@@ -1,0 +1,76 @@
+// Elencos reais (nomes públicos de jogadores). Formato: "POS|Nome|Idade|OVR"
+// separados por ";". Clubes sem elenco nomeado recebem elenco gerado a partir
+// dos bancos de nomes do país, com nível derivado da força do clube.
+
+export const NAMED_SQUADS: Record<string, string> = {
+  fla: "GK|Rossi|30|84;DF|Varela|31|80;DF|Léo Ortiz|29|82;DF|Léo Pereira|29|81;DF|Ayrton Lucas|28|81;MF|Erick Pulgar|31|81;MF|Jorginho|34|83;MF|De La Cruz|28|84;MF|Arrascaeta|31|87;FW|Pedro|28|85;FW|Bruno Henrique|35|82;FW|Luiz Araújo|29|80;MF|Everton Ribeiro|36|80;DF|Danilo|34|82",
+  pal: "GK|Weverton|37|82;DF|Marcos Rocha|36|78;DF|Gustavo Gómez|32|85;DF|Murilo|28|82;DF|Piquerez|27|82;MF|Aníbal Moreno|26|81;MF|Richard Ríos|25|82;MF|Raphael Veiga|30|83;FW|Estêvão|18|84;FW|Vitor Roque|20|81;FW|Flaco López|24|81;MF|Maurício|24|79;DF|Bruno Fuchs|26|78;GK|Marcelo Lomba|38|74",
+  bot: "GK|John|29|80;DF|Vitinho|26|78;DF|Bastos|30|80;DF|Barboza|29|81;DF|Alex Telles|33|81;MF|Marlon Freitas|30|79;MF|Gregore|31|79;MF|Almada|24|84;FW|Savarino|28|81;FW|Igor Jesus|24|81;FW|Luiz Henrique|24|83;MF|Eduardo|29|78;DF|Jair|21|77;FW|Júnior Santos|30|78",
+  sao: "GK|Rafael|36|82;DF|Rafinha|40|76;DF|Arboleda|33|81;DF|Alan Franco|28|79;DF|Wendell|32|79;MF|Pablo Maia|23|80;MF|Alisson|32|79;MF|Oscar|34|82;MF|Lucas Moura|33|83;FW|Calleri|32|82;FW|Ferreirinha|28|79;MF|Bobadilla|22|77;DF|Sabino|28|77;GK|Jandrei|32|74",
+  cor: "GK|Hugo Souza|26|81;DF|Matheuzinho|25|78;DF|Cacá|26|78;DF|André Ramalho|33|79;DF|Hugo|29|77;MF|José Martínez|31|79;MF|Raniele|29|78;MF|Rodrigo Garro|27|82;FW|Memphis Depay|32|85;FW|Yuri Alberto|24|82;FW|Talles Magno|23|78;MF|Maycon|28|77;DF|Félix Torres|28|78;GK|Matheus Donelli|23|72",
+  mgo: "GK|Everson|35|81;DF|Saravia|33|77;DF|Lyanco|28|79;DF|Junior Alonso|32|80;DF|Guilherme Arana|28|82;MF|Otávio|30|79;MF|Alan Franco|27|79;MF|Bernard|33|80;MF|Scarpa|31|81;FW|Hulk|39|84;FW|Rony|30|79;FW|Paulinho|25|81;DF|Battaglia|33|77;GK|Matheus Mendes|25|71",
+
+  liv: "GK|Alisson|33|89;DF|Bradley|22|79;DF|Van Dijk|34|89;DF|Konaté|26|85;DF|Kerkez|22|81;MF|Gravenberch|23|85;MF|Mac Allister|27|86;MF|Szoboszlai|25|85;FW|Salah|33|89;FW|Ekitiké|23|83;FW|Gakpo|26|84;FW|Wirtz|22|87;DF|Robertson|31|84;GK|Mamardashvili|25|82",
+  ars: "GK|Raya|30|85;DF|Timber|24|83;DF|Saliba|24|87;DF|Gabriel|28|86;DF|Calafiori|23|82;MF|Zubimendi|26|85;MF|Ødegaard|27|87;MF|Rice|27|88;FW|Saka|24|87;FW|Gyökeres|27|86;FW|Martinelli|24|83;MF|Merino|29|83;DF|White|28|83;GK|Kepa|31|79",
+  mci: "GK|Ederson|32|86;DF|Nunes|27|80;DF|Rúben Dias|28|88;DF|Gvardiol|23|85;DF|Aké|30|82;MF|Rodri|29|90;MF|Bernardo Silva|31|86;MF|Reijnders|27|84;FW|Savinho|21|82;FW|Haaland|25|91;FW|Doku|23|83;MF|Foden|25|86;DF|Stones|31|84;GK|Ortega|32|78",
+  che: "GK|Sánchez|28|80;DF|Gusto|22|81;DF|Colwill|23|82;DF|Chalobah|26|80;DF|Cucurella|27|83;MF|Caicedo|24|86;MF|Fernández|25|84;MF|Palmer|23|87;FW|Neto|26|81;FW|João Pedro|24|82;FW|Estêvão|18|82;FW|Garnacho|21|81;DF|James|26|82;GK|Jörgensen|24|76",
+  tot: "GK|Vicario|29|83;DF|Porro|26|82;DF|Romero|27|85;DF|Van de Ven|24|83;DF|Udogie|23|81;MF|Bentancur|28|81;MF|Bergvall|19|79;MF|Sarr|23|80;FW|Kudus|25|83;FW|Richarlison|28|81;FW|Son|33|84;FW|Solanke|28|81;DF|Spence|25|78;GK|Kinsky|22|74",
+  mun: "GK|Bayındır|27|76;DF|Mazraoui|28|81;DF|De Ligt|26|84;DF|Yoro|20|80;DF|Shaw|30|80;MF|Casemiro|33|82;MF|Bruno Fernandes|31|87;MF|Mainoo|20|80;FW|Mbeumo|26|83;FW|Šeško|22|82;FW|Cunha|26|83;FW|Amad|23|81;DF|Dalot|26|81;GK|Onana|29|79",
+
+  rma: "GK|Courtois|33|89;DF|Trent|27|86;DF|Militão|27|85;DF|Huijsen|20|82;DF|Carreras|23|80;MF|Tchouaméni|25|85;MF|Valverde|27|88;MF|Bellingham|22|89;FW|Mbappé|27|91;FW|Vinícius Jr|25|90;FW|Rodrygo|25|85;MF|Güler|20|83;MF|Camavinga|23|84;GK|Lunin|26|79",
+  bar: "GK|Joan García|24|82;DF|Koundé|27|85;DF|Cubarsí|18|83;DF|Araújo|26|84;DF|Balde|22|83;MF|De Jong|28|85;MF|Pedri|23|88;MF|Olmo|27|85;FW|Lamine Yamal|18|89;FW|Lewandowski|37|86;FW|Raphinha|29|88;FW|Ferran Torres|25|82;DF|Martín|22|80;GK|Szczęsny|35|79",
+  atm: "GK|Oblak|33|86;DF|Llorente|31|83;DF|Le Normand|29|83;DF|Giménez|30|83;DF|Hancko|28|82;MF|Koke|34|81;MF|Barrios|22|82;MF|Baena|24|83;FW|Griezmann|34|86;FW|Julián Álvarez|26|87;FW|Sørloth|30|82;MF|Simeone|30|80;DF|Molina|27|81;GK|Musso|31|76",
+  ath: "GK|Simón|31|85;DF|Gorosabel|29|78;DF|Vivian|26|82;DF|Paredes|26|80;DF|Yuri Berchiche|35|79;MF|Ruiz de Galarreta|32|79;MF|Jauregizar|22|80;MF|Sancet|25|83;FW|Nico Williams|23|85;FW|Guruzeta|26|79;FW|Berenguer|30|79;MF|Iñaki Williams|31|82;DF|Lekue|31|76;GK|Padilla|24|74",
+  bet: "GK|Valles|27|78;DF|Bellerín|30|78;DF|Natan|24|79;DF|Bartra|34|78;DF|Ricardo Rodríguez|33|76;MF|Marc Roca|29|79;MF|Fornals|29|80;MF|Lo Celso|29|82;FW|Antony|25|84;FW|Cucho Hernández|26|80;FW|Abde|23|80;MF|Isco|33|84;DF|Firpo|29|77;GK|Adrián|38|72",
+  vil: "GK|Luiz Júnior|24|80;DF|Kiko Femenía|34|76;DF|Marín|22|79;DF|Foyth|27|81;DF|Cardona|24|77;MF|Comesaña|26|80;MF|Parejo|36|82;MF|Buchanan|26|79;FW|Pépé|30|81;FW|Mikautadze|25|81;FW|Ayoze Pérez|32|82;FW|Gerard Moreno|33|82;DF|Mouriño|22|77;GK|Tenas|26|72",
+
+  int_i: "GK|Sommer|37|84;DF|Pavard|29|82;DF|Acerbi|37|82;DF|Bastoni|26|86;MF|Dumfries|29|83;MF|Barella|28|86;MF|Çalhanoğlu|31|85;MF|Mkhitaryan|36|82;MF|Dimarco|28|85;FW|Lautaro Martínez|28|88;FW|Thuram|28|86;FW|Bonny|22|79;DF|de Vrij|33|80;GK|Martínez|33|76",
+  nap: "GK|Meret|28|82;DF|Di Lorenzo|32|84;DF|Rrahmani|31|83;DF|Buongiorno|26|83;DF|Olivera|28|81;MF|Lobotka|31|85;MF|Anguissa|30|84;MF|De Bruyne|34|87;FW|Politano|32|82;FW|Lukaku|32|84;FW|Neres|28|84;FW|Højlund|22|80;DF|Spinazzola|32|79;GK|Milinković-Savić|28|80",
+  mil: "GK|Maignan|30|86;DF|Tomori|27|82;DF|Gabbia|26|79;DF|Pavlović|24|80;MF|Saelemaekers|26|80;MF|Modrić|40|83;MF|Fofana|26|83;MF|Ricci|24|80;MF|Bartesaghi|20|76;FW|Pulisic|27|85;FW|Leão|26|86;FW|Nkunku|28|83;DF|Estupiñán|27|80;GK|Terracciano|22|71",
+  juv_i: "GK|Di Gregorio|28|81;DF|Kalulu|25|81;DF|Bremer|28|85;DF|Kelly|27|79;MF|Cambiaso|25|82;MF|Locatelli|27|82;MF|Thuram|24|82;MF|McKennie|27|80;FW|Yıldız|20|84;FW|Vlahović|25|84;FW|David|25|83;FW|Openda|25|81;DF|Cabal|24|77;GK|Perin|33|76",
+  ata: "GK|Carnesecchi|25|82;DF|Hien|26|81;DF|Djimsiti|32|80;DF|Kolašinac|32|79;MF|Bellanova|25|81;MF|de Roon|34|81;MF|Éderson|26|84;MF|Zappacosta|33|79;FW|Lookman|28|85;FW|De Ketelaere|24|83;FW|Scamacca|27|81;FW|Krstović|25|80;DF|Scalvini|22|80;GK|Sportiello|33|73",
+  rom: "GK|Svilar|26|84;DF|Mancini|29|81;DF|N'Dicka|26|82;DF|Hermoso|30|79;MF|Wesley|22|79;MF|Koné|24|84;MF|Cristante|30|80;MF|Angeliño|28|81;FW|Soulé|22|81;FW|Dybala|32|84;FW|Ferguson|21|79;FW|Pellegrini|29|82;DF|Çelik|28|77;GK|Gollini|30|72",
+};
+
+export const NAME_POOLS: Record<string, { first: string[]; last: string[] }> = {
+  bra: {
+    first: [
+      "Lucas","Gabriel","Matheus","Rafael","Bruno","Thiago","Vinícius","Pedro","João","Felipe",
+      "Caio","Douglas","Everton","Wesley","Igor","Diego","Marcelo","Rodrigo","André","Kaio",
+    ],
+    last: [
+      "Silva","Santos","Oliveira","Souza","Pereira","Costa","Almeida","Ribeiro","Carvalho","Barbosa",
+      "Rocha","Nascimento","Moreira","Cardoso","Teixeira","Gomes","Lima","Araújo","Freitas","Martins",
+    ],
+  },
+  eng: {
+    first: [
+      "Harry","Jack","Callum","Tyler","Reece","Ollie","Conor","Ethan","Lewis","Mason",
+      "Josh","Kyle","Ryan","Dominic","Jordan","Sam","Nathan","Elliot","Charlie","Aaron",
+    ],
+    last: [
+      "Walker","Bennett","Ainsley","Cartwright","Hughes","Doyle","Marsden","Whitmore","Ellison","Radford",
+      "Kirby","Sinclair","Prescott","Holloway","Fenton","Barlow","Trescott","Nolan","Gale","Rowntree",
+    ],
+  },
+  esp: {
+    first: [
+      "Álvaro","Sergio","Iker","Marcos","Javi","Rubén","Pablo","Adrián","Unai","Aitor",
+      "Hugo","Dani","Mateo","Nacho","Óscar","Jorge","Iván","Bruno","Manu","Gonzalo",
+    ],
+    last: [
+      "Herrera","Navarro","Cabrera","Iglesias","Ferrer","Cuenca","Salazar","Otero","Vidal","Bermejo",
+      "Lozano","Aranda","Peralta","Ibáñez","Rueda","Segura","Villar","Montero","Escudero","Nieto",
+    ],
+  },
+  ita: {
+    first: [
+      "Marco","Luca","Andrea","Matteo","Davide","Simone","Alessio","Federico","Nicolò","Giacomo",
+      "Lorenzo","Tommaso","Riccardo","Filippo","Emanuele","Pietro","Samuele","Cristian","Manuel","Gian",
+    ],
+    last: [
+      "Ferrari","Rinaldi","Bellotti","Marchetti","Costanzo","Palmieri","Baldini","Fontana","Serra","Gallo",
+      "Mancuso","Rizzo","Vitale","Grassi","Bianco","Sartori","Perrone","Zanetti","Caruso","Neri",
+    ],
+  },
+};
