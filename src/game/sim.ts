@@ -152,7 +152,7 @@ export class MatchSim {
     if (this.events.length > 80) this.events.shift();
   }
 
-  private minute() {
+  minute() {
     return Math.min(90, Math.floor(this.time / 60));
   }
 
@@ -433,7 +433,6 @@ export class MatchSim {
         side,
         text: `${this.minute()}' ${holder.name} finaliza para fora.`,
       });
-      window.setTimeout(() => {}, 0);
       this.scheduleRestart(side === "home" ? "away" : "home");
       return;
     }
