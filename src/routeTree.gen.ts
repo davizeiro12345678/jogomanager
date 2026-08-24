@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedClubRouteImport } from './routes/_authenticated/club'
+import { Route as AuthenticatedLeagueRouteImport } from './routes/_authenticated/league'
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
 import { Route as AuthenticatedSquadRouteImport } from './routes/_authenticated/squad'
 import { Route as AuthenticatedTacticsRouteImport } from './routes/_authenticated/tactics'
@@ -36,6 +37,11 @@ const AuthenticatedClubRoute = AuthenticatedClubRouteImport.update({
   path: '/club',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLeagueRoute = AuthenticatedLeagueRouteImport.update({
+  id: '/league',
+  path: '/league',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedNewRoute = AuthenticatedNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -56,6 +62,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/club': typeof AuthenticatedClubRoute
+  '/league': typeof AuthenticatedLeagueRoute
   '/new': typeof AuthenticatedNewRoute
   '/squad': typeof AuthenticatedSquadRoute
   '/tactics': typeof AuthenticatedTacticsRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/club': typeof AuthenticatedClubRoute
+  '/league': typeof AuthenticatedLeagueRoute
   '/new': typeof AuthenticatedNewRoute
   '/squad': typeof AuthenticatedSquadRoute
   '/tactics': typeof AuthenticatedTacticsRoute
@@ -74,21 +82,24 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/club': typeof AuthenticatedClubRoute
+  '/_authenticated/league': typeof AuthenticatedLeagueRoute
   '/_authenticated/new': typeof AuthenticatedNewRoute
   '/_authenticated/squad': typeof AuthenticatedSquadRoute
   '/_authenticated/tactics': typeof AuthenticatedTacticsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/club' | '/new' | '/squad' | '/tactics'
+  fullPaths:
+    '/' | '/auth' | '/club' | '/league' | '/new' | '/squad' | '/tactics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/club' | '/new' | '/squad' | '/tactics'
+  to: '/' | '/auth' | '/club' | '/league' | '/new' | '/squad' | '/tactics'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/club'
+    | '/_authenticated/league'
     | '/_authenticated/new'
     | '/_authenticated/squad'
     | '/_authenticated/tactics'
@@ -130,6 +141,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClubRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/league': {
+      id: '/_authenticated/league'
+      path: '/league'
+      fullPath: '/league'
+      preLoaderRoute: typeof AuthenticatedLeagueRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/new': {
       id: '/_authenticated/new'
       path: '/new'
@@ -156,6 +174,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedClubRoute: typeof AuthenticatedClubRoute
+  AuthenticatedLeagueRoute: typeof AuthenticatedLeagueRoute
   AuthenticatedNewRoute: typeof AuthenticatedNewRoute
   AuthenticatedSquadRoute: typeof AuthenticatedSquadRoute
   AuthenticatedTacticsRoute: typeof AuthenticatedTacticsRoute
@@ -163,6 +182,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClubRoute: AuthenticatedClubRoute,
+  AuthenticatedLeagueRoute: AuthenticatedLeagueRoute,
   AuthenticatedNewRoute: AuthenticatedNewRoute,
   AuthenticatedSquadRoute: AuthenticatedSquadRoute,
   AuthenticatedTacticsRoute: AuthenticatedTacticsRoute,
