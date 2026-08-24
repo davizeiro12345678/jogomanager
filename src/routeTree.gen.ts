@@ -13,7 +13,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedClubRouteImport } from './routes/_authenticated/club'
+import { Route as AuthenticatedLeagueRouteImport } from './routes/_authenticated/league'
+import { Route as AuthenticatedMatchRouteImport } from './routes/_authenticated/match'
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
+import { Route as AuthenticatedSquadRouteImport } from './routes/_authenticated/squad'
+import { Route as AuthenticatedTacticsRouteImport } from './routes/_authenticated/tactics'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,9 +38,29 @@ const AuthenticatedClubRoute = AuthenticatedClubRouteImport.update({
   path: '/club',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLeagueRoute = AuthenticatedLeagueRouteImport.update({
+  id: '/league',
+  path: '/league',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMatchRoute = AuthenticatedMatchRouteImport.update({
+  id: '/match',
+  path: '/match',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedNewRoute = AuthenticatedNewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSquadRoute = AuthenticatedSquadRouteImport.update({
+  id: '/squad',
+  path: '/squad',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTacticsRoute = AuthenticatedTacticsRouteImport.update({
+  id: '/tactics',
+  path: '/tactics',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
@@ -44,13 +68,21 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/club': typeof AuthenticatedClubRoute
+  '/league': typeof AuthenticatedLeagueRoute
+  '/match': typeof AuthenticatedMatchRoute
   '/new': typeof AuthenticatedNewRoute
+  '/squad': typeof AuthenticatedSquadRoute
+  '/tactics': typeof AuthenticatedTacticsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/club': typeof AuthenticatedClubRoute
+  '/league': typeof AuthenticatedLeagueRoute
+  '/match': typeof AuthenticatedMatchRoute
   '/new': typeof AuthenticatedNewRoute
+  '/squad': typeof AuthenticatedSquadRoute
+  '/tactics': typeof AuthenticatedTacticsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -58,20 +90,44 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/club': typeof AuthenticatedClubRoute
+  '/_authenticated/league': typeof AuthenticatedLeagueRoute
+  '/_authenticated/match': typeof AuthenticatedMatchRoute
   '/_authenticated/new': typeof AuthenticatedNewRoute
+  '/_authenticated/squad': typeof AuthenticatedSquadRoute
+  '/_authenticated/tactics': typeof AuthenticatedTacticsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/club' | '/new'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/club'
+    | '/league'
+    | '/match'
+    | '/new'
+    | '/squad'
+    | '/tactics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/club' | '/new'
+  to:
+    | '/'
+    | '/auth'
+    | '/club'
+    | '/league'
+    | '/match'
+    | '/new'
+    | '/squad'
+    | '/tactics'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/club'
+    | '/_authenticated/league'
+    | '/_authenticated/match'
     | '/_authenticated/new'
+    | '/_authenticated/squad'
+    | '/_authenticated/tactics'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -110,6 +166,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClubRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/league': {
+      id: '/_authenticated/league'
+      path: '/league'
+      fullPath: '/league'
+      preLoaderRoute: typeof AuthenticatedLeagueRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/match': {
+      id: '/_authenticated/match'
+      path: '/match'
+      fullPath: '/match'
+      preLoaderRoute: typeof AuthenticatedMatchRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/new': {
       id: '/_authenticated/new'
       path: '/new'
@@ -117,17 +187,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/squad': {
+      id: '/_authenticated/squad'
+      path: '/squad'
+      fullPath: '/squad'
+      preLoaderRoute: typeof AuthenticatedSquadRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tactics': {
+      id: '/_authenticated/tactics'
+      path: '/tactics'
+      fullPath: '/tactics'
+      preLoaderRoute: typeof AuthenticatedTacticsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedClubRoute: typeof AuthenticatedClubRoute
+  AuthenticatedLeagueRoute: typeof AuthenticatedLeagueRoute
+  AuthenticatedMatchRoute: typeof AuthenticatedMatchRoute
   AuthenticatedNewRoute: typeof AuthenticatedNewRoute
+  AuthenticatedSquadRoute: typeof AuthenticatedSquadRoute
+  AuthenticatedTacticsRoute: typeof AuthenticatedTacticsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClubRoute: AuthenticatedClubRoute,
+  AuthenticatedLeagueRoute: AuthenticatedLeagueRoute,
+  AuthenticatedMatchRoute: AuthenticatedMatchRoute,
   AuthenticatedNewRoute: AuthenticatedNewRoute,
+  AuthenticatedSquadRoute: AuthenticatedSquadRoute,
+  AuthenticatedTacticsRoute: AuthenticatedTacticsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
