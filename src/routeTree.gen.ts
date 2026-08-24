@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedClubRouteImport } from './routes/_authenticated/club'
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
+import { Route as AuthenticatedSquadRouteImport } from './routes/_authenticated/squad'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -39,18 +40,25 @@ const AuthenticatedNewRoute = AuthenticatedNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSquadRoute = AuthenticatedSquadRouteImport.update({
+  id: '/squad',
+  path: '/squad',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/club': typeof AuthenticatedClubRoute
   '/new': typeof AuthenticatedNewRoute
+  '/squad': typeof AuthenticatedSquadRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/club': typeof AuthenticatedClubRoute
   '/new': typeof AuthenticatedNewRoute
+  '/squad': typeof AuthenticatedSquadRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -59,12 +67,13 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/club': typeof AuthenticatedClubRoute
   '/_authenticated/new': typeof AuthenticatedNewRoute
+  '/_authenticated/squad': typeof AuthenticatedSquadRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/club' | '/new'
+  fullPaths: '/' | '/auth' | '/club' | '/new' | '/squad'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/club' | '/new'
+  to: '/' | '/auth' | '/club' | '/new' | '/squad'
   id:
     | '__root__'
     | '/'
@@ -72,6 +81,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/club'
     | '/_authenticated/new'
+    | '/_authenticated/squad'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,17 +127,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/squad': {
+      id: '/_authenticated/squad'
+      path: '/squad'
+      fullPath: '/squad'
+      preLoaderRoute: typeof AuthenticatedSquadRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedClubRoute: typeof AuthenticatedClubRoute
   AuthenticatedNewRoute: typeof AuthenticatedNewRoute
+  AuthenticatedSquadRoute: typeof AuthenticatedSquadRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClubRoute: AuthenticatedClubRoute,
   AuthenticatedNewRoute: AuthenticatedNewRoute,
+  AuthenticatedSquadRoute: AuthenticatedSquadRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
