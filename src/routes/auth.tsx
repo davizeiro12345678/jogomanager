@@ -3,8 +3,18 @@ import { useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 
+function safeNext(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  // Only same-origin relative paths; never full URLs.
+  if (!value.startsWith("/") || value.startsWith("//")) return undefined;
+  return value;
+}
+
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: safeNext(s.next),
+  }),
   head: () => ({
     meta: [
       { title: "Entrar · Manager 3D — Futebol 3D ao vivo" },
