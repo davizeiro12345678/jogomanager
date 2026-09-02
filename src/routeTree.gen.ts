@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DevsceneRouteImport } from './routes/devscene'
 import { Route as AuthenticatedClubRouteImport } from './routes/_authenticated/club'
 import { Route as AuthenticatedLeagueRouteImport } from './routes/_authenticated/league'
 import { Route as AuthenticatedMatchRouteImport } from './routes/_authenticated/match'
@@ -31,6 +32,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevsceneRoute = DevsceneRouteImport.update({
+  id: '/devscene',
+  path: '/devscene',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedClubRoute = AuthenticatedClubRouteImport.update({
@@ -67,6 +73,7 @@ const AuthenticatedTacticsRoute = AuthenticatedTacticsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/devscene': typeof DevsceneRoute
   '/club': typeof AuthenticatedClubRoute
   '/league': typeof AuthenticatedLeagueRoute
   '/match': typeof AuthenticatedMatchRoute
@@ -77,6 +84,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/devscene': typeof DevsceneRoute
   '/club': typeof AuthenticatedClubRoute
   '/league': typeof AuthenticatedLeagueRoute
   '/match': typeof AuthenticatedMatchRoute
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/devscene': typeof DevsceneRoute
   '/_authenticated/club': typeof AuthenticatedClubRoute
   '/_authenticated/league': typeof AuthenticatedLeagueRoute
   '/_authenticated/match': typeof AuthenticatedMatchRoute
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/devscene'
     | '/club'
     | '/league'
     | '/match'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/devscene'
     | '/club'
     | '/league'
     | '/match'
@@ -122,6 +133,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/devscene'
     | '/_authenticated/club'
     | '/_authenticated/league'
     | '/_authenticated/match'
@@ -134,6 +146,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  DevsceneRoute: typeof DevsceneRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -157,6 +170,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/devscene': {
+      id: '/devscene'
+      path: '/devscene'
+      fullPath: '/devscene'
+      preLoaderRoute: typeof DevsceneRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/club': {
@@ -229,6 +249,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  DevsceneRoute: DevsceneRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
