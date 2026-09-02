@@ -808,7 +808,7 @@ function PlayerMesh({
           {isGK && (
             <mesh position={[0, -0.32, 0]}>
               <boxGeometry args={[0.15, 0.18, 0.11]} />
-              <meshStandardMaterial color={kit.accent ?? "#f2f2f2"} roughness={0.6} />
+              <meshStandardMaterial color={kit.detail} roughness={0.6} />
             </mesh>
           )}
         </group>
