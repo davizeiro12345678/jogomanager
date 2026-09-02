@@ -325,42 +325,50 @@ function AdBoards() {
   for (let i = 0; i < count; i++) {
     const x = -(FIELD_X + 8) + w / 2 + i * w;
     for (const z of [-1, 1]) {
-      const [text, bg, fg] = ADS[(i + (z > 0 ? 3 : 0)) % ADS.length]!;
-      boards.push(<AdBoard key={`${i}-${z}`} x={x} z={z * (FIELD_Z + 5)} w={w} text={text} bg={bg} fg={fg} />);
+      boards.push(
+        <AdBoard key={`${i}-${z}`} x={x} z={z * (FIELD_Z + 5)} w={w} seed={i + (z > 0 ? 3 : 0)} />,
+      );
     }
   }
   return <group>{boards}</group>;
 }
 
-function AdBoard({
-  x,
-  z,
-  w,
-  text,
-  bg,
-  fg,
-}: {
-  x: number;
-  z: number;
-  w: number;
-  text: string;
-  bg: string;
-  fg: string;
-}) {
-  const tex = useMemo(() => adBoardTexture(text, bg, fg), [text, bg, fg]);
+function AdBoard({ x, z, w, seed }: { x: number; z: number; w: number; seed: number }) {
+  const texes = useMemo(
+    () => ADS.map(([text, bg, fg]) => adBoardTexture(text, bg, fg)).filter(Boolean) as THREE.CanvasTexture[],
+    [],
+  );
+  const matRef = useRef<THREE.MeshStandardMaterial>(null);
+  const idx = useRef(-1);
+  useFrame(({ clock }) => {
+    if (!texes.length) return;
+    // troca de anúncio a cada 5s, com defasagem por placa
+    const next = (Math.floor(clock.elapsedTime / 5) + seed) % texes.length;
+    if (next === idx.current) return;
+    idx.current = next;
+    const tex = texes[next]!;
+    const m = matRef.current;
+    if (m) {
+      m.map = tex;
+      m.emissiveMap = tex;
+      m.needsUpdate = true;
+    }
+  });
   return (
     <mesh position={[x, 0.6, z]} rotation={[0, z > 0 ? Math.PI : 0, 0]}>
       <boxGeometry args={[w * 0.94, 1.2, 0.25]} />
       <meshStandardMaterial
-        {...(tex ? { map: tex, emissiveMap: tex } : { color: bg })}
+        ref={matRef}
         color="#ffffff"
         emissive="#ffffff"
-        emissiveIntensity={0.45}
+        emissiveIntensity={0.55}
         roughness={0.4}
+        toneMapped={false}
       />
     </mesh>
   );
 }
+
 
 function scoreboardTexture(text: string) {
   if (typeof document === "undefined") return null;
