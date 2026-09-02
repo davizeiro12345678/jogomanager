@@ -919,7 +919,7 @@ function Rig({
     const effective: CameraMode = pulse > 0.55 ? "behind" : mode;
     switch (effective) {
       case "broadcast":
-        target.set(bx * 0.55, 50, FIELD_Z + 34);
+        target.set(bx * 0.55, 46, FIELD_Z + 44);
         break;
       case "tactical":
         target.set(bx * 0.2, 72, 6);
@@ -1067,7 +1067,7 @@ export function Stadium3D({
       <Canvas
         shadows={quality === "alta"}
         dpr={quality === "alta" ? [1, 2] : quality === "media" ? 1 : 0.75}
-        camera={{ position: [0, 50, FIELD_Z + 34], fov: 42 }}
+        camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
         gl={{ antialias: quality !== "baixa" }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
