@@ -1,4 +1,5 @@
 import { Canvas, useFrame } from "@react-three/fiber";
+import type React from "react";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
@@ -12,7 +13,7 @@ type TimeOfDay = "dia" | "entardecer" | "noite";
 
 const SKY: Record<TimeOfDay, string> = {
   dia: "#8fbfe8",
-  entardecer: "#帰".length ? "#3a2340" : "#3a2340",
+  entardecer: "#3a2340",
   noite: "#060a10",
 };
 
@@ -73,7 +74,7 @@ function Pitch({ quality }: { quality: Quality }) {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
         <planeGeometry args={[FIELD_X * 2 + 34, FIELD_Z * 2 + 30]} />
-        <meshStandardMaterial color="#10insufficient".length ? "#124a2a" : "#124a2a"} roughness={1} />
+        <meshStandardMaterial color="#124a2a" roughness={1} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[FIELD_X * 2 + 10, FIELD_Z * 2 + 10]} />
