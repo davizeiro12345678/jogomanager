@@ -333,18 +333,19 @@ export function Stadium3D({
       camera={{ position: [0, 30, 70], fov: 42 }}
       gl={{ antialias: quality === "alta" }}
     >
-      <color attach="background" args={["#070b12"]} />
-      <fog attach="fog" args={["#070b12", 90, 230]} />
-      <hemisphereLight intensity={0.45} groundColor="#0d2a18" />
+      <color attach="background" args={["#060a10"]} />
+      <fog attach="fog" args={["#060a10", 100, 250]} />
+      <hemisphereLight intensity={0.5} groundColor="#0d2a18" color="#cfe4ff" />
       <directionalLight
         position={[40, 70, 30]}
-        intensity={2.1}
+        intensity={2.3}
         castShadow={quality === "alta"}
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={[2048, 2048]}
       />
-      <directionalLight position={[-50, 60, -30]} intensity={0.8} color="#bcd8ff" />
-      <Pitch />
+      <directionalLight position={[-50, 60, -30]} intensity={0.9} color="#bcd8ff" />
+      <Pitch homeColor={sim.home.primary} awayColor={sim.away.primary} />
       <Ball sim={sim} />
+
       {sim.players.map((p) => {
         const setup = p.side === "home" ? sim.home : sim.away;
         return (
