@@ -652,16 +652,16 @@ function Rig({ sim, mode }: { sim: MatchSim; mode: CameraMode }) {
     const bz = sim.ball.z;
     switch (mode) {
       case "broadcast":
-        target.set(bx * 0.55, 24, FIELD_Z + 32);
+        target.set(bx * 0.55, 34, FIELD_Z + 52);
         break;
       case "tactical":
-        target.set(bx * 0.2, 64, 4);
+        target.set(bx * 0.2, 72, 6);
         break;
       case "goal":
-        target.set(FIELD_X + 18, 9, bz * 0.3);
+        target.set(FIELD_X + 22, 11, bz * 0.3);
         break;
       case "fan":
-        target.set(bx * 0.3, 12, FIELD_Z + 17);
+        target.set(bx * 0.3, 15.5, FIELD_Z + 19);
         break;
       case "behind": {
         const a = clock.elapsedTime * 0.15;
@@ -710,7 +710,7 @@ function Scene({
     [sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash],
   );
 
-  const sun = time === "dia" ? 2.6 : time === "entardecer" ? 1.5 : 0.7;
+  const sun = time === "dia" ? 2.8 : time === "entardecer" ? 2.0 : 1.3;
   const sunColor = time === "entardecer" ? "#ffb27a" : time === "dia" ? "#fff6e0" : "#bcd8ff";
 
   return (
@@ -718,7 +718,7 @@ function Scene({
       <color attach="background" args={[SKY[time]]} />
       <fog attach="fog" args={[SKY[time], 110, 300]} />
       <hemisphereLight
-        intensity={time === "dia" ? 0.9 : 0.45}
+        intensity={time === "dia" ? 1.0 : 0.7}
         groundColor="#0d2a18"
         color={time === "entardecer" ? "#ffd0a8" : "#cfe4ff"}
       />
@@ -779,7 +779,7 @@ export function Stadium3D({
     <Canvas
       shadows={quality === "alta"}
       dpr={quality === "alta" ? [1, 2] : quality === "media" ? 1 : 0.75}
-      camera={{ position: [0, 30, 70], fov: 42 }}
+      camera={{ position: [0, 34, FIELD_Z + 52], fov: 42 }}
       gl={{ antialias: quality !== "baixa" }}
     >
       <Scene sim={sim} mode={mode} quality={quality} time={time} />
