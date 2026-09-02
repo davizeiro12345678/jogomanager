@@ -516,7 +516,7 @@ function Stands({
       ))}
       <instancedMesh ref={ref} args={[undefined, undefined, crowd.positions.length]}>
         <boxGeometry args={[0.44, 0.62, 0.44]} />
-        <meshStandardMaterial vertexColors roughness={0.8} />
+        <meshStandardMaterial roughness={0.8} />
       </instancedMesh>
     </group>
   );
