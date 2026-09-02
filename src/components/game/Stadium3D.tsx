@@ -6,7 +6,7 @@ import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
 
 export type CameraMode = "broadcast" | "tactical" | "goal";
 
-function Pitch() {
+function Pitch({ homeColor, awayColor }: { homeColor: string; awayColor: string }) {
   const stripes = useMemo(() => {
     const arr: { x: number; w: number }[] = [];
     const count = 14;
@@ -17,6 +17,10 @@ function Pitch() {
 
   return (
     <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.03, 0]} receiveShadow>
+        <planeGeometry args={[FIELD_X * 2 + 26, FIELD_Z * 2 + 26]} />
+        <meshStandardMaterial color="#14512c" roughness={1} />
+      </mesh>
       {stripes.map((s, i) => (
         <mesh
           key={i}
@@ -25,16 +29,69 @@ function Pitch() {
           receiveShadow
         >
           <planeGeometry args={[s.w, FIELD_Z * 2]} />
-          <meshStandardMaterial color={i % 2 === 0 ? "#1f7a3f" : "#1a6b37"} roughness={0.95} />
+          <meshStandardMaterial color={i % 2 === 0 ? "#20824a" : "#1a6f3d"} roughness={0.92} />
         </mesh>
       ))}
       <Lines />
       <Goal side={1} />
       <Goal side={-1} />
-      <Stands />
+      <AdBoards />
+      <Floodlights />
+      <Stands homeColor={homeColor} awayColor={awayColor} />
     </group>
   );
 }
+
+function AdBoards() {
+  const colors = ["#0b2b45", "#8a1420", "#123f2a", "#3a2f6b", "#6b4a12"];
+  const boards: JSX.Element[] = [];
+  const count = 16;
+  const w = ((FIELD_X + 6) * 2) / count;
+  for (let i = 0; i < count; i++) {
+    const x = -(FIELD_X + 6) + w / 2 + i * w;
+    for (const z of [-1, 1]) {
+      boards.push(
+        <mesh key={`${i}-${z}`} position={[x, 0.55, z * (FIELD_Z + 4.5)]}>
+          <boxGeometry args={[w * 0.94, 1.1, 0.25]} />
+          <meshStandardMaterial
+            color={colors[(i + (z > 0 ? 1 : 0)) % colors.length]}
+            emissive={colors[(i + (z > 0 ? 1 : 0)) % colors.length]}
+            emissiveIntensity={0.35}
+            roughness={0.5}
+          />
+        </mesh>,
+      );
+    }
+  }
+  return <group>{boards}</group>;
+}
+
+function Floodlights() {
+  const spots: [number, number][] = [
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [1, 1],
+  ];
+  return (
+    <group>
+      {spots.map(([sx, sz], i) => (
+        <group key={i} position={[sx * (FIELD_X + 16), 0, sz * (FIELD_Z + 18)]}>
+          <mesh position={[0, 13, 0]}>
+            <cylinderGeometry args={[0.5, 0.8, 26, 8]} />
+            <meshStandardMaterial color="#2a3138" roughness={0.8} />
+          </mesh>
+          <mesh position={[0, 26.5, 0]}>
+            <boxGeometry args={[7, 3, 1]} />
+            <meshStandardMaterial color="#f5f8ff" emissive="#dceaff" emissiveIntensity={1.6} />
+          </mesh>
+          <pointLight position={[0, 26, 0]} intensity={900} distance={190} color="#e8f2ff" />
+        </group>
+      ))}
+    </group>
+  );
+}
+
 
 function line(points: [number, number][], y = 0.02) {
   return new THREE.BufferGeometry().setFromPoints(
