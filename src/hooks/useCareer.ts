@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback } from "react";
 
+import { migrateCareer } from "@/game/career";
 import { loadCareer, saveCareer, deleteCareer } from "@/lib/career.functions";
 import type { CareerState } from "@/game/types";
 
@@ -15,7 +16,10 @@ export function useCareer() {
 
   const query = useQuery({
     queryKey: CAREER_KEY,
-    queryFn: () => load(),
+    queryFn: async () => {
+      const raw = await load();
+      return raw ? migrateCareer(raw) : null;
+    },
     staleTime: 30_000,
   });
 
