@@ -30,7 +30,7 @@ function Dev() {
   const [mode] = useState<CameraMode>("broadcast");
   const sim = useMemo(() => {
     const ids = Object.keys(CLUBS);
-    const s = new MatchSim(team(ids[0]!), team(ids[1]!));
+    const s = new MatchSim(team(ids[0]!), team(ids[1]!), "dev");
     for (let i = 0; i < 200; i++) s.step(1 / 30);
     return s;
   }, []);
