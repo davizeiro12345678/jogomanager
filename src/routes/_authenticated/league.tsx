@@ -5,6 +5,7 @@ import { Crest } from "@/components/game/Crest";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { computeTable, roundFixtures } from "@/game/season";
 import { useCareer } from "@/hooks/useCareer";
+import { Flag } from "@/components/game/Flag";
 
 export const Route = createFileRoute("/_authenticated/league")({
   head: () => ({
@@ -34,7 +35,7 @@ function LeaguePage() {
   return (
     <GameShell career={career}>
       <h1 className="font-display text-3xl uppercase tracking-wide">
-        {league.flag} {league.name}
+        <Flag league={league.id} size={28} /> {league.name}
       </h1>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
