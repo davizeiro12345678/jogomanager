@@ -498,20 +498,20 @@ function Stands({
       {[-1, 1].map((z) => (
         <mesh key={z} position={[0, 4, z * (FIELD_Z + 14)]} rotation={[z * 0.34, 0, 0]}>
           <boxGeometry args={[FIELD_X * 2 + 26, 16, 24]} />
-          <meshStandardMaterial color="#232c35" roughness={1} />
+          <meshStandardMaterial color="#3a444f" roughness={1} />
         </mesh>
       ))}
       {[-1, 1].map((x) => (
         <mesh key={x} position={[x * (FIELD_X + 17), 4, 0]} rotation={[0, 0, -x * 0.3]}>
           <boxGeometry args={[24, 16, FIELD_Z * 2 + 34]} />
-          <meshStandardMaterial color="#232c35" roughness={1} />
+          <meshStandardMaterial color="#3a444f" roughness={1} />
         </mesh>
       ))}
       {/* cobertura */}
       {[-1, 1].map((z) => (
         <mesh key={`r${z}`} position={[0, 20, z * (FIELD_Z + 22)]} rotation={[z * 0.1, 0, 0]}>
           <boxGeometry args={[FIELD_X * 2 + 34, 0.8, 30]} />
-          <meshStandardMaterial color="#2c353e" roughness={0.9} metalness={0.2} />
+          <meshStandardMaterial color="#48535e" roughness={0.9} metalness={0.2} />
         </mesh>
       ))}
       <instancedMesh ref={ref} args={[undefined, undefined, crowd.positions.length]}>
@@ -652,7 +652,7 @@ function Rig({ sim, mode }: { sim: MatchSim; mode: CameraMode }) {
     const bz = sim.ball.z;
     switch (mode) {
       case "broadcast":
-        target.set(bx * 0.55, 42, FIELD_Z + 30);
+        target.set(bx * 0.55, 44, FIELD_Z + 40);
         break;
       case "tactical":
         target.set(bx * 0.2, 72, 6);
@@ -717,6 +717,7 @@ function Scene({
     <>
       <color attach="background" args={[SKY[time]]} />
       <fog attach="fog" args={[SKY[time], 110, 300]} />
+      <ambientLight intensity={0.55} />
       <hemisphereLight
         intensity={time === "dia" ? 1.0 : 0.7}
         groundColor="#0d2a18"
@@ -779,7 +780,7 @@ export function Stadium3D({
     <Canvas
       shadows={quality === "alta"}
       dpr={quality === "alta" ? [1, 2] : quality === "media" ? 1 : 0.75}
-      camera={{ position: [0, 42, FIELD_Z + 30], fov: 45 }}
+      camera={{ position: [0, 44, FIELD_Z + 40], fov: 40 }}
       gl={{ antialias: quality !== "baixa" }}
     >
       <Scene sim={sim} mode={mode} quality={quality} time={time} />
