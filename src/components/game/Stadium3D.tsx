@@ -652,7 +652,7 @@ function Rig({ sim, mode }: { sim: MatchSim; mode: CameraMode }) {
     const bz = sim.ball.z;
     switch (mode) {
       case "broadcast":
-        target.set(bx * 0.55, 30, FIELD_Z + 22);
+        target.set(bx * 0.55, 50, FIELD_Z + 34);
         break;
       case "tactical":
         target.set(bx * 0.2, 72, 6);
@@ -780,7 +780,7 @@ export function Stadium3D({
     <Canvas
       shadows={quality === "alta"}
       dpr={quality === "alta" ? [1, 2] : quality === "media" ? 1 : 0.75}
-      camera={{ position: [0, 30, FIELD_Z + 22], fov: 46 }}
+      camera={{ position: [0, 50, FIELD_Z + 34], fov: 42 }}
       gl={{ antialias: quality !== "baixa" }}
     >
       <Scene sim={sim} mode={mode} quality={quality} time={time} />
