@@ -896,12 +896,25 @@ function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
 
 /* ------------------------------------------------------------------ câmera */
 
-function Rig({ sim, mode }: { sim: MatchSim; mode: CameraMode }) {
+function Rig({
+  sim,
+  mode,
+  goalPulse,
+}: {
+  sim: MatchSim;
+  mode: CameraMode;
+  goalPulse: React.MutableRefObject<number>;
+}) {
   const target = useMemo(() => new THREE.Vector3(), []);
+  const look = useMemo(() => new THREE.Vector3(), []);
+  const smoothLook = useMemo(() => new THREE.Vector3(0, 0.8, 0), []);
   useFrame(({ camera, clock }) => {
     const bx = sim.ball.x;
     const bz = sim.ball.z;
-    switch (mode) {
+    const pulse = goalPulse.current;
+    // replay automático: no gol a câmera vai para trás da bola em órbita lenta
+    const effective: CameraMode = pulse > 0.55 ? "behind" : mode;
+    switch (effective) {
       case "broadcast":
         target.set(bx * 0.55, 50, FIELD_Z + 34);
         break;
@@ -914,17 +927,29 @@ function Rig({ sim, mode }: { sim: MatchSim; mode: CameraMode }) {
       case "fan":
         target.set(bx * 0.3, 17, FIELD_Z + 22);
         break;
+      case "rail":
+        target.set(bx, 9, FIELD_Z + 13);
+        break;
       case "behind": {
         const a = clock.elapsedTime * 0.15;
         target.set(bx + Math.cos(a) * 16, 6.5, bz + Math.sin(a) * 16);
         break;
       }
     }
-    camera.position.lerp(target, mode === "behind" ? 0.12 : 0.05);
-    camera.lookAt(bx * 0.6, 0.8, bz * 0.6);
+    // tremor sutil em lances de perigo / comemoração
+    if (pulse > 0.05) {
+      const s = pulse * 0.5;
+      target.x += Math.sin(clock.elapsedTime * 21) * s;
+      target.y += Math.cos(clock.elapsedTime * 17) * s * 0.6;
+    }
+    camera.position.lerp(target, effective === "behind" ? 0.12 : effective === "rail" ? 0.16 : 0.05);
+    look.set(bx * 0.6, 0.8, bz * 0.6);
+    smoothLook.lerp(look, 0.1);
+    camera.lookAt(smoothLook);
   });
   return null;
 }
+
 
 /* ------------------------------------------------------------------- cena */
 
