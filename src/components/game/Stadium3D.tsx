@@ -474,6 +474,9 @@ function Stands({
     if (!mesh) return;
     crowd.colors.forEach((c, i) => mesh.setColorAt(i, c));
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    const mat = mesh.material as THREE.Material | THREE.Material[];
+    if (Array.isArray(mat)) mat.forEach((m) => (m.needsUpdate = true));
+    else mat.needsUpdate = true;
   }, [crowd]);
 
   useFrame(({ clock }) => {
