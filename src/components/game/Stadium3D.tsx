@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
 
-export type CameraMode = "broadcast" | "tactical" | "goal" | "fan" | "behind";
+export type CameraMode = "broadcast" | "tactical" | "goal" | "fan" | "rail" | "behind";
 export type Quality = "alta" | "media" | "baixa";
 
 type TimeOfDay = "dia" | "entardecer" | "noite";
@@ -325,42 +325,50 @@ function AdBoards() {
   for (let i = 0; i < count; i++) {
     const x = -(FIELD_X + 8) + w / 2 + i * w;
     for (const z of [-1, 1]) {
-      const [text, bg, fg] = ADS[(i + (z > 0 ? 3 : 0)) % ADS.length]!;
-      boards.push(<AdBoard key={`${i}-${z}`} x={x} z={z * (FIELD_Z + 5)} w={w} text={text} bg={bg} fg={fg} />);
+      boards.push(
+        <AdBoard key={`${i}-${z}`} x={x} z={z * (FIELD_Z + 5)} w={w} seed={i + (z > 0 ? 3 : 0)} />,
+      );
     }
   }
   return <group>{boards}</group>;
 }
 
-function AdBoard({
-  x,
-  z,
-  w,
-  text,
-  bg,
-  fg,
-}: {
-  x: number;
-  z: number;
-  w: number;
-  text: string;
-  bg: string;
-  fg: string;
-}) {
-  const tex = useMemo(() => adBoardTexture(text, bg, fg), [text, bg, fg]);
+function AdBoard({ x, z, w, seed }: { x: number; z: number; w: number; seed: number }) {
+  const texes = useMemo(
+    () => ADS.map(([text, bg, fg]) => adBoardTexture(text, bg, fg)).filter(Boolean) as THREE.CanvasTexture[],
+    [],
+  );
+  const matRef = useRef<THREE.MeshStandardMaterial>(null);
+  const idx = useRef(-1);
+  useFrame(({ clock }) => {
+    if (!texes.length) return;
+    // troca de anúncio a cada 5s, com defasagem por placa
+    const next = (Math.floor(clock.elapsedTime / 5) + seed) % texes.length;
+    if (next === idx.current) return;
+    idx.current = next;
+    const tex = texes[next]!;
+    const m = matRef.current;
+    if (m) {
+      m.map = tex;
+      m.emissiveMap = tex;
+      m.needsUpdate = true;
+    }
+  });
   return (
     <mesh position={[x, 0.6, z]} rotation={[0, z > 0 ? Math.PI : 0, 0]}>
       <boxGeometry args={[w * 0.94, 1.2, 0.25]} />
       <meshStandardMaterial
-        {...(tex ? { map: tex, emissiveMap: tex } : { color: bg })}
+        ref={matRef}
         color="#ffffff"
         emissive="#ffffff"
-        emissiveIntensity={0.45}
+        emissiveIntensity={0.55}
         roughness={0.4}
+        toneMapped={false}
       />
     </mesh>
   );
 }
+
 
 function scoreboardTexture(text: string) {
   if (typeof document === "undefined") return null;
@@ -465,34 +473,114 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
   );
 }
 
+function Tiers({ rings }: { rings: number }) {
+  const steps: React.ReactElement[] = [];
+  const lenX = FIELD_X * 2 + 30;
+  const lenZ = FIELD_Z * 2 + 34;
+  for (let r = 0; r < rings; r++) {
+    const y = 2.0 + r * 1.45;
+    const shade = r % 2 === 0 ? "#2f3943" : "#39434e";
+    for (const z of [-1, 1]) {
+      steps.push(
+        <mesh key={`sz${r}${z}`} position={[0, y - 0.72, z * (FIELD_Z + 7 + r * 1.5)]} receiveShadow>
+          <boxGeometry args={[lenX, 1.45, 1.5]} />
+          <meshStandardMaterial color={shade} roughness={1} />
+        </mesh>,
+      );
+    }
+    for (const x of [-1, 1]) {
+      steps.push(
+        <mesh key={`sx${r}${x}`} position={[x * (FIELD_X + 10 + r * 1.5), y - 0.72, 0]} receiveShadow>
+          <boxGeometry args={[1.5, 1.45, lenZ]} />
+          <meshStandardMaterial color={shade} roughness={1} />
+        </mesh>,
+      );
+    }
+  }
+  return <group>{steps}</group>;
+}
+
+function Roof({ rings }: { rings: number }) {
+  const outer = 9 + rings * 1.5;
+  const depth = 10;
+  const height = 2.0 + rings * 1.45 + 7;
+  const trusses: React.ReactElement[] = [];
+  for (let i = -6; i <= 6; i++) {
+    for (const z of [-1, 1]) {
+      trusses.push(
+        <mesh key={`tz${i}${z}`} position={[i * 13, height - 2.2, z * (FIELD_Z + outer)]}>
+          <boxGeometry args={[0.5, 4.4, 0.5]} />
+          <meshStandardMaterial color="#5a6672" roughness={0.7} metalness={0.35} />
+        </mesh>,
+      );
+    }
+  }
+  return (
+    <group>
+      {trusses}
+      {[-1, 1].map((z) => (
+        <mesh key={`rz${z}`} position={[0, height, z * (FIELD_Z + outer + depth / 2 - 2)]}>
+          <boxGeometry args={[FIELD_X * 2 + 36, 0.6, depth]} />
+          <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} />
+        </mesh>
+      ))}
+      {[-1, 1].map((x) => (
+        <mesh key={`rx${x}`} position={[x * (FIELD_X + outer + depth / 2 - 2), height, 0]}>
+          <boxGeometry args={[depth, 0.6, FIELD_Z * 2 + 40]} />
+          <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} />
+        </mesh>
+      ))}
+    </group>
+  );
+
+}
+
+function Banners({ color }: { color: string }) {
+  return (
+    <group>
+      {[-1, 0, 1].map((i) => (
+        <mesh key={i} position={[i * 22, 2.2, -(FIELD_Z + 6.4)]}>
+          <planeGeometry args={[16, 1.6]} />
+          <meshStandardMaterial color={color} roughness={0.9} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 function Stands({
   homeColor,
   awayColor,
   quality,
   goalPulse,
+  night,
 }: {
   homeColor: string;
   awayColor: string;
   quality: Quality;
   goalPulse: React.MutableRefObject<number>;
+  night: boolean;
 }) {
-  const density = quality === "alta" ? 240 : quality === "media" ? 150 : 80;
-  const rings = quality === "alta" ? 8 : quality === "media" ? 6 : 4;
+  const density = quality === "alta" ? 320 : quality === "media" ? 190 : 90;
+  const rings = quality === "alta" ? 10 : quality === "media" ? 7 : 4;
 
   const crowd = useMemo(() => {
     const positions: THREE.Vector3[] = [];
     const colors: THREE.Color[] = [];
     const home = new THREE.Color(homeColor);
     const away = new THREE.Color(awayColor);
-    const neutral = ["#d8d8d8", "#8fa3b8", "#42506b", "#e0c07a", "#b8c4cf"];
-    // laterais
+    const neutral = ["#d8d8d8", "#8fa3b8", "#42506b", "#e0c07a", "#b8c4cf", "#6c7a8c"];
     for (let ring = 0; ring < rings; ring++) {
       for (let i = 0; i < density; i++) {
         const t = i / density;
         const px = -FIELD_X - 10 + t * (FIELD_X * 2 + 20);
         for (const zSide of [-1, 1]) {
           positions.push(
-            new THREE.Vector3(px, 2.6 + ring * 1.45, zSide * (FIELD_Z + 7 + ring * 1.5)),
+            new THREE.Vector3(
+              px + ((i * 7 + ring * 3) % 5) * 0.06,
+              2.6 + ring * 1.45,
+              zSide * (FIELD_Z + 7 + ring * 1.5),
+            ),
           );
           const zone = t < 0.3 ? home : t > 0.7 ? away : null;
           colors.push(
@@ -503,10 +591,10 @@ function Stands({
         }
       }
     }
-    // fundos (mosaico da casa atrás de um gol)
     for (let ring = 0; ring < rings; ring++) {
-      for (let i = 0; i < Math.round(density * 0.6); i++) {
-        const t = i / Math.round(density * 0.6);
+      const n = Math.round(density * 0.6);
+      for (let i = 0; i < n; i++) {
+        const t = i / n;
         const pz = -FIELD_Z - 8 + t * (FIELD_Z * 2 + 16);
         for (const xSide of [-1, 1]) {
           positions.push(
@@ -521,7 +609,9 @@ function Stands({
   }, [homeColor, awayColor, density, rings]);
 
   const ref = useRef<THREE.InstancedMesh>(null);
+  const flashRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
+  const flashCount = night ? Math.min(140, Math.round(crowd.positions.length * 0.05)) : 0;
 
   useEffect(() => {
     const mesh = ref.current;
@@ -541,43 +631,64 @@ function Stands({
     for (let i = 0; i < crowd.positions.length; i++) {
       const p = crowd.positions[i]!;
       const wave = Math.sin(t * 1.1 - p.x * 0.06) > 0.86 ? 0.5 : 0;
-      const jump = pulse > 0 ? Math.abs(Math.sin(t * 9 + i)) * 0.7 * pulse : 0;
+      const jump = pulse > 0 ? Math.abs(Math.sin(t * 9 + i)) * 0.75 * pulse : 0;
       dummy.position.set(p.x, p.y + Math.sin(t * 3 + i) * 0.06 + wave + jump, p.z);
+      dummy.scale.set(1, 1, 1);
+      dummy.rotation.y = ((i % 7) - 3) * 0.06;
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
+
+    // flashes de câmera na torcida (mais intensos após o gol)
+    const fm = flashRef.current;
+    if (fm && flashCount) {
+      for (let i = 0; i < flashCount; i++) {
+        const p = crowd.positions[(i * 37) % crowd.positions.length]!;
+        const on = Math.sin(t * (6 + (i % 5)) + i * 2.3) > (pulse > 0.05 ? 0.55 : 0.95);
+        dummy.position.set(p.x, p.y + 0.45, p.z);
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.setScalar(on ? 1 : 0.0001);
+        dummy.updateMatrix();
+        fm.setMatrixAt(i, dummy.matrix);
+      }
+      fm.instanceMatrix.needsUpdate = true;
+    }
   });
 
   return (
     <group>
-      {/* estrutura das arquibancadas */}
+      {/* muro externo (atrás das arquibancadas) */}
       {[-1, 1].map((z) => (
-        <mesh key={z} position={[0, 3, z * (FIELD_Z + 21)]} rotation={[z * 0.34, 0, 0]}>
-          <boxGeometry args={[FIELD_X * 2 + 26, 16, 24]} />
-          <meshStandardMaterial color="#3a444f" roughness={1} />
+        <mesh key={z} position={[0, 6, z * (FIELD_Z + 9 + rings * 1.5)]}>
+          <boxGeometry args={[FIELD_X * 2 + 34, 12, 2]} />
+          <meshStandardMaterial color="#28313a" roughness={1} />
         </mesh>
       ))}
       {[-1, 1].map((x) => (
-        <mesh key={x} position={[x * (FIELD_X + 25), 3, 0]} rotation={[0, 0, -x * 0.3]}>
-          <boxGeometry args={[24, 16, FIELD_Z * 2 + 34]} />
-          <meshStandardMaterial color="#3a444f" roughness={1} />
+        <mesh key={x} position={[x * (FIELD_X + 12 + rings * 1.5), 6, 0]}>
+          <boxGeometry args={[2, 12, FIELD_Z * 2 + 36]} />
+          <meshStandardMaterial color="#28313a" roughness={1} />
         </mesh>
       ))}
-      {/* cobertura */}
-      {[-1, 1].map((z) => (
-        <mesh key={`r${z}`} position={[0, 20, z * (FIELD_Z + 26)]} rotation={[z * 0.1, 0, 0]}>
-          <boxGeometry args={[FIELD_X * 2 + 34, 0.8, 20]} />
-          <meshStandardMaterial color="#48535e" roughness={0.9} metalness={0.2} />
-        </mesh>
-      ))}
-      <instancedMesh ref={ref} args={[undefined, undefined, crowd.positions.length]}>
-        <boxGeometry args={[0.44, 0.62, 0.44]} />
-        <meshStandardMaterial roughness={0.8} />
+
+      <Tiers rings={rings} />
+      <Roof rings={rings} />
+      <Banners color={homeColor} />
+      <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, crowd.positions.length]}>
+        <boxGeometry args={[0.5, 0.8, 0.5]} />
+        <meshStandardMaterial roughness={0.85} />
       </instancedMesh>
+      {flashCount > 0 && (
+        <instancedMesh ref={flashRef} frustumCulled={false} args={[undefined, undefined, flashCount]}>
+          <sphereGeometry args={[0.13, 6, 6]} />
+          <meshBasicMaterial color="#ffffff" toneMapped={false} transparent opacity={0.9} />
+        </instancedMesh>
+      )}
     </group>
   );
 }
+
 
 /* --------------------------------------------------------------- jogadores */
 
@@ -596,7 +707,10 @@ function PlayerMesh({
   const tex = useMemo(() => kitTexture(kit, player.number), [kit, player.number]);
   const skin = useMemo(() => skinFor(player.id), [player.id]);
   const hair = useMemo(() => hairFor(player.id), [player.id]);
+  const style = useMemo(() => hash(player.id) % 4, [player.id]); // 0 curto 1 moicano 2 coque 3 careca
+  const isGK = player.pos === "GK";
   const shadows = quality === "alta";
+  const lean = useRef(0);
 
   useFrame(({ clock }) => {
     const g = group.current;
@@ -604,45 +718,87 @@ function PlayerMesh({
     g.position.x += (player.x - g.position.x) * 0.34;
     g.position.z += (player.z - g.position.z) * 0.34;
     const speed = Math.hypot(player.vx, player.vz);
-    if (speed > 0.15) g.rotation.y = Math.atan2(player.vx, player.vz);
+    if (speed > 0.15) {
+      const want = Math.atan2(player.vx, player.vz);
+      // giro suave em direção ao movimento
+      let d = want - g.rotation.y;
+      while (d > Math.PI) d -= Math.PI * 2;
+      while (d < -Math.PI) d += Math.PI * 2;
+      g.rotation.y += d * 0.22;
+    }
 
     const celebrating = goalPulse.current > 0.05;
     const t = clock.elapsedTime;
+    const stride = Math.min(1, speed / 5.5);
     const swing = celebrating
-      ? Math.sin(t * 8) * 0.5
-      : Math.sin(t * 11 + player.number) * 0.42 * Math.min(1, speed / 4);
+      ? Math.sin(t * 8) * 0.55
+      : Math.sin(t * (7 + stride * 8) + player.number) * 0.75 * stride;
 
-    g.position.y = celebrating ? Math.abs(Math.sin(t * 7 + player.number)) * 0.35 : 0;
+    // inclinação do tronco proporcional à velocidade
+    const targetLean = celebrating ? -0.18 : stride * 0.24;
+    lean.current += (targetLean - lean.current) * 0.12;
+    g.rotation.x = lean.current;
+    g.position.y = celebrating ? Math.abs(Math.sin(t * 7 + player.number)) * 0.38 : 0;
 
     for (const c of g.children) {
       if (c.userData['leg'] !== undefined) c.rotation.x = c.userData['leg'] ? swing : -swing;
       if (c.userData['arm'] !== undefined) {
-        c.rotation.x = celebrating ? -2.2 : (c.userData['arm'] ? -swing : swing) * 0.8;
+        c.rotation.x = celebrating ? -2.3 : (c.userData['arm'] ? -swing : swing) * 0.85;
+        c.rotation.z = celebrating ? (c.userData['arm'] ? 0.5 : -0.5) : 0;
+      }
+      if (c.userData['bob'] !== undefined) {
+        c.position.y = (c.userData['bob'] as number) + Math.abs(Math.sin(t * (7 + stride * 8))) * 0.03 * stride;
       }
     }
   });
 
   return (
     <group ref={group} position={[player.x, 0, player.z]}>
+      {/* sombra de contato */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
+        <circleGeometry args={[0.36, 14]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.3} depthWrite={false} />
+      </mesh>
       {/* tronco */}
-      <mesh position={[0, 1.16, 0]} castShadow={shadows}>
+      <mesh position={[0, 1.16, 0]} castShadow={shadows} userData={{ bob: 1.16 }}>
         <capsuleGeometry args={[0.27, 0.5, 4, 12]} />
-        <meshStandardMaterial
-          {...(tex ? { map: tex } : { color: kit.base })}
-          roughness={0.72}
-        />
+        <meshStandardMaterial {...(tex ? { map: tex } : { color: kit.base })} roughness={0.72} />
+      </mesh>
+      {/* ombros */}
+      <mesh position={[0, 1.44, 0]} rotation={[0, 0, Math.PI / 2]} castShadow={shadows}>
+        <capsuleGeometry args={[0.115, 0.4, 4, 8]} />
+        <meshStandardMaterial color={kit.base} roughness={0.72} />
+      </mesh>
+      {/* pescoço */}
+      <mesh position={[0, 1.56, 0]}>
+        <cylinderGeometry args={[0.075, 0.085, 0.12, 8]} />
+        <meshStandardMaterial color={skin} roughness={0.85} />
       </mesh>
       {/* cabeça */}
-      <mesh position={[0, 1.7, 0]} castShadow={shadows}>
+      <mesh position={[0, 1.71, 0]} castShadow={shadows}>
         <sphereGeometry args={[0.185, 16, 16]} />
         <meshStandardMaterial color={skin} roughness={0.85} />
       </mesh>
-      {/* cabelo */}
-      <mesh position={[0, 1.78, -0.02]}>
-        <sphereGeometry args={[0.175, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color={hair} roughness={1} />
-      </mesh>
-      {/* braços (mangas na cor do kit, mãos na cor da pele) */}
+      {/* cabelo por estilo */}
+      {style !== 3 && (
+        <mesh position={[0, 1.79, -0.015]}>
+          <sphereGeometry args={[0.178, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+      )}
+      {style === 1 && (
+        <mesh position={[0, 1.88, 0]}>
+          <boxGeometry args={[0.07, 0.12, 0.3]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+      )}
+      {style === 2 && (
+        <mesh position={[0, 1.85, -0.16]}>
+          <sphereGeometry args={[0.085, 10, 10]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+      )}
+      {/* braços */}
       {[-0.32, 0.32].map((x, i) => (
         <group key={`a${x}`} position={[x, 1.22, 0]} userData={{ arm: i === 0 }}>
           <mesh position={[0, 0.12, 0]} castShadow={shadows}>
@@ -653,32 +809,36 @@ function PlayerMesh({
             <capsuleGeometry args={[0.062, 0.2, 4, 8]} />
             <meshStandardMaterial color={skin} roughness={0.85} />
           </mesh>
+          {isGK && (
+            <mesh position={[0, -0.32, 0]}>
+              <boxGeometry args={[0.15, 0.18, 0.11]} />
+              <meshStandardMaterial color={kit.detail} roughness={0.6} />
+            </mesh>
+          )}
         </group>
       ))}
       {/* shorts */}
-      <mesh position={[0, 0.82, 0]} castShadow={shadows}>
+      <mesh position={[0, 0.82, 0]} castShadow={shadows} userData={{ bob: 0.82 }}>
         <boxGeometry args={[0.5, 0.3, 0.34]} />
         <meshStandardMaterial color={kit.shorts} roughness={0.8} />
       </mesh>
-      {/* pernas (meias) */}
+      {/* pernas */}
       {[-0.14, 0.14].map((x, i) => (
         <group key={`l${x}`} position={[x, 0.4, 0]} userData={{ leg: i === 0 }}>
           <mesh castShadow={shadows}>
             <capsuleGeometry args={[0.095, 0.48, 4, 8]} />
             <meshStandardMaterial color={kit.socks} roughness={0.8} />
           </mesh>
+          <mesh position={[0, -0.32, 0.05]}>
+            <boxGeometry args={[0.16, 0.1, 0.3]} />
+            <meshStandardMaterial color="#101010" roughness={0.5} />
+          </mesh>
         </group>
-      ))}
-      {/* chuteiras */}
-      {[-0.14, 0.14].map((x) => (
-        <mesh key={`b${x}`} position={[x, 0.06, 0.05]}>
-          <boxGeometry args={[0.16, 0.1, 0.3]} />
-          <meshStandardMaterial color="#101010" roughness={0.5} />
-        </mesh>
       ))}
     </group>
   );
 }
+
 
 function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
   const ref = useRef<THREE.Mesh>(null);
@@ -740,14 +900,27 @@ function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
 
 /* ------------------------------------------------------------------ câmera */
 
-function Rig({ sim, mode }: { sim: MatchSim; mode: CameraMode }) {
+function Rig({
+  sim,
+  mode,
+  goalPulse,
+}: {
+  sim: MatchSim;
+  mode: CameraMode;
+  goalPulse: React.MutableRefObject<number>;
+}) {
   const target = useMemo(() => new THREE.Vector3(), []);
+  const look = useMemo(() => new THREE.Vector3(), []);
+  const smoothLook = useMemo(() => new THREE.Vector3(0, 0.8, 0), []);
   useFrame(({ camera, clock }) => {
     const bx = sim.ball.x;
     const bz = sim.ball.z;
-    switch (mode) {
+    const pulse = goalPulse.current;
+    // replay automático: no gol a câmera vai para trás da bola em órbita lenta
+    const effective: CameraMode = pulse > 0.55 ? "behind" : mode;
+    switch (effective) {
       case "broadcast":
-        target.set(bx * 0.55, 50, FIELD_Z + 34);
+        target.set(bx * 0.55, 46, FIELD_Z + 44);
         break;
       case "tactical":
         target.set(bx * 0.2, 72, 6);
@@ -758,17 +931,29 @@ function Rig({ sim, mode }: { sim: MatchSim; mode: CameraMode }) {
       case "fan":
         target.set(bx * 0.3, 17, FIELD_Z + 22);
         break;
+      case "rail":
+        target.set(bx, 9, FIELD_Z + 13);
+        break;
       case "behind": {
         const a = clock.elapsedTime * 0.15;
         target.set(bx + Math.cos(a) * 16, 6.5, bz + Math.sin(a) * 16);
         break;
       }
     }
-    camera.position.lerp(target, mode === "behind" ? 0.12 : 0.05);
-    camera.lookAt(bx * 0.6, 0.8, bz * 0.6);
+    // tremor sutil em lances de perigo / comemoração
+    if (pulse > 0.05) {
+      const s = pulse * 0.5;
+      target.x += Math.sin(clock.elapsedTime * 21) * s;
+      target.y += Math.cos(clock.elapsedTime * 17) * s * 0.6;
+    }
+    camera.position.lerp(target, effective === "behind" ? 0.12 : effective === "rail" ? 0.16 : 0.05);
+    look.set(bx * 0.6, 0.8, bz * 0.6);
+    smoothLook.lerp(look, 0.1);
+    camera.lookAt(smoothLook);
   });
   return null;
 }
+
 
 /* ------------------------------------------------------------------- cena */
 
@@ -839,6 +1024,7 @@ function Scene({
         awayColor={sim.away.primary}
         quality={quality}
         goalPulse={goalPulse}
+        night={time !== "dia"}
       />
       <Scoreboard sim={sim} />
       <Ball sim={sim} quality={quality} />
@@ -857,7 +1043,7 @@ function Scene({
           quality={quality}
         />
       ))}
-      <Rig sim={sim} mode={mode} />
+      <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
     </>
   );
 }
@@ -878,13 +1064,28 @@ export function Stadium3D({
   }, [sim.home.clubId, sim.away.clubId]);
 
   return (
-    <Canvas
-      shadows={quality === "alta"}
-      dpr={quality === "alta" ? [1, 2] : quality === "media" ? 1 : 0.75}
-      camera={{ position: [0, 50, FIELD_Z + 34], fov: 42 }}
-      gl={{ antialias: quality !== "baixa" }}
-    >
-      <Scene sim={sim} mode={mode} quality={quality} time={time} />
-    </Canvas>
+    <div className="relative h-full w-full">
+      <Canvas
+        shadows={quality === "alta"}
+        dpr={quality === "alta" ? [1, 2] : quality === "media" ? 1 : 0.75}
+        camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
+        gl={{ antialias: quality !== "baixa" }}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = quality === "baixa" ? 1.0 : 1.12;
+        }}
+      >
+        <Scene sim={sim} mode={mode} quality={quality} time={time} />
+      </Canvas>
+      {/* acabamento de transmissão: vinheta + leve correção de cor */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.42) 100%)",
+        }}
+      />
+    </div>
   );
 }
