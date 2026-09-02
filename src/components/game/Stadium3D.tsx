@@ -1020,6 +1020,7 @@ function Scene({
         awayColor={sim.away.primary}
         quality={quality}
         goalPulse={goalPulse}
+        night={time !== "dia"}
       />
       <Scoreboard sim={sim} />
       <Ball sim={sim} quality={quality} />
@@ -1038,7 +1039,7 @@ function Scene({
           quality={quality}
         />
       ))}
-      <Rig sim={sim} mode={mode} />
+      <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
     </>
   );
 }
@@ -1059,12 +1060,32 @@ export function Stadium3D({
   }, [sim.home.clubId, sim.away.clubId]);
 
   return (
-    <Canvas
-      shadows={quality === "alta"}
-      dpr={quality === "alta" ? [1, 2] : quality === "media" ? 1 : 0.75}
-      camera={{ position: [0, 50, FIELD_Z + 34], fov: 42 }}
-      gl={{ antialias: quality !== "baixa" }}
-    >
+    <div className="relative h-full w-full">
+      <Canvas
+        shadows={quality === "alta"}
+        dpr={quality === "alta" ? [1, 2] : quality === "media" ? 1 : 0.75}
+        camera={{ position: [0, 50, FIELD_Z + 34], fov: 42 }}
+        gl={{ antialias: quality !== "baixa" }}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = quality === "baixa" ? 1.0 : 1.12;
+        }}
+      >
+        <Scene sim={sim} mode={mode} quality={quality} time={time} />
+      </Canvas>
+      {/* acabamento de transmissão: vinheta + leve correção de cor */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.42) 100%)",
+        }}
+      />
+    </div>
+  );
+}
+
       <Scene sim={sim} mode={mode} quality={quality} time={time} />
     </Canvas>
   );
