@@ -38,8 +38,8 @@ export function pickLineup(players: Player[], formation: FormationKey) {
 function enrichPlayer(p: Player): Player {
   return {
     ...p,
-    wage: p.wage ?? wageFor(p.ovr),
-    value: p.value ?? valueFor(p.ovr, p.age),
+    wage: p.wage > 0 ? p.wage : wageFor(p.ovr),
+    value: p.value > 0 ? p.value : valueFor(p.ovr, p.age),
     yellows: p.yellows ?? 0,
     suspended: p.suspended ?? false,
     injuryWeeks: p.injuryWeeks ?? 0,
