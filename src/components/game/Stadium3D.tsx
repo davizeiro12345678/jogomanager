@@ -674,12 +674,12 @@ function Stands({
       <Tiers rings={rings} />
       <Roof rings={rings} />
       <Banners color={homeColor} />
-      <instancedMesh ref={ref} args={[undefined, undefined, crowd.positions.length]}>
-        <boxGeometry args={[0.42, 0.66, 0.42]} />
+      <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, crowd.positions.length]}>
+        <boxGeometry args={[0.5, 0.8, 0.5]} />
         <meshStandardMaterial roughness={0.85} />
       </instancedMesh>
       {flashCount > 0 && (
-        <instancedMesh ref={flashRef} args={[undefined, undefined, flashCount]}>
+        <instancedMesh ref={flashRef} frustumCulled={false} args={[undefined, undefined, flashCount]}>
           <sphereGeometry args={[0.13, 6, 6]} />
           <meshBasicMaterial color="#ffffff" toneMapped={false} transparent opacity={0.9} />
         </instancedMesh>
