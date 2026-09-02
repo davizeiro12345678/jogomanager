@@ -3,9 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Stadium3D } from "@/components/game/Stadium3D";
 import { CLUBS } from "@/game/data/leagues";
-import { generateSquad } from "@/game/squad";
+import { buildSquad } from "@/game/squad";
 import { MatchSim, type TeamSetup } from "@/game/sim";
-import { DEFAULT_TACTICS } from "@/game/types";
+
 
 export const Route = createFileRoute("/devscene")({ ssr: false, component: Dev });
 
@@ -17,8 +17,8 @@ function setup(id: string): TeamSetup {
     short: c.short,
     primary: c.primary,
     secondary: c.secondary,
-    players: generateSquad(c).slice(0, 11),
-    tactics: DEFAULT_TACTICS,
+    players: buildSquad(c.id).slice(0, 11),
+    tactics: { formation: "4-3-3", mentality: 2, pressing: 1, width: 1, tempo: 1 },
   };
 }
 
