@@ -3,7 +3,7 @@ import type React from "react";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { kitFor, kitTexture, skinFor, colorClash, type Kit } from "@/game/kits";
+import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
 
 export type CameraMode = "broadcast" | "tactical" | "goal" | "fan" | "behind";
@@ -541,6 +541,7 @@ function PlayerMesh({
   const group = useRef<THREE.Group>(null);
   const tex = useMemo(() => kitTexture(kit, player.number), [kit, player.number]);
   const skin = useMemo(() => skinFor(player.id), [player.id]);
+  const hair = useMemo(() => hairFor(player.id), [player.id]);
   const shadows = quality === "alta";
 
   useFrame(({ clock }) => {
@@ -754,7 +755,13 @@ function Scene({
         <PlayerMesh
           key={p.id}
           player={p}
-          kit={p.side === "home" ? homeKit : awayKit}
+          kit={
+            p.pos === "GK"
+              ? gkKitFor(p.side === "home" ? sim.home.clubId : sim.away.clubId)
+              : p.side === "home"
+                ? homeKit
+                : awayKit
+          }
           goalPulse={goalPulse}
           quality={quality}
         />
