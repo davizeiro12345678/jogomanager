@@ -215,14 +215,17 @@ function LiveMatch({
           <p className="font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
             Câmera
           </p>
-          <div className="mt-1 flex gap-1">
+          <div className="mt-1 flex flex-wrap gap-1">
             {(
               [
                 ["broadcast", "TV"],
                 ["tactical", "Tática"],
                 ["goal", "Gol"],
+                ["fan", "Torcida"],
+                ["behind", "Replay"],
               ] as const
             ).map(([m, label]) => (
+
               <button
                 key={m}
                 onClick={() => setCamera(m)}
