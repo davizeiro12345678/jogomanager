@@ -1,3 +1,4 @@
+import type React from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -44,7 +45,7 @@ function Pitch({ homeColor, awayColor }: { homeColor: string; awayColor: string 
 
 function AdBoards() {
   const colors = ["#0b2b45", "#8a1420", "#123f2a", "#3a2f6b", "#6b4a12"];
-  const boards: JSX.Element[] = [];
+  const boards: React.ReactElement[] = [];
   const count = 16;
   const w = ((FIELD_X + 6) * 2) / count;
   for (let i = 0; i < count; i++) {
