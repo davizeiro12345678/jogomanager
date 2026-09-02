@@ -3,8 +3,19 @@ import { useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 
+function safeNext(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  // Only same-origin relative paths; never full URLs.
+  if (!value.startsWith("/") || value.startsWith("//")) return undefined;
+  return value;
+}
+
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  validateSearch: (s: Record<string, unknown>): { next?: string } => {
+    const next = safeNext(s["next"]);
+    return next ? { next } : {};
+  },
   head: () => ({
     meta: [
       { title: "Entrar · Manager 3D — Futebol 3D ao vivo" },
@@ -24,6 +35,8 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
+  const destination = next ?? "/club";
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,9 +45,9 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/club" });
+      if (data.session) navigate({ href: destination });
     });
-  }, [navigate]);
+  }, [navigate, destination]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,7 +59,9 @@ function AuthPage() {
         : supabase.auth.signUp({
             email,
             password,
-            options: { emailRedirectTo: `${window.location.origin}/club` },
+            options: {
+              emailRedirectTo: `${window.location.origin}${destination}`,
+            },
           });
     const { data, error: err } = await fn;
     setBusy(false);
@@ -54,7 +69,7 @@ function AuthPage() {
       setError(err.message);
       return;
     }
-    if (data.session) navigate({ to: "/club" });
+    if (data.session) navigate({ href: destination });
     else setError("Confirme o e-mail enviado para concluir o cadastro.");
   }
 
