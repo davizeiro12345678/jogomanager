@@ -122,6 +122,7 @@ function SquadPage() {
                           </span>
                         ) : (
                           <select
+                            aria-label={`Substituir titular por ${p.name}`}
                             className="rounded border border-input bg-background/60 px-1 py-0.5 text-xs"
                             value=""
                             onChange={(e) => e.target.value && swap(e.target.value, p.id)}
