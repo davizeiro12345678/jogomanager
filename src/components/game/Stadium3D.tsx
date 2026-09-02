@@ -1085,8 +1085,3 @@ export function Stadium3D({
     </div>
   );
 }
-
-      <Scene sim={sim} mode={mode} quality={quality} time={time} />
-    </Canvas>
-  );
-}
