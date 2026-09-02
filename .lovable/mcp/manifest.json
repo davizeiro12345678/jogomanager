@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "sdk_version": "1.0.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://vylshefvsjggyjlhfups.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "pro-football-manager-3d",
+      "version": "0.1.0",
+      "title": "Pro Football Manager 3D"
+    },
+    "tools": [
+      {
+        "name": "get_career",
+        "title": "Get manager career",
+        "description": "Read the signed-in user's saved Manager 3D career: club, league, season round, squad, tactics and standings state.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "save_career",
+        "title": "Save manager career",
+        "description": "Create or overwrite the signed-in user's Manager 3D career state (club, squad, tactics, season progress).",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "state": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {},
+              "description": "Full career state object as used by the game."
+            }
+          },
+          "required": [
+            "state"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_career",
+        "title": "Delete manager career",
+        "description": "Permanently delete the signed-in user's saved Manager 3D career.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
