@@ -45,7 +45,10 @@ function NewCareer() {
         </p>
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
+          <label htmlFor="manager-name" className="sr-only">Seu nome de técnico</label>
           <input
+            id="manager-name"
+            aria-label="Seu nome de técnico"
             value={manager}
             onChange={(e) => setManager(e.target.value)}
             placeholder="Seu nome"

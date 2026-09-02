@@ -72,7 +72,9 @@ function AuthPage() {
         </p>
 
         <form onSubmit={submit} className="mt-5 space-y-3">
+          <label htmlFor="auth-email" className="sr-only">E-mail</label>
           <input
+            id="auth-email"
             type="email"
             required
             value={email}
@@ -80,7 +82,9 @@ function AuthPage() {
             placeholder="voce@email.com"
             className="w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
           />
+          <label htmlFor="auth-password" className="sr-only">Senha</label>
           <input
+            id="auth-password"
             type="password"
             required
             minLength={6}

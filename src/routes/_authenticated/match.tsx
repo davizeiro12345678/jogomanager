@@ -171,6 +171,10 @@ function LiveMatch({
     <div className="relative h-screen w-full overflow-hidden bg-[#070b12]">
       <Stadium3D sim={sim} mode={camera} quality={quality} tick={tick} />
 
+      <h1 className="sr-only">
+        {CLUBS[fixture.home]!.name} x {CLUBS[fixture.away]!.name} — partida ao vivo em 3D
+      </h1>
+
       {/* Placar */}
       <div className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2">
         <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-black/65 px-5 py-2.5 backdrop-blur-xl">
@@ -285,6 +289,7 @@ function LiveMatch({
             Mentalidade
           </p>
           <select
+            aria-label="Mentalidade da equipe"
             value={(mySide === "home" ? sim.home : sim.away).tactics.mentality}
             onChange={(e) => setMentality(Number(e.target.value))}
             className="mt-1 w-full rounded bg-white/10 px-2 py-1 text-xs text-white"
@@ -302,6 +307,7 @@ function LiveMatch({
             Pressão
           </p>
           <select
+            aria-label="Intensidade de pressão"
             value={(mySide === "home" ? sim.home : sim.away).tactics.pressing}
             onChange={(e) => setPressing(Number(e.target.value))}
             className="mt-1 w-full rounded bg-white/10 px-2 py-1 text-xs text-white"
