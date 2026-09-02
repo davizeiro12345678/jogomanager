@@ -473,34 +473,112 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
   );
 }
 
+function Tiers({ rings }: { rings: number }) {
+  const steps: React.ReactElement[] = [];
+  const lenX = FIELD_X * 2 + 30;
+  const lenZ = FIELD_Z * 2 + 34;
+  for (let r = 0; r < rings; r++) {
+    const y = 2.0 + r * 1.45;
+    const shade = r % 2 === 0 ? "#2f3943" : "#39434e";
+    for (const z of [-1, 1]) {
+      steps.push(
+        <mesh key={`sz${r}${z}`} position={[0, y - 0.72, z * (FIELD_Z + 7 + r * 1.5)]} receiveShadow>
+          <boxGeometry args={[lenX, 1.45, 1.5]} />
+          <meshStandardMaterial color={shade} roughness={1} />
+        </mesh>,
+      );
+    }
+    for (const x of [-1, 1]) {
+      steps.push(
+        <mesh key={`sx${r}${x}`} position={[x * (FIELD_X + 10 + r * 1.5), y - 0.72, 0]} receiveShadow>
+          <boxGeometry args={[1.5, 1.45, lenZ]} />
+          <meshStandardMaterial color={shade} roughness={1} />
+        </mesh>,
+      );
+    }
+  }
+  return <group>{steps}</group>;
+}
+
+function Roof({ rings }: { rings: number }) {
+  const outer = 7 + rings * 1.5;
+  const height = 2.0 + rings * 1.45 + 6;
+  const trusses: React.ReactElement[] = [];
+  for (let i = -6; i <= 6; i++) {
+    for (const z of [-1, 1]) {
+      trusses.push(
+        <mesh key={`tz${i}${z}`} position={[i * 13, height - 1.4, z * (FIELD_Z + outer)]}>
+          <boxGeometry args={[0.5, 2.8, 0.5]} />
+          <meshStandardMaterial color="#5a6672" roughness={0.7} metalness={0.35} />
+        </mesh>,
+      );
+    }
+  }
+  return (
+    <group>
+      {trusses}
+      {[-1, 1].map((z) => (
+        <mesh key={`rz${z}`} position={[0, height, z * (FIELD_Z + outer - 2)]} rotation={[z * 0.08, 0, 0]}>
+          <boxGeometry args={[FIELD_X * 2 + 36, 0.6, outer + 6]} />
+          <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+      {[-1, 1].map((x) => (
+        <mesh key={`rx${x}`} position={[x * (FIELD_X + outer - 2), height, 0]} rotation={[0, 0, -x * 0.08]}>
+          <boxGeometry args={[outer + 6, 0.6, FIELD_Z * 2 + 40]} />
+          <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function Banners({ color }: { color: string }) {
+  return (
+    <group>
+      {[-1, 0, 1].map((i) => (
+        <mesh key={i} position={[i * 22, 2.2, -(FIELD_Z + 6.4)]}>
+          <planeGeometry args={[16, 1.6]} />
+          <meshStandardMaterial color={color} roughness={0.9} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 function Stands({
   homeColor,
   awayColor,
   quality,
   goalPulse,
+  night,
 }: {
   homeColor: string;
   awayColor: string;
   quality: Quality;
   goalPulse: React.MutableRefObject<number>;
+  night: boolean;
 }) {
-  const density = quality === "alta" ? 240 : quality === "media" ? 150 : 80;
-  const rings = quality === "alta" ? 8 : quality === "media" ? 6 : 4;
+  const density = quality === "alta" ? 320 : quality === "media" ? 190 : 90;
+  const rings = quality === "alta" ? 10 : quality === "media" ? 7 : 4;
 
   const crowd = useMemo(() => {
     const positions: THREE.Vector3[] = [];
     const colors: THREE.Color[] = [];
     const home = new THREE.Color(homeColor);
     const away = new THREE.Color(awayColor);
-    const neutral = ["#d8d8d8", "#8fa3b8", "#42506b", "#e0c07a", "#b8c4cf"];
-    // laterais
+    const neutral = ["#d8d8d8", "#8fa3b8", "#42506b", "#e0c07a", "#b8c4cf", "#6c7a8c"];
     for (let ring = 0; ring < rings; ring++) {
       for (let i = 0; i < density; i++) {
         const t = i / density;
         const px = -FIELD_X - 10 + t * (FIELD_X * 2 + 20);
         for (const zSide of [-1, 1]) {
           positions.push(
-            new THREE.Vector3(px, 2.6 + ring * 1.45, zSide * (FIELD_Z + 7 + ring * 1.5)),
+            new THREE.Vector3(
+              px + ((i * 7 + ring * 3) % 5) * 0.06,
+              2.6 + ring * 1.45,
+              zSide * (FIELD_Z + 7 + ring * 1.5),
+            ),
           );
           const zone = t < 0.3 ? home : t > 0.7 ? away : null;
           colors.push(
@@ -511,10 +589,10 @@ function Stands({
         }
       }
     }
-    // fundos (mosaico da casa atrás de um gol)
     for (let ring = 0; ring < rings; ring++) {
-      for (let i = 0; i < Math.round(density * 0.6); i++) {
-        const t = i / Math.round(density * 0.6);
+      const n = Math.round(density * 0.6);
+      for (let i = 0; i < n; i++) {
+        const t = i / n;
         const pz = -FIELD_Z - 8 + t * (FIELD_Z * 2 + 16);
         for (const xSide of [-1, 1]) {
           positions.push(
@@ -529,7 +607,9 @@ function Stands({
   }, [homeColor, awayColor, density, rings]);
 
   const ref = useRef<THREE.InstancedMesh>(null);
+  const flashRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
+  const flashCount = night ? Math.min(140, Math.round(crowd.positions.length * 0.05)) : 0;
 
   useEffect(() => {
     const mesh = ref.current;
@@ -549,43 +629,62 @@ function Stands({
     for (let i = 0; i < crowd.positions.length; i++) {
       const p = crowd.positions[i]!;
       const wave = Math.sin(t * 1.1 - p.x * 0.06) > 0.86 ? 0.5 : 0;
-      const jump = pulse > 0 ? Math.abs(Math.sin(t * 9 + i)) * 0.7 * pulse : 0;
+      const jump = pulse > 0 ? Math.abs(Math.sin(t * 9 + i)) * 0.75 * pulse : 0;
       dummy.position.set(p.x, p.y + Math.sin(t * 3 + i) * 0.06 + wave + jump, p.z);
+      dummy.rotation.y = ((i % 7) - 3) * 0.06;
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
+
+    // flashes de câmera na torcida (mais intensos após o gol)
+    const fm = flashRef.current;
+    if (fm && flashCount) {
+      for (let i = 0; i < flashCount; i++) {
+        const p = crowd.positions[(i * 37) % crowd.positions.length]!;
+        const on = Math.sin(t * (6 + (i % 5)) + i * 2.3) > (pulse > 0.05 ? 0.55 : 0.95);
+        dummy.position.set(p.x, p.y + 0.45, p.z);
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.setScalar(on ? 1 : 0.0001);
+        dummy.updateMatrix();
+        fm.setMatrixAt(i, dummy.matrix);
+      }
+      fm.instanceMatrix.needsUpdate = true;
+    }
   });
 
   return (
     <group>
-      {/* estrutura das arquibancadas */}
+      {/* estrutura externa */}
       {[-1, 1].map((z) => (
         <mesh key={z} position={[0, 3, z * (FIELD_Z + 21)]} rotation={[z * 0.34, 0, 0]}>
           <boxGeometry args={[FIELD_X * 2 + 26, 16, 24]} />
-          <meshStandardMaterial color="#3a444f" roughness={1} />
+          <meshStandardMaterial color="#28313a" roughness={1} />
         </mesh>
       ))}
       {[-1, 1].map((x) => (
         <mesh key={x} position={[x * (FIELD_X + 25), 3, 0]} rotation={[0, 0, -x * 0.3]}>
           <boxGeometry args={[24, 16, FIELD_Z * 2 + 34]} />
-          <meshStandardMaterial color="#3a444f" roughness={1} />
+          <meshStandardMaterial color="#28313a" roughness={1} />
         </mesh>
       ))}
-      {/* cobertura */}
-      {[-1, 1].map((z) => (
-        <mesh key={`r${z}`} position={[0, 20, z * (FIELD_Z + 26)]} rotation={[z * 0.1, 0, 0]}>
-          <boxGeometry args={[FIELD_X * 2 + 34, 0.8, 20]} />
-          <meshStandardMaterial color="#48535e" roughness={0.9} metalness={0.2} />
-        </mesh>
-      ))}
+      <Tiers rings={rings} />
+      <Roof rings={rings} />
+      <Banners color={homeColor} />
       <instancedMesh ref={ref} args={[undefined, undefined, crowd.positions.length]}>
-        <boxGeometry args={[0.44, 0.62, 0.44]} />
-        <meshStandardMaterial roughness={0.8} />
+        <boxGeometry args={[0.42, 0.66, 0.42]} />
+        <meshStandardMaterial roughness={0.85} />
       </instancedMesh>
+      {flashCount > 0 && (
+        <instancedMesh ref={flashRef} args={[undefined, undefined, flashCount]}>
+          <sphereGeometry args={[0.13, 6, 6]} />
+          <meshBasicMaterial color="#ffffff" toneMapped={false} transparent opacity={0.9} />
+        </instancedMesh>
+      )}
     </group>
   );
 }
+
 
 /* --------------------------------------------------------------- jogadores */
 
