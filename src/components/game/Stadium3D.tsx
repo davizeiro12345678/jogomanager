@@ -288,24 +288,78 @@ function Dugouts() {
 
 /* -------------------------------------------------------------- estrutura */
 
+function adBoardTexture(text: string, bg: string, fg: string) {
+  if (typeof document === "undefined") return null;
+  const w = 256;
+  const h = 48;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = fg;
+  ctx.font = "bold 30px 'Barlow Condensed', system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, w / 2, h / 2);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+const ADS = [
+  ["FUT+ TV", "#0b2b45", "#7dfcb0"],
+  ["AERO BRASIL", "#8a1420", "#ffffff"],
+  ["NOVA BET", "#123f2a", "#f5c400"],
+  ["PIXEL ENERGY", "#3a2f6b", "#ffffff"],
+  ["GOLAÇO FM", "#6b4a12", "#ffe9b0"],
+  ["MANAGER 3D", "#101418", "#7dfcb0"],
+] as const;
+
 function AdBoards() {
-  const colors = ["#0b2b45", "#8a1420", "#123f2a", "#3a2f6b", "#6b4a12"];
   const boards: React.ReactElement[] = [];
   const count = 18;
   const w = ((FIELD_X + 8) * 2) / count;
   for (let i = 0; i < count; i++) {
     const x = -(FIELD_X + 8) + w / 2 + i * w;
     for (const z of [-1, 1]) {
-      const c = colors[(i + (z > 0 ? 1 : 0)) % colors.length]!;
-      boards.push(
-        <mesh key={`${i}-${z}`} position={[x, 0.6, z * (FIELD_Z + 5)]}>
-          <boxGeometry args={[w * 0.94, 1.2, 0.25]} />
-          <meshStandardMaterial color={c} emissive={c} emissiveIntensity={0.5} roughness={0.4} />
-        </mesh>,
-      );
+      const [text, bg, fg] = ADS[(i + (z > 0 ? 3 : 0)) % ADS.length]!;
+      boards.push(<AdBoard key={`${i}-${z}`} x={x} z={z * (FIELD_Z + 5)} w={w} text={text} bg={bg} fg={fg} />);
     }
   }
   return <group>{boards}</group>;
+}
+
+function AdBoard({
+  x,
+  z,
+  w,
+  text,
+  bg,
+  fg,
+}: {
+  x: number;
+  z: number;
+  w: number;
+  text: string;
+  bg: string;
+  fg: string;
+}) {
+  const tex = useMemo(() => adBoardTexture(text, bg, fg), [text, bg, fg]);
+  return (
+    <mesh position={[x, 0.6, z]} rotation={[0, z > 0 ? Math.PI : 0, 0]}>
+      <boxGeometry args={[w * 0.94, 1.2, 0.25]} />
+      <meshStandardMaterial
+        {...(tex ? { map: tex, emissiveMap: tex } : { color: bg })}
+        color="#ffffff"
+        emissive="#ffffff"
+        emissiveIntensity={0.45}
+        roughness={0.4}
+      />
+    </mesh>
+  );
 }
 
 function scoreboardTexture(text: string) {
@@ -615,8 +669,6 @@ function PlayerMesh({
           </mesh>
         </group>
       ))}
-      {/* faixa de capitão */}
-      {player.number === 1 || player.id.endsWith("-c") ? null : null}
       {/* chuteiras */}
       {[-0.14, 0.14].map((x) => (
         <mesh key={`b${x}`} position={[x, 0.06, 0.05]}>
