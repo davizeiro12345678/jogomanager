@@ -703,7 +703,10 @@ function PlayerMesh({
   const tex = useMemo(() => kitTexture(kit, player.number), [kit, player.number]);
   const skin = useMemo(() => skinFor(player.id), [player.id]);
   const hair = useMemo(() => hairFor(player.id), [player.id]);
+  const style = useMemo(() => hash(player.id) % 4, [player.id]); // 0 curto 1 moicano 2 coque 3 careca
+  const isGK = player.pos === "GK";
   const shadows = quality === "alta";
+  const lean = useRef(0);
 
   useFrame(({ clock }) => {
     const g = group.current;
@@ -711,45 +714,87 @@ function PlayerMesh({
     g.position.x += (player.x - g.position.x) * 0.34;
     g.position.z += (player.z - g.position.z) * 0.34;
     const speed = Math.hypot(player.vx, player.vz);
-    if (speed > 0.15) g.rotation.y = Math.atan2(player.vx, player.vz);
+    if (speed > 0.15) {
+      const want = Math.atan2(player.vx, player.vz);
+      // giro suave em direção ao movimento
+      let d = want - g.rotation.y;
+      while (d > Math.PI) d -= Math.PI * 2;
+      while (d < -Math.PI) d += Math.PI * 2;
+      g.rotation.y += d * 0.22;
+    }
 
     const celebrating = goalPulse.current > 0.05;
     const t = clock.elapsedTime;
+    const stride = Math.min(1, speed / 5.5);
     const swing = celebrating
-      ? Math.sin(t * 8) * 0.5
-      : Math.sin(t * 11 + player.number) * 0.42 * Math.min(1, speed / 4);
+      ? Math.sin(t * 8) * 0.55
+      : Math.sin(t * (7 + stride * 8) + player.number) * 0.75 * stride;
 
-    g.position.y = celebrating ? Math.abs(Math.sin(t * 7 + player.number)) * 0.35 : 0;
+    // inclinação do tronco proporcional à velocidade
+    const targetLean = celebrating ? -0.18 : stride * 0.24;
+    lean.current += (targetLean - lean.current) * 0.12;
+    g.rotation.x = lean.current;
+    g.position.y = celebrating ? Math.abs(Math.sin(t * 7 + player.number)) * 0.38 : 0;
 
     for (const c of g.children) {
       if (c.userData['leg'] !== undefined) c.rotation.x = c.userData['leg'] ? swing : -swing;
       if (c.userData['arm'] !== undefined) {
-        c.rotation.x = celebrating ? -2.2 : (c.userData['arm'] ? -swing : swing) * 0.8;
+        c.rotation.x = celebrating ? -2.3 : (c.userData['arm'] ? -swing : swing) * 0.85;
+        c.rotation.z = celebrating ? (c.userData['arm'] ? 0.5 : -0.5) : 0;
+      }
+      if (c.userData['bob'] !== undefined) {
+        c.position.y = (c.userData['bob'] as number) + Math.abs(Math.sin(t * (7 + stride * 8))) * 0.03 * stride;
       }
     }
   });
 
   return (
     <group ref={group} position={[player.x, 0, player.z]}>
+      {/* sombra de contato */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
+        <circleGeometry args={[0.36, 14]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.3} depthWrite={false} />
+      </mesh>
       {/* tronco */}
-      <mesh position={[0, 1.16, 0]} castShadow={shadows}>
+      <mesh position={[0, 1.16, 0]} castShadow={shadows} userData={{ bob: 1.16 }}>
         <capsuleGeometry args={[0.27, 0.5, 4, 12]} />
-        <meshStandardMaterial
-          {...(tex ? { map: tex } : { color: kit.base })}
-          roughness={0.72}
-        />
+        <meshStandardMaterial {...(tex ? { map: tex } : { color: kit.base })} roughness={0.72} />
+      </mesh>
+      {/* ombros */}
+      <mesh position={[0, 1.44, 0]} rotation={[0, 0, Math.PI / 2]} castShadow={shadows}>
+        <capsuleGeometry args={[0.115, 0.4, 4, 8]} />
+        <meshStandardMaterial color={kit.base} roughness={0.72} />
+      </mesh>
+      {/* pescoço */}
+      <mesh position={[0, 1.56, 0]}>
+        <cylinderGeometry args={[0.075, 0.085, 0.12, 8]} />
+        <meshStandardMaterial color={skin} roughness={0.85} />
       </mesh>
       {/* cabeça */}
-      <mesh position={[0, 1.7, 0]} castShadow={shadows}>
+      <mesh position={[0, 1.71, 0]} castShadow={shadows}>
         <sphereGeometry args={[0.185, 16, 16]} />
         <meshStandardMaterial color={skin} roughness={0.85} />
       </mesh>
-      {/* cabelo */}
-      <mesh position={[0, 1.78, -0.02]}>
-        <sphereGeometry args={[0.175, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color={hair} roughness={1} />
-      </mesh>
-      {/* braços (mangas na cor do kit, mãos na cor da pele) */}
+      {/* cabelo por estilo */}
+      {style !== 3 && (
+        <mesh position={[0, 1.79, -0.015]}>
+          <sphereGeometry args={[0.178, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+      )}
+      {style === 1 && (
+        <mesh position={[0, 1.88, 0]}>
+          <boxGeometry args={[0.07, 0.12, 0.3]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+      )}
+      {style === 2 && (
+        <mesh position={[0, 1.85, -0.16]}>
+          <sphereGeometry args={[0.085, 10, 10]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+      )}
+      {/* braços */}
       {[-0.32, 0.32].map((x, i) => (
         <group key={`a${x}`} position={[x, 1.22, 0]} userData={{ arm: i === 0 }}>
           <mesh position={[0, 0.12, 0]} castShadow={shadows}>
@@ -760,32 +805,36 @@ function PlayerMesh({
             <capsuleGeometry args={[0.062, 0.2, 4, 8]} />
             <meshStandardMaterial color={skin} roughness={0.85} />
           </mesh>
+          {isGK && (
+            <mesh position={[0, -0.32, 0]}>
+              <boxGeometry args={[0.15, 0.18, 0.11]} />
+              <meshStandardMaterial color={kit.accent ?? "#f2f2f2"} roughness={0.6} />
+            </mesh>
+          )}
         </group>
       ))}
       {/* shorts */}
-      <mesh position={[0, 0.82, 0]} castShadow={shadows}>
+      <mesh position={[0, 0.82, 0]} castShadow={shadows} userData={{ bob: 0.82 }}>
         <boxGeometry args={[0.5, 0.3, 0.34]} />
         <meshStandardMaterial color={kit.shorts} roughness={0.8} />
       </mesh>
-      {/* pernas (meias) */}
+      {/* pernas */}
       {[-0.14, 0.14].map((x, i) => (
         <group key={`l${x}`} position={[x, 0.4, 0]} userData={{ leg: i === 0 }}>
           <mesh castShadow={shadows}>
             <capsuleGeometry args={[0.095, 0.48, 4, 8]} />
             <meshStandardMaterial color={kit.socks} roughness={0.8} />
           </mesh>
+          <mesh position={[0, -0.32, 0.05]}>
+            <boxGeometry args={[0.16, 0.1, 0.3]} />
+            <meshStandardMaterial color="#101010" roughness={0.5} />
+          </mesh>
         </group>
-      ))}
-      {/* chuteiras */}
-      {[-0.14, 0.14].map((x) => (
-        <mesh key={`b${x}`} position={[x, 0.06, 0.05]}>
-          <boxGeometry args={[0.16, 0.1, 0.3]} />
-          <meshStandardMaterial color="#101010" roughness={0.5} />
-        </mesh>
       ))}
     </group>
   );
 }
+
 
 function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
   const ref = useRef<THREE.Mesh>(null);
