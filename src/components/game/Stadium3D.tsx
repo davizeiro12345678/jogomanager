@@ -501,14 +501,15 @@ function Tiers({ rings }: { rings: number }) {
 }
 
 function Roof({ rings }: { rings: number }) {
-  const outer = 7 + rings * 1.5;
-  const height = 2.0 + rings * 1.45 + 6;
+  const outer = 9 + rings * 1.5;
+  const depth = 10;
+  const height = 2.0 + rings * 1.45 + 7;
   const trusses: React.ReactElement[] = [];
   for (let i = -6; i <= 6; i++) {
     for (const z of [-1, 1]) {
       trusses.push(
-        <mesh key={`tz${i}${z}`} position={[i * 13, height - 1.4, z * (FIELD_Z + outer)]}>
-          <boxGeometry args={[0.5, 2.8, 0.5]} />
+        <mesh key={`tz${i}${z}`} position={[i * 13, height - 2.2, z * (FIELD_Z + outer)]}>
+          <boxGeometry args={[0.5, 4.4, 0.5]} />
           <meshStandardMaterial color="#5a6672" roughness={0.7} metalness={0.35} />
         </mesh>,
       );
@@ -518,19 +519,20 @@ function Roof({ rings }: { rings: number }) {
     <group>
       {trusses}
       {[-1, 1].map((z) => (
-        <mesh key={`rz${z}`} position={[0, height, z * (FIELD_Z + outer - 2)]} rotation={[z * 0.08, 0, 0]}>
-          <boxGeometry args={[FIELD_X * 2 + 36, 0.6, outer + 6]} />
-          <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} side={THREE.DoubleSide} />
+        <mesh key={`rz${z}`} position={[0, height, z * (FIELD_Z + outer + depth / 2 - 2)]}>
+          <boxGeometry args={[FIELD_X * 2 + 36, 0.6, depth]} />
+          <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} />
         </mesh>
       ))}
       {[-1, 1].map((x) => (
-        <mesh key={`rx${x}`} position={[x * (FIELD_X + outer - 2), height, 0]} rotation={[0, 0, -x * 0.08]}>
-          <boxGeometry args={[outer + 6, 0.6, FIELD_Z * 2 + 40]} />
-          <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} side={THREE.DoubleSide} />
+        <mesh key={`rx${x}`} position={[x * (FIELD_X + outer + depth / 2 - 2), height, 0]}>
+          <boxGeometry args={[depth, 0.6, FIELD_Z * 2 + 40]} />
+          <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} />
         </mesh>
       ))}
     </group>
   );
+
 }
 
 function Banners({ color }: { color: string }) {
