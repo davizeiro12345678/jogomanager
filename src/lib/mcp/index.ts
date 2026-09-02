@@ -16,5 +16,7 @@ export default defineMcp({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
   }),
-  tools: [getCareerTool, saveCareerTool, deleteCareerTool],
+  // exactOptionalPropertyTypes: tools without an explicit outputSchema
+  // otherwise fail AnyToolDefinition assignability.
+  tools: [getCareerTool, saveCareerTool, deleteCareerTool] as never[],
 });
