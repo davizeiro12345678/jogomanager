@@ -1,3 +1,4 @@
+import type React from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -6,7 +7,7 @@ import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
 
 export type CameraMode = "broadcast" | "tactical" | "goal";
 
-function Pitch() {
+function Pitch({ homeColor, awayColor }: { homeColor: string; awayColor: string }) {
   const stripes = useMemo(() => {
     const arr: { x: number; w: number }[] = [];
     const count = 14;
@@ -17,6 +18,10 @@ function Pitch() {
 
   return (
     <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.03, 0]} receiveShadow>
+        <planeGeometry args={[FIELD_X * 2 + 26, FIELD_Z * 2 + 26]} />
+        <meshStandardMaterial color="#14512c" roughness={1} />
+      </mesh>
       {stripes.map((s, i) => (
         <mesh
           key={i}
@@ -25,16 +30,71 @@ function Pitch() {
           receiveShadow
         >
           <planeGeometry args={[s.w, FIELD_Z * 2]} />
-          <meshStandardMaterial color={i % 2 === 0 ? "#1f7a3f" : "#1a6b37"} roughness={0.95} />
+          <meshStandardMaterial color={i % 2 === 0 ? "#20824a" : "#1a6f3d"} roughness={0.92} />
         </mesh>
       ))}
       <Lines />
       <Goal side={1} />
       <Goal side={-1} />
-      <Stands />
+      <AdBoards />
+      <Floodlights />
+      <Stands homeColor={homeColor} awayColor={awayColor} />
     </group>
   );
 }
+
+function AdBoards() {
+  const colors = ["#0b2b45", "#8a1420", "#123f2a", "#3a2f6b", "#6b4a12"];
+  const boards: React.ReactElement[] = [];
+  const count = 16;
+  const w = ((FIELD_X + 6) * 2) / count;
+  for (let i = 0; i < count; i++) {
+    const x = -(FIELD_X + 6) + w / 2 + i * w;
+    for (const z of [-1, 1]) {
+      const c = colors[(i + (z > 0 ? 1 : 0)) % colors.length]!;
+      boards.push(
+        <mesh key={`${i}-${z}`} position={[x, 0.55, z * (FIELD_Z + 4.5)]}>
+          <boxGeometry args={[w * 0.94, 1.1, 0.25]} />
+          <meshStandardMaterial
+            color={c}
+            emissive={c}
+            emissiveIntensity={0.35}
+            roughness={0.5}
+          />
+        </mesh>,
+
+      );
+    }
+  }
+  return <group>{boards}</group>;
+}
+
+function Floodlights() {
+  const spots: [number, number][] = [
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [1, 1],
+  ];
+  return (
+    <group>
+      {spots.map(([sx, sz], i) => (
+        <group key={i} position={[sx * (FIELD_X + 16), 0, sz * (FIELD_Z + 18)]}>
+          <mesh position={[0, 13, 0]}>
+            <cylinderGeometry args={[0.5, 0.8, 26, 8]} />
+            <meshStandardMaterial color="#2a3138" roughness={0.8} />
+          </mesh>
+          <mesh position={[0, 26.5, 0]}>
+            <boxGeometry args={[7, 3, 1]} />
+            <meshStandardMaterial color="#f5f8ff" emissive="#dceaff" emissiveIntensity={1.6} />
+          </mesh>
+          <pointLight position={[0, 26, 0]} intensity={900} distance={190} color="#e8f2ff" />
+        </group>
+      ))}
+    </group>
+  );
+}
+
 
 function line(points: [number, number][], y = 0.02) {
   return new THREE.BufferGeometry().setFromPoints(
@@ -118,14 +178,14 @@ function Goal({ side }: { side: number }) {
   );
 }
 
-function Stands() {
+function Stands({ homeColor, awayColor }: { homeColor: string; awayColor: string }) {
   const crowd = useMemo(() => {
     const positions: THREE.Matrix4[] = [];
     const colors: THREE.Color[] = [];
-    const palette = ["#d8d8d8", "#8fa3b8", "#c46a4a", "#42506b", "#e0c07a"];
-    for (let ring = 0; ring < 6; ring++) {
-      for (let i = 0; i < 190; i++) {
-        const t = i / 190;
+    const neutral = ["#d8d8d8", "#8fa3b8", "#42506b", "#e0c07a"];
+    for (let ring = 0; ring < 7; ring++) {
+      for (let i = 0; i < 200; i++) {
+        const t = i / 200;
         const perimX = -FIELD_X - 8 + t * (FIELD_X * 2 + 16);
         for (const zSide of [-1, 1]) {
           const m = new THREE.Matrix4().setPosition(
@@ -134,12 +194,15 @@ function Stands() {
             zSide * (FIELD_Z + 7 + ring * 1.9),
           );
           positions.push(m);
-          colors.push(new THREE.Color(palette[(i + ring) % palette.length]!));
+          const fanZone = t < 0.34 ? homeColor : t > 0.66 ? awayColor : null;
+          const c = fanZone && (i + ring) % 3 !== 0 ? fanZone : neutral[(i + ring) % neutral.length]!;
+          colors.push(new THREE.Color(c));
         }
       }
     }
     return { positions, colors };
-  }, []);
+  }, [homeColor, awayColor]);
+
 
   const ref = useRef<THREE.InstancedMesh>(null);
   useFrame(({ clock }) => {
@@ -273,18 +336,19 @@ export function Stadium3D({
       camera={{ position: [0, 30, 70], fov: 42 }}
       gl={{ antialias: quality === "alta" }}
     >
-      <color attach="background" args={["#070b12"]} />
-      <fog attach="fog" args={["#070b12", 90, 230]} />
-      <hemisphereLight intensity={0.45} groundColor="#0d2a18" />
+      <color attach="background" args={["#060a10"]} />
+      <fog attach="fog" args={["#060a10", 100, 250]} />
+      <hemisphereLight intensity={0.5} groundColor="#0d2a18" color="#cfe4ff" />
       <directionalLight
         position={[40, 70, 30]}
-        intensity={2.1}
+        intensity={2.3}
         castShadow={quality === "alta"}
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={[2048, 2048]}
       />
-      <directionalLight position={[-50, 60, -30]} intensity={0.8} color="#bcd8ff" />
-      <Pitch />
+      <directionalLight position={[-50, 60, -30]} intensity={0.9} color="#bcd8ff" />
+      <Pitch homeColor={sim.home.primary} awayColor={sim.away.primary} />
       <Ball sim={sim} />
+
       {sim.players.map((p) => {
         const setup = p.side === "home" ? sim.home : sim.away;
         return (
