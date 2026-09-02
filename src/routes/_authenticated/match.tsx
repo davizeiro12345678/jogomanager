@@ -112,14 +112,14 @@ function LiveMatch({
   const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [tick, setTick] = useState(0);
   const [done, setDone] = useState(false);
-  const quality = useMemo<"alta" | "media">(
-    () =>
-      typeof navigator !== "undefined" && navigator.hardwareConcurrency &&
-      navigator.hardwareConcurrency >= 8
-        ? "alta"
-        : "media",
-    [],
+  const [quality, setQuality] = useState<Quality>(() =>
+    typeof navigator !== "undefined" &&
+    navigator.hardwareConcurrency &&
+    navigator.hardwareConcurrency >= 8
+      ? "alta"
+      : "media",
   );
+
   const raf = useRef<number>(0);
   const last = useRef<number>(0);
 
