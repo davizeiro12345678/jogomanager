@@ -27,7 +27,7 @@ function team(clubId: string): TeamSetup {
 }
 
 function Dev() {
-  const [mode] = useState<CameraMode>("fan");
+  const [mode] = useState<CameraMode>("broadcast");
   const sim = useMemo(() => {
     const ids = Object.keys(CLUBS);
     const s = new MatchSim(team(ids[0]!), team(ids[1]!), "dev");
