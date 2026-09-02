@@ -516,7 +516,7 @@ function Stands({
       ))}
       <instancedMesh ref={ref} args={[undefined, undefined, crowd.positions.length]}>
         <boxGeometry args={[0.44, 0.62, 0.44]} />
-        <meshStandardMaterial vertexColors roughness={0.95} />
+        <meshStandardMaterial vertexColors roughness={0.8} />
       </instancedMesh>
     </group>
   );
@@ -710,14 +710,14 @@ function Scene({
     [sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash],
   );
 
-  const sun = time === "dia" ? 2.8 : time === "entardecer" ? 2.0 : 1.3;
+  const sun = time === "dia" ? 2.8 : time === "entardecer" ? 2.2 : 1.8;
   const sunColor = time === "entardecer" ? "#ffb27a" : time === "dia" ? "#fff6e0" : "#bcd8ff";
 
   return (
     <>
       <color attach="background" args={[SKY[time]]} />
       <fog attach="fog" args={[SKY[time], 110, 300]} />
-      <ambientLight intensity={0.55} />
+      <ambientLight intensity={0.9} />
       <hemisphereLight
         intensity={time === "dia" ? 1.0 : 0.7}
         groundColor="#0d2a18"
