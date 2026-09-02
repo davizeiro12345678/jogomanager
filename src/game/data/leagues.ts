@@ -1048,7 +1048,22 @@ export const LEAGUES: League[] = [
   build("aus", "A-League", "Austrália", "🇦🇺", AUS),
   build("kor", "K League 1", "Coreia do Sul", "🇰🇷", KOR),
   build("egy", "Premier League Egípcia", "Egito", "🇪🇬", EGY),
-
+  build("hrv", "SuperSport HNL", "Croácia", "🇭🇷", HRV),
+  build("srb", "SuperLiga", "Sérvia", "🇷🇸", SRB),
+  build("cze", "Fortuna Liga", "Tchéquia", "🇨🇿", CZE),
+  build("rou", "SuperLiga", "Romênia", "🇷🇴", ROU),
+  build("per", "Liga 1", "Peru", "🇵🇪", PER),
+  build("ecu", "LigaPro", "Equador", "🇪🇨", ECU),
+  build("par", "Primera División", "Paraguai", "🇵🇾", PAR),
+  build("bol", "División Profesional", "Bolívia", "🇧🇴", BOL),
+  build("nga", "NPFL", "Nigéria", "🇳🇬", NGA),
+  build("rsa", "Betway Premiership", "África do Sul", "🇿🇦", RSA),
+  build("mar", "Botola Pro", "Marrocos", "🇲🇦", MAR),
+  build("qat", "Stars League", "Catar", "🇶🇦", QAT),
+  build("uae", "Pro League", "Emirados Árabes", "🇦🇪", UAE),
+  build("tha", "Thai League 1", "Tailândia", "🇹🇭", THA),
+  build("idn", "Liga 1", "Indonésia", "🇮🇩", IDN),
+  build("can", "Premier League", "Canadá", "🇨🇦", CAN),
 ];
 
 export const CLUBS: Record<string, Club> = Object.fromEntries(
