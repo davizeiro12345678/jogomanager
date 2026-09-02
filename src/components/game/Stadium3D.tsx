@@ -509,8 +509,8 @@ function Stands({
       ))}
       {/* cobertura */}
       {[-1, 1].map((z) => (
-        <mesh key={`r${z}`} position={[0, 20, z * (FIELD_Z + 22)]} rotation={[z * 0.1, 0, 0]}>
-          <boxGeometry args={[FIELD_X * 2 + 34, 0.8, 30]} />
+        <mesh key={`r${z}`} position={[0, 20, z * (FIELD_Z + 26)]} rotation={[z * 0.1, 0, 0]}>
+          <boxGeometry args={[FIELD_X * 2 + 34, 0.8, 20]} />
           <meshStandardMaterial color="#48535e" roughness={0.9} metalness={0.2} />
         </mesh>
       ))}
