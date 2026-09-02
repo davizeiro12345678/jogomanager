@@ -175,14 +175,14 @@ function Goal({ side }: { side: number }) {
   );
 }
 
-function Stands() {
+function Stands({ homeColor, awayColor }: { homeColor: string; awayColor: string }) {
   const crowd = useMemo(() => {
     const positions: THREE.Matrix4[] = [];
     const colors: THREE.Color[] = [];
-    const palette = ["#d8d8d8", "#8fa3b8", "#c46a4a", "#42506b", "#e0c07a"];
-    for (let ring = 0; ring < 6; ring++) {
-      for (let i = 0; i < 190; i++) {
-        const t = i / 190;
+    const neutral = ["#d8d8d8", "#8fa3b8", "#42506b", "#e0c07a"];
+    for (let ring = 0; ring < 7; ring++) {
+      for (let i = 0; i < 200; i++) {
+        const t = i / 200;
         const perimX = -FIELD_X - 8 + t * (FIELD_X * 2 + 16);
         for (const zSide of [-1, 1]) {
           const m = new THREE.Matrix4().setPosition(
@@ -191,12 +191,15 @@ function Stands() {
             zSide * (FIELD_Z + 7 + ring * 1.9),
           );
           positions.push(m);
-          colors.push(new THREE.Color(palette[(i + ring) % palette.length]!));
+          const fanZone = t < 0.34 ? homeColor : t > 0.66 ? awayColor : null;
+          const c = fanZone && (i + ring) % 3 !== 0 ? fanZone : neutral[(i + ring) % neutral.length]!;
+          colors.push(new THREE.Color(c));
         }
       }
     }
     return { positions, colors };
-  }, []);
+  }, [homeColor, awayColor]);
+
 
   const ref = useRef<THREE.InstancedMesh>(null);
   useFrame(({ clock }) => {
