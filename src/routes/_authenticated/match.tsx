@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Stadium3D, type CameraMode } from "@/components/game/Stadium3D";
+import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
 import { MENTALITIES, PRESSING } from "@/game/formations";
@@ -234,6 +234,25 @@ function LiveMatch({
                 }`}
               >
                 {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
+            Gráficos
+          </p>
+          <div className="mt-1 flex gap-1">
+            {(["alta", "media", "baixa"] as const).map((q) => (
+              <button
+                key={q}
+                onClick={() => setQuality(q)}
+                className={`flex-1 rounded px-2 py-1 text-xs capitalize ${
+                  quality === q ? "bg-primary text-primary-foreground" : "bg-white/10 text-white"
+                }`}
+              >
+                {q}
               </button>
             ))}
           </div>
