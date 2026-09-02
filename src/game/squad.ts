@@ -1,5 +1,6 @@
 import { CLUBS } from "./data/leagues";
-import { NAMED_SQUADS, NAME_POOLS } from "./data/squads";
+import { NAMED_SQUADS } from "./data/squads";
+import { poolForLeague } from "./data/names";
 import { makeRng } from "./rng";
 import type { Club, Player, Position } from "./types";
 
@@ -101,7 +102,7 @@ export function buildSquad(clubId: string): Player[] {
     });
   }
 
-  const pool = NAME_POOLS[club.league] ?? NAME_POOLS["bra"]!;
+  const pool = poolForLeague(club.league);
   const used = new Set(players.map((p) => p.name));
   let i = players.length;
   while (players.length < 18) {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LEAGUES } from "@/game/data/leagues";
 import { Crest } from "@/components/game/Crest";
+import { Flag } from "@/components/game/Flag";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -72,7 +73,7 @@ function Landing() {
                 className="rounded-xl border border-border/60 bg-card/70 p-4 backdrop-blur"
               >
                 <p className="font-display text-lg">
-                  {l.flag} {l.name}
+                  <Flag league={l.id} size={20} /> {l.name}
                 </p>
                 <p className="text-xs text-muted-foreground">{l.clubs.length} clubes</p>
                 <div className="mt-3 flex -space-x-2">

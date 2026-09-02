@@ -5,6 +5,7 @@ import { LEAGUES, getLeague } from "@/game/data/leagues";
 import { initCareer } from "@/game/career";
 import { Crest } from "@/components/game/Crest";
 import { useCareer } from "@/hooks/useCareer";
+import { Flag } from "@/components/game/Flag";
 
 export const Route = createFileRoute("/_authenticated/new")({
   head: () => ({
@@ -61,7 +62,7 @@ function NewCareer() {
                     : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {l.flag} {l.name}
+                <Flag league={l.id} size={18} /> {l.name}
               </button>
             ))}
           </div>
