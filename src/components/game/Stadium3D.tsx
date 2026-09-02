@@ -633,6 +633,7 @@ function Stands({
       const wave = Math.sin(t * 1.1 - p.x * 0.06) > 0.86 ? 0.5 : 0;
       const jump = pulse > 0 ? Math.abs(Math.sin(t * 9 + i)) * 0.75 * pulse : 0;
       dummy.position.set(p.x, p.y + Math.sin(t * 3 + i) * 0.06 + wave + jump, p.z);
+      dummy.scale.set(1, 1, 1);
       dummy.rotation.y = ((i % 7) - 3) * 0.06;
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
