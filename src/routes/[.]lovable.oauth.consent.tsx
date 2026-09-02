@@ -8,7 +8,7 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   ssr: false,
   validateSearch: (s: Record<string, unknown>) => ({
     authorization_id:
-      typeof s.authorization_id === "string" ? s.authorization_id : "",
+      typeof s["authorization_id"] === "string" ? s["authorization_id"] : "",
   }),
   beforeLoad: async ({ search, location }) => {
     if (!search.authorization_id) throw new Error("Missing authorization_id");
@@ -25,9 +25,14 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
     const { data, error } =
       await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
     if (error) throw error;
-    const immediate = data?.redirect_url ?? data?.redirect_to;
-    if (immediate && !data?.client) throw redirect({ href: immediate });
-    return data;
+    const details = data as {
+      redirect_url?: string;
+      redirect_to?: string;
+      client?: { name?: string } | null;
+    } | null;
+    const immediate = details?.redirect_url ?? details?.redirect_to;
+    if (immediate && !details?.client) throw redirect({ href: immediate });
+    return details;
   },
   component: Consent,
   errorComponent: ({ error }) => (
@@ -60,7 +65,10 @@ function Consent() {
       setError(error.message);
       return;
     }
-    const target = data?.redirect_url ?? data?.redirect_to;
+    const result = data as
+      | { redirect_url?: string; redirect_to?: string }
+      | null;
+    const target = result?.redirect_url ?? result?.redirect_to;
     if (!target) {
       setBusy(false);
       setError("O servidor de autorização não retornou um redirecionamento.");
