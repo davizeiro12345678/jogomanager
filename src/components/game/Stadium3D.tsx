@@ -683,6 +683,7 @@ function PlayerMesh({
 function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
   const ref = useRef<THREE.Mesh>(null);
   const shadow = useRef<THREE.Mesh>(null);
+  const trail = useRef<THREE.Mesh>(null);
   useFrame((_, dt) => {
     const m = ref.current;
     if (!m) return;
@@ -699,12 +700,35 @@ function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
       s.scale.setScalar(k);
       (s.material as THREE.MeshBasicMaterial).opacity = 0.36 * k;
     }
+    // rastro de velocidade em chutes fortes
+    const t = trail.current;
+    if (t) {
+      const active = sp > 16;
+      t.visible = active;
+      if (active) {
+        const k = Math.min(1, (sp - 16) / 18);
+        t.position.copy(m.position);
+        t.rotation.y = Math.atan2(sim.ball.vx, sim.ball.vz);
+        t.scale.set(1, 1, 1 + k * 9);
+        (t.material as THREE.MeshBasicMaterial).opacity = 0.22 * k;
+      }
+    }
   });
   return (
     <group>
       <mesh ref={ref} castShadow={quality === "alta"} position={[0, 0.13, 0]}>
         <sphereGeometry args={[0.13, 20, 20]} />
         <meshStandardMaterial color="#ffffff" roughness={0.3} metalness={0.05} />
+      </mesh>
+      <mesh ref={trail} position={[0, 0.13, 0]} visible={false}>
+        <boxGeometry args={[0.09, 0.09, 0.5]} />
+        <meshBasicMaterial
+          color="#ffffff"
+          transparent
+          opacity={0.2}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
       </mesh>
       <mesh ref={shadow} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.18, 16]} />
