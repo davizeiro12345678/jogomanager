@@ -51,16 +51,18 @@ function AdBoards() {
   for (let i = 0; i < count; i++) {
     const x = -(FIELD_X + 6) + w / 2 + i * w;
     for (const z of [-1, 1]) {
+      const c = colors[(i + (z > 0 ? 1 : 0)) % colors.length]!;
       boards.push(
         <mesh key={`${i}-${z}`} position={[x, 0.55, z * (FIELD_Z + 4.5)]}>
           <boxGeometry args={[w * 0.94, 1.1, 0.25]} />
           <meshStandardMaterial
-            color={colors[(i + (z > 0 ? 1 : 0)) % colors.length]}
-            emissive={colors[(i + (z > 0 ? 1 : 0)) % colors.length]}
+            color={c}
+            emissive={c}
             emissiveIntensity={0.35}
             roughness={0.5}
           />
         </mesh>,
+
       );
     }
   }
