@@ -586,22 +586,37 @@ function PlayerMesh({
       {/* cabelo */}
       <mesh position={[0, 1.78, -0.02]}>
         <sphereGeometry args={[0.175, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#20160f" roughness={1} />
+        <meshStandardMaterial color={hair} roughness={1} />
       </mesh>
-      {/* braços */}
+      {/* braços (mangas na cor do kit, mãos na cor da pele) */}
       {[-0.32, 0.32].map((x, i) => (
-        <mesh key={`a${x}`} position={[x, 1.22, 0]} userData={{ arm: i === 0 }} castShadow={shadows}>
-          <capsuleGeometry args={[0.07, 0.42, 4, 8]} />
-          <meshStandardMaterial color={skin} roughness={0.85} />
-        </mesh>
+        <group key={`a${x}`} position={[x, 1.22, 0]} userData={{ arm: i === 0 }}>
+          <mesh position={[0, 0.12, 0]} castShadow={shadows}>
+            <capsuleGeometry args={[0.075, 0.14, 4, 8]} />
+            <meshStandardMaterial color={kit.base} roughness={0.72} />
+          </mesh>
+          <mesh position={[0, -0.16, 0]} castShadow={shadows}>
+            <capsuleGeometry args={[0.062, 0.2, 4, 8]} />
+            <meshStandardMaterial color={skin} roughness={0.85} />
+          </mesh>
+        </group>
       ))}
-      {/* pernas */}
+      {/* shorts */}
+      <mesh position={[0, 0.82, 0]} castShadow={shadows}>
+        <boxGeometry args={[0.5, 0.3, 0.34]} />
+        <meshStandardMaterial color={kit.shorts} roughness={0.8} />
+      </mesh>
+      {/* pernas (meias) */}
       {[-0.14, 0.14].map((x, i) => (
-        <mesh key={`l${x}`} position={[x, 0.42, 0]} userData={{ leg: i === 0 }} castShadow={shadows}>
-          <capsuleGeometry args={[0.095, 0.5, 4, 8]} />
-          <meshStandardMaterial color={kit.detail} roughness={0.8} />
-        </mesh>
+        <group key={`l${x}`} position={[x, 0.4, 0]} userData={{ leg: i === 0 }}>
+          <mesh castShadow={shadows}>
+            <capsuleGeometry args={[0.095, 0.48, 4, 8]} />
+            <meshStandardMaterial color={kit.socks} roughness={0.8} />
+          </mesh>
+        </group>
       ))}
+      {/* faixa de capitão */}
+      {player.number === 1 || player.id.endsWith("-c") ? null : null}
       {/* chuteiras */}
       {[-0.14, 0.14].map((x) => (
         <mesh key={`b${x}`} position={[x, 0.06, 0.05]}>
