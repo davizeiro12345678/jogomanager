@@ -438,7 +438,7 @@ function Stands({
         const px = -FIELD_X - 10 + t * (FIELD_X * 2 + 20);
         for (const zSide of [-1, 1]) {
           positions.push(
-            new THREE.Vector3(px, 2.4 + ring * 1.5, zSide * (FIELD_Z + 8 + ring * 2)),
+            new THREE.Vector3(px, 2.6 + ring * 1.45, zSide * (FIELD_Z + 7 + ring * 1.5)),
           );
           const zone = t < 0.3 ? home : t > 0.7 ? away : null;
           colors.push(
@@ -456,7 +456,7 @@ function Stands({
         const pz = -FIELD_Z - 8 + t * (FIELD_Z * 2 + 16);
         for (const xSide of [-1, 1]) {
           positions.push(
-            new THREE.Vector3(xSide * (FIELD_X + 12 + ring * 2), 2.4 + ring * 1.5, pz),
+            new THREE.Vector3(xSide * (FIELD_X + 10 + ring * 1.5), 2.6 + ring * 1.45, pz),
           );
           const mosaic = (ring + i) % 5 < 3 ? home : new THREE.Color("#f2f2f2");
           colors.push(xSide === 1 ? mosaic : new THREE.Color(neutral[(i + ring) % neutral.length]!));
@@ -496,13 +496,13 @@ function Stands({
     <group>
       {/* estrutura das arquibancadas */}
       {[-1, 1].map((z) => (
-        <mesh key={z} position={[0, 4, z * (FIELD_Z + 14)]} rotation={[z * 0.34, 0, 0]}>
+        <mesh key={z} position={[0, 3, z * (FIELD_Z + 21)]} rotation={[z * 0.34, 0, 0]}>
           <boxGeometry args={[FIELD_X * 2 + 26, 16, 24]} />
           <meshStandardMaterial color="#3a444f" roughness={1} />
         </mesh>
       ))}
       {[-1, 1].map((x) => (
-        <mesh key={x} position={[x * (FIELD_X + 17), 4, 0]} rotation={[0, 0, -x * 0.3]}>
+        <mesh key={x} position={[x * (FIELD_X + 25), 3, 0]} rotation={[0, 0, -x * 0.3]}>
           <boxGeometry args={[24, 16, FIELD_Z * 2 + 34]} />
           <meshStandardMaterial color="#3a444f" roughness={1} />
         </mesh>
