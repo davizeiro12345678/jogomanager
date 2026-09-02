@@ -42,7 +42,7 @@ function Dev() {
   }, [sim]);
   return (
     <div className="h-screen w-screen">
-      {ready && <Stadium3D sim={sim} mode="broadcast" quality="alta" tick={tick} />}
+      {ready && <Stadium3D sim={sim} mode="fan" quality="alta" tick={tick} />}
     </div>
   );
 }
