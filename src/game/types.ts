@@ -36,6 +36,13 @@ export interface Player {
   goals: number;
   assists: number;
   apps: number;
+  /** salário semanal em milhares de euros */
+  wage: number;
+  /** valor de mercado em milhões de euros */
+  value: number;
+  yellows: number;
+  suspended: boolean;
+  injuryWeeks: number;
 }
 
 export type FormationKey = "4-3-3" | "4-4-2" | "3-5-2" | "4-2-3-1";
@@ -67,13 +74,52 @@ export interface TableRow {
   pts: number;
 }
 
+export type TrainingFocus = "ataque" | "defesa" | "fisico" | "tecnica" | "equilibrado";
+
+export type NewsKind = "resultado" | "mercado" | "lesao" | "cartao" | "sistema" | "premio";
+
+export interface NewsItem {
+  id: string;
+  season: number;
+  round: number;
+  kind: NewsKind;
+  title: string;
+  body: string;
+}
+
+export interface Trophy {
+  season: number;
+  name: string;
+}
+
+export interface SeasonSummary {
+  season: number;
+  position: number;
+  pts: number;
+  w: number;
+  d: number;
+  l: number;
+  championId: string;
+}
+
+export interface Finances {
+  /** caixa em milhões de euros */
+  budget: number;
+  /** total gasto em transferências na temporada (M€) */
+  spent: number;
+  /** total de receitas na temporada (M€) */
+  income: number;
+}
+
 export interface CareerState {
-  version: 1;
+  version: 2;
   leagueId: string;
   clubId: string;
   managerName: string;
+  season: number;
   round: number;
   tactics: Tactics;
+  training: TrainingFocus;
   lineup: string[]; // 11 player ids
   bench: string[];
   fixtures: Fixture[];
@@ -85,6 +131,14 @@ export interface CareerState {
     hg: number;
     ag: number;
   }[];
+  finances: Finances;
+  /** satisfação da diretoria, 0-100 */
+  approval: number;
+  /** posição-alvo definida pela diretoria */
+  objective: number;
+  news: NewsItem[];
+  trophies: Trophy[];
+  history: SeasonSummary[];
 }
 
 export interface MatchEventLog {

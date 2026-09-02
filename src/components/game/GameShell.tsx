@@ -11,6 +11,9 @@ const TABS = [
   { to: "/squad", label: "Elenco" },
   { to: "/tactics", label: "Táticas" },
   { to: "/league", label: "Liga" },
+  { to: "/transfers", label: "Mercado" },
+  { to: "/news", label: "Notícias" },
+  { to: "/history", label: "História" },
 ] as const;
 
 export function GameShell({
@@ -32,7 +35,9 @@ export function GameShell({
             <div className="leading-tight">
               <p className="font-display text-lg tracking-wide">{club?.name ?? "Manager 3D"}</p>
               <p className="text-xs text-muted-foreground">
-                {career ? `Rodada ${career.round} · ${career.managerName}` : "Carreira"}
+                {career
+                  ? `Temporada ${career.season} · Rodada ${career.round} · €${career.finances.budget.toFixed(1)}M`
+                  : "Carreira"}
               </p>
             </div>
           </div>

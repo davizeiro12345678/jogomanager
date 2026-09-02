@@ -732,6 +732,272 @@ const FRA2: Raw[] = [
 
 
 
+const HRV: Raw[] = [
+  ["hrv_din", "Dinamo Zagreb", "DIN", "#1f4fa0", "#ffffff", 78],
+  ["hrv_haj", "Hajduk Split", "HAJ", "#ffffff", "#1f4fa0", 76],
+  ["hrv_rij", "Rijeka", "RIJ", "#ffffff", "#7ec8e3", 74],
+  ["hrv_osi", "Osijek", "OSI", "#1f4fa0", "#ffffff", 73],
+  ["hrv_lok", "Lokomotiva Zagreb", "LOK", "#7a1020", "#ffffff", 70],
+  ["hrv_var", "Varaždin", "VAR", "#f5820a", "#111111", 68],
+  ["hrv_ist", "Istra 1961", "IST", "#f5c400", "#0a7a3c", 68],
+  ["hrv_gor", "Gorica", "GOR", "#111111", "#ffffff", 67],
+  ["hrv_sla", "Slaven Belupo", "SLA", "#7ec8e3", "#ffffff", 67],
+  ["hrv_sib", "Šibenik", "SIB", "#f5820a", "#111111", 66],
+  ["hrv_vuk", "Vukovar 91", "VUK", "#1f4fa0", "#f5c400", 65],
+  ["hrv_rud", "Rudeš", "RUD", "#ffffff", "#1f4fa0", 65],
+  ["hrv_int", "Inter Zaprešić", "INT", "#0a7a3c", "#f5c400", 66],
+  ["hrv_cib", "Cibalia", "CIB", "#111111", "#7ec8e3", 66],
+];
+
+const SRB: Raw[] = [
+  ["srb_czv", "Crvena zvezda", "CZV", "#e30613", "#ffffff", 79],
+  ["srb_par", "Partizan", "PAR", "#111111", "#ffffff", 77],
+  ["srb_voj", "Vojvodina", "VOJ", "#e30613", "#ffffff", 72],
+  ["srb_cuk", "Čukarički", "CUK", "#111111", "#ffffff", 71],
+  ["srb_tsc", "TSC Bačka Topola", "TSC", "#0a7a3c", "#111111", 70],
+  ["srb_rad", "Radnički Niš", "RAD", "#1f4fa0", "#ffffff", 68],
+  ["srb_nap", "Napredak", "NAP", "#e30613", "#ffffff", 67],
+  ["srb_mla", "Mladost Lučani", "MLA", "#1f4fa0", "#ffffff", 67],
+  ["srb_spk", "Spartak Subotica", "SPK", "#7ec8e3", "#ffffff", 67],
+  ["srb_zem", "Zemun", "ZEM", "#1f4fa0", "#0a7a3c", 66],
+  ["srb_jav", "Javor", "JAV", "#f5c400", "#111111", 66],
+  ["srb_nov", "Novi Pazar", "NOV", "#1f4fa0", "#f5c400", 67],
+  ["srb_voz", "Voždovac", "VOZ", "#e30613", "#ffffff", 66],
+  ["srb_rai", "Radnički Kragujevac", "RAK", "#e30613", "#111111", 66],
+];
+
+const CZE: Raw[] = [
+  ["cze_sla", "Slavia Praha", "SLA", "#e30613", "#ffffff", 78],
+  ["cze_spa", "Sparta Praha", "SPA", "#7a1020", "#ffffff", 78],
+  ["cze_plz", "Viktoria Plzeň", "PLZ", "#1f4fa0", "#e30613", 75],
+  ["cze_ban", "Baník Ostrava", "BAN", "#7ec8e3", "#ffffff", 72],
+  ["cze_slo", "Slovácko", "SLK", "#1f4fa0", "#ffffff", 71],
+  ["cze_lib", "Slovan Liberec", "LIB", "#1f4fa0", "#ffffff", 70],
+  ["cze_sig", "Sigma Olomouc", "SIG", "#1f4fa0", "#ffffff", 70],
+  ["cze_jab", "Jablonec", "JAB", "#0a7a3c", "#ffffff", 69],
+  ["cze_tep", "Teplice", "TEP", "#f5c400", "#1f4fa0", 68],
+  ["cze_boh", "Bohemians 1905", "BOH", "#0a7a3c", "#ffffff", 68],
+  ["cze_mlb", "Mladá Boleslav", "MLB", "#0a7a3c", "#ffffff", 69],
+  ["cze_hra", "Hradec Králové", "HRA", "#111111", "#ffffff", 67],
+  ["cze_pce", "Pardubice", "PCE", "#e30613", "#f5c400", 67],
+  ["cze_kar", "Karviná", "KAR", "#0a7a3c", "#ffffff", 66],
+];
+
+const ROU: Raw[] = [
+  ["rou_fcs", "FCSB", "FCS", "#e30613", "#1f4fa0", 76],
+  ["rou_cfr", "CFR Cluj", "CFR", "#7a1020", "#ffffff", 75],
+  ["rou_ucv", "Universitatea Craiova", "UCV", "#1f4fa0", "#ffffff", 74],
+  ["rou_rap", "Rapid București", "RAP", "#7a1020", "#f5c400", 73],
+  ["rou_din", "Dinamo București", "DIN", "#e30613", "#ffffff", 71],
+  ["rou_far", "Farul Constanța", "FAR", "#1f4fa0", "#7ec8e3", 70],
+  ["rou_sep", "Sepsi OSK", "SEP", "#e30613", "#ffffff", 70],
+  ["rou_pet", "Petrolul", "PET", "#f5c400", "#111111", 68],
+  ["rou_uta", "UTA Arad", "UTA", "#e30613", "#ffffff", 68],
+  ["rou_her", "Hermannstadt", "HER", "#e30613", "#111111", 67],
+  ["rou_bot", "Botoșani", "BOT", "#e30613", "#ffffff", 67],
+  ["rou_glm", "Gloria Buzău", "GLM", "#1f4fa0", "#e30613", 66],
+  ["rou_otl", "Oțelul Galați", "OTL", "#e30613", "#1f4fa0", 66],
+  ["rou_pol", "Poli Iași", "POL", "#1f4fa0", "#ffffff", 66],
+];
+
+const PER: Raw[] = [
+  ["per_uni", "Universitario", "UNI", "#f5f0dc", "#7a1020", 73],
+  ["per_ali", "Alianza Lima", "ALI", "#1f2a5a", "#ffffff", 73],
+  ["per_cri", "Sporting Cristal", "CRI", "#7ec8e3", "#ffffff", 74],
+  ["per_mel", "FBC Melgar", "MEL", "#e30613", "#111111", 70],
+  ["per_boy", "Sport Boys", "BOY", "#f582a0", "#ffffff", 67],
+  ["per_cie", "Cienciano", "CIE", "#e30613", "#ffffff", 68],
+  ["per_mun", "Deportivo Municipal", "MUN", "#e30613", "#ffffff", 67],
+  ["per_val", "César Vallejo", "VAL", "#1f4fa0", "#f5820a", 68],
+  ["per_gar", "Sport Huancayo", "HUA", "#e30613", "#f5c400", 67],
+  ["per_utc", "UTC Cajamarca", "UTC", "#7ec8e3", "#111111", 66],
+  ["per_adt", "ADT Tarma", "ADT", "#7ec8e3", "#ffffff", 66],
+  ["per_gri", "Atlético Grau", "GRI", "#f5c400", "#e30613", 66],
+  ["per_ayc", "Ayacucho FC", "AYC", "#f5820a", "#111111", 66],
+  ["per_com", "Comerciantes Unidos", "COM", "#1f4fa0", "#f5c400", 65],
+];
+
+const ECU: Raw[] = [
+  ["ecu_ldu", "LDU Quito", "LDU", "#ffffff", "#e30613", 74],
+  ["ecu_bsc", "Barcelona SC", "BSC", "#f5c400", "#111111", 73],
+  ["ecu_idv", "Independiente del Valle", "IDV", "#111111", "#7ec8e3", 75],
+  ["ecu_eme", "Emelec", "EME", "#1f4fa0", "#7ec8e3", 72],
+  ["ecu_nac", "El Nacional", "NAC", "#e30613", "#ffffff", 68],
+  ["ecu_auc", "Aucas", "AUC", "#f5c400", "#e30613", 68],
+  ["ecu_del", "Delfín", "DEL", "#7ec8e3", "#111111", 67],
+  ["ecu_tec", "Técnico Universitario", "TEC", "#e30613", "#ffffff", 67],
+  ["ecu_msr", "Mushuc Runa", "MSR", "#0a7a3c", "#f5c400", 66],
+  ["ecu_cat", "Universidad Católica", "CAT", "#7ec8e3", "#ffffff", 68],
+  ["ecu_ore", "Orense", "ORE", "#0a7a3c", "#ffffff", 66],
+  ["ecu_cue", "Deportivo Cuenca", "CUE", "#e30613", "#f5c400", 67],
+  ["ecu_gua", "Guayaquil City", "GUA", "#7ec8e3", "#ffffff", 66],
+  ["ecu_mac", "Macará", "MAC", "#7ec8e3", "#e30613", 66],
+];
+
+const PAR: Raw[] = [
+  ["par_oli", "Olimpia", "OLI", "#ffffff", "#111111", 74],
+  ["par_ccp", "Cerro Porteño", "CCP", "#1f4fa0", "#e30613", 73],
+  ["par_lib", "Libertad", "LIB", "#111111", "#ffffff", 72],
+  ["par_gua", "Guaraní", "GUA", "#f5c400", "#111111", 70],
+  ["par_nac", "Nacional", "NAC", "#ffffff", "#e30613", 68],
+  ["par_sol", "Sol de América", "SOL", "#1f4fa0", "#ffffff", 67],
+  ["par_luq", "Sportivo Luqueño", "LUQ", "#1f4fa0", "#f5c400", 67],
+  ["par_tac", "Tacuary", "TAC", "#111111", "#ffffff", 66],
+  ["par_tri", "Sportivo Trinidense", "TRI", "#7ec8e3", "#ffffff", 66],
+  ["par_gen", "General Caballero", "GEN", "#e30613", "#111111", 66],
+  ["par_ame", "Sportivo Ameliano", "AME", "#1f4fa0", "#ffffff", 66],
+  ["par_mai", "Deportivo Santaní", "SAN", "#111111", "#e30613", 65],
+  ["par_rub", "Rubio Ñu", "RUB", "#ffffff", "#0a7a3c", 65],
+  ["par_fer", "Fernando de la Mora", "FDM", "#e30613", "#1f4fa0", 65],
+];
+
+const BOL: Raw[] = [
+  ["bol_bol", "Bolívar", "BOL", "#7ec8e3", "#ffffff", 72],
+  ["bol_str", "The Strongest", "STR", "#f5c400", "#111111", 72],
+  ["bol_wil", "Jorge Wilstermann", "WIL", "#e30613", "#ffffff", 69],
+  ["bol_blo", "Blooming", "BLO", "#7ec8e3", "#ffffff", 68],
+  ["bol_oru", "Always Ready", "ALR", "#e30613", "#ffffff", 69],
+  ["bol_ori", "Oriente Petrolero", "ORI", "#0a7a3c", "#ffffff", 68],
+  ["bol_nac", "Nacional Potosí", "NAC", "#ffffff", "#e30613", 67],
+  ["bol_tom", "Real Tomayapo", "TOM", "#0a7a3c", "#f5c400", 66],
+  ["bol_gua", "Guabirá", "GUB", "#e30613", "#ffffff", 66],
+  ["bol_aur", "Aurora", "AUR", "#7ec8e3", "#ffffff", 66],
+  ["bol_uni", "Universitario Vinto", "UNI", "#e30613", "#111111", 65],
+  ["bol_rsc", "Real Santa Cruz", "RSC", "#ffffff", "#1f4fa0", 65],
+  ["bol_saj", "San Antonio Bulo Bulo", "SAB", "#0a7a3c", "#ffffff", 65],
+  ["bol_tot", "CD Totora Real Oruro", "TOT", "#f5820a", "#111111", 64],
+];
+
+const NGA: Raw[] = [
+  ["nga_eny", "Enyimba", "ENY", "#1f4fa0", "#ffffff", 69],
+  ["nga_ken", "Kano Pillars", "KAN", "#f5c400", "#0a7a3c", 67],
+  ["nga_rem", "Remo Stars", "REM", "#1f4fa0", "#e30613", 68],
+  ["nga_riv", "Rivers United", "RIV", "#e30613", "#ffffff", 68],
+  ["nga_sho", "Shooting Stars", "SHO", "#7ec8e3", "#e30613", 66],
+  ["nga_pla", "Plateau United", "PLA", "#f5c400", "#e30613", 66],
+  ["nga_lob", "Lobi Stars", "LOB", "#e30613", "#ffffff", 66],
+  ["nga_akr", "Akwa United", "AKW", "#e30613", "#1f4fa0", 65],
+  ["nga_sun", "Sunshine Stars", "SUN", "#f5820a", "#1f4fa0", 65],
+  ["nga_abw", "Abia Warriors", "ABW", "#e30613", "#f5c400", 65],
+  ["nga_ens", "Enugu Rangers", "ENR", "#e30613", "#ffffff", 66],
+  ["nga_hea", "Heartland", "HEA", "#e30613", "#f5c400", 65],
+  ["nga_kwg", "Kwara United", "KWA", "#0a7a3c", "#f5c400", 65],
+  ["nga_ben", "Bendel Insurance", "BEN", "#e30613", "#ffffff", 64],
+];
+
+const RSA: Raw[] = [
+  ["rsa_sun", "Mamelodi Sundowns", "SUN", "#f5c400", "#1f4fa0", 76],
+  ["rsa_pir", "Orlando Pirates", "PIR", "#111111", "#ffffff", 73],
+  ["rsa_chi", "Kaizer Chiefs", "CHI", "#f5c400", "#111111", 72],
+  ["rsa_sup", "SuperSport United", "SSU", "#1f4fa0", "#ffffff", 69],
+  ["rsa_ctc", "Cape Town City", "CTC", "#1f4fa0", "#f5c400", 68],
+  ["rsa_stl", "Stellenbosch", "STL", "#7a1020", "#ffffff", 68],
+  ["rsa_ama", "AmaZulu", "AMA", "#0a7a3c", "#ffffff", 67],
+  ["rsa_roy", "Royal AM", "ROY", "#f5820a", "#111111", 67],
+  ["rsa_gol", "Lamontville Golden Arrows", "GOL", "#0a7a3c", "#f5c400", 66],
+  ["rsa_chp", "Chippa United", "CHP", "#e30613", "#111111", 66],
+  ["rsa_pol", "Polokwane City", "PLK", "#f5820a", "#0a7a3c", 66],
+  ["rsa_sek", "Sekhukhune United", "SEK", "#e30613", "#f5c400", 66],
+  ["rsa_tsg", "TS Galaxy", "TSG", "#e30613", "#7ec8e3", 65],
+  ["rsa_ric", "Richards Bay", "RIC", "#1f4fa0", "#f5820a", 65],
+];
+
+const MAR: Raw[] = [
+  ["mar_wyd", "Wydad Casablanca", "WYD", "#e30613", "#ffffff", 74],
+  ["mar_raj", "Raja Casablanca", "RAJ", "#0a7a3c", "#ffffff", 74],
+  ["mar_far", "AS FAR", "FAR", "#111111", "#e30613", 72],
+  ["mar_ber", "RS Berkane", "BER", "#f5820a", "#111111", 71],
+  ["mar_fus", "FUS Rabat", "FUS", "#e30613", "#ffffff", 68],
+  ["mar_itt", "Ittihad Tanger", "ITT", "#7ec8e3", "#ffffff", 67],
+  ["mar_ocs", "Olympic Safi", "SAF", "#1f4fa0", "#ffffff", 66],
+  ["mar_has", "Hassania Agadir", "HAS", "#e30613", "#ffffff", 67],
+  ["mar_mco", "Mouloudia Oujda", "MCO", "#0a7a3c", "#ffffff", 67],
+  ["mar_scc", "Chabab Mohammédia", "SCC", "#e30613", "#111111", 66],
+  ["mar_jss", "Jeunesse Soualem", "SOU", "#1f4fa0", "#f5c400", 65],
+  ["mar_utr", "Union Touarga", "TOU", "#0a7a3c", "#f5c400", 66],
+  ["mar_mag", "Maghreb Fès", "FES", "#f5c400", "#111111", 66],
+  ["mar_dch", "Difaâ El Jadida", "JAD", "#1f4fa0", "#0a7a3c", 65],
+];
+
+const QAT: Raw[] = [
+  ["qat_sad", "Al-Sadd", "SAD", "#111111", "#ffffff", 75],
+  ["qat_duh", "Al-Duhail", "DUH", "#e30613", "#ffffff", 74],
+  ["qat_ray", "Al-Rayyan", "RAY", "#111111", "#e30613", 72],
+  ["qat_ara", "Al-Arabi", "ARA", "#e30613", "#ffffff", 71],
+  ["qat_gha", "Al-Gharafa", "GHA", "#f5c400", "#7ec8e3", 70],
+  ["qat_wak", "Al-Wakrah", "WAK", "#7ec8e3", "#ffffff", 68],
+  ["qat_ahl", "Al-Ahli", "AHL", "#0a7a3c", "#ffffff", 68],
+  ["qat_sha", "Al-Shahania", "SHA", "#e30613", "#111111", 66],
+  ["qat_umm", "Umm Salal", "UMM", "#f5820a", "#111111", 66],
+  ["qat_kho", "Al-Khor", "KHO", "#1f4fa0", "#ffffff", 65],
+  ["qat_mua", "Muaither", "MUA", "#f5820a", "#0a7a3c", 64],
+  ["qat_mes", "Mesaimeer", "MES", "#1f4fa0", "#f5c400", 64],
+  ["qat_sha2", "Al-Shamal", "SHM", "#e30613", "#ffffff", 65],
+  ["qat_qsc", "Qatar SC", "QSC", "#f5c400", "#111111", 67],
+];
+
+const UAE: Raw[] = [
+  ["uae_ain", "Al-Ain", "AIN", "#5b2d8e", "#ffffff", 74],
+  ["uae_wah", "Al-Wahda", "WAH", "#7a1020", "#ffffff", 73],
+  ["uae_jaz", "Al-Jazira", "JAZ", "#ffffff", "#1f4fa0", 72],
+  ["uae_shj", "Sharjah", "SHJ", "#ffffff", "#1f4fa0", 70],
+  ["uae_nas", "Al-Nasr", "NAS", "#1f4fa0", "#ffffff", 69],
+  ["uae_was", "Al-Wasl", "WAS", "#f5c400", "#111111", 71],
+  ["uae_shb", "Shabab Al-Ahli", "SHB", "#e30613", "#ffffff", 72],
+  ["uae_ban", "Baniyas", "BAN", "#7ec8e3", "#ffffff", 67],
+  ["uae_kal", "Ittihad Kalba", "KAL", "#e30613", "#ffffff", 67],
+  ["uae_kho", "Khorfakkan", "KHF", "#0a7a3c", "#ffffff", 65],
+  ["uae_ajm", "Ajman", "AJM", "#f5820a", "#111111", 66],
+  ["uae_fuj", "Al-Fujairah", "FUJ", "#0a7a3c", "#111111", 64],
+  ["uae_hrt", "Hatta", "HAT", "#7ec8e3", "#1f4fa0", 64],
+  ["uae_dib", "Dibba Al-Hisn", "DIB", "#f5c400", "#1f4fa0", 64],
+];
+
+const THA: Raw[] = [
+  ["tha_bur", "Buriram United", "BUR", "#1f2a5a", "#f5820a", 71],
+  ["tha_bkk", "Bangkok United", "BKK", "#e30613", "#111111", 70],
+  ["tha_mua", "Muangthong United", "MUA", "#e30613", "#111111", 68],
+  ["tha_por", "Port FC", "POR", "#1f4fa0", "#f5820a", 67],
+  ["tha_chb", "Chonburi", "CHB", "#7ec8e3", "#ffffff", 66],
+  ["tha_rac", "Ratchaburi", "RAC", "#f5820a", "#111111", 66],
+  ["tha_bgp", "BG Pathum United", "BGP", "#7ec8e3", "#f5c400", 69],
+  ["tha_pol", "Police Tero", "POL", "#e30613", "#ffffff", 65],
+  ["tha_nak", "Nakhon Ratchasima", "NAK", "#f5820a", "#111111", 65],
+  ["tha_lam", "Lamphun Warriors", "LAM", "#e30613", "#ffffff", 64],
+  ["tha_uth", "Uthai Thani", "UTH", "#0a7a3c", "#f5c400", 64],
+  ["tha_kra", "Kasetsart", "KAS", "#0a7a3c", "#f5c400", 63],
+  ["tha_suk", "Sukhothai", "SUK", "#f5c400", "#1f4fa0", 64],
+  ["tha_pra", "Prachuap", "PRA", "#f5820a", "#ffffff", 65],
+];
+
+const IDN: Raw[] = [
+  ["idn_pers", "Persib Bandung", "PERS", "#1f4fa0", "#ffffff", 68],
+  ["idn_perj", "Persija Jakarta", "PERJ", "#f5820a", "#ffffff", 68],
+  ["idn_bali", "Bali United", "BALI", "#e30613", "#ffffff", 69],
+  ["idn_are", "Arema", "ARE", "#1f4fa0", "#ffffff", 66],
+  ["idn_psm", "PSM Makassar", "PSM", "#e30613", "#ffffff", 66],
+  ["idn_bor", "Borneo Samarinda", "BOR", "#f5820a", "#111111", 66],
+  ["idn_dew", "Dewa United", "DEW", "#f5c400", "#111111", 66],
+  ["idn_psis", "PSIS Semarang", "PSIS", "#1f4fa0", "#7ec8e3", 65],
+  ["idn_mad", "Madura United", "MAD", "#e30613", "#ffffff", 65],
+  ["idn_bar", "Barito Putera", "BAR", "#f5c400", "#1f4fa0", 64],
+  ["idn_pby", "Persebaya Surabaya", "PBY", "#0a7a3c", "#ffffff", 66],
+  ["idn_pss", "PSS Sleman", "PSS", "#0a7a3c", "#ffffff", 64],
+  ["idn_persik", "Persik Kediri", "KED", "#5b2d8e", "#ffffff", 64],
+  ["idn_semen", "Semen Padang", "SPD", "#e30613", "#f5c400", 63],
+];
+
+const CAN: Raw[] = [
+  ["can_for", "Forge FC", "FOR", "#f5820a", "#111111", 67],
+  ["can_cav", "Cavalry FC", "CAV", "#e30613", "#ffffff", 66],
+  ["can_hfx", "HFX Wanderers", "HFX", "#7ec8e3", "#1f2a5a", 64],
+  ["can_ott", "Atlético Ottawa", "OTT", "#e30613", "#ffffff", 65],
+  ["can_pac", "Pacific FC", "PAC", "#0a7a3c", "#7ec8e3", 64],
+  ["can_val", "Valour FC", "VAL", "#111111", "#f5c400", 63],
+  ["can_yor", "York United", "YOR", "#1f4fa0", "#0a7a3c", 63],
+  ["can_van", "Vancouver FC", "VAN", "#7ec8e3", "#ffffff", 62],
+];
+
 function build(id: string, name: string, country: string, flag: string, raw: Raw[]): League {
   const clubs: Club[] = raw.map(([cid, cname, short, primary, secondary, strength]) => ({
     id: cid,
@@ -782,7 +1048,22 @@ export const LEAGUES: League[] = [
   build("aus", "A-League", "Austrália", "🇦🇺", AUS),
   build("kor", "K League 1", "Coreia do Sul", "🇰🇷", KOR),
   build("egy", "Premier League Egípcia", "Egito", "🇪🇬", EGY),
-
+  build("hrv", "SuperSport HNL", "Croácia", "🇭🇷", HRV),
+  build("srb", "SuperLiga", "Sérvia", "🇷🇸", SRB),
+  build("cze", "Fortuna Liga", "Tchéquia", "🇨🇿", CZE),
+  build("rou", "SuperLiga", "Romênia", "🇷🇴", ROU),
+  build("per", "Liga 1", "Peru", "🇵🇪", PER),
+  build("ecu", "LigaPro", "Equador", "🇪🇨", ECU),
+  build("par", "Primera División", "Paraguai", "🇵🇾", PAR),
+  build("bol", "División Profesional", "Bolívia", "🇧🇴", BOL),
+  build("nga", "NPFL", "Nigéria", "🇳🇬", NGA),
+  build("rsa", "Betway Premiership", "África do Sul", "🇿🇦", RSA),
+  build("mar", "Botola Pro", "Marrocos", "🇲🇦", MAR),
+  build("qat", "Stars League", "Catar", "🇶🇦", QAT),
+  build("uae", "Pro League", "Emirados Árabes", "🇦🇪", UAE),
+  build("tha", "Thai League 1", "Tailândia", "🇹🇭", THA),
+  build("idn", "Liga 1", "Indonésia", "🇮🇩", IDN),
+  build("can", "Premier League", "Canadá", "🇨🇦", CAN),
 ];
 
 export const CLUBS: Record<string, Club> = Object.fromEntries(

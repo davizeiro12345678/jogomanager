@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
 import { FORMATIONS } from "@/game/formations";
+import { formatMoney, formatWage } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";
 import type { Player } from "@/game/types";
 
@@ -22,6 +23,22 @@ export const Route = createFileRoute("/_authenticated/squad")({
   }),
   component: SquadPage,
 });
+
+function statusBadge(p: Player) {
+  if (p.injuryWeeks > 0)
+    return (
+      <span className="rounded bg-destructive/20 px-1.5 py-0.5 text-[10px] uppercase text-destructive">
+        Lesionado {p.injuryWeeks}r
+      </span>
+    );
+  if (p.suspended)
+    return (
+      <span className="rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] uppercase text-amber-400">
+        Suspenso
+      </span>
+    );
+  return null;
+}
 
 function SquadPage() {
   const { career, update } = useCareer();
@@ -56,7 +73,8 @@ function SquadPage() {
             <div className="absolute inset-x-6 inset-y-4 rounded-md border border-white/25" />
             <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25" />
             {lineup.map((p, i) => {
-              const slot = slots[i]!;
+              const slot = slots[i];
+              if (!slot) return null;
               return (
                 <div
                   key={p.id}
@@ -88,17 +106,28 @@ function SquadPage() {
                   <th className="p-1">Pos</th>
                   <th className="p-1">OVR</th>
                   <th className="p-1">Cond</th>
+                  <th className="p-1">Valor</th>
                   <th className="p-1"></th>
                 </tr>
               </thead>
               <tbody>
                 {[...lineup, ...reserves].map((p) => {
                   const starting = career!.lineup.includes(p.id);
+                  const unavailable = p.injuryWeeks > 0 || p.suspended;
                   return (
                     <tr key={p.id} className="border-t border-border/40">
                       <td className="p-1">
                         <span className="text-muted-foreground">{p.number} </span>
                         {p.name}
+                        {p.yellows > 0 ? (
+                          <span
+                            className="ml-1 text-[10px] text-amber-400"
+                            title={`${p.yellows} cartão(ões) amarelo(s)`}
+                          >
+                            {"🟨".repeat(p.yellows)}
+                          </span>
+                        ) : null}
+                        <div className="mt-0.5 flex gap-1">{statusBadge(p)}</div>
                       </td>
                       <td className="p-1 text-center text-muted-foreground">{p.pos}</td>
                       <td className="p-1 text-center font-display">{p.ovr}</td>
@@ -115,11 +144,17 @@ function SquadPage() {
                           {p.condition}%
                         </span>
                       </td>
+                      <td className="p-1 text-center text-xs text-muted-foreground">
+                        {formatMoney(p.value)}
+                        <div className="text-[10px]">{formatWage(p.wage)}</div>
+                      </td>
                       <td className="p-1 text-right">
                         {starting ? (
                           <span className="rounded bg-primary/20 px-1.5 py-0.5 text-[10px] uppercase text-primary">
                             Titular
                           </span>
+                        ) : unavailable ? (
+                          statusBadge(p)
                         ) : (
                           <select
                             aria-label={`Substituir titular por ${p.name}`}

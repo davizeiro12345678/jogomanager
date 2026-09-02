@@ -117,6 +117,70 @@ export const POOLS: Record<string, NamePool> = {
     "Mohamed,Ahmed,Mahmoud,Omar,Youssef,Karim,Hossam,Ramadan,Mostafa,Amr,Tarek,Emam,Zizo,Marwan,Islam",
     "Salah,Hegazi,Elneny,Abdelmonem,Fathi,Trezeguet,Sobhi,Kahraba,Shenawy,Attia,Magdy,Gabaski,Fatouh,Sherif,Zaki",
   ),
+  hrv: P(
+    "Luka,Marko,Ivan,Petar,Josip,Ante,Filip,Domagoj,Bruno,Lovro,Nikola,Tin,Fran,Mateo,Dario",
+    "Modrić,Kovač,Perišić,Brozović,Vida,Livaković,Gvardiol,Petković,Barišić,Juranović,Sučić,Ćaleta,Vlašić,Oršić,Budimir",
+  ),
+  srb: P(
+    "Luka,Nikola,Dušan,Filip,Nemanja,Sergej,Strahinja,Miloš,Aleksa,Veljko,Stefan,Ivan,Marko,Uroš,Dejan",
+    "Jović,Ilić,Tadić,Kostić,Gudelj,Pavlović,Milinković,Stojanović,Terzić,Birmančević,Mitrović,Ristić,Grujić,Zivković,Ristanović",
+  ),
+  cze: P(
+    "Jan,Tomáš,Patrik,Lukáš,Adam,Ondřej,Michal,Jakub,David,Filip,Matěj,Václav,Antonín,Pavel,Marek",
+    "Novák,Svoboda,Dvořák,Procházka,Černý,Kučera,Veselý,Pospíšil,Jelínek,Král,Hájek,Beneš,Krejčí,Hlaváček,Sedláček",
+  ),
+  rou: P(
+    "Andrei,Alexandru,Darius,Ianis,Florin,Denis,Radu,George,Nicolae,Claudiu,Marius,Daniel,Răzvan,Octavian,Valentin",
+    "Popescu,Ionescu,Popa,Stan,Dumitrescu,Marin,Constantin,Gheorghe,Munteanu,Stanciu,Man,Drăguș,Olaru,Bîrligea,Mihăilă",
+  ),
+  per: P(
+    "José,Paolo,André,Christian,Edison,Luis,Yoshimar,Alex,Jefferson,Renato,Christofer,Carlos,Miguel,Andy,Bernardo",
+    "Flores,Guerrero,Carrillo,Cueva,Yotún,Tapia,Valera,Farfán,Cuesta,Trauco,Gonzales,Corzo,Loyola,Polo,Abram",
+  ),
+  ecu: P(
+    "Enner,Gonzalo,Ángel,Moisés,Jhegson,Alan,Piero,Moisés,Kendry,Jordy,José,Dener,Aníbal,Félix,Janner",
+    "Valencia,Plata,Mena,Caicedo,Méndez,Franco,Hincapié,Ramírez,Páez,Caicedo,Cifuentes,Valencia,Chalá,Torres,Corozo",
+  ),
+  par: P(
+    "Miguel,Óscar,Ángel,Diego,Cecilio,Julio,Antonio,Braian,Robert,Darío,Gabriel,Mathías,Blas,Damián,Rodney",
+    "Almirón,Cardozo,Romero,Gómez,Domínguez,Enciso,Sanabria,Samudio,Piris,Lezcano,Ávalos,Villasanti,Riveros,Bobadilla,Redes",
+  ),
+  bol: P(
+    "Marcelo,Ramiro,Juan Carlos,Moisés,Leonel,Carmelo,Bruno,José,Henry,Diego,Gabriel,Boris,Robson,Miguel,Leonardo",
+    "Martins,Vaca,Arce,Villarroel,Justiniano,Algarañaz,Miranda,Sagredo,Fernández,Bejarano,Villamíl,Cespedes,Matheus,Terceros,Ursino",
+  ),
+  nga: P(
+    "Victor,Kelechi,Samuel,Moses,Ahmed,Alex,Wilfred,Joe,Ademola,Paul,Ola,Taiwo,Cyriel,Chidera,Gift",
+    "Osimhen,Iheanacho,Chukwueze,Simon,Musa,Iwobi,Ndidi,Aribo,Lookman,Onuachu,Aina,Awoniyi,Dessers,Ejuke,Orban",
+  ),
+  rsa: P(
+    "Percy,Themba,Teboho,Keagan,Lyle,Bongani,Ronwen,Thapelo,Aubrey,Bathusi,Sphephelo,Oswin,Katlego,Mihlali,Evidence",
+    "Tau,Zwane,Mokoena,Dolly,Foster,Zungu,Williams,Morena,Modiba,Aubaas,Sithole,Appollis,Makgopa,Mayambela,Makgopa",
+  ),
+  mar: P(
+    "Achraf,Hakim,Youssef,Sofyan,Noussair,Azzedine,Brahim,Selim,Abde,Yassine,Eliesse,Sofiane,Bilal,Ayoub,Walid",
+    "Hakimi,Ziyech,En-Nesyri,Amrabat,Mazraoui,Ounahi,Diaz,Amallah,Ezzalzouli,Bounou,Ben Seghir,Boufal,El Khannouss,El Kaabi,Regragui",
+  ),
+  qat: P(
+    "Akram,Almoez,Boualem,Karim,Yusuf,Assim,Edmilson,Mohammed,Bassam,Salem,Tarek,Pedro,Ró-Ró,Lucas,Ismail",
+    "Afif,Ali,Khoukhi,Boudiaf,Abdurisag,Madibo,Junior,Waad,Al-Rawi,Al-Hajri,Salman,Miguel,Mendes,Mohamad",
+  ),
+  uae: P(
+    "Ali,Fábio,Caio,Yahya,Harib,Khalil,Majed,Band Ali,Abdullah,Tahnoon,Sultan,Khalifa,Saeed,Ali,Ahmed",
+    "Mabkhout,Lima,Canedo,Al-Ghassani,Abdalla,Al-Hammadi,Hassan,Al-Ahbabi,Ramadan,Al-Zaabi,Adel,Al-Hammadi,Easa,Saleh,Khalil",
+  ),
+  tha: P(
+    "Chanathip,Teerasil,Theerathon,Sarach,Supachai,Ekanit,Ben,Peeradol,Nicholas,Elias,Suphanat,Channarong,Jonathan,Manuel,Patrik",
+    "Songkrasin,Dangda,Bunmathan,Yenramyan,Chaided,Panya,Davis,Chamrasamee,Mickelson,Dolah,Mueanta,Promsrikaew,Khemdee,Bihr,Gustafsson",
+  ),
+  idn: P(
+    "Egy,Witan,Asnawi,Pratama,Rizky,Marc,Saddil,Marselino,Rafael,Elkan,Sandy,Alfeandra,Ragnar,Ivar,Justin",
+    "Maulana,Sulaeman,Mangkualam,Arhan,Ridho,Klok,Ramdhani,Ferdinan,Struick,Baggott,Walsh,Dewangga,Oratmangoen,Jenner,Hubner",
+  ),
+  can: P(
+    "Alphonso,Jonathan,Cyle,Stephen,Tajon,Promise,Ismaël,Samuel,Alistair,Richie,Liam,Junior,Cyle,Mathieu,Ayo",
+    "Davies,David,Larin,Eustáquio,Buchanan,David,Koné,Piette,Johnston,Laryea,Millar,Hoilett,Choinière,Akinola",
+  ),
 };
 
 /** Liga -> banco de nomes (divisões inferiores herdam do país). */

@@ -3,7 +3,7 @@ import type React from "react";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { kitFor, kitTexture, skinFor, colorClash, type Kit } from "@/game/kits";
+import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
 
 export type CameraMode = "broadcast" | "tactical" | "goal" | "fan" | "behind";
@@ -288,24 +288,78 @@ function Dugouts() {
 
 /* -------------------------------------------------------------- estrutura */
 
+function adBoardTexture(text: string, bg: string, fg: string) {
+  if (typeof document === "undefined") return null;
+  const w = 256;
+  const h = 48;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = fg;
+  ctx.font = "bold 30px 'Barlow Condensed', system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, w / 2, h / 2);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+const ADS = [
+  ["FUT+ TV", "#0b2b45", "#7dfcb0"],
+  ["AERO BRASIL", "#8a1420", "#ffffff"],
+  ["NOVA BET", "#123f2a", "#f5c400"],
+  ["PIXEL ENERGY", "#3a2f6b", "#ffffff"],
+  ["GOLAÇO FM", "#6b4a12", "#ffe9b0"],
+  ["MANAGER 3D", "#101418", "#7dfcb0"],
+] as const;
+
 function AdBoards() {
-  const colors = ["#0b2b45", "#8a1420", "#123f2a", "#3a2f6b", "#6b4a12"];
   const boards: React.ReactElement[] = [];
   const count = 18;
   const w = ((FIELD_X + 8) * 2) / count;
   for (let i = 0; i < count; i++) {
     const x = -(FIELD_X + 8) + w / 2 + i * w;
     for (const z of [-1, 1]) {
-      const c = colors[(i + (z > 0 ? 1 : 0)) % colors.length]!;
-      boards.push(
-        <mesh key={`${i}-${z}`} position={[x, 0.6, z * (FIELD_Z + 5)]}>
-          <boxGeometry args={[w * 0.94, 1.2, 0.25]} />
-          <meshStandardMaterial color={c} emissive={c} emissiveIntensity={0.5} roughness={0.4} />
-        </mesh>,
-      );
+      const [text, bg, fg] = ADS[(i + (z > 0 ? 3 : 0)) % ADS.length]!;
+      boards.push(<AdBoard key={`${i}-${z}`} x={x} z={z * (FIELD_Z + 5)} w={w} text={text} bg={bg} fg={fg} />);
     }
   }
   return <group>{boards}</group>;
+}
+
+function AdBoard({
+  x,
+  z,
+  w,
+  text,
+  bg,
+  fg,
+}: {
+  x: number;
+  z: number;
+  w: number;
+  text: string;
+  bg: string;
+  fg: string;
+}) {
+  const tex = useMemo(() => adBoardTexture(text, bg, fg), [text, bg, fg]);
+  return (
+    <mesh position={[x, 0.6, z]} rotation={[0, z > 0 ? Math.PI : 0, 0]}>
+      <boxGeometry args={[w * 0.94, 1.2, 0.25]} />
+      <meshStandardMaterial
+        {...(tex ? { map: tex, emissiveMap: tex } : { color: bg })}
+        color="#ffffff"
+        emissive="#ffffff"
+        emissiveIntensity={0.45}
+        roughness={0.4}
+      />
+    </mesh>
+  );
 }
 
 function scoreboardTexture(text: string) {
@@ -541,6 +595,7 @@ function PlayerMesh({
   const group = useRef<THREE.Group>(null);
   const tex = useMemo(() => kitTexture(kit, player.number), [kit, player.number]);
   const skin = useMemo(() => skinFor(player.id), [player.id]);
+  const hair = useMemo(() => hairFor(player.id), [player.id]);
   const shadows = quality === "alta";
 
   useFrame(({ clock }) => {
@@ -585,21 +640,34 @@ function PlayerMesh({
       {/* cabelo */}
       <mesh position={[0, 1.78, -0.02]}>
         <sphereGeometry args={[0.175, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#20160f" roughness={1} />
+        <meshStandardMaterial color={hair} roughness={1} />
       </mesh>
-      {/* braços */}
+      {/* braços (mangas na cor do kit, mãos na cor da pele) */}
       {[-0.32, 0.32].map((x, i) => (
-        <mesh key={`a${x}`} position={[x, 1.22, 0]} userData={{ arm: i === 0 }} castShadow={shadows}>
-          <capsuleGeometry args={[0.07, 0.42, 4, 8]} />
-          <meshStandardMaterial color={skin} roughness={0.85} />
-        </mesh>
+        <group key={`a${x}`} position={[x, 1.22, 0]} userData={{ arm: i === 0 }}>
+          <mesh position={[0, 0.12, 0]} castShadow={shadows}>
+            <capsuleGeometry args={[0.075, 0.14, 4, 8]} />
+            <meshStandardMaterial color={kit.base} roughness={0.72} />
+          </mesh>
+          <mesh position={[0, -0.16, 0]} castShadow={shadows}>
+            <capsuleGeometry args={[0.062, 0.2, 4, 8]} />
+            <meshStandardMaterial color={skin} roughness={0.85} />
+          </mesh>
+        </group>
       ))}
-      {/* pernas */}
+      {/* shorts */}
+      <mesh position={[0, 0.82, 0]} castShadow={shadows}>
+        <boxGeometry args={[0.5, 0.3, 0.34]} />
+        <meshStandardMaterial color={kit.shorts} roughness={0.8} />
+      </mesh>
+      {/* pernas (meias) */}
       {[-0.14, 0.14].map((x, i) => (
-        <mesh key={`l${x}`} position={[x, 0.42, 0]} userData={{ leg: i === 0 }} castShadow={shadows}>
-          <capsuleGeometry args={[0.095, 0.5, 4, 8]} />
-          <meshStandardMaterial color={kit.detail} roughness={0.8} />
-        </mesh>
+        <group key={`l${x}`} position={[x, 0.4, 0]} userData={{ leg: i === 0 }}>
+          <mesh castShadow={shadows}>
+            <capsuleGeometry args={[0.095, 0.48, 4, 8]} />
+            <meshStandardMaterial color={kit.socks} roughness={0.8} />
+          </mesh>
+        </group>
       ))}
       {/* chuteiras */}
       {[-0.14, 0.14].map((x) => (
@@ -615,6 +683,7 @@ function PlayerMesh({
 function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
   const ref = useRef<THREE.Mesh>(null);
   const shadow = useRef<THREE.Mesh>(null);
+  const trail = useRef<THREE.Mesh>(null);
   useFrame((_, dt) => {
     const m = ref.current;
     if (!m) return;
@@ -631,12 +700,35 @@ function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
       s.scale.setScalar(k);
       (s.material as THREE.MeshBasicMaterial).opacity = 0.36 * k;
     }
+    // rastro de velocidade em chutes fortes
+    const t = trail.current;
+    if (t) {
+      const active = sp > 16;
+      t.visible = active;
+      if (active) {
+        const k = Math.min(1, (sp - 16) / 18);
+        t.position.copy(m.position);
+        t.rotation.y = Math.atan2(sim.ball.vx, sim.ball.vz);
+        t.scale.set(1, 1, 1 + k * 9);
+        (t.material as THREE.MeshBasicMaterial).opacity = 0.22 * k;
+      }
+    }
   });
   return (
     <group>
       <mesh ref={ref} castShadow={quality === "alta"} position={[0, 0.13, 0]}>
         <sphereGeometry args={[0.13, 20, 20]} />
         <meshStandardMaterial color="#ffffff" roughness={0.3} metalness={0.05} />
+      </mesh>
+      <mesh ref={trail} position={[0, 0.13, 0]} visible={false}>
+        <boxGeometry args={[0.09, 0.09, 0.5]} />
+        <meshBasicMaterial
+          color="#ffffff"
+          transparent
+          opacity={0.2}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
       </mesh>
       <mesh ref={shadow} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.18, 16]} />
@@ -754,7 +846,13 @@ function Scene({
         <PlayerMesh
           key={p.id}
           player={p}
-          kit={p.side === "home" ? homeKit : awayKit}
+          kit={
+            p.pos === "GK"
+              ? gkKitFor(p.side === "home" ? sim.home.clubId : sim.away.clubId)
+              : p.side === "home"
+                ? homeKit
+                : awayKit
+          }
           goalPulse={goalPulse}
           quality={quality}
         />

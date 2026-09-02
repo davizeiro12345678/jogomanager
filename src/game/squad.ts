@@ -84,6 +84,11 @@ function makePlayer(
     goals: 0,
     assists: 0,
     apps: 0,
+    wage: 0,
+    value: 0,
+    yellows: 0,
+    suspended: false,
+    injuryWeeks: 0,
   };
 }
 
