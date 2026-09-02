@@ -226,6 +226,7 @@ function LiveMatch({
                 ["tactical", "Tática"],
                 ["goal", "Gol"],
                 ["fan", "Torcida"],
+                ["rail", "Trilho"],
                 ["behind", "Replay"],
               ] as const
             ).map(([m, label]) => (
