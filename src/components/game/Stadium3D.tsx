@@ -676,7 +676,7 @@ function Stands({
       <Banners color={homeColor} />
       <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, crowd.positions.length]}>
         <boxGeometry args={[0.5, 0.8, 0.5]} />
-        <meshStandardMaterial roughness={0.85} />
+        <meshStandardMaterial roughness={0.85} emissive="#ff0000" emissiveIntensity={2} />
       </instancedMesh>
       {flashCount > 0 && (
         <instancedMesh ref={flashRef} frustumCulled={false} args={[undefined, undefined, flashCount]}>
