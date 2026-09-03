@@ -456,15 +456,37 @@ export function advanceRound(state: CareerState, userResult: { hg: number; ag: n
   // finanças semanais
   const table = computeTable({ ...state, fixtures });
   const position = table.findIndex((r) => r.clubId === state.clubId) + 1;
-  const income = weeklyIncome(CLUBS[state.clubId]?.strength ?? 70, position || 10, won);
+  const homeGame = played ? played.home === state.clubId : false;
+  const gate = homeGame ? gateIncome(state) : 0;
+  const income =
+    weeklyIncome(CLUBS[state.clubId]?.strength ?? 70, position || 10, won) +
+    (state.sponsor ?? 0) +
+    gate;
   const wages = Object.values(players).reduce((s, p) => s + p.wage, 0) / 1000;
-  const budget = Math.round((state.finances.budget + income - wages) * 100) / 100;
+  const costs = wages + staffBill(state);
+  const budget = Math.round((state.finances.budget + income - costs) * 100) / 100;
 
-  // aprovação da diretoria
+  // aprovação da diretoria e da torcida
   const approval = Math.max(
     5,
     Math.min(100, state.approval + (won ? 2.5 : draw ? 0.5 : -2.5)),
   );
+  const fanApproval = Math.max(
+    5,
+    Math.min(100, (state.fanApproval ?? 60) + (won ? 3 : draw ? 0 : -3) - (state.ticketPrice - 45) / 25),
+  );
+  const pressure = Math.max(
+    0,
+    Math.min(
+      100,
+      (state.pressure ?? 25) + pressureDelta(won, draw, position || 10, state.objective),
+    ),
+  );
+  const streak = won
+    ? Math.max(1, (state.streak ?? 0) + 1)
+    : draw
+      ? 0
+      : Math.min(-1, (state.streak ?? 0) - 1);
 
   const headline: NewsItem = {
     id: `res-${round}-${state.season}`,
@@ -498,12 +520,202 @@ export function advanceRound(state: CareerState, userResult: { hg: number; ag: n
       income: Math.round((state.finances.income + income) * 100) / 100,
     },
     approval: Math.round(approval),
+    fanApproval: Math.round(fanApproval),
+    pressure: Math.round(pressure),
+    streak,
     news: [headline, ...news, ...state.news].slice(0, 60),
+  };
+
+  // eventos dinâmicos: bastidores, propostas por jogadores, sondagens por você
+  const ev = runWeeklyEvents(next);
+  next = {
+    ...next,
+    players: ev.players,
+    offers: [...(next.offers ?? []).filter((o) => o.expiresRound >= next.round), ...ev.offers],
+    jobOffers: [
+      ...(next.jobOffers ?? []).filter((j) => j.expiresRound >= next.round),
+      ...ev.jobOffers,
+    ],
+    news: [...ev.news, ...next.news].slice(0, 60),
   };
 
   if (next.round > totalRounds(next)) {
     next = endSeason(next);
   }
 
+  next = checkSacking(next);
+
   return next;
 }
+
+/* ------------------------------------------------- diretoria & mercado */
+
+/** Aceita uma proposta por um dos seus jogadores. */
+export function acceptOffer(state: CareerState, offerId: string): CareerState {
+  const offer = (state.offers ?? []).find((o) => o.id === offerId);
+  if (!offer) return state;
+  const player = state.players[offer.playerId];
+  if (!player) return state;
+  const players = { ...state.players };
+  delete players[offer.playerId];
+  const club = CLUBS[offer.clubId];
+
+  return {
+    ...state,
+    players,
+    lineup: state.lineup.filter((id) => id !== offer.playerId),
+    bench: state.bench.filter((id) => id !== offer.playerId),
+    offers: (state.offers ?? []).filter((o) => o.id !== offerId),
+    finances: {
+      ...state.finances,
+      budget: Math.round((state.finances.budget + offer.amount) * 10) / 10,
+      income: Math.round((state.finances.income + offer.amount) * 10) / 10,
+    },
+    fanApproval: Math.max(5, (state.fanApproval ?? 60) - (player.ovr >= 80 ? 6 : 2)),
+    news: [
+      {
+        id: `sold-${offer.id}`,
+        season: state.season,
+        round: state.round,
+        kind: "mercado" as const,
+        title: `${player.name} vendido ao ${club?.name ?? "exterior"}`,
+        body: `Transferência fechada por €${offer.amount.toFixed(1)}M.`,
+      },
+      ...state.news,
+    ].slice(0, 60),
+  };
+}
+
+export function rejectOffer(state: CareerState, offerId: string): CareerState {
+  return { ...state, offers: (state.offers ?? []).filter((o) => o.id !== offerId) };
+}
+
+/** Assume um novo clube (após demissão, pedido de demissão ou convite). */
+export function takeJob(state: CareerState, jobId: string): CareerState {
+  const job = (state.jobOffers ?? []).find((j) => j.id === jobId);
+  if (!job) return state;
+  const club = CLUBS[job.clubId]!;
+  const squad = buildSquad(job.clubId).map(enrichPlayer);
+  const { lineup, bench } = pickLineup(squad, state.tactics.formation);
+  const history = state.sacked ? (state.managerHistory ?? []) : closeSpell(state, "Saiu do clube");
+
+  return {
+    ...state,
+    leagueId: job.leagueId,
+    clubId: job.clubId,
+    round: 1,
+    fixtures: generateFixtures(job.leagueId, `${job.clubId}-${state.managerName}-s${state.season}`),
+    players: Object.fromEntries(squad.map((p) => [p.id, p])),
+    lineup,
+    bench,
+    results: [],
+    finances: { budget: job.budget, spent: 0, income: 0 },
+    approval: 60,
+    fanApproval: 58,
+    pressure: 20,
+    objective: job.objective,
+    offers: [],
+    jobOffers: [],
+    sacked: false,
+    ...defaultV3(club),
+    managerHistory: [...history, { clubId: job.clubId, from: state.season, to: null, note: "Contratado" }],
+    news: [
+      {
+        id: `hire-${job.id}`,
+        season: state.season,
+        round: state.round,
+        kind: "sistema" as const,
+        title: `Novo desafio: ${club.name}`,
+        body: `Você assinou com o ${club.name}. Objetivo: ${job.objective}º lugar ou melhor.`,
+      },
+      ...state.news,
+    ].slice(0, 60),
+  };
+}
+
+/** Pede demissão: fica sem clube e recebe convites. */
+export function resign(state: CareerState): CareerState {
+  const rnd = makeRng(`resign-${state.clubId}-${state.season}-${state.round}`);
+  const offers = state.jobOffers?.length ? state.jobOffers : [];
+  return {
+    ...state,
+    sacked: true,
+    jobOffers: offers.length
+      ? offers
+      : [
+          {
+            id: `job-open-${state.season}-${state.round}`,
+            clubId: pickRandomClubId(rnd, state.clubId),
+            leagueId: state.leagueId,
+            season: state.season,
+            round: state.round,
+            expiresRound: state.round + 99,
+            budget: 20,
+            objective: 10,
+          },
+        ],
+    managerHistory: closeSpell(state, "Pediu demissão"),
+    news: [
+      {
+        id: `resign-${state.season}-${state.round}`,
+        season: state.season,
+        round: state.round,
+        kind: "sistema" as const,
+        title: "Você pediu demissão",
+        body: "Hora de buscar um novo projeto na sala da diretoria.",
+      },
+      ...state.news,
+    ].slice(0, 60),
+  };
+}
+
+function pickRandomClubId(rnd: () => number, exclude: string): string {
+  const ids = Object.keys(CLUBS).filter((id) => id !== exclude);
+  return ids[Math.floor(rnd() * ids.length)] ?? exclude;
+}
+
+/** Melhora um membro do staff (custo imediato em M€). */
+export function upgradeStaff(state: CareerState, role: keyof ReturnType<typeof defaultStaff>): CareerState {
+  const staff = state.staff ?? defaultStaff();
+  const level = staff[role];
+  if (level >= 5) return state;
+  const cost = Math.round((level + 1) * 1.2 * 10) / 10;
+  if (state.finances.budget < cost) return state;
+  return {
+    ...state,
+    staff: { ...staff, [role]: level + 1 },
+    finances: {
+      ...state.finances,
+      budget: Math.round((state.finances.budget - cost) * 10) / 10,
+      spent: Math.round((state.finances.spent + cost) * 10) / 10,
+    },
+  };
+}
+
+/** Gera relatórios de olheiros conforme o nível do departamento. */
+export function runScouting(state: CareerState): CareerState {
+  const level = (state.staff ?? defaultStaff()).olheiro;
+  const rnd = makeRng(`scout-${state.clubId}-${state.season}-${state.round}`);
+  const ids = Object.keys(CLUBS).filter((id) => id !== state.clubId);
+  const reports: ScoutReport[] = [];
+  for (let i = 0; i < 3 + level; i++) {
+    const clubId = ids[Math.floor(rnd() * ids.length)]!;
+    const squad = buildSquad(clubId).map(enrichPlayer);
+    const p = squad[Math.floor(rnd() * squad.length)];
+    if (!p) continue;
+    reports.push({
+      id: `sc-${p.id}-${state.season}-${state.round}-${i}`,
+      playerId: p.id,
+      name: p.name,
+      clubId,
+      pos: p.pos,
+      ovr: p.ovr,
+      potential: p.potential ?? p.ovr,
+      age: p.age,
+      value: p.value,
+      season: state.season,
+    });
+  }
+  return { ...state, scoutReports: reports };
+}
+
