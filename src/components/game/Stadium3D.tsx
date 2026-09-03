@@ -1118,17 +1118,23 @@ function PlayerMesh({
                   {/* manga */}
                   <mesh position={[0, -0.11, 0]} castShadow={shadows}>
                     <cylinderGeometry args={[0.07, 0.062, sleeveLong ? 0.22 : 0.12, 10]} />
-                    <meshStandardMaterial color={kit.detail} roughness={0.78} />
+                    {detailMat}
                   </mesh>
-                  {/* braço */}
+                  {/* bíceps + tríceps */}
                   <mesh position={[0, -0.16, 0]} castShadow={shadows}>
                     <capsuleGeometry args={[0.058, 0.14, 4, 10]} />
                     {skinMat}
                   </mesh>
+                  {detail && !sleeveLong && (
+                    <mesh position={[0, -0.145, 0.018]} scale={[0.85, 1.1, 0.7]}>
+                      <sphereGeometry args={[0.05, 8, 8]} />
+                      {skinMat}
+                    </mesh>
+                  )}
                   {captain && id === "l" && (
                     <mesh position={[0, -0.15, 0]}>
                       <cylinderGeometry args={[0.062, 0.062, 0.05, 10]} />
-                      <meshStandardMaterial color={kit.detail} roughness={0.6} />
+                      {detailMat}
                     </mesh>
                   )}
                   <group ref={fRef} position={[0, -0.28, 0]}>
@@ -1136,20 +1142,38 @@ function PlayerMesh({
                       <capsuleGeometry args={[0.048, 0.17, 4, 10]} />
                       {skinMat}
                     </mesh>
+                    {/* punho / pulseira */}
+                    {detail && (
+                      <mesh position={[0, -0.215, 0]}>
+                        <cylinderGeometry args={[0.05, 0.05, 0.022, 8]} />
+                        {isGK ? detailMat : <meshStandardMaterial color="#f2f2f2" roughness={0.9} />}
+                      </mesh>
+                    )}
                     {/* mão / luva */}
-                    <mesh position={[0, -0.255, 0.008]} scale={isGK ? [1.25, 1.2, 0.75] : [1, 1.25, 0.6]}>
+                    <mesh position={[0, -0.255, 0.008]} scale={isGK ? [1.3, 1.25, 0.8] : [1, 1.25, 0.6]}>
                       <sphereGeometry args={[0.055, 10, 10]} />
                       <meshStandardMaterial
                         color={isGK ? kit.detail : skin}
-                        roughness={isGK ? 0.55 : 0.66}
+                        roughness={isGK ? 0.5 : 0.66}
                       />
                     </mesh>
-                    {detail && !isGK && (
-                      <mesh position={[0, -0.3, 0.012]} rotation={[0.25, 0, 0]} scale={[1, 1, 0.55]}>
-                        <capsuleGeometry args={[0.02, 0.045, 3, 6]} />
-                        {skinMat}
-                      </mesh>
-                    )}
+                    {/* dedos */}
+                    {detail &&
+                      (isGK ? [-0.032, -0.011, 0.011, 0.032] : [-0.02, 0.02]).map((fx) => (
+                        <mesh
+                          key={fx}
+                          position={[fx, -0.305, 0.01]}
+                          rotation={[0.2, 0, 0]}
+                          scale={[1, 1, 0.6]}
+                        >
+                          <capsuleGeometry args={[isGK ? 0.014 : 0.016, isGK ? 0.05 : 0.04, 3, 6]} />
+                          {isGK ? (
+                            <meshStandardMaterial color={kit.detail} roughness={0.5} />
+                          ) : (
+                            skinMat
+                          )}
+                        </mesh>
+                      ))}
                   </group>
                 </group>
               ),
