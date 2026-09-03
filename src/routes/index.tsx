@@ -28,10 +28,17 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
-  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [hasCareer, setHasCareer] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
+    let alive = true;
+    if (readLocalCareer()) setHasCareer(true);
+    supabase.auth.getSession().then(({ data }) => {
+      if (alive && data.session) setHasCareer(true);
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
 
   return (
@@ -46,15 +53,15 @@ function Landing() {
         </h1>
         <p className="mt-5 max-w-xl text-lg text-muted-foreground">
           Escolha um clube real, monte a escalação, defina a tática e assista aos 90 minutos ao
-          vivo num estádio 3D — dando ordens enquanto a bola rola.
+          vivo num estádio 3D — dando ordens enquanto a bola rola. Sem cadastro: é só jogar.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            to={signedIn ? "/club" : "/auth"}
+            to={hasCareer ? "/dashboard" : "/new"}
             className="rounded-lg bg-primary px-6 py-3 font-display text-sm uppercase tracking-widest text-primary-foreground transition hover:brightness-110"
           >
-            {signedIn ? "Continuar carreira" : "Começar carreira"}
+            {hasCareer ? "Continuar carreira" : "Jogar agora"}
           </Link>
           <Link
             to="/new"
@@ -62,7 +69,18 @@ function Landing() {
           >
             Escolher clube
           </Link>
+          <Link
+            to="/auth"
+            className="rounded-lg px-6 py-3 font-display text-sm uppercase tracking-widest text-muted-foreground transition hover:text-foreground"
+          >
+            Entrar (opcional)
+          </Link>
         </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          O e-mail é opcional — serve só para salvar a carreira na nuvem e jogar em outros
+          aparelhos.
+        </p>
+
 
         <section className="mt-16">
           <h2 className="font-display text-2xl uppercase tracking-wide">Ligas disponíveis</h2>
