@@ -35,7 +35,17 @@ export function pickLineup(players: Player[], formation: FormationKey) {
   return { lineup, bench };
 }
 
+const PERSONALITIES = [
+  "líder",
+  "profissional",
+  "ambicioso",
+  "temperamental",
+  "caseiro",
+  "determinado",
+] as const;
+
 function enrichPlayer(p: Player): Player {
+  const rnd = makeRng(`pl-${p.id}`);
   return {
     ...p,
     wage: p.wage > 0 ? p.wage : wageFor(p.ovr),
@@ -43,6 +53,33 @@ function enrichPlayer(p: Player): Player {
     yellows: p.yellows ?? 0,
     suspended: p.suspended ?? false,
     injuryWeeks: p.injuryWeeks ?? 0,
+    potential:
+      p.potential ??
+      Math.min(99, p.ovr + (p.age <= 20 ? 6 + Math.floor(rnd() * 8) : p.age <= 24 ? 3 + Math.floor(rnd() * 6) : Math.floor(rnd() * 3))),
+    personality: p.personality ?? PERSONALITIES[Math.floor(rnd() * PERSONALITIES.length)]!,
+    form: p.form ?? Math.round((p.morale + p.condition) / 2),
+    contractYears: p.contractYears ?? 1 + Math.floor(rnd() * 4),
+    releaseClause:
+      p.releaseClause ??
+      Math.round(valueFor(p.ovr, p.age) * (1.8 + rnd() * 1.4) * 10) / 10,
+    unhappy: p.unhappy ?? false,
+  };
+}
+
+function defaultV3(club: { strength: number } | undefined) {
+  const s = club?.strength ?? 70;
+  return {
+    fanApproval: 62,
+    pressure: 25,
+    staff: defaultStaff(),
+    sponsor: Math.round(s * 0.02 * 100) / 100,
+    ticketPrice: 45,
+    capacity: Math.round(12000 + s * 700),
+    streak: 0,
+    offers: [] as TransferOffer[],
+    jobOffers: [] as JobOffer[],
+    scoutReports: [] as ScoutReport[],
+    sacked: false,
   };
 }
 
@@ -58,7 +95,7 @@ export function initCareer(
   const objective = Math.max(1, Math.min(15, Math.round((96 - club.strength) / 4)));
 
   return {
-    version: 2,
+    version: 3,
     leagueId,
     clubId,
     managerName,
@@ -90,21 +127,24 @@ export function initCareer(
     ],
     trophies: [],
     history: [],
+    ...defaultV3(club),
+    managerHistory: [{ clubId, from: 1, to: null, note: "Contratado" }],
   };
 }
 
-/** Migra estados antigos (v1) para o formato atual. */
+/** Migra estados antigos (v1/v2) para o formato atual. */
 export function migrateCareer(raw: unknown): CareerState {
   const s = raw as CareerState & { version?: number };
-  if (s && s.version === 2) return s;
+  if (s && s.version === 3) return s;
   const club = CLUBS[s.clubId];
   const players: Record<string, Player> = {};
   for (const [id, p] of Object.entries(s.players ?? {})) {
     players[id] = enrichPlayer(p as Player);
   }
+  const base = defaultV3(club);
   return {
     ...s,
-    version: 2,
+    version: 3,
     season: s.season ?? 1,
     training: s.training ?? "equilibrado",
     finances: s.finances ?? {
@@ -118,8 +158,22 @@ export function migrateCareer(raw: unknown): CareerState {
     trophies: s.trophies ?? [],
     history: s.history ?? [],
     players,
+    fanApproval: s.fanApproval ?? base.fanApproval,
+    pressure: s.pressure ?? base.pressure,
+    staff: s.staff ?? base.staff,
+    sponsor: s.sponsor ?? base.sponsor,
+    ticketPrice: s.ticketPrice ?? base.ticketPrice,
+    capacity: s.capacity ?? base.capacity,
+    streak: s.streak ?? 0,
+    offers: s.offers ?? [],
+    jobOffers: s.jobOffers ?? [],
+    scoutReports: s.scoutReports ?? [],
+    sacked: s.sacked ?? false,
+    managerHistory:
+      s.managerHistory ?? [{ clubId: s.clubId, from: s.season ?? 1, to: null, note: "Contratado" }],
   };
 }
+
 
 export function orderedPositions(): Position[] {
   return ["GK", "DF", "MF", "FW"];
