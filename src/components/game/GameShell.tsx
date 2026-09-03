@@ -35,7 +35,7 @@ export function GameShell({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border/60 bg-card/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-3 lg:flex-row lg:items-center lg:gap-4">
           <div className="flex items-center gap-3">
             {club ? <Crest club={club} size={34} /> : null}
             <div className="leading-tight">
@@ -47,7 +47,8 @@ export function GameShell({
               </p>
             </div>
           </div>
-          <nav className="ml-auto flex items-center gap-1">
+          <nav className="-mx-1 flex items-center gap-1 overflow-x-auto lg:ml-auto lg:mx-0">
+
             {TABS.map((t) => (
               <Link
                 key={t.to}
