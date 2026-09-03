@@ -1129,14 +1129,8 @@ function Rig({
 
 /* --------------------------------------------------------- pós-processamento */
 
-function Post({
-  quality,
-  goalPulse,
-}: {
-  quality: Quality;
-  goalPulse: React.MutableRefObject<number>;
-}) {
-  const replay = goalPulse.current > 0.55;
+function Post({ quality, replay }: { quality: Quality; replay: boolean }) {
+
   if (quality === "baixa") return null;
   if (quality === "media") {
     return (
