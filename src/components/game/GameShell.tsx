@@ -7,14 +7,20 @@ import { Crest } from "./Crest";
 import type { CareerState } from "@/game/types";
 
 const TABS = [
+  { to: "/dashboard", label: "Painel" },
   { to: "/club", label: "Central" },
   { to: "/squad", label: "Elenco" },
   { to: "/tactics", label: "Táticas" },
   { to: "/league", label: "Liga" },
   { to: "/transfers", label: "Mercado" },
+  { to: "/scouting", label: "Olheiros" },
+  { to: "/finances", label: "Finanças" },
+  { to: "/board", label: "Diretoria" },
+  { to: "/stats", label: "Stats" },
   { to: "/news", label: "Notícias" },
   { to: "/history", label: "História" },
 ] as const;
+
 
 export function GameShell({
   career,
