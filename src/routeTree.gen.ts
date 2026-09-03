@@ -25,6 +25,7 @@ import { Route as AuthenticatedMatchRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
 import { Route as AuthenticatedNewsRouteImport } from './routes/_authenticated/news'
 import { Route as AuthenticatedSquadRouteImport } from './routes/_authenticated/squad'
+import { Route as AuthenticatedStatsRouteImport } from './routes/_authenticated/stats'
 import { Route as AuthenticatedTacticsRouteImport } from './routes/_authenticated/tactics'
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -112,6 +113,11 @@ const AuthenticatedSquadRoute = AuthenticatedSquadRouteImport.update({
   path: '/squad',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedStatsRoute = AuthenticatedStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTacticsRoute = AuthenticatedTacticsRouteImport.update({
   id: '/tactics',
   path: '/tactics',
@@ -160,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/new': typeof AuthenticatedNewRoute
   '/news': typeof AuthenticatedNewsRoute
   '/squad': typeof AuthenticatedSquadRoute
+  '/stats': typeof AuthenticatedStatsRoute
   '/tactics': typeof AuthenticatedTacticsRoute
   '/transfers': typeof AuthenticatedTransfersRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -183,6 +190,7 @@ export interface FileRoutesByTo {
   '/new': typeof AuthenticatedNewRoute
   '/news': typeof AuthenticatedNewsRoute
   '/squad': typeof AuthenticatedSquadRoute
+  '/stats': typeof AuthenticatedStatsRoute
   '/tactics': typeof AuthenticatedTacticsRoute
   '/transfers': typeof AuthenticatedTransfersRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -208,6 +216,7 @@ export interface FileRoutesById {
   '/_authenticated/new': typeof AuthenticatedNewRoute
   '/_authenticated/news': typeof AuthenticatedNewsRoute
   '/_authenticated/squad': typeof AuthenticatedSquadRoute
+  '/_authenticated/stats': typeof AuthenticatedStatsRoute
   '/_authenticated/tactics': typeof AuthenticatedTacticsRoute
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/news'
     | '/squad'
+    | '/stats'
     | '/tactics'
     | '/transfers'
     | '/.lovable/oauth/consent'
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/news'
     | '/squad'
+    | '/stats'
     | '/tactics'
     | '/transfers'
     | '/.lovable/oauth/consent'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/_authenticated/new'
     | '/_authenticated/news'
     | '/_authenticated/squad'
+    | '/_authenticated/stats'
     | '/_authenticated/tactics'
     | '/_authenticated/transfers'
     | '/.lovable/oauth/consent'
@@ -415,6 +427,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSquadRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/stats': {
+      id: '/_authenticated/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof AuthenticatedStatsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tactics': {
       id: '/_authenticated/tactics'
       path: '/tactics'
@@ -471,6 +490,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNewRoute: typeof AuthenticatedNewRoute
   AuthenticatedNewsRoute: typeof AuthenticatedNewsRoute
   AuthenticatedSquadRoute: typeof AuthenticatedSquadRoute
+  AuthenticatedStatsRoute: typeof AuthenticatedStatsRoute
   AuthenticatedTacticsRoute: typeof AuthenticatedTacticsRoute
   AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRoute
 }
@@ -486,6 +506,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedNewRoute: AuthenticatedNewRoute,
   AuthenticatedNewsRoute: AuthenticatedNewsRoute,
   AuthenticatedSquadRoute: AuthenticatedSquadRoute,
+  AuthenticatedStatsRoute: AuthenticatedStatsRoute,
   AuthenticatedTacticsRoute: AuthenticatedTacticsRoute,
   AuthenticatedTransfersRoute: AuthenticatedTransfersRoute,
 }
