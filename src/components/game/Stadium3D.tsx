@@ -1083,7 +1083,7 @@ function Rig({
   const target = useMemo(() => new THREE.Vector3(), []);
   const look = useMemo(() => new THREE.Vector3(), []);
   const smoothLook = useMemo(() => new THREE.Vector3(0, 0.8, 0), []);
-  useFrame(({ camera, clock }) => {
+  useFrame(({ camera, clock }, dt) => {
     const bx = sim.ball.x;
     const bz = sim.ball.z;
     const pulse = goalPulse.current;
@@ -1117,13 +1117,51 @@ function Rig({
       target.x += Math.sin(clock.elapsedTime * 21) * s;
       target.y += Math.cos(clock.elapsedTime * 17) * s * 0.6;
     }
-    camera.position.lerp(target, effective === "behind" ? 0.12 : effective === "rail" ? 0.16 : 0.05);
+    // damping independente de framerate (maath)
+    const smooth = effective === "behind" ? 0.35 : effective === "rail" ? 0.28 : 0.75;
+    easing.damp3(camera.position, target, smooth, dt);
     look.set(bx * 0.6, 0.8, bz * 0.6);
-    smoothLook.lerp(look, 0.1);
+    easing.damp3(smoothLook, look, 0.35, dt);
     camera.lookAt(smoothLook);
   });
   return null;
 }
+
+/* --------------------------------------------------------- pós-processamento */
+
+function Post({
+  quality,
+  goalPulse,
+}: {
+  quality: Quality;
+  goalPulse: React.MutableRefObject<number>;
+}) {
+  const replay = goalPulse.current > 0.55;
+  if (quality === "baixa") return null;
+  if (quality === "media") {
+    return (
+      <EffectComposer enableNormalPass={false}>
+        <Bloom intensity={0.35} luminanceThreshold={0.75} luminanceSmoothing={0.25} mipmapBlur />
+        <Vignette offset={0.28} darkness={0.55} />
+      </EffectComposer>
+    );
+  }
+  return (
+    <EffectComposer enableNormalPass={false} multisampling={0}>
+      <Bloom intensity={0.6} luminanceThreshold={0.68} luminanceSmoothing={0.3} mipmapBlur />
+      <DepthOfField
+        focusDistance={0.012}
+        focalLength={replay ? 0.06 : 0.3}
+        bokehScale={replay ? 3.2 : 0}
+      />
+      <HueSaturation saturation={0.12} />
+      <BrightnessContrast brightness={0.01} contrast={0.1} />
+      <Vignette offset={0.25} darkness={0.6} />
+      <SMAA />
+    </EffectComposer>
+  );
+}
+
 
 
 /* ------------------------------------------------------------------- cena */
