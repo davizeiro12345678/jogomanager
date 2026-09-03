@@ -16,6 +16,7 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedClubRouteImport } from './routes/_authenticated/club'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedLeagueRouteImport } from './routes/_authenticated/league'
 import { Route as AuthenticatedMatchRouteImport } from './routes/_authenticated/match'
@@ -62,6 +63,11 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
 const AuthenticatedClubRoute = AuthenticatedClubRouteImport.update({
   id: '/club',
   path: '/club',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/club': typeof AuthenticatedClubRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/league': typeof AuthenticatedLeagueRoute
   '/match': typeof AuthenticatedMatchRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/club': typeof AuthenticatedClubRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/league': typeof AuthenticatedLeagueRoute
   '/match': typeof AuthenticatedMatchRoute
@@ -175,6 +183,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/club': typeof AuthenticatedClubRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/league': typeof AuthenticatedLeagueRoute
   '/_authenticated/match': typeof AuthenticatedMatchRoute
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/.well-known/oauth-protected-resource'
     | '/club'
+    | '/dashboard'
     | '/history'
     | '/league'
     | '/match'
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/.well-known/oauth-protected-resource'
     | '/club'
+    | '/dashboard'
     | '/history'
     | '/league'
     | '/match'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/club'
+    | '/_authenticated/dashboard'
     | '/_authenticated/history'
     | '/_authenticated/league'
     | '/_authenticated/match'
@@ -314,6 +326,13 @@ declare module '@tanstack/react-router' {
       path: '/club'
       fullPath: '/club'
       preLoaderRoute: typeof AuthenticatedClubRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/history': {
@@ -405,6 +424,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedClubRoute: typeof AuthenticatedClubRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedLeagueRoute: typeof AuthenticatedLeagueRoute
   AuthenticatedMatchRoute: typeof AuthenticatedMatchRoute
@@ -417,6 +437,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClubRoute: AuthenticatedClubRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedLeagueRoute: AuthenticatedLeagueRoute,
   AuthenticatedMatchRoute: AuthenticatedMatchRoute,
