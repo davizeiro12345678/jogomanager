@@ -1,10 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
+import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
+import { acceptOffer, rejectOffer } from "@/game/career";
+import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, formatWage, wageBill } from "@/game/economy";
 import { generateMarket, releasePlayer, signPlayer, type MarketEntry } from "@/game/transfers";
 import { useCareer } from "@/hooks/useCareer";
+
 
 export const Route = createFileRoute("/_authenticated/transfers")({
   head: () => ({
@@ -41,7 +45,51 @@ function TransfersPage() {
 
   return (
     <GameShell career={career}>
+      {career.offers.length > 0 ? (
+        <section className="mb-4 rounded-2xl border border-amber-400/40 bg-amber-400/5 p-5">
+          <h2 className="font-display text-xl uppercase tracking-wide">Clubes interessados</h2>
+          <ul className="mt-3 space-y-2">
+            {career.offers.map((o) => {
+              const p = career.players[o.playerId];
+              const c = CLUBS[o.clubId];
+              if (!p || !c) return null;
+              return (
+                <li
+                  key={o.id}
+                  className="flex flex-wrap items-center gap-3 rounded-xl border border-border/40 bg-background/40 p-3"
+                >
+                  <Crest club={c} size={34} />
+                  <div>
+                    <p className="text-sm font-medium">
+                      {c.name} quer {p.name} ({p.pos} · {p.ovr})
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Proposta {formatMoney(o.amount)} · salário oferecido {formatWage(o.wage)} ·
+                      expira na rodada {o.expiresRound}
+                    </p>
+                  </div>
+                  <div className="ml-auto flex gap-2">
+                    <button
+                      onClick={() => update(acceptOffer(career, o.id))}
+                      className="rounded-md bg-primary px-3 py-1.5 text-xs uppercase tracking-wider text-primary-foreground"
+                    >
+                      Vender
+                    </button>
+                    <button
+                      onClick={() => update(rejectOffer(career, o.id))}
+                      className="rounded-md bg-secondary px-3 py-1.5 text-xs uppercase tracking-wider"
+                    >
+                      Recusar
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+
         <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-display text-2xl uppercase tracking-wide">Mercado da bola</h1>

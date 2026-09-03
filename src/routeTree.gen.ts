@@ -15,13 +15,18 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
 import { Route as AuthenticatedClubRouteImport } from './routes/_authenticated/club'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedFinancesRouteImport } from './routes/_authenticated/finances'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedLeagueRouteImport } from './routes/_authenticated/league'
 import { Route as AuthenticatedMatchRouteImport } from './routes/_authenticated/match'
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
 import { Route as AuthenticatedNewsRouteImport } from './routes/_authenticated/news'
+import { Route as AuthenticatedScoutingRouteImport } from './routes/_authenticated/scouting'
 import { Route as AuthenticatedSquadRouteImport } from './routes/_authenticated/squad'
+import { Route as AuthenticatedStatsRouteImport } from './routes/_authenticated/stats'
 import { Route as AuthenticatedTacticsRouteImport } from './routes/_authenticated/tactics'
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -59,9 +64,24 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedBoardRoute = AuthenticatedBoardRouteImport.update({
+  id: '/board',
+  path: '/board',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedClubRoute = AuthenticatedClubRouteImport.update({
   id: '/club',
   path: '/club',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFinancesRoute = AuthenticatedFinancesRouteImport.update({
+  id: '/finances',
+  path: '/finances',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
@@ -89,9 +109,19 @@ const AuthenticatedNewsRoute = AuthenticatedNewsRouteImport.update({
   path: '/news',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedScoutingRoute = AuthenticatedScoutingRouteImport.update({
+  id: '/scouting',
+  path: '/scouting',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSquadRoute = AuthenticatedSquadRouteImport.update({
   id: '/squad',
   path: '/squad',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedStatsRoute = AuthenticatedStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedTacticsRoute = AuthenticatedTacticsRouteImport.update({
@@ -132,13 +162,18 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/board': typeof AuthenticatedBoardRoute
   '/club': typeof AuthenticatedClubRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/finances': typeof AuthenticatedFinancesRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/league': typeof AuthenticatedLeagueRoute
   '/match': typeof AuthenticatedMatchRoute
   '/new': typeof AuthenticatedNewRoute
   '/news': typeof AuthenticatedNewsRoute
+  '/scouting': typeof AuthenticatedScoutingRoute
   '/squad': typeof AuthenticatedSquadRoute
+  '/stats': typeof AuthenticatedStatsRoute
   '/tactics': typeof AuthenticatedTacticsRoute
   '/transfers': typeof AuthenticatedTransfersRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -152,13 +187,18 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/board': typeof AuthenticatedBoardRoute
   '/club': typeof AuthenticatedClubRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/finances': typeof AuthenticatedFinancesRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/league': typeof AuthenticatedLeagueRoute
   '/match': typeof AuthenticatedMatchRoute
   '/new': typeof AuthenticatedNewRoute
   '/news': typeof AuthenticatedNewsRoute
+  '/scouting': typeof AuthenticatedScoutingRoute
   '/squad': typeof AuthenticatedSquadRoute
+  '/stats': typeof AuthenticatedStatsRoute
   '/tactics': typeof AuthenticatedTacticsRoute
   '/transfers': typeof AuthenticatedTransfersRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -174,13 +214,18 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/_authenticated/board': typeof AuthenticatedBoardRoute
   '/_authenticated/club': typeof AuthenticatedClubRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/finances': typeof AuthenticatedFinancesRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/league': typeof AuthenticatedLeagueRoute
   '/_authenticated/match': typeof AuthenticatedMatchRoute
   '/_authenticated/new': typeof AuthenticatedNewRoute
   '/_authenticated/news': typeof AuthenticatedNewsRoute
+  '/_authenticated/scouting': typeof AuthenticatedScoutingRoute
   '/_authenticated/squad': typeof AuthenticatedSquadRoute
+  '/_authenticated/stats': typeof AuthenticatedStatsRoute
   '/_authenticated/tactics': typeof AuthenticatedTacticsRoute
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -196,13 +241,18 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/sitemap.xml'
     | '/.well-known/oauth-protected-resource'
+    | '/board'
     | '/club'
+    | '/dashboard'
+    | '/finances'
     | '/history'
     | '/league'
     | '/match'
     | '/new'
     | '/news'
+    | '/scouting'
     | '/squad'
+    | '/stats'
     | '/tactics'
     | '/transfers'
     | '/.lovable/oauth/consent'
@@ -216,13 +266,18 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/sitemap.xml'
     | '/.well-known/oauth-protected-resource'
+    | '/board'
     | '/club'
+    | '/dashboard'
+    | '/finances'
     | '/history'
     | '/league'
     | '/match'
     | '/new'
     | '/news'
+    | '/scouting'
     | '/squad'
+    | '/stats'
     | '/tactics'
     | '/transfers'
     | '/.lovable/oauth/consent'
@@ -237,13 +292,18 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/sitemap.xml'
     | '/.well-known/oauth-protected-resource'
+    | '/_authenticated/board'
     | '/_authenticated/club'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/finances'
     | '/_authenticated/history'
     | '/_authenticated/league'
     | '/_authenticated/match'
     | '/_authenticated/new'
     | '/_authenticated/news'
+    | '/_authenticated/scouting'
     | '/_authenticated/squad'
+    | '/_authenticated/stats'
     | '/_authenticated/tactics'
     | '/_authenticated/transfers'
     | '/.lovable/oauth/consent'
@@ -309,11 +369,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/board': {
+      id: '/_authenticated/board'
+      path: '/board'
+      fullPath: '/board'
+      preLoaderRoute: typeof AuthenticatedBoardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/club': {
       id: '/_authenticated/club'
       path: '/club'
       fullPath: '/club'
       preLoaderRoute: typeof AuthenticatedClubRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/finances': {
+      id: '/_authenticated/finances'
+      path: '/finances'
+      fullPath: '/finances'
+      preLoaderRoute: typeof AuthenticatedFinancesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/history': {
@@ -351,11 +432,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNewsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/scouting': {
+      id: '/_authenticated/scouting'
+      path: '/scouting'
+      fullPath: '/scouting'
+      preLoaderRoute: typeof AuthenticatedScoutingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/squad': {
       id: '/_authenticated/squad'
       path: '/squad'
       fullPath: '/squad'
       preLoaderRoute: typeof AuthenticatedSquadRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/stats': {
+      id: '/_authenticated/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof AuthenticatedStatsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/tactics': {
@@ -404,25 +499,35 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBoardRoute: typeof AuthenticatedBoardRoute
   AuthenticatedClubRoute: typeof AuthenticatedClubRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFinancesRoute: typeof AuthenticatedFinancesRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedLeagueRoute: typeof AuthenticatedLeagueRoute
   AuthenticatedMatchRoute: typeof AuthenticatedMatchRoute
   AuthenticatedNewRoute: typeof AuthenticatedNewRoute
   AuthenticatedNewsRoute: typeof AuthenticatedNewsRoute
+  AuthenticatedScoutingRoute: typeof AuthenticatedScoutingRoute
   AuthenticatedSquadRoute: typeof AuthenticatedSquadRoute
+  AuthenticatedStatsRoute: typeof AuthenticatedStatsRoute
   AuthenticatedTacticsRoute: typeof AuthenticatedTacticsRoute
   AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBoardRoute: AuthenticatedBoardRoute,
   AuthenticatedClubRoute: AuthenticatedClubRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFinancesRoute: AuthenticatedFinancesRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedLeagueRoute: AuthenticatedLeagueRoute,
   AuthenticatedMatchRoute: AuthenticatedMatchRoute,
   AuthenticatedNewRoute: AuthenticatedNewRoute,
   AuthenticatedNewsRoute: AuthenticatedNewsRoute,
+  AuthenticatedScoutingRoute: AuthenticatedScoutingRoute,
   AuthenticatedSquadRoute: AuthenticatedSquadRoute,
+  AuthenticatedStatsRoute: AuthenticatedStatsRoute,
   AuthenticatedTacticsRoute: AuthenticatedTacticsRoute,
   AuthenticatedTransfersRoute: AuthenticatedTransfersRoute,
 }

@@ -18,6 +18,14 @@ export interface League {
   clubs: Club[];
 }
 
+export type Personality =
+  | "líder"
+  | "profissional"
+  | "ambicioso"
+  | "temperamental"
+  | "caseiro"
+  | "determinado";
+
 export interface Player {
   id: string;
   clubId: string;
@@ -43,7 +51,21 @@ export interface Player {
   yellows: number;
   suspended: boolean;
   injuryWeeks: number;
+  /** teto de evolução (atributo oculto) */
+  potential?: number;
+  personality?: Personality;
+  /** forma recente 0-100 */
+  form?: number;
+  /** anos restantes de contrato */
+  contractYears?: number;
+  /** cláusula de rescisão em M€ */
+  releaseClause?: number;
+  /** tipo/descrição da lesão atual */
+  injuryType?: string;
+  /** jogador insatisfeito com tempo de jogo */
+  unhappy?: boolean;
 }
+
 
 export type FormationKey = "4-3-3" | "4-4-2" | "3-5-2" | "4-2-3-1";
 
@@ -111,8 +133,63 @@ export interface Finances {
   income: number;
 }
 
+export type StaffRole = "assistente" | "preparador" | "medico" | "olheiro";
+
+export interface Staff {
+  /** nível 1-5 por função */
+  assistente: number;
+  preparador: number;
+  medico: number;
+  olheiro: number;
+}
+
+export interface TransferOffer {
+  id: string;
+  playerId: string;
+  clubId: string;
+  /** proposta em M€ */
+  amount: number;
+  /** salário oferecido (k€/sem) */
+  wage: number;
+  season: number;
+  round: number;
+  expiresRound: number;
+}
+
+export interface JobOffer {
+  id: string;
+  clubId: string;
+  leagueId: string;
+  season: number;
+  round: number;
+  expiresRound: number;
+  /** orçamento prometido (M€) */
+  budget: number;
+  objective: number;
+}
+
+export interface ManagerSpell {
+  clubId: string;
+  from: number;
+  to: number | null;
+  note: string;
+}
+
+export interface ScoutReport {
+  id: string;
+  playerId: string;
+  name: string;
+  clubId: string;
+  pos: Position;
+  ovr: number;
+  potential: number;
+  age: number;
+  value: number;
+  season: number;
+}
+
 export interface CareerState {
-  version: 2;
+  version: 3;
   leagueId: string;
   clubId: string;
   managerName: string;
@@ -139,7 +216,29 @@ export interface CareerState {
   news: NewsItem[];
   trophies: Trophy[];
   history: SeasonSummary[];
+
+  /* ---------------------------------------------------------- v3 */
+  /** aprovação da torcida 0-100 */
+  fanApproval: number;
+  /** pressão da diretoria 0-100 (100 = demissão iminente) */
+  pressure: number;
+  staff: Staff;
+  /** receita de patrocínio por rodada (M€) */
+  sponsor: number;
+  /** preço médio do ingresso (€) */
+  ticketPrice: number;
+  /** capacidade do estádio */
+  capacity: number;
+  /** sequência atual: positivo = vitórias, negativo = derrotas */
+  streak: number;
+  offers: TransferOffer[];
+  jobOffers: JobOffer[];
+  scoutReports: ScoutReport[];
+  managerHistory: ManagerSpell[];
+  /** verdadeiro quando o treinador foi demitido e aguarda novo clube */
+  sacked: boolean;
 }
+
 
 export interface MatchEventLog {
   minute: number;
