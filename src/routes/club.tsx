@@ -9,6 +9,7 @@ import { useCareer } from "@/hooks/useCareer";
 import type { TrainingFocus } from "@/game/types";
 
 export const Route = createFileRoute("/club")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Central do clube · Manager 3D" },

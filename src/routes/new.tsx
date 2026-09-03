@@ -8,6 +8,7 @@ import { useCareer } from "@/hooks/useCareer";
 import { Flag } from "@/components/game/Flag";
 
 export const Route = createFileRoute("/new")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Escolher clube · Manager 3D" },

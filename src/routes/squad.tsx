@@ -7,6 +7,7 @@ import { useCareer } from "@/hooks/useCareer";
 import type { Player } from "@/game/types";
 
 export const Route = createFileRoute("/squad")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Elenco e escalação · Manager 3D" },

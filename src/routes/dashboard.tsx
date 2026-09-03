@@ -9,6 +9,7 @@ import { computeTable, nextFixture } from "@/game/season";
 import { useCareer } from "@/hooks/useCareer";
 
 export const Route = createFileRoute("/dashboard")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Painel do treinador · Manager 3D" },

@@ -8,6 +8,7 @@ import { formatMoney } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";
 
 export const Route = createFileRoute("/scouting")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Olheiros e relatórios · Manager 3D" },

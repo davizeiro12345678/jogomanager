@@ -7,6 +7,7 @@ import { gateIncome, staffBill } from "@/game/events";
 import { useCareer } from "@/hooks/useCareer";
 
 export const Route = createFileRoute("/finances")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Finanças do clube · Manager 3D" },
