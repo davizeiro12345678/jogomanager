@@ -1086,6 +1086,24 @@ function PlayerMesh({
                   {hairMat}
                 </mesh>
               )}
+              {headband && (
+                <mesh position={[0, 0.058, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                  <torusGeometry args={[0.142, 0.017, 6, 16]} />
+                  {detailMat}
+                </mesh>
+              )}
+              {ponytail && (
+                <>
+                  <mesh position={[0, 0.045, -0.145]} rotation={[0.5, 0, 0]}>
+                    <capsuleGeometry args={[0.045, 0.12, 4, 8]} />
+                    {hairMat}
+                  </mesh>
+                  <mesh position={[0, 0.075, -0.115]}>
+                    <torusGeometry args={[0.045, 0.011, 5, 10]} />
+                    {detailMat}
+                  </mesh>
+                </>
+              )}
             </group>
 
             {/* braços articulados */}
