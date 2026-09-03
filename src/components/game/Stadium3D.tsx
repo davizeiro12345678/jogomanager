@@ -1314,26 +1314,34 @@ export function Stadium3D({
   return (
     <div className="relative h-full w-full">
       <Canvas
-        shadows={quality === "alta"}
-        dpr={quality === "alta" ? [1, 2] : quality === "media" ? 1 : 0.75}
+        shadows={quality === "alta" ? "soft" : false}
+        dpr={quality === "alta" ? [1, 2] : quality === "media" ? [1, 1.5] : 0.75}
         camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
-        gl={{ antialias: quality !== "baixa" }}
+        gl={{
+          antialias: quality === "media",
+          powerPreference: "high-performance",
+          stencil: false,
+        }}
+        performance={{ min: 0.5 }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = quality === "baixa" ? 1.0 : 1.12;
+          gl.toneMappingExposure = quality === "baixa" ? 1.0 : 1.15;
+          gl.outputColorSpace = THREE.SRGBColorSpace;
         }}
       >
         <Scene sim={sim} mode={mode} quality={quality} time={time} />
       </Canvas>
-      {/* acabamento de transmissão: vinheta + leve correção de cor */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.42) 100%)",
-        }}
-      />
+      {quality === "baixa" ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.42) 100%)",
+          }}
+        />
+      ) : null}
     </div>
   );
 }
+
