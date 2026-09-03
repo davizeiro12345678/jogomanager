@@ -1204,9 +1204,45 @@ function Scene({
     <>
       <color attach="background" args={[SKY[time]]} />
       <fog attach="fog" args={[SKY[time], 110, 300]} />
-      <ambientLight intensity={0.9} />
+      {quality === "alta" ? <SoftShadows size={26} samples={12} focus={0.7} /> : null}
+      <AdaptiveDpr pixelated={false} />
+      <AdaptiveEvents />
+
+      {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
+      <Environment resolution={quality === "alta" ? 256 : 128} frames={1}>
+        <color attach="background" args={[SKY[time]]} />
+        <Lightformer
+          intensity={time === "dia" ? 3 : 1.6}
+          color={sunColor}
+          position={[0, 24, 0]}
+          rotation={[Math.PI / 2, 0, 0]}
+          scale={[60, 60, 1]}
+        />
+        <Lightformer
+          intensity={time === "noite" ? 2.4 : 1.2}
+          color="#dceaff"
+          position={[-30, 14, 0]}
+          rotation-y={Math.PI / 2}
+          scale={[60, 8, 1]}
+        />
+        <Lightformer
+          intensity={time === "noite" ? 2.4 : 1.2}
+          color="#dceaff"
+          position={[30, 14, 0]}
+          rotation-y={-Math.PI / 2}
+          scale={[60, 8, 1]}
+        />
+        <Lightformer
+          intensity={0.8}
+          color={time === "entardecer" ? "#ff9b5c" : "#8fd8ff"}
+          position={[0, 6, -40]}
+          scale={[60, 8, 1]}
+        />
+      </Environment>
+
+      <ambientLight intensity={0.7} />
       <hemisphereLight
-        intensity={time === "dia" ? 1.0 : 0.7}
+        intensity={time === "dia" ? 0.9 : 0.6}
         groundColor="#0d2a18"
         color={time === "entardecer" ? "#ffd0a8" : "#cfe4ff"}
       />
@@ -1216,6 +1252,7 @@ function Scene({
         color={sunColor}
         castShadow={quality === "alta"}
         shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0004}
         shadow-camera-left={-90}
         shadow-camera-right={90}
         shadow-camera-top={70}
@@ -1224,6 +1261,7 @@ function Scene({
       <directionalLight position={[-60, 60, -40]} intensity={0.6} color="#bcd8ff" />
 
       <Pitch quality={quality} />
+
       <AdBoards />
       <Floodlights time={time} quality={quality} />
       <Stands
