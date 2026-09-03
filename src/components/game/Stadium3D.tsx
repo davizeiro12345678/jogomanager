@@ -1,5 +1,5 @@
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment, Lightformer, SoftShadows, AdaptiveDpr, AdaptiveEvents } from "@react-three/drei";
+import { Environment, Lightformer, AdaptiveDpr, AdaptiveEvents } from "@react-three/drei";
 import {
   EffectComposer,
   Bloom,
@@ -1204,7 +1204,6 @@ function Scene({
     <>
       <color attach="background" args={[SKY[time]]} />
       <fog attach="fog" args={[SKY[time], 110, 300]} />
-      {quality === "alta" ? <SoftShadows size={26} samples={12} focus={0.7} /> : null}
       <AdaptiveDpr pixelated={false} />
       <AdaptiveEvents />
 
@@ -1314,7 +1313,7 @@ export function Stadium3D({
   return (
     <div className="relative h-full w-full">
       <Canvas
-        shadows={quality === "alta" ? "soft" : false}
+        shadows={quality === "alta"}
         dpr={quality === "alta" ? [1, 2] : quality === "media" ? [1, 1.5] : 0.75}
         camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
         gl={{
