@@ -11,7 +11,7 @@ import {
 } from "@react-three/postprocessing";
 import { easing } from "maath";
 import type React from "react";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { emptyPose, getClip, mixPose, selectClip, type ClipName, type Pose } from "@/game/animation";
