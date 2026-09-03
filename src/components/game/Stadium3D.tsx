@@ -1010,7 +1010,7 @@ function PlayerMesh({
                 {beard ? <meshStandardMaterial color={hair} roughness={1} /> : skinMat}
               </mesh>
               {detail && (
-                <>
+                <group ref={lod}>
                   {/* orelhas */}
                   {[-1, 1].map((s) => (
                     <mesh key={s} position={[s * 0.138, -0.005, 0]} scale={[0.4, 1, 0.7]}>
@@ -1023,6 +1023,11 @@ function PlayerMesh({
                     <sphereGeometry args={[0.032, 8, 8]} />
                     {skinMat}
                   </mesh>
+                  {/* boca */}
+                  <mesh position={[0, -0.072, 0.126]} scale={[1, 0.45, 0.4]}>
+                    <sphereGeometry args={[0.028, 8, 8]} />
+                    <meshStandardMaterial color="#8b4a44" roughness={0.6} />
+                  </mesh>
                   {/* olhos */}
                   {[-1, 1].map((s) => (
                     <group key={s} position={[s * 0.058, 0.035, 0.122]}>
@@ -1032,7 +1037,12 @@ function PlayerMesh({
                       </mesh>
                       <mesh position={[0, 0, 0.014]}>
                         <sphereGeometry args={[0.012, 8, 8]} />
-                        <meshStandardMaterial color="#1a1410" roughness={0.4} />
+                        <meshStandardMaterial color="#1a1410" roughness={0.35} />
+                      </mesh>
+                      {/* pálpebra */}
+                      <mesh position={[0, 0.017, 0.006]} scale={[1.05, 0.5, 0.7]}>
+                        <sphereGeometry args={[0.027, 8, 8]} />
+                        {skinMat}
                       </mesh>
                     </group>
                   ))}
@@ -1043,7 +1053,7 @@ function PlayerMesh({
                       {hairMat}
                     </mesh>
                   ))}
-                </>
+                </group>
               )}
               {/* cabelos */}
               {style !== 3 && (
