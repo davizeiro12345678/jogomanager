@@ -61,19 +61,40 @@ export function GameShell({
                 {t.label}
               </Link>
             ))}
-            <button
-              onClick={async () => {
-                await supabase.auth.signOut();
-                navigate({ to: "/" });
-              }}
-              className="ml-2 rounded-md px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-            >
-              Sair
-            </button>
+            {signedIn ? (
+              <button
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  navigate({ to: "/" });
+                }}
+                className="ml-2 rounded-md px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Sair
+              </button>
+            ) : (
+              <Link
+                to="/auth"
+                className="ml-2 shrink-0 rounded-md border border-primary/50 px-3 py-1.5 text-xs text-primary hover:bg-primary/10"
+              >
+                Salvar na nuvem
+              </Link>
+            )}
           </nav>
         </div>
       </header>
+      {signedIn === false && (
+        <div className="border-b border-border/50 bg-secondary/40">
+          <p className="mx-auto max-w-6xl px-4 py-2 text-xs text-muted-foreground">
+            Você está jogando como convidado — o progresso fica salvo neste navegador.{" "}
+            <Link to="/auth" className="text-primary underline underline-offset-2">
+              Crie uma conta grátis
+            </Link>{" "}
+            para jogar em outros aparelhos.
+          </p>
+        </div>
+      )}
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
     </div>
   );
 }
+
