@@ -804,9 +804,12 @@ function PlayerMesh({
   const acc = useRef(0);
   const step = quality === "baixa" ? 1 / 30 : 1 / 60;
 
-  useFrame((_, rawDt) => {
+  useFrame((state, rawDt) => {
     const g = group.current;
     if (!g) return;
+    const camDist = state.camera.position.distanceTo(g.position);
+    if (lod.current) lod.current.visible = camDist < 34;
+    if (lodFar.current) lodFar.current.visible = camDist < 60;
     const dt = Math.min(rawDt, 0.05);
     g.position.x += (player.x - g.position.x) * 0.34;
     g.position.z += (player.z - g.position.z) * 0.34;
