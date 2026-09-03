@@ -24,6 +24,7 @@ import { Route as AuthenticatedLeagueRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedMatchRouteImport } from './routes/_authenticated/match'
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
 import { Route as AuthenticatedNewsRouteImport } from './routes/_authenticated/news'
+import { Route as AuthenticatedScoutingRouteImport } from './routes/_authenticated/scouting'
 import { Route as AuthenticatedSquadRouteImport } from './routes/_authenticated/squad'
 import { Route as AuthenticatedStatsRouteImport } from './routes/_authenticated/stats'
 import { Route as AuthenticatedTacticsRouteImport } from './routes/_authenticated/tactics'
@@ -108,6 +109,11 @@ const AuthenticatedNewsRoute = AuthenticatedNewsRouteImport.update({
   path: '/news',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedScoutingRoute = AuthenticatedScoutingRouteImport.update({
+  id: '/scouting',
+  path: '/scouting',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSquadRoute = AuthenticatedSquadRouteImport.update({
   id: '/squad',
   path: '/squad',
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/match': typeof AuthenticatedMatchRoute
   '/new': typeof AuthenticatedNewRoute
   '/news': typeof AuthenticatedNewsRoute
+  '/scouting': typeof AuthenticatedScoutingRoute
   '/squad': typeof AuthenticatedSquadRoute
   '/stats': typeof AuthenticatedStatsRoute
   '/tactics': typeof AuthenticatedTacticsRoute
@@ -189,6 +196,7 @@ export interface FileRoutesByTo {
   '/match': typeof AuthenticatedMatchRoute
   '/new': typeof AuthenticatedNewRoute
   '/news': typeof AuthenticatedNewsRoute
+  '/scouting': typeof AuthenticatedScoutingRoute
   '/squad': typeof AuthenticatedSquadRoute
   '/stats': typeof AuthenticatedStatsRoute
   '/tactics': typeof AuthenticatedTacticsRoute
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/_authenticated/match': typeof AuthenticatedMatchRoute
   '/_authenticated/new': typeof AuthenticatedNewRoute
   '/_authenticated/news': typeof AuthenticatedNewsRoute
+  '/_authenticated/scouting': typeof AuthenticatedScoutingRoute
   '/_authenticated/squad': typeof AuthenticatedSquadRoute
   '/_authenticated/stats': typeof AuthenticatedStatsRoute
   '/_authenticated/tactics': typeof AuthenticatedTacticsRoute
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/match'
     | '/new'
     | '/news'
+    | '/scouting'
     | '/squad'
     | '/stats'
     | '/tactics'
@@ -265,6 +275,7 @@ export interface FileRouteTypes {
     | '/match'
     | '/new'
     | '/news'
+    | '/scouting'
     | '/squad'
     | '/stats'
     | '/tactics'
@@ -290,6 +301,7 @@ export interface FileRouteTypes {
     | '/_authenticated/match'
     | '/_authenticated/new'
     | '/_authenticated/news'
+    | '/_authenticated/scouting'
     | '/_authenticated/squad'
     | '/_authenticated/stats'
     | '/_authenticated/tactics'
@@ -420,6 +432,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNewsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/scouting': {
+      id: '/_authenticated/scouting'
+      path: '/scouting'
+      fullPath: '/scouting'
+      preLoaderRoute: typeof AuthenticatedScoutingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/squad': {
       id: '/_authenticated/squad'
       path: '/squad'
@@ -489,6 +508,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMatchRoute: typeof AuthenticatedMatchRoute
   AuthenticatedNewRoute: typeof AuthenticatedNewRoute
   AuthenticatedNewsRoute: typeof AuthenticatedNewsRoute
+  AuthenticatedScoutingRoute: typeof AuthenticatedScoutingRoute
   AuthenticatedSquadRoute: typeof AuthenticatedSquadRoute
   AuthenticatedStatsRoute: typeof AuthenticatedStatsRoute
   AuthenticatedTacticsRoute: typeof AuthenticatedTacticsRoute
@@ -505,6 +525,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMatchRoute: AuthenticatedMatchRoute,
   AuthenticatedNewRoute: AuthenticatedNewRoute,
   AuthenticatedNewsRoute: AuthenticatedNewsRoute,
+  AuthenticatedScoutingRoute: AuthenticatedScoutingRoute,
   AuthenticatedSquadRoute: AuthenticatedSquadRoute,
   AuthenticatedStatsRoute: AuthenticatedStatsRoute,
   AuthenticatedTacticsRoute: AuthenticatedTacticsRoute,
