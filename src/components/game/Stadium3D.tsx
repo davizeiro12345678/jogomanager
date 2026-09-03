@@ -787,10 +787,14 @@ function PlayerMesh({
   const skin = useMemo(() => skinFor(player.id), [player.id]);
   const hair = useMemo(() => hairFor(player.id), [player.id]);
   const h = useMemo(() => hash(player.id), [player.id]);
-  const style = h % 5; // 0 curto 1 moicano 2 coque 3 careca 4 afro
-  const build = 0.92 + ((h >> 3) % 100) / 620; // variação física determinística
+  const style = h % 7; // 0 curto 1 moicano 2 coque 3 careca 4 afro 5 faixa 6 rabo
+  const build = 0.92 + ((h >> 3) % 100) / 620; // altura determinística
+  const girth = 0.94 + ((h >> 9) % 100) / 700; // largura determinística
   const isGK = player.pos === "GK";
   const shadows = quality === "alta";
+  const lod = useRef<THREE.Group>(null);
+  const lodFar = useRef<THREE.Group>(null);
+
 
   const cur = useRef<Pose>(emptyPose());
   const target = useRef<Pose>(emptyPose());
@@ -800,9 +804,12 @@ function PlayerMesh({
   const acc = useRef(0);
   const step = quality === "baixa" ? 1 / 30 : 1 / 60;
 
-  useFrame((_, rawDt) => {
+  useFrame((state, rawDt) => {
     const g = group.current;
     if (!g) return;
+    const camDist = state.camera.position.distanceTo(g.position);
+    if (lod.current) lod.current.visible = camDist < 34;
+    if (lodFar.current) lodFar.current.visible = camDist < 60;
     const dt = Math.min(rawDt, 0.05);
     g.position.x += (player.x - g.position.x) * 0.34;
     g.position.z += (player.z - g.position.z) * 0.34;
@@ -882,15 +889,42 @@ function PlayerMesh({
 
   const detail = quality !== "baixa";
   const hi = quality === "alta";
-  const skinMat = <meshStandardMaterial color={skin} roughness={0.66} />;
-  const kitMat = <meshStandardMaterial color={kit.base} roughness={0.72} />;
-  const hairMat = <meshStandardMaterial color={hair} roughness={1} />;
+  // pele com brilho de suor sutil, tecido com sheen (aspecto de malha esportiva)
+  const skinMat = hi ? (
+    <meshPhysicalMaterial color={skin} roughness={0.52} clearcoat={0.28} clearcoatRoughness={0.6} sheen={0.25} sheenColor="#ffd9c0" />
+  ) : (
+    <meshStandardMaterial color={skin} roughness={0.66} />
+  );
+  const fabric = (color: string, rough = 0.78) =>
+    hi ? (
+      <meshPhysicalMaterial color={color} roughness={rough} sheen={0.55} sheenRoughness={0.85} sheenColor="#ffffff" />
+    ) : (
+      <meshStandardMaterial color={color} roughness={rough} />
+    );
+  const kitMat = fabric(kit.base, 0.72);
+  const shortsMat = fabric(kit.shorts, 0.85);
+  const detailMat = fabric(kit.detail, 0.75);
+  const socksMat = fabric(kit.socks, 0.95);
+  const jerseyMat = hi ? (
+    <meshPhysicalMaterial
+      {...(tex ? { map: tex } : { color: kit.base })}
+      roughness={0.7}
+      sheen={0.5}
+      sheenRoughness={0.85}
+      sheenColor="#ffffff"
+    />
+  ) : (
+    <meshStandardMaterial {...(tex ? { map: tex } : { color: kit.base })} roughness={0.72} />
+  );
+  const hairMat = <meshStandardMaterial color={hair} roughness={0.94} />;
   const beard = detail && (h >> 7) % 5 === 0 && style !== 2;
   const captain = (h >> 11) % 11 === 0;
   const sleeveLong = (h >> 13) % 4 === 0 || isGK;
+  const headband = style === 5;
+  const ponytail = style === 6;
 
   return (
-    <group ref={group} position={[player.x, 0, player.z]} scale={build}>
+    <group ref={group} position={[player.x, 0, player.z]} scale={[build * girth, build, build * girth]}>
       {/* sombra de contato */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
         <circleGeometry args={[0.32, 16]} />
@@ -901,27 +935,52 @@ function PlayerMesh({
         {/* quadril / shorts (cintura + pernas do calção) */}
         <mesh position={[0, -0.05, 0]} scale={[1, 1, 0.72]} castShadow={shadows}>
           <capsuleGeometry args={[0.19, 0.14, 4, 12]} />
-          <meshStandardMaterial color={kit.shorts} roughness={0.85} />
+          {shortsMat}
         </mesh>
         {detail &&
           [-0.11, 0.11].map((x) => (
-            <mesh key={x} position={[x, -0.17, 0]} scale={[1, 1, 0.82]} castShadow={shadows}>
-              <cylinderGeometry args={[0.11, 0.115, 0.17, 10]} />
-              <meshStandardMaterial color={kit.shorts} roughness={0.85} />
-            </mesh>
+            <group key={x}>
+              <mesh position={[x, -0.17, 0]} scale={[1, 1, 0.82]} castShadow={shadows}>
+                <cylinderGeometry args={[0.11, 0.115, 0.17, 10]} />
+                {shortsMat}
+              </mesh>
+              {/* barra do calção */}
+              <mesh position={[x, -0.252, 0]} scale={[1, 1, 0.82]}>
+                <cylinderGeometry args={[0.117, 0.117, 0.022, 10]} />
+                {detailMat}
+              </mesh>
+            </group>
           ))}
+        {/* cós elástico */}
+        {detail && (
+          <mesh position={[0, 0.035, 0]} scale={[1, 1, 0.72]}>
+            <cylinderGeometry args={[0.188, 0.188, 0.03, 12]} />
+            {detailMat}
+          </mesh>
+        )}
 
         <group ref={spine}>
           {/* tronco: cintura estreita → peito largo */}
           <mesh position={[0, 0.18, 0]} scale={[1.02, 1, 0.68]} castShadow={shadows}>
             <capsuleGeometry args={[0.2, 0.24, 4, 14]} />
-            <meshStandardMaterial {...(tex ? { map: tex } : { color: kit.base })} roughness={0.72} />
+            {jerseyMat}
           </mesh>
           <group ref={chest} position={[0, 0.28, 0]}>
             <mesh position={[0, 0.12, 0]} scale={[1.12, 1, 0.7]} castShadow={shadows}>
               <capsuleGeometry args={[0.195, 0.15, 4, 14]} />
-              <meshStandardMaterial {...(tex ? { map: tex } : { color: kit.base })} roughness={0.72} />
+              {jerseyMat}
             </mesh>
+            {/* peitoral / volume do tórax */}
+            {detail && (
+              <group ref={lodFar}>
+                {[-1, 1].map((s) => (
+                  <mesh key={s} position={[s * 0.085, 0.11, 0.1]} scale={[1.1, 0.8, 0.5]}>
+                    <sphereGeometry args={[0.078, 10, 10]} />
+                    {kitMat}
+                  </mesh>
+                ))}
+              </group>
+            )}
             {/* linha dos ombros */}
             <mesh position={[0, 0.23, 0]} rotation={[0, 0, Math.PI / 2]} scale={[1, 1, 0.72]} castShadow={shadows}>
               <capsuleGeometry args={[0.098, 0.3, 4, 10]} />
@@ -951,7 +1010,7 @@ function PlayerMesh({
                 {beard ? <meshStandardMaterial color={hair} roughness={1} /> : skinMat}
               </mesh>
               {detail && (
-                <>
+                <group ref={lod}>
                   {/* orelhas */}
                   {[-1, 1].map((s) => (
                     <mesh key={s} position={[s * 0.138, -0.005, 0]} scale={[0.4, 1, 0.7]}>
@@ -964,6 +1023,11 @@ function PlayerMesh({
                     <sphereGeometry args={[0.032, 8, 8]} />
                     {skinMat}
                   </mesh>
+                  {/* boca */}
+                  <mesh position={[0, -0.072, 0.126]} scale={[1, 0.45, 0.4]}>
+                    <sphereGeometry args={[0.028, 8, 8]} />
+                    <meshStandardMaterial color="#8b4a44" roughness={0.6} />
+                  </mesh>
                   {/* olhos */}
                   {[-1, 1].map((s) => (
                     <group key={s} position={[s * 0.058, 0.035, 0.122]}>
@@ -973,7 +1037,12 @@ function PlayerMesh({
                       </mesh>
                       <mesh position={[0, 0, 0.014]}>
                         <sphereGeometry args={[0.012, 8, 8]} />
-                        <meshStandardMaterial color="#1a1410" roughness={0.4} />
+                        <meshStandardMaterial color="#1a1410" roughness={0.35} />
+                      </mesh>
+                      {/* pálpebra */}
+                      <mesh position={[0, 0.017, 0.006]} scale={[1.05, 0.5, 0.7]}>
+                        <sphereGeometry args={[0.027, 8, 8]} />
+                        {skinMat}
                       </mesh>
                     </group>
                   ))}
@@ -984,7 +1053,7 @@ function PlayerMesh({
                       {hairMat}
                     </mesh>
                   ))}
-                </>
+                </group>
               )}
               {/* cabelos */}
               {style !== 3 && (
@@ -1017,6 +1086,24 @@ function PlayerMesh({
                   {hairMat}
                 </mesh>
               )}
+              {headband && (
+                <mesh position={[0, 0.058, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                  <torusGeometry args={[0.142, 0.017, 6, 16]} />
+                  {detailMat}
+                </mesh>
+              )}
+              {ponytail && (
+                <>
+                  <mesh position={[0, 0.045, -0.145]} rotation={[0.5, 0, 0]}>
+                    <capsuleGeometry args={[0.045, 0.12, 4, 8]} />
+                    {hairMat}
+                  </mesh>
+                  <mesh position={[0, 0.075, -0.115]}>
+                    <torusGeometry args={[0.045, 0.011, 5, 10]} />
+                    {detailMat}
+                  </mesh>
+                </>
+              )}
             </group>
 
             {/* braços articulados */}
@@ -1031,17 +1118,23 @@ function PlayerMesh({
                   {/* manga */}
                   <mesh position={[0, -0.11, 0]} castShadow={shadows}>
                     <cylinderGeometry args={[0.07, 0.062, sleeveLong ? 0.22 : 0.12, 10]} />
-                    <meshStandardMaterial color={kit.detail} roughness={0.78} />
+                    {detailMat}
                   </mesh>
-                  {/* braço */}
+                  {/* bíceps + tríceps */}
                   <mesh position={[0, -0.16, 0]} castShadow={shadows}>
                     <capsuleGeometry args={[0.058, 0.14, 4, 10]} />
                     {skinMat}
                   </mesh>
+                  {detail && !sleeveLong && (
+                    <mesh position={[0, -0.145, 0.018]} scale={[0.85, 1.1, 0.7]}>
+                      <sphereGeometry args={[0.05, 8, 8]} />
+                      {skinMat}
+                    </mesh>
+                  )}
                   {captain && id === "l" && (
                     <mesh position={[0, -0.15, 0]}>
                       <cylinderGeometry args={[0.062, 0.062, 0.05, 10]} />
-                      <meshStandardMaterial color={kit.detail} roughness={0.6} />
+                      {detailMat}
                     </mesh>
                   )}
                   <group ref={fRef} position={[0, -0.28, 0]}>
@@ -1049,20 +1142,38 @@ function PlayerMesh({
                       <capsuleGeometry args={[0.048, 0.17, 4, 10]} />
                       {skinMat}
                     </mesh>
+                    {/* punho / pulseira */}
+                    {detail && (
+                      <mesh position={[0, -0.215, 0]}>
+                        <cylinderGeometry args={[0.05, 0.05, 0.022, 8]} />
+                        {isGK ? detailMat : <meshStandardMaterial color="#f2f2f2" roughness={0.9} />}
+                      </mesh>
+                    )}
                     {/* mão / luva */}
-                    <mesh position={[0, -0.255, 0.008]} scale={isGK ? [1.25, 1.2, 0.75] : [1, 1.25, 0.6]}>
+                    <mesh position={[0, -0.255, 0.008]} scale={isGK ? [1.3, 1.25, 0.8] : [1, 1.25, 0.6]}>
                       <sphereGeometry args={[0.055, 10, 10]} />
                       <meshStandardMaterial
                         color={isGK ? kit.detail : skin}
-                        roughness={isGK ? 0.55 : 0.66}
+                        roughness={isGK ? 0.5 : 0.66}
                       />
                     </mesh>
-                    {detail && !isGK && (
-                      <mesh position={[0, -0.3, 0.012]} rotation={[0.25, 0, 0]} scale={[1, 1, 0.55]}>
-                        <capsuleGeometry args={[0.02, 0.045, 3, 6]} />
-                        {skinMat}
-                      </mesh>
-                    )}
+                    {/* dedos */}
+                    {detail &&
+                      (isGK ? [-0.032, -0.011, 0.011, 0.032] : [-0.02, 0.02]).map((fx) => (
+                        <mesh
+                          key={fx}
+                          position={[fx, -0.305, 0.01]}
+                          rotation={[0.2, 0, 0]}
+                          scale={[1, 1, 0.6]}
+                        >
+                          <capsuleGeometry args={[isGK ? 0.014 : 0.016, isGK ? 0.05 : 0.04, 3, 6]} />
+                          {isGK ? (
+                            <meshStandardMaterial color={kit.detail} roughness={0.5} />
+                          ) : (
+                            skinMat
+                          )}
+                        </mesh>
+                      ))}
                   </group>
                 </group>
               ),
