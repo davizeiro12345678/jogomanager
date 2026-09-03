@@ -77,12 +77,53 @@ function grassTexture() {
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.anisotropy = 16;
+  return tex;
+}
+
+/** Mapa de rugosidade: as listras de corte refletem a luz de forma diferente
+ *  (grama penteada para lados opostos) — dá o brilho úmido da transmissão. */
+function grassRoughness() {
+  if (typeof document === "undefined") return null;
+  const size = 512;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = "#b4b4b4";
+  ctx.fillRect(0, 0, size, size);
+  ctx.save();
+  ctx.translate(size / 2, size / 2);
+  ctx.rotate(-0.22);
+  ctx.translate(-size, -size);
+  for (let i = 0; i < 40; i++) {
+    ctx.fillStyle = i % 2 === 0 ? "#8c8c8c" : "#d2d2d2";
+    ctx.fillRect(i * 36, 0, 36, size * 2);
+  }
+  ctx.restore();
+  for (let i = 0; i < 400; i++) {
+    ctx.fillStyle = `rgba(255,255,255,${0.02 + Math.random() * 0.05})`;
+    ctx.beginPath();
+    ctx.ellipse(
+      Math.random() * size,
+      Math.random() * size,
+      4 + Math.random() * 14,
+      2 + Math.random() * 7,
+      Math.random() * 3,
+      0,
+      7,
+    );
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
   tex.anisotropy = 8;
   return tex;
 }
 
 function Pitch({ quality }: { quality: Quality }) {
   const tex = useMemo(grassTexture, []);
+  const rough = useMemo(grassRoughness, []);
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
@@ -91,10 +132,16 @@ function Pitch({ quality }: { quality: Quality }) {
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[FIELD_X * 2 + 10, FIELD_Z * 2 + 10]} />
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           {...(tex ? { map: tex } : { color: "#1d7a45" })}
-          roughness={0.82}
-          metalness={0.02}
+          {...(rough ? { roughnessMap: rough } : {})}
+          roughness={0.78}
+          metalness={0.0}
+          clearcoat={quality === "alta" ? 0.35 : 0}
+          clearcoatRoughness={0.7}
+          sheen={quality === "alta" ? 0.4 : 0}
+          sheenColor="#7dffb0"
+          envMapIntensity={0.35}
         />
       </mesh>
       <Lines />
@@ -105,6 +152,7 @@ function Pitch({ quality }: { quality: Quality }) {
     </group>
   );
 }
+
 
 function line(points: [number, number][], y = 0.02) {
   return new THREE.BufferGeometry().setFromPoints(
