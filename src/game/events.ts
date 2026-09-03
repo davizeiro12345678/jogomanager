@@ -231,7 +231,8 @@ export function checkSacking(state: CareerState): CareerState {
         id: `sack-${state.season}-${state.round}`,
         season: state.season,
         round: state.round,
-        kind: "sistema",
+        kind: "sistema" as const,
+
         title: `Você foi demitido do ${club?.name ?? "clube"}`,
         body: "A diretoria perdeu a paciência com os resultados. Escolha um novo projeto na sala da diretoria.",
       },
