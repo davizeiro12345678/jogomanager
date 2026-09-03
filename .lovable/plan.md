@@ -1,43 +1,55 @@
-# Mega atualização: jogar sem login + gráficos, ligas, UI e conteúdo
+# Mega atualização: jogar sem login, identidade visual dos clubes e conteúdo
 
-## 1. Jogar sem e-mail (modo convidado)
+## 1. Jogar sem e-mail (conta opcional)
 
-- A home passa a ter um botão principal "Jogar agora" que cria a carreira imediatamente, sem conta.
-- A carreira do convidado é salva no navegador (localStorage) com a mesma estrutura da carreira na nuvem.
-- Login vira opcional: um aviso discreto ("salve na nuvem para jogar em outros aparelhos") com botão de criar conta.
-- Ao entrar numa conta com carreira local existente, a carreira é enviada para a nuvem e o jogo continua de onde parou.
-- Todas as telas (elenco, táticas, partida, mercado, diretoria, finanças, notícias, história, estatísticas, olheiros) funcionam igual nos dois modos.
+- Home ganha botão principal "Jogar agora": cria a carreira na hora, sem conta.
+- Carreira do convidado salva no navegador (localStorage), com a mesma estrutura da carreira na nuvem.
+- Faixa discreta "salve na nuvem para jogar em outros aparelhos" com botão de criar conta; nunca bloqueia o jogo.
+- Ao entrar numa conta, a carreira local é enviada para a nuvem e o jogo continua de onde parou (sem perder progresso).
+- Todas as telas funcionam nos dois modos: elenco, táticas, partida, mercado, diretoria, finanças, notícias, história, estatísticas, olheiros.
 
-## 2. Novas ligas e campeonatos
+## 2. Logos/escudos: reconstrução visual completa
 
-- Adicionar ~12 novas ligas nacionais (ex.: Escócia, Grécia, Áustria, Suíça, Dinamarca, Noruega, Suécia, Croácia, Sérvia, Japão, Coreia, Austrália) com elencos e escudos gerados.
-- Adicionar competições continentais e copas nacionais com chaves eliminatórias integradas ao calendário e à sala de troféus.
+Hoje os escudos são um desenho simples repetido. Novo gerador com muito mais qualidade:
 
-## 3. Gráficos: estádio, jogadores, kits e escudos
+- 8 formatos de escudo: circular, escudo clássico, escudo inglês, losango, hexágono, brasão com ponta, escudo partido e estrela.
+- Composições internas: faixa diagonal, listras verticais, meio a meio, quadrantes, faixa horizontal, raios, contorno duplo.
+- Detalhes: monograma legível com fonte forte, ano de fundação, estrelas de títulos, borda metálica (ouro/prata), pequeno símbolo por região (bola, leão, águia, coroa, âncora, folha, montanha, raio).
+- Paleta derivada das cores reais do clube, com contraste garantido e versão clara/escura para fundos diferentes.
+- Renderização nítida em qualquer tamanho (SVG), com variação de detalhe: versão simplificada para listas e ícones pequenos, versão completa para páginas de clube e placar.
+- Escudo aplicado de forma consistente: navegação, tabela, placar do estádio, mercado, notícias e sala de troféus.
 
-- Estádio: arquibancadas em mais níveis, telão, fumaça/bandeirões da torcida, iluminação noturna melhor, clima (sol/chuva/noite) e desgaste do gramado.
-- Jogadores: proporções corporais melhores, variação de tipo físico/pele/cabelo, números e nomes nas camisas, expressões de comemoração.
-- Kits: padrões novos (listras, faixa, xadrez, degradê), meias/calções coerentes, uniforme reserva e goleiro distinto.
-- Escudos: geração mais rica (formatos de escudo, faixas, estrelas, iniciais legíveis) e uso consistente em todas as telas.
+## 3. Kits, jogadores e estádio (3D)
 
-## 4. UI/UX e conteúdo
+- Kits: novos padrões (listras verticais/horizontais, faixa cruzada, xadrez, degradê, ombros contrastantes), meias e calções coerentes, uniforme reserva e goleiro distinto, número e nome nas costas, escudo no peito.
+- Jogadores: proporções melhores, variação de altura/físico/tom de pele/cabelo, luvas do goleiro, capitão com braçadeira, animações de comemoração já existentes reaproveitadas.
+- Estádio: mais níveis de arquibancada, telão com replay, bandeirões e fumaça da torcida, iluminação noturna, clima (sol/chuva/noite) e desgaste do gramado ao longo da temporada.
+- Mantém os modos Baixa/Média/Alta; sem soft shadows e sem depth of field (quebraram o render antes).
 
-- Painel inicial mais claro: próximo jogo em destaque, objetivos da diretoria, alertas (lesões, contratos, moral).
-- Navegação com ícones, melhor uso em celular, estados de carregamento e vazios, feedback ao salvar.
-- Mais conteúdo: notícias com contexto real da temporada, rivalidades, entrevistas pós-jogo simples que afetam moral, prêmios de fim de temporada.
+## 4. Novas ligas e campeonatos
 
-## 5. Novas funcionalidades/mecânicas
+- ~12 novas ligas nacionais (Escócia, Grécia, Áustria, Suíça, Dinamarca, Noruega, Suécia, Croácia, Sérvia, Japão, Coreia, Austrália) com elencos, nomes locais e escudos gerados.
+- Copas nacionais e competições continentais com fase eliminatória integradas ao calendário, às finanças e à sala de troféus.
+
+## 5. UI/UX e conteúdo
+
+- Painel inicial mais claro: próximo jogo em destaque, objetivos da diretoria, alertas de lesão/contrato/moral.
+- Navegação com ícones, melhor uso no celular, estados de carregamento e vazios, confirmação visual ao salvar.
+- Conteúdo: notícias com contexto da temporada, rivalidades, entrevista pós-jogo simples que afeta moral, prêmios de fim de temporada.
+
+## 6. Novas mecânicas
 
 - Substituições e ajustes táticos durante a partida ao vivo.
 - Treino semanal com foco escolhido afetando forma e evolução.
-- Empréstimos, cláusulas e renovações de contrato.
+- Empréstimos, cláusulas de rescisão e renovação de contratos.
 - Categorias de base gerando jovens promissores.
 - Sala de troféus e histórico de temporadas expandidos.
 
 ## Detalhes técnicos
 
-- Camada de persistência unificada (`src/game/storage.ts`): mesma API para localStorage (convidado) e tabela `careers` (autenticado), com migração automática ao logar.
-- Rotas de jogo saem de `_authenticated/` para rotas públicas que leem a carreira da camada unificada; nada de chamadas de servidor protegidas em loaders públicos.
-- Dados de ligas/clubes continuam determinísticos por seed, sem assets externos.
-- Melhorias 3D seguem o pipeline atual (R3F + postprocessing), mantendo os modos Baixa/Média/Alta e sem soft shadows/depth of field (quebraram antes).
+- `src/game/storage.ts`: camada única de persistência (localStorage para convidado, tabela `careers` para autenticado) com migração automática no login.
+- Rotas de jogo saem de `_authenticated/` para rotas públicas lendo dessa camada; nenhum loader público chama função de servidor protegida.
+- `src/components/game/Crest.tsx` reescrito como gerador determinístico por seed do clube (formato + composição + símbolo + paleta), com prop de detalhe (`sm`/`full`).
+- Kits em `src/game/kits.ts` ganham novos padrões e mapeamento para texturas do 3D.
+- Melhorias 3D seguem o pipeline atual (R3F + postprocessing) em `Stadium3D.tsx`.
 - Verificação: type-check estrito, build de produção e captura de tela do jogo em modo convidado.
