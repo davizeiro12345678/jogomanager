@@ -7,7 +7,8 @@ import { computeTable, roundFixtures } from "@/game/season";
 import { useCareer } from "@/hooks/useCareer";
 import { Flag } from "@/components/game/Flag";
 
-export const Route = createFileRoute("/_authenticated/league")({
+export const Route = createFileRoute("/league")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Tabela e calendário · Manager 3D" },

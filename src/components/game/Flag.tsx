@@ -53,6 +53,22 @@ const FLAGS: Record<string, Spec> = {
   aus: { t: "custom", key: "aus" },
   kor: { t: "custom", key: "kor" },
   egy: { t: "h", c: ["#ce1126", "#ffffff", "#000000"] },
+  hrv: { t: "h", c: ["#ff0000", "#ffffff", "#171796"] },
+  srb: { t: "h", c: ["#c6363c", "#0c4076", "#ffffff"] },
+  cze: { t: "custom", key: "cze" },
+  rou: { t: "v", c: ["#002b7f", "#fcd116", "#ce1126"] },
+  per: { t: "v", c: ["#d91023", "#ffffff", "#d91023"] },
+  ecu: { t: "h", c: ["#ffdd00", "#0072ce", "#ef3340"] },
+  par: { t: "h", c: ["#d52b1e", "#ffffff", "#0038a8"] },
+  bol: { t: "h", c: ["#d52b1e", "#f9e300", "#007a33"] },
+  nga: { t: "v", c: ["#008751", "#ffffff", "#008751"] },
+  rsa: { t: "custom", key: "rsa" },
+  mar: { t: "custom", key: "mar" },
+  qat: { t: "custom", key: "qat" },
+  uae: { t: "custom", key: "uae" },
+  tha: { t: "custom", key: "tha" },
+  idn: { t: "h2", c: ["#ce1126", "#ffffff"] },
+  can: { t: "custom", key: "can" },
 };
 
 function Custom({ k }: { k: string }) {
@@ -193,6 +209,64 @@ function Custom({ k }: { k: string }) {
           <rect width="24" height="16" fill="#ffffff" />
           <path d="M12 4.4 a3.6 3.6 0 0 1 0 7.2 a1.8 1.8 0 0 1 0 -3.6 a1.8 1.8 0 0 0 0 -3.6z" fill="#cd2e3a" />
           <path d="M12 4.4 a3.6 3.6 0 0 0 0 7.2 a1.8 1.8 0 0 0 0 -3.6 a1.8 1.8 0 0 1 0 -3.6z" fill="#0047a0" />
+        </>
+      );
+    case "cze":
+      return (
+        <>
+          <rect width="24" height="16" fill="#ffffff" />
+          <rect y="8" width="24" height="8" fill="#d7141a" />
+          <path d="M0 0 L11 8 L0 16 Z" fill="#11457e" />
+        </>
+      );
+    case "rsa":
+      return (
+        <>
+          <rect width="24" height="16" fill="#002395" />
+          <rect width="24" height="8" fill="#de3831" />
+          <path d="M0 0 L9 8 L0 16 Z" fill="#000000" />
+          <path d="M0 2 L7.4 8 L0 14 Z" fill="#ffb612" />
+          <path d="M-1 6.2 L6 6.2 L12 1.2 L24 1.2 L24 5.2 L13.5 5.2 L7.6 8 L13.5 10.8 L24 10.8 L24 14.8 L12 14.8 L6 9.8 L-1 9.8 Z" fill="#007a4d" />
+        </>
+      );
+    case "mar":
+      return (
+        <>
+          <rect width="24" height="16" fill="#c1272d" />
+          <path d="M12 4.6 l1.5 4.5 -3.8-2.8 h4.6 l-3.8 2.8z" fill="none" stroke="#006233" strokeWidth="0.9" />
+        </>
+      );
+    case "qat":
+      return (
+        <>
+          <rect width="24" height="16" fill="#8d1b3d" />
+          <path d="M0 0 H7 L9.6 1.8 L7 3.6 L9.6 5.4 L7 7.2 L9.6 9 L7 10.8 L9.6 12.6 L7 14.4 L9.6 16 H0 Z" fill="#ffffff" />
+        </>
+      );
+    case "uae":
+      return (
+        <>
+          <rect width="24" height="16" fill="#ffffff" />
+          <rect width="24" height="5.34" fill="#00732f" />
+          <rect y="10.66" width="24" height="5.34" fill="#000000" />
+          <rect width="7" height="16" fill="#ff0000" />
+        </>
+      );
+    case "tha":
+      return (
+        <>
+          <rect width="24" height="16" fill="#a51931" />
+          <rect y="2.7" width="24" height="10.6" fill="#f4f5f8" />
+          <rect y="5.4" width="24" height="5.2" fill="#2d2a4a" />
+        </>
+      );
+    case "can":
+      return (
+        <>
+          <rect width="24" height="16" fill="#ffffff" />
+          <rect width="6" height="16" fill="#d80621" />
+          <rect x="18" width="6" height="16" fill="#d80621" />
+          <path d="M12 3.4 l1 2.6 2.2-1 -1 2.6 2.3 .5 -2.6 1.6 .6 2.1 -2.5-.8 -.6 2.4 -.6-2.4 -2.5 .8 .6-2.1 -2.6-1.6 2.3-.5 -1-2.6 2.2 1z" fill="#d80621" />
         </>
       );
     default:

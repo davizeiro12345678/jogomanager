@@ -10,7 +10,8 @@ import { generateMarket, releasePlayer, signPlayer, type MarketEntry } from "@/g
 import { useCareer } from "@/hooks/useCareer";
 
 
-export const Route = createFileRoute("/_authenticated/transfers")({
+export const Route = createFileRoute("/transfers")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Mercado de transferências · Manager 3D" },

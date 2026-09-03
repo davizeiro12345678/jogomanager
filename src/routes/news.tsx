@@ -4,7 +4,8 @@ import { GameShell } from "@/components/game/GameShell";
 import { useCareer } from "@/hooks/useCareer";
 import type { NewsKind } from "@/game/types";
 
-export const Route = createFileRoute("/_authenticated/news")({
+export const Route = createFileRoute("/news")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Notícias · Manager 3D" },
