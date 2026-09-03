@@ -787,7 +787,7 @@ function PlayerMesh({
   const skin = useMemo(() => skinFor(player.id), [player.id]);
   const hair = useMemo(() => hairFor(player.id), [player.id]);
   const h = useMemo(() => hash(player.id), [player.id]);
-  const style = h % 4; // 0 curto 1 moicano 2 coque 3 careca
+  const style = h % 5; // 0 curto 1 moicano 2 coque 3 careca 4 afro
   const build = 0.92 + ((h >> 3) % 100) / 620; // variação física determinística
   const isGK = player.pos === "GK";
   const shadows = quality === "alta";
