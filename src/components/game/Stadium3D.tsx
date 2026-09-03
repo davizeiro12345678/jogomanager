@@ -889,12 +889,39 @@ function PlayerMesh({
 
   const detail = quality !== "baixa";
   const hi = quality === "alta";
-  const skinMat = <meshStandardMaterial color={skin} roughness={0.66} />;
-  const kitMat = <meshStandardMaterial color={kit.base} roughness={0.72} />;
-  const hairMat = <meshStandardMaterial color={hair} roughness={1} />;
+  // pele com brilho de suor sutil, tecido com sheen (aspecto de malha esportiva)
+  const skinMat = hi ? (
+    <meshPhysicalMaterial color={skin} roughness={0.52} clearcoat={0.28} clearcoatRoughness={0.6} sheen={0.25} sheenColor="#ffd9c0" />
+  ) : (
+    <meshStandardMaterial color={skin} roughness={0.66} />
+  );
+  const fabric = (color: string, rough = 0.78) =>
+    hi ? (
+      <meshPhysicalMaterial color={color} roughness={rough} sheen={0.55} sheenRoughness={0.85} sheenColor="#ffffff" />
+    ) : (
+      <meshStandardMaterial color={color} roughness={rough} />
+    );
+  const kitMat = fabric(kit.base, 0.72);
+  const shortsMat = fabric(kit.shorts, 0.85);
+  const detailMat = fabric(kit.detail, 0.75);
+  const socksMat = fabric(kit.socks, 0.95);
+  const jerseyMat = hi ? (
+    <meshPhysicalMaterial
+      {...(tex ? { map: tex } : { color: kit.base })}
+      roughness={0.7}
+      sheen={0.5}
+      sheenRoughness={0.85}
+      sheenColor="#ffffff"
+    />
+  ) : (
+    <meshStandardMaterial {...(tex ? { map: tex } : { color: kit.base })} roughness={0.72} />
+  );
+  const hairMat = <meshStandardMaterial color={hair} roughness={0.94} />;
   const beard = detail && (h >> 7) % 5 === 0 && style !== 2;
   const captain = (h >> 11) % 11 === 0;
   const sleeveLong = (h >> 13) % 4 === 0 || isGK;
+  const headband = style === 5;
+  const ponytail = style === 6;
 
   return (
     <group ref={group} position={[player.x, 0, player.z]} scale={build}>
