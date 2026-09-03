@@ -1173,6 +1173,7 @@ function Scene({
 }) {
   const goalPulse = useRef(0);
   const lastGoals = useRef(0);
+  const [replay, setReplay] = useState(false);
 
   useFrame((_, dt) => {
     const total = sim.stats.home.goals + sim.stats.away.goals;
@@ -1181,7 +1182,10 @@ function Scene({
       goalPulse.current = 1;
     }
     if (goalPulse.current > 0) goalPulse.current = Math.max(0, goalPulse.current - dt * 0.22);
+    const r = goalPulse.current > 0.55;
+    setReplay((v) => (v === r ? v : r));
   });
+
 
   const awayClash = colorClash(sim.home.primary, sim.away.primary);
   const homeKit = useMemo(
