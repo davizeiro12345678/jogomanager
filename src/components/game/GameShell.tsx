@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { CLUBS } from "@/game/data/leagues";
+import { useSignedIn } from "@/hooks/useCareer";
 import { Crest } from "./Crest";
 import type { CareerState } from "@/game/types";
 
@@ -30,7 +31,9 @@ export function GameShell({
   children: ReactNode;
 }) {
   const navigate = useNavigate();
+  const signedIn = useSignedIn();
   const club = career ? CLUBS[career.clubId] : undefined;
+
 
   return (
     <div className="min-h-screen bg-background text-foreground">
