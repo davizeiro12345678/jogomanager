@@ -611,13 +611,14 @@ export function takeJob(state: CareerState, jobId: string): CareerState {
     results: [],
     finances: { budget: job.budget, spent: 0, income: 0 },
     approval: 60,
+    objective: job.objective,
+    ...defaultV3(club),
     fanApproval: 58,
     pressure: 20,
-    objective: job.objective,
     offers: [],
     jobOffers: [],
     sacked: false,
-    ...defaultV3(club),
+
     managerHistory: [...history, { clubId: job.clubId, from: state.season, to: null, note: "Contratado" }],
     news: [
       {
