@@ -18,6 +18,14 @@ export interface League {
   clubs: Club[];
 }
 
+export type Personality =
+  | "líder"
+  | "profissional"
+  | "ambicioso"
+  | "temperamental"
+  | "caseiro"
+  | "determinado";
+
 export interface Player {
   id: string;
   clubId: string;
@@ -43,7 +51,21 @@ export interface Player {
   yellows: number;
   suspended: boolean;
   injuryWeeks: number;
+  /** teto de evolução (atributo oculto) */
+  potential?: number;
+  personality?: Personality;
+  /** forma recente 0-100 */
+  form?: number;
+  /** anos restantes de contrato */
+  contractYears?: number;
+  /** cláusula de rescisão em M€ */
+  releaseClause?: number;
+  /** tipo/descrição da lesão atual */
+  injuryType?: string;
+  /** jogador insatisfeito com tempo de jogo */
+  unhappy?: boolean;
 }
+
 
 export type FormationKey = "4-3-3" | "4-4-2" | "3-5-2" | "4-2-3-1";
 
