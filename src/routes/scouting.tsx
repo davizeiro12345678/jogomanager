@@ -7,7 +7,7 @@ import { CLUBS } from "@/game/data/leagues";
 import { formatMoney } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";
 
-export const Route = createFileRoute("/_authenticated/scouting")({
+export const Route = createFileRoute("/scouting")({
   head: () => ({
     meta: [
       { title: "Olheiros e relatórios · Manager 3D" },

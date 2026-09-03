@@ -6,7 +6,7 @@ import { formatMoney, formatWage } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";
 import type { Player } from "@/game/types";
 
-export const Route = createFileRoute("/_authenticated/squad")({
+export const Route = createFileRoute("/squad")({
   head: () => ({
     meta: [
       { title: "Elenco e escalação · Manager 3D" },

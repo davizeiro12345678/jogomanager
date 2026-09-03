@@ -5,7 +5,7 @@ import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
 import { useCareer } from "@/hooks/useCareer";
 
-export const Route = createFileRoute("/_authenticated/history")({
+export const Route = createFileRoute("/history")({
   head: () => ({
     meta: [
       { title: "História e troféus · Manager 3D" },

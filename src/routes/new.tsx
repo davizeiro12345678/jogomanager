@@ -7,7 +7,7 @@ import { Crest } from "@/components/game/Crest";
 import { useCareer } from "@/hooks/useCareer";
 import { Flag } from "@/components/game/Flag";
 
-export const Route = createFileRoute("/_authenticated/new")({
+export const Route = createFileRoute("/new")({
   head: () => ({
     meta: [
       { title: "Escolher clube · Manager 3D" },

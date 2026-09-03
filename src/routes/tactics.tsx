@@ -8,7 +8,7 @@ import type { FormationKey } from "@/game/types";
 
 const FORMATION_KEYS: FormationKey[] = ["4-3-3", "4-4-2", "3-5-2", "4-2-3-1"];
 
-export const Route = createFileRoute("/_authenticated/tactics")({
+export const Route = createFileRoute("/tactics")({
   head: () => ({
     meta: [
       { title: "Táticas · Manager 3D" },

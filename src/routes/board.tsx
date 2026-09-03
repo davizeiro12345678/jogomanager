@@ -9,7 +9,7 @@ import { staffBill } from "@/game/events";
 import { useCareer } from "@/hooks/useCareer";
 import type { Staff } from "@/game/types";
 
-export const Route = createFileRoute("/_authenticated/board")({
+export const Route = createFileRoute("/board")({
   head: () => ({
     meta: [
       { title: "Sala da diretoria · Manager 3D" },

@@ -6,7 +6,7 @@ import { formOf, potentialOf } from "@/game/events";
 import { useCareer } from "@/hooks/useCareer";
 import type { Player } from "@/game/types";
 
-export const Route = createFileRoute("/_authenticated/stats")({
+export const Route = createFileRoute("/stats")({
   head: () => ({
     meta: [
       { title: "Estatísticas do elenco · Manager 3D" },

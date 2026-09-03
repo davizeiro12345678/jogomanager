@@ -13,7 +13,7 @@ import { pickLineup } from "@/game/career";
 import { useCareer } from "@/hooks/useCareer";
 import type { CareerState, Player } from "@/game/types";
 
-export const Route = createFileRoute("/_authenticated/match")({
+export const Route = createFileRoute("/match")({
   head: () => ({
     meta: [
       { title: "Partida ao vivo em 3D · Manager 3D" },
