@@ -1,4 +1,15 @@
 import { Canvas, useFrame } from "@react-three/fiber";
+import { Environment, Lightformer, SoftShadows, AdaptiveDpr, AdaptiveEvents } from "@react-three/drei";
+import {
+  EffectComposer,
+  Bloom,
+  Vignette,
+  SMAA,
+  DepthOfField,
+  BrightnessContrast,
+  HueSaturation,
+} from "@react-three/postprocessing";
+import { easing } from "maath";
 import type React from "react";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -6,6 +17,7 @@ import * as THREE from "three";
 import { emptyPose, getClip, mixPose, selectClip, type ClipName, type Pose } from "@/game/animation";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
+
 
 export type CameraMode = "broadcast" | "tactical" | "goal" | "fan" | "rail" | "behind";
 export type Quality = "alta" | "media" | "baixa";
