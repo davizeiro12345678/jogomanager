@@ -1,10 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
+import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
+import { acceptOffer, rejectOffer } from "@/game/career";
+import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, formatWage, wageBill } from "@/game/economy";
 import { generateMarket, releasePlayer, signPlayer, type MarketEntry } from "@/game/transfers";
 import { useCareer } from "@/hooks/useCareer";
+
 
 export const Route = createFileRoute("/_authenticated/transfers")({
   head: () => ({
