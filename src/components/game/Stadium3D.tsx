@@ -787,10 +787,14 @@ function PlayerMesh({
   const skin = useMemo(() => skinFor(player.id), [player.id]);
   const hair = useMemo(() => hairFor(player.id), [player.id]);
   const h = useMemo(() => hash(player.id), [player.id]);
-  const style = h % 5; // 0 curto 1 moicano 2 coque 3 careca 4 afro
-  const build = 0.92 + ((h >> 3) % 100) / 620; // variação física determinística
+  const style = h % 7; // 0 curto 1 moicano 2 coque 3 careca 4 afro 5 faixa 6 rabo
+  const build = 0.92 + ((h >> 3) % 100) / 620; // altura determinística
+  const girth = 0.94 + ((h >> 9) % 100) / 700; // largura determinística
   const isGK = player.pos === "GK";
   const shadows = quality === "alta";
+  const lod = useRef<THREE.Group>(null);
+  const lodFar = useRef<THREE.Group>(null);
+
 
   const cur = useRef<Pose>(emptyPose());
   const target = useRef<Pose>(emptyPose());
