@@ -1129,7 +1129,7 @@ function Rig({
 
 /* --------------------------------------------------------- pós-processamento */
 
-function Post({ quality, replay }: { quality: Quality; replay: boolean }) {
+function Post({ quality }: { quality: Quality; replay?: boolean }) {
 
   if (quality === "baixa") return null;
   if (quality === "media") {
@@ -1143,11 +1143,6 @@ function Post({ quality, replay }: { quality: Quality; replay: boolean }) {
   return (
     <EffectComposer enableNormalPass={false} multisampling={0}>
       <Bloom intensity={0.6} luminanceThreshold={0.68} luminanceSmoothing={0.3} mipmapBlur />
-      <DepthOfField
-        focusDistance={0.012}
-        focalLength={replay ? 0.06 : 0.3}
-        bokehScale={replay ? 3.2 : 0}
-      />
       <HueSaturation saturation={0.12} />
       <BrightnessContrast brightness={0.01} contrast={0.1} />
       <Vignette offset={0.25} darkness={0.6} />
