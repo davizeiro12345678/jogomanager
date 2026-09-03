@@ -9,6 +9,9 @@
 - [x] Mecânicas v2: finanças (caixa, folha, receitas, prêmios), treino semanal, lesões, suspensões por cartões, evolução/declínio de jogadores, moral, aprovação da diretoria, notícias, múltiplas temporadas com troféus e histórico
 - [x] Novas telas: Mercado (contratar/dispensar), Notícias, História; hub do clube com alertas e finanças; elenco com valor/salário/cartões
 
+## Concluído (cont.)
+- [x] E-mails: domínio notify.football-manager.app em verificação, templates de autenticação com a marca e infraestrutura de e-mails do app
+
 ## Próximo
 - [ ] Copa nacional (mata-mata integrada ao calendário)
 - [ ] Substituições ao vivo durante a partida 3D
