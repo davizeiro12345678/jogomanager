@@ -1,5 +1,14 @@
 import { CLUBS, getLeague } from "./data/leagues";
 import { seasonPrize, valueFor, wageFor, weeklyIncome } from "./economy";
+import {
+  checkSacking,
+  closeSpell,
+  defaultStaff,
+  gateIncome,
+  pressureDelta,
+  runWeeklyEvents,
+  staffBill,
+} from "./events";
 import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
 import { computeTable, generateFixtures } from "./season";
@@ -7,11 +16,15 @@ import { buildSquad } from "./squad";
 import type {
   CareerState,
   FormationKey,
+  JobOffer,
   NewsItem,
   Player,
   Position,
+  ScoutReport,
   TrainingFocus,
+  TransferOffer,
 } from "./types";
+
 
 export function pickLineup(players: Player[], formation: FormationKey) {
   const slots = FORMATIONS[formation];
