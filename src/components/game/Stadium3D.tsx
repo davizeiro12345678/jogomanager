@@ -1290,6 +1290,8 @@ function Scene({
         />
       ))}
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
+      <Post quality={quality} replay={replay} />
+
     </>
   );
 }
