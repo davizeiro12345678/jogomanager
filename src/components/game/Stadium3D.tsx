@@ -3,6 +3,7 @@ import type React from "react";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
+import { emptyPose, getClip, mixPose, selectClip, type ClipName, type Pose } from "@/game/animation";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
 
@@ -694,150 +695,259 @@ function Stands({
 
 function PlayerMesh({
   player,
+  sim,
   kit,
   goalPulse,
   quality,
 }: {
   player: SimPlayer;
+  sim: MatchSim;
   kit: Kit;
   goalPulse: React.MutableRefObject<number>;
   quality: Quality;
 }) {
   const group = useRef<THREE.Group>(null);
+  const hips = useRef<THREE.Group>(null);
+  const spine = useRef<THREE.Group>(null);
+  const chest = useRef<THREE.Group>(null);
+  const head = useRef<THREE.Group>(null);
+  const armL = useRef<THREE.Group>(null);
+  const armR = useRef<THREE.Group>(null);
+  const foreL = useRef<THREE.Group>(null);
+  const foreR = useRef<THREE.Group>(null);
+  const legL = useRef<THREE.Group>(null);
+  const legR = useRef<THREE.Group>(null);
+  const kneeLRef = useRef<THREE.Group>(null);
+  const kneeRRef = useRef<THREE.Group>(null);
+  const footL = useRef<THREE.Group>(null);
+  const footR = useRef<THREE.Group>(null);
+
   const tex = useMemo(() => kitTexture(kit, player.number), [kit, player.number]);
   const skin = useMemo(() => skinFor(player.id), [player.id]);
   const hair = useMemo(() => hairFor(player.id), [player.id]);
-  const style = useMemo(() => hash(player.id) % 4, [player.id]); // 0 curto 1 moicano 2 coque 3 careca
+  const h = useMemo(() => hash(player.id), [player.id]);
+  const style = h % 4; // 0 curto 1 moicano 2 coque 3 careca
+  const build = 0.92 + ((h >> 3) % 100) / 620; // variação física determinística
   const isGK = player.pos === "GK";
   const shadows = quality === "alta";
-  const lean = useRef(0);
 
-  useFrame(({ clock }) => {
+  const cur = useRef<Pose>(emptyPose());
+  const target = useRef<Pose>(emptyPose());
+  const clipName = useRef<ClipName>("idle");
+  const clipTime = useRef(0);
+  const seed = h % 97;
+  const acc = useRef(0);
+  const step = quality === "baixa" ? 1 / 30 : 1 / 60;
+
+  useFrame((_, rawDt) => {
     const g = group.current;
     if (!g) return;
+    const dt = Math.min(rawDt, 0.05);
     g.position.x += (player.x - g.position.x) * 0.34;
     g.position.z += (player.z - g.position.z) * 0.34;
-    const speed = Math.hypot(player.vx, player.vz);
-    if (speed > 0.15) {
+
+    const speed = Math.hypot(player.vx, player.vz) * (player.id === sim.ball.holder ? 5 : 5.2);
+    const dirLen = Math.hypot(player.vx, player.vz);
+    if (dirLen > 0.12) {
       const want = Math.atan2(player.vx, player.vz);
-      // giro suave em direção ao movimento
       let d = want - g.rotation.y;
       while (d > Math.PI) d -= Math.PI * 2;
       while (d < -Math.PI) d += Math.PI * 2;
-      g.rotation.y += d * 0.22;
+      g.rotation.y += d * 0.2;
     }
+
+    // acumulador para reduzir custo em qualidade baixa
+    acc.current += dt;
+    if (acc.current < step) return;
+    const adt = acc.current;
+    acc.current = 0;
 
     const celebrating = goalPulse.current > 0.05;
-    const t = clock.elapsedTime;
-    const stride = Math.min(1, speed / 5.5);
-    const swing = celebrating
-      ? Math.sin(t * 8) * 0.55
-      : Math.sin(t * (7 + stride * 8) + player.number) * 0.75 * stride;
+    const hasBall = sim.ball.holder === player.id;
+    const ballDist = Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z);
+    const action = player.action ?? (celebrating && isGK ? "celebrate" : null);
 
-    // inclinação do tronco proporcional à velocidade
-    const targetLean = celebrating ? -0.18 : stride * 0.24;
-    lean.current += (targetLean - lean.current) * 0.12;
-    g.rotation.x = lean.current;
-    g.position.y = celebrating ? Math.abs(Math.sin(t * 7 + player.number)) * 0.38 : 0;
-
-    for (const c of g.children) {
-      if (c.userData['leg'] !== undefined) c.rotation.x = c.userData['leg'] ? swing : -swing;
-      if (c.userData['arm'] !== undefined) {
-        c.rotation.x = celebrating ? -2.3 : (c.userData['arm'] ? -swing : swing) * 0.85;
-        c.rotation.z = celebrating ? (c.userData['arm'] ? 0.5 : -0.5) : 0;
-      }
-      if (c.userData['bob'] !== undefined) {
-        c.position.y = (c.userData['bob'] as number) + Math.abs(Math.sin(t * (7 + stride * 8))) * 0.03 * stride;
-      }
+    const next = selectClip({
+      isGK,
+      action,
+      speed,
+      hasBall,
+      ballDist,
+      stamina: player.stamina,
+      defending: sim.possession !== player.side,
+      stopped: !hasBall && speed < 0.2 && sim.ball.holder === null,
+      seed,
+      time: sim.time,
+    });
+    if (next !== clipName.current) {
+      clipName.current = next;
+      clipTime.current = 0;
     }
+    clipTime.current += adt;
+
+    const u = player.actionDur > 0 && player.action
+      ? Math.min(1, 1 - player.actionT / player.actionDur)
+      : Math.min(1, clipTime.current);
+    target.current = getClip(clipName.current)({
+      t: clipTime.current,
+      u,
+      speed,
+      stride: Math.min(1, speed / 7),
+      seed,
+    });
+
+    const k = Math.min(1, adt / 0.15);
+    mixPose(cur.current, target.current, k, cur.current);
+    const p = cur.current;
+
+    if (hips.current) {
+      hips.current.position.y = 0.92 * build + p.hipY;
+      hips.current.rotation.set(p.hipPitch, p.hipYaw, p.hipRoll);
+    }
+    spine.current?.rotation.set(p.spine, 0, 0);
+    chest.current?.rotation.set(p.chest, 0, 0);
+    head.current?.rotation.set(p.headPitch, p.headYaw, 0);
+    armL.current?.rotation.set(p.armLPitch, 0, p.armLRoll);
+    armR.current?.rotation.set(p.armRPitch, 0, p.armRRoll);
+    foreL.current?.rotation.set(p.elbowL, 0, 0);
+    foreR.current?.rotation.set(p.elbowR, 0, 0);
+    legL.current?.rotation.set(p.legLPitch, 0, p.legLRoll);
+    legR.current?.rotation.set(p.legRPitch, 0, p.legRRoll);
+    kneeLRef.current?.rotation.set(p.kneeL, 0, 0);
+    kneeRRef.current?.rotation.set(p.kneeR, 0, 0);
+    footL.current?.rotation.set(p.ankleL, 0, 0);
+    footR.current?.rotation.set(p.ankleR, 0, 0);
   });
 
+  const skinMat = <meshStandardMaterial color={skin} roughness={0.85} />;
+  const kitMat = <meshStandardMaterial color={kit.base} roughness={0.72} />;
+
   return (
-    <group ref={group} position={[player.x, 0, player.z]}>
+    <group ref={group} position={[player.x, 0, player.z]} scale={build}>
       {/* sombra de contato */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
-        <circleGeometry args={[0.36, 14]} />
+        <circleGeometry args={[0.34, 14]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.3} depthWrite={false} />
       </mesh>
-      {/* tronco */}
-      <mesh position={[0, 1.16, 0]} castShadow={shadows} userData={{ bob: 1.16 }}>
-        <capsuleGeometry args={[0.27, 0.5, 4, 12]} />
-        <meshStandardMaterial {...(tex ? { map: tex } : { color: kit.base })} roughness={0.72} />
-      </mesh>
-      {/* ombros */}
-      <mesh position={[0, 1.44, 0]} rotation={[0, 0, Math.PI / 2]} castShadow={shadows}>
-        <capsuleGeometry args={[0.115, 0.4, 4, 8]} />
-        <meshStandardMaterial color={kit.base} roughness={0.72} />
-      </mesh>
-      {/* pescoço */}
-      <mesh position={[0, 1.56, 0]}>
-        <cylinderGeometry args={[0.075, 0.085, 0.12, 8]} />
-        <meshStandardMaterial color={skin} roughness={0.85} />
-      </mesh>
-      {/* cabeça */}
-      <mesh position={[0, 1.71, 0]} castShadow={shadows}>
-        <sphereGeometry args={[0.185, 16, 16]} />
-        <meshStandardMaterial color={skin} roughness={0.85} />
-      </mesh>
-      {/* cabelo por estilo */}
-      {style !== 3 && (
-        <mesh position={[0, 1.79, -0.015]}>
-          <sphereGeometry args={[0.178, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-          <meshStandardMaterial color={hair} roughness={1} />
+
+      <group ref={hips} position={[0, 0.92, 0]}>
+        {/* quadril / shorts */}
+        <mesh position={[0, -0.06, 0]} castShadow={shadows}>
+          <boxGeometry args={[0.42, 0.26, 0.28]} />
+          <meshStandardMaterial color={kit.shorts} roughness={0.85} />
         </mesh>
-      )}
-      {style === 1 && (
-        <mesh position={[0, 1.88, 0]}>
-          <boxGeometry args={[0.07, 0.12, 0.3]} />
-          <meshStandardMaterial color={hair} roughness={1} />
-        </mesh>
-      )}
-      {style === 2 && (
-        <mesh position={[0, 1.85, -0.16]}>
-          <sphereGeometry args={[0.085, 10, 10]} />
-          <meshStandardMaterial color={hair} roughness={1} />
-        </mesh>
-      )}
-      {/* braços */}
-      {[-0.32, 0.32].map((x, i) => (
-        <group key={`a${x}`} position={[x, 1.22, 0]} userData={{ arm: i === 0 }}>
-          <mesh position={[0, 0.12, 0]} castShadow={shadows}>
-            <capsuleGeometry args={[0.075, 0.14, 4, 8]} />
-            <meshStandardMaterial color={kit.base} roughness={0.72} />
+
+        <group ref={spine}>
+          {/* tronco */}
+          <mesh position={[0, 0.2, 0]} castShadow={shadows}>
+            <capsuleGeometry args={[0.21, 0.26, 4, 12]} />
+            <meshStandardMaterial {...(tex ? { map: tex } : { color: kit.base })} roughness={0.72} />
           </mesh>
-          <mesh position={[0, -0.16, 0]} castShadow={shadows}>
-            <capsuleGeometry args={[0.062, 0.2, 4, 8]} />
-            <meshStandardMaterial color={skin} roughness={0.85} />
-          </mesh>
-          {isGK && (
-            <mesh position={[0, -0.32, 0]}>
-              <boxGeometry args={[0.15, 0.18, 0.11]} />
-              <meshStandardMaterial color={kit.detail} roughness={0.6} />
+          <group ref={chest} position={[0, 0.28, 0]}>
+            {/* peitoral / ombros */}
+            <mesh position={[0, 0.14, 0]} castShadow={shadows}>
+              <capsuleGeometry args={[0.2, 0.16, 4, 12]} />
+              <meshStandardMaterial {...(tex ? { map: tex } : { color: kit.base })} roughness={0.72} />
             </mesh>
-          )}
+            <mesh position={[0, 0.24, 0]} rotation={[0, 0, Math.PI / 2]} castShadow={shadows}>
+              <capsuleGeometry args={[0.1, 0.34, 4, 8]} />
+              {kitMat}
+            </mesh>
+
+            {/* pescoço + cabeça */}
+            <mesh position={[0, 0.33, 0]}>
+              <cylinderGeometry args={[0.066, 0.078, 0.1, 8]} />
+              {skinMat}
+            </mesh>
+            <group ref={head} position={[0, 0.42, 0]}>
+              <mesh castShadow={shadows}>
+                <sphereGeometry args={[0.16, 16, 16]} />
+                {skinMat}
+              </mesh>
+              {style !== 3 && (
+                <mesh position={[0, 0.03, -0.012]}>
+                  <sphereGeometry args={[0.158, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+                  <meshStandardMaterial color={hair} roughness={1} />
+                </mesh>
+              )}
+              {style === 1 && (
+                <mesh position={[0, 0.12, 0]}>
+                  <boxGeometry args={[0.06, 0.1, 0.26]} />
+                  <meshStandardMaterial color={hair} roughness={1} />
+                </mesh>
+              )}
+              {style === 2 && (
+                <mesh position={[0, 0.09, -0.14]}>
+                  <sphereGeometry args={[0.075, 10, 10]} />
+                  <meshStandardMaterial color={hair} roughness={1} />
+                </mesh>
+              )}
+            </group>
+
+            {/* braços articulados */}
+            {([["l", -0.22, armL, foreL] as const, ["r", 0.22, armR, foreR] as const]).map(
+              ([id, x, aRef, fRef]) => (
+                <group key={id} ref={aRef} position={[x, 0.2, 0]}>
+                  <mesh position={[0, -0.14, 0]} castShadow={shadows}>
+                    <capsuleGeometry args={[0.066, 0.16, 4, 8]} />
+                    {kitMat}
+                  </mesh>
+                  <group ref={fRef} position={[0, -0.28, 0]}>
+                    <mesh position={[0, -0.13, 0]} castShadow={shadows}>
+                      <capsuleGeometry args={[0.055, 0.18, 4, 8]} />
+                      {skinMat}
+                    </mesh>
+                    <mesh position={[0, -0.27, 0]}>
+                      {isGK ? <boxGeometry args={[0.13, 0.16, 0.1]} /> : <sphereGeometry args={[0.06, 8, 8]} />}
+                      <meshStandardMaterial color={isGK ? kit.detail : skin} roughness={isGK ? 0.6 : 0.85} />
+                    </mesh>
+                  </group>
+                </group>
+              ),
+            )}
+          </group>
         </group>
-      ))}
-      {/* shorts */}
-      <mesh position={[0, 0.82, 0]} castShadow={shadows} userData={{ bob: 0.82 }}>
-        <boxGeometry args={[0.5, 0.3, 0.34]} />
-        <meshStandardMaterial color={kit.shorts} roughness={0.8} />
-      </mesh>
-      {/* pernas */}
-      {[-0.14, 0.14].map((x, i) => (
-        <group key={`l${x}`} position={[x, 0.4, 0]} userData={{ leg: i === 0 }}>
-          <mesh castShadow={shadows}>
-            <capsuleGeometry args={[0.095, 0.48, 4, 8]} />
-            <meshStandardMaterial color={kit.socks} roughness={0.8} />
-          </mesh>
-          <mesh position={[0, -0.32, 0.05]}>
-            <boxGeometry args={[0.16, 0.1, 0.3]} />
-            <meshStandardMaterial color="#101010" roughness={0.5} />
-          </mesh>
-        </group>
-      ))}
+
+        {/* pernas articuladas */}
+        {([["l", -0.12, legL, kneeLRef, footL] as const, ["r", 0.12, legR, kneeRRef, footR] as const]).map(
+          ([id, x, tRef, cRef, fRef]) => (
+            <group key={id} ref={tRef} position={[x, -0.1, 0]}>
+              {/* coxa */}
+              <mesh position={[0, -0.2, 0]} castShadow={shadows}>
+                <capsuleGeometry args={[0.088, 0.24, 4, 8]} />
+                <meshStandardMaterial color={skin} roughness={0.85} />
+              </mesh>
+              <group ref={cRef} position={[0, -0.42, 0]}>
+                {/* panturrilha com meião */}
+                <mesh position={[0, -0.18, 0]} castShadow={shadows}>
+                  <capsuleGeometry args={[0.075, 0.2, 4, 8]} />
+                  <meshStandardMaterial color={kit.socks} roughness={0.9} />
+                </mesh>
+                {/* caneleira */}
+                <mesh position={[0, -0.16, 0.05]}>
+                  <boxGeometry args={[0.1, 0.18, 0.05]} />
+                  <meshStandardMaterial color={kit.socks} roughness={0.7} />
+                </mesh>
+                <group ref={fRef} position={[0, -0.36, 0]}>
+                  {/* chuteira */}
+                  <mesh position={[0, -0.03, 0.06]} castShadow={shadows}>
+                    <boxGeometry args={[0.13, 0.08, 0.28]} />
+                    <meshStandardMaterial color="#0d0d0d" roughness={0.45} metalness={0.15} />
+                  </mesh>
+                  <mesh position={[0, -0.07, 0.06]}>
+                    <boxGeometry args={[0.135, 0.02, 0.28]} />
+                    <meshStandardMaterial color={kit.detail} roughness={0.5} />
+                  </mesh>
+                </group>
+              </group>
+            </group>
+          ),
+        )}
+      </group>
     </group>
   );
 }
+
 
 
 function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
@@ -1032,6 +1142,7 @@ function Scene({
         <PlayerMesh
           key={p.id}
           player={p}
+          sim={sim}
           kit={
             p.pos === "GK"
               ? gkKitFor(p.side === "home" ? sim.home.clubId : sim.away.clubId)

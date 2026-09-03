@@ -1,5 +1,6 @@
 import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
+import type { PlayerAction } from "./animation";
 import type { MatchEventLog, Player, Tactics } from "./types";
 
 export const FIELD_X = 52.5;
@@ -26,6 +27,12 @@ export interface SimPlayer {
   defending: number;
   physical: number;
   stamina: number;
+  /** ação de animação em curso (curta duração) */
+  action: PlayerAction | null;
+  /** tempo restante da ação, em segundos */
+  actionT: number;
+  /** duração total da ação atual */
+  actionDur: number;
 }
 
 export interface TeamSetup {
@@ -109,6 +116,9 @@ export class MatchSim {
         defending: p.defending,
         physical: p.physical,
         stamina: Math.max(60, p.condition),
+        action: null,
+        actionT: 0,
+        actionDur: 0,
       };
     });
   }
@@ -152,6 +162,26 @@ export class MatchSim {
     if (this.events.length > 80) this.events.shift();
   }
 
+  /** dispara uma animação curta no jogador */
+  trigger(p: SimPlayer | null | undefined, action: PlayerAction, dur = 0.7) {
+    if (!p) return;
+    p.action = action;
+    p.actionT = dur;
+    p.actionDur = dur;
+  }
+
+  private tickActions(dt: number) {
+    for (const p of this.players) {
+      if (p.actionT > 0) {
+        p.actionT -= dt;
+        if (p.actionT <= 0) {
+          p.actionT = 0;
+          p.action = null;
+        }
+      }
+    }
+  }
+
   minute() {
     return Math.min(90, Math.floor(this.time / 60));
   }
@@ -187,6 +217,7 @@ export class MatchSim {
 
     this.stats[this.possession].possessionTicks += dt;
     if (this.restartTimer > 0) this.restartTimer -= dt;
+    this.tickActions(dt);
 
     this.moveOffBall(dt);
     this.moveBall(dt);
@@ -291,6 +322,7 @@ export class MatchSim {
       }
     }
     if (closest && bestD < 1.6 && Math.hypot(this.ball.vx, this.ball.vz) < 24) {
+      this.trigger(closest, this.ball.height > 0.9 ? "header" : "trap", 0.5);
       this.ball.holder = closest.id;
       this.possession = closest.side;
       this.ball.vx = 0;
@@ -317,6 +349,7 @@ export class MatchSim {
       this.ball.vx = 0;
       this.ball.vz = 0;
       this.restartTimer = 0.8;
+      this.trigger(best, Math.abs(this.ball.z) > FIELD_Z - 2 ? "throwIn" : "corner", 0.9);
     }
   }
 
@@ -346,7 +379,11 @@ export class MatchSim {
       dt *
       1.6;
     if (this.rnd() < chance) {
+      const slide = this.rnd() < 0.4;
+      this.trigger(opp, slide ? "slide" : "tackle", slide ? 1.0 : 0.6);
+      this.trigger(holder, "duel", 0.5);
       if (this.rnd() < 0.22) {
+        this.trigger(holder, "protest", 1.4);
         this.stats[opp.side].fouls++;
         this.pushEvent({
           minute: this.minute(),
@@ -360,6 +397,7 @@ export class MatchSim {
       this.ball.holder = opp.id;
       this.possession = opp.side;
       this.decisionTimer = 0.4;
+      this.trigger(opp, "intercept", 0.5);
     }
   }
 
@@ -404,6 +442,8 @@ export class MatchSim {
     const d = Math.hypot(dx, dz) || 1;
     const power = Math.min(30, 9 + dist * 0.85);
     const err = success > this.rnd() ? 0 : (this.rnd() - 0.5) * 14;
+    const wide = Math.abs(holder.z) > FIELD_Z * 0.55 && Math.abs(best.x - dir * FIELD_X) < 30;
+    this.trigger(holder, wide ? "cross" : dist > 24 ? "passLong" : "pass", dist > 24 ? 0.85 : 0.6);
     this.ball.holder = null;
     this.ball.vx = (dx / d) * power + err * 0.2;
     this.ball.vz = (dz / d) * power + err;
@@ -417,6 +457,22 @@ export class MatchSim {
     const gk = this.players.find((p) => p.side !== side && p.pos === "GK");
     const accuracy = (holder.shooting / 100) * (1 - Math.min(0.75, distGoal / 40));
     const onTarget = this.rnd() < 0.34 + accuracy * 0.55;
+    const roll = this.rnd();
+    this.trigger(
+      holder,
+      distGoal > 22
+        ? "shotPower"
+        : roll < 0.12
+          ? "chip"
+          : roll < 0.24
+            ? "volley"
+            : roll < 0.32
+              ? "bicycle"
+              : roll < 0.6
+                ? "shotPlaced"
+                : "shot",
+      0.8,
+    );
     this.ball.holder = null;
     const targetZ = (this.rnd() - 0.5) * (onTarget ? GOAL_Z * 1.4 : GOAL_Z * 4.5);
     const dx = dir * FIELD_X - holder.x;
@@ -443,6 +499,12 @@ export class MatchSim {
     if (this.rnd() < goalChance) {
       this.stats[side].goals++;
       this.scorers.push({ minute: this.minute(), side, name: holder.name });
+      const celeb = this.rnd();
+      this.trigger(holder, celeb < 0.34 ? "kneeSlide" : celeb < 0.67 ? "celebrateRun" : "celebrate", 6);
+      for (const m of this.players) {
+        if (m.side === side && m.id !== holder.id) this.trigger(m, m.pos === "GK" ? "celebrate" : "hug", 5.2);
+        else if (m.side !== side) this.trigger(m, "dejected", 4.4);
+      }
       this.pushEvent({
         minute: this.minute(),
         type: "goal",
@@ -451,6 +513,18 @@ export class MatchSim {
       });
       this.kickoff(side === "home" ? "away" : "home");
     } else {
+      const dive = targetZ - (gk?.z ?? 0);
+      this.trigger(
+        gk,
+        Math.abs(dive) < 1.2
+          ? this.rnd() < 0.5
+            ? "catch"
+            : "save"
+          : dive > 0
+            ? "diveRight"
+            : "diveLeft",
+        1.1,
+      );
       this.pushEvent({
         minute: this.minute(),
         type: "save",
@@ -470,6 +544,7 @@ export class MatchSim {
     this.ball.vz = 0;
     this.restartTimer = 1.5;
     this.decisionTimer = 1.2;
+    this.trigger(gk, this.rnd() < 0.5 ? "goalKick" : "distribute", 1.1);
   }
 
   possessionPct(): [number, number] {
