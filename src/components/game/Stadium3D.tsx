@@ -924,7 +924,7 @@ function PlayerMesh({
   const ponytail = style === 6;
 
   return (
-    <group ref={group} position={[player.x, 0, player.z]} scale={build}>
+    <group ref={group} position={[player.x, 0, player.z]} scale={[build * girth, build, build * girth]}>
       {/* sombra de contato */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
         <circleGeometry args={[0.32, 16]} />
@@ -935,27 +935,52 @@ function PlayerMesh({
         {/* quadril / shorts (cintura + pernas do calção) */}
         <mesh position={[0, -0.05, 0]} scale={[1, 1, 0.72]} castShadow={shadows}>
           <capsuleGeometry args={[0.19, 0.14, 4, 12]} />
-          <meshStandardMaterial color={kit.shorts} roughness={0.85} />
+          {shortsMat}
         </mesh>
         {detail &&
           [-0.11, 0.11].map((x) => (
-            <mesh key={x} position={[x, -0.17, 0]} scale={[1, 1, 0.82]} castShadow={shadows}>
-              <cylinderGeometry args={[0.11, 0.115, 0.17, 10]} />
-              <meshStandardMaterial color={kit.shorts} roughness={0.85} />
-            </mesh>
+            <group key={x}>
+              <mesh position={[x, -0.17, 0]} scale={[1, 1, 0.82]} castShadow={shadows}>
+                <cylinderGeometry args={[0.11, 0.115, 0.17, 10]} />
+                {shortsMat}
+              </mesh>
+              {/* barra do calção */}
+              <mesh position={[x, -0.252, 0]} scale={[1, 1, 0.82]}>
+                <cylinderGeometry args={[0.117, 0.117, 0.022, 10]} />
+                {detailMat}
+              </mesh>
+            </group>
           ))}
+        {/* cós elástico */}
+        {detail && (
+          <mesh position={[0, 0.035, 0]} scale={[1, 1, 0.72]}>
+            <cylinderGeometry args={[0.188, 0.188, 0.03, 12]} />
+            {detailMat}
+          </mesh>
+        )}
 
         <group ref={spine}>
           {/* tronco: cintura estreita → peito largo */}
           <mesh position={[0, 0.18, 0]} scale={[1.02, 1, 0.68]} castShadow={shadows}>
             <capsuleGeometry args={[0.2, 0.24, 4, 14]} />
-            <meshStandardMaterial {...(tex ? { map: tex } : { color: kit.base })} roughness={0.72} />
+            {jerseyMat}
           </mesh>
           <group ref={chest} position={[0, 0.28, 0]}>
             <mesh position={[0, 0.12, 0]} scale={[1.12, 1, 0.7]} castShadow={shadows}>
               <capsuleGeometry args={[0.195, 0.15, 4, 14]} />
-              <meshStandardMaterial {...(tex ? { map: tex } : { color: kit.base })} roughness={0.72} />
+              {jerseyMat}
             </mesh>
+            {/* peitoral / volume do tórax */}
+            {detail && (
+              <group ref={lodFar}>
+                {[-1, 1].map((s) => (
+                  <mesh key={s} position={[s * 0.085, 0.11, 0.1]} scale={[1.1, 0.8, 0.5]}>
+                    <sphereGeometry args={[0.078, 10, 10]} />
+                    {kitMat}
+                  </mesh>
+                ))}
+              </group>
+            )}
             {/* linha dos ombros */}
             <mesh position={[0, 0.23, 0]} rotation={[0, 0, Math.PI / 2]} scale={[1, 1, 0.72]} castShadow={shadows}>
               <capsuleGeometry args={[0.098, 0.3, 4, 10]} />
