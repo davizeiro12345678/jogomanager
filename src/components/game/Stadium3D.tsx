@@ -43,7 +43,7 @@ function hash(s: string) {
 
 function grassTexture() {
   if (typeof document === "undefined") return null;
-  const size = 1024;
+  const size = 2048;
   const c = document.createElement("canvas");
   c.width = size;
   c.height = size;
@@ -60,9 +60,10 @@ function grassTexture() {
   ctx.translate(-size, -size);
   for (let i = 0; i < 40; i++) {
     ctx.fillStyle = i % 2 === 0 ? "rgba(255,255,255,0.055)" : "rgba(0,0,0,0.055)";
-    ctx.fillRect(i * 72, 0, 72, size * 2);
+    ctx.fillRect(i * 144, 0, 144, size * 2);
   }
   ctx.restore();
+
 
   // desgaste / manchas
   for (let i = 0; i < 900; i++) {
