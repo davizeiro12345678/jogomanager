@@ -1,11 +1,23 @@
 import { Canvas, useFrame } from "@react-three/fiber";
+import { Environment, Lightformer, AdaptiveDpr, AdaptiveEvents } from "@react-three/drei";
+import {
+  EffectComposer,
+  Bloom,
+  Vignette,
+  SMAA,
+  DepthOfField,
+  BrightnessContrast,
+  HueSaturation,
+} from "@react-three/postprocessing";
+import { easing } from "maath";
 import type React from "react";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { emptyPose, getClip, mixPose, selectClip, type ClipName, type Pose } from "@/game/animation";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
+
 
 export type CameraMode = "broadcast" | "tactical" | "goal" | "fan" | "rail" | "behind";
 export type Quality = "alta" | "media" | "baixa";
@@ -31,7 +43,7 @@ function hash(s: string) {
 
 function grassTexture() {
   if (typeof document === "undefined") return null;
-  const size = 1024;
+  const size = 2048;
   const c = document.createElement("canvas");
   c.width = size;
   c.height = size;
@@ -48,9 +60,10 @@ function grassTexture() {
   ctx.translate(-size, -size);
   for (let i = 0; i < 40; i++) {
     ctx.fillStyle = i % 2 === 0 ? "rgba(255,255,255,0.055)" : "rgba(0,0,0,0.055)";
-    ctx.fillRect(i * 72, 0, 72, size * 2);
+    ctx.fillRect(i * 144, 0, 144, size * 2);
   }
   ctx.restore();
+
 
   // desgaste / manchas
   for (let i = 0; i < 900; i++) {
@@ -65,12 +78,53 @@ function grassTexture() {
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.anisotropy = 16;
+  return tex;
+}
+
+/** Mapa de rugosidade: as listras de corte refletem a luz de forma diferente
+ *  (grama penteada para lados opostos) — dá o brilho úmido da transmissão. */
+function grassRoughness() {
+  if (typeof document === "undefined") return null;
+  const size = 512;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = "#b4b4b4";
+  ctx.fillRect(0, 0, size, size);
+  ctx.save();
+  ctx.translate(size / 2, size / 2);
+  ctx.rotate(-0.22);
+  ctx.translate(-size, -size);
+  for (let i = 0; i < 40; i++) {
+    ctx.fillStyle = i % 2 === 0 ? "#8c8c8c" : "#d2d2d2";
+    ctx.fillRect(i * 36, 0, 36, size * 2);
+  }
+  ctx.restore();
+  for (let i = 0; i < 400; i++) {
+    ctx.fillStyle = `rgba(255,255,255,${0.02 + Math.random() * 0.05})`;
+    ctx.beginPath();
+    ctx.ellipse(
+      Math.random() * size,
+      Math.random() * size,
+      4 + Math.random() * 14,
+      2 + Math.random() * 7,
+      Math.random() * 3,
+      0,
+      7,
+    );
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
   tex.anisotropy = 8;
   return tex;
 }
 
 function Pitch({ quality }: { quality: Quality }) {
   const tex = useMemo(grassTexture, []);
+  const rough = useMemo(grassRoughness, []);
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
@@ -79,10 +133,16 @@ function Pitch({ quality }: { quality: Quality }) {
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[FIELD_X * 2 + 10, FIELD_Z * 2 + 10]} />
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           {...(tex ? { map: tex } : { color: "#1d7a45" })}
-          roughness={0.82}
-          metalness={0.02}
+          {...(rough ? { roughnessMap: rough } : {})}
+          roughness={0.78}
+          metalness={0.0}
+          clearcoat={quality === "alta" ? 0.35 : 0}
+          clearcoatRoughness={0.7}
+          sheen={quality === "alta" ? 0.4 : 0}
+          sheenColor="#7dffb0"
+          envMapIntensity={0.35}
         />
       </mesh>
       <Lines />
@@ -93,6 +153,7 @@ function Pitch({ quality }: { quality: Quality }) {
     </group>
   );
 }
+
 
 function line(points: [number, number][], y = 0.02) {
   return new THREE.BufferGeometry().setFromPoints(
@@ -1022,7 +1083,7 @@ function Rig({
   const target = useMemo(() => new THREE.Vector3(), []);
   const look = useMemo(() => new THREE.Vector3(), []);
   const smoothLook = useMemo(() => new THREE.Vector3(0, 0.8, 0), []);
-  useFrame(({ camera, clock }) => {
+  useFrame(({ camera, clock }, dt) => {
     const bx = sim.ball.x;
     const bz = sim.ball.z;
     const pulse = goalPulse.current;
@@ -1056,13 +1117,40 @@ function Rig({
       target.x += Math.sin(clock.elapsedTime * 21) * s;
       target.y += Math.cos(clock.elapsedTime * 17) * s * 0.6;
     }
-    camera.position.lerp(target, effective === "behind" ? 0.12 : effective === "rail" ? 0.16 : 0.05);
+    // damping independente de framerate (maath)
+    const smooth = effective === "behind" ? 0.35 : effective === "rail" ? 0.28 : 0.75;
+    easing.damp3(camera.position, target, smooth, dt);
     look.set(bx * 0.6, 0.8, bz * 0.6);
-    smoothLook.lerp(look, 0.1);
+    easing.damp3(smoothLook, look, 0.35, dt);
     camera.lookAt(smoothLook);
   });
   return null;
 }
+
+/* --------------------------------------------------------- pós-processamento */
+
+function Post({ quality }: { quality: Quality; replay?: boolean }) {
+
+  if (quality === "baixa") return null;
+  if (quality === "media") {
+    return (
+      <EffectComposer enableNormalPass={false}>
+        <Bloom intensity={0.35} luminanceThreshold={0.75} luminanceSmoothing={0.25} mipmapBlur />
+        <Vignette offset={0.28} darkness={0.55} />
+      </EffectComposer>
+    );
+  }
+  return (
+    <EffectComposer enableNormalPass={false} multisampling={0}>
+      <Bloom intensity={0.6} luminanceThreshold={0.68} luminanceSmoothing={0.3} mipmapBlur />
+      <HueSaturation saturation={0.12} />
+      <BrightnessContrast brightness={0.01} contrast={0.1} />
+      <Vignette offset={0.25} darkness={0.6} />
+      <SMAA />
+    </EffectComposer>
+  );
+}
+
 
 
 /* ------------------------------------------------------------------- cena */
@@ -1080,6 +1168,7 @@ function Scene({
 }) {
   const goalPulse = useRef(0);
   const lastGoals = useRef(0);
+  const [replay, setReplay] = useState(false);
 
   useFrame((_, dt) => {
     const total = sim.stats.home.goals + sim.stats.away.goals;
@@ -1088,7 +1177,10 @@ function Scene({
       goalPulse.current = 1;
     }
     if (goalPulse.current > 0) goalPulse.current = Math.max(0, goalPulse.current - dt * 0.22);
+    const r = goalPulse.current > 0.55;
+    setReplay((v) => (v === r ? v : r));
   });
+
 
   const awayClash = colorClash(sim.home.primary, sim.away.primary);
   const homeKit = useMemo(
@@ -1107,9 +1199,44 @@ function Scene({
     <>
       <color attach="background" args={[SKY[time]]} />
       <fog attach="fog" args={[SKY[time], 110, 300]} />
-      <ambientLight intensity={0.9} />
+      <AdaptiveDpr pixelated={false} />
+      <AdaptiveEvents />
+
+      {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
+      <Environment resolution={quality === "alta" ? 256 : 128} frames={1}>
+        <color attach="background" args={[SKY[time]]} />
+        <Lightformer
+          intensity={time === "dia" ? 3 : 1.6}
+          color={sunColor}
+          position={[0, 24, 0]}
+          rotation={[Math.PI / 2, 0, 0]}
+          scale={[60, 60, 1]}
+        />
+        <Lightformer
+          intensity={time === "noite" ? 2.4 : 1.2}
+          color="#dceaff"
+          position={[-30, 14, 0]}
+          rotation-y={Math.PI / 2}
+          scale={[60, 8, 1]}
+        />
+        <Lightformer
+          intensity={time === "noite" ? 2.4 : 1.2}
+          color="#dceaff"
+          position={[30, 14, 0]}
+          rotation-y={-Math.PI / 2}
+          scale={[60, 8, 1]}
+        />
+        <Lightformer
+          intensity={0.8}
+          color={time === "entardecer" ? "#ff9b5c" : "#8fd8ff"}
+          position={[0, 6, -40]}
+          scale={[60, 8, 1]}
+        />
+      </Environment>
+
+      <ambientLight intensity={0.7} />
       <hemisphereLight
-        intensity={time === "dia" ? 1.0 : 0.7}
+        intensity={time === "dia" ? 0.9 : 0.6}
         groundColor="#0d2a18"
         color={time === "entardecer" ? "#ffd0a8" : "#cfe4ff"}
       />
@@ -1119,6 +1246,7 @@ function Scene({
         color={sunColor}
         castShadow={quality === "alta"}
         shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0004}
         shadow-camera-left={-90}
         shadow-camera-right={90}
         shadow-camera-top={70}
@@ -1127,6 +1255,7 @@ function Scene({
       <directionalLight position={[-60, 60, -40]} intensity={0.6} color="#bcd8ff" />
 
       <Pitch quality={quality} />
+
       <AdBoards />
       <Floodlights time={time} quality={quality} />
       <Stands
@@ -1155,6 +1284,8 @@ function Scene({
         />
       ))}
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
+      <Post quality={quality} replay={replay} />
+
     </>
   );
 }
@@ -1178,25 +1309,33 @@ export function Stadium3D({
     <div className="relative h-full w-full">
       <Canvas
         shadows={quality === "alta"}
-        dpr={quality === "alta" ? [1, 2] : quality === "media" ? 1 : 0.75}
+        dpr={quality === "alta" ? [1, 2] : quality === "media" ? [1, 1.5] : 0.75}
         camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
-        gl={{ antialias: quality !== "baixa" }}
+        gl={{
+          antialias: quality === "media",
+          powerPreference: "high-performance",
+          stencil: false,
+        }}
+        performance={{ min: 0.5 }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = quality === "baixa" ? 1.0 : 1.12;
+          gl.toneMappingExposure = quality === "baixa" ? 1.0 : 1.15;
+          gl.outputColorSpace = THREE.SRGBColorSpace;
         }}
       >
         <Scene sim={sim} mode={mode} quality={quality} time={time} />
       </Canvas>
-      {/* acabamento de transmissão: vinheta + leve correção de cor */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.42) 100%)",
-        }}
-      />
+      {quality === "baixa" ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.42) 100%)",
+          }}
+        />
+      ) : null}
     </div>
   );
 }
+
