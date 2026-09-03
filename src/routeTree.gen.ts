@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
 import { Route as AuthenticatedClubRouteImport } from './routes/_authenticated/club'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
@@ -60,6 +61,11 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedBoardRoute = AuthenticatedBoardRouteImport.update({
+  id: '/board',
+  path: '/board',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedClubRoute = AuthenticatedClubRouteImport.update({
   id: '/club',
   path: '/club',
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/board': typeof AuthenticatedBoardRoute
   '/club': typeof AuthenticatedClubRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/board': typeof AuthenticatedBoardRoute
   '/club': typeof AuthenticatedClubRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRoute
@@ -182,6 +190,7 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/_authenticated/board': typeof AuthenticatedBoardRoute
   '/_authenticated/club': typeof AuthenticatedClubRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
@@ -205,6 +214,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/sitemap.xml'
     | '/.well-known/oauth-protected-resource'
+    | '/board'
     | '/club'
     | '/dashboard'
     | '/history'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/sitemap.xml'
     | '/.well-known/oauth-protected-resource'
+    | '/board'
     | '/club'
     | '/dashboard'
     | '/history'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/sitemap.xml'
     | '/.well-known/oauth-protected-resource'
+    | '/_authenticated/board'
     | '/_authenticated/club'
     | '/_authenticated/dashboard'
     | '/_authenticated/history'
@@ -320,6 +332,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/.well-known/oauth-protected-resource'
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/board': {
+      id: '/_authenticated/board'
+      path: '/board'
+      fullPath: '/board'
+      preLoaderRoute: typeof AuthenticatedBoardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/club': {
       id: '/_authenticated/club'
@@ -423,6 +442,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBoardRoute: typeof AuthenticatedBoardRoute
   AuthenticatedClubRoute: typeof AuthenticatedClubRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
@@ -436,6 +456,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBoardRoute: AuthenticatedBoardRoute,
   AuthenticatedClubRoute: AuthenticatedClubRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
