@@ -10,6 +10,7 @@
 - [x] Novas telas: Mercado (contratar/dispensar), Notícias, História; hub do clube com alertas e finanças; elenco com valor/salário/cartões
 
 ## Próximo
+- [ ] Infraestrutura de e-mail (domínio notify.football-manager.app + templates de autenticação e do app)
 - [ ] Copa nacional (mata-mata integrada ao calendário)
 - [ ] Substituições ao vivo durante a partida 3D
 - [ ] Melhorar câmera broadcast (altura/enquadramento) e iluminação das arquibancadas
