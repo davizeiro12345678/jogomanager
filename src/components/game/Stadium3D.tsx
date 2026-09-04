@@ -1185,10 +1185,21 @@ function PlayerMesh({
         {([["l", -0.115, legL, kneeLRef, footL] as const, ["r", 0.115, legR, kneeRRef, footR] as const]).map(
           ([id, x, tRef, cRef, fRef]) => (
             <group key={id} ref={tRef} position={[x, -0.1, 0]}>
-              {/* coxa (mais grossa em cima) */}
+              {/* coxa (mais grossa em cima) + quadríceps */}
               <mesh position={[0, -0.19, 0]} scale={[1, 1, 0.92]} castShadow={shadows}>
                 <capsuleGeometry args={[0.085, 0.22, 4, 10]} />
                 {skinMat}
+              </mesh>
+              {detail && (
+                <mesh position={[0, -0.2, 0.035]} scale={[0.72, 1.25, 0.55]}>
+                  <sphereGeometry args={[0.08, 10, 10]} />
+                  {skinMat}
+                </mesh>
+              )}
+              {/* barra do calção sobre a coxa */}
+              <mesh position={[0, -0.08, 0]} scale={[1, 1, 0.95]}>
+                <cylinderGeometry args={[0.098, 0.094, 0.09, 12]} />
+                {shortsMat}
               </mesh>
               <group ref={cRef} position={[0, -0.42, 0]}>
                 {/* joelho */}
@@ -1196,26 +1207,44 @@ function PlayerMesh({
                   <sphereGeometry args={[0.072, 10, 10]} />
                   {skinMat}
                 </mesh>
-                {/* panturrilha nua + meião */}
+                {/* panturrilha nua + meião com caneleira */}
                 <mesh position={[0, -0.1, 0]} castShadow={shadows}>
                   <capsuleGeometry args={[0.068, 0.08, 4, 10]} />
                   {skinMat}
                 </mesh>
                 <mesh position={[0, -0.24, -0.004]} scale={[1, 1, 1.04]} castShadow={shadows}>
                   <capsuleGeometry args={[0.072, 0.16, 4, 10]} />
-                  <meshStandardMaterial color={kit.socks} roughness={0.95} />
+                  {socksMat}
                 </mesh>
                 {detail && (
-                  <mesh position={[0, -0.15, 0]}>
-                    <cylinderGeometry args={[0.075, 0.073, 0.035, 10]} />
-                    <meshStandardMaterial color={kit.detail} roughness={0.9} />
-                  </mesh>
+                  <>
+                    {/* volume da caneleira */}
+                    <mesh position={[0, -0.24, 0.045]} scale={[0.7, 1.5, 0.4]}>
+                      <sphereGeometry args={[0.07, 10, 10]} />
+                      {socksMat}
+                    </mesh>
+                    {/* panturrilha */}
+                    <mesh position={[0, -0.19, -0.03]} scale={[0.75, 1.1, 0.55]}>
+                      <sphereGeometry args={[0.072, 10, 10]} />
+                      {socksMat}
+                    </mesh>
+                    {/* faixa superior do meião */}
+                    <mesh position={[0, -0.15, 0]}>
+                      <cylinderGeometry args={[0.076, 0.074, 0.035, 12]} />
+                      {detailMat}
+                    </mesh>
+                    {/* fita de fixação */}
+                    <mesh position={[0, -0.3, 0]}>
+                      <cylinderGeometry args={[0.075, 0.075, 0.018, 12]} />
+                      {detailMat}
+                    </mesh>
+                  </>
                 )}
                 <group ref={fRef} position={[0, -0.37, 0]}>
-                  {/* chuteira: bico + calcanhar + sola */}
+                  {/* chuteira: bico + calcanhar + sola + travas */}
                   <mesh position={[0, -0.02, 0.07]} scale={[1, 0.62, 1]} rotation={[0.06, 0, 0]} castShadow={shadows}>
                     <capsuleGeometry args={[0.062, 0.16, 4, 10]} />
-                    <meshStandardMaterial color="#0d0d0d" roughness={0.38} metalness={0.18} />
+                    <meshStandardMaterial color="#0d0d0d" roughness={0.34} metalness={0.2} />
                   </mesh>
                   <mesh position={[0, 0.005, -0.025]} scale={[0.95, 1, 0.9]}>
                     <sphereGeometry args={[0.058, 10, 10]} />
@@ -1223,13 +1252,25 @@ function PlayerMesh({
                   </mesh>
                   <mesh position={[0, -0.052, 0.045]}>
                     <boxGeometry args={[0.115, 0.018, 0.25]} />
-                    <meshStandardMaterial color={kit.detail} roughness={0.5} />
+                    {detailMat}
                   </mesh>
                   {detail && (
-                    <mesh position={[0, -0.005, 0.055]} rotation={[0.1, 0, 0]}>
-                      <boxGeometry args={[0.03, 0.05, 0.13]} />
-                      <meshStandardMaterial color="#f2f2f2" roughness={0.7} />
-                    </mesh>
+                    <>
+                      {/* cadarço / peito do pé */}
+                      <mesh position={[0, -0.005, 0.055]} rotation={[0.1, 0, 0]}>
+                        <boxGeometry args={[0.03, 0.05, 0.13]} />
+                        <meshStandardMaterial color="#f2f2f2" roughness={0.7} />
+                      </mesh>
+                      {/* travas */}
+                      {([[-0.035, 0.14], [0.035, 0.14], [-0.038, 0.02], [0.038, 0.02], [0, -0.05]] as const).map(
+                        ([sx, sz], i) => (
+                          <mesh key={i} position={[sx, -0.066, sz]}>
+                            <coneGeometry args={[0.011, 0.022, 6]} />
+                            <meshStandardMaterial color="#e8e8e8" roughness={0.45} metalness={0.25} />
+                          </mesh>
+                        ),
+                      )}
+                    </>
                   )}
                 </group>
               </group>
