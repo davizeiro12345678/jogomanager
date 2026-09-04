@@ -228,19 +228,19 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
 
   const jerseyMat = hi ? (
     <meshPhysicalMaterial
-      color={kit.primary}
-      map={tex ?? undefined}
+      color={kit.base}
+      map={tex ?? null}
       roughness={0.78}
       sheen={0.45}
-      sheenColor={shade(kit.primary, 0.4)}
+      sheenColor={shade(kit.base, 0.4)}
     />
   ) : (
-    <meshStandardMaterial color={kit.primary} map={tex ?? undefined} roughness={0.85} />
+    <meshStandardMaterial color={kit.base} map={tex ?? null} roughness={0.85} />
   );
 
   const shortsMat = <meshStandardMaterial color={kit.shorts} roughness={0.86} />;
   const socksMat = <meshStandardMaterial color={kit.socks} roughness={0.9} />;
-  const trimMat = <meshStandardMaterial color={kit.secondary} roughness={0.8} />;
+  const trimMat = <meshStandardMaterial color={kit.detail} roughness={0.8} />;
   const hairMat = (
     <meshStandardMaterial color={look.hairColor} roughness={0.85} metalness={0.02} />
   );
@@ -305,7 +305,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
               <sphereGeometry args={[handR, segs.radial, segs.radial]} />
               {handMat}
             </mesh>
-            <group ref={side === 1 ? lod0 : undefined}>
+            <group ref={side === 1 ? lod0 : spareRef}>
               {/* dedos, só no LOD mais próximo */}
               {[0, 1, 2, 3].map((i) => (
                 <mesh
@@ -380,7 +380,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
               <boxGeometry args={[P.footH * 1.0, P.footH * 0.16, P.footLen * 0.86]} />
               {bootAccentMat}
             </mesh>
-            <group ref={side === 1 ? lod1 : undefined}>
+            <group ref={side === 1 ? lod1 : spareRef}>
               {([
                 [-0.3, 0.36],
                 [0.3, 0.36],
