@@ -28,7 +28,7 @@ export function hashId(s: string): number {
 }
 
 /** gerador linear simples, suficiente para variação visual */
-export function makeLook Rng(seed: number): () => number {
+export function makeLookRng(seed: number): () => number {
   let s = (seed || 1) >>> 0;
   return () => {
     s ^= s << 13;
