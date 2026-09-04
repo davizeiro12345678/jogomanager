@@ -1264,7 +1264,7 @@ function PlayerMesh({
                       {/* travas */}
                       {([[-0.035, 0.14], [0.035, 0.14], [-0.038, 0.02], [0.038, 0.02], [0, -0.05]] as const).map(
                         ([sx, sz], i) => (
-                          <mesh key={i} position={[sx, -0.066, sz]}>
+                          <mesh key={i} position={[sx, -0.066, sz]} rotation={[Math.PI, 0, 0]}>
                             <coneGeometry args={[0.011, 0.022, 6]} />
                             <meshStandardMaterial color="#e8e8e8" roughness={0.45} metalness={0.25} />
                           </mesh>
