@@ -239,16 +239,46 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
     <meshStandardMaterial color={kit.base} map={tex ?? null} roughness={0.85} />
   );
 
-  const shortsMat = <meshStandardMaterial color={kit.shorts} roughness={0.86} />;
-  const socksMat = <meshStandardMaterial color={kit.socks} roughness={0.9} />;
+  const shortsMat = hi ? (
+    <meshPhysicalMaterial
+      color={kit.shorts}
+      roughness={0.84}
+      sheen={0.4}
+      sheenColor={shade(kit.shorts, 0.35)}
+    />
+  ) : (
+    <meshStandardMaterial color={kit.shorts} roughness={0.86} />
+  );
+  const socksMat = hi ? (
+    <meshPhysicalMaterial
+      color={kit.socks}
+      roughness={0.92}
+      sheen={0.6}
+      sheenRoughness={0.8}
+      sheenColor={shade(kit.socks, 0.45)}
+    />
+  ) : (
+    <meshStandardMaterial color={kit.socks} roughness={0.9} />
+  );
   const trimMat = <meshStandardMaterial color={kit.detail} roughness={0.8} />;
   const hairMat = (
     <meshStandardMaterial color={look.hairColor} roughness={0.85} metalness={0.02} />
   );
-  const bootMat = (
+  const bootMat = hi ? (
+    <meshPhysicalMaterial
+      color={look.bootColor}
+      roughness={0.22}
+      metalness={0.1}
+      clearcoat={0.85}
+      clearcoatRoughness={0.18}
+    />
+  ) : (
     <meshStandardMaterial color={look.bootColor} roughness={0.34} metalness={0.22} />
   );
   const bootAccentMat = <meshStandardMaterial color={look.bootAccent} roughness={0.4} />;
+  const soleMat = (
+    <meshStandardMaterial color={shade(look.bootColor, -0.55)} roughness={0.6} />
+  );
   const gloveMat = <meshStandardMaterial color={look.gloveColor} roughness={0.7} />;
 
   const handMat = look.gloves ? gloveMat : skinMat;
