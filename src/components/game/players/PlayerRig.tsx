@@ -85,6 +85,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
   // grupos de LOD: detalhes finos (rosto, dedos, costuras) e corpo médio
   const lod0 = useRef<THREE.Group>(null);
   const lod1 = useRef<THREE.Group>(null);
+  const spareRef = useRef<THREE.Group>(null);
   const lodState = useRef<LodLevel>(1);
 
   /* ---------------------------------------------------------- animação */
