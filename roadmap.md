@@ -1,18 +1,17 @@
 # Roadmap
 
-## Concluído
-- [x] SEO (acessibilidade, sitemap, GSC verificado)
-- [x] MCP (get/save/delete career, OAuth)
-- [x] Favicon próprio
-- [x] Mega update fase 1: jogadores 3D detalhados (shorts, meias, mangas, cabelos variados), GK com kit próprio, 10 padrões de kit, placas de publicidade com marcas, rastro da bola
-- [x] 16 novas ligas (Croácia, Sérvia, Tchéquia, Romênia, Peru, Equador, Paraguai, Bolívia, Nigéria, África do Sul, Marrocos, Catar, Emirados, Tailândia, Indonésia, Canadá) + bancos de nomes
-- [x] Mecânicas v2: finanças (caixa, folha, receitas, prêmios), treino semanal, lesões, suspensões por cartões, evolução/declínio de jogadores, moral, aprovação da diretoria, notícias, múltiplas temporadas com troféus e histórico
-- [x] Novas telas: Mercado (contratar/dispensar), Notícias, História; hub do clube com alertas e finanças; elenco com valor/salário/cartões
+## Em aberto (pedidos de 04/09)
+- [ ] Estratégia de palavras-chave PT-BR ("manager de futebol", "soccer manager") + páginas públicas
+- [ ] Páginas públicas: /guias, /ligas-de-futebol, /dicas de gestão (SEO, head próprio, sitemap)
+- [ ] Terminar pernas/chuteiras/meias com os novos materiais físicos e validar no navegador
+- [ ] Integrar PlayerRig ao Stadium3D (substituir PlayerMesh antigo)
+- [ ] Página de cadastro de clubes reais (nome, escudo/foto, cores do kit)
+- [ ] Página de cadastro de jogadores (foto, posição, idade, contrato, valor, salário)
+- [ ] Usar os dados cadastrados na criação de carreira (escolher elenco antes de começar)
+- [ ] Ligas reais: decidir modelo (cadastro do usuário vs. dados fictícios) — licenciamento
+- [ ] Publicar e reenviar o sitemap ao Google
 
-## Concluído (cont.)
-- [x] E-mails: domínio notify.football-manager.app em verificação, templates de autenticação com a marca e infraestrutura de e-mails do app
-
-## Próximo
-- [ ] Copa nacional (mata-mata integrada ao calendário)
-- [ ] Substituições ao vivo durante a partida 3D
-- [ ] Melhorar câmera broadcast (altura/enquadramento) e iluminação das arquibancadas
+## Feito
+- Modo convidado (jogar sem e-mail), carreira local + nuvem
+- Escudos procedurais, kits, bandeiras, estádio 3D, pós-processamento
+- Search Console conectado, sitemap enviado
