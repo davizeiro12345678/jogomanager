@@ -18,6 +18,7 @@ import type { ComponentType, ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { CLUBS } from "@/game/data/leagues";
+import { useClubTheme } from "@/game/theme";
 import { useSignedIn } from "@/hooks/useCareer";
 import { Crest } from "./Crest";
 import type { CareerState } from "@/game/types";
