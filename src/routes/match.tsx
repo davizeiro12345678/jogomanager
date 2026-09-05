@@ -377,9 +377,12 @@ function LiveMatch({
       .playerRatings()
       .filter((r) => r.side === mySide)
       .map((r) => ({ pid: r.pid, goals: r.goals, assists: r.assists, played: true }));
-    update(advanceRound(career, { hg: snap.hg, ag: snap.ag }, perf));
-    navigate({ to: "/club" });
+    void advanceRoundAsync(career, { hg: snap.hg, ag: snap.ag }, perf).then((next) => {
+      update(next);
+      navigate({ to: "/club" });
+    });
   }
+
 
 
   function setMentality(v: number) {
