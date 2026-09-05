@@ -6,11 +6,13 @@
 import { LEAGUES } from "@/game/data/leagues";
 import {
   sdbSearchTeam,
+  sdbAllTeams,
   sdbSquad,
   apiFootballTeamId,
   apiFootballSquad,
   footballDataSquad,
 } from "./football-api.server";
+
 
 type Admin = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 
