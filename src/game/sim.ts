@@ -589,6 +589,7 @@ export class MatchSim {
     const side = holder.side;
     const dir = this.attackDir(side);
     this.stats[side].shots++;
+    holder.shots++;
     const gk = this.players.find((p) => p.side !== side && p.pos === "GK");
     const accuracy = (holder.shooting / 100) * (1 - Math.min(0.75, distGoal / 40));
     const onTarget = this.rnd() < 0.34 + accuracy * 0.55;
