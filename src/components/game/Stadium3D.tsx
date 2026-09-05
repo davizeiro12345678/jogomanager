@@ -50,20 +50,43 @@ function grassTexture() {
   const ctx = c.getContext("2d");
   if (!ctx) return null;
 
-  ctx.fillStyle = "#1d7a45";
+  // base com variação de tonalidade (não é verde chapado)
+  const g = ctx.createLinearGradient(0, 0, 0, size);
+  g.addColorStop(0, "#1a6f3f");
+  g.addColorStop(0.5, "#1f8149");
+  g.addColorStop(1, "#186a3c");
+  ctx.fillStyle = g;
   ctx.fillRect(0, 0, size, size);
 
-  // listras de corte diagonais
+  // listras de corte diagonais, com bordas suaves e largura alternada
   ctx.save();
   ctx.translate(size / 2, size / 2);
   ctx.rotate(-0.22);
   ctx.translate(-size, -size);
   for (let i = 0; i < 40; i++) {
-    ctx.fillStyle = i % 2 === 0 ? "rgba(255,255,255,0.055)" : "rgba(0,0,0,0.055)";
+    const light = i % 2 === 0;
+    const grad = ctx.createLinearGradient(i * 144, 0, i * 144 + 144, 0);
+    const a = light ? "rgba(255,255,255," : "rgba(0,0,0,";
+    grad.addColorStop(0, `${a}0.02)`);
+    grad.addColorStop(0.5, `${a}0.075)`);
+    grad.addColorStop(1, `${a}0.02)`);
+    ctx.fillStyle = grad;
     ctx.fillRect(i * 144, 0, 144, size * 2);
   }
   ctx.restore();
 
+  // fibras finas (textura de lâmina) — dá granulação de perto
+  for (let i = 0; i < 26000; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const len = 3 + Math.random() * 7;
+    ctx.strokeStyle = `rgba(${Math.random() > 0.45 ? "210,255,190" : "10,60,30"},${0.03 + Math.random() * 0.07})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + (Math.random() - 0.5) * 3, y - len);
+    ctx.stroke();
+  }
 
   // desgaste / manchas
   for (let i = 0; i < 900; i++) {
@@ -75,10 +98,66 @@ function grassTexture() {
     ctx.fill();
   }
 
+  // áreas mais gastas: pequenas áreas e círculo central
+  const wear = (cx: number, cy: number, rx: number, ry: number, strength: number) => {
+    const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry));
+    rg.addColorStop(0, `rgba(150,130,80,${strength})`);
+    rg.addColorStop(1, "rgba(150,130,80,0)");
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(1, ry / rx);
+    ctx.fillStyle = rg;
+    ctx.beginPath();
+    ctx.arc(0, 0, rx, 0, 7);
+    ctx.fill();
+    ctx.restore();
+  };
+  wear(size * 0.5, size * 0.5, size * 0.1, size * 0.1, 0.1);
+  wear(size * 0.05, size * 0.5, size * 0.09, size * 0.16, 0.16);
+  wear(size * 0.95, size * 0.5, size * 0.09, size * 0.16, 0.16);
+
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
   tex.anisotropy = 16;
+  return tex;
+}
+
+/** Normal map procedural: dá relevo às lâminas e às listras de corte. */
+function grassNormal() {
+  if (typeof document === "undefined") return null;
+  const size = 1024;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = "#8080ff";
+  ctx.fillRect(0, 0, size, size);
+  // inclinação alternada das faixas ceifadas
+  ctx.save();
+  ctx.translate(size / 2, size / 2);
+  ctx.rotate(-0.22);
+  ctx.translate(-size, -size);
+  for (let i = 0; i < 40; i++) {
+    ctx.fillStyle = i % 2 === 0 ? "rgba(110,128,255,0.55)" : "rgba(150,128,255,0.55)";
+    ctx.fillRect(i * 72, 0, 72, size * 2);
+  }
+  ctx.restore();
+  // ruído de lâminas
+  for (let i = 0; i < 16000; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    ctx.strokeStyle = `rgba(${100 + Math.random() * 60 | 0},${100 + Math.random() * 60 | 0},255,0.25)`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + (Math.random() - 0.5) * 2, y - 2 - Math.random() * 4);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(6, 4);
+  tex.anisotropy = 8;
   return tex;
 }
 
@@ -122,9 +201,42 @@ function grassRoughness() {
   return tex;
 }
 
+/** Tufos de grama instanciados perto das linhas laterais (só na qualidade alta). */
+function GrassTufts() {
+  const count = 2600;
+  const ref = useRef<THREE.InstancedMesh>(null);
+  useEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const d = new THREE.Object3D();
+    const col = new THREE.Color();
+    for (let i = 0; i < count; i++) {
+      const x = (Math.random() * 2 - 1) * (FIELD_X + 4);
+      const z = (Math.random() * 2 - 1) * (FIELD_Z + 4);
+      d.position.set(x, 0.09, z);
+      d.rotation.set(0, Math.random() * Math.PI, (Math.random() - 0.5) * 0.35);
+      const s = 0.7 + Math.random() * 0.8;
+      d.scale.set(s, s * (0.8 + Math.random() * 0.6), s);
+      d.updateMatrix();
+      mesh.setMatrixAt(i, d.matrix);
+      col.setHSL(0.33 + Math.random() * 0.03, 0.5, 0.24 + Math.random() * 0.1);
+      mesh.setColorAt(i, col);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, []);
+  return (
+    <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, count]}>
+      <coneGeometry args={[0.06, 0.18, 4]} />
+      <meshStandardMaterial roughness={0.95} />
+    </instancedMesh>
+  );
+}
+
 function Pitch({ quality }: { quality: Quality }) {
   const tex = useMemo(grassTexture, []);
   const rough = useMemo(grassRoughness, []);
+  const norm = useMemo(() => (quality === "baixa" ? null : grassNormal()), [quality]);
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
@@ -136,6 +248,7 @@ function Pitch({ quality }: { quality: Quality }) {
         <meshPhysicalMaterial
           {...(tex ? { map: tex } : { color: "#1d7a45" })}
           {...(rough ? { roughnessMap: rough } : {})}
+          {...(norm ? { normalMap: norm, normalScale: new THREE.Vector2(0.55, 0.55) } : {})}
           roughness={0.78}
           metalness={0.0}
           clearcoat={quality === "alta" ? 0.35 : 0}
@@ -145,6 +258,7 @@ function Pitch({ quality }: { quality: Quality }) {
           envMapIntensity={0.35}
         />
       </mesh>
+      {quality === "alta" && <GrassTufts />}
       <Lines />
       <Goal side={1} quality={quality} />
       <Goal side={-1} quality={quality} />
@@ -153,6 +267,7 @@ function Pitch({ quality }: { quality: Quality }) {
     </group>
   );
 }
+
 
 
 function line(points: [number, number][], y = 0.02) {
