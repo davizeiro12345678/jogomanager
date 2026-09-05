@@ -50,20 +50,43 @@ function grassTexture() {
   const ctx = c.getContext("2d");
   if (!ctx) return null;
 
-  ctx.fillStyle = "#1d7a45";
+  // base com variação de tonalidade (não é verde chapado)
+  const g = ctx.createLinearGradient(0, 0, 0, size);
+  g.addColorStop(0, "#1a6f3f");
+  g.addColorStop(0.5, "#1f8149");
+  g.addColorStop(1, "#186a3c");
+  ctx.fillStyle = g;
   ctx.fillRect(0, 0, size, size);
 
-  // listras de corte diagonais
+  // listras de corte diagonais, com bordas suaves e largura alternada
   ctx.save();
   ctx.translate(size / 2, size / 2);
   ctx.rotate(-0.22);
   ctx.translate(-size, -size);
   for (let i = 0; i < 40; i++) {
-    ctx.fillStyle = i % 2 === 0 ? "rgba(255,255,255,0.055)" : "rgba(0,0,0,0.055)";
+    const light = i % 2 === 0;
+    const grad = ctx.createLinearGradient(i * 144, 0, i * 144 + 144, 0);
+    const a = light ? "rgba(255,255,255," : "rgba(0,0,0,";
+    grad.addColorStop(0, `${a}0.02)`);
+    grad.addColorStop(0.5, `${a}0.075)`);
+    grad.addColorStop(1, `${a}0.02)`);
+    ctx.fillStyle = grad;
     ctx.fillRect(i * 144, 0, 144, size * 2);
   }
   ctx.restore();
 
+  // fibras finas (textura de lâmina) — dá granulação de perto
+  for (let i = 0; i < 26000; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const len = 3 + Math.random() * 7;
+    ctx.strokeStyle = `rgba(${Math.random() > 0.45 ? "210,255,190" : "10,60,30"},${0.03 + Math.random() * 0.07})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + (Math.random() - 0.5) * 3, y - len);
+    ctx.stroke();
+  }
 
   // desgaste / manchas
   for (let i = 0; i < 900; i++) {
@@ -75,10 +98,66 @@ function grassTexture() {
     ctx.fill();
   }
 
+  // áreas mais gastas: pequenas áreas e círculo central
+  const wear = (cx: number, cy: number, rx: number, ry: number, strength: number) => {
+    const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry));
+    rg.addColorStop(0, `rgba(150,130,80,${strength})`);
+    rg.addColorStop(1, "rgba(150,130,80,0)");
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(1, ry / rx);
+    ctx.fillStyle = rg;
+    ctx.beginPath();
+    ctx.arc(0, 0, rx, 0, 7);
+    ctx.fill();
+    ctx.restore();
+  };
+  wear(size * 0.5, size * 0.5, size * 0.1, size * 0.1, 0.1);
+  wear(size * 0.05, size * 0.5, size * 0.09, size * 0.16, 0.16);
+  wear(size * 0.95, size * 0.5, size * 0.09, size * 0.16, 0.16);
+
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
   tex.anisotropy = 16;
+  return tex;
+}
+
+/** Normal map procedural: dá relevo às lâminas e às listras de corte. */
+function grassNormal() {
+  if (typeof document === "undefined") return null;
+  const size = 1024;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = "#8080ff";
+  ctx.fillRect(0, 0, size, size);
+  // inclinação alternada das faixas ceifadas
+  ctx.save();
+  ctx.translate(size / 2, size / 2);
+  ctx.rotate(-0.22);
+  ctx.translate(-size, -size);
+  for (let i = 0; i < 40; i++) {
+    ctx.fillStyle = i % 2 === 0 ? "rgba(110,128,255,0.55)" : "rgba(150,128,255,0.55)";
+    ctx.fillRect(i * 72, 0, 72, size * 2);
+  }
+  ctx.restore();
+  // ruído de lâminas
+  for (let i = 0; i < 16000; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    ctx.strokeStyle = `rgba(${100 + Math.random() * 60 | 0},${100 + Math.random() * 60 | 0},255,0.25)`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + (Math.random() - 0.5) * 2, y - 2 - Math.random() * 4);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(6, 4);
+  tex.anisotropy = 8;
   return tex;
 }
 
@@ -122,9 +201,42 @@ function grassRoughness() {
   return tex;
 }
 
+/** Tufos de grama instanciados perto das linhas laterais (só na qualidade alta). */
+function GrassTufts() {
+  const count = 2600;
+  const ref = useRef<THREE.InstancedMesh>(null);
+  useEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const d = new THREE.Object3D();
+    const col = new THREE.Color();
+    for (let i = 0; i < count; i++) {
+      const x = (Math.random() * 2 - 1) * (FIELD_X + 4);
+      const z = (Math.random() * 2 - 1) * (FIELD_Z + 4);
+      d.position.set(x, 0.09, z);
+      d.rotation.set(0, Math.random() * Math.PI, (Math.random() - 0.5) * 0.35);
+      const s = 0.7 + Math.random() * 0.8;
+      d.scale.set(s, s * (0.8 + Math.random() * 0.6), s);
+      d.updateMatrix();
+      mesh.setMatrixAt(i, d.matrix);
+      col.setHSL(0.33 + Math.random() * 0.03, 0.5, 0.24 + Math.random() * 0.1);
+      mesh.setColorAt(i, col);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, []);
+  return (
+    <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, count]}>
+      <coneGeometry args={[0.06, 0.18, 4]} />
+      <meshStandardMaterial roughness={0.95} />
+    </instancedMesh>
+  );
+}
+
 function Pitch({ quality }: { quality: Quality }) {
   const tex = useMemo(grassTexture, []);
   const rough = useMemo(grassRoughness, []);
+  const norm = useMemo(() => (quality === "baixa" ? null : grassNormal()), [quality]);
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
@@ -136,15 +248,17 @@ function Pitch({ quality }: { quality: Quality }) {
         <meshPhysicalMaterial
           {...(tex ? { map: tex } : { color: "#1d7a45" })}
           {...(rough ? { roughnessMap: rough } : {})}
+          {...(norm ? { normalMap: norm, normalScale: new THREE.Vector2(0.55, 0.55) } : {})}
           roughness={0.78}
           metalness={0.0}
           clearcoat={quality === "alta" ? 0.35 : 0}
           clearcoatRoughness={0.7}
-          sheen={quality === "alta" ? 0.4 : 0}
-          sheenColor="#7dffb0"
+          sheen={quality === "alta" ? 0.22 : 0}
+          sheenColor="#4f9c6d"
           envMapIntensity={0.35}
         />
       </mesh>
+      {quality === "alta" && <GrassTufts />}
       <Lines />
       <Goal side={1} quality={quality} />
       <Goal side={-1} quality={quality} />
@@ -153,6 +267,7 @@ function Pitch({ quality }: { quality: Quality }) {
     </group>
   );
 }
+
 
 
 function line(points: [number, number][], y = 0.02) {
@@ -227,70 +342,139 @@ function Lines() {
   );
 }
 
+/** Rede em losango, com nós — usada como alphaMap (recorte real, não plano leitoso). */
 function netTexture() {
   if (typeof document === "undefined") return null;
-  const s = 128;
+  const s = 256;
   const c = document.createElement("canvas");
-  c.width = s;
-  c.height = s;
+  c.width = c.height = s;
   const ctx = c.getContext("2d");
   if (!ctx) return null;
-  ctx.clearRect(0, 0, s, s);
-  ctx.strokeStyle = "rgba(255,255,255,0.85)";
-  ctx.lineWidth = 2;
-  for (let i = 0; i <= 8; i++) {
-    const p = (i / 8) * s;
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, s, s);
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 3.2;
+  ctx.lineCap = "round";
+  const step = s / 8;
+  for (let i = -8; i <= 16; i++) {
     ctx.beginPath();
-    ctx.moveTo(p, 0);
-    ctx.lineTo(p, s);
-    ctx.moveTo(0, p);
-    ctx.lineTo(s, p);
+    ctx.moveTo(i * step, 0);
+    ctx.lineTo(i * step + s, s);
     ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(i * step, 0);
+    ctx.lineTo(i * step - s, s);
+    ctx.stroke();
+  }
+  // nós nos cruzamentos
+  ctx.fillStyle = "#ffffff";
+  for (let a = 0; a <= 8; a++) {
+    for (let b = 0; b <= 8; b++) {
+      ctx.beginPath();
+      ctx.arc(a * step, b * step, 2.6, 0, 7);
+      ctx.fill();
+    }
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(6, 3);
   return tex;
+}
+
+function useNetMaterial(repeatX: number, repeatY: number) {
+  return useMemo(() => {
+    const alpha = netTexture();
+    const mat = new THREE.MeshStandardMaterial({
+      color: "#f4f8ff",
+      roughness: 0.65,
+      metalness: 0,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      opacity: 0.95,
+    });
+    if (alpha) {
+      alpha.repeat.set(repeatX, repeatY);
+      mat.alphaMap = alpha;
+      mat.alphaTest = 0.32;
+    } else {
+      mat.opacity = 0.2;
+    }
+    return mat;
+  }, [repeatX, repeatY]);
+}
+
+/** Plano com barriga: a rede cai para trás como pano pendurado. */
+function sagGeometry(w: number, h: number, sag: number) {
+  const g = new THREE.PlaneGeometry(w, h, 14, 10);
+  const pos = g.attributes["position"] as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    const fx = 1 - Math.abs(x) / (w / 2);
+    const fy = (y + h / 2) / h;
+    pos.setZ(i, -sag * fx * (0.35 + 0.65 * (1 - fy)));
+  }
+  pos.needsUpdate = true;
+  g.computeVertexNormals();
+  return g;
 }
 
 function Goal({ side, quality }: { side: number; quality: Quality }) {
   const x = side * FIELD_X;
-  const net = useMemo(netTexture, []);
-  const netMat = net ? (
-    <meshStandardMaterial map={net} transparent opacity={0.55} side={THREE.DoubleSide} />
-  ) : (
-    <meshStandardMaterial color="#ffffff" transparent opacity={0.2} side={THREE.DoubleSide} />
+  const backMat = useNetMaterial(14, 5);
+  const sideMat = useNetMaterial(4, 5);
+  const topMat = useNetMaterial(4, 14);
+  const backGeo = useMemo(() => sagGeometry(7.32, 2.44, 0.55), []);
+  const post = (
+    <meshStandardMaterial color="#fdfdfd" roughness={0.22} metalness={0.08} />
   );
   return (
     <group position={[x, 0, 0]}>
       {[-3.66, 3.66].map((z) => (
-        <mesh key={z} position={[0, 1.22, z]} castShadow={quality === "alta"}>
-          <cylinderGeometry args={[0.1, 0.1, 2.44, 12]} />
-          <meshStandardMaterial color="#fbfbfb" roughness={0.3} />
-        </mesh>
+        <group key={z}>
+          <mesh position={[0, 1.22, z]} castShadow={quality === "alta"}>
+            <cylinderGeometry args={[0.06, 0.06, 2.44, 16]} />
+            {post}
+          </mesh>
+          {/* suporte traseiro da rede */}
+          <mesh position={[side * 1.05, 0.62, z]} rotation={[0, 0, side * 0.9]}>
+            <cylinderGeometry args={[0.035, 0.035, 2.2, 8]} />
+            {post}
+          </mesh>
+        </group>
       ))}
       <mesh position={[0, 2.44, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow={quality === "alta"}>
-        <cylinderGeometry args={[0.1, 0.1, 7.32, 12]} />
-        <meshStandardMaterial color="#fbfbfb" roughness={0.3} />
+        <cylinderGeometry args={[0.06, 0.06, 7.32, 16]} />
+        {post}
       </mesh>
-      {/* rede: fundo, laterais e teto */}
-      <mesh position={[side * 1.9, 1.22, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <planeGeometry args={[7.32, 2.44]} />
-        {netMat}
+      {/* barras traseiras horizontais */}
+      <mesh position={[side * 1.9, 0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.04, 0.04, 7.32, 10]} />
+        {post}
       </mesh>
+      {/* rede: fundo (com barriga), laterais e teto */}
+      <mesh
+        position={[side * 1.9, 1.22, 0]}
+        rotation={[0, side > 0 ? Math.PI / 2 : -Math.PI / 2, 0]}
+        geometry={backGeo}
+        material={backMat}
+      />
       {[-3.66, 3.66].map((z) => (
-        <mesh key={`s${z}`} position={[side * 0.95, 1.22, z]}>
+        <mesh key={`s${z}`} position={[side * 0.95, 1.22, z]} material={sideMat}>
           <planeGeometry args={[1.9, 2.44]} />
-          {netMat}
         </mesh>
       ))}
-      <mesh position={[side * 0.95, 2.4, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh
+        position={[side * 0.95, 2.4, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        material={topMat}
+      >
         <planeGeometry args={[1.9, 7.32]} />
-        {netMat}
       </mesh>
     </group>
   );
 }
+
 
 function CornerFlags() {
   const ref = useRef<THREE.Group>(null);
@@ -564,7 +748,7 @@ function Tiers({ rings }: { rings: number }) {
 
 function Roof({ rings }: { rings: number }) {
   const outer = 9 + rings * 1.5;
-  const depth = 10;
+  const depth = 12;
   const height = 2.0 + rings * 1.45 + 7;
   const trusses: React.ReactElement[] = [];
   for (let i = -6; i <= 6; i++) {
@@ -575,27 +759,93 @@ function Roof({ rings }: { rings: number }) {
           <meshStandardMaterial color="#5a6672" roughness={0.7} metalness={0.35} />
         </mesh>,
       );
+      // diagonal de contraventamento
+      trusses.push(
+        <mesh
+          key={`dz${i}${z}`}
+          position={[i * 13 + 6.5, height - 1.2, z * (FIELD_Z + outer)]}
+          rotation={[0, 0, 0.9]}
+        >
+          <boxGeometry args={[0.22, 12, 0.22]} />
+          <meshStandardMaterial color="#6b7783" roughness={0.6} metalness={0.4} />
+        </mesh>,
+      );
+    }
+  }
+  for (let i = -4; i <= 4; i++) {
+    for (const x of [-1, 1]) {
+      trusses.push(
+        <mesh key={`tx${i}${x}`} position={[x * (FIELD_X + outer), height - 2.2, i * 14]}>
+          <boxGeometry args={[0.5, 4.4, 0.5]} />
+          <meshStandardMaterial color="#5a6672" roughness={0.7} metalness={0.35} />
+        </mesh>,
+      );
     }
   }
   return (
     <group>
       {trusses}
       {[-1, 1].map((z) => (
-        <mesh key={`rz${z}`} position={[0, height, z * (FIELD_Z + outer + depth / 2 - 2)]}>
-          <boxGeometry args={[FIELD_X * 2 + 36, 0.6, depth]} />
-          <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} />
-        </mesh>
+        <group key={`rz${z}`}>
+          <mesh position={[0, height, z * (FIELD_Z + outer + depth / 2 - 2)]}>
+            <boxGeometry args={[FIELD_X * 2 + 36, 0.6, depth]} />
+            <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} />
+          </mesh>
+          {/* forro iluminado por baixo */}
+          <mesh
+            position={[0, height - 0.42, z * (FIELD_Z + outer + depth / 2 - 2)]}
+            rotation={[Math.PI / 2, 0, 0]}
+          >
+            <planeGeometry args={[FIELD_X * 2 + 34, depth - 1]} />
+            <meshStandardMaterial
+              color="#20272e"
+              emissive="#8fb6d8"
+              emissiveIntensity={0.18}
+              roughness={0.9}
+            />
+          </mesh>
+        </group>
       ))}
       {[-1, 1].map((x) => (
-        <mesh key={`rx${x}`} position={[x * (FIELD_X + outer + depth / 2 - 2), height, 0]}>
-          <boxGeometry args={[depth, 0.6, FIELD_Z * 2 + 40]} />
-          <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} />
+        <group key={`rx${x}`}>
+          <mesh position={[x * (FIELD_X + outer + depth / 2 - 2), height, 0]}>
+            <boxGeometry args={[depth, 0.6, FIELD_Z * 2 + 40]} />
+            <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} />
+          </mesh>
+          <mesh
+            position={[x * (FIELD_X + outer + depth / 2 - 2), height - 0.42, 0]}
+            rotation={[Math.PI / 2, 0, 0]}
+          >
+            <planeGeometry args={[depth - 1, FIELD_Z * 2 + 38]} />
+            <meshStandardMaterial
+              color="#20272e"
+              emissive="#8fb6d8"
+              emissiveIntensity={0.18}
+              roughness={0.9}
+            />
+          </mesh>
+        </group>
+      ))}
+      {/* cantos fechados: o estádio deixa de ter buracos nas quinas */}
+      {[
+        [1, 1],
+        [1, -1],
+        [-1, 1],
+        [-1, -1],
+      ].map(([sx, sz], i) => (
+        <mesh
+          key={`c${i}`}
+          position={[sx! * (FIELD_X + outer + 2), height, sz! * (FIELD_Z + outer + 2)]}
+          rotation={[0, sx! * sz! * Math.PI / 4, 0]}
+        >
+          <boxGeometry args={[26, 0.6, depth]} />
+          <meshStandardMaterial color="#49545f" roughness={0.8} metalness={0.2} />
         </mesh>
       ))}
     </group>
   );
-
 }
+
 
 function Banners({ color }: { color: string }) {
   return (
@@ -623,15 +873,19 @@ function Stands({
   goalPulse: React.MutableRefObject<number>;
   night: boolean;
 }) {
-  const density = quality === "alta" ? 320 : quality === "media" ? 190 : 90;
-  const rings = quality === "alta" ? 10 : quality === "media" ? 7 : 4;
+  const density = quality === "alta" ? 460 : quality === "media" ? 240 : 100;
+  const rings = quality === "alta" ? 14 : quality === "media" ? 9 : 5;
 
   const crowd = useMemo(() => {
     const positions: THREE.Vector3[] = [];
     const colors: THREE.Color[] = [];
+    const skins: THREE.Color[] = [];
     const home = new THREE.Color(homeColor);
     const away = new THREE.Color(awayColor);
     const neutral = ["#d8d8d8", "#8fa3b8", "#42506b", "#e0c07a", "#b8c4cf", "#6c7a8c"];
+    const skinTones = ["#e8b98f", "#d19b6d", "#a9713f", "#7a4b26", "#f2cfa8", "#5c3418"];
+    const pick = (i: number, ring: number) =>
+      new THREE.Color(skinTones[(i * 5 + ring * 3) % skinTones.length]!);
     for (let ring = 0; ring < rings; ring++) {
       for (let i = 0; i < density; i++) {
         const t = i / density;
@@ -650,6 +904,7 @@ function Stands({
               ? zone
               : new THREE.Color(neutral[(i + ring) % neutral.length]!),
           );
+          skins.push(pick(i, ring));
         }
       }
     }
@@ -664,22 +919,29 @@ function Stands({
           );
           const mosaic = (ring + i) % 5 < 3 ? home : new THREE.Color("#f2f2f2");
           colors.push(xSide === 1 ? mosaic : new THREE.Color(neutral[(i + ring) % neutral.length]!));
+          skins.push(pick(i + 3, ring));
         }
       }
     }
-    return { positions, colors };
+    return { positions, colors, skins };
   }, [homeColor, awayColor, density, rings]);
 
   const ref = useRef<THREE.InstancedMesh>(null);
+  const headRef = useRef<THREE.InstancedMesh>(null);
   const flashRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const flashCount = night ? Math.min(140, Math.round(crowd.positions.length * 0.05)) : 0;
+  const flashCount = night ? Math.min(200, Math.round(crowd.positions.length * 0.05)) : 0;
 
   useEffect(() => {
     const mesh = ref.current;
     if (!mesh) return;
     crowd.colors.forEach((c, i) => mesh.setColorAt(i, c));
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    const head = headRef.current;
+    if (head) {
+      crowd.skins.forEach((c, i) => head.setColorAt(i, c));
+      if (head.instanceColor) head.instanceColor.needsUpdate = true;
+    }
     const mat = mesh.material as THREE.Material | THREE.Material[];
     if (Array.isArray(mat)) mat.forEach((m) => (m.needsUpdate = true));
     else mat.needsUpdate = true;
@@ -688,19 +950,30 @@ function Stands({
   useFrame(({ clock }) => {
     const mesh = ref.current;
     if (!mesh) return;
+    const head = headRef.current;
     const t = clock.elapsedTime;
     const pulse = goalPulse.current;
     for (let i = 0; i < crowd.positions.length; i++) {
       const p = crowd.positions[i]!;
       const wave = Math.sin(t * 1.1 - p.x * 0.06) > 0.86 ? 0.5 : 0;
       const jump = pulse > 0 ? Math.abs(Math.sin(t * 9 + i)) * 0.75 * pulse : 0;
-      dummy.position.set(p.x, p.y + Math.sin(t * 3 + i) * 0.06 + wave + jump, p.z);
-      dummy.scale.set(1, 1, 1);
-      dummy.rotation.y = ((i % 7) - 3) * 0.06;
+      const y = p.y + Math.sin(t * 3 + i) * 0.06 + wave + jump;
+      const yaw = ((i % 7) - 3) * 0.06;
+      dummy.position.set(p.x, y, p.z);
+      dummy.scale.set(1, 0.92 + ((i % 5) * 0.04), 1);
+      dummy.rotation.set(0, yaw, 0);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
+      if (head) {
+        dummy.position.set(p.x, y + 0.52, p.z);
+        dummy.scale.setScalar(1);
+        dummy.rotation.set(Math.sin(t * 2 + i) * 0.05, yaw, 0);
+        dummy.updateMatrix();
+        head.setMatrixAt(i, dummy.matrix);
+      }
     }
     mesh.instanceMatrix.needsUpdate = true;
+    if (head) head.instanceMatrix.needsUpdate = true;
 
     // flashes de câmera na torcida (mais intensos após o gol)
     const fm = flashRef.current;
@@ -738,8 +1011,16 @@ function Stands({
       <Roof rings={rings} />
       <Banners color={homeColor} />
       <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, crowd.positions.length]}>
-        <boxGeometry args={[0.5, 0.8, 0.5]} />
-        <meshStandardMaterial roughness={0.85} />
+        <capsuleGeometry args={[0.22, 0.42, 3, 6]} />
+        <meshStandardMaterial roughness={0.88} />
+      </instancedMesh>
+      <instancedMesh
+        ref={headRef}
+        frustumCulled={false}
+        args={[undefined, undefined, crowd.positions.length]}
+      >
+        <sphereGeometry args={[0.16, 6, 5]} />
+        <meshStandardMaterial roughness={0.75} />
       </instancedMesh>
       {flashCount > 0 && (
         <instancedMesh ref={flashRef} frustumCulled={false} args={[undefined, undefined, flashCount]}>
@@ -750,6 +1031,7 @@ function Stands({
     </group>
   );
 }
+
 
 
 /* --------------------------------------------------------------- jogadores */
@@ -897,6 +1179,42 @@ function Post({ quality }: { quality: Quality; replay?: boolean }) {
 
 
 
+/** Céu em degradê + nuvens leves; substitui o fundo chapado. */
+function SkyDome({ time }: { time: TimeOfDay }) {
+  const tex = useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const w = 32;
+    const h = 256;
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext("2d");
+    if (!ctx) return null;
+    const stops: Record<TimeOfDay, [string, string, string]> = {
+      dia: ["#3f86d0", "#8fbfe8", "#d8ecf8"],
+      entardecer: ["#1c1030", "#7a3560", "#ff9e5c"],
+      noite: ["#02040a", "#080f1c", "#16243a"],
+    };
+    const [top, mid, low] = stops[time];
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, top);
+    g.addColorStop(0.55, mid);
+    g.addColorStop(1, low);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, [time]);
+  if (!tex) return null;
+  return (
+    <mesh scale={[-1, 1, 1]}>
+      <sphereGeometry args={[420, 24, 16]} />
+      <meshBasicMaterial map={tex} side={THREE.BackSide} depthWrite={false} fog={false} />
+    </mesh>
+  );
+}
+
 /* ------------------------------------------------------------------- cena */
 
 function Scene({
@@ -998,6 +1316,7 @@ function Scene({
       />
       <directionalLight position={[-60, 60, -40]} intensity={0.6} color="#bcd8ff" />
 
+      <SkyDome time={time} />
       <Pitch quality={quality} />
 
       <AdBoards />
