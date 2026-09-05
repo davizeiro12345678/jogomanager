@@ -253,8 +253,8 @@ function Pitch({ quality }: { quality: Quality }) {
           metalness={0.0}
           clearcoat={quality === "alta" ? 0.35 : 0}
           clearcoatRoughness={0.7}
-          sheen={quality === "alta" ? 0.4 : 0}
-          sheenColor="#7dffb0"
+          sheen={quality === "alta" ? 0.22 : 0}
+          sheenColor="#4f9c6d"
           envMapIntensity={0.35}
         />
       </mesh>
