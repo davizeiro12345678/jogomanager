@@ -2,24 +2,24 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { Flag } from "@/components/game/Flag";
 import { LEAGUES } from "@/game/data/leagues";
+import { PublicLinks } from "@/components/PublicLinks";
+import { breadcrumbLd, canonical, itemListLd, seoMeta } from "@/lib/seo";
+
+const PATH = "/ligas-de-futebol";
+const TITLE = "Ligas de futebol disponíveis no jogo de manager | Pro Football Manager 3D";
+const DESC =
+  "Veja todas as ligas e campeonatos jogáveis no Pro Football Manager 3D: Brasil, Inglaterra, Espanha, Itália, Alemanha, França, Portugal e mais, com todos os clubes de cada divisão.";
 
 export const Route = createFileRoute("/ligas-de-futebol")({
   head: () => ({
-    meta: [
-      { title: "Ligas de futebol disponíveis no jogo de manager | Pro Football Manager 3D" },
-      {
-        name: "description",
-        content:
-          "Veja todas as ligas e campeonatos jogáveis no Pro Football Manager 3D: Brasil, Inglaterra, Espanha, Itália, Alemanha, França, Portugal e mais, com todos os clubes de cada divisão.",
-      },
-      { property: "og:title", content: "Ligas de futebol disponíveis | Pro Football Manager 3D" },
-      {
-        property: "og:description",
-        content:
-          "Lista completa das ligas e clubes que você pode comandar no jogo de manager de futebol 3D.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+    meta: seoMeta({ title: TITLE, description: DESC, path: PATH }),
+    links: canonical(PATH),
+    scripts: [
+      itemListLd("Ligas jogáveis", LEAGUES.map((l) => l.name)),
+      breadcrumbLd([
+        { name: "Início", path: "/" },
+        { name: "Ligas de futebol", path: PATH },
+      ]),
     ],
   }),
   component: LeaguesPage,
