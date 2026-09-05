@@ -93,7 +93,7 @@ function mapSdb(t: SdbTeam): RemoteTeam {
 
 /** Search a club on TheSportsDB by name, optionally constrained to a country. */
 export async function sdbSearchTeam(name: string, country?: string): Promise<RemoteTeam | null> {
-  const key = process.env["THESPORTSDB_API_KEY"] ?? "3";
+  const key = process.env["THESPORTSDB_API_KEY"] ?? "123";
   const url = `https://www.thesportsdb.com/api/v1/json/${key}/searchteams.php?t=${encodeURIComponent(name)}`;
   const json = await getJson<{ teams: SdbTeam[] | null }>(url);
   const teams = json?.teams;
@@ -236,7 +236,7 @@ interface SdbPlayer {
 
 /** Full squad for a TheSportsDB team id, including player photos. */
 export async function sdbSquad(teamId: string): Promise<RemotePlayer[]> {
-  const key = process.env["THESPORTSDB_API_KEY"] ?? "3";
+  const key = process.env["THESPORTSDB_API_KEY"] ?? "123";
   const json = await getJson<{ player: SdbPlayer[] | null }>(
     `https://www.thesportsdb.com/api/v1/json/${key}/lookup_all_players.php?id=${encodeURIComponent(teamId)}`,
   );
