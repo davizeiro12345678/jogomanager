@@ -545,19 +545,27 @@ export class MatchSim {
   }
 
   private dribble(holder: SimPlayer, dt: number) {
+    if (this.restartTimer > 0) {
+      const k = Math.exp(-7 * dt);
+      holder.vx *= k;
+      holder.vz *= k;
+      return;
+    }
     const dir = this.attackDir(holder.side);
     const targetX = dir * FIELD_X;
     const dx = targetX - holder.x;
-    const dz = -holder.z * 0.25;
+    const dz = -holder.z * 0.25 + Math.sin(this.time * 0.9 + holder.number) * 4;
     const d = Math.hypot(dx, dz) || 1;
-    const speed = 2.4 + (holder.pace / 100) * 4.4;
+    const speed = (3.0 + (holder.pace / 100) * 4.4) * (0.8 + (holder.stamina / 100) * 0.2);
     holder.x += (dx / d) * speed * dt;
-    holder.z += (dz / d) * speed * dt + Math.sin(this.time * 1.7 + holder.number) * dt * 1.2;
-    holder.vx = dx / d;
-    holder.vz = dz / d;
+    holder.z += (dz / d) * speed * dt;
+    const k = 1 - Math.exp(-6 * dt);
+    holder.vx += ((dx / d) * speed - holder.vx) * k;
+    holder.vz += ((dz / d) * speed - holder.vz) * k;
     holder.x = Math.max(-FIELD_X + 1, Math.min(FIELD_X - 1, holder.x));
     holder.z = Math.max(-FIELD_Z + 1, Math.min(FIELD_Z - 1, holder.z));
   }
+
 
   private pressure(holder: SimPlayer, dt: number) {
     const { opp, dist } = this.nearestOpponent(holder);
