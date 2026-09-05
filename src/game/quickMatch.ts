@@ -3,13 +3,13 @@ import { CLUBS } from "./data/leagues";
 import { buildSquad } from "./squad";
 import { pickLineup } from "./career";
 import type { TeamSetup } from "./sim";
-import type { Player } from "./types";
+import type { FormationKey, Player } from "./types";
 
 export type Difficulty = "facil" | "normal" | "dificil";
 
 export function buildTeamSetup(
   clubId: string,
-  formation = "4-3-3",
+  formation: FormationKey = "4-3-3",
   mentality = 2,
   pressing = 1,
 ): TeamSetup {
