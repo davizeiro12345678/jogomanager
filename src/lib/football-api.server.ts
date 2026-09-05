@@ -187,6 +187,23 @@ export async function sdbSearchTeam(name: string, country?: string): Promise<Rem
   return loose ? mapSdb(loose) : null;
 }
 
+/**
+ * Fetch every team of a league in a single request.
+ * Far cheaper than one search per club on the rate-limited free tier.
+ */
+export async function sdbAllTeams(league: string): Promise<(RemoteTeam & { alternate?: string })[]> {
+  const key = process.env["THESPORTSDB_API_KEY"] ?? "123";
+  const json = await getJson<{ teams: (SdbTeam & { strTeamAlternate?: string })[] | null }>(
+    `https://www.thesportsdb.com/api/v1/json/${key}/search_all_teams.php?l=${encodeURIComponent(league)}`,
+  );
+  return (json?.teams ?? []).map((t) => ({
+    ...mapSdb(t),
+    alternate: t.strTeamAlternate ?? undefined,
+  }));
+}
+
+
+
 
 /* ------------------------------------------------------------------ */
 /* football-data.org                                                   */
