@@ -69,11 +69,7 @@ export async function enrichClubs(limit = 40, offset = 0) {
 
   for (const club of rows ?? []) {
     if (club.crest_url) continue;
-    let remote = await sdbSearchTeam(club.name, club.country ?? undefined);
-    if (!remote) {
-      await wait(4000);
-      remote = await sdbSearchTeam(club.name, club.country ?? undefined);
-    }
+    const remote = await sdbSearchTeam(club.name, club.country ?? undefined);
     if (!remote) {
       failures.push(club.name);
       await wait(2100);
