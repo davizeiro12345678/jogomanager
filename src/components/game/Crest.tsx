@@ -1,6 +1,7 @@
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
 
 import type { Club } from "@/game/types";
+import { badgeFor } from "@/lib/customData";
 
 function hash(str: string) {
   let h = 2166136261;
