@@ -18,11 +18,15 @@ export const Route = createFileRoute("/api/public/sync-football")({
         }
         const url = new URL(request.url);
         const scope = url.searchParams.get("scope") ?? "clubs";
-        const limit = Number(url.searchParams.get("limit") ?? "40") || 40;
-        const offset = Number(url.searchParams.get("offset") ?? "0") || 0;
+        const num = (k: string, d: number) => Number(url.searchParams.get(k) ?? d) || d;
+        const limit = num("limit", scope === "all" ? 600 : 40);
+        const offset = num("offset", 0);
+        const concurrency = num("concurrency", 8);
+        const budgetMs = num("budgetMs", scope === "all" ? 90_000 : 45_000);
 
         const { runSync } = await import("@/lib/football-sync.server");
-        const result = await runSync({ scope, limit, offset });
+        const result = await runSync({ scope, limit, offset, concurrency, budgetMs });
+
         return new Response(JSON.stringify(result), {
           status: result.ok ? 200 : 500,
           headers: { "content-type": "application/json", "cache-control": "no-store" },

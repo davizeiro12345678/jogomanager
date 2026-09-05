@@ -38,14 +38,23 @@ export interface RemotePlayer {
 const UA = { "User-Agent": "football-manager-app/1.0" };
 
 async function getJson<T>(url: string, headers: Record<string, string> = {}): Promise<T | null> {
-  try {
-    const res = await fetch(url, { headers: { ...UA, ...headers } });
-    if (!res.ok) return null;
-    return (await res.json()) as T;
-  } catch {
-    return null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, { headers: { ...UA, ...headers } });
+      if (res.ok) return (await res.json()) as T;
+      // Free tiers throttle aggressively; back off and try again.
+      if (res.status === 429 || res.status >= 500) {
+        await new Promise((r) => setTimeout(r, 700 * (attempt + 1) + Math.random() * 400));
+        continue;
+      }
+      return null;
+    } catch {
+      await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+    }
   }
+  return null;
 }
+
 
 /* ------------------------------------------------------------------ */
 /* TheSportsDB                                                         */
@@ -91,28 +100,110 @@ function mapSdb(t: SdbTeam): RemoteTeam {
   };
 }
 
+/** Localised club names -> the name TheSportsDB indexes them under. */
+const NAME_ALIASES: Record<string, string> = {
+  bayerndemunique: "Bayern Munich",
+  olympiquedemarselha: "Olympique de Marseille",
+  parissaintgermain: "Paris SG",
+  aekatenas: "AEK Athens",
+  legiavarsovia: "Legia Warszawa",
+  rapidviena: "Rapid Wien",
+  bodoglimt: "Bodo/Glimt",
+  saintetienne: "AS Saint-Etienne",
+  unionsaintgilloise: "Royale Union Saint-Gilloise",
+  interdemilao: "Inter Milan",
+  acmilao: "AC Milan",
+  bayernmunique: "Bayern Munich",
+  colonia: "FC Koln",
+  atleticodemadri: "Atletico Madrid",
+  realmadri: "Real Madrid",
+  sevilha: "Sevilla",
+  corunha: "Deportivo La Coruna",
+  lisboa: "Lisbon",
+  praga: "Prague",
+  moscou: "Moscow",
+  copenhague: "FC Copenhagen",
+  zurique: "FC Zurich",
+  genebra: "Servette",
+  atenas: "Athens",
+};
+
+/** Alternative queries to try when the primary club name finds nothing. */
+function nameVariants(name: string): string[] {
+  const out = new Set<string>();
+  out.add(name);
+  const alias = NAME_ALIASES[normalise(name)];
+  if (alias) out.add(alias);
+
+  const plain = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  out.add(plain);
+  // "Olympique de Marselha" -> "Olympique Marselha"
+  out.add(plain.replace(/\s+(de|do|da|of|del|di)\s+/gi, " "));
+  // Drop trailing club suffixes that the API often omits.
+  out.add(plain.replace(/\s+(FC|CF|SC|AC|BK|SK|FK|CD|AFC)$/i, "").trim());
+  // Fall back to the distinctive first two words.
+  const words = plain.split(/\s+/);
+  if (words.length > 2) out.add(words.slice(0, 2).join(" "));
+  return [...out].filter((s) => s.length > 2);
+}
+
+async function sdbQuery(key: string, query: string): Promise<SdbTeam[]> {
+  const url = `https://www.thesportsdb.com/api/v1/json/${key}/searchteams.php?t=${encodeURIComponent(query)}`;
+  const json = await getJson<{ teams: SdbTeam[] | null }>(url);
+  return json?.teams ?? [];
+}
+
 /** Search a club on TheSportsDB by name, optionally constrained to a country. */
 export async function sdbSearchTeam(name: string, country?: string): Promise<RemoteTeam | null> {
   const key = process.env["THESPORTSDB_API_KEY"] ?? "123";
-  const url = `https://www.thesportsdb.com/api/v1/json/${key}/searchteams.php?t=${encodeURIComponent(name)}`;
-  const json = await getJson<{ teams: SdbTeam[] | null }>(url);
-  const teams = json?.teams;
-  if (!teams || teams.length === 0) return null;
-
-  const soccer = teams.filter((t) => !("strSport" in t) || (t as { strSport?: string }).strSport === "Soccer");
-  const pool = soccer.length ? soccer : teams;
   const wanted = normalise(name);
+  let loose: SdbTeam | null = null;
 
-  const byCountry = country
-    ? pool.filter((t) => normalise(t.strCountry ?? "") === normalise(country))
-    : [];
-  const candidates = byCountry.length ? byCountry : pool;
+  for (const query of nameVariants(name)) {
+    const teams = await sdbQuery(key, query);
+    if (!teams.length) continue;
 
-  const exact = candidates.find(
-    (t) => normalise(t.strTeam ?? "") === wanted || normalise(t.strTeamAlternate ?? "").includes(wanted),
-  );
-  return mapSdb(exact ?? candidates[0]!);
+    const soccer = teams.filter(
+      (t) => !("strSport" in t) || (t as { strSport?: string }).strSport === "Soccer",
+    );
+    const pool = soccer.length ? soccer : teams;
+
+    const byCountry = country
+      ? pool.filter((t) => normalise(t.strCountry ?? "") === normalise(country))
+      : [];
+    const candidates = byCountry.length ? byCountry : pool;
+
+    const exact = candidates.find(
+      (t) =>
+        normalise(t.strTeam ?? "") === wanted ||
+        normalise(t.strTeam ?? "") === normalise(query) ||
+        normalise(t.strTeamAlternate ?? "").includes(wanted),
+    );
+    if (exact) return mapSdb(exact);
+    // Keep a same-country candidate as a fallback, but keep trying variants.
+    if (!loose && byCountry.length) loose = candidates[0]!;
+  }
+
+  return loose ? mapSdb(loose) : null;
 }
+
+/**
+ * Fetch every team of a league in a single request.
+ * Far cheaper than one search per club on the rate-limited free tier.
+ */
+export async function sdbAllTeams(league: string): Promise<(RemoteTeam & { alternate?: string | undefined })[]> {
+  const key = process.env["THESPORTSDB_API_KEY"] ?? "123";
+  const json = await getJson<{ teams: (SdbTeam & { strTeamAlternate?: string })[] | null }>(
+    `https://www.thesportsdb.com/api/v1/json/${key}/search_all_teams.php?l=${encodeURIComponent(league)}`,
+  );
+  return (json?.teams ?? []).map((t) => ({
+    ...mapSdb(t),
+    alternate: t.strTeamAlternate ?? undefined,
+  }));
+}
+
+
+
 
 /* ------------------------------------------------------------------ */
 /* football-data.org                                                   */
