@@ -644,7 +644,7 @@ export function advanceRound(
     fixtures,
     players,
     round: round + 1,
-    matchLog: logEntry ? [logEntry, ...(state.matchLog ?? [])].slice(0, 400) : state.matchLog,
+    ...(logEntry ? { matchLog: [logEntry, ...(state.matchLog ?? [])].slice(0, 400) } : {}),
     results: played
       ? [
           ...state.results,
