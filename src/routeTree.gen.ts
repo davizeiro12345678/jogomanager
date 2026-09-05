@@ -16,6 +16,7 @@ import { Route as BrasileiraoRouteImport } from './routes/brasileirao'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as ComoSerTecnicoDeFutebolRouteImport } from './routes/como-ser-tecnico-de-futebol'
+import { Route as CupRouteImport } from './routes/cup'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DicasDeGestaoRouteImport } from './routes/dicas-de-gestao'
 import { Route as FinancesRouteImport } from './routes/finances'
@@ -79,6 +80,11 @@ const ClubRoute = ClubRouteImport.update({
 const ComoSerTecnicoDeFutebolRoute = ComoSerTecnicoDeFutebolRouteImport.update({
   id: '/como-ser-tecnico-de-futebol',
   path: '/como-ser-tecnico-de-futebol',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CupRoute = CupRouteImport.update({
+  id: '/cup',
+  path: '/cup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -237,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/cup': typeof CupRoute
   '/dashboard': typeof DashboardRoute
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/finances': typeof FinancesRoute
@@ -275,6 +282,7 @@ export interface FileRoutesByTo {
   '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/cup': typeof CupRoute
   '/dashboard': typeof DashboardRoute
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/finances': typeof FinancesRoute
@@ -314,6 +322,7 @@ export interface FileRoutesById {
   '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/cup': typeof CupRoute
   '/dashboard': typeof DashboardRoute
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/finances': typeof FinancesRoute
@@ -354,6 +363,7 @@ export interface FileRouteTypes {
     | '/cadastro'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/cup'
     | '/dashboard'
     | '/dicas-de-gestao'
     | '/finances'
@@ -392,6 +402,7 @@ export interface FileRouteTypes {
     | '/cadastro'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/cup'
     | '/dashboard'
     | '/dicas-de-gestao'
     | '/finances'
@@ -430,6 +441,7 @@ export interface FileRouteTypes {
     | '/cadastro'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/cup'
     | '/dashboard'
     | '/dicas-de-gestao'
     | '/finances'
@@ -469,6 +481,7 @@ export interface RootRouteChildren {
   CadastroRoute: typeof CadastroRoute
   ClubRoute: typeof ClubRoute
   ComoSerTecnicoDeFutebolRoute: typeof ComoSerTecnicoDeFutebolRoute
+  CupRoute: typeof CupRoute
   DashboardRoute: typeof DashboardRoute
   DicasDeGestaoRoute: typeof DicasDeGestaoRoute
   FinancesRoute: typeof FinancesRoute
@@ -549,6 +562,13 @@ declare module '@tanstack/react-router' {
       path: '/como-ser-tecnico-de-futebol'
       fullPath: '/como-ser-tecnico-de-futebol'
       preLoaderRoute: typeof ComoSerTecnicoDeFutebolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cup': {
+      id: '/cup'
+      path: '/cup'
+      fullPath: '/cup'
+      preLoaderRoute: typeof CupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -765,6 +785,7 @@ const rootRouteChildren: RootRouteChildren = {
   CadastroRoute: CadastroRoute,
   ClubRoute: ClubRoute,
   ComoSerTecnicoDeFutebolRoute: ComoSerTecnicoDeFutebolRoute,
+  CupRoute: CupRoute,
   DashboardRoute: DashboardRoute,
   DicasDeGestaoRoute: DicasDeGestaoRoute,
   FinancesRoute: FinancesRoute,
