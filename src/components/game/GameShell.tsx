@@ -187,16 +187,16 @@ export function GameShell({
 
       {/* Barra inferior do celular */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-card/95 backdrop-blur-xl md:hidden">
-        {TABS.filter((t) => MOBILE.includes(t.to)).map((t) => {
-          const Icon = t.icon;
+        {TABS.filter((tab) => MOBILE.includes(tab.to)).map((tab) => {
+          const Icon = tab.icon;
           return (
             <Link
-              key={t.to}
-              to={t.to}
+              key={tab.to}
+              to={tab.to}
               className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] uppercase tracking-wider text-muted-foreground [&.active]:text-primary"
             >
               <Icon size={17} />
-              {t.label}
+              {t(tab.key)}
             </Link>
           );
         })}
