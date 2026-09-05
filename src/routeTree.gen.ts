@@ -16,6 +16,7 @@ import { Route as BrasileiraoRouteImport } from './routes/brasileirao'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as ComoSerTecnicoDeFutebolRouteImport } from './routes/como-ser-tecnico-de-futebol'
+import { Route as CriadorRouteImport } from './routes/criador'
 import { Route as CupRouteImport } from './routes/cup'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DicasDeGestaoRouteImport } from './routes/dicas-de-gestao'
@@ -39,6 +40,7 @@ import { Route as SquadRouteImport } from './routes/squad'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as TacticsRouteImport } from './routes/tactics'
 import { Route as TaticasEFormacoesRouteImport } from './routes/taticas-e-formacoes'
+import { Route as TemporadaAutomaticaRouteImport } from './routes/temporada-automatica'
 import { Route as TrainingRouteImport } from './routes/training'
 import { Route as TransfersRouteImport } from './routes/transfers'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -81,6 +83,11 @@ const ClubRoute = ClubRouteImport.update({
 const ComoSerTecnicoDeFutebolRoute = ComoSerTecnicoDeFutebolRouteImport.update({
   id: '/como-ser-tecnico-de-futebol',
   path: '/como-ser-tecnico-de-futebol',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CriadorRoute = CriadorRouteImport.update({
+  id: '/criador',
+  path: '/criador',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CupRoute = CupRouteImport.update({
@@ -198,6 +205,11 @@ const TaticasEFormacoesRoute = TaticasEFormacoesRouteImport.update({
   path: '/taticas-e-formacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TemporadaAutomaticaRoute = TemporadaAutomaticaRouteImport.update({
+  id: '/temporada-automatica',
+  path: '/temporada-automatica',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TrainingRoute = TrainingRouteImport.update({
   id: '/training',
   path: '/training',
@@ -249,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
   '/dashboard': typeof DashboardRoute
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
@@ -272,6 +285,7 @@ export interface FileRoutesByFullPath {
   '/stats': typeof StatsRoute
   '/tactics': typeof TacticsRoute
   '/taticas-e-formacoes': typeof TaticasEFormacoesRoute
+  '/temporada-automatica': typeof TemporadaAutomaticaRoute
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -289,6 +303,7 @@ export interface FileRoutesByTo {
   '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
   '/dashboard': typeof DashboardRoute
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
@@ -312,6 +327,7 @@ export interface FileRoutesByTo {
   '/stats': typeof StatsRoute
   '/tactics': typeof TacticsRoute
   '/taticas-e-formacoes': typeof TaticasEFormacoesRoute
+  '/temporada-automatica': typeof TemporadaAutomaticaRoute
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -330,6 +346,7 @@ export interface FileRoutesById {
   '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
   '/dashboard': typeof DashboardRoute
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
@@ -353,6 +370,7 @@ export interface FileRoutesById {
   '/stats': typeof StatsRoute
   '/tactics': typeof TacticsRoute
   '/taticas-e-formacoes': typeof TaticasEFormacoesRoute
+  '/temporada-automatica': typeof TemporadaAutomaticaRoute
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -372,6 +390,7 @@ export interface FileRouteTypes {
     | '/cadastro'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/criador'
     | '/cup'
     | '/dashboard'
     | '/dicas-de-gestao'
@@ -395,6 +414,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/tactics'
     | '/taticas-e-formacoes'
+    | '/temporada-automatica'
     | '/training'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
@@ -412,6 +432,7 @@ export interface FileRouteTypes {
     | '/cadastro'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/criador'
     | '/cup'
     | '/dashboard'
     | '/dicas-de-gestao'
@@ -435,6 +456,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/tactics'
     | '/taticas-e-formacoes'
+    | '/temporada-automatica'
     | '/training'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
@@ -452,6 +474,7 @@ export interface FileRouteTypes {
     | '/cadastro'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/criador'
     | '/cup'
     | '/dashboard'
     | '/dicas-de-gestao'
@@ -475,6 +498,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/tactics'
     | '/taticas-e-formacoes'
+    | '/temporada-automatica'
     | '/training'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
@@ -493,6 +517,7 @@ export interface RootRouteChildren {
   CadastroRoute: typeof CadastroRoute
   ClubRoute: typeof ClubRoute
   ComoSerTecnicoDeFutebolRoute: typeof ComoSerTecnicoDeFutebolRoute
+  CriadorRoute: typeof CriadorRoute
   CupRoute: typeof CupRoute
   DashboardRoute: typeof DashboardRoute
   DicasDeGestaoRoute: typeof DicasDeGestaoRoute
@@ -516,6 +541,7 @@ export interface RootRouteChildren {
   StatsRoute: typeof StatsRoute
   TacticsRoute: typeof TacticsRoute
   TaticasEFormacoesRoute: typeof TaticasEFormacoesRoute
+  TemporadaAutomaticaRoute: typeof TemporadaAutomaticaRoute
   TrainingRoute: typeof TrainingRoute
   TransfersRoute: typeof TransfersRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -575,6 +601,13 @@ declare module '@tanstack/react-router' {
       path: '/como-ser-tecnico-de-futebol'
       fullPath: '/como-ser-tecnico-de-futebol'
       preLoaderRoute: typeof ComoSerTecnicoDeFutebolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/criador': {
+      id: '/criador'
+      path: '/criador'
+      fullPath: '/criador'
+      preLoaderRoute: typeof CriadorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cup': {
@@ -738,6 +771,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TaticasEFormacoesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/temporada-automatica': {
+      id: '/temporada-automatica'
+      path: '/temporada-automatica'
+      fullPath: '/temporada-automatica'
+      preLoaderRoute: typeof TemporadaAutomaticaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/training': {
       id: '/training'
       path: '/training'
@@ -805,6 +845,7 @@ const rootRouteChildren: RootRouteChildren = {
   CadastroRoute: CadastroRoute,
   ClubRoute: ClubRoute,
   ComoSerTecnicoDeFutebolRoute: ComoSerTecnicoDeFutebolRoute,
+  CriadorRoute: CriadorRoute,
   CupRoute: CupRoute,
   DashboardRoute: DashboardRoute,
   DicasDeGestaoRoute: DicasDeGestaoRoute,
@@ -828,6 +869,7 @@ const rootRouteChildren: RootRouteChildren = {
   StatsRoute: StatsRoute,
   TacticsRoute: TacticsRoute,
   TaticasEFormacoesRoute: TaticasEFormacoesRoute,
+  TemporadaAutomaticaRoute: TemporadaAutomaticaRoute,
   TrainingRoute: TrainingRoute,
   TransfersRoute: TransfersRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:

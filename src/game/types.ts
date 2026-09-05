@@ -243,6 +243,29 @@ export interface CareerState {
   sacked: boolean;
   /** copas nacionais e continentais da temporada */
   cups?: CupState[];
+
+  /* ---------------------------------------------------------- v4 */
+  /** histórico partida a partida (gols, assistências e minutos por jogo) */
+  matchLog?: MatchLogEntry[];
+}
+
+/** Uma linha do histórico por partida do clube do usuário. */
+export interface MatchLogEntry {
+  season: number;
+  round: number;
+  /** competição da partida */
+  comp: string;
+  opponentId: string;
+  home: boolean;
+  gf: number;
+  ga: number;
+  players: {
+    pid: string;
+    goals: number;
+    assists: number;
+    minutes: number;
+    rating: number;
+  }[];
 }
 
 export interface CupTie {

@@ -510,12 +510,17 @@ export interface MatchPerformance {
   goals: number;
   assists: number;
   played: boolean;
+  /** minutos em campo (padrão 90 quando ausente) */
+  minutes?: number;
+  /** nota da partida 0-10 */
+  rating?: number;
 }
 
 export function advanceRound(
   state: CareerState,
   userResult: { hg: number; ag: number },
   performances: MatchPerformance[] = [],
+  comp = "Liga",
 ) {
   const round = state.round;
   const fixtures = state.fixtures.map((f) => {
@@ -613,11 +618,33 @@ export function advanceRound(
       : "",
   };
 
+
+  // histórico partida a partida
+  const logEntry = played
+    ? {
+        season: state.season,
+        round,
+        comp,
+        opponentId: played.home === state.clubId ? played.away : played.home,
+        home: userHome,
+        gf,
+        ga,
+        players: performances.map((p) => ({
+          pid: p.pid,
+          goals: p.goals,
+          assists: p.assists,
+          minutes: p.minutes ?? 90,
+          rating: Math.round((p.rating ?? 6 + p.goals * 1.2 + p.assists * 0.7) * 10) / 10,
+        })),
+      }
+    : null;
+
   let next: CareerState = {
     ...state,
     fixtures,
     players,
     round: round + 1,
+    ...(logEntry ? { matchLog: [logEntry, ...(state.matchLog ?? [])].slice(0, 400) } : {}),
     results: played
       ? [
           ...state.results,
