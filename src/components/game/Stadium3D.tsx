@@ -1805,11 +1805,20 @@ function Stadium3DImpl({
     return t === 0 ? "dia" : t === 1 ? "entardecer" : "noite";
   }, [sim.home.clubId, sim.away.clubId]);
 
+  // Em segundo plano o desenho 3D é suspenso para poupar bateria no celular.
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const onVis = () => setVisible(!document.hidden);
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
   return (
     <div className="relative h-full w-full">
       <Canvas
         shadows={quality === "alta"}
-        dpr={quality === "alta" ? [1, 2] : quality === "media" ? [1, 1.5] : 0.75}
+        frameloop={visible ? "always" : "demand"}
+        dpr={dprFor(quality)}
         camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
         gl={{
           antialias: quality === "media",
