@@ -577,6 +577,8 @@ export class MatchSim {
     const err = success > this.rnd() ? 0 : (this.rnd() - 0.5) * 14;
     const wide = Math.abs(holder.z) > FIELD_Z * 0.55 && Math.abs(best.x - dir * FIELD_X) < 30;
     this.trigger(holder, wide ? "cross" : dist > 24 ? "passLong" : "pass", dist > 24 ? 0.85 : 0.6);
+    holder.passes++;
+    this.lastPass[holder.side] = { id: holder.id, time: this.time };
     this.ball.holder = null;
     this.ball.vx = (dx / d) * power + err * 0.2;
     this.ball.vz = (dz / d) * power + err;
