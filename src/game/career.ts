@@ -510,12 +510,17 @@ export interface MatchPerformance {
   goals: number;
   assists: number;
   played: boolean;
+  /** minutos em campo (padrão 90 quando ausente) */
+  minutes?: number;
+  /** nota da partida 0-10 */
+  rating?: number;
 }
 
 export function advanceRound(
   state: CareerState,
   userResult: { hg: number; ag: number },
   performances: MatchPerformance[] = [],
+  comp = "Liga",
 ) {
   const round = state.round;
   const fixtures = state.fixtures.map((f) => {
