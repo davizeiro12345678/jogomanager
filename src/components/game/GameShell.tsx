@@ -6,6 +6,7 @@ import {
   Coins,
   Dumbbell,
   Gauge,
+  Globe,
   History,
   Home,
   LayoutGrid,
@@ -22,24 +23,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { CLUBS } from "@/game/data/leagues";
 import { useClubTheme } from "@/game/theme";
 import { useSignedIn } from "@/hooks/useCareer";
+import { LANGS, LANG_NAMES, useT, type Lang } from "@/i18n";
 import { Crest } from "./Crest";
 import type { CareerState } from "@/game/types";
 
-const TABS: { to: string; label: string; icon: ComponentType<{ size?: number }> }[] = [
-  { to: "/dashboard", label: "Painel", icon: Gauge },
-  { to: "/club", label: "Central", icon: Home },
-  { to: "/squad", label: "Elenco", icon: Users },
-  { to: "/tactics", label: "Táticas", icon: LayoutGrid },
-  { to: "/training", label: "Treino", icon: Dumbbell },
-  { to: "/league", label: "Liga", icon: Table2 },
-  { to: "/cup", label: "Copas", icon: Trophy },
-  { to: "/transfers", label: "Mercado", icon: ArrowLeftRight },
-  { to: "/scouting", label: "Olheiros", icon: Search },
-  { to: "/finances", label: "Finanças", icon: Coins },
-  { to: "/board", label: "Diretoria", icon: Briefcase },
-  { to: "/stats", label: "Stats", icon: BarChart3 },
-  { to: "/news", label: "Notícias", icon: Newspaper },
-  { to: "/history", label: "História", icon: History },
+const TABS: { to: string; key: string; icon: ComponentType<{ size?: number }> }[] = [
+  { to: "/dashboard", key: "nav.panel", icon: Gauge },
+  { to: "/club", key: "nav.central", icon: Home },
+  { to: "/squad", key: "nav.squad", icon: Users },
+  { to: "/tactics", key: "nav.tactics", icon: LayoutGrid },
+  { to: "/training", key: "nav.training", icon: Dumbbell },
+  { to: "/league", key: "nav.league", icon: Table2 },
+  { to: "/cup", key: "nav.cups", icon: Trophy },
+  { to: "/transfers", key: "nav.market", icon: ArrowLeftRight },
+  { to: "/scouting", key: "nav.scouting", icon: Search },
+  { to: "/finances", key: "nav.finances", icon: Coins },
+  { to: "/board", key: "nav.board", icon: Briefcase },
+  { to: "/stats", key: "nav.stats", icon: BarChart3 },
+  { to: "/news", key: "nav.news", icon: Newspaper },
+  { to: "/history", key: "nav.history", icon: History },
 ];
 
 /** Atalhos mostrados na barra inferior do celular. */
