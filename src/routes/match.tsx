@@ -273,13 +273,8 @@ function LiveMatch({
   const narratorRef = useRef<Narrator | null>(null);
   const narrCursorRef = useRef(0);
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
-  const [quality, setQuality] = useState<Quality>(() => {
-    if (typeof navigator === "undefined") return "media";
-    const cores = navigator.hardwareConcurrency ?? 4;
-    const mobile = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
-    if (mobile || cores <= 4) return "baixa";
-    return cores >= 8 ? "alta" : "media";
-  });
+  const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
+
 
   const speedRef = useRef(speed);
   speedRef.current = speed;
