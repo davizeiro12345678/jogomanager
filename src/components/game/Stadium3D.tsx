@@ -1348,7 +1348,7 @@ function CrowdFlags({
           position={f.pos}
           rotation={[0, f.rot, 0]}
           scale={[f.s, f.s, 1]}
-          material={materials[i]}
+          material={materials[i]!}
         >
           <planeGeometry args={[2.4, 1.5, 12, 6]} />
         </mesh>
