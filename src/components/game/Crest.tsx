@@ -93,6 +93,12 @@ export function Crest({
   detail?: "auto" | "simple" | "full";
 }) {
   const uid = useId().replace(/:/g, "");
+  const [custom, setCustom] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    setCustom(badgeFor(club.id));
+  }, [club.id]);
+
   const h = hash(club.id);
   const shape = SHAPE_LIST[h % SHAPE_LIST.length]!;
   const pattern = PATTERN_LIST[Math.floor(h / 7) % PATTERN_LIST.length]!;
