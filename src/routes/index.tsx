@@ -10,27 +10,19 @@ import { Flag } from "@/components/game/Flag";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Pro Football Manager 3D — Futebol manager em 3D ao vivo" },
-      {
-        name: "description",
-        content:
-          "Comande um clube real, monte o elenco, defina a tática e assista aos 90 minutos em 3D. Brasileirão, Premier League, La Liga, Serie A e mais de 30 ligas.",
-      },
-      { property: "og:title", content: "Pro Football Manager 3D — Futebol manager em 3D ao vivo" },
-      {
-        property: "og:description",
-        content: "Comande um clube real, monte o elenco, defina a tática e assista aos 90 minutos em 3D. Brasileirão, Premier League, La Liga, Serie A e mais de 30 ligas.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://soccer-manager.fun/" },
-      { name: "twitter:card", content: "summary_large_image" },
+      ...seoMeta({
+        title: "Pro Football Manager 3D — Jogo de manager de futebol grátis em 3D",
+        description:
+          "Comande um clube real, monte o elenco, defina a tática e assista aos 90 minutos em 3D. Brasileirão, Premier League, LaLiga, Serie A e mais de 30 ligas. Grátis no navegador.",
+        path: "/",
+      }),
       {
         name: "google-site-verification",
         content: "aiZIOSixTEt1PZq_nu3R9bRBcvc0Xxv139cyiLgnJyA",
       },
     ],
-    links: [{ rel: "canonical", href: "https://soccer-manager.fun/" }],
-
+    links: canonical("/"),
+    scripts: [gameLd()],
   }),
   component: Landing,
 });
