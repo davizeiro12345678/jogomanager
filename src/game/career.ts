@@ -9,6 +9,7 @@ import {
   runWeeklyEvents,
   staffBill,
 } from "./events";
+import { customPlayersFor, toGamePlayer } from "@/lib/customData";
 import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
 import { computeTable, generateFixtures } from "./season";
