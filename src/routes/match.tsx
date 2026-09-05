@@ -21,7 +21,9 @@ import { CLUBS } from "@/game/data/leagues";
 import { MENTALITIES, PRESSING } from "@/game/formations";
 import { MatchSim, type TeamSetup } from "@/game/sim";
 import { Narrator, type NarrationEvent } from "@/game/narrator";
-import { advanceRound } from "@/game/career";
+import { advanceRoundAsync } from "@/game/simWorkerClient";
+import { detectQuality } from "@/game/device";
+
 import { nextFixture } from "@/game/season";
 import { buildSquad } from "@/game/squad";
 import { pickLineup } from "@/game/career";
@@ -273,13 +275,8 @@ function LiveMatch({
   const narratorRef = useRef<Narrator | null>(null);
   const narrCursorRef = useRef(0);
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
-  const [quality, setQuality] = useState<Quality>(() => {
-    if (typeof navigator === "undefined") return "media";
-    const cores = navigator.hardwareConcurrency ?? 4;
-    const mobile = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
-    if (mobile || cores <= 4) return "baixa";
-    return cores >= 8 ? "alta" : "media";
-  });
+  const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
+
 
   const speedRef = useRef(speed);
   speedRef.current = speed;
@@ -382,9 +379,12 @@ function LiveMatch({
       .playerRatings()
       .filter((r) => r.side === mySide)
       .map((r) => ({ pid: r.pid, goals: r.goals, assists: r.assists, played: true }));
-    update(advanceRound(career, { hg: snap.hg, ag: snap.ag }, perf));
-    navigate({ to: "/club" });
+    void advanceRoundAsync(career, { hg: snap.hg, ag: snap.ag }, perf).then((next) => {
+      update(next);
+      navigate({ to: "/club" });
+    });
   }
+
 
 
   function setMentality(v: number) {

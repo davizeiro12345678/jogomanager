@@ -15,6 +15,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { PlayerRig } from "@/components/game/players/PlayerRig";
+import { dprFor } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
 
@@ -1235,6 +1236,8 @@ function Stands({
       <Tiers rings={rings} />
       <Roof rings={rings} />
       <Banners color={homeColor} />
+      <CrowdFlags color={homeColor} alt={awayColor} rings={rings} quality={quality} />
+
       <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, crowd.positions.length]}>
         <capsuleGeometry args={[0.22, 0.42, 3, 6]} />
         <meshStandardMaterial roughness={0.88} />
@@ -1264,8 +1267,99 @@ function Stands({
 }
 
 
+/**
+ * Bandeirões da torcida: planos com ondulação no vertex shader, espalhados
+ * pelas arquibancadas nas cores dos dois clubes.
+ */
+function CrowdFlags({
+  color,
+  alt,
+  rings,
+  quality,
+}: {
+  color: string;
+  alt: string;
+  rings: number;
+  quality: Quality;
+}) {
+  const count = quality === "alta" ? 46 : quality === "media" ? 24 : 10;
+  const uTime = useRef({ value: 0 });
+
+  const flags = useMemo(() => {
+    const out: { pos: [number, number, number]; rot: number; c: string; s: number }[] = [];
+    for (let i = 0; i < count; i++) {
+      const behind = i % 2 === 0;
+      const ring = 1 + (i * 3) % Math.max(1, rings - 1);
+      const t = ((i * 37) % 100) / 100;
+      const y = 3.4 + ring * 1.45;
+      if (behind) {
+        const zSide = i % 4 < 2 ? -1 : 1;
+        out.push({
+          pos: [-FIELD_X - 8 + t * (FIELD_X * 2 + 16), y, zSide * (FIELD_Z + 7 + ring * 1.5)],
+          rot: zSide > 0 ? Math.PI : 0,
+          c: t < 0.45 ? color : alt,
+          s: 0.8 + ((i % 3) * 0.35),
+        });
+      } else {
+        const xSide = i % 4 < 2 ? -1 : 1;
+        out.push({
+          pos: [xSide * (FIELD_X + 10 + ring * 1.5), y, -FIELD_Z - 6 + t * (FIELD_Z * 2 + 12)],
+          rot: xSide > 0 ? -Math.PI / 2 : Math.PI / 2,
+          c: xSide > 0 ? color : alt,
+          s: 0.8 + ((i % 4) * 0.3),
+        });
+      }
+    }
+    return out;
+  }, [count, rings, color, alt]);
+
+  const materials = useMemo(() => flags.map((f) => {
+    const m = new THREE.MeshStandardMaterial({
+      color: f.c,
+      side: THREE.DoubleSide,
+      roughness: 0.85,
+      metalness: 0,
+    });
+    m.onBeforeCompile = (shader) => {
+      shader.uniforms["uTime"] = uTime.current;
+      shader.vertexShader = shader.vertexShader
+        .replace("#include <common>", "#include <common>\nuniform float uTime;")
+        .replace(
+          "#include <begin_vertex>",
+          `#include <begin_vertex>
+           float wave = sin(uTime * 2.2 + position.x * 3.0) * 0.12
+                      + sin(uTime * 3.7 + position.y * 2.0) * 0.05;
+           transformed.z += wave * (0.4 + position.x + 0.5);`,
+        );
+    };
+    return m;
+  }), [flags]);
+
+  useFrame(({ clock }) => {
+    uTime.current.value = clock.elapsedTime;
+  });
+
+  if (!count) return null;
+  return (
+    <group>
+      {flags.map((f, i) => (
+        <mesh
+          key={i}
+          position={f.pos}
+          rotation={[0, f.rot, 0]}
+          scale={[f.s, f.s, 1]}
+          material={materials[i]!}
+        >
+          <planeGeometry args={[2.4, 1.5, 12, 6]} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
 
 /* --------------------------------------------------------------- jogadores */
+
+
 
 
 function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
@@ -1712,11 +1806,20 @@ function Stadium3DImpl({
     return t === 0 ? "dia" : t === 1 ? "entardecer" : "noite";
   }, [sim.home.clubId, sim.away.clubId]);
 
+  // Em segundo plano o desenho 3D é suspenso para poupar bateria no celular.
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const onVis = () => setVisible(!document.hidden);
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
   return (
     <div className="relative h-full w-full">
       <Canvas
         shadows={quality === "alta"}
-        dpr={quality === "alta" ? [1, 2] : quality === "media" ? [1, 1.5] : 0.75}
+        frameloop={visible ? "always" : "demand"}
+        dpr={dprFor(quality)}
         camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
         gl={{
           antialias: quality === "media",

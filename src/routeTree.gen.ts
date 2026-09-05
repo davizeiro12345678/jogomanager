@@ -30,6 +30,7 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as MercadoDeTransferenciasRouteImport } from './routes/mercado-de-transferencias'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as NewsRouteImport } from './routes/news'
+import { Route as PartidaRapidaRouteImport } from './routes/partida-rapida'
 import { Route as PerguntasFrequentesRouteImport } from './routes/perguntas-frequentes'
 import { Route as ScoutingRouteImport } from './routes/scouting'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
@@ -152,6 +153,11 @@ const NewsRoute = NewsRouteImport.update({
   path: '/news',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PartidaRapidaRoute = PartidaRapidaRouteImport.update({
+  id: '/partida-rapida',
+  path: '/partida-rapida',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PerguntasFrequentesRoute = PerguntasFrequentesRouteImport.update({
   id: '/perguntas-frequentes',
   path: '/perguntas-frequentes',
@@ -257,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
   '/new': typeof NewRoute
   '/news': typeof NewsRoute
+  '/partida-rapida': typeof PartidaRapidaRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -296,6 +303,7 @@ export interface FileRoutesByTo {
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
   '/new': typeof NewRoute
   '/news': typeof NewsRoute
+  '/partida-rapida': typeof PartidaRapidaRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -336,6 +344,7 @@ export interface FileRoutesById {
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
   '/new': typeof NewRoute
   '/news': typeof NewsRoute
+  '/partida-rapida': typeof PartidaRapidaRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -377,6 +386,7 @@ export interface FileRouteTypes {
     | '/mercado-de-transferencias'
     | '/new'
     | '/news'
+    | '/partida-rapida'
     | '/perguntas-frequentes'
     | '/scouting'
     | '/sitemap.xml'
@@ -416,6 +426,7 @@ export interface FileRouteTypes {
     | '/mercado-de-transferencias'
     | '/new'
     | '/news'
+    | '/partida-rapida'
     | '/perguntas-frequentes'
     | '/scouting'
     | '/sitemap.xml'
@@ -455,6 +466,7 @@ export interface FileRouteTypes {
     | '/mercado-de-transferencias'
     | '/new'
     | '/news'
+    | '/partida-rapida'
     | '/perguntas-frequentes'
     | '/scouting'
     | '/sitemap.xml'
@@ -495,6 +507,7 @@ export interface RootRouteChildren {
   MercadoDeTransferenciasRoute: typeof MercadoDeTransferenciasRoute
   NewRoute: typeof NewRoute
   NewsRoute: typeof NewsRoute
+  PartidaRapidaRoute: typeof PartidaRapidaRoute
   PerguntasFrequentesRoute: typeof PerguntasFrequentesRoute
   ScoutingRoute: typeof ScoutingRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -662,6 +675,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NewsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/partida-rapida': {
+      id: '/partida-rapida'
+      path: '/partida-rapida'
+      fullPath: '/partida-rapida'
+      preLoaderRoute: typeof PartidaRapidaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/perguntas-frequentes': {
       id: '/perguntas-frequentes'
       path: '/perguntas-frequentes'
@@ -799,6 +819,7 @@ const rootRouteChildren: RootRouteChildren = {
   MercadoDeTransferenciasRoute: MercadoDeTransferenciasRoute,
   NewRoute: NewRoute,
   NewsRoute: NewsRoute,
+  PartidaRapidaRoute: PartidaRapidaRoute,
   PerguntasFrequentesRoute: PerguntasFrequentesRoute,
   ScoutingRoute: ScoutingRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
