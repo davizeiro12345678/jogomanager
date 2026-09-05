@@ -113,6 +113,18 @@ export function Crest({
   const rimA = stars >= 2 ? "#fdf0b8" : "#e8e8ee";
   const rimB = stars >= 2 ? "#a9812c" : "#7d7d88";
 
+  if (custom) {
+    return (
+      <img
+        src={custom}
+        width={size}
+        height={size}
+        alt={`Escudo do ${club.name}`}
+        className="shrink-0 rounded-md object-cover drop-shadow-[0_3px_8px_rgba(0,0,0,0.5)]"
+      />
+    );
+  }
+
   return (
     <svg
       width={size}
