@@ -159,6 +159,164 @@ export async function enrichClubs(limit = 400, offset = 0, concurrency = 8, budg
   return { imported, scanned: rows?.length ?? 0, failures };
 }
 
+/** Our competition id -> the league name TheSportsDB indexes teams under. */
+const SDB_LEAGUE: Record<string, string> = {
+  bra: "Brazilian Serie A",
+  bra2: "Brazilian Serie B",
+  eng: "English Premier League",
+  eng2: "English League Championship",
+  esp: "Spanish La Liga",
+  esp2: "Spanish La Liga 2",
+  ita: "Italian Serie A",
+  ita2: "Italian Serie B",
+  ger: "German Bundesliga",
+  ger2: "German 2. Bundesliga",
+  fra: "French Ligue 1",
+  fra2: "French Ligue 2",
+  por: "Portuguese Primeira Liga",
+  ned: "Dutch Eredivisie",
+  bel: "Belgian First Division A",
+  tur: "Turkish Super Lig",
+  sco: "Scottish Premier League",
+  arg: "Argentinian Primera División",
+  mex: "Mexican Primera League",
+  usa: "American Major League Soccer",
+  sau: "Saudi Pro League",
+  jpn: "Japanese J League",
+  gre: "Greek Superleague Greece",
+  sui: "Swiss Super League",
+  aut: "Austrian Football Bundesliga",
+  den: "Danish Superliga",
+  nor: "Norwegian Eliteserien",
+  swe: "Swedish Allsvenskan",
+  pol: "Polish Ekstraklasa",
+  ukr: "Ukrainian Premier League",
+  chi: "Chilean Primera División",
+  col: "Colombian Primera A",
+  uru: "Uruguayan Primera División",
+  aus: "Australian A-League",
+  kor: "South Korean K League 1",
+  egy: "Egyptian Premier League",
+  hrv: "Croatian 1. HNL",
+  srb: "Serbian SuperLiga",
+  cze: "Czech Fortuna Liga",
+  rou: "Romanian Liga I",
+  per: "Peruvian Primera División",
+  ecu: "Ecuadorian Serie A",
+  par: "Paraguayan Primera División",
+  bol: "Bolivian Primera División",
+  nga: "Nigerian Premier League",
+  rsa: "South African Premier Division",
+  mar: "Moroccan Botola Pro",
+  qat: "Qatar Stars League",
+  uae: "UAE Arabian Gulf League",
+  tha: "Thai League 1",
+  idn: "Indonesian Liga 1",
+  can: "Canadian Premier League",
+};
+
+const norm = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\b(fc|cf|sc|ac|afc|cd|club|de|do|da|of|the)\b/g, "")
+    .replace(/[^a-z0-9]/g, "");
+
+/**
+ * Bulk import: one request per league brings back every team with its crest,
+ * kit and stadium, which we then match against the bundled clubs locally.
+ */
+export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
+  const db = await admin();
+  const deadline = Date.now() + budgetMs;
+  let matched = 0;
+  let fetchedTeams = 0;
+  const unmatched: string[] = [];
+
+  await pool(LEAGUES, concurrency, deadline, async (league) => {
+    const sdbName = SDB_LEAGUE[league.id];
+    if (!sdbName) return;
+    const remote = await sdbAllTeams(sdbName);
+    if (!remote.length) return;
+    fetchedTeams += remote.length;
+
+    const index = new Map<string, (typeof remote)[number]>();
+    for (const t of remote) {
+      index.set(norm(t.name), t);
+      for (const alt of (t.alternate ?? "").split(",")) {
+        const k = norm(alt);
+        if (k.length > 3 && !index.has(k)) index.set(k, t);
+      }
+    }
+
+    for (const club of league.clubs) {
+      const key = norm(club.name);
+      let hit = index.get(key);
+      if (!hit) {
+        hit = remote.find((t) => {
+          const n = norm(t.name);
+          return n.includes(key) || key.includes(n);
+        });
+      }
+      if (!hit) {
+        unmatched.push(club.name);
+        continue;
+      }
+
+      let stadiumId: string | null = null;
+      if (hit.stadium) {
+        const { data: st } = await db
+          .from("stadiums")
+          .upsert(
+            {
+              name: hit.stadium,
+              city: hit.city ?? null,
+              country: hit.country ?? league.country,
+              capacity: hit.stadiumCapacity ?? null,
+            },
+            { onConflict: "name" },
+          )
+          .select("id")
+          .maybeSingle();
+        stadiumId = st?.id ?? null;
+      }
+
+      await db
+        .from("clubs")
+        .update({
+          crest_url: hit.crestUrl ?? null,
+          founded: hit.founded ?? null,
+          city: hit.city ?? null,
+          ...(stadiumId ? { stadium_id: stadiumId } : {}),
+        })
+        .eq("id", club.id);
+
+      if (hit.externalId) {
+        await db.from("club_external_ids").upsert(
+          { club_id: club.id, source: "thesportsdb", external_id: hit.externalId, confirmed: true },
+          { onConflict: "club_id,source" },
+        );
+      }
+      if (hit.apiFootballId) {
+        await db.from("club_external_ids").upsert(
+          { club_id: club.id, source: "api-football", external_id: hit.apiFootballId, confirmed: true },
+          { onConflict: "club_id,source" },
+        );
+      }
+      if (hit.kitUrl) {
+        await db.from("kits").upsert(
+          { club_id: club.id, season: "2025-2026", kind: "home", image_url: hit.kitUrl },
+          { onConflict: "club_id,season,kind" },
+        );
+      }
+      matched += 1;
+    }
+  });
+
+  return { matched, fetchedTeams, unmatched };
+}
+
 
 /** Import real squads for a batch of clubs, using whichever squad API has a key. */
 export async function importSquads(limit = 200, offset = 0, concurrency = 6, budgetMs = 45_000) {
