@@ -9,16 +9,28 @@
 
 ## O que muda
 
-### 1. Elencos reais em todos os clubes
-Escrever o elenco real (nome, posição, idade, nível) de **todos os 224 clubes**, começando pelas grandes ligas e descendo até as menores. Cada clube passa a ter de 18 a 24 jogadores reais, com goleiros, defensores, meias e atacantes na proporção correta, capitão, camisa 10 e joias da base.
+### 1. Tudo real vindo de API oficial
+O jogo passa a puxar os dados de futebol de APIs públicas de verdade, em vez de listas escritas à mão:
 
-### 2. Camisas reais
-Cada clube ganha o desenho verdadeiro do seu uniforme, definido à mão: listras verticais (Barcelona, Newcastle, Juventus), listras horizontais (Celtic, Sporting), faixa diagonal (River Plate, Peru), tricolor (Fluminense, Bahia), mangas contrastantes, gola e detalhes — além do uniforme reserva e do uniforme do goleiro. Aparecem no campo em 3D, nos escudos e nas listas de elenco.
+- **TheSportsDB** — escudos/logos oficiais dos clubes, imagens das camisas de cada temporada, fotos e nomes dos estádios, cores oficiais. Tem plano gratuito e é a fonte principal de imagem.
+- **football-data.org** — competições, tabelas, calendário e elencos das principais ligas europeias e do Brasileirão.
+- **API-Football (API-Sports)** — cobertura ampla (mais de 900 ligas) para elencos, idades, posições e valores dos clubes que as outras duas não cobrem.
 
-Sobre direitos: nomes de clubes, jogadores e competições são informação pública e podem ser usados. Escudos oficiais, fotos de jogadores e logotipos de patrocinadores são protegidos — então os escudos continuam sendo desenhos próprios nas cores certas, e as camisas reproduzem o padrão (listras, cores, faixas) sem marcas nem patrocínio.
+Uma rotina de importação roda no servidor, busca clube por clube, baixa os escudos e as imagens de camisa, guarda tudo no banco e nos arquivos do app. Depois disso o jogo funciona mesmo offline — a API só é consultada quando você mandar atualizar.
 
-### 3. Banco de dados real
-Criar no banco da nuvem as tabelas de **competições, clubes, estádios, uniformes, jogadores, temporadas e classificações**, com todos esses dados carregados. O jogo passa a ler daí, com os arquivos locais servindo de reserva caso a rede falhe. Isso permite, adiante, atualizar elencos sem reescrever o app e cruzar estatísticas entre carreiras.
+**Chaves:** TheSportsDB e API-Football exigem uma chave gratuita cadastrada no seu nome. Vou pedir as chaves quando começar essa etapa; sem elas uso apenas football-data.org (gratuita, mas cobre menos ligas) e completo o resto com os dados escritos à mão.
+
+**Direitos de imagem:** escudos e camisas oficiais pertencem aos clubes. Usá-los num jogo publicado é uso de marca de terceiros — funciona bem para projeto pessoal/portfólio, mas se um dia o jogo for comercial os clubes podem pedir a retirada. Por isso o app guarda os dois: o escudo oficial da API e o escudo desenhado por nós, e um botão nas configurações troca entre "visual oficial" e "visual próprio".
+
+### 2. Escudos e camisas no jogo
+Os escudos oficiais aparecem em toda a interface (elenco, tabela, mercado, notícias) e na camisa dos jogadores em 3D. A imagem da camisa oficial de cada clube é lida pela API e convertida no uniforme 3D — cor de fundo, listras, mangas e detalhes extraídos da própria imagem —, incluindo uniforme titular, reserva e de goleiro. Se um clube não tiver imagem na API, cai no padrão desenhado à mão (listras do Barcelona, tricolor do Fluminense, faixa do River, etc.).
+
+### 3. Elencos reais em todos os clubes
+Elenco real (nome, posição, idade, número, nacionalidade e nível) para **todos os 224 clubes**, importado da API e conferido: 18 a 24 jogadores por clube, na proporção correta de posições, com capitão e joias da base. Onde a API falhar, entra elenco escrito à mão. Foto do jogador aparece quando a API fornece; caso contrário, o rosto gerado pelo jogo.
+
+### 4. Banco de dados real
+Criar no banco da nuvem as tabelas de **competições, clubes, estádios, uniformes, jogadores, temporadas, classificações e registro de importações**, com todos esses dados carregados pela rotina de importação. O jogo lê daí, com os arquivos locais servindo de reserva caso a rede falhe. Isso permite atualizar elencos e escudos sem reescrever o app.
+
 
 ### 4. Mega atualização gráfica
 
