@@ -11,7 +11,7 @@ import {
 } from "@react-three/postprocessing";
 import { easing } from "maath";
 import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { PlayerRig } from "@/components/game/players/PlayerRig";
@@ -1353,7 +1353,7 @@ function Scene({
   );
 }
 
-export function Stadium3D({
+function Stadium3DImpl({
   sim,
   mode,
   quality,
@@ -1361,7 +1361,6 @@ export function Stadium3D({
   sim: MatchSim;
   mode: CameraMode;
   quality: Quality;
-  tick?: number;
 }) {
   const time = useMemo<TimeOfDay>(() => {
     const t = hash(sim.home.clubId + sim.away.clubId) % 3;
@@ -1401,4 +1400,11 @@ export function Stadium3D({
     </div>
   );
 }
+
+/**
+ * Memoizado: o HUD da partida re-renderiza várias vezes por segundo e não deve
+ * reconstruir a árvore 3D. Só mudanças reais de sim/câmera/qualidade renderizam.
+ */
+export const Stadium3D = memo(Stadium3DImpl);
+
 
