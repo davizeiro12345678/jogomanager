@@ -15,3 +15,9 @@
 - [x] Página /cadastro de clubes e jogadores do usuário
 - [x] Modo convidado, carreira local + nuvem
 - [x] PlayerRig integrado ao Stadium3D
+
+
+## Feito (2026-09-05)
+- Escudos oficiais importados para 287 clubes e imagens de camisa para 240.
+- Elencos reais (nomes, idades, números, nacionalidade e fotos quando existem) importados e aplicados ao criar carreira.
+- Publicado e sitemap atualizado.
