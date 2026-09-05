@@ -97,8 +97,12 @@ export function Crest({
   const [custom, setCustom] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    setCustom(badgeFor(club.id));
+    const sync = () => setCustom(badgeFor(club.id) ?? officialCrest(club.id));
+    sync();
+    void loadOfficialAssets().then(sync);
+    return subscribeOfficial(sync);
   }, [club.id]);
+
 
   const h = hash(club.id);
   const shape = SHAPE_LIST[h % SHAPE_LIST.length]!;
