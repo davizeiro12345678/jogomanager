@@ -6,13 +6,13 @@ import { LEAGUES } from "@/game/data/leagues";
 export const Route = createFileRoute("/ligas-de-futebol")({
   head: () => ({
     meta: [
-      { title: "Ligas de futebol disponíveis no jogo de manager | Manager 3D" },
+      { title: "Ligas de futebol disponíveis no jogo de manager | Pro Football Manager 3D" },
       {
         name: "description",
         content:
-          "Veja todas as ligas e campeonatos jogáveis no Manager 3D: Brasil, Inglaterra, Espanha, Itália, Alemanha, França, Portugal e mais, com todos os clubes de cada divisão.",
+          "Veja todas as ligas e campeonatos jogáveis no Pro Football Manager 3D: Brasil, Inglaterra, Espanha, Itália, Alemanha, França, Portugal e mais, com todos os clubes de cada divisão.",
       },
-      { property: "og:title", content: "Ligas de futebol disponíveis | Manager 3D" },
+      { property: "og:title", content: "Ligas de futebol disponíveis | Pro Football Manager 3D" },
       {
         property: "og:description",
         content:

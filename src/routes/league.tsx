@@ -11,12 +11,12 @@ export const Route = createFileRoute("/league")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Tabela e calendário · Manager 3D" },
+      { title: "Tabela e calendário · Pro Football Manager 3D" },
       {
         name: "description",
         content: "Classificação atualizada da liga e os jogos da rodada atual da temporada.",
       },
-      { property: "og:title", content: "Tabela e calendário · Manager 3D" },
+      { property: "og:title", content: "Tabela e calendário · Pro Football Manager 3D" },
       { property: "og:description", content: "Acompanhe a corrida pelo título." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

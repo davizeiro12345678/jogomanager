@@ -18,13 +18,13 @@ export const Route = createFileRoute("/auth")({
   },
   head: () => ({
     meta: [
-      { title: "Entrar · Manager 3D — Futebol 3D ao vivo" },
+      { title: "Entrar · Pro Football Manager 3D" },
       {
         name: "description",
         content:
           "Acesse sua conta para salvar a carreira de técnico e continuar a temporada de onde parou.",
       },
-      { property: "og:title", content: "Entrar · Manager 3D" },
+      { property: "og:title", content: "Entrar · Pro Football Manager 3D" },
       { property: "og:description", content: "Sua carreira de técnico salva na nuvem." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

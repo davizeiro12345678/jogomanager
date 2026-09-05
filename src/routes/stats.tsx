@@ -10,13 +10,13 @@ export const Route = createFileRoute("/stats")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Estatísticas do elenco · Manager 3D" },
+      { title: "Estatísticas do elenco · Pro Football Manager 3D" },
       {
         name: "description",
         content:
           "Artilharia, assistências, forma, potencial e comparação entre jogadores do seu elenco.",
       },
-      { property: "og:title", content: "Estatísticas do elenco · Manager 3D" },
+      { property: "og:title", content: "Estatísticas do elenco · Pro Football Manager 3D" },
       { property: "og:description", content: "Números do seu time, rodada a rodada." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

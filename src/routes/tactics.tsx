@@ -12,12 +12,12 @@ export const Route = createFileRoute("/tactics")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Táticas · Manager 3D" },
+      { title: "Táticas · Pro Football Manager 3D" },
       {
         name: "description",
         content: "Defina formação, mentalidade, pressão, largura e ritmo do seu time.",
       },
-      { property: "og:title", content: "Táticas · Manager 3D" },
+      { property: "og:title", content: "Táticas · Pro Football Manager 3D" },
       { property: "og:description", content: "Ajuste o plano de jogo antes de entrar em campo." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

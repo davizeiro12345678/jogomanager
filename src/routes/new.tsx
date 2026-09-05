@@ -12,12 +12,12 @@ export const Route = createFileRoute("/new")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Escolher clube · Manager 3D" },
+      { title: "Escolher clube · Pro Football Manager 3D" },
       {
         name: "description",
         content: "Escolha a liga e o clube que você vai comandar nesta temporada.",
       },
-      { property: "og:title", content: "Escolher clube · Manager 3D" },
+      { property: "og:title", content: "Escolher clube · Pro Football Manager 3D" },
       { property: "og:description", content: "80 clubes reais em 4 grandes ligas." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -14,12 +14,12 @@ export const Route = createFileRoute("/transfers")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Mercado de transferências · Manager 3D" },
+      { title: "Mercado de transferências · Pro Football Manager 3D" },
       {
         name: "description",
         content: "Contrate reforços, gerencie o orçamento e libere jogadores do elenco.",
       },
-      { property: "og:title", content: "Mercado de transferências · Manager 3D" },
+      { property: "og:title", content: "Mercado de transferências · Pro Football Manager 3D" },
       { property: "og:description", content: "Reforce seu elenco dentro do orçamento." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -9,12 +9,12 @@ export const Route = createFileRoute("/history")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "História e troféus · Manager 3D" },
+      { title: "História e troféus · Pro Football Manager 3D" },
       {
         name: "description",
         content: "A trajetória da sua carreira: temporadas, posições e títulos conquistados.",
       },
-      { property: "og:title", content: "História e troféus · Manager 3D" },
+      { property: "og:title", content: "História e troféus · Pro Football Manager 3D" },
       { property: "og:description", content: "Sala de troféus e retrospecto da carreira." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

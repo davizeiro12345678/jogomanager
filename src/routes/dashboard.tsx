@@ -12,13 +12,13 @@ export const Route = createFileRoute("/dashboard")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Painel do treinador · Manager 3D" },
+      { title: "Painel do treinador · Pro Football Manager 3D" },
       {
         name: "description",
         content:
           "Visão geral da temporada: próxima partida, forma recente, finanças, moral do elenco e pressão da diretoria.",
       },
-      { property: "og:title", content: "Painel do treinador · Manager 3D" },
+      { property: "og:title", content: "Painel do treinador · Pro Football Manager 3D" },
       { property: "og:description", content: "Seu centro de comando na carreira." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
