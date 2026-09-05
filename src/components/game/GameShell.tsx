@@ -4,6 +4,7 @@ import {
   BarChart3,
   Briefcase,
   Coins,
+  Dumbbell,
   Gauge,
   History,
   Home,
