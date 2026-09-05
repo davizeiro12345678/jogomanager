@@ -74,9 +74,10 @@ export class Narrator {
     const voices = this.synth.getVoices();
     if (!voices.length) return null;
     const tag = this.lang.toLowerCase();
+    const base = tag.split("-")[0] ?? tag;
     return (
       voices.find((v) => v.lang.toLowerCase() === tag) ??
-      voices.find((v) => v.lang.toLowerCase().startsWith(tag.split("-")[0])) ??
+      voices.find((v) => v.lang.toLowerCase().startsWith(base)) ??
       null
     );
   }
@@ -88,7 +89,8 @@ export class Narrator {
     if (event !== "goal" && now - this.lastSpeak < 5000) return;
     this.lastSpeak = now;
 
-    const pack = LINES[this.lang] ?? LINES[this.lang.split("-")[0]] ?? LINES.en;
+    const base = this.lang.split("-")[0] ?? this.lang;
+    const pack = LINES[this.lang] ?? LINES[base] ?? LINES["en"];
     const pool = pack[event];
     if (!pool?.length) return;
     const text = pool[Math.floor(Math.random() * pool.length)].replace("{team}", team);
