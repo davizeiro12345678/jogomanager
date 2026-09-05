@@ -112,6 +112,8 @@ export class MatchSim {
   subsUsed: Record<Side, number> = { home: 0, away: 0 };
   /** último passador de cada lado, para creditar assistência */
   private lastPass: Record<Side, { id: string; time: number } | null> = { home: null, away: null };
+  /** jogadores em "freeze" curto após um chute próximo */
+  private reactionUntil = new Map<string, number>();
   finished = false;
   lastEventId = 0;
   private decisionTimer = 0;
