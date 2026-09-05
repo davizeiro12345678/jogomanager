@@ -9,16 +9,28 @@
 
 ## O que muda
 
-### 1. Elencos reais em todos os clubes
-Escrever o elenco real (nome, posição, idade, nível) de **todos os 224 clubes**, começando pelas grandes ligas e descendo até as menores. Cada clube passa a ter de 18 a 24 jogadores reais, com goleiros, defensores, meias e atacantes na proporção correta, capitão, camisa 10 e joias da base.
+### 1. Tudo real vindo de API oficial
+O jogo passa a puxar os dados de futebol de APIs públicas de verdade, em vez de listas escritas à mão:
 
-### 2. Camisas reais
-Cada clube ganha o desenho verdadeiro do seu uniforme, definido à mão: listras verticais (Barcelona, Newcastle, Juventus), listras horizontais (Celtic, Sporting), faixa diagonal (River Plate, Peru), tricolor (Fluminense, Bahia), mangas contrastantes, gola e detalhes — além do uniforme reserva e do uniforme do goleiro. Aparecem no campo em 3D, nos escudos e nas listas de elenco.
+- **TheSportsDB** — escudos/logos oficiais dos clubes, imagens das camisas de cada temporada, fotos e nomes dos estádios, cores oficiais. Tem plano gratuito e é a fonte principal de imagem.
+- **football-data.org** — competições, tabelas, calendário e elencos das principais ligas europeias e do Brasileirão.
+- **API-Football (API-Sports)** — cobertura ampla (mais de 900 ligas) para elencos, idades, posições e valores dos clubes que as outras duas não cobrem.
 
-Sobre direitos: nomes de clubes, jogadores e competições são informação pública e podem ser usados. Escudos oficiais, fotos de jogadores e logotipos de patrocinadores são protegidos — então os escudos continuam sendo desenhos próprios nas cores certas, e as camisas reproduzem o padrão (listras, cores, faixas) sem marcas nem patrocínio.
+Uma rotina de importação roda no servidor, busca clube por clube, baixa os escudos e as imagens de camisa, guarda tudo no banco e nos arquivos do app. Depois disso o jogo funciona mesmo offline — a API só é consultada quando você mandar atualizar.
 
-### 3. Banco de dados real
-Criar no banco da nuvem as tabelas de **competições, clubes, estádios, uniformes, jogadores, temporadas e classificações**, com todos esses dados carregados. O jogo passa a ler daí, com os arquivos locais servindo de reserva caso a rede falhe. Isso permite, adiante, atualizar elencos sem reescrever o app e cruzar estatísticas entre carreiras.
+**Chaves:** TheSportsDB e API-Football exigem uma chave gratuita cadastrada no seu nome. Vou pedir as chaves quando começar essa etapa; sem elas uso apenas football-data.org (gratuita, mas cobre menos ligas) e completo o resto com os dados escritos à mão.
+
+**Direitos de imagem:** escudos e camisas oficiais pertencem aos clubes. Usá-los num jogo publicado é uso de marca de terceiros — funciona bem para projeto pessoal/portfólio, mas se um dia o jogo for comercial os clubes podem pedir a retirada. Por isso o app guarda os dois: o escudo oficial da API e o escudo desenhado por nós, e um botão nas configurações troca entre "visual oficial" e "visual próprio".
+
+### 2. Escudos e camisas no jogo
+Os escudos oficiais aparecem em toda a interface (elenco, tabela, mercado, notícias) e na camisa dos jogadores em 3D. A imagem da camisa oficial de cada clube é lida pela API e convertida no uniforme 3D — cor de fundo, listras, mangas e detalhes extraídos da própria imagem —, incluindo uniforme titular, reserva e de goleiro. Se um clube não tiver imagem na API, cai no padrão desenhado à mão (listras do Barcelona, tricolor do Fluminense, faixa do River, etc.).
+
+### 3. Elencos reais em todos os clubes
+Elenco real (nome, posição, idade, número, nacionalidade e nível) para **todos os 224 clubes**, importado da API e conferido: 18 a 24 jogadores por clube, na proporção correta de posições, com capitão e joias da base. Onde a API falhar, entra elenco escrito à mão. Foto do jogador aparece quando a API fornece; caso contrário, o rosto gerado pelo jogo.
+
+### 4. Banco de dados real
+Criar no banco da nuvem as tabelas de **competições, clubes, estádios, uniformes, jogadores, temporadas, classificações e registro de importações**, com todos esses dados carregados pela rotina de importação. O jogo lê daí, com os arquivos locais servindo de reserva caso a rede falhe. Isso permite atualizar elencos e escudos sem reescrever o app.
+
 
 ### 4. Mega atualização gráfica
 
@@ -49,18 +61,24 @@ Três níveis de qualidade (Baixo, Médio, Alto) escolhidos automaticamente pelo
 
 ## Detalhes técnicos
 
-- Dados: `src/game/data/squads.ts` cresce para conter os 224 elencos (dividido em arquivos por confederação para não virar um arquivo gigante); novo `src/game/data/kits-real.ts` com o padrão por clube substituindo o sorteio em `src/game/kits.ts`.
-- Banco: migração criando `competitions`, `clubs`, `stadiums`, `kits`, `players`, `seasons`, `standings` no schema público, com `GRANT SELECT` para leitura anônima, RLS ativa e políticas somente-leitura; a carga inicial vai por `INSERT` na própria migração. Carregamento no app via função de servidor pública com cache do TanStack Query e fallback para os arquivos locais.
-- 3D: `Stadium3D.tsx` dividido em módulos (`Pitch`, `Nets`, `Stands`, `Crowd`, `Lighting`, `BroadcastCamera`) para não passar de mil linhas por arquivo; grama e torcida por `InstancedMesh`; rede como geometria de linhas com simulação de mola; texturas geradas em canvas (sem downloads externos).
-- Cadastro do usuário (`/cadastro`) continua funcionando e sobrescreve os dados oficiais quando preenchido.
+- APIs: chaves guardadas como segredos do backend (`THESPORTSDB_API_KEY`, `APIFOOTBALL_API_KEY`, `FOOTBALL_DATA_API_KEY`), nunca no código do navegador. Importador roda como função de servidor administrativa (`src/lib/import.functions.ts`) mais uma rota `/api/public/sync-football` protegida por segredo, chamável manualmente ou por agendamento.
+- Imagens: escudos e camisas baixados uma vez, redimensionados e enviados para o armazenamento da nuvem (buckets públicos `crests` e `kits`); o app usa a URL do nosso armazenamento, não a do fornecedor, para não depender da disponibilidade deles e não estourar limite de requisições.
+- Casamento de clubes: tabela de correspondência entre o id interno (`fla`, `liv`, `rma`) e os ids das três APIs, conferida manualmente para evitar troca de clubes homônimos.
+- Camisa 3D: a imagem oficial é analisada no servidor (cores dominantes, detecção de listras verticais/horizontais) e vira um conjunto de parâmetros de uniforme; a textura em 3D é gerada em canvas a partir desses parâmetros — nada de baixar imagem grande durante a partida.
+- Dados locais de reserva: `src/game/data/squads.ts` dividido por confederação; `src/game/data/kits-real.ts` com o padrão escrito à mão por clube substituindo o sorteio de `src/game/kits.ts`.
+- Banco: migração criando `competitions`, `clubs`, `stadiums`, `kits`, `players`, `seasons`, `standings`, `club_external_ids` e `import_runs` no schema público, com `GRANT SELECT` para leitura anônima, RLS ativa e políticas somente-leitura (escrita só pela função administrativa). Leitura no app via função de servidor pública com cache do TanStack Query e fallback para os arquivos locais.
+- 3D: `Stadium3D.tsx` dividido em módulos (`Pitch`, `Nets`, `Stands`, `Crowd`, `Lighting`, `BroadcastCamera`) para não passar de mil linhas por arquivo; grama e torcida por `InstancedMesh`; rede como geometria de linhas com simulação de mola; texturas geradas em canvas.
+- Cadastro do usuário (`/cadastro`) continua funcionando e tem prioridade sobre os dados da API.
 - Verificação: type-check, build e captura de tela no navegador nos três níveis de qualidade, além de conferir que a partida roda a 60 fps no modo Médio.
 
 ## Ordem de entrega
 
-1. Banco de dados + carga de competições, clubes e estádios
-2. Camisas reais por clube
-3. Elencos reais dos 224 clubes
-4. Gramado, redes e iluminação
-5. Torcida, arquibancadas e estádio
-6. Jogadores, animações e câmera de transmissão
-7. Ajuste de desempenho e publicação
+1. Banco de dados + tabela de correspondência de clubes
+2. Importador das APIs: competições, clubes, estádios, escudos e camisas
+3. Escudos e camisas oficiais na interface e no 3D
+4. Elencos reais dos 224 clubes (API + reserva escrita à mão)
+5. Gramado, redes e iluminação
+6. Torcida, arquibancadas e estádio
+7. Jogadores, animações e câmera de transmissão
+8. Ajuste de desempenho e publicação
+
