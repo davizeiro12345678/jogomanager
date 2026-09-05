@@ -389,7 +389,7 @@ function applyWeeklyDevelopment(
           });
         }
       }
-      if (rnd() < 0.045) {
+      if (rnd() < 0.045 * injuryMult) {
         q.injuryWeeks = 1 + Math.floor(rnd() * 4);
         news.push({
           id: `inj-${id}-${state.round}`,
