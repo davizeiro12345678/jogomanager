@@ -351,7 +351,7 @@ function applyWeeklyDevelopment(
     );
 
     // desenvolvimento por idade
-    if (q.age <= 23 && rnd() < 0.16) {
+    if (q.age <= 23 && rnd() < 0.16 * growthMult) {
       (q as unknown as Record<string, number>)[attr] = Math.min(
         99,
         (q[attr] as number) + 1,
