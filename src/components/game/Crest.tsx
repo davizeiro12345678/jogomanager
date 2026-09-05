@@ -2,6 +2,8 @@ import { useEffect, useId, useState } from "react";
 
 import type { Club } from "@/game/types";
 import { badgeFor } from "@/lib/customData";
+import { loadOfficialAssets, officialCrest, subscribeOfficial } from "@/lib/officialAssets";
+
 
 function hash(str: string) {
   let h = 2166136261;
@@ -97,8 +99,15 @@ export function Crest({
   const [custom, setCustom] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    setCustom(badgeFor(club.id));
+    const sync = () => setCustom(badgeFor(club.id) ?? officialCrest(club.id));
+    sync();
+    void loadOfficialAssets().then(sync);
+    const off = subscribeOfficial(sync);
+    return () => {
+      off();
+    };
   }, [club.id]);
+
 
   const h = hash(club.id);
   const shape = SHAPE_LIST[h % SHAPE_LIST.length]!;
@@ -127,7 +136,7 @@ export function Crest({
         width={size}
         height={size}
         alt={`Escudo do ${club.name}`}
-        className="shrink-0 rounded-md object-cover drop-shadow-[0_3px_8px_rgba(0,0,0,0.5)]"
+        className="shrink-0 rounded-md object-contain drop-shadow-[0_3px_8px_rgba(0,0,0,0.5)]"
       />
     );
   }

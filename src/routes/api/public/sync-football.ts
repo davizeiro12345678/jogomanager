@@ -1,0 +1,33 @@
+import { createFileRoute } from "@tanstack/react-router";
+
+/**
+ * Manual / scheduled importer trigger.
+ * Protected by a shared secret so it can be called by cron but not by the public.
+ *
+ *   POST /api/public/sync-football?scope=seed|clubs|squads&limit=40&offset=0
+ *   Header: x-sync-secret: <LOVABLE_CRON_SECRET>
+ */
+export const Route = createFileRoute("/api/public/sync-football")({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        const secret = process.env["LOVABLE_CRON_SECRET"];
+        const provided = request.headers.get("x-sync-secret");
+        if (!secret || provided !== secret) {
+          return new Response("Unauthorized", { status: 401 });
+        }
+        const url = new URL(request.url);
+        const scope = url.searchParams.get("scope") ?? "clubs";
+        const limit = Number(url.searchParams.get("limit") ?? "40") || 40;
+        const offset = Number(url.searchParams.get("offset") ?? "0") || 0;
+
+        const { runSync } = await import("@/lib/football-sync.server");
+        const result = await runSync({ scope, limit, offset });
+        return new Response(JSON.stringify(result), {
+          status: result.ok ? 200 : 500,
+          headers: { "content-type": "application/json", "cache-control": "no-store" },
+        });
+      },
+    },
+  },
+});

@@ -38,6 +38,336 @@ export type Database = {
         }
         Relationships: []
       }
+      club_external_ids: {
+        Row: {
+          club_id: string
+          confirmed: boolean
+          created_at: string
+          external_id: string
+          id: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          confirmed?: boolean
+          created_at?: string
+          external_id: string
+          id?: string
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          confirmed?: boolean
+          created_at?: string
+          external_id?: string
+          id?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_external_ids_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clubs: {
+        Row: {
+          city: string | null
+          competition_id: string | null
+          country: string | null
+          created_at: string
+          crest_url: string | null
+          founded: number | null
+          full_name: string | null
+          id: string
+          name: string
+          primary_color: string
+          secondary_color: string
+          short_name: string
+          stadium_id: string | null
+          strength: number
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          competition_id?: string | null
+          country?: string | null
+          created_at?: string
+          crest_url?: string | null
+          founded?: number | null
+          full_name?: string | null
+          id: string
+          name: string
+          primary_color?: string
+          secondary_color?: string
+          short_name: string
+          stadium_id?: string | null
+          strength?: number
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          competition_id?: string | null
+          country?: string | null
+          created_at?: string
+          crest_url?: string | null
+          founded?: number | null
+          full_name?: string | null
+          id?: string
+          name?: string
+          primary_color?: string
+          secondary_color?: string
+          short_name?: string
+          stadium_id?: string | null
+          strength?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clubs_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clubs_stadium_id_fkey"
+            columns: ["stadium_id"]
+            isOneToOne: false
+            referencedRelation: "stadiums"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitions: {
+        Row: {
+          club_count: number
+          country: string
+          created_at: string
+          external_id: string | null
+          external_source: string | null
+          flag: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          tier: number
+          updated_at: string
+        }
+        Insert: {
+          club_count?: number
+          country: string
+          created_at?: string
+          external_id?: string | null
+          external_source?: string | null
+          flag?: string | null
+          id: string
+          logo_url?: string | null
+          name: string
+          tier?: number
+          updated_at?: string
+        }
+        Update: {
+          club_count?: number
+          country?: string
+          created_at?: string
+          external_id?: string | null
+          external_source?: string | null
+          flag?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          tier?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      import_runs: {
+        Row: {
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          items_imported: number
+          scope: string | null
+          source: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          items_imported?: number
+          scope?: string | null
+          source: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          items_imported?: number
+          scope?: string | null
+          source?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      kits: {
+        Row: {
+          base_color: string
+          club_id: string
+          created_at: string
+          detail_color: string
+          id: string
+          image_url: string | null
+          kind: string
+          pattern: string
+          season: string
+          shorts_color: string
+          socks_color: string
+          updated_at: string
+        }
+        Insert: {
+          base_color?: string
+          club_id: string
+          created_at?: string
+          detail_color?: string
+          id?: string
+          image_url?: string | null
+          kind?: string
+          pattern?: string
+          season?: string
+          shorts_color?: string
+          socks_color?: string
+          updated_at?: string
+        }
+        Update: {
+          base_color?: string
+          club_id?: string
+          created_at?: string
+          detail_color?: string
+          id?: string
+          image_url?: string | null
+          kind?: string
+          pattern?: string
+          season?: string
+          shorts_color?: string
+          socks_color?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kits_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          age: number
+          club_id: string
+          created_at: string
+          id: string
+          name: string
+          nationality: string | null
+          overall: number
+          photo_url: string | null
+          position: string
+          potential: number | null
+          shirt_number: number | null
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          age?: number
+          club_id: string
+          created_at?: string
+          id?: string
+          name: string
+          nationality?: string | null
+          overall?: number
+          photo_url?: string | null
+          position: string
+          potential?: number | null
+          shirt_number?: number | null
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age?: number
+          club_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          nationality?: string | null
+          overall?: number
+          photo_url?: string | null
+          position?: string
+          potential?: number | null
+          shirt_number?: number | null
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stadiums: {
+        Row: {
+          capacity: number | null
+          city: string | null
+          country: string | null
+          created_at: string
+          id: string
+          name: string
+          photo_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          photo_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          photo_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

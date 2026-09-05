@@ -64,6 +64,8 @@ export interface Player {
   injuryType?: string;
   /** jogador insatisfeito com tempo de jogo */
   unhappy?: boolean;
+  nationality?: string;
+  photo?: string;
 }
 
 
