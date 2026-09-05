@@ -345,9 +345,14 @@ function LiveMatch({
   }, [skip]);
 
   function finish() {
-    update(advanceRound(career, { hg: snap.hg, ag: snap.ag }));
+    const perf = sim
+      .playerRatings()
+      .filter((r) => r.side === mySide)
+      .map((r) => ({ pid: r.pid, goals: r.goals, assists: r.assists, played: true }));
+    update(advanceRound(career, { hg: snap.hg, ag: snap.ag }, perf));
     navigate({ to: "/club" });
   }
+
 
   function setMentality(v: number) {
     const setup = mySide === "home" ? sim.home : sim.away;
