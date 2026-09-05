@@ -199,7 +199,7 @@ const ALG: Raw[] = [
   ["alg_mca", "MC Alger", "MCA", "#0a8f3c", "#c8102e", 70],
   ["alg_jsk", "JS Kabylie", "JSK", "#f5c400", "#0a8f3c", 69],
   ["alg_usm", "USM Alger", "USM", "#c8102e", "#111111", 69],
-  ["alg_esс", "ES Sétif", "ESS", "#111111", "#ffffff", 68],
+  ["alg_ess", "ES Sétif", "ESS", "#111111", "#ffffff", 68],
   ["alg_cs", "CS Constantine", "CSC", "#0a8f3c", "#ffffff", 67],
   ["alg_par", "Paradou AC", "PAC", "#f5c400", "#1f4fa0", 65],
   ["alg_bel", "USM Khenchela", "USK", "#c8102e", "#f5c400", 63],
