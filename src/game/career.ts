@@ -316,7 +316,12 @@ function applyWeeklyDevelopment(
   const rnd = makeRng(seed);
   const news: NewsItem[] = [];
   const attr = trainingAttr(state.training);
-  const condRegen = state.training === "fisico" ? 16 : state.training === "equilibrado" ? 12 : 9;
+  const intensity = state.trainingIntensity ?? 1;
+  const baseRegen = state.training === "fisico" ? 16 : state.training === "equilibrado" ? 12 : 9;
+  // treino leve recupera mais e evolui menos; treino intenso é o contrário
+  const condRegen = baseRegen + (intensity === 0 ? 5 : intensity === 2 ? -5 : 0);
+  const growthMult = 0.75 + intensity * 0.3;
+  const injuryMult = 0.7 + intensity * 0.4;
 
   const next: Record<string, Player> = {};
   for (const [id, p] of Object.entries(players)) {
@@ -346,7 +351,7 @@ function applyWeeklyDevelopment(
     );
 
     // desenvolvimento por idade
-    if (q.age <= 23 && rnd() < 0.16) {
+    if (q.age <= 23 && rnd() < 0.16 * growthMult) {
       (q as unknown as Record<string, number>)[attr] = Math.min(
         99,
         (q[attr] as number) + 1,
@@ -384,7 +389,7 @@ function applyWeeklyDevelopment(
           });
         }
       }
-      if (rnd() < 0.045) {
+      if (rnd() < 0.045 * injuryMult) {
         q.injuryWeeks = 1 + Math.floor(rnd() * 4);
         news.push({
           id: `inj-${id}-${state.round}`,

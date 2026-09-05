@@ -6,6 +6,7 @@ import {
   Gauge,
   Pause,
   Play,
+  Repeat,
   SkipForward,
   Sparkles,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
 import { Crest } from "@/components/game/Crest";
+import { MatchReport } from "@/components/game/MatchReport";
 import { CLUBS } from "@/game/data/leagues";
 import { MENTALITIES, PRESSING } from "@/game/formations";
 import { MatchSim, type TeamSetup } from "@/game/sim";
@@ -360,6 +362,36 @@ function LiveMatch({
 
   const myTactics = (mySide === "home" ? sim.home : sim.away).tactics;
 
+  // Substituições ao vivo (até 5)
+  const [outPid, setOutPid] = useState("");
+  const [inId, setInId] = useState("");
+  const [subTick, setSubTick] = useState(0);
+  const onPitch = useMemo(
+    () => sim.players.filter((p) => p.side === mySide),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sim, mySide, subTick],
+  );
+  const usedIds = useMemo(
+    () => new Set(sim.players.filter((p) => p.side === mySide).map((p) => p.pid)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sim, mySide, subTick],
+  );
+  const benchAvailable = career.bench
+    .map((id) => career.players[id]!)
+    .filter((p) => p && !usedIds.has(p.id) && p.injuryWeeks === 0 && !p.suspended);
+  const subsUsed = sim.subsUsed[mySide];
+
+  function makeSub() {
+    const incoming = career.players[inId];
+    if (!outPid || !incoming || subsUsed >= 5) return;
+    if (sim.substitute(mySide, outPid, incoming)) {
+      setOutPid("");
+      setInId("");
+      setSubTick((n) => n + 1);
+      setSnap(snapshot(sim));
+    }
+  }
+
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
       <Stadium3D sim={sim} mode={camera} quality={quality} />
@@ -531,6 +563,54 @@ function LiveMatch({
           </label>
         </div>
 
+        <div>
+          <p className="flex items-center justify-between font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
+            <span className="flex items-center gap-1">
+              <Repeat size={11} /> Substituições
+            </span>
+            <span>{subsUsed}/5</span>
+          </p>
+          <div className="mt-1 grid grid-cols-2 gap-1">
+            <select
+              aria-label="Jogador que sai"
+              value={outPid}
+              onChange={(e) => setOutPid(e.target.value)}
+              className="w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
+            >
+              <option value="" className="text-black">
+                Sai…
+              </option>
+              {onPitch.map((p) => (
+                <option key={p.pid} value={p.pid} className="text-black">
+                  {p.number} {p.name}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Jogador que entra"
+              value={inId}
+              onChange={(e) => setInId(e.target.value)}
+              className="w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
+            >
+              <option value="" className="text-black">
+                Entra…
+              </option>
+              {benchAvailable.map((p) => (
+                <option key={p.id} value={p.id} className="text-black">
+                  {p.number} {p.name} ({p.pos})
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={makeSub}
+            disabled={!outPid || !inId || subsUsed >= 5}
+            className="mt-1 w-full rounded-lg bg-white/15 px-2 py-1.5 text-xs text-white disabled:opacity-40"
+          >
+            Confirmar substituição
+          </button>
+        </div>
+
         <button
           onClick={() => setShowStats((s) => !s)}
           className="flex w-full items-center justify-center gap-1 rounded-lg bg-white/10 px-2 py-1.5 text-xs text-white"
@@ -543,49 +623,13 @@ function LiveMatch({
       </div>
 
       {done ? (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/75 p-4 backdrop-blur">
-          <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card p-6 text-center">
-            <p className="font-display text-xs uppercase tracking-[0.3em] text-primary">
-              Fim de jogo
-            </p>
-            <p className="mt-2 font-display text-4xl tabular-nums">
-              {CLUBS[fixture.home]!.short} {snap.hg} x {snap.ag} {CLUBS[fixture.away]!.short}
-            </p>
-            <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
-              {sim.scorers.map((s, i) => (
-                <li key={i}>
-                  {s.minute}' {s.name}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-              <div>
-                <p className="font-display text-lg text-foreground">
-                  {snap.poss[0]}%–{snap.poss[1]}%
-                </p>
-                <p>Posse</p>
-              </div>
-              <div>
-                <p className="font-display text-lg text-foreground">
-                  {snap.hShots}–{snap.aShots}
-                </p>
-                <p>Chutes</p>
-              </div>
-              <div>
-                <p className="font-display text-lg text-foreground">
-                  {snap.hFouls}–{snap.aFouls}
-                </p>
-                <p>Faltas</p>
-              </div>
-            </div>
-            <button
-              onClick={finish}
-              className="mt-5 w-full rounded-lg bg-primary px-4 py-2.5 font-display text-sm uppercase tracking-widest text-primary-foreground"
-            >
-              Voltar à central
-            </button>
-          </div>
-        </div>
+        <MatchReport
+          sim={sim}
+          homeId={fixture.home}
+          awayId={fixture.away}
+          mySide={mySide}
+          onFinish={finish}
+        />
       ) : null}
     </div>
   );

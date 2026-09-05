@@ -33,6 +33,41 @@ export interface SimPlayer {
   actionT: number;
   /** duração total da ação atual */
   actionDur: number;
+  /** id do jogador na carreira (sem prefixo de lado) */
+  pid: string;
+  goals: number;
+  assists: number;
+  shots: number;
+  passes: number;
+  tackles: number;
+  saves: number;
+  /** minuto em que entrou em campo */
+  onSince: number;
+  /** minutos jogados acumulados */
+  minutes: number;
+}
+
+export interface ShotRecord {
+  x: number;
+  z: number;
+  side: Side;
+  result: "goal" | "saved" | "off";
+  minute: number;
+  name: string;
+}
+
+export interface PlayerRating {
+  pid: string;
+  side: Side;
+  name: string;
+  number: number;
+  pos: string;
+  goals: number;
+  assists: number;
+  passes: number;
+  tackles: number;
+  saves: number;
+  rating: number;
 }
 
 export interface TeamSetup {
@@ -70,6 +105,13 @@ export class MatchSim {
   };
   events: MatchEventLog[] = [];
   scorers: Scorer[] = [];
+  /** finalizações registradas para o mapa de chutes */
+  shotMap: ShotRecord[] = [];
+  /** jogadores que saíram por substituição (mantêm estatísticas) */
+  subsOut: SimPlayer[] = [];
+  subsUsed: Record<Side, number> = { home: 0, away: 0 };
+  /** último passador de cada lado, para creditar assistência */
+  private lastPass: Record<Side, { id: string; time: number } | null> = { home: null, away: null };
   finished = false;
   lastEventId = 0;
   private decisionTimer = 0;
@@ -119,8 +161,99 @@ export class MatchSim {
         action: null,
         actionT: 0,
         actionDur: 0,
+        pid: p.id,
+        goals: 0,
+        assists: 0,
+        shots: 0,
+        passes: 0,
+        tackles: 0,
+        saves: 0,
+        onSince: 0,
+        minutes: 0,
       };
     });
+  }
+
+  /**
+   * Troca um titular por um reserva mantendo a posição na formação.
+   * Devolve falso quando o jogador que sai não está em campo.
+   */
+  substitute(side: Side, outPid: string, incoming: Player): boolean {
+    const idx = this.players.findIndex((p) => p.side === side && p.pid === outPid);
+    if (idx < 0) return false;
+    const out = this.players[idx]!;
+    out.minutes += this.minute() - out.onSince;
+    this.subsOut.push(out);
+    const fresh: SimPlayer = {
+      ...out,
+      id: `${side}-${incoming.id}`,
+      pid: incoming.id,
+      name: incoming.name,
+      number: incoming.number,
+      pos: incoming.pos,
+      pace: incoming.pace,
+      shooting: incoming.shooting,
+      passing: incoming.passing,
+      defending: incoming.defending,
+      physical: incoming.physical,
+      stamina: Math.max(70, incoming.condition),
+      action: null,
+      actionT: 0,
+      actionDur: 0,
+      goals: 0,
+      assists: 0,
+      shots: 0,
+      passes: 0,
+      tackles: 0,
+      saves: 0,
+      onSince: this.minute(),
+      minutes: 0,
+    };
+    if (this.ball.holder === out.id) this.ball.holder = fresh.id;
+    this.players[idx] = fresh;
+    this.subsUsed[side]++;
+    this.pushEvent({
+      minute: this.minute(),
+      type: "sub",
+      side,
+      text: `${this.minute()}' Substituição no ${this.setup(side).short}: entra ${incoming.name}, sai ${out.name}.`,
+    });
+    return true;
+  }
+
+  /** Notas de 0 a 10 de todos os jogadores que atuaram na partida. */
+  playerRatings(): PlayerRating[] {
+    const all = [...this.players, ...this.subsOut];
+    return all.map((p) => {
+      const mins = Math.max(1, p.minutes + (this.subsOut.includes(p) ? 0 : this.minute() - p.onSince));
+      const conceded = this.stats[p.side === "home" ? "away" : "home"].goals;
+      let r = 6;
+      r += p.goals * 1.35 + p.assists * 0.85;
+      r += Math.min(0.9, p.passes / 28) + Math.min(0.7, p.tackles * 0.18);
+      if (p.pos === "GK") r += Math.min(1.2, p.saves * 0.28) - conceded * 0.35;
+      r += (this.stats[p.side].goals - conceded) * 0.12;
+      r *= 0.75 + Math.min(1, mins / 70) * 0.25;
+      return {
+        pid: p.pid,
+        side: p.side,
+        name: p.name,
+        number: p.number,
+        pos: p.pos,
+        goals: p.goals,
+        assists: p.assists,
+        passes: p.passes,
+        tackles: p.tackles,
+        saves: p.saves,
+        rating: Math.max(3, Math.min(10, Math.round(r * 10) / 10)),
+      };
+    });
+  }
+
+  /** Melhor jogador da partida. */
+  manOfTheMatch(): PlayerRating | null {
+    const rs = this.playerRatings();
+    if (!rs.length) return null;
+    return rs.reduce((a, b) => (b.rating > a.rating ? b : a));
   }
 
   reset() {
@@ -381,6 +514,7 @@ export class MatchSim {
     if (this.rnd() < chance) {
       const slide = this.rnd() < 0.4;
       this.trigger(opp, slide ? "slide" : "tackle", slide ? 1.0 : 0.6);
+      opp.tackles++;
       this.trigger(holder, "duel", 0.5);
       if (this.rnd() < 0.22) {
         this.trigger(holder, "protest", 1.4);
@@ -444,6 +578,8 @@ export class MatchSim {
     const err = success > this.rnd() ? 0 : (this.rnd() - 0.5) * 14;
     const wide = Math.abs(holder.z) > FIELD_Z * 0.55 && Math.abs(best.x - dir * FIELD_X) < 30;
     this.trigger(holder, wide ? "cross" : dist > 24 ? "passLong" : "pass", dist > 24 ? 0.85 : 0.6);
+    holder.passes++;
+    this.lastPass[holder.side] = { id: holder.id, time: this.time };
     this.ball.holder = null;
     this.ball.vx = (dx / d) * power + err * 0.2;
     this.ball.vz = (dz / d) * power + err;
@@ -454,6 +590,7 @@ export class MatchSim {
     const side = holder.side;
     const dir = this.attackDir(side);
     this.stats[side].shots++;
+    holder.shots++;
     const gk = this.players.find((p) => p.side !== side && p.pos === "GK");
     const accuracy = (holder.shooting / 100) * (1 - Math.min(0.75, distGoal / 40));
     const onTarget = this.rnd() < 0.34 + accuracy * 0.55;
@@ -483,6 +620,14 @@ export class MatchSim {
     this.ball.height = 0.8;
 
     if (!onTarget) {
+      this.shotMap.push({
+        x: holder.x,
+        z: holder.z,
+        side,
+        result: "off",
+        minute: this.minute(),
+        name: holder.name,
+      });
       this.pushEvent({
         minute: this.minute(),
         type: "shot",
@@ -498,6 +643,21 @@ export class MatchSim {
     const goalChance = Math.max(0.06, Math.min(0.72, accuracy * 1.15 - gkSkill / 260));
     if (this.rnd() < goalChance) {
       this.stats[side].goals++;
+      holder.goals++;
+      const assist = this.lastPass[side];
+      if (assist && this.time - assist.time < 12 && assist.id !== holder.id) {
+        const provider = this.players.find((p) => p.id === assist.id);
+        if (provider) provider.assists++;
+      }
+      this.lastPass[side] = null;
+      this.shotMap.push({
+        x: holder.x,
+        z: holder.z,
+        side,
+        result: "goal",
+        minute: this.minute(),
+        name: holder.name,
+      });
       this.scorers.push({ minute: this.minute(), side, name: holder.name });
       const celeb = this.rnd();
       this.trigger(holder, celeb < 0.34 ? "kneeSlide" : celeb < 0.67 ? "celebrateRun" : "celebrate", 6);
@@ -513,6 +673,15 @@ export class MatchSim {
       });
       this.kickoff(side === "home" ? "away" : "home");
     } else {
+      if (gk) gk.saves++;
+      this.shotMap.push({
+        x: holder.x,
+        z: holder.z,
+        side,
+        result: "saved",
+        minute: this.minute(),
+        name: holder.name,
+      });
       const dive = targetZ - (gk?.z ?? 0);
       this.trigger(
         gk,
