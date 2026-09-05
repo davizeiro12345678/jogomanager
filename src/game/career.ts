@@ -14,9 +14,11 @@ import { realSquadFor, type RealPlayer } from "@/lib/realSquads";
 import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
 import { computeTable, generateFixtures } from "./season";
+import { createCups, cupPrize, playCupStage, stageName } from "./cup";
 import { buildSquad } from "./squad";
 import type {
   CareerState,
+  CupState,
   FormationKey,
   JobOffer,
   NewsItem,
@@ -646,6 +648,9 @@ export function advanceRound(
     news: [...ev.news, ...next.news].slice(0, 60),
   };
 
+  // copas: fases intercaladas com o calendário da liga
+  next = processCups(next, round);
+
   if (next.round > totalRounds(next)) {
     next = endSeason(next);
   }
@@ -653,6 +658,70 @@ export function advanceRound(
   next = checkSacking(next);
 
   return next;
+}
+
+
+/** Roda as fases de copa que caem nesta rodada. */
+function processCups(state: CareerState, round: number): CareerState {
+  const cups: CupState[] = state.cups?.length ? state.cups : createCups(state);
+  const news: NewsItem[] = [];
+  const trophies = [...state.trophies];
+  let budget = state.finances.budget;
+  let income = state.finances.income;
+
+  const updated = cups.map((cup) => {
+    if (cup.winner || round % cup.everyRounds !== 0) return cup;
+    if (cup.out) return cup;
+    const res = playCupStage(cup, state);
+    if (res.userPlayed) {
+      const opp = res.opponentId ? CLUBS[res.opponentId]?.name : "adversário";
+      if (res.userWon) {
+        const prize = cupPrize(cup.id, cup.stage);
+        budget = Math.round((budget + prize) * 10) / 10;
+        income = Math.round((income + prize) * 10) / 10;
+        news.push({
+          id: `cup-${cup.id}-${state.season}-${cup.stage}`,
+          season: state.season,
+          round,
+          kind: "premio",
+          title: `${cup.name}: classificado! (${res.userScore} contra ${opp})`,
+          body: `Avanço garantido — ${stageName(res.cup.stage)} pela frente. Premiação de €${prize}M.`,
+        });
+      } else {
+        news.push({
+          id: `cup-${cup.id}-${state.season}-${cup.stage}`,
+          season: state.season,
+          round,
+          kind: "resultado",
+          title: `${cup.name}: eliminado (${res.userScore} contra ${opp})`,
+          body: `Fim de caminhada na ${stageName(cup.stage)}.`,
+        });
+      }
+    }
+    if (res.champion === state.clubId) {
+      trophies.push({ season: state.season, name: res.cup.name });
+      const prize = cupPrize(cup.id, 4);
+      budget = Math.round((budget + prize) * 10) / 10;
+      income = Math.round((income + prize) * 10) / 10;
+      news.push({
+        id: `cup-win-${cup.id}-${state.season}`,
+        season: state.season,
+        round,
+        kind: "premio",
+        title: `🏆 Campeão da ${res.cup.name}!`,
+        body: `Título conquistado na temporada ${state.season}. Premiação de €${prize}M.`,
+      });
+    }
+    return res.cup;
+  });
+
+  return {
+    ...state,
+    cups: updated,
+    trophies,
+    finances: { ...state.finances, budget, income },
+    news: [...news, ...state.news].slice(0, 60),
+  };
 }
 
 /* ------------------------------------------------- diretoria & mercado */
