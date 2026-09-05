@@ -144,27 +144,27 @@ export function GameShell({
                 }}
                 className="ml-2 shrink-0 rounded-md px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
               >
-                Sair
+                {t("action.signOut")}
               </button>
             ) : (
               <Link
                 to="/auth"
                 className="ml-2 shrink-0 rounded-md border border-primary/50 px-3 py-1.5 text-xs text-primary hover:bg-primary/10"
               >
-                Salvar na nuvem
+                {t("action.saveCloud")}
               </Link>
             )}
           </nav>
 
           {/* Navegação secundária rolável no celular */}
           <nav className="-mx-1 flex gap-1 overflow-x-auto pb-1 md:hidden">
-            {TABS.filter((t) => !MOBILE.includes(t.to)).map((t) => (
+            {TABS.filter((tab) => !MOBILE.includes(tab.to)).map((tab) => (
               <Link
-                key={t.to}
-                to={t.to}
+                key={tab.to}
+                to={tab.to}
                 className="shrink-0 rounded-lg bg-secondary/60 px-3 py-1.5 font-display text-[11px] uppercase tracking-wider text-muted-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
               >
-                {t.label}
+                {t(tab.key)}
               </Link>
             ))}
           </nav>
