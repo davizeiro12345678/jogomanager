@@ -619,6 +619,14 @@ export class MatchSim {
     this.ball.height = 0.8;
 
     if (!onTarget) {
+      this.shotMap.push({
+        x: holder.x,
+        z: holder.z,
+        side,
+        result: "off",
+        minute: this.minute(),
+        name: holder.name,
+      });
       this.pushEvent({
         minute: this.minute(),
         type: "shot",
