@@ -11,7 +11,7 @@ import {
 } from "@react-three/postprocessing";
 import { easing } from "maath";
 import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { PlayerRig } from "@/components/game/players/PlayerRig";
