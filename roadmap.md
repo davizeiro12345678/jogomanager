@@ -1,16 +1,17 @@
 # Roadmap
 
-## Em aberto
-- [ ] Ligas reais licenciadas: só via cadastro do usuário (direitos de imagem) — avaliar API oficial paga
-- [ ] Reenviar o sitemap atualizado ao Google após a publicação
+## Em andamento (plano aprovado 05/09)
+- [ ] Banco de dados de futebol (competições, clubes, estádios, kits, jogadores, ids externos, import_runs)
+- [ ] Importador das APIs (TheSportsDB / football-data.org / API-Football) + rota de sincronização
+- [ ] Escudos e camisas oficiais na interface e no 3D, com alternância oficial/próprio
+- [ ] Elencos reais nos 224 clubes (API + reserva escrita à mão)
+- [ ] Gramado, redes e iluminação
+- [ ] Torcida, arquibancadas e estádio
+- [ ] Jogadores, animações e câmera de transmissão
+- [ ] Desempenho nos três níveis + publicação
 
 ## Feito
-- [x] Páginas públicas /guias, /ligas-de-futebol, /dicas-de-gestao com head próprio e no sitemap
-- [x] Estratégia PT-BR aplicada nos títulos ("manager de futebol", "soccer manager")
-- [x] Pernas, meias e chuteiras detalhadas com os novos materiais físicos
-- [x] PlayerRig integrado ao Stadium3D (PlayerMesh antigo removido)
-- [x] Página /cadastro: clubes (nome, sigla, cores, escudo) e jogadores (foto, posição, idade, contrato, salário, valor)
-- [x] Dados cadastrados entram no elenco ao criar a carreira; escudos personalizados aparecem no jogo
-- [x] Modo convidado (jogar sem e-mail), carreira local + nuvem
-- [x] Escudos procedurais, kits, bandeiras, estádio 3D, pós-processamento
-- [x] Search Console conectado
+- [x] Páginas públicas /guias, /ligas-de-futebol, /dicas-de-gestao no sitemap
+- [x] Página /cadastro de clubes e jogadores do usuário
+- [x] Modo convidado, carreira local + nuvem
+- [x] PlayerRig integrado ao Stadium3D
