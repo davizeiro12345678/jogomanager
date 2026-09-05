@@ -454,7 +454,7 @@ export async function runSync(opts: {
     } else if (scope === "all") {
       const r = await importEverything(opts);
       detail = r;
-      items = r.clubsEnriched + r.playersImported;
+      items = r.bulkMatched + r.clubsEnriched + r.playersImported;
     } else {
       items = (await enrichClubs(opts.limit ?? 400, opts.offset ?? 0, opts.concurrency ?? 8, opts.budgetMs ?? 45_000)).imported;
     }
