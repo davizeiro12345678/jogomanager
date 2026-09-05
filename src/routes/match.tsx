@@ -9,6 +9,8 @@ import {
   Repeat,
   SkipForward,
   Sparkles,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -18,11 +20,13 @@ import { MatchReport } from "@/components/game/MatchReport";
 import { CLUBS } from "@/game/data/leagues";
 import { MENTALITIES, PRESSING } from "@/game/formations";
 import { MatchSim, type TeamSetup } from "@/game/sim";
+import { Narrator, type NarrationEvent } from "@/game/narrator";
 import { advanceRound } from "@/game/career";
 import { nextFixture } from "@/game/season";
 import { buildSquad } from "@/game/squad";
 import { pickLineup } from "@/game/career";
 import { useCareer } from "@/hooks/useCareer";
+import { useT } from "@/i18n";
 import type { CareerState, Player } from "@/game/types";
 
 export const Route = createFileRoute("/match")({
@@ -258,12 +262,16 @@ function LiveMatch({
   }, [career.round]);
 
   const mySide = isHome ? "home" : "away";
+  const { lang } = useT();
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
   const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [showStats, setShowStats] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [done, setDone] = useState(false);
+  const [narrating, setNarrating] = useState(false);
+  const narratorRef = useRef<Narrator | null>(null);
+  const narrCursorRef = useRef(0);
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
   const [quality, setQuality] = useState<Quality>(() => {
     if (typeof navigator === "undefined") return "media";
@@ -277,6 +285,31 @@ function LiveMatch({
   speedRef.current = speed;
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+
+  // Narração: consome eventos novos do simulador e fala via Web Speech API.
+  useEffect(() => {
+    const n = new Narrator({ lang, enabled: narrating });
+    narratorRef.current = n;
+    narrCursorRef.current = sim.events.length;
+    return () => {
+      n.dispose();
+      narratorRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sim, lang, narrating]);
+
+  useEffect(() => {
+    const n = narratorRef.current;
+    if (!n) return;
+    const fresh = sim.events.slice(narrCursorRef.current);
+    narrCursorRef.current = sim.events.length;
+    for (const e of fresh) {
+      if (e.side === "neutral") continue;
+      if (!["goal", "save", "shot", "foul", "kickoff", "halftime", "fulltime"].includes(e.type)) continue;
+      const team = e.side === "home" ? sim.home.short : sim.away.short;
+      n.speak(e.type as NarrationEvent, team);
+    }
+  }, [snap, sim]);
 
   // Laço de simulação desacoplado do React: o HUD só atualiza ~10x por segundo,
   // então a árvore 3D (memoizada) nunca é reconciliada por quadro.
@@ -442,6 +475,13 @@ function LiveMatch({
           </button>
         ))}
         <button
+          onClick={() => setNarrating((v) => !v)}
+          aria-label={narrating ? "Desligar narração" : "Ligar narração"}
+          className={`grid h-9 w-9 place-items-center rounded-full ${narrating ? "text-primary" : "text-white/60"}`}
+        >
+          {narrating ? <Volume2 size={16} /> : <VolumeX size={16} />}
+        </button>
+        <button
           onClick={skip}
           aria-label="Pular para o fim"
           className="grid h-9 w-9 place-items-center rounded-full text-white/80"
@@ -484,6 +524,13 @@ function LiveMatch({
               {s}x
             </button>
           ))}
+          <button
+            onClick={() => setNarrating((v) => !v)}
+            aria-label={narrating ? "Desligar narração" : "Ligar narração"}
+            className={`grid w-9 place-items-center rounded-lg py-1.5 ${narrating ? "bg-primary/30 text-primary" : "bg-white/10 text-white/60"}`}
+          >
+            {narrating ? <Volume2 size={13} /> : <VolumeX size={13} />}
+          </button>
           <button
             onClick={skip}
             aria-label="Pular partida"

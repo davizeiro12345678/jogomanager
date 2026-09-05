@@ -112,6 +112,8 @@ export class MatchSim {
   subsUsed: Record<Side, number> = { home: 0, away: 0 };
   /** último passador de cada lado, para creditar assistência */
   private lastPass: Record<Side, { id: string; time: number } | null> = { home: null, away: null };
+  /** jogadores em "freeze" curto após um chute próximo */
+  private reactionUntil = new Map<string, number>();
   finished = false;
   lastEventId = 0;
   private decisionTimer = 0;
@@ -440,12 +442,22 @@ export class MatchSim {
       const dz = tz - p.z;
       const d = Math.hypot(dx, dz);
       if (d > 0.3) {
-        const step = Math.min(d, speed * dt);
+        // curva de corrida: quanto maior a mudança de direção, mais o jogador reduz
+        let speedEff = speed;
+        const curSpeed = Math.hypot(p.vx, p.vz);
+        if (curSpeed > 2.5) {
+          const dot = (dx / d) * (p.vx / curSpeed) + (dz / d) * (p.vz / curSpeed);
+          // só penaliza curvas realmente fechadas (> ~100°); o resto mantém o ritmo
+          if (dot < 0.2) speedEff = speed * (0.6 + 0.4 * Math.max(0, (dot + 0.2) / 1.2));
+        }
+        // reação tardia a um chute próximo
+        if ((this.reactionUntil.get(p.id) ?? 0) > this.time) speedEff *= 0.3;
+        const step = Math.min(d, speedEff * dt);
         p.x += (dx / d) * step;
         p.z += (dz / d) * step;
         // velocidade real em m/s, suavizada (aceleração)
-        const tvx = (dx / d) * speed;
-        const tvz = (dz / d) * speed;
+        const tvx = (dx / d) * speedEff;
+        const tvz = (dz / d) * speedEff;
         const k = 1 - Math.exp(-6 * dt);
         p.vx += (tvx - p.vx) * k;
         p.vz += (tvz - p.vz) * k;
@@ -678,6 +690,13 @@ export class MatchSim {
       0.8,
     );
     this.ball.holder = null;
+    // reação ao chute: adversários próximos congelam por uma fração de segundo
+    for (const p of this.players) {
+      if (p.side === side || p.pos === "GK") continue;
+      if (Math.hypot(p.x - holder.x, p.z - holder.z) < 7) {
+        this.reactionUntil.set(p.id, this.time + 0.45 + this.rnd() * 0.2);
+      }
+    }
     const targetZ = (this.rnd() - 0.5) * (onTarget ? GOAL_Z * 1.4 : GOAL_Z * 4.5);
     const dx = dir * FIELD_X - holder.x;
     const dz = targetZ - holder.z;
