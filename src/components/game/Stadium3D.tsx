@@ -1312,8 +1312,9 @@ function CrowdFlags({
     return out;
   }, [count, rings, color, alt]);
 
-  const material = useMemo(() => {
+  const materials = useMemo(() => flags.map((f) => {
     const m = new THREE.MeshStandardMaterial({
+      color: f.c,
       side: THREE.DoubleSide,
       roughness: 0.85,
       metalness: 0,
@@ -1331,7 +1332,7 @@ function CrowdFlags({
         );
     };
     return m;
-  }, []);
+  }), [flags]);
 
   useFrame(({ clock }) => {
     uTime.current.value = clock.elapsedTime;
@@ -1346,10 +1347,7 @@ function CrowdFlags({
           position={f.pos}
           rotation={[0, f.rot, 0]}
           scale={[f.s, f.s, 1]}
-          material={material.clone()}
-          onUpdate={(self) => {
-            (self.material as THREE.MeshStandardMaterial).color.set(f.c);
-          }}
+          material={materials[i]}
         >
           <planeGeometry args={[2.4, 1.5, 12, 6]} />
         </mesh>
