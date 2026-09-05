@@ -25,6 +25,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/guias", changefreq: "weekly", priority: "0.8" },
           { path: "/dicas-de-gestao", changefreq: "weekly", priority: "0.8" },
           { path: "/perguntas-frequentes", changefreq: "monthly", priority: "0.7" },
+          { path: "/criador", changefreq: "monthly", priority: "0.5" },
         ];
 
         const lastmod = new Date().toISOString().slice(0, 10);
