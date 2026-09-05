@@ -258,12 +258,16 @@ function LiveMatch({
   }, [career.round]);
 
   const mySide = isHome ? "home" : "away";
+  const { lang } = useT();
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
   const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [showStats, setShowStats] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [done, setDone] = useState(false);
+  const [narrating, setNarrating] = useState(false);
+  const narratorRef = useRef<Narrator | null>(null);
+  const narrCursorRef = useRef(0);
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
   const [quality, setQuality] = useState<Quality>(() => {
     if (typeof navigator === "undefined") return "media";
@@ -277,6 +281,31 @@ function LiveMatch({
   speedRef.current = speed;
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+
+  // Narração: consome eventos novos do simulador e fala via Web Speech API.
+  useEffect(() => {
+    const n = new Narrator({ lang, enabled: narrating });
+    narratorRef.current = n;
+    narrCursorRef.current = sim.events.length;
+    return () => {
+      n.dispose();
+      narratorRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sim, lang, narrating]);
+
+  useEffect(() => {
+    const n = narratorRef.current;
+    if (!n) return;
+    const fresh = sim.events.slice(narrCursorRef.current);
+    narrCursorRef.current = sim.events.length;
+    for (const e of fresh) {
+      if (e.side === "neutral") continue;
+      if (!["goal", "save", "shot", "foul", "kickoff", "halftime", "fulltime"].includes(e.type)) continue;
+      const team = e.side === "home" ? sim.homeShort : sim.awayShort;
+      n.speak(e.type as NarrationEvent, team);
+    }
+  }, [snap, sim]);
 
   // Laço de simulação desacoplado do React: o HUD só atualiza ~10x por segundo,
   // então a árvore 3D (memoizada) nunca é reconciliada por quadro.
