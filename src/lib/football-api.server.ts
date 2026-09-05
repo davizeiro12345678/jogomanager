@@ -14,13 +14,13 @@ export interface RemoteTeam {
   source: string;
   externalId: string;
   name: string;
-  crestUrl?: string;
-  kitUrl?: string;
-  stadium?: string;
-  stadiumCapacity?: number;
-  city?: string;
-  country?: string;
-  founded?: number;
+  crestUrl?: string | undefined;
+  kitUrl?: string | undefined;
+  stadium?: string | undefined;
+  stadiumCapacity?: number | undefined;
+  city?: string | undefined;
+  country?: string | undefined;
+  founded?: number | undefined;
 }
 
 export interface RemotePlayer {
@@ -28,10 +28,10 @@ export interface RemotePlayer {
   externalId: string;
   name: string;
   position: string;
-  age?: number;
-  shirtNumber?: number;
-  nationality?: string;
-  photoUrl?: string;
+  age?: number | undefined;
+  shirtNumber?: number | undefined;
+  nationality?: string | undefined;
+  photoUrl?: string | undefined;
 }
 
 const UA = { "User-Agent": "football-manager-app/1.0" };
@@ -120,7 +120,7 @@ interface FdSquadMember {
   name?: string;
   position?: string;
   dateOfBirth?: string;
-  nationality?: string;
+  nationality?: string | undefined;
 }
 
 export async function footballDataSquad(teamId: string): Promise<RemotePlayer[]> {
@@ -148,7 +148,7 @@ export async function footballDataSquad(teamId: string): Promise<RemotePlayer[]>
 interface AfPlayer {
   id?: number;
   name?: string;
-  age?: number;
+  age?: number | undefined;
   number?: number;
   position?: string;
   photo?: string;

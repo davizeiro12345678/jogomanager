@@ -102,7 +102,10 @@ export function Crest({
     const sync = () => setCustom(badgeFor(club.id) ?? officialCrest(club.id));
     sync();
     void loadOfficialAssets().then(sync);
-    return subscribeOfficial(sync);
+    const off = subscribeOfficial(sync);
+    return () => {
+      off();
+    };
   }, [club.id]);
 
 
