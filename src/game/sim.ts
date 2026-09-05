@@ -154,8 +154,99 @@ export class MatchSim {
         action: null,
         actionT: 0,
         actionDur: 0,
+        pid: p.id,
+        goals: 0,
+        assists: 0,
+        shots: 0,
+        passes: 0,
+        tackles: 0,
+        saves: 0,
+        onSince: 0,
+        minutes: 0,
       };
     });
+  }
+
+  /**
+   * Troca um titular por um reserva mantendo a posição na formação.
+   * Devolve falso quando o jogador que sai não está em campo.
+   */
+  substitute(side: Side, outPid: string, incoming: Player): boolean {
+    const idx = this.players.findIndex((p) => p.side === side && p.pid === outPid);
+    if (idx < 0) return false;
+    const out = this.players[idx]!;
+    out.minutes += this.minute() - out.onSince;
+    this.subsOut.push(out);
+    const fresh: SimPlayer = {
+      ...out,
+      id: `${side}-${incoming.id}`,
+      pid: incoming.id,
+      name: incoming.name,
+      number: incoming.number,
+      pos: incoming.pos,
+      pace: incoming.pace,
+      shooting: incoming.shooting,
+      passing: incoming.passing,
+      defending: incoming.defending,
+      physical: incoming.physical,
+      stamina: Math.max(70, incoming.condition),
+      action: null,
+      actionT: 0,
+      actionDur: 0,
+      goals: 0,
+      assists: 0,
+      shots: 0,
+      passes: 0,
+      tackles: 0,
+      saves: 0,
+      onSince: this.minute(),
+      minutes: 0,
+    };
+    if (this.ball.holder === out.id) this.ball.holder = fresh.id;
+    this.players[idx] = fresh;
+    this.subsUsed[side]++;
+    this.pushEvent({
+      minute: this.minute(),
+      type: "sub",
+      side,
+      text: `${this.minute()}' Substituição no ${this.setup(side).short}: entra ${incoming.name}, sai ${out.name}.`,
+    });
+    return true;
+  }
+
+  /** Notas de 0 a 10 de todos os jogadores que atuaram na partida. */
+  playerRatings(): PlayerRating[] {
+    const all = [...this.players, ...this.subsOut];
+    return all.map((p) => {
+      const mins = Math.max(1, p.minutes + (this.subsOut.includes(p) ? 0 : this.minute() - p.onSince));
+      const conceded = this.stats[p.side === "home" ? "away" : "home"].goals;
+      let r = 6;
+      r += p.goals * 1.35 + p.assists * 0.85;
+      r += Math.min(0.9, p.passes / 28) + Math.min(0.7, p.tackles * 0.18);
+      if (p.pos === "GK") r += Math.min(1.2, p.saves * 0.28) - conceded * 0.35;
+      r += (this.stats[p.side].goals - conceded) * 0.12;
+      r *= 0.75 + Math.min(1, mins / 70) * 0.25;
+      return {
+        pid: p.pid,
+        side: p.side,
+        name: p.name,
+        number: p.number,
+        pos: p.pos,
+        goals: p.goals,
+        assists: p.assists,
+        passes: p.passes,
+        tackles: p.tackles,
+        saves: p.saves,
+        rating: Math.max(3, Math.min(10, Math.round(r * 10) / 10)),
+      };
+    });
+  }
+
+  /** Melhor jogador da partida. */
+  manOfTheMatch(): PlayerRating | null {
+    const rs = this.playerRatings();
+    if (!rs.length) return null;
+    return rs.reduce((a, b) => (b.rating > a.rating ? b : a));
   }
 
   reset() {
