@@ -707,7 +707,7 @@ export class MatchSim {
 
     this.stats[side].onTarget++;
     const gkSkill = gk ? gk.defending * 0.7 + gk.physical * 0.3 : 60;
-    const goalChance = Math.max(0.06, Math.min(0.72, accuracy * 1.15 - gkSkill / 260));
+    const goalChance = Math.max(0.04, Math.min(0.42, accuracy * 0.75 - gkSkill / 300));
     if (this.rnd() < goalChance) {
       this.stats[side].goals++;
       holder.goals++;
