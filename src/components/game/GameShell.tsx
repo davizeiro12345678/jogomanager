@@ -5,6 +5,7 @@ import {
   Briefcase,
   Coins,
   Dumbbell,
+  FastForward,
   Gauge,
   Globe,
   History,
@@ -42,6 +43,7 @@ const TABS: { to: string; key: string; icon: ComponentType<{ size?: number }> }[
   { to: "/stats", key: "nav.stats", icon: BarChart3 },
   { to: "/news", key: "nav.news", icon: Newspaper },
   { to: "/history", key: "nav.history", icon: History },
+  { to: "/temporada-automatica", key: "nav.auto", icon: FastForward },
 ];
 
 /** Atalhos mostrados na barra inferior do celular. */

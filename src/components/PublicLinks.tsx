@@ -11,6 +11,7 @@ export const PUBLIC_PAGES = [
   { to: "/guias", label: "Guias" },
   { to: "/dicas-de-gestao", label: "Dicas de gestão" },
   { to: "/perguntas-frequentes", label: "Perguntas frequentes" },
+  { to: "/criador", label: "Sobre o criador" },
 ] as const;
 
 export function PublicLinks({ exclude }: { exclude?: string }) {
