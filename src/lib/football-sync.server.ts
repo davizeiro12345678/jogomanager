@@ -159,7 +159,7 @@ export async function enrichClubs(limit = 400, offset = 0, concurrency = 8, budg
 
 
 /** Import real squads for a batch of clubs, using whichever squad API has a key. */
-export async function importSquads(limit = 10, offset = 0) {
+export async function importSquads(limit = 200, offset = 0, concurrency = 6, budgetMs = 45_000) {
   const db = await admin();
   const { data: rows, error } = await db
     .from("clubs")
@@ -168,10 +168,12 @@ export async function importSquads(limit = 10, offset = 0) {
     .range(offset, offset + limit - 1);
   if (error) throw new Error(error.message);
 
+  const deadline = Date.now() + budgetMs;
   let imported = 0;
-  for (const club of rows ?? []) {
+
+  await pool(rows ?? [], concurrency, deadline, async (club) => {
     const { data: existing } = await db.from("players").select("id").eq("club_id", club.id).limit(1);
-    if (existing && existing.length) continue;
+    if (existing && existing.length) return;
 
     const { data: ext } = await db
       .from("club_external_ids")
@@ -202,12 +204,9 @@ export async function importSquads(limit = 10, offset = 0) {
       }
     }
 
-    if (!players.length) {
-      await new Promise((r) => setTimeout(r, 2100));
-      continue;
-    }
+    if (!players.length) return;
 
-    const rowsToInsert = players.slice(0, 26).map((p) => ({
+    const rowsToInsert = players.slice(0, 30).map((p) => ({
       club_id: club.id,
       name: p.name,
       position: p.position,
@@ -219,12 +218,60 @@ export async function importSquads(limit = 10, offset = 0) {
     }));
     const res = await db.from("players").insert(rowsToInsert);
     if (!res.error) imported += rowsToInsert.length;
-    await new Promise((r) => setTimeout(r, 2100));
-  }
+  });
+
   return { imported };
 }
 
-export async function runSync(opts: { scope?: string; limit?: number; offset?: number }) {
+/**
+ * One-shot importer: seeds every bundled competition/club, enriches as many
+ * clubs as fit in the time budget, then pulls squads for the same batch.
+ */
+export async function importEverything(opts: {
+  limit?: number;
+  offset?: number;
+  concurrency?: number;
+  budgetMs?: number;
+  squads?: boolean;
+}) {
+  const limit = opts.limit ?? 600;
+  const offset = opts.offset ?? 0;
+  const concurrency = opts.concurrency ?? 8;
+  const total = opts.budgetMs ?? 90_000;
+  const started = Date.now();
+
+  const seeded = await seedFromBundledData();
+  const enrichBudget = opts.squads === false ? total : Math.floor(total * 0.6);
+  const enriched = await enrichClubs(
+    limit,
+    offset,
+    concurrency,
+    Math.max(5_000, enrichBudget - (Date.now() - started)),
+  );
+
+  let squads = { imported: 0 };
+  if (opts.squads !== false) {
+    const left = total - (Date.now() - started);
+    if (left > 5_000) squads = await importSquads(limit, offset, Math.max(4, concurrency - 2), left);
+  }
+
+  return {
+    seeded,
+    clubsEnriched: enriched.imported,
+    clubsScanned: enriched.scanned,
+    playersImported: squads.imported,
+    failures: enriched.failures.slice(0, 25),
+    elapsedMs: Date.now() - started,
+  };
+}
+
+export async function runSync(opts: {
+  scope?: string;
+  limit?: number;
+  offset?: number;
+  concurrency?: number;
+  budgetMs?: number;
+}) {
   const db = await admin();
   const scope = opts.scope ?? "clubs";
   const { data: run } = await db
@@ -235,13 +282,18 @@ export async function runSync(opts: { scope?: string; limit?: number; offset?: n
 
   try {
     let items = 0;
+    let detail: unknown = null;
     if (scope === "seed") {
       const r = await seedFromBundledData();
       items = r.clubs;
     } else if (scope === "squads") {
-      items = (await importSquads(opts.limit ?? 10, opts.offset ?? 0)).imported;
+      items = (await importSquads(opts.limit ?? 200, opts.offset ?? 0, opts.concurrency ?? 6, opts.budgetMs ?? 45_000)).imported;
+    } else if (scope === "all") {
+      const r = await importEverything(opts);
+      detail = r;
+      items = r.clubsEnriched + r.playersImported;
     } else {
-      items = (await enrichClubs(opts.limit ?? 40, opts.offset ?? 0)).imported;
+      items = (await enrichClubs(opts.limit ?? 400, opts.offset ?? 0, opts.concurrency ?? 8, opts.budgetMs ?? 45_000)).imported;
     }
     if (run?.id) {
       await db
@@ -249,8 +301,9 @@ export async function runSync(opts: { scope?: string; limit?: number; offset?: n
         .update({ status: "done", items_imported: items, finished_at: new Date().toISOString() })
         .eq("id", run.id);
     }
-    return { ok: true as const, scope, items };
+    return { ok: true as const, scope, items, detail };
   } catch (e) {
+
     const message = e instanceof Error ? e.message : String(e);
     if (run?.id) {
       await db
