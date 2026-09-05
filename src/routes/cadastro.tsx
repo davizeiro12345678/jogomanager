@@ -267,7 +267,7 @@ function ClubTab({ data, onChange }: { data: CustomData; onChange: () => void })
       </div>
 
       <div className="rounded-xl border border-border/60 bg-card/70 p-5 backdrop-blur">
-        <p className="font-display text-sm uppercase tracking-wide">Prévia</p>
+        <h2 className="font-display text-sm uppercase tracking-wide">Prévia</h2>
         <div className="mt-4 flex items-center gap-3">
           {badge ? (
             <img src={badge} alt={`Escudo de ${name}`} className="h-12 w-12 rounded object-cover" />
@@ -284,7 +284,7 @@ function ClubTab({ data, onChange }: { data: CustomData; onChange: () => void })
           <span className="h-8 flex-1 rounded" style={{ background: secondary }} />
         </div>
 
-        <p className="mt-6 font-display text-sm uppercase tracking-wide">Clubes personalizados</p>
+        <h2 className="mt-6 font-display text-sm uppercase tracking-wide">Clubes personalizados</h2>
         <ul className="mt-2 space-y-1 text-sm">
           {Object.values(data.clubs).length === 0 && (
             <li className="text-xs text-muted-foreground">Nenhum ainda.</li>
@@ -440,7 +440,7 @@ function PlayerTab({ data, onChange }: { data: CustomData; onChange: () => void 
       </div>
 
       <div className="rounded-xl border border-border/60 bg-card/70 p-5 backdrop-blur">
-        <p className="font-display text-sm uppercase tracking-wide">Jogadores cadastrados</p>
+        <h2 className="font-display text-sm uppercase tracking-wide">Jogadores cadastrados</h2>
         <ul className="mt-3 space-y-3">
           {data.players.length === 0 && (
             <li className="text-xs text-muted-foreground">Nenhum ainda.</li>
