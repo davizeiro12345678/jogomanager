@@ -20,6 +20,7 @@ import { Route as FinancesRouteImport } from './routes/finances'
 import { Route as GuiasRouteImport } from './routes/guias'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as LeagueRouteImport } from './routes/league'
+import { Route as LigasDeFutebolRouteImport } from './routes/ligas-de-futebol'
 import { Route as MatchRouteImport } from './routes/match'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as NewRouteImport } from './routes/new'
@@ -89,6 +90,11 @@ const HistoryRoute = HistoryRouteImport.update({
 const LeagueRoute = LeagueRouteImport.update({
   id: '/league',
   path: '/league',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LigasDeFutebolRoute = LigasDeFutebolRouteImport.update({
+  id: '/ligas-de-futebol',
+  path: '/ligas-de-futebol',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MatchRoute = MatchRouteImport.update({
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
   '/league': typeof LeagueRoute
+  '/ligas-de-futebol': typeof LigasDeFutebolRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
   '/new': typeof NewRoute
@@ -209,6 +216,7 @@ export interface FileRoutesByTo {
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
   '/league': typeof LeagueRoute
+  '/ligas-de-futebol': typeof LigasDeFutebolRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
   '/new': typeof NewRoute
@@ -238,6 +246,7 @@ export interface FileRoutesById {
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
   '/league': typeof LeagueRoute
+  '/ligas-de-futebol': typeof LigasDeFutebolRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
   '/new': typeof NewRoute
@@ -268,6 +277,7 @@ export interface FileRouteTypes {
     | '/guias'
     | '/history'
     | '/league'
+    | '/ligas-de-futebol'
     | '/match'
     | '/mcp'
     | '/new'
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/guias'
     | '/history'
     | '/league'
+    | '/ligas-de-futebol'
     | '/match'
     | '/mcp'
     | '/new'
@@ -324,6 +335,7 @@ export interface FileRouteTypes {
     | '/guias'
     | '/history'
     | '/league'
+    | '/ligas-de-futebol'
     | '/match'
     | '/mcp'
     | '/new'
@@ -353,6 +365,7 @@ export interface RootRouteChildren {
   GuiasRoute: typeof GuiasRoute
   HistoryRoute: typeof HistoryRoute
   LeagueRoute: typeof LeagueRoute
+  LigasDeFutebolRoute: typeof LigasDeFutebolRoute
   MatchRoute: typeof MatchRoute
   McpRoute: typeof McpRoute
   NewRoute: typeof NewRoute
@@ -447,6 +460,13 @@ declare module '@tanstack/react-router' {
       path: '/league'
       fullPath: '/league'
       preLoaderRoute: typeof LeagueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ligas-de-futebol': {
+      id: '/ligas-de-futebol'
+      path: '/ligas-de-futebol'
+      fullPath: '/ligas-de-futebol'
+      preLoaderRoute: typeof LigasDeFutebolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/match': {
@@ -569,6 +589,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuiasRoute: GuiasRoute,
   HistoryRoute: HistoryRoute,
   LeagueRoute: LeagueRoute,
+  LigasDeFutebolRoute: LigasDeFutebolRoute,
   MatchRoute: MatchRoute,
   McpRoute: McpRoute,
   NewRoute: NewRoute,
