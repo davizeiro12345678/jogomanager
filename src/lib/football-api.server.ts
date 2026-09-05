@@ -191,7 +191,7 @@ export async function sdbSearchTeam(name: string, country?: string): Promise<Rem
  * Fetch every team of a league in a single request.
  * Far cheaper than one search per club on the rate-limited free tier.
  */
-export async function sdbAllTeams(league: string): Promise<(RemoteTeam & { alternate?: string })[]> {
+export async function sdbAllTeams(league: string): Promise<(RemoteTeam & { alternate?: string | undefined })[]> {
   const key = process.env["THESPORTSDB_API_KEY"] ?? "123";
   const json = await getJson<{ teams: (SdbTeam & { strTeamAlternate?: string })[] | null }>(
     `https://www.thesportsdb.com/api/v1/json/${key}/search_all_teams.php?l=${encodeURIComponent(league)}`,
