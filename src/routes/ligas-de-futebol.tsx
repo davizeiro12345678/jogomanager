@@ -77,6 +77,8 @@ function LeaguesPage() {
             Guias para iniciantes
           </Link>
         </div>
+
+        <PublicLinks exclude="/ligas-de-futebol" />
       </div>
     </div>
   );

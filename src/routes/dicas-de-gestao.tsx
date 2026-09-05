@@ -74,6 +74,8 @@ function TipsPage() {
             Ver os guias
           </Link>
         </div>
+
+        <PublicLinks exclude="/dicas-de-gestao" />
       </div>
     </div>
   );

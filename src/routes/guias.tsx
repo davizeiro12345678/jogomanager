@@ -93,6 +93,8 @@ function GuidesPage() {
             Ligas disponíveis
           </Link>
         </div>
+
+        <PublicLinks exclude="/guias" />
       </div>
     </div>
   );
