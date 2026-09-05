@@ -50,9 +50,18 @@ export function GameShell({
   const navigate = useNavigate();
   const signedIn = useSignedIn();
   const club = career ? CLUBS[career.clubId] : undefined;
+  useClubTheme(club);
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 z-0 h-64 opacity-70"
+        style={{
+          background:
+            "radial-gradient(70% 100% at 50% 0%, var(--club-glow, transparent), transparent 70%)",
+        }}
+      />
       <header className="sticky top-0 z-30 border-b border-border/60 bg-card/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-3 lg:flex-row lg:items-center lg:gap-4">
           <div className="flex items-center gap-3">
