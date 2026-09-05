@@ -501,7 +501,19 @@ function endSeason(state: CareerState): CareerState {
   };
 }
 
-export function advanceRound(state: CareerState, userResult: { hg: number; ag: number }) {
+/** Desempenho individual de uma partida (jogadores do clube do usuário). */
+export interface MatchPerformance {
+  pid: string;
+  goals: number;
+  assists: number;
+  played: boolean;
+}
+
+export function advanceRound(
+  state: CareerState,
+  userResult: { hg: number; ag: number },
+  performances: MatchPerformance[] = [],
+) {
   const round = state.round;
   const fixtures = state.fixtures.map((f) => {
     if (f.round !== round || f.homeGoals !== null) return f;
@@ -522,13 +534,31 @@ export function advanceRound(state: CareerState, userResult: { hg: number; ag: n
   const won = gf > ga;
   const draw = gf === ga;
 
+  // estatísticas individuais da partida (jogos, gols, assistências)
+  let squadAfterMatch = state.players;
+  if (performances.length) {
+    squadAfterMatch = { ...state.players };
+    for (const perf of performances) {
+      const p = squadAfterMatch[perf.pid];
+      if (!p) continue;
+      squadAfterMatch[perf.pid] = {
+        ...p,
+        apps: (p.apps ?? 0) + (perf.played ? 1 : 0),
+        goals: (p.goals ?? 0) + perf.goals,
+        assists: (p.assists ?? 0) + perf.assists,
+      };
+    }
+  }
+
   // mecânicas semanais sobre o elenco
   const { players, news } = applyWeeklyDevelopment(
-    state.players,
+    squadAfterMatch,
     state,
     won,
     `${state.clubId}-${round}-dev`,
   );
+
+
 
   // finanças semanais
   const table = computeTable({ ...state, fixtures });
