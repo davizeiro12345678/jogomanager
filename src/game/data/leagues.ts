@@ -1,5 +1,6 @@
 import type { Club, League } from "../types";
 import { EXTRA_LEAGUES } from "./leagues-extra";
+import { WORLD_LEAGUES } from "./leagues-world";
 
 type Raw = [id: string, name: string, short: string, primary: string, secondary: string, strength: number];
 
@@ -1066,6 +1067,7 @@ export const LEAGUES: League[] = [
   build("idn", "Liga 1", "Indonésia", "🇮🇩", IDN),
   build("can", "Premier League", "Canadá", "🇨🇦", CAN),
   ...EXTRA_LEAGUES,
+  ...WORLD_LEAGUES,
 ];
 
 export const CLUBS: Record<string, Club> = Object.fromEntries(
