@@ -61,18 +61,24 @@ Três níveis de qualidade (Baixo, Médio, Alto) escolhidos automaticamente pelo
 
 ## Detalhes técnicos
 
-- Dados: `src/game/data/squads.ts` cresce para conter os 224 elencos (dividido em arquivos por confederação para não virar um arquivo gigante); novo `src/game/data/kits-real.ts` com o padrão por clube substituindo o sorteio em `src/game/kits.ts`.
-- Banco: migração criando `competitions`, `clubs`, `stadiums`, `kits`, `players`, `seasons`, `standings` no schema público, com `GRANT SELECT` para leitura anônima, RLS ativa e políticas somente-leitura; a carga inicial vai por `INSERT` na própria migração. Carregamento no app via função de servidor pública com cache do TanStack Query e fallback para os arquivos locais.
-- 3D: `Stadium3D.tsx` dividido em módulos (`Pitch`, `Nets`, `Stands`, `Crowd`, `Lighting`, `BroadcastCamera`) para não passar de mil linhas por arquivo; grama e torcida por `InstancedMesh`; rede como geometria de linhas com simulação de mola; texturas geradas em canvas (sem downloads externos).
-- Cadastro do usuário (`/cadastro`) continua funcionando e sobrescreve os dados oficiais quando preenchido.
+- APIs: chaves guardadas como segredos do backend (`THESPORTSDB_API_KEY`, `APIFOOTBALL_API_KEY`, `FOOTBALL_DATA_API_KEY`), nunca no código do navegador. Importador roda como função de servidor administrativa (`src/lib/import.functions.ts`) mais uma rota `/api/public/sync-football` protegida por segredo, chamável manualmente ou por agendamento.
+- Imagens: escudos e camisas baixados uma vez, redimensionados e enviados para o armazenamento da nuvem (buckets públicos `crests` e `kits`); o app usa a URL do nosso armazenamento, não a do fornecedor, para não depender da disponibilidade deles e não estourar limite de requisições.
+- Casamento de clubes: tabela de correspondência entre o id interno (`fla`, `liv`, `rma`) e os ids das três APIs, conferida manualmente para evitar troca de clubes homônimos.
+- Camisa 3D: a imagem oficial é analisada no servidor (cores dominantes, detecção de listras verticais/horizontais) e vira um conjunto de parâmetros de uniforme; a textura em 3D é gerada em canvas a partir desses parâmetros — nada de baixar imagem grande durante a partida.
+- Dados locais de reserva: `src/game/data/squads.ts` dividido por confederação; `src/game/data/kits-real.ts` com o padrão escrito à mão por clube substituindo o sorteio de `src/game/kits.ts`.
+- Banco: migração criando `competitions`, `clubs`, `stadiums`, `kits`, `players`, `seasons`, `standings`, `club_external_ids` e `import_runs` no schema público, com `GRANT SELECT` para leitura anônima, RLS ativa e políticas somente-leitura (escrita só pela função administrativa). Leitura no app via função de servidor pública com cache do TanStack Query e fallback para os arquivos locais.
+- 3D: `Stadium3D.tsx` dividido em módulos (`Pitch`, `Nets`, `Stands`, `Crowd`, `Lighting`, `BroadcastCamera`) para não passar de mil linhas por arquivo; grama e torcida por `InstancedMesh`; rede como geometria de linhas com simulação de mola; texturas geradas em canvas.
+- Cadastro do usuário (`/cadastro`) continua funcionando e tem prioridade sobre os dados da API.
 - Verificação: type-check, build e captura de tela no navegador nos três níveis de qualidade, além de conferir que a partida roda a 60 fps no modo Médio.
 
 ## Ordem de entrega
 
-1. Banco de dados + carga de competições, clubes e estádios
-2. Camisas reais por clube
-3. Elencos reais dos 224 clubes
-4. Gramado, redes e iluminação
-5. Torcida, arquibancadas e estádio
-6. Jogadores, animações e câmera de transmissão
-7. Ajuste de desempenho e publicação
+1. Banco de dados + tabela de correspondência de clubes
+2. Importador das APIs: competições, clubes, estádios, escudos e camisas
+3. Escudos e camisas oficiais na interface e no 3D
+4. Elencos reais dos 224 clubes (API + reserva escrita à mão)
+5. Gramado, redes e iluminação
+6. Torcida, arquibancadas e estádio
+7. Jogadores, animações e câmera de transmissão
+8. Ajuste de desempenho e publicação
+
