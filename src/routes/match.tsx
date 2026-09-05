@@ -18,11 +18,13 @@ import { MatchReport } from "@/components/game/MatchReport";
 import { CLUBS } from "@/game/data/leagues";
 import { MENTALITIES, PRESSING } from "@/game/formations";
 import { MatchSim, type TeamSetup } from "@/game/sim";
+import { Narrator, type NarrationEvent } from "@/game/narrator";
 import { advanceRound } from "@/game/career";
 import { nextFixture } from "@/game/season";
 import { buildSquad } from "@/game/squad";
 import { pickLineup } from "@/game/career";
 import { useCareer } from "@/hooks/useCareer";
+import { useT } from "@/i18n";
 import type { CareerState, Player } from "@/game/types";
 
 export const Route = createFileRoute("/match")({
@@ -302,7 +304,7 @@ function LiveMatch({
     for (const e of fresh) {
       if (e.side === "neutral") continue;
       if (!["goal", "save", "shot", "foul", "kickoff", "halftime", "fulltime"].includes(e.type)) continue;
-      const team = e.side === "home" ? sim.homeShort : sim.awayShort;
+      const team = e.side === "home" ? sim.home.short : sim.away.short;
       n.speak(e.type as NarrationEvent, team);
     }
   }, [snap, sim]);
