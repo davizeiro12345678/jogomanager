@@ -133,7 +133,7 @@ export function Crest({
         width={size}
         height={size}
         alt={`Escudo do ${club.name}`}
-        className="shrink-0 rounded-md object-cover drop-shadow-[0_3px_8px_rgba(0,0,0,0.5)]"
+        className="shrink-0 rounded-md object-contain drop-shadow-[0_3px_8px_rgba(0,0,0,0.5)]"
       />
     );
   }
