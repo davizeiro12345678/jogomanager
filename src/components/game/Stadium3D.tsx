@@ -1266,8 +1266,101 @@ function Stands({
 }
 
 
+/**
+ * Bandeirões da torcida: planos com ondulação no vertex shader, espalhados
+ * pelas arquibancadas nas cores dos dois clubes.
+ */
+function CrowdFlags({
+  color,
+  alt,
+  rings,
+  quality,
+}: {
+  color: string;
+  alt: string;
+  rings: number;
+  quality: Quality;
+}) {
+  const count = quality === "alta" ? 46 : quality === "media" ? 24 : 10;
+  const uTime = useRef({ value: 0 });
+
+  const flags = useMemo(() => {
+    const out: { pos: [number, number, number]; rot: number; c: string; s: number }[] = [];
+    for (let i = 0; i < count; i++) {
+      const behind = i % 2 === 0;
+      const ring = 1 + (i * 3) % Math.max(1, rings - 1);
+      const t = ((i * 37) % 100) / 100;
+      const y = 3.4 + ring * 1.45;
+      if (behind) {
+        const zSide = i % 4 < 2 ? -1 : 1;
+        out.push({
+          pos: [-FIELD_X - 8 + t * (FIELD_X * 2 + 16), y, zSide * (FIELD_Z + 7 + ring * 1.5)],
+          rot: zSide > 0 ? Math.PI : 0,
+          c: t < 0.45 ? color : alt,
+          s: 0.8 + ((i % 3) * 0.35),
+        });
+      } else {
+        const xSide = i % 4 < 2 ? -1 : 1;
+        out.push({
+          pos: [xSide * (FIELD_X + 10 + ring * 1.5), y, -FIELD_Z - 6 + t * (FIELD_Z * 2 + 12)],
+          rot: xSide > 0 ? -Math.PI / 2 : Math.PI / 2,
+          c: xSide > 0 ? color : alt,
+          s: 0.8 + ((i % 4) * 0.3),
+        });
+      }
+    }
+    return out;
+  }, [count, rings, color, alt]);
+
+  const material = useMemo(() => {
+    const m = new THREE.MeshStandardMaterial({
+      side: THREE.DoubleSide,
+      roughness: 0.85,
+      metalness: 0,
+    });
+    m.onBeforeCompile = (shader) => {
+      shader.uniforms["uTime"] = uTime.current;
+      shader.vertexShader = shader.vertexShader
+        .replace("#include <common>", "#include <common>\nuniform float uTime;")
+        .replace(
+          "#include <begin_vertex>",
+          `#include <begin_vertex>
+           float wave = sin(uTime * 2.2 + position.x * 3.0) * 0.12
+                      + sin(uTime * 3.7 + position.y * 2.0) * 0.05;
+           transformed.z += wave * (0.4 + position.x + 0.5);`,
+        );
+    };
+    return m;
+  }, []);
+
+  useFrame(({ clock }) => {
+    uTime.current.value = clock.elapsedTime;
+  });
+
+  if (!count) return null;
+  return (
+    <group>
+      {flags.map((f, i) => (
+        <mesh
+          key={i}
+          position={f.pos}
+          rotation={[0, f.rot, 0]}
+          scale={[f.s, f.s, 1]}
+          material={material.clone()}
+          onUpdate={(self) => {
+            (self.material as THREE.MeshStandardMaterial).color.set(f.c);
+          }}
+        >
+          <planeGeometry args={[2.4, 1.5, 12, 6]} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
 
 /* --------------------------------------------------------------- jogadores */
+
+
 
 
 function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
