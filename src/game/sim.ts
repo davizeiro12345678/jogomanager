@@ -642,6 +642,21 @@ export class MatchSim {
     const goalChance = Math.max(0.06, Math.min(0.72, accuracy * 1.15 - gkSkill / 260));
     if (this.rnd() < goalChance) {
       this.stats[side].goals++;
+      holder.goals++;
+      const assist = this.lastPass[side];
+      if (assist && this.time - assist.time < 12 && assist.id !== holder.id) {
+        const provider = this.players.find((p) => p.id === assist.id);
+        if (provider) provider.assists++;
+      }
+      this.lastPass[side] = null;
+      this.shotMap.push({
+        x: holder.x,
+        z: holder.z,
+        side,
+        result: "goal",
+        minute: this.minute(),
+        name: holder.name,
+      });
       this.scorers.push({ minute: this.minute(), side, name: holder.name });
       const celeb = this.rnd();
       this.trigger(holder, celeb < 0.34 ? "kneeSlide" : celeb < 0.67 ? "celebrateRun" : "celebrate", 6);
