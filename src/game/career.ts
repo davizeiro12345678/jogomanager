@@ -618,11 +618,33 @@ export function advanceRound(
       : "",
   };
 
+
+  // histórico partida a partida
+  const logEntry = played
+    ? {
+        season: state.season,
+        round,
+        comp,
+        opponentId: played.home === state.clubId ? played.away : played.home,
+        home: userHome,
+        gf,
+        ga,
+        players: performances.map((p) => ({
+          pid: p.pid,
+          goals: p.goals,
+          assists: p.assists,
+          minutes: p.minutes ?? 90,
+          rating: Math.round((p.rating ?? 6 + p.goals * 1.2 + p.assists * 0.7) * 10) / 10,
+        })),
+      }
+    : null;
+
   let next: CareerState = {
     ...state,
     fixtures,
     players,
     round: round + 1,
+    matchLog: logEntry ? [logEntry, ...(state.matchLog ?? [])].slice(0, 400) : state.matchLog,
     results: played
       ? [
           ...state.results,
