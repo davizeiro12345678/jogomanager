@@ -360,6 +360,36 @@ function LiveMatch({
 
   const myTactics = (mySide === "home" ? sim.home : sim.away).tactics;
 
+  // Substituições ao vivo (até 5)
+  const [outPid, setOutPid] = useState("");
+  const [inId, setInId] = useState("");
+  const [subTick, setSubTick] = useState(0);
+  const onPitch = useMemo(
+    () => sim.players.filter((p) => p.side === mySide),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sim, mySide, subTick],
+  );
+  const usedIds = useMemo(
+    () => new Set(sim.players.filter((p) => p.side === mySide).map((p) => p.pid)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sim, mySide, subTick],
+  );
+  const benchAvailable = career.bench
+    .map((id) => career.players[id]!)
+    .filter((p) => p && !usedIds.has(p.id) && p.injuryWeeks === 0 && !p.suspended);
+  const subsUsed = sim.subsUsed[mySide];
+
+  function makeSub() {
+    const incoming = career.players[inId];
+    if (!outPid || !incoming || subsUsed >= 5) return;
+    if (sim.substitute(mySide, outPid, incoming)) {
+      setOutPid("");
+      setInId("");
+      setSubTick((n) => n + 1);
+      setSnap(snapshot(sim));
+    }
+  }
+
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
       <Stadium3D sim={sim} mode={camera} quality={quality} />
