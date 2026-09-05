@@ -14,6 +14,7 @@ export const Route = createFileRoute("/transfers")({
   ssr: false,
   head: () => ({
     meta: [
+      { name: "robots", content: "noindex, follow" },
       { title: "Mercado de transferências · Pro Football Manager 3D" },
       {
         name: "description",

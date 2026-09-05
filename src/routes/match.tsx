@@ -17,6 +17,7 @@ export const Route = createFileRoute("/match")({
   ssr: false,
   head: () => ({
     meta: [
+      { name: "robots", content: "noindex, follow" },
       { title: "Partida ao vivo em 3D · Pro Football Manager 3D" },
       {
         name: "description",

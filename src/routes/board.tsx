@@ -13,6 +13,7 @@ export const Route = createFileRoute("/board")({
   ssr: false,
   head: () => ({
     meta: [
+      { name: "robots", content: "noindex, follow" },
       { title: "Sala da diretoria · Pro Football Manager 3D" },
       {
         name: "description",

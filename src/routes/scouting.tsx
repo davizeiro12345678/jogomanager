@@ -11,6 +11,7 @@ export const Route = createFileRoute("/scouting")({
   ssr: false,
   head: () => ({
     meta: [
+      { name: "robots", content: "noindex, follow" },
       { title: "Olheiros e relatórios · Pro Football Manager 3D" },
       {
         name: "description",

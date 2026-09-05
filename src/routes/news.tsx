@@ -8,6 +8,7 @@ export const Route = createFileRoute("/news")({
   ssr: false,
   head: () => ({
     meta: [
+      { name: "robots", content: "noindex, follow" },
       { title: "Notícias · Pro Football Manager 3D" },
       {
         name: "description",

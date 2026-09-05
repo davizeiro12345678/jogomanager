@@ -9,6 +9,7 @@ export const Route = createFileRoute("/history")({
   ssr: false,
   head: () => ({
     meta: [
+      { name: "robots", content: "noindex, follow" },
       { title: "História e troféus · Pro Football Manager 3D" },
       {
         name: "description",
