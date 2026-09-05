@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BoardRouteImport } from './routes/board'
+import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as FinancesRouteImport } from './routes/finances'
@@ -46,6 +47,11 @@ const AuthRoute = AuthRouteImport.update({
 const BoardRoute = BoardRouteImport.update({
   id: '/board',
   path: '/board',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CadastroRoute = CadastroRouteImport.update({
+  id: '/cadastro',
+  path: '/cadastro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClubRoute = ClubRouteImport.update({
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
+  '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
   '/dashboard': typeof DashboardRoute
   '/finances': typeof FinancesRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
+  '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
   '/dashboard': typeof DashboardRoute
   '/finances': typeof FinancesRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
+  '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
   '/dashboard': typeof DashboardRoute
   '/finances': typeof FinancesRoute
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/board'
+    | '/cadastro'
     | '/club'
     | '/dashboard'
     | '/finances'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/board'
+    | '/cadastro'
     | '/club'
     | '/dashboard'
     | '/finances'
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/board'
+    | '/cadastro'
     | '/club'
     | '/dashboard'
     | '/finances'
@@ -309,6 +321,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   BoardRoute: typeof BoardRoute
+  CadastroRoute: typeof CadastroRoute
   ClubRoute: typeof ClubRoute
   DashboardRoute: typeof DashboardRoute
   FinancesRoute: typeof FinancesRoute
@@ -352,6 +365,13 @@ declare module '@tanstack/react-router' {
       path: '/board'
       fullPath: '/board'
       preLoaderRoute: typeof BoardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cadastro': {
+      id: '/cadastro'
+      path: '/cadastro'
+      fullPath: '/cadastro'
+      preLoaderRoute: typeof CadastroRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/club': {
@@ -501,6 +521,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   BoardRoute: BoardRoute,
+  CadastroRoute: CadastroRoute,
   ClubRoute: ClubRoute,
   DashboardRoute: DashboardRoute,
   FinancesRoute: FinancesRoute,
