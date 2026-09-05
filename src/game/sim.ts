@@ -33,6 +33,41 @@ export interface SimPlayer {
   actionT: number;
   /** duração total da ação atual */
   actionDur: number;
+  /** id do jogador na carreira (sem prefixo de lado) */
+  pid: string;
+  goals: number;
+  assists: number;
+  shots: number;
+  passes: number;
+  tackles: number;
+  saves: number;
+  /** minuto em que entrou em campo */
+  onSince: number;
+  /** minutos jogados acumulados */
+  minutes: number;
+}
+
+export interface ShotRecord {
+  x: number;
+  z: number;
+  side: Side;
+  result: "goal" | "saved" | "off";
+  minute: number;
+  name: string;
+}
+
+export interface PlayerRating {
+  pid: string;
+  side: Side;
+  name: string;
+  number: number;
+  pos: string;
+  goals: number;
+  assists: number;
+  passes: number;
+  tackles: number;
+  saves: number;
+  rating: number;
 }
 
 export interface TeamSetup {
