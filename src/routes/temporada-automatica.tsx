@@ -30,7 +30,7 @@ export const Route = createFileRoute("/temporada-automatica")({
 });
 
 function AutoSeasonPage() {
-  const { career, save } = useCareer();
+  const { career, update } = useCareer();
   const [weeks, setWeeks] = useState<AutoWeek[]>([]);
   const [busy, setBusy] = useState(false);
   const calm = prefersReducedMotion();
@@ -47,7 +47,7 @@ function AutoSeasonPage() {
     const w = autoWeek(career);
     if (w) {
       setWeeks((cur) => [w, ...cur].slice(0, 60));
-      save(w.state);
+      update(w.state);
     }
     setBusy(false);
   };
@@ -57,7 +57,7 @@ function AutoSeasonPage() {
     const { weeks: ws, state } = autoSeason(career);
     if (ws.length) {
       setWeeks((cur) => [...[...ws].reverse(), ...cur].slice(0, 60));
-      save(state);
+      update(state);
     }
     setBusy(false);
   };
