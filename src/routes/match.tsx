@@ -14,6 +14,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
 import { Crest } from "@/components/game/Crest";
+import { MatchReport } from "@/components/game/MatchReport";
 import { CLUBS } from "@/game/data/leagues";
 import { MENTALITIES, PRESSING } from "@/game/formations";
 import { MatchSim, type TeamSetup } from "@/game/sim";
