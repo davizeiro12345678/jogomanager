@@ -169,15 +169,39 @@ const Scoreboard = memo(function Scoreboard({
   const home = CLUBS[homeId]!;
   const away = CLUBS[awayId]!;
   const [ph, pa] = snap.poss;
+  // pequeno destaque quando o placar muda
+  const total = snap.hg + snap.ag;
+  const [flash, setFlash] = useState(false);
+  const lastTotal = useRef(total);
+  useEffect(() => {
+    if (total === lastTotal.current) return;
+    lastTotal.current = total;
+    setFlash(true);
+    const t = setTimeout(() => setFlash(false), 1600);
+    return () => clearTimeout(t);
+  }, [total]);
+
   return (
     <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex flex-col items-center px-3">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/12 bg-black/70 shadow-2xl backdrop-blur-xl">
+      <div
+        className={`w-full max-w-md overflow-hidden rounded-2xl border bg-black/70 shadow-2xl backdrop-blur-xl transition-all duration-500 ${
+          flash ? "scale-[1.03] border-primary/70 shadow-primary/30" : "border-white/12"
+        }`}
+      >
+        <div className="flex h-1 w-full">
+          <div className="flex-1" style={{ background: home.primary }} />
+          <div className="flex-1" style={{ background: away.primary }} />
+        </div>
         <div className="flex items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4">
           <Crest club={home} size={28} detail="simple" />
           <span className="font-display text-base tracking-wide text-white sm:text-lg">
             {home.short}
           </span>
-          <span className="mx-auto font-display text-2xl tabular-nums text-white sm:text-3xl">
+          <span
+            className={`mx-auto font-display text-2xl tabular-nums text-white transition-transform duration-300 sm:text-3xl ${
+              flash ? "scale-125" : ""
+            }`}
+          >
             {snap.hg} <span className="text-white/35">:</span> {snap.ag}
           </span>
           <span className="font-display text-base tracking-wide text-white sm:text-lg">
@@ -189,8 +213,11 @@ const Scoreboard = memo(function Scoreboard({
           </span>
         </div>
         <div className="flex h-1.5 w-full">
-          <div className="bg-primary transition-[width] duration-500" style={{ width: `${ph}%` }} />
-          <div className="flex-1 bg-white/40" />
+          <div
+            className="transition-[width] duration-700"
+            style={{ width: `${ph}%`, background: home.primary }}
+          />
+          <div className="flex-1" style={{ background: away.primary }} />
         </div>
         <div className="flex justify-between px-4 py-1 text-[10px] uppercase tracking-widest text-white/60">
           <span>Posse {ph}%</span>
