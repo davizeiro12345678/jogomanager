@@ -53,11 +53,88 @@ export async function seedFromBundledData() {
   return { competitions: competitions.length, clubs: clubs.length };
 }
 
+type ClubRow = { id: string; name: string; country: string | null; crest_url?: string | null };
+
+/** Enrich a single club with crest / kit / stadium / external ids. */
+async function enrichOne(db: Admin, club: ClubRow): Promise<boolean> {
+  const remote = await sdbSearchTeam(club.name, club.country ?? undefined);
+  if (!remote) return false;
+
+  let stadiumId: string | null = null;
+  if (remote.stadium) {
+    const { data: st } = await db
+      .from("stadiums")
+      .upsert(
+        {
+          name: remote.stadium,
+          city: remote.city ?? null,
+          country: remote.country ?? club.country,
+          capacity: remote.stadiumCapacity ?? null,
+        },
+        { onConflict: "name" },
+      )
+      .select("id")
+      .maybeSingle();
+    stadiumId = st?.id ?? null;
+  }
+
+  await db
+    .from("clubs")
+    .update({
+      crest_url: remote.crestUrl ?? null,
+      founded: remote.founded ?? null,
+      city: remote.city ?? null,
+      ...(stadiumId ? { stadium_id: stadiumId } : {}),
+    })
+    .eq("id", club.id);
+
+  const externals = [
+    remote.externalId ? { source: "thesportsdb", external_id: remote.externalId } : null,
+    remote.apiFootballId ? { source: "api-football", external_id: remote.apiFootballId } : null,
+  ].filter(Boolean) as { source: string; external_id: string }[];
+
+  for (const e of externals) {
+    await db
+      .from("club_external_ids")
+      .upsert({ club_id: club.id, ...e, confirmed: true }, { onConflict: "club_id,source" });
+  }
+
+  if (remote.kitUrl) {
+    await db.from("kits").upsert(
+      { club_id: club.id, season: "2025-2026", kind: "home", image_url: remote.kitUrl },
+      { onConflict: "club_id,season,kind" },
+    );
+  }
+
+  return true;
+}
+
+/** Run tasks with a bounded number of parallel workers, honouring a deadline. */
+async function pool<T>(
+  items: T[],
+  concurrency: number,
+  deadline: number,
+  worker: (item: T) => Promise<void>,
+) {
+  let cursor = 0;
+  const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (cursor < items.length && Date.now() < deadline) {
+      const item = items[cursor++]!;
+      try {
+        await worker(item);
+      } catch {
+        /* keep going: one bad club must not stop the import */
+      }
+    }
+  });
+  await Promise.all(runners);
+}
+
 /**
- * Enrich a batch of clubs with official crest / kit / stadium data.
- * Batched because the free API tiers are rate limited.
+ * Enrich clubs with official crest / kit / stadium data.
+ * Runs several lookups in parallel and stops when the time budget runs out.
  */
-export async function enrichClubs(limit = 40, offset = 0) {
+export async function enrichClubs(limit = 400, offset = 0, concurrency = 8, budgetMs = 45_000) {
   const db = await admin();
   const { data: rows, error } = await db
     .from("clubs")
@@ -67,90 +144,19 @@ export async function enrichClubs(limit = 40, offset = 0) {
     .range(offset, offset + limit - 1);
   if (error) throw new Error(error.message);
 
-  // TheSportsDB's free tier allows ~30 requests/minute; pace the loop.
-  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
+  const deadline = Date.now() + budgetMs;
   let imported = 0;
   const failures: string[] = [];
 
-  for (const club of rows ?? []) {
-    if (club.crest_url) continue;
-    const remote = await sdbSearchTeam(club.name, club.country ?? undefined);
-    if (!remote) {
-      failures.push(club.name);
-      await wait(2100);
-      continue;
-    }
-
-    let stadiumId: string | null = null;
-    if (remote.stadium) {
-      const { data: st } = await db
-        .from("stadiums")
-        .upsert(
-          {
-            name: remote.stadium,
-            city: remote.city ?? null,
-            country: remote.country ?? club.country,
-            capacity: remote.stadiumCapacity ?? null,
-          },
-          { onConflict: "name" },
-        )
-        .select("id")
-        .maybeSingle();
-      stadiumId = st?.id ?? null;
-    }
-
-    await db
-      .from("clubs")
-      .update({
-        crest_url: remote.crestUrl ?? null,
-        founded: remote.founded ?? null,
-        city: remote.city ?? null,
-        ...(stadiumId ? { stadium_id: stadiumId } : {}),
-      })
-      .eq("id", club.id);
-
-    if (remote.externalId) {
-      await db
-        .from("club_external_ids")
-        .upsert(
-          { club_id: club.id, source: "thesportsdb", external_id: remote.externalId, confirmed: true },
-          { onConflict: "club_id,source" },
-        );
-    }
-
-    if (remote.apiFootballId) {
-      await db
-        .from("club_external_ids")
-        .upsert(
-          {
-            club_id: club.id,
-            source: "api-football",
-            external_id: remote.apiFootballId,
-            confirmed: true,
-          },
-          { onConflict: "club_id,source" },
-        );
-    }
-
-    if (remote.kitUrl) {
-      await db.from("kits").upsert(
-        {
-          club_id: club.id,
-          season: "2025-2026",
-          kind: "home",
-          image_url: remote.kitUrl,
-        },
-        { onConflict: "club_id,season,kind" },
-      );
-    }
-
-    imported += 1;
-    await wait(2100);
-  }
+  await pool(rows ?? [], concurrency, deadline, async (club) => {
+    const ok = await enrichOne(db, club);
+    if (ok) imported += 1;
+    else failures.push(club.name);
+  });
 
   return { imported, scanned: rows?.length ?? 0, failures };
 }
+
 
 /** Import real squads for a batch of clubs, using whichever squad API has a key. */
 export async function importSquads(limit = 10, offset = 0) {
