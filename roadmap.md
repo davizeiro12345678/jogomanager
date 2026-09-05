@@ -21,3 +21,5 @@
 - Escudos oficiais importados para 287 clubes e imagens de camisa para 240.
 - Elencos reais (nomes, idades, números, nacionalidade e fotos quando existem) importados e aplicados ao criar carreira.
 - Publicado e sitemap atualizado.
+
+- [x] Importação contínua dos dados reais (escudos, estádios, elencos) — 935 clubes com elenco, 1073 escudos
