@@ -1353,7 +1353,7 @@ function Scene({
   );
 }
 
-export function Stadium3D({
+function Stadium3DImpl({
   sim,
   mode,
   quality,
@@ -1361,7 +1361,6 @@ export function Stadium3D({
   sim: MatchSim;
   mode: CameraMode;
   quality: Quality;
-  tick?: number;
 }) {
   const time = useMemo<TimeOfDay>(() => {
     const t = hash(sim.home.clubId + sim.away.clubId) % 3;
