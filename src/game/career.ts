@@ -127,6 +127,42 @@ function withCustomPlayers(clubId: string, squad: Player[]): Player[] {
   return list;
 }
 
+/**
+ * Aplica os nomes reais importados das APIs por cima do elenco gerado.
+ * A força de cada jogador continua vindo do balanceamento do jogo; o que muda
+ * é quem veste a camisa: nome, idade, número, nacionalidade e foto.
+ */
+function withRealPlayers(clubId: string, squad: Player[]): Player[] {
+  const real = realSquadFor(clubId);
+  if (real.length === 0) return squad;
+
+  const byPos = new Map<string, RealPlayer[]>();
+  real.forEach((r) => {
+    const list = byPos.get(r.position) ?? [];
+    list.push(r);
+    byPos.set(r.position, list);
+  });
+  const spare = [...real];
+
+  return squad.map((p) => {
+    const pool = byPos.get(p.pos);
+    const pick = pool && pool.length ? pool.shift()! : spare.shift();
+    if (!pick) return p;
+    const idx = spare.indexOf(pick);
+    if (idx >= 0) spare.splice(idx, 1);
+    return {
+      ...p,
+      name: pick.name,
+      age: pick.age > 15 && pick.age < 45 ? pick.age : p.age,
+      number: pick.shirt_number && pick.shirt_number > 0 ? pick.shirt_number : p.number,
+      ...(pick.nationality ? { nationality: pick.nationality } : {}),
+      ...(pick.photo_url ? { photo: pick.photo_url } : {}),
+    };
+  });
+}
+
+
+
 
 export function initCareer(
   leagueId: string,
