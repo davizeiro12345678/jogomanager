@@ -56,18 +56,27 @@ export async function enrichClubs(limit = 40, offset = 0) {
   const { data: rows, error } = await db
     .from("clubs")
     .select("id, name, country, crest_url")
+    .is("crest_url", null)
     .order("strength", { ascending: false })
     .range(offset, offset + limit - 1);
   if (error) throw new Error(error.message);
+
+  // TheSportsDB's free tier allows ~30 requests/minute; pace the loop.
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
   let imported = 0;
   const failures: string[] = [];
 
   for (const club of rows ?? []) {
     if (club.crest_url) continue;
-    const remote = await sdbSearchTeam(club.name, club.country ?? undefined);
+    let remote = await sdbSearchTeam(club.name, club.country ?? undefined);
+    if (!remote) {
+      await wait(4000);
+      remote = await sdbSearchTeam(club.name, club.country ?? undefined);
+    }
     if (!remote) {
       failures.push(club.name);
+      await wait(2100);
       continue;
     }
 
@@ -135,6 +144,7 @@ export async function enrichClubs(limit = 40, offset = 0) {
     }
 
     imported += 1;
+    await wait(2100);
   }
 
   return { imported, scanned: rows?.length ?? 0, failures };
