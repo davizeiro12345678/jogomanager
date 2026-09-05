@@ -477,6 +477,7 @@ function endSeason(state: CareerState): CareerState {
     lineup,
     bench,
     results: [],
+    cups: [],
     finances: {
       budget: Math.round((state.finances.budget + prize) * 10) / 10,
       spent: 0,
@@ -785,6 +786,7 @@ export function takeJob(state: CareerState, jobId: string): CareerState {
     lineup,
     bench,
     results: [],
+    cups: [],
     finances: { budget: job.budget, spent: 0, income: 0 },
     approval: 60,
     objective: job.objective,
