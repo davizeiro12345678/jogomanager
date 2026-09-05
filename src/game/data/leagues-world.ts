@@ -48,7 +48,7 @@ const LTU: Raw[] = [
   ["ltu_sud", "Sūduva", "SUD", "#1f4fa0", "#f5c400", 65],
   ["ltu_pan", "Panevėžys", "PAN", "#111111", "#f5c400", 66],
   ["ltu_kau", "Kauno Žalgiris", "KAU", "#0a8f3c", "#111111", 64],
-  ["ltu_hег", "Hegelmann", "HEG", "#c8102e", "#ffffff", 62],
+  ["ltu_heg", "Hegelmann", "HEG", "#c8102e", "#ffffff", 62],
   ["ltu_ban", "Banga", "BAN", "#1f4fa0", "#ffffff", 60],
   ["ltu_dai", "Dainava", "DAI", "#f5820a", "#111111", 59],
   ["ltu_rie", "Riteriai", "RIT", "#7a1b30", "#f5c400", 58],
