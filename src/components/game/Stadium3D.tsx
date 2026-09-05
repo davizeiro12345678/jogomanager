@@ -202,38 +202,172 @@ function grassRoughness() {
 }
 
 /** Tufos de grama instanciados perto das linhas laterais (só na qualidade alta). */
-function GrassTufts() {
-  const count = 2600;
-  const ref = useRef<THREE.InstancedMesh>(null);
+/**
+ * Fibras de grama instanciadas com vento no vertex shader: nada é atualizado
+ * na CPU por quadro, então dá para colocar dezenas de milhares de folhas.
+ * A bola amassa a grama num raio curto ao passar.
+ */
+function useBladeMaterial(color: string) {
+  const uniforms = useRef({
+    uTime: { value: 0 },
+    uBall: { value: new THREE.Vector3() },
+    uWind: { value: 1 },
+  });
+  const mat = useMemo(() => {
+    const m = new THREE.MeshStandardMaterial({ color, roughness: 0.94, metalness: 0 });
+    m.onBeforeCompile = (shader) => {
+      shader.uniforms["uTime"] = uniforms.current.uTime;
+      shader.uniforms["uBall"] = uniforms.current.uBall;
+      shader.uniforms["uWind"] = uniforms.current.uWind;
+      shader.vertexShader = shader.vertexShader
+        .replace(
+          "#include <common>",
+          `#include <common>
+           uniform float uTime;
+           uniform float uWind;
+           uniform vec3 uBall;`,
+        )
+        .replace(
+          "#include <begin_vertex>",
+          `#include <begin_vertex>
+           vec3 wp = (instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+           float h = clamp(position.y / 0.22, 0.0, 1.0);
+           float w = sin(uTime * 1.7 + wp.x * 0.35 + wp.z * 0.22)
+                   + 0.5 * sin(uTime * 3.1 + wp.x * 0.9);
+           transformed.x += w * 0.07 * h * uWind;
+           transformed.z += w * 0.04 * h * uWind;
+           vec2 d = wp.xz - uBall.xz;
+           float near = 1.0 - smoothstep(0.0, 1.6, length(d));
+           transformed.xz += normalize(d + 0.0001) * near * 0.16 * h;
+           transformed.y -= near * 0.1 * h;`,
+        );
+    };
+    return m;
+  }, [color]);
+  return { mat, uniforms: uniforms.current };
+}
+
+function GrassField({ sim, quality }: { sim: MatchSim; quality: Quality }) {
+  const short = quality === "alta" ? 12000 : 5000;
+  const tall = quality === "alta" ? 3600 : 1400;
+  const shortRef = useRef<THREE.InstancedMesh>(null);
+  const tallRef = useRef<THREE.InstancedMesh>(null);
+  const { mat, uniforms } = useBladeMaterial("#2b8a4d");
+
   useEffect(() => {
-    const mesh = ref.current;
-    if (!mesh) return;
     const d = new THREE.Object3D();
     const col = new THREE.Color();
-    for (let i = 0; i < count; i++) {
-      const x = (Math.random() * 2 - 1) * (FIELD_X + 4);
-      const z = (Math.random() * 2 - 1) * (FIELD_Z + 4);
-      d.position.set(x, 0.09, z);
-      d.rotation.set(0, Math.random() * Math.PI, (Math.random() - 0.5) * 0.35);
-      const s = 0.7 + Math.random() * 0.8;
-      d.scale.set(s, s * (0.8 + Math.random() * 0.6), s);
-      d.updateMatrix();
-      mesh.setMatrixAt(i, d.matrix);
-      col.setHSL(0.33 + Math.random() * 0.03, 0.5, 0.24 + Math.random() * 0.1);
-      mesh.setColorAt(i, col);
+    const fill = (mesh: THREE.InstancedMesh | null, n: number, tallLayer: boolean) => {
+      if (!mesh) return;
+      for (let i = 0; i < n; i++) {
+        const x = (Math.random() * 2 - 1) * (FIELD_X + 5);
+        const z = (Math.random() * 2 - 1) * (FIELD_Z + 5);
+        d.position.set(x, tallLayer ? 0.09 : 0.05, z);
+        d.rotation.set(0, Math.random() * Math.PI, (Math.random() - 0.5) * (tallLayer ? 0.4 : 0.22));
+        const s = tallLayer ? 0.7 + Math.random() * 0.8 : 0.5 + Math.random() * 0.5;
+        d.scale.set(s, s * (0.75 + Math.random() * 0.7), s);
+        d.updateMatrix();
+        mesh.setMatrixAt(i, d.matrix);
+        // faixas de corte: alternância clara/escura também nas fibras
+        const stripe = Math.floor((z + FIELD_Z) / 6) % 2 === 0 ? 0.05 : 0;
+        col.setHSL(0.33 + Math.random() * 0.03, 0.5, 0.22 + stripe + Math.random() * 0.1);
+        mesh.setColorAt(i, col);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    };
+    fill(shortRef.current, short, false);
+    fill(tallRef.current, tall, true);
+  }, [short, tall]);
+
+  useFrame(({ clock }) => {
+    uniforms.uTime.value = clock.elapsedTime;
+    uniforms.uBall.value.set(sim.ball.x, 0, sim.ball.z);
+    uniforms.uWind.value = 0.8 + Math.sin(clock.elapsedTime * 0.23) * 0.35;
+  });
+
+  return (
+    <group>
+      <instancedMesh
+        ref={shortRef}
+        frustumCulled={false}
+        material={mat}
+        args={[undefined, undefined, short]}
+      >
+        <coneGeometry args={[0.045, 0.12, 3]} />
+      </instancedMesh>
+      <instancedMesh
+        ref={tallRef}
+        frustumCulled={false}
+        material={mat}
+        args={[undefined, undefined, tall]}
+      >
+        <coneGeometry args={[0.06, 0.22, 4]} />
+      </instancedMesh>
+    </group>
+  );
+}
+
+
+
+/**
+ * Marcas de pisada e rastro de deslize: um pool de manchas escuras deixadas
+ * pela bola e pelos jogadores, que desbotam com o tempo.
+ */
+function PitchMarks({ sim }: { sim: MatchSim }) {
+  const COUNT = 90;
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const slots = useRef(
+    Array.from({ length: COUNT }, () => ({ x: 0, z: 0, life: 0, s: 1, r: 0 })),
+  );
+  const next = useRef(0);
+  const timer = useRef(0);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
+  useFrame((_, rawDt) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const dt = Math.min(rawDt, 0.05);
+    timer.current += dt;
+
+    // deixa marcas onde os jogadores mais rápidos pisam
+    if (timer.current > 0.12) {
+      timer.current = 0;
+      for (const p of sim.players) {
+        const sp = Math.hypot(p.vx, p.vz);
+        if (sp < 0.55) continue;
+        const slot = slots.current[next.current % COUNT]!;
+        next.current += 1;
+        slot.x = p.x;
+        slot.z = p.z;
+        slot.life = 1;
+        slot.s = 0.35 + Math.min(0.7, sp * 0.5);
+        slot.r = Math.atan2(p.vx, p.vz);
+      }
+    }
+
+    for (let i = 0; i < COUNT; i++) {
+      const s = slots.current[i]!;
+      if (s.life > 0) s.life = Math.max(0, s.life - dt * 0.06);
+      dummy.position.set(s.x, 0.012, s.z);
+      dummy.rotation.set(-Math.PI / 2, 0, -s.r);
+      const k = s.life > 0 ? s.s : 0.0001;
+      dummy.scale.set(k * 0.5, k, 1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, []);
+  });
+
   return (
-    <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, count]}>
-      <coneGeometry args={[0.06, 0.18, 4]} />
-      <meshStandardMaterial roughness={0.95} />
+    <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, COUNT]}>
+      <circleGeometry args={[0.5, 8]} />
+      <meshBasicMaterial color="#0d3a1f" transparent opacity={0.22} depthWrite={false} />
     </instancedMesh>
   );
 }
 
-function Pitch({ quality }: { quality: Quality }) {
+function Pitch({ quality, sim }: { quality: Quality; sim: MatchSim }) {
   const tex = useMemo(grassTexture, []);
   const rough = useMemo(grassRoughness, []);
   const norm = useMemo(() => (quality === "baixa" ? null : grassNormal()), [quality]);
@@ -258,10 +392,11 @@ function Pitch({ quality }: { quality: Quality }) {
           envMapIntensity={0.35}
         />
       </mesh>
-      {quality === "alta" && <GrassTufts />}
+      {quality !== "baixa" && <GrassField sim={sim} quality={quality} />}
+      {quality !== "baixa" && <PitchMarks sim={sim} />}
       <Lines />
-      <Goal side={1} quality={quality} />
-      <Goal side={-1} quality={quality} />
+      <Goal side={1} quality={quality} sim={sim} />
+      <Goal side={-1} quality={quality} sim={sim} />
       <CornerFlags />
       <Dugouts />
     </group>
@@ -403,28 +538,110 @@ function useNetMaterial(repeatX: number, repeatY: number) {
   }, [repeatX, repeatY]);
 }
 
-/** Plano com barriga: a rede cai para trás como pano pendurado. */
-function sagGeometry(w: number, h: number, sag: number) {
-  const g = new THREE.PlaneGeometry(w, h, 14, 10);
-  const pos = g.attributes["position"] as THREE.BufferAttribute;
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i);
-    const y = pos.getY(i);
-    const fx = 1 - Math.abs(x) / (w / 2);
-    const fy = (y + h / 2) / h;
-    pos.setZ(i, -sag * fx * (0.35 + 0.65 * (1 - fy)));
-  }
-  pos.needsUpdate = true;
-  g.computeVertexNormals();
-  return g;
+
+
+
+
+/**
+ * Rede simulada: malha de pontos com equação de onda no eixo de profundidade.
+ * O vento faz a rede respirar e a bola estufa o pano de verdade, com a
+ * ondulação se espalhando pelos fios e amortecendo aos poucos.
+ */
+function NetCloth({
+  side,
+  sim,
+  material,
+  quality,
+}: {
+  side: number;
+  sim: MatchSim;
+  material: THREE.Material;
+  quality: Quality;
+}) {
+  const cols = quality === "alta" ? 22 : quality === "media" ? 14 : 9;
+  const rows = quality === "alta" ? 14 : quality === "media" ? 9 : 6;
+  const W = 7.32;
+  const H = 2.44;
+
+  const geo = useMemo(() => new THREE.PlaneGeometry(W, H, cols, rows), [cols, rows]);
+  const state = useMemo(() => {
+    const n = (cols + 1) * (rows + 1);
+    return { z: new Float32Array(n), zp: new Float32Array(n) };
+  }, [cols, rows]);
+  const ref = useRef<THREE.Mesh>(null);
+  const acc = useRef(0);
+
+  useFrame(({ clock }, rawDt) => {
+    acc.current += Math.min(rawDt, 0.05);
+    const step = 1 / 60;
+    if (acc.current < step) return;
+    acc.current = 0;
+
+    const { z, zp } = state;
+    const cx = cols + 1;
+    const t = clock.elapsedTime;
+
+    // impulso da bola: dentro do gol, empurra a rede no ponto de impacto
+    const bx = sim.ball.x;
+    const insideGoal = side > 0 ? bx > FIELD_X - 0.2 : bx < -FIELD_X + 0.2;
+    if (insideGoal && Math.abs(sim.ball.z) < W / 2 && sim.ball.height < H) {
+      const u = (sim.ball.z / W + 0.5) * cols;
+      const v = (1 - sim.ball.height / H) * rows;
+      const power = Math.min(1.4, 0.25 + Math.hypot(sim.ball.vx, sim.ball.vz) * 0.12);
+      for (let ry = -2; ry <= 2; ry++) {
+        for (const rx of [-2, -1, 0, 1, 2]) {
+          const ix = Math.round(u) + rx;
+          const iy = Math.round(v) + ry;
+          if (ix < 1 || ix >= cols || iy < 1 || iy >= rows) continue;
+          const f = Math.exp(-(rx * rx + ry * ry) * 0.35);
+          z[iy * cx + ix] = (z[iy * cx + ix] ?? 0) - power * f * 0.28;
+        }
+      }
+    }
+
+    // propagação + vento + gravidade leve (barriga da rede)
+    for (let y = 1; y < rows; y++) {
+      for (let x = 1; x < cols; x++) {
+        const i = y * cx + x;
+        const lap =
+          (z[i - 1] ?? 0) + (z[i + 1] ?? 0) + (z[i - cx] ?? 0) + (z[i + cx] ?? 0) - 4 * (z[i] ?? 0);
+        const wind = Math.sin(t * 1.3 + x * 0.4 + y * 0.2) * 0.0016;
+        const next = 2 * (z[i] ?? 0) - (zp[i] ?? 0) + lap * 0.22 + wind - 0.0009;
+        zp[i] = z[i] ?? 0;
+        z[i] = next * 0.986;
+      }
+    }
+
+    const pos = geo.attributes["position"] as THREE.BufferAttribute;
+    for (let y = 0; y <= rows; y++) {
+      for (let x = 0; x <= cols; x++) {
+        const i = y * cx + x;
+        const fx = 1 - Math.abs(x / cols - 0.5) * 2;
+        const fy = 1 - y / rows;
+        const sag = -0.5 * fx * (0.3 + 0.7 * fy);
+        pos.setZ(i, sag + (z[i] ?? 0));
+      }
+    }
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
+  });
+
+  return (
+    <mesh
+      ref={ref}
+      position={[side * 1.9, 1.22, 0]}
+      rotation={[0, side > 0 ? Math.PI / 2 : -Math.PI / 2, 0]}
+      geometry={geo}
+      material={material}
+    />
+  );
 }
 
-function Goal({ side, quality }: { side: number; quality: Quality }) {
+function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: MatchSim }) {
   const x = side * FIELD_X;
   const backMat = useNetMaterial(14, 5);
   const sideMat = useNetMaterial(4, 5);
   const topMat = useNetMaterial(4, 14);
-  const backGeo = useMemo(() => sagGeometry(7.32, 2.44, 0.55), []);
   const post = (
     <meshStandardMaterial color="#fdfdfd" roughness={0.22} metalness={0.08} />
   );
@@ -453,12 +670,7 @@ function Goal({ side, quality }: { side: number; quality: Quality }) {
         {post}
       </mesh>
       {/* rede: fundo (com barriga), laterais e teto */}
-      <mesh
-        position={[side * 1.9, 1.22, 0]}
-        rotation={[0, side > 0 ? Math.PI / 2 : -Math.PI / 2, 0]}
-        geometry={backGeo}
-        material={backMat}
-      />
+      <NetCloth side={side} sim={sim} material={backMat} quality={quality} />
       {[-3.66, 3.66].map((z) => (
         <mesh key={`s${z}`} position={[side * 0.95, 1.22, z]} material={sideMat}>
           <planeGeometry args={[1.9, 2.44]} />
@@ -931,6 +1143,8 @@ function Stands({
   const flashRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const flashCount = night ? Math.min(200, Math.round(crowd.positions.length * 0.05)) : 0;
+  const armsRef = useRef<THREE.InstancedMesh>(null);
+  const armCount = quality === "alta" ? Math.round(crowd.positions.length * 0.45) : 0;
 
   useEffect(() => {
     const mesh = ref.current;
@@ -971,9 +1185,20 @@ function Stands({
         dummy.updateMatrix();
         head.setMatrixAt(i, dummy.matrix);
       }
+      // braços: palmas no ritmo, erguidos na comemoração e na ola
+      const arms = armsRef.current;
+      if (arms && i < armCount) {
+        const raise = Math.min(1, pulse * 1.2 + (wave > 0 ? 0.8 : 0) + (Math.sin(t * 6 + i) > 0.7 ? 0.25 : 0));
+        dummy.position.set(p.x, y + 0.42 + raise * 0.3, p.z);
+        dummy.rotation.set(-raise * 1.5, yaw, 0);
+        dummy.scale.set(1, 0.5 + raise * 0.7, 1);
+        dummy.updateMatrix();
+        arms.setMatrixAt(i, dummy.matrix);
+      }
     }
     mesh.instanceMatrix.needsUpdate = true;
     if (head) head.instanceMatrix.needsUpdate = true;
+    if (armsRef.current && armCount) armsRef.current.instanceMatrix.needsUpdate = true;
 
     // flashes de câmera na torcida (mais intensos após o gol)
     const fm = flashRef.current;
@@ -1022,6 +1247,12 @@ function Stands({
         <sphereGeometry args={[0.16, 6, 5]} />
         <meshStandardMaterial roughness={0.75} />
       </instancedMesh>
+      {armCount > 0 && (
+        <instancedMesh ref={armsRef} frustumCulled={false} args={[undefined, undefined, armCount]}>
+          <capsuleGeometry args={[0.07, 0.34, 2, 4]} />
+          <meshStandardMaterial color="#d7a377" roughness={0.8} />
+        </instancedMesh>
+      )}
       {flashCount > 0 && (
         <instancedMesh ref={flashRef} frustumCulled={false} args={[undefined, undefined, flashCount]}>
           <sphereGeometry args={[0.13, 6, 6]} />
@@ -1217,6 +1448,119 @@ function SkyDome({ time }: { time: TimeOfDay }) {
 
 /* ------------------------------------------------------------------- cena */
 
+
+/**
+ * Festa do gol: papel picado colorido caindo sobre o gramado e fumaça de
+ * sinalizador subindo atrás do gol, tudo instanciado e disparado pelo pulso.
+ */
+function GoalFx({ goalPulse, quality }: { goalPulse: React.MutableRefObject<number>; quality: Quality }) {
+  const COUNT = quality === "alta" ? 320 : 140;
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const smoke = useRef<THREE.InstancedMesh>(null);
+  const parts = useMemo(
+    () =>
+      Array.from({ length: COUNT }, () => ({
+        x: 0,
+        y: -5,
+        z: 0,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        r: Math.random() * Math.PI,
+        spin: (Math.random() - 0.5) * 6,
+      })),
+    [COUNT],
+  );
+  const armed = useRef(false);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const col = useMemo(() => new THREE.Color(), []);
+
+  useEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    for (let i = 0; i < COUNT; i++) {
+      col.setHSL(Math.random(), 0.85, 0.6);
+      mesh.setColorAt(i, col);
+    }
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, [COUNT, col]);
+
+  useFrame(({ clock }, rawDt) => {
+    const dt = Math.min(rawDt, 0.05);
+    const mesh = ref.current;
+    if (!mesh) return;
+
+    if (goalPulse.current > 0.9 && !armed.current) {
+      armed.current = true;
+      for (const p of parts) {
+        p.x = (Math.random() * 2 - 1) * (FIELD_X * 0.8);
+        p.y = 16 + Math.random() * 10;
+        p.z = (Math.random() * 2 - 1) * (FIELD_Z * 0.8);
+        p.vx = (Math.random() - 0.5) * 1.2;
+        p.vy = -1 - Math.random() * 1.5;
+        p.vz = (Math.random() - 0.5) * 1.2;
+      }
+    }
+    if (goalPulse.current < 0.2) armed.current = false;
+
+    for (let i = 0; i < COUNT; i++) {
+      const p = parts[i]!;
+      if (p.y > 0.05) {
+        p.vy -= dt * 2.2;
+        p.x += (p.vx + Math.sin(clock.elapsedTime * 2 + i) * 0.4) * dt;
+        p.z += (p.vz + Math.cos(clock.elapsedTime * 1.7 + i) * 0.4) * dt;
+        p.y = Math.max(0.03, p.y + p.vy * dt);
+        p.r += p.spin * dt;
+      }
+      dummy.position.set(p.x, p.y, p.z);
+      dummy.rotation.set(p.r, p.r * 0.7, p.r * 0.4);
+      dummy.scale.setScalar(p.y > 0.05 ? 1 : 0.0001);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+
+    const sm = smoke.current;
+    if (sm) {
+      const glow = goalPulse.current;
+      for (let i = 0; i < 12; i++) {
+        const side = i < 6 ? -1 : 1;
+        const t = (clock.elapsedTime * 0.35 + i * 0.17) % 1;
+        dummy.position.set(
+          side * (FIELD_X + 6),
+          1 + t * 12,
+          (i % 6) * 6 - 15,
+        );
+        dummy.rotation.set(0, 0, t * 1.5);
+        dummy.scale.setScalar(glow > 0.05 ? (2 + t * 9) * glow : 0.0001);
+        dummy.updateMatrix();
+        sm.setMatrixAt(i, dummy.matrix);
+      }
+      sm.instanceMatrix.needsUpdate = true;
+      (sm.material as THREE.MeshBasicMaterial).opacity = 0.16 * glow;
+    }
+  });
+
+  return (
+    <group>
+      <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, COUNT]}>
+        <planeGeometry args={[0.28, 0.16]} />
+        <meshBasicMaterial side={THREE.DoubleSide} toneMapped={false} />
+      </instancedMesh>
+      <instancedMesh ref={smoke} frustumCulled={false} args={[undefined, undefined, 12]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial
+          color="#ff6a3d"
+          transparent
+          opacity={0}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </instancedMesh>
+    </group>
+  );
+}
+
 function Scene({
   sim,
   mode,
@@ -1317,7 +1661,7 @@ function Scene({
       <directionalLight position={[-60, 60, -40]} intensity={0.6} color="#bcd8ff" />
 
       <SkyDome time={time} />
-      <Pitch quality={quality} />
+      <Pitch quality={quality} sim={sim} />
 
       <AdBoards />
       <Floodlights time={time} quality={quality} />
@@ -1346,6 +1690,7 @@ function Scene({
           quality={quality}
         />
       ))}
+      <GoalFx goalPulse={goalPulse} quality={quality} />
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
       <Post quality={quality} replay={replay} />
 

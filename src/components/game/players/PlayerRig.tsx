@@ -37,6 +37,10 @@ import {
 } from "@/game/player-model";
 import { type MatchSim, type SimPlayer } from "@/game/sim";
 
+/** duração da transição cruzada entre dois movimentos, em segundos */
+const BLEND_TIME = 0.18;
+const ease = (u: number) => u * u * (3 - 2 * u);
+
 export type Quality = "alta" | "media" | "baixa";
 
 /* -------------------------------------------------------------------------- */
@@ -92,11 +96,15 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
 
   const cur = useRef<Pose>(emptyPose());
   const target = useRef<Pose>(emptyPose());
+  const blendBuf = useRef<Pose>(emptyPose());
   const clipName = useRef<ClipName>("idle");
+  const prevName = useRef<ClipName | null>(null);
   const clipTime = useRef(0);
+  const prevTime = useRef(0);
   const blend = useRef(1);
   const acc = useRef(0);
   const seed = look.seed % 97;
+
 
   useFrame((state, rawDt) => {
     const g = root.current;
@@ -153,29 +161,71 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
     });
 
     if (next !== clipName.current) {
+      // guarda o clipe anterior para fazer a transição cruzada
+      prevName.current = clipName.current;
+      prevTime.current = clipTime.current;
       clipName.current = next;
       clipTime.current = 0;
       blend.current = 0;
     }
     clipTime.current += adt;
-    blend.current = Math.min(1, blend.current + adt / 0.15);
+    prevTime.current += adt;
+    blend.current = Math.min(1, blend.current + adt / BLEND_TIME);
 
     const u =
       player.action && player.actionDur > 0
         ? 1 - Math.max(0, player.actionT) / player.actionDur
         : (clipTime.current % 1.4) / 1.4;
 
-    const clip = getClip(clipName.current);
-    const p = clip({
+    const ctx = {
       t: clipTime.current,
       u,
       speed,
       stride: Math.min(1, speed / 7),
       seed,
-    });
+    };
+    let p = getClip(clipName.current)(ctx);
+
+    // ---- transição cruzada com o clipe anterior (nada de troca seca)
+    if (blend.current < 1 && prevName.current) {
+      const prev = getClip(prevName.current)({
+        ...ctx,
+        t: prevTime.current,
+        u: (prevTime.current % 1.4) / 1.4,
+      });
+      p = mixPose(prev, p, ease(blend.current), blendBuf.current);
+    }
+
+    // ---- camada superior: tronco e cabeça acompanham a bola
+    const toBall = Math.atan2(sim.ball.x - player.x, sim.ball.z - player.z);
+    let look2 = toBall - g.rotation.y;
+    while (look2 > Math.PI) look2 -= Math.PI * 2;
+    while (look2 < -Math.PI) look2 += Math.PI * 2;
+    const gaze = Math.max(-0.9, Math.min(0.9, look2));
+    const ballH = Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z);
+    p.headYaw += gaze * 0.75;
+    p.chest += Math.min(0.12, gaze * gaze * 0.1);
+    p.headPitch += ballH < 6 ? 0.12 : -0.03;
+
+    // ---- cansaço: respiração pesada, ombros caídos, tronco mais curvado
+    const tired = 1 - Math.min(1, Math.max(0, player.stamina) / 100);
+    if (tired > 0.25) {
+      const br = Math.sin(state.clock.elapsedTime * 2.6 + seed) * tired * 0.05;
+      p.spine += tired * 0.1 + br;
+      p.chest += br * 0.6;
+      p.armLRoll += tired * 0.06;
+      p.armRRoll -= tired * 0.06;
+      p.headPitch += tired * 0.07;
+    }
+
     target.current = p;
-    mixPose(cur.current, target.current, Math.min(1, adt * 14), cur.current);
+    mixPose(cur.current, target.current, Math.min(1, adt * 16), cur.current);
     const c = cur.current;
+
+    // ---- balanço secundário dos braços (atrasa em relação ao tronco)
+    const sway = Math.sin(state.clock.elapsedTime * 3.1 + seed) * 0.03 * (0.4 + Math.min(1, speed / 6));
+    c.armLPitch += sway;
+    c.armRPitch -= sway;
 
     // ---- aplica nas juntas
     if (hips.current) {
@@ -198,6 +248,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
     if (kneeRRef.current) kneeRRef.current.rotation.x = c.kneeR;
     if (ankleLRef.current) ankleLRef.current.rotation.x = c.ankleL;
     if (ankleRRef.current) ankleRRef.current.rotation.x = c.ankleR;
+
 
     // ---- sombra de contato acompanha a altura do quadril
     if (shadowRef.current) {
