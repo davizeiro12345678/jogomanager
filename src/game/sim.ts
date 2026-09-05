@@ -609,11 +609,12 @@ export class MatchSim {
     const mentality = this.setup(holder.side).tactics.mentality;
 
     const shootUrge =
-      distGoal < 30
-        ? (holder.shooting / 100) * (1 - distGoal / 34) * (pressDist > 2.5 ? 1.25 : 0.7)
+      distGoal < 26
+        ? (holder.shooting / 100) * (1 - distGoal / 30) * (pressDist > 2.5 ? 1.2 : 0.55)
         : 0;
 
-    if (holder.pos !== "GK" && this.rnd() < shootUrge * 0.55) {
+    if (holder.pos !== "GK" && this.rnd() < shootUrge * 0.1) {
+
       this.shoot(holder, distGoal);
       return;
     }
