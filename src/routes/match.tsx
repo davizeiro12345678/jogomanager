@@ -525,6 +525,13 @@ function LiveMatch({
             </button>
           ))}
           <button
+            onClick={() => setNarrating((v) => !v)}
+            aria-label={narrating ? "Desligar narração" : "Ligar narração"}
+            className={`grid w-9 place-items-center rounded-lg py-1.5 ${narrating ? "bg-primary/30 text-primary" : "bg-white/10 text-white/60"}`}
+          >
+            {narrating ? <Volume2 size={13} /> : <VolumeX size={13} />}
+          </button>
+          <button
             onClick={skip}
             aria-label="Pular partida"
             className="grid w-9 place-items-center rounded-lg bg-white/10 py-1.5 text-white/80"
