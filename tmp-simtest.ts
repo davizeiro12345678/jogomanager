@@ -1,6 +1,7 @@
 import { MatchSim } from "@/game/sim";
 import { CLUBS } from "@/game/data/leagues";
-import { buildSquad, pickLineup } from "@/game/squad";
+import { buildSquad } from "@/game/squad";
+import { pickLineup } from "@/game/career";
 import type { TeamSetup } from "@/game/sim";
 function setup(id: string): TeamSetup {
   const c = CLUBS[id]!;
