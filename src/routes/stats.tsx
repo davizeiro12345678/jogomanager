@@ -63,6 +63,10 @@ function StatsPage() {
     <GameShell career={career}>
       <h1 className="font-display text-2xl uppercase tracking-wide">Estatísticas</h1>
 
+      <MatchHistory career={career} />
+
+
+
       {selected.length === 2 ? (
         <section className="mt-4 rounded-2xl border border-border/60 bg-card/70 p-4">
           <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
