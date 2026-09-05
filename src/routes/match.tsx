@@ -103,7 +103,8 @@ interface Snap {
 }
 
 function snapshot(sim: MatchSim): Snap {
-  const [ph, pa] = sim.possessionPct();
+  const started = sim.stats.home.possessionTicks + sim.stats.away.possessionTicks > 30;
+  const [ph, pa] = started ? sim.possessionPct() : ([50, 50] as [number, number]);
   return {
     minute: sim.minute(),
     hg: sim.stats.home.goals,
