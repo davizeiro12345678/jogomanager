@@ -145,7 +145,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
     const adt = acc.current;
     acc.current = 0;
 
-    const speed = dirLen * (player.id === sim.ball.holder ? 5 : 5.2);
+    const speed = dirLen;
     const stopped = goalPulse.current > 0.05 && player.action === null ? false : false;
 
     const next = selectClip({
