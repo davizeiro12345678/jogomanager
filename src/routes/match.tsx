@@ -9,6 +9,8 @@ import {
   Repeat,
   SkipForward,
   Sparkles,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -472,6 +474,13 @@ function LiveMatch({
             {s}x
           </button>
         ))}
+        <button
+          onClick={() => setNarrating((v) => !v)}
+          aria-label={narrating ? "Desligar narração" : "Ligar narração"}
+          className={`grid h-9 w-9 place-items-center rounded-full ${narrating ? "text-primary" : "text-white/60"}`}
+        >
+          {narrating ? <Volume2 size={16} /> : <VolumeX size={16} />}
+        </button>
         <button
           onClick={skip}
           aria-label="Pular para o fim"
