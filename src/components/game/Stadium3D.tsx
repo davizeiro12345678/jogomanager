@@ -1401,3 +1401,10 @@ function Stadium3DImpl({
   );
 }
 
+/**
+ * Memoizado: o HUD da partida re-renderiza várias vezes por segundo e não deve
+ * reconstruir a árvore 3D. Só mudanças reais de sim/câmera/qualidade renderizam.
+ */
+export const Stadium3D = memo(Stadium3DImpl);
+
+
