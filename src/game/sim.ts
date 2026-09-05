@@ -672,6 +672,15 @@ export class MatchSim {
       });
       this.kickoff(side === "home" ? "away" : "home");
     } else {
+      if (gk) gk.saves++;
+      this.shotMap.push({
+        x: holder.x,
+        z: holder.z,
+        side,
+        result: "saved",
+        minute: this.minute(),
+        name: holder.name,
+      });
       const dive = targetZ - (gk?.z ?? 0);
       this.trigger(
         gk,
