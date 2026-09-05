@@ -38,14 +38,23 @@ export interface RemotePlayer {
 const UA = { "User-Agent": "football-manager-app/1.0" };
 
 async function getJson<T>(url: string, headers: Record<string, string> = {}): Promise<T | null> {
-  try {
-    const res = await fetch(url, { headers: { ...UA, ...headers } });
-    if (!res.ok) return null;
-    return (await res.json()) as T;
-  } catch {
-    return null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, { headers: { ...UA, ...headers } });
+      if (res.ok) return (await res.json()) as T;
+      // Free tiers throttle aggressively; back off and try again.
+      if (res.status === 429 || res.status >= 500) {
+        await new Promise((r) => setTimeout(r, 700 * (attempt + 1) + Math.random() * 400));
+        continue;
+      }
+      return null;
+    } catch {
+      await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+    }
   }
+  return null;
 }
+
 
 /* ------------------------------------------------------------------ */
 /* TheSportsDB                                                         */
