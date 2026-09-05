@@ -56,6 +56,7 @@ export function GameShell({
 }) {
   const navigate = useNavigate();
   const signedIn = useSignedIn();
+  const { t, lang, setLang } = useT();
   const club = career ? CLUBS[career.clubId] : undefined;
   useClubTheme(club);
 
