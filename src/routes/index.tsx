@@ -81,6 +81,27 @@ function Landing() {
           O e-mail é opcional — serve só para salvar a carreira na nuvem e jogar em outros
           aparelhos.
         </p>
+        <nav className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          <Link to="/guias" className="underline-offset-4 hover:text-foreground hover:underline">
+            Guias para iniciantes
+          </Link>
+          <Link
+            to="/ligas-de-futebol"
+            className="underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Todas as ligas
+          </Link>
+          <Link
+            to="/dicas-de-gestao"
+            className="underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Dicas de gestão
+          </Link>
+          <Link to="/cadastro" className="underline-offset-4 hover:text-foreground hover:underline">
+            Cadastrar meus clubes e jogadores
+          </Link>
+        </nav>
+
 
 
         <section className="mt-16">
