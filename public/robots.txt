@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://football-manager.app/sitemap.xml
+Sitemap: https://soccer-manager.fun/sitemap.xml

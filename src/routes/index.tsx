@@ -22,8 +22,15 @@ export const Route = createFileRoute("/")({
         content: "Comande um clube real, dê ordens em tempo real e veja o jogo acontecer em 3D.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://soccer-manager.fun/" },
       { name: "twitter:card", content: "summary_large_image" },
+      {
+        name: "google-site-verification",
+        content: "aiZIOSixTEt1PZq_nu3R9bRBcvc0Xxv139cyiLgnJyA",
+      },
     ],
+    links: [{ rel: "canonical", href: "https://soccer-manager.fun/" }],
+
   }),
   component: Landing,
 });
