@@ -199,6 +199,8 @@ export interface CareerState {
   round: number;
   tactics: Tactics;
   training: TrainingFocus;
+  /** intensidade do treino: 0 leve, 1 normal, 2 intenso */
+  trainingIntensity?: 0 | 1 | 2;
   lineup: string[]; // 11 player ids
   bench: string[];
   fixtures: Fixture[];
