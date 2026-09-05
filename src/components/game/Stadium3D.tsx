@@ -807,15 +807,19 @@ function Stands({
   goalPulse: React.MutableRefObject<number>;
   night: boolean;
 }) {
-  const density = quality === "alta" ? 320 : quality === "media" ? 190 : 90;
-  const rings = quality === "alta" ? 10 : quality === "media" ? 7 : 4;
+  const density = quality === "alta" ? 460 : quality === "media" ? 240 : 100;
+  const rings = quality === "alta" ? 14 : quality === "media" ? 9 : 5;
 
   const crowd = useMemo(() => {
     const positions: THREE.Vector3[] = [];
     const colors: THREE.Color[] = [];
+    const skins: THREE.Color[] = [];
     const home = new THREE.Color(homeColor);
     const away = new THREE.Color(awayColor);
     const neutral = ["#d8d8d8", "#8fa3b8", "#42506b", "#e0c07a", "#b8c4cf", "#6c7a8c"];
+    const skinTones = ["#e8b98f", "#d19b6d", "#a9713f", "#7a4b26", "#f2cfa8", "#5c3418"];
+    const pick = (i: number, ring: number) =>
+      new THREE.Color(skinTones[(i * 5 + ring * 3) % skinTones.length]!);
     for (let ring = 0; ring < rings; ring++) {
       for (let i = 0; i < density; i++) {
         const t = i / density;
@@ -834,6 +838,7 @@ function Stands({
               ? zone
               : new THREE.Color(neutral[(i + ring) % neutral.length]!),
           );
+          skins.push(pick(i, ring));
         }
       }
     }
@@ -848,22 +853,29 @@ function Stands({
           );
           const mosaic = (ring + i) % 5 < 3 ? home : new THREE.Color("#f2f2f2");
           colors.push(xSide === 1 ? mosaic : new THREE.Color(neutral[(i + ring) % neutral.length]!));
+          skins.push(pick(i + 3, ring));
         }
       }
     }
-    return { positions, colors };
+    return { positions, colors, skins };
   }, [homeColor, awayColor, density, rings]);
 
   const ref = useRef<THREE.InstancedMesh>(null);
+  const headRef = useRef<THREE.InstancedMesh>(null);
   const flashRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const flashCount = night ? Math.min(140, Math.round(crowd.positions.length * 0.05)) : 0;
+  const flashCount = night ? Math.min(200, Math.round(crowd.positions.length * 0.05)) : 0;
 
   useEffect(() => {
     const mesh = ref.current;
     if (!mesh) return;
     crowd.colors.forEach((c, i) => mesh.setColorAt(i, c));
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    const head = headRef.current;
+    if (head) {
+      crowd.skins.forEach((c, i) => head.setColorAt(i, c));
+      if (head.instanceColor) head.instanceColor.needsUpdate = true;
+    }
     const mat = mesh.material as THREE.Material | THREE.Material[];
     if (Array.isArray(mat)) mat.forEach((m) => (m.needsUpdate = true));
     else mat.needsUpdate = true;
@@ -872,19 +884,30 @@ function Stands({
   useFrame(({ clock }) => {
     const mesh = ref.current;
     if (!mesh) return;
+    const head = headRef.current;
     const t = clock.elapsedTime;
     const pulse = goalPulse.current;
     for (let i = 0; i < crowd.positions.length; i++) {
       const p = crowd.positions[i]!;
       const wave = Math.sin(t * 1.1 - p.x * 0.06) > 0.86 ? 0.5 : 0;
       const jump = pulse > 0 ? Math.abs(Math.sin(t * 9 + i)) * 0.75 * pulse : 0;
-      dummy.position.set(p.x, p.y + Math.sin(t * 3 + i) * 0.06 + wave + jump, p.z);
-      dummy.scale.set(1, 1, 1);
-      dummy.rotation.y = ((i % 7) - 3) * 0.06;
+      const y = p.y + Math.sin(t * 3 + i) * 0.06 + wave + jump;
+      const yaw = ((i % 7) - 3) * 0.06;
+      dummy.position.set(p.x, y, p.z);
+      dummy.scale.set(1, 0.92 + ((i % 5) * 0.04), 1);
+      dummy.rotation.set(0, yaw, 0);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
+      if (head) {
+        dummy.position.set(p.x, y + 0.52, p.z);
+        dummy.scale.setScalar(1);
+        dummy.rotation.set(Math.sin(t * 2 + i) * 0.05, yaw, 0);
+        dummy.updateMatrix();
+        head.setMatrixAt(i, dummy.matrix);
+      }
     }
     mesh.instanceMatrix.needsUpdate = true;
+    if (head) head.instanceMatrix.needsUpdate = true;
 
     // flashes de câmera na torcida (mais intensos após o gol)
     const fm = flashRef.current;
@@ -922,8 +945,16 @@ function Stands({
       <Roof rings={rings} />
       <Banners color={homeColor} />
       <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, crowd.positions.length]}>
-        <boxGeometry args={[0.5, 0.8, 0.5]} />
-        <meshStandardMaterial roughness={0.85} />
+        <capsuleGeometry args={[0.22, 0.42, 3, 6]} />
+        <meshStandardMaterial roughness={0.88} />
+      </instancedMesh>
+      <instancedMesh
+        ref={headRef}
+        frustumCulled={false}
+        args={[undefined, undefined, crowd.positions.length]}
+      >
+        <sphereGeometry args={[0.16, 6, 5]} />
+        <meshStandardMaterial roughness={0.75} />
       </instancedMesh>
       {flashCount > 0 && (
         <instancedMesh ref={flashRef} frustumCulled={false} args={[undefined, undefined, flashCount]}>
@@ -934,6 +965,7 @@ function Stands({
     </group>
   );
 }
+
 
 
 /* --------------------------------------------------------------- jogadores */
