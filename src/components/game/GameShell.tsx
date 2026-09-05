@@ -174,11 +174,11 @@ export function GameShell({
       {signedIn === false && (
         <div className="border-b border-border/50 bg-secondary/40">
           <p className="mx-auto max-w-6xl px-4 py-2 text-xs text-muted-foreground">
-            Você está jogando como convidado — o progresso fica salvo neste navegador.{" "}
+            {t("guest.line1")}{" "}
             <Link to="/auth" className="text-primary underline underline-offset-2">
-              Crie uma conta grátis
+              {t("guest.cta")}
             </Link>{" "}
-            para jogar em outros aparelhos.
+            {t("guest.line2")}
           </p>
         </div>
       )}
