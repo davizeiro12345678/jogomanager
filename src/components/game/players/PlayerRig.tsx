@@ -127,7 +127,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
     // ---- orientação: olha para onde corre; sem bola, olha para a bola
     const dirLen = Math.hypot(player.vx, player.vz);
     let want = g.rotation.y;
-    if (dirLen > 0.12) {
+    if (dirLen > 0.5) {
       want = Math.atan2(player.vx, player.vz);
     } else {
       want = Math.atan2(sim.ball.x - player.x, sim.ball.z - player.z);
@@ -135,7 +135,8 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
     let d = want - g.rotation.y;
     while (d > Math.PI) d -= Math.PI * 2;
     while (d < -Math.PI) d += Math.PI * 2;
-    g.rotation.y += d * (dirLen > 0.12 ? 0.2 : 0.08);
+    g.rotation.y += d * (dirLen > 0.5 ? 0.2 : 0.08);
+
 
     // ---- passo de animação em taxa reduzida longe da câmera
     const step = lod === 0 ? 0 : lod === 1 ? 1 / 40 : 1 / 20;
