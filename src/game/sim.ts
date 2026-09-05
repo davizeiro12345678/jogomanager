@@ -514,6 +514,7 @@ export class MatchSim {
     if (this.rnd() < chance) {
       const slide = this.rnd() < 0.4;
       this.trigger(opp, slide ? "slide" : "tackle", slide ? 1.0 : 0.6);
+      opp.tackles++;
       this.trigger(holder, "duel", 0.5);
       if (this.rnd() < 0.22) {
         this.trigger(holder, "protest", 1.4);
