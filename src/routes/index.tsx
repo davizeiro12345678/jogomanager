@@ -65,11 +65,18 @@ function Landing() {
             {hasCareer ? "Continuar carreira" : "Jogar agora"}
           </Link>
           <Link
+            to="/partida-rapida"
+            className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest text-foreground transition hover:bg-secondary"
+          >
+            Partida rápida
+          </Link>
+          <Link
             to="/new"
             className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest text-foreground transition hover:bg-secondary"
           >
             Escolher clube
           </Link>
+
           <Link
             to="/auth"
             className="rounded-lg px-6 py-3 font-display text-sm uppercase tracking-widest text-muted-foreground transition hover:text-foreground"
