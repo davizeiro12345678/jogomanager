@@ -79,17 +79,17 @@ export function GameShell({
               {career ? (
                 <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px]">
                   <span className="rounded-full bg-secondary px-2 py-0.5 text-muted-foreground">
-                    Temporada {career.season}
+                    {t("shell.season")} {career.season}
                   </span>
                   <span className="rounded-full bg-secondary px-2 py-0.5 text-muted-foreground">
-                    Rodada {career.round}
+                    {t("shell.round")} {career.round}
                   </span>
                   <span className="rounded-full bg-primary/15 px-2 py-0.5 text-primary">
                     €{career.finances.budget.toFixed(1)}M
                   </span>
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground">Carreira</p>
+                <p className="text-xs text-muted-foreground">{t("shell.career")}</p>
               )}
             </div>
             <Link
