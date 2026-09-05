@@ -85,6 +85,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
   // grupos de LOD: detalhes finos (rosto, dedos, costuras) e corpo médio
   const lod0 = useRef<THREE.Group>(null);
   const lod1 = useRef<THREE.Group>(null);
+  const spareRef = useRef<THREE.Group>(null);
   const lodState = useRef<LodLevel>(1);
 
   /* ---------------------------------------------------------- animação */
@@ -228,26 +229,56 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
 
   const jerseyMat = hi ? (
     <meshPhysicalMaterial
-      color={kit.primary}
-      map={tex ?? undefined}
+      color={kit.base}
+      map={tex ?? null}
       roughness={0.78}
       sheen={0.45}
-      sheenColor={shade(kit.primary, 0.4)}
+      sheenColor={shade(kit.base, 0.4)}
     />
   ) : (
-    <meshStandardMaterial color={kit.primary} map={tex ?? undefined} roughness={0.85} />
+    <meshStandardMaterial color={kit.base} map={tex ?? null} roughness={0.85} />
   );
 
-  const shortsMat = <meshStandardMaterial color={kit.shorts} roughness={0.86} />;
-  const socksMat = <meshStandardMaterial color={kit.socks} roughness={0.9} />;
-  const trimMat = <meshStandardMaterial color={kit.secondary} roughness={0.8} />;
+  const shortsMat = hi ? (
+    <meshPhysicalMaterial
+      color={kit.shorts}
+      roughness={0.84}
+      sheen={0.4}
+      sheenColor={shade(kit.shorts, 0.35)}
+    />
+  ) : (
+    <meshStandardMaterial color={kit.shorts} roughness={0.86} />
+  );
+  const socksMat = hi ? (
+    <meshPhysicalMaterial
+      color={kit.socks}
+      roughness={0.92}
+      sheen={0.6}
+      sheenRoughness={0.8}
+      sheenColor={shade(kit.socks, 0.45)}
+    />
+  ) : (
+    <meshStandardMaterial color={kit.socks} roughness={0.9} />
+  );
+  const trimMat = <meshStandardMaterial color={kit.detail} roughness={0.8} />;
   const hairMat = (
     <meshStandardMaterial color={look.hairColor} roughness={0.85} metalness={0.02} />
   );
-  const bootMat = (
+  const bootMat = hi ? (
+    <meshPhysicalMaterial
+      color={look.bootColor}
+      roughness={0.22}
+      metalness={0.1}
+      clearcoat={0.85}
+      clearcoatRoughness={0.18}
+    />
+  ) : (
     <meshStandardMaterial color={look.bootColor} roughness={0.34} metalness={0.22} />
   );
   const bootAccentMat = <meshStandardMaterial color={look.bootAccent} roughness={0.4} />;
+  const soleMat = (
+    <meshStandardMaterial color={shade(look.bootColor, -0.55)} roughness={0.6} />
+  );
   const gloveMat = <meshStandardMaterial color={look.gloveColor} roughness={0.7} />;
 
   const handMat = look.gloves ? gloveMat : skinMat;
@@ -305,7 +336,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
               <sphereGeometry args={[handR, segs.radial, segs.radial]} />
               {handMat}
             </mesh>
-            <group ref={side === 1 ? lod0 : undefined}>
+            <group ref={side === 1 ? lod0 : spareRef}>
               {/* dedos, só no LOD mais próximo */}
               {[0, 1, 2, 3].map((i) => (
                 <mesh
@@ -344,10 +375,23 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
           <capsuleGeometry args={[P.legR, P.thigh * 0.72, segs.cap, segs.radial]} />
           {skinMat}
         </mesh>
+        {/* quadríceps */}
+        <mesh
+          position={[0, -P.thigh * 0.62, P.legR * 0.24]}
+          scale={[0.9, 1, 0.7]}
+          castShadow={shadows}
+        >
+          <capsuleGeometry args={[P.legR * 0.72, P.thigh * 0.3, segs.cap, segs.radial]} />
+          {skinMat}
+        </mesh>
         {/* barra do calção */}
         <mesh position={[0, -P.thigh * 0.32, 0]} castShadow={shadows}>
           <capsuleGeometry args={[P.legR * 1.3, P.thigh * 0.24, 2, segs.radial]} />
           {shortsMat}
+        </mesh>
+        <mesh position={[0, -P.thigh * 0.44, 0]}>
+          <cylinderGeometry args={[P.legR * 1.31, P.legR * 1.28, 0.02, segs.radial]} />
+          {trimMat}
         </mesh>
         {/* joelho */}
         <group ref={kneeRef} position={[0, -P.thigh, 0]}>
@@ -355,32 +399,93 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
             <sphereGeometry args={[P.legR * 0.94, segs.radial, segs.radial]} />
             {skinMat}
           </mesh>
-          {/* panturrilha + meião */}
+          {/* panturrilha */}
           <mesh position={[0, -P.shin * 0.5, 0]} castShadow={shadows}>
             <capsuleGeometry args={[P.legR * 0.86, P.shin * 0.66, segs.cap, segs.radial]} />
             {skinMat}
           </mesh>
+          <mesh
+            position={[0, -P.shin * 0.34, -P.legR * 0.22]}
+            scale={[0.85, 1, 0.75]}
+            castShadow={shadows}
+          >
+            <capsuleGeometry args={[P.legR * 0.68, P.shin * 0.26, segs.cap, segs.radial]} />
+            {skinMat}
+          </mesh>
+          {/* meião */}
           <mesh position={[0, -P.shin * 0.62, 0]} castShadow={shadows}>
             <capsuleGeometry args={[P.legR * 0.94, P.shin * 0.44, segs.cap, segs.radial]} />
             {socksMat}
           </mesh>
+          {/* caneleira por baixo do meião */}
+          <mesh
+            position={[0, -P.shin * 0.55, P.legR * 0.5]}
+            scale={[0.8, 1, 0.35]}
+            castShadow={shadows}
+          >
+            <capsuleGeometry args={[P.legR * 0.7, P.shin * 0.3, 2, segs.radial]} />
+            {socksMat}
+          </mesh>
+          {/* punho do meião */}
+          <mesh position={[0, -P.shin * 0.36, 0]}>
+            <cylinderGeometry args={[P.legR * 1.02, P.legR * 0.98, 0.045, segs.radial]} />
+            {trimMat}
+          </mesh>
           {look.sockTape && (
-            <mesh position={[0, -P.shin * 0.42, 0]}>
-              <cylinderGeometry args={[P.legR * 1.0, P.legR * 1.0, 0.035, segs.radial]} />
+            <mesh position={[0, -P.shin * 0.46, 0]}>
+              <cylinderGeometry args={[P.legR * 1.03, P.legR * 1.03, 0.035, segs.radial]} />
               {trimMat}
             </mesh>
           )}
           {/* tornozelo → chuteira */}
           <group ref={ankleRef} position={[0, -P.shin, 0]}>
-            <mesh position={[0, -P.footH * 0.35, P.footLen * 0.16]} castShadow={shadows}>
+            {/* cano do meião sobre o tornozelo */}
+            <mesh position={[0, P.footH * 0.12, 0]}>
+              <capsuleGeometry args={[P.legR * 0.72, P.footH * 0.2, 2, segs.radial]} />
+              {socksMat}
+            </mesh>
+            {/* cabedal */}
+            <mesh position={[0, -P.footH * 0.32, P.footLen * 0.16]} castShadow={shadows}>
               <capsuleGeometry args={[P.footH * 0.5, P.footLen * 0.45, 3, segs.radial]} />
               {bootMat}
             </mesh>
-            <mesh position={[0, -P.footH * 0.62, P.footLen * 0.1]}>
-              <boxGeometry args={[P.footH * 1.0, P.footH * 0.16, P.footLen * 0.86]} />
+            {/* bico */}
+            <mesh
+              position={[0, -P.footH * 0.45, P.footLen * 0.42]}
+              scale={[0.85, 0.7, 1]}
+              castShadow={shadows}
+            >
+              <sphereGeometry args={[P.footH * 0.46, segs.radial, segs.radial]} />
+              {bootMat}
+            </mesh>
+            {/* calcanhar */}
+            <mesh position={[0, -P.footH * 0.24, -P.footLen * 0.16]} scale={[0.85, 1, 0.7]}>
+              <sphereGeometry args={[P.footH * 0.44, segs.radial, segs.radial]} />
+              {bootMat}
+            </mesh>
+            {/* faixa lateral / listra da marca */}
+            <mesh position={[0, -P.footH * 0.34, P.footLen * 0.18]} rotation={[0, 0, 0.1]}>
+              <boxGeometry args={[P.footH * 1.04, P.footH * 0.12, P.footLen * 0.4]} />
               {bootAccentMat}
             </mesh>
-            <group ref={side === 1 ? lod1 : undefined}>
+            {/* sola */}
+            <mesh position={[0, -P.footH * 0.62, P.footLen * 0.1]}>
+              <boxGeometry args={[P.footH * 1.0, P.footH * 0.16, P.footLen * 0.86]} />
+              {soleMat}
+            </mesh>
+            <group ref={side === 1 ? lod1 : spareRef}>
+              {/* cadarços */}
+              {[0, 1, 2].map((i) => (
+                <mesh
+                  key={`l${i}`}
+                  position={[0, -P.footH * 0.12, P.footLen * (0.1 + i * 0.09)]}
+                  rotation={[0.12, 0, 0]}
+                >
+                  <boxGeometry args={[P.footH * 0.5, P.footH * 0.06, P.footLen * 0.04]} />
+                  {bootAccentMat}
+                </mesh>
+              ))}
+              {/* travas */}
               {([
                 [-0.3, 0.36],
                 [0.3, 0.36],
