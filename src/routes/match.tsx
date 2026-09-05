@@ -531,6 +531,54 @@ function LiveMatch({
           </label>
         </div>
 
+        <div>
+          <p className="flex items-center justify-between font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
+            <span className="flex items-center gap-1">
+              <Repeat size={11} /> Substituições
+            </span>
+            <span>{subsUsed}/5</span>
+          </p>
+          <div className="mt-1 grid grid-cols-2 gap-1">
+            <select
+              aria-label="Jogador que sai"
+              value={outPid}
+              onChange={(e) => setOutPid(e.target.value)}
+              className="w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
+            >
+              <option value="" className="text-black">
+                Sai…
+              </option>
+              {onPitch.map((p) => (
+                <option key={p.pid} value={p.pid} className="text-black">
+                  {p.number} {p.name}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Jogador que entra"
+              value={inId}
+              onChange={(e) => setInId(e.target.value)}
+              className="w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
+            >
+              <option value="" className="text-black">
+                Entra…
+              </option>
+              {benchAvailable.map((p) => (
+                <option key={p.id} value={p.id} className="text-black">
+                  {p.number} {p.name} ({p.pos})
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={makeSub}
+            disabled={!outPid || !inId || subsUsed >= 5}
+            className="mt-1 w-full rounded-lg bg-white/15 px-2 py-1.5 text-xs text-white disabled:opacity-40"
+          >
+            Confirmar substituição
+          </button>
+        </div>
+
         <button
           onClick={() => setShowStats((s) => !s)}
           className="flex w-full items-center justify-center gap-1 rounded-lg bg-white/10 px-2 py-1.5 text-xs text-white"
