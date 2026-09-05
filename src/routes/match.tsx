@@ -21,7 +21,9 @@ import { CLUBS } from "@/game/data/leagues";
 import { MENTALITIES, PRESSING } from "@/game/formations";
 import { MatchSim, type TeamSetup } from "@/game/sim";
 import { Narrator, type NarrationEvent } from "@/game/narrator";
-import { advanceRound } from "@/game/career";
+import { advanceRoundAsync } from "@/game/simWorkerClient";
+import { detectQuality } from "@/game/device";
+
 import { nextFixture } from "@/game/season";
 import { buildSquad } from "@/game/squad";
 import { pickLineup } from "@/game/career";
