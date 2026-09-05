@@ -10,16 +10,16 @@ import { Flag } from "@/components/game/Flag";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Manager 3D — Seja o técnico e assista a partida em 3D" },
+      { title: "Pro Football Manager 3D — Futebol manager em 3D ao vivo" },
       {
         name: "description",
         content:
-          "Escale o time, defina a tática e acompanhe a partida ao vivo em 3D. Clubes e elencos reais do Brasileirão, Premier League, La Liga e Serie A.",
+          "Comande um clube real, monte o elenco, defina a tática e assista aos 90 minutos em 3D. Brasileirão, Premier League, La Liga, Serie A e mais de 30 ligas.",
       },
-      { property: "og:title", content: "Manager 3D — Futebol de gestão com partida 3D ao vivo" },
+      { property: "og:title", content: "Pro Football Manager 3D — Futebol manager em 3D ao vivo" },
       {
         property: "og:description",
-        content: "Comande um clube real, dê ordens em tempo real e veja o jogo acontecer em 3D.",
+        content: "Comande um clube real, monte o elenco, defina a tática e assista aos 90 minutos em 3D. Brasileirão, Premier League, La Liga, Serie A e mais de 30 ligas.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://soccer-manager.fun/" },
