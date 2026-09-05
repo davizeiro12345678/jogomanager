@@ -394,29 +394,31 @@ export async function importEverything(opts: {
   budgetMs?: number;
   squads?: boolean;
 }) {
-  const limit = opts.limit ?? 600;
+  const limit = opts.limit ?? 900;
   const offset = opts.offset ?? 0;
   const concurrency = opts.concurrency ?? 8;
-  const total = opts.budgetMs ?? 90_000;
+  const total = opts.budgetMs ?? 120_000;
   const started = Date.now();
+  const left = () => total - (Date.now() - started);
 
   const seeded = await seedFromBundledData();
-  const enrichBudget = opts.squads === false ? total : Math.floor(total * 0.6);
-  const enriched = await enrichClubs(
-    limit,
-    offset,
-    concurrency,
-    Math.max(5_000, enrichBudget - (Date.now() - started)),
-  );
+
+  // 1) Bulk pass: one API request per league covers every club in it.
+  const bulk = await importLeagues(Math.min(Math.floor(total * 0.4), Math.max(5_000, left())), 4);
+
+  // 2) Fill the gaps club by club for whatever the bulk pass missed.
+  const enrichBudget = opts.squads === false ? left() : Math.floor(left() * 0.6);
+  const enriched = await enrichClubs(limit, offset, concurrency, Math.max(5_000, enrichBudget));
 
   let squads = { imported: 0 };
-  if (opts.squads !== false) {
-    const left = total - (Date.now() - started);
-    if (left > 5_000) squads = await importSquads(limit, offset, Math.max(4, concurrency - 2), left);
+  if (opts.squads !== false && left() > 5_000) {
+    squads = await importSquads(limit, offset, Math.max(4, concurrency - 2), left());
   }
 
   return {
     seeded,
+    bulkMatched: bulk.matched,
+    bulkTeamsFetched: bulk.fetchedTeams,
     clubsEnriched: enriched.imported,
     clubsScanned: enriched.scanned,
     playersImported: squads.imported,
@@ -424,6 +426,7 @@ export async function importEverything(opts: {
     elapsedMs: Date.now() - started,
   };
 }
+
 
 export async function runSync(opts: {
   scope?: string;
