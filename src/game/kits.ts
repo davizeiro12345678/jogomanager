@@ -99,13 +99,33 @@ export function colorClash(a: string, b: string) {
 
 const cache = new Map<string, THREE.CanvasTexture>();
 
-export function kitTexture(kit: Kit, number: number): THREE.CanvasTexture | null {
+/** Ruído fino de tecido — tira o aspecto de plástico liso. */
+function fabricNoise(ctx: CanvasRenderingContext2D, size: number, seed: number) {
+  let s = seed || 1;
+  const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  for (let i = 0; i < size * 6; i++) {
+    const x = rnd() * size;
+    const y = rnd() * size;
+    ctx.fillStyle = rnd() > 0.5 ? "#ffffff" : "#000000";
+    ctx.fillRect(x, y, 1.5, 1.5);
+  }
+  ctx.restore();
+}
+
+export function kitTexture(
+  kit: Kit,
+  number: number,
+  name?: string,
+): THREE.CanvasTexture | null {
   if (typeof document === "undefined") return null;
-  const key = `${kit.base}|${kit.detail}|${kit.pattern}|${number}`;
+  const key = `${kit.base}|${kit.detail}|${kit.pattern}|${number}|${name ?? ""}`;
   const hit = cache.get(key);
   if (hit) return hit;
 
-  const size = 256;
+  const size = 512;
+  const s = size / 256; // fator sobre o desenho original
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
@@ -118,15 +138,15 @@ export function kitTexture(kit: Kit, number: number): THREE.CanvasTexture | null
   switch (kit.pattern) {
     case "stripes":
       ctx.fillStyle = kit.detail;
-      for (let i = 0; i < 8; i++) ctx.fillRect(i * 32 + 8, 0, 16, size);
+      for (let i = 0; i < 8; i++) ctx.fillRect((i * 32 + 8) * s, 0, 16 * s, size);
       break;
     case "pin":
       ctx.fillStyle = kit.detail;
-      for (let i = 0; i < 16; i++) ctx.fillRect(i * 16 + 6, 0, 3, size);
+      for (let i = 0; i < 16; i++) ctx.fillRect((i * 16 + 6) * s, 0, 3 * s, size);
       break;
     case "hoops":
       ctx.fillStyle = kit.detail;
-      for (let i = 0; i < 6; i++) ctx.fillRect(0, i * 42 + 10, size, 20);
+      for (let i = 0; i < 6; i++) ctx.fillRect(0, (i * 42 + 10) * s, size, 20 * s);
       break;
     case "sash":
       ctx.fillStyle = kit.detail;
@@ -149,18 +169,18 @@ export function kitTexture(kit: Kit, number: number): THREE.CanvasTexture | null
       ctx.fillStyle = kit.detail;
       for (let y = 0; y < 8; y++)
         for (let x = 0; x < 8; x++)
-          if ((x + y) % 2 === 0) ctx.fillRect(x * 32, y * 32, 32, 32);
+          if ((x + y) % 2 === 0) ctx.fillRect(x * 32 * s, y * 32 * s, 32 * s, 32 * s);
       break;
     case "band":
       ctx.fillStyle = kit.detail;
-      ctx.fillRect(0, size * 0.28, size, 44);
-      ctx.fillRect(0, size * 0.28 - 8, size, 4);
-      ctx.fillRect(0, size * 0.28 + 48, size, 4);
+      ctx.fillRect(0, size * 0.28, size, 44 * s);
+      ctx.fillRect(0, size * 0.28 - 8 * s, size, 4 * s);
+      ctx.fillRect(0, size * 0.28 + 48 * s, size, 4 * s);
       break;
     case "sleeves":
       ctx.fillStyle = kit.detail;
-      ctx.fillRect(0, 0, 40, size);
-      ctx.fillRect(size - 40, 0, 40, size);
+      ctx.fillRect(0, 0, 40 * s, size);
+      ctx.fillRect(size - 40 * s, 0, 40 * s, size);
       break;
     case "gradient": {
       const grad = ctx.createLinearGradient(0, 0, 0, size);
@@ -174,33 +194,61 @@ export function kitTexture(kit: Kit, number: number): THREE.CanvasTexture | null
       break;
   }
 
-  // gola
+  // gola + vivos nos punhos
   ctx.fillStyle = kit.detail;
-  ctx.fillRect(0, 0, size, 16);
+  ctx.fillRect(0, 0, size, 16 * s);
+  ctx.fillStyle = shade(kit.detail, 0.75);
+  ctx.fillRect(0, 16 * s, size, 3 * s);
+  ctx.fillStyle = kit.detail;
+  ctx.fillRect(0, size - 10 * s, size, 10 * s);
+  ctx.fillRect(0, size * 0.5 - 2 * s, 8 * s, size * 0.5);
+  ctx.fillRect(size - 8 * s, size * 0.5 - 2 * s, 8 * s, size * 0.5);
 
-  // sombreamento inferior (volume do torso)
+  fabricNoise(ctx, size, hash(kit.base + kit.pattern));
+
+  // luz de cima e sombra de baixo (volume do torso)
+  const topLight = ctx.createLinearGradient(0, 0, 0, size * 0.4);
+  topLight.addColorStop(0, "rgba(255,255,255,0.14)");
+  topLight.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = topLight;
+  ctx.fillRect(0, 0, size, size * 0.4);
+
   const shadeGrad = ctx.createLinearGradient(0, size * 0.55, 0, size);
   shadeGrad.addColorStop(0, "rgba(0,0,0,0)");
-  shadeGrad.addColorStop(1, "rgba(0,0,0,0.22)");
+  shadeGrad.addColorStop(1, "rgba(0,0,0,0.24)");
   ctx.fillStyle = shadeGrad;
   ctx.fillRect(0, 0, size, size);
 
-  // número nas costas
-  ctx.font = "bold 96px 'Barlow Condensed', system-ui, sans-serif";
+  const ink = luminance(kit.base) > 0.5 ? "#101418" : "#ffffff";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.lineWidth = 8;
+
+  // sobrenome nas costas
+  if (name) {
+    const short = name.split(" ").pop()!.toUpperCase().slice(0, 12);
+    ctx.font = `bold ${34 * s}px 'Barlow Condensed', system-ui, sans-serif`;
+    ctx.lineWidth = 5 * s;
+    ctx.strokeStyle = "rgba(0,0,0,0.5)";
+    ctx.fillStyle = ink;
+    ctx.strokeText(short, size * 0.5, size * 0.3);
+    ctx.fillText(short, size * 0.5, size * 0.3);
+  }
+
+  // número nas costas
+  ctx.font = `bold ${96 * s}px 'Barlow Condensed', system-ui, sans-serif`;
+  ctx.lineWidth = 8 * s;
   ctx.strokeStyle = "rgba(0,0,0,0.55)";
-  ctx.fillStyle = luminance(kit.base) > 0.5 ? "#101418" : "#ffffff";
-  ctx.strokeText(String(number), size * 0.5, size * 0.58);
-  ctx.fillText(String(number), size * 0.5, size * 0.58);
+  ctx.fillStyle = ink;
+  ctx.strokeText(String(number), size * 0.5, size * 0.6);
+  ctx.fillText(String(number), size * 0.5, size * 0.6);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
   cache.set(key, tex);
   return tex;
 }
+
 
 export const SKIN_TONES = ["#8d5524", "#c68642", "#e0ac69", "#f1c27d", "#6b4226", "#a9714b"];
 export const HAIR_COLORS = ["#14100c", "#20160f", "#3a2410", "#6b4423", "#0d0d0d", "#c8a24a"];

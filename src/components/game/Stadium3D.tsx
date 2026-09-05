@@ -8,6 +8,7 @@ import {
   DepthOfField,
   BrightnessContrast,
   HueSaturation,
+  Noise,
 } from "@react-three/postprocessing";
 import { easing } from "maath";
 import type React from "react";
@@ -1480,22 +1481,36 @@ function Rig({
 
 /* --------------------------------------------------------- pós-processamento */
 
-function Post({ quality }: { quality: Quality; replay?: boolean }) {
-
+function Post({ quality, replay = false }: { quality: Quality; replay?: boolean }) {
   if (quality === "baixa") return null;
+
+  // preset "cinema" no replay de gol: contraste, cor mais quente e vinheta forte
+  if (replay) {
+    return (
+      <EffectComposer key="cinema" enableNormalPass={false} multisampling={0}>
+        <Bloom intensity={0.9} luminanceThreshold={0.6} luminanceSmoothing={0.35} mipmapBlur />
+        <HueSaturation saturation={0.22} />
+        <BrightnessContrast brightness={-0.02} contrast={0.2} />
+        <Noise opacity={0.06} />
+        <Vignette offset={0.18} darkness={0.85} />
+      </EffectComposer>
+    );
+  }
+
   if (quality === "media") {
     return (
-      <EffectComposer enableNormalPass={false}>
+      <EffectComposer key="media" enableNormalPass={false}>
         <Bloom intensity={0.35} luminanceThreshold={0.75} luminanceSmoothing={0.25} mipmapBlur />
         <Vignette offset={0.28} darkness={0.55} />
       </EffectComposer>
     );
   }
   return (
-    <EffectComposer enableNormalPass={false} multisampling={0}>
+    <EffectComposer key="alta" enableNormalPass={false} multisampling={0}>
       <Bloom intensity={0.6} luminanceThreshold={0.68} luminanceSmoothing={0.3} mipmapBlur />
       <HueSaturation saturation={0.12} />
       <BrightnessContrast brightness={0.01} contrast={0.1} />
+      <Noise opacity={0.025} />
       <Vignette offset={0.25} darkness={0.6} />
       <SMAA />
     </EffectComposer>

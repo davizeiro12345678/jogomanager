@@ -61,7 +61,10 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
     [player.id, player.pos, player.number],
   );
   const P = useMemo(() => proportionsFor(look), [look]);
-  const tex = useMemo(() => kitTexture(kit, player.number), [kit, player.number]);
+  const tex = useMemo(
+    () => kitTexture(kit, player.number, player.name),
+    [kit, player.number, player.name],
+  );
 
   const isGK = player.pos === "GK";
   const hi = quality === "alta";
@@ -135,7 +138,16 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
     let d = want - g.rotation.y;
     while (d > Math.PI) d -= Math.PI * 2;
     while (d < -Math.PI) d += Math.PI * 2;
-    g.rotation.y += d * (dirLen > 0.5 ? 0.2 : 0.08);
+    const turnRate = d * (dirLen > 0.5 ? 0.2 : 0.08);
+    g.rotation.y += turnRate;
+
+    // ---- inclinação do corpo: para a frente na aceleração, para dentro na curva
+    const leanF = Math.min(0.26, dirLen * 0.032);
+    const leanS = Math.max(-0.3, Math.min(0.3, -turnRate * 6 * Math.min(1, dirLen / 5)));
+    g.rotation.x += (leanF - g.rotation.x) * Math.min(1, dt * 6);
+    g.rotation.z += (leanS - g.rotation.z) * Math.min(1, dt * 6);
+
+
 
 
     // ---- passo de animação em taxa reduzida longe da câmera
@@ -255,6 +267,8 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
     if (shadowRef.current) {
       const s = 1 - c.hipY * 0.5;
       shadowRef.current.scale.setScalar(s);
+      // compensa a inclinação do corpo para a sombra ficar colada no gramado
+      shadowRef.current.rotation.set(-Math.PI / 2 - g.rotation.x, 0, -g.rotation.z);
       const m = shadowRef.current.material as THREE.MeshBasicMaterial;
       m.opacity = 0.3 * s;
     }
