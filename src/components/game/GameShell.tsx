@@ -13,6 +13,7 @@ import {
   Play,
   Search,
   Table2,
+  Trophy,
   Users,
 } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
@@ -31,6 +32,7 @@ const TABS: { to: string; label: string; icon: ComponentType<{ size?: number }> 
   { to: "/tactics", label: "Táticas", icon: LayoutGrid },
   { to: "/training", label: "Treino", icon: Dumbbell },
   { to: "/league", label: "Liga", icon: Table2 },
+  { to: "/cup", label: "Copas", icon: Trophy },
   { to: "/transfers", label: "Mercado", icon: ArrowLeftRight },
   { to: "/scouting", label: "Olheiros", icon: Search },
   { to: "/finances", label: "Finanças", icon: Coins },
