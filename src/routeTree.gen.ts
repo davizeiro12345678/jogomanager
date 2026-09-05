@@ -12,24 +12,31 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BoardRouteImport } from './routes/board'
+import { Route as BrasileiraoRouteImport } from './routes/brasileirao'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as ClubRouteImport } from './routes/club'
+import { Route as ComoSerTecnicoDeFutebolRouteImport } from './routes/como-ser-tecnico-de-futebol'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DicasDeGestaoRouteImport } from './routes/dicas-de-gestao'
 import { Route as FinancesRouteImport } from './routes/finances'
 import { Route as GuiasRouteImport } from './routes/guias'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as JogoDeManagerDeFutebolRouteImport } from './routes/jogo-de-manager-de-futebol'
 import { Route as LeagueRouteImport } from './routes/league'
 import { Route as LigasDeFutebolRouteImport } from './routes/ligas-de-futebol'
 import { Route as MatchRouteImport } from './routes/match'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as MercadoDeTransferenciasRouteImport } from './routes/mercado-de-transferencias'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as NewsRouteImport } from './routes/news'
+import { Route as PerguntasFrequentesRouteImport } from './routes/perguntas-frequentes'
 import { Route as ScoutingRouteImport } from './routes/scouting'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SoccerManagerOnlineRouteImport } from './routes/soccer-manager-online'
 import { Route as SquadRouteImport } from './routes/squad'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as TacticsRouteImport } from './routes/tactics'
+import { Route as TaticasEFormacoesRouteImport } from './routes/taticas-e-formacoes'
 import { Route as TransfersRouteImport } from './routes/transfers'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -53,6 +60,11 @@ const BoardRoute = BoardRouteImport.update({
   path: '/board',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BrasileiraoRoute = BrasileiraoRouteImport.update({
+  id: '/brasileirao',
+  path: '/brasileirao',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CadastroRoute = CadastroRouteImport.update({
   id: '/cadastro',
   path: '/cadastro',
@@ -61,6 +73,11 @@ const CadastroRoute = CadastroRouteImport.update({
 const ClubRoute = ClubRouteImport.update({
   id: '/club',
   path: '/club',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComoSerTecnicoDeFutebolRoute = ComoSerTecnicoDeFutebolRouteImport.update({
+  id: '/como-ser-tecnico-de-futebol',
+  path: '/como-ser-tecnico-de-futebol',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -88,6 +105,11 @@ const HistoryRoute = HistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JogoDeManagerDeFutebolRoute = JogoDeManagerDeFutebolRouteImport.update({
+  id: '/jogo-de-manager-de-futebol',
+  path: '/jogo-de-manager-de-futebol',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LeagueRoute = LeagueRouteImport.update({
   id: '/league',
   path: '/league',
@@ -108,6 +130,11 @@ const McpRoute = McpRouteImport.update({
   path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MercadoDeTransferenciasRoute = MercadoDeTransferenciasRouteImport.update({
+  id: '/mercado-de-transferencias',
+  path: '/mercado-de-transferencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -118,6 +145,11 @@ const NewsRoute = NewsRouteImport.update({
   path: '/news',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PerguntasFrequentesRoute = PerguntasFrequentesRouteImport.update({
+  id: '/perguntas-frequentes',
+  path: '/perguntas-frequentes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScoutingRoute = ScoutingRouteImport.update({
   id: '/scouting',
   path: '/scouting',
@@ -126,6 +158,11 @@ const ScoutingRoute = ScoutingRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SoccerManagerOnlineRoute = SoccerManagerOnlineRouteImport.update({
+  id: '/soccer-manager-online',
+  path: '/soccer-manager-online',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SquadRoute = SquadRouteImport.update({
@@ -141,6 +178,11 @@ const StatsRoute = StatsRouteImport.update({
 const TacticsRoute = TacticsRouteImport.update({
   id: '/tactics',
   path: '/tactics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TaticasEFormacoesRoute = TaticasEFormacoesRouteImport.update({
+  id: '/taticas-e-formacoes',
+  path: '/taticas-e-formacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TransfersRoute = TransfersRouteImport.update({
@@ -185,24 +227,31 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
+  '/brasileirao': typeof BrasileiraoRoute
   '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
+  '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/dashboard': typeof DashboardRoute
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/finances': typeof FinancesRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
+  '/jogo-de-manager-de-futebol': typeof JogoDeManagerDeFutebolRoute
   '/league': typeof LeagueRoute
   '/ligas-de-futebol': typeof LigasDeFutebolRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
+  '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
   '/new': typeof NewRoute
   '/news': typeof NewsRoute
+  '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/soccer-manager-online': typeof SoccerManagerOnlineRoute
   '/squad': typeof SquadRoute
   '/stats': typeof StatsRoute
   '/tactics': typeof TacticsRoute
+  '/taticas-e-formacoes': typeof TaticasEFormacoesRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -215,24 +264,31 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
+  '/brasileirao': typeof BrasileiraoRoute
   '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
+  '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/dashboard': typeof DashboardRoute
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/finances': typeof FinancesRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
+  '/jogo-de-manager-de-futebol': typeof JogoDeManagerDeFutebolRoute
   '/league': typeof LeagueRoute
   '/ligas-de-futebol': typeof LigasDeFutebolRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
+  '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
   '/new': typeof NewRoute
   '/news': typeof NewsRoute
+  '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/soccer-manager-online': typeof SoccerManagerOnlineRoute
   '/squad': typeof SquadRoute
   '/stats': typeof StatsRoute
   '/tactics': typeof TacticsRoute
+  '/taticas-e-formacoes': typeof TaticasEFormacoesRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -246,24 +302,31 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
+  '/brasileirao': typeof BrasileiraoRoute
   '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
+  '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/dashboard': typeof DashboardRoute
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/finances': typeof FinancesRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
+  '/jogo-de-manager-de-futebol': typeof JogoDeManagerDeFutebolRoute
   '/league': typeof LeagueRoute
   '/ligas-de-futebol': typeof LigasDeFutebolRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
+  '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
   '/new': typeof NewRoute
   '/news': typeof NewsRoute
+  '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/soccer-manager-online': typeof SoccerManagerOnlineRoute
   '/squad': typeof SquadRoute
   '/stats': typeof StatsRoute
   '/tactics': typeof TacticsRoute
+  '/taticas-e-formacoes': typeof TaticasEFormacoesRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -278,24 +341,31 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/board'
+    | '/brasileirao'
     | '/cadastro'
     | '/club'
+    | '/como-ser-tecnico-de-futebol'
     | '/dashboard'
     | '/dicas-de-gestao'
     | '/finances'
     | '/guias'
     | '/history'
+    | '/jogo-de-manager-de-futebol'
     | '/league'
     | '/ligas-de-futebol'
     | '/match'
     | '/mcp'
+    | '/mercado-de-transferencias'
     | '/new'
     | '/news'
+    | '/perguntas-frequentes'
     | '/scouting'
     | '/sitemap.xml'
+    | '/soccer-manager-online'
     | '/squad'
     | '/stats'
     | '/tactics'
+    | '/taticas-e-formacoes'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
@@ -308,24 +378,31 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/board'
+    | '/brasileirao'
     | '/cadastro'
     | '/club'
+    | '/como-ser-tecnico-de-futebol'
     | '/dashboard'
     | '/dicas-de-gestao'
     | '/finances'
     | '/guias'
     | '/history'
+    | '/jogo-de-manager-de-futebol'
     | '/league'
     | '/ligas-de-futebol'
     | '/match'
     | '/mcp'
+    | '/mercado-de-transferencias'
     | '/new'
     | '/news'
+    | '/perguntas-frequentes'
     | '/scouting'
     | '/sitemap.xml'
+    | '/soccer-manager-online'
     | '/squad'
     | '/stats'
     | '/tactics'
+    | '/taticas-e-formacoes'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
@@ -338,24 +415,31 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/board'
+    | '/brasileirao'
     | '/cadastro'
     | '/club'
+    | '/como-ser-tecnico-de-futebol'
     | '/dashboard'
     | '/dicas-de-gestao'
     | '/finances'
     | '/guias'
     | '/history'
+    | '/jogo-de-manager-de-futebol'
     | '/league'
     | '/ligas-de-futebol'
     | '/match'
     | '/mcp'
+    | '/mercado-de-transferencias'
     | '/new'
     | '/news'
+    | '/perguntas-frequentes'
     | '/scouting'
     | '/sitemap.xml'
+    | '/soccer-manager-online'
     | '/squad'
     | '/stats'
     | '/tactics'
+    | '/taticas-e-formacoes'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
@@ -369,24 +453,31 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   BoardRoute: typeof BoardRoute
+  BrasileiraoRoute: typeof BrasileiraoRoute
   CadastroRoute: typeof CadastroRoute
   ClubRoute: typeof ClubRoute
+  ComoSerTecnicoDeFutebolRoute: typeof ComoSerTecnicoDeFutebolRoute
   DashboardRoute: typeof DashboardRoute
   DicasDeGestaoRoute: typeof DicasDeGestaoRoute
   FinancesRoute: typeof FinancesRoute
   GuiasRoute: typeof GuiasRoute
   HistoryRoute: typeof HistoryRoute
+  JogoDeManagerDeFutebolRoute: typeof JogoDeManagerDeFutebolRoute
   LeagueRoute: typeof LeagueRoute
   LigasDeFutebolRoute: typeof LigasDeFutebolRoute
   MatchRoute: typeof MatchRoute
   McpRoute: typeof McpRoute
+  MercadoDeTransferenciasRoute: typeof MercadoDeTransferenciasRoute
   NewRoute: typeof NewRoute
   NewsRoute: typeof NewsRoute
+  PerguntasFrequentesRoute: typeof PerguntasFrequentesRoute
   ScoutingRoute: typeof ScoutingRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SoccerManagerOnlineRoute: typeof SoccerManagerOnlineRoute
   SquadRoute: typeof SquadRoute
   StatsRoute: typeof StatsRoute
   TacticsRoute: typeof TacticsRoute
+  TaticasEFormacoesRoute: typeof TaticasEFormacoesRoute
   TransfersRoute: typeof TransfersRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -419,6 +510,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BoardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/brasileirao': {
+      id: '/brasileirao'
+      path: '/brasileirao'
+      fullPath: '/brasileirao'
+      preLoaderRoute: typeof BrasileiraoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cadastro': {
       id: '/cadastro'
       path: '/cadastro'
@@ -431,6 +529,13 @@ declare module '@tanstack/react-router' {
       path: '/club'
       fullPath: '/club'
       preLoaderRoute: typeof ClubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/como-ser-tecnico-de-futebol': {
+      id: '/como-ser-tecnico-de-futebol'
+      path: '/como-ser-tecnico-de-futebol'
+      fullPath: '/como-ser-tecnico-de-futebol'
+      preLoaderRoute: typeof ComoSerTecnicoDeFutebolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -468,6 +573,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jogo-de-manager-de-futebol': {
+      id: '/jogo-de-manager-de-futebol'
+      path: '/jogo-de-manager-de-futebol'
+      fullPath: '/jogo-de-manager-de-futebol'
+      preLoaderRoute: typeof JogoDeManagerDeFutebolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/league': {
       id: '/league'
       path: '/league'
@@ -496,6 +608,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mercado-de-transferencias': {
+      id: '/mercado-de-transferencias'
+      path: '/mercado-de-transferencias'
+      fullPath: '/mercado-de-transferencias'
+      preLoaderRoute: typeof MercadoDeTransferenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/new': {
       id: '/new'
       path: '/new'
@@ -510,6 +629,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NewsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/perguntas-frequentes': {
+      id: '/perguntas-frequentes'
+      path: '/perguntas-frequentes'
+      fullPath: '/perguntas-frequentes'
+      preLoaderRoute: typeof PerguntasFrequentesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/scouting': {
       id: '/scouting'
       path: '/scouting'
@@ -522,6 +648,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/soccer-manager-online': {
+      id: '/soccer-manager-online'
+      path: '/soccer-manager-online'
+      fullPath: '/soccer-manager-online'
+      preLoaderRoute: typeof SoccerManagerOnlineRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/squad': {
@@ -543,6 +676,13 @@ declare module '@tanstack/react-router' {
       path: '/tactics'
       fullPath: '/tactics'
       preLoaderRoute: typeof TacticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/taticas-e-formacoes': {
+      id: '/taticas-e-formacoes'
+      path: '/taticas-e-formacoes'
+      fullPath: '/taticas-e-formacoes'
+      preLoaderRoute: typeof TaticasEFormacoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/transfers': {
@@ -601,24 +741,31 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   BoardRoute: BoardRoute,
+  BrasileiraoRoute: BrasileiraoRoute,
   CadastroRoute: CadastroRoute,
   ClubRoute: ClubRoute,
+  ComoSerTecnicoDeFutebolRoute: ComoSerTecnicoDeFutebolRoute,
   DashboardRoute: DashboardRoute,
   DicasDeGestaoRoute: DicasDeGestaoRoute,
   FinancesRoute: FinancesRoute,
   GuiasRoute: GuiasRoute,
   HistoryRoute: HistoryRoute,
+  JogoDeManagerDeFutebolRoute: JogoDeManagerDeFutebolRoute,
   LeagueRoute: LeagueRoute,
   LigasDeFutebolRoute: LigasDeFutebolRoute,
   MatchRoute: MatchRoute,
   McpRoute: McpRoute,
+  MercadoDeTransferenciasRoute: MercadoDeTransferenciasRoute,
   NewRoute: NewRoute,
   NewsRoute: NewsRoute,
+  PerguntasFrequentesRoute: PerguntasFrequentesRoute,
   ScoutingRoute: ScoutingRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SoccerManagerOnlineRoute: SoccerManagerOnlineRoute,
   SquadRoute: SquadRoute,
   StatsRoute: StatsRoute,
   TacticsRoute: TacticsRoute,
+  TaticasEFormacoesRoute: TaticasEFormacoesRoute,
   TransfersRoute: TransfersRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,

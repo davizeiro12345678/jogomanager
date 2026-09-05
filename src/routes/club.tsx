@@ -12,6 +12,7 @@ export const Route = createFileRoute("/club")({
   ssr: false,
   head: () => ({
     meta: [
+      { name: "robots", content: "noindex, follow" },
       { title: "Central do clube · Pro Football Manager 3D" },
       {
         name: "description",

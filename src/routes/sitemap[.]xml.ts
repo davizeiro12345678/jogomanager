@@ -15,14 +15,19 @@ export const Route = createFileRoute("/sitemap.xml")({
       GET: async () => {
         const entries: SitemapEntry[] = [
           { path: "/", changefreq: "weekly", priority: "1.0" },
-          { path: "/new", changefreq: "weekly", priority: "0.9" },
-          { path: "/guias", changefreq: "weekly", priority: "0.9" },
+          { path: "/jogo-de-manager-de-futebol", changefreq: "weekly", priority: "0.9" },
+          { path: "/soccer-manager-online", changefreq: "weekly", priority: "0.9" },
           { path: "/ligas-de-futebol", changefreq: "weekly", priority: "0.9" },
+          { path: "/brasileirao", changefreq: "weekly", priority: "0.9" },
+          { path: "/taticas-e-formacoes", changefreq: "weekly", priority: "0.8" },
+          { path: "/como-ser-tecnico-de-futebol", changefreq: "weekly", priority: "0.8" },
+          { path: "/mercado-de-transferencias", changefreq: "weekly", priority: "0.8" },
+          { path: "/guias", changefreq: "weekly", priority: "0.8" },
           { path: "/dicas-de-gestao", changefreq: "weekly", priority: "0.8" },
-          { path: "/cadastro", changefreq: "monthly", priority: "0.6" },
-          { path: "/league", changefreq: "weekly", priority: "0.6" },
-          { path: "/auth", changefreq: "monthly", priority: "0.4" },
+          { path: "/perguntas-frequentes", changefreq: "monthly", priority: "0.7" },
         ];
+
+        const lastmod = new Date().toISOString().slice(0, 10);
 
 
 
@@ -30,6 +35,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           [
             `  <url>`,
             `    <loc>${BASE_URL}${e.path}</loc>`,
+            `    <lastmod>${lastmod}</lastmod>`,
             e.changefreq ? `    <changefreq>${e.changefreq}</changefreq>` : null,
             e.priority ? `    <priority>${e.priority}</priority>` : null,
             `  </url>`,

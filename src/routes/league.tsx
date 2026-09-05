@@ -11,6 +11,7 @@ export const Route = createFileRoute("/league")({
   ssr: false,
   head: () => ({
     meta: [
+      { name: "robots", content: "noindex, follow" },
       { title: "Tabela e calendário · Pro Football Manager 3D" },
       {
         name: "description",

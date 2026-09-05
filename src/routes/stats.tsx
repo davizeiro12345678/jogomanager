@@ -10,6 +10,7 @@ export const Route = createFileRoute("/stats")({
   ssr: false,
   head: () => ({
     meta: [
+      { name: "robots", content: "noindex, follow" },
       { title: "Estatísticas do elenco · Pro Football Manager 3D" },
       {
         name: "description",

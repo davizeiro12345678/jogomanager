@@ -1,22 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import { PublicLinks } from "@/components/PublicLinks";
+import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
+
+const PATH = "/guias";
+const TITLE = "Guias de manager de futebol: como começar bem | Pro Football Manager 3D";
+const DESC =
+  "Guias em português para quem quer virar manager de futebol: escolher o clube, montar a escalação, definir a tática e vencer a primeira temporada.";
+
 export const Route = createFileRoute("/guias")({
   head: () => ({
-    meta: [
-      { title: "Guias de manager de futebol: como começar bem | Pro Football Manager 3D" },
-      {
-        name: "description",
-        content:
-          "Guias em português para quem quer virar manager de futebol: escolher o clube, montar a escalação, definir a tática e vencer a primeira temporada.",
-      },
-      { property: "og:title", content: "Guias de manager de futebol | Pro Football Manager 3D" },
-      {
-        property: "og:description",
-        content:
-          "Aprenda a escolher clube, escalar o time, ajustar a tática e administrar o orçamento no seu jogo de manager de futebol.",
-      },
-      { property: "og:type", content: "article" },
-      { name: "twitter:card", content: "summary_large_image" },
+    meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
+    links: canonical(PATH),
+    scripts: [
+      articleLd({ headline: "Guias de manager de futebol", description: DESC, path: PATH }),
+      breadcrumbLd([
+        { name: "Início", path: "/" },
+        { name: "Guias", path: PATH },
+      ]),
     ],
   }),
   component: GuidesPage,
@@ -92,6 +93,8 @@ function GuidesPage() {
             Ligas disponíveis
           </Link>
         </div>
+
+        <PublicLinks exclude="/guias" />
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ export const Route = createFileRoute("/dashboard")({
   ssr: false,
   head: () => ({
     meta: [
+      { name: "robots", content: "noindex, follow" },
       { title: "Painel do treinador · Pro Football Manager 3D" },
       {
         name: "description",

@@ -1,22 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import { PublicLinks } from "@/components/PublicLinks";
+import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
+
+const PATH = "/dicas-de-gestao";
+const TITLE = "Dicas de gestão para soccer manager: 12 táticas que funcionam";
+const DESC =
+  "12 dicas de gestão para o seu jogo de soccer manager: elenco enxuto, folha salarial, transferências inteligentes, moral do vestiário e planejamento de temporada.";
+
 export const Route = createFileRoute("/dicas-de-gestao")({
   head: () => ({
-    meta: [
-      { title: "Dicas de gestão para soccer manager: 12 táticas que funcionam" },
-      {
-        name: "description",
-        content:
-          "12 dicas de gestão para o seu jogo de soccer manager: elenco enxuto, folha salarial, transferências inteligentes, moral do vestiário e planejamento de temporada.",
-      },
-      { property: "og:title", content: "Dicas de gestão para soccer manager" },
-      {
-        property: "og:description",
-        content:
-          "Aprenda a controlar folha salarial, negociar transferências e manter o vestiário motivado na sua carreira de treinador.",
-      },
-      { property: "og:type", content: "article" },
-      { name: "twitter:card", content: "summary_large_image" },
+    meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
+    links: canonical(PATH),
+    scripts: [
+      articleLd({ headline: "Dicas de gestão para soccer manager", description: DESC, path: PATH }),
+      breadcrumbLd([
+        { name: "Início", path: "/" },
+        { name: "Dicas de gestão", path: PATH },
+      ]),
     ],
   }),
   component: TipsPage,
@@ -73,6 +74,8 @@ function TipsPage() {
             Ver os guias
           </Link>
         </div>
+
+        <PublicLinks exclude="/dicas-de-gestao" />
       </div>
     </div>
   );

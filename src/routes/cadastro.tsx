@@ -19,6 +19,7 @@ export const Route = createFileRoute("/cadastro")({
   ssr: false,
   head: () => ({
     meta: [
+      { name: "robots", content: "noindex, follow" },
       { title: "Cadastrar clubes e jogadores · Pro Football Manager 3D" },
       {
         name: "description",
