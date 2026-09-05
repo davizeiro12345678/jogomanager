@@ -241,7 +241,31 @@ export interface CareerState {
   managerHistory: ManagerSpell[];
   /** verdadeiro quando o treinador foi demitido e aguarda novo clube */
   sacked: boolean;
+  /** copas nacionais e continentais da temporada */
+  cups?: CupState[];
 }
+
+export interface CupTie {
+  /** fase: 0 oitavas, 1 quartas, 2 semi, 3 final */
+  round: number;
+  home: string;
+  away: string;
+  hg: number | null;
+  ag: number | null;
+}
+
+export interface CupState {
+  id: "national" | "continental";
+  name: string;
+  stage: number;
+  ties: CupTie[];
+  /** o clube do usuário já foi eliminado */
+  out: boolean;
+  winner: string | null;
+  /** a cada quantas rodadas de liga acontece uma fase */
+  everyRounds: number;
+}
+
 
 
 export interface MatchEventLog {
