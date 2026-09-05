@@ -1316,6 +1316,7 @@ function Scene({
       />
       <directionalLight position={[-60, 60, -40]} intensity={0.6} color="#bcd8ff" />
 
+      <SkyDome time={time} />
       <Pitch quality={quality} />
 
       <AdBoards />
