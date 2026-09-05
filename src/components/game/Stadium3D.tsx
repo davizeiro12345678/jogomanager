@@ -748,7 +748,7 @@ function Tiers({ rings }: { rings: number }) {
 
 function Roof({ rings }: { rings: number }) {
   const outer = 9 + rings * 1.5;
-  const depth = 10;
+  const depth = 12;
   const height = 2.0 + rings * 1.45 + 7;
   const trusses: React.ReactElement[] = [];
   for (let i = -6; i <= 6; i++) {
@@ -759,27 +759,93 @@ function Roof({ rings }: { rings: number }) {
           <meshStandardMaterial color="#5a6672" roughness={0.7} metalness={0.35} />
         </mesh>,
       );
+      // diagonal de contraventamento
+      trusses.push(
+        <mesh
+          key={`dz${i}${z}`}
+          position={[i * 13 + 6.5, height - 1.2, z * (FIELD_Z + outer)]}
+          rotation={[0, 0, 0.9]}
+        >
+          <boxGeometry args={[0.22, 12, 0.22]} />
+          <meshStandardMaterial color="#6b7783" roughness={0.6} metalness={0.4} />
+        </mesh>,
+      );
+    }
+  }
+  for (let i = -4; i <= 4; i++) {
+    for (const x of [-1, 1]) {
+      trusses.push(
+        <mesh key={`tx${i}${x}`} position={[x * (FIELD_X + outer), height - 2.2, i * 14]}>
+          <boxGeometry args={[0.5, 4.4, 0.5]} />
+          <meshStandardMaterial color="#5a6672" roughness={0.7} metalness={0.35} />
+        </mesh>,
+      );
     }
   }
   return (
     <group>
       {trusses}
       {[-1, 1].map((z) => (
-        <mesh key={`rz${z}`} position={[0, height, z * (FIELD_Z + outer + depth / 2 - 2)]}>
-          <boxGeometry args={[FIELD_X * 2 + 36, 0.6, depth]} />
-          <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} />
-        </mesh>
+        <group key={`rz${z}`}>
+          <mesh position={[0, height, z * (FIELD_Z + outer + depth / 2 - 2)]}>
+            <boxGeometry args={[FIELD_X * 2 + 36, 0.6, depth]} />
+            <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} />
+          </mesh>
+          {/* forro iluminado por baixo */}
+          <mesh
+            position={[0, height - 0.42, z * (FIELD_Z + outer + depth / 2 - 2)]}
+            rotation={[Math.PI / 2, 0, 0]}
+          >
+            <planeGeometry args={[FIELD_X * 2 + 34, depth - 1]} />
+            <meshStandardMaterial
+              color="#20272e"
+              emissive="#8fb6d8"
+              emissiveIntensity={0.18}
+              roughness={0.9}
+            />
+          </mesh>
+        </group>
       ))}
       {[-1, 1].map((x) => (
-        <mesh key={`rx${x}`} position={[x * (FIELD_X + outer + depth / 2 - 2), height, 0]}>
-          <boxGeometry args={[depth, 0.6, FIELD_Z * 2 + 40]} />
-          <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} />
+        <group key={`rx${x}`}>
+          <mesh position={[x * (FIELD_X + outer + depth / 2 - 2), height, 0]}>
+            <boxGeometry args={[depth, 0.6, FIELD_Z * 2 + 40]} />
+            <meshStandardMaterial color="#4b5661" roughness={0.75} metalness={0.25} />
+          </mesh>
+          <mesh
+            position={[x * (FIELD_X + outer + depth / 2 - 2), height - 0.42, 0]}
+            rotation={[Math.PI / 2, 0, 0]}
+          >
+            <planeGeometry args={[depth - 1, FIELD_Z * 2 + 38]} />
+            <meshStandardMaterial
+              color="#20272e"
+              emissive="#8fb6d8"
+              emissiveIntensity={0.18}
+              roughness={0.9}
+            />
+          </mesh>
+        </group>
+      ))}
+      {/* cantos fechados: o estádio deixa de ter buracos nas quinas */}
+      {[
+        [1, 1],
+        [1, -1],
+        [-1, 1],
+        [-1, -1],
+      ].map(([sx, sz], i) => (
+        <mesh
+          key={`c${i}`}
+          position={[sx! * (FIELD_X + outer + 2), height, sz! * (FIELD_Z + outer + 2)]}
+          rotation={[0, sx! * sz! * Math.PI / 4, 0]}
+        >
+          <boxGeometry args={[26, 0.6, depth]} />
+          <meshStandardMaterial color="#49545f" roughness={0.8} metalness={0.2} />
         </mesh>
       ))}
     </group>
   );
-
 }
+
 
 function Banners({ color }: { color: string }) {
   return (
