@@ -96,21 +96,21 @@ export function GameShell({
               to="/match"
               className="ml-auto flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground lg:hidden"
             >
-              <Play size={13} /> Jogar
+              <Play size={13} /> {t("action.play")}
             </Link>
           </div>
 
           <nav className="-mx-1 hidden flex-wrap items-center justify-end gap-0.5 md:flex lg:mx-0 lg:ml-auto">
-            {TABS.map((t) => {
-              const Icon = t.icon;
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
               return (
                 <Link
-                  key={t.to}
-                  to={t.to}
+                  key={tab.to}
+                  to={tab.to}
                   className="flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-display text-xs uppercase tracking-wider text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
                 >
                   <Icon size={13} />
-                  {t.label}
+                  {t(tab.key)}
                 </Link>
               );
             })}
@@ -118,8 +118,24 @@ export function GameShell({
               to="/match"
               className="ml-1 hidden shrink-0 items-center gap-1 rounded-lg bg-primary px-3 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground lg:flex"
             >
-              <Play size={13} /> Jogar
+              <Play size={13} /> {t("action.play")}
             </Link>
+            <label className="ml-1 flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-muted-foreground">
+              <Globe size={13} />
+              <span className="sr-only">{t("shell.language")}</span>
+              <select
+                aria-label={t("shell.language")}
+                value={lang}
+                onChange={(e) => setLang(e.target.value as Lang)}
+                className="max-w-[7.5rem] cursor-pointer bg-transparent text-xs outline-none [&>option]:bg-card [&>option]:text-foreground"
+              >
+                {LANGS.map((l) => (
+                  <option key={l} value={l}>
+                    {LANG_NAMES[l]}
+                  </option>
+                ))}
+              </select>
+            </label>
             {signedIn ? (
               <button
                 onClick={async () => {
