@@ -81,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "N3Z9611b9SUqfFw2Y7W4VXRU1IQF5XiqC8MoOnaq-4U",
       },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { name: "author", content: "Manager 3D" },
+      { name: "author", content: "Pro Football Manager 3D" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

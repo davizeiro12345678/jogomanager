@@ -8,12 +8,12 @@ export const Route = createFileRoute("/news")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Notícias · Manager 3D" },
+      { title: "Notícias · Pro Football Manager 3D" },
       {
         name: "description",
         content: "Tudo que acontece no clube: resultados, lesões, mercado e bastidores.",
       },
-      { property: "og:title", content: "Notícias · Manager 3D" },
+      { property: "og:title", content: "Notícias · Pro Football Manager 3D" },
       { property: "og:description", content: "O feed de notícias do seu clube." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

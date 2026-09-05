@@ -10,13 +10,13 @@ export const Route = createFileRoute("/finances")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Finanças do clube · Manager 3D" },
+      { title: "Finanças do clube · Pro Football Manager 3D" },
       {
         name: "description",
         content:
           "Caixa, folha salarial, patrocínio, bilheteria, preço de ingressos e expansão do estádio.",
       },
-      { property: "og:title", content: "Finanças do clube · Manager 3D" },
+      { property: "og:title", content: "Finanças do clube · Pro Football Manager 3D" },
       { property: "og:description", content: "Controle o dinheiro do clube." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -19,13 +19,13 @@ export const Route = createFileRoute("/cadastro")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Cadastrar clubes e jogadores · Manager 3D" },
+      { title: "Cadastrar clubes e jogadores · Pro Football Manager 3D" },
       {
         name: "description",
         content:
           "Cadastre seus clubes e jogadores: nome, escudo, cores do uniforme, posição, idade, contrato, salário e valor de mercado.",
       },
-      { property: "og:title", content: "Cadastro de clubes e jogadores · Manager 3D" },
+      { property: "og:title", content: "Cadastro de clubes e jogadores · Pro Football Manager 3D" },
       {
         property: "og:description",
         content: "Monte seu próprio banco de clubes e jogadores para usar na carreira.",

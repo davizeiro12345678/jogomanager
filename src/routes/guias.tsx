@@ -3,13 +3,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/guias")({
   head: () => ({
     meta: [
-      { title: "Guias de manager de futebol: como começar bem | Manager 3D" },
+      { title: "Guias de manager de futebol: como começar bem | Pro Football Manager 3D" },
       {
         name: "description",
         content:
           "Guias em português para quem quer virar manager de futebol: escolher o clube, montar a escalação, definir a tática e vencer a primeira temporada.",
       },
-      { property: "og:title", content: "Guias de manager de futebol | Manager 3D" },
+      { property: "og:title", content: "Guias de manager de futebol | Pro Football Manager 3D" },
       {
         property: "og:description",
         content:

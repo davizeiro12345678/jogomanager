@@ -10,13 +10,13 @@ export const Route = createFileRoute("/squad")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Elenco e escalação · Manager 3D" },
+      { title: "Elenco e escalação · Pro Football Manager 3D" },
       {
         name: "description",
         content:
           "Monte o time titular, veja atributos, condição física e moral de cada jogador do elenco.",
       },
-      { property: "og:title", content: "Elenco e escalação · Manager 3D" },
+      { property: "og:title", content: "Elenco e escalação · Pro Football Manager 3D" },
       { property: "og:description", content: "Escale seus onze e ajuste o banco." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

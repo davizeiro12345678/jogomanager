@@ -17,13 +17,13 @@ export const Route = createFileRoute("/match")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Partida ao vivo em 3D · Manager 3D" },
+      { title: "Partida ao vivo em 3D · Pro Football Manager 3D" },
       {
         name: "description",
         content:
           "Assista aos 90 minutos em 3D, troque de câmera e dê ordens táticas em tempo real da beira do campo.",
       },
-      { property: "og:title", content: "Partida ao vivo em 3D · Manager 3D" },
+      { property: "og:title", content: "Partida ao vivo em 3D · Pro Football Manager 3D" },
       { property: "og:description", content: "Ordens em tempo real enquanto a bola rola." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

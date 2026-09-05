@@ -11,12 +11,12 @@ export const Route = createFileRoute("/scouting")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Olheiros e relatórios · Manager 3D" },
+      { title: "Olheiros e relatórios · Pro Football Manager 3D" },
       {
         name: "description",
         content: "Envie olheiros pelo mundo e receba relatórios com potencial, idade e valor.",
       },
-      { property: "og:title", content: "Olheiros e relatórios · Manager 3D" },
+      { property: "og:title", content: "Olheiros e relatórios · Pro Football Manager 3D" },
       { property: "og:description", content: "Descubra talentos antes dos rivais." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

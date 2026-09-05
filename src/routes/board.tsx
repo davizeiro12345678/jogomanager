@@ -13,13 +13,13 @@ export const Route = createFileRoute("/board")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sala da diretoria · Manager 3D" },
+      { title: "Sala da diretoria · Pro Football Manager 3D" },
       {
         name: "description",
         content:
           "Objetivos, pressão da diretoria, staff, convites de outros clubes, demissão e histórico do treinador.",
       },
-      { property: "og:title", content: "Sala da diretoria · Manager 3D" },
+      { property: "og:title", content: "Sala da diretoria · Pro Football Manager 3D" },
       { property: "og:description", content: "Negocie seu futuro como treinador." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
