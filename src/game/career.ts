@@ -316,7 +316,12 @@ function applyWeeklyDevelopment(
   const rnd = makeRng(seed);
   const news: NewsItem[] = [];
   const attr = trainingAttr(state.training);
-  const condRegen = state.training === "fisico" ? 16 : state.training === "equilibrado" ? 12 : 9;
+  const intensity = state.trainingIntensity ?? 1;
+  const baseRegen = state.training === "fisico" ? 16 : state.training === "equilibrado" ? 12 : 9;
+  // treino leve recupera mais e evolui menos; treino intenso é o contrário
+  const condRegen = baseRegen + (intensity === 0 ? 5 : intensity === 2 ? -5 : 0);
+  const growthMult = 0.75 + intensity * 0.3;
+  const injuryMult = 0.7 + intensity * 0.4;
 
   const next: Record<string, Player> = {};
   for (const [id, p] of Object.entries(players)) {
