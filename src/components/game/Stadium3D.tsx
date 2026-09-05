@@ -1235,6 +1235,8 @@ function Stands({
       <Tiers rings={rings} />
       <Roof rings={rings} />
       <Banners color={homeColor} />
+      <CrowdFlags color={homeColor} alt={awayColor} rings={rings} quality={quality} />
+
       <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, crowd.positions.length]}>
         <capsuleGeometry args={[0.22, 0.42, 3, 6]} />
         <meshStandardMaterial roughness={0.88} />
