@@ -21,6 +21,7 @@ export interface RemoteTeam {
   city?: string | undefined;
   country?: string | undefined;
   founded?: number | undefined;
+  apiFootballId?: string | undefined;
 }
 
 export interface RemotePlayer {
@@ -52,6 +53,7 @@ async function getJson<T>(url: string, headers: Record<string, string> = {}): Pr
 
 interface SdbTeam {
   idTeam?: string;
+  idAPIfootball?: string;
   strTeam?: string;
   strTeamAlternate?: string;
   strBadge?: string;
@@ -85,13 +87,14 @@ function mapSdb(t: SdbTeam): RemoteTeam {
     city: t.strLocation ?? undefined,
     country: t.strCountry ?? undefined,
     founded: t.intFormedYear ? Number(t.intFormedYear) || undefined : undefined,
+    apiFootballId: t.idAPIfootball || undefined,
   };
 }
 
 /** Search a club on TheSportsDB by name, optionally constrained to a country. */
 export async function sdbSearchTeam(name: string, country?: string): Promise<RemoteTeam | null> {
   const key = process.env["THESPORTSDB_API_KEY"] ?? "3";
-  const url = `https://www.thesportsdb.com/api/json/${key}/searchteams.php?t=${encodeURIComponent(name)}`;
+  const url = `https://www.thesportsdb.com/api/v1/json/${key}/searchteams.php?t=${encodeURIComponent(name)}`;
   const json = await getJson<{ teams: SdbTeam[] | null }>(url);
   const teams = json?.teams;
   if (!teams || teams.length === 0) return null;
