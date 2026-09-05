@@ -342,70 +342,139 @@ function Lines() {
   );
 }
 
+/** Rede em losango, com nós — usada como alphaMap (recorte real, não plano leitoso). */
 function netTexture() {
   if (typeof document === "undefined") return null;
-  const s = 128;
+  const s = 256;
   const c = document.createElement("canvas");
-  c.width = s;
-  c.height = s;
+  c.width = c.height = s;
   const ctx = c.getContext("2d");
   if (!ctx) return null;
-  ctx.clearRect(0, 0, s, s);
-  ctx.strokeStyle = "rgba(255,255,255,0.85)";
-  ctx.lineWidth = 2;
-  for (let i = 0; i <= 8; i++) {
-    const p = (i / 8) * s;
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, s, s);
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 3.2;
+  ctx.lineCap = "round";
+  const step = s / 8;
+  for (let i = -8; i <= 16; i++) {
     ctx.beginPath();
-    ctx.moveTo(p, 0);
-    ctx.lineTo(p, s);
-    ctx.moveTo(0, p);
-    ctx.lineTo(s, p);
+    ctx.moveTo(i * step, 0);
+    ctx.lineTo(i * step + s, s);
     ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(i * step, 0);
+    ctx.lineTo(i * step - s, s);
+    ctx.stroke();
+  }
+  // nós nos cruzamentos
+  ctx.fillStyle = "#ffffff";
+  for (let a = 0; a <= 8; a++) {
+    for (let b = 0; b <= 8; b++) {
+      ctx.beginPath();
+      ctx.arc(a * step, b * step, 2.6, 0, 7);
+      ctx.fill();
+    }
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(6, 3);
   return tex;
+}
+
+function useNetMaterial(repeatX: number, repeatY: number) {
+  return useMemo(() => {
+    const alpha = netTexture();
+    const mat = new THREE.MeshStandardMaterial({
+      color: "#f4f8ff",
+      roughness: 0.65,
+      metalness: 0,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      opacity: 0.95,
+    });
+    if (alpha) {
+      alpha.repeat.set(repeatX, repeatY);
+      mat.alphaMap = alpha;
+      mat.alphaTest = 0.32;
+    } else {
+      mat.opacity = 0.2;
+    }
+    return mat;
+  }, [repeatX, repeatY]);
+}
+
+/** Plano com barriga: a rede cai para trás como pano pendurado. */
+function sagGeometry(w: number, h: number, sag: number) {
+  const g = new THREE.PlaneGeometry(w, h, 14, 10);
+  const pos = g.attributes["position"] as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    const fx = 1 - Math.abs(x) / (w / 2);
+    const fy = (y + h / 2) / h;
+    pos.setZ(i, -sag * fx * (0.35 + 0.65 * (1 - fy)));
+  }
+  pos.needsUpdate = true;
+  g.computeVertexNormals();
+  return g;
 }
 
 function Goal({ side, quality }: { side: number; quality: Quality }) {
   const x = side * FIELD_X;
-  const net = useMemo(netTexture, []);
-  const netMat = net ? (
-    <meshStandardMaterial map={net} transparent opacity={0.55} side={THREE.DoubleSide} />
-  ) : (
-    <meshStandardMaterial color="#ffffff" transparent opacity={0.2} side={THREE.DoubleSide} />
+  const backMat = useNetMaterial(14, 5);
+  const sideMat = useNetMaterial(4, 5);
+  const topMat = useNetMaterial(4, 14);
+  const backGeo = useMemo(() => sagGeometry(7.32, 2.44, 0.55), []);
+  const post = (
+    <meshStandardMaterial color="#fdfdfd" roughness={0.22} metalness={0.08} />
   );
   return (
     <group position={[x, 0, 0]}>
       {[-3.66, 3.66].map((z) => (
-        <mesh key={z} position={[0, 1.22, z]} castShadow={quality === "alta"}>
-          <cylinderGeometry args={[0.1, 0.1, 2.44, 12]} />
-          <meshStandardMaterial color="#fbfbfb" roughness={0.3} />
-        </mesh>
+        <group key={z}>
+          <mesh position={[0, 1.22, z]} castShadow={quality === "alta"}>
+            <cylinderGeometry args={[0.06, 0.06, 2.44, 16]} />
+            {post}
+          </mesh>
+          {/* suporte traseiro da rede */}
+          <mesh position={[side * 1.05, 0.62, z]} rotation={[0, 0, side * 0.9]}>
+            <cylinderGeometry args={[0.035, 0.035, 2.2, 8]} />
+            {post}
+          </mesh>
+        </group>
       ))}
       <mesh position={[0, 2.44, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow={quality === "alta"}>
-        <cylinderGeometry args={[0.1, 0.1, 7.32, 12]} />
-        <meshStandardMaterial color="#fbfbfb" roughness={0.3} />
+        <cylinderGeometry args={[0.06, 0.06, 7.32, 16]} />
+        {post}
       </mesh>
-      {/* rede: fundo, laterais e teto */}
-      <mesh position={[side * 1.9, 1.22, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <planeGeometry args={[7.32, 2.44]} />
-        {netMat}
+      {/* barras traseiras horizontais */}
+      <mesh position={[side * 1.9, 0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.04, 0.04, 7.32, 10]} />
+        {post}
       </mesh>
+      {/* rede: fundo (com barriga), laterais e teto */}
+      <mesh
+        position={[side * 1.9, 1.22, 0]}
+        rotation={[0, side > 0 ? Math.PI / 2 : -Math.PI / 2, 0]}
+        geometry={backGeo}
+        material={backMat}
+      />
       {[-3.66, 3.66].map((z) => (
-        <mesh key={`s${z}`} position={[side * 0.95, 1.22, z]}>
+        <mesh key={`s${z}`} position={[side * 0.95, 1.22, z]} material={sideMat}>
           <planeGeometry args={[1.9, 2.44]} />
-          {netMat}
         </mesh>
       ))}
-      <mesh position={[side * 0.95, 2.4, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh
+        position={[side * 0.95, 2.4, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        material={topMat}
+      >
         <planeGeometry args={[1.9, 7.32]} />
-        {netMat}
       </mesh>
     </group>
   );
 }
+
 
 function CornerFlags() {
   const ref = useRef<THREE.Group>(null);
