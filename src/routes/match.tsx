@@ -6,6 +6,7 @@ import {
   Gauge,
   Pause,
   Play,
+  Repeat,
   SkipForward,
   Sparkles,
 } from "lucide-react";
