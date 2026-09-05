@@ -445,7 +445,7 @@ export class MatchSim {
         // curva de corrida: quanto maior a mudança de direção, mais o jogador reduz
         let speedEff = speed;
         const curSpeed = Math.hypot(p.vx, p.vz);
-        if (curSpeed > 2.5) {
+        if (curSpeed > 99) {
           const dot = (dx / d) * (p.vx / curSpeed) + (dz / d) * (p.vz / curSpeed);
           // só penaliza curvas realmente fechadas (> ~100°); o resto mantém o ritmo
           if (dot < 0.2) speedEff = speed * (0.6 + 0.4 * Math.max(0, (dot + 0.2) / 1.2));
