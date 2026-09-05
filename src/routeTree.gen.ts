@@ -37,6 +37,7 @@ import { Route as SquadRouteImport } from './routes/squad'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as TacticsRouteImport } from './routes/tactics'
 import { Route as TaticasEFormacoesRouteImport } from './routes/taticas-e-formacoes'
+import { Route as TrainingRouteImport } from './routes/training'
 import { Route as TransfersRouteImport } from './routes/transfers'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -185,6 +186,11 @@ const TaticasEFormacoesRoute = TaticasEFormacoesRouteImport.update({
   path: '/taticas-e-formacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrainingRoute = TrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TransfersRoute = TransfersRouteImport.update({
   id: '/transfers',
   path: '/transfers',
@@ -252,6 +258,7 @@ export interface FileRoutesByFullPath {
   '/stats': typeof StatsRoute
   '/tactics': typeof TacticsRoute
   '/taticas-e-formacoes': typeof TaticasEFormacoesRoute
+  '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -289,6 +296,7 @@ export interface FileRoutesByTo {
   '/stats': typeof StatsRoute
   '/tactics': typeof TacticsRoute
   '/taticas-e-formacoes': typeof TaticasEFormacoesRoute
+  '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -327,6 +335,7 @@ export interface FileRoutesById {
   '/stats': typeof StatsRoute
   '/tactics': typeof TacticsRoute
   '/taticas-e-formacoes': typeof TaticasEFormacoesRoute
+  '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -366,6 +375,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/tactics'
     | '/taticas-e-formacoes'
+    | '/training'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
@@ -403,6 +413,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/tactics'
     | '/taticas-e-formacoes'
+    | '/training'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
@@ -440,6 +451,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/tactics'
     | '/taticas-e-formacoes'
+    | '/training'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
@@ -478,6 +490,7 @@ export interface RootRouteChildren {
   StatsRoute: typeof StatsRoute
   TacticsRoute: typeof TacticsRoute
   TaticasEFormacoesRoute: typeof TaticasEFormacoesRoute
+  TrainingRoute: typeof TrainingRoute
   TransfersRoute: typeof TransfersRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -685,6 +698,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TaticasEFormacoesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/training': {
+      id: '/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof TrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/transfers': {
       id: '/transfers'
       path: '/transfers'
@@ -766,6 +786,7 @@ const rootRouteChildren: RootRouteChildren = {
   StatsRoute: StatsRoute,
   TacticsRoute: TacticsRoute,
   TaticasEFormacoesRoute: TaticasEFormacoesRoute,
+  TrainingRoute: TrainingRoute,
   TransfersRoute: TransfersRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
