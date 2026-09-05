@@ -117,6 +117,9 @@ export class MatchSim {
   private decisionTimer = 0;
   private rnd: () => number;
   private restartTimer = 0;
+  /** tempo com a bola solta, usado para destravar a jogada */
+  private looseTime = 0;
+
 
   constructor(
     public home: TeamSetup,
