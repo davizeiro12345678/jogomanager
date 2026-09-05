@@ -10,6 +10,7 @@ import {
   staffBill,
 } from "./events";
 import { customPlayersFor, toGamePlayer } from "@/lib/customData";
+import { realSquadFor, type RealPlayer } from "@/lib/realSquads";
 import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
 import { computeTable, generateFixtures } from "./season";
@@ -170,7 +171,10 @@ export function initCareer(
   managerName: string,
 ): CareerState {
   const club = CLUBS[clubId]!;
-  const squad = withCustomPlayers(clubId, buildSquad(clubId).map(enrichPlayer));
+  const squad = withCustomPlayers(
+    clubId,
+    withRealPlayers(clubId, buildSquad(clubId).map(enrichPlayer)),
+  );
   const formation: FormationKey = "4-3-3";
   const { lineup, bench } = pickLineup(squad, formation);
   const objective = Math.max(1, Math.min(15, Math.round((96 - club.strength) / 4)));

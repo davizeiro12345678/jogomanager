@@ -5,6 +5,7 @@ import { LEAGUES, getLeague } from "@/game/data/leagues";
 import { initCareer } from "@/game/career";
 import { Crest } from "@/components/game/Crest";
 import { useCareer } from "@/hooks/useCareer";
+import { loadRealSquad } from "@/lib/realSquads";
 import { Flag } from "@/components/game/Flag";
 
 export const Route = createFileRoute("/new")({
@@ -32,7 +33,12 @@ function NewCareer() {
   const [manager, setManager] = useState("Técnico");
   const league = getLeague(leagueId);
 
-  function start(clubId: string) {
+  const [loadingClub, setLoadingClub] = useState<string | null>(null);
+
+  async function start(clubId: string) {
+    setLoadingClub(clubId);
+    // Busca o elenco real do clube antes de montar a carreira.
+    await loadRealSquad(clubId);
     update(initCareer(leagueId, clubId, manager.trim() || "Técnico"));
     navigate({ to: "/club" });
   }
@@ -76,13 +82,16 @@ function NewCareer() {
           {league.clubs.map((c) => (
             <button
               key={c.id}
-              onClick={() => start(c.id)}
+              onClick={() => void start(c.id)}
+              disabled={loadingClub !== null}
               className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/70 p-3 text-left backdrop-blur transition hover:border-primary hover:bg-card"
             >
               <Crest club={c} size={40} />
               <div className="min-w-0">
                 <p className="truncate font-display text-lg leading-tight">{c.name}</p>
-                <p className="text-xs text-muted-foreground">Força {c.strength}</p>
+                <p className="text-xs text-muted-foreground">
+                  {loadingClub === c.id ? "Carregando elenco real…" : `Força ${c.strength}`}
+                </p>
               </div>
             </button>
           ))}
