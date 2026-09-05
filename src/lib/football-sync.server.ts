@@ -108,6 +108,20 @@ export async function enrichClubs(limit = 40, offset = 0) {
         );
     }
 
+    if (remote.apiFootballId) {
+      await db
+        .from("club_external_ids")
+        .upsert(
+          {
+            club_id: club.id,
+            source: "api-football",
+            external_id: remote.apiFootballId,
+            confirmed: true,
+          },
+          { onConflict: "club_id,source" },
+        );
+    }
+
     if (remote.kitUrl) {
       await db.from("kits").upsert(
         {
