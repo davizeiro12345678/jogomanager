@@ -4,7 +4,13 @@
  * from the public APIs.
  */
 import { LEAGUES } from "@/game/data/leagues";
-import { sdbSearchTeam, apiFootballTeamId, apiFootballSquad, footballDataSquad } from "./football-api.server";
+import {
+  sdbSearchTeam,
+  sdbSquad,
+  apiFootballTeamId,
+  apiFootballSquad,
+  footballDataSquad,
+} from "./football-api.server";
 
 type Admin = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 
@@ -167,8 +173,13 @@ export async function importSquads(limit = 10, offset = 0) {
       .eq("club_id", club.id);
 
     let players = [] as Awaited<ReturnType<typeof apiFootballSquad>>;
-    const fd = ext?.find((e) => e.source === "football-data");
-    if (fd) players = await footballDataSquad(fd.external_id);
+    const sdb = ext?.find((e) => e.source === "thesportsdb");
+    if (sdb) players = await sdbSquad(sdb.external_id);
+
+    if (!players.length) {
+      const fd = ext?.find((e) => e.source === "football-data");
+      if (fd) players = await footballDataSquad(fd.external_id);
+    }
 
     if (!players.length) {
       const af =
@@ -185,7 +196,10 @@ export async function importSquads(limit = 10, offset = 0) {
       }
     }
 
-    if (!players.length) continue;
+    if (!players.length) {
+      await new Promise((r) => setTimeout(r, 2100));
+      continue;
+    }
 
     const rowsToInsert = players.slice(0, 26).map((p) => ({
       club_id: club.id,
@@ -199,6 +213,7 @@ export async function importSquads(limit = 10, offset = 0) {
     }));
     const res = await db.from("players").insert(rowsToInsert);
     if (!res.error) imported += rowsToInsert.length;
+    await new Promise((r) => setTimeout(r, 2100));
   }
   return { imported };
 }

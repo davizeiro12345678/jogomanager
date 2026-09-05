@@ -218,3 +218,39 @@ export function ageFrom(iso: string): number | undefined {
   if (m < 0 || (m === 0 && now.getDate() < d.getDate())) a -= 1;
   return a;
 }
+
+/* ------------------------------------------------------------------ */
+/* TheSportsDB squads (free tier)                                      */
+/* ------------------------------------------------------------------ */
+
+interface SdbPlayer {
+  idPlayer?: string;
+  strPlayer?: string;
+  strPosition?: string;
+  strNumber?: string;
+  strNationality?: string;
+  dateBorn?: string;
+  strCutout?: string;
+  strThumb?: string;
+}
+
+/** Full squad for a TheSportsDB team id, including player photos. */
+export async function sdbSquad(teamId: string): Promise<RemotePlayer[]> {
+  const key = process.env["THESPORTSDB_API_KEY"] ?? "3";
+  const json = await getJson<{ player: SdbPlayer[] | null }>(
+    `https://www.thesportsdb.com/api/v1/json/${key}/lookup_all_players.php?id=${encodeURIComponent(teamId)}`,
+  );
+  const list = json?.player ?? [];
+  return list
+    .filter((p) => p.strPlayer)
+    .map((p) => ({
+      source: "thesportsdb",
+      externalId: String(p.idPlayer ?? ""),
+      name: p.strPlayer!,
+      position: mapPosition(p.strPosition),
+      age: p.dateBorn ? ageFrom(p.dateBorn) : undefined,
+      shirtNumber: p.strNumber ? Number(p.strNumber) || undefined : undefined,
+      nationality: p.strNationality ?? undefined,
+      photoUrl: p.strCutout ?? p.strThumb ?? undefined,
+    }));
+}
