@@ -94,7 +94,7 @@ export class Narrator {
     if (!pack) return;
     const pool = pack[event];
     if (!pool?.length) return;
-    const text = pool[Math.floor(Math.random() * pool.length)].replace("{team}", team);
+    const text = (pool[Math.floor(Math.random() * pool.length)] ?? "").replace("{team}", team);
 
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = this.lang;
