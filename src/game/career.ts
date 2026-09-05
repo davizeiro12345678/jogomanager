@@ -96,6 +96,37 @@ function defaultV3(club: { strength: number } | undefined) {
   };
 }
 
+/**
+ * Junta os jogadores cadastrados pelo usuário ao elenco gerado.
+ * Cada cadastro entra no lugar do jogador mais fraco da mesma posição
+ * (ou simplesmente do mais fraco), mantendo o tamanho do plantel.
+ */
+function withCustomPlayers(clubId: string, squad: Player[]): Player[] {
+  const custom = customPlayersFor(clubId);
+  if (custom.length === 0) return squad;
+  const list = [...squad];
+  const usedNumbers = new Set(list.map((p) => p.number));
+
+  custom.forEach((cp) => {
+    let num = 2;
+    while (usedNumbers.has(num) && num < 40) num++;
+    usedNumbers.add(num);
+    const player = enrichPlayer(toGamePlayer(cp, num));
+
+    const samePos = list
+      .filter((p) => p.pos === cp.pos)
+      .sort((a, b) => a.ovr - b.ovr)[0];
+    const weakest = [...list].sort((a, b) => a.ovr - b.ovr)[0];
+    const target = samePos ?? weakest;
+    const idx = target ? list.findIndex((p) => p.id === target.id) : -1;
+    if (idx >= 0) list[idx] = player;
+    else list.push(player);
+  });
+
+  return list;
+}
+
+
 export function initCareer(
   leagueId: string,
   clubId: string,
