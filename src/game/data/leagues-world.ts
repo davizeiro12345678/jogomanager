@@ -112,7 +112,7 @@ const KAZ: Raw[] = [
 const UZB: Raw[] = [
   ["uzb_pak", "Pakhtakor", "PAK", "#1f4fa0", "#ffffff", 72],
   ["uzb_nas", "Nasaf", "NAS", "#0a8f3c", "#ffffff", 70],
-  ["uzb_ навb", "AGMK", "AGM", "#f5820a", "#111111", 68],
+  ["uzb_agmk", "AGMK", "AGM", "#f5820a", "#111111", 68],
   ["uzb_bun", "Bunyodkor", "BUN", "#7ec8e3", "#ffffff", 68],
   ["uzb_nav", "Navbahor", "NAV", "#0a8f3c", "#f5c400", 69],
   ["uzb_sog", "Sogdiana", "SOG", "#c8102e", "#ffffff", 65],
