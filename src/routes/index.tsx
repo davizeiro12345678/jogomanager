@@ -6,6 +6,7 @@ import { LEAGUES } from "@/game/data/leagues";
 import { Crest } from "@/components/game/Crest";
 import { readLocalCareer } from "@/lib/careerStorage";
 import { Flag } from "@/components/game/Flag";
+import { canonical, gameLd, seoMeta } from "@/lib/seo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
