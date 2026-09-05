@@ -543,49 +543,13 @@ function LiveMatch({
       </div>
 
       {done ? (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/75 p-4 backdrop-blur">
-          <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card p-6 text-center">
-            <p className="font-display text-xs uppercase tracking-[0.3em] text-primary">
-              Fim de jogo
-            </p>
-            <p className="mt-2 font-display text-4xl tabular-nums">
-              {CLUBS[fixture.home]!.short} {snap.hg} x {snap.ag} {CLUBS[fixture.away]!.short}
-            </p>
-            <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
-              {sim.scorers.map((s, i) => (
-                <li key={i}>
-                  {s.minute}' {s.name}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-              <div>
-                <p className="font-display text-lg text-foreground">
-                  {snap.poss[0]}%–{snap.poss[1]}%
-                </p>
-                <p>Posse</p>
-              </div>
-              <div>
-                <p className="font-display text-lg text-foreground">
-                  {snap.hShots}–{snap.aShots}
-                </p>
-                <p>Chutes</p>
-              </div>
-              <div>
-                <p className="font-display text-lg text-foreground">
-                  {snap.hFouls}–{snap.aFouls}
-                </p>
-                <p>Faltas</p>
-              </div>
-            </div>
-            <button
-              onClick={finish}
-              className="mt-5 w-full rounded-lg bg-primary px-4 py-2.5 font-display text-sm uppercase tracking-widest text-primary-foreground"
-            >
-              Voltar à central
-            </button>
-          </div>
-        </div>
+        <MatchReport
+          sim={sim}
+          homeId={fixture.home}
+          awayId={fixture.away}
+          mySide={mySide}
+          onFinish={finish}
+        />
       ) : null}
     </div>
   );
