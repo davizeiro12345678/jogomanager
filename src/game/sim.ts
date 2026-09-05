@@ -105,6 +105,13 @@ export class MatchSim {
   };
   events: MatchEventLog[] = [];
   scorers: Scorer[] = [];
+  /** finalizações registradas para o mapa de chutes */
+  shotMap: ShotRecord[] = [];
+  /** jogadores que saíram por substituição (mantêm estatísticas) */
+  subsOut: SimPlayer[] = [];
+  subsUsed: Record<Side, number> = { home: 0, away: 0 };
+  /** último passador de cada lado, para creditar assistência */
+  private lastPass: Record<Side, { id: string; time: number } | null> = { home: null, away: null };
   finished = false;
   lastEventId = 0;
   private decisionTimer = 0;
