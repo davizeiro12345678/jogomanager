@@ -118,8 +118,17 @@ function SquadPage() {
                   return (
                     <tr key={p.id} className="border-t border-border/40">
                       <td className="p-1">
+                        {p.photo ? (
+                          <img
+                            src={p.photo}
+                            alt=""
+                            loading="lazy"
+                            className="mr-2 inline-block h-7 w-7 rounded-full object-cover align-middle ring-1 ring-border/60"
+                          />
+                        ) : null}
                         <span className="text-muted-foreground">{p.number} </span>
                         {p.name}
+
                         {p.yellows > 0 ? (
                           <span
                             className="ml-1 text-[10px] text-amber-400"
