@@ -83,7 +83,7 @@ export function GameShell({
             </Link>
           </div>
 
-          <nav className="-mx-1 hidden items-center gap-0.5 overflow-x-auto md:flex lg:mx-0 lg:ml-auto">
+          <nav className="-mx-1 hidden flex-wrap items-center justify-end gap-0.5 md:flex lg:mx-0 lg:ml-auto">
             {TABS.map((t) => {
               const Icon = t.icon;
               return (
