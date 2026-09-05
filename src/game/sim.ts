@@ -117,6 +117,9 @@ export class MatchSim {
   private decisionTimer = 0;
   private rnd: () => number;
   private restartTimer = 0;
+  /** tempo com a bola solta, usado para destravar a jogada */
+  private looseTime = 0;
+
 
   constructor(
     public home: TeamSetup,
@@ -368,9 +371,25 @@ export class MatchSim {
     }
   }
 
+  /** ids dos jogadores designados a perseguir a bola solta */
+  private chasers(): Set<string> {
+    const set = new Set<string>();
+    if (this.ball.holder) return set;
+    for (const side of ["home", "away"] as Side[]) {
+      const list = this.players
+        .filter((p) => p.side === side && p.pos !== "GK")
+        .map((p) => ({ p, d: Math.hypot(p.x - this.ball.x, p.z - this.ball.z) }))
+        .sort((a, b) => a.d - b.d)
+        .slice(0, 2);
+      for (const c of list) set.add(c.p.id);
+    }
+    return set;
+  }
+
   private moveOffBall(dt: number) {
     const bx = this.ball.x;
     const bz = this.ball.z;
+    const chase = this.chasers();
     for (const p of this.players) {
       if (p.id === this.ball.holder) continue;
       const setup = this.setup(p.side);
@@ -383,15 +402,29 @@ export class MatchSim {
 
       let tx = p.slotX * FIELD_X * 0.9 + this.mentalityShift(p.side) + bx * 0.22 + pressLine * dir;
       let tz = p.slotZ * FIELD_Z * widthFactor + bz * 0.28;
+      let sprint = 1;
+
+      const ballDist = Math.hypot(bx - p.x, bz - p.z);
 
       if (p.pos === "GK") {
         tx = dir * -FIELD_X * 0.95 + bx * 0.04;
         tz = bz * 0.16;
+        // goleiro sai da área para bola solta muito perto
+        if (!this.ball.holder && ballDist < 9 && Math.abs(bx - dir * -FIELD_X) < 14) {
+          tx = bx;
+          tz = bz;
+          sprint = 1.25;
+        }
+      } else if (chase.has(p.id)) {
+        // interceptação: mira num ponto à frente da bola
+        tx = bx + this.ball.vx * 0.22;
+        tz = bz + this.ball.vz * 0.22;
+        sprint = 1.35;
       } else if (!attacking) {
-        const { dist } = { dist: Math.hypot(bx - p.x, bz - p.z) };
-        if (dist < 16) {
-          tx += (bx - tx) * 0.55;
-          tz += (bz - tz) * 0.55;
+        if (ballDist < 18) {
+          tx += (bx - tx) * 0.6;
+          tz += (bz - tz) * 0.6;
+          sprint = 1.15;
         }
       } else {
         tz += Math.sin(this.time * 0.4 + p.number) * 1.6;
@@ -400,19 +433,26 @@ export class MatchSim {
       tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, tx));
       tz = Math.max(-FIELD_Z + 2, Math.min(FIELD_Z - 2, tz));
 
-      const speed = (2.9 + (p.pace / 100) * 4.2) * (p.pos === "GK" ? 0.55 : 1);
+      const stam = 0.75 + (p.stamina / 100) * 0.25;
+      const speed =
+        (3.6 + (p.pace / 100) * 4.6) * (p.pos === "GK" ? 0.6 : 1) * sprint * stam;
       const dx = tx - p.x;
       const dz = tz - p.z;
       const d = Math.hypot(dx, dz);
-      if (d > 0.4) {
+      if (d > 0.3) {
         const step = Math.min(d, speed * dt);
         p.x += (dx / d) * step;
         p.z += (dz / d) * step;
-        p.vx = dx / d;
-        p.vz = dz / d;
+        // velocidade real em m/s, suavizada (aceleração)
+        const tvx = (dx / d) * speed;
+        const tvz = (dz / d) * speed;
+        const k = 1 - Math.exp(-6 * dt);
+        p.vx += (tvx - p.vx) * k;
+        p.vz += (tvz - p.vz) * k;
       } else {
-        p.vx *= 0.85;
-        p.vz *= 0.85;
+        const k = Math.exp(-7 * dt);
+        p.vx *= k;
+        p.vz *= k;
       }
     }
   }
@@ -420,12 +460,15 @@ export class MatchSim {
   private moveBall(dt: number) {
     const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
     if (holder) {
-      this.ball.x = holder.x + holder.vx * 1.1;
-      this.ball.z = holder.z + holder.vz * 1.1;
+      this.looseTime = 0;
+      const hs = Math.hypot(holder.vx, holder.vz) || 1;
+      this.ball.x = holder.x + (holder.vx / hs) * 0.9;
+      this.ball.z = holder.z + (holder.vz / hs) * 0.9;
       this.ball.height = 0.12;
       return;
     }
 
+    this.looseTime += dt;
     this.ball.x += this.ball.vx * dt;
     this.ball.z += this.ball.vz * dt;
     this.ball.vx *= 1 - 0.9 * dt;
@@ -454,14 +497,29 @@ export class MatchSim {
         closest = p;
       }
     }
-    if (closest && bestD < 1.6 && Math.hypot(this.ball.vx, this.ball.vz) < 24) {
+    const ballSpeed = Math.hypot(this.ball.vx, this.ball.vz);
+    if (closest && bestD < 1.9 && ballSpeed < 26) {
       this.trigger(closest, this.ball.height > 0.9 ? "header" : "trap", 0.5);
       this.ball.holder = closest.id;
       this.possession = closest.side;
       this.ball.vx = 0;
       this.ball.vz = 0;
+      this.looseTime = 0;
+      return;
+    }
+    // destravamento: bola parada sem dono por muito tempo
+    if (this.looseTime > 3.5 && ballSpeed < 4 && closest) {
+      closest.x = this.ball.x;
+      closest.z = this.ball.z;
+      this.ball.holder = closest.id;
+      this.possession = closest.side;
+      this.ball.vx = 0;
+      this.ball.vz = 0;
+      this.looseTime = 0;
+      this.decisionTimer = 0.5;
     }
   }
+
 
   private giveToNearest(side: Side) {
     let best: SimPlayer | null = null;
@@ -487,19 +545,27 @@ export class MatchSim {
   }
 
   private dribble(holder: SimPlayer, dt: number) {
+    if (this.restartTimer > 0) {
+      const k = Math.exp(-7 * dt);
+      holder.vx *= k;
+      holder.vz *= k;
+      return;
+    }
     const dir = this.attackDir(holder.side);
     const targetX = dir * FIELD_X;
     const dx = targetX - holder.x;
-    const dz = -holder.z * 0.25;
+    const dz = -holder.z * 0.25 + Math.sin(this.time * 0.9 + holder.number) * 4;
     const d = Math.hypot(dx, dz) || 1;
-    const speed = 2.4 + (holder.pace / 100) * 4.4;
+    const speed = (3.0 + (holder.pace / 100) * 4.4) * (0.8 + (holder.stamina / 100) * 0.2);
     holder.x += (dx / d) * speed * dt;
-    holder.z += (dz / d) * speed * dt + Math.sin(this.time * 1.7 + holder.number) * dt * 1.2;
-    holder.vx = dx / d;
-    holder.vz = dz / d;
+    holder.z += (dz / d) * speed * dt;
+    const k = 1 - Math.exp(-6 * dt);
+    holder.vx += ((dx / d) * speed - holder.vx) * k;
+    holder.vz += ((dz / d) * speed - holder.vz) * k;
     holder.x = Math.max(-FIELD_X + 1, Math.min(FIELD_X - 1, holder.x));
     holder.z = Math.max(-FIELD_Z + 1, Math.min(FIELD_Z - 1, holder.z));
   }
+
 
   private pressure(holder: SimPlayer, dt: number) {
     const { opp, dist } = this.nearestOpponent(holder);
@@ -543,11 +609,12 @@ export class MatchSim {
     const mentality = this.setup(holder.side).tactics.mentality;
 
     const shootUrge =
-      distGoal < 30
-        ? (holder.shooting / 100) * (1 - distGoal / 34) * (pressDist > 2.5 ? 1.25 : 0.7)
+      distGoal < 26
+        ? (holder.shooting / 100) * (1 - distGoal / 30) * (pressDist > 2.5 ? 1.2 : 0.55)
         : 0;
 
-    if (holder.pos !== "GK" && this.rnd() < shootUrge * 0.55) {
+    if (holder.pos !== "GK" && this.rnd() < shootUrge * 0.1) {
+
       this.shoot(holder, distGoal);
       return;
     }
@@ -640,7 +707,7 @@ export class MatchSim {
 
     this.stats[side].onTarget++;
     const gkSkill = gk ? gk.defending * 0.7 + gk.physical * 0.3 : 60;
-    const goalChance = Math.max(0.06, Math.min(0.72, accuracy * 1.15 - gkSkill / 260));
+    const goalChance = Math.max(0.04, Math.min(0.42, accuracy * 0.75 - gkSkill / 300));
     if (this.rnd() < goalChance) {
       this.stats[side].goals++;
       holder.goals++;
