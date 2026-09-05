@@ -90,7 +90,8 @@ export class Narrator {
     this.lastSpeak = now;
 
     const base = this.lang.split("-")[0] ?? this.lang;
-    const pack = LINES[this.lang] ?? LINES[base] ?? LINES["en"];
+    const pack = (LINES[this.lang] ?? LINES[base] ?? LINES["en"])!;
+    if (!pack) return;
     const pool = pack[event];
     if (!pool?.length) return;
     const text = pool[Math.floor(Math.random() * pool.length)].replace("{team}", team);
