@@ -4,7 +4,9 @@ import { useState } from "react";
 import { GameShell } from "@/components/game/GameShell";
 import { formOf, potentialOf } from "@/game/events";
 import { useCareer } from "@/hooks/useCareer";
-import type { Player } from "@/game/types";
+import type { CareerState, Player } from "@/game/types";
+import { Crest } from "@/components/game/Crest";
+import { CLUBS } from "@/game/data/leagues";
 
 export const Route = createFileRoute("/stats")({
   ssr: false,
@@ -153,5 +155,75 @@ function StatsPage() {
         </table>
       </section>
     </GameShell>
+  );
+}
+
+/** Histórico partida a partida do clube do usuário. */
+function MatchHistory({ career }: { career: CareerState }) {
+  const [open, setOpen] = useState<number | null>(null);
+  const log = career.matchLog ?? [];
+  if (!log.length) return null;
+
+  return (
+    <section className="mt-4 rounded-2xl border border-border/60 bg-card/70 p-4">
+      <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
+        Partida a partida
+      </h2>
+      <ul className="mt-3 space-y-2">
+        {log.slice(0, 20).map((m, i) => {
+          const club = CLUBS[m.opponentId];
+          const win = m.gf > m.ga;
+          const draw = m.gf === m.ga;
+          const scorers = m.players.filter((p) => p.goals > 0 || p.assists > 0);
+          return (
+            <li key={`${m.season}-${m.round}-${i}`} className="rounded-xl border border-border/40">
+              <button
+                onClick={() => setOpen(open === i ? null : i)}
+                className="flex w-full items-center gap-3 px-3 py-2 text-left"
+                aria-expanded={open === i}
+              >
+                <span
+                  className={`inline-flex h-6 w-6 items-center justify-center rounded-md font-display text-xs ${
+                    win
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : draw
+                        ? "bg-secondary text-muted-foreground"
+                        : "bg-destructive/20 text-destructive"
+                  }`}
+                >
+                  {win ? "V" : draw ? "E" : "D"}
+                </span>
+                {club ? <Crest club={club} size={22} detail="simple" /> : null}
+                <span className="min-w-0 flex-1 truncate text-sm">
+                  {m.home ? "vs" : "em"} {club?.name ?? m.opponentId}
+                </span>
+                <span className="text-xs text-muted-foreground">{m.comp}</span>
+                <span className="font-display tabular-nums">
+                  {m.gf}–{m.ga}
+                </span>
+              </button>
+              {open === i ? (
+                <div className="animate-fade-in border-t border-border/40 px-3 py-2 text-xs text-muted-foreground">
+                  {scorers.length ? (
+                    <ul className="space-y-1">
+                      {scorers.map((p) => (
+                        <li key={p.pid}>
+                          {career.players[p.pid]?.name ?? "—"}
+                          {p.goals ? ` · ${p.goals} gol${p.goals > 1 ? "s" : ""}` : ""}
+                          {p.assists ? ` · ${p.assists} assistência${p.assists > 1 ? "s" : ""}` : ""}
+                          {` · nota ${p.rating.toFixed(1)}`}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>Sem gols ou assistências nesta partida.</p>
+                  )}
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
