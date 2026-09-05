@@ -1,6 +1,7 @@
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
 
 import type { Club } from "@/game/types";
+import { badgeFor } from "@/lib/customData";
 
 function hash(str: string) {
   let h = 2166136261;
@@ -93,6 +94,12 @@ export function Crest({
   detail?: "auto" | "simple" | "full";
 }) {
   const uid = useId().replace(/:/g, "");
+  const [custom, setCustom] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    setCustom(badgeFor(club.id));
+  }, [club.id]);
+
   const h = hash(club.id);
   const shape = SHAPE_LIST[h % SHAPE_LIST.length]!;
   const pattern = PATTERN_LIST[Math.floor(h / 7) % PATTERN_LIST.length]!;
@@ -112,6 +119,18 @@ export function Crest({
   const inkStroke = dark ? "rgba(0,0,0,0.75)" : "rgba(255,255,255,0.85)";
   const rimA = stars >= 2 ? "#fdf0b8" : "#e8e8ee";
   const rimB = stars >= 2 ? "#a9812c" : "#7d7d88";
+
+  if (custom) {
+    return (
+      <img
+        src={custom}
+        width={size}
+        height={size}
+        alt={`Escudo do ${club.name}`}
+        className="shrink-0 rounded-md object-cover drop-shadow-[0_3px_8px_rgba(0,0,0,0.5)]"
+      />
+    );
+  }
 
   return (
     <svg

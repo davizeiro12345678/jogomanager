@@ -12,11 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BoardRouteImport } from './routes/board'
+import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as DicasDeGestaoRouteImport } from './routes/dicas-de-gestao'
 import { Route as FinancesRouteImport } from './routes/finances'
+import { Route as GuiasRouteImport } from './routes/guias'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as LeagueRouteImport } from './routes/league'
+import { Route as LigasDeFutebolRouteImport } from './routes/ligas-de-futebol'
 import { Route as MatchRouteImport } from './routes/match'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as NewRouteImport } from './routes/new'
@@ -48,6 +52,11 @@ const BoardRoute = BoardRouteImport.update({
   path: '/board',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CadastroRoute = CadastroRouteImport.update({
+  id: '/cadastro',
+  path: '/cadastro',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClubRoute = ClubRouteImport.update({
   id: '/club',
   path: '/club',
@@ -58,9 +67,19 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DicasDeGestaoRoute = DicasDeGestaoRouteImport.update({
+  id: '/dicas-de-gestao',
+  path: '/dicas-de-gestao',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FinancesRoute = FinancesRouteImport.update({
   id: '/finances',
   path: '/finances',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuiasRoute = GuiasRouteImport.update({
+  id: '/guias',
+  path: '/guias',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -71,6 +90,11 @@ const HistoryRoute = HistoryRouteImport.update({
 const LeagueRoute = LeagueRouteImport.update({
   id: '/league',
   path: '/league',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LigasDeFutebolRoute = LigasDeFutebolRouteImport.update({
+  id: '/ligas-de-futebol',
+  path: '/ligas-de-futebol',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MatchRoute = MatchRouteImport.update({
@@ -155,11 +179,15 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
+  '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
   '/dashboard': typeof DashboardRoute
+  '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/finances': typeof FinancesRoute
+  '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
   '/league': typeof LeagueRoute
+  '/ligas-de-futebol': typeof LigasDeFutebolRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
   '/new': typeof NewRoute
@@ -180,11 +208,15 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
+  '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
   '/dashboard': typeof DashboardRoute
+  '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/finances': typeof FinancesRoute
+  '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
   '/league': typeof LeagueRoute
+  '/ligas-de-futebol': typeof LigasDeFutebolRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
   '/new': typeof NewRoute
@@ -206,11 +238,15 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
+  '/cadastro': typeof CadastroRoute
   '/club': typeof ClubRoute
   '/dashboard': typeof DashboardRoute
+  '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/finances': typeof FinancesRoute
+  '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
   '/league': typeof LeagueRoute
+  '/ligas-de-futebol': typeof LigasDeFutebolRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
   '/new': typeof NewRoute
@@ -233,11 +269,15 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/board'
+    | '/cadastro'
     | '/club'
     | '/dashboard'
+    | '/dicas-de-gestao'
     | '/finances'
+    | '/guias'
     | '/history'
     | '/league'
+    | '/ligas-de-futebol'
     | '/match'
     | '/mcp'
     | '/new'
@@ -258,11 +298,15 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/board'
+    | '/cadastro'
     | '/club'
     | '/dashboard'
+    | '/dicas-de-gestao'
     | '/finances'
+    | '/guias'
     | '/history'
     | '/league'
+    | '/ligas-de-futebol'
     | '/match'
     | '/mcp'
     | '/new'
@@ -283,11 +327,15 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/board'
+    | '/cadastro'
     | '/club'
     | '/dashboard'
+    | '/dicas-de-gestao'
     | '/finances'
+    | '/guias'
     | '/history'
     | '/league'
+    | '/ligas-de-futebol'
     | '/match'
     | '/mcp'
     | '/new'
@@ -309,11 +357,15 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   BoardRoute: typeof BoardRoute
+  CadastroRoute: typeof CadastroRoute
   ClubRoute: typeof ClubRoute
   DashboardRoute: typeof DashboardRoute
+  DicasDeGestaoRoute: typeof DicasDeGestaoRoute
   FinancesRoute: typeof FinancesRoute
+  GuiasRoute: typeof GuiasRoute
   HistoryRoute: typeof HistoryRoute
   LeagueRoute: typeof LeagueRoute
+  LigasDeFutebolRoute: typeof LigasDeFutebolRoute
   MatchRoute: typeof MatchRoute
   McpRoute: typeof McpRoute
   NewRoute: typeof NewRoute
@@ -354,6 +406,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BoardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cadastro': {
+      id: '/cadastro'
+      path: '/cadastro'
+      fullPath: '/cadastro'
+      preLoaderRoute: typeof CadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/club': {
       id: '/club'
       path: '/club'
@@ -368,11 +427,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dicas-de-gestao': {
+      id: '/dicas-de-gestao'
+      path: '/dicas-de-gestao'
+      fullPath: '/dicas-de-gestao'
+      preLoaderRoute: typeof DicasDeGestaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/finances': {
       id: '/finances'
       path: '/finances'
       fullPath: '/finances'
       preLoaderRoute: typeof FinancesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guias': {
+      id: '/guias'
+      path: '/guias'
+      fullPath: '/guias'
+      preLoaderRoute: typeof GuiasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -387,6 +460,13 @@ declare module '@tanstack/react-router' {
       path: '/league'
       fullPath: '/league'
       preLoaderRoute: typeof LeagueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ligas-de-futebol': {
+      id: '/ligas-de-futebol'
+      path: '/ligas-de-futebol'
+      fullPath: '/ligas-de-futebol'
+      preLoaderRoute: typeof LigasDeFutebolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/match': {
@@ -501,11 +581,15 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   BoardRoute: BoardRoute,
+  CadastroRoute: CadastroRoute,
   ClubRoute: ClubRoute,
   DashboardRoute: DashboardRoute,
+  DicasDeGestaoRoute: DicasDeGestaoRoute,
   FinancesRoute: FinancesRoute,
+  GuiasRoute: GuiasRoute,
   HistoryRoute: HistoryRoute,
   LeagueRoute: LeagueRoute,
+  LigasDeFutebolRoute: LigasDeFutebolRoute,
   MatchRoute: MatchRoute,
   McpRoute: McpRoute,
   NewRoute: NewRoute,
