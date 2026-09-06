@@ -673,44 +673,109 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
     [-1, 1],
     [1, 1],
   ];
+  const lamps = [-2.6, -0.9, 0.9, 2.6];
   return (
     <group>
-      {spots.map(([sx, sz], i) => (
-        <group key={i} position={[sx * (FIELD_X + 20), 0, sz * (FIELD_Z + 22)]}>
-          <mesh position={[0, 14, 0]}>
-            <cylinderGeometry args={[0.5, 0.9, 28, 8]} />
-            <meshStandardMaterial color="#252c33" roughness={0.85} />
-          </mesh>
-          <mesh position={[0, 28.5, 0]}>
-            <boxGeometry args={[8, 3.4, 1]} />
-            <meshStandardMaterial
-              color="#f5f8ff"
-              emissive={on ? "#dceaff" : "#333"}
-              emissiveIntensity={on ? 2.2 : 0}
+      {spots.map(([sx, sz], i) => {
+        const px = sx * (FIELD_X + 20);
+        const pz = sz * (FIELD_Z + 22);
+        const dist = Math.hypot(px, pz);
+        return (
+          <group key={i} position={[px, 0, pz]}>
+            {/* mastro treliçado */}
+            <mesh position={[0, 14, 0]} castShadow>
+              <cylinderGeometry args={[0.5, 0.9, 28, 8]} />
+              <meshStandardMaterial color="#252c33" roughness={0.85} metalness={0.35} />
+            </mesh>
+            {[0, 1, 2, 3].map((k) => (
+              <mesh key={k} position={[0, 6 + k * 6, 0]}>
+                <torusGeometry args={[0.85, 0.07, 4, 10]} />
+                <meshStandardMaterial color="#39424b" roughness={0.8} metalness={0.4} />
+              </mesh>
+            ))}
+            {/* rack com lâmpadas individuais */}
+            <mesh position={[0, 28.5, 0]}>
+              <boxGeometry args={[8.6, 3.6, 0.6]} />
+              <meshStandardMaterial color="#39424b" roughness={0.8} metalness={0.4} />
+            </mesh>
+            {lamps.map((lx) =>
+              [0.85, -0.85].map((ly) => (
+                <mesh key={`${lx}${ly}`} position={[lx, 28.5 + ly, 0.45]}>
+                  <boxGeometry args={[1.5, 1.3, 0.3]} />
+                  <meshStandardMaterial
+                    color="#f5f8ff"
+                    emissive={on ? "#dceaff" : "#2b3138"}
+                    emissiveIntensity={on ? 3.4 : 0}
+                    toneMapped={false}
+                  />
+                </mesh>
+              )),
+            )}
+            {on && (
+              <>
+                {/* halo volumétrico: cone leve saindo do rack em direção ao campo */}
+                {quality !== "baixa" && (
+                  <mesh
+                    position={[-px * 0.28, 20, -pz * 0.28]}
+                    rotation={[
+                      Math.atan2(Math.hypot(px, pz) * 0.55, 18) * (pz > 0 ? -1 : 1),
+                      Math.atan2(-px, -pz),
+                      0,
+                    ]}
+                  >
+                    <coneGeometry args={[9, Math.max(24, dist * 0.7), 16, 1, true]} />
+                    <meshBasicMaterial
+                      color="#cfe3ff"
+                      transparent
+                      opacity={quality === "alta" ? 0.055 : 0.035}
+                      depthWrite={false}
+                      side={THREE.DoubleSide}
+                      blending={THREE.AdditiveBlending}
+                      toneMapped={false}
+                    />
+                  </mesh>
+                )}
+                <sprite position={[0, 28.5, 0]} scale={[30, 30, 1]}>
+                  <spriteMaterial
+                    color="#cfe3ff"
+                    opacity={0.18}
+                    transparent
+                    depthWrite={false}
+                    blending={THREE.AdditiveBlending}
+                  />
+                </sprite>
+                {quality !== "baixa" && (
+                  <pointLight position={[0, 28, 0]} intensity={1400} distance={230} color="#e8f2ff" />
+                )}
+              </>
+            )}
+          </group>
+        );
+      })}
+      {/* reflexo dos refletores no gramado úmido */}
+      {on &&
+        quality === "alta" &&
+        spots.map(([sx, sz], i) => (
+          <mesh
+            key={`r${i}`}
+            rotation={[-Math.PI / 2, 0, 0]}
+            position={[sx * (FIELD_X * 0.55), 0.02, sz * (FIELD_Z * 0.5)]}
+          >
+            <circleGeometry args={[26, 24]} />
+            <meshBasicMaterial
+              color="#9fc4ff"
+              transparent
+              opacity={0.05}
+              depthWrite={false}
+              blending={THREE.AdditiveBlending}
               toneMapped={false}
             />
           </mesh>
-          {on && (
-            <>
-              <sprite position={[0, 28.5, 0]} scale={[26, 26, 1]}>
-                <spriteMaterial
-                  color="#cfe3ff"
-                  opacity={0.16}
-                  transparent
-                  depthWrite={false}
-                  blending={THREE.AdditiveBlending}
-                />
-              </sprite>
-              {quality !== "baixa" && (
-                <pointLight position={[0, 28, 0]} intensity={1400} distance={230} color="#e8f2ff" />
-              )}
-            </>
-          )}
-        </group>
-      ))}
+        ))}
     </group>
   );
 }
+
 
 /** Concreto compartilhado por toda a estrutura (um material só, muitas peças). */
 function useConcrete(color = "#6d747b", repeat = 6) {
