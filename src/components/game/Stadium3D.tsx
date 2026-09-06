@@ -223,13 +223,15 @@ function Pitch({ quality, sim }: { quality: Quality; sim: MatchSim }) {
           {...(tex ? { map: tex } : { color: "#1d7a45" })}
           {...(rough ? { roughnessMap: rough } : {})}
           {...(norm ? { normalMap: norm, normalScale: new THREE.Vector2(0.55, 0.55) } : {})}
-          roughness={0.78}
+          {...(norm ? { normalScale: new THREE.Vector2(0.7, 0.7) } : {})}
+          roughness={0.74}
           metalness={0.0}
-          clearcoat={quality === "alta" ? 0.35 : 0}
-          clearcoatRoughness={0.7}
-          sheen={quality === "alta" ? 0.22 : 0}
-          sheenColor="#4f9c6d"
-          envMapIntensity={0.35}
+          clearcoat={quality === "alta" ? 0.5 : quality === "media" ? 0.2 : 0}
+          clearcoatRoughness={0.62}
+          sheen={quality === "alta" ? 0.34 : 0}
+          sheenRoughness={0.75}
+          sheenColor="#5fae7c"
+          envMapIntensity={0.45}
         />
       </mesh>
       {quality !== "baixa" && <GrassField sim={sim} quality={quality} />}
