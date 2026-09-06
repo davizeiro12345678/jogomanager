@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
@@ -6,9 +8,21 @@ import { GameShell } from "@/components/game/GameShell";
 import { acceptOffer, rejectOffer } from "@/game/career";
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, formatWage, wageBill } from "@/game/economy";
-import { generateMarket, releasePlayer, signPlayer, type MarketEntry } from "@/game/transfers";
+import {
+  askingPrice,
+  bidFor,
+  clubName,
+  negotiate,
+  sellToClub,
+  signRealPlayer,
+  toTarget,
+  wageAsk,
+  windowOpen,
+  type RealTarget,
+} from "@/game/realMarket";
+import { releasePlayer } from "@/game/transfers";
 import { useCareer } from "@/hooks/useCareer";
-
+import { searchRealPlayers } from "@/lib/football.functions";
 
 export const Route = createFileRoute("/transfers")({
   ssr: false,
@@ -18,10 +32,10 @@ export const Route = createFileRoute("/transfers")({
       { title: "Mercado de transferências · Pro Football Manager 3D" },
       {
         name: "description",
-        content: "Contrate reforços, gerencie o orçamento e libere jogadores do elenco.",
+        content: "Negocie com clubes reais, contrate reforços e gerencie o orçamento do elenco.",
       },
       { property: "og:title", content: "Mercado de transferências · Pro Football Manager 3D" },
-      { property: "og:description", content: "Reforce seu elenco dentro do orçamento." },
+      { property: "og:description", content: "Negocie com clubes reais dentro do orçamento." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -29,21 +43,33 @@ export const Route = createFileRoute("/transfers")({
   component: TransfersPage,
 });
 
+const POS = ["ALL", "GK", "DF", "MF", "FW"];
+
 function TransfersPage() {
   const { career, update } = useCareer();
-  const [filter, setFilter] = useState<string>("ALL");
+  const search = useServerFn(searchRealPlayers);
 
-  const market = useMemo(
-    () => (career ? generateMarket(`${career.clubId}-s${career.season}-r${career.round}`) : []),
-    [career],
-  );
+  const [q, setQ] = useState("");
+  const [pos, setPos] = useState("ALL");
+  const [maxAge, setMaxAge] = useState(40);
+  const [minOvr, setMinOvr] = useState(60);
+  const [page, setPage] = useState(0);
+  const [target, setTarget] = useState<RealTarget | null>(null);
+
+  const { data, isFetching } = useQuery({
+    queryKey: ["market", q, pos, maxAge, minOvr, page],
+    queryFn: () => search({ data: { q, pos, maxAge, minOvr, page } }),
+    staleTime: 60_000,
+  });
+
+  const signed = useMemo(() => new Set(career?.transferredIn ?? []), [career]);
 
   if (!career) return <Empty />;
 
   const players = Object.values(career.players);
   const bill = wageBill(players);
-  const filtered =
-    filter === "ALL" ? market : market.filter((m: MarketEntry) => m.pos === filter);
+  const open = windowOpen(career);
+  const rows = (data?.rows ?? []).map(toTarget).filter((t) => !signed.has(t.id));
 
   return (
     <GameShell career={career}>
@@ -90,121 +116,346 @@ function TransfersPage() {
           </ul>
         </section>
       ) : null}
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
 
+      <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
         <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-display text-2xl uppercase tracking-wide">Mercado da bola</h1>
+            <span
+              className={`rounded-full px-2.5 py-1 text-[10px] uppercase tracking-wider ${
+                open ? "bg-primary/20 text-primary" : "bg-destructive/20 text-destructive"
+              }`}
+            >
+              {open ? "Janela aberta" : "Janela fechada"}
+            </span>
             <span className="ml-auto rounded-lg bg-secondary px-3 py-1 font-display text-sm">
               Caixa: <span className="text-primary">{formatMoney(career.finances.budget)}</span>
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Novas ofertas a cada rodada. Folha atual: {formatWage(bill)}/semana.
+            Jogadores reais de todos os clubes importados. Folha atual: {formatWage(bill)}/semana.
           </p>
 
-          <div className="mt-3 flex gap-1" role="tablist" aria-label="Filtrar por posição">
-            {["ALL", "GK", "DF", "MF", "FW"].map((f) => (
-              <button
-                key={f}
-                role="tab"
-                aria-selected={filter === f}
-                onClick={() => setFilter(f)}
-                className={`rounded-md px-3 py-1 text-xs uppercase tracking-wider transition ${
-                  filter === f ? "bg-primary text-primary-foreground" : "bg-secondary hover:brightness-125"
-                }`}
-              >
-                {f === "ALL" ? "Todos" : f}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="p-2 text-left">Jogador</th>
-                  <th className="p-2">Pos</th>
-                  <th className="p-2">Idade</th>
-                  <th className="p-2">OVR</th>
-                  <th className="p-2">Preço</th>
-                  <th className="p-2">Salário</th>
-                  <th className="p-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((m: MarketEntry) => {
-                  const affordable = career.finances.budget >= m.price;
-                  const signed = Boolean(career.players[`free-${m.key}`]);
-                  return (
-                    <tr key={m.key} className="border-t border-border/40">
-                      <td className="p-2">
-                        {m.name}
-                        <div className="text-[10px] text-muted-foreground">{m.fromLeague}</div>
-                      </td>
-                      <td className="p-2 text-center text-muted-foreground">{m.pos}</td>
-                      <td className="p-2 text-center">{m.age}</td>
-                      <td className="p-2 text-center font-display text-base">{m.ovr}</td>
-                      <td className="p-2 text-center">{formatMoney(m.price)}</td>
-                      <td className="p-2 text-center text-xs text-muted-foreground">
-                        {formatWage(m.wage)}
-                      </td>
-                      <td className="p-2 text-right">
-                        {signed ? (
-                          <span className="rounded bg-primary/20 px-2 py-1 text-[10px] uppercase text-primary">
-                            Contratado
-                          </span>
-                        ) : (
-                          <button
-                            disabled={!affordable}
-                            onClick={() => update(signPlayer(career, m))}
-                            className="rounded-md bg-primary px-3 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            Contratar
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
-          <h2 className="font-display text-xl uppercase tracking-wide">Dispensar jogador</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Rescisão amigável custa 20% do valor de mercado. Elenco mínimo: 16 atletas.
-          </p>
-          <ul className="mt-3 max-h-[60vh] space-y-2 overflow-y-auto text-sm">
-            {players
-              .slice()
-              .sort((a, b) => a.ovr - b.ovr)
-              .map((p) => (
-                <li
-                  key={p.id}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-border/40 px-3 py-2"
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <label htmlFor="market-q" className="sr-only">
+              Buscar jogador
+            </label>
+            <input
+              id="market-q"
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(0);
+              }}
+              placeholder="Buscar por nome…"
+              className="min-w-[10rem] flex-1 rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <div className="flex gap-1" role="tablist" aria-label="Filtrar por posição">
+              {POS.map((f) => (
+                <button
+                  key={f}
+                  role="tab"
+                  aria-selected={pos === f}
+                  onClick={() => {
+                    setPos(f);
+                    setPage(0);
+                  }}
+                  className={`rounded-md px-3 py-1.5 text-xs uppercase tracking-wider transition ${
+                    pos === f ? "bg-primary text-primary-foreground" : "bg-secondary hover:brightness-125"
+                  }`}
                 >
-                  <span>
-                    <span className="text-muted-foreground">{p.pos}</span> {p.name}
-                    <span className="ml-2 font-display">{p.ovr}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {formatWage(p.wage)}
-                    </span>
-                  </span>
-                  <button
-                    onClick={() => update(releasePlayer(career, p.id))}
-                    className="rounded-md bg-destructive/20 px-2.5 py-1 text-[10px] uppercase tracking-wider text-destructive transition hover:bg-destructive/30"
-                  >
-                    Dispensar
-                  </button>
-                </li>
+                  {f === "ALL" ? "Todos" : f}
+                </button>
               ))}
-          </ul>
+            </div>
+          </div>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="text-xs text-muted-foreground">
+              Idade máxima: <span className="font-display text-foreground">{maxAge}</span>
+              <input
+                type="range"
+                min={17}
+                max={40}
+                value={maxAge}
+                onChange={(e) => {
+                  setMaxAge(Number(e.target.value));
+                  setPage(0);
+                }}
+                className="mt-1 w-full accent-[var(--club-primary,theme(colors.primary.DEFAULT))]"
+              />
+            </label>
+            <label className="text-xs text-muted-foreground">
+              Nível mínimo: <span className="font-display text-foreground">{minOvr}</span>
+              <input
+                type="range"
+                min={50}
+                max={92}
+                value={minOvr}
+                onChange={(e) => {
+                  setMinOvr(Number(e.target.value));
+                  setPage(0);
+                }}
+                className="mt-1 w-full"
+              />
+            </label>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {isFetching && rows.length === 0 ? (
+              <SkeletonRows />
+            ) : rows.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-border/60 p-6 text-center text-sm text-muted-foreground">
+                Nenhum jogador encontrado com esses filtros.
+              </p>
+            ) : (
+              rows.map((t) => {
+                const club = CLUBS[t.clubId];
+                const price = askingPrice(t);
+                return (
+                  <div
+                    key={t.id}
+                    className="flex flex-wrap items-center gap-3 rounded-xl border border-border/40 bg-background/40 p-3 transition hover:border-primary/60"
+                  >
+                    {club ? <Crest club={club} size={34} detail="simple" /> : null}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{t.name}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {t.pos} · {t.age} anos · {t.nationality ?? "—"} · {clubName(t.clubId)}
+                      </p>
+                    </div>
+                    <span className="ml-auto font-display text-xl">{t.ovr}</span>
+                    <span className="w-24 text-right text-sm">{formatMoney(price)}</span>
+                    <button
+                      disabled={!open}
+                      onClick={() => setTarget(t)}
+                      className="rounded-md bg-primary px-3 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-40"
+                    >
+                      Negociar
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              className="rounded-md bg-secondary px-3 py-1.5 text-xs uppercase tracking-wider disabled:opacity-40"
+            >
+              Anterior
+            </button>
+            <span className="text-xs text-muted-foreground">Página {page + 1}</span>
+            <button
+              disabled={!data?.hasMore}
+              onClick={() => setPage((p) => p + 1)}
+              className="rounded-md bg-secondary px-3 py-1.5 text-xs uppercase tracking-wider disabled:opacity-40"
+            >
+              Próxima
+            </button>
+          </div>
         </section>
+
+        <SellPanel career={career} update={update} />
       </div>
+
+      {target ? (
+        <NegotiationDialog
+          target={target}
+          onClose={() => setTarget(null)}
+          career={career}
+          update={update}
+        />
+      ) : null}
     </GameShell>
+  );
+}
+
+function SkeletonRows() {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="h-14 animate-pulse rounded-xl bg-secondary/50" />
+      ))}
+    </div>
+  );
+}
+
+type Career = NonNullable<ReturnType<typeof useCareer>["career"]>;
+
+function SellPanel({
+  career,
+  update,
+}: {
+  career: Career;
+  update: (s: Career) => void;
+}) {
+  const players = Object.values(career.players).sort((a, b) => a.ovr - b.ovr);
+  const buyers = Object.values(CLUBS)
+    .filter((c) => c.id !== career.clubId)
+    .sort((a, b) => b.strength - a.strength)
+    .slice(0, 40);
+
+  return (
+    <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+      <h2 className="font-display text-xl uppercase tracking-wide">Vender ou dispensar</h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        A venda entra direto no caixa. Rescisão custa 20% do valor. Elenco mínimo: 16 atletas.
+      </p>
+      <ul className="mt-3 max-h-[60vh] space-y-2 overflow-y-auto text-sm">
+        {players.map((p) => {
+          const buyer = buyers[Math.abs(p.name.length * 7 + p.number) % buyers.length]!;
+          const fee = bidFor(career, p, buyer.id);
+          return (
+            <li key={p.id} className="rounded-lg border border-border/40 px-3 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <span>
+                  <span className="text-muted-foreground">{p.pos}</span> {p.name}
+                  <span className="ml-2 font-display">{p.ovr}</span>
+                </span>
+                <span className="text-xs text-muted-foreground">{formatWage(p.wage)}</span>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="text-[11px] text-muted-foreground">
+                  {buyer.name} ofereceria {formatMoney(fee)}
+                </span>
+                <button
+                  onClick={() => update(sellToClub(career, p.id, buyer.id, fee))}
+                  className="ml-auto rounded-md bg-primary/90 px-2.5 py-1 text-[10px] uppercase tracking-wider text-primary-foreground"
+                >
+                  Vender
+                </button>
+                <button
+                  onClick={() => update(releasePlayer(career, p.id))}
+                  className="rounded-md bg-destructive/20 px-2.5 py-1 text-[10px] uppercase tracking-wider text-destructive transition hover:bg-destructive/30"
+                >
+                  Dispensar
+                </button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+function NegotiationDialog({
+  target,
+  career,
+  update,
+  onClose,
+}: {
+  target: RealTarget;
+  career: Career;
+  update: (s: Career) => void;
+  onClose: () => void;
+}) {
+  const ask = askingPrice(target);
+  const [fee, setFee] = useState(ask);
+  const [wage, setWage] = useState(wageAsk(target));
+  const [loan, setLoan] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [log, setLog] = useState<string[]>([]);
+  const [agreed, setAgreed] = useState(false);
+
+  const cost = loan ? Math.round(fee * 0.25 * 10) / 10 : fee;
+  const affordable = career.finances.budget >= cost;
+  const wageOk = wage >= wageAsk(target);
+
+  function propose() {
+    const res = negotiate(career, target, fee, attempt);
+    setAttempt((a) => a + 1);
+    setLog((l) => [res.message, ...l]);
+    if (res.status === "accepted") setAgreed(true);
+    if (res.status === "counter" && res.counter) setFee(res.counter);
+  }
+
+  function close() {
+    update(signRealPlayer(career, target, { fee, wage, loan }));
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
+      <div className="w-full max-w-lg animate-scale-in rounded-2xl border border-border/60 bg-card p-5 shadow-2xl">
+        <div className="flex items-center gap-3">
+          {CLUBS[target.clubId] ? <Crest club={CLUBS[target.clubId]!} size={40} /> : null}
+          <div>
+            <h3 className="font-display text-xl uppercase tracking-wide">{target.name}</h3>
+            <p className="text-xs text-muted-foreground">
+              {target.pos} · {target.age} anos · OVR {target.ovr} · {clubName(target.clubId)}
+            </p>
+          </div>
+          <button onClick={onClose} className="ml-auto text-sm text-muted-foreground hover:text-foreground">
+            Fechar
+          </button>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          <label className="block text-xs text-muted-foreground">
+            Proposta: <span className="font-display text-foreground">{formatMoney(fee)}</span>{" "}
+            (pedido {formatMoney(ask)})
+            <input
+              type="range"
+              min={Math.max(0.3, Math.round(ask * 0.4 * 10) / 10)}
+              max={Math.round(ask * 2 * 10) / 10}
+              step={0.1}
+              value={fee}
+              onChange={(e) => {
+                setFee(Number(e.target.value));
+                setAgreed(false);
+              }}
+              className="mt-1 w-full"
+            />
+          </label>
+          <label className="block text-xs text-muted-foreground">
+            Salário oferecido: <span className="font-display text-foreground">{formatWage(wage)}</span>{" "}
+            (pedido {formatWage(wageAsk(target))})
+            <input
+              type="range"
+              min={Math.round(wageAsk(target) * 0.5)}
+              max={Math.round(wageAsk(target) * 2)}
+              value={wage}
+              onChange={(e) => setWage(Number(e.target.value))}
+              className="mt-1 w-full"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-xs">
+            <input type="checkbox" checked={loan} onChange={(e) => setLoan(e.target.checked)} />
+            Empréstimo por uma temporada (paga 25% do valor e metade do salário)
+          </label>
+        </div>
+
+        {log.length > 0 ? (
+          <ul className="mt-3 max-h-28 space-y-1 overflow-y-auto rounded-lg bg-background/50 p-3 text-xs">
+            {log.map((l, i) => (
+              <li key={i} className={i === 0 ? "text-foreground" : "text-muted-foreground"}>
+                {l}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={propose}
+            className="flex-1 rounded-lg bg-secondary px-4 py-2 font-display text-sm uppercase tracking-wider transition hover:brightness-125"
+          >
+            Enviar proposta
+          </button>
+          <button
+            disabled={!agreed || !affordable || !wageOk}
+            onClick={close}
+            className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-40"
+          >
+            {agreed ? (affordable ? (wageOk ? "Fechar contrato" : "Salário baixo") : "Sem caixa") : "Aguardando acordo"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
