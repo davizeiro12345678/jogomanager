@@ -226,7 +226,7 @@ function Pitch({ quality, sim }: { quality: Quality; sim: MatchSim }) {
           {...(norm ? { normalScale: new THREE.Vector2(0.7, 0.7) } : {})}
           roughness={0.74}
           metalness={0.0}
-          clearcoat={quality === "alta" ? 0.5 : quality === "media" ? 0.2 : 0}
+          clearcoat={quality === "alta" ? 0.32 : quality === "media" ? 0.14 : 0}
           clearcoatRoughness={0.62}
           sheen={quality === "alta" ? 0.34 : 0}
           sheenRoughness={0.75}

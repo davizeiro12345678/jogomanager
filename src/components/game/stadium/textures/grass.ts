@@ -57,10 +57,10 @@ function buildAlbedo(size = 2048) {
 
   // base: variação larga de tonalidade, sem verde chapado
   const g = ctx.createLinearGradient(0, 0, size * 0.35, size);
-  g.addColorStop(0, "#186a3c");
-  g.addColorStop(0.35, "#1f8149");
-  g.addColorStop(0.7, "#1a7341");
-  g.addColorStop(1, "#155f36");
+  g.addColorStop(0, "#125c33");
+  g.addColorStop(0.35, "#1a7342");
+  g.addColorStop(0.7, "#15663a");
+  g.addColorStop(1, "#11542f");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, size, size);
 
@@ -80,11 +80,11 @@ function buildAlbedo(size = 2048) {
   // faixas de corte com borda irregular
   withStripes(ctx, size, (i, x, w) => {
     const light = i % 2 === 0;
-    const a = light ? "rgba(232,255,228," : "rgba(0,28,12,";
+    const a = light ? "rgba(226,255,214," : "rgba(0,24,10,";
     const grad = ctx.createLinearGradient(x, 0, x + w, 0);
-    grad.addColorStop(0, `${a}0.015)`);
-    grad.addColorStop(0.5, `${a}0.085)`);
-    grad.addColorStop(1, `${a}0.015)`);
+    grad.addColorStop(0, `${a}0.04)`);
+    grad.addColorStop(0.5, `${a}0.17)`);
+    grad.addColorStop(1, `${a}0.04)`);
     ctx.fillStyle = grad;
     ctx.fillRect(x, 0, w, size * 2);
     // borda serrilhada da passagem do cortador
