@@ -236,7 +236,7 @@ function Pitch({ quality, sim }: { quality: Quality; sim: MatchSim }) {
       </mesh>
       {quality !== "baixa" && <GrassField sim={sim} quality={quality} />}
       {quality !== "baixa" && <PitchMarks sim={sim} />}
-      <Lines />
+      <PaintedLines />
       <Goal side={1} quality={quality} sim={sim} />
       <Goal side={-1} quality={quality} sim={sim} />
       <CornerFlags />
