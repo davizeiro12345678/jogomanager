@@ -1207,7 +1207,7 @@ function Stands({
       {/* tronco: ombros mais largos que o quadril, tecido fosco */}
       <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, crowd.positions.length]}>
         <capsuleGeometry args={[0.22, 0.44, quality === "alta" ? 4 : 3, quality === "alta" ? 10 : 6]} />
-        <meshStandardMaterial roughness={0.9} sheen={quality === "alta" ? 0.3 : 0} />
+        <meshStandardMaterial roughness={0.9} />
       </instancedMesh>
       <instancedMesh
         ref={shoulderRef}
