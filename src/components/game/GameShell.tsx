@@ -4,6 +4,7 @@ import {
   BarChart3,
   Briefcase,
   Coins,
+  Clapperboard,
   Dumbbell,
   FastForward,
   Gauge,
