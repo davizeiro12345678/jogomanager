@@ -241,7 +241,7 @@ function NewClubPage() {
 
           {step === 2 && (
             <>
-              <Chips label="Padrão da camisa" value={club.kit.pattern} onChange={(v) => setKit({ pattern: v })} options={KIT_CREST_PATTERNS.map((s) => ({ id: s, label: s }))} />
+              <Chips label="Padrão da camisa" value={club.kit.pattern} onChange={(v) => setKit({ pattern: v })} options={KIT_PATTERNS.map((k) => ({ id: k, label: k }))} />
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Calção">
                   <input type="color" className={inputClass} value={club.kit.shorts} onChange={(e) => setKit({ shorts: e.target.value })} />

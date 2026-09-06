@@ -76,7 +76,7 @@ const labelCls = "text-xs uppercase tracking-wide text-muted-foreground";
 
 function CadastroPage() {
   const [tab, setTab] = useState<"clubes" | "jogadores">("clubes");
-  const [data, setData] = useState<CustomData>({ clubs: {}, players: [] });
+  const [data, setData] = useState<CustomData>({ clubs: {}, players: [], competitions: [] });
 
   useEffect(() => {
     applyCustomToWorld();

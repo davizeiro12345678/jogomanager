@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
   Camera,
   ChevronDown,
@@ -22,6 +23,7 @@ import { MENTALITIES, PRESSING } from "@/game/formations";
 import { MatchSim, type TeamSetup } from "@/game/sim";
 import { Narrator, type NarrationEvent } from "@/game/narrator";
 import { advanceRoundAsync } from "@/game/simWorkerClient";
+import { achievementById } from "@/game/achievements";
 import { detectQuality } from "@/game/device";
 
 import { nextFixture } from "@/game/season";
@@ -407,6 +409,13 @@ function LiveMatch({
       .filter((r) => r.side === mySide)
       .map((r) => ({ pid: r.pid, goals: r.goals, assists: r.assists, played: true }));
     void advanceRoundAsync(career, { hg: snap.hg, ag: snap.ag }, perf).then((next) => {
+      const before = new Set(career.achievements ?? []);
+      for (const id of next.achievements ?? []) {
+        if (!before.has(id)) {
+          const a = achievementById(id);
+          if (a) toast.success(`Conquista desbloqueada: ${a.title}`);
+        }
+      }
       update(next);
       navigate({ to: "/club" });
     });
