@@ -50,6 +50,7 @@ import { Route as TemporadaAutomaticaRouteImport } from './routes/temporada-auto
 import { Route as TrainingRouteImport } from './routes/training'
 import { Route as TransfersRouteImport } from './routes/transfers'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as CheckoutReturnRouteImport } from './routes/checkout/return'
 import { Route as ClubeNovoRouteImport } from './routes/clube.novo'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicSyncFootballRouteImport } from './routes/api/public/sync-football'
@@ -264,6 +265,11 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
+const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
+  id: '/checkout/return',
+  path: '/checkout/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClubeNovoRoute = ClubeNovoRouteImport.update({
   id: '/clube/novo',
   path: '/clube/novo',
@@ -344,6 +350,7 @@ export interface FileRoutesByFullPath {
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
@@ -394,6 +401,7 @@ export interface FileRoutesByTo {
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
@@ -445,6 +453,7 @@ export interface FileRoutesById {
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
@@ -497,6 +506,7 @@ export interface FileRouteTypes {
     | '/training'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
+    | '/checkout/return'
     | '/clube/novo'
     | '/.lovable/oauth/consent'
     | '/api/public/sync-football'
@@ -547,6 +557,7 @@ export interface FileRouteTypes {
     | '/training'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
+    | '/checkout/return'
     | '/clube/novo'
     | '/.lovable/oauth/consent'
     | '/api/public/sync-football'
@@ -597,6 +608,7 @@ export interface FileRouteTypes {
     | '/training'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
+    | '/checkout/return'
     | '/clube/novo'
     | '/.lovable/oauth/consent'
     | '/api/public/sync-football'
@@ -648,6 +660,7 @@ export interface RootRouteChildren {
   TrainingRoute: typeof TrainingRoute
   TransfersRoute: typeof TransfersRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  CheckoutReturnRoute: typeof CheckoutReturnRoute
   ClubeNovoRoute: typeof ClubeNovoRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicSyncFootballRoute: typeof ApiPublicSyncFootballRoute
@@ -946,6 +959,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/checkout/return': {
+      id: '/checkout/return'
+      path: '/checkout/return'
+      fullPath: '/checkout/return'
+      preLoaderRoute: typeof CheckoutReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clube/novo': {
       id: '/clube/novo'
       path: '/clube/novo'
@@ -1041,6 +1061,7 @@ const rootRouteChildren: RootRouteChildren = {
   TransfersRoute: TransfersRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  CheckoutReturnRoute: CheckoutReturnRoute,
   ClubeNovoRoute: ClubeNovoRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicSyncFootballRoute: ApiPublicSyncFootballRoute,

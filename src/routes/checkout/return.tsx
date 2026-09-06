@@ -12,12 +12,12 @@ export const Route = createFileRoute("/checkout/return")({
       { title: "Resultado do pagamento · Pro Football Manager 3D" },
       {
         name: "description",
-        content: "Confirmação de pagamento e entrega de itens.
+        content: "Confirmação de pagamento e entrega de itens.",
       },
       { property: "og:title", content: "Resultado do pagamento · Pro Football Manager 3D" },
       {
         property: "og:description",
-        content: "Confirmação de pagamento e entrega de itens.
+        content: "Confirmação de pagamento e entrega de itens.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -38,8 +38,6 @@ function CheckoutReturn() {
       setStatus("error");
       return;
     }
-    // Stripe redirects here immediately; the webhook fulfills the purchase
-    // asynchronously. We show a success state because the payment was submitted.
     setStatus("success");
   }, [sessionId]);
 
