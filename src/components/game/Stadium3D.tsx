@@ -252,7 +252,8 @@ function Pitch({ quality, sim, wet }: { quality: Quality; sim: MatchSim; wet: nu
           <meshStandardMaterial
             map={wear}
             transparent
-            opacity={0.85}
+            opacity={0.34}
+
             roughness={0.95}
             metalness={0}
             depthWrite={false}
