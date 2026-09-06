@@ -733,31 +733,142 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
   );
 }
 
-function Tiers({ rings }: { rings: number }) {
+/** Concreto compartilhado por toda a estrutura (um material só, muitas peças). */
+function useConcrete(color = "#6d747b", repeat = 6) {
+  return useMemo(() => {
+    const map = concreteAlbedo();
+    const rough = concreteRoughness();
+    const m = new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.96,
+      metalness: 0.02,
+    });
+    if (map) {
+      const t = map.clone();
+      t.needsUpdate = true;
+      t.repeat.set(repeat, repeat * 0.4);
+      m.map = t;
+    }
+    if (rough) {
+      const t = rough.clone();
+      t.needsUpdate = true;
+      t.repeat.set(repeat, repeat * 0.4);
+      m.roughnessMap = t;
+    }
+    return m;
+  }, [color, repeat]);
+}
+
+function Tiers({
+  rings,
+  homeColor,
+  awayColor,
+}: {
+  rings: number;
+  homeColor: string;
+  awayColor: string;
+}) {
   const steps: React.ReactElement[] = [];
   const lenX = FIELD_X * 2 + 30;
   const lenZ = FIELD_Z * 2 + 34;
+  const concrete = useConcrete("#5f666d", 10);
+
+  const seatMat = useMemo(() => {
+    const t = seatsTexture(homeColor, awayColor);
+    const m = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.82 });
+    if (t) {
+      const c = t.clone();
+      c.needsUpdate = true;
+      c.repeat.set(14, 1);
+      m.map = c;
+    } else {
+      m.color = new THREE.Color(homeColor);
+    }
+    return m;
+  }, [homeColor, awayColor]);
+  const seatMatSide = useMemo(() => {
+    const c = seatMat.clone();
+    if (c.map) {
+      const t = c.map.clone();
+      t.needsUpdate = true;
+      t.repeat.set(10, 1);
+      c.map = t;
+    }
+    return c;
+  }, [seatMat]);
+
   for (let r = 0; r < rings; r++) {
     const y = 2.0 + r * 1.45;
-    const shade = r % 2 === 0 ? "#2f3943" : "#39434e";
     for (const z of [-1, 1]) {
       steps.push(
-        <mesh key={`sz${r}${z}`} position={[0, y - 0.72, z * (FIELD_Z + 7 + r * 1.5)]} receiveShadow>
+        <mesh
+          key={`sz${r}${z}`}
+          position={[0, y - 0.72, z * (FIELD_Z + 7 + r * 1.5)]}
+          receiveShadow
+          material={concrete}
+        >
           <boxGeometry args={[lenX, 1.45, 1.5]} />
-          <meshStandardMaterial color={shade} roughness={1} />
+        </mesh>,
+      );
+      // faixa de cadeiras na frente do degrau
+      steps.push(
+        <mesh
+          key={`cz${r}${z}`}
+          position={[0, y - 0.6, z * (FIELD_Z + 7 + r * 1.5 - 0.78)]}
+          rotation={[0, z > 0 ? Math.PI : 0, 0]}
+          material={seatMat}
+        >
+          <planeGeometry args={[lenX, 1.2]} />
         </mesh>,
       );
     }
     for (const x of [-1, 1]) {
       steps.push(
-        <mesh key={`sx${r}${x}`} position={[x * (FIELD_X + 10 + r * 1.5), y - 0.72, 0]} receiveShadow>
+        <mesh
+          key={`sx${r}${x}`}
+          position={[x * (FIELD_X + 10 + r * 1.5), y - 0.72, 0]}
+          receiveShadow
+          material={concrete}
+        >
           <boxGeometry args={[1.5, 1.45, lenZ]} />
-          <meshStandardMaterial color={shade} roughness={1} />
+        </mesh>,
+      );
+      steps.push(
+        <mesh
+          key={`cx${r}${x}`}
+          position={[x * (FIELD_X + 10 + r * 1.5 - 0.78), y - 0.6, 0]}
+          rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}
+          material={seatMatSide}
+        >
+          <planeGeometry args={[lenZ, 1.2]} />
         </mesh>,
       );
     }
   }
-  return <group>{steps}</group>;
+
+  // escadas de acesso (vomitórios) cortando os setores
+  const stairs: React.ReactElement[] = [];
+  for (let i = -3; i <= 3; i++) {
+    for (const z of [-1, 1]) {
+      stairs.push(
+        <mesh
+          key={`v${i}${z}`}
+          position={[i * 22, 2.0 + (rings * 1.45) / 2 - 0.7, z * (FIELD_Z + 7 + (rings * 1.5) / 2)]}
+          rotation={[z > 0 ? -0.72 : 0.72, 0, 0]}
+          material={concrete}
+        >
+          <boxGeometry args={[2.2, 0.18, rings * 2.2]} />
+        </mesh>,
+      );
+    }
+  }
+
+  return (
+    <group>
+      {steps}
+      {stairs}
+    </group>
+  );
 }
 
 function Roof({ rings }: { rings: number }) {
