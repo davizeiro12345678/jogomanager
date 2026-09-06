@@ -1748,6 +1748,7 @@ function Scene({
   const goalPulse = useRef(0);
   const lastGoals = useRef(0);
   const [replay, setReplay] = useState(false);
+  const [moment, setMoment] = useState<"match" | "replay" | "drama">("match");
 
   useFrame((_, dt) => {
     const total = sim.stats.home.goals + sim.stats.away.goals;
@@ -1758,6 +1759,9 @@ function Scene({
     if (goalPulse.current > 0) goalPulse.current = Math.max(0, goalPulse.current - dt * 0.22);
     const r = goalPulse.current > 0.55;
     setReplay((v) => (v === r ? v : r));
+    const m = goalPulse.current > 0.82 ? "drama" : r ? "replay" : "match";
+    setMoment((v) => (v === m ? v : m));
+
   });
 
 
