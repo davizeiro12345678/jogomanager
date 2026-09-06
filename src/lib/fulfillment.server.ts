@@ -58,11 +58,17 @@ export async function fulfillOneTimePurchase(
   } as any);
   if (purchaseError) throw new Error(purchaseError.message);
 
-  const { data: existingWallet, error: walletFetchError } = await supabase
+  const { data: rawWallet, error: walletFetchError } = await supabase
     .from("user_wallet")
     .select("coins, scout_reports, training_boosts, unlocked_themes")
     .eq("user_id", userId)
     .maybeSingle();
+  const existingWallet = rawWallet as {
+    coins: number;
+    scout_reports: number;
+    training_boosts: number;
+    unlocked_themes: string[];
+  } | null;
   if (walletFetchError) throw new Error(walletFetchError.message);
 
   const currentThemes = new Set<string>(existingWallet?.unlocked_themes ?? []);
