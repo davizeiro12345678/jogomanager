@@ -1131,6 +1131,8 @@ function Stands({
     tick.current++;
     if (tick.current % everyN !== 0) return;
     const head = headRef.current;
+    const hair = hairRef.current;
+    const shoulders = shoulderRef.current;
     const t = clock.elapsedTime;
     const pulse = goalPulse.current;
     for (let i = 0; i < crowd.positions.length; i++) {
@@ -1138,24 +1140,43 @@ function Stands({
       const wave = Math.sin(t * 1.1 - p.x * 0.06) > 0.86 ? 0.5 : 0;
       const jump = pulse > 0 ? Math.abs(Math.sin(t * 9 + i)) * 0.75 * pulse : 0;
       const y = p.y + Math.sin(t * 3 + i) * 0.06 + wave + jump;
-      const yaw = ((i % 7) - 3) * 0.06;
-      dummy.position.set(p.x, y, p.z);
-      dummy.scale.set(1, 0.92 + ((i % 5) * 0.04), 1);
-      dummy.rotation.set(0, yaw, 0);
+      // balanço lateral: a massa nunca fica perfeitamente enfileirada
+      const swayX = Math.sin(t * 1.6 + i * 0.7) * 0.05 * (0.4 + pulse);
+      const yaw = ((i % 7) - 3) * 0.06 + Math.sin(t * 0.8 + i) * 0.05;
+      const tall = 0.9 + ((i % 5) * 0.045);
+      dummy.position.set(p.x + swayX, y, p.z);
+      dummy.scale.set(1, tall, 1);
+      dummy.rotation.set(0, yaw, Math.sin(t * 1.9 + i * 1.3) * 0.03);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
+      if (shoulders) {
+        dummy.position.set(p.x + swayX, y + 0.3 * tall, p.z);
+        dummy.scale.set(1.5, 0.55, 1);
+        dummy.rotation.set(0, yaw, Math.PI / 2);
+        dummy.updateMatrix();
+        shoulders.setMatrixAt(i, dummy.matrix);
+      }
+      const headY = y + 0.5 * tall + 0.06;
+      const headPitch = Math.sin(t * 2 + i) * 0.05;
       if (head) {
-        dummy.position.set(p.x, y + 0.52, p.z);
+        dummy.position.set(p.x + swayX, headY, p.z);
         dummy.scale.setScalar(1);
-        dummy.rotation.set(Math.sin(t * 2 + i) * 0.05, yaw, 0);
+        dummy.rotation.set(headPitch, yaw, 0);
         dummy.updateMatrix();
         head.setMatrixAt(i, dummy.matrix);
+      }
+      if (hair) {
+        dummy.position.set(p.x + swayX, headY + 0.015, p.z);
+        dummy.scale.set(1, i % 4 === 0 ? 0.7 : 1, 1);
+        dummy.rotation.set(headPitch, yaw, 0);
+        dummy.updateMatrix();
+        hair.setMatrixAt(i, dummy.matrix);
       }
       // braços: palmas no ritmo, erguidos na comemoração e na ola
       const arms = armsRef.current;
       if (arms && i < armCount) {
         const raise = Math.min(1, pulse * 1.2 + (wave > 0 ? 0.8 : 0) + (Math.sin(t * 6 + i) > 0.7 ? 0.25 : 0));
-        dummy.position.set(p.x, y + 0.42 + raise * 0.3, p.z);
+        dummy.position.set(p.x + swayX, y + 0.42 + raise * 0.3, p.z);
         dummy.rotation.set(-raise * 1.5, yaw, 0);
         dummy.scale.set(1, 0.5 + raise * 0.7, 1);
         dummy.updateMatrix();
@@ -1164,6 +1185,8 @@ function Stands({
     }
     mesh.instanceMatrix.needsUpdate = true;
     if (head) head.instanceMatrix.needsUpdate = true;
+    if (hair) hair.instanceMatrix.needsUpdate = true;
+    if (shoulders) shoulders.instanceMatrix.needsUpdate = true;
     if (armsRef.current && armCount) armsRef.current.instanceMatrix.needsUpdate = true;
 
     // flashes de câmera na torcida (mais intensos após o gol)
