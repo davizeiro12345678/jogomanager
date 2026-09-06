@@ -13,7 +13,7 @@ export const loadCareer = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     if (!data?.state) return null;
     return {
-      state: data.state as CareerState,
+      state: data.state as unknown as CareerState,
       updatedAt: (data.updated_at as string | null) ?? null,
     };
   });
