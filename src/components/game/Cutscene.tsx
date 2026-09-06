@@ -395,6 +395,23 @@ export function Cutscene({
   const reduced = useMemo(() => prefersReducedMotion(), []);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [par, setPar] = useState({ x: 0, y: 0 });
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (reduced) return;
+      const el = stageRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setPar({
+        x: (e.clientX - r.left) / r.width - 0.5,
+        y: (e.clientY - r.top) / r.height - 0.5,
+      });
+    },
+    [reduced],
+  );
+
 
   const line = data?.lines[i];
   const full = line?.text ?? "";
