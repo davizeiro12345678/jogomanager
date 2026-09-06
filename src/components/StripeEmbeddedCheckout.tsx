@@ -17,7 +17,7 @@ export function StripeEmbeddedCheckout({
     const result = await createCheckoutSession({
       data: {
         priceId,
-        quantity,
+        ...(quantity != null ? { quantity } : {}),
         returnUrl: returnUrl || window.location.href,
         environment: getStripeEnvironment(),
       },
