@@ -37,7 +37,7 @@ type TimeOfDay = "dia" | "entardecer" | "noite";
 
 const SKY: Record<TimeOfDay, string> = {
   dia: "#8fbfe8",
-  entardecer: "#3a2340",
+  entardecer: "#4a3630",
   noite: "#060a10",
 };
 
