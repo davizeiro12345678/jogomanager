@@ -24,7 +24,7 @@ async function resolveOrCreateCustomer(
       query: `metadata['userId']:'${options.userId}'`,
       limit: 1,
     });
-    if (found.data.length) return found.data[0].id;
+    if (found.data.length) return found.data[0]!.id;
   }
   if (options.email) {
     const existing = await stripe.customers.list({
