@@ -222,7 +222,64 @@ export const CUTSCENES: Record<string, Cutscene> = {
     ],
     "bad",
   ),
+  "cup-draw": scene("cup-draw", "Sorteio da copa", "board", [
+    { who: "narrator", text: "Bolinhas giram no globo de vidro. A sala inteira prende a respiração." },
+    { who: "press", text: "E o adversário do seu time na próxima fase é..." },
+    { who: "manager", text: "Seja quem for, a gente estuda e enfrenta. Copa é jogo de detalhe." },
+    { who: "assistant", text: "Já peço os vídeos dos últimos cinco jogos deles." },
+  ]),
+  "press-defeat": scene(
+    "press-defeat",
+    "Coletiva após a derrota",
+    "press",
+    [
+      { who: "narrator", text: "Sala apertada, microfones ligados, ninguém sorrindo." },
+      { who: "press", text: "O time não criou nada. O senhor errou a escalação?" },
+      { who: "manager", text: "A responsabilidade é minha. Amanhã cedo estamos no campo corrigindo." },
+      { who: "press", text: "A diretoria te garantiu no cargo?" },
+      { who: "manager", text: "Meu emprego se garante ganhando. É o que pretendo fazer." },
+    ],
+    "bad",
+  ),
+  renewal: scene(
+    "renewal",
+    "Renovação de contrato",
+    "board",
+    [
+      { who: "president", text: "O conselho aprovou por unanimidade. Queremos você por mais tempo." },
+      { who: "manager", text: "Aceito — mas quero decidir as contratações da próxima janela." },
+      { who: "president", text: "Fechado. Assine aqui e vamos brindar." },
+      { who: "narrator", text: "Flashes, aperto de mão e uma caneta que vale uma temporada inteira." },
+    ],
+    "good",
+  ),
+  "idol-farewell": scene(
+    "idol-farewell",
+    "Despedida do ídolo",
+    "farewell",
+    [
+      { who: "narrator", text: "Estádio cheio num amistoso de terça. Todos vieram por um homem só." },
+      { who: "captain", text: "Foram doze anos. Vou sentir falta do cheiro da grama molhada." },
+      { who: "fan", text: "Eterno! Eterno!" },
+      { who: "manager", text: "A camisa sai de campo, mas a régua que ele deixou fica no vestiário." },
+    ],
+    "good",
+  ),
+  "title-night": scene(
+    "title-night",
+    "Noite de título",
+    "trophy",
+    [
+      { who: "narrator", text: "Papel picado no ar, o gramado some debaixo da festa." },
+      { who: "captain", text: "Professor, essa taça é sua também. Sobe aí com a gente." },
+      { who: "manager", text: "É de todo mundo. Do roupeiro ao torcedor que veio na chuva." },
+      { who: "fan", text: "Campeão! Campeão!" },
+      { who: "narrator", text: "A taça sobe. A cidade não dorme hoje." },
+    ],
+    "good",
+  ),
 };
+
 
 /** Cenas de treino sorteadas semana a semana no modo carreira. */
 export const TRAINING_SCENE_IDS = [
