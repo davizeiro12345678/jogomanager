@@ -933,15 +933,37 @@ function Stands({
     const colors: THREE.Color[] = [];
     const skins: THREE.Color[] = [];
     const home = new THREE.Color(homeColor);
+    const homeAlt = new THREE.Color(homeColor).offsetHSL(0, -0.1, 0.14);
     const away = new THREE.Color(awayColor);
-    const neutral = ["#d8d8d8", "#8fa3b8", "#42506b", "#e0c07a", "#b8c4cf", "#6c7a8c"];
+    const neutral = ["#d8d8d8", "#8fa3b8", "#42506b", "#e0c07a", "#b8c4cf", "#6c7a8c"].map(
+      (c) => new THREE.Color(c),
+    );
     const skinTones = ["#e8b98f", "#d19b6d", "#a9713f", "#7a4b26", "#f2cfa8", "#5c3418"];
     const pick = (i: number, ring: number) =>
       new THREE.Color(skinTones[(i * 5 + ring * 3) % skinTones.length]!);
+
+    /** Setores: a torcida se agrupa em blocos, como num estádio de verdade.
+     *  Cada bloco tem uma cor dominante e uma minoria de camisas neutras. */
+    const SECTORS = 14;
+    const sectorColor = (sector: number, side: number) => {
+      const s = (sector + (side > 0 ? 0 : 7)) % SECTORS;
+      if (s < 3) return home;              // arquibancada organizada mandante
+      if (s === 3 || s === 10) return homeAlt; // bloco do terceiro uniforme
+      if (s >= 11) return away;            // setor visitante
+      return neutral[s % neutral.length]!;
+    };
+    const shirtFor = (sector: number, side: number, i: number, ring: number) => {
+      const dominant = sectorColor(sector, side);
+      // 22% de torcedores fora do padrão do setor, para o bloco não ficar chapado
+      if ((i * 13 + ring * 7) % 9 < 2) return neutral[(i + ring) % neutral.length]!;
+      return dominant;
+    };
+
     for (let ring = 0; ring < rings; ring++) {
       for (let i = 0; i < density; i++) {
         const t = i / density;
         const px = -FIELD_X - 10 + t * (FIELD_X * 2 + 20);
+        const sector = Math.floor(t * SECTORS);
         for (const zSide of [-1, 1]) {
           positions.push(
             new THREE.Vector3(
@@ -950,12 +972,7 @@ function Stands({
               zSide * (FIELD_Z + 7 + ring * 1.5),
             ),
           );
-          const zone = t < 0.3 ? home : t > 0.7 ? away : null;
-          colors.push(
-            zone && (i + ring) % 3 !== 0
-              ? zone
-              : new THREE.Color(neutral[(i + ring) % neutral.length]!),
-          );
+          colors.push(shirtFor(sector, zSide, i, ring));
           skins.push(pick(i, ring));
         }
       }
@@ -965,18 +982,26 @@ function Stands({
       for (let i = 0; i < n; i++) {
         const t = i / n;
         const pz = -FIELD_Z - 8 + t * (FIELD_Z * 2 + 16);
+        const sector = Math.floor(t * SECTORS);
         for (const xSide of [-1, 1]) {
           positions.push(
             new THREE.Vector3(xSide * (FIELD_X + 10 + ring * 1.5), 2.6 + ring * 1.45, pz),
           );
-          const mosaic = (ring + i) % 5 < 3 ? home : new THREE.Color("#f2f2f2");
-          colors.push(xSide === 1 ? mosaic : new THREE.Color(neutral[(i + ring) % neutral.length]!));
+          // atrás do gol mandante: mosaico em faixas alternadas
+          const mosaic =
+            xSide === 1
+              ? (ring + Math.floor(t * 9)) % 3 === 0
+                ? new THREE.Color("#f2f2f2")
+                : home
+              : shirtFor(sector, xSide, i, ring);
+          colors.push(mosaic);
           skins.push(pick(i + 3, ring));
         }
       }
     }
     return { positions, colors, skins };
   }, [homeColor, awayColor, density, rings]);
+
 
   const ref = useRef<THREE.InstancedMesh>(null);
   const headRef = useRef<THREE.InstancedMesh>(null);
