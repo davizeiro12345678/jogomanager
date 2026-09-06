@@ -26,6 +26,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DicasDeGestaoRouteImport } from './routes/dicas-de-gestao'
 import { Route as EditorRouteImport } from './routes/editor'
 import { Route as FinancesRouteImport } from './routes/finances'
+import { Route as GestaoFinanceiraRouteImport } from './routes/gestao-financeira'
 import { Route as GuiaDeScoutingRouteImport } from './routes/guia-de-scouting'
 import { Route as GuiasRouteImport } from './routes/guias'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -145,6 +146,11 @@ const EditorRoute = EditorRouteImport.update({
 const FinancesRoute = FinancesRouteImport.update({
   id: '/finances',
   path: '/finances',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GestaoFinanceiraRoute = GestaoFinanceiraRouteImport.update({
+  id: '/gestao-financeira',
+  path: '/gestao-financeira',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GuiaDeScoutingRoute = GuiaDeScoutingRouteImport.update({
@@ -344,6 +350,7 @@ export interface FileRoutesByFullPath {
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/editor': typeof EditorRoute
   '/finances': typeof FinancesRoute
+  '/gestao-financeira': typeof GestaoFinanceiraRoute
   '/guia-de-scouting': typeof GuiaDeScoutingRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
@@ -398,6 +405,7 @@ export interface FileRoutesByTo {
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/editor': typeof EditorRoute
   '/finances': typeof FinancesRoute
+  '/gestao-financeira': typeof GestaoFinanceiraRoute
   '/guia-de-scouting': typeof GuiaDeScoutingRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
@@ -453,6 +461,7 @@ export interface FileRoutesById {
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/editor': typeof EditorRoute
   '/finances': typeof FinancesRoute
+  '/gestao-financeira': typeof GestaoFinanceiraRoute
   '/guia-de-scouting': typeof GuiaDeScoutingRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
@@ -509,6 +518,7 @@ export interface FileRouteTypes {
     | '/dicas-de-gestao'
     | '/editor'
     | '/finances'
+    | '/gestao-financeira'
     | '/guia-de-scouting'
     | '/guias'
     | '/history'
@@ -563,6 +573,7 @@ export interface FileRouteTypes {
     | '/dicas-de-gestao'
     | '/editor'
     | '/finances'
+    | '/gestao-financeira'
     | '/guia-de-scouting'
     | '/guias'
     | '/history'
@@ -617,6 +628,7 @@ export interface FileRouteTypes {
     | '/dicas-de-gestao'
     | '/editor'
     | '/finances'
+    | '/gestao-financeira'
     | '/guia-de-scouting'
     | '/guias'
     | '/history'
@@ -672,6 +684,7 @@ export interface RootRouteChildren {
   DicasDeGestaoRoute: typeof DicasDeGestaoRoute
   EditorRoute: typeof EditorRoute
   FinancesRoute: typeof FinancesRoute
+  GestaoFinanceiraRoute: typeof GestaoFinanceiraRoute
   GuiaDeScoutingRoute: typeof GuiaDeScoutingRoute
   GuiasRoute: typeof GuiasRoute
   HistoryRoute: typeof HistoryRoute
@@ -828,6 +841,13 @@ declare module '@tanstack/react-router' {
       path: '/finances'
       fullPath: '/finances'
       preLoaderRoute: typeof FinancesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gestao-financeira': {
+      id: '/gestao-financeira'
+      path: '/gestao-financeira'
+      fullPath: '/gestao-financeira'
+      preLoaderRoute: typeof GestaoFinanceiraRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/guia-de-scouting': {
@@ -1096,6 +1116,7 @@ const rootRouteChildren: RootRouteChildren = {
   DicasDeGestaoRoute: DicasDeGestaoRoute,
   EditorRoute: EditorRoute,
   FinancesRoute: FinancesRoute,
+  GestaoFinanceiraRoute: GestaoFinanceiraRoute,
   GuiaDeScoutingRoute: GuiaDeScoutingRoute,
   GuiasRoute: GuiasRoute,
   HistoryRoute: HistoryRoute,
