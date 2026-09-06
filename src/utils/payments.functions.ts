@@ -74,14 +74,13 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       const stripePrice = prices.data[0];
       const isRecurring = stripePrice.type === "recurring";
 
-      const { data: profile } = await context.supabase
-        .from("profiles")
-        .select("email")
-        .eq("user_id", context.userId)
-        .maybeSingle();
+      const email =
+        typeof context.claims?.email === "string"
+          ? context.claims.email
+          : undefined;
 
       const customerId = await resolveOrCreateCustomer(stripe, {
-        email: profile?.email ?? undefined,
+        email,
         userId: context.userId,
       });
 
