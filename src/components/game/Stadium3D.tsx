@@ -267,8 +267,9 @@ function PaintedLines() {
       <planeGeometry args={[LINES_W, LINES_H]} />
       <meshStandardMaterial
         map={tex}
+        color="#c9cec6"
         transparent
-        roughness={0.62}
+        roughness={0.92}
         metalness={0}
         depthWrite={false}
         polygonOffset
