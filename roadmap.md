@@ -25,3 +25,5 @@
 - [x] Importação contínua dos dados reais (escudos, estádios, elencos) — 935 clubes com elenco, 1073 escudos
 
 - [x] Criação do treinador em etapas (identidade, aparência, perfil, clube) + cutscene de chegada
+- [x] Carreira de treinador semana a semana (/carreira) com cutscenes e galeria
+- [x] Qualidade 3D adaptativa por FPS + DPR móvel 0,7-1,25
