@@ -548,84 +548,64 @@ function Dugouts() {
 
 /* -------------------------------------------------------------- estrutura */
 
-function adBoardTexture(text: string, bg: string, fg: string) {
-  if (typeof document === "undefined") return null;
-  const w = 256;
-  const h = 48;
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = fg;
-  ctx.font = "bold 30px 'Barlow Condensed', system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(text, w / 2, h / 2);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
+/**
+ * Placas de LED: uma faixa contínua por linha lateral, com a textura
+ * rolando na horizontal (como um painel de LED de transmissão real).
+ */
+function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: string }) {
+  const tex = useMemo(() => adTexture(homeColor, awayColor), [homeColor, awayColor]);
+  const matA = useRef<THREE.MeshStandardMaterial>(null);
+  const matB = useRef<THREE.MeshStandardMaterial>(null);
+  const len = (FIELD_X + 8) * 2;
 
-const ADS = [
-  ["FUT+ TV", "#0b2b45", "#7dfcb0"],
-  ["AERO BRASIL", "#8a1420", "#ffffff"],
-  ["NOVA BET", "#123f2a", "#f5c400"],
-  ["PIXEL ENERGY", "#3a2f6b", "#ffffff"],
-  ["GOLAÇO FM", "#6b4a12", "#ffe9b0"],
-  ["MANAGER 3D", "#101418", "#7dfcb0"],
-] as const;
+  const texA = useMemo(() => {
+    if (!tex) return null;
+    const t = tex.clone();
+    t.needsUpdate = true;
+    t.repeat.set(3, 1);
+    return t;
+  }, [tex]);
+  const texB = useMemo(() => {
+    if (!tex) return null;
+    const t = tex.clone();
+    t.needsUpdate = true;
+    t.repeat.set(3, 1);
+    t.offset.x = 0.5;
+    return t;
+  }, [tex]);
 
-function AdBoards() {
-  const boards: React.ReactElement[] = [];
-  const count = 18;
-  const w = ((FIELD_X + 8) * 2) / count;
-  for (let i = 0; i < count; i++) {
-    const x = -(FIELD_X + 8) + w / 2 + i * w;
-    for (const z of [-1, 1]) {
-      boards.push(
-        <AdBoard key={`${i}-${z}`} x={x} z={z * (FIELD_Z + 5)} w={w} seed={i + (z > 0 ? 3 : 0)} />,
-      );
-    }
-  }
-  return <group>{boards}</group>;
-}
-
-function AdBoard({ x, z, w, seed }: { x: number; z: number; w: number; seed: number }) {
-  const texes = useMemo(
-    () => ADS.map(([text, bg, fg]) => adBoardTexture(text, bg, fg)).filter(Boolean) as THREE.CanvasTexture[],
-    [],
-  );
-  const matRef = useRef<THREE.MeshStandardMaterial>(null);
-  const idx = useRef(-1);
-  useFrame(({ clock }) => {
-    if (!texes.length) return;
-    // troca de anúncio a cada 5s, com defasagem por placa
-    const next = (Math.floor(clock.elapsedTime / 5) + seed) % texes.length;
-    if (next === idx.current) return;
-    idx.current = next;
-    const tex = texes[next]!;
-    const m = matRef.current;
-    if (m) {
-      m.map = tex;
-      m.emissiveMap = tex;
-      m.needsUpdate = true;
-    }
+  useFrame((_, delta) => {
+    if (texA) texA.offset.x = (texA.offset.x + delta * 0.05) % 1;
+    if (texB) texB.offset.x = (texB.offset.x - delta * 0.05 + 1) % 1;
+    // leve cintilar do painel
+    const flick = 0.5 + Math.random() * 0.06;
+    if (matA.current) matA.current.emissiveIntensity = flick;
+    if (matB.current) matB.current.emissiveIntensity = flick;
   });
+
+  if (!texA || !texB) return null;
+
   return (
-    <mesh position={[x, 0.6, z]} rotation={[0, z > 0 ? Math.PI : 0, 0]}>
-      <boxGeometry args={[w * 0.94, 1.2, 0.25]} />
-      <meshStandardMaterial
-        ref={matRef}
-        color="#ffffff"
-        emissive="#ffffff"
-        emissiveIntensity={0.55}
-        roughness={0.4}
-        toneMapped={false}
-      />
-    </mesh>
+    <group>
+      {[
+        { z: -(FIELD_Z + 5), rot: 0, m: matA, t: texA },
+        { z: FIELD_Z + 5, rot: Math.PI, m: matB, t: texB },
+      ].map((s, i) => (
+        <mesh key={i} position={[0, 0.62, s.z]} rotation={[0, s.rot, 0]}>
+          <boxGeometry args={[len, 1.24, 0.22]} />
+          <meshStandardMaterial
+            ref={s.m}
+            map={s.t}
+            emissiveMap={s.t}
+            color="#ffffff"
+            emissive="#ffffff"
+            emissiveIntensity={0.5}
+            roughness={0.35}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+    </group>
   );
 }
 
