@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { FastForward, Play, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 
 import { GameShell } from "@/components/game/GameShell";
 import { Crest } from "@/components/game/Crest";
@@ -8,6 +9,7 @@ import { CLUBS } from "@/game/data/leagues";
 import { autoSeason, autoWeek, type AutoWeek } from "@/game/autoplay";
 import { prefersReducedMotion } from "@/game/device";
 import { useCareer } from "@/hooks/useCareer";
+import { achievementById } from "@/game/achievements";
 
 export const Route = createFileRoute("/temporada-automatica")({
   ssr: false,
@@ -29,6 +31,16 @@ export const Route = createFileRoute("/temporada-automatica")({
   component: AutoSeasonPage,
 });
 
+function notifyNewAchievements(before: string[] | undefined, after: string[] | undefined) {
+  const prev = new Set(before ?? []);
+  for (const id of after ?? []) {
+    if (!prev.has(id)) {
+      const a = achievementById(id);
+      if (a) toast.success(`Conquista desbloqueada: ${a.title}`);
+    }
+  }
+}
+
 function AutoSeasonPage() {
   const { career, update } = useCareer();
   const [weeks, setWeeks] = useState<AutoWeek[]>([]);
@@ -47,6 +59,7 @@ function AutoSeasonPage() {
     const w = autoWeek(career);
     if (w) {
       setWeeks((cur) => [w, ...cur].slice(0, 60));
+      notifyNewAchievements(career.achievements, w.state.achievements);
       update(w.state);
     }
     setBusy(false);
@@ -57,6 +70,7 @@ function AutoSeasonPage() {
     const { weeks: ws, state } = autoSeason(career);
     if (ws.length) {
       setWeeks((cur) => [...[...ws].reverse(), ...cur].slice(0, 60));
+      notifyNewAchievements(career.achievements, state.achievements);
       update(state);
     }
     setBusy(false);
