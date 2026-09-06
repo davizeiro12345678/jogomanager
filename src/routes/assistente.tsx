@@ -77,9 +77,12 @@ function writeCache(k: string, v: string) {
 /* ------------------------------------------------------------ helpers de resumo */
 
 function resumoJogadores(players: Record<string, Player>, lineup: string[]) {
-  const all = Object.values(players);
-  const list = lineup.length ? lineup.map((id) => players[id]).filter(Boolean) as Player[] : all;
-  return list.slice(0, 20).map((p) => ({
+  const all = Object.values(players).sort((a, b) => b.ovr - a.ovr);
+  const titulares = new Set(lineup);
+  // manda o elenco inteiro (titulares primeiro) para a IA não achar que o time só tem 11 jogadores
+  const list = [...all.filter((p) => titulares.has(p.id)), ...all.filter((p) => !titulares.has(p.id))];
+  return list.slice(0, 26).map((p) => ({
+    titular: titulares.has(p.id),
     nome: p.name,
     pos: p.pos,
     ovr: p.ovr,
