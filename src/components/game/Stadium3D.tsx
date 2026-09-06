@@ -1717,7 +1717,7 @@ function Scene({
       <SkyDome time={time} />
       <Pitch quality={quality} sim={sim} />
 
-      <AdBoards />
+      <AdBoards homeColor={homeColor} awayColor={awayColor} />
       <Floodlights time={time} quality={quality} />
       <Stands
         homeColor={sim.home.primary}
