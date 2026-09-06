@@ -34,6 +34,7 @@ import { Route as LigasDeFutebolRouteImport } from './routes/ligas-de-futebol'
 import { Route as LojaRouteImport } from './routes/loja'
 import { Route as MatchRouteImport } from './routes/match'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as MelhoresFormacoesRouteImport } from './routes/melhores-formacoes'
 import { Route as MercadoDeTransferenciasRouteImport } from './routes/mercado-de-transferencias'
 import { Route as MultiplayerRouteImport } from './routes/multiplayer'
 import { Route as NewRouteImport } from './routes/new'
@@ -183,6 +184,11 @@ const MatchRoute = MatchRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MelhoresFormacoesRoute = MelhoresFormacoesRouteImport.update({
+  id: '/melhores-formacoes',
+  path: '/melhores-formacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MercadoDeTransferenciasRoute = MercadoDeTransferenciasRouteImport.update({
@@ -340,6 +346,7 @@ export interface FileRoutesByFullPath {
   '/loja': typeof LojaRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
+  '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
@@ -392,6 +399,7 @@ export interface FileRoutesByTo {
   '/loja': typeof LojaRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
+  '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
@@ -445,6 +453,7 @@ export interface FileRoutesById {
   '/loja': typeof LojaRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
+  '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
@@ -499,6 +508,7 @@ export interface FileRouteTypes {
     | '/loja'
     | '/match'
     | '/mcp'
+    | '/melhores-formacoes'
     | '/mercado-de-transferencias'
     | '/multiplayer'
     | '/new'
@@ -551,6 +561,7 @@ export interface FileRouteTypes {
     | '/loja'
     | '/match'
     | '/mcp'
+    | '/melhores-formacoes'
     | '/mercado-de-transferencias'
     | '/multiplayer'
     | '/new'
@@ -603,6 +614,7 @@ export interface FileRouteTypes {
     | '/loja'
     | '/match'
     | '/mcp'
+    | '/melhores-formacoes'
     | '/mercado-de-transferencias'
     | '/multiplayer'
     | '/new'
@@ -656,6 +668,7 @@ export interface RootRouteChildren {
   LojaRoute: typeof LojaRoute
   MatchRoute: typeof MatchRoute
   McpRoute: typeof McpRoute
+  MelhoresFormacoesRoute: typeof MelhoresFormacoesRoute
   MercadoDeTransferenciasRoute: typeof MercadoDeTransferenciasRoute
   MultiplayerRoute: typeof MultiplayerRoute
   NewRoute: typeof NewRoute
@@ -858,6 +871,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/melhores-formacoes': {
+      id: '/melhores-formacoes'
+      path: '/melhores-formacoes'
+      fullPath: '/melhores-formacoes'
+      preLoaderRoute: typeof MelhoresFormacoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mercado-de-transferencias': {
@@ -1064,6 +1084,7 @@ const rootRouteChildren: RootRouteChildren = {
   LojaRoute: LojaRoute,
   MatchRoute: MatchRoute,
   McpRoute: McpRoute,
+  MelhoresFormacoesRoute: MelhoresFormacoesRoute,
   MercadoDeTransferenciasRoute: MercadoDeTransferenciasRoute,
   MultiplayerRoute: MultiplayerRoute,
   NewRoute: NewRoute,
