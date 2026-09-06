@@ -144,13 +144,14 @@ function make() {
     }
   }
 
-  // ---- desgaste difuso geral, para nada ficar perfeito
-  for (let i = 0; i < 260; i++) {
+  // ---- desgaste difuso geral, para nada ficar perfeito (bem sutil)
+  for (let i = 0; i < 220; i++) {
     const mx = (rand() - 0.5) * FIELD_W;
     const mz = (rand() - 0.5) * FIELD_H;
     const [x, y] = toPx(mx, mz);
-    blob(ctx, x, y, 20 + rand() * 90, 0.03 + rand() * 0.06, "rgba(190,182,140,ALPHA)");
+    blob(ctx, x, y, 8 + rand() * 26, 0.012 + rand() * 0.02, "rgba(190,182,140,ALPHA)");
   }
+
 
   // ---- lama: manchas escuras e úmidas nos cantos e atrás das metas
   for (let i = 0; i < 40; i++) {
