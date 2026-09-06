@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { LEAGUES, getLeague } from "@/game/data/leagues";
 import { initCareer } from "@/game/career";
@@ -7,19 +7,22 @@ import { Crest } from "@/components/game/Crest";
 import { useCareer } from "@/hooks/useCareer";
 import { loadRealSquad } from "@/lib/realSquads";
 import { Flag } from "@/components/game/Flag";
+import { ManagerPortrait, HAIR_COLORS } from "@/components/game/ManagerPortrait";
+import { Cutscene } from "@/components/game/Cutscene";
+import type { ManagerAttributes, ManagerLook, ManagerPersonality, ManagerProfile } from "@/game/types";
 
 export const Route = createFileRoute("/new")({
   ssr: false,
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Escolher clube · Pro Football Manager 3D" },
+      { title: "Criar treinador · Pro Football Manager 3D" },
       {
         name: "description",
-        content: "Escolha a liga e o clube que você vai comandar nesta temporada.",
+        content: "Monte seu treinador — nome, aparência, personalidade — e escolha o clube que vai comandar.",
       },
-      { property: "og:title", content: "Escolher clube · Pro Football Manager 3D" },
-      { property: "og:description", content: "80 clubes reais em 4 grandes ligas." },
+      { property: "og:title", content: "Criar treinador · Pro Football Manager 3D" },
+      { property: "og:description", content: "Identidade, aparência, perfil e clube em quatro passos." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -27,77 +30,396 @@ export const Route = createFileRoute("/new")({
   component: NewCareer,
 });
 
+const PERSONALITIES: { id: ManagerPersonality; label: string; desc: string }[] = [
+  { id: "calmo", label: "Calmo", desc: "Diretoria mais paciente, elenco estável." },
+  { id: "motivador", label: "Motivador", desc: "Moral do elenco sobe mais rápido." },
+  { id: "durao", label: "Durão", desc: "Disciplina alta, mas desgasta estrelas." },
+  { id: "tatico", label: "Tático", desc: "Time rende mais com a tática certa." },
+  { id: "jovem", label: "Jovem promessa", desc: "Jovens crescem mais no treino." },
+];
+
+const ATTR_LABELS: { key: keyof ManagerAttributes; label: string }[] = [
+  { key: "attack", label: "Ataque" },
+  { key: "defense", label: "Defesa" },
+  { key: "market", label: "Mercado" },
+  { key: "squad", label: "Gestão de elenco" },
+  { key: "media", label: "Imprensa" },
+];
+
+const TOTAL_POINTS = 30;
+
+function StepDots({ step }: { step: number }) {
+  return (
+    <div className="flex gap-2">
+      {[0, 1, 2, 3].map((i) => (
+        <span
+          key={i}
+          className={`h-1.5 w-10 rounded-full ${i <= step ? "bg-primary" : "bg-border"}`}
+        />
+      ))}
+    </div>
+  );
+}
+
 function NewCareer() {
   const navigate = useNavigate();
   const { update } = useCareer();
+
+  const [step, setStep] = useState(0);
+  const [name, setName] = useState("Técnico");
+  const [country, setCountry] = useState(LEAGUES[0]!.id);
+  const [age, setAge] = useState(38);
+  const [look, setLook] = useState<ManagerLook>({
+    skin: 1,
+    hair: 0,
+    hairColor: HAIR_COLORS[0]!,
+    beard: 0,
+    outfit: 0,
+  });
+  const [personality, setPersonality] = useState<ManagerPersonality>("motivador");
+  const [reputation, setReputation] = useState(3);
+  const [attrs, setAttrs] = useState<ManagerAttributes>({
+    attack: 6,
+    defense: 6,
+    market: 6,
+    squad: 6,
+    media: 6,
+  });
   const [leagueId, setLeagueId] = useState(LEAGUES[0]!.id);
-  const [manager, setManager] = useState("Técnico");
-  const league = getLeague(leagueId);
-
   const [loadingClub, setLoadingClub] = useState<string | null>(null);
+  const [scene, setScene] = useState(false);
+  const [pending, setPending] = useState<{ leagueId: string; clubId: string } | null>(null);
 
-  async function start(clubId: string) {
-    setLoadingClub(clubId);
-    // Busca o elenco real do clube antes de montar a carreira.
-    await loadRealSquad(clubId);
-    update(initCareer(leagueId, clubId, manager.trim() || "Técnico"));
-    navigate({ to: "/club" });
+  const league = getLeague(leagueId);
+  const spent = useMemo(
+    () => Object.values(attrs).reduce((a, b) => a + b, 0),
+    [attrs],
+  );
+  const left = TOTAL_POINTS - spent;
+  const maxStrength = 66 + reputation * 5; // reputação baixa limita clubes grandes
+
+  function setAttr(key: keyof ManagerAttributes, v: number) {
+    const next = Math.max(1, Math.min(10, v));
+    const delta = next - attrs[key];
+    if (delta > left) return;
+    setAttrs({ ...attrs, [key]: next });
   }
+
+  function profile(clubId: string): ManagerProfile {
+    return {
+      name: name.trim() || "Técnico",
+      country,
+      age,
+      favClub: clubId,
+      look,
+      personality,
+      reputation,
+      attrs,
+      approval: 55 + reputation * 4,
+    };
+  }
+
+  async function choose(clubId: string) {
+    setLoadingClub(clubId);
+    await loadRealSquad(clubId);
+    update(initCareer(leagueId, clubId, name.trim() || "Técnico", profile(clubId)));
+    setPending({ leagueId, clubId });
+    setLoadingClub(null);
+    setScene(true);
+  }
+
+  const accent = pending ? getLeague(pending.leagueId).clubs.find((c) => c.id === pending.clubId)?.primary : undefined;
 
   return (
     <div className="pitch-bg min-h-screen px-4 py-10">
       <div className="mx-auto max-w-5xl">
-        <h1 className="font-display text-4xl uppercase tracking-wide">Nova carreira</h1>
+        <h1 className="font-display text-4xl uppercase tracking-wide">Novo treinador</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Escolha a liga, informe seu nome e assuma o comando de um clube.
+          Quatro passos: identidade, aparência, perfil e clube.
         </p>
-
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <label htmlFor="manager-name" className="sr-only">Seu nome de técnico</label>
-          <input
-            id="manager-name"
-            aria-label="Seu nome de técnico"
-            value={manager}
-            onChange={(e) => setManager(e.target.value)}
-            placeholder="Seu nome"
-            className="rounded-lg border border-input bg-card/70 px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-          <div className="flex flex-wrap gap-2">
-            {LEAGUES.map((l) => (
-              <button
-                key={l.id}
-                onClick={() => setLeagueId(l.id)}
-                className={`rounded-lg border px-3 py-2 font-display text-sm uppercase tracking-wide transition ${
-                  l.id === leagueId
-                    ? "border-primary bg-primary/15 text-foreground"
-                    : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Flag league={l.id} size={18} /> {l.name}
-              </button>
-            ))}
-          </div>
+        <div className="mt-4">
+          <StepDots step={step} />
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {league.clubs.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => void start(c.id)}
-              disabled={loadingClub !== null}
-              className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/70 p-3 text-left backdrop-blur transition hover:border-primary hover:bg-card"
-            >
-              <Crest club={c} size={40} />
-              <div className="min-w-0">
-                <p className="truncate font-display text-lg leading-tight">{c.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {loadingClub === c.id ? "Carregando elenco real…" : `Força ${c.strength}`}
-                </p>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[220px_1fr]">
+          <aside className="rounded-2xl border border-border/60 bg-card/70 p-4 text-center backdrop-blur">
+            <ManagerPortrait look={look} size={140} className="mx-auto" />
+            <p className="mt-3 font-display text-xl leading-tight">{name || "Técnico"}</p>
+            <p className="text-xs text-muted-foreground">
+              {getLeague(country).country} · {age} anos
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {PERSONALITIES.find((p) => p.id === personality)?.label} · reputação {"★".repeat(reputation)}
+            </p>
+          </aside>
+
+          <section className="rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur">
+            {step === 0 && (
+              <div className="space-y-5">
+                <div>
+                  <label htmlFor="manager-name" className="text-sm text-muted-foreground">
+                    Seu nome
+                  </label>
+                  <input
+                    id="manager-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-input bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="manager-age" className="text-sm text-muted-foreground">
+                    Idade: {age}
+                  </label>
+                  <input
+                    id="manager-age"
+                    type="range"
+                    min={25}
+                    max={70}
+                    value={age}
+                    onChange={(e) => setAge(Number(e.target.value))}
+                    className="mt-1 w-full accent-primary"
+                  />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">País de origem</p>
+                  <div className="mt-2 flex max-h-48 flex-wrap gap-2 overflow-y-auto">
+                    {LEAGUES.slice(0, 40).map((l) => (
+                      <button
+                        key={l.id}
+                        onClick={() => setCountry(l.id)}
+                        className={`rounded-lg border px-2.5 py-1.5 text-xs transition ${
+                          l.id === country
+                            ? "border-primary bg-primary/15"
+                            : "border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <Flag league={l.id} size={14} /> {l.country}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </button>
-          ))}
+            )}
+
+            {step === 1 && (
+              <div className="space-y-5">
+                <Row label="Tom de pele">
+                  {[0, 1, 2, 3, 4, 5].map((s) => (
+                    <Chip key={s} active={look.skin === s} onClick={() => setLook({ ...look, skin: s })}>
+                      {s + 1}
+                    </Chip>
+                  ))}
+                </Row>
+                <Row label="Cabelo">
+                  {[0, 1, 2, 3, 4, 5, 6].map((h) => (
+                    <Chip key={h} active={look.hair === h} onClick={() => setLook({ ...look, hair: h })}>
+                      {h === 0 ? "Curto" : h === 6 ? "Careca" : `Estilo ${h}`}
+                    </Chip>
+                  ))}
+                </Row>
+                <Row label="Cor do cabelo">
+                  {HAIR_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      aria-label={`Cor ${c}`}
+                      onClick={() => setLook({ ...look, hairColor: c })}
+                      style={{ background: c }}
+                      className={`h-7 w-7 rounded-full border-2 ${
+                        look.hairColor === c ? "border-primary" : "border-border"
+                      }`}
+                    />
+                  ))}
+                </Row>
+                <Row label="Barba">
+                  {[0, 1, 2, 3, 4].map((b) => (
+                    <Chip key={b} active={look.beard === b} onClick={() => setLook({ ...look, beard: b })}>
+                      {b === 0 ? "Sem barba" : `Estilo ${b}`}
+                    </Chip>
+                  ))}
+                </Row>
+                <Row label="Roupa">
+                  {["Terno", "Agasalho", "Casual"].map((o, i) => (
+                    <Chip key={o} active={look.outfit === i} onClick={() => setLook({ ...look, outfit: i })}>
+                      {o}
+                    </Chip>
+                  ))}
+                </Row>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-5">
+                <div>
+                  <p className="text-sm text-muted-foreground">Personalidade</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {PERSONALITIES.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setPersonality(p.id)}
+                        className={`rounded-xl border p-3 text-left transition ${
+                          personality === p.id
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-primary/60"
+                        }`}
+                      >
+                        <p className="font-display text-lg leading-tight">{p.label}</p>
+                        <p className="text-xs text-muted-foreground">{p.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Reputação inicial</p>
+                  <div className="mt-2 flex gap-2">
+                    {[1, 2, 3, 4, 5].map((r) => (
+                      <Chip key={r} active={reputation === r} onClick={() => setReputation(r)}>
+                        {"★".repeat(r)}
+                      </Chip>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Reputação maior abre clubes mais fortes e aumenta o orçamento.
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Habilidades · pontos restantes: <strong>{left}</strong>
+                  </p>
+                  <div className="mt-2 space-y-2">
+                    {ATTR_LABELS.map((a) => (
+                      <div key={a.key} className="flex items-center gap-3">
+                        <span className="w-36 text-sm">{a.label}</span>
+                        <input
+                          aria-label={a.label}
+                          type="range"
+                          min={1}
+                          max={10}
+                          value={attrs[a.key]}
+                          onChange={(e) => setAttr(a.key, Number(e.target.value))}
+                          className="flex-1 accent-primary"
+                        />
+                        <span className="w-6 text-right text-sm tabular-nums">{attrs[a.key]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div>
+                <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto">
+                  {LEAGUES.map((l) => (
+                    <button
+                      key={l.id}
+                      onClick={() => setLeagueId(l.id)}
+                      className={`rounded-lg border px-2.5 py-1.5 text-xs transition ${
+                        l.id === leagueId
+                          ? "border-primary bg-primary/15"
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Flag league={l.id} size={14} /> {l.name}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {league.clubs.map((c) => {
+                    const locked = c.strength > maxStrength;
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => !locked && void choose(c.id)}
+                        disabled={locked || loadingClub !== null}
+                        className={`flex items-center gap-3 rounded-xl border p-3 text-left transition ${
+                          locked
+                            ? "cursor-not-allowed border-border/40 opacity-45"
+                            : "border-border/60 bg-card/70 hover:border-primary hover:bg-card"
+                        }`}
+                      >
+                        <Crest club={c} size={40} />
+                        <div className="min-w-0">
+                          <p className="truncate font-display text-lg leading-tight">{c.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {loadingClub === c.id
+                              ? "Carregando elenco real…"
+                              : locked
+                                ? "Precisa de mais reputação"
+                                : `Força ${c.strength}`}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 flex items-center justify-between">
+              <button
+                onClick={() => setStep(Math.max(0, step - 1))}
+                disabled={step === 0}
+                className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground disabled:opacity-40"
+              >
+                Voltar
+              </button>
+              {step < 3 && (
+                <button
+                  onClick={() => setStep(step + 1)}
+                  disabled={step === 2 && left !== 0}
+                  className="rounded-lg bg-primary px-5 py-2 font-display text-sm uppercase tracking-wide text-primary-foreground disabled:opacity-40"
+                >
+                  {step === 2 && left !== 0 ? `Distribua ${left} pontos` : "Continuar"}
+                </button>
+              )}
+            </div>
+          </section>
         </div>
       </div>
+
+      {scene && (
+        <Cutscene
+          scene="arrival"
+          look={look}
+          {...(accent ? { accent } : {})}
+          onDone={() => {
+            setScene(false);
+            navigate({ to: "/club" });
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <div className="mt-2 flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-lg border px-3 py-1.5 text-xs transition ${
+        active ? "border-primary bg-primary/15" : "border-border text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
