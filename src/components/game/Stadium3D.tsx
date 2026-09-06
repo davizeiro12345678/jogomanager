@@ -1000,6 +1000,7 @@ function Stands({
 }) {
   const density = quality === "alta" ? 460 : quality === "media" ? 240 : 100;
   const rings = quality === "alta" ? 14 : quality === "media" ? 9 : 5;
+  const wallMat = useConcrete("#39424b", 14);
 
   const crowd = useMemo(() => {
     const positions: THREE.Vector3[] = [];
