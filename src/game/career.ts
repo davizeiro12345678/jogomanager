@@ -16,6 +16,7 @@ import { makeRng } from "./rng";
 import { applyRegens } from "./regen";
 
 import { computeTable, generateFixtures } from "./season";
+import { evaluateAchievements } from "./achievements";
 import { createCups, cupPrize, playCupStage, stageName } from "./cup";
 import { buildSquad } from "./squad";
 import type {
@@ -240,7 +241,8 @@ export function initCareer(
 /** Migra estados antigos (v1/v2) para o formato atual. */
 export function migrateCareer(raw: unknown): CareerState {
   const s = raw as CareerState & { version?: number };
-  if (s && s.version === 3) return s;
+  if (s && s.version === 3)
+    return { ...s, achievements: s.achievements ?? [], achievementsUnlockedAt: s.achievementsUnlockedAt ?? {} };
   const club = CLUBS[s.clubId];
   const players: Record<string, Player> = {};
   for (const [id, p] of Object.entries(s.players ?? {})) {
@@ -276,6 +278,8 @@ export function migrateCareer(raw: unknown): CareerState {
     sacked: s.sacked ?? false,
     managerHistory:
       s.managerHistory ?? [{ clubId: s.clubId, from: s.season ?? 1, to: null, note: "Contratado" }],
+    achievements: s.achievements ?? [],
+    achievementsUnlockedAt: s.achievementsUnlockedAt ?? {},
   };
 }
 
@@ -708,6 +712,19 @@ export function advanceRound(
   }
 
   next = checkSacking(next);
+
+  const newlyUnlocked = evaluateAchievements(next);
+  if (newlyUnlocked.length) {
+    const now = new Date().toISOString();
+    next = {
+      ...next,
+      achievements: [...(next.achievements ?? []), ...newlyUnlocked],
+      achievementsUnlockedAt: {
+        ...(next.achievementsUnlockedAt ?? {}),
+        ...Object.fromEntries(newlyUnlocked.map((id) => [id, now])),
+      },
+    };
+  }
 
   return next;
 }

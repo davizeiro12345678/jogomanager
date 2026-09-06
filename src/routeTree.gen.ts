@@ -10,11 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AssistenteRouteImport } from './routes/assistente'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BoardRouteImport } from './routes/board'
 import { Route as BrasileiraoRouteImport } from './routes/brasileirao'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as CarreiraRouteImport } from './routes/carreira'
+import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as ComoSerTecnicoDeFutebolRouteImport } from './routes/como-ser-tecnico-de-futebol'
 import { Route as CriadorRouteImport } from './routes/criador'
@@ -27,6 +29,7 @@ import { Route as HistoryRouteImport } from './routes/history'
 import { Route as JogoDeManagerDeFutebolRouteImport } from './routes/jogo-de-manager-de-futebol'
 import { Route as LeagueRouteImport } from './routes/league'
 import { Route as LigasDeFutebolRouteImport } from './routes/ligas-de-futebol'
+import { Route as LojaRouteImport } from './routes/loja'
 import { Route as MatchRouteImport } from './routes/match'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as MercadoDeTransferenciasRouteImport } from './routes/mercado-de-transferencias'
@@ -57,6 +60,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AssistenteRoute = AssistenteRouteImport.update({
+  id: '/assistente',
+  path: '/assistente',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -80,6 +88,11 @@ const CadastroRoute = CadastroRouteImport.update({
 const CarreiraRoute = CarreiraRouteImport.update({
   id: '/carreira',
   path: '/carreira',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClubRoute = ClubRouteImport.update({
@@ -140,6 +153,11 @@ const LeagueRoute = LeagueRouteImport.update({
 const LigasDeFutebolRoute = LigasDeFutebolRouteImport.update({
   id: '/ligas-de-futebol',
   path: '/ligas-de-futebol',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LojaRoute = LojaRouteImport.update({
+  id: '/loja',
+  path: '/loja',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MatchRoute = MatchRouteImport.update({
@@ -267,11 +285,13 @@ const LovableEmailTransactionalPreviewRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/assistente': typeof AssistenteRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
   '/brasileirao': typeof BrasileiraoRoute
   '/cadastro': typeof CadastroRoute
   '/carreira': typeof CarreiraRoute
+  '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/criador': typeof CriadorRoute
@@ -284,6 +304,7 @@ export interface FileRoutesByFullPath {
   '/jogo-de-manager-de-futebol': typeof JogoDeManagerDeFutebolRoute
   '/league': typeof LeagueRoute
   '/ligas-de-futebol': typeof LigasDeFutebolRoute
+  '/loja': typeof LojaRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
@@ -311,11 +332,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/assistente': typeof AssistenteRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
   '/brasileirao': typeof BrasileiraoRoute
   '/cadastro': typeof CadastroRoute
   '/carreira': typeof CarreiraRoute
+  '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/criador': typeof CriadorRoute
@@ -328,6 +351,7 @@ export interface FileRoutesByTo {
   '/jogo-de-manager-de-futebol': typeof JogoDeManagerDeFutebolRoute
   '/league': typeof LeagueRoute
   '/ligas-de-futebol': typeof LigasDeFutebolRoute
+  '/loja': typeof LojaRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
@@ -356,11 +380,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/assistente': typeof AssistenteRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
   '/brasileirao': typeof BrasileiraoRoute
   '/cadastro': typeof CadastroRoute
   '/carreira': typeof CarreiraRoute
+  '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/criador': typeof CriadorRoute
@@ -373,6 +399,7 @@ export interface FileRoutesById {
   '/jogo-de-manager-de-futebol': typeof JogoDeManagerDeFutebolRoute
   '/league': typeof LeagueRoute
   '/ligas-de-futebol': typeof LigasDeFutebolRoute
+  '/loja': typeof LojaRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
@@ -402,11 +429,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/assistente'
     | '/auth'
     | '/board'
     | '/brasileirao'
     | '/cadastro'
     | '/carreira'
+    | '/chat'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
     | '/criador'
@@ -419,6 +448,7 @@ export interface FileRouteTypes {
     | '/jogo-de-manager-de-futebol'
     | '/league'
     | '/ligas-de-futebol'
+    | '/loja'
     | '/match'
     | '/mcp'
     | '/mercado-de-transferencias'
@@ -446,11 +476,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/assistente'
     | '/auth'
     | '/board'
     | '/brasileirao'
     | '/cadastro'
     | '/carreira'
+    | '/chat'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
     | '/criador'
@@ -463,6 +495,7 @@ export interface FileRouteTypes {
     | '/jogo-de-manager-de-futebol'
     | '/league'
     | '/ligas-de-futebol'
+    | '/loja'
     | '/match'
     | '/mcp'
     | '/mercado-de-transferencias'
@@ -490,11 +523,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/assistente'
     | '/auth'
     | '/board'
     | '/brasileirao'
     | '/cadastro'
     | '/carreira'
+    | '/chat'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
     | '/criador'
@@ -507,6 +542,7 @@ export interface FileRouteTypes {
     | '/jogo-de-manager-de-futebol'
     | '/league'
     | '/ligas-de-futebol'
+    | '/loja'
     | '/match'
     | '/mcp'
     | '/mercado-de-transferencias'
@@ -535,11 +571,13 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AssistenteRoute: typeof AssistenteRoute
   AuthRoute: typeof AuthRoute
   BoardRoute: typeof BoardRoute
   BrasileiraoRoute: typeof BrasileiraoRoute
   CadastroRoute: typeof CadastroRoute
   CarreiraRoute: typeof CarreiraRoute
+  ChatRoute: typeof ChatRoute
   ClubRoute: typeof ClubRoute
   ComoSerTecnicoDeFutebolRoute: typeof ComoSerTecnicoDeFutebolRoute
   CriadorRoute: typeof CriadorRoute
@@ -552,6 +590,7 @@ export interface RootRouteChildren {
   JogoDeManagerDeFutebolRoute: typeof JogoDeManagerDeFutebolRoute
   LeagueRoute: typeof LeagueRoute
   LigasDeFutebolRoute: typeof LigasDeFutebolRoute
+  LojaRoute: typeof LojaRoute
   MatchRoute: typeof MatchRoute
   McpRoute: typeof McpRoute
   MercadoDeTransferenciasRoute: typeof MercadoDeTransferenciasRoute
@@ -587,6 +626,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/assistente': {
+      id: '/assistente'
+      path: '/assistente'
+      fullPath: '/assistente'
+      preLoaderRoute: typeof AssistenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -620,6 +666,13 @@ declare module '@tanstack/react-router' {
       path: '/carreira'
       fullPath: '/carreira'
       preLoaderRoute: typeof CarreiraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/club': {
@@ -704,6 +757,13 @@ declare module '@tanstack/react-router' {
       path: '/ligas-de-futebol'
       fullPath: '/ligas-de-futebol'
       preLoaderRoute: typeof LigasDeFutebolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/loja': {
+      id: '/loja'
+      path: '/loja'
+      fullPath: '/loja'
+      preLoaderRoute: typeof LojaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/match': {
@@ -879,11 +939,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AssistenteRoute: AssistenteRoute,
   AuthRoute: AuthRoute,
   BoardRoute: BoardRoute,
   BrasileiraoRoute: BrasileiraoRoute,
   CadastroRoute: CadastroRoute,
   CarreiraRoute: CarreiraRoute,
+  ChatRoute: ChatRoute,
   ClubRoute: ClubRoute,
   ComoSerTecnicoDeFutebolRoute: ComoSerTecnicoDeFutebolRoute,
   CriadorRoute: CriadorRoute,
@@ -896,6 +958,7 @@ const rootRouteChildren: RootRouteChildren = {
   JogoDeManagerDeFutebolRoute: JogoDeManagerDeFutebolRoute,
   LeagueRoute: LeagueRoute,
   LigasDeFutebolRoute: LigasDeFutebolRoute,
+  LojaRoute: LojaRoute,
   MatchRoute: MatchRoute,
   McpRoute: McpRoute,
   MercadoDeTransferenciasRoute: MercadoDeTransferenciasRoute,
