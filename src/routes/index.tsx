@@ -76,6 +76,13 @@ function Landing() {
           >
             Escolher clube
           </Link>
+          <Link
+            to="/clube/novo"
+            className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest text-foreground transition hover:bg-secondary"
+          >
+            Criar meu clube
+          </Link>
+
 
           <Link
             to="/auth"

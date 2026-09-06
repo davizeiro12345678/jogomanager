@@ -1,0 +1,135 @@
+import { PlayerPortrait } from "@/components/game/PlayerPortrait";
+import {
+  ATTR_LABELS,
+  attrTone,
+  groupsFor,
+  PERSONALITY_DESC,
+  profileFor,
+} from "@/game/attributes";
+import { CLUBS } from "@/game/data/leagues";
+import { formatMoney, formatWage } from "@/game/economy";
+import type { Player } from "@/game/types";
+
+function Bar({ v }: { v: number }) {
+  return (
+    <span className="ml-2 inline-block h-1.5 w-16 overflow-hidden rounded bg-muted align-middle">
+      <span className="block h-full rounded bg-primary" style={{ width: `${v}%` }} />
+    </span>
+  );
+}
+
+/** Ficha completa do jogador: retrato, atributos, personalidade e carreira. */
+export function PlayerSheet({ player, onClose }: { player: Player; onClose: () => void }) {
+  const prof = profileFor(player);
+  const club = CLUBS[player.clubId];
+  const groups = groupsFor(player.pos);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-background/80 p-4 backdrop-blur"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Ficha de ${player.name}`}
+      onClick={onClose}
+    >
+      <div
+        className="my-6 w-full max-w-3xl rounded-2xl border border-border/60 bg-card p-5 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="flex flex-wrap items-center gap-4">
+          <PlayerPortrait
+            player={player}
+            size={84}
+            primary={club?.primary ?? "#0a8f3c"}
+            secondary={club?.secondary ?? "#ffffff"}
+          />
+          <div className="min-w-40 flex-1">
+            <h2 className="font-display text-xl uppercase tracking-wide">{player.name}</h2>
+            <p className="text-sm text-muted-foreground">
+              #{player.number} · {player.pos} · {player.age} anos · {club?.name ?? "sem clube"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {prof.height} cm · {prof.weight} kg · pé {prof.foot} · afinidade com você {prof.rapport}%
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="font-display text-3xl text-primary">{player.ovr}</p>
+            <p className="text-[11px] uppercase text-muted-foreground">
+              potencial {player.potential ?? player.ovr}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-border/60 px-3 py-1.5 text-sm"
+          >
+            Fechar
+          </button>
+        </header>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-4">
+          {[
+            ["Condição", `${player.condition}%`],
+            ["Moral", `${player.morale}%`],
+            ["Salário", formatWage(player.wage)],
+            ["Valor", formatMoney(player.value)],
+          ].map(([k, v]) => (
+            <div key={k} className="rounded-xl border border-border/50 bg-background/40 p-2 text-center">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{k}</p>
+              <p className="text-sm font-semibold">{v}</p>
+            </div>
+          ))}
+        </div>
+
+        <section className="mt-4 rounded-xl border border-border/50 bg-background/40 p-3">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Personalidade · {prof.personality}
+          </p>
+          <p className="mt-1 text-sm">{PERSONALITY_DESC[prof.personality]}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {prof.traits.map((t) => (
+              <span key={t} className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] text-primary">
+                {t}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {groups.map((g) => (
+            <section key={g.label} className="rounded-xl border border-border/50 bg-background/40 p-3">
+              <h3 className="text-xs uppercase tracking-wide text-muted-foreground">{g.label}</h3>
+              <ul className="mt-2 space-y-1">
+                {g.keys.map((k) => (
+                  <li key={k} className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{ATTR_LABELS[k]}</span>
+                    <span className={attrTone(prof.attrs[k])}>
+                      {prof.attrs[k]}
+                      <Bar v={prof.attrs[k]} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+
+        <section className="mt-4 rounded-xl border border-border/50 bg-background/40 p-3">
+          <h3 className="text-xs uppercase tracking-wide text-muted-foreground">Passagem por clubes</h3>
+          <ul className="mt-2 space-y-1 text-sm">
+            {prof.spells.map((s, i) => (
+              <li key={`${s.clubId}-${i}`} className="flex justify-between gap-3">
+                <span>
+                  {s.from}–{s.to} · {s.clubName}
+                </span>
+                <span className="text-muted-foreground">
+                  {s.apps} jogos · {s.goals} gols
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+    </div>
+  );
+}

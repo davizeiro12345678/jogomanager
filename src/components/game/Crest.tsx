@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 
 import type { Club } from "@/game/types";
+import { crestStyleFor } from "@/game/customStyle";
 import { badgeFor } from "@/lib/customData";
 import { loadOfficialAssets, officialCrest, subscribeOfficial } from "@/lib/officialAssets";
 
@@ -110,10 +111,12 @@ export function Crest({
 
 
   const h = hash(club.id);
-  const shape = SHAPE_LIST[h % SHAPE_LIST.length]!;
-  const pattern = PATTERN_LIST[Math.floor(h / 7) % PATTERN_LIST.length]!;
-  const emblem = EMBLEM_LIST[Math.floor(h / 31) % EMBLEM_LIST.length]!;
-  const founded = 1890 + (Math.floor(h / 97) % 110);
+  const style = crestStyleFor(club.id);
+  const shape = style?.shape ?? SHAPE_LIST[h % SHAPE_LIST.length]!;
+  const pattern = style?.pattern ?? PATTERN_LIST[Math.floor(h / 7) % PATTERN_LIST.length]!;
+  const emblem = style?.emblem ?? EMBLEM_LIST[Math.floor(h / 31) % EMBLEM_LIST.length]!;
+  const founded = style?.founded ?? 1890 + (Math.floor(h / 97) % 110);
+
   const stars = club.strength >= 84 ? 3 : club.strength >= 78 ? 2 : club.strength >= 72 ? 1 : 0;
   const full = detail === "full" || (detail === "auto" && size >= 38);
 
