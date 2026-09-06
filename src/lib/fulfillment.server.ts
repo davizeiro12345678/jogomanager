@@ -131,7 +131,7 @@ export async function syncSubscription(
       cancel_at_period_end: subscription.cancel_at_period_end || false,
       environment: env,
       updated_at: new Date().toISOString(),
-    },
+    } as any,
     { onConflict: "stripe_subscription_id" }
   );
 
