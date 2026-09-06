@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { kitStyleFor } from "./customStyle";
 
 export type KitPattern =
   | "solid"
@@ -65,11 +66,24 @@ function shortsAndSocks(base: string, detail: string, seed: string) {
 }
 
 export function kitFor(clubId: string, primary: string, secondary: string, away = false): Kit {
+  const custom = kitStyleFor(clubId);
+  if (custom) {
+    const base = away ? custom.awayBase : custom.base;
+    const detail = away ? custom.awayDetail : custom.detail;
+    return {
+      base,
+      detail,
+      pattern: custom.pattern,
+      shorts: away ? detail : custom.shorts,
+      socks: away ? base : custom.socks,
+    };
+  }
   const p = PATTERNS[hash(clubId) % PATTERNS.length]!;
   const [base, detail] = away ? [secondary, primary] : [primary, secondary];
   const { shorts, socks } = shortsAndSocks(base, detail, `${clubId}-ss`);
   return { base, detail, pattern: p, shorts, socks };
 }
+
 
 /** Uniforme de goleiro: cores vibrantes determinísticas. */
 export function gkKitFor(clubId: string): Kit {

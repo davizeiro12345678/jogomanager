@@ -45,6 +45,7 @@ import { Route as TemporadaAutomaticaRouteImport } from './routes/temporada-auto
 import { Route as TrainingRouteImport } from './routes/training'
 import { Route as TransfersRouteImport } from './routes/transfers'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as ClubeNovoRouteImport } from './routes/clube.novo'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicSyncFootballRouteImport } from './routes/api/public/sync-football'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -232,6 +233,11 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ClubeNovoRoute = ClubeNovoRouteImport.update({
+  id: '/clube/novo',
+  path: '/clube/novo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -296,6 +302,7 @@ export interface FileRoutesByFullPath {
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/clube/novo': typeof ClubeNovoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -339,6 +346,7 @@ export interface FileRoutesByTo {
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/clube/novo': typeof ClubeNovoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -383,6 +391,7 @@ export interface FileRoutesById {
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/clube/novo': typeof ClubeNovoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -428,6 +437,7 @@ export interface FileRouteTypes {
     | '/training'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
+    | '/clube/novo'
     | '/.lovable/oauth/consent'
     | '/api/public/sync-football'
     | '/lovable/email/auth/preview'
@@ -471,6 +481,7 @@ export interface FileRouteTypes {
     | '/training'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
+    | '/clube/novo'
     | '/.lovable/oauth/consent'
     | '/api/public/sync-football'
     | '/lovable/email/auth/preview'
@@ -514,6 +525,7 @@ export interface FileRouteTypes {
     | '/training'
     | '/transfers'
     | '/.well-known/oauth-protected-resource'
+    | '/clube/novo'
     | '/.lovable/oauth/consent'
     | '/api/public/sync-football'
     | '/lovable/email/auth/preview'
@@ -558,6 +570,7 @@ export interface RootRouteChildren {
   TrainingRoute: typeof TrainingRoute
   TransfersRoute: typeof TransfersRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  ClubeNovoRoute: typeof ClubeNovoRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicSyncFootballRoute: typeof ApiPublicSyncFootballRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -819,6 +832,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/clube/novo': {
+      id: '/clube/novo'
+      path: '/clube/novo'
+      fullPath: '/clube/novo'
+      preLoaderRoute: typeof ClubeNovoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
       path: '/.lovable/oauth/consent'
@@ -895,6 +915,7 @@ const rootRouteChildren: RootRouteChildren = {
   TransfersRoute: TransfersRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  ClubeNovoRoute: ClubeNovoRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicSyncFootballRoute: ApiPublicSyncFootballRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,

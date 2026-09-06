@@ -13,6 +13,8 @@ import { customPlayersFor, toGamePlayer } from "@/lib/customData";
 import { realSquadFor, type RealPlayer } from "@/lib/realSquads";
 import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
+import { applyRegens } from "./regen";
+
 import { computeTable, generateFixtures } from "./season";
 import { createCups, cupPrize, playCupStage, stageName } from "./cup";
 import { buildSquad } from "./squad";
@@ -466,9 +468,9 @@ function endSeason(state: CareerState): CareerState {
 
   // envelhecimento e reset de estatísticas
   const rnd = makeRng(`age-${state.clubId}-${state.season}`);
-  const players: Record<string, Player> = {};
+  const aged: Record<string, Player> = {};
   for (const [id, p] of Object.entries(state.players)) {
-    players[id] = {
+    aged[id] = {
       ...p,
       age: p.age + 1,
       goals: 0,
@@ -481,8 +483,14 @@ function endSeason(state: CareerState): CareerState {
     };
   }
 
+  // aposentadorias e garotos da base
+  const regen = applyRegens(aged, state.clubId, state.season, state.round);
+  const players = regen.players;
+  news.push(...regen.news);
+
   const squad = Object.values(players);
   const { lineup, bench } = pickLineup(squad, state.tactics.formation);
+
 
   return {
     ...state,
