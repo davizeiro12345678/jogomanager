@@ -625,7 +625,7 @@ export class MatchSim {
         ? (holder.shooting / 100) * (1 - distGoal / 34) * (pressDist > 2.5 ? 1.2 : 0.7)
         : 0;
 
-    if (holder.pos !== "GK" && this.rnd() < shootUrge * 0.55) {
+    if (holder.pos !== "GK" && this.rnd() < shootUrge * 0.12) {
       this.shoot(holder, distGoal);
       return;
     }
@@ -725,7 +725,7 @@ export class MatchSim {
 
     this.stats[side].onTarget++;
     const gkSkill = gk ? gk.defending * 0.7 + gk.physical * 0.3 : 60;
-    const goalChance = Math.max(0.06, Math.min(0.72, accuracy * 1.15 - gkSkill / 260));
+    const goalChance = Math.max(0.05, Math.min(0.55, accuracy * 0.9 - gkSkill / 270));
     if (this.rnd() < goalChance) {
       this.stats[side].goals++;
       holder.goals++;
