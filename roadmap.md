@@ -23,3 +23,5 @@
 - Publicado e sitemap atualizado.
 
 - [x] Importação contínua dos dados reais (escudos, estádios, elencos) — 935 clubes com elenco, 1073 escudos
+
+- [x] Criação do treinador em etapas (identidade, aparência, perfil, clube) + cutscene de chegada
