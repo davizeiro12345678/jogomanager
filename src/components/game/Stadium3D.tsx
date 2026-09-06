@@ -714,21 +714,14 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
             )}
             {on && (
               <>
-                {/* halo volumétrico: cone leve saindo do rack em direção ao campo */}
-                {quality !== "baixa" && (
-                  <mesh
-                    position={[-px * 0.28, 20, -pz * 0.28]}
-                    rotation={[
-                      Math.atan2(Math.hypot(px, pz) * 0.55, 18) * (pz > 0 ? -1 : 1),
-                      Math.atan2(-px, -pz),
-                      0,
-                    ]}
-                  >
-                    <coneGeometry args={[9, Math.max(24, dist * 0.7), 16, 1, true]} />
+                {/* halo volumétrico curto, apenas em volta do rack */}
+                {quality === "alta" && (
+                  <mesh position={[0, 26, 0]} rotation={[Math.PI, 0, 0]}>
+                    <coneGeometry args={[5.5, 9, 14, 1, true]} />
                     <meshBasicMaterial
                       color="#cfe3ff"
                       transparent
-                      opacity={quality === "alta" ? 0.055 : 0.035}
+                      opacity={0.05}
                       depthWrite={false}
                       side={THREE.DoubleSide}
                       blending={THREE.AdditiveBlending}
@@ -736,6 +729,7 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
                     />
                   </mesh>
                 )}
+
                 <sprite position={[0, 28.5, 0]} scale={[30, 30, 1]}>
                   <spriteMaterial
                     color="#cfe3ff"
