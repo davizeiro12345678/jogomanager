@@ -29,7 +29,7 @@ function buildAlbedo(size = 1024) {
   const made = make(size);
   if (!made) return null;
   const { c, ctx } = made;
-  const rand = rng(0xc0nc & 0xffff);
+  const rand = rng(0xc0c0de);
 
   ctx.fillStyle = "#6a7178";
   ctx.fillRect(0, 0, size, size);
