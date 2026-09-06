@@ -38,6 +38,33 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          body: string
+          created_at: string
+          display_name: string
+          hidden: boolean
+          id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          display_name: string
+          hidden?: boolean
+          id?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          display_name?: string
+          hidden?: boolean
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       club_external_ids: {
         Row: {
           club_id: string
@@ -410,6 +437,117 @@ export type Database = {
           name?: string
           photo_url?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      store_products: {
+        Row: {
+          active: boolean
+          coins: number
+          created_at: string
+          currency: string
+          description: string
+          id: string
+          key: string
+          kind: string
+          name: string
+          price_cents: number
+        }
+        Insert: {
+          active?: boolean
+          coins?: number
+          created_at?: string
+          currency?: string
+          description?: string
+          id?: string
+          key: string
+          kind?: string
+          name: string
+          price_cents?: number
+        }
+        Update: {
+          active?: boolean
+          coins?: number
+          created_at?: string
+          currency?: string
+          description?: string
+          id?: string
+          key?: string
+          kind?: string
+          name?: string
+          price_cents?: number
+        }
+        Relationships: []
+      }
+      user_achievements: {
+        Row: {
+          achievement_key: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_key: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_key?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_purchases: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          id: string
+          product_key: string
+          reference: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          product_key: string
+          reference?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          product_key?: string
+          reference?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_wallet: {
+        Row: {
+          coins: number
+          season_pass: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coins?: number
+          season_pass?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coins?: number
+          season_pass?: boolean
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
