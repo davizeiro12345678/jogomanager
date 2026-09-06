@@ -952,18 +952,67 @@ function Roof({ rings }: { rings: number }) {
 }
 
 
-function Banners({ color }: { color: string }) {
+/**
+ * Faixas de torcida organizada e mosaico de cartolinas dos setores atrás
+ * dos gols — o que se vê primeiro numa panorâmica de transmissão.
+ */
+function Banners({ color, alt, rings }: { color: string; alt: string; rings: number }) {
+  const words = ["torcida fiel", "aqui é nosso", "amor eterno", "raça e paixão"];
+  const banners = useMemo(
+    () =>
+      words.map((w, i) => bannerTexture(w, i % 2 === 0 ? color : alt, i % 2 === 0 ? alt : color)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [color, alt],
+  );
+  const mosaic = useMemo(() => mosaicTexture(color, alt), [color, alt]);
+  const top = 2.0 + rings * 1.45;
+
   return (
     <group>
-      {[-1, 0, 1].map((i) => (
-        <mesh key={i} position={[i * 22, 2.2, -(FIELD_Z + 6.4)]}>
-          <planeGeometry args={[16, 1.6]} />
-          <meshStandardMaterial color={color} roughness={0.9} side={THREE.DoubleSide} />
-        </mesh>
-      ))}
+      {/* faixas presas na grade da primeira fila */}
+      {banners.map((t, i) =>
+        t ? (
+          <mesh key={`b${i}`} position={[(i - 1.5) * 26, 2.2, -(FIELD_Z + 6.4)]}>
+            <planeGeometry args={[18, 2.2]} />
+            <meshStandardMaterial map={t} roughness={0.92} side={THREE.DoubleSide} />
+          </mesh>
+        ) : null,
+      )}
+      {banners.map((t, i) =>
+        t ? (
+          <mesh
+            key={`bb${i}`}
+            position={[(i - 1.5) * 26, 2.2, FIELD_Z + 6.4]}
+            rotation={[0, Math.PI, 0]}
+          >
+            <planeGeometry args={[18, 2.2]} />
+            <meshStandardMaterial map={t} roughness={0.92} side={THREE.DoubleSide} />
+          </mesh>
+        ) : null,
+      )}
+      {/* mosaico atrás de cada gol, ocupando a altura do anel */}
+      {mosaic
+        ? [-1, 1].map((x) => (
+            <mesh
+              key={`m${x}`}
+              position={[x * (FIELD_X + 11), top * 0.55 + 2, 0]}
+              rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}
+            >
+              <planeGeometry args={[FIELD_Z * 1.6, Math.max(6, top * 0.7)]} />
+              <meshStandardMaterial
+                map={mosaic}
+                roughness={0.95}
+                transparent
+                opacity={0.85}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+          ))
+        : null}
     </group>
   );
 }
+
 
 function Stands({
   homeColor,
