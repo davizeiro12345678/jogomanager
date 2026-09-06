@@ -32,7 +32,7 @@ async function resolveOrCreateCustomer(
       limit: 1,
     });
     if (existing.data.length) {
-      const customer = existing.data[0];
+      const customer = existing.data[0]!;
       if (options.userId && customer.metadata?.userId !== options.userId) {
         await stripe.customers.update(customer.id, {
           metadata: { ...customer.metadata, userId: options.userId },
@@ -42,8 +42,8 @@ async function resolveOrCreateCustomer(
     }
   }
   const created = await stripe.customers.create({
-    ...(options.email && { email: options.email }),
-    ...(options.userId && { metadata: { userId: options.userId } }),
+    ...(options.email ? { email: options.email } : {}),
+    ...(options.userId ? { metadata: { userId: options.userId } } : {}),
   });
   return created.id;
 }
@@ -71,7 +71,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         lookup_keys: [data.priceId],
       });
       if (!prices.data.length) throw new Error("Price not found");
-      const stripePrice = prices.data[0];
+      const stripePrice = prices.data[0]!;
       const isRecurring = stripePrice.type === "recurring";
 
       const email =
@@ -80,7 +80,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
           : undefined;
 
       const customerId = await resolveOrCreateCustomer(stripe, {
-        email,
+        ...(email ? { email } : {}),
         userId: context.userId,
       });
 
@@ -109,7 +109,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         ...(isRecurring && {
           subscription_data: { metadata: { userId: context.userId } },
         }),
-      } as Stripe.Checkout.SessionCreateParams);
+      } as Parameters<ReturnType<typeof createStripeClient>["checkout"]["sessions"]["create"]>[0]);
 
       return { clientSecret: session.client_secret ?? "" };
     } catch (error) {
@@ -139,7 +139,7 @@ export const createPortalSession = createServerFn({ method: "POST" })
       const stripe = createStripeClient(data.environment);
       const portal = await stripe.billingPortal.sessions.create({
         customer: sub.stripe_customer_id,
-        ...(data.returnUrl && { return_url: data.returnUrl }),
+        ...(data.returnUrl ? { return_url: data.returnUrl } : {}),
       });
       return { url: portal.url };
     } catch (error) {
