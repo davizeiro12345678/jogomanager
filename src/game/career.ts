@@ -21,6 +21,7 @@ import type {
   CupState,
   FormationKey,
   JobOffer,
+  ManagerProfile,
   NewsItem,
   Player,
   Position,
