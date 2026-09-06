@@ -1834,7 +1834,7 @@ function Scene({
       <directionalLight position={[-60, 60, -40]} intensity={0.6} color="#bcd8ff" />
 
       <SkyDome time={time} />
-      <Pitch quality={quality} sim={sim} />
+      <Pitch quality={quality} sim={sim} wet={time === "noite" ? 0.7 : time === "entardecer" ? 0.3 : 0} />
 
       <AdBoards homeColor={sim.home.primary} awayColor={sim.away.primary} />
       <Floodlights time={time} quality={quality} />
@@ -1844,6 +1844,13 @@ function Scene({
         quality={quality}
         goalPulse={goalPulse}
         night={time !== "dia"}
+      />
+      <StadiumProps
+        rings={quality === "alta" ? 14 : quality === "media" ? 9 : 5}
+        quality={quality}
+        homeColor={sim.home.primary}
+        awayColor={sim.away.primary}
+        ball={sim.ball}
       />
       <Scoreboard sim={sim} />
       <Ball sim={sim} quality={quality} />
@@ -1865,7 +1872,13 @@ function Scene({
       ))}
       <GoalFx goalPulse={goalPulse} quality={quality} />
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
-      <PostFX quality={quality} replay={replay} />
+      <PostFX
+        quality={quality}
+        replay={replay}
+        moment={goalPulse.current > 0.8 ? "drama" : replay ? "replay" : "match"}
+        time={time}
+      />
+
 
     </>
   );
