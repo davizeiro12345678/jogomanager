@@ -38,11 +38,11 @@ function Person({
 }: {
   x: number;
   y: number;
-  s?: number;
+  s?: number | undefined;
   shirt: string;
-  skin?: string;
-  anim?: string;
-  delay?: number;
+  skin?: string | undefined;
+  anim?: string | undefined;
+  delay?: number | undefined;
 }) {
   return (
     <g
