@@ -4,6 +4,7 @@ import {
   BarChart3,
   Briefcase,
   Coins,
+  Clapperboard,
   Dumbbell,
   FastForward,
   Gauge,
@@ -43,6 +44,7 @@ const TABS: { to: string; key: string; icon: ComponentType<{ size?: number }> }[
   { to: "/stats", key: "nav.stats", icon: BarChart3 },
   { to: "/news", key: "nav.news", icon: Newspaper },
   { to: "/history", key: "nav.history", icon: History },
+  { to: "/carreira", key: "nav.coach", icon: Clapperboard },
   { to: "/temporada-automatica", key: "nav.auto", icon: FastForward },
 ];
 

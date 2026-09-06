@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BoardRouteImport } from './routes/board'
 import { Route as BrasileiraoRouteImport } from './routes/brasileirao'
 import { Route as CadastroRouteImport } from './routes/cadastro'
+import { Route as CarreiraRouteImport } from './routes/carreira'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as ComoSerTecnicoDeFutebolRouteImport } from './routes/como-ser-tecnico-de-futebol'
 import { Route as CriadorRouteImport } from './routes/criador'
@@ -73,6 +74,11 @@ const BrasileiraoRoute = BrasileiraoRouteImport.update({
 const CadastroRoute = CadastroRouteImport.update({
   id: '/cadastro',
   path: '/cadastro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CarreiraRoute = CarreiraRouteImport.update({
+  id: '/carreira',
+  path: '/carreira',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClubRoute = ClubRouteImport.update({
@@ -259,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/board': typeof BoardRoute
   '/brasileirao': typeof BrasileiraoRoute
   '/cadastro': typeof CadastroRoute
+  '/carreira': typeof CarreiraRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/criador': typeof CriadorRoute
@@ -301,6 +308,7 @@ export interface FileRoutesByTo {
   '/board': typeof BoardRoute
   '/brasileirao': typeof BrasileiraoRoute
   '/cadastro': typeof CadastroRoute
+  '/carreira': typeof CarreiraRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/criador': typeof CriadorRoute
@@ -344,6 +352,7 @@ export interface FileRoutesById {
   '/board': typeof BoardRoute
   '/brasileirao': typeof BrasileiraoRoute
   '/cadastro': typeof CadastroRoute
+  '/carreira': typeof CarreiraRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/criador': typeof CriadorRoute
@@ -388,6 +397,7 @@ export interface FileRouteTypes {
     | '/board'
     | '/brasileirao'
     | '/cadastro'
+    | '/carreira'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
     | '/criador'
@@ -430,6 +440,7 @@ export interface FileRouteTypes {
     | '/board'
     | '/brasileirao'
     | '/cadastro'
+    | '/carreira'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
     | '/criador'
@@ -472,6 +483,7 @@ export interface FileRouteTypes {
     | '/board'
     | '/brasileirao'
     | '/cadastro'
+    | '/carreira'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
     | '/criador'
@@ -515,6 +527,7 @@ export interface RootRouteChildren {
   BoardRoute: typeof BoardRoute
   BrasileiraoRoute: typeof BrasileiraoRoute
   CadastroRoute: typeof CadastroRoute
+  CarreiraRoute: typeof CarreiraRoute
   ClubRoute: typeof ClubRoute
   ComoSerTecnicoDeFutebolRoute: typeof ComoSerTecnicoDeFutebolRoute
   CriadorRoute: typeof CriadorRoute
@@ -587,6 +600,13 @@ declare module '@tanstack/react-router' {
       path: '/cadastro'
       fullPath: '/cadastro'
       preLoaderRoute: typeof CadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/carreira': {
+      id: '/carreira'
+      path: '/carreira'
+      fullPath: '/carreira'
+      preLoaderRoute: typeof CarreiraRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/club': {
@@ -843,6 +863,7 @@ const rootRouteChildren: RootRouteChildren = {
   BoardRoute: BoardRoute,
   BrasileiraoRoute: BrasileiraoRoute,
   CadastroRoute: CadastroRoute,
+  CarreiraRoute: CarreiraRoute,
   ClubRoute: ClubRoute,
   ComoSerTecnicoDeFutebolRoute: ComoSerTecnicoDeFutebolRoute,
   CriadorRoute: CriadorRoute,

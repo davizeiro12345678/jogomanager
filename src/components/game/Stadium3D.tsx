@@ -1,5 +1,11 @@
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment, Lightformer, AdaptiveDpr, AdaptiveEvents } from "@react-three/drei";
+import {
+  Environment,
+  Lightformer,
+  AdaptiveDpr,
+  AdaptiveEvents,
+  PerformanceMonitor,
+} from "@react-three/drei";
 import {
   EffectComposer,
   Bloom,
@@ -16,7 +22,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { PlayerRig } from "@/components/game/players/PlayerRig";
-import { dprFor } from "@/game/device";
+import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
 
@@ -1829,27 +1835,54 @@ function Stadium3DImpl({
     return () => document.removeEventListener("visibilitychange", onVis);
   }, []);
 
+  /**
+   * Qualidade adaptativa: mede o ritmo real dos quadros e desce um degrau
+   * (resolução, pós-processamento e torcida antes de tudo) quando a partida
+   * fica pesada; volta a subir só depois de um bom tempo estável.
+   */
+  const [eff, setEff] = useState<Quality>(quality);
+  useEffect(() => setEff(quality), [quality]);
+  const declines = useRef(0);
+
   return (
     <div className="relative h-full w-full">
       <Canvas
-        shadows={quality === "alta"}
+        shadows={eff === "alta"}
         frameloop={visible ? "always" : "demand"}
-        dpr={dprFor(quality)}
+        dpr={dprFor(eff)}
         camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
         gl={{
-          antialias: quality === "media",
+          antialias: eff === "media",
           powerPreference: "high-performance",
           stencil: false,
         }}
         performance={{ min: 0.5 }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = quality === "baixa" ? 1.0 : 1.15;
+          gl.toneMappingExposure = eff === "baixa" ? 1.0 : 1.15;
           gl.outputColorSpace = THREE.SRGBColorSpace;
         }}
       >
-        <Scene sim={sim} mode={mode} quality={quality} time={time} />
+        <PerformanceMonitor
+          onDecline={() => {
+            declines.current += 1;
+            if (declines.current >= 2) {
+              declines.current = 0;
+              setEff((q) => lowerQuality(q));
+            }
+          }}
+          onIncline={() => {
+            declines.current = 0;
+            setEff((q) => (higherQuality(q) === quality ? higherQuality(q) : q));
+          }}
+        />
+        <Scene sim={sim} mode={mode} quality={eff} time={time} />
       </Canvas>
+      {eff !== quality ? (
+        <span className="pointer-events-none absolute right-2 top-2 rounded-full bg-black/45 px-2 py-0.5 text-[10px] uppercase tracking-widest text-white/80">
+          Qualidade {eff}
+        </span>
+      ) : null}
       {quality === "baixa" ? (
         <div
           aria-hidden
