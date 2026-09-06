@@ -281,8 +281,9 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
   const skinMat = hi ? (
     <meshPhysicalMaterial
       color={look.skin}
-      roughness={0.62 - look.sweat * 0.12}
-      clearcoat={0.28}
+      roughness={0.6 - look.sweat * 0.16}
+      clearcoat={0.28 + look.sweat * 0.25}
+      envMapIntensity={0.8}
       clearcoatRoughness={0.5}
       sheen={0.2}
       sheenColor="#ffd9c0"
@@ -297,8 +298,9 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
     <meshPhysicalMaterial
       color={kit.base}
       map={tex ?? null}
-      roughness={0.78}
-      sheen={0.45}
+      roughness={0.76}
+      envMapIntensity={0.7}
+      sheen={0.5}
       sheenColor={shade(kit.base, 0.4)}
     />
   ) : (
