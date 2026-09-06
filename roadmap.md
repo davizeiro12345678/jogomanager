@@ -5,10 +5,11 @@
 - [ ] Importador das APIs (TheSportsDB / football-data.org / API-Football) + rota de sincronização
 - [ ] Escudos e camisas oficiais na interface e no 3D, com alternância oficial/próprio
 - [ ] Elencos reais nos 224 clubes (API + reserva escrita à mão)
-- [ ] Gramado, redes e iluminação
-- [ ] Torcida, arquibancadas e estádio
-- [ ] Jogadores, animações e câmera de transmissão
-- [ ] Desempenho nos três níveis + publicação
+- [x] Gramado, redes e iluminação (texturas em camadas + cal desgastada)
+- [x] Torcida, arquibancadas e estádio (setores, bandeirões, mosaico, cobertura, props)
+- [x] Jogadores, animações e câmera de transmissão (rig anatômico, 3 LODs, chuteiras)
+- [x] Desempenho nos três níveis (qualidade adaptativa + pós-processamento por momento)
+- [x] Calibração de cor da transmissão (céu, exposição e luzes do entardecer)
 
 ## Feito
 - [x] Páginas públicas /guias, /ligas-de-futebol, /dicas-de-gestao no sitemap

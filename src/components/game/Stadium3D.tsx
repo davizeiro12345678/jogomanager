@@ -37,7 +37,7 @@ type TimeOfDay = "dia" | "entardecer" | "noite";
 
 const SKY: Record<TimeOfDay, string> = {
   dia: "#8fbfe8",
-  entardecer: "#3a2340",
+  entardecer: "#4a3630",
   noite: "#060a10",
 };
 
@@ -1592,7 +1592,7 @@ function SkyDome({ time }: { time: TimeOfDay }) {
     if (!ctx) return null;
     const stops: Record<TimeOfDay, [string, string, string]> = {
       dia: ["#3f86d0", "#8fbfe8", "#d8ecf8"],
-      entardecer: ["#1c1030", "#7a3560", "#ff9e5c"],
+      entardecer: ["#20304f", "#6b5570", "#ffb277"],
       noite: ["#02040a", "#080f1c", "#16243a"],
     };
     const [top, mid, low] = stops[time];
@@ -1771,8 +1771,8 @@ function Scene({
     [sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash],
   );
 
-  const sun = time === "dia" ? 2.8 : time === "entardecer" ? 2.2 : 1.8;
-  const sunColor = time === "entardecer" ? "#ffb27a" : time === "dia" ? "#fff6e0" : "#bcd8ff";
+  const sun = time === "dia" ? 1.9 : time === "entardecer" ? 1.5 : 1.2;
+  const sunColor = time === "entardecer" ? "#ffc79a" : time === "dia" ? "#fff6e0" : "#bcd8ff";
 
   return (
     <>
@@ -1813,11 +1813,11 @@ function Scene({
         />
       </Environment>
 
-      <ambientLight intensity={0.7} />
+      <ambientLight intensity={0.32} />
       <hemisphereLight
-        intensity={time === "dia" ? 0.9 : 0.6}
+        intensity={time === "dia" ? 0.5 : 0.32}
         groundColor="#0d2a18"
-        color={time === "entardecer" ? "#ffd0a8" : "#cfe4ff"}
+        color={time === "entardecer" ? "#ffd8ba" : "#cfe4ff"}
       />
       <directionalLight
         position={[50, 80, 40]}
@@ -1930,7 +1930,7 @@ function Stadium3DImpl({
         performance={{ min: 0.5 }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = eff === "baixa" ? 1.0 : 1.15;
+          gl.toneMappingExposure = eff === "baixa" ? 0.95 : 1.02;
           gl.outputColorSpace = THREE.SRGBColorSpace;
         }}
       >
