@@ -58,6 +58,10 @@ interface StoreProduct {
 interface Wallet {
   coins: number;
   season_pass: boolean;
+  season_pass_until: string | null;
+  scout_reports: number;
+  training_boosts: number;
+  unlocked_themes: string[];
 }
 
 function formatBRL(cents: number, currency: string): string {
@@ -69,17 +73,34 @@ function formatBRL(cents: number, currency: string): string {
 
 const KIND_LABELS: Record<string, string> = {
   coins: "Moedas",
-  scouting: "Olheiros",
+  scout: "Olheiros",
   training: "Treino",
   cosmetic: "Cosmético",
-  season_pass: "Passe de temporada",
+  pass: "Passe de temporada",
+};
+
+const KIND_ICONS: Record<string, React.ReactNode> = {
+  coins: <Coins size={16} />,
+  scout: <Search size={16} />,
+  training: <Dumbbell size={16} />,
+  cosmetic: <Palette size={16} />,
+  pass: <Crown size={16} />,
+};
+
+const PRICE_IDS: Record<string, string> = {
+  coins_small: "coins_small",
+  coins_medium: "coins_medium",
+  scout_pack: "scout_pack",
+  training_pack: "training_pack",
+  theme_pack: "theme_pack",
+  season_pass: "season_pass_monthly",
 };
 
 function LojaPage() {
   const signedIn = useSignedIn();
   const qc = useQueryClient();
-  const purchase = useServerFn(purchaseProduct);
-  const [purchasingKey, setPurchasingKey] = useState<string | null>(null);
+  const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
+  const [openingKey, setOpeningKey] = useState<string | null>(null);
 
   const productsQuery = useQuery({
     queryKey: ["store_products"],
@@ -103,33 +124,49 @@ function LojaPage() {
       if (!userId) return null;
       const { data, error } = await supabase
         .from("user_wallet")
-        .select("coins, season_pass")
+        .select("coins, season_pass, season_pass_until, scout_reports, training_boosts, unlocked_themes")
         .eq("user_id", userId)
         .maybeSingle();
       if (error) throw new Error(error.message);
-      return (data ?? { coins: 0, season_pass: false }) as Wallet;
+      return (data ?? {
+        coins: 0,
+        season_pass: false,
+        season_pass_until: null,
+        scout_reports: 0,
+        training_boosts: 0,
+        unlocked_themes: [],
+      }) as Wallet;
     },
   });
 
+  const subscriptionQuery = useSubscription();
+  const subscriptionActive = isSubscriptionActive(subscriptionQuery.data);
+
   async function buy(productKey: string) {
     if (!signedIn) return;
-    setPurchasingKey(productKey);
+    setOpeningKey(productKey);
     try {
-      const result = await purchase({ data: { productKey } });
-      qc.setQueryData(["user_wallet", signedIn], {
-        coins: result.coins,
-        season_pass: result.seasonPass,
+      const priceId = PRICE_IDS[productKey];
+      if (!priceId) throw new Error("Produto não configurado para checkout.");
+      openCheckout({
+        priceId,
+        returnUrl: `${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`,
       });
-      toast.success("Compra concluída! (pagamento em teste)");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível concluir a compra.");
+      toast.error(err instanceof Error ? err.message : "Não foi possível abrir o checkout.");
     } finally {
-      setPurchasingKey(null);
+      setOpeningKey(null);
     }
+  }
+
+  function formatDate(iso: string | null | undefined): string {
+    if (!iso) return "";
+    return new Date(iso).toLocaleDateString("pt-BR");
   }
 
   return (
     <div className="pitch-bg min-h-screen px-4 py-6">
+      <PaymentTestModeBanner />
       <div className="mx-auto max-w-4xl">
         <div className="mb-4">
           <Link to="/dashboard" className="text-xs uppercase tracking-widest text-primary">
@@ -143,23 +180,35 @@ function LojaPage() {
         </div>
 
         {signedIn && (
-          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border/60 bg-card/70 p-4">
-            <Coins className="text-primary" size={20} />
-            <span className="font-display text-sm uppercase tracking-wide">
-              {walletQuery.data?.coins ?? 0} moedas
-            </span>
-            {walletQuery.data?.season_pass && (
-              <Badge className="gap-1">
-                <Sparkles size={12} /> Passe de temporada ativo
-              </Badge>
+          <div className="mb-4 rounded-2xl border border-border/60 bg-card/70 p-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <Coins className="text-primary" size={20} />
+              <span className="font-display text-sm uppercase tracking-wide">
+                {walletQuery.data?.coins ?? 0} moedas
+              </span>
+              {walletQuery.data && walletQuery.data.scout_reports > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  <Search size={12} /> {walletQuery.data.scout_reports} relatórios
+                </Badge>
+              )}
+              {walletQuery.data && walletQuery.data.training_boosts > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  <Dumbbell size={12} /> {walletQuery.data.training_boosts} treinos
+                </Badge>
+              )}
+              {subscriptionActive && (
+                <Badge className="gap-1">
+                  <Sparkles size={12} /> Passe ativo até {formatDate(walletQuery.data?.season_pass_until)}
+                </Badge>
+              )}
+            </div>
+            {walletQuery.data && walletQuery.data.unlocked_themes.length > 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Temas desbloqueados: {walletQuery.data.unlocked_themes.join(", ")}
+              </p>
             )}
           </div>
         )}
-
-        <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-200">
-          Pagamento em teste: nenhuma cobrança real é feita ainda. As compras já creditam moedas e
-          benefícios na sua conta enquanto o processador de cartão não é conectado.
-        </div>
 
         {!signedIn ? (
           <div className="rounded-2xl border border-border/60 bg-card/85 p-6 text-center">
@@ -179,38 +228,60 @@ function LojaPage() {
         ) : productsQuery.data?.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhum produto disponível no momento.</p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {productsQuery.data?.map((p) => (
-              <Card key={p.key} className="flex flex-col bg-card/70">
-                <CardHeader>
-                  <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="font-display text-base uppercase tracking-wide">
-                      {p.name}
-                    </CardTitle>
-                    <Badge variant="secondary">{KIND_LABELS[p.kind] ?? p.kind}</Badge>
-                  </div>
-                  <CardDescription>{p.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="mt-auto flex flex-col gap-1">
-                  <span className="font-display text-lg">
-                    {formatBRL(p.price_cents, p.currency)}
-                  </span>
-                  {p.coins > 0 && (
-                    <span className="text-xs text-muted-foreground">+{p.coins} moedas</span>
-                  )}
-                </CardContent>
-                <CardFooter>
-                  <Button
-                    className="w-full"
-                    disabled={purchasingKey === p.key}
-                    onClick={() => void buy(p.key)}
-                  >
-                    {purchasingKey === p.key ? "Processando…" : "Comprar"}
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {productsQuery.data?.map((p) => (
+                <Card key={p.key} className="flex flex-col bg-card/70">
+                  <CardHeader>
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="font-display text-base uppercase tracking-wide">
+                        {p.name}
+                      </CardTitle>
+                      <Badge variant="secondary" className="gap-1">
+                        {KIND_ICONS[p.kind] ?? <Package size={16} />}
+                        {KIND_LABELS[p.kind] ?? p.kind}
+                      </Badge>
+                    </div>
+                    <CardDescription>{p.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="mt-auto flex flex-col gap-1">
+                    <span className="font-display text-lg">
+                      {formatBRL(p.price_cents, p.currency)}
+                    </span>
+                    {p.coins > 0 && (
+                      <span className="text-xs text-muted-foreground">+{p.coins} moedas</span>
+                    )}
+                  </CardContent>
+                  <CardFooter>
+                    <Button
+                      className="w-full"
+                      disabled={openingKey === p.key || (p.kind === "pass" && subscriptionActive)}
+                      onClick={() => void buy(p.key)}
+                    >
+                      {openingKey === p.key
+                        ? "Abrindo checkout…"
+                        : p.kind === "pass" && subscriptionActive
+                          ? "Assinatura ativa"
+                          : "Comprar"}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+
+            {isOpen && (
+              <div className="mt-6">
+                <div className="mb-2 flex items-center justify-between">
+                  <h2 className="font-display text-sm uppercase tracking-wide">Checkout seguro</h2>
+                  <Button variant="ghost" size="sm" onClick={closeCheckout}>
+                    Fechar
                   </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+                </div>
+                <Separator className="mb-4" />
+                {checkoutElement}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
