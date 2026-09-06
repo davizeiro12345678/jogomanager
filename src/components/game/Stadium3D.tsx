@@ -1,5 +1,11 @@
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment, Lightformer, AdaptiveDpr, AdaptiveEvents } from "@react-three/drei";
+import {
+  Environment,
+  Lightformer,
+  AdaptiveDpr,
+  AdaptiveEvents,
+  PerformanceMonitor,
+} from "@react-three/drei";
 import {
   EffectComposer,
   Bloom,
@@ -16,7 +22,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { PlayerRig } from "@/components/game/players/PlayerRig";
-import { dprFor } from "@/game/device";
+import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
 
