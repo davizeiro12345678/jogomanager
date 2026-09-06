@@ -33,7 +33,7 @@ async function resolveOrCreateCustomer(
     });
     if (existing.data.length) {
       const customer = existing.data[0]!;
-      if (options.userId && customer.metadata?.userId !== options.userId) {
+      if (options.userId && customer.metadata?.["userId"] !== options.userId) {
         await stripe.customers.update(customer.id, {
           metadata: { ...customer.metadata, userId: options.userId },
         });
