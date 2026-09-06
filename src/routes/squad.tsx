@@ -1,4 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+
+import { PlayerSheet } from "@/components/game/PlayerSheet";
 
 import { GameShell } from "@/components/game/GameShell";
 import { FORMATIONS } from "@/game/formations";
@@ -44,6 +47,7 @@ function statusBadge(p: Player) {
 
 function SquadPage() {
   const { career, update } = useCareer();
+  const [sheet, setSheet] = useState<Player | null>(null);
   if (!career) return <Empty />;
 
   const players = Object.values(career.players);
@@ -128,7 +132,13 @@ function SquadPage() {
                           />
                         ) : null}
                         <span className="text-muted-foreground">{p.number} </span>
-                        {p.name}
+                        <button
+                          type="button"
+                          onClick={() => setSheet(p)}
+                          className="text-left underline-offset-2 hover:text-primary hover:underline"
+                        >
+                          {p.name}
+                        </button>
 
                         {p.yellows > 0 ? (
                           <span
@@ -190,6 +200,7 @@ function SquadPage() {
           </div>
         </section>
       </div>
+      {sheet ? <PlayerSheet player={sheet} onClose={() => setSheet(null)} /> : null}
     </GameShell>
   );
 }
