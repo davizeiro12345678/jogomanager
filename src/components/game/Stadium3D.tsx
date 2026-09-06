@@ -1250,7 +1250,7 @@ function Stands({
 
       <Tiers rings={rings} homeColor={homeColor} awayColor={awayColor} />
       <Roof rings={rings} />
-      <Banners color={homeColor} />
+      <Banners color={homeColor} alt={awayColor} rings={rings} />
       <CrowdFlags color={homeColor} alt={awayColor} rings={rings} quality={quality} />
 
       {/* tronco: ombros mais largos que o quadril, tecido fosco */}
