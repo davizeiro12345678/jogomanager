@@ -55,3 +55,54 @@ export const getRealSquad = createServerFn({ method: "GET" })
       .limit(30);
     return rows ?? [];
   });
+
+export interface MarketSearchInput {
+  q?: string;
+  pos?: string;
+  minAge?: number;
+  maxAge?: number;
+  minOvr?: number;
+  maxOvr?: number;
+  clubId?: string;
+  page?: number;
+}
+
+export interface MarketRow {
+  id: string;
+  name: string;
+  position: string;
+  age: number;
+  shirt_number: number | null;
+  nationality: string | null;
+  overall: number;
+  photo_url: string | null;
+  club_id: string;
+}
+
+const PAGE = 24;
+
+/** Public read: paginated search across every imported real player. */
+export const searchRealPlayers = createServerFn({ method: "GET" })
+  .inputValidator((input: MarketSearchInput) => input)
+  .handler(async ({ data }): Promise<{ rows: MarketRow[]; page: number; hasMore: boolean }> => {
+    const db = publicClient();
+    const page = Math.max(0, data.page ?? 0);
+    let query = db
+      .from("players")
+      .select("id, name, position, age, shirt_number, nationality, overall, photo_url, club_id")
+      .order("overall", { ascending: false })
+      .range(page * PAGE, page * PAGE + PAGE);
+
+    if (data.q?.trim()) query = query.ilike("name", `%${data.q.trim()}%`);
+    if (data.pos && data.pos !== "ALL") query = query.eq("position", data.pos);
+    if (data.clubId) query = query.eq("club_id", data.clubId);
+    if (data.minAge) query = query.gte("age", data.minAge);
+    if (data.maxAge) query = query.lte("age", data.maxAge);
+    if (data.minOvr) query = query.gte("overall", data.minOvr);
+    if (data.maxOvr) query = query.lte("overall", data.maxOvr);
+
+    const { data: rows } = await query;
+    const list = (rows ?? []) as MarketRow[];
+    return { rows: list.slice(0, PAGE), page, hasMore: list.length > PAGE };
+  });
+
