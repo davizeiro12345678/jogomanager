@@ -827,22 +827,23 @@ function Tiers({
     }
   }
 
-  // escadas de acesso (vomitórios) cortando os setores
+  // corrimãos verticais separando os setores (sem invadir o campo)
   const stairs: React.ReactElement[] = [];
   for (let i = -3; i <= 3; i++) {
     for (const z of [-1, 1]) {
       stairs.push(
         <mesh
           key={`v${i}${z}`}
-          position={[i * 22, 2.0 + (rings * 1.45) / 2 - 0.7, z * (FIELD_Z + 7 + (rings * 1.5) / 2)]}
-          rotation={[z > 0 ? -0.72 : 0.72, 0, 0]}
+          position={[i * 24, 2.0 + (rings * 1.45) / 2, z * (FIELD_Z + 8 + (rings * 1.5) / 2)]}
+          rotation={[z > 0 ? -0.76 : 0.76, 0, 0]}
           material={concrete}
         >
-          <boxGeometry args={[2.2, 0.18, rings * 2.2]} />
+          <boxGeometry args={[1.1, 0.1, rings * 1.9]} />
         </mesh>,
       );
     }
   }
+
 
   return (
     <group>
