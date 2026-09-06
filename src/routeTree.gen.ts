@@ -27,6 +27,7 @@ import { Route as DicasDeGestaoRouteImport } from './routes/dicas-de-gestao'
 import { Route as EditorRouteImport } from './routes/editor'
 import { Route as FinancesRouteImport } from './routes/finances'
 import { Route as GestaoFinanceiraRouteImport } from './routes/gestao-financeira'
+import { Route as GlossarioDoFutebolRouteImport } from './routes/glossario-do-futebol'
 import { Route as GuiaDeScoutingRouteImport } from './routes/guia-de-scouting'
 import { Route as GuiasRouteImport } from './routes/guias'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -151,6 +152,11 @@ const FinancesRoute = FinancesRouteImport.update({
 const GestaoFinanceiraRoute = GestaoFinanceiraRouteImport.update({
   id: '/gestao-financeira',
   path: '/gestao-financeira',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GlossarioDoFutebolRoute = GlossarioDoFutebolRouteImport.update({
+  id: '/glossario-do-futebol',
+  path: '/glossario-do-futebol',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GuiaDeScoutingRoute = GuiaDeScoutingRouteImport.update({
@@ -351,6 +357,7 @@ export interface FileRoutesByFullPath {
   '/editor': typeof EditorRoute
   '/finances': typeof FinancesRoute
   '/gestao-financeira': typeof GestaoFinanceiraRoute
+  '/glossario-do-futebol': typeof GlossarioDoFutebolRoute
   '/guia-de-scouting': typeof GuiaDeScoutingRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
@@ -406,6 +413,7 @@ export interface FileRoutesByTo {
   '/editor': typeof EditorRoute
   '/finances': typeof FinancesRoute
   '/gestao-financeira': typeof GestaoFinanceiraRoute
+  '/glossario-do-futebol': typeof GlossarioDoFutebolRoute
   '/guia-de-scouting': typeof GuiaDeScoutingRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
@@ -462,6 +470,7 @@ export interface FileRoutesById {
   '/editor': typeof EditorRoute
   '/finances': typeof FinancesRoute
   '/gestao-financeira': typeof GestaoFinanceiraRoute
+  '/glossario-do-futebol': typeof GlossarioDoFutebolRoute
   '/guia-de-scouting': typeof GuiaDeScoutingRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
@@ -519,6 +528,7 @@ export interface FileRouteTypes {
     | '/editor'
     | '/finances'
     | '/gestao-financeira'
+    | '/glossario-do-futebol'
     | '/guia-de-scouting'
     | '/guias'
     | '/history'
@@ -574,6 +584,7 @@ export interface FileRouteTypes {
     | '/editor'
     | '/finances'
     | '/gestao-financeira'
+    | '/glossario-do-futebol'
     | '/guia-de-scouting'
     | '/guias'
     | '/history'
@@ -629,6 +640,7 @@ export interface FileRouteTypes {
     | '/editor'
     | '/finances'
     | '/gestao-financeira'
+    | '/glossario-do-futebol'
     | '/guia-de-scouting'
     | '/guias'
     | '/history'
@@ -685,6 +697,7 @@ export interface RootRouteChildren {
   EditorRoute: typeof EditorRoute
   FinancesRoute: typeof FinancesRoute
   GestaoFinanceiraRoute: typeof GestaoFinanceiraRoute
+  GlossarioDoFutebolRoute: typeof GlossarioDoFutebolRoute
   GuiaDeScoutingRoute: typeof GuiaDeScoutingRoute
   GuiasRoute: typeof GuiasRoute
   HistoryRoute: typeof HistoryRoute
@@ -848,6 +861,13 @@ declare module '@tanstack/react-router' {
       path: '/gestao-financeira'
       fullPath: '/gestao-financeira'
       preLoaderRoute: typeof GestaoFinanceiraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/glossario-do-futebol': {
+      id: '/glossario-do-futebol'
+      path: '/glossario-do-futebol'
+      fullPath: '/glossario-do-futebol'
+      preLoaderRoute: typeof GlossarioDoFutebolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/guia-de-scouting': {
@@ -1117,6 +1137,7 @@ const rootRouteChildren: RootRouteChildren = {
   EditorRoute: EditorRoute,
   FinancesRoute: FinancesRoute,
   GestaoFinanceiraRoute: GestaoFinanceiraRoute,
+  GlossarioDoFutebolRoute: GlossarioDoFutebolRoute,
   GuiaDeScoutingRoute: GuiaDeScoutingRoute,
   GuiasRoute: GuiasRoute,
   HistoryRoute: HistoryRoute,
