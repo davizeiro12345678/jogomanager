@@ -1,59 +1,238 @@
 /**
- * Roteiro das cutscenes 2D do jogo. Cada cena é um pequeno conjunto de
- * falas com um cenário ilustrado (desenhado em SVG/CSS no componente).
+ * Roteiro das cutscenes 2D. Cada cena tem um cenário ilustrado e animado
+ * (desenhado em SVG no componente Cutscene) e uma sequência de falas.
  */
-export type SceneArt = "arrival" | "press" | "dressing" | "trophy";
+export type SceneArt =
+  | "arrival"
+  | "press"
+  | "dressing"
+  | "trophy"
+  | "training"
+  | "gym"
+  | "tactics"
+  | "staff"
+  | "board"
+  | "transfer"
+  | "tunnel"
+  | "celebration"
+  | "defeat"
+  | "farewell";
+
+export type Speaker =
+  | "manager"
+  | "president"
+  | "press"
+  | "captain"
+  | "narrator"
+  | "assistant"
+  | "doctor"
+  | "scout"
+  | "agent"
+  | "fan";
+
+export const SPEAKER_LABEL: Record<Speaker, string> = {
+  manager: "Você",
+  president: "Presidente",
+  press: "Imprensa",
+  captain: "Capitão",
+  narrator: "",
+  assistant: "Auxiliar",
+  doctor: "Médico",
+  scout: "Olheiro",
+  agent: "Empresário",
+  fan: "Torcida",
+};
 
 export interface CutsceneLine {
-  /** quem fala: "manager" usa o retrato do treinador */
-  who: "manager" | "president" | "press" | "captain" | "narrator";
+  who: Speaker;
   text: string;
 }
+
+export type SceneMood = "good" | "bad" | "neutral";
 
 export interface Cutscene {
   id: string;
   title: string;
   art: SceneArt;
+  mood?: SceneMood;
   lines: CutsceneLine[];
 }
 
+function scene(
+  id: string,
+  title: string,
+  art: SceneArt,
+  lines: CutsceneLine[],
+  mood: SceneMood = "neutral",
+): Cutscene {
+  return { id, title, art, mood, lines };
+}
+
 export const CUTSCENES: Record<string, Cutscene> = {
-  arrival: {
-    id: "arrival",
-    title: "Chegada ao clube",
-    art: "arrival",
-    lines: [
-      { who: "narrator", text: "O carro para em frente ao centro de treinamento. Câmeras por toda parte." },
-      { who: "president", text: "Bem-vindo. A torcida está ansiosa — e a diretoria também." },
-      { who: "manager", text: "Vim para trabalhar. Me dê tempo e time para brigar lá em cima." },
-    ],
-  },
-  press: {
-    id: "press",
-    title: "Apresentação à imprensa",
-    art: "press",
-    lines: [
-      { who: "press", text: "Qual é a meta para a temporada?" },
-      { who: "manager", text: "Jogar bem, competir em tudo e devolver orgulho a esta camisa." },
-      { who: "narrator", text: "Os flashes disparam. O relógio da sua era começa agora." },
-    ],
-  },
-  dressing: {
-    id: "dressing",
-    title: "Vestiário antes do jogo",
-    art: "dressing",
-    lines: [
-      { who: "captain", text: "O grupo está pronto, professor." },
-      { who: "manager", text: "Intensidade nos primeiros minutos. A torcida faz o resto." },
-    ],
-  },
-  title: {
-    id: "title",
-    title: "Comemoração de título",
-    art: "trophy",
-    lines: [
+  /* ------------------------------------------------ história */
+  arrival: scene("arrival", "Chegada ao clube", "arrival", [
+    { who: "narrator", text: "O carro para em frente ao centro de treinamento. Câmeras por toda parte." },
+    { who: "president", text: "Bem-vindo. A torcida está ansiosa — e a diretoria também." },
+    { who: "manager", text: "Vim para trabalhar. Me dê tempo e time para brigar lá em cima." },
+    { who: "narrator", text: "Portões se abrem. O escudo do clube brilha sob o sol da tarde." },
+  ]),
+  press: scene("press", "Apresentação à imprensa", "press", [
+    { who: "press", text: "Qual é a meta para a temporada?" },
+    { who: "manager", text: "Jogar bem, competir em tudo e devolver orgulho a esta camisa." },
+    { who: "press", text: "E se os resultados demorarem?" },
+    { who: "manager", text: "Aí eu trabalho mais. Não existe atalho." },
+    { who: "narrator", text: "Os flashes disparam. O relógio da sua era começa agora." },
+  ]),
+  dressing: scene("dressing", "Vestiário antes do jogo", "dressing", [
+    { who: "captain", text: "O grupo está pronto, professor." },
+    { who: "manager", text: "Intensidade nos primeiros minutos. A torcida faz o resto." },
+    { who: "narrator", text: "Chuteiras batem no piso. O corredor já ruge lá fora." },
+  ]),
+  tunnel: scene("tunnel", "Túnel de acesso", "tunnel", [
+    { who: "narrator", text: "Luz no fim do túnel, som abafado de setenta mil pessoas." },
+    { who: "captain", text: "Ninguém baixa a cabeça hoje." },
+    { who: "manager", text: "Vamos jogar como treinamos. Simples assim." },
+  ]),
+  title: scene(
+    "title",
+    "Comemoração de título",
+    "celebration",
+    [
       { who: "narrator", text: "Confete, fogos e a taça erguida sob o estádio lotado." },
+      { who: "fan", text: "É campeão! É campeão!" },
       { who: "manager", text: "Isto é de vocês. Amanhã já pensamos na próxima." },
     ],
-  },
+    "good",
+  ),
+
+  /* ------------------------------------------------ treino */
+  "training-warmup": scene("training-warmup", "Aquecimento", "training", [
+    { who: "narrator", text: "Seis da manhã. Cones espalhados, orvalho ainda no gramado." },
+    { who: "assistant", text: "Grupo completo. Dois em trabalho reduzido." },
+    { who: "manager", text: "Começa leve. Quero todo mundo inteiro no domingo." },
+  ]),
+  "training-tactics": scene("training-tactics", "Trabalho tático", "tactics", [
+    { who: "manager", text: "Linha alta, encurtando o campo. A bola volta rápido pra gente." },
+    { who: "captain", text: "E se eles jogarem em contra-ataque longo?" },
+    { who: "manager", text: "Aí o zagueiro mais rápido cobre e o lateral fecha por dentro." },
+    { who: "assistant", text: "Ensaiado. Repetimos mais dez vezes até virar hábito." },
+  ]),
+  "training-finishing": scene("training-finishing", "Finalização", "training", [
+    { who: "narrator", text: "Bola após bola cruzando a área. O goleiro reclama do ritmo." },
+    { who: "manager", text: "Chute com o pé de apoio firme. Colocação antes de força." },
+    { who: "captain", text: "Se o domingo for assim, ganhamos fácil." },
+  ]),
+  "training-gym": scene("training-gym", "Academia e recuperação", "gym", [
+    { who: "doctor", text: "Cargas controladas. Dois atletas voltam de lesão nesta semana." },
+    { who: "manager", text: "Sem pressa. Prefiro perder um jogo a perder um jogador." },
+  ]),
+  "training-talk": scene("training-talk", "Conversa individual", "staff", [
+    { who: "manager", text: "Sei que você quer jogar mais. Eu preciso de você pronto quando chamar." },
+    { who: "captain", text: "Eu estou. Só quero minha chance." },
+    { who: "manager", text: "Ela vem. Continue treinando assim." },
+  ]),
+
+  /* ------------------------------------------------ salas do clube */
+  trophyroom: scene("trophyroom", "Sala de troféus", "trophy", [
+    { who: "narrator", text: "Vidro, luz baixa e prateleiras que contam a história do clube." },
+    { who: "president", text: "Cada taça aqui tem um nome por trás. Escreva o seu." },
+    { who: "manager", text: "Vou encher uma prateleira inteira." },
+  ]),
+  staffroom: scene("staffroom", "Sala da comissão técnica", "staff", [
+    { who: "assistant", text: "O quadro está pronto. Rival marca por pressão no lado direito." },
+    { who: "doctor", text: "Elenco fisicamente bem, dois no limite de cartões." },
+    { who: "scout", text: "Tenho três nomes baratos que resolvem o meio-campo." },
+    { who: "manager", text: "Traga o relatório. Decidimos até sexta." },
+  ]),
+  board: scene("board", "Reunião com a diretoria", "board", [
+    { who: "president", text: "Os números precisam fechar. E a torcida precisa sorrir." },
+    { who: "manager", text: "Me dê a janela e eu entrego as duas coisas." },
+    { who: "president", text: "Está anotado. Vamos cobrar." },
+  ]),
+  transferwindow: scene("transferwindow", "Janela de transferências", "transfer", [
+    { who: "agent", text: "Meu jogador gosta do projeto. O salário é que precisa conversar." },
+    { who: "manager", text: "Nós pagamos por rendimento, não por currículo." },
+    { who: "scout", text: "Se ele recusar, tenho um garoto que faz o mesmo por metade." },
+  ]),
+
+  /* ------------------------------------------------ momentos de temporada */
+  winstreak: scene(
+    "winstreak",
+    "Sequência de vitórias",
+    "celebration",
+    [
+      { who: "narrator", text: "Três, quatro, cinco jogos. A cidade só fala do time." },
+      { who: "press", text: "É o melhor momento do clube em anos. Qual o segredo?" },
+      { who: "manager", text: "Trabalho chato e repetido, todo dia, sem holofote." },
+    ],
+    "good",
+  ),
+  comeback: scene(
+    "comeback",
+    "Virada histórica",
+    "celebration",
+    [
+      { who: "narrator", text: "Estava perdido. Terminou em festa nos últimos minutos." },
+      { who: "captain", text: "Ninguém acreditou em nós, professor." },
+      { who: "manager", text: "Nós acreditamos. É o que importa." },
+    ],
+    "good",
+  ),
+  badloss: scene(
+    "badloss",
+    "Derrota dolorosa",
+    "defeat",
+    [
+      { who: "narrator", text: "Vestiário em silêncio. Só o barulho do chuveiro ao fundo." },
+      { who: "manager", text: "A culpa é minha. A resposta é de todos nós, na próxima." },
+      { who: "captain", text: "Vamos dar essa resposta." },
+    ],
+    "bad",
+  ),
+  sackrisk: scene(
+    "sackrisk",
+    "Reunião de emergência",
+    "board",
+    [
+      { who: "president", text: "Não posso segurar a pressão por muito mais tempo." },
+      { who: "manager", text: "Me dê três jogos. Você vai ver outro time." },
+      { who: "president", text: "Três. Nem um a mais." },
+    ],
+    "bad",
+  ),
+  promotion: scene(
+    "promotion",
+    "Acesso conquistado",
+    "celebration",
+    [
+      { who: "narrator", text: "Invasão de campo, bandeirões e o apito final mais longo do ano." },
+      { who: "fan", text: "Subimos! Subimos!" },
+      { who: "manager", text: "Agora começa a parte difícil: se manter lá em cima." },
+    ],
+    "good",
+  ),
+  farewell: scene(
+    "farewell",
+    "Despedida",
+    "farewell",
+    [
+      { who: "narrator", text: "Malas no corredor. O escudo fica; o treinador segue." },
+      { who: "manager", text: "Obrigado por tudo. Este clube me ensinou mais do que eu ensinei." },
+      { who: "fan", text: "Volte sempre, professor." },
+    ],
+    "bad",
+  ),
 };
+
+/** Cenas de treino sorteadas semana a semana no modo carreira. */
+export const TRAINING_SCENE_IDS = [
+  "training-warmup",
+  "training-tactics",
+  "training-finishing",
+  "training-gym",
+  "training-talk",
+  "staffroom",
+] as const;
+
+/** Todas as cenas que a galeria pode listar. */
+export const SCENE_LIST = Object.values(CUTSCENES);
