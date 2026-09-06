@@ -1165,15 +1165,13 @@ function Stands({
     <group>
       {/* muro externo (atrás das arquibancadas) */}
       {[-1, 1].map((z) => (
-        <mesh key={z} position={[0, 6, z * (FIELD_Z + 9 + rings * 1.5)]}>
+        <mesh key={z} position={[0, 6, z * (FIELD_Z + 9 + rings * 1.5)]} material={wallMat}>
           <boxGeometry args={[FIELD_X * 2 + 34, 12, 2]} />
-          <meshStandardMaterial color="#28313a" roughness={1} />
         </mesh>
       ))}
       {[-1, 1].map((x) => (
-        <mesh key={x} position={[x * (FIELD_X + 12 + rings * 1.5), 6, 0]}>
+        <mesh key={x} position={[x * (FIELD_X + 12 + rings * 1.5), 6, 0]} material={wallMat}>
           <boxGeometry args={[2, 12, FIELD_Z * 2 + 36]} />
-          <meshStandardMaterial color="#28313a" roughness={1} />
         </mesh>
       ))}
 
