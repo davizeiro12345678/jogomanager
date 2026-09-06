@@ -218,10 +218,11 @@ function PitchMarks({ sim }: { sim: MatchSim }) {
   );
 }
 
-function Pitch({ quality, sim }: { quality: Quality; sim: MatchSim }) {
+function Pitch({ quality, sim, wet }: { quality: Quality; sim: MatchSim; wet: number }) {
   const tex = useMemo(grassAlbedo, []);
   const rough = useMemo(grassRoughness, []);
   const norm = useMemo(() => (quality === "baixa" ? null : grassNormal()), [quality]);
+  const wear = useMemo(() => (quality === "baixa" ? null : pitchWearTexture()), [quality]);
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
@@ -233,28 +234,44 @@ function Pitch({ quality, sim }: { quality: Quality; sim: MatchSim }) {
         <meshPhysicalMaterial
           {...(tex ? { map: tex } : { color: "#1d7a45" })}
           {...(rough ? { roughnessMap: rough } : {})}
-          {...(norm ? { normalMap: norm, normalScale: new THREE.Vector2(0.55, 0.55) } : {})}
-          {...(norm ? { normalScale: new THREE.Vector2(0.7, 0.7) } : {})}
+          {...(norm ? { normalMap: norm, normalScale: new THREE.Vector2(0.7, 0.7) } : {})}
           roughness={0.74}
           metalness={0.0}
-          clearcoat={quality === "alta" ? 0.32 : quality === "media" ? 0.14 : 0}
-          clearcoatRoughness={0.62}
-          sheen={quality === "alta" ? 0.34 : 0}
+          clearcoat={quality === "alta" ? 0.32 + wet * 0.4 : quality === "media" ? 0.14 : 0}
+          clearcoatRoughness={0.62 - wet * 0.3}
+          sheen={quality === "alta" ? 0.34 + wet * 0.3 : 0}
           sheenRoughness={0.75}
           sheenColor="#5fae7c"
-          envMapIntensity={0.45}
+          envMapIntensity={0.45 + wet * 0.4}
         />
       </mesh>
+      {/* desgaste, lama e terra exposta por cima do gramado */}
+      {wear ? (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0]} renderOrder={1}>
+          <planeGeometry args={[LINES_W, LINES_H]} />
+          <meshStandardMaterial
+            map={wear}
+            transparent
+            opacity={0.85}
+            roughness={0.95}
+            metalness={0}
+            depthWrite={false}
+            polygonOffset
+            polygonOffsetFactor={-1}
+            polygonOffsetUnits={-1}
+          />
+        </mesh>
+      ) : null}
       {quality !== "baixa" && <GrassField sim={sim} quality={quality} />}
       {quality !== "baixa" && <PitchMarks sim={sim} />}
       <PaintedLines />
       <Goal side={1} quality={quality} sim={sim} />
       <Goal side={-1} quality={quality} sim={sim} />
       <CornerFlags />
-      <Dugouts />
     </group>
   );
 }
+
 
 
 
