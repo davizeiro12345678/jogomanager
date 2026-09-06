@@ -98,7 +98,7 @@ const PRICE_IDS: Record<string, string> = {
 
 function LojaPage() {
   const signedIn = useSignedIn();
-  const qc = useQueryClient();
+  
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [openingKey, setOpeningKey] = useState<string | null>(null);
 
