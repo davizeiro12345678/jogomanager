@@ -157,7 +157,7 @@ export async function syncSubscription(
         user_id: userId,
         season_pass: !!seasonPassUntil,
         season_pass_until: seasonPassUntil,
-      },
+      } as any,
       { onConflict: "user_id" }
     );
 }
