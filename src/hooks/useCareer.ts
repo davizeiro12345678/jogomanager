@@ -1,14 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { migrateCareer } from "@/game/career";
 import { supabase } from "@/integrations/supabase/client";
 import { loadCareer, saveCareer, deleteCareer } from "@/lib/career.functions";
-import { clearLocalCareer, readLocalCareer, writeLocalCareer } from "@/lib/careerStorage";
+import {
+  clearLocalCareer,
+  clearOutbox,
+  isOnline,
+  loadLocalCareer,
+  localSavedAt,
+  queueSync,
+  readOutbox,
+  saveLocalCareer,
+} from "@/lib/offline/store";
 import type { CareerState } from "@/game/types";
 
 export const CAREER_KEY = ["career"] as const;
+
+export type SyncState = "local" | "syncing" | "synced" | "pending" | "offline";
 
 /** Tracks whether a Supabase session exists. `null` while unknown. */
 export function useSignedIn() {
@@ -32,9 +43,11 @@ export function useSignedIn() {
 }
 
 /**
- * Career persistence that works with or without an account.
- * Guests are saved in localStorage; signed-in users are saved in the cloud,
- * and a local career is uploaded automatically on the first cloud load.
+ * Persistência da carreira que funciona com ou sem conta e com ou sem internet.
+ *
+ * - Sempre grava primeiro no aparelho (IndexedDB + espelho no localStorage).
+ * - Com conta e conexão, envia para a nuvem.
+ * - Sem conexão, guarda na fila e envia sozinho quando a internet voltar.
  */
 export function useCareer() {
   const qc = useQueryClient();
@@ -42,20 +55,50 @@ export function useCareer() {
   const load = useServerFn(loadCareer);
   const save = useServerFn(saveCareer);
   const wipe = useServerFn(deleteCareer);
+  const [sync, setSync] = useState<SyncState>("local");
+  const flushing = useRef(false);
 
   const query = useQuery({
     queryKey: [...CAREER_KEY, signedIn],
     enabled: signedIn !== null,
     queryFn: async () => {
-      const local = readLocalCareer();
+      const local = await loadLocalCareer();
       if (!signedIn) return local ? migrateCareer(local) : null;
+      if (!isOnline()) {
+        setSync("offline");
+        return local ? migrateCareer(local) : null;
+      }
 
-      const raw = await load();
-      if (raw) return migrateCareer(raw);
-      if (local) {
-        // First sign-in with a guest career: push it to the cloud.
+      let cloud: CareerState | null = null;
+      let cloudAt = 0;
+      try {
+        const raw = await load();
+        if (raw) {
+          cloud = raw.state as CareerState;
+          cloudAt = raw.updatedAt ? Date.parse(raw.updatedAt) : 0;
+        }
+      } catch {
+        setSync("offline");
+        return local ? migrateCareer(local) : null;
+      }
+
+      const localAt = await localSavedAt();
+      // Conflito resolvido por data: a versão mais recente vence.
+      if (local && (!cloud || localAt > cloudAt)) {
         const migrated = migrateCareer(local);
-        await save({ data: { state: migrated } });
+        try {
+          await save({ data: { state: migrated } });
+          setSync("synced");
+        } catch {
+          await queueSync(migrated);
+          setSync("pending");
+        }
+        return migrated;
+      }
+      if (cloud) {
+        const migrated = migrateCareer(cloud);
+        await saveLocalCareer(migrated, "nuvem");
+        setSync("synced");
         return migrated;
       }
       return null;
@@ -65,23 +108,79 @@ export function useCareer() {
 
   const mutation = useMutation({
     mutationFn: async (state: CareerState) => {
-      writeLocalCareer(state);
-      if (signedIn) await save({ data: { state } });
+      await saveLocalCareer(state);
+      if (!signedIn) {
+        setSync("local");
+        return { ok: true };
+      }
+      if (!isOnline()) {
+        await queueSync(state);
+        setSync("offline");
+        return { ok: true };
+      }
+      setSync("syncing");
+      try {
+        await save({ data: { state } });
+        await clearOutbox();
+        setSync("synced");
+      } catch {
+        await queueSync(state);
+        setSync("pending");
+      }
       return { ok: true };
     },
   });
 
+  // Envia a fila assim que a conexão volta.
+  const flush = useCallback(async () => {
+    if (!signedIn || flushing.current || !isOnline()) return;
+    const entry = await readOutbox();
+    if (!entry) return;
+    flushing.current = true;
+    setSync("syncing");
+    try {
+      await save({ data: { state: entry.state } });
+      await clearOutbox();
+      setSync("synced");
+    } catch {
+      setSync("pending");
+    } finally {
+      flushing.current = false;
+    }
+  }, [signedIn, save]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onUp = () => {
+      void flush();
+    };
+    window.addEventListener("online", onUp);
+    void flush();
+    const timer = window.setInterval(onUp, 30_000);
+    return () => {
+      window.removeEventListener("online", onUp);
+      window.clearInterval(timer);
+    };
+  }, [flush]);
+
+  const mutate = mutation.mutate;
   const update = useCallback(
     (next: CareerState) => {
       qc.setQueryData([...CAREER_KEY, signedIn], next);
-      mutation.mutate(next);
+      mutate(next);
     },
-    [qc, mutation, signedIn],
+    [qc, mutate, signedIn],
   );
 
   const reset = useCallback(async () => {
-    clearLocalCareer();
-    if (signedIn) await wipe();
+    await clearLocalCareer();
+    if (signedIn && isOnline()) {
+      try {
+        await wipe();
+      } catch {
+        /* offline: a carreira local já foi apagada */
+      }
+    }
     qc.setQueryData([...CAREER_KEY, signedIn], null);
   }, [qc, wipe, signedIn]);
 
@@ -90,6 +189,7 @@ export function useCareer() {
     isLoading: signedIn === null || query.isLoading,
     saving: mutation.isPending,
     signedIn,
+    sync,
     update,
     reset,
   };

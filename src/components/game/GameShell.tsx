@@ -19,6 +19,7 @@ import {
   Search,
   ShoppingBag,
   Sparkles,
+  Swords,
   Table2,
   Trophy,
   Users,
@@ -26,37 +27,46 @@ import {
 } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 
+import { OfflineBar, SyncBadge, useServiceWorker } from "@/components/OfflineBar";
 import { supabase } from "@/integrations/supabase/client";
 import { CLUBS } from "@/game/data/leagues";
 import { useClubTheme } from "@/game/theme";
-import { useSignedIn } from "@/hooks/useCareer";
+import { useCareer, useSignedIn } from "@/hooks/useCareer";
 import { LANGS, LANG_NAMES, useT, type Lang } from "@/i18n";
+import { CommandPalette } from "./CommandPalette";
 import { Crest } from "./Crest";
 import type { CareerState } from "@/game/types";
 
-const TABS: { to: string; key: string; icon: ComponentType<{ size?: number }> }[] = [
-  { to: "/dashboard", key: "nav.panel", icon: Gauge },
-  { to: "/club", key: "nav.central", icon: Home },
-  { to: "/squad", key: "nav.squad", icon: Users },
-  { to: "/tactics", key: "nav.tactics", icon: LayoutGrid },
-  { to: "/training", key: "nav.training", icon: Dumbbell },
-  { to: "/league", key: "nav.league", icon: Table2 },
-  { to: "/cup", key: "nav.cups", icon: Trophy },
-  { to: "/transfers", key: "nav.market", icon: ArrowLeftRight },
-  { to: "/scouting", key: "nav.scouting", icon: Search },
-  { to: "/finances", key: "nav.finances", icon: Coins },
-  { to: "/board", key: "nav.board", icon: Briefcase },
-  { to: "/stats", key: "nav.stats", icon: BarChart3 },
-  { to: "/news", key: "nav.news", icon: Newspaper },
-  { to: "/history", key: "nav.history", icon: History },
-  { to: "/carreira", key: "nav.coach", icon: Clapperboard },
-  { to: "/temporada-automatica", key: "nav.auto", icon: FastForward },
-  { to: "/conquistas", key: "nav.awards", icon: Medal },
-  { to: "/assistente", key: "nav.ai", icon: Sparkles },
-  { to: "/editor", key: "nav.editor", icon: Wrench },
-  { to: "/chat", key: "nav.chat", icon: MessagesSquare },
-  { to: "/loja", key: "nav.store", icon: ShoppingBag },
+const TABS: {
+  to: string;
+  key: string;
+  icon: ComponentType<{ size?: number }>;
+  group: string;
+}[] = [
+  { to: "/dashboard", key: "nav.panel", icon: Gauge, group: "Clube" },
+  { to: "/club", key: "nav.central", icon: Home, group: "Clube" },
+  { to: "/squad", key: "nav.squad", icon: Users, group: "Equipe" },
+  { to: "/tactics", key: "nav.tactics", icon: LayoutGrid, group: "Equipe" },
+  { to: "/training", key: "nav.training", icon: Dumbbell, group: "Equipe" },
+  { to: "/league", key: "nav.league", icon: Table2, group: "Competição" },
+  { to: "/cup", key: "nav.cups", icon: Trophy, group: "Competição" },
+  { to: "/transfers", key: "nav.market", icon: ArrowLeftRight, group: "Mercado" },
+  { to: "/scouting", key: "nav.scouting", icon: Search, group: "Mercado" },
+  { to: "/finances", key: "nav.finances", icon: Coins, group: "Clube" },
+  { to: "/board", key: "nav.board", icon: Briefcase, group: "Clube" },
+  { to: "/stats", key: "nav.stats", icon: BarChart3, group: "Competição" },
+  { to: "/news", key: "nav.news", icon: Newspaper, group: "Competição" },
+  { to: "/history", key: "nav.history", icon: History, group: "Competição" },
+  { to: "/carreira", key: "nav.coach", icon: Clapperboard, group: "Carreira" },
+  { to: "/temporada-automatica", key: "nav.auto", icon: FastForward, group: "Carreira" },
+  { to: "/conquistas", key: "nav.awards", icon: Medal, group: "Carreira" },
+  { to: "/assistente", key: "nav.ai", icon: Sparkles, group: "Extras" },
+  { to: "/editor", key: "nav.editor", icon: Wrench, group: "Extras" },
+  { to: "/chat", key: "nav.chat", icon: MessagesSquare, group: "Extras" },
+  { to: "/loja", key: "nav.store", icon: ShoppingBag, group: "Extras" },
+  { to: "/multiplayer", key: "nav.versus", icon: Swords, group: "Extras" },
 ];
+
 
 /** Atalhos mostrados na barra inferior do celular. */
 const MOBILE = ["/dashboard", "/squad", "/tactics", "/league", "/transfers"];
@@ -71,11 +81,14 @@ export function GameShell({
   const navigate = useNavigate();
   const signedIn = useSignedIn();
   const { t, lang, setLang } = useT();
+  const { sync } = useCareer();
+  useServiceWorker();
   const club = career ? CLUBS[career.clubId] : undefined;
   useClubTheme(club);
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
+      <OfflineBar />
       <div
         aria-hidden
         className="pointer-events-none fixed inset-x-0 top-0 z-0 h-64 opacity-70"
@@ -134,6 +147,10 @@ export function GameShell({
             >
               <Play size={13} /> {t("action.play")}
             </Link>
+            <CommandPalette
+              items={TABS.map((tab) => ({ to: tab.to, label: t(tab.key), group: tab.group }))}
+            />
+            <SyncBadge sync={sync} className="ml-1" />
             <label className="ml-1 flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-muted-foreground">
               <Globe size={13} />
               <span className="sr-only">{t("shell.language")}</span>
