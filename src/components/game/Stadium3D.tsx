@@ -544,29 +544,6 @@ function CornerFlags() {
   );
 }
 
-function Dugouts() {
-  return (
-    <group>
-      {[-1, 1].map((s) => (
-        <group key={s} position={[s * 14, 0, -(FIELD_Z + 7.5)]}>
-          <mesh position={[0, 1.1, 0]}>
-            <boxGeometry args={[11, 2.2, 3]} />
-            <meshStandardMaterial color="#13181d" roughness={0.9} />
-          </mesh>
-          <mesh position={[0, 1.6, 1.45]}>
-            <planeGeometry args={[11, 1.4]} />
-            <meshStandardMaterial color="#0a0d10" transparent opacity={0.5} />
-          </mesh>
-        </group>
-      ))}
-      {/* túnel */}
-      <mesh position={[0, 1.6, -(FIELD_Z + 9)]}>
-        <boxGeometry args={[6, 3.2, 6]} />
-        <meshStandardMaterial color="#0e1216" roughness={1} />
-      </mesh>
-    </group>
-  );
-}
 
 /* -------------------------------------------------------------- estrutura */
 
