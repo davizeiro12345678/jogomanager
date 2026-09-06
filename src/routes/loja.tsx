@@ -79,7 +79,7 @@ const KIND_LABELS: Record<string, string> = {
   pass: "Passe de temporada",
 };
 
-const KIND_ICONS: Record<string, React.ReactNode> = {
+const KIND_ICONS: Record<string, ReactNode> = {
   coins: <Coins size={16} />,
   scout: <Search size={16} />,
   training: <Dumbbell size={16} />,
