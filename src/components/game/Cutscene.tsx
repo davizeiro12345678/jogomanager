@@ -452,11 +452,60 @@ export function Cutscene({
           reduced ? "" : "animate-scale-in"
         }`}
       >
-        <div className="relative h-48 overflow-hidden sm:h-64">
-          <div className={`absolute inset-0 ${reduced ? "" : "cs-anim-zoom"}`}>
+        <div
+          ref={stageRef}
+          onPointerMove={onPointerMove}
+          className="relative h-48 overflow-hidden sm:h-64"
+        >
+          {/* camada de fundo: mais lenta, levemente desfocada (profundidade) */}
+          <div
+            className={`absolute -inset-6 ${reduced ? "" : "cs-anim-zoom"}`}
+            style={{
+              transform: `translate3d(${par.x * 6}px, ${par.y * 4}px, 0) scale(1.12)`,
+              filter: "blur(3px) saturate(0.85)",
+              opacity: 0.85,
+              transition: reduced ? undefined : "transform 220ms ease-out",
+            }}
+          >
+            <Backdrop art={data.art} a={accent2} b={accent} reduced={reduced} trophies={trophies} />
+          </div>
+          {/* camada principal */}
+          <div
+            className={`absolute inset-0 ${reduced ? "" : "cs-anim-zoom"}`}
+            style={{
+              transform: `translate3d(${par.x * -14}px, ${par.y * -9}px, 0)`,
+              transition: reduced ? undefined : "transform 180ms ease-out",
+            }}
+          >
             <Backdrop art={data.art} a={accent} b={accent2} reduced={reduced} trophies={trophies} />
           </div>
+          {/* varredura de luz */}
+          {!reduced && (
+            <div
+              className="pointer-events-none absolute inset-0 cs-anim-sweep"
+              style={{
+                background:
+                  "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.10) 50%, transparent 65%)",
+              }}
+            />
+          )}
+          {/* vinheta + granulado */}
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(120% 90% at 50% 45%, transparent 40%, rgba(0,0,0,0.55) 100%)",
+            }}
+          />
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.07] mix-blend-overlay"
+            style={{ backgroundImage: GRAIN, backgroundSize: "160px 160px" }}
+          />
+          {/* tarjas cinematográficas */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-black/80 sm:h-5" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 bg-black/80 sm:h-5" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+
           <div className="absolute bottom-3 left-4 flex items-end gap-3">
             <ManagerPortrait look={look} size={72} accent={accent} />
             <div>
