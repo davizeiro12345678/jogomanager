@@ -13,7 +13,14 @@ import * as THREE from "three";
 
 import { PlayerRig } from "@/components/game/players/PlayerRig";
 import { PostFX } from "@/components/game/post/PostFX";
+import { adTexture } from "@/components/game/stadium/textures/ads";
+import {
+  concreteAlbedo,
+  concreteRoughness,
+  seatsTexture,
+} from "@/components/game/stadium/textures/concrete";
 import { grassAlbedo, grassNormal, grassRoughness } from "@/components/game/stadium/textures/grass";
+import { LINES_H, LINES_W, pitchLinesTexture } from "@/components/game/stadium/textures/lines";
 import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
@@ -236,7 +243,7 @@ function Pitch({ quality, sim }: { quality: Quality; sim: MatchSim }) {
       </mesh>
       {quality !== "baixa" && <GrassField sim={sim} quality={quality} />}
       {quality !== "baixa" && <PitchMarks sim={sim} />}
-      <Lines />
+      <PaintedLines />
       <Goal side={1} quality={quality} sim={sim} />
       <Goal side={-1} quality={quality} sim={sim} />
       <CornerFlags />
@@ -247,75 +254,29 @@ function Pitch({ quality, sim }: { quality: Quality; sim: MatchSim }) {
 
 
 
-function line(points: [number, number][], y = 0.02) {
-  return new THREE.BufferGeometry().setFromPoints(
-    points.map(([x, z]) => new THREE.Vector3(x, y, z)),
-  );
-}
-
-function Lines() {
-  const geoms = useMemo(() => {
-    const g: THREE.BufferGeometry[] = [];
-    g.push(
-      line([
-        [-FIELD_X, -FIELD_Z],
-        [FIELD_X, -FIELD_Z],
-        [FIELD_X, FIELD_Z],
-        [-FIELD_X, FIELD_Z],
-        [-FIELD_X, -FIELD_Z],
-      ]),
-    );
-    g.push(
-      line([
-        [0, -FIELD_Z],
-        [0, FIELD_Z],
-      ]),
-    );
-    const circle: [number, number][] = [];
-    for (let i = 0; i <= 64; i++) {
-      const a = (i / 64) * Math.PI * 2;
-      circle.push([Math.cos(a) * 9.15, Math.sin(a) * 9.15]);
-    }
-    g.push(line(circle));
-    for (const s of [1, -1]) {
-      g.push(
-        line([
-          [s * FIELD_X, -20],
-          [s * (FIELD_X - 16.5), -20],
-          [s * (FIELD_X - 16.5), 20],
-          [s * FIELD_X, 20],
-        ]),
-      );
-      g.push(
-        line([
-          [s * FIELD_X, -9],
-          [s * (FIELD_X - 5.5), -9],
-          [s * (FIELD_X - 5.5), 9],
-          [s * FIELD_X, 9],
-        ]),
-      );
-    }
-    return g;
-  }, []);
-
+/**
+ * Marcação do campo pintada: um plano com a textura de cal por cima do
+ * gramado. Substitui as antigas linhas de 1 pixel, que serrilhavam e
+ * pareciam desenho técnico.
+ */
+function PaintedLines() {
+  const tex = useMemo(pitchLinesTexture, []);
+  if (!tex) return null;
   return (
-    <group>
-      {geoms.map((g, i) => (
-        <primitive
-          key={i}
-          object={
-            new THREE.Line(
-              g,
-              new THREE.LineBasicMaterial({ color: "#f2fbf4", transparent: true, opacity: 0.9 }),
-            )
-          }
-        />
-      ))}
-      <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[0.35, 12]} />
-        <meshBasicMaterial color="#f2fbf4" />
-      </mesh>
-    </group>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]} renderOrder={2}>
+      <planeGeometry args={[LINES_W, LINES_H]} />
+      <meshStandardMaterial
+        map={tex}
+        color="#c9cec6"
+        transparent
+        roughness={0.92}
+        metalness={0}
+        depthWrite={false}
+        polygonOffset
+        polygonOffsetFactor={-2}
+        polygonOffsetUnits={-2}
+      />
+    </mesh>
   );
 }
 
@@ -588,84 +549,64 @@ function Dugouts() {
 
 /* -------------------------------------------------------------- estrutura */
 
-function adBoardTexture(text: string, bg: string, fg: string) {
-  if (typeof document === "undefined") return null;
-  const w = 256;
-  const h = 48;
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = fg;
-  ctx.font = "bold 30px 'Barlow Condensed', system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(text, w / 2, h / 2);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
+/**
+ * Placas de LED: uma faixa contínua por linha lateral, com a textura
+ * rolando na horizontal (como um painel de LED de transmissão real).
+ */
+function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: string }) {
+  const tex = useMemo(() => adTexture(homeColor, awayColor), [homeColor, awayColor]);
+  const matA = useRef<THREE.MeshStandardMaterial>(null);
+  const matB = useRef<THREE.MeshStandardMaterial>(null);
+  const len = (FIELD_X + 8) * 2;
 
-const ADS = [
-  ["FUT+ TV", "#0b2b45", "#7dfcb0"],
-  ["AERO BRASIL", "#8a1420", "#ffffff"],
-  ["NOVA BET", "#123f2a", "#f5c400"],
-  ["PIXEL ENERGY", "#3a2f6b", "#ffffff"],
-  ["GOLAÇO FM", "#6b4a12", "#ffe9b0"],
-  ["MANAGER 3D", "#101418", "#7dfcb0"],
-] as const;
+  const texA = useMemo(() => {
+    if (!tex) return null;
+    const t = tex.clone();
+    t.needsUpdate = true;
+    t.repeat.set(3, 1);
+    return t;
+  }, [tex]);
+  const texB = useMemo(() => {
+    if (!tex) return null;
+    const t = tex.clone();
+    t.needsUpdate = true;
+    t.repeat.set(3, 1);
+    t.offset.x = 0.5;
+    return t;
+  }, [tex]);
 
-function AdBoards() {
-  const boards: React.ReactElement[] = [];
-  const count = 18;
-  const w = ((FIELD_X + 8) * 2) / count;
-  for (let i = 0; i < count; i++) {
-    const x = -(FIELD_X + 8) + w / 2 + i * w;
-    for (const z of [-1, 1]) {
-      boards.push(
-        <AdBoard key={`${i}-${z}`} x={x} z={z * (FIELD_Z + 5)} w={w} seed={i + (z > 0 ? 3 : 0)} />,
-      );
-    }
-  }
-  return <group>{boards}</group>;
-}
-
-function AdBoard({ x, z, w, seed }: { x: number; z: number; w: number; seed: number }) {
-  const texes = useMemo(
-    () => ADS.map(([text, bg, fg]) => adBoardTexture(text, bg, fg)).filter(Boolean) as THREE.CanvasTexture[],
-    [],
-  );
-  const matRef = useRef<THREE.MeshStandardMaterial>(null);
-  const idx = useRef(-1);
-  useFrame(({ clock }) => {
-    if (!texes.length) return;
-    // troca de anúncio a cada 5s, com defasagem por placa
-    const next = (Math.floor(clock.elapsedTime / 5) + seed) % texes.length;
-    if (next === idx.current) return;
-    idx.current = next;
-    const tex = texes[next]!;
-    const m = matRef.current;
-    if (m) {
-      m.map = tex;
-      m.emissiveMap = tex;
-      m.needsUpdate = true;
-    }
+  useFrame((_, delta) => {
+    if (texA) texA.offset.x = (texA.offset.x + delta * 0.05) % 1;
+    if (texB) texB.offset.x = (texB.offset.x - delta * 0.05 + 1) % 1;
+    // leve cintilar do painel
+    const flick = 0.5 + Math.random() * 0.06;
+    if (matA.current) matA.current.emissiveIntensity = flick;
+    if (matB.current) matB.current.emissiveIntensity = flick;
   });
+
+  if (!texA || !texB) return null;
+
   return (
-    <mesh position={[x, 0.6, z]} rotation={[0, z > 0 ? Math.PI : 0, 0]}>
-      <boxGeometry args={[w * 0.94, 1.2, 0.25]} />
-      <meshStandardMaterial
-        ref={matRef}
-        color="#ffffff"
-        emissive="#ffffff"
-        emissiveIntensity={0.55}
-        roughness={0.4}
-        toneMapped={false}
-      />
-    </mesh>
+    <group>
+      {[
+        { z: -(FIELD_Z + 5), rot: 0, m: matA, t: texA },
+        { z: FIELD_Z + 5, rot: Math.PI, m: matB, t: texB },
+      ].map((s, i) => (
+        <mesh key={i} position={[0, 0.62, s.z]} rotation={[0, s.rot, 0]}>
+          <boxGeometry args={[len, 1.24, 0.22]} />
+          <meshStandardMaterial
+            ref={s.m}
+            map={s.t}
+            emissiveMap={s.t}
+            color="#ffffff"
+            emissive="#ffffff"
+            emissiveIntensity={0.5}
+            roughness={0.35}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+    </group>
   );
 }
 
@@ -773,31 +714,143 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
   );
 }
 
-function Tiers({ rings }: { rings: number }) {
+/** Concreto compartilhado por toda a estrutura (um material só, muitas peças). */
+function useConcrete(color = "#6d747b", repeat = 6) {
+  return useMemo(() => {
+    const map = concreteAlbedo();
+    const rough = concreteRoughness();
+    const m = new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.96,
+      metalness: 0.02,
+    });
+    if (map) {
+      const t = map.clone();
+      t.needsUpdate = true;
+      t.repeat.set(repeat, repeat * 0.4);
+      m.map = t;
+    }
+    if (rough) {
+      const t = rough.clone();
+      t.needsUpdate = true;
+      t.repeat.set(repeat, repeat * 0.4);
+      m.roughnessMap = t;
+    }
+    return m;
+  }, [color, repeat]);
+}
+
+function Tiers({
+  rings,
+  homeColor,
+  awayColor,
+}: {
+  rings: number;
+  homeColor: string;
+  awayColor: string;
+}) {
   const steps: React.ReactElement[] = [];
   const lenX = FIELD_X * 2 + 30;
   const lenZ = FIELD_Z * 2 + 34;
+  const concrete = useConcrete("#5f666d", 10);
+
+  const seatMat = useMemo(() => {
+    const t = seatsTexture(homeColor, awayColor);
+    const m = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.82 });
+    if (t) {
+      const c = t.clone();
+      c.needsUpdate = true;
+      c.repeat.set(14, 1);
+      m.map = c;
+    } else {
+      m.color = new THREE.Color(homeColor);
+    }
+    return m;
+  }, [homeColor, awayColor]);
+  const seatMatSide = useMemo(() => {
+    const c = seatMat.clone();
+    if (c.map) {
+      const t = c.map.clone();
+      t.needsUpdate = true;
+      t.repeat.set(10, 1);
+      c.map = t;
+    }
+    return c;
+  }, [seatMat]);
+
   for (let r = 0; r < rings; r++) {
     const y = 2.0 + r * 1.45;
-    const shade = r % 2 === 0 ? "#2f3943" : "#39434e";
     for (const z of [-1, 1]) {
       steps.push(
-        <mesh key={`sz${r}${z}`} position={[0, y - 0.72, z * (FIELD_Z + 7 + r * 1.5)]} receiveShadow>
+        <mesh
+          key={`sz${r}${z}`}
+          position={[0, y - 0.72, z * (FIELD_Z + 7 + r * 1.5)]}
+          receiveShadow
+          material={concrete}
+        >
           <boxGeometry args={[lenX, 1.45, 1.5]} />
-          <meshStandardMaterial color={shade} roughness={1} />
+        </mesh>,
+      );
+      // faixa de cadeiras na frente do degrau
+      steps.push(
+        <mesh
+          key={`cz${r}${z}`}
+          position={[0, y - 0.6, z * (FIELD_Z + 7 + r * 1.5 - 0.78)]}
+          rotation={[0, z > 0 ? Math.PI : 0, 0]}
+          material={seatMat}
+        >
+          <planeGeometry args={[lenX, 1.2]} />
         </mesh>,
       );
     }
     for (const x of [-1, 1]) {
       steps.push(
-        <mesh key={`sx${r}${x}`} position={[x * (FIELD_X + 10 + r * 1.5), y - 0.72, 0]} receiveShadow>
+        <mesh
+          key={`sx${r}${x}`}
+          position={[x * (FIELD_X + 10 + r * 1.5), y - 0.72, 0]}
+          receiveShadow
+          material={concrete}
+        >
           <boxGeometry args={[1.5, 1.45, lenZ]} />
-          <meshStandardMaterial color={shade} roughness={1} />
+        </mesh>,
+      );
+      steps.push(
+        <mesh
+          key={`cx${r}${x}`}
+          position={[x * (FIELD_X + 10 + r * 1.5 - 0.78), y - 0.6, 0]}
+          rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}
+          material={seatMatSide}
+        >
+          <planeGeometry args={[lenZ, 1.2]} />
         </mesh>,
       );
     }
   }
-  return <group>{steps}</group>;
+
+  // corrimãos verticais separando os setores (sem invadir o campo)
+  const stairs: React.ReactElement[] = [];
+  for (let i = -3; i <= 3; i++) {
+    for (const z of [-1, 1]) {
+      stairs.push(
+        <mesh
+          key={`v${i}${z}`}
+          position={[i * 24, 2.0 + (rings * 1.45) / 2, z * (FIELD_Z + 8 + (rings * 1.5) / 2)]}
+          rotation={[z > 0 ? -0.76 : 0.76, 0, 0]}
+          material={concrete}
+        >
+          <boxGeometry args={[1.1, 0.1, rings * 1.9]} />
+        </mesh>,
+      );
+    }
+  }
+
+
+  return (
+    <group>
+      {steps}
+      {stairs}
+    </group>
+  );
 }
 
 function Roof({ rings }: { rings: number }) {
@@ -929,6 +982,7 @@ function Stands({
 }) {
   const density = quality === "alta" ? 460 : quality === "media" ? 240 : 100;
   const rings = quality === "alta" ? 14 : quality === "media" ? 9 : 5;
+  const wallMat = useConcrete("#39424b", 14);
 
   const crowd = useMemo(() => {
     const positions: THREE.Vector3[] = [];
@@ -1007,6 +1061,8 @@ function Stands({
 
   const ref = useRef<THREE.InstancedMesh>(null);
   const headRef = useRef<THREE.InstancedMesh>(null);
+  const hairRef = useRef<THREE.InstancedMesh>(null);
+  const shoulderRef = useRef<THREE.InstancedMesh>(null);
   const flashRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const flashCount = night ? Math.min(200, Math.round(crowd.positions.length * 0.05)) : 0;
@@ -1018,10 +1074,28 @@ function Stands({
     if (!mesh) return;
     crowd.colors.forEach((c, i) => mesh.setColorAt(i, c));
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    const shoulders = shoulderRef.current;
+    if (shoulders) {
+      crowd.colors.forEach((c, i) => shoulders.setColorAt(i, c));
+      if (shoulders.instanceColor) shoulders.instanceColor.needsUpdate = true;
+    }
     const head = headRef.current;
     if (head) {
       crowd.skins.forEach((c, i) => head.setColorAt(i, c));
       if (head.instanceColor) head.instanceColor.needsUpdate = true;
+    }
+    const hair = hairRef.current;
+    if (hair) {
+      const hairs = ["#221a14", "#3d2a19", "#7a5a33", "#c9b48a", "#101010", "#5e5e5e", "#e8e8e8"];
+      for (let i = 0; i < crowd.positions.length; i++) {
+        // 1 em cada 4 usa boné na cor do setor, o resto usa cabelo
+        const cap = i % 4 === 0;
+        hair.setColorAt(
+          i,
+          cap ? crowd.colors[i]! : new THREE.Color(hairs[(i * 7) % hairs.length]!),
+        );
+      }
+      if (hair.instanceColor) hair.instanceColor.needsUpdate = true;
     }
     const mat = mesh.material as THREE.Material | THREE.Material[];
     if (Array.isArray(mat)) mat.forEach((m) => (m.needsUpdate = true));
@@ -1039,6 +1113,8 @@ function Stands({
     tick.current++;
     if (tick.current % everyN !== 0) return;
     const head = headRef.current;
+    const hair = hairRef.current;
+    const shoulders = shoulderRef.current;
     const t = clock.elapsedTime;
     const pulse = goalPulse.current;
     for (let i = 0; i < crowd.positions.length; i++) {
@@ -1046,24 +1122,43 @@ function Stands({
       const wave = Math.sin(t * 1.1 - p.x * 0.06) > 0.86 ? 0.5 : 0;
       const jump = pulse > 0 ? Math.abs(Math.sin(t * 9 + i)) * 0.75 * pulse : 0;
       const y = p.y + Math.sin(t * 3 + i) * 0.06 + wave + jump;
-      const yaw = ((i % 7) - 3) * 0.06;
-      dummy.position.set(p.x, y, p.z);
-      dummy.scale.set(1, 0.92 + ((i % 5) * 0.04), 1);
-      dummy.rotation.set(0, yaw, 0);
+      // balanço lateral: a massa nunca fica perfeitamente enfileirada
+      const swayX = Math.sin(t * 1.6 + i * 0.7) * 0.05 * (0.4 + pulse);
+      const yaw = ((i % 7) - 3) * 0.06 + Math.sin(t * 0.8 + i) * 0.05;
+      const tall = 0.9 + ((i % 5) * 0.045);
+      dummy.position.set(p.x + swayX, y, p.z);
+      dummy.scale.set(1, tall, 1);
+      dummy.rotation.set(0, yaw, Math.sin(t * 1.9 + i * 1.3) * 0.03);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
+      if (shoulders) {
+        dummy.position.set(p.x + swayX, y + 0.3 * tall, p.z);
+        dummy.scale.set(1.5, 0.55, 1);
+        dummy.rotation.set(0, yaw, Math.PI / 2);
+        dummy.updateMatrix();
+        shoulders.setMatrixAt(i, dummy.matrix);
+      }
+      const headY = y + 0.5 * tall + 0.06;
+      const headPitch = Math.sin(t * 2 + i) * 0.05;
       if (head) {
-        dummy.position.set(p.x, y + 0.52, p.z);
+        dummy.position.set(p.x + swayX, headY, p.z);
         dummy.scale.setScalar(1);
-        dummy.rotation.set(Math.sin(t * 2 + i) * 0.05, yaw, 0);
+        dummy.rotation.set(headPitch, yaw, 0);
         dummy.updateMatrix();
         head.setMatrixAt(i, dummy.matrix);
+      }
+      if (hair) {
+        dummy.position.set(p.x + swayX, headY + 0.015, p.z);
+        dummy.scale.set(1, i % 4 === 0 ? 0.7 : 1, 1);
+        dummy.rotation.set(headPitch, yaw, 0);
+        dummy.updateMatrix();
+        hair.setMatrixAt(i, dummy.matrix);
       }
       // braços: palmas no ritmo, erguidos na comemoração e na ola
       const arms = armsRef.current;
       if (arms && i < armCount) {
         const raise = Math.min(1, pulse * 1.2 + (wave > 0 ? 0.8 : 0) + (Math.sin(t * 6 + i) > 0.7 ? 0.25 : 0));
-        dummy.position.set(p.x, y + 0.42 + raise * 0.3, p.z);
+        dummy.position.set(p.x + swayX, y + 0.42 + raise * 0.3, p.z);
         dummy.rotation.set(-raise * 1.5, yaw, 0);
         dummy.scale.set(1, 0.5 + raise * 0.7, 1);
         dummy.updateMatrix();
@@ -1072,6 +1167,8 @@ function Stands({
     }
     mesh.instanceMatrix.needsUpdate = true;
     if (head) head.instanceMatrix.needsUpdate = true;
+    if (hair) hair.instanceMatrix.needsUpdate = true;
+    if (shoulders) shoulders.instanceMatrix.needsUpdate = true;
     if (armsRef.current && armCount) armsRef.current.instanceMatrix.needsUpdate = true;
 
     // flashes de câmera na torcida (mais intensos após o gol)
@@ -1094,34 +1191,50 @@ function Stands({
     <group>
       {/* muro externo (atrás das arquibancadas) */}
       {[-1, 1].map((z) => (
-        <mesh key={z} position={[0, 6, z * (FIELD_Z + 9 + rings * 1.5)]}>
+        <mesh key={z} position={[0, 6, z * (FIELD_Z + 9 + rings * 1.5)]} material={wallMat}>
           <boxGeometry args={[FIELD_X * 2 + 34, 12, 2]} />
-          <meshStandardMaterial color="#28313a" roughness={1} />
         </mesh>
       ))}
       {[-1, 1].map((x) => (
-        <mesh key={x} position={[x * (FIELD_X + 12 + rings * 1.5), 6, 0]}>
+        <mesh key={x} position={[x * (FIELD_X + 12 + rings * 1.5), 6, 0]} material={wallMat}>
           <boxGeometry args={[2, 12, FIELD_Z * 2 + 36]} />
-          <meshStandardMaterial color="#28313a" roughness={1} />
         </mesh>
       ))}
 
-      <Tiers rings={rings} />
+      <Tiers rings={rings} homeColor={homeColor} awayColor={awayColor} />
       <Roof rings={rings} />
       <Banners color={homeColor} />
       <CrowdFlags color={homeColor} alt={awayColor} rings={rings} quality={quality} />
 
+      {/* tronco: ombros mais largos que o quadril, tecido fosco */}
       <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, crowd.positions.length]}>
-        <capsuleGeometry args={[0.22, 0.42, 3, 6]} />
-        <meshStandardMaterial roughness={0.88} />
+        <capsuleGeometry args={[0.22, 0.44, quality === "alta" ? 4 : 3, quality === "alta" ? 10 : 6]} />
+        <meshStandardMaterial roughness={0.9} />
+      </instancedMesh>
+      <instancedMesh
+        ref={shoulderRef}
+        frustumCulled={false}
+        args={[undefined, undefined, crowd.positions.length]}
+      >
+        <capsuleGeometry args={[0.13, 0.3, 2, quality === "alta" ? 8 : 5]} />
+        <meshStandardMaterial roughness={0.9} />
       </instancedMesh>
       <instancedMesh
         ref={headRef}
         frustumCulled={false}
         args={[undefined, undefined, crowd.positions.length]}
       >
-        <sphereGeometry args={[0.16, 6, 5]} />
-        <meshStandardMaterial roughness={0.75} />
+        <sphereGeometry args={[0.16, quality === "alta" ? 10 : 6, quality === "alta" ? 8 : 5]} />
+        <meshStandardMaterial roughness={0.72} />
+      </instancedMesh>
+      {/* cabelo/boné: quebra a fileira de cabeças todas iguais */}
+      <instancedMesh
+        ref={hairRef}
+        frustumCulled={false}
+        args={[undefined, undefined, crowd.positions.length]}
+      >
+        <sphereGeometry args={[0.165, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.62]} />
+        <meshStandardMaterial roughness={0.9} />
       </instancedMesh>
       {armCount > 0 && (
         <instancedMesh ref={armsRef} frustumCulled={false} args={[undefined, undefined, armCount]}>
@@ -1606,7 +1719,7 @@ function Scene({
       <SkyDome time={time} />
       <Pitch quality={quality} sim={sim} />
 
-      <AdBoards />
+      <AdBoards homeColor={sim.home.primary} awayColor={sim.away.primary} />
       <Floodlights time={time} quality={quality} />
       <Stands
         homeColor={sim.home.primary}
