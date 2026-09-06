@@ -1,5 +1,4 @@
-import {
-  Clapperboard, Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeftRight,
   BarChart3,
