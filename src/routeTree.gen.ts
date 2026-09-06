@@ -31,6 +31,7 @@ import { Route as GlossarioDoFutebolRouteImport } from './routes/glossario-do-fu
 import { Route as GuiaDeScoutingRouteImport } from './routes/guia-de-scouting'
 import { Route as GuiasRouteImport } from './routes/guias'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as JogarOfflineRouteImport } from './routes/jogar-offline'
 import { Route as JogoDeManagerDeFutebolRouteImport } from './routes/jogo-de-manager-de-futebol'
 import { Route as LeagueRouteImport } from './routes/league'
 import { Route as LigasDeFutebolRouteImport } from './routes/ligas-de-futebol'
@@ -172,6 +173,11 @@ const GuiasRoute = GuiasRouteImport.update({
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JogarOfflineRoute = JogarOfflineRouteImport.update({
+  id: '/jogar-offline',
+  path: '/jogar-offline',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JogoDeManagerDeFutebolRoute = JogoDeManagerDeFutebolRouteImport.update({
@@ -361,6 +367,7 @@ export interface FileRoutesByFullPath {
   '/guia-de-scouting': typeof GuiaDeScoutingRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
+  '/jogar-offline': typeof JogarOfflineRoute
   '/jogo-de-manager-de-futebol': typeof JogoDeManagerDeFutebolRoute
   '/league': typeof LeagueRoute
   '/ligas-de-futebol': typeof LigasDeFutebolRoute
@@ -417,6 +424,7 @@ export interface FileRoutesByTo {
   '/guia-de-scouting': typeof GuiaDeScoutingRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
+  '/jogar-offline': typeof JogarOfflineRoute
   '/jogo-de-manager-de-futebol': typeof JogoDeManagerDeFutebolRoute
   '/league': typeof LeagueRoute
   '/ligas-de-futebol': typeof LigasDeFutebolRoute
@@ -474,6 +482,7 @@ export interface FileRoutesById {
   '/guia-de-scouting': typeof GuiaDeScoutingRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
+  '/jogar-offline': typeof JogarOfflineRoute
   '/jogo-de-manager-de-futebol': typeof JogoDeManagerDeFutebolRoute
   '/league': typeof LeagueRoute
   '/ligas-de-futebol': typeof LigasDeFutebolRoute
@@ -532,6 +541,7 @@ export interface FileRouteTypes {
     | '/guia-de-scouting'
     | '/guias'
     | '/history'
+    | '/jogar-offline'
     | '/jogo-de-manager-de-futebol'
     | '/league'
     | '/ligas-de-futebol'
@@ -588,6 +598,7 @@ export interface FileRouteTypes {
     | '/guia-de-scouting'
     | '/guias'
     | '/history'
+    | '/jogar-offline'
     | '/jogo-de-manager-de-futebol'
     | '/league'
     | '/ligas-de-futebol'
@@ -644,6 +655,7 @@ export interface FileRouteTypes {
     | '/guia-de-scouting'
     | '/guias'
     | '/history'
+    | '/jogar-offline'
     | '/jogo-de-manager-de-futebol'
     | '/league'
     | '/ligas-de-futebol'
@@ -701,6 +713,7 @@ export interface RootRouteChildren {
   GuiaDeScoutingRoute: typeof GuiaDeScoutingRoute
   GuiasRoute: typeof GuiasRoute
   HistoryRoute: typeof HistoryRoute
+  JogarOfflineRoute: typeof JogarOfflineRoute
   JogoDeManagerDeFutebolRoute: typeof JogoDeManagerDeFutebolRoute
   LeagueRoute: typeof LeagueRoute
   LigasDeFutebolRoute: typeof LigasDeFutebolRoute
@@ -889,6 +902,13 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/history'
       preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jogar-offline': {
+      id: '/jogar-offline'
+      path: '/jogar-offline'
+      fullPath: '/jogar-offline'
+      preLoaderRoute: typeof JogarOfflineRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/jogo-de-manager-de-futebol': {
@@ -1141,6 +1161,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuiaDeScoutingRoute: GuiaDeScoutingRoute,
   GuiasRoute: GuiasRoute,
   HistoryRoute: HistoryRoute,
+  JogarOfflineRoute: JogarOfflineRoute,
   JogoDeManagerDeFutebolRoute: JogoDeManagerDeFutebolRoute,
   LeagueRoute: LeagueRoute,
   LigasDeFutebolRoute: LigasDeFutebolRoute,
