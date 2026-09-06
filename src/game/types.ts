@@ -247,6 +247,52 @@ export interface CareerState {
   /* ---------------------------------------------------------- v4 */
   /** histórico partida a partida (gols, assistências e minutos por jogo) */
   matchLog?: MatchLogEntry[];
+
+  /* ---------------------------------------------------------- v5 */
+  /** perfil completo do treinador criado no início do jogo */
+  manager?: ManagerProfile;
+  /** ids de jogadores reais já contratados (não voltam ao mercado) */
+  transferredIn?: string[];
+  /** cutscenes já exibidas */
+  seenScenes?: string[];
+}
+
+export type ManagerPersonality = "calmo" | "motivador" | "durao" | "tatico" | "jovem";
+
+export interface ManagerLook {
+  /** 0-5 tom de pele */
+  skin: number;
+  /** 0-6 estilo de cabelo */
+  hair: number;
+  hairColor: string;
+  /** 0-4 estilo de barba */
+  beard: number;
+  /** 0-2 roupa: terno, agasalho, casual */
+  outfit: number;
+}
+
+export interface ManagerAttributes {
+  attack: number;
+  defense: number;
+  market: number;
+  squad: number;
+  media: number;
+}
+
+export interface ManagerProfile {
+  name: string;
+  /** id da liga usada como país de origem */
+  country: string;
+  age: number;
+  /** clube do coração */
+  favClub: string;
+  look: ManagerLook;
+  personality: ManagerPersonality;
+  /** reputação inicial 1-5 */
+  reputation: number;
+  attrs: ManagerAttributes;
+  /** aprovação inicial escolhida/derivada 0-100 */
+  approval: number;
 }
 
 /** Uma linha do histórico por partida do clube do usuário. */
