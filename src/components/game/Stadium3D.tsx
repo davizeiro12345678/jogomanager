@@ -1026,9 +1026,16 @@ function Stands({
     else mat.needsUpdate = true;
   }, [crowd]);
 
+  // atualiza a torcida em taxa reduzida fora da qualidade alta: o movimento
+  // continua contínuo aos olhos, mas o custo por quadro cai pela metade/terço
+  const tick = useRef(0);
+  const everyN = quality === "alta" ? 1 : quality === "media" ? 2 : 3;
+
   useFrame(({ clock }) => {
     const mesh = ref.current;
     if (!mesh) return;
+    tick.current++;
+    if (tick.current % everyN !== 0) return;
     const head = headRef.current;
     const t = clock.elapsedTime;
     const pulse = goalPulse.current;
