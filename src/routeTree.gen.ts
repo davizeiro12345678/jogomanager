@@ -35,6 +35,7 @@ import { Route as LojaRouteImport } from './routes/loja'
 import { Route as MatchRouteImport } from './routes/match'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as MercadoDeTransferenciasRouteImport } from './routes/mercado-de-transferencias'
+import { Route as MultiplayerRouteImport } from './routes/multiplayer'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as PartidaRapidaRouteImport } from './routes/partida-rapida'
@@ -189,6 +190,11 @@ const MercadoDeTransferenciasRoute = MercadoDeTransferenciasRouteImport.update({
   path: '/mercado-de-transferencias',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MultiplayerRoute = MultiplayerRouteImport.update({
+  id: '/multiplayer',
+  path: '/multiplayer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -335,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
+  '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
   '/news': typeof NewsRoute
   '/partida-rapida': typeof PartidaRapidaRoute
@@ -386,6 +393,7 @@ export interface FileRoutesByTo {
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
+  '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
   '/news': typeof NewsRoute
   '/partida-rapida': typeof PartidaRapidaRoute
@@ -438,6 +446,7 @@ export interface FileRoutesById {
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
+  '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
   '/news': typeof NewsRoute
   '/partida-rapida': typeof PartidaRapidaRoute
@@ -491,6 +500,7 @@ export interface FileRouteTypes {
     | '/match'
     | '/mcp'
     | '/mercado-de-transferencias'
+    | '/multiplayer'
     | '/new'
     | '/news'
     | '/partida-rapida'
@@ -542,6 +552,7 @@ export interface FileRouteTypes {
     | '/match'
     | '/mcp'
     | '/mercado-de-transferencias'
+    | '/multiplayer'
     | '/new'
     | '/news'
     | '/partida-rapida'
@@ -593,6 +604,7 @@ export interface FileRouteTypes {
     | '/match'
     | '/mcp'
     | '/mercado-de-transferencias'
+    | '/multiplayer'
     | '/new'
     | '/news'
     | '/partida-rapida'
@@ -645,6 +657,7 @@ export interface RootRouteChildren {
   MatchRoute: typeof MatchRoute
   McpRoute: typeof McpRoute
   MercadoDeTransferenciasRoute: typeof MercadoDeTransferenciasRoute
+  MultiplayerRoute: typeof MultiplayerRoute
   NewRoute: typeof NewRoute
   NewsRoute: typeof NewsRoute
   PartidaRapidaRoute: typeof PartidaRapidaRoute
@@ -854,6 +867,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MercadoDeTransferenciasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/multiplayer': {
+      id: '/multiplayer'
+      path: '/multiplayer'
+      fullPath: '/multiplayer'
+      preLoaderRoute: typeof MultiplayerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/new': {
       id: '/new'
       path: '/new'
@@ -1045,6 +1065,7 @@ const rootRouteChildren: RootRouteChildren = {
   MatchRoute: MatchRoute,
   McpRoute: McpRoute,
   MercadoDeTransferenciasRoute: MercadoDeTransferenciasRoute,
+  MultiplayerRoute: MultiplayerRoute,
   NewRoute: NewRoute,
   NewsRoute: NewsRoute,
   PartidaRapidaRoute: PartidaRapidaRoute,
