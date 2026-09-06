@@ -6,16 +6,6 @@ import {
   AdaptiveEvents,
   PerformanceMonitor,
 } from "@react-three/drei";
-import {
-  EffectComposer,
-  Bloom,
-  Vignette,
-  SMAA,
-  DepthOfField,
-  BrightnessContrast,
-  HueSaturation,
-  Noise,
-} from "@react-three/postprocessing";
 import { easing } from "maath";
 import type React from "react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
