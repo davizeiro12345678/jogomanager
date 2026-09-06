@@ -1181,17 +1181,35 @@ function Stands({
       <Banners color={homeColor} />
       <CrowdFlags color={homeColor} alt={awayColor} rings={rings} quality={quality} />
 
+      {/* tronco: ombros mais largos que o quadril, tecido fosco */}
       <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, crowd.positions.length]}>
-        <capsuleGeometry args={[0.22, 0.42, 3, 6]} />
-        <meshStandardMaterial roughness={0.88} />
+        <capsuleGeometry args={[0.22, 0.44, quality === "alta" ? 4 : 3, quality === "alta" ? 10 : 6]} />
+        <meshStandardMaterial roughness={0.9} sheen={quality === "alta" ? 0.3 : 0} />
+      </instancedMesh>
+      <instancedMesh
+        ref={shoulderRef}
+        frustumCulled={false}
+        args={[undefined, undefined, crowd.positions.length]}
+      >
+        <capsuleGeometry args={[0.13, 0.3, 2, quality === "alta" ? 8 : 5]} />
+        <meshStandardMaterial roughness={0.9} />
       </instancedMesh>
       <instancedMesh
         ref={headRef}
         frustumCulled={false}
         args={[undefined, undefined, crowd.positions.length]}
       >
-        <sphereGeometry args={[0.16, 6, 5]} />
-        <meshStandardMaterial roughness={0.75} />
+        <sphereGeometry args={[0.16, quality === "alta" ? 10 : 6, quality === "alta" ? 8 : 5]} />
+        <meshStandardMaterial roughness={0.72} />
+      </instancedMesh>
+      {/* cabelo/boné: quebra a fileira de cabeças todas iguais */}
+      <instancedMesh
+        ref={hairRef}
+        frustumCulled={false}
+        args={[undefined, undefined, crowd.positions.length]}
+      >
+        <sphereGeometry args={[0.165, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.62]} />
+        <meshStandardMaterial roughness={0.9} />
       </instancedMesh>
       {armCount > 0 && (
         <instancedMesh ref={armsRef} frustumCulled={false} args={[undefined, undefined, armCount]}>
