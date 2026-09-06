@@ -7,12 +7,17 @@ export const loadCareer = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("careers")
-      .select("state")
+      .select("state, updated_at")
       .eq("user_id", context.userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return (data?.state as CareerState | undefined) ?? null;
+    if (!data?.state) return null;
+    return {
+      state: data.state as CareerState,
+      updatedAt: (data.updated_at as string | null) ?? null,
+    };
   });
+
 
 export const saveCareer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
