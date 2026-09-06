@@ -1346,9 +1346,13 @@ function CrowdFlags({
     return out;
   }, [count, rings, color, alt]);
 
-  const materials = useMemo(() => flags.map((f) => {
+  const materials = useMemo(() => flags.map((f, i) => {
+    // bandeirões grandes ganham estampa (listras + escudo); os pequenos ficam
+    // só na cor, para não pesar em aparelho fraco
+    const printed = i % 3 === 0 ? bigFlagTexture(f.c, f.c === color ? alt : color) : null;
     const m = new THREE.MeshStandardMaterial({
-      color: f.c,
+      color: printed ? "#ffffff" : f.c,
+      ...(printed ? { map: printed } : {}),
       side: THREE.DoubleSide,
       roughness: 0.85,
       metalness: 0,
@@ -1366,7 +1370,8 @@ function CrowdFlags({
         );
     };
     return m;
-  }), [flags]);
+  }), [flags, color, alt]);
+
 
   useFrame(({ clock }) => {
     uTime.current.value = clock.elapsedTime;
