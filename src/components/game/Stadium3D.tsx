@@ -1177,7 +1177,7 @@ function Stands({
         </mesh>
       ))}
 
-      <Tiers rings={rings} />
+      <Tiers rings={rings} homeColor={homeColor} awayColor={awayColor} />
       <Roof rings={rings} />
       <Banners color={homeColor} />
       <CrowdFlags color={homeColor} alt={awayColor} rings={rings} quality={quality} />
