@@ -1813,11 +1813,11 @@ function Scene({
         />
       </Environment>
 
-      <ambientLight intensity={0.7} />
+      <ambientLight intensity={0.32} />
       <hemisphereLight
-        intensity={time === "dia" ? 0.9 : 0.6}
+        intensity={time === "dia" ? 0.5 : 0.32}
         groundColor="#0d2a18"
-        color={time === "entardecer" ? "#ffd0a8" : "#cfe4ff"}
+        color={time === "entardecer" ? "#ffd8ba" : "#cfe4ff"}
       />
       <directionalLight
         position={[50, 80, 40]}
