@@ -12,12 +12,17 @@ import {
   History,
   Home,
   LayoutGrid,
+  Medal,
+  MessagesSquare,
   Newspaper,
   Play,
   Search,
+  ShoppingBag,
+  Sparkles,
   Table2,
   Trophy,
   Users,
+  Wrench,
 } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 
@@ -46,6 +51,11 @@ const TABS: { to: string; key: string; icon: ComponentType<{ size?: number }> }[
   { to: "/history", key: "nav.history", icon: History },
   { to: "/carreira", key: "nav.coach", icon: Clapperboard },
   { to: "/temporada-automatica", key: "nav.auto", icon: FastForward },
+  { to: "/conquistas", key: "nav.awards", icon: Medal },
+  { to: "/assistente", key: "nav.ai", icon: Sparkles },
+  { to: "/editor", key: "nav.editor", icon: Wrench },
+  { to: "/chat", key: "nav.chat", icon: MessagesSquare },
+  { to: "/loja", key: "nav.store", icon: ShoppingBag },
 ];
 
 /** Atalhos mostrados na barra inferior do celular. */

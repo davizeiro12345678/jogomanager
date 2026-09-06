@@ -2,10 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
+import { Chips, CREST_EMBLEMS, CREST_PATTERNS, CREST_SHAPES, EMBLEM_LABEL, KIT_PATTERNS } from "@/components/game/CrestBuilder";
 import { initCareer } from "@/game/career";
 import { LEAGUES } from "@/game/data/leagues";
-import type { CrestEmblem, CrestPattern, CrestShape, RoofKind, ChantKind } from "@/game/customStyle";
-import type { KitPattern } from "@/game/kits";
+import type { RoofKind, ChantKind } from "@/game/customStyle";
 import { useCareer } from "@/hooks/useCareer";
 import { DEFAULT_MY_CLUB, slugifyClubId, writeMyClub, type MyClub } from "@/lib/myClub";
 
@@ -31,10 +31,6 @@ export const Route = createFileRoute("/clube/novo")({
   component: NewClubPage,
 });
 
-const SHAPES: CrestShape[] = ["shield", "round", "pointed", "diamond", "hex", "english", "split", "banner"];
-const PATTERNS: CrestPattern[] = ["sash", "halves", "stripes", "rings", "quarters", "chevron", "hoop", "rays", "solid"];
-const EMBLEMS: CrestEmblem[] = ["ball", "lion", "eagle", "crown", "anchor", "leaf", "mountain", "bolt"];
-const KIT_PATTERNS: KitPattern[] = ["solid", "stripes", "hoops", "sash", "halves", "checks", "band", "sleeves", "gradient", "pin"];
 const ROOFS: { id: RoofKind; label: string }[] = [
   { id: "aberto", label: "Sem cobertura" },
   { id: "parcial", label: "Cobertura parcial" },
@@ -46,17 +42,6 @@ const CHANTS: { id: ChantKind; label: string }[] = [
   { id: "epico", label: "Épica — hino arrepiante antes do apito" },
   { id: "silencioso", label: "Reservada — só explode no gol" },
 ];
-const EMBLEM_LABEL: Record<CrestEmblem, string> = {
-  ball: "Bola",
-  lion: "Leão",
-  eagle: "Águia",
-  crown: "Coroa",
-  anchor: "Âncora",
-  leaf: "Folha",
-  mountain: "Montanha",
-  bolt: "Raio",
-};
-
 const STEPS = ["Identidade", "Escudo", "Uniforme", "Estádio", "Torcida"];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -70,40 +55,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const inputClass =
   "w-full rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary";
-
-function Chips<T extends string>({
-  value,
-  options,
-  onChange,
-  label,
-}: {
-  value: T;
-  options: { id: T; label: string }[];
-  onChange: (v: T) => void;
-  label: string;
-}) {
-  return (
-    <div>
-      <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
-      <div className="flex flex-wrap gap-2">
-        {options.map((o) => (
-          <button
-            key={o.id}
-            type="button"
-            onClick={() => onChange(o.id)}
-            className={`rounded-full border px-3 py-1.5 text-xs transition ${
-              value === o.id
-                ? "border-primary bg-primary/15 text-primary"
-                : "border-border/60 text-muted-foreground hover:border-primary/50"
-            }`}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function KitPreview({ club }: { club: MyClub }) {
   const { kit } = club;
@@ -282,15 +233,15 @@ function NewClubPage() {
                   <input type="color" className={inputClass} value={club.secondary} onChange={(e) => set("secondary", e.target.value)} />
                 </Field>
               </div>
-              <Chips label="Formato" value={club.crest.shape} onChange={(v) => setCrest({ shape: v })} options={SHAPES.map((s) => ({ id: s, label: s }))} />
-              <Chips label="Estampa" value={club.crest.pattern} onChange={(v) => setCrest({ pattern: v })} options={PATTERNS.map((s) => ({ id: s, label: s }))} />
-              <Chips label="Símbolo" value={club.crest.emblem} onChange={(v) => setCrest({ emblem: v })} options={EMBLEMS.map((s) => ({ id: s, label: EMBLEM_LABEL[s] }))} />
+              <Chips label="Formato" value={club.crest.shape} onChange={(v) => setCrest({ shape: v })} options={CREST_SHAPES.map((s) => ({ id: s, label: s }))} />
+              <Chips label="Estampa" value={club.crest.pattern} onChange={(v) => setCrest({ pattern: v })} options={CREST_PATTERNS.map((s) => ({ id: s, label: s }))} />
+              <Chips label="Símbolo" value={club.crest.emblem} onChange={(v) => setCrest({ emblem: v })} options={CREST_EMBLEMS.map((s) => ({ id: s, label: EMBLEM_LABEL[s] }))} />
             </>
           )}
 
           {step === 2 && (
             <>
-              <Chips label="Padrão da camisa" value={club.kit.pattern} onChange={(v) => setKit({ pattern: v })} options={KIT_PATTERNS.map((s) => ({ id: s, label: s }))} />
+              <Chips label="Padrão da camisa" value={club.kit.pattern} onChange={(v) => setKit({ pattern: v })} options={KIT_PATTERNS.map((k) => ({ id: k, label: k }))} />
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Calção">
                   <input type="color" className={inputClass} value={club.kit.shorts} onChange={(e) => setKit({ shorts: e.target.value })} />

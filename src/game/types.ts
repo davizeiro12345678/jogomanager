@@ -255,6 +255,12 @@ export interface CareerState {
   transferredIn?: string[];
   /** cutscenes já exibidas */
   seenScenes?: string[];
+
+  /* ---------------------------------------------------------- v6 */
+  /** ids das conquistas já desbloqueadas */
+  achievements?: string[];
+  /** data (ISO) em que cada conquista foi desbloqueada */
+  achievementsUnlockedAt?: Record<string, string>;
 }
 
 export type ManagerPersonality = "calmo" | "motivador" | "durao" | "tatico" | "jovem";
