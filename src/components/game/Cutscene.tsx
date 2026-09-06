@@ -3,7 +3,13 @@
  * atores que entram em cena, texto máquina de escrever e botão de pular.
  * Respeita "reduzir movimento" (sem animação e texto imediato).
  */
+import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+/** granulado de filme reutilizado na moldura da cena */
+const GRAIN =
+  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.6'/></svg>\")";
+
 
 import {
   CUTSCENES,
@@ -395,6 +401,23 @@ export function Cutscene({
   const reduced = useMemo(() => prefersReducedMotion(), []);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [par, setPar] = useState({ x: 0, y: 0 });
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (reduced) return;
+      const el = stageRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setPar({
+        x: (e.clientX - r.left) / r.width - 0.5,
+        y: (e.clientY - r.top) / r.height - 0.5,
+      });
+    },
+    [reduced],
+  );
+
 
   const line = data?.lines[i];
   const full = line?.text ?? "";
@@ -452,11 +475,60 @@ export function Cutscene({
           reduced ? "" : "animate-scale-in"
         }`}
       >
-        <div className="relative h-48 overflow-hidden sm:h-64">
-          <div className={`absolute inset-0 ${reduced ? "" : "cs-anim-zoom"}`}>
+        <div
+          ref={stageRef}
+          onPointerMove={onPointerMove}
+          className="relative h-48 overflow-hidden sm:h-64"
+        >
+          {/* camada de fundo: mais lenta, levemente desfocada (profundidade) */}
+          <div
+            className={`absolute -inset-6 ${reduced ? "" : "cs-anim-zoom"}`}
+            style={{
+              transform: `translate3d(${par.x * 6}px, ${par.y * 4}px, 0) scale(1.12)`,
+              filter: "blur(3px) saturate(0.85)",
+              opacity: 0.85,
+              transition: reduced ? undefined : "transform 220ms ease-out",
+            }}
+          >
+            <Backdrop art={data.art} a={accent2} b={accent} reduced={reduced} trophies={trophies} />
+          </div>
+          {/* camada principal */}
+          <div
+            className={`absolute inset-0 ${reduced ? "" : "cs-anim-zoom"}`}
+            style={{
+              transform: `translate3d(${par.x * -14}px, ${par.y * -9}px, 0)`,
+              transition: reduced ? undefined : "transform 180ms ease-out",
+            }}
+          >
             <Backdrop art={data.art} a={accent} b={accent2} reduced={reduced} trophies={trophies} />
           </div>
+          {/* varredura de luz */}
+          {!reduced && (
+            <div
+              className="pointer-events-none absolute inset-0 cs-anim-sweep"
+              style={{
+                background:
+                  "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.10) 50%, transparent 65%)",
+              }}
+            />
+          )}
+          {/* vinheta + granulado */}
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(120% 90% at 50% 45%, transparent 40%, rgba(0,0,0,0.55) 100%)",
+            }}
+          />
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.07] mix-blend-overlay"
+            style={{ backgroundImage: GRAIN, backgroundSize: "160px 160px" }}
+          />
+          {/* tarjas cinematográficas */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-black/80 sm:h-5" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 bg-black/80 sm:h-5" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+
           <div className="absolute bottom-3 left-4 flex items-end gap-3">
             <ManagerPortrait look={look} size={72} accent={accent} />
             <div>

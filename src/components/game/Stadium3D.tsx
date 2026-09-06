@@ -21,6 +21,10 @@ import {
 } from "@/components/game/stadium/textures/concrete";
 import { grassAlbedo, grassNormal, grassRoughness } from "@/components/game/stadium/textures/grass";
 import { LINES_H, LINES_W, pitchLinesTexture } from "@/components/game/stadium/textures/lines";
+import { pitchWearTexture } from "@/components/game/stadium/textures/wear";
+import { bannerTexture, bigFlagTexture, mosaicTexture } from "@/components/game/stadium/textures/tifo";
+import { StadiumProps } from "@/components/game/stadium/Props";
+
 import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
@@ -214,10 +218,11 @@ function PitchMarks({ sim }: { sim: MatchSim }) {
   );
 }
 
-function Pitch({ quality, sim }: { quality: Quality; sim: MatchSim }) {
+function Pitch({ quality, sim, wet }: { quality: Quality; sim: MatchSim; wet: number }) {
   const tex = useMemo(grassAlbedo, []);
   const rough = useMemo(grassRoughness, []);
   const norm = useMemo(() => (quality === "baixa" ? null : grassNormal()), [quality]);
+  const wear = useMemo(() => (quality === "baixa" ? null : pitchWearTexture()), [quality]);
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
@@ -229,28 +234,45 @@ function Pitch({ quality, sim }: { quality: Quality; sim: MatchSim }) {
         <meshPhysicalMaterial
           {...(tex ? { map: tex } : { color: "#1d7a45" })}
           {...(rough ? { roughnessMap: rough } : {})}
-          {...(norm ? { normalMap: norm, normalScale: new THREE.Vector2(0.55, 0.55) } : {})}
-          {...(norm ? { normalScale: new THREE.Vector2(0.7, 0.7) } : {})}
+          {...(norm ? { normalMap: norm, normalScale: new THREE.Vector2(0.7, 0.7) } : {})}
           roughness={0.74}
           metalness={0.0}
-          clearcoat={quality === "alta" ? 0.32 : quality === "media" ? 0.14 : 0}
-          clearcoatRoughness={0.62}
-          sheen={quality === "alta" ? 0.34 : 0}
+          clearcoat={quality === "alta" ? 0.32 + wet * 0.4 : quality === "media" ? 0.14 : 0}
+          clearcoatRoughness={0.62 - wet * 0.3}
+          sheen={quality === "alta" ? 0.34 + wet * 0.3 : 0}
           sheenRoughness={0.75}
           sheenColor="#5fae7c"
-          envMapIntensity={0.45}
+          envMapIntensity={0.45 + wet * 0.4}
         />
       </mesh>
+      {/* desgaste, lama e terra exposta por cima do gramado */}
+      {wear ? (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0]} renderOrder={1}>
+          <planeGeometry args={[LINES_W, LINES_H]} />
+          <meshStandardMaterial
+            map={wear}
+            transparent
+            opacity={0.34}
+
+            roughness={0.95}
+            metalness={0}
+            depthWrite={false}
+            polygonOffset
+            polygonOffsetFactor={-1}
+            polygonOffsetUnits={-1}
+          />
+        </mesh>
+      ) : null}
       {quality !== "baixa" && <GrassField sim={sim} quality={quality} />}
       {quality !== "baixa" && <PitchMarks sim={sim} />}
       <PaintedLines />
       <Goal side={1} quality={quality} sim={sim} />
       <Goal side={-1} quality={quality} sim={sim} />
       <CornerFlags />
-      <Dugouts />
     </group>
   );
 }
+
 
 
 
@@ -523,29 +545,6 @@ function CornerFlags() {
   );
 }
 
-function Dugouts() {
-  return (
-    <group>
-      {[-1, 1].map((s) => (
-        <group key={s} position={[s * 14, 0, -(FIELD_Z + 7.5)]}>
-          <mesh position={[0, 1.1, 0]}>
-            <boxGeometry args={[11, 2.2, 3]} />
-            <meshStandardMaterial color="#13181d" roughness={0.9} />
-          </mesh>
-          <mesh position={[0, 1.6, 1.45]}>
-            <planeGeometry args={[11, 1.4]} />
-            <meshStandardMaterial color="#0a0d10" transparent opacity={0.5} />
-          </mesh>
-        </group>
-      ))}
-      {/* túnel */}
-      <mesh position={[0, 1.6, -(FIELD_Z + 9)]}>
-        <boxGeometry args={[6, 3.2, 6]} />
-        <meshStandardMaterial color="#0e1216" roughness={1} />
-      </mesh>
-    </group>
-  );
-}
 
 /* -------------------------------------------------------------- estrutura */
 
@@ -675,44 +674,104 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
     [-1, 1],
     [1, 1],
   ];
+  const lamps = [-2.6, -0.9, 0.9, 2.6];
   return (
     <group>
-      {spots.map(([sx, sz], i) => (
-        <group key={i} position={[sx * (FIELD_X + 20), 0, sz * (FIELD_Z + 22)]}>
-          <mesh position={[0, 14, 0]}>
-            <cylinderGeometry args={[0.5, 0.9, 28, 8]} />
-            <meshStandardMaterial color="#252c33" roughness={0.85} />
-          </mesh>
-          <mesh position={[0, 28.5, 0]}>
-            <boxGeometry args={[8, 3.4, 1]} />
-            <meshStandardMaterial
-              color="#f5f8ff"
-              emissive={on ? "#dceaff" : "#333"}
-              emissiveIntensity={on ? 2.2 : 0}
+      {spots.map(([sx, sz], i) => {
+        const px = sx * (FIELD_X + 20);
+        const pz = sz * (FIELD_Z + 22);
+        const dist = Math.hypot(px, pz);
+        return (
+          <group key={i} position={[px, 0, pz]}>
+            {/* mastro treliçado */}
+            <mesh position={[0, 14, 0]} castShadow>
+              <cylinderGeometry args={[0.5, 0.9, 28, 8]} />
+              <meshStandardMaterial color="#252c33" roughness={0.85} metalness={0.35} />
+            </mesh>
+            {[0, 1, 2, 3].map((k) => (
+              <mesh key={k} position={[0, 6 + k * 6, 0]}>
+                <torusGeometry args={[0.85, 0.07, 4, 10]} />
+                <meshStandardMaterial color="#39424b" roughness={0.8} metalness={0.4} />
+              </mesh>
+            ))}
+            {/* rack com lâmpadas individuais */}
+            <mesh position={[0, 28.5, 0]}>
+              <boxGeometry args={[8.6, 3.6, 0.6]} />
+              <meshStandardMaterial color="#39424b" roughness={0.8} metalness={0.4} />
+            </mesh>
+            {lamps.map((lx) =>
+              [0.85, -0.85].map((ly) => (
+                <mesh key={`${lx}${ly}`} position={[lx, 28.5 + ly, 0.45]}>
+                  <boxGeometry args={[1.5, 1.3, 0.3]} />
+                  <meshStandardMaterial
+                    color="#f5f8ff"
+                    emissive={on ? "#dceaff" : "#2b3138"}
+                    emissiveIntensity={on ? 3.4 : 0}
+                    toneMapped={false}
+                  />
+                </mesh>
+              )),
+            )}
+            {on && (
+              <>
+                {/* halo volumétrico curto, apenas em volta do rack */}
+                {quality === "alta" && (
+                  <mesh position={[0, 26, 0]} rotation={[Math.PI, 0, 0]}>
+                    <coneGeometry args={[5.5, 9, 14, 1, true]} />
+                    <meshBasicMaterial
+                      color="#cfe3ff"
+                      transparent
+                      opacity={0.05}
+                      depthWrite={false}
+                      side={THREE.DoubleSide}
+                      blending={THREE.AdditiveBlending}
+                      toneMapped={false}
+                    />
+                  </mesh>
+                )}
+
+                <sprite position={[0, 28.5, 0]} scale={[30, 30, 1]}>
+                  <spriteMaterial
+                    color="#cfe3ff"
+                    opacity={0.18}
+                    transparent
+                    depthWrite={false}
+                    blending={THREE.AdditiveBlending}
+                  />
+                </sprite>
+                {quality !== "baixa" && (
+                  <pointLight position={[0, 28, 0]} intensity={1400} distance={230} color="#e8f2ff" />
+                )}
+              </>
+            )}
+          </group>
+        );
+      })}
+      {/* reflexo dos refletores no gramado úmido: discreto, colado nos cantos */}
+      {on &&
+        quality === "alta" &&
+        spots.map(([sx, sz], i) => (
+          <mesh
+            key={`r${i}`}
+            rotation={[-Math.PI / 2, 0, 0]}
+            position={[sx * (FIELD_X * 0.86), 0.02, sz * (FIELD_Z * 0.86)]}
+          >
+            <circleGeometry args={[10, 20]} />
+            <meshBasicMaterial
+              color="#9fc4ff"
+              transparent
+              opacity={0.02}
+              depthWrite={false}
+              blending={THREE.AdditiveBlending}
               toneMapped={false}
             />
           </mesh>
-          {on && (
-            <>
-              <sprite position={[0, 28.5, 0]} scale={[26, 26, 1]}>
-                <spriteMaterial
-                  color="#cfe3ff"
-                  opacity={0.16}
-                  transparent
-                  depthWrite={false}
-                  blending={THREE.AdditiveBlending}
-                />
-              </sprite>
-              {quality !== "baixa" && (
-                <pointLight position={[0, 28, 0]} intensity={1400} distance={230} color="#e8f2ff" />
-              )}
-            </>
-          )}
-        </group>
-      ))}
+        ))}
+
     </group>
   );
 }
+
 
 /** Concreto compartilhado por toda a estrutura (um material só, muitas peças). */
 function useConcrete(color = "#6d747b", repeat = 6) {
@@ -954,18 +1013,67 @@ function Roof({ rings }: { rings: number }) {
 }
 
 
-function Banners({ color }: { color: string }) {
+/**
+ * Faixas de torcida organizada e mosaico de cartolinas dos setores atrás
+ * dos gols — o que se vê primeiro numa panorâmica de transmissão.
+ */
+function Banners({ color, alt, rings }: { color: string; alt: string; rings: number }) {
+  const words = ["torcida fiel", "aqui é nosso", "amor eterno", "raça e paixão"];
+  const banners = useMemo(
+    () =>
+      words.map((w, i) => bannerTexture(w, i % 2 === 0 ? color : alt, i % 2 === 0 ? alt : color)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [color, alt],
+  );
+  const mosaic = useMemo(() => mosaicTexture(color, alt), [color, alt]);
+  const top = 2.0 + rings * 1.45;
+
   return (
     <group>
-      {[-1, 0, 1].map((i) => (
-        <mesh key={i} position={[i * 22, 2.2, -(FIELD_Z + 6.4)]}>
-          <planeGeometry args={[16, 1.6]} />
-          <meshStandardMaterial color={color} roughness={0.9} side={THREE.DoubleSide} />
-        </mesh>
-      ))}
+      {/* faixas presas na grade da primeira fila */}
+      {banners.map((t, i) =>
+        t ? (
+          <mesh key={`b${i}`} position={[(i - 1.5) * 26, 2.2, -(FIELD_Z + 6.4)]}>
+            <planeGeometry args={[18, 2.2]} />
+            <meshStandardMaterial map={t} roughness={0.92} side={THREE.DoubleSide} />
+          </mesh>
+        ) : null,
+      )}
+      {banners.map((t, i) =>
+        t ? (
+          <mesh
+            key={`bb${i}`}
+            position={[(i - 1.5) * 26, 2.2, FIELD_Z + 6.4]}
+            rotation={[0, Math.PI, 0]}
+          >
+            <planeGeometry args={[18, 2.2]} />
+            <meshStandardMaterial map={t} roughness={0.92} side={THREE.DoubleSide} />
+          </mesh>
+        ) : null,
+      )}
+      {/* mosaico atrás de cada gol, ocupando a altura do anel */}
+      {mosaic
+        ? [-1, 1].map((x) => (
+            <mesh
+              key={`m${x}`}
+              position={[x * (FIELD_X + 11), top * 0.55 + 2, 0]}
+              rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}
+            >
+              <planeGeometry args={[FIELD_Z * 1.6, Math.max(6, top * 0.7)]} />
+              <meshStandardMaterial
+                map={mosaic}
+                roughness={0.95}
+                transparent
+                opacity={0.85}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+          ))
+        : null}
     </group>
   );
 }
+
 
 function Stands({
   homeColor,
@@ -1203,7 +1311,7 @@ function Stands({
 
       <Tiers rings={rings} homeColor={homeColor} awayColor={awayColor} />
       <Roof rings={rings} />
-      <Banners color={homeColor} />
+      <Banners color={homeColor} alt={awayColor} rings={rings} />
       <CrowdFlags color={homeColor} alt={awayColor} rings={rings} quality={quality} />
 
       {/* tronco: ombros mais largos que o quadril, tecido fosco */}
@@ -1299,9 +1407,13 @@ function CrowdFlags({
     return out;
   }, [count, rings, color, alt]);
 
-  const materials = useMemo(() => flags.map((f) => {
+  const materials = useMemo(() => flags.map((f, i) => {
+    // bandeirões grandes ganham estampa (listras + escudo); os pequenos ficam
+    // só na cor, para não pesar em aparelho fraco
+    const printed = i % 3 === 0 ? bigFlagTexture(f.c, f.c === color ? alt : color) : null;
     const m = new THREE.MeshStandardMaterial({
-      color: f.c,
+      color: printed ? "#ffffff" : f.c,
+      ...(printed ? { map: printed } : {}),
       side: THREE.DoubleSide,
       roughness: 0.85,
       metalness: 0,
@@ -1319,7 +1431,8 @@ function CrowdFlags({
         );
     };
     return m;
-  }), [flags]);
+  }), [flags, color, alt]);
+
 
   useFrame(({ clock }) => {
     uTime.current.value = clock.elapsedTime;
@@ -1631,6 +1744,7 @@ function Scene({
   const goalPulse = useRef(0);
   const lastGoals = useRef(0);
   const [replay, setReplay] = useState(false);
+  const [moment, setMoment] = useState<"match" | "replay" | "drama">("match");
 
   useFrame((_, dt) => {
     const total = sim.stats.home.goals + sim.stats.away.goals;
@@ -1641,6 +1755,9 @@ function Scene({
     if (goalPulse.current > 0) goalPulse.current = Math.max(0, goalPulse.current - dt * 0.22);
     const r = goalPulse.current > 0.55;
     setReplay((v) => (v === r ? v : r));
+    const m = goalPulse.current > 0.82 ? "drama" : r ? "replay" : "match";
+    setMoment((v) => (v === m ? v : m));
+
   });
 
 
@@ -1717,7 +1834,7 @@ function Scene({
       <directionalLight position={[-60, 60, -40]} intensity={0.6} color="#bcd8ff" />
 
       <SkyDome time={time} />
-      <Pitch quality={quality} sim={sim} />
+      <Pitch quality={quality} sim={sim} wet={time === "noite" ? 0.7 : time === "entardecer" ? 0.3 : 0} />
 
       <AdBoards homeColor={sim.home.primary} awayColor={sim.away.primary} />
       <Floodlights time={time} quality={quality} />
@@ -1727,6 +1844,13 @@ function Scene({
         quality={quality}
         goalPulse={goalPulse}
         night={time !== "dia"}
+      />
+      <StadiumProps
+        rings={quality === "alta" ? 14 : quality === "media" ? 9 : 5}
+        quality={quality}
+        homeColor={sim.home.primary}
+        awayColor={sim.away.primary}
+        ball={sim.ball}
       />
       <Scoreboard sim={sim} />
       <Ball sim={sim} quality={quality} />
@@ -1748,7 +1872,13 @@ function Scene({
       ))}
       <GoalFx goalPulse={goalPulse} quality={quality} />
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
-      <PostFX quality={quality} replay={replay} />
+      <PostFX
+        quality={quality}
+        replay={replay}
+        moment={moment}
+        time={time}
+      />
+
 
     </>
   );
