@@ -19,6 +19,7 @@ import { Route as CarreiraRouteImport } from './routes/carreira'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as ComoSerTecnicoDeFutebolRouteImport } from './routes/como-ser-tecnico-de-futebol'
+import { Route as ConquistasRouteImport } from './routes/conquistas'
 import { Route as CriadorRouteImport } from './routes/criador'
 import { Route as CupRouteImport } from './routes/cup'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -104,6 +105,11 @@ const ClubRoute = ClubRouteImport.update({
 const ComoSerTecnicoDeFutebolRoute = ComoSerTecnicoDeFutebolRouteImport.update({
   id: '/como-ser-tecnico-de-futebol',
   path: '/como-ser-tecnico-de-futebol',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConquistasRoute = ConquistasRouteImport.update({
+  id: '/conquistas',
+  path: '/conquistas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CriadorRoute = CriadorRouteImport.update({
@@ -300,6 +306,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/conquistas': typeof ConquistasRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
   '/dashboard': typeof DashboardRoute
@@ -348,6 +355,7 @@ export interface FileRoutesByTo {
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/conquistas': typeof ConquistasRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
   '/dashboard': typeof DashboardRoute
@@ -397,6 +405,7 @@ export interface FileRoutesById {
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/conquistas': typeof ConquistasRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
   '/dashboard': typeof DashboardRoute
@@ -447,6 +456,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/conquistas'
     | '/criador'
     | '/cup'
     | '/dashboard'
@@ -495,6 +505,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/conquistas'
     | '/criador'
     | '/cup'
     | '/dashboard'
@@ -543,6 +554,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/conquistas'
     | '/criador'
     | '/cup'
     | '/dashboard'
@@ -592,6 +604,7 @@ export interface RootRouteChildren {
   ChatRoute: typeof ChatRoute
   ClubRoute: typeof ClubRoute
   ComoSerTecnicoDeFutebolRoute: typeof ComoSerTecnicoDeFutebolRoute
+  ConquistasRoute: typeof ConquistasRoute
   CriadorRoute: typeof CriadorRoute
   CupRoute: typeof CupRoute
   DashboardRoute: typeof DashboardRoute
@@ -700,6 +713,13 @@ declare module '@tanstack/react-router' {
       path: '/como-ser-tecnico-de-futebol'
       fullPath: '/como-ser-tecnico-de-futebol'
       preLoaderRoute: typeof ComoSerTecnicoDeFutebolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conquistas': {
+      id: '/conquistas'
+      path: '/conquistas'
+      fullPath: '/conquistas'
+      preLoaderRoute: typeof ConquistasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/criador': {
@@ -968,6 +988,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatRoute: ChatRoute,
   ClubRoute: ClubRoute,
   ComoSerTecnicoDeFutebolRoute: ComoSerTecnicoDeFutebolRoute,
+  ConquistasRoute: ConquistasRoute,
   CriadorRoute: CriadorRoute,
   CupRoute: CupRoute,
   DashboardRoute: DashboardRoute,

@@ -197,7 +197,12 @@ export function applyCustomToWorld() {
     if (o.secondary) club.secondary = o.secondary;
     if (typeof o.force === "number") club.strength = Math.max(35, Math.min(99, Math.round(o.force)));
     if (o.badge) badges.set(o.id, o.badge);
-    setClubStyle(o.id, { crest: o.crest, kit: o.kit, stadium: o.stadium, fans: o.fans });
+    setClubStyle(o.id, {
+      ...(o.crest ? { crest: o.crest } : {}),
+      ...(o.kit ? { kit: o.kit } : {}),
+      ...(o.stadium ? { stadium: o.stadium } : {}),
+      ...(o.fans ? { fans: o.fans } : {}),
+    });
   }
 
   applyCustomCompetitions(data.competitions);
@@ -315,9 +320,9 @@ export function toGamePlayer(cp: CustomPlayer, number: number): Player {
     suspended: false,
     injuryWeeks: 0,
     contractYears: cp.contractYears,
-    potential: cp.potential,
-    personality: cp.personality,
-    nationality: cp.nationality,
+    ...(cp.potential !== undefined ? { potential: cp.potential } : {}),
+    ...(cp.personality !== undefined ? { personality: cp.personality } : {}),
+    ...(cp.nationality !== undefined ? { nationality: cp.nationality } : {}),
     photo: cp.photo,
   };
 }

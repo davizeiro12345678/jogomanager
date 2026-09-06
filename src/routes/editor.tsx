@@ -233,8 +233,8 @@ function ElencosTab({ data, onChange }: { data: CustomData; onChange: () => void
                   <PlayerPortrait
                     player={{ ...p, number: p.number ?? 1, pace: 0, shooting: 0, passing: 0, defending: 0, physical: 0, condition: 0, morale: 0, goals: 0, assists: 0, apps: 0, yellows: 0, suspended: false, injuryWeeks: 0 } as never}
                     size={32}
-                    primary={club?.primary}
-                    secondary={club?.secondary}
+                    primary={club?.primary ?? "#0a8f3c"}
+                    secondary={club?.secondary ?? "#ffffff"}
                   />
                   {p.name}
                 </TableCell>
@@ -318,8 +318,8 @@ function PlayerDialog({
             <PlayerPortrait
               player={{ ...form, number: form.number ?? 1, pace: 0, shooting: 0, passing: 0, defending: 0, physical: 0, condition: 0, morale: 0, goals: 0, assists: 0, apps: 0, yellows: 0, suspended: false, injuryWeeks: 0 } as never}
               size={88}
-              primary={CLUBS[form.clubId]?.primary}
-              secondary={CLUBS[form.clubId]?.secondary}
+              primary={CLUBS[form.clubId]?.primary ?? "#0a8f3c"}
+              secondary={CLUBS[form.clubId]?.secondary ?? "#ffffff"}
             />
           </div>
           <div>
@@ -461,7 +461,7 @@ function ClubesTab({ data, onChange }: { data: CustomData; onChange: () => void 
       short: o?.short ?? b?.short ?? "",
       primary: o?.primary ?? b?.primary ?? "#0a8f3c",
       secondary: o?.secondary ?? b?.secondary ?? "#ffffff",
-      badge: o?.badge,
+      ...(o?.badge ? { badge: o.badge } : {}),
       force: o?.force ?? b?.strength ?? 70,
       crest: o?.crest ?? { shape: "shield", pattern: "sash", emblem: "ball", founded: 1990 },
       kit: o?.kit ?? { pattern: "stripes", base: b?.primary ?? "#0a8f3c", detail: b?.secondary ?? "#ffffff", shorts: "#ffffff", socks: "#0a8f3c", awayBase: "#ffffff", awayDetail: "#0a8f3c" },
