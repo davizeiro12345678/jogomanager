@@ -24,6 +24,13 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/mercado-de-transferencias", changefreq: "weekly", priority: "0.8" },
           { path: "/guias", changefreq: "weekly", priority: "0.8" },
           { path: "/dicas-de-gestao", changefreq: "weekly", priority: "0.8" },
+          { path: "/melhores-formacoes", changefreq: "weekly", priority: "0.8" },
+          { path: "/guia-de-scouting", changefreq: "weekly", priority: "0.8" },
+          { path: "/gestao-financeira", changefreq: "weekly", priority: "0.8" },
+          { path: "/glossario-do-futebol", changefreq: "monthly", priority: "0.7" },
+          { path: "/jogar-offline", changefreq: "monthly", priority: "0.7" },
+          { path: "/comparativo-jogos-manager", changefreq: "monthly", priority: "0.7" },
+          { path: "/multiplayer", changefreq: "weekly", priority: "0.6" },
           { path: "/perguntas-frequentes", changefreq: "monthly", priority: "0.7" },
           { path: "/criador", changefreq: "monthly", priority: "0.5" },
         ];
