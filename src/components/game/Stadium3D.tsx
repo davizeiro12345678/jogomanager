@@ -22,6 +22,8 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { PlayerRig } from "@/components/game/players/PlayerRig";
+import { PostFX } from "@/components/game/post/PostFX";
+import { grassAlbedo, grassNormal, grassRoughness } from "@/components/game/stadium/textures/grass";
 import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
@@ -48,166 +50,6 @@ function hash(s: string) {
 }
 
 /* ---------------------------------------------------------------- gramado */
-
-function grassTexture() {
-  if (typeof document === "undefined") return null;
-  const size = 2048;
-  const c = document.createElement("canvas");
-  c.width = size;
-  c.height = size;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-
-  // base com variação de tonalidade (não é verde chapado)
-  const g = ctx.createLinearGradient(0, 0, 0, size);
-  g.addColorStop(0, "#1a6f3f");
-  g.addColorStop(0.5, "#1f8149");
-  g.addColorStop(1, "#186a3c");
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, size, size);
-
-  // listras de corte diagonais, com bordas suaves e largura alternada
-  ctx.save();
-  ctx.translate(size / 2, size / 2);
-  ctx.rotate(-0.22);
-  ctx.translate(-size, -size);
-  for (let i = 0; i < 40; i++) {
-    const light = i % 2 === 0;
-    const grad = ctx.createLinearGradient(i * 144, 0, i * 144 + 144, 0);
-    const a = light ? "rgba(255,255,255," : "rgba(0,0,0,";
-    grad.addColorStop(0, `${a}0.02)`);
-    grad.addColorStop(0.5, `${a}0.075)`);
-    grad.addColorStop(1, `${a}0.02)`);
-    ctx.fillStyle = grad;
-    ctx.fillRect(i * 144, 0, 144, size * 2);
-  }
-  ctx.restore();
-
-  // fibras finas (textura de lâmina) — dá granulação de perto
-  for (let i = 0; i < 26000; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const len = 3 + Math.random() * 7;
-    ctx.strokeStyle = `rgba(${Math.random() > 0.45 ? "210,255,190" : "10,60,30"},${0.03 + Math.random() * 0.07})`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + (Math.random() - 0.5) * 3, y - len);
-    ctx.stroke();
-  }
-
-  // desgaste / manchas
-  for (let i = 0; i < 900; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    ctx.fillStyle = `rgba(${Math.random() > 0.5 ? "255,255,255" : "0,0,0"},${0.015 + Math.random() * 0.03})`;
-    ctx.beginPath();
-    ctx.ellipse(x, y, 6 + Math.random() * 26, 3 + Math.random() * 12, Math.random() * 3, 0, 7);
-    ctx.fill();
-  }
-
-  // áreas mais gastas: pequenas áreas e círculo central
-  const wear = (cx: number, cy: number, rx: number, ry: number, strength: number) => {
-    const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry));
-    rg.addColorStop(0, `rgba(150,130,80,${strength})`);
-    rg.addColorStop(1, "rgba(150,130,80,0)");
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.scale(1, ry / rx);
-    ctx.fillStyle = rg;
-    ctx.beginPath();
-    ctx.arc(0, 0, rx, 0, 7);
-    ctx.fill();
-    ctx.restore();
-  };
-  wear(size * 0.5, size * 0.5, size * 0.1, size * 0.1, 0.1);
-  wear(size * 0.05, size * 0.5, size * 0.09, size * 0.16, 0.16);
-  wear(size * 0.95, size * 0.5, size * 0.09, size * 0.16, 0.16);
-
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.anisotropy = 16;
-  return tex;
-}
-
-/** Normal map procedural: dá relevo às lâminas e às listras de corte. */
-function grassNormal() {
-  if (typeof document === "undefined") return null;
-  const size = 1024;
-  const c = document.createElement("canvas");
-  c.width = c.height = size;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  ctx.fillStyle = "#8080ff";
-  ctx.fillRect(0, 0, size, size);
-  // inclinação alternada das faixas ceifadas
-  ctx.save();
-  ctx.translate(size / 2, size / 2);
-  ctx.rotate(-0.22);
-  ctx.translate(-size, -size);
-  for (let i = 0; i < 40; i++) {
-    ctx.fillStyle = i % 2 === 0 ? "rgba(110,128,255,0.55)" : "rgba(150,128,255,0.55)";
-    ctx.fillRect(i * 72, 0, 72, size * 2);
-  }
-  ctx.restore();
-  // ruído de lâminas
-  for (let i = 0; i < 16000; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    ctx.strokeStyle = `rgba(${100 + Math.random() * 60 | 0},${100 + Math.random() * 60 | 0},255,0.25)`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + (Math.random() - 0.5) * 2, y - 2 - Math.random() * 4);
-    ctx.stroke();
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(6, 4);
-  tex.anisotropy = 8;
-  return tex;
-}
-
-/** Mapa de rugosidade: as listras de corte refletem a luz de forma diferente
- *  (grama penteada para lados opostos) — dá o brilho úmido da transmissão. */
-function grassRoughness() {
-  if (typeof document === "undefined") return null;
-  const size = 512;
-  const c = document.createElement("canvas");
-  c.width = c.height = size;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  ctx.fillStyle = "#b4b4b4";
-  ctx.fillRect(0, 0, size, size);
-  ctx.save();
-  ctx.translate(size / 2, size / 2);
-  ctx.rotate(-0.22);
-  ctx.translate(-size, -size);
-  for (let i = 0; i < 40; i++) {
-    ctx.fillStyle = i % 2 === 0 ? "#8c8c8c" : "#d2d2d2";
-    ctx.fillRect(i * 36, 0, 36, size * 2);
-  }
-  ctx.restore();
-  for (let i = 0; i < 400; i++) {
-    ctx.fillStyle = `rgba(255,255,255,${0.02 + Math.random() * 0.05})`;
-    ctx.beginPath();
-    ctx.ellipse(
-      Math.random() * size,
-      Math.random() * size,
-      4 + Math.random() * 14,
-      2 + Math.random() * 7,
-      Math.random() * 3,
-      0,
-      7,
-    );
-    ctx.fill();
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.anisotropy = 8;
-  return tex;
-}
 
 /** Tufos de grama instanciados perto das linhas laterais (só na qualidade alta). */
 /**
@@ -376,7 +218,7 @@ function PitchMarks({ sim }: { sim: MatchSim }) {
 }
 
 function Pitch({ quality, sim }: { quality: Quality; sim: MatchSim }) {
-  const tex = useMemo(grassTexture, []);
+  const tex = useMemo(grassAlbedo, []);
   const rough = useMemo(grassRoughness, []);
   const norm = useMemo(() => (quality === "baixa" ? null : grassNormal()), [quality]);
   return (
@@ -1487,44 +1329,6 @@ function Rig({
 
 /* --------------------------------------------------------- pós-processamento */
 
-function Post({ quality, replay = false }: { quality: Quality; replay?: boolean }) {
-  if (quality === "baixa") return null;
-
-  // preset "cinema" no replay de gol: contraste, cor mais quente e vinheta forte
-  if (replay) {
-    return (
-      <EffectComposer key="cinema" enableNormalPass={false} multisampling={0}>
-        <Bloom intensity={0.9} luminanceThreshold={0.6} luminanceSmoothing={0.35} mipmapBlur />
-        <HueSaturation saturation={0.22} />
-        <BrightnessContrast brightness={-0.02} contrast={0.2} />
-        <Noise opacity={0.06} />
-        <Vignette offset={0.18} darkness={0.85} />
-      </EffectComposer>
-    );
-  }
-
-  if (quality === "media") {
-    return (
-      <EffectComposer key="media" enableNormalPass={false}>
-        <Bloom intensity={0.35} luminanceThreshold={0.75} luminanceSmoothing={0.25} mipmapBlur />
-        <Vignette offset={0.28} darkness={0.55} />
-      </EffectComposer>
-    );
-  }
-  return (
-    <EffectComposer key="alta" enableNormalPass={false} multisampling={0}>
-      <Bloom intensity={0.6} luminanceThreshold={0.68} luminanceSmoothing={0.3} mipmapBlur />
-      <HueSaturation saturation={0.12} />
-      <BrightnessContrast brightness={0.01} contrast={0.1} />
-      <Noise opacity={0.025} />
-      <Vignette offset={0.25} darkness={0.6} />
-      <SMAA />
-    </EffectComposer>
-  );
-}
-
-
-
 /** Céu em degradê + nuvens leves; substitui o fundo chapado. */
 function SkyDome({ time }: { time: TimeOfDay }) {
   const tex = useMemo(() => {
@@ -1807,7 +1611,7 @@ function Scene({
       ))}
       <GoalFx goalPulse={goalPulse} quality={quality} />
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
-      <Post quality={quality} replay={replay} />
+      <PostFX quality={quality} replay={replay} />
 
     </>
   );

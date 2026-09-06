@@ -6,9 +6,7 @@ import {
   BrightnessContrast,
   HueSaturation,
   Noise,
-  ToneMapping,
 } from "@react-three/postprocessing";
-import { ToneMappingMode } from "postprocessing";
 
 export type PostQuality = "alta" | "media" | "baixa";
 
@@ -40,7 +38,6 @@ export function PostFX({
         <BrightnessContrast brightness={-0.02} contrast={0.22} />
         <Noise opacity={0.055} />
         <Vignette offset={0.16} darkness={0.88} />
-        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       </EffectComposer>
     );
   }
