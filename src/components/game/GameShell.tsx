@@ -19,6 +19,7 @@ import {
   Search,
   ShoppingBag,
   Sparkles,
+  Swords,
   Table2,
   Trophy,
   Users,
@@ -80,11 +81,14 @@ export function GameShell({
   const navigate = useNavigate();
   const signedIn = useSignedIn();
   const { t, lang, setLang } = useT();
+  const { sync } = useCareer();
+  useServiceWorker();
   const club = career ? CLUBS[career.clubId] : undefined;
   useClubTheme(club);
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
+      <OfflineBar />
       <div
         aria-hidden
         className="pointer-events-none fixed inset-x-0 top-0 z-0 h-64 opacity-70"
@@ -143,6 +147,10 @@ export function GameShell({
             >
               <Play size={13} /> {t("action.play")}
             </Link>
+            <CommandPalette
+              items={TABS.map((tab) => ({ to: tab.to, label: t(tab.key), group: tab.group }))}
+            />
+            <SyncBadge sync={sync} className="ml-1" />
             <label className="ml-1 flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-muted-foreground">
               <Globe size={13} />
               <span className="sr-only">{t("shell.language")}</span>
