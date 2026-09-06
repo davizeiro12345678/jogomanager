@@ -171,6 +171,7 @@ export function initCareer(
   leagueId: string,
   clubId: string,
   managerName: string,
+  profile?: ManagerProfile,
 ): CareerState {
   const club = CLUBS[clubId]!;
   const squad = withCustomPlayers(
@@ -180,6 +181,14 @@ export function initCareer(
   const formation: FormationKey = "4-3-3";
   const { lineup, bench } = pickLineup(squad, formation);
   const objective = Math.max(1, Math.min(15, Math.round((96 - club.strength) / 4)));
+  const base = defaultV3(club);
+  const rep = profile?.reputation ?? 3;
+  const loved = profile?.favClub === clubId;
+  const budget = Math.round(club.strength * 0.9 * (0.7 + rep * 0.12) * 10) / 10;
+  const approval = Math.max(
+    20,
+    Math.min(95, (profile?.approval ?? 62) + (loved ? 8 : 0)),
+  );
 
   return {
     version: 3,
@@ -196,11 +205,11 @@ export function initCareer(
     players: Object.fromEntries(squad.map((p) => [p.id, p])),
     results: [],
     finances: {
-      budget: Math.round(club.strength * 0.9 * 10) / 10,
+      budget,
       spent: 0,
       income: 0,
     },
-    approval: 62,
+    approval,
     objective,
     news: [
       {
@@ -214,10 +223,16 @@ export function initCareer(
     ],
     trophies: [],
     history: [],
-    ...defaultV3(club),
+    ...base,
+    fanApproval: Math.max(30, Math.min(95, base.fanApproval + (loved ? 12 : 0) + (rep - 3) * 4)),
+    pressure: Math.max(5, base.pressure - (rep - 3) * 4 - (loved ? 5 : 0)),
+    ...(profile ? { manager: profile } : {}),
+    transferredIn: [],
+    seenScenes: [],
     managerHistory: [{ clubId, from: 1, to: null, note: "Contratado" }],
   };
 }
+
 
 /** Migra estados antigos (v1/v2) para o formato atual. */
 export function migrateCareer(raw: unknown): CareerState {
