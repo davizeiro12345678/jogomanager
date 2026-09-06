@@ -1879,7 +1879,7 @@ function Scene({
       <PostFX
         quality={quality}
         replay={replay}
-        moment={goalPulse.current > 0.8 ? "drama" : replay ? "replay" : "match"}
+        moment={moment}
         time={time}
       />
 
