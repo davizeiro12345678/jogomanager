@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Coins, Sparkles } from "lucide-react";
+import { Coins, Sparkles, Crown, Package, Search, Dumbbell, Palette } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSignedIn } from "@/hooks/useCareer";
-import { purchaseProduct } from "@/lib/store.functions";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { useSubscription, isSubscriptionActive } from "@/hooks/useSubscription";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 export const Route = createFileRoute("/loja")({
   ssr: false,
