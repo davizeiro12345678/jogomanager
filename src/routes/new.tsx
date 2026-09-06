@@ -96,7 +96,7 @@ function NewCareer() {
     [attrs],
   );
   const left = TOTAL_POINTS - spent;
-  const maxStrength = 66 + reputation * 5; // reputação baixa limita clubes grandes
+  const maxStrength = 66 + reputation * 6; // reputação baixa limita clubes grandes (5★ libera todos)
 
   function setAttr(key: keyof ManagerAttributes, v: number) {
     const next = Math.max(1, Math.min(10, v));
