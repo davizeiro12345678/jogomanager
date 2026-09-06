@@ -21,6 +21,10 @@ import {
 } from "@/components/game/stadium/textures/concrete";
 import { grassAlbedo, grassNormal, grassRoughness } from "@/components/game/stadium/textures/grass";
 import { LINES_H, LINES_W, pitchLinesTexture } from "@/components/game/stadium/textures/lines";
+import { pitchWearTexture } from "@/components/game/stadium/textures/wear";
+import { bannerTexture, bigFlagTexture, mosaicTexture } from "@/components/game/stadium/textures/tifo";
+import { StadiumProps } from "@/components/game/stadium/Props";
+
 import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
