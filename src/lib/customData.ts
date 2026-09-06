@@ -323,6 +323,6 @@ export function toGamePlayer(cp: CustomPlayer, number: number): Player {
     ...(cp.potential !== undefined ? { potential: cp.potential } : {}),
     ...(cp.personality !== undefined ? { personality: cp.personality } : {}),
     ...(cp.nationality !== undefined ? { nationality: cp.nationality } : {}),
-    photo: cp.photo,
+    ...(cp.photo !== undefined ? { photo: cp.photo } : {}),
   };
 }
