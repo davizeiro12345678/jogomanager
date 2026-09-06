@@ -19,6 +19,7 @@ import { Route as CarreiraRouteImport } from './routes/carreira'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as ComoSerTecnicoDeFutebolRouteImport } from './routes/como-ser-tecnico-de-futebol'
+import { Route as ComparativoJogosManagerRouteImport } from './routes/comparativo-jogos-manager'
 import { Route as ConquistasRouteImport } from './routes/conquistas'
 import { Route as CriadorRouteImport } from './routes/criador'
 import { Route as CupRouteImport } from './routes/cup'
@@ -113,6 +114,11 @@ const ClubRoute = ClubRouteImport.update({
 const ComoSerTecnicoDeFutebolRoute = ComoSerTecnicoDeFutebolRouteImport.update({
   id: '/como-ser-tecnico-de-futebol',
   path: '/como-ser-tecnico-de-futebol',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComparativoJogosManagerRoute = ComparativoJogosManagerRouteImport.update({
+  id: '/comparativo-jogos-manager',
+  path: '/comparativo-jogos-manager',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConquistasRoute = ConquistasRouteImport.update({
@@ -355,6 +361,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
   '/conquistas': typeof ConquistasRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
@@ -412,6 +419,7 @@ export interface FileRoutesByTo {
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
   '/conquistas': typeof ConquistasRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
@@ -470,6 +478,7 @@ export interface FileRoutesById {
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
   '/conquistas': typeof ConquistasRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
@@ -529,6 +538,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/comparativo-jogos-manager'
     | '/conquistas'
     | '/criador'
     | '/cup'
@@ -586,6 +596,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/comparativo-jogos-manager'
     | '/conquistas'
     | '/criador'
     | '/cup'
@@ -643,6 +654,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/comparativo-jogos-manager'
     | '/conquistas'
     | '/criador'
     | '/cup'
@@ -701,6 +713,7 @@ export interface RootRouteChildren {
   ChatRoute: typeof ChatRoute
   ClubRoute: typeof ClubRoute
   ComoSerTecnicoDeFutebolRoute: typeof ComoSerTecnicoDeFutebolRoute
+  ComparativoJogosManagerRoute: typeof ComparativoJogosManagerRoute
   ConquistasRoute: typeof ConquistasRoute
   CriadorRoute: typeof CriadorRoute
   CupRoute: typeof CupRoute
@@ -818,6 +831,13 @@ declare module '@tanstack/react-router' {
       path: '/como-ser-tecnico-de-futebol'
       fullPath: '/como-ser-tecnico-de-futebol'
       preLoaderRoute: typeof ComoSerTecnicoDeFutebolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/comparativo-jogos-manager': {
+      id: '/comparativo-jogos-manager'
+      path: '/comparativo-jogos-manager'
+      fullPath: '/comparativo-jogos-manager'
+      preLoaderRoute: typeof ComparativoJogosManagerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/conquistas': {
@@ -1149,6 +1169,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatRoute: ChatRoute,
   ClubRoute: ClubRoute,
   ComoSerTecnicoDeFutebolRoute: ComoSerTecnicoDeFutebolRoute,
+  ComparativoJogosManagerRoute: ComparativoJogosManagerRoute,
   ConquistasRoute: ConquistasRoute,
   CriadorRoute: CriadorRoute,
   CupRoute: CupRoute,
