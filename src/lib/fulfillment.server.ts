@@ -55,7 +55,7 @@ export async function fulfillOneTimePurchase(
     amount_cents: amountCents,
     status: "completed",
     reference,
-  });
+  } as any);
   if (purchaseError) throw new Error(purchaseError.message);
 
   const { data: existingWallet, error: walletFetchError } = await supabase
