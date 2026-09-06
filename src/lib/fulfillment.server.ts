@@ -58,39 +58,32 @@ export async function fulfillOneTimePurchase(
   });
   if (purchaseError) throw new Error(purchaseError.message);
 
-  const { data: wallet, error: walletError } = await supabase
+  const { data: existingWallet, error: walletFetchError } = await supabase
     .from("user_wallet")
-    .upsert(
-      {
-        user_id: userId,
-        coins: effect.coins,
-        scout_reports: effect.scoutReports,
-        training_boosts: effect.trainingBoosts,
-        unlocked_themes: effect.themes,
-      },
-      { onConflict: "user_id" }
-    )
     .select("coins, scout_reports, training_boosts, unlocked_themes")
-    .single();
-  if (walletError) throw new Error(walletError.message);
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (walletFetchError) throw new Error(walletFetchError.message);
 
-  // Append-only counters and themes: re-read current values and add new ones
-  const currentCoins = wallet?.coins ?? effect.coins;
-  const currentScout = wallet?.scout_reports ?? effect.scoutReports;
-  const currentTraining = wallet?.training_boosts ?? effect.trainingBoosts;
-  const currentThemes = new Set<string>(wallet?.unlocked_themes ?? []);
+  const currentThemes = new Set<string>(existingWallet?.unlocked_themes ?? []);
   for (const theme of effect.themes) currentThemes.add(theme);
 
-  const { error: updateError } = await supabase
-    .from("user_wallet")
-    .update({
-      coins: currentCoins,
-      scout_reports: currentScout,
-      training_boosts: currentTraining,
+  const nextCoins = (existingWallet?.coins ?? 0) + effect.coins;
+  const nextScout = (existingWallet?.scout_reports ?? 0) + effect.scoutReports;
+  const nextTraining =
+    (existingWallet?.training_boosts ?? 0) + effect.trainingBoosts;
+
+  const { error: walletError } = await supabase.from("user_wallet").upsert(
+    {
+      user_id: userId,
+      coins: nextCoins,
+      scout_reports: nextScout,
+      training_boosts: nextTraining,
       unlocked_themes: Array.from(currentThemes),
-    })
-    .eq("user_id", userId);
-  if (updateError) throw new Error(updateError.message);
+    },
+    { onConflict: "user_id" }
+  );
+  if (walletError) throw new Error(walletError.message);
 }
 
 export async function syncSubscription(
