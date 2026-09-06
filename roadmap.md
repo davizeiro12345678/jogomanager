@@ -38,4 +38,4 @@
 - [x] Fase 3 — salto visual do estádio, gramado, torcida, jogadores 3D e cutscenes
 - [x] Fase 4 — modo editor (elencos, clubes, competições, importar/exportar)
 - [x] Fase 5 — assistente de IA (Gemini), chat global em tempo real e loja com carteira
-- [ ] Loja: ligar o pagamento real por cartão (hoje o fluxo está em modo de teste)
+- [x] Loja: ligar o pagamento real por cartão (Stripe em configuração)
