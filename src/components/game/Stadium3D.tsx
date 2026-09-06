@@ -1930,7 +1930,7 @@ function Stadium3DImpl({
         performance={{ min: 0.5 }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = eff === "baixa" ? 1.0 : 1.15;
+          gl.toneMappingExposure = eff === "baixa" ? 0.95 : 1.02;
           gl.outputColorSpace = THREE.SRGBColorSpace;
         }}
       >
