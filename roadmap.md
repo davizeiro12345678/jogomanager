@@ -27,3 +27,6 @@
 - [x] Criação do treinador em etapas (identidade, aparência, perfil, clube) + cutscene de chegada
 - [x] Carreira de treinador semana a semana (/carreira) com cutscenes e galeria
 - [x] Qualidade 3D adaptativa por FPS + DPR móvel 0,7-1,25
+- [x] Texturas do gramado em módulo próprio (cor, relevo, rugosidade) com cache compartilhado
+- [x] Pós-processamento em módulo próprio com presets por qualidade e replay
+- [x] Torcida em setores + atualização em taxa reduzida fora da qualidade alta
