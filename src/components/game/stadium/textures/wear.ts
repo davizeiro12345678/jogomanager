@@ -108,15 +108,6 @@ function dirtPatch(
   }
 }
 
-function build() {
-  if (typeof document === "undefined") return null;
-  const c = document.createElement("canvas");
-  c.width = c.height = SIZE;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  const rand = rng(0xdea d1 as unknown as number);
-  return { c, ctx, rand };
-}
 
 function make() {
   if (typeof document === "undefined") return null;
