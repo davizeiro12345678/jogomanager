@@ -31,3 +31,11 @@
 - [x] Texturas do gramado em módulo próprio (cor, relevo, rugosidade) com cache compartilhado
 - [x] Pós-processamento em módulo próprio com presets por qualidade e replay
 - [x] Torcida em setores + atualização em taxa reduzida fora da qualidade alta
+
+## Feito (2026-09-06 — fases 1 a 5)
+- [x] Fase 1 — criação do próprio clube, ficha completa do jogador, regens e retratos vetoriais
+- [x] Fase 2 — conquistas (24 troféus), resumo de carreira do treinador e sincronização na nuvem
+- [x] Fase 3 — salto visual do estádio, gramado, torcida, jogadores 3D e cutscenes
+- [x] Fase 4 — modo editor (elencos, clubes, competições, importar/exportar)
+- [x] Fase 5 — assistente de IA (Gemini), chat global em tempo real e loja com carteira
+- [ ] Loja: ligar o pagamento real por cartão (hoje o fluxo está em modo de teste)
