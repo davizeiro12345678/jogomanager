@@ -3,7 +3,13 @@
  * atores que entram em cena, texto máquina de escrever e botão de pular.
  * Respeita "reduzir movimento" (sem animação e texto imediato).
  */
+import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+/** granulado de filme reutilizado na moldura da cena */
+const GRAIN =
+  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.6'/></svg>\")";
+
 
 import {
   CUTSCENES,
