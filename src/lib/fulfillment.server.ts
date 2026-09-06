@@ -86,7 +86,7 @@ export async function fulfillOneTimePurchase(
       scout_reports: nextScout,
       training_boosts: nextTraining,
       unlocked_themes: Array.from(currentThemes),
-    },
+    } as any,
     { onConflict: "user_id" }
   );
   if (walletError) throw new Error(walletError.message);
