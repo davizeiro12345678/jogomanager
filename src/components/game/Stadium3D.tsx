@@ -1592,7 +1592,7 @@ function SkyDome({ time }: { time: TimeOfDay }) {
     if (!ctx) return null;
     const stops: Record<TimeOfDay, [string, string, string]> = {
       dia: ["#3f86d0", "#8fbfe8", "#d8ecf8"],
-      entardecer: ["#1c1030", "#7a3560", "#ff9e5c"],
+      entardecer: ["#20304f", "#6b5570", "#ffb277"],
       noite: ["#02040a", "#080f1c", "#16243a"],
     };
     const [top, mid, low] = stops[time];
