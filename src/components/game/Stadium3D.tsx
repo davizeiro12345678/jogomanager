@@ -247,75 +247,28 @@ function Pitch({ quality, sim }: { quality: Quality; sim: MatchSim }) {
 
 
 
-function line(points: [number, number][], y = 0.02) {
-  return new THREE.BufferGeometry().setFromPoints(
-    points.map(([x, z]) => new THREE.Vector3(x, y, z)),
-  );
-}
-
-function Lines() {
-  const geoms = useMemo(() => {
-    const g: THREE.BufferGeometry[] = [];
-    g.push(
-      line([
-        [-FIELD_X, -FIELD_Z],
-        [FIELD_X, -FIELD_Z],
-        [FIELD_X, FIELD_Z],
-        [-FIELD_X, FIELD_Z],
-        [-FIELD_X, -FIELD_Z],
-      ]),
-    );
-    g.push(
-      line([
-        [0, -FIELD_Z],
-        [0, FIELD_Z],
-      ]),
-    );
-    const circle: [number, number][] = [];
-    for (let i = 0; i <= 64; i++) {
-      const a = (i / 64) * Math.PI * 2;
-      circle.push([Math.cos(a) * 9.15, Math.sin(a) * 9.15]);
-    }
-    g.push(line(circle));
-    for (const s of [1, -1]) {
-      g.push(
-        line([
-          [s * FIELD_X, -20],
-          [s * (FIELD_X - 16.5), -20],
-          [s * (FIELD_X - 16.5), 20],
-          [s * FIELD_X, 20],
-        ]),
-      );
-      g.push(
-        line([
-          [s * FIELD_X, -9],
-          [s * (FIELD_X - 5.5), -9],
-          [s * (FIELD_X - 5.5), 9],
-          [s * FIELD_X, 9],
-        ]),
-      );
-    }
-    return g;
-  }, []);
-
+/**
+ * Marcação do campo pintada: um plano com a textura de cal por cima do
+ * gramado. Substitui as antigas linhas de 1 pixel, que serrilhavam e
+ * pareciam desenho técnico.
+ */
+function PaintedLines() {
+  const tex = useMemo(pitchLinesTexture, []);
+  if (!tex) return null;
   return (
-    <group>
-      {geoms.map((g, i) => (
-        <primitive
-          key={i}
-          object={
-            new THREE.Line(
-              g,
-              new THREE.LineBasicMaterial({ color: "#f2fbf4", transparent: true, opacity: 0.9 }),
-            )
-          }
-        />
-      ))}
-      <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[0.35, 12]} />
-        <meshBasicMaterial color="#f2fbf4" />
-      </mesh>
-    </group>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]} renderOrder={2}>
+      <planeGeometry args={[LINES_W, LINES_H]} />
+      <meshStandardMaterial
+        map={tex}
+        transparent
+        roughness={0.62}
+        metalness={0}
+        depthWrite={false}
+        polygonOffset
+        polygonOffsetFactor={-2}
+        polygonOffsetUnits={-2}
+      />
+    </mesh>
   );
 }
 
