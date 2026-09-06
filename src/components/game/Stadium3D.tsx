@@ -1079,6 +1079,8 @@ function Stands({
 
   const ref = useRef<THREE.InstancedMesh>(null);
   const headRef = useRef<THREE.InstancedMesh>(null);
+  const hairRef = useRef<THREE.InstancedMesh>(null);
+  const shoulderRef = useRef<THREE.InstancedMesh>(null);
   const flashRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const flashCount = night ? Math.min(200, Math.round(crowd.positions.length * 0.05)) : 0;
@@ -1090,10 +1092,28 @@ function Stands({
     if (!mesh) return;
     crowd.colors.forEach((c, i) => mesh.setColorAt(i, c));
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    const shoulders = shoulderRef.current;
+    if (shoulders) {
+      crowd.colors.forEach((c, i) => shoulders.setColorAt(i, c));
+      if (shoulders.instanceColor) shoulders.instanceColor.needsUpdate = true;
+    }
     const head = headRef.current;
     if (head) {
       crowd.skins.forEach((c, i) => head.setColorAt(i, c));
       if (head.instanceColor) head.instanceColor.needsUpdate = true;
+    }
+    const hair = hairRef.current;
+    if (hair) {
+      const hairs = ["#221a14", "#3d2a19", "#7a5a33", "#c9b48a", "#101010", "#5e5e5e", "#e8e8e8"];
+      for (let i = 0; i < crowd.positions.length; i++) {
+        // 1 em cada 4 usa boné na cor do setor, o resto usa cabelo
+        const cap = i % 4 === 0;
+        hair.setColorAt(
+          i,
+          cap ? crowd.colors[i]! : new THREE.Color(hairs[(i * 7) % hairs.length]!),
+        );
+      }
+      if (hair.instanceColor) hair.instanceColor.needsUpdate = true;
     }
     const mat = mesh.material as THREE.Material | THREE.Material[];
     if (Array.isArray(mat)) mat.forEach((m) => (m.needsUpdate = true));
