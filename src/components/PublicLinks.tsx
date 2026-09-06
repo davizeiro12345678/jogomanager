@@ -10,6 +10,12 @@ export const PUBLIC_PAGES = [
   { to: "/ligas-de-futebol", label: "Ligas disponíveis" },
   { to: "/guias", label: "Guias" },
   { to: "/dicas-de-gestao", label: "Dicas de gestão" },
+  { to: "/melhores-formacoes", label: "Melhores formações" },
+  { to: "/guia-de-scouting", label: "Guia de scouting" },
+  { to: "/gestao-financeira", label: "Gestão financeira" },
+  { to: "/glossario-do-futebol", label: "Glossário do futebol" },
+  { to: "/jogar-offline", label: "Como jogar offline" },
+  { to: "/comparativo-jogos-manager", label: "Comparativo de jogos" },
   { to: "/perguntas-frequentes", label: "Perguntas frequentes" },
   { to: "/criador", label: "Sobre o criador" },
 ] as const;

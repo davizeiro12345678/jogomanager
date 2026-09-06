@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { LEAGUES } from "@/game/data/leagues";
+import { CLUBS, LEAGUES } from "@/game/data/leagues";
 import { Crest } from "@/components/game/Crest";
 import { readLocalCareer } from "@/lib/careerStorage";
 import { Flag } from "@/components/game/Flag";
@@ -28,12 +28,55 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
+const HUB = [
+  {
+    to: "/new",
+    title: "Nova carreira",
+    text: "Crie seu treinador e escolha um clube entre mais de mil times reais.",
+  },
+  {
+    to: "/partida-rapida",
+    title: "Partida rápida",
+    text: "Um jogo avulso em 3D contra o computador, com narração ao vivo.",
+  },
+  {
+    to: "/multiplayer",
+    title: "Multiplayer 1x1",
+    text: "Crie uma sala, mande o código e jogue contra um amigo em tempo real.",
+  },
+  {
+    to: "/clube/novo",
+    title: "Criar meu clube",
+    text: "Escudo, cores, estádio e elenco do zero — o clube é seu.",
+  },
+  {
+    to: "/melhores-formacoes",
+    title: "Melhores formações",
+    text: "Quando usar 4-3-3, 4-4-2, 3-5-2 e o que cada esquema cobra.",
+  },
+  {
+    to: "/jogar-offline",
+    title: "Jogar offline",
+    text: "Instale como aplicativo e continue jogando sem internet.",
+  },
+] as const;
+
 function Landing() {
   const [hasCareer, setHasCareer] = useState(false);
+  const [resume, setResume] = useState<{ club: string; season: number; round: number } | null>(null);
 
   useEffect(() => {
     let alive = true;
-    if (readLocalCareer()) setHasCareer(true);
+    const local = readLocalCareer();
+    if (local) {
+      setHasCareer(true);
+      const club = CLUBS[local.clubId];
+      setResume({
+        club: club?.name ?? local.clubId,
+        season: local.season ?? 1,
+        round: (local.round ?? 0) + 1,
+      });
+    }
     supabase.auth.getSession().then(({ data }) => {
       if (alive && data.session) setHasCareer(true);
     });
@@ -57,6 +100,23 @@ function Landing() {
           vivo num estádio 3D — dando ordens enquanto a bola rola. Sem cadastro: é só jogar.
         </p>
 
+        {resume ? (
+          <Link
+            to="/dashboard"
+            className="mt-8 flex max-w-xl items-center gap-4 rounded-2xl border border-primary/40 bg-primary/10 p-4 transition hover:bg-primary/15"
+          >
+            <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary/20 font-display text-xl text-primary">
+              ▶
+            </span>
+            <span>
+              <span className="block font-display text-lg">Continuar de onde parou</span>
+              <span className="block text-sm text-muted-foreground">
+                {resume.club} · temporada {resume.season}, rodada {resume.round}
+              </span>
+            </span>
+          </Link>
+        ) : null}
+
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             to={hasCareer ? "/dashboard" : "/new"}
@@ -71,19 +131,11 @@ function Landing() {
             Partida rápida
           </Link>
           <Link
-            to="/new"
+            to="/multiplayer"
             className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest text-foreground transition hover:bg-secondary"
           >
-            Escolher clube
+            Multiplayer 1x1
           </Link>
-          <Link
-            to="/clube/novo"
-            className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest text-foreground transition hover:bg-secondary"
-          >
-            Criar meu clube
-          </Link>
-
-
           <Link
             to="/auth"
             className="rounded-lg px-6 py-3 font-display text-sm uppercase tracking-widest text-muted-foreground transition hover:text-foreground"
@@ -95,7 +147,24 @@ function Landing() {
           O e-mail é opcional — serve só para salvar a carreira na nuvem e jogar em outros
           aparelhos.
         </p>
-        <nav className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+
+        <section className="mt-12">
+          <h2 className="sr-only">Por onde começar</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {HUB.map((c) => (
+              <Link
+                key={c.to}
+                to={c.to}
+                className="group rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur transition hover:border-primary/50 hover:bg-card"
+              >
+                <p className="font-display text-lg group-hover:text-primary">{c.title}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{c.text}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <nav className="mt-10 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
           <Link to="/guias" className="underline-offset-4 hover:text-foreground hover:underline">
             Guias para iniciantes
           </Link>
@@ -106,15 +175,34 @@ function Landing() {
             Todas as ligas
           </Link>
           <Link
-            to="/dicas-de-gestao"
+            to="/guia-de-scouting"
             className="underline-offset-4 hover:text-foreground hover:underline"
           >
-            Dicas de gestão
+            Guia de scouting
+          </Link>
+          <Link
+            to="/gestao-financeira"
+            className="underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Gestão financeira
+          </Link>
+          <Link
+            to="/glossario-do-futebol"
+            className="underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Glossário
+          </Link>
+          <Link
+            to="/comparativo-jogos-manager"
+            className="underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Comparativo de jogos
           </Link>
           <Link to="/cadastro" className="underline-offset-4 hover:text-foreground hover:underline">
             Cadastrar meus clubes e jogadores
           </Link>
         </nav>
+
 
 
 

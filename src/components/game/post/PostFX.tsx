@@ -3,8 +3,8 @@ import {
   EffectComposer,
   Bloom,
   Vignette,
+  N8AO,
   SMAA,
-  SSAO,
   BrightnessContrast,
   ChromaticAberration,
   DepthOfField,
@@ -71,22 +71,13 @@ export function PostFX({
     <EffectComposer key={`alta-${m}`} enableNormalPass={!cinema} multisampling={0}>
       {/* oclusão de contato: sombra suave onde jogadores e estruturas encostam */}
       {!cinema ? (
-        <SSAO
-          blendFunction={BlendFunction.MULTIPLY}
-          samples={16}
-          rings={4}
-          distanceThreshold={0.6}
-          distanceFalloff={0.12}
-          rangeThreshold={0.008}
-          rangeFalloff={0.008}
-          luminanceInfluence={0.6}
-          radius={0.06}
-          intensity={16}
-          bias={0.03}
-          worldDistanceThreshold={40}
-          worldDistanceFalloff={12}
-          worldProximityThreshold={1}
-          worldProximityFalloff={0.4}
+        <N8AO
+          color="#0b1016"
+          aoRadius={1.1}
+          distanceFalloff={0.85}
+          intensity={2.6}
+          halfRes
+          screenSpaceRadius={false}
         />
       ) : (
         <></>

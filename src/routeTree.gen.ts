@@ -19,6 +19,7 @@ import { Route as CarreiraRouteImport } from './routes/carreira'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as ComoSerTecnicoDeFutebolRouteImport } from './routes/como-ser-tecnico-de-futebol'
+import { Route as ComparativoJogosManagerRouteImport } from './routes/comparativo-jogos-manager'
 import { Route as ConquistasRouteImport } from './routes/conquistas'
 import { Route as CriadorRouteImport } from './routes/criador'
 import { Route as CupRouteImport } from './routes/cup'
@@ -26,14 +27,19 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DicasDeGestaoRouteImport } from './routes/dicas-de-gestao'
 import { Route as EditorRouteImport } from './routes/editor'
 import { Route as FinancesRouteImport } from './routes/finances'
+import { Route as GestaoFinanceiraRouteImport } from './routes/gestao-financeira'
+import { Route as GlossarioDoFutebolRouteImport } from './routes/glossario-do-futebol'
+import { Route as GuiaDeScoutingRouteImport } from './routes/guia-de-scouting'
 import { Route as GuiasRouteImport } from './routes/guias'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as JogarOfflineRouteImport } from './routes/jogar-offline'
 import { Route as JogoDeManagerDeFutebolRouteImport } from './routes/jogo-de-manager-de-futebol'
 import { Route as LeagueRouteImport } from './routes/league'
 import { Route as LigasDeFutebolRouteImport } from './routes/ligas-de-futebol'
 import { Route as LojaRouteImport } from './routes/loja'
 import { Route as MatchRouteImport } from './routes/match'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as MelhoresFormacoesRouteImport } from './routes/melhores-formacoes'
 import { Route as MercadoDeTransferenciasRouteImport } from './routes/mercado-de-transferencias'
 import { Route as MultiplayerRouteImport } from './routes/multiplayer'
 import { Route as NewRouteImport } from './routes/new'
@@ -110,6 +116,11 @@ const ComoSerTecnicoDeFutebolRoute = ComoSerTecnicoDeFutebolRouteImport.update({
   path: '/como-ser-tecnico-de-futebol',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComparativoJogosManagerRoute = ComparativoJogosManagerRouteImport.update({
+  id: '/comparativo-jogos-manager',
+  path: '/comparativo-jogos-manager',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConquistasRoute = ConquistasRouteImport.update({
   id: '/conquistas',
   path: '/conquistas',
@@ -145,6 +156,21 @@ const FinancesRoute = FinancesRouteImport.update({
   path: '/finances',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GestaoFinanceiraRoute = GestaoFinanceiraRouteImport.update({
+  id: '/gestao-financeira',
+  path: '/gestao-financeira',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GlossarioDoFutebolRoute = GlossarioDoFutebolRouteImport.update({
+  id: '/glossario-do-futebol',
+  path: '/glossario-do-futebol',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuiaDeScoutingRoute = GuiaDeScoutingRouteImport.update({
+  id: '/guia-de-scouting',
+  path: '/guia-de-scouting',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuiasRoute = GuiasRouteImport.update({
   id: '/guias',
   path: '/guias',
@@ -153,6 +179,11 @@ const GuiasRoute = GuiasRouteImport.update({
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JogarOfflineRoute = JogarOfflineRouteImport.update({
+  id: '/jogar-offline',
+  path: '/jogar-offline',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JogoDeManagerDeFutebolRoute = JogoDeManagerDeFutebolRouteImport.update({
@@ -183,6 +214,11 @@ const MatchRoute = MatchRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MelhoresFormacoesRoute = MelhoresFormacoesRouteImport.update({
+  id: '/melhores-formacoes',
+  path: '/melhores-formacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MercadoDeTransferenciasRoute = MercadoDeTransferenciasRouteImport.update({
@@ -325,6 +361,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
   '/conquistas': typeof ConquistasRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
@@ -332,14 +369,19 @@ export interface FileRoutesByFullPath {
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/editor': typeof EditorRoute
   '/finances': typeof FinancesRoute
+  '/gestao-financeira': typeof GestaoFinanceiraRoute
+  '/glossario-do-futebol': typeof GlossarioDoFutebolRoute
+  '/guia-de-scouting': typeof GuiaDeScoutingRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
+  '/jogar-offline': typeof JogarOfflineRoute
   '/jogo-de-manager-de-futebol': typeof JogoDeManagerDeFutebolRoute
   '/league': typeof LeagueRoute
   '/ligas-de-futebol': typeof LigasDeFutebolRoute
   '/loja': typeof LojaRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
+  '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
@@ -377,6 +419,7 @@ export interface FileRoutesByTo {
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
   '/conquistas': typeof ConquistasRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
@@ -384,14 +427,19 @@ export interface FileRoutesByTo {
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/editor': typeof EditorRoute
   '/finances': typeof FinancesRoute
+  '/gestao-financeira': typeof GestaoFinanceiraRoute
+  '/glossario-do-futebol': typeof GlossarioDoFutebolRoute
+  '/guia-de-scouting': typeof GuiaDeScoutingRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
+  '/jogar-offline': typeof JogarOfflineRoute
   '/jogo-de-manager-de-futebol': typeof JogoDeManagerDeFutebolRoute
   '/league': typeof LeagueRoute
   '/ligas-de-futebol': typeof LigasDeFutebolRoute
   '/loja': typeof LojaRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
+  '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
@@ -430,6 +478,7 @@ export interface FileRoutesById {
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
+  '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
   '/conquistas': typeof ConquistasRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
@@ -437,14 +486,19 @@ export interface FileRoutesById {
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/editor': typeof EditorRoute
   '/finances': typeof FinancesRoute
+  '/gestao-financeira': typeof GestaoFinanceiraRoute
+  '/glossario-do-futebol': typeof GlossarioDoFutebolRoute
+  '/guia-de-scouting': typeof GuiaDeScoutingRoute
   '/guias': typeof GuiasRoute
   '/history': typeof HistoryRoute
+  '/jogar-offline': typeof JogarOfflineRoute
   '/jogo-de-manager-de-futebol': typeof JogoDeManagerDeFutebolRoute
   '/league': typeof LeagueRoute
   '/ligas-de-futebol': typeof LigasDeFutebolRoute
   '/loja': typeof LojaRoute
   '/match': typeof MatchRoute
   '/mcp': typeof McpRoute
+  '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
@@ -484,6 +538,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/comparativo-jogos-manager'
     | '/conquistas'
     | '/criador'
     | '/cup'
@@ -491,14 +546,19 @@ export interface FileRouteTypes {
     | '/dicas-de-gestao'
     | '/editor'
     | '/finances'
+    | '/gestao-financeira'
+    | '/glossario-do-futebol'
+    | '/guia-de-scouting'
     | '/guias'
     | '/history'
+    | '/jogar-offline'
     | '/jogo-de-manager-de-futebol'
     | '/league'
     | '/ligas-de-futebol'
     | '/loja'
     | '/match'
     | '/mcp'
+    | '/melhores-formacoes'
     | '/mercado-de-transferencias'
     | '/multiplayer'
     | '/new'
@@ -536,6 +596,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/comparativo-jogos-manager'
     | '/conquistas'
     | '/criador'
     | '/cup'
@@ -543,14 +604,19 @@ export interface FileRouteTypes {
     | '/dicas-de-gestao'
     | '/editor'
     | '/finances'
+    | '/gestao-financeira'
+    | '/glossario-do-futebol'
+    | '/guia-de-scouting'
     | '/guias'
     | '/history'
+    | '/jogar-offline'
     | '/jogo-de-manager-de-futebol'
     | '/league'
     | '/ligas-de-futebol'
     | '/loja'
     | '/match'
     | '/mcp'
+    | '/melhores-formacoes'
     | '/mercado-de-transferencias'
     | '/multiplayer'
     | '/new'
@@ -588,6 +654,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/club'
     | '/como-ser-tecnico-de-futebol'
+    | '/comparativo-jogos-manager'
     | '/conquistas'
     | '/criador'
     | '/cup'
@@ -595,14 +662,19 @@ export interface FileRouteTypes {
     | '/dicas-de-gestao'
     | '/editor'
     | '/finances'
+    | '/gestao-financeira'
+    | '/glossario-do-futebol'
+    | '/guia-de-scouting'
     | '/guias'
     | '/history'
+    | '/jogar-offline'
     | '/jogo-de-manager-de-futebol'
     | '/league'
     | '/ligas-de-futebol'
     | '/loja'
     | '/match'
     | '/mcp'
+    | '/melhores-formacoes'
     | '/mercado-de-transferencias'
     | '/multiplayer'
     | '/new'
@@ -641,6 +713,7 @@ export interface RootRouteChildren {
   ChatRoute: typeof ChatRoute
   ClubRoute: typeof ClubRoute
   ComoSerTecnicoDeFutebolRoute: typeof ComoSerTecnicoDeFutebolRoute
+  ComparativoJogosManagerRoute: typeof ComparativoJogosManagerRoute
   ConquistasRoute: typeof ConquistasRoute
   CriadorRoute: typeof CriadorRoute
   CupRoute: typeof CupRoute
@@ -648,14 +721,19 @@ export interface RootRouteChildren {
   DicasDeGestaoRoute: typeof DicasDeGestaoRoute
   EditorRoute: typeof EditorRoute
   FinancesRoute: typeof FinancesRoute
+  GestaoFinanceiraRoute: typeof GestaoFinanceiraRoute
+  GlossarioDoFutebolRoute: typeof GlossarioDoFutebolRoute
+  GuiaDeScoutingRoute: typeof GuiaDeScoutingRoute
   GuiasRoute: typeof GuiasRoute
   HistoryRoute: typeof HistoryRoute
+  JogarOfflineRoute: typeof JogarOfflineRoute
   JogoDeManagerDeFutebolRoute: typeof JogoDeManagerDeFutebolRoute
   LeagueRoute: typeof LeagueRoute
   LigasDeFutebolRoute: typeof LigasDeFutebolRoute
   LojaRoute: typeof LojaRoute
   MatchRoute: typeof MatchRoute
   McpRoute: typeof McpRoute
+  MelhoresFormacoesRoute: typeof MelhoresFormacoesRoute
   MercadoDeTransferenciasRoute: typeof MercadoDeTransferenciasRoute
   MultiplayerRoute: typeof MultiplayerRoute
   NewRoute: typeof NewRoute
@@ -755,6 +833,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComoSerTecnicoDeFutebolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/comparativo-jogos-manager': {
+      id: '/comparativo-jogos-manager'
+      path: '/comparativo-jogos-manager'
+      fullPath: '/comparativo-jogos-manager'
+      preLoaderRoute: typeof ComparativoJogosManagerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/conquistas': {
       id: '/conquistas'
       path: '/conquistas'
@@ -804,6 +889,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FinancesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gestao-financeira': {
+      id: '/gestao-financeira'
+      path: '/gestao-financeira'
+      fullPath: '/gestao-financeira'
+      preLoaderRoute: typeof GestaoFinanceiraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/glossario-do-futebol': {
+      id: '/glossario-do-futebol'
+      path: '/glossario-do-futebol'
+      fullPath: '/glossario-do-futebol'
+      preLoaderRoute: typeof GlossarioDoFutebolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guia-de-scouting': {
+      id: '/guia-de-scouting'
+      path: '/guia-de-scouting'
+      fullPath: '/guia-de-scouting'
+      preLoaderRoute: typeof GuiaDeScoutingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/guias': {
       id: '/guias'
       path: '/guias'
@@ -816,6 +922,13 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/history'
       preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jogar-offline': {
+      id: '/jogar-offline'
+      path: '/jogar-offline'
+      fullPath: '/jogar-offline'
+      preLoaderRoute: typeof JogarOfflineRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/jogo-de-manager-de-futebol': {
@@ -858,6 +971,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/melhores-formacoes': {
+      id: '/melhores-formacoes'
+      path: '/melhores-formacoes'
+      fullPath: '/melhores-formacoes'
+      preLoaderRoute: typeof MelhoresFormacoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mercado-de-transferencias': {
@@ -1049,6 +1169,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatRoute: ChatRoute,
   ClubRoute: ClubRoute,
   ComoSerTecnicoDeFutebolRoute: ComoSerTecnicoDeFutebolRoute,
+  ComparativoJogosManagerRoute: ComparativoJogosManagerRoute,
   ConquistasRoute: ConquistasRoute,
   CriadorRoute: CriadorRoute,
   CupRoute: CupRoute,
@@ -1056,14 +1177,19 @@ const rootRouteChildren: RootRouteChildren = {
   DicasDeGestaoRoute: DicasDeGestaoRoute,
   EditorRoute: EditorRoute,
   FinancesRoute: FinancesRoute,
+  GestaoFinanceiraRoute: GestaoFinanceiraRoute,
+  GlossarioDoFutebolRoute: GlossarioDoFutebolRoute,
+  GuiaDeScoutingRoute: GuiaDeScoutingRoute,
   GuiasRoute: GuiasRoute,
   HistoryRoute: HistoryRoute,
+  JogarOfflineRoute: JogarOfflineRoute,
   JogoDeManagerDeFutebolRoute: JogoDeManagerDeFutebolRoute,
   LeagueRoute: LeagueRoute,
   LigasDeFutebolRoute: LigasDeFutebolRoute,
   LojaRoute: LojaRoute,
   MatchRoute: MatchRoute,
   McpRoute: McpRoute,
+  MelhoresFormacoesRoute: MelhoresFormacoesRoute,
   MercadoDeTransferenciasRoute: MercadoDeTransferenciasRoute,
   MultiplayerRoute: MultiplayerRoute,
   NewRoute: NewRoute,
