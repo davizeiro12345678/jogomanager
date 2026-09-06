@@ -747,26 +747,27 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
           </group>
         );
       })}
-      {/* reflexo dos refletores no gramado úmido */}
+      {/* reflexo dos refletores no gramado úmido: discreto, colado nos cantos */}
       {on &&
         quality === "alta" &&
         spots.map(([sx, sz], i) => (
           <mesh
             key={`r${i}`}
             rotation={[-Math.PI / 2, 0, 0]}
-            position={[sx * (FIELD_X * 0.55), 0.02, sz * (FIELD_Z * 0.5)]}
+            position={[sx * (FIELD_X * 0.86), 0.02, sz * (FIELD_Z * 0.86)]}
           >
-            <circleGeometry args={[26, 24]} />
+            <circleGeometry args={[10, 20]} />
             <meshBasicMaterial
               color="#9fc4ff"
               transparent
-              opacity={0.05}
+              opacity={0.02}
               depthWrite={false}
               blending={THREE.AdditiveBlending}
               toneMapped={false}
             />
           </mesh>
         ))}
+
     </group>
   );
 }
