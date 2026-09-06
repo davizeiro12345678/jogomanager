@@ -1771,8 +1771,8 @@ function Scene({
     [sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash],
   );
 
-  const sun = time === "dia" ? 2.8 : time === "entardecer" ? 2.2 : 1.8;
-  const sunColor = time === "entardecer" ? "#ffb27a" : time === "dia" ? "#fff6e0" : "#bcd8ff";
+  const sun = time === "dia" ? 1.9 : time === "entardecer" ? 1.5 : 1.2;
+  const sunColor = time === "entardecer" ? "#ffc79a" : time === "dia" ? "#fff6e0" : "#bcd8ff";
 
   return (
     <>
