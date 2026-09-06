@@ -13,7 +13,14 @@ import * as THREE from "three";
 
 import { PlayerRig } from "@/components/game/players/PlayerRig";
 import { PostFX } from "@/components/game/post/PostFX";
+import { adTexture } from "@/components/game/stadium/textures/ads";
+import {
+  concreteAlbedo,
+  concreteRoughness,
+  seatsTexture,
+} from "@/components/game/stadium/textures/concrete";
 import { grassAlbedo, grassNormal, grassRoughness } from "@/components/game/stadium/textures/grass";
+import { LINES_H, LINES_W, pitchLinesTexture } from "@/components/game/stadium/textures/lines";
 import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
