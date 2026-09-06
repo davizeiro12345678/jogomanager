@@ -99,8 +99,8 @@ export async function verifyWebhook(
   const v1Signatures: string[] = [];
   for (const part of signature.split(",")) {
     const [key, value] = part.split("=", 2);
-    if (key === "t") timestamp = value;
-    if (key === "v1") v1Signatures.push(value);
+    if (key === "t" && value) timestamp = value;
+    if (key === "v1" && value) v1Signatures.push(value);
   }
 
   if (!timestamp || v1Signatures.length === 0) {
