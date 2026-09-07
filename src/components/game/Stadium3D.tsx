@@ -1565,7 +1565,7 @@ function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
     <mesh ref={ref} castShadow={quality === "alta"} position={[0, 0.13, 0]}>
       <sphereGeometry args={[0.13, 24, 24]} />
       <meshStandardMaterial
-        map={tex ?? undefined}
+        map={tex}
         color="#ffffff"
         roughness={0.32}
         metalness={0.04}
