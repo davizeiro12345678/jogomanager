@@ -69,6 +69,22 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
     [kit, player.number, player.name],
   );
 
+  // sobrenome grande nas costas + cor de tinta que contrasta com a camisa
+  const surname = useMemo(() => {
+    const parts = player.name.trim().split(/\s+/);
+    return (parts[parts.length - 1] ?? player.name).toUpperCase().slice(0, 12);
+  }, [player.name]);
+  const [jerseyInk, jerseyInkOutline] = useMemo(() => {
+    const h = kit.base.replace("#", "");
+    const r = parseInt(h.slice(0, 2), 16) / 255;
+    const g = parseInt(h.slice(2, 4), 16) / 255;
+    const b = parseInt(h.slice(4, 6), 16) / 255;
+    const l = 0.299 * r + 0.587 * g + 0.114 * b;
+    return l > 0.55
+      ? (["#101418", "#f2f2f2"] as const)
+      : (["#f5f5f2", "#101418"] as const);
+  }, [kit.base]);
+
   const isGK = player.pos === "GK";
   const hi = quality === "alta";
   const shadows = quality === "alta";
