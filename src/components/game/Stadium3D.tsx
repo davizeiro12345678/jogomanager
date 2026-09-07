@@ -1677,7 +1677,17 @@ function ballTexture(): THREE.Texture | null {
   return tex;
 }
 
-function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
+function Ball({
+  sim,
+  quality,
+  hiVis = false,
+  wet = 0,
+}: {
+  sim: MatchSim;
+  quality: Quality;
+  hiVis?: boolean;
+  wet?: number;
+}) {
   const ref = useRef<THREE.Mesh>(null);
   const shadow = useRef<THREE.Mesh>(null);
   const tex = useMemo(ballTexture, []);
@@ -1703,9 +1713,11 @@ function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
       <sphereGeometry args={[0.13, 24, 24]} />
       <meshStandardMaterial
         map={tex}
-        color="#ffffff"
-        roughness={0.32}
-        metalness={0.04}
+        // bola de alta visibilidade na neve; molhada reflete mais a luz
+        color={hiVis ? "#f2ff45" : "#ffffff"}
+        roughness={0.32 - wet * 0.2}
+        metalness={0.04 + wet * 0.1}
+        envMapIntensity={0.8 + wet * 0.8}
       />
     </mesh>
   );
