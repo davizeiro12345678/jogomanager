@@ -12,7 +12,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(SHELL)
-      .then((c) => c.addAll([OFFLINE_URL, "/manifest.webmanifest", "/favicon.png"]))
+      .then((c) => c.addAll([OFFLINE_URL, "/manifest.webmanifest", "/favicon.png", "/fonts/BarlowCondensed-Bold.ttf"]))
       .catch(() => undefined)
       .then(() => self.skipWaiting()),
   );

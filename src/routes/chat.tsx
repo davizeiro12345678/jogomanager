@@ -153,18 +153,24 @@ function ChatPage() {
       return;
     }
     setSending(true);
-    const { error } = await supabase.from("chat_messages").insert({
-      user_id: userId ?? "",
-      display_name: displayName,
-      body,
+    // Envio via função segura: o nome vem da conta (não do navegador) e há
+    // limite de tamanho e de mensagens por minuto no servidor.
+    const { error } = await supabase.rpc("send_chat_message", {
+      message_body: body,
     });
     setSending(false);
     if (error) {
-      toast.error("Não foi possível enviar a mensagem.");
+      toast.error(
+        error.message.includes("rate_limited")
+          ? "Calma! Você está enviando mensagens rápido demais."
+          : error.message.includes("invalid_length")
+            ? "A mensagem precisa ter entre 1 e 500 caracteres."
+            : "Não foi possível enviar a mensagem.",
+      );
       return;
     }
     setDraft("");
-  }, [draft, userId, displayName]);
+  }, [draft]);
 
   const deleteMessage = useCallback(async (id: string) => {
     const { error } = await supabase.from("chat_messages").delete().eq("id", id);

@@ -620,6 +620,14 @@ export type Database = {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
       }
+      send_chat_message: { Args: { message_body: string }; Returns: string }
+      spend_coins: {
+        Args: { amount: number }
+        Returns: {
+          coins: number
+          season_pass: boolean
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
