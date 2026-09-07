@@ -37,12 +37,13 @@ import { StadiumProps } from "@/components/game/stadium/Props";
 import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
+import { matchLook, type TimeOfDay } from "@/game/matchday";
 
 
 export type CameraMode = "broadcast" | "tactical" | "goal" | "fan" | "rail" | "behind";
 export type Quality = "alta" | "media" | "baixa";
 
-type TimeOfDay = "dia" | "entardecer" | "noite";
+
 
 const SKY: Record<TimeOfDay, string> = {
   dia: "#8fbfe8",
