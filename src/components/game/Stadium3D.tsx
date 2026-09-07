@@ -2043,17 +2043,17 @@ function Officials({ sim, quality }: { sim: MatchSim; quality: Quality }) {
 }
 
 function Scene({
-
   sim,
   mode,
   quality,
-  time,
+  look,
 }: {
   sim: MatchSim;
   mode: CameraMode;
   quality: Quality;
-  time: TimeOfDay;
+  look: ReturnType<typeof matchLook>;
 }) {
+  const time = look.time;
   const goalPulse = useRef(0);
   const lastGoals = useRef(0);
   const [replay, setReplay] = useState(false);
@@ -2147,7 +2147,11 @@ function Scene({
       <directionalLight position={[-60, 60, -40]} intensity={0.6} color="#bcd8ff" />
 
       <SkyDome time={time} />
-      <Pitch quality={quality} sim={sim} wet={time === "noite" ? 0.7 : time === "entardecer" ? 0.3 : 0} />
+      <Pitch quality={quality} sim={sim} wet={look.wet} mow={look.mow} />
+      {quality !== "baixa" ? (
+        <Weather weather={look.weather} wind={look.wind} quality={quality} />
+      ) : null}
+      {quality !== "baixa" ? <Officials sim={sim} quality={quality} /> : null}
 
       <AdBoards homeColor={sim.home.primary} awayColor={sim.away.primary} />
       <Floodlights time={time} quality={quality} />
@@ -2166,7 +2170,7 @@ function Scene({
         ball={sim.ball}
       />
       <Scoreboard sim={sim} replay={replay} />
-      <Ball sim={sim} quality={quality} />
+      <Ball sim={sim} quality={quality} hiVis={look.hiVisBall} wet={look.wet} />
       {sim.players.map((p) => (
         <PlayerRig
           key={p.id}
@@ -2206,10 +2210,10 @@ function Stadium3DImpl({
   mode: CameraMode;
   quality: Quality;
 }) {
-  const time = useMemo<TimeOfDay>(() => {
-    const t = hash(sim.home.clubId + sim.away.clubId) % 3;
-    return t === 0 ? "dia" : t === 1 ? "entardecer" : "noite";
-  }, [sim.home.clubId, sim.away.clubId]);
+  const look = useMemo(
+    () => matchLook(sim.home.clubId, sim.away.clubId),
+    [sim.home.clubId, sim.away.clubId],
+  );
 
   // Em segundo plano o desenho 3D é suspenso para poupar bateria no celular.
   const [visible, setVisible] = useState(true);
@@ -2260,7 +2264,7 @@ function Stadium3DImpl({
             setEff((q) => (higherQuality(q) === quality ? higherQuality(q) : q));
           }}
         />
-        <Scene sim={sim} mode={mode} quality={eff} time={time} />
+        <Scene sim={sim} mode={mode} quality={eff} look={look} />
       </Canvas>
       {eff !== quality ? (
         <span className="pointer-events-none absolute right-2 top-2 rounded-full bg-black/45 px-2 py-0.5 text-[10px] uppercase tracking-widest text-white/80">
