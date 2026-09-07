@@ -233,7 +233,8 @@ function buildAlbedo(pattern: MowPattern = "checker", size = 2048) {
 
 /* ----------------------------------------------------------------- relevo */
 
-function buildNormal(size = 1024) {
+function buildNormal(pattern: MowPattern = "checker", size = 1024) {
+  const spec = MOW[pattern];
   const made = canvas(size);
   if (!made) return null;
   const { c, ctx } = made;
@@ -242,7 +243,7 @@ function buildNormal(size = 1024) {
   ctx.fillRect(0, 0, size, size);
 
   // inclinação oposta das faixas ceifadas
-  withStripes(ctx, size / 2, (i, x, w) => {
+  withStripes(ctx, size / 2, spec, (i, x, w) => {
     ctx.fillStyle = i % 2 === 0 ? "rgba(104,128,255,0.6)" : "rgba(156,128,255,0.6)";
     ctx.fillRect(x, 0, w, size * 2);
   });
@@ -280,7 +281,8 @@ function buildNormal(size = 1024) {
 
 /* ------------------------------------------------------------- rugosidade */
 
-function buildRoughness(size = 1024) {
+function buildRoughness(pattern: MowPattern = "checker", size = 1024) {
+  const spec = MOW[pattern];
   const made = canvas(size);
   if (!made) return null;
   const { c, ctx } = made;
@@ -289,7 +291,7 @@ function buildRoughness(size = 1024) {
   ctx.fillRect(0, 0, size, size);
 
   // grama penteada para lados opostos reflete diferente: brilho úmido rasante
-  withStripes(ctx, size, (i, x, w) => {
+  withStripes(ctx, size, spec, (i, x, w) => {
     ctx.fillStyle = i % 2 === 0 ? "#828282" : "#d6d6d6";
     ctx.fillRect(x, 0, w, size * 2);
   });
@@ -321,21 +323,21 @@ function buildRoughness(size = 1024) {
 
 /* ---------------------------------------------------------------- cache */
 
-let _albedo: THREE.Texture | null | undefined;
-let _normal: THREE.Texture | null | undefined;
-let _rough: THREE.Texture | null | undefined;
+const _albedo = new Map<MowPattern, THREE.Texture | null>();
+const _normal = new Map<MowPattern, THREE.Texture | null>();
+const _rough = new Map<MowPattern, THREE.Texture | null>();
 
-export function grassAlbedo() {
-  if (_albedo === undefined) _albedo = buildAlbedo();
-  return _albedo;
+export function grassAlbedo(pattern: MowPattern = "checker") {
+  if (!_albedo.has(pattern)) _albedo.set(pattern, buildAlbedo(pattern));
+  return _albedo.get(pattern) ?? null;
 }
 
-export function grassNormal() {
-  if (_normal === undefined) _normal = buildNormal();
-  return _normal;
+export function grassNormal(pattern: MowPattern = "checker") {
+  if (!_normal.has(pattern)) _normal.set(pattern, buildNormal(pattern));
+  return _normal.get(pattern) ?? null;
 }
 
-export function grassRoughness() {
-  if (_rough === undefined) _rough = buildRoughness();
-  return _rough;
+export function grassRoughness(pattern: MowPattern = "checker") {
+  if (!_rough.has(pattern)) _rough.set(pattern, buildRoughness(pattern));
+  return _rough.get(pattern) ?? null;
 }
