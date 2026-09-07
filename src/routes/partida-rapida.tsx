@@ -250,7 +250,14 @@ function QuickLive({
   }, [myId, oppId, difficulty, seed]);
 
   const { lang } = useT();
-  const [quality] = useState<Quality>(() => detectQuality() as Quality);
+  const [quality] = useState<Quality>(() => {
+    // `?q=baixa|media|alta` força o nível gráfico (testes, suporte e aparelhos fracos)
+    if (typeof window !== "undefined") {
+      const q = new URLSearchParams(window.location.search).get("q");
+      if (q === "baixa" || q === "media" || q === "alta") return q;
+    }
+    return detectQuality() as Quality;
+  });
   const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
