@@ -1955,7 +1955,95 @@ function GoalFx({ goalPulse, quality }: { goalPulse: React.MutableRefObject<numb
   );
 }
 
+/* ------------------------------------------------------- arbitragem */
+
+/** Corpo simples em preto: árbitro no centro da jogada e dois bandeirinhas. */
+function Official({
+  sim,
+  role,
+  quality,
+}: {
+  sim: MatchSim;
+  role: "ref" | "ar1" | "ar2";
+  quality: Quality;
+}) {
+  const g = useRef<THREE.Group>(null);
+  const legs = useRef(0);
+  useFrame((_, rawDt) => {
+    const grp = g.current;
+    if (!grp) return;
+    const dt = Math.min(rawDt, 0.05);
+    let tx: number;
+    let tz: number;
+    if (role === "ref") {
+      // atrás e ao lado da jogada, como o árbitro real se posiciona
+      tx = sim.ball.x - 6;
+      tz = sim.ball.z + 7;
+    } else {
+      const side = role === "ar1" ? 1 : -1;
+      tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, sim.ball.x * 0.85));
+      tz = side * (FIELD_Z + 1.6);
+    }
+    tx = Math.max(-FIELD_X - 2, Math.min(FIELD_X + 2, tx));
+    tz = Math.max(-FIELD_Z - 3, Math.min(FIELD_Z + 3, tz));
+    const dx = tx - grp.position.x;
+    const dz = tz - grp.position.z;
+    const dist = Math.hypot(dx, dz);
+    const sp = Math.min(7, dist * 1.6);
+    if (dist > 0.05) {
+      grp.position.x += (dx / dist) * sp * dt;
+      grp.position.z += (dz / dist) * sp * dt;
+      grp.rotation.y = Math.atan2(sim.ball.x - grp.position.x, sim.ball.z - grp.position.z);
+      legs.current += sp * dt * 3;
+    }
+    const swing = Math.sin(legs.current) * Math.min(0.6, sp * 0.09);
+    const l = grp.children[2] as THREE.Mesh | undefined;
+    const r = grp.children[3] as THREE.Mesh | undefined;
+    if (l) l.rotation.x = swing;
+    if (r) r.rotation.x = -swing;
+  });
+
+  const kit = role === "ref" ? "#101318" : "#ffe14d";
+  return (
+    <group ref={g} position={[0, 0, role === "ref" ? 8 : FIELD_Z + 1.6]}>
+      <mesh position={[0, 1.28, 0]} castShadow={quality === "alta"}>
+        <capsuleGeometry args={[0.19, 0.5, 4, 8]} />
+        <meshStandardMaterial color={kit} roughness={0.72} />
+      </mesh>
+      <mesh position={[0, 1.72, 0]}>
+        <sphereGeometry args={[0.14, 12, 12]} />
+        <meshStandardMaterial color="#c98d63" roughness={0.85} />
+      </mesh>
+      <mesh position={[-0.11, 0.52, 0]}>
+        <capsuleGeometry args={[0.08, 0.6, 4, 6]} />
+        <meshStandardMaterial color="#15181d" roughness={0.8} />
+      </mesh>
+      <mesh position={[0.11, 0.52, 0]}>
+        <capsuleGeometry args={[0.08, 0.6, 4, 6]} />
+        <meshStandardMaterial color="#15181d" roughness={0.8} />
+      </mesh>
+      {role !== "ref" ? (
+        <mesh position={[0.28, 1.5, 0]} rotation={[0, 0, -0.5]}>
+          <planeGeometry args={[0.34, 0.34]} />
+          <meshBasicMaterial color="#ffe14d" side={THREE.DoubleSide} />
+        </mesh>
+      ) : null}
+    </group>
+  );
+}
+
+function Officials({ sim, quality }: { sim: MatchSim; quality: Quality }) {
+  return (
+    <group>
+      <Official sim={sim} role="ref" quality={quality} />
+      <Official sim={sim} role="ar1" quality={quality} />
+      <Official sim={sim} role="ar2" quality={quality} />
+    </group>
+  );
+}
+
 function Scene({
+
   sim,
   mode,
   quality,
