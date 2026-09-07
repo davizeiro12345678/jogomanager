@@ -279,6 +279,7 @@ function Pitch({
       ) : null}
       {quality !== "baixa" && <GrassField sim={sim} quality={quality} />}
       {quality !== "baixa" && <PitchMarks sim={sim} />}
+      {quality !== "baixa" && wet > 0.5 ? <Puddles wet={wet} /> : null}
       <PaintedLines />
       <Goal side={1} quality={quality} sim={sim} />
       <Goal side={-1} quality={quality} sim={sim} />
@@ -286,6 +287,124 @@ function Pitch({
     </group>
   );
 }
+
+/** Poças espelhadas no gramado encharcado, sempre nos mesmos pontos. */
+function Puddles({ wet }: { wet: number }) {
+  const spots = useMemo(() => {
+    const out: { x: number; z: number; rx: number; rz: number }[] = [];
+    let s = 0x9e37;
+    const r = () => {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      return s / 0x7fffffff;
+    };
+    for (let i = 0; i < 18; i++) {
+      out.push({
+        x: (r() * 2 - 1) * FIELD_X * 0.95,
+        z: (r() * 2 - 1) * FIELD_Z * 0.95,
+        rx: 0.8 + r() * 2.6,
+        rz: 0.5 + r() * 1.8,
+      });
+    }
+    return out;
+  }, []);
+  return (
+    <group>
+      {spots.map((p, i) => (
+        <mesh
+          key={i}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[p.x, 0.014, p.z]}
+          scale={[p.rx, p.rz, 1]}
+          renderOrder={3}
+        >
+          <circleGeometry args={[1, 20]} />
+          <meshPhysicalMaterial
+            color="#123b2a"
+            roughness={0.06}
+            metalness={0.1}
+            clearcoat={1}
+            clearcoatRoughness={0.05}
+            transparent
+            opacity={0.35 + wet * 0.35}
+            depthWrite={false}
+            envMapIntensity={1.6}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/**
+ * Chuva e neve: partículas instanciadas que caem num volume em volta da
+ * câmera, inclinadas pelo vento. Nada de física — só movimento contínuo com
+ * recolocação ao chegar ao chão, o que mantém o custo baixíssimo.
+ */
+function Weather({
+  weather,
+  wind,
+  quality,
+}: {
+  weather: "seco" | "molhado" | "chuva" | "neve";
+  wind: number;
+  quality: Quality;
+}) {
+  const rain = weather === "chuva";
+  const snow = weather === "neve";
+  const count = quality === "alta" ? (rain ? 2600 : 1500) : rain ? 1100 : 700;
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const drops = useMemo(
+    () =>
+      Array.from({ length: count }, () => ({
+        x: (Math.random() * 2 - 1) * (FIELD_X + 26),
+        y: Math.random() * 34,
+        z: (Math.random() * 2 - 1) * (FIELD_Z + 24),
+        s: 0.6 + Math.random() * 0.9,
+        p: Math.random() * 6.28,
+      })),
+    [count],
+  );
+
+  useFrame((_, rawDt) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const dt = Math.min(rawDt, 0.05);
+    const fall = rain ? 34 : 2.4;
+    for (let i = 0; i < drops.length; i++) {
+      const d = drops[i]!;
+      d.y -= fall * dt * d.s;
+      d.x += wind * dt * (rain ? 5 : 1.6);
+      if (!rain) d.z += Math.sin(d.p + d.y * 0.4) * dt * 0.9;
+      if (d.y < 0) {
+        d.y = 30 + Math.random() * 6;
+        d.x = (Math.random() * 2 - 1) * (FIELD_X + 26);
+        d.z = (Math.random() * 2 - 1) * (FIELD_Z + 24);
+      }
+      dummy.position.set(d.x, d.y, d.z);
+      dummy.rotation.set(0, 0, rain ? wind * 0.28 : 0);
+      dummy.scale.set(1, rain ? 1 : 0.5, 1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+
+  if (!rain && !snow) return null;
+
+  return (
+    <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, count]}>
+      {rain ? <planeGeometry args={[0.03, 0.85]} /> : <circleGeometry args={[0.05, 5]} />}
+      <meshBasicMaterial
+        color={rain ? "#cfe6ff" : "#ffffff"}
+        transparent
+        opacity={rain ? 0.35 : 0.8}
+        depthWrite={false}
+      />
+    </instancedMesh>
+  );
+}
+
 
 
 
