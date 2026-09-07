@@ -612,58 +612,82 @@ function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: stri
 }
 
 
-function scoreboardTexture(text: string) {
-  if (typeof document === "undefined") return null;
-  const w = 512;
-  const h = 192;
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  ctx.fillStyle = "#05070a";
-  ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = "#7dfcb0";
-  ctx.font = "bold 96px 'Barlow Condensed', system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(text, w / 2, h / 2);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-function Scoreboard({ sim }: { sim: MatchSim }) {
-  const matRef = useRef<THREE.MeshStandardMaterial>(null);
-  const label = useRef("");
+/**
+ * Telão do estádio com texto 3D nítido (troika SDF) em vez de textura de
+ * canvas refeita a cada mudança: placar, relógio e selo de REPLAY ficam
+ * legíveis de qualquer distância e custam quase nada para atualizar.
+ */
+function Scoreboard({ sim, replay }: { sim: MatchSim; replay: boolean }) {
+  const [label, setLabel] = useState("");
+  const [clockText, setClockText] = useState("0'");
   useFrame(() => {
-    const text = `${sim.home.short} ${sim.stats.home.goals}-${sim.stats.away.goals} ${sim.away.short}  ${sim.minute()}'`;
-    if (text === label.current) return;
-    label.current = text;
-    const tex = scoreboardTexture(text);
-    if (tex && matRef.current) {
-      matRef.current.map?.dispose();
-      matRef.current.map = tex;
-      matRef.current.emissiveMap = tex;
-      matRef.current.needsUpdate = true;
-    }
+    const l = `${sim.home.short}  ${sim.stats.home.goals} – ${sim.stats.away.goals}  ${sim.away.short}`;
+    const c = `${sim.minute()}'`;
+    if (l !== label) setLabel(l);
+    if (c !== clockText) setClockText(c);
   });
   return (
     <group position={[0, 22, -(FIELD_Z + 26)]}>
       <mesh>
         <boxGeometry args={[30, 11, 1]} />
-        <meshStandardMaterial color="#0b0e12" />
+        <meshStandardMaterial color="#0b0e12" roughness={0.55} metalness={0.25} />
       </mesh>
-      <mesh position={[0, 0, 0.6]}>
-        <planeGeometry args={[28, 9.5]} />
-        <meshStandardMaterial
-          ref={matRef}
-          color="#ffffff"
-          emissive="#ffffff"
-          emissiveIntensity={0.9}
-          toneMapped={false}
-        />
+      <mesh position={[0, 0, 0.55]}>
+        <planeGeometry args={[28.6, 9.6]} />
+        <meshStandardMaterial color="#04070b" emissive="#0a1a12" emissiveIntensity={0.5} />
       </mesh>
+      {/* moldura luminosa do painel */}
+      <mesh position={[0, 4.9, 0.56]}>
+        <boxGeometry args={[29.2, 0.22, 0.05]} />
+        <meshBasicMaterial color="#1de07a" toneMapped={false} />
+      </mesh>
+      <mesh position={[0, -4.9, 0.56]}>
+        <boxGeometry args={[29.2, 0.22, 0.05]} />
+        <meshBasicMaterial color="#1de07a" toneMapped={false} />
+      </mesh>
+      <Suspense fallback={null}>
+        <Text
+          font={DISPLAY_FONT}
+          position={[0, 1.1, 0.62]}
+          fontSize={3.4}
+          letterSpacing={0.05}
+          color="#9dffc4"
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.06}
+          outlineColor="#02130a"
+        >
+          {label}
+        </Text>
+        <Text
+          font={DISPLAY_FONT}
+          position={[0, -2.6, 0.62]}
+          fontSize={2}
+          letterSpacing={0.08}
+          color="#ffd76a"
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.05}
+          outlineColor="#130d02"
+        >
+          {clockText}
+        </Text>
+        {replay ? (
+          <Text
+            font={DISPLAY_FONT}
+            position={[0, 3.9, 0.62]}
+            fontSize={1.5}
+            letterSpacing={0.3}
+            color="#ff5d5d"
+            anchorX="center"
+            anchorY="middle"
+            outlineWidth={0.04}
+            outlineColor="#1a0202"
+          >
+            REPLAY
+          </Text>
+        ) : null}
+      </Suspense>
     </group>
   );
 }
@@ -1463,10 +1487,62 @@ function CrowdFlags({
 
 
 
+/** Textura da bola: painéis escuros + costuras, gerada uma vez por sessão. */
+let _ballTex: THREE.Texture | null | undefined;
+function ballTexture(): THREE.Texture | null {
+  if (_ballTex !== undefined) return _ballTex;
+  _ballTex = null;
+  if (typeof document === "undefined") return null;
+  const s = 256;
+  const c = document.createElement("canvas");
+  c.width = c.height = s;
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = "#f7f7f2";
+  ctx.fillRect(0, 0, s, s);
+  const pentagon = (cx: number, cy: number, r: number, rot: number) => {
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const a = rot + (i / 5) * Math.PI * 2;
+      const px = cx + Math.cos(a) * r;
+      const py = cy + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+  };
+  ctx.fillStyle = "#15171c";
+  for (let row = 0; row < 5; row++) {
+    for (let col = 0; col < 7; col++) {
+      pentagon(
+        ((col + (row % 2) * 0.5) * s) / 7 + s / 14,
+        (row * s) / 5 + s / 10,
+        s * 0.045,
+        row * 0.6 + col,
+      );
+    }
+  }
+  // costuras: linhas curvas claras ligando os painéis
+  ctx.strokeStyle = "rgba(30,32,38,0.5)";
+  ctx.lineWidth = 1.4;
+  for (let row = 0; row < 6; row++) {
+    ctx.beginPath();
+    ctx.moveTo(0, (row * s) / 5);
+    ctx.bezierCurveTo(s * 0.3, (row * s) / 5 + 8, s * 0.7, (row * s) / 5 - 8, s, (row * s) / 5);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  _ballTex = tex;
+  return tex;
+}
+
 function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
   const ref = useRef<THREE.Mesh>(null);
   const shadow = useRef<THREE.Mesh>(null);
-  const trail = useRef<THREE.Mesh>(null);
+  const tex = useMemo(ballTexture, []);
   useFrame((_, dt) => {
     const m = ref.current;
     if (!m) return;
@@ -1483,36 +1559,33 @@ function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
       s.scale.setScalar(k);
       (s.material as THREE.MeshBasicMaterial).opacity = 0.36 * k;
     }
-    // rastro de velocidade em chutes fortes
-    const t = trail.current;
-    if (t) {
-      const active = sp > 16;
-      t.visible = active;
-      if (active) {
-        const k = Math.min(1, (sp - 16) / 18);
-        t.position.copy(m.position);
-        t.rotation.y = Math.atan2(sim.ball.vx, sim.ball.vz);
-        t.scale.set(1, 1, 1 + k * 9);
-        (t.material as THREE.MeshBasicMaterial).opacity = 0.22 * k;
-      }
-    }
   });
+  const ball = (
+    <mesh ref={ref} castShadow={quality === "alta"} position={[0, 0.13, 0]}>
+      <sphereGeometry args={[0.13, 24, 24]} />
+      <meshStandardMaterial
+        map={tex ?? undefined}
+        color="#ffffff"
+        roughness={0.32}
+        metalness={0.04}
+      />
+    </mesh>
+  );
   return (
     <group>
-      <mesh ref={ref} castShadow={quality === "alta"} position={[0, 0.13, 0]}>
-        <sphereGeometry args={[0.13, 20, 20]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.3} metalness={0.05} />
-      </mesh>
-      <mesh ref={trail} position={[0, 0.13, 0]} visible={false}>
-        <boxGeometry args={[0.09, 0.09, 0.5]} />
-        <meshBasicMaterial
-          color="#ffffff"
-          transparent
-          opacity={0.2}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
+      {/* rastro de velocidade (meshline) em chutes fortes — só média/alta */}
+      {quality === "baixa" ? (
+        ball
+      ) : (
+        <Trail
+          width={1.1}
+          length={5.5}
+          color="#dff2ff"
+          attenuation={(t) => t * t}
+        >
+          {ball}
+        </Trail>
+      )}
       <mesh ref={shadow} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.18, 16]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.36} />
@@ -1854,7 +1927,7 @@ function Scene({
         awayColor={sim.away.primary}
         ball={sim.ball}
       />
-      <Scoreboard sim={sim} />
+      <Scoreboard sim={sim} replay={replay} />
       <Ball sim={sim} quality={quality} />
       {sim.players.map((p) => (
         <PlayerRig
