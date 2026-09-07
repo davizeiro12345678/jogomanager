@@ -7,7 +7,8 @@ export interface WalletState {
 
 const EMPTY_WALLET: WalletState = { coins: 0, seasonPass: false };
 
-/** Reads the signed-in user's wallet, creating a zeroed one if it doesn't exist yet. */
+/** Reads the signed-in user's wallet. The wallet row is read-only for users:
+ *  every credit or debit happens on the server (purchases, rewards, spends). */
 export async function getWallet(): Promise<WalletState> {
   const { data: session } = await supabase.auth.getSession();
   const userId = session.session?.user.id;
@@ -24,27 +25,22 @@ export async function getWallet(): Promise<WalletState> {
 }
 
 /**
- * Spends coins from the signed-in user's wallet if the balance allows it.
- * Returns the resulting wallet, or `null` if the balance was insufficient.
- * Other game features (training boosts, cosmetics, etc.) can reuse this to
- * charge coins without duplicating the wallet update logic.
+ * Spends coins from the signed-in user's wallet through the server-side
+ * `spend_coins` function, which verifies the balance atomically before
+ * debiting. Returns the resulting wallet, or `null` when the balance is
+ * insufficient. Users can no longer write their own balance directly.
  */
 export async function spendCoins(amount: number): Promise<WalletState | null> {
   if (amount <= 0) throw new Error("O valor a gastar deve ser positivo.");
 
   const { data: session } = await supabase.auth.getSession();
-  const userId = session.session?.user.id;
-  if (!userId) throw new Error("É preciso estar logado para gastar moedas.");
+  if (!session.session?.user.id) {
+    throw new Error("É preciso estar logado para gastar moedas.");
+  }
 
-  const wallet = await getWallet();
-  if (wallet.coins < amount) return null;
-
-  const { data, error } = await supabase
-    .from("user_wallet")
-    .update({ coins: wallet.coins - amount })
-    .eq("user_id", userId)
-    .select("coins, season_pass")
-    .single();
+  const { data, error } = await supabase.rpc("spend_coins", { amount });
   if (error) throw new Error(error.message);
-  return { coins: data.coins, seasonPass: data.season_pass };
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null; // saldo insuficiente
+  return { coins: row.coins, seasonPass: row.season_pass };
 }
