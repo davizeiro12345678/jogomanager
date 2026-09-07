@@ -32,7 +32,7 @@ const STRIPE_ANGLE = -0.22;
 const STRIPES = 40;
 
 /** Ruído simplex determinístico (mesma semente da textura). */
-const noise2D = createNoise2D(rng(0x51mp1eX ^ 0xabcdef));
+const noise2D = createNoise2D(rng(0x51e4a3));
 
 function withStripes(
   ctx: CanvasRenderingContext2D,
