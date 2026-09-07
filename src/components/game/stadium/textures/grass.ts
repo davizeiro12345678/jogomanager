@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { createNoise2D } from "simplex-noise";
 
 /**
  * Texturas procedurais determinísticas do gramado.
@@ -6,6 +7,12 @@ import * as THREE from "three";
  * Tudo é gerado uma única vez por sessão e compartilhado entre partidas
  * (carreira, partida rápida e multiplayer) — nenhuma textura é recriada ao
  * trocar de tela, o que evita picos de GPU/CPU no celular.
+ *
+ * O padrão de corte mistura três assinaturas de gramado real:
+ *  1. faixas diagonais (a passagem do cortador),
+ *  2. anéis radiais em volta do círculo central (corte em caracol),
+ *  3. um xadrez bem sutil (duas passagens cruzadas), tudo modulado por
+ *     ruído simplex para as manchas grandes de solo/irrigação.
  */
 
 /* ------------------------------------------------------------ aleatório fixo */
@@ -23,6 +30,9 @@ function rng(seed: number) {
 
 const STRIPE_ANGLE = -0.22;
 const STRIPES = 40;
+
+/** Ruído simplex determinístico (mesma semente da textura). */
+const noise2D = createNoise2D(rng(0x51mp1eX ^ 0xabcdef));
 
 function withStripes(
   ctx: CanvasRenderingContext2D,
