@@ -22,7 +22,13 @@ import {
   concreteRoughness,
   seatsTexture,
 } from "@/components/game/stadium/textures/concrete";
-import { grassAlbedo, grassNormal, grassRoughness } from "@/components/game/stadium/textures/grass";
+import {
+  grassAlbedo,
+  grassNormal,
+  grassRoughness,
+  type MowPattern,
+} from "@/components/game/stadium/textures/grass";
+
 import { LINES_H, LINES_W, pitchLinesTexture } from "@/components/game/stadium/textures/lines";
 import { pitchWearTexture } from "@/components/game/stadium/textures/wear";
 import { bannerTexture, bigFlagTexture, mosaicTexture } from "@/components/game/stadium/textures/tifo";
@@ -31,12 +37,13 @@ import { StadiumProps } from "@/components/game/stadium/Props";
 import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
+import { matchLook, type TimeOfDay } from "@/game/matchday";
 
 
 export type CameraMode = "broadcast" | "tactical" | "goal" | "fan" | "rail" | "behind";
 export type Quality = "alta" | "media" | "baixa";
 
-type TimeOfDay = "dia" | "entardecer" | "noite";
+
 
 const SKY: Record<TimeOfDay, string> = {
   dia: "#8fbfe8",
@@ -44,14 +51,6 @@ const SKY: Record<TimeOfDay, string> = {
   noite: "#060a10",
 };
 
-function hash(s: string) {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return Math.abs(h);
-}
 
 /* ---------------------------------------------------------------- gramado */
 
@@ -221,11 +220,22 @@ function PitchMarks({ sim }: { sim: MatchSim }) {
   );
 }
 
-function Pitch({ quality, sim, wet }: { quality: Quality; sim: MatchSim; wet: number }) {
-  const tex = useMemo(grassAlbedo, []);
-  const rough = useMemo(grassRoughness, []);
-  const norm = useMemo(() => (quality === "baixa" ? null : grassNormal()), [quality]);
+function Pitch({
+  quality,
+  sim,
+  wet,
+  mow,
+}: {
+  quality: Quality;
+  sim: MatchSim;
+  wet: number;
+  mow: MowPattern;
+}) {
+  const tex = useMemo(() => grassAlbedo(mow), [mow]);
+  const rough = useMemo(() => grassRoughness(mow), [mow]);
+  const norm = useMemo(() => (quality === "baixa" ? null : grassNormal(mow)), [quality, mow]);
   const wear = useMemo(() => (quality === "baixa" ? null : pitchWearTexture()), [quality]);
+
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
@@ -268,6 +278,7 @@ function Pitch({ quality, sim, wet }: { quality: Quality; sim: MatchSim; wet: nu
       ) : null}
       {quality !== "baixa" && <GrassField sim={sim} quality={quality} />}
       {quality !== "baixa" && <PitchMarks sim={sim} />}
+      {quality !== "baixa" && wet > 0.5 ? <Puddles wet={wet} /> : null}
       <PaintedLines />
       <Goal side={1} quality={quality} sim={sim} />
       <Goal side={-1} quality={quality} sim={sim} />
@@ -275,6 +286,124 @@ function Pitch({ quality, sim, wet }: { quality: Quality; sim: MatchSim; wet: nu
     </group>
   );
 }
+
+/** Poças espelhadas no gramado encharcado, sempre nos mesmos pontos. */
+function Puddles({ wet }: { wet: number }) {
+  const spots = useMemo(() => {
+    const out: { x: number; z: number; rx: number; rz: number }[] = [];
+    let s = 0x9e37;
+    const r = () => {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      return s / 0x7fffffff;
+    };
+    for (let i = 0; i < 18; i++) {
+      out.push({
+        x: (r() * 2 - 1) * FIELD_X * 0.95,
+        z: (r() * 2 - 1) * FIELD_Z * 0.95,
+        rx: 0.8 + r() * 2.6,
+        rz: 0.5 + r() * 1.8,
+      });
+    }
+    return out;
+  }, []);
+  return (
+    <group>
+      {spots.map((p, i) => (
+        <mesh
+          key={i}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[p.x, 0.014, p.z]}
+          scale={[p.rx, p.rz, 1]}
+          renderOrder={3}
+        >
+          <circleGeometry args={[1, 20]} />
+          <meshPhysicalMaterial
+            color="#123b2a"
+            roughness={0.06}
+            metalness={0.1}
+            clearcoat={1}
+            clearcoatRoughness={0.05}
+            transparent
+            opacity={0.35 + wet * 0.35}
+            depthWrite={false}
+            envMapIntensity={1.6}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/**
+ * Chuva e neve: partículas instanciadas que caem num volume em volta da
+ * câmera, inclinadas pelo vento. Nada de física — só movimento contínuo com
+ * recolocação ao chegar ao chão, o que mantém o custo baixíssimo.
+ */
+function Weather({
+  weather,
+  wind,
+  quality,
+}: {
+  weather: "seco" | "molhado" | "chuva" | "neve";
+  wind: number;
+  quality: Quality;
+}) {
+  const rain = weather === "chuva";
+  const snow = weather === "neve";
+  const count = quality === "alta" ? (rain ? 2600 : 1500) : rain ? 1100 : 700;
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const drops = useMemo(
+    () =>
+      Array.from({ length: count }, () => ({
+        x: (Math.random() * 2 - 1) * (FIELD_X + 26),
+        y: Math.random() * 34,
+        z: (Math.random() * 2 - 1) * (FIELD_Z + 24),
+        s: 0.6 + Math.random() * 0.9,
+        p: Math.random() * 6.28,
+      })),
+    [count],
+  );
+
+  useFrame((_, rawDt) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const dt = Math.min(rawDt, 0.05);
+    const fall = rain ? 34 : 2.4;
+    for (let i = 0; i < drops.length; i++) {
+      const d = drops[i]!;
+      d.y -= fall * dt * d.s;
+      d.x += wind * dt * (rain ? 5 : 1.6);
+      if (!rain) d.z += Math.sin(d.p + d.y * 0.4) * dt * 0.9;
+      if (d.y < 0) {
+        d.y = 30 + Math.random() * 6;
+        d.x = (Math.random() * 2 - 1) * (FIELD_X + 26);
+        d.z = (Math.random() * 2 - 1) * (FIELD_Z + 24);
+      }
+      dummy.position.set(d.x, d.y, d.z);
+      dummy.rotation.set(0, 0, rain ? wind * 0.28 : 0);
+      dummy.scale.set(1, rain ? 1 : 0.5, 1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+
+  if (!rain && !snow) return null;
+
+  return (
+    <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, count]}>
+      {rain ? <planeGeometry args={[0.03, 0.85]} /> : <circleGeometry args={[0.05, 5]} />}
+      <meshBasicMaterial
+        color={rain ? "#cfe6ff" : "#ffffff"}
+        transparent
+        opacity={rain ? 0.35 : 0.8}
+        depthWrite={false}
+      />
+    </instancedMesh>
+  );
+}
+
 
 
 
@@ -1540,7 +1669,17 @@ function ballTexture(): THREE.Texture | null {
   return tex;
 }
 
-function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
+function Ball({
+  sim,
+  quality,
+  hiVis = false,
+  wet = 0,
+}: {
+  sim: MatchSim;
+  quality: Quality;
+  hiVis?: boolean;
+  wet?: number;
+}) {
   const ref = useRef<THREE.Mesh>(null);
   const shadow = useRef<THREE.Mesh>(null);
   const tex = useMemo(ballTexture, []);
@@ -1566,9 +1705,11 @@ function Ball({ sim, quality }: { sim: MatchSim; quality: Quality }) {
       <sphereGeometry args={[0.13, 24, 24]} />
       <meshStandardMaterial
         map={tex}
-        color="#ffffff"
-        roughness={0.32}
-        metalness={0.04}
+        // bola de alta visibilidade na neve; molhada reflete mais a luz
+        color={hiVis ? "#f2ff45" : "#ffffff"}
+        roughness={0.32 - wet * 0.2}
+        metalness={0.04 + wet * 0.1}
+        envMapIntensity={0.8 + wet * 0.8}
       />
     </mesh>
   );
@@ -1806,17 +1947,105 @@ function GoalFx({ goalPulse, quality }: { goalPulse: React.MutableRefObject<numb
   );
 }
 
+/* ------------------------------------------------------- arbitragem */
+
+/** Corpo simples em preto: árbitro no centro da jogada e dois bandeirinhas. */
+function Official({
+  sim,
+  role,
+  quality,
+}: {
+  sim: MatchSim;
+  role: "ref" | "ar1" | "ar2";
+  quality: Quality;
+}) {
+  const g = useRef<THREE.Group>(null);
+  const legs = useRef(0);
+  useFrame((_, rawDt) => {
+    const grp = g.current;
+    if (!grp) return;
+    const dt = Math.min(rawDt, 0.05);
+    let tx: number;
+    let tz: number;
+    if (role === "ref") {
+      // atrás e ao lado da jogada, como o árbitro real se posiciona
+      tx = sim.ball.x - 6;
+      tz = sim.ball.z + 7;
+    } else {
+      const side = role === "ar1" ? 1 : -1;
+      tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, sim.ball.x * 0.85));
+      tz = side * (FIELD_Z + 1.6);
+    }
+    tx = Math.max(-FIELD_X - 2, Math.min(FIELD_X + 2, tx));
+    tz = Math.max(-FIELD_Z - 3, Math.min(FIELD_Z + 3, tz));
+    const dx = tx - grp.position.x;
+    const dz = tz - grp.position.z;
+    const dist = Math.hypot(dx, dz);
+    const sp = Math.min(7, dist * 1.6);
+    if (dist > 0.05) {
+      grp.position.x += (dx / dist) * sp * dt;
+      grp.position.z += (dz / dist) * sp * dt;
+      grp.rotation.y = Math.atan2(sim.ball.x - grp.position.x, sim.ball.z - grp.position.z);
+      legs.current += sp * dt * 3;
+    }
+    const swing = Math.sin(legs.current) * Math.min(0.6, sp * 0.09);
+    const l = grp.children[2] as THREE.Mesh | undefined;
+    const r = grp.children[3] as THREE.Mesh | undefined;
+    if (l) l.rotation.x = swing;
+    if (r) r.rotation.x = -swing;
+  });
+
+  const kit = role === "ref" ? "#101318" : "#ffe14d";
+  return (
+    <group ref={g} position={[0, 0, role === "ref" ? 8 : FIELD_Z + 1.6]}>
+      <mesh position={[0, 1.28, 0]} castShadow={quality === "alta"}>
+        <capsuleGeometry args={[0.19, 0.5, 4, 8]} />
+        <meshStandardMaterial color={kit} roughness={0.72} />
+      </mesh>
+      <mesh position={[0, 1.72, 0]}>
+        <sphereGeometry args={[0.14, 12, 12]} />
+        <meshStandardMaterial color="#c98d63" roughness={0.85} />
+      </mesh>
+      <mesh position={[-0.11, 0.52, 0]}>
+        <capsuleGeometry args={[0.08, 0.6, 4, 6]} />
+        <meshStandardMaterial color="#15181d" roughness={0.8} />
+      </mesh>
+      <mesh position={[0.11, 0.52, 0]}>
+        <capsuleGeometry args={[0.08, 0.6, 4, 6]} />
+        <meshStandardMaterial color="#15181d" roughness={0.8} />
+      </mesh>
+      {role !== "ref" ? (
+        <mesh position={[0.28, 1.5, 0]} rotation={[0, 0, -0.5]}>
+          <planeGeometry args={[0.34, 0.34]} />
+          <meshBasicMaterial color="#ffe14d" side={THREE.DoubleSide} />
+        </mesh>
+      ) : null}
+    </group>
+  );
+}
+
+function Officials({ sim, quality }: { sim: MatchSim; quality: Quality }) {
+  return (
+    <group>
+      <Official sim={sim} role="ref" quality={quality} />
+      <Official sim={sim} role="ar1" quality={quality} />
+      <Official sim={sim} role="ar2" quality={quality} />
+    </group>
+  );
+}
+
 function Scene({
   sim,
   mode,
   quality,
-  time,
+  look,
 }: {
   sim: MatchSim;
   mode: CameraMode;
   quality: Quality;
-  time: TimeOfDay;
+  look: ReturnType<typeof matchLook>;
 }) {
+  const time = look.time;
   const goalPulse = useRef(0);
   const lastGoals = useRef(0);
   const [replay, setReplay] = useState(false);
@@ -1910,7 +2139,11 @@ function Scene({
       <directionalLight position={[-60, 60, -40]} intensity={0.6} color="#bcd8ff" />
 
       <SkyDome time={time} />
-      <Pitch quality={quality} sim={sim} wet={time === "noite" ? 0.7 : time === "entardecer" ? 0.3 : 0} />
+      <Pitch quality={quality} sim={sim} wet={look.wet} mow={look.mow} />
+      {quality !== "baixa" ? (
+        <Weather weather={look.weather} wind={look.wind} quality={quality} />
+      ) : null}
+      {quality !== "baixa" ? <Officials sim={sim} quality={quality} /> : null}
 
       <AdBoards homeColor={sim.home.primary} awayColor={sim.away.primary} />
       <Floodlights time={time} quality={quality} />
@@ -1929,7 +2162,7 @@ function Scene({
         ball={sim.ball}
       />
       <Scoreboard sim={sim} replay={replay} />
-      <Ball sim={sim} quality={quality} />
+      <Ball sim={sim} quality={quality} hiVis={look.hiVisBall} wet={look.wet} />
       {sim.players.map((p) => (
         <PlayerRig
           key={p.id}
@@ -1969,10 +2202,10 @@ function Stadium3DImpl({
   mode: CameraMode;
   quality: Quality;
 }) {
-  const time = useMemo<TimeOfDay>(() => {
-    const t = hash(sim.home.clubId + sim.away.clubId) % 3;
-    return t === 0 ? "dia" : t === 1 ? "entardecer" : "noite";
-  }, [sim.home.clubId, sim.away.clubId]);
+  const look = useMemo(
+    () => matchLook(sim.home.clubId, sim.away.clubId),
+    [sim.home.clubId, sim.away.clubId],
+  );
 
   // Em segundo plano o desenho 3D é suspenso para poupar bateria no celular.
   const [visible, setVisible] = useState(true);
@@ -2023,7 +2256,7 @@ function Stadium3DImpl({
             setEff((q) => (higherQuality(q) === quality ? higherQuality(q) : q));
           }}
         />
-        <Scene sim={sim} mode={mode} quality={eff} time={time} />
+        <Scene sim={sim} mode={mode} quality={eff} look={look} />
       </Canvas>
       {eff !== quality ? (
         <span className="pointer-events-none absolute right-2 top-2 rounded-full bg-black/45 px-2 py-0.5 text-[10px] uppercase tracking-widest text-white/80">
