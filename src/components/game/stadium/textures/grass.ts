@@ -28,8 +28,20 @@ function rng(seed: number) {
   };
 }
 
-const STRIPE_ANGLE = -0.22;
-const STRIPES = 40;
+/** Padrões de corte usados pelos clubes. */
+export type MowPattern = "stripes" | "checker" | "rings" | "diagonal" | "wide";
+
+export const MOW_PATTERNS: MowPattern[] = ["stripes", "checker", "rings", "diagonal", "wide"];
+
+type MowSpec = { angle: number; count: number; rings: boolean; cross: boolean };
+
+const MOW: Record<MowPattern, MowSpec> = {
+  stripes: { angle: 0, count: 40, rings: false, cross: false },
+  checker: { angle: -0.22, count: 40, rings: false, cross: true },
+  rings: { angle: -0.22, count: 32, rings: true, cross: false },
+  diagonal: { angle: -0.62, count: 44, rings: false, cross: true },
+  wide: { angle: 0, count: 20, rings: false, cross: false },
+};
 
 /** Ruído simplex determinístico (mesma semente da textura). */
 const noise2D = createNoise2D(rng(0x51e4a3));
@@ -37,16 +49,18 @@ const noise2D = createNoise2D(rng(0x51e4a3));
 function withStripes(
   ctx: CanvasRenderingContext2D,
   size: number,
+  spec: MowSpec,
   draw: (i: number, x: number, w: number) => void,
 ) {
-  const w = (size * 2) / STRIPES;
+  const w = (size * 2) / spec.count;
   ctx.save();
   ctx.translate(size / 2, size / 2);
-  ctx.rotate(STRIPE_ANGLE);
+  ctx.rotate(spec.angle);
   ctx.translate(-size, -size);
-  for (let i = 0; i < STRIPES; i++) draw(i, i * w, w);
+  for (let i = 0; i < spec.count; i++) draw(i, i * w, w);
   ctx.restore();
 }
+
 
 function canvas(size: number) {
   if (typeof document === "undefined") return null;
