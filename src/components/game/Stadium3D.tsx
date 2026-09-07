@@ -22,7 +22,13 @@ import {
   concreteRoughness,
   seatsTexture,
 } from "@/components/game/stadium/textures/concrete";
-import { grassAlbedo, grassNormal, grassRoughness } from "@/components/game/stadium/textures/grass";
+import {
+  grassAlbedo,
+  grassNormal,
+  grassRoughness,
+  type MowPattern,
+} from "@/components/game/stadium/textures/grass";
+
 import { LINES_H, LINES_W, pitchLinesTexture } from "@/components/game/stadium/textures/lines";
 import { pitchWearTexture } from "@/components/game/stadium/textures/wear";
 import { bannerTexture, bigFlagTexture, mosaicTexture } from "@/components/game/stadium/textures/tifo";
