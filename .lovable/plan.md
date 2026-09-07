@@ -1,70 +1,126 @@
-# Mega atualização gráfica 3D + correções de segurança e de busca
+# Salto definitivo: imagem 3D de jogo de console, segurança fechada e buscas afinadas
 
-Três frentes num só ciclo: um salto grande na imagem do jogo, o fechamento das brechas de segurança da loja/chat e o ajuste do que os buscadores veem em todos os seus endereços.
+Três frentes num só ciclo. O objetivo visual é claro: quando a partida abre, tem de parecer transmissão de TV — não um campo verde com bonecos. Abaixo, tudo o que muda, em linguagem direta.
 
-## 1. Salto gráfico 3D
+---
 
-**Campo e bola**
-- Bola com física real (colisão com traves, rede, chão e jogadores), efeito curva e quique com atrito variável conforme o gramado esteja seco ou molhado.
-- Grama em três camadas com corte diagonal, desgaste que aumenta ao longo do jogo, poças e brilho rasante sob os refletores.
-- Marcas de deslize e respingos de terra que ficam no gramado e desbotam.
+## PARTE 1 — A partida em 3D, de ponta a ponta
 
-**Estádio**
-- Sombras de contato mais precisas, luz que vaza da cobertura, halo dos refletores com poeira no ar.
-- Telão com placar em texto nítido (hoje é uma imagem desenhada a cada mudança) e replay do lance.
-- Publicidade em LED com rolagem e cintilação corretas, portões, escadas, cabines e câmeras de TV que acompanham a bola.
+### 1.1 O gramado vira personagem
 
-**Torcida**
-- Mais variação de corpos, roupas e alturas, mosaicos por setor, ola mais orgânica, bandeirões maiores com estampa e cachecóis girando.
-- Reação ao placar: pulos, braços erguidos e flashes concentrados no setor do time que marcou.
+- **Textura de grama real em alta definição** (gerada por procedimento, sem peso de download): folhas com direção, variação de cor por tufagem e manchas naturais de campo pisado.
+- **Corte em faixas diagonais e radiais**, não só horizontais — com brilho diferente quando a câmera muda de lado, como no campo de verdade.
+- **Desgaste ao longo da partida**: a zona central e a pequena área vão escurecendo e perdendo fibra conforme o jogo avança.
+- **Marcas de jogo que ficam**: pegadas, riscos de carrinho, rastro de deslize do goleiro — aparecem na hora e desbotam devagar.
+- **Condição climática por partida**: seco (grama clara e rápida), garoa (brilho molhado, poças pequenas, respingo no carrinho) e noite úmida (reflexo do refletor na grama rasa).
+- **Tufos 3D perto da câmera**: na qualidade alta, a grama tem volume real nos lances em close.
+- **Linhas de cal com borda imperfeita**: pintura com manchas e apagado nas laterais, em vez de um retângulo digital perfeito.
 
-**Jogadores**
-- Nome e número nas costas em texto de verdade (nítido de perto), chuteiras separadas, suor e brilho de tecido.
-- Corrida, condução, chute, carrinho e comemoração com transições suaves; nível de detalhe cai com a distância para não pesar.
+### 1.2 A bola com física de verdade
 
-**Imagem final (pós-processamento)**
-- Foco seletivo no replay, cor calibrada por horário, granulado de transmissão, reflexos e anti-serrilhado melhores.
-- Tudo continua com os três níveis de qualidade (alta / média / baixa) e a queda automática quando o aparelho sofre.
+- **Física real**: quique com atrito, rolagem que desacelera, efeito curva (a bola fecha ou abre), ricochete na trave com direção certa e baque no corpo do goleiro.
+- **Rede que estufa de verdade**: pano com trama em losango que empina no gol, balança e assenta — hoje a rede é quase estática.
+- **Rastro de chute forte**: linha de velocidade atrás da bola em chutes acima de certa força, estilo transmissão.
+- **Bola com costuras e painéis**: deixa de ser uma esfera lisa branca.
 
-## 2. Nove novas bibliotecas visuais e de física
+### 1.3 O estádio ganha escala e vida
 
-Todas são bibliotecas conhecidas e mantidas do ecossistema 3D web:
+- **Arquibancada em anéis com setores, escadas, corrimãos e corredores** de acesso; telão grande com placar em texto nítido (hoje é uma imagem refeita a cada mudança) e replay do lance.
+- **Cobertura com estrutura metálica**, calhas, sombras projetadas na arquibancada e luz que vaza pelas bordas ao entardecer.
+- **Refletores com facho de luz e poeira no ar** à noite; halo visível; luz que bate no gramado com quente/frio correto por horário.
+- **Publicidade em LED** ao redor do campo com rolagem suave, cintilação de painel real e arte por clube.
+- **Detalhes de transmissão**: banco de reservas com acrílico, túnel de acesso iluminado, câmeras de TV que seguem a bola, cabines de imprensa, portões e cones.
+- **Céu coerente com o horário**: dia limpo, entardecer com horizonte quente, noite com nuvens escuras — o mesmo céu reflete nos vidros e na grama úmida.
 
-| Biblioteca | Para quê |
-| --- | --- |
-| `@react-three/rapier` | física real da bola, traves e colisões |
-| `three-mesh-bvh` | colisão e detecção rápidas em cenas pesadas |
-| `three-custom-shader-material` | shaders próprios de grama, tecido e água |
-| `troika-three-text` | texto nítido no telão, nas costas das camisas e na publicidade |
-| `meshline` | rastros de bola e linhas grossas de trajetória |
-| `camera-controls` | movimentos de câmera cinematográficos e estáveis |
-| `simplex-noise` | texturas e desgaste gerados por procedimento |
-| `gsap` | linha do tempo das cutscenes e das entradas de câmera |
-| `lenis` | rolagem suave nas páginas do site |
+### 1.4 A torcida para de parecer papelão
 
-Cada uma entra atrás do nível de qualidade: em aparelho fraco o jogo não carrega o que não vai usar.
+- **Mais variedade**: corpos com alturas, larguras e tons de pele diferentes; camisas com pequenas variações de tom dentro do mesmo setor; bonés, cabelos e acessórios.
+- **Mosaico por setor**: blocos inteiros levantam cartolina na cor certa em lances grandes, formando a bandeira do clube vista de cima.
+- **Ola orgânica**: a onda percorre as arquibancadas com velocidade e altura naturais, morre e recomeça.
+- **Reação ao placar**: o setor do time que marca explode em pulos, braços erguidos e flashes de celular; o setor adversário encolhe.
+- **Bandeirões grandes** com estampa (listras + escudo), ondulação de pano no vento e cachecóis girando acima das cabeças.
+- **Som ambiente** (quando o som estiver ligado): murmúrio contínuo, tambor e explosão no gol.
 
-## 3. Correções de segurança
+### 1.5 Os jogadores, de perto e de longe
 
-Verificado na base de dados:
+- **Camisa com nome e número nas costas em texto nítido** (deixa de ser textura embaçada), com o número da escalação real.
+- **Chuteiras separadas** com cor própria, meiões com recuo na canela e uniforme com dobras simples de tecido.
+- **Pele e brilho de suor** discretos; cabelo com mais formatos.
+- **Animações mais vivas**: corrida com braços, condução com toque curto, chute com giro do quadril, carrinho com deslize, defesa do goleiro com salto lateral e comemorações variadas.
+- **Nível de detalhe por distância**: perto da câmera, tudo isso aparece; longe, o jogo simplifica sozinho para não pesar — o jogador nunca percebe a troca.
 
-- **Moedas podem ser alteradas pelo próprio navegador.** Hoje o saldo da carteira é gravado direto pelo aplicativo, e a regra de acesso permite ao usuário gravar qualquer valor na própria carteira. Na prática dá para se dar moedas de graça. Correção: toda alteração de saldo passa a ser feita no servidor, e a regra de acesso do usuário passa a ser apenas de leitura — quem credita é o servidor.
-- **Compras e recompensas conferidas no servidor.** Gastar moedas, desbloquear temas, relatórios de olheiro e treinos passam por uma verificação de saldo no servidor, não no navegador.
-- **Chat:** limite de tamanho da mensagem, limite de envios por minuto e nome de exibição vindo da conta (hoje é enviado pelo próprio cliente e pode ser forjado).
-- Varredura de segurança e de dependências no fim, com correção do que aparecer.
+### 1.6 A imagem final (pós-processamento de transmissão)
 
-## 4. Buscas e domínios
+- **Foco seletivo cinematográfico** no replay e no gol (o fundo desfoca de verdade, com formato de lente).
+- **Cor calibrada por horário e por momento**: manhã fria, entardecer quente, noite contrastada; replay com cara de VT; lance decisivo com mais contraste.
+- **Granulado leve de câmera**, vinheta suave, reflexos e anti-serrilhado melhorados; aberração de lente só nas bordas, como na TV.
+- **Transição de câmera com corte direto** (estilo diretor de transmissão) em vez de deslize infinito.
+- **Sempre com os três níveis de qualidade** (alta / média / baixa) e queda automática quando o aparelho sofre — nada disso derruba o desempenho em celular fraco.
 
-Verificado agora: os oito endereços redirecionam corretamente para `soccer-manager.fun`, e as verificações rápidas de páginas e metadados estão passando. Restam dois pontos:
+### 1.7 Cutscenes mais bonitas
+
+As cenas 2D de história (apresentação, vestiário, título) ganham: fundo com camadas em profundidade e movimento suave de câmera, iluminação coerente com o horário, retrato do treinador com mais expressões e entrada/saída dos personagens com deslize em vez de aparecer do nada.
+
+---
+
+## PARTE 2 — Nove bibliotecas novas, todas renomadas no 3D web
+
+| Biblioteca | Reputação | O que ela faz no jogo |
+| --- | --- | --- |
+| `@react-three/rapier` | motor de física usado em jogos web sérios | bola, traves, colisões e ricochetes reais |
+| `three-mesh-bvh` | referência de aceleração de cena | colisão e detecção rápidas sem travar |
+| `three-custom-shader-material` | padrão para material com shader próprio | grama, tecido molhado e reflexos sob medida |
+| `troika-three-text` | texto 3D nítido de verdade | telão, nomes/números nas camisas, publicidade |
+| `meshline` | linhas grossas clássicas do 3D web | rastro da bola e trajetórias de chute |
+| `camera-controls` | controle de câmera profissional | cortes e movimentos de câmera de transmissão |
+| `simplex-noise` | o clássico de texturas procedurais | grama, desgaste, nuvens e poças gerados no jogo |
+| `gsap` | padrão de animação da web | linha do tempo das cutscenes e entradas de câmera |
+| `lenis` | rolagem suave de site premiado | rolagem macia nas páginas do site |
+
+Regra de ouro: cada biblioteca entra **atrás do nível de qualidade**. Em aparelho fraco, o jogo não carrega física avançada nem texto 3D — e continua rodando liso.
+
+---
+
+## PARTE 3 — Segurança: fechando as brechas de verdade
+
+Verificado na base de dados agora. Os dois problemas reais:
+
+1. **Qualquer um pode se dar moedas.** A regra de acesso da carteira permite que o próprio usuário grave qualquer saldo pelo navegador. Hoje dá para se creditar moedas infinitas sem pagar.
+   **Correção:** a carteira passa a ser **somente leitura** para o usuário. Todo crédito e gasto (compras, recompensas, bônus de temporada) passa pelo servidor, que confere o saldo antes de debitar.
+2. **Chat com nome forjável e sem freio.** O nome exibido é enviado pelo próprio navegador (dá para se passar por outra pessoa) e não há limite de mensagens.
+   **Correção:** o nome vem da conta, não do navegador; mensagens ganham limite de tamanho e de envios por minuto; ofensas podem ser escondidas pela moderação.
+
+No fim do ciclo, rodo a **varredura de segurança completa** e a de **dependências**, e corrijo o que aparecer — sem deixar aviso pendurado.
+
+---
+
+## PARTE 4 — Buscas (Google) em todos os domínios
+
+O que já confirmei: os oito endereços (soccer-manager.fun, footballcarrer.fun, football-manager.app, soccermanagement.fun e os `www.`) **redirecionam corretamente** para `soccer-manager.fun`, e as verificações rápidas de página e metadados estão **passando**. O que falta:
 
 - **Etiqueta de tipo duplicada** nas páginas de conteúdo (uma definição global brigando com a da página). Correção: manter só a da página.
-- **Google Search Console não concluído** para `www.footballcarrer.fun`: colocar a etiqueta de verificação, publicar, verificar e enviar o mapa do site.
-- Revisão do mapa do site e dos textos de título/descrição das páginas novas, e nova varredura ao final.
+- **Google Search Console não concluído** em `www.footballcarrer.fun`: colocar a etiqueta de verificação, publicar, confirmar e enviar o mapa do site.
+- **Revisão do mapa do site** com as páginas novas (guias, glossário, comparativo, offline, multiplayer) e dos títulos/descrições delas.
+- **Nova varredura ao final** para confirmar que tudo ficou verde.
+
+---
+
+## Ordem de execução
+
+1. Segurança (carteira + chat) e varredura — protege o que já está no ar.
+2. Buscas (etiqueta, Search Console, mapa do site) — rápido e independente.
+3. Instalação das 9 bibliotecas.
+4. Gramado + bola + física.
+5. Estádio + torcida.
+6. Jogadores + animações.
+7. Pós-processamento + cutscenes.
+8. Teste em partida real (rápida, carreira e multiplayer) nos três níveis de qualidade e nos três horários.
 
 ## Detalhes técnicos
 
-- Física: `@react-three/rapier` só na qualidade alta/média; a simulação de partida (`src/game/sim.ts`) continua sendo a fonte da verdade — a física é visual (bola, rede, bandeiras), sem alterar o resultado.
-- Texto 3D via `troika-three-text` substitui os `CanvasTexture` regenerados por quadro no placar.
-- Carteira: novas funções de servidor em `src/lib/wallet.functions.ts` com `requireSupabaseAuth`; migração ajustando as políticas de `public.user_wallet` para `SELECT` do usuário e escrita apenas pelo servidor; `src/lib/wallet.ts` passa a chamá-las.
-- Chat: validação com `zod`, `CHECK` de tamanho na coluna e `display_name` derivado do usuário autenticado.
-- SEO: remover `og:type` do `__root.tsx`; fluxo META de verificação do Search Console; nova varredura ao final.
+- **Física visual, não decisória:** o motor `rapier` desenha a bola, a rede e os ricochetes; quem decide gol, falta e resultado continua sendo a simulação da partida (`src/game/sim.ts`). Nenhum resultado muda.
+- **Texto 3D** via `troika-three-text` substitui os `CanvasTexture` refeitos por quadro no placar e nas camisas — nítido de perto, leve de longe.
+- **Carteira:** novas funções de servidor em `src/lib/wallet.functions.ts` com autenticação obrigatória; migração deixando `public.user_wallet` com `SELECT` para o usuário e escrita só pelo servidor; `src/lib/wallet.ts` passa a chamar essas funções.
+- **Chat:** validação com `zod`, limite de tamanho na coluna e `display_name` derivado do usuário autenticado.
+- **Buscas:** remover o `og:type` global de `src/routes/__root.tsx`; fluxo de verificação META do Search Console; `src/routes/sitemap[.]xml.ts` revisado com as páginas novas.
+- **Sem quebra de qualidade:** todo efeito novo verifica o nível (alta/média/baixa) antes de existir; a queda automática de qualidade já existente continua valendo.
