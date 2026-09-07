@@ -221,11 +221,22 @@ function PitchMarks({ sim }: { sim: MatchSim }) {
   );
 }
 
-function Pitch({ quality, sim, wet }: { quality: Quality; sim: MatchSim; wet: number }) {
-  const tex = useMemo(grassAlbedo, []);
-  const rough = useMemo(grassRoughness, []);
-  const norm = useMemo(() => (quality === "baixa" ? null : grassNormal()), [quality]);
+function Pitch({
+  quality,
+  sim,
+  wet,
+  mow,
+}: {
+  quality: Quality;
+  sim: MatchSim;
+  wet: number;
+  mow: MowPattern;
+}) {
+  const tex = useMemo(() => grassAlbedo(mow), [mow]);
+  const rough = useMemo(() => grassRoughness(mow), [mow]);
+  const norm = useMemo(() => (quality === "baixa" ? null : grassNormal(mow)), [quality, mow]);
   const wear = useMemo(() => (quality === "baixa" ? null : pitchWearTexture()), [quality]);
+
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
