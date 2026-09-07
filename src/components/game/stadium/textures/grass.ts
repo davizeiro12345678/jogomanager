@@ -73,7 +73,9 @@ function canvas(size: number) {
 
 /* -------------------------------------------------------------------- cor */
 
-function buildAlbedo(size = 2048) {
+function buildAlbedo(pattern: MowPattern = "checker", size = 2048) {
+  const spec = MOW[pattern];
+
   const made = canvas(size);
   if (!made) return null;
   const { c, ctx } = made;
