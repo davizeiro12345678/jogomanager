@@ -106,6 +106,58 @@ function buildAlbedo(size = 2048) {
     }
   });
 
+  // anéis radiais de corte em volta do círculo central (caracol do cortador)
+  ctx.save();
+  ctx.translate(size / 2, size / 2);
+  for (let r = size * 0.04, band = 0; r < size * 0.46; r += size * 0.017, band++) {
+    const light = band % 2 === 0;
+    ctx.strokeStyle = light ? "rgba(224,255,210,0.05)" : "rgba(0,26,10,0.06)";
+    ctx.lineWidth = size * 0.017;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // xadrez sutil: segunda passagem do cortador cruzando as faixas
+  ctx.save();
+  ctx.translate(size / 2, size / 2);
+  ctx.rotate(STRIPE_ANGLE + Math.PI / 2);
+  ctx.translate(-size, -size);
+  const cellW = (size * 2) / STRIPES;
+  for (let i = 0; i < STRIPES; i += 2) {
+    ctx.fillStyle = i % 4 === 0 ? "rgba(230,255,220,0.028)" : "rgba(0,22,9,0.032)";
+    ctx.fillRect(i * cellW, 0, cellW, size * 2);
+  }
+  ctx.restore();
+
+  // manchas grandes de solo/irrigação guiadas por ruído simplex (orgânicas)
+  {
+    const img = ctx.getImageData(0, 0, size, size);
+    const px = img.data;
+    const step = 2; // amostra grossa: interpolação visual suficiente
+    for (let y = 0; y < size; y += step) {
+      for (let x = 0; x < size; x += step) {
+        const n = noise2D(x / (size * 0.16), y / (size * 0.16));
+        if (n < 0.34) continue; // só os topos do ruído viram mancha
+        const a = Math.min(0.16, (n - 0.34) * 0.35);
+        const warm = noise2D(x / (size * 0.4) + 9, y / (size * 0.4) + 9) > 0;
+        const rC = warm ? 150 : 10;
+        const gC = warm ? 132 : 52;
+        const bC = warm ? 84 : 26;
+        for (let dy = 0; dy < step; dy++) {
+          for (let dx = 0; dx < step; dx++) {
+            const i = ((y + dy) * size + (x + dx)) * 4;
+            px[i] = px[i]! * (1 - a) + rC * a;
+            px[i + 1] = px[i + 1]! * (1 - a) + gC * a;
+            px[i + 2] = px[i + 2]! * (1 - a) + bC * a;
+          }
+        }
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
   // microfibras: granulação vista de perto
   ctx.lineWidth = 1;
   for (let i = 0; i < 60000; i++) {
