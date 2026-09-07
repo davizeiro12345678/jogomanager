@@ -104,7 +104,7 @@ function buildAlbedo(pattern: MowPattern = "checker", size = 2048) {
   }
 
   // faixas de corte com borda irregular
-  withStripes(ctx, size, (i, x, w) => {
+  withStripes(ctx, size, spec, (i, x, w) => {
     const light = i % 2 === 0;
     const a = light ? "rgba(226,255,214," : "rgba(0,24,10,";
     const grad = ctx.createLinearGradient(x, 0, x + w, 0);
@@ -123,29 +123,39 @@ function buildAlbedo(pattern: MowPattern = "checker", size = 2048) {
   });
 
   // anéis radiais de corte em volta do círculo central (caracol do cortador)
-  ctx.save();
-  ctx.translate(size / 2, size / 2);
-  for (let r = size * 0.04, band = 0; r < size * 0.46; r += size * 0.017, band++) {
-    const light = band % 2 === 0;
-    ctx.strokeStyle = light ? "rgba(224,255,210,0.05)" : "rgba(0,26,10,0.06)";
-    ctx.lineWidth = size * 0.017;
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.stroke();
+  if (spec.rings) {
+    ctx.save();
+    ctx.translate(size / 2, size / 2);
+    for (let r = size * 0.04, band = 0; r < size * 0.46; r += size * 0.017, band++) {
+      const light = band % 2 === 0;
+      ctx.strokeStyle = light ? "rgba(224,255,210,0.07)" : "rgba(0,26,10,0.08)";
+      ctx.lineWidth = size * 0.017;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
-  ctx.restore();
 
-  // xadrez sutil: segunda passagem do cortador cruzando as faixas
-  ctx.save();
-  ctx.translate(size / 2, size / 2);
-  ctx.rotate(STRIPE_ANGLE + Math.PI / 2);
-  ctx.translate(-size, -size);
-  const cellW = (size * 2) / STRIPES;
-  for (let i = 0; i < STRIPES; i += 2) {
-    ctx.fillStyle = i % 4 === 0 ? "rgba(230,255,220,0.028)" : "rgba(0,22,9,0.032)";
-    ctx.fillRect(i * cellW, 0, cellW, size * 2);
+  // xadrez: segunda passagem do cortador cruzando as faixas
+  if (spec.cross) {
+    ctx.save();
+    ctx.translate(size / 2, size / 2);
+    ctx.rotate(spec.angle + Math.PI / 2);
+    ctx.translate(-size, -size);
+    const cellW = (size * 2) / spec.count;
+    const strong = pattern === "checker" ? 2.6 : 1;
+    for (let i = 0; i < spec.count; i += 2) {
+      ctx.fillStyle =
+        i % 4 === 0
+          ? `rgba(230,255,220,${0.028 * strong})`
+          : `rgba(0,22,9,${0.032 * strong})`;
+      ctx.fillRect(i * cellW, 0, cellW, size * 2);
+    }
+    ctx.restore();
   }
-  ctx.restore();
+
+
 
   // manchas grandes de solo/irrigação guiadas por ruído simplex (orgânicas)
   {
