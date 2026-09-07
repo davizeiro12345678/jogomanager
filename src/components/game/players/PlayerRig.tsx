@@ -13,9 +13,12 @@
 // ============================================================================
 
 import { useFrame } from "@react-three/fiber";
+import { Text } from "@react-three/drei";
 import type React from "react";
-import { useMemo, useRef } from "react";
+import { Suspense, useMemo, useRef } from "react";
 import * as THREE from "three";
+
+import { DISPLAY_FONT } from "@/components/game/fonts";
 
 import {
   emptyPose,
@@ -763,6 +766,39 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
               <torusGeometry args={[P.neckR * 1.5, P.neckR * 0.28, 6, 14]} />
               {trimMat}
             </mesh>
+
+            {/* nome + número 3D nítidos nas costas (só na qualidade alta) */}
+            {hi ? (
+              <Suspense fallback={null}>
+                <Text
+                  font={DISPLAY_FONT}
+                  position={[0, P.chestLen * 0.74, -(P.chestD + 0.02)]}
+                  rotation={[0, Math.PI, 0]}
+                  fontSize={0.1}
+                  letterSpacing={0.06}
+                  color={jerseyInk}
+                  anchorX="center"
+                  anchorY="middle"
+                  outlineWidth={0.008}
+                  outlineColor={jerseyInkOutline}
+                >
+                  {surname}
+                </Text>
+                <Text
+                  font={DISPLAY_FONT}
+                  position={[0, P.chestLen * 0.36, -(P.chestD + 0.02)]}
+                  rotation={[0, Math.PI, 0]}
+                  fontSize={0.24}
+                  color={jerseyInk}
+                  anchorX="center"
+                  anchorY="middle"
+                  outlineWidth={0.01}
+                  outlineColor={jerseyInkOutline}
+                >
+                  {String(player.number)}
+                </Text>
+              </Suspense>
+            ) : null}
 
             {/* pescoço + cabeça */}
             <group ref={neck} position={[0, P.chestLen * 1.0, 0]}>
