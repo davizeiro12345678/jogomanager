@@ -47,6 +47,7 @@ import { Route as NewsRouteImport } from './routes/news'
 import { Route as PartidaRapidaRouteImport } from './routes/partida-rapida'
 import { Route as PerguntasFrequentesRouteImport } from './routes/perguntas-frequentes'
 import { Route as ProdutosRouteImport } from './routes/produtos'
+import { Route as ReplaysRouteImport } from './routes/replays'
 import { Route as ScoutingRouteImport } from './routes/scouting'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SoccerManagerOnlineRouteImport } from './routes/soccer-manager-online'
@@ -257,6 +258,11 @@ const ProdutosRoute = ProdutosRouteImport.update({
   path: '/produtos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReplaysRoute = ReplaysRouteImport.update({
+  id: '/replays',
+  path: '/replays',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScoutingRoute = ScoutingRouteImport.update({
   id: '/scouting',
   path: '/scouting',
@@ -395,6 +401,7 @@ export interface FileRoutesByFullPath {
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/produtos': typeof ProdutosRoute
+  '/replays': typeof ReplaysRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/soccer-manager-online': typeof SoccerManagerOnlineRoute
@@ -454,6 +461,7 @@ export interface FileRoutesByTo {
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/produtos': typeof ProdutosRoute
+  '/replays': typeof ReplaysRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/soccer-manager-online': typeof SoccerManagerOnlineRoute
@@ -514,6 +522,7 @@ export interface FileRoutesById {
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/produtos': typeof ProdutosRoute
+  '/replays': typeof ReplaysRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/soccer-manager-online': typeof SoccerManagerOnlineRoute
@@ -575,6 +584,7 @@ export interface FileRouteTypes {
     | '/partida-rapida'
     | '/perguntas-frequentes'
     | '/produtos'
+    | '/replays'
     | '/scouting'
     | '/sitemap.xml'
     | '/soccer-manager-online'
@@ -634,6 +644,7 @@ export interface FileRouteTypes {
     | '/partida-rapida'
     | '/perguntas-frequentes'
     | '/produtos'
+    | '/replays'
     | '/scouting'
     | '/sitemap.xml'
     | '/soccer-manager-online'
@@ -693,6 +704,7 @@ export interface FileRouteTypes {
     | '/partida-rapida'
     | '/perguntas-frequentes'
     | '/produtos'
+    | '/replays'
     | '/scouting'
     | '/sitemap.xml'
     | '/soccer-manager-online'
@@ -753,6 +765,7 @@ export interface RootRouteChildren {
   PartidaRapidaRoute: typeof PartidaRapidaRoute
   PerguntasFrequentesRoute: typeof PerguntasFrequentesRoute
   ProdutosRoute: typeof ProdutosRoute
+  ReplaysRoute: typeof ReplaysRoute
   ScoutingRoute: typeof ScoutingRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SoccerManagerOnlineRoute: typeof SoccerManagerOnlineRoute
@@ -1042,6 +1055,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/replays': {
+      id: '/replays'
+      path: '/replays'
+      fullPath: '/replays'
+      preLoaderRoute: typeof ReplaysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/scouting': {
       id: '/scouting'
       path: '/scouting'
@@ -1217,6 +1237,7 @@ const rootRouteChildren: RootRouteChildren = {
   PartidaRapidaRoute: PartidaRapidaRoute,
   PerguntasFrequentesRoute: PerguntasFrequentesRoute,
   ProdutosRoute: ProdutosRoute,
+  ReplaysRoute: ReplaysRoute,
   ScoutingRoute: ScoutingRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SoccerManagerOnlineRoute: SoccerManagerOnlineRoute,

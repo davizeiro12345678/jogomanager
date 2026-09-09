@@ -36,7 +36,7 @@ import { StadiumProps } from "@/components/game/stadium/Props";
 
 import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
-import { FIELD_X, FIELD_Z, type MatchSim, type SimPlayer } from "@/game/sim";
+import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
 import { matchLook, type TimeOfDay } from "@/game/matchday";
 
 
@@ -100,7 +100,7 @@ function useBladeMaterial(color: string) {
   return { mat, uniforms: uniforms.current };
 }
 
-function GrassField({ sim, quality }: { sim: MatchSim; quality: Quality }) {
+function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
   const short = quality === "alta" ? 12000 : 5000;
   const tall = quality === "alta" ? 3600 : 1400;
   const shortRef = useRef<THREE.InstancedMesh>(null);
@@ -167,7 +167,7 @@ function GrassField({ sim, quality }: { sim: MatchSim; quality: Quality }) {
  * Marcas de pisada e rastro de deslize: um pool de manchas escuras deixadas
  * pela bola e pelos jogadores, que desbotam com o tempo.
  */
-function PitchMarks({ sim }: { sim: MatchSim }) {
+function PitchMarks({ sim }: { sim: SimView }) {
   const COUNT = 90;
   const ref = useRef<THREE.InstancedMesh>(null);
   const slots = useRef(
@@ -227,7 +227,7 @@ function Pitch({
   mow,
 }: {
   quality: Quality;
-  sim: MatchSim;
+  sim: SimView;
   wet: number;
   mow: MowPattern;
 }) {
@@ -511,7 +511,7 @@ function NetCloth({
   quality,
 }: {
   side: number;
-  sim: MatchSim;
+  sim: SimView;
   material: THREE.Material;
   quality: Quality;
 }) {
@@ -594,7 +594,7 @@ function NetCloth({
   );
 }
 
-function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: MatchSim }) {
+function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: SimView }) {
   const x = side * FIELD_X;
   const backMat = useNetMaterial(14, 5);
   const sideMat = useNetMaterial(4, 5);
@@ -747,7 +747,7 @@ function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: stri
  * canvas refeita a cada mudança: placar, relógio e selo de REPLAY ficam
  * legíveis de qualquer distância e custam quase nada para atualizar.
  */
-function Scoreboard({ sim, replay }: { sim: MatchSim; replay: boolean }) {
+function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
   const [label, setLabel] = useState("");
   const [clockText, setClockText] = useState("0'");
   useFrame(() => {
@@ -1675,7 +1675,7 @@ function Ball({
   hiVis = false,
   wet = 0,
 }: {
-  sim: MatchSim;
+  sim: SimView;
   quality: Quality;
   hiVis?: boolean;
   wet?: number;
@@ -1743,7 +1743,7 @@ function Rig({
   mode,
   goalPulse,
 }: {
-  sim: MatchSim;
+  sim: SimView;
   mode: CameraMode;
   goalPulse: React.MutableRefObject<number>;
 }) {
@@ -1955,7 +1955,7 @@ function Official({
   role,
   quality,
 }: {
-  sim: MatchSim;
+  sim: SimView;
   role: "ref" | "ar1" | "ar2";
   quality: Quality;
 }) {
@@ -2024,7 +2024,7 @@ function Official({
   );
 }
 
-function Officials({ sim, quality }: { sim: MatchSim; quality: Quality }) {
+function Officials({ sim, quality }: { sim: SimView; quality: Quality }) {
   return (
     <group>
       <Official sim={sim} role="ref" quality={quality} />
@@ -2040,7 +2040,7 @@ function Scene({
   quality,
   look,
 }: {
-  sim: MatchSim;
+  sim: SimView;
   mode: CameraMode;
   quality: Quality;
   look: ReturnType<typeof matchLook>;
@@ -2198,7 +2198,7 @@ function Stadium3DImpl({
   mode,
   quality,
 }: {
-  sim: MatchSim;
+  sim: SimView;
   mode: CameraMode;
   quality: Quality;
 }) {

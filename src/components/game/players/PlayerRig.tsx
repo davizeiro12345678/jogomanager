@@ -38,7 +38,7 @@ import {
   skinShadow,
   type LodLevel,
 } from "@/game/player-model";
-import { type MatchSim, type SimPlayer } from "@/game/sim";
+import { type SimView, type SimPlayer } from "@/game/sim";
 
 /** duração da transição cruzada entre dois movimentos, em segundos */
 const BLEND_TIME = 0.18;
@@ -50,7 +50,7 @@ export type Quality = "alta" | "media" | "baixa";
 
 interface RigProps {
   player: SimPlayer;
-  sim: MatchSim;
+  sim: SimView;
   kit: Kit;
   goalPulse: React.MutableRefObject<number>;
   quality: Quality;

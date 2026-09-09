@@ -21,6 +21,7 @@ import { MatchReport } from "@/components/game/MatchReport";
 import { CLUBS } from "@/game/data/leagues";
 import { MENTALITIES, PRESSING } from "@/game/formations";
 import { MatchSim, type TeamSetup } from "@/game/sim";
+import { ReplayRecorder, saveReplay } from "@/game/replay";
 import { Narrator, type NarrationEvent } from "@/game/narrator";
 import { advanceRoundAsync } from "@/game/simWorkerClient";
 import { achievementById } from "@/game/achievements";
@@ -339,6 +340,20 @@ function LiveMatch({
 
   // Laço de simulação desacoplado do React: o HUD só atualiza ~10x por segundo,
   // então a árvore 3D (memoizada) nunca é reconciliada por quadro.
+  const recorderRef = useRef<ReplayRecorder | null>(null);
+  const savedRef = useRef(false);
+  useEffect(() => {
+    recorderRef.current = new ReplayRecorder(sim);
+    savedRef.current = false;
+  }, [sim]);
+
+  const storeReplay = useCallback(() => {
+    const rec = recorderRef.current;
+    if (!rec || savedRef.current) return;
+    savedRef.current = true;
+    void saveReplay(rec.build(`${sim.home.short} ${sim.stats.home.goals}-${sim.stats.away.goals} ${sim.away.short}`));
+  }, [sim]);
+
   useEffect(() => {
     let raf = 0;
     let last = 0;
@@ -357,12 +372,14 @@ function LiveMatch({
       if (pausedRef.current || hidden) return;
       const steps = Math.max(1, Math.round(speedRef.current));
       for (let i = 0; i < steps; i++) sim.step(dt * 6);
+      recorderRef.current?.sample();
       acc += dt;
       if (acc >= 0.1 || sim.finished) {
         acc = 0;
         setSnap(snapshot(sim));
       }
       if (sim.finished) {
+        storeReplay();
         setDone(true);
         cancelAnimationFrame(raf);
       }
@@ -372,13 +389,18 @@ function LiveMatch({
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [sim]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sim, storeReplay]);
 
   const skip = useCallback(() => {
-    while (!sim.finished) sim.step(0.4);
+    while (!sim.finished) {
+      sim.step(0.4);
+      recorderRef.current?.sample();
+    }
+    storeReplay();
     setSnap(snapshot(sim));
     setDone(true);
-  }, [sim]);
+  }, [sim, storeReplay]);
 
   // Atalhos de teclado
   useEffect(() => {

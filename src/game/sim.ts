@@ -94,6 +94,21 @@ export interface Scorer {
   name: string;
 }
 
+/**
+ * Superfície de leitura usada pela cena 3D. Tanto a partida ao vivo
+ * (`MatchSim`) quanto a repetição gravada (`ReplaySim`) a implementam.
+ */
+export interface SimView {
+  time: number;
+  players: SimPlayer[];
+  ball: { x: number; z: number; vx: number; vz: number; holder: string | null; height: number };
+  possession: Side;
+  stats: Record<Side, MatchStats>;
+  home: TeamSetup;
+  away: TeamSetup;
+  minute(): number;
+}
+
 export class MatchSim {
   time = 0; // segundos de jogo
   players: SimPlayer[] = [];
