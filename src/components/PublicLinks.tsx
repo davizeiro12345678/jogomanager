@@ -17,7 +17,9 @@ export const PUBLIC_PAGES = [
   { to: "/jogar-offline", label: "Como jogar offline" },
   { to: "/comparativo-jogos-manager", label: "Comparativo de jogos" },
   { to: "/perguntas-frequentes", label: "Perguntas frequentes" },
+  { to: "/produtos", label: "Pacotes e passe de temporada" },
   { to: "/criador", label: "Sobre o criador" },
+
 ] as const;
 
 export function PublicLinks({ exclude }: { exclude?: string }) {

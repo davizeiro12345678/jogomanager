@@ -32,7 +32,9 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/comparativo-jogos-manager", changefreq: "monthly", priority: "0.7" },
           { path: "/multiplayer", changefreq: "weekly", priority: "0.6" },
           { path: "/perguntas-frequentes", changefreq: "monthly", priority: "0.7" },
+          { path: "/produtos", changefreq: "monthly", priority: "0.7" },
           { path: "/criador", changefreq: "monthly", priority: "0.5" },
+
         ];
 
         const lastmod = new Date().toISOString().slice(0, 10);
