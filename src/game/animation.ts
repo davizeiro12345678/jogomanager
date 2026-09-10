@@ -758,16 +758,19 @@ const BASE_CLIPS = {
       elbowR: -1.4,
       hipRoll: sin(c.t * 2.2) * 0.08,
     }),
-};
+} satisfies Record<string, Clip>;
+
+/** catálogo completo: clipes base + os 89 clipes extras */
+const CLIPS = { ...BASE_CLIPS, ...EXTRA_CLIPS };
 
 export type ClipName = keyof typeof CLIPS;
 
 export const CLIP_NAMES = Object.keys(CLIPS) as ClipName[];
-/** número total de animações disponíveis (59) */
+/** número total de animações disponíveis */
 export const CLIP_COUNT = CLIP_NAMES.length;
 
 export function getClip(name: ClipName): Clip {
-  return CLIPS[name] ?? CLIPS['idle']!;
+  return (CLIPS as Record<string, Clip>)[name] ?? CLIPS.idle;
 }
 
 // ------------------------------------------------------ máquina de estados
