@@ -53,3 +53,7 @@
 - [x] Loja: ligar o pagamento real por cartão (Stripe em configuração)
 - [x] 89 novas animações procedurais (animation-extra.ts) + variedade no seletor de clipes
 - [ ] Salto seguinte: geometria dos jogadores, texturas, cutscenes, página inicial e painéis
+
+## Conectores
+- [x] ElevenLabs — narração com voz realista na partida (fallback para a voz do navegador)
+- [ ] Logo.dev, Firecrawl, PostHog, Resend (avaliar valor real antes de ligar)
