@@ -5,6 +5,7 @@
 // `animation-extra.ts`; aqui ficam os clipes base e a máquina de estados.
 
 import { EXTRA_CLIPS } from "./animation-extra";
+import { EXTRA2_CLIPS } from "./animation-extra2";
 import {
   JOINTS,
   emptyPose,
@@ -760,8 +761,8 @@ const BASE_CLIPS = {
     }),
 } satisfies Record<string, Clip>;
 
-/** catálogo completo: clipes base + os 89 clipes extras */
-const CLIPS = { ...BASE_CLIPS, ...EXTRA_CLIPS };
+/** catálogo completo: clipes base + dois pacotes de 89 clipes extras */
+const CLIPS = { ...BASE_CLIPS, ...EXTRA_CLIPS, ...EXTRA2_CLIPS };
 
 export type ClipName = keyof typeof CLIPS;
 
@@ -888,46 +889,70 @@ export function selectClip(c: SelectCtx): ClipName {
 
   if (c.isGK) {
     if (c.speed > 5) return "gkSweeper";
-    if (c.speed > 1.6) return "gkShuffle";
-    if (c.ballDist < 14) return "gkPenaltyReady";
-    if (c.ballDist > 55) return pick<ClipName>(["gkStance", "gkWallSetup", "handsOnHips"], c, 6);
-    return "gkStance";
+    if (c.speed > 1.6) return pick<ClipName>(["gkShuffle", "gkSideShuffle"], c, 2);
+    if (c.ballDist < 14) return pick<ClipName>(["gkPenaltyReady", "gkStance"], c, 4);
+    if (c.ballDist > 55)
+      return pick<ClipName>(["gkStance", "gkWallSetup", "gkOrganize", "gkBounceBall", "handsOnHips"], c, 6);
+    return pick<ClipName>(["gkStance", "gkOrganize"], c, 5);
   }
 
   if (c.stopped)
-    return pick<ClipName>(["whistleStop", "restart", "lineUpPose", "freeKickWall", "handsOnHips"], c, 3);
+    return pick<ClipName>(
+      ["whistleStop", "restart", "lineUpPose", "freeKickWall", "handsOnHips", "huddleTalk", "drinkWater", "adjustSocks"],
+      c,
+      3,
+    );
 
   const sp = c.speed;
   if (c.hasBall) {
     if (sp > 7.2) return "knockOn";
-    if (sp > 5.4) return pick<ClipName>(["dribbleFast", "dribbleSlalom", "oneTwoRun"], c, 2);
-    if (sp > 2.4) return pick<ClipName>(["dribbleLight", "closeControl", "dribbleSlalom"], c, 2);
-    if (sp > 1.2) return pick<ClipName>(["closeControl", "shieldBall"], c, 2);
+    if (sp > 5.4) return pick<ClipName>(["dribbleFast", "dribbleSlalom", "oneTwoRun", "crossoverDribble"], c, 2);
+    if (sp > 2.4)
+      return pick<ClipName>(["dribbleLight", "closeControl", "dribbleSlalom", "dragPush", "crossoverDribble"], c, 2);
+    if (sp > 1.2) return pick<ClipName>(["closeControl", "shieldBall", "ballRollSole", "shieldTurnOut"], c, 2);
     return pick<ClipName>(
-      ["feint", "stepover", "scissorsDouble", "dragBack", "cruyffTurn", "heelFlick", "rouletteSpin"],
+      [
+        "feint", "stepover", "scissorsDouble", "dragBack", "cruyffTurn", "heelFlick", "rouletteSpin",
+        "elasticoOut", "elasticoIn", "stepOverSlow", "bodyFeintLeft", "bodyFeintRight", "flipFlap",
+        "fakeShotStop", "scoopLift", "firstTouchAway", "juggleKeepUp",
+      ],
       c,
       2,
     );
   }
 
   if (sp < 0.35) {
-    if (c.defending && c.ballDist < 18) return pick<ClipName>(["mark", "markTight", "jockey"], c, 3);
-    if (c.stamina < 30) return pick<ClipName>(["catchBreathKnees", "handsOnHips", "tired"], c, 3);
+    if (c.defending && c.ballDist < 18)
+      return pick<ClipName>(["mark", "markTight", "jockey", "shoulderToShoulder", "armBarHold"], c, 3);
+    if (c.stamina < 30)
+      return pick<ClipName>(["catchBreathKnees", "handsOnHips", "tired", "missSighs"], c, 3);
     return pick<ClipName>(
-      ["idle", "breathe", "weightShift", "handsOnHips", "applaudFans", "handsOnHead"],
+      [
+        "idle", "breathe", "weightShift", "handsOnHips", "applaudFans", "handsOnHead",
+        "encourageTeammate", "protestHandsOut", "warmUpStretch",
+      ],
       c,
     );
   }
   if (sp < 1.2) {
     if (c.defending && c.ballDist < 12)
-      return pick<ClipName>(["sideStep", "shuffleLeft", "shuffleRight", "jockey"], c, 2);
-    return pick<ClipName>(["walk", "stroll"], c, 5);
+      return pick<ClipName>(["sideStep", "shuffleLeft", "shuffleRight", "jockey", "sideGallopL", "sideGallopR"], c, 2);
+    if (c.stamina < 28) return "exhaustedWalk";
+    return pick<ClipName>(["walk", "stroll", "walkTalk"], c, 5);
   }
-  if (sp < 2.6) return c.stamina < 45 ? "tired" : pick<ClipName>(["walk", "stroll", "joggingBack"], c, 4);
-  if (sp < 4.2) return c.stamina < 40 ? "tired" : pick<ClipName>(["jog", "joggingBack"], c, 4);
+  if (sp < 2.6)
+    return c.stamina < 45 ? pick<ClipName>(["tired", "exhaustedWalk"], c, 4) : pick<ClipName>(["walk", "stroll", "joggingBack", "skipStep"], c, 4);
+  if (sp < 4.2)
+    return c.stamina < 40
+      ? pick<ClipName>(["tired", "runTired"], c, 4)
+      : pick<ClipName>(["jog", "joggingBack", "runRelaxed", "checkShoulder"], c, 4);
   if (sp < 6.2)
     return c.defending
-      ? pick<ClipName>(["recover", "pressTrigger"], c, 3)
-      : pick<ClipName>(["run", "curveRunLeft", "curveRunRight", "dummyRun"], c, 3);
-  return c.defending ? "recoverySprint" : pick<ClipName>(["sprint", "curveRunLeft", "curveRunRight"], c, 3);
+      ? pick<ClipName>(["recover", "pressTrigger", "backpedalFast", "leanIntoTurnL", "leanIntoTurnR"], c, 3)
+      : c.stamina < 35
+        ? pick<ClipName>(["runTired", "runHeavy"], c, 3)
+        : pick<ClipName>(["run", "curveRunLeft", "curveRunRight", "dummyRun", "runHeavy", "accelBurst"], c, 3);
+  return c.defending
+    ? pick<ClipName>(["recoverySprint", "sprintFlatOut"], c, 3)
+    : pick<ClipName>(["sprint", "curveRunLeft", "curveRunRight", "sprintFlatOut", "sprintEasing"], c, 3);
 }
