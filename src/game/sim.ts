@@ -555,7 +555,7 @@ export class MatchSim {
   private drainStamina(dt: number) {
     for (const p of this.players) {
       const speed = Math.hypot(p.vx, p.vz);
-      const effort = 0.008 + (speed / 9) * 0.045 * (p.pos === "GK" ? 0.25 : 1);
+      const effort = 0.0015 + (speed / 9) * 0.008 * (p.pos === "GK" ? 0.25 : 1);
       const resist = 0.6 + (p.physical / 100) * 0.6;
       p.stamina = Math.max(12, p.stamina - (effort / resist) * dt);
     }
