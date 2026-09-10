@@ -204,7 +204,7 @@ function Landing() {
           </div>
         </section>
 
-        <nav className="mt-10 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <nav className="mt-10 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground sm:text-sm">
           <Link to="/guias" className="underline-offset-4 hover:text-foreground hover:underline">
             Guias para iniciantes
           </Link>
