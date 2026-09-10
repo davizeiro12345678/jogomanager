@@ -130,6 +130,7 @@ function RootComponent() {
   useEffect(() => {
     void import("../lib/customData").then((m) => m.applyCustomToWorld());
     void import("../lib/myClub").then((m) => m.applyMyClubToWorld());
+    void import("../lib/analytics").then((m) => m.initAnalytics());
   }, []);
 
 
