@@ -552,28 +552,34 @@ export type Database = {
         Row: {
           amount_cents: number
           created_at: string
+          error: string | null
           id: string
           product_key: string
           reference: string | null
           status: string
+          updated_at: string
           user_id: string
         }
         Insert: {
           amount_cents?: number
           created_at?: string
+          error?: string | null
           id?: string
           product_key: string
           reference?: string | null
           status?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
           amount_cents?: number
           created_at?: string
+          error?: string | null
           id?: string
           product_key?: string
           reference?: string | null
           status?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
