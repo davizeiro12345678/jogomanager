@@ -159,6 +159,10 @@ export class MatchSim {
   private restartTimer = 0;
   /** tempo com a bola solta, usado para destravar a jogada */
   private looseTime = 0;
+  /** último lado que tocou na bola — define lateral, escanteio e tiro de meta */
+  private lastTouch: Side = "home";
+
+
 
 
   constructor(
