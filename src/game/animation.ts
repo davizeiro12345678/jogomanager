@@ -81,7 +81,7 @@ function idleBase(c: ClipCtx, k = 1): Pose {
 
 // ---------------------------------------------------------------- clipes
 
-const CLIPS: Record<string, Clip> = {
+const BASE_CLIPS = {
   // ---- locomoção (12)
   idle: (c) => idleBase(c),
   breathe: (c) => mixPose(idleBase(c), pose({ chest: 0.1, spine: 0.1, headPitch: 0.06 }), 0.4 + sin(c.t * 1.2) * 0.3),
