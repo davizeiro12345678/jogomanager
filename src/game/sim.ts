@@ -842,7 +842,7 @@ export class MatchSim {
 
     // 1) decide o desfecho ANTES da trajetória, para que o visual corresponda ao evento
     const onTarget = this.rnd() < 0.34 + accuracy * 0.55;
-    const goalChance = Math.max(0.05, Math.min(0.45, accuracy * 0.55 - gkSkill / 300));
+    const goalChance = Math.max(0.06, Math.min(0.55, accuracy * 0.62 - gkSkill / 340));
     const outcome: "goal" | "saved" | "off" = !onTarget
       ? "off"
       : this.rnd() < goalChance
