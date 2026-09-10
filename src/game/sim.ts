@@ -979,8 +979,11 @@ export class MatchSim {
     if (!gk) return;
     this.ball.holder = gk.id;
     this.possession = side;
+    this.lastTouch = side;
     this.ball.vx = 0;
     this.ball.vz = 0;
+    this.ball.height = 0.12;
+    this.looseTime = 0;
     this.restartTimer = 1.5;
     this.decisionTimer = 1.2;
     this.trigger(gk, this.rnd() < 0.5 ? "goalKick" : "distribute", 1.1);
