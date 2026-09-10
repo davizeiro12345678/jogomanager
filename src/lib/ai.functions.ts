@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { AiError, callGemini } from "@/lib/ai.server";
 
 const BREVITY = "Responda sempre em português do Brasil, em prosa corrida, com no máximo ~120 palavras. Seja direto e objetivo.";
@@ -36,6 +37,7 @@ const diretorEsportivoSchema = z.object({
 });
 
 export const diretorEsportivo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: z.infer<typeof diretorEsportivoSchema>) => diretorEsportivoSchema.parse(input))
   .handler(async ({ data }) =>
     wrap(async () => {
@@ -65,6 +67,7 @@ const olheiroSchema = z.object({
 });
 
 export const olheiro = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: z.infer<typeof olheiroSchema>) => olheiroSchema.parse(input))
   .handler(async ({ data }) =>
     wrap(async () => {
@@ -89,6 +92,7 @@ const jornalistaSchema = z.object({
 });
 
 export const jornalista = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: z.infer<typeof jornalistaSchema>) => jornalistaSchema.parse(input))
   .handler(async ({ data }) =>
     wrap(async () => {
@@ -111,6 +115,7 @@ const assistenteTaticoSchema = z.object({
 });
 
 export const assistenteTatico = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: z.infer<typeof assistenteTaticoSchema>) => assistenteTaticoSchema.parse(input))
   .handler(async ({ data }) =>
     wrap(async () => {
@@ -135,6 +140,7 @@ const coletivaSchema = z.object({
 });
 
 export const coletiva = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: z.infer<typeof coletivaSchema>) => coletivaSchema.parse(input))
   .handler(async ({ data }) =>
     wrap(async () => {
@@ -159,6 +165,7 @@ const chatIASchema = z.object({
 });
 
 export const chatIA = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: z.infer<typeof chatIASchema>) => chatIASchema.parse(input))
   .handler(async ({ data }) =>
     wrap(async () => {

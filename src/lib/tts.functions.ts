@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
 /**
  * Narração com voz realista (ElevenLabs).
  *
@@ -26,6 +28,7 @@ export type NarrateResult =
   | { ok: false; reason: "unavailable" | "error" };
 
 export const narrateLine = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => NarrateInput.parse(input))
   .handler(async ({ data }): Promise<NarrateResult> => {
     const apiKey = process.env["ELEVENLABS_API_KEY"];
