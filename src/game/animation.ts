@@ -1,83 +1,28 @@
-// Sistema de animação procedural dos jogadores (59 clipes).
+// Sistema de animação procedural dos jogadores (148 clipes).
 // Cada clipe devolve ângulos por articulação; a malha 3D aplica com blend suave.
+//
+// Os tipos e utilidades vivem em `animation-core.ts` e os 89 clipes novos em
+// `animation-extra.ts`; aqui ficam os clipes base e a máquina de estados.
 
-export type JointName =
-  | "hipY"
-  | "hipPitch"
-  | "hipRoll"
-  | "hipYaw"
-  | "spine"
-  | "chest"
-  | "headPitch"
-  | "headYaw"
-  | "armLPitch"
-  | "armLRoll"
-  | "elbowL"
-  | "armRPitch"
-  | "armRRoll"
-  | "elbowR"
-  | "legLPitch"
-  | "legLRoll"
-  | "kneeL"
-  | "ankleL"
-  | "legRPitch"
-  | "legRRoll"
-  | "kneeR"
-  | "ankleR";
+import { EXTRA_CLIPS } from "./animation-extra";
+import {
+  JOINTS,
+  emptyPose,
+  mixPose,
+  type Clip,
+  type ClipCtx,
+  type JointName,
+  type Pose,
+} from "./animation-core";
 
-export type Pose = Record<JointName, number>;
-
-export const JOINTS: JointName[] = [
-  "hipY",
-  "hipPitch",
-  "hipRoll",
-  "hipYaw",
-  "spine",
-  "chest",
-  "headPitch",
-  "headYaw",
-  "armLPitch",
-  "armLRoll",
-  "elbowL",
-  "armRPitch",
-  "armRRoll",
-  "elbowR",
-  "legLPitch",
-  "legLRoll",
-  "kneeL",
-  "ankleL",
-  "legRPitch",
-  "legRRoll",
-  "kneeR",
-  "ankleR",
-];
-
-export function emptyPose(): Pose {
-  const p = {} as Pose;
-  for (const j of JOINTS) p[j] = 0;
-  return p;
-}
+export { JOINTS, emptyPose, mixPose };
+export type { Clip, ClipCtx, JointName, Pose };
 
 function pose(partial: Partial<Pose>): Pose {
   const p = emptyPose();
   Object.assign(p, partial);
   return p;
 }
-
-export interface ClipCtx {
-  /** tempo em segundos desde o início do clipe */
-  t: number;
-  /** progresso 0..1 quando o clipe é uma ação de duração fixa */
-  u: number;
-  /** velocidade do jogador em m/s */
-  speed: number;
-  /** 0..1 quanto o jogador está próximo do sprint */
-  stride: number;
-  /** variação individual determinística */
-  seed: number;
-}
-
-export type Clip = (c: ClipCtx) => Pose;
 
 const sin = Math.sin;
 const cos = Math.cos;
@@ -132,13 +77,6 @@ function idleBase(c: ClipCtx, k = 1): Pose {
     kneeL: -0.06,
     kneeR: -0.06,
   });
-}
-
-/** mistura duas poses */
-export function mixPose(a: Pose, b: Pose, k: number, out?: Pose): Pose {
-  const o = out ?? emptyPose();
-  for (const j of JOINTS) o[j] = a[j] + (b[j] - a[j]) * k;
-  return o;
 }
 
 // ---------------------------------------------------------------- clipes
