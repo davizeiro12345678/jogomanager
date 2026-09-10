@@ -4,8 +4,11 @@ import { CheckCircle, XCircle, Loader2, Coins } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { claimCheckoutSession } from "@/lib/checkout-claim.functions";
 import { getPurchases } from "@/lib/purchases.functions";
+import { getStripeEnvironment } from "@/lib/stripe";
 import { track } from "@/lib/analytics";
+
 
 export const Route = createFileRoute("/checkout/return")({
   ssr: false,
