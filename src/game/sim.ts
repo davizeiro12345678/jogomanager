@@ -771,6 +771,7 @@ export class MatchSim {
       }
       this.ball.holder = opp.id;
       this.possession = opp.side;
+      this.lastTouch = opp.side;
       this.decisionTimer = 0.4;
       this.trigger(opp, "intercept", 0.5);
     }
