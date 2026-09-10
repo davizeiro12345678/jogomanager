@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSignedIn } from "@/hooks/useCareer";
 import { containsProfanity, PROFANITY_BLOCKED_MESSAGE } from "@/lib/moderation";
+import { sendChatMessage } from "@/lib/chat.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -131,15 +132,15 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
       return;
     }
     setSending(true);
-    // Envio via função segura: o nome vem da conta (não do navegador) e há
-    // limite de tamanho e de mensagens por minuto no servidor.
-    const { error } = await supabase.rpc("send_chat_message", { message_body: body });
+    // Envio pelo servidor: a identidade vem do token verificado (não do
+    // navegador) e há limite de tamanho e de mensagens por minuto.
+    const result = await sendChatMessage({ data: { body } }).catch(() => null);
     setSending(false);
-    if (error) {
+    if (!result || !result.ok) {
       toast.error(
-        error.message.includes("rate_limited")
+        result && result.reason === "rate_limited"
           ? "Calma! Você está enviando mensagens rápido demais."
-          : error.message.includes("invalid_length")
+          : result && result.reason === "invalid_length"
             ? "A mensagem precisa ter entre 1 e 500 caracteres."
             : "Não foi possível enviar a mensagem.",
       );
