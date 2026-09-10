@@ -597,15 +597,27 @@ export class MatchSim {
     this.ball.vz *= 1 - 0.9 * dt;
     this.ball.height = Math.max(0.12, this.ball.height - dt * 1.2);
 
+    // lateral: sai pela linha lateral, reposição do time que não tocou por último
     if (Math.abs(this.ball.z) > FIELD_Z - 0.5) {
       this.ball.z = Math.sign(this.ball.z) * (FIELD_Z - 1);
-      this.ball.vz *= -0.2;
-      this.giveToNearest(this.possession === "home" ? "away" : "home");
+      this.ball.vz = 0;
+      this.ball.height = 0.12;
+      this.restartFor(this.lastTouch === "home" ? "away" : "home", "throwIn");
       return;
     }
+    // linha de fundo: escanteio se o último toque foi do time que defende aquele lado
     if (Math.abs(this.ball.x) > FIELD_X - 0.5) {
-      this.ball.x = Math.sign(this.ball.x) * (FIELD_X - 3);
-      this.giveToNearest(this.ball.x > 0 ? "away" : "home");
+      const endSide: Side = this.ball.x > 0 ? "away" : "home"; // dono daquela meta
+      this.ball.x = Math.sign(this.ball.x) * (FIELD_X - 0.6);
+      this.ball.height = 0.12;
+      if (this.lastTouch === endSide) {
+        // desviou na defesa → escanteio para o adversário
+        this.ball.z = Math.sign(this.ball.z || 1) * (FIELD_Z - 1);
+        this.restartFor(endSide === "home" ? "away" : "home", "corner");
+      } else {
+        this.ball.z = 0;
+        this.scheduleRestart(endSide);
+      }
       return;
     }
 
@@ -620,12 +632,17 @@ export class MatchSim {
       }
     }
     const ballSpeed = Math.hypot(this.ball.vx, this.ball.vz);
-    if (closest && bestD < 1.9 && ballSpeed < 26) {
-      this.trigger(closest, this.ball.height > 0.9 ? "header" : "trap", 0.5);
+    const h = this.ball.height;
+    // bola muito alta não pode ser dominada; entre 0.9 e 2.4 é cabeceio
+    const reachable = h <= 2.4;
+    if (closest && bestD < 1.9 && ballSpeed < 26 && reachable) {
+      this.trigger(closest, h > 0.9 ? "header" : "trap", 0.5);
       this.ball.holder = closest.id;
       this.possession = closest.side;
+      this.lastTouch = closest.side;
       this.ball.vx = 0;
       this.ball.vz = 0;
+      this.ball.height = 0.12;
       this.looseTime = 0;
       return;
     }
@@ -635,6 +652,8 @@ export class MatchSim {
       closest.z = this.ball.z;
       this.ball.holder = closest.id;
       this.possession = closest.side;
+      this.lastTouch = closest.side;
+      this.ball.height = 0.12;
       this.ball.vx = 0;
       this.ball.vz = 0;
       this.looseTime = 0;
@@ -642,39 +661,42 @@ export class MatchSim {
     }
   }
 
-
-  private giveToNearest(side: Side) {
+  /** entrega a bola parada ao jogador mais próximo do lado indicado */
+  private restartFor(side: Side, kind: "throwIn" | "corner") {
     let best: SimPlayer | null = null;
     let bestD = Infinity;
     for (const p of this.players) {
-      if (p.side !== side) continue;
+      if (p.side !== side || p.pos === "GK") continue;
       const d = Math.hypot(p.x - this.ball.x, p.z - this.ball.z);
       if (d < bestD) {
         bestD = d;
         best = p;
       }
     }
-    if (best) {
-      best.x = this.ball.x;
-      best.z = this.ball.z;
-      this.ball.holder = best.id;
-      this.possession = side;
-      this.ball.vx = 0;
-      this.ball.vz = 0;
-      this.restartTimer = 0.8;
-      const isCorner = Math.abs(this.ball.z) <= FIELD_Z - 2;
-      this.trigger(best, isCorner ? "corner" : "throwIn", 0.9);
-      if (isCorner) {
-        this.stats[side].corners++;
-        this.pushEvent({
-          minute: this.minute(),
-          type: "corner",
-          side,
-          text: `${this.minute()}' Escanteio para ${this.setup(side).short}.`,
-        });
-      }
+    if (!best) return;
+    best.x = this.ball.x;
+    best.z = this.ball.z;
+    best.vx = 0;
+    best.vz = 0;
+    this.ball.holder = best.id;
+    this.possession = side;
+    this.lastTouch = side;
+    this.ball.vx = 0;
+    this.ball.vz = 0;
+    this.looseTime = 0;
+    this.restartTimer = 0.8;
+    this.trigger(best, kind, 0.9);
+    if (kind === "corner") {
+      this.stats[side].corners++;
+      this.pushEvent({
+        minute: this.minute(),
+        type: "corner",
+        side,
+        text: `${this.minute()}' Escanteio para ${this.setup(side).short}.`,
+      });
     }
   }
+
 
   private dribble(holder: SimPlayer, dt: number) {
     if (this.restartTimer > 0) {
