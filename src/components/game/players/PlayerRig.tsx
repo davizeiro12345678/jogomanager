@@ -300,6 +300,18 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     if (ankleRRef.current) ankleRRef.current.rotation.x = c.ankleR;
 
 
+    // ---- piscada ocasional (só perto da câmera, onde o rosto aparece)
+    if (blinkRef.current && lod === 0) {
+      nextBlink.current -= adt;
+      const b = blinkRef.current;
+      if (nextBlink.current <= 0) {
+        b.scale.y = Math.min(1, b.scale.y + adt * 22);
+        if (b.scale.y >= 1) nextBlink.current = 2 + ((seed % 7) + Math.random() * 3);
+      } else {
+        b.scale.y = Math.max(0.001, b.scale.y - adt * 16);
+      }
+    }
+
     // ---- sombra de contato acompanha a altura do quadril
     if (shadowRef.current) {
       const s = 1 - c.hipY * 0.5;
