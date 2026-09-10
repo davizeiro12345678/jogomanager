@@ -825,6 +825,7 @@ export class MatchSim {
     if (err === 0) this.stats[holder.side].passesOk++;
     this.lastPass[holder.side] = { id: holder.id, time: this.time };
     this.ball.holder = null;
+    this.lastTouch = holder.side;
     this.ball.vx = (dx / d) * power + err * 0.2;
     this.ball.vz = (dz / d) * power + err;
     this.ball.height = dist > 22 ? 1.6 : 0.3;
@@ -837,7 +838,17 @@ export class MatchSim {
     holder.shots++;
     const gk = this.players.find((p) => p.side !== side && p.pos === "GK");
     const accuracy = (holder.shooting / 100) * (1 - Math.min(0.75, distGoal / 40));
+    const gkSkill = gk ? gk.defending * 0.7 + gk.physical * 0.3 : 60;
+
+    // 1) decide o desfecho ANTES da trajetória, para que o visual corresponda ao evento
     const onTarget = this.rnd() < 0.34 + accuracy * 0.55;
+    const goalChance = Math.max(0.05, Math.min(0.45, accuracy * 0.55 - gkSkill / 300));
+    const outcome: "goal" | "saved" | "off" = !onTarget
+      ? "off"
+      : this.rnd() < goalChance
+        ? "goal"
+        : "saved";
+
     const roll = this.rnd();
     this.trigger(
       holder,
@@ -855,6 +866,7 @@ export class MatchSim {
       0.8,
     );
     this.ball.holder = null;
+    this.lastTouch = side;
     // reação ao chute: adversários próximos congelam por uma fração de segundo
     for (const p of this.players) {
       if (p.side === side || p.pos === "GK") continue;
@@ -862,15 +874,23 @@ export class MatchSim {
         this.reactionUntil.set(p.id, this.time + 0.45 + this.rnd() * 0.2);
       }
     }
-    const targetZ = (this.rnd() - 0.5) * (onTarget ? GOAL_Z * 1.4 : GOAL_Z * 4.5);
+
+    // 2) trajetória coerente: no alvo entra entre as traves; fora passa por fora/por cima
+    const inside = (this.rnd() - 0.5) * GOAL_Z * 1.55; // dentro das traves
+    const outsideZ =
+      Math.sign(this.rnd() - 0.5 || 1) * (GOAL_Z + 1.2 + this.rnd() * GOAL_Z * 1.6);
+    const targetZ = outcome === "off" ? outsideZ : inside;
     const dx = dir * FIELD_X - holder.x;
     const dz = targetZ - holder.z;
     const d = Math.hypot(dx, dz) || 1;
-    this.ball.vx = (dx / d) * 34;
-    this.ball.vz = (dz / d) * 34;
-    this.ball.height = 0.8;
+    const power = 30 + this.rnd() * 8;
+    this.ball.vx = (dx / d) * power;
+    this.ball.vz = (dz / d) * power;
+    // altura: no alvo sempre abaixo do travessão (2.44 m); fora pode ir por cima
+    this.ball.height =
+      outcome === "off" && this.rnd() < 0.45 ? 2.9 + this.rnd() * 1.6 : 0.4 + this.rnd() * 1.5;
 
-    if (!onTarget) {
+    if (outcome === "off") {
       this.shotMap.push({
         x: holder.x,
         z: holder.z,
@@ -890,9 +910,7 @@ export class MatchSim {
     }
 
     this.stats[side].onTarget++;
-    const gkSkill = gk ? gk.defending * 0.7 + gk.physical * 0.3 : 60;
-    const goalChance = Math.max(0.05, Math.min(0.45, accuracy * 0.55 - gkSkill / 300));
-    if (this.rnd() < goalChance) {
+    if (outcome === "goal") {
       this.stats[side].goals++;
       holder.goals++;
       const assist = this.lastPass[side];
@@ -954,6 +972,7 @@ export class MatchSim {
       this.scheduleRestart(side === "home" ? "away" : "home");
     }
   }
+
 
   private scheduleRestart(side: Side) {
     const gk = this.players.find((p) => p.side === side && p.pos === "GK");
