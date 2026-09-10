@@ -20,8 +20,10 @@ export interface ProductEffect {
 }
 
 const EFFECTS: Record<string, ProductEffect> = {
+  coins_starter: { coins: 200, scoutReports: 0, trainingBoosts: 0, themes: [] },
   coins_small: { coins: 500, scoutReports: 0, trainingBoosts: 0, themes: [] },
   coins_medium: { coins: 1500, scoutReports: 0, trainingBoosts: 0, themes: [] },
+  coins_large: { coins: 4000, scoutReports: 0, trainingBoosts: 0, themes: [] },
   scout_pack: { coins: 0, scoutReports: 10, trainingBoosts: 0, themes: [] },
   training_pack: { coins: 0, scoutReports: 0, trainingBoosts: 1, themes: [] },
   theme_pack: {
@@ -30,7 +32,20 @@ const EFFECTS: Record<string, ProductEffect> = {
     trainingBoosts: 0,
     themes: ["premium_gold", "premium_carbon", "neon_stadium"],
   },
+  celebration_pack: {
+    coins: 0,
+    scoutReports: 0,
+    trainingBoosts: 0,
+    themes: ["celebration_extra"],
+  },
+  stadium_pack: {
+    coins: 0,
+    scoutReports: 0,
+    trainingBoosts: 0,
+    themes: ["stadium_mow", "stadium_tifo"],
+  },
 };
+
 
 export function getProductEffect(productKey: string): ProductEffect | null {
   return EFFECTS[productKey] ?? null;
