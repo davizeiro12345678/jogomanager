@@ -168,33 +168,25 @@ function Landing() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             to={hasCareer ? "/dashboard" : "/new"}
-            className="rounded-lg bg-primary px-6 py-3 font-display text-sm uppercase tracking-widest text-primary-foreground transition hover:brightness-110"
+            className="flex-1 rounded-lg bg-primary px-6 py-3 text-center font-display text-sm uppercase tracking-widest text-primary-foreground transition hover:brightness-110 sm:flex-none"
           >
             {hasCareer ? "Continuar carreira" : "Jogar agora"}
           </Link>
           <Link
             to="/partida-rapida"
-            className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest text-foreground transition hover:bg-secondary"
+            className="flex-1 rounded-lg border border-border px-6 py-3 text-center font-display text-sm uppercase tracking-widest text-foreground transition hover:bg-secondary sm:flex-none"
           >
             Partida rápida
           </Link>
-          <Link
-            to="/multiplayer"
-            className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest text-foreground transition hover:bg-secondary"
-          >
-            Multiplayer 1x1
-          </Link>
-          <Link
-            to="/auth"
-            className="rounded-lg px-6 py-3 font-display text-sm uppercase tracking-widest text-muted-foreground transition hover:text-foreground"
-          >
-            Entrar (opcional)
-          </Link>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          O e-mail é opcional — serve só para salvar a carreira na nuvem e jogar em outros
-          aparelhos.
+          Sem cadastro para jogar.{" "}
+          <Link to="/auth" className="underline underline-offset-4 hover:text-foreground">
+            Entrar
+          </Link>{" "}
+          só serve para salvar a carreira na nuvem.
         </p>
+
 
         <section className="mt-12">
           <h2 className="sr-only">Por onde começar</h2>
