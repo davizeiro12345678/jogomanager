@@ -56,7 +56,16 @@ interface RigProps {
   quality: Quality;
 }
 
-export function PlayerRig({ player, sim, kit, goalPulse, quality }: RigProps) {
+export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }: RigProps) {
+  // O usuário pode forçar mais ou menos detalhe na página /visual.
+  const detail = useVisual().playerDetail;
+  const quality: Quality =
+    detail === "detalhado"
+      ? "alta"
+      : detail === "simples"
+        ? "baixa"
+        : baseQuality;
+
   /* ------------------------------------------------------------ aparência */
 
   const look = useMemo(
