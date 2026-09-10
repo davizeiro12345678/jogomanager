@@ -58,6 +58,7 @@ import { Route as TaticasEFormacoesRouteImport } from './routes/taticas-e-formac
 import { Route as TemporadaAutomaticaRouteImport } from './routes/temporada-automatica'
 import { Route as TrainingRouteImport } from './routes/training'
 import { Route as TransfersRouteImport } from './routes/transfers'
+import { Route as VisualRouteImport } from './routes/visual'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout/return'
 import { Route as ClubeNovoRouteImport } from './routes/clube.novo'
@@ -313,6 +314,11 @@ const TransfersRoute = TransfersRouteImport.update({
   path: '/transfers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VisualRoute = VisualRouteImport.update({
+  id: '/visual',
+  path: '/visual',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
   Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
     id: '/.well-known/oauth-protected-resource',
@@ -412,6 +418,7 @@ export interface FileRoutesByFullPath {
   '/temporada-automatica': typeof TemporadaAutomaticaRoute
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
+  '/visual': typeof VisualRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
@@ -472,6 +479,7 @@ export interface FileRoutesByTo {
   '/temporada-automatica': typeof TemporadaAutomaticaRoute
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
+  '/visual': typeof VisualRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
@@ -533,6 +541,7 @@ export interface FileRoutesById {
   '/temporada-automatica': typeof TemporadaAutomaticaRoute
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
+  '/visual': typeof VisualRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
@@ -595,6 +604,7 @@ export interface FileRouteTypes {
     | '/temporada-automatica'
     | '/training'
     | '/transfers'
+    | '/visual'
     | '/.well-known/oauth-protected-resource'
     | '/checkout/return'
     | '/clube/novo'
@@ -655,6 +665,7 @@ export interface FileRouteTypes {
     | '/temporada-automatica'
     | '/training'
     | '/transfers'
+    | '/visual'
     | '/.well-known/oauth-protected-resource'
     | '/checkout/return'
     | '/clube/novo'
@@ -715,6 +726,7 @@ export interface FileRouteTypes {
     | '/temporada-automatica'
     | '/training'
     | '/transfers'
+    | '/visual'
     | '/.well-known/oauth-protected-resource'
     | '/checkout/return'
     | '/clube/novo'
@@ -776,6 +788,7 @@ export interface RootRouteChildren {
   TemporadaAutomaticaRoute: typeof TemporadaAutomaticaRoute
   TrainingRoute: typeof TrainingRoute
   TransfersRoute: typeof TransfersRoute
+  VisualRoute: typeof VisualRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   ClubeNovoRoute: typeof ClubeNovoRoute
@@ -1132,6 +1145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TransfersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/visual': {
+      id: '/visual'
+      path: '/visual'
+      fullPath: '/visual'
+      preLoaderRoute: typeof VisualRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.well-known/oauth-protected-resource': {
       id: '/.well-known/oauth-protected-resource'
       path: '/.well-known/oauth-protected-resource'
@@ -1248,6 +1268,7 @@ const rootRouteChildren: RootRouteChildren = {
   TemporadaAutomaticaRoute: TemporadaAutomaticaRoute,
   TrainingRoute: TrainingRoute,
   TransfersRoute: TransfersRoute,
+  VisualRoute: VisualRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
