@@ -128,6 +128,25 @@ function Landing() {
           ))}
         </dl>
 
+        {/* faixa de escudos: mostra de cara que os clubes são reais */}
+        <div
+          aria-hidden="true"
+          className="mt-8 -mx-4 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]"
+        >
+          <div className="flex w-max gap-3 px-4 motion-safe:animate-[marquee_38s_linear_infinite]">
+            {[...LEAGUES.flatMap((l) => l.clubs.slice(0, 5)), ...LEAGUES.flatMap((l) => l.clubs.slice(0, 5))].map(
+              (c, i) => (
+                <span
+                  key={`${c.id}-${i}`}
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-border/50 bg-card/60 backdrop-blur"
+                >
+                  <Crest club={c} size={26} />
+                </span>
+              ),
+            )}
+          </div>
+        </div>
+
 
         {resume ? (
           <Link
