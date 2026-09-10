@@ -93,7 +93,13 @@ function Landing() {
           aria-hidden="true"
           className="pointer-events-none absolute -top-24 left-1/4 h-72 w-[36rem] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]"
         />
-        <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">
+        {/* linhas do gramado ao fundo, bem discretas */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] opacity-[0.07] [background-image:repeating-linear-gradient(90deg,transparent_0_44px,hsl(var(--foreground))_44px_45px)] [mask-image:linear-gradient(to_bottom,black,transparent)]"
+        />
+        <p className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-display text-[0.65rem] uppercase tracking-[0.35em] text-primary">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
           Temporada 2026
         </p>
         <h1 className="mt-3 max-w-3xl font-display text-5xl leading-[1.05] sm:text-7xl">
