@@ -907,7 +907,8 @@ export class MatchSim {
         side,
         text: `${this.minute()}' ${holder.name} finaliza para fora.`,
       });
-      this.scheduleRestart(side === "home" ? "away" : "home");
+      // a bola segue viva: quem reinicia é decidido por onde ela sair de campo
+      this.restartTimer = 0.4;
       return;
     }
 
