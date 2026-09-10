@@ -1,4 +1,6 @@
 import type { MowPattern } from "@/components/game/stadium/textures/grass";
+import { getVisual } from "@/game/visual-settings";
+
 
 /**
  * "Cara" da partida: horário, clima, corte do gramado, vento e público.

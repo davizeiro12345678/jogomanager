@@ -101,8 +101,11 @@ function useBladeMaterial(color: string) {
 }
 
 function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
-  const short = quality === "alta" ? 12000 : 5000;
-  const tall = quality === "alta" ? 3600 : 1400;
+  const vis = useVisual();
+  const scale = Math.max(0, vis.grassDensity);
+  const short = Math.round((quality === "alta" ? 12000 : 5000) * scale);
+  const tall = Math.round((quality === "alta" ? 3600 : 1400) * scale);
+
   const shortRef = useRef<THREE.InstancedMesh>(null);
   const tallRef = useRef<THREE.InstancedMesh>(null);
   const { mat, uniforms } = useBladeMaterial("#2b8a4d");
