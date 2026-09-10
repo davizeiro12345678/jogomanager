@@ -1139,20 +1139,36 @@ export class MatchSim {
       }
     }
 
-    // 2) trajetória coerente: no alvo entra entre as traves; fora passa por fora/por cima
-    const inside = (this.rnd() - 0.5) * GOAL_Z * 1.55; // dentro das traves
+    // 2) trajetória física: a bola voa com arco e o desfecho só acontece na meta
+    const inside = (this.rnd() - 0.5) * GOAL_Z * 1.5; // dentro das traves
     const outsideZ =
       Math.sign(this.rnd() - 0.5 || 1) * (GOAL_Z + 1.2 + this.rnd() * GOAL_Z * 1.6);
     const targetZ = outcome === "off" ? outsideZ : inside;
+    // altura de chegada: no alvo sempre abaixo do travessão; fora pode ir por cima
+    const targetH =
+      outcome === "off" && this.rnd() < 0.42 ? 3.0 + this.rnd() * 1.8 : 0.25 + this.rnd() * 1.8;
+
     const dx = dir * FIELD_X - holder.x;
     const dz = targetZ - holder.z;
     const d = Math.hypot(dx, dz) || 1;
-    const power = 30 + this.rnd() * 8;
+    const power = 24 + (holder.shooting / 100) * 13 + this.rnd() * 6;
     this.ball.vx = (dx / d) * power;
     this.ball.vz = (dz / d) * power;
-    // altura: no alvo sempre abaixo do travessão (2.44 m); fora pode ir por cima
-    this.ball.height =
-      outcome === "off" && this.rnd() < 0.45 ? 2.9 + this.rnd() * 1.6 : 0.4 + this.rnd() * 1.5;
+    this.ball.height = 0.25;
+    const flight = Math.max(0.15, d / power);
+    // vy resolvido pela balística: sai baixo e chega na altura pretendida
+    this.ballVy = (targetH - 0.25) / flight + 4.905 * flight;
+    this.ballSpin = (this.rnd() - 0.5) * (distGoal > 20 ? 7 : 3);
+
+    this.pendingShot = {
+      side,
+      shooter: holder.id,
+      outcome,
+      fromX: holder.x,
+      fromZ: holder.z,
+      targetZ,
+    };
+    this.restartTimer = 0.35;
 
     if (outcome === "off") {
       // parte das finalizações erradas desvia na defesa e vira escanteio
@@ -1171,72 +1187,6 @@ export class MatchSim {
         side,
         text: `${this.minute()}' ${holder.name} finaliza para fora.`,
       });
-      // a bola segue viva: quem reinicia é decidido por onde ela sair de campo
-      this.restartTimer = 0.4;
-      return;
-    }
-
-    this.stats[side].onTarget++;
-    if (outcome === "goal") {
-      this.stats[side].goals++;
-      holder.goals++;
-      const assist = this.lastPass[side];
-      if (assist && this.time - assist.time < 12 && assist.id !== holder.id) {
-        const provider = this.players.find((p) => p.id === assist.id);
-        if (provider) provider.assists++;
-      }
-      this.lastPass[side] = null;
-      this.shotMap.push({
-        x: holder.x,
-        z: holder.z,
-        side,
-        result: "goal",
-        minute: this.minute(),
-        name: holder.name,
-      });
-      this.scorers.push({ minute: this.minute(), side, name: holder.name });
-      const celeb = this.rnd();
-      this.trigger(holder, celeb < 0.34 ? "kneeSlide" : celeb < 0.67 ? "celebrateRun" : "celebrate", 6);
-      for (const m of this.players) {
-        if (m.side === side && m.id !== holder.id) this.trigger(m, m.pos === "GK" ? "celebrate" : "hug", 5.2);
-        else if (m.side !== side) this.trigger(m, "dejected", 4.4);
-      }
-      this.pushEvent({
-        minute: this.minute(),
-        type: "goal",
-        side,
-        text: `${this.minute()}' GOL! ${holder.name} marca para o ${this.setup(side).short}!`,
-      });
-      this.kickoff(side === "home" ? "away" : "home");
-    } else {
-      if (gk) gk.saves++;
-      this.shotMap.push({
-        x: holder.x,
-        z: holder.z,
-        side,
-        result: "saved",
-        minute: this.minute(),
-        name: holder.name,
-      });
-      const dive = targetZ - (gk?.z ?? 0);
-      this.trigger(
-        gk,
-        Math.abs(dive) < 1.2
-          ? this.rnd() < 0.5
-            ? "catch"
-            : "save"
-          : dive > 0
-            ? "diveRight"
-            : "diveLeft",
-        1.1,
-      );
-      this.pushEvent({
-        minute: this.minute(),
-        type: "save",
-        side,
-        text: `${this.minute()}' ${gk?.name ?? "O goleiro"} faz a defesa em chute de ${holder.name}.`,
-      });
-      this.scheduleRestart(side === "home" ? "away" : "home");
     }
   }
 
