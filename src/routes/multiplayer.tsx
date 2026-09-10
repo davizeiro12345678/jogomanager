@@ -507,7 +507,11 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string | null })
           placeholder="Mensagem…"
           className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
         />
-        <button className="rounded-lg bg-primary px-3 py-1.5 text-primary-foreground">
+        <button
+          type="submit"
+          aria-label="Enviar mensagem"
+          className="min-h-11 rounded-lg bg-primary px-3 py-1.5 text-primary-foreground"
+        >
           <Send size={14} />
         </button>
       </form>

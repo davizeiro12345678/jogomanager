@@ -1,7 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
-const BASE_URL = "https://soccer-manager.fun";
+const FALLBACK_BASE_URL = "https://stadium-stewards.lovable.app";
+
+/** O sitemap deve apontar sempre para o mesmo host que respondeu ao pedido. */
+function baseUrlFor(request: Request): string {
+  try {
+    return new URL(request.url).origin;
+  } catch {
+    return FALLBACK_BASE_URL;
+  }
+}
 
 interface SitemapEntry {
   path: string;
@@ -12,7 +21,8 @@ interface SitemapEntry {
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
-      GET: async () => {
+      GET: async ({ request }) => {
+        const BASE_URL = baseUrlFor(request);
         const entries: SitemapEntry[] = [
           { path: "/", changefreq: "weekly", priority: "1.0" },
           { path: "/jogo-de-manager-de-futebol", changefreq: "weekly", priority: "0.9" },
@@ -38,15 +48,10 @@ export const Route = createFileRoute("/sitemap.xml")({
 
         ];
 
-        const lastmod = new Date().toISOString().slice(0, 10);
-
-
-
         const urls = entries.map((e) =>
           [
             `  <url>`,
             `    <loc>${BASE_URL}${e.path}</loc>`,
-            `    <lastmod>${lastmod}</lastmod>`,
             e.changefreq ? `    <changefreq>${e.changefreq}</changefreq>` : null,
             e.priority ? `    <priority>${e.priority}</priority>` : null,
             `  </url>`,

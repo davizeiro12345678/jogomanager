@@ -49,6 +49,7 @@ import { Route as PartidaRapidaRouteImport } from './routes/partida-rapida'
 import { Route as PerguntasFrequentesRouteImport } from './routes/perguntas-frequentes'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as ReplaysRouteImport } from './routes/replays'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as ScoutingRouteImport } from './routes/scouting'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SobreRouteImport } from './routes/sobre'
@@ -271,6 +272,11 @@ const ReplaysRoute = ReplaysRouteImport.update({
   path: '/replays',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScoutingRoute = ScoutingRouteImport.update({
   id: '/scouting',
   path: '/scouting',
@@ -421,6 +427,7 @@ export interface FileRoutesByFullPath {
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/produtos': typeof ProdutosRoute
   '/replays': typeof ReplaysRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
@@ -484,6 +491,7 @@ export interface FileRoutesByTo {
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/produtos': typeof ProdutosRoute
   '/replays': typeof ReplaysRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
@@ -548,6 +556,7 @@ export interface FileRoutesById {
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/produtos': typeof ProdutosRoute
   '/replays': typeof ReplaysRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
@@ -613,6 +622,7 @@ export interface FileRouteTypes {
     | '/perguntas-frequentes'
     | '/produtos'
     | '/replays'
+    | '/robots.txt'
     | '/scouting'
     | '/sitemap.xml'
     | '/sobre'
@@ -676,6 +686,7 @@ export interface FileRouteTypes {
     | '/perguntas-frequentes'
     | '/produtos'
     | '/replays'
+    | '/robots.txt'
     | '/scouting'
     | '/sitemap.xml'
     | '/sobre'
@@ -739,6 +750,7 @@ export interface FileRouteTypes {
     | '/perguntas-frequentes'
     | '/produtos'
     | '/replays'
+    | '/robots.txt'
     | '/scouting'
     | '/sitemap.xml'
     | '/sobre'
@@ -803,6 +815,7 @@ export interface RootRouteChildren {
   PerguntasFrequentesRoute: typeof PerguntasFrequentesRoute
   ProdutosRoute: typeof ProdutosRoute
   ReplaysRoute: typeof ReplaysRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
   ScoutingRoute: typeof ScoutingRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SobreRoute: typeof SobreRoute
@@ -1108,6 +1121,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReplaysRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/scouting': {
       id: '/scouting'
       path: '/scouting'
@@ -1299,6 +1319,7 @@ const rootRouteChildren: RootRouteChildren = {
   PerguntasFrequentesRoute: PerguntasFrequentesRoute,
   ProdutosRoute: ProdutosRoute,
   ReplaysRoute: ReplaysRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
   ScoutingRoute: ScoutingRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SobreRoute: SobreRoute,
