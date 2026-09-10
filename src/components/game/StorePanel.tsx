@@ -137,6 +137,7 @@ export function StorePanel({
   function buy(productKey: string) {
     if (!signedIn) return;
     setOpeningKey(productKey);
+    void import("@/lib/analytics").then((m) => m.track("checkout_iniciado", { produto: productKey }));
     try {
       const priceId = PRICE_IDS[productKey];
       if (!priceId) throw new Error("Produto não configurado para checkout.");
