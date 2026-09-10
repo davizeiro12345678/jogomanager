@@ -11,8 +11,9 @@ import {
   HueSaturation,
   Noise,
   TiltShift2,
+  ToneMapping,
 } from "@react-three/postprocessing";
-import { BlendFunction } from "postprocessing";
+import { BlendFunction, ToneMappingMode } from "postprocessing";
 import * as THREE from "three";
 import { postPreset } from "./presets";
 import type { PostMoment, PostQuality, PostTime } from "./presets";
