@@ -51,3 +51,5 @@
 - [x] Fase 4 — modo editor (elencos, clubes, competições, importar/exportar)
 - [x] Fase 5 — assistente de IA (Gemini), chat global em tempo real e loja com carteira
 - [x] Loja: ligar o pagamento real por cartão (Stripe em configuração)
+- [x] 89 novas animações procedurais (animation-extra.ts) + variedade no seletor de clipes
+- [ ] Salto seguinte: geometria dos jogadores, texturas, cutscenes, página inicial e painéis

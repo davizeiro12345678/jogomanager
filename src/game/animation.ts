@@ -1,83 +1,28 @@
-// Sistema de animação procedural dos jogadores (59 clipes).
+// Sistema de animação procedural dos jogadores (148 clipes).
 // Cada clipe devolve ângulos por articulação; a malha 3D aplica com blend suave.
+//
+// Os tipos e utilidades vivem em `animation-core.ts` e os 89 clipes novos em
+// `animation-extra.ts`; aqui ficam os clipes base e a máquina de estados.
 
-export type JointName =
-  | "hipY"
-  | "hipPitch"
-  | "hipRoll"
-  | "hipYaw"
-  | "spine"
-  | "chest"
-  | "headPitch"
-  | "headYaw"
-  | "armLPitch"
-  | "armLRoll"
-  | "elbowL"
-  | "armRPitch"
-  | "armRRoll"
-  | "elbowR"
-  | "legLPitch"
-  | "legLRoll"
-  | "kneeL"
-  | "ankleL"
-  | "legRPitch"
-  | "legRRoll"
-  | "kneeR"
-  | "ankleR";
+import { EXTRA_CLIPS } from "./animation-extra";
+import {
+  JOINTS,
+  emptyPose,
+  mixPose,
+  type Clip,
+  type ClipCtx,
+  type JointName,
+  type Pose,
+} from "./animation-core";
 
-export type Pose = Record<JointName, number>;
-
-export const JOINTS: JointName[] = [
-  "hipY",
-  "hipPitch",
-  "hipRoll",
-  "hipYaw",
-  "spine",
-  "chest",
-  "headPitch",
-  "headYaw",
-  "armLPitch",
-  "armLRoll",
-  "elbowL",
-  "armRPitch",
-  "armRRoll",
-  "elbowR",
-  "legLPitch",
-  "legLRoll",
-  "kneeL",
-  "ankleL",
-  "legRPitch",
-  "legRRoll",
-  "kneeR",
-  "ankleR",
-];
-
-export function emptyPose(): Pose {
-  const p = {} as Pose;
-  for (const j of JOINTS) p[j] = 0;
-  return p;
-}
+export { JOINTS, emptyPose, mixPose };
+export type { Clip, ClipCtx, JointName, Pose };
 
 function pose(partial: Partial<Pose>): Pose {
   const p = emptyPose();
   Object.assign(p, partial);
   return p;
 }
-
-export interface ClipCtx {
-  /** tempo em segundos desde o início do clipe */
-  t: number;
-  /** progresso 0..1 quando o clipe é uma ação de duração fixa */
-  u: number;
-  /** velocidade do jogador em m/s */
-  speed: number;
-  /** 0..1 quanto o jogador está próximo do sprint */
-  stride: number;
-  /** variação individual determinística */
-  seed: number;
-}
-
-export type Clip = (c: ClipCtx) => Pose;
 
 const sin = Math.sin;
 const cos = Math.cos;
@@ -134,16 +79,9 @@ function idleBase(c: ClipCtx, k = 1): Pose {
   });
 }
 
-/** mistura duas poses */
-export function mixPose(a: Pose, b: Pose, k: number, out?: Pose): Pose {
-  const o = out ?? emptyPose();
-  for (const j of JOINTS) o[j] = a[j] + (b[j] - a[j]) * k;
-  return o;
-}
-
 // ---------------------------------------------------------------- clipes
 
-const CLIPS: Record<string, Clip> = {
+const BASE_CLIPS = {
   // ---- locomoção (12)
   idle: (c) => idleBase(c),
   breathe: (c) => mixPose(idleBase(c), pose({ chest: 0.1, spine: 0.1, headPitch: 0.06 }), 0.4 + sin(c.t * 1.2) * 0.3),
@@ -820,16 +758,19 @@ const CLIPS: Record<string, Clip> = {
       elbowR: -1.4,
       hipRoll: sin(c.t * 2.2) * 0.08,
     }),
-};
+} satisfies Record<string, Clip>;
+
+/** catálogo completo: clipes base + os 89 clipes extras */
+const CLIPS = { ...BASE_CLIPS, ...EXTRA_CLIPS };
 
 export type ClipName = keyof typeof CLIPS;
 
 export const CLIP_NAMES = Object.keys(CLIPS) as ClipName[];
-/** número total de animações disponíveis (59) */
+/** número total de animações disponíveis */
 export const CLIP_COUNT = CLIP_NAMES.length;
 
 export function getClip(name: ClipName): Clip {
-  return CLIPS[name] ?? CLIPS['idle']!;
+  return (CLIPS as Record<string, Clip>)[name] ?? CLIPS.idle;
 }
 
 // ------------------------------------------------------ máquina de estados
@@ -936,31 +877,57 @@ export interface SelectCtx {
   time: number;
 }
 
+/** sorteio determinístico e lento (troca a cada `every` segundos) */
+function pick<T>(list: T[], c: SelectCtx, every = 4): T {
+  const i = (c.seed + Math.floor(c.time / every)) % list.length;
+  return list[i]!;
+}
+
 export function selectClip(c: SelectCtx): ClipName {
   if (c.action) return ACTION_CLIP[c.action];
 
   if (c.isGK) {
+    if (c.speed > 5) return "gkSweeper";
     if (c.speed > 1.6) return "gkShuffle";
+    if (c.ballDist < 14) return "gkPenaltyReady";
+    if (c.ballDist > 55) return pick<ClipName>(["gkStance", "gkWallSetup", "handsOnHips"], c, 6);
     return "gkStance";
   }
 
-  if (c.stopped) return c.seed % 3 === 0 ? "whistleStop" : "restart";
+  if (c.stopped)
+    return pick<ClipName>(["whistleStop", "restart", "lineUpPose", "freeKickWall", "handsOnHips"], c, 3);
 
   const sp = c.speed;
   if (c.hasBall) {
-    if (sp > 5.4) return "dribbleFast";
-    if (sp > 1.2) return "dribbleLight";
-    return (c.seed + Math.floor(c.time * 0.5)) % 2 === 0 ? "feint" : "stepover";
+    if (sp > 7.2) return "knockOn";
+    if (sp > 5.4) return pick<ClipName>(["dribbleFast", "dribbleSlalom", "oneTwoRun"], c, 2);
+    if (sp > 2.4) return pick<ClipName>(["dribbleLight", "closeControl", "dribbleSlalom"], c, 2);
+    if (sp > 1.2) return pick<ClipName>(["closeControl", "shieldBall"], c, 2);
+    return pick<ClipName>(
+      ["feint", "stepover", "scissorsDouble", "dragBack", "cruyffTurn", "heelFlick", "rouletteSpin"],
+      c,
+      2,
+    );
   }
 
   if (sp < 0.35) {
-    if (c.defending && c.ballDist < 18) return "mark";
-    const k = (c.seed + Math.floor(c.time / 4)) % 3;
-    return k === 0 ? "idle" : k === 1 ? "breathe" : "weightShift";
+    if (c.defending && c.ballDist < 18) return pick<ClipName>(["mark", "markTight", "jockey"], c, 3);
+    if (c.stamina < 30) return pick<ClipName>(["catchBreathKnees", "handsOnHips", "tired"], c, 3);
+    return pick<ClipName>(
+      ["idle", "breathe", "weightShift", "handsOnHips", "applaudFans", "handsOnHead"],
+      c,
+    );
   }
-  if (sp < 1.2) return c.defending && c.ballDist < 12 ? "sideStep" : "walk";
-  if (sp < 2.6) return c.stamina < 45 ? "tired" : "walk";
-  if (sp < 4.2) return c.stamina < 40 ? "tired" : "jog";
-  if (sp < 6.2) return c.defending ? "recover" : "run";
-  return "sprint";
+  if (sp < 1.2) {
+    if (c.defending && c.ballDist < 12)
+      return pick<ClipName>(["sideStep", "shuffleLeft", "shuffleRight", "jockey"], c, 2);
+    return pick<ClipName>(["walk", "stroll"], c, 5);
+  }
+  if (sp < 2.6) return c.stamina < 45 ? "tired" : pick<ClipName>(["walk", "stroll", "joggingBack"], c, 4);
+  if (sp < 4.2) return c.stamina < 40 ? "tired" : pick<ClipName>(["jog", "joggingBack"], c, 4);
+  if (sp < 6.2)
+    return c.defending
+      ? pick<ClipName>(["recover", "pressTrigger"], c, 3)
+      : pick<ClipName>(["run", "curveRunLeft", "curveRunRight", "dummyRun"], c, 3);
+  return c.defending ? "recoverySprint" : pick<ClipName>(["sprint", "curveRunLeft", "curveRunRight"], c, 3);
 }

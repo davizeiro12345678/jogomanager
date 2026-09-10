@@ -98,7 +98,8 @@ export function PostFX({
         mipmapBlur
       />
       {p.tilt > 0 ? <TiltShift2 blur={p.tilt} /> : <></>}
-      <ChromaticAberration offset={ab} radialModulation={false} modulationOffset={0} />
+      {/* aberração só nas bordas, como lente de transmissão real */}
+      <ChromaticAberration offset={ab} radialModulation modulationOffset={0.35} />
       <HueSaturation saturation={p.saturation} hue={p.hue} />
       <BrightnessContrast brightness={p.brightness} contrast={p.contrast} />
       <Noise opacity={p.grain} blendFunction={BlendFunction.OVERLAY} />
