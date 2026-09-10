@@ -31,6 +31,7 @@ import {
 
 import { LINES_H, LINES_W, pitchLinesTexture } from "@/components/game/stadium/textures/lines";
 import { pitchWearTexture } from "@/components/game/stadium/textures/wear";
+import { skyTexture } from "@/components/game/stadium/textures/sky";
 import { bannerTexture, bigFlagTexture, mosaicTexture } from "@/components/game/stadium/textures/tifo";
 import { StadiumProps } from "@/components/game/stadium/Props";
 
