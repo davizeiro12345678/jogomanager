@@ -459,7 +459,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
             castShadow={shadows}
           >
             <sphereGeometry args={[P.armR * 1.12, segs.radial, segs.radial]} />
-            {look.sleeves === "long" ? jerseyMat : jerseyMat}
+            {jerseyMat}
           </mesh>
         )}
         {/* braço */}
