@@ -161,6 +161,21 @@ export class MatchSim {
   private looseTime = 0;
   /** último lado que tocou na bola — define lateral, escanteio e tiro de meta */
   private lastTouch: Side = "home";
+  /** velocidade vertical da bola (m/s) — a altura passa a ser física de verdade */
+  private ballVy = 0;
+  /** curva lateral (efeito Magnus) aplicada enquanto a bola voa */
+  private ballSpin = 0;
+  /** finalização em voo: só vira gol/defesa quando a bola chega lá */
+  private pendingShot: {
+    side: Side;
+    shooter: string;
+    outcome: "goal" | "saved" | "off";
+    fromX: number;
+    fromZ: number;
+    targetZ: number;
+  } | null = null;
+  /** passe em voo: quem deve receber e até quando o passador não retoma a bola */
+  private pass: { to: string; from: string; until: number } | null = null;
 
 
 
