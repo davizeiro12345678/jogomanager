@@ -247,9 +247,17 @@ function Landing() {
 
 
         <section className="mt-16">
-          <h2 className="font-display text-2xl uppercase tracking-wide">Ligas disponíveis</h2>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-display text-2xl uppercase tracking-wide">Ligas disponíveis</h2>
+            <Link
+              to="/ligas-de-futebol"
+              className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Ver todas as {LEAGUES.length} ligas
+            </Link>
+          </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {LEAGUES.map((l) => (
+            {LEAGUES.slice(0, 8).map((l) => (
               <div
                 key={l.id}
                 className="rounded-xl border border-border/60 bg-card/70 p-4 backdrop-blur"
@@ -267,6 +275,7 @@ function Landing() {
             ))}
           </div>
         </section>
+
       </div>
     </div>
   );
