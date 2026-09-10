@@ -38,6 +38,8 @@ import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
 import { matchLook, type TimeOfDay } from "@/game/matchday";
+import { useVisual } from "@/game/visual-settings";
+
 
 
 export type CameraMode = "broadcast" | "tactical" | "goal" | "fan" | "rail" | "behind";
@@ -1247,7 +1249,11 @@ function Stands({
   goalPulse: React.MutableRefObject<number>;
   night: boolean;
 }) {
-  const density = quality === "alta" ? 460 : quality === "media" ? 240 : 100;
+  const vis = useVisual();
+  const density = Math.round(
+    (quality === "alta" ? 460 : quality === "media" ? 240 : 100) * Math.max(0.1, vis.crowdDensity),
+  );
+
   const rings = quality === "alta" ? 14 : quality === "media" ? 9 : 5;
   const wallMat = useConcrete("#39424b", 14);
 
