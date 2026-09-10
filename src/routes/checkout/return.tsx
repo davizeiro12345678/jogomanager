@@ -72,6 +72,20 @@ function CheckoutReturn() {
   useEffect(() => {
     if (!sessionId) return;
     let alive = true;
+
+    // Confirma a compra direto na Stripe (o webhook pode atrasar ou não chegar).
+    void (async () => {
+      try {
+        const res = await claimSession({
+          data: { sessionId, environment: getStripeEnvironment() },
+        });
+        if (!alive) return;
+        if (res.status === "delivered") await check();
+      } catch {
+        /* o polling abaixo ainda cobre o caminho do webhook */
+      }
+    })();
+
     const timer = setInterval(() => {
       void (async () => {
         if (!alive) return;
@@ -88,7 +102,8 @@ function CheckoutReturn() {
       alive = false;
       clearInterval(timer);
     };
-  }, [sessionId, check]);
+  }, [sessionId, check, claimSession]);
+
 
   return (
     <div className="pitch-bg flex min-h-screen items-center justify-center px-4 py-6">
