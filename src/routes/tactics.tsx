@@ -37,14 +37,14 @@ export const Route = createFileRoute("/tactics")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Táticas · Pro Football Manager 3D" },
+      { title: "Táticas · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
         content:
-          "Arraste os jogadores no campo, escolha formação, mentalidade, pressão, largura e ritmo do seu time.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Táticas · Pro Football Manager 3D" },
-      { property: "og:description", content: "Ajuste o plano de jogo antes de entrar em campo." },
+      { property: "og:title", content: "Táticas · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

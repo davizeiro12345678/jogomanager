@@ -7,13 +7,13 @@ export const Route = createFileRoute("/chat")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Chat global · Pro Football Manager 3D" },
+      { title: "Chat global · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
-        content: "Converse em tempo real com outros técnicos na sala de chat global do jogo.",
+        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Chat global · Pro Football Manager 3D" },
-      { property: "og:description", content: "Bata um papo com outros técnicos em tempo real." },
+      { property: "og:title", content: "Chat global · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

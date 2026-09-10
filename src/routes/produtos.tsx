@@ -21,9 +21,9 @@ const PackScene = lazy(() =>
 );
 
 const PATH = "/produtos";
-const TITLE = "Pacotes e passe de temporada · Pro Football Manager 3D";
+const TITLE = "Pacotes e passe de temporada · Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Moedas, relatórios de olheiros, impulsos de treino, temas e o passe de temporada do Pro Football Manager 3D — com compra segura direto na página.";
+  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
 function productsLd() {
   return {

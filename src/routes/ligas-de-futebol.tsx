@@ -6,9 +6,9 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { breadcrumbLd, canonical, itemListLd, seoMeta } from "@/lib/seo";
 
 const PATH = "/ligas-de-futebol";
-const TITLE = "Ligas de futebol disponíveis no jogo de manager | Pro Football Manager 3D";
+const TITLE = "Ligas de futebol disponíveis no jogo de manager | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Veja todas as ligas e campeonatos jogáveis no Pro Football Manager 3D: Brasil, Inglaterra, Espanha, Itália, Alemanha, França, Portugal e mais, com todos os clubes de cada divisão.";
+  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
 export const Route = createFileRoute("/ligas-de-futebol")({
   head: () => ({

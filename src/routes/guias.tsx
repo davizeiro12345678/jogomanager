@@ -4,9 +4,9 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guias";
-const TITLE = "Guias de manager de futebol: como começar bem | Pro Football Manager 3D";
+const TITLE = "Guias de manager de futebol: como começar bem | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Guias em português para quem quer virar manager de futebol: escolher o clube, montar a escalação, definir a tática e vencer a primeira temporada.";
+  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
 export const Route = createFileRoute("/guias")({
   head: () => ({

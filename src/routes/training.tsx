@@ -9,14 +9,14 @@ export const Route = createFileRoute("/training")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Treino da semana · Pro Football Manager 3D" },
+      { title: "Treino da semana · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
         content:
-          "Escolha o foco e a intensidade do treino semanal e acompanhe condição física, moral e evolução do elenco.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Treino da semana · Pro Football Manager 3D" },
-      { property: "og:description", content: "Foco, intensidade e evolução do elenco." },
+      { property: "og:title", content: "Treino da semana · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

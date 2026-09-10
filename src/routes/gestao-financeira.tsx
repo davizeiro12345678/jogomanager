@@ -4,9 +4,9 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/gestao-financeira";
-const TITLE = "Gestão financeira no futebol: folha, orçamento e lucro no mercado";
+const TITLE = "Gestão financeira no futebol: folha, orçamento e lucro no mercado · Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Como equilibrar as contas do clube: folha salarial saudável, orçamento por temporada, receita de bilheteria e venda de jogadores sem enfraquecer o time.";
+  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
 export const Route = createFileRoute("/gestao-financeira")({
   head: () => ({

@@ -4,9 +4,9 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/perguntas-frequentes";
-const TITLE = "Perguntas frequentes sobre o jogo | Pro Football Manager 3D";
+const TITLE = "Perguntas frequentes sobre o jogo | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Precisa instalar? Precisa criar conta? Funciona no celular? Respostas rápidas sobre o jogo de manager de futebol 3D gratuito no navegador.";
+  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
 export const Route = createFileRoute("/perguntas-frequentes")({
   head: () => ({

@@ -6,16 +6,15 @@ import { CLUBS, LEAGUES } from "@/game/data/leagues";
 import { Crest } from "@/components/game/Crest";
 import { readLocalCareer } from "@/lib/careerStorage";
 import { Flag } from "@/components/game/Flag";
-import { canonical, gameLd, seoMeta } from "@/lib/seo";
+import { canonical, gameLd, seoMeta, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
 import heroStadium from "@/assets/hero-stadium.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       ...seoMeta({
-        title: "Pro Football Manager 3D — Jogo de manager de futebol grátis em 3D",
-        description:
-          "Comande um clube real, monte o elenco, defina a tática e assista aos 90 minutos em 3D. Brasileirão, Premier League, LaLiga, Serie A e mais de 30 ligas. Grátis no navegador.",
+        title: SITE_TITLE,
+        description: SITE_DESCRIPTION,
         path: "/",
       }),
       {

@@ -23,16 +23,16 @@ export const Route = createFileRoute("/assistente")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Assistente de IA · Pro Football Manager 3D" },
+      { title: "Assistente de IA · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
         content:
-          "Fale com o cérebro de IA do seu clube: diretor esportivo, olheiro, jornalista, tático e coletiva de imprensa.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Assistente de IA · Pro Football Manager 3D" },
+      { property: "og:title", content: "Assistente de IA · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         property: "og:description",
-        content: "Peça análises, notícias e sugestões táticas geradas por IA para a sua carreira.",
+        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

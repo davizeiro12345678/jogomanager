@@ -1,5 +1,8 @@
 export const SITE_URL = "https://soccer-manager.fun";
 export const SITE_NAME = "Pro Football Manager 3D";
+export const SITE_TITLE = "Pro Football Manager 3D: Jogo de Futebol Manager Online";
+export const SITE_DESCRIPTION =
+  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 export const OG_IMAGE = `${SITE_URL}/og-cover.jpg`;
 
 type Meta = Record<string, string>;
@@ -80,8 +83,7 @@ export function gameLd() {
       "@context": "https://schema.org",
       "@type": "VideoGame",
       name: SITE_NAME,
-      description:
-        "Jogo de manager de futebol em 3D no navegador: comande um clube real, monte o elenco, defina a tática e assista aos 90 minutos.",
+      description: SITE_DESCRIPTION,
       url: SITE_URL,
       image: OG_IMAGE,
       inLanguage: "pt-BR",

@@ -4,9 +4,9 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/taticas-e-formacoes";
-const TITLE = "Melhores táticas e formações no manager de futebol | Pro Football Manager 3D";
+const TITLE = "Melhores táticas e formações no manager de futebol | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "4-3-3, 4-4-2, 3-5-2, 4-2-3-1 e 5-3-2: quando usar cada formação, que mentalidade combinar e como ajustar pressão e ritmo dentro da partida.";
+  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
 export const Route = createFileRoute("/taticas-e-formacoes")({
   head: () => ({

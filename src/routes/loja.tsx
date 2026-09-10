@@ -8,16 +8,16 @@ export const Route = createFileRoute("/loja")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Loja · Pro Football Manager 3D" },
+      { title: "Loja · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
         content:
-          "Compre moedas, relatórios de olheiros, impulsos de treino e itens cosméticos para o seu clube.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Loja · Pro Football Manager 3D" },
+      { property: "og:title", content: "Loja · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         property: "og:description",
-        content: "Moedas, relatórios de olheiros, impulsos de treino e cosméticos.",
+        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -12,13 +12,13 @@ export const Route = createFileRoute("/conquistas")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Conquistas · Pro Football Manager 3D" },
+      { title: "Conquistas · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
-        content: "Acompanhe todas as conquistas desbloqueadas na sua carreira de treinador.",
+        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Conquistas · Pro Football Manager 3D" },
-      { property: "og:description", content: "Bronze, prata e ouro: sua galeria de conquistas." },
+      { property: "og:title", content: "Conquistas · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

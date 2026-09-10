@@ -52,14 +52,14 @@ export const Route = createFileRoute("/match")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Partida ao vivo em 3D · Pro Football Manager 3D" },
+      { title: "Partida ao vivo em 3D · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
         content:
-          "Assista aos 90 minutos em 3D, troque de câmera e dê ordens táticas em tempo real da beira do campo.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Partida ao vivo em 3D · Pro Football Manager 3D" },
-      { property: "og:description", content: "Ordens em tempo real enquanto a bola rola." },
+      { property: "og:title", content: "Partida ao vivo em 3D · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
