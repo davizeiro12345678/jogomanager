@@ -117,7 +117,7 @@ export class Narrator {
     this.synth.speak(utter);
   }
 
-  private playBase64(mp3: string, event: NarrationEvent) {
+  private playBase64(mp3: string, event: NarrationEvent, text: string) {
     if (!this.enabled) return;
     if (event === "goal") this.stop();
     const el = new Audio(`data:audio/mpeg;base64,${mp3}`);
@@ -125,7 +125,7 @@ export class Narrator {
     this.audio = el;
     void el.play().catch(() => {
       // Autoplay bloqueado: volta para a voz do navegador.
-      this.speakLocal("", event);
+      this.speakLocal(text, event);
     });
   }
 
@@ -133,7 +133,7 @@ export class Narrator {
     const key = `${this.lang}|${text}`;
     const cached = audioCache.get(key);
     if (cached) {
-      this.playBase64(cached, event);
+      this.playBase64(cached, event, text);
       return;
     }
     try {
@@ -149,7 +149,7 @@ export class Narrator {
         if (first) audioCache.delete(first);
       }
       audioCache.set(key, res.audio);
-      this.playBase64(res.audio, event);
+      this.playBase64(res.audio, event, text);
     } catch {
       this.remoteBroken = true;
       this.speakLocal(text, event);
