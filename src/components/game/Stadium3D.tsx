@@ -2055,6 +2055,8 @@ function Scene({
   look: ReturnType<typeof matchLook>;
 }) {
   const time = look.time;
+  const postOn = useVisual().postFx;
+
   const goalPulse = useRef(0);
   const lastGoals = useRef(0);
   const [replay, setReplay] = useState(false);
