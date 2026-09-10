@@ -17,7 +17,39 @@ const SPONSORS = [
   "SUPER LIGA",
 ];
 
-function build(primary: string, secondary: string) {
+/**
+ * Desenha o logo real de uma marca (Logo.dev) por cima do painel assim que a
+ * imagem chega. Enquanto não chega, fica o painel de texto.
+ */
+function paintLogos(
+  ctx: CanvasRenderingContext2D,
+  tex: THREE.CanvasTexture,
+  domains: string[],
+  panel: number,
+  h: number,
+) {
+  const token = import.meta.env["VITE_LOVABLE_CONNECTOR_LOGO_DEV_API_KEY"];
+  if (!token) return;
+  domains.slice(0, SPONSORS.length).forEach((domain, i) => {
+    const clean = domain.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    if (!clean) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const x = i * panel;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(x + 6, 6, panel - 12, h - 12);
+      const ratio = Math.min((panel - 60) / img.width, (h - 60) / img.height);
+      const w2 = img.width * ratio;
+      const h2 = img.height * ratio;
+      ctx.drawImage(img, x + (panel - w2) / 2, (h - h2) / 2, w2, h2);
+      tex.needsUpdate = true;
+    };
+    img.src = `https://img.logo.dev/${encodeURIComponent(clean)}?token=${token}&size=256&format=png`;
+  });
+}
+
+function build(primary: string, secondary: string, sponsors: string[]) {
   if (typeof document === "undefined") return null;
   const w = 4096;
   const h = 256;
@@ -59,6 +91,7 @@ function build(primary: string, secondary: string) {
   ctx.globalCompositeOperation = "source-over";
 
   const tex = new THREE.CanvasTexture(c);
+  if (sponsors.length) paintLogos(ctx, tex, sponsors, panel, h);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.ClampToEdgeWrapping;
@@ -68,8 +101,8 @@ function build(primary: string, secondary: string) {
 
 const cache = new Map<string, THREE.Texture | null>();
 
-export function adTexture(primary: string, secondary: string) {
-  const key = `${primary}|${secondary}`;
-  if (!cache.has(key)) cache.set(key, build(primary, secondary));
+export function adTexture(primary: string, secondary: string, sponsors: string[] = []) {
+  const key = `${primary}|${secondary}|${sponsors.join(",")}`;
+  if (!cache.has(key)) cache.set(key, build(primary, secondary, sponsors));
   return cache.get(key) ?? null;
 }

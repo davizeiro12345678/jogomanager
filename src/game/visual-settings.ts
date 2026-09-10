@@ -28,6 +28,8 @@ export interface VisualSettings {
   mowByClub: Record<string, MowPattern>;
   /** pós-processamento (brilho, foco, granulado) */
   postFx: boolean;
+  /** sites de marcas exibidas nas placas de LED do estádio (logos reais) */
+  sponsors: string[];
 }
 
 export const DEFAULT_VISUAL: VisualSettings = {
@@ -40,6 +42,7 @@ export const DEFAULT_VISUAL: VisualSettings = {
   mow: "auto",
   mowByClub: {},
   postFx: true,
+  sponsors: [],
 };
 
 const KEY = "manager3d.visual.v1";

@@ -205,6 +205,29 @@ function VisualPage() {
                 className="size-5 accent-primary"
               />
             </label>
+            <label className="block rounded-xl border border-border/60 p-3 text-sm">
+              <span>
+                Placas do estádio
+                <span className="block text-[11px] text-muted-foreground">
+                  Coloque sites de marcas separados por vírgula (ex.: nike.com, spotify.com) e os
+                  logos aparecem nas placas de LED à beira do campo.
+                </span>
+              </span>
+              <input
+                className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                defaultValue={v.sponsors.join(", ")}
+                placeholder="nike.com, spotify.com"
+                onBlur={(e) =>
+                  setVisual({
+                    sponsors: e.target.value
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean)
+                      .slice(0, 8),
+                  })
+                }
+              />
+            </label>
           </div>
         </article>
 
