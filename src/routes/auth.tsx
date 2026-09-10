@@ -19,14 +19,14 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Entrar · Pro Football Manager 3D" },
+      { title: "Entrar · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
         content:
-          "Acesse sua conta para salvar a carreira de técnico e continuar a temporada de onde parou.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Entrar · Pro Football Manager 3D" },
-      { property: "og:description", content: "Sua carreira de técnico salva na nuvem." },
+      { property: "og:title", content: "Entrar · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

@@ -4,9 +4,9 @@ import { ArticleShell } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/glossario-do-futebol";
-const TITLE = "Glossário do futebol: 40 termos de tática e gestão explicados";
+const TITLE = "Glossário do futebol: 40 termos de tática e gestão explicados · Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Dicionário rápido do futebol e dos jogos de manager: bloco baixo, gegenpressing, falso 9, cláusula, moral, potencial, xG e outros termos explicados em uma linha.";
+  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
 export const Route = createFileRoute("/glossario-do-futebol")({
   head: () => ({

@@ -46,16 +46,16 @@ export const Route = createFileRoute("/editor")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Editor e customização · Pro Football Manager 3D" },
+      { title: "Editor e customização · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
         content:
-          "Edite elencos, clubes, escudos, uniformes, estádios e monte competições customizadas. Exporte e importe seus dados quando quiser.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Editor e customização · Pro Football Manager 3D" },
+      { property: "og:title", content: "Editor e customização · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         property: "og:description",
-        content: "Personalize clubes, jogadores e competições do jogo direto no navegador, sem login.",
+        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

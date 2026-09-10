@@ -4,9 +4,9 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/soccer-manager-online";
-const TITLE = "Soccer manager online: jogue no navegador em 3D | Pro Football Manager 3D";
+const TITLE = "Soccer manager online: jogue no navegador em 3D | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Um soccer manager online e gratuito, com partidas em 3D no navegador, ligas reais, mercado de transferências, contratos, lesões e pressão da diretoria.";
+  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
 export const Route = createFileRoute("/soccer-manager-online")({
   head: () => ({

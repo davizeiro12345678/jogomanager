@@ -13,16 +13,16 @@ export const Route = createFileRoute("/clube/novo")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Criar seu clube · Pro Football Manager 3D" },
+      { title: "Criar seu clube · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
         content:
-          "Fundamento do zero: nome, cidade, escudo, uniforme, estádio e torcida do seu próprio clube, e comece a carreira na liga que escolher.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Criar seu clube · Pro Football Manager 3D" },
+      { property: "og:title", content: "Criar seu clube · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         property: "og:description",
-        content: "Crie escudo, uniforme, estádio e torcida do seu clube e entre em uma liga real.",
+        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -13,14 +13,14 @@ export const Route = createFileRoute("/stats")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Estatísticas do elenco · Pro Football Manager 3D" },
+      { title: "Estatísticas do elenco · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
         content:
-          "Artilharia, assistências, forma, potencial e comparação entre jogadores do seu elenco.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Estatísticas do elenco · Pro Football Manager 3D" },
-      { property: "og:description", content: "Números do seu time, rodada a rodada." },
+      { property: "og:title", content: "Estatísticas do elenco · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

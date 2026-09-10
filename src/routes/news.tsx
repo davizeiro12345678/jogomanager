@@ -9,13 +9,13 @@ export const Route = createFileRoute("/news")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Notícias · Pro Football Manager 3D" },
+      { title: "Notícias · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
-        content: "Tudo que acontece no clube: resultados, lesões, mercado e bastidores.",
+        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Notícias · Pro Football Manager 3D" },
-      { property: "og:description", content: "O feed de notícias do seu clube." },
+      { property: "og:title", content: "Notícias · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

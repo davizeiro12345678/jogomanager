@@ -4,9 +4,9 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/sobre";
-const TITLE = "Sobre o Pro Football Manager 3D: o jogo de técnico no navegador";
+const TITLE = "Sobre o Pro Football Manager 3D: Jogo de Futebol Manager Online: o jogo de técnico no navegador";
 const DESC =
-  "O que é o Pro Football Manager 3D, como funciona a carreira de técnico, o que dá para fazer de graça, como salvamos seu progresso e o que vem por aí.";
+  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
 export const Route = createFileRoute("/sobre")({
   head: () => ({

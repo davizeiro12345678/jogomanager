@@ -18,14 +18,14 @@ export const Route = createFileRoute("/partida-rapida")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Partida rápida contra o computador · Pro Football Manager 3D" },
+      { title: "Partida rápida contra o computador · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
         content:
-          "Escolha seu time, um adversário e jogue uma partida avulsa em 3D com narração e placar ao vivo.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Partida rápida · Pro Football Manager 3D" },
-      { property: "og:description", content: "Um jogo avulso contra o computador, em 3D." },
+      { property: "og:title", content: "Partida rápida · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

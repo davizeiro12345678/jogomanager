@@ -13,14 +13,14 @@ export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Painel do treinador · Pro Football Manager 3D" },
+      { title: "Painel do treinador · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
         content:
-          "Visão geral da temporada: próxima partida, forma recente, finanças, moral do elenco e pressão da diretoria.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Painel do treinador · Pro Football Manager 3D" },
-      { property: "og:description", content: "Seu centro de comando na carreira." },
+      { property: "og:title", content: "Painel do treinador · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

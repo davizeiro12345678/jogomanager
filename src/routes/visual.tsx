@@ -21,16 +21,16 @@ export const Route = createFileRoute("/visual")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Ajustes visuais · Pro Football Manager 3D" },
+      { title: "Ajustes visuais · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
         content:
-          "Ajuste texturas, grama, torcida, jogadores, clima, horário e corte do gramado de cada clube — tudo salvo no seu navegador.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Ajustes visuais · Pro Football Manager 3D" },
+      { property: "og:title", content: "Ajustes visuais · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         property: "og:description",
-        content: "Deixe o estádio 3D do jeito que você gosta e com o desempenho que o seu aparelho aguenta.",
+        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
