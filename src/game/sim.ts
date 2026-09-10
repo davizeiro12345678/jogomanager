@@ -159,6 +159,10 @@ export class MatchSim {
   private restartTimer = 0;
   /** tempo com a bola solta, usado para destravar a jogada */
   private looseTime = 0;
+  /** último lado que tocou na bola — define lateral, escanteio e tiro de meta */
+  private lastTouch: Side = "home";
+
+
 
 
   constructor(
@@ -316,6 +320,7 @@ export class MatchSim {
     starter.z = 0;
     this.ball.holder = starter.id;
     this.possession = side;
+    this.lastTouch = side;
     this.restartTimer = 1.2;
   }
 
@@ -396,7 +401,11 @@ export class MatchSim {
     this.tickActions(dt);
 
     this.moveOffBall(dt);
+    this.separate();
+    this.drainStamina(dt);
     this.moveBall(dt);
+    this.sanitize();
+
 
     const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
     if (holder) {
@@ -409,6 +418,9 @@ export class MatchSim {
         this.decisionTimer = 1.5 - tempo * 0.35 + this.rnd() * 0.6;
       }
     }
+    // segunda passada: o condutor também não pode terminar dentro de outro jogador
+    this.separate();
+    this.sanitize();
   }
 
   /** ids dos jogadores designados a perseguir a bola solta */
@@ -507,7 +519,71 @@ export class MatchSim {
     }
   }
 
+  /** empurra jogadores sobrepostos para que não se atravessem */
+  private separate() {
+    const R = 0.85; // raio do corpo
+    const list = this.players;
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i]!;
+        const b = list[j]!;
+        let dx = b.x - a.x;
+        let dz = b.z - a.z;
+        let d = Math.hypot(dx, dz);
+        if (d > R * 2) continue;
+        if (d < 1e-4) {
+          dx = (this.rnd() - 0.5) * 0.02;
+          dz = (this.rnd() - 0.5) * 0.02;
+          d = Math.hypot(dx, dz) || 1e-4;
+        }
+        const push = (R * 2 - d) / 2;
+        const nx = (dx / d) * push;
+        const nz = (dz / d) * push;
+        // quem tem a bola cede menos espaço
+        const aw = a.id === this.ball.holder ? 0.3 : 1;
+        const bw = b.id === this.ball.holder ? 0.3 : 1;
+        a.x -= nx * aw;
+        a.z -= nz * aw;
+        b.x += nx * bw;
+        b.z += nz * bw;
+      }
+    }
+    for (const p of list) {
+      p.x = Math.max(-FIELD_X - 1, Math.min(FIELD_X + 1, p.x));
+      p.z = Math.max(-FIELD_Z - 1, Math.min(FIELD_Z + 1, p.z));
+    }
+  }
+
+  /** desgaste físico ao longo dos 90 minutos */
+  private drainStamina(dt: number) {
+    for (const p of this.players) {
+      const speed = Math.hypot(p.vx, p.vz);
+      const effort = 0.0015 + (speed / 9) * 0.008 * (p.pos === "GK" ? 0.25 : 1);
+      const resist = 0.6 + (p.physical / 100) * 0.6;
+      p.stamina = Math.max(12, p.stamina - (effort / resist) * dt);
+    }
+  }
+
+  /** blindagem contra NaN/Infinity vindos de dados ruins */
+  private sanitize() {
+    const fix = (v: number, fallback: number) => (Number.isFinite(v) ? v : fallback);
+    for (const p of this.players) {
+      p.x = Math.max(-FIELD_X - 1, Math.min(FIELD_X + 1, fix(p.x, 0)));
+      p.z = Math.max(-FIELD_Z - 1, Math.min(FIELD_Z + 1, fix(p.z, 0)));
+      p.vx = Math.max(-14, Math.min(14, fix(p.vx, 0)));
+      p.vz = Math.max(-14, Math.min(14, fix(p.vz, 0)));
+      p.stamina = Math.max(0, Math.min(100, fix(p.stamina, 70)));
+    }
+    const b = this.ball;
+    b.x = Math.max(-FIELD_X - 2, Math.min(FIELD_X + 2, fix(b.x, 0)));
+    b.z = Math.max(-FIELD_Z - 2, Math.min(FIELD_Z + 2, fix(b.z, 0)));
+    b.vx = Math.max(-45, Math.min(45, fix(b.vx, 0)));
+    b.vz = Math.max(-45, Math.min(45, fix(b.vz, 0)));
+    b.height = Math.max(0.1, Math.min(9, fix(b.height, 0.12)));
+  }
+
   private moveBall(dt: number) {
+
     const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
     if (holder) {
       this.looseTime = 0;
@@ -525,15 +601,27 @@ export class MatchSim {
     this.ball.vz *= 1 - 0.9 * dt;
     this.ball.height = Math.max(0.12, this.ball.height - dt * 1.2);
 
+    // lateral: sai pela linha lateral, reposição do time que não tocou por último
     if (Math.abs(this.ball.z) > FIELD_Z - 0.5) {
       this.ball.z = Math.sign(this.ball.z) * (FIELD_Z - 1);
-      this.ball.vz *= -0.2;
-      this.giveToNearest(this.possession === "home" ? "away" : "home");
+      this.ball.vz = 0;
+      this.ball.height = 0.12;
+      this.restartFor(this.lastTouch === "home" ? "away" : "home", "throwIn");
       return;
     }
+    // linha de fundo: escanteio se o último toque foi do time que defende aquele lado
     if (Math.abs(this.ball.x) > FIELD_X - 0.5) {
-      this.ball.x = Math.sign(this.ball.x) * (FIELD_X - 3);
-      this.giveToNearest(this.ball.x > 0 ? "away" : "home");
+      const endSide: Side = this.ball.x > 0 ? "away" : "home"; // dono daquela meta
+      this.ball.x = Math.sign(this.ball.x) * (FIELD_X - 0.6);
+      this.ball.height = 0.12;
+      if (this.lastTouch === endSide) {
+        // desviou na defesa → escanteio para o adversário
+        this.ball.z = Math.sign(this.ball.z || 1) * (FIELD_Z - 1);
+        this.restartFor(endSide === "home" ? "away" : "home", "corner");
+      } else {
+        this.ball.z = 0;
+        this.scheduleRestart(endSide);
+      }
       return;
     }
 
@@ -548,12 +636,17 @@ export class MatchSim {
       }
     }
     const ballSpeed = Math.hypot(this.ball.vx, this.ball.vz);
-    if (closest && bestD < 1.9 && ballSpeed < 26) {
-      this.trigger(closest, this.ball.height > 0.9 ? "header" : "trap", 0.5);
+    const h = this.ball.height;
+    // bola muito alta não pode ser dominada; entre 0.9 e 2.4 é cabeceio
+    const reachable = h <= 2.4;
+    if (closest && bestD < 1.9 && ballSpeed < 26 && reachable) {
+      this.trigger(closest, h > 0.9 ? "header" : "trap", 0.5);
       this.ball.holder = closest.id;
       this.possession = closest.side;
+      this.lastTouch = closest.side;
       this.ball.vx = 0;
       this.ball.vz = 0;
+      this.ball.height = 0.12;
       this.looseTime = 0;
       return;
     }
@@ -563,6 +656,8 @@ export class MatchSim {
       closest.z = this.ball.z;
       this.ball.holder = closest.id;
       this.possession = closest.side;
+      this.lastTouch = closest.side;
+      this.ball.height = 0.12;
       this.ball.vx = 0;
       this.ball.vz = 0;
       this.looseTime = 0;
@@ -570,39 +665,42 @@ export class MatchSim {
     }
   }
 
-
-  private giveToNearest(side: Side) {
+  /** entrega a bola parada ao jogador mais próximo do lado indicado */
+  private restartFor(side: Side, kind: "throwIn" | "corner") {
     let best: SimPlayer | null = null;
     let bestD = Infinity;
     for (const p of this.players) {
-      if (p.side !== side) continue;
+      if (p.side !== side || p.pos === "GK") continue;
       const d = Math.hypot(p.x - this.ball.x, p.z - this.ball.z);
       if (d < bestD) {
         bestD = d;
         best = p;
       }
     }
-    if (best) {
-      best.x = this.ball.x;
-      best.z = this.ball.z;
-      this.ball.holder = best.id;
-      this.possession = side;
-      this.ball.vx = 0;
-      this.ball.vz = 0;
-      this.restartTimer = 0.8;
-      const isCorner = Math.abs(this.ball.z) <= FIELD_Z - 2;
-      this.trigger(best, isCorner ? "corner" : "throwIn", 0.9);
-      if (isCorner) {
-        this.stats[side].corners++;
-        this.pushEvent({
-          minute: this.minute(),
-          type: "corner",
-          side,
-          text: `${this.minute()}' Escanteio para ${this.setup(side).short}.`,
-        });
-      }
+    if (!best) return;
+    best.x = this.ball.x;
+    best.z = this.ball.z;
+    best.vx = 0;
+    best.vz = 0;
+    this.ball.holder = best.id;
+    this.possession = side;
+    this.lastTouch = side;
+    this.ball.vx = 0;
+    this.ball.vz = 0;
+    this.looseTime = 0;
+    this.restartTimer = 0.8;
+    this.trigger(best, kind, 0.9);
+    if (kind === "corner") {
+      this.stats[side].corners++;
+      this.pushEvent({
+        minute: this.minute(),
+        type: "corner",
+        side,
+        text: `${this.minute()}' Escanteio para ${this.setup(side).short}.`,
+      });
     }
   }
+
 
   private dribble(holder: SimPlayer, dt: number) {
     if (this.restartTimer > 0) {
@@ -676,6 +774,7 @@ export class MatchSim {
       }
       this.ball.holder = opp.id;
       this.possession = opp.side;
+      this.lastTouch = opp.side;
       this.decisionTimer = 0.4;
       this.trigger(opp, "intercept", 0.5);
     }
@@ -729,6 +828,7 @@ export class MatchSim {
     if (err === 0) this.stats[holder.side].passesOk++;
     this.lastPass[holder.side] = { id: holder.id, time: this.time };
     this.ball.holder = null;
+    this.lastTouch = holder.side;
     this.ball.vx = (dx / d) * power + err * 0.2;
     this.ball.vz = (dz / d) * power + err;
     this.ball.height = dist > 22 ? 1.6 : 0.3;
@@ -741,7 +841,17 @@ export class MatchSim {
     holder.shots++;
     const gk = this.players.find((p) => p.side !== side && p.pos === "GK");
     const accuracy = (holder.shooting / 100) * (1 - Math.min(0.75, distGoal / 40));
+    const gkSkill = gk ? gk.defending * 0.7 + gk.physical * 0.3 : 60;
+
+    // 1) decide o desfecho ANTES da trajetória, para que o visual corresponda ao evento
     const onTarget = this.rnd() < 0.34 + accuracy * 0.55;
+    const goalChance = Math.max(0.06, Math.min(0.55, accuracy * 0.62 - gkSkill / 340));
+    const outcome: "goal" | "saved" | "off" = !onTarget
+      ? "off"
+      : this.rnd() < goalChance
+        ? "goal"
+        : "saved";
+
     const roll = this.rnd();
     this.trigger(
       holder,
@@ -759,6 +869,7 @@ export class MatchSim {
       0.8,
     );
     this.ball.holder = null;
+    this.lastTouch = side;
     // reação ao chute: adversários próximos congelam por uma fração de segundo
     for (const p of this.players) {
       if (p.side === side || p.pos === "GK") continue;
@@ -766,15 +877,25 @@ export class MatchSim {
         this.reactionUntil.set(p.id, this.time + 0.45 + this.rnd() * 0.2);
       }
     }
-    const targetZ = (this.rnd() - 0.5) * (onTarget ? GOAL_Z * 1.4 : GOAL_Z * 4.5);
+
+    // 2) trajetória coerente: no alvo entra entre as traves; fora passa por fora/por cima
+    const inside = (this.rnd() - 0.5) * GOAL_Z * 1.55; // dentro das traves
+    const outsideZ =
+      Math.sign(this.rnd() - 0.5 || 1) * (GOAL_Z + 1.2 + this.rnd() * GOAL_Z * 1.6);
+    const targetZ = outcome === "off" ? outsideZ : inside;
     const dx = dir * FIELD_X - holder.x;
     const dz = targetZ - holder.z;
     const d = Math.hypot(dx, dz) || 1;
-    this.ball.vx = (dx / d) * 34;
-    this.ball.vz = (dz / d) * 34;
-    this.ball.height = 0.8;
+    const power = 30 + this.rnd() * 8;
+    this.ball.vx = (dx / d) * power;
+    this.ball.vz = (dz / d) * power;
+    // altura: no alvo sempre abaixo do travessão (2.44 m); fora pode ir por cima
+    this.ball.height =
+      outcome === "off" && this.rnd() < 0.45 ? 2.9 + this.rnd() * 1.6 : 0.4 + this.rnd() * 1.5;
 
-    if (!onTarget) {
+    if (outcome === "off") {
+      // parte das finalizações erradas desvia na defesa e vira escanteio
+      if (this.rnd() < 0.22) this.lastTouch = side === "home" ? "away" : "home";
       this.shotMap.push({
         x: holder.x,
         z: holder.z,
@@ -789,14 +910,13 @@ export class MatchSim {
         side,
         text: `${this.minute()}' ${holder.name} finaliza para fora.`,
       });
-      this.scheduleRestart(side === "home" ? "away" : "home");
+      // a bola segue viva: quem reinicia é decidido por onde ela sair de campo
+      this.restartTimer = 0.4;
       return;
     }
 
     this.stats[side].onTarget++;
-    const gkSkill = gk ? gk.defending * 0.7 + gk.physical * 0.3 : 60;
-    const goalChance = Math.max(0.05, Math.min(0.45, accuracy * 0.55 - gkSkill / 300));
-    if (this.rnd() < goalChance) {
+    if (outcome === "goal") {
       this.stats[side].goals++;
       holder.goals++;
       const assist = this.lastPass[side];
@@ -859,13 +979,17 @@ export class MatchSim {
     }
   }
 
+
   private scheduleRestart(side: Side) {
     const gk = this.players.find((p) => p.side === side && p.pos === "GK");
     if (!gk) return;
     this.ball.holder = gk.id;
     this.possession = side;
+    this.lastTouch = side;
     this.ball.vx = 0;
     this.ball.vz = 0;
+    this.ball.height = 0.12;
+    this.looseTime = 0;
     this.restartTimer = 1.5;
     this.decisionTimer = 1.2;
     this.trigger(gk, this.rnd() < 0.5 ? "goalKick" : "distribute", 1.1);

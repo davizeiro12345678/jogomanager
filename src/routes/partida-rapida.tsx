@@ -288,9 +288,18 @@ function QuickLive({
     const fresh = sim.events.slice(cursorRef.current);
     cursorRef.current = sim.events.length;
     for (const e of fresh) {
-      if (e.side === "neutral") continue;
-      if (!["goal", "save", "shot", "foul", "kickoff", "halftime", "fulltime"].includes(e.type)) continue;
-      n.speak(e.type as NarrationEvent, e.side === "home" ? sim.home.short : sim.away.short);
+      const ev: NarrationEvent | null =
+        e.type === "yellow" || e.type === "red"
+          ? "card"
+          : (["goal", "save", "shot", "foul", "kickoff", "halftime", "fulltime"] as const).includes(
+                e.type as never,
+              )
+            ? (e.type as NarrationEvent)
+            : null;
+      if (!ev) continue;
+      const neutral = ev === "kickoff" || ev === "halftime" || ev === "fulltime";
+      if (e.side === "neutral" && !neutral) continue;
+      n.speak(ev, e.side === "away" ? sim.away.short : sim.home.short);
     }
   }, [snap, sim]);
 

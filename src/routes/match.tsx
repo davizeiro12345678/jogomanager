@@ -370,10 +370,20 @@ function LiveMatch({
     const fresh = sim.events.slice(narrCursorRef.current);
     narrCursorRef.current = sim.events.length;
     for (const e of fresh) {
-      if (e.side === "neutral") continue;
-      if (!["goal", "save", "shot", "foul", "kickoff", "halftime", "fulltime"].includes(e.type)) continue;
-      const team = e.side === "home" ? sim.home.short : sim.away.short;
-      n.speak(e.type as NarrationEvent, team);
+      const ev: NarrationEvent | null =
+        e.type === "yellow" || e.type === "red"
+          ? "card"
+          : (["goal", "save", "shot", "foul", "kickoff", "halftime", "fulltime"] as const).includes(
+                e.type as never,
+              )
+            ? (e.type as NarrationEvent)
+            : null;
+      if (!ev) continue;
+      const neutral = ev === "kickoff" || ev === "halftime" || ev === "fulltime";
+      if (e.side === "neutral" && !neutral) continue;
+      const team =
+        e.side === "home" ? sim.home.short : e.side === "away" ? sim.away.short : sim.home.short;
+      n.speak(ev, team);
     }
   }, [snap, sim]);
 
