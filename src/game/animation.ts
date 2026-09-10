@@ -5,6 +5,7 @@
 // `animation-extra.ts`; aqui ficam os clipes base e a máquina de estados.
 
 import { EXTRA_CLIPS } from "./animation-extra";
+import { EXTRA2_CLIPS } from "./animation-extra2";
 import {
   JOINTS,
   emptyPose,
