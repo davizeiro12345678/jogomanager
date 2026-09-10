@@ -891,6 +891,8 @@ export class MatchSim {
       outcome === "off" && this.rnd() < 0.45 ? 2.9 + this.rnd() * 1.6 : 0.4 + this.rnd() * 1.5;
 
     if (outcome === "off") {
+      // parte das finalizações erradas desvia na defesa e vira escanteio
+      if (this.rnd() < 0.22) this.lastTouch = side === "home" ? "away" : "home";
       this.shotMap.push({
         x: holder.x,
         z: holder.z,
