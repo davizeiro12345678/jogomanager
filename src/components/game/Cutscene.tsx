@@ -589,6 +589,23 @@ export function Cutscene({
             className="pointer-events-none absolute inset-0 opacity-[0.07] mix-blend-overlay"
             style={{ backgroundImage: GRAIN, backgroundSize: "160px 160px" }}
           />
+          {/* halation: brilho difuso nas altas luzes, como filme */}
+          <div
+            className="pointer-events-none absolute inset-0 mix-blend-screen"
+            style={{
+              background:
+                "radial-gradient(60% 45% at 50% 22%, rgba(255,214,150,0.16), transparent 70%)",
+            }}
+          />
+          {/* franja cromática sutil nas bordas */}
+          <div
+            className="pointer-events-none absolute inset-0 mix-blend-screen opacity-30"
+            style={{
+              background:
+                "linear-gradient(90deg, rgba(60,130,255,0.22), transparent 12%, transparent 88%, rgba(255,80,60,0.2))",
+            }}
+          />
+
           {/* tarjas cinematográficas */}
           <div className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-black/80 sm:h-5" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 bg-black/80 sm:h-5" />
