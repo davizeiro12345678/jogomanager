@@ -29,6 +29,12 @@ import {
   type Pose,
 } from "@/game/animation";
 import { kitTexture, type Kit } from "@/game/kits";
+import {
+  bootGrainNormal,
+  jerseyWeaveNormal,
+  skinPoreNormal,
+  sockRibNormal,
+} from "@/game/textures/fabric";
 import { useVisual } from "@/game/visual-settings";
 import {
   lodForDistance,
@@ -117,6 +123,8 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
   const ankleLRef = useRef<THREE.Group>(null);
   const ankleRRef = useRef<THREE.Group>(null);
   const shadowRef = useRef<THREE.Mesh>(null);
+  const blinkRef = useRef<THREE.Group>(null);
+  const nextBlink = useRef(1 + Math.random() * 4);
 
   // grupos de LOD: detalhes finos (rosto, dedos, costuras) e corpo médio
   const lod0 = useRef<THREE.Group>(null);
@@ -292,6 +300,18 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     if (ankleRRef.current) ankleRRef.current.rotation.x = c.ankleR;
 
 
+    // ---- piscada ocasional (só perto da câmera, onde o rosto aparece)
+    if (blinkRef.current && lod === 0) {
+      nextBlink.current -= adt;
+      const b = blinkRef.current;
+      if (nextBlink.current <= 0) {
+        b.scale.y = Math.min(1, b.scale.y + adt * 22);
+        if (b.scale.y >= 1) nextBlink.current = 2 + ((seed % 7) + Math.random() * 3);
+      } else {
+        b.scale.y = Math.max(0.001, b.scale.y - adt * 16);
+      }
+    }
+
     // ---- sombra de contato acompanha a altura do quadril
     if (shadowRef.current) {
       const s = 1 - c.hipY * 0.5;
@@ -307,10 +327,19 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
 
   const segs = segmentsFor(0);
 
+  // relevo procedural (trama da malha, canelado do meião, poros, couro)
+  const weave = useMemo(() => (hi ? jerseyWeaveNormal() : null), [hi]);
+  const rib = useMemo(() => (hi ? sockRibNormal() : null), [hi]);
+  const pores = useMemo(() => (hi ? skinPoreNormal() : null), [hi]);
+  const grain = useMemo(() => (hi ? bootGrainNormal() : null), [hi]);
+  const nScale = useMemo(() => new THREE.Vector2(0.55, 0.55), []);
+
   const skinMat = hi ? (
     <meshPhysicalMaterial
       color={look.skin}
       roughness={0.6 - look.sweat * 0.16}
+      normalMap={pores ?? null}
+      normalScale={nScale}
       clearcoat={0.28 + look.sweat * 0.25}
       envMapIntensity={0.8}
       clearcoatRoughness={0.5}
@@ -327,6 +356,8 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     <meshPhysicalMaterial
       color={kit.base}
       map={tex ?? null}
+      normalMap={weave ?? null}
+      normalScale={nScale}
       roughness={0.76}
       envMapIntensity={0.7}
       sheen={0.5}
@@ -340,6 +371,8 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     <meshPhysicalMaterial
       color={kit.shorts}
       roughness={0.84}
+      normalMap={weave ?? null}
+      normalScale={nScale}
       sheen={0.4}
       sheenColor={shade(kit.shorts, 0.35)}
     />
@@ -350,6 +383,8 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     <meshPhysicalMaterial
       color={kit.socks}
       roughness={0.92}
+      normalMap={rib ?? null}
+      normalScale={nScale}
       sheen={0.6}
       sheenRoughness={0.8}
       sheenColor={shade(kit.socks, 0.45)}
@@ -365,6 +400,8 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     <meshPhysicalMaterial
       color={look.bootColor}
       roughness={0.22}
+      normalMap={grain ?? null}
+      normalScale={nScale}
       metalness={0.1}
       clearcoat={0.85}
       clearcoatRoughness={0.18}
@@ -633,9 +670,38 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
           </mesh>
         </group>
       ))}
+      {/* pálpebras: piscam de vez em quando */}
+      <group ref={blinkRef}>
+        {[-1, 1].map((s) => (
+          <mesh
+            key={s}
+            position={[s * P.headR * 0.36, P.headR * 0.16, P.headR * 0.84]}
+            scale={[1, 0.001, 1]}
+          >
+            <boxGeometry args={[P.headR * 0.34, P.headR * 0.3, P.headR * 0.08]} />
+            {skinMat}
+          </mesh>
+        ))}
+      </group>
       {/* nariz */}
       <mesh position={[0, -P.headR * 0.05, P.headR * 0.95]} rotation={[0.3, 0, 0]}>
         <coneGeometry args={[P.headR * 0.16, P.headR * 0.34, 6]} />
+        {skinMat}
+      </mesh>
+      {/* maçãs do rosto */}
+      {[-1, 1].map((s) => (
+        <mesh
+          key={`c${s}`}
+          position={[s * P.headR * 0.5, -P.headR * 0.16, P.headR * 0.66]}
+          scale={[1, 0.8, 0.6]}
+        >
+          <sphereGeometry args={[P.headR * 0.26, 8, 8]} />
+          {skinMat}
+        </mesh>
+      ))}
+      {/* lábio inferior + queixo */}
+      <mesh position={[0, -P.headR * 0.55, P.headR * 0.78]} scale={[0.9, 0.6, 0.7]}>
+        <sphereGeometry args={[P.headR * 0.24, 8, 8]} />
         {skinMat}
       </mesh>
       {/* boca */}

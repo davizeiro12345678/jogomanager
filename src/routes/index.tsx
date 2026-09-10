@@ -87,18 +87,41 @@ function Landing() {
 
   return (
     <div className="pitch-bg min-h-screen">
-      <div className="mx-auto max-w-6xl px-4 py-16">
+      <div className="relative mx-auto max-w-6xl px-4 py-16">
+        {/* brilho de refletor atrás do título */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-24 left-1/4 h-72 w-[36rem] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]"
+        />
         <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">
           Temporada 2026
         </p>
         <h1 className="mt-3 max-w-3xl font-display text-5xl leading-[1.05] sm:text-7xl">
           Você é o manager.
-          <br />O jogo acontece em 3D.
+          <br />
+          <span className="bg-gradient-to-r from-primary to-foreground bg-clip-text text-transparent">
+            O jogo acontece em 3D.
+          </span>
         </h1>
         <p className="mt-5 max-w-xl text-lg text-muted-foreground">
           Escolha um clube real, monte a escalação, defina a tática e assista aos 90 minutos ao
           vivo num estádio 3D — dando ordens enquanto a bola rola. Sem cadastro: é só jogar.
         </p>
+
+        <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4">
+          {[
+            [`${Object.keys(CLUBS).length}+`, "clubes reais"],
+            [`${LEAGUES.length}`, "ligas e copas"],
+            ["90'", "em 3D ao vivo"],
+            ["0", "custo para jogar"],
+          ].map(([v, k]) => (
+            <div key={k}>
+              <dt className="font-display text-3xl text-primary">{v}</dt>
+              <dd className="text-xs uppercase tracking-widest text-muted-foreground">{k}</dd>
+            </div>
+          ))}
+        </dl>
+
 
         {resume ? (
           <Link
@@ -155,7 +178,7 @@ function Landing() {
               <Link
                 key={c.to}
                 to={c.to}
-                className="group rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur transition hover:border-primary/50 hover:bg-card"
+                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-card hover:shadow-lg"
               >
                 <p className="font-display text-lg group-hover:text-primary">{c.title}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{c.text}</p>
