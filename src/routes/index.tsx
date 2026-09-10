@@ -178,7 +178,7 @@ function Landing() {
               <Link
                 key={c.to}
                 to={c.to}
-                className="group rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur transition hover:border-primary/50 hover:bg-card"
+                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-card hover:shadow-lg"
               >
                 <p className="font-display text-lg group-hover:text-primary">{c.title}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{c.text}</p>

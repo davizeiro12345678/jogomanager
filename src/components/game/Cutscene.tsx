@@ -512,6 +512,38 @@ export function Cutscene({
               }}
             />
           )}
+          {/* partículas de poeira no facho de luz */}
+          {!reduced && (
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              {Array.from({ length: 18 }).map((_, n) => (
+                <span
+                  key={n}
+                  className="absolute block rounded-full bg-white/40 cs-anim-bob"
+                  style={{
+                    left: `${(n * 37) % 100}%`,
+                    top: `${(n * 53) % 100}%`,
+                    width: `${1 + (n % 3)}px`,
+                    height: `${1 + (n % 3)}px`,
+                    opacity: 0.12 + (n % 5) * 0.05,
+                    animationDelay: `${(n % 7) * 380}ms`,
+                    animationDuration: `${3 + (n % 4)}s`,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+          {/* tonalização quente/fria conforme o clima da cena */}
+          <div
+            className="pointer-events-none absolute inset-0 mix-blend-soft-light"
+            style={{
+              background:
+                data.mood === "bad"
+                  ? "linear-gradient(180deg, rgba(40,80,160,0.45), rgba(0,0,0,0.2))"
+                  : data.mood === "good"
+                    ? "linear-gradient(180deg, rgba(255,190,90,0.4), rgba(0,0,0,0.15))"
+                    : "linear-gradient(180deg, rgba(255,255,255,0.12), transparent)",
+            }}
+          />
           {/* vinheta + granulado */}
           <div
             className="pointer-events-none absolute inset-0"
