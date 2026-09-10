@@ -84,7 +84,12 @@ export function subscribeVisual(fn: (v: VisualSettings) => void) {
 /** Hook: devolve os ajustes atuais e re-renderiza quando mudam. */
 export function useVisual(): VisualSettings {
   const [v, setV] = useState<VisualSettings>(() => getVisual());
-  useEffect(() => subscribeVisual(setV), []);
+  useEffect(() => {
+    const off = subscribeVisual(setV);
+    return () => {
+      off();
+    };
+  }, []);
   return v;
 }
 
