@@ -93,7 +93,13 @@ function Landing() {
           aria-hidden="true"
           className="pointer-events-none absolute -top-24 left-1/4 h-72 w-[36rem] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]"
         />
-        <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">
+        {/* linhas do gramado ao fundo, bem discretas */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] opacity-[0.07] [background-image:repeating-linear-gradient(90deg,transparent_0_44px,hsl(var(--foreground))_44px_45px)] [mask-image:linear-gradient(to_bottom,black,transparent)]"
+        />
+        <p className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-display text-[0.65rem] uppercase tracking-[0.35em] text-primary">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
           Temporada 2026
         </p>
         <h1 className="mt-3 max-w-3xl font-display text-5xl leading-[1.05] sm:text-7xl">
@@ -121,6 +127,25 @@ function Landing() {
             </div>
           ))}
         </dl>
+
+        {/* faixa de escudos: mostra de cara que os clubes são reais */}
+        <div
+          aria-hidden="true"
+          className="mt-8 -mx-4 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]"
+        >
+          <div className="flex w-max gap-3 px-4 motion-safe:animate-[marquee_38s_linear_infinite]">
+            {[...LEAGUES.flatMap((l) => l.clubs.slice(0, 5)), ...LEAGUES.flatMap((l) => l.clubs.slice(0, 5))].map(
+              (c, i) => (
+                <span
+                  key={`${c.id}-${i}`}
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-border/50 bg-card/60 backdrop-blur"
+                >
+                  <Crest club={c} size={26} />
+                </span>
+              ),
+            )}
+          </div>
+        </div>
 
 
         {resume ? (
