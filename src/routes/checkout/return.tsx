@@ -38,6 +38,7 @@ const MAX_TRIES = 15; // ~30 segundos
 function CheckoutReturn() {
   const { session_id: sessionId } = Route.useSearch();
   const fetchPurchases = useServerFn(getPurchases);
+  const claimSession = useServerFn(claimCheckoutSession);
   const [status, setStatus] = useState<"loading" | "delivered" | "slow" | "error">(
     sessionId ? "loading" : "error",
   );
@@ -63,6 +64,7 @@ function CheckoutReturn() {
       return false;
     }
   }, [fetchPurchases, sessionId]);
+
 
   useEffect(() => {
     if (!sessionId) return;
