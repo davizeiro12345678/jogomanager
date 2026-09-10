@@ -18,6 +18,7 @@ import {
   Play,
   Search,
   ShoppingBag,
+  SlidersHorizontal,
   Sparkles,
   Swords,
   Table2,
