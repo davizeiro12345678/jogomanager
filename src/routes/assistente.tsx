@@ -1,3 +1,4 @@
+import { aiErrorMessage } from "@/lib/ai-error";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
@@ -167,7 +168,7 @@ function useCachedTool<TInput>(
   return {
     result,
     loading: mutation.isPending,
-    error: mutation.isError ? (mutation.error as Error).message : null,
+    error: mutation.isError ? aiErrorMessage(mutation.error) : null,
     generate: (input: TInput) => mutation.mutate(input),
   };
 }
@@ -457,7 +458,7 @@ function AssistenteContent({ career }: { career: CareerState }) {
             <p className="text-xs text-muted-foreground">Assistente está digitando…</p>
           ) : null}
           {chatMutation.isError ? (
-            <p className="text-sm text-destructive">{(chatMutation.error as Error).message}</p>
+            <p className="text-sm text-destructive">{aiErrorMessage(chatMutation.error)}</p>
           ) : null}
         </div>
         <div className="mt-3 flex gap-2">
