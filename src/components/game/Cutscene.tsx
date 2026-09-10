@@ -480,14 +480,15 @@ export function Cutscene({
           onPointerMove={onPointerMove}
           className="relative h-48 overflow-hidden sm:h-64"
         >
+          {/* enquadramento muda a cada fala, como corte de câmera */}
           {/* camada de fundo: mais lenta, levemente desfocada (profundidade) */}
           <div
             className={`absolute -inset-6 ${reduced ? "" : "cs-anim-zoom"}`}
             style={{
-              transform: `translate3d(${par.x * 6}px, ${par.y * 4}px, 0) scale(1.12)`,
+              transform: `translate3d(${par.x * 6 + shot.x * 0.4}px, ${par.y * 4 + shot.y * 0.4}px, 0) scale(${1.12 + shot.z * 0.5})`,
               filter: "blur(3px) saturate(0.85)",
               opacity: 0.85,
-              transition: reduced ? undefined : "transform 220ms ease-out",
+              transition: reduced ? undefined : "transform 700ms cubic-bezier(.2,.7,.2,1)",
             }}
           >
             <Backdrop art={data.art} a={accent2} b={accent} reduced={reduced} trophies={trophies} />
@@ -496,12 +497,34 @@ export function Cutscene({
           <div
             className={`absolute inset-0 ${reduced ? "" : "cs-anim-zoom"}`}
             style={{
-              transform: `translate3d(${par.x * -14}px, ${par.y * -9}px, 0)`,
-              transition: reduced ? undefined : "transform 180ms ease-out",
+              transform: `translate3d(${par.x * -14 + shot.x}px, ${par.y * -9 + shot.y}px, 0) scale(${1 + shot.z})`,
+              transition: reduced ? undefined : "transform 700ms cubic-bezier(.2,.7,.2,1)",
             }}
           >
             <Backdrop art={data.art} a={accent} b={accent2} reduced={reduced} trophies={trophies} />
           </div>
+          {/* luzes desfocadas ao fundo (bokeh de refletores) */}
+          {!reduced && (
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              {Array.from({ length: 7 }).map((_, n) => (
+                <span
+                  key={`b${n}`}
+                  className="absolute block rounded-full cs-anim-bob"
+                  style={{
+                    left: `${8 + ((n * 61) % 85)}%`,
+                    top: `${4 + ((n * 29) % 45)}%`,
+                    width: `${18 + (n % 4) * 10}px`,
+                    height: `${18 + (n % 4) * 10}px`,
+                    background: `radial-gradient(circle, ${n % 2 ? accent : accent2}66, transparent 70%)`,
+                    filter: "blur(6px)",
+                    opacity: 0.5,
+                    animationDelay: `${n * 520}ms`,
+                    animationDuration: `${5 + (n % 3)}s`,
+                  }}
+                />
+              ))}
+            </div>
+          )}
           {/* varredura de luz */}
           {!reduced && (
             <div
