@@ -21,7 +21,8 @@ interface SitemapEntry {
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
-      GET: async () => {
+      GET: async ({ request }) => {
+        const BASE_URL = baseUrlFor(request);
         const entries: SitemapEntry[] = [
           { path: "/", changefreq: "weekly", priority: "1.0" },
           { path: "/jogo-de-manager-de-futebol", changefreq: "weekly", priority: "0.9" },
