@@ -6,7 +6,7 @@ import { CLUBS, LEAGUES } from "@/game/data/leagues";
 import { Crest } from "@/components/game/Crest";
 import { readLocalCareer } from "@/lib/careerStorage";
 import { Flag } from "@/components/game/Flag";
-import { canonical, gameLd, seoMeta } from "@/lib/seo";
+import { canonical, gameLd, seoMeta, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
 import heroStadium from "@/assets/hero-stadium.jpg";
 
 export const Route = createFileRoute("/")({
