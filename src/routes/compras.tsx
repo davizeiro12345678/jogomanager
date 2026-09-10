@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { Coins, Clock, CheckCircle2, AlertTriangle, ShoppingBag } from "lucide-react";
 
 import { GameShell } from "@/components/game/GameShell";
-import { useSignedIn } from "@/hooks/useCareer";
+import { useCareer, useSignedIn } from "@/hooks/useCareer";
 import { getPurchases, type PurchaseRow } from "@/lib/purchases.functions";
 import { track } from "@/lib/analytics";
 import { Badge } from "@/components/ui/badge";
@@ -109,6 +109,7 @@ function PurchaseLine({ purchase }: { purchase: PurchaseRow }) {
 
 function ComprasPage() {
   const signedIn = useSignedIn();
+  const { career } = useCareer();
   const fetchPurchases = useServerFn(getPurchases);
 
   const query = useQuery({
@@ -125,7 +126,7 @@ function ComprasPage() {
   const data = query.data;
 
   return (
-    <GameShell>
+    <GameShell career={career}>
       <div className="mx-auto max-w-3xl px-4 py-6">
         <h1 className="font-display text-2xl uppercase tracking-wide">Minhas compras</h1>
         <p className="mt-1 text-sm text-muted-foreground">

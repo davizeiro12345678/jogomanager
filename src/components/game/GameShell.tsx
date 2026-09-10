@@ -16,6 +16,7 @@ import {
   MessagesSquare,
   Newspaper,
   Play,
+  Receipt,
   Search,
   ShoppingBag,
   SlidersHorizontal,

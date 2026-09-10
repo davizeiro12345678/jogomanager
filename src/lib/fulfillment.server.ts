@@ -80,7 +80,7 @@ export async function markPurchaseFailed(
   const supabase = getSupabase();
   await supabase
     .from("user_purchases")
-    .update({ status: "failed", error: message.slice(0, 400) } as any)
+    .update({ status: "failed", error: message.slice(0, 400) } as never)
     .eq("reference", reference)
     .neq("status", "completed");
 }
