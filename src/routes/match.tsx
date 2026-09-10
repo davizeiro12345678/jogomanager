@@ -6,15 +6,27 @@ import {
   ChevronDown,
   FastForward,
   Gauge,
+  MessageCircle,
   Pause,
   Play,
   Repeat,
+  ShoppingBag,
   SkipForward,
   Sparkles,
   Volume2,
   VolumeX,
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { ChatPanel } from "@/components/game/ChatPanel";
+import { StorePanel } from "@/components/game/StorePanel";
 
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
 import { Crest } from "@/components/game/Crest";
@@ -325,6 +337,8 @@ function LiveMatch({
   const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [showStats, setShowStats] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  /** gaveta lateral: loja ou chat sem sair da partida (o jogo pausa) */
+  const [drawer, setDrawer] = useState<"none" | "store" | "chat">("none");
   const [done, setDone] = useState(false);
   const [narrating, setNarrating] = useState(false);
   const narratorRef = useRef<Narrator | null>(null);
@@ -626,6 +640,26 @@ function LiveMatch({
           {narrating ? <Volume2 size={16} /> : <VolumeX size={16} />}
         </button>
         <button
+          onClick={() => {
+            setPaused(true);
+            setDrawer("store");
+          }}
+          aria-label="Abrir loja"
+          className="grid h-9 w-9 place-items-center rounded-full text-white/80"
+        >
+          <ShoppingBag size={16} />
+        </button>
+        <button
+          onClick={() => {
+            setPaused(true);
+            setDrawer("chat");
+          }}
+          aria-label="Abrir chat"
+          className="grid h-9 w-9 place-items-center rounded-full text-white/80"
+        >
+          <MessageCircle size={16} />
+        </button>
+        <button
           onClick={skip}
           aria-label="Pular para o fim"
           className="grid h-9 w-9 place-items-center rounded-full text-white/80"
@@ -640,6 +674,33 @@ function LiveMatch({
           <ChevronDown size={16} className={panelOpen ? "" : "rotate-180"} />
         </button>
       </div>
+
+      {/* Loja e chat sem sair da partida */}
+      <Sheet open={drawer !== "none"} onOpenChange={(o) => !o && setDrawer("none")}>
+        <SheetContent
+          side="right"
+          className="flex w-full flex-col overflow-y-auto sm:max-w-md"
+        >
+          <SheetHeader>
+            <SheetTitle className="font-display uppercase tracking-wide">
+              {drawer === "store" ? "Loja" : "Chat global"}
+            </SheetTitle>
+            <SheetDescription>
+              {drawer === "store"
+                ? "A partida fica pausada enquanto você compra."
+                : "Converse com outros técnicos sem perder o jogo."}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 flex min-h-0 flex-1 flex-col">
+            {drawer === "store" ? (
+              <StorePanel next="/match" columns={1} />
+            ) : drawer === "chat" ? (
+              <ChatPanel next="/match" />
+            ) : null}
+          </div>
+        </SheetContent>
+      </Sheet>
+
 
       {/* Painel de controle */}
       <div
