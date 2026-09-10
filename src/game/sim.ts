@@ -598,7 +598,9 @@ export class MatchSim {
     b.z = Math.max(-FIELD_Z - 2, Math.min(FIELD_Z + 2, fix(b.z, 0)));
     b.vx = Math.max(-45, Math.min(45, fix(b.vx, 0)));
     b.vz = Math.max(-45, Math.min(45, fix(b.vz, 0)));
-    b.height = Math.max(0.1, Math.min(9, fix(b.height, 0.12)));
+    b.height = Math.max(0.1, Math.min(12, fix(b.height, 0.12)));
+    this.ballVy = Math.max(-30, Math.min(30, fix(this.ballVy, 0)));
+    this.ballSpin = Math.max(-12, Math.min(12, fix(this.ballSpin, 0)));
   }
 
   private moveBall(dt: number) {
