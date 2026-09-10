@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { spendCoinsFn } from "@/lib/wallet.functions";
 
 export interface WalletState {
   coins: number;
@@ -38,9 +39,10 @@ export async function spendCoins(amount: number): Promise<WalletState | null> {
     throw new Error("É preciso estar logado para gastar moedas.");
   }
 
-  const { data, error } = await supabase.rpc("spend_coins", { amount });
-  if (error) throw new Error(error.message);
-  const row = Array.isArray(data) ? data[0] : data;
-  if (!row) return null; // saldo insuficiente
-  return { coins: row.coins, seasonPass: row.season_pass };
+  const result = await spendCoinsFn({ data: { amount } });
+  if (!result.ok) {
+    if (result.reason === "insufficient") return null;
+    throw new Error("Não foi possível gastar as moedas agora.");
+  }
+  return { coins: result.coins, seasonPass: result.seasonPass };
 }
