@@ -620,9 +620,12 @@ export type Database = {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
       }
-      send_chat_message: { Args: { message_body: string }; Returns: string }
-      spend_coins: {
-        Args: { amount: number }
+      send_chat_message_for: {
+        Args: { _user_id: string; message_body: string }
+        Returns: string
+      }
+      spend_coins_for: {
+        Args: { _user_id: string; amount: number }
         Returns: {
           coins: number
           season_pass: boolean
