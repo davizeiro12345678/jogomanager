@@ -418,6 +418,9 @@ export class MatchSim {
         this.decisionTimer = 1.5 - tempo * 0.35 + this.rnd() * 0.6;
       }
     }
+    // segunda passada: o condutor também não pode terminar dentro de outro jogador
+    this.separate();
+    this.sanitize();
   }
 
   /** ids dos jogadores designados a perseguir a bola solta */
