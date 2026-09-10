@@ -114,7 +114,7 @@ function Landing() {
           vivo num estádio 3D — dando ordens enquanto a bola rola. Sem cadastro: é só jogar.
         </p>
 
-        <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4">
+        <dl className="mt-8 grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:gap-x-10">
           {[
             [`${Object.keys(CLUBS).length}+`, "clubes reais"],
             [`${LEAGUES.length}`, "ligas e copas"],
@@ -168,33 +168,25 @@ function Landing() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             to={hasCareer ? "/dashboard" : "/new"}
-            className="rounded-lg bg-primary px-6 py-3 font-display text-sm uppercase tracking-widest text-primary-foreground transition hover:brightness-110"
+            className="flex-1 rounded-lg bg-primary px-6 py-3 text-center font-display text-sm uppercase tracking-widest text-primary-foreground transition hover:brightness-110 sm:flex-none"
           >
             {hasCareer ? "Continuar carreira" : "Jogar agora"}
           </Link>
           <Link
             to="/partida-rapida"
-            className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest text-foreground transition hover:bg-secondary"
+            className="flex-1 rounded-lg border border-border px-6 py-3 text-center font-display text-sm uppercase tracking-widest text-foreground transition hover:bg-secondary sm:flex-none"
           >
             Partida rápida
           </Link>
-          <Link
-            to="/multiplayer"
-            className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest text-foreground transition hover:bg-secondary"
-          >
-            Multiplayer 1x1
-          </Link>
-          <Link
-            to="/auth"
-            className="rounded-lg px-6 py-3 font-display text-sm uppercase tracking-widest text-muted-foreground transition hover:text-foreground"
-          >
-            Entrar (opcional)
-          </Link>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          O e-mail é opcional — serve só para salvar a carreira na nuvem e jogar em outros
-          aparelhos.
+          Sem cadastro para jogar.{" "}
+          <Link to="/auth" className="underline underline-offset-4 hover:text-foreground">
+            Entrar
+          </Link>{" "}
+          só serve para salvar a carreira na nuvem.
         </p>
+
 
         <section className="mt-12">
           <h2 className="sr-only">Por onde começar</h2>
@@ -212,7 +204,7 @@ function Landing() {
           </div>
         </section>
 
-        <nav className="mt-10 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <nav className="mt-10 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground sm:text-sm">
           <Link to="/guias" className="underline-offset-4 hover:text-foreground hover:underline">
             Guias para iniciantes
           </Link>
@@ -255,9 +247,17 @@ function Landing() {
 
 
         <section className="mt-16">
-          <h2 className="font-display text-2xl uppercase tracking-wide">Ligas disponíveis</h2>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-display text-2xl uppercase tracking-wide">Ligas disponíveis</h2>
+            <Link
+              to="/ligas-de-futebol"
+              className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Ver todas as {LEAGUES.length} ligas
+            </Link>
+          </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {LEAGUES.map((l) => (
+            {LEAGUES.slice(0, 8).map((l) => (
               <div
                 key={l.id}
                 className="rounded-xl border border-border/60 bg-card/70 p-4 backdrop-blur"
@@ -275,6 +275,7 @@ function Landing() {
             ))}
           </div>
         </section>
+
       </div>
     </div>
   );

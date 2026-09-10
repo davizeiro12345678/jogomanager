@@ -7,6 +7,8 @@
 - [ ] Melhorias massivas: jogadores, cutscenes, stack visual do site
 - [ ] Carreira de treinador ligada de ponta a ponta (liga, finanças, pressão, contratações, temporada completa)
 - [ ] Narração e eventos dinâmicos adaptativos; conquistas de engajamento
+- [x] Tela inicial enxuta no celular (2 botões, ligas resumidas)
+- [x] Novos pacotes na loja (moedas iniciais, cofre, comemorações, estádio)
 - [x] Loja com packs baratos + chat com pessoas reais e com IA (também dentro da partida, em gaveta)
 - [ ] Editor/customização: elencos, escudos, kits, nomes, fotos, campeonatos e ligas; regens com foto
 - [ ] Atributos detalhados dos jogadores (personalidade, moral, histórico de clubes, fotos)
