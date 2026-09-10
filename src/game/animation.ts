@@ -877,31 +877,57 @@ export interface SelectCtx {
   time: number;
 }
 
+/** sorteio determinístico e lento (troca a cada `every` segundos) */
+function pick<T>(list: T[], c: SelectCtx, every = 4): T {
+  const i = (c.seed + Math.floor(c.time / every)) % list.length;
+  return list[i]!;
+}
+
 export function selectClip(c: SelectCtx): ClipName {
   if (c.action) return ACTION_CLIP[c.action];
 
   if (c.isGK) {
+    if (c.speed > 5) return "gkSweeper";
     if (c.speed > 1.6) return "gkShuffle";
+    if (c.ballDist < 14) return "gkPenaltyReady";
+    if (c.ballDist > 55) return pick<ClipName>(["gkStance", "gkWallSetup", "handsOnHips"], c, 6);
     return "gkStance";
   }
 
-  if (c.stopped) return c.seed % 3 === 0 ? "whistleStop" : "restart";
+  if (c.stopped)
+    return pick<ClipName>(["whistleStop", "restart", "lineUpPose", "freeKickWall", "handsOnHips"], c, 3);
 
   const sp = c.speed;
   if (c.hasBall) {
-    if (sp > 5.4) return "dribbleFast";
-    if (sp > 1.2) return "dribbleLight";
-    return (c.seed + Math.floor(c.time * 0.5)) % 2 === 0 ? "feint" : "stepover";
+    if (sp > 7.2) return "knockOn";
+    if (sp > 5.4) return pick<ClipName>(["dribbleFast", "dribbleSlalom", "oneTwoRun"], c, 2);
+    if (sp > 2.4) return pick<ClipName>(["dribbleLight", "closeControl", "dribbleSlalom"], c, 2);
+    if (sp > 1.2) return pick<ClipName>(["closeControl", "shieldBall"], c, 2);
+    return pick<ClipName>(
+      ["feint", "stepover", "scissorsDouble", "dragBack", "cruyffTurn", "heelFlick", "rouletteSpin"],
+      c,
+      2,
+    );
   }
 
   if (sp < 0.35) {
-    if (c.defending && c.ballDist < 18) return "mark";
-    const k = (c.seed + Math.floor(c.time / 4)) % 3;
-    return k === 0 ? "idle" : k === 1 ? "breathe" : "weightShift";
+    if (c.defending && c.ballDist < 18) return pick<ClipName>(["mark", "markTight", "jockey"], c, 3);
+    if (c.stamina < 30) return pick<ClipName>(["catchBreathKnees", "handsOnHips", "tired"], c, 3);
+    return pick<ClipName>(
+      ["idle", "breathe", "weightShift", "handsOnHips", "applaudFans", "handsOnHead"],
+      c,
+    );
   }
-  if (sp < 1.2) return c.defending && c.ballDist < 12 ? "sideStep" : "walk";
-  if (sp < 2.6) return c.stamina < 45 ? "tired" : "walk";
-  if (sp < 4.2) return c.stamina < 40 ? "tired" : "jog";
-  if (sp < 6.2) return c.defending ? "recover" : "run";
-  return "sprint";
+  if (sp < 1.2) {
+    if (c.defending && c.ballDist < 12)
+      return pick<ClipName>(["sideStep", "shuffleLeft", "shuffleRight", "jockey"], c, 2);
+    return pick<ClipName>(["walk", "stroll"], c, 5);
+  }
+  if (sp < 2.6) return c.stamina < 45 ? "tired" : pick<ClipName>(["walk", "stroll", "joggingBack"], c, 4);
+  if (sp < 4.2) return c.stamina < 40 ? "tired" : pick<ClipName>(["jog", "joggingBack"], c, 4);
+  if (sp < 6.2)
+    return c.defending
+      ? pick<ClipName>(["recover", "pressTrigger"], c, 3)
+      : pick<ClipName>(["run", "curveRunLeft", "curveRunRight", "dummyRun"], c, 3);
+  return c.defending ? "recoverySprint" : pick<ClipName>(["sprint", "curveRunLeft", "curveRunRight"], c, 3);
 }
