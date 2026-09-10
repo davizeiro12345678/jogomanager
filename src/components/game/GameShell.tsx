@@ -66,6 +66,7 @@ const TABS: {
   { to: "/loja", key: "nav.store", icon: ShoppingBag, group: "Extras" },
   { to: "/multiplayer", key: "nav.versus", icon: Swords, group: "Extras" },
   { to: "/replays", key: "nav.replays", icon: Clapperboard, group: "Extras" },
+  { to: "/visual", key: "nav.visual", icon: SlidersHorizontal, group: "Extras" },
 ];
 
 
