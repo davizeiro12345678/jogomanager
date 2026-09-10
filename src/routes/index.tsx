@@ -114,7 +114,7 @@ function Landing() {
           vivo num estádio 3D — dando ordens enquanto a bola rola. Sem cadastro: é só jogar.
         </p>
 
-        <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4">
+        <dl className="mt-8 grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:gap-x-10">
           {[
             [`${Object.keys(CLUBS).length}+`, "clubes reais"],
             [`${LEAGUES.length}`, "ligas e copas"],
