@@ -7,6 +7,7 @@ export interface PurchaseRow {
   productKey: string;
   amountCents: number;
   status: string;
+  reference: string | null;
   error: string | null;
   createdAt: string;
 }
@@ -27,7 +28,7 @@ export const getPurchases = createServerFn({ method: "GET" })
     const [{ data: rows, error }, { data: wallet }] = await Promise.all([
       context.supabase
         .from("user_purchases")
-        .select("id, product_key, amount_cents, status, error, created_at")
+        .select("id, product_key, amount_cents, status, error, reference, created_at")
         .eq("user_id", context.userId)
         .order("created_at", { ascending: false })
         .limit(100),
@@ -45,6 +46,7 @@ export const getPurchases = createServerFn({ method: "GET" })
       productKey: r.product_key,
       amountCents: r.amount_cents,
       status: r.status,
+      reference: r.reference ?? null,
       error: (r as { error: string | null }).error ?? null,
       createdAt: r.created_at,
     }));
