@@ -28,6 +28,22 @@ export interface StorePack {
 
 export const STORE_PACKS: StorePack[] = [
   {
+    key: "coins_starter",
+    priceId: "coins_starter",
+    name: "Moedas iniciais",
+    tagline: "O jeito mais barato de experimentar",
+    description:
+      "Um punhado pequeno de moedas para testar relatórios, impulsos de treino e temas sem gastar quase nada.",
+    priceCents: 490,
+    currency: "brl",
+    coins: 200,
+    kind: "coins",
+    contents: ["200 moedas creditadas na hora", "Vale para qualquer item do jogo"],
+    accent: "#ffe08a",
+    accent2: "#8a6a12",
+  },
+  {
+
     key: "coins_small",
     priceId: "coins_small",
     name: "Punhado de moedas",
