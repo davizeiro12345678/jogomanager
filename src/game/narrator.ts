@@ -1,89 +1,100 @@
 /**
- * Narração da partida via Web Speech API (síntese de voz do navegador).
- * Sem dependências externas; escolhe a voz que combina com o idioma da interface.
- * Pode ser ligada/desligada pelo jogador e respeita o volume.
+ * Narração da partida.
+ *
+ * Prioriza voz realista (ElevenLabs, gerada no servidor) e cai para a voz do
+ * navegador (Web Speech API) quando o áudio remoto não está disponível.
+ * As falas entram numa fila para nunca se sobreporem — exceto gol, que
+ * interrompe tudo porque é o lance mais importante.
  */
 
-export type NarrationEvent = "goal" | "save" | "shot" | "foul" | "card" | "kickoff" | "halftime" | "fulltime";
+import {
+  lineCount,
+  narrationLang,
+  narrationLine,
+  SPEECH_TAG,
+  type NarrationEvent,
+  type NarrationLang,
+} from "./narration-lines";
 
-const LINES: Record<string, Record<NarrationEvent, string[]>> = {
-  "pt-BR": {
-    goal: ["GOOOL! {team} balança a rede!", "É GOOOL do {team}!", "GOOOOL! Que momento para o {team}!"],
-    save: ["Que defesa do goleiro do {team}!", "Espalma o goleiro! Grande defesa do {team}!"],
-    shot: ["{team} finaliza!", "Chance para o {team}!"],
-    foul: ["Falta marcada contra o {team}.", "O árbitro apita falta do {team}."],
-    card: ["Cartão para o {team}!", "O árbitro tira o cartão para o {team}."],
-    kickoff: ["Começa a partida!", "Bola rolando!"],
-    halftime: ["Fim do primeiro tempo.", "Intervalo de jogo."],
-    fulltime: ["Fim de jogo!", "Apita o árbitro, final de partida!"],
-  },
-  en: {
-    goal: ["GOAL! {team} find the net!", "It's a goal for {team}!", "GOAL! What a moment for {team}!"],
-    save: ["What a save by the {team} keeper!", "Brilliant stop from {team}!"],
-    shot: ["{team} take a shot!", "A chance for {team}!"],
-    foul: ["Foul given against {team}.", "The referee blows for a foul by {team}."],
-    card: ["A card for {team}!", "The referee reaches for the pocket — {team}."],
-    kickoff: ["The match is underway!", "Kick-off!"],
-    halftime: ["Half-time.", "The whistle goes for the break."],
-    fulltime: ["Full-time!", "The referee ends the match!"],
-  },
-  es: {
-    goal: ["¡GOOOL del {team}!", "¡GOL! ¡Marca el {team}!"],
-    save: ["¡Qué parada del portero del {team}!", "¡Gran atajada del {team}!"],
-    shot: ["¡Dispara el {team}!", "¡Ocación para el {team}!"],
-    foul: ["Falta del {team}.", "El árbitro pita falta del {team}."],
-    card: ["¡Tarjeta para el {team}!"],
-    kickoff: ["¡Arranca el partido!", "¡Rueda el balón!"],
-    halftime: ["Final de la primera parte.", "Descanso."],
-    fulltime: ["¡Final del partido!"],
-  },
-};
+export type { NarrationEvent } from "./narration-lines";
 
 export interface NarratorOptions {
+  /** Tag de idioma da interface (ex.: "pt-BR"). */
   lang: string;
   enabled: boolean;
   rate?: number;
-  /** Usa voz realista (ElevenLabs) quando disponível; cai para a voz do navegador. */
+  /** Usa voz realista quando disponível. */
   realistic?: boolean;
+  volume?: number;
 }
 
 /** Cache global de áudios já gerados — cada frase custa uma chamada de API. */
 const audioCache = new Map<string, string>();
-const MAX_CACHE = 60;
+const MAX_CACHE = 80;
+
+/** Espaçamento mínimo entre falas do mesmo tipo (ms). */
+const MIN_GAP: Partial<Record<NarrationEvent, number>> = {
+  shot: 7000,
+  chance: 9000,
+  foul: 12000,
+  card: 6000,
+  save: 5000,
+};
+
+interface QueueItem {
+  event: NarrationEvent;
+  text: string;
+  lang: NarrationLang;
+  variant: number;
+  team: string;
+}
 
 export class Narrator {
-  private lang: string;
+  private lang: NarrationLang;
   private enabled: boolean;
   private rate: number;
   private realistic: boolean;
-  private lastSpeak = 0;
+  private volume: number;
+  private lastByEvent = new Map<NarrationEvent, number>();
   private synth: SpeechSynthesis | null;
   private audio: HTMLAudioElement | null = null;
+  private queue: QueueItem[] = [];
+  private busy = false;
+  private disposed = false;
   /** Desliga a voz realista após uma falha para não insistir em erro. */
   private remoteBroken = false;
 
   constructor(opts: NarratorOptions) {
-    this.lang = opts.lang;
+    this.lang = narrationLang(opts.lang);
     this.enabled = opts.enabled;
     this.rate = opts.rate ?? 1.05;
     this.realistic = opts.realistic ?? true;
-    this.synth = typeof window !== "undefined" && "speechSynthesis" in window ? window.speechSynthesis : null;
+    this.volume = opts.volume ?? 1;
+    this.synth =
+      typeof window !== "undefined" && "speechSynthesis" in window ? window.speechSynthesis : null;
   }
 
   setLang(lang: string) {
-    this.lang = lang;
+    this.lang = narrationLang(lang);
   }
 
   setEnabled(on: boolean) {
     this.enabled = on;
-    if (!on) this.stop();
+    if (!on) this.stopAll();
   }
 
   setRealistic(on: boolean) {
     this.realistic = on;
   }
 
-  private stop() {
+  setVolume(v: number) {
+    this.volume = Math.max(0, Math.min(1, v));
+    if (this.audio) this.audio.volume = this.volume;
+  }
+
+  private stopAll() {
+    this.queue = [];
+    this.busy = false;
     this.synth?.cancel();
     if (this.audio) {
       this.audio.pause();
@@ -91,95 +102,138 @@ export class Narrator {
     }
   }
 
-  /** Seleciona voz cujo idioma bate com o da interface. */
+  /** Seleciona voz do navegador cujo idioma bate com o da narração. */
   private voice(): SpeechSynthesisVoice | null {
     if (!this.synth) return null;
     const voices = this.synth.getVoices();
     if (!voices.length) return null;
-    const tag = this.lang.toLowerCase();
-    const base = tag.split("-")[0] ?? tag;
+    const tag = SPEECH_TAG[this.lang].toLowerCase();
+    const base = tag.split("-")[0]!;
     return (
-      voices.find((v) => v.lang.toLowerCase() === tag) ??
+      voices.find((v) => v.lang.toLowerCase().replace("_", "-") === tag) ??
       voices.find((v) => v.lang.toLowerCase().startsWith(base)) ??
       null
     );
   }
 
-  private speakLocal(text: string, event: NarrationEvent) {
-    if (!this.synth) return;
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = this.lang;
-    utter.rate = event === "goal" ? this.rate * 1.05 : this.rate;
-    utter.pitch = event === "goal" ? 1.15 : 1;
-    const v = this.voice();
-    if (v) utter.voice = v;
-    if (event === "goal") this.synth.cancel();
-    this.synth.speak(utter);
-  }
-
-  private playBase64(mp3: string, event: NarrationEvent, text: string) {
-    if (!this.enabled) return;
-    if (event === "goal") this.stop();
-    const el = new Audio(`data:audio/mpeg;base64,${mp3}`);
-    el.volume = 1;
-    this.audio = el;
-    void el.play().catch(() => {
-      // Autoplay bloqueado: volta para a voz do navegador.
-      this.speakLocal(text, event);
+  private speakLocal(item: QueueItem): Promise<void> {
+    return new Promise((resolve) => {
+      if (!this.synth || this.volume === 0) {
+        resolve();
+        return;
+      }
+      const utter = new SpeechSynthesisUtterance(item.text);
+      utter.lang = SPEECH_TAG[item.lang];
+      utter.volume = this.volume;
+      utter.rate = item.event === "goal" ? this.rate * 1.08 : this.rate;
+      utter.pitch = item.event === "goal" ? 1.2 : 1;
+      const v = this.voice();
+      if (v) utter.voice = v;
+      utter.onend = () => resolve();
+      utter.onerror = () => resolve();
+      this.synth.speak(utter);
+      // Segurança: se o evento não disparar, libera a fila mesmo assim.
+      window.setTimeout(resolve, 9000);
     });
   }
 
-  private async speakRemote(text: string, event: NarrationEvent) {
-    const key = `${this.lang}|${text}`;
+  private playBase64(mp3: string): Promise<void> {
+    return new Promise((resolve) => {
+      const el = new Audio(`data:audio/mpeg;base64,${mp3}`);
+      el.volume = this.volume;
+      this.audio = el;
+      el.onended = () => resolve();
+      el.onerror = () => resolve();
+      void el.play().catch(() => resolve());
+      window.setTimeout(resolve, 12000);
+    });
+  }
+
+  private async speakRemote(item: QueueItem): Promise<boolean> {
+    const key = `${item.lang}|${item.event}|${item.variant}|${item.team}`;
     const cached = audioCache.get(key);
     if (cached) {
-      this.playBase64(cached, event, text);
-      return;
+      await this.playBase64(cached);
+      return true;
     }
     try {
-      const { narrateLine } = await import("@/lib/tts.functions");
-      const res = await narrateLine({ data: { text } });
+      const { narrateEvent } = await import("@/lib/tts.functions");
+      const res = await narrateEvent({
+        data: { lang: item.lang, event: item.event, team: item.team, variant: item.variant },
+      });
       if (!res.ok) {
         this.remoteBroken = true;
-        this.speakLocal(text, event);
-        return;
+        return false;
       }
       if (audioCache.size >= MAX_CACHE) {
         const first = audioCache.keys().next().value;
         if (first) audioCache.delete(first);
       }
       audioCache.set(key, res.audio);
-      this.playBase64(res.audio, event, text);
+      if (!this.enabled || this.disposed) return true;
+      await this.playBase64(res.audio);
+      return true;
     } catch {
       this.remoteBroken = true;
-      this.speakLocal(text, event);
+      return false;
     }
   }
 
+  private async drain() {
+    if (this.busy) return;
+    this.busy = true;
+    try {
+      while (this.queue.length && this.enabled && !this.disposed) {
+        const item = this.queue.shift()!;
+        let spoke = false;
+        if (this.realistic && !this.remoteBroken) spoke = await this.speakRemote(item);
+        if (!spoke && this.enabled && !this.disposed) await this.speakLocal(item);
+      }
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  /** Enfileira uma fala para o evento; `goal` tem prioridade máxima. */
   speak(event: NarrationEvent, team: string) {
-    if (!this.enabled) return;
-    const now = performance.now();
-    // Intervalo mínimo para não sobrepor falas em lances rápidos.
-    if (event !== "goal" && now - this.lastSpeak < 5000) return;
-    this.lastSpeak = now;
+    if (!this.enabled || this.disposed) return;
 
-    const base = this.lang.split("-")[0] ?? this.lang;
-    const pack = (LINES[this.lang] ?? LINES[base] ?? LINES["en"])!;
-    if (!pack) return;
-    const pool = pack[event];
-    if (!pool?.length) return;
-    const text = (pool[Math.floor(Math.random() * pool.length)] ?? "").replace("{team}", team);
-    if (!text) return;
-
-    if (this.realistic && !this.remoteBroken) {
-      void this.speakRemote(text, event);
-      return;
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    const gap = MIN_GAP[event];
+    if (gap) {
+      const last = this.lastByEvent.get(event) ?? -Infinity;
+      if (now - last < gap) return;
     }
-    this.speakLocal(text, event);
+    this.lastByEvent.set(event, now);
+
+    const variant = Math.floor(Math.random() * lineCount(this.lang, event));
+    const item: QueueItem = {
+      event,
+      lang: this.lang,
+      variant,
+      team,
+      text: narrationLine(this.lang, event, team, variant),
+    };
+
+    if (event === "goal" || event === "fulltime") {
+      // Lance decisivo: corta o que estiver tocando e fala agora.
+      this.queue = [];
+      this.synth?.cancel();
+      if (this.audio) {
+        this.audio.pause();
+        this.audio = null;
+      }
+      this.queue.push(item);
+    } else {
+      if (this.queue.length >= 3) return;
+      this.queue.push(item);
+    }
+    void this.drain();
   }
 
+  /** Texto da última fala útil para legenda (opcional). */
   dispose() {
-    this.stop();
+    this.disposed = true;
+    this.stopAll();
   }
 }
-
