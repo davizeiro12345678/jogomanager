@@ -320,6 +320,7 @@ export class MatchSim {
     starter.z = 0;
     this.ball.holder = starter.id;
     this.possession = side;
+    this.lastTouch = side;
     this.restartTimer = 1.2;
   }
 
