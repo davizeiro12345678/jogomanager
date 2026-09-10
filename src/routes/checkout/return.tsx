@@ -4,8 +4,11 @@ import { CheckCircle, XCircle, Loader2, Coins } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { claimCheckoutSession } from "@/lib/checkout-claim.functions";
 import { getPurchases } from "@/lib/purchases.functions";
+import { getStripeEnvironment } from "@/lib/stripe";
 import { track } from "@/lib/analytics";
+
 
 export const Route = createFileRoute("/checkout/return")({
   ssr: false,
@@ -38,6 +41,7 @@ const MAX_TRIES = 15; // ~30 segundos
 function CheckoutReturn() {
   const { session_id: sessionId } = Route.useSearch();
   const fetchPurchases = useServerFn(getPurchases);
+  const claimSession = useServerFn(claimCheckoutSession);
   const [status, setStatus] = useState<"loading" | "delivered" | "slow" | "error">(
     sessionId ? "loading" : "error",
   );
@@ -64,9 +68,24 @@ function CheckoutReturn() {
     }
   }, [fetchPurchases, sessionId]);
 
+
   useEffect(() => {
     if (!sessionId) return;
     let alive = true;
+
+    // Confirma a compra direto na Stripe (o webhook pode atrasar ou não chegar).
+    void (async () => {
+      try {
+        const res = await claimSession({
+          data: { sessionId, environment: getStripeEnvironment() },
+        });
+        if (!alive) return;
+        if (res.status === "delivered") await check();
+      } catch {
+        /* o polling abaixo ainda cobre o caminho do webhook */
+      }
+    })();
+
     const timer = setInterval(() => {
       void (async () => {
         if (!alive) return;
@@ -83,7 +102,8 @@ function CheckoutReturn() {
       alive = false;
       clearInterval(timer);
     };
-  }, [sessionId, check]);
+  }, [sessionId, check, claimSession]);
+
 
   return (
     <div className="pitch-bg flex min-h-screen items-center justify-center px-4 py-6">

@@ -451,11 +451,34 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
           <sphereGeometry args={[P.armR * 1.35, segs.radial, segs.radial]} />
           {jerseyMat}
         </mesh>
+        {/* deltoide: leve volume muscular por cima do ombro */}
+        {hi && (
+          <mesh
+            position={[side * P.armR * 0.28, -P.upperArm * 0.1, 0]}
+            scale={[1, 1.18, 0.92]}
+            castShadow={shadows}
+          >
+            <sphereGeometry args={[P.armR * 1.12, segs.radial, segs.radial]} />
+            {jerseyMat}
+          </mesh>
+        )}
         {/* braço */}
         <mesh position={[0, -P.upperArm * 0.5, 0]} castShadow={shadows}>
           <capsuleGeometry args={[P.armR, P.upperArm * 0.78, segs.cap, segs.radial]} />
           {look.sleeves === "long" ? jerseyMat : skinMat}
         </mesh>
+        {/* bíceps */}
+        {hi && look.sleeves !== "long" && (
+          <mesh
+            position={[0, -P.upperArm * 0.58, P.armR * 0.12]}
+            scale={[0.9, 1.35, 0.9]}
+            castShadow={shadows}
+          >
+            <sphereGeometry args={[P.armR * 0.78, segs.radial, segs.radial]} />
+            {skinMat}
+          </mesh>
+        )}
+
         {/* manga */}
         {look.sleeves === "short" && (
           <mesh position={[0, -P.upperArm * 0.24, 0]} castShadow={shadows}>
