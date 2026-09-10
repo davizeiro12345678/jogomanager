@@ -22,7 +22,7 @@ export interface ProductEffect {
 const EFFECTS: Record<string, ProductEffect> = {
   coins_starter: { coins: 200, scoutReports: 0, trainingBoosts: 0, themes: [] },
   coins_small: { coins: 500, scoutReports: 0, trainingBoosts: 0, themes: [] },
-  coins_medium: { coins: 1500, scoutReports: 0, trainingBoosts: 0, themes: [] },
+  coins_medium: { coins: 1800, scoutReports: 0, trainingBoosts: 0, themes: [] },
   coins_large: { coins: 4000, scoutReports: 0, trainingBoosts: 0, themes: [] },
   scout_pack: { coins: 0, scoutReports: 10, trainingBoosts: 0, themes: [] },
   training_pack: { coins: 0, scoutReports: 0, trainingBoosts: 1, themes: [] },
