@@ -393,7 +393,19 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     <meshStandardMaterial color={kit.socks} roughness={0.9} />
   );
   const trimMat = <meshStandardMaterial color={kit.detail} roughness={0.8} />;
-  const hairMat = (
+  const hairMat = hi ? (
+    <meshPhysicalMaterial
+      color={look.hairColor}
+      roughness={0.62}
+      metalness={0.04}
+      clearcoat={0.35}
+      clearcoatRoughness={0.42}
+      sheen={0.85}
+      sheenRoughness={0.55}
+      sheenColor={shade(look.hairColor, 0.55)}
+      envMapIntensity={0.6}
+    />
+  ) : (
     <meshStandardMaterial color={look.hairColor} roughness={0.85} metalness={0.02} />
   );
   const bootMat = hi ? (
