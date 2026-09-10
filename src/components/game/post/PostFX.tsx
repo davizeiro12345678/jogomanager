@@ -104,7 +104,9 @@ export function PostFX({
       <BrightnessContrast brightness={p.brightness} contrast={p.contrast} />
       <Noise opacity={p.grain} blendFunction={BlendFunction.OVERLAY} />
       <Vignette offset={cinema ? 0.15 : 0.26} darkness={p.vignette} />
-      {!cinema ? <SMAA /> : <></>}
+      {/* curva de cor final: realces suaves em vez de estourados */}
+      <ToneMapping mode={ToneMappingMode.AGX} />
+      <SMAA />
     </EffectComposer>
   );
 }
