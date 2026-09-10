@@ -29,6 +29,7 @@ import {
   type Pose,
 } from "@/game/animation";
 import { kitTexture, type Kit } from "@/game/kits";
+import { useVisual } from "@/game/visual-settings";
 import {
   lodForDistance,
   lookFor,
