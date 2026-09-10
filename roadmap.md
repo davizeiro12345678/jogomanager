@@ -57,3 +57,6 @@
 ## Conectores
 - [x] ElevenLabs — narração com voz realista na partida (fallback para a voz do navegador)
 - [ ] Logo.dev, Firecrawl, PostHog, Resend (avaliar valor real antes de ligar)
+- [x] PostHog — eventos de uso e checkout (sem dados pessoais)
+- [x] Logo.dev — logos reais de marcas nas placas de LED (configurável em /visual)
+- [x] Resend — conta ligada; falta um domínio verificado para enviar e-mails
