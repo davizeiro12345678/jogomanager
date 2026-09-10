@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
+  BarChart3,
   Camera,
   ChevronDown,
   FastForward,
@@ -108,6 +109,16 @@ interface Snap {
   aOn: number;
   hFouls: number;
   aFouls: number;
+  hPass: number;
+  aPass: number;
+  hPassOk: number;
+  aPassOk: number;
+  hCorners: number;
+  aCorners: number;
+  hYellow: number;
+  aYellow: number;
+  hRed: number;
+  aRed: number;
   poss: [number, number];
   events: { type: string; text: string; minute: number }[];
   finished: boolean;
@@ -126,6 +137,16 @@ function snapshot(sim: MatchSim): Snap {
     aOn: sim.stats.away.onTarget,
     hFouls: sim.stats.home.fouls,
     aFouls: sim.stats.away.fouls,
+    hPass: sim.stats.home.passes,
+    aPass: sim.stats.away.passes,
+    hPassOk: sim.stats.home.passesOk,
+    aPassOk: sim.stats.away.passesOk,
+    hCorners: sim.stats.home.corners,
+    aCorners: sim.stats.away.corners,
+    hYellow: sim.stats.home.yellow,
+    aYellow: sim.stats.away.yellow,
+    hRed: sim.stats.home.red,
+    aRed: sim.stats.away.red,
     poss: [ph, pa],
     events: sim.events.slice(-14).map((e) => ({ type: e.type, text: e.text, minute: e.minute })),
     finished: sim.finished,
@@ -237,9 +258,13 @@ const Scoreboard = memo(function Scoreboard({
 function eventIcon(type: string) {
   if (type === "goal") return "⚽";
   if (type === "save") return "🧤";
-  if (type === "foul") return "🟨";
+  if (type === "foul") return "🚫";
+  if (type === "yellow") return "🟨";
+  if (type === "red") return "🟥";
+  if (type === "corner") return "🚩";
   if (type === "shot") return "🎯";
   if (type === "kickoff") return "🔔";
+  if (type === "sub") return "🔁";
   return "•";
 }
 
@@ -499,16 +524,70 @@ function LiveMatch({
       <Scoreboard homeId={fixture.home} awayId={fixture.away} snap={snap} paused={paused} />
       <Feed events={snap.events} />
 
-      {/* Estatísticas ao vivo */}
+      {/* Estatísticas ao vivo — gaveta no celular, painel lateral no desktop */}
       {showStats ? (
-        <div className="absolute right-3 top-24 z-10 w-60 space-y-3 rounded-2xl border border-white/10 bg-black/65 p-3 backdrop-blur-xl">
-          <p className="font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
-            Estatísticas
-          </p>
+        <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-30 max-h-[62vh] space-y-3 overflow-y-auto rounded-t-3xl border-t border-white/12 bg-black/85 p-4 pb-20 backdrop-blur-xl md:inset-x-auto md:bottom-auto md:right-3 md:top-24 md:max-h-none md:w-64 md:rounded-2xl md:border md:p-3 md:pb-3">
+          <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-white/25 md:hidden" />
+          <div className="flex items-center justify-between">
+            <p className="font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
+              Estatísticas
+            </p>
+            <button
+              onClick={() => setShowStats(false)}
+              className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/70 md:hidden"
+            >
+              Fechar
+            </button>
+          </div>
           <StatRow label="Posse" h={snap.poss[0]} a={snap.poss[1]} />
           <StatRow label="Chutes" h={snap.hShots} a={snap.aShots} />
           <StatRow label="No gol" h={snap.hOn} a={snap.aOn} />
+          <StatRow label="Passes" h={snap.hPass} a={snap.aPass} />
+          <StatRow label="Passes certos" h={snap.hPassOk} a={snap.aPassOk} />
+          <div className="flex items-center justify-between text-[11px] text-white/60">
+            <span className="font-display tabular-nums text-white">
+              {snap.hPass ? Math.round((snap.hPassOk / snap.hPass) * 100) : 0}%
+            </span>
+            <span className="uppercase tracking-widest">Acerto de passe</span>
+            <span className="font-display tabular-nums text-white">
+              {snap.aPass ? Math.round((snap.aPassOk / snap.aPass) * 100) : 0}%
+            </span>
+          </div>
+          <StatRow label="Escanteios" h={snap.hCorners} a={snap.aCorners} />
           <StatRow label="Faltas" h={snap.hFouls} a={snap.aFouls} />
+          <div className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-[11px] text-white/70">
+            <span className="font-display tabular-nums text-white">
+              <span className="mr-1 inline-block h-2.5 w-2 rounded-[2px] bg-yellow-400 align-middle" />
+              {snap.hYellow}
+              <span className="ml-2 mr-1 inline-block h-2.5 w-2 rounded-[2px] bg-red-500 align-middle" />
+              {snap.hRed}
+            </span>
+            <span className="uppercase tracking-widest">Cartões</span>
+            <span className="font-display tabular-nums text-white">
+              {snap.aYellow}
+              <span className="mx-1 inline-block h-2.5 w-2 rounded-[2px] bg-yellow-400 align-middle" />
+              {snap.aRed}
+              <span className="ml-1 inline-block h-2.5 w-2 rounded-[2px] bg-red-500 align-middle" />
+            </span>
+          </div>
+          {/* eventos ao vivo — no celular o feed lateral fica oculto */}
+          <div className="md:hidden">
+            <p className="mb-1 font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
+              Lances
+            </p>
+            <div className="space-y-1 text-xs text-white/85">
+              {[...snap.events]
+                .reverse()
+                .slice(0, 8)
+                .map((e, i) => (
+                  <p key={`${e.minute}-${i}`} className="flex gap-2">
+                    <span className="w-7 shrink-0 tabular-nums text-white/45">{e.minute}'</span>
+                    <span className="shrink-0">{eventIcon(e.type)}</span>
+                    <span>{e.text}</span>
+                  </p>
+                ))}
+            </div>
+          </div>
         </div>
       ) : null}
 
@@ -532,6 +611,13 @@ function LiveMatch({
             {s}x
           </button>
         ))}
+        <button
+          onClick={() => setShowStats((s) => !s)}
+          aria-label="Ver estatísticas"
+          className={`grid h-9 w-9 place-items-center rounded-full ${showStats ? "bg-white/25 text-white" : "text-white/70"}`}
+        >
+          <BarChart3 size={16} />
+        </button>
         <button
           onClick={() => setNarrating((v) => !v)}
           aria-label={narrating ? "Desligar narração" : "Ligar narração"}

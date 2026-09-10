@@ -651,15 +651,24 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
       {[-1, 1].map((s) => (
         <group key={s}>
           <mesh position={[s * P.headR * 0.36, P.headR * 0.1, P.headR * 0.82]}>
-            <sphereGeometry args={[P.headR * 0.15, 8, 8]} />
-            <meshStandardMaterial color="#f7f7f7" roughness={0.35} />
+            <sphereGeometry args={[P.headR * 0.15, hi ? 12 : 8, hi ? 12 : 8]} />
+            <meshStandardMaterial color="#f7f7f7" roughness={0.28} />
           </mesh>
-          <mesh position={[s * P.headR * 0.36, P.headR * 0.1, P.headR * 0.93]}>
-            <sphereGeometry args={[P.headR * 0.07, 8, 8]} />
-            <meshStandardMaterial color="#181818" roughness={0.3} />
+          {/* íris */}
+          <mesh position={[s * P.headR * 0.36, P.headR * 0.1, P.headR * 0.9]}>
+            <sphereGeometry args={[P.headR * 0.085, 10, 10]} />
+            <meshStandardMaterial color={look.eyeColor} roughness={0.22} metalness={0.05} />
+          </mesh>
+          {/* pupila */}
+          <mesh position={[s * P.headR * 0.36, P.headR * 0.1, P.headR * 0.94]}>
+            <sphereGeometry args={[P.headR * 0.045, 8, 8]} />
+            <meshStandardMaterial color="#0b0b0b" roughness={0.15} />
           </mesh>
           {/* sobrancelha */}
-          <mesh position={[s * P.headR * 0.36, P.headR * 0.32, P.headR * 0.84]}>
+          <mesh
+            position={[s * P.headR * 0.36, P.headR * 0.32, P.headR * 0.84]}
+            rotation={[0, 0, s * 0.12]}
+          >
             <boxGeometry args={[P.headR * 0.36, P.headR * 0.08, P.headR * 0.1]} />
             {hairMat}
           </mesh>
@@ -668,6 +677,13 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
             <sphereGeometry args={[P.headR * 0.3, 8, 8]} />
             {skinMat}
           </mesh>
+          {/* narina */}
+          {hi ? (
+            <mesh position={[s * P.headR * 0.09, -P.headR * 0.17, P.headR * 0.98]}>
+              <sphereGeometry args={[P.headR * 0.045, 6, 6]} />
+              <meshStandardMaterial color={shade(look.skin, -0.55)} roughness={0.7} />
+            </mesh>
+          ) : null}
         </group>
       ))}
       {/* pálpebras: piscam de vez em quando */}
@@ -683,9 +699,16 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
           </mesh>
         ))}
       </group>
+      {/* arco superciliar */}
+      {hi ? (
+        <mesh position={[0, P.headR * 0.26, P.headR * 0.7]} scale={[1, 0.35, 0.5]}>
+          <sphereGeometry args={[P.headR * 0.6, 10, 10]} />
+          {skinMat}
+        </mesh>
+      ) : null}
       {/* nariz */}
       <mesh position={[0, -P.headR * 0.05, P.headR * 0.95]} rotation={[0.3, 0, 0]}>
-        <coneGeometry args={[P.headR * 0.16, P.headR * 0.34, 6]} />
+        <coneGeometry args={[P.headR * 0.16, P.headR * 0.34, hi ? 10 : 6]} />
         {skinMat}
       </mesh>
       {/* maçãs do rosto */}
@@ -699,11 +722,25 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
           {skinMat}
         </mesh>
       ))}
+      {/* maxilar */}
+      {hi ? (
+        <mesh position={[0, -P.headR * 0.48, P.headR * 0.2]} scale={[0.94, 0.5, 0.94]}>
+          <sphereGeometry args={[P.headR * 0.9, 12, 12]} />
+          {skinMat}
+        </mesh>
+      ) : null}
       {/* lábio inferior + queixo */}
       <mesh position={[0, -P.headR * 0.55, P.headR * 0.78]} scale={[0.9, 0.6, 0.7]}>
         <sphereGeometry args={[P.headR * 0.24, 8, 8]} />
         {skinMat}
       </mesh>
+      {/* lábio superior */}
+      {hi ? (
+        <mesh position={[0, -P.headR * 0.36, P.headR * 0.84]} scale={[1, 0.45, 0.6]}>
+          <sphereGeometry args={[P.headR * 0.2, 8, 8]} />
+          <meshStandardMaterial color={shade(look.skin, -0.18)} roughness={0.55} />
+        </mesh>
+      ) : null}
       {/* boca */}
       <mesh position={[0, -P.headR * 0.45, P.headR * 0.84]}>
         <boxGeometry args={[P.headR * 0.34, P.headR * 0.07, P.headR * 0.06]} />
@@ -747,9 +784,10 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
   const hair = (() => {
     const s = look.hairStyle;
     if (s === "bald") return null;
-    const capHeight = s === "buzz" ? 0.96 : s === "short" ? 1.02 : 1.06;
+    const capHeight = (s === "buzz" ? 0.96 : s === "short" ? 1.02 : 1.06) * look.hairVolume;
+    const capWide = 1.02 + (look.hairVolume - 1) * 0.5;
     const base = (
-      <mesh position={[0, P.headR * 0.16, -P.headR * 0.04]} scale={[1.02, capHeight, 1.04]}>
+      <mesh position={[0, P.headR * 0.16, -P.headR * 0.04]} scale={[capWide, capHeight, capWide + 0.02]}>
         <sphereGeometry args={[P.headR * 0.99, 14, 14, 0, Math.PI * 2, 0, Math.PI * 0.62]} />
         {hairMat}
       </mesh>
@@ -853,11 +891,36 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
               <capsuleGeometry args={[P.armR * 1.3, P.shoulderW * 0.8, 3, segs.radial]} />
               {jerseyMat}
             </mesh>
-            {/* gola */}
+            {/* gola: careca, V ou polo */}
             <mesh position={[0, P.chestLen * 0.98, 0]} rotation={[Math.PI / 2, 0, 0]}>
-              <torusGeometry args={[P.neckR * 1.5, P.neckR * 0.28, 6, 14]} />
+              <torusGeometry
+                args={[
+                  P.neckR * (look.collar === "polo" ? 1.62 : 1.5),
+                  P.neckR * (look.collar === "polo" ? 0.36 : 0.28),
+                  6,
+                  14,
+                ]}
+              />
               {trimMat}
             </mesh>
+            {look.collar === "v" ? (
+              <mesh
+                position={[0, P.chestLen * 0.78, P.chestD * 0.5]}
+                rotation={[0, 0, Math.PI / 4]}
+              >
+                <boxGeometry args={[P.neckR * 1.1, P.neckR * 1.1, P.neckR * 0.16]} />
+                {trimMat}
+              </mesh>
+            ) : null}
+            {look.collar === "polo" ? (
+              <mesh
+                position={[0, P.chestLen * 0.9, P.chestD * 0.46]}
+                rotation={[-0.5, 0, 0]}
+              >
+                <boxGeometry args={[P.neckR * 2.1, P.neckR * 0.9, P.neckR * 0.14]} />
+                {trimMat}
+              </mesh>
+            ) : null}
 
             {/* nome + número 3D nítidos nas costas (só na qualidade alta) */}
             {hi ? (

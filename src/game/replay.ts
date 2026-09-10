@@ -8,6 +8,7 @@
 import { get, set } from "idb-keyval";
 
 import type { PlayerAction } from "./animation";
+import { emptyStats } from "./sim";
 import type { MatchStats, Side, SimPlayer, SimView, TeamSetup } from "./sim";
 
 const KEY = "manager3d.replays.v1";
@@ -121,8 +122,8 @@ export class ReplaySim implements SimView {
   ball = { x: 0, z: 0, vx: 0, vz: 0, holder: null as string | null, height: 0 };
   possession: Side = "home";
   stats: Record<Side, MatchStats> = {
-    home: { goals: 0, shots: 0, onTarget: 0, possessionTicks: 0, fouls: 0 },
-    away: { goals: 0, shots: 0, onTarget: 0, possessionTicks: 0, fouls: 0 },
+    home: emptyStats(),
+    away: emptyStats(),
   };
   home: TeamSetup;
   away: TeamSetup;

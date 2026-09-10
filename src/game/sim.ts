@@ -86,6 +86,29 @@ export interface MatchStats {
   onTarget: number;
   possessionTicks: number;
   fouls: number;
+  /** passes tentados */
+  passes: number;
+  /** passes que chegaram ao destinatário pretendido */
+  passesOk: number;
+  corners: number;
+  yellow: number;
+  red: number;
+}
+
+/** estatísticas zeradas — usado pela partida ao vivo e pela repetição */
+export function emptyStats(): MatchStats {
+  return {
+    goals: 0,
+    shots: 0,
+    onTarget: 0,
+    possessionTicks: 0,
+    fouls: 0,
+    passes: 0,
+    passesOk: 0,
+    corners: 0,
+    yellow: 0,
+    red: 0,
+  };
 }
 
 export interface Scorer {
@@ -115,8 +138,8 @@ export class MatchSim {
   ball = { x: 0, z: 0, vx: 0, vz: 0, holder: null as string | null, height: 0 };
   possession: Side = "home";
   stats: Record<Side, MatchStats> = {
-    home: { goals: 0, shots: 0, onTarget: 0, possessionTicks: 0, fouls: 0 },
-    away: { goals: 0, shots: 0, onTarget: 0, possessionTicks: 0, fouls: 0 },
+    home: emptyStats(),
+    away: emptyStats(),
   };
   events: MatchEventLog[] = [];
   scorers: Scorer[] = [];
@@ -567,7 +590,17 @@ export class MatchSim {
       this.ball.vx = 0;
       this.ball.vz = 0;
       this.restartTimer = 0.8;
-      this.trigger(best, Math.abs(this.ball.z) > FIELD_Z - 2 ? "throwIn" : "corner", 0.9);
+      const isCorner = Math.abs(this.ball.z) <= FIELD_Z - 2;
+      this.trigger(best, isCorner ? "corner" : "throwIn", 0.9);
+      if (isCorner) {
+        this.stats[side].corners++;
+        this.pushEvent({
+          minute: this.minute(),
+          type: "corner",
+          side,
+          text: `${this.minute()}' Escanteio para ${this.setup(side).short}.`,
+        });
+      }
     }
   }
 
@@ -618,6 +651,26 @@ export class MatchSim {
           side: opp.side,
           text: `${this.minute()}' Falta de ${opp.name} sobre ${holder.name}.`,
         });
+        // cartão: falta dura (carrinho) pune mais; vermelho é raro
+        const cardRoll = this.rnd();
+        const yellowChance = slide ? 0.3 : 0.16;
+        if (cardRoll < 0.012) {
+          this.stats[opp.side].red++;
+          this.pushEvent({
+            minute: this.minute(),
+            type: "red",
+            side: opp.side,
+            text: `${this.minute()}' Cartão vermelho para ${opp.name}!`,
+          });
+        } else if (cardRoll < yellowChance) {
+          this.stats[opp.side].yellow++;
+          this.pushEvent({
+            minute: this.minute(),
+            type: "yellow",
+            side: opp.side,
+            text: `${this.minute()}' Cartão amarelo para ${opp.name}.`,
+          });
+        }
         this.restartTimer = 1.4;
         return;
       }
@@ -672,6 +725,8 @@ export class MatchSim {
     const wide = Math.abs(holder.z) > FIELD_Z * 0.55 && Math.abs(best.x - dir * FIELD_X) < 30;
     this.trigger(holder, wide ? "cross" : dist > 24 ? "passLong" : "pass", dist > 24 ? 0.85 : 0.6);
     holder.passes++;
+    this.stats[holder.side].passes++;
+    if (err === 0) this.stats[holder.side].passesOk++;
     this.lastPass[holder.side] = { id: holder.id, time: this.time };
     this.ball.holder = null;
     this.ball.vx = (dx / d) * power + err * 0.2;
