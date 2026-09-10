@@ -690,7 +690,12 @@ function CornerFlags() {
  * rolando na horizontal (como um painel de LED de transmissão real).
  */
 function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: string }) {
-  const tex = useMemo(() => adTexture(homeColor, awayColor), [homeColor, awayColor]);
+  const sponsors = useVisual().sponsors;
+  const key = sponsors.join(",");
+  const tex = useMemo(
+    () => adTexture(homeColor, awayColor, key ? key.split(",") : []),
+    [homeColor, awayColor, key],
+  );
   const matA = useRef<THREE.MeshStandardMaterial>(null);
   const matB = useRef<THREE.MeshStandardMaterial>(null);
   const len = (FIELD_X + 8) * 2;
