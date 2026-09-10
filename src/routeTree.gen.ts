@@ -51,6 +51,7 @@ import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as ReplaysRouteImport } from './routes/replays'
 import { Route as ScoutingRouteImport } from './routes/scouting'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as SoccerManagerOnlineRouteImport } from './routes/soccer-manager-online'
 import { Route as SquadRouteImport } from './routes/squad'
 import { Route as StatsRouteImport } from './routes/stats'
@@ -280,6 +281,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SobreRoute = SobreRouteImport.update({
+  id: '/sobre',
+  path: '/sobre',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SoccerManagerOnlineRoute = SoccerManagerOnlineRouteImport.update({
   id: '/soccer-manager-online',
   path: '/soccer-manager-online',
@@ -417,6 +423,7 @@ export interface FileRoutesByFullPath {
   '/replays': typeof ReplaysRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sobre': typeof SobreRoute
   '/soccer-manager-online': typeof SoccerManagerOnlineRoute
   '/squad': typeof SquadRoute
   '/stats': typeof StatsRoute
@@ -479,6 +486,7 @@ export interface FileRoutesByTo {
   '/replays': typeof ReplaysRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sobre': typeof SobreRoute
   '/soccer-manager-online': typeof SoccerManagerOnlineRoute
   '/squad': typeof SquadRoute
   '/stats': typeof StatsRoute
@@ -542,6 +550,7 @@ export interface FileRoutesById {
   '/replays': typeof ReplaysRoute
   '/scouting': typeof ScoutingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sobre': typeof SobreRoute
   '/soccer-manager-online': typeof SoccerManagerOnlineRoute
   '/squad': typeof SquadRoute
   '/stats': typeof StatsRoute
@@ -606,6 +615,7 @@ export interface FileRouteTypes {
     | '/replays'
     | '/scouting'
     | '/sitemap.xml'
+    | '/sobre'
     | '/soccer-manager-online'
     | '/squad'
     | '/stats'
@@ -668,6 +678,7 @@ export interface FileRouteTypes {
     | '/replays'
     | '/scouting'
     | '/sitemap.xml'
+    | '/sobre'
     | '/soccer-manager-online'
     | '/squad'
     | '/stats'
@@ -730,6 +741,7 @@ export interface FileRouteTypes {
     | '/replays'
     | '/scouting'
     | '/sitemap.xml'
+    | '/sobre'
     | '/soccer-manager-online'
     | '/squad'
     | '/stats'
@@ -793,6 +805,7 @@ export interface RootRouteChildren {
   ReplaysRoute: typeof ReplaysRoute
   ScoutingRoute: typeof ScoutingRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SobreRoute: typeof SobreRoute
   SoccerManagerOnlineRoute: typeof SoccerManagerOnlineRoute
   SquadRoute: typeof SquadRoute
   StatsRoute: typeof StatsRoute
@@ -1109,6 +1122,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sobre': {
+      id: '/sobre'
+      path: '/sobre'
+      fullPath: '/sobre'
+      preLoaderRoute: typeof SobreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/soccer-manager-online': {
       id: '/soccer-manager-online'
       path: '/soccer-manager-online'
@@ -1281,6 +1301,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReplaysRoute: ReplaysRoute,
   ScoutingRoute: ScoutingRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SobreRoute: SobreRoute,
   SoccerManagerOnlineRoute: SoccerManagerOnlineRoute,
   SquadRoute: SquadRoute,
   StatsRoute: StatsRoute,
