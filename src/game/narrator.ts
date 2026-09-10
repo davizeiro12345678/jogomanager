@@ -43,19 +43,30 @@ export interface NarratorOptions {
   lang: string;
   enabled: boolean;
   rate?: number;
+  /** Usa voz realista (ElevenLabs) quando disponível; cai para a voz do navegador. */
+  realistic?: boolean;
 }
+
+/** Cache global de áudios já gerados — cada frase custa uma chamada de API. */
+const audioCache = new Map<string, string>();
+const MAX_CACHE = 60;
 
 export class Narrator {
   private lang: string;
   private enabled: boolean;
   private rate: number;
+  private realistic: boolean;
   private lastSpeak = 0;
   private synth: SpeechSynthesis | null;
+  private audio: HTMLAudioElement | null = null;
+  /** Desliga a voz realista após uma falha para não insistir em erro. */
+  private remoteBroken = false;
 
   constructor(opts: NarratorOptions) {
     this.lang = opts.lang;
     this.enabled = opts.enabled;
     this.rate = opts.rate ?? 1.05;
+    this.realistic = opts.realistic ?? true;
     this.synth = typeof window !== "undefined" && "speechSynthesis" in window ? window.speechSynthesis : null;
   }
 
@@ -65,7 +76,19 @@ export class Narrator {
 
   setEnabled(on: boolean) {
     this.enabled = on;
-    if (!on) this.synth?.cancel();
+    if (!on) this.stop();
+  }
+
+  setRealistic(on: boolean) {
+    this.realistic = on;
+  }
+
+  private stop() {
+    this.synth?.cancel();
+    if (this.audio) {
+      this.audio.pause();
+      this.audio = null;
+    }
   }
 
   /** Seleciona voz cujo idioma bate com o da interface. */
@@ -82,8 +105,59 @@ export class Narrator {
     );
   }
 
+  private speakLocal(text: string, event: NarrationEvent) {
+    if (!this.synth) return;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = this.lang;
+    utter.rate = event === "goal" ? this.rate * 1.05 : this.rate;
+    utter.pitch = event === "goal" ? 1.15 : 1;
+    const v = this.voice();
+    if (v) utter.voice = v;
+    if (event === "goal") this.synth.cancel();
+    this.synth.speak(utter);
+  }
+
+  private playBase64(mp3: string, event: NarrationEvent) {
+    if (!this.enabled) return;
+    if (event === "goal") this.stop();
+    const el = new Audio(`data:audio/mpeg;base64,${mp3}`);
+    el.volume = 1;
+    this.audio = el;
+    void el.play().catch(() => {
+      // Autoplay bloqueado: volta para a voz do navegador.
+      this.speakLocal("", event);
+    });
+  }
+
+  private async speakRemote(text: string, event: NarrationEvent) {
+    const key = `${this.lang}|${text}`;
+    const cached = audioCache.get(key);
+    if (cached) {
+      this.playBase64(cached, event);
+      return;
+    }
+    try {
+      const { narrateLine } = await import("@/lib/tts.functions");
+      const res = await narrateLine({ data: { text } });
+      if (!res.ok) {
+        this.remoteBroken = true;
+        this.speakLocal(text, event);
+        return;
+      }
+      if (audioCache.size >= MAX_CACHE) {
+        const first = audioCache.keys().next().value;
+        if (first) audioCache.delete(first);
+      }
+      audioCache.set(key, res.audio);
+      this.playBase64(res.audio, event);
+    } catch {
+      this.remoteBroken = true;
+      this.speakLocal(text, event);
+    }
+  }
+
   speak(event: NarrationEvent, team: string) {
-    if (!this.enabled || !this.synth) return;
+    if (!this.enabled) return;
     const now = performance.now();
     // Intervalo mínimo para não sobrepor falas em lances rápidos.
     if (event !== "goal" && now - this.lastSpeak < 5000) return;
@@ -95,18 +169,17 @@ export class Narrator {
     const pool = pack[event];
     if (!pool?.length) return;
     const text = (pool[Math.floor(Math.random() * pool.length)] ?? "").replace("{team}", team);
+    if (!text) return;
 
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = this.lang;
-    utter.rate = event === "goal" ? this.rate * 1.05 : this.rate;
-    utter.pitch = event === "goal" ? 1.15 : 1;
-    const v = this.voice();
-    if (v) utter.voice = v;
-    if (event === "goal") this.synth.cancel();
-    this.synth.speak(utter);
+    if (this.realistic && !this.remoteBroken) {
+      void this.speakRemote(text, event);
+      return;
+    }
+    this.speakLocal(text, event);
   }
 
   dispose() {
-    this.synth?.cancel();
+    this.stop();
   }
 }
+
