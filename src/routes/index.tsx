@@ -7,6 +7,7 @@ import { Crest } from "@/components/game/Crest";
 import { readLocalCareer } from "@/lib/careerStorage";
 import { Flag } from "@/components/game/Flag";
 import { canonical, gameLd, seoMeta } from "@/lib/seo";
+import heroStadium from "@/assets/hero-stadium.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -147,6 +148,15 @@ function Landing() {
           </div>
         </div>
 
+        <figure className="mt-10 overflow-hidden rounded-3xl border border-border/60 shadow-2xl shadow-primary/10">
+          <img
+            src={heroStadium}
+            alt="Manager na beira do campo observando a partida em um estádio 3D lotado à noite"
+            width={1600}
+            height={912}
+            className="h-auto w-full"
+          />
+        </figure>
 
         {resume ? (
           <Link
