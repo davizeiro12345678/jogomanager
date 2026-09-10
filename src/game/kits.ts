@@ -128,6 +128,57 @@ function fabricNoise(ctx: CanvasRenderingContext2D, size: number, seed: number) 
   ctx.restore();
 }
 
+/** Brasão simples do clube: escudo com faixa diagonal e estrela. */
+function drawCrest(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  r: number,
+  kit: Kit,
+) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.beginPath();
+  ctx.moveTo(-r, -r * 1.05);
+  ctx.lineTo(r, -r * 1.05);
+  ctx.lineTo(r, r * 0.35);
+  ctx.quadraticCurveTo(r, r * 1.15, 0, r * 1.35);
+  ctx.quadraticCurveTo(-r, r * 1.15, -r, r * 0.35);
+  ctx.closePath();
+  ctx.fillStyle = shade(kit.detail, 0.9);
+  ctx.fill();
+  ctx.lineWidth = r * 0.16;
+  ctx.strokeStyle = "rgba(0,0,0,0.45)";
+  ctx.stroke();
+
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = kit.base;
+  ctx.beginPath();
+  ctx.moveTo(-r * 1.2, r * 0.2);
+  ctx.lineTo(r * 1.2, -r * 0.6);
+  ctx.lineTo(r * 1.2, r * 0.1);
+  ctx.lineTo(-r * 1.2, r * 0.9);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // estrela central
+  ctx.fillStyle = luminance(kit.detail) > 0.5 ? "#1b1f24" : "#f4d152";
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const ang = (Math.PI / 5) * i - Math.PI / 2;
+    const rad = i % 2 === 0 ? r * 0.42 : r * 0.18;
+    const x = Math.cos(ang) * rad;
+    const y = Math.sin(ang) * rad - r * 0.15;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
 export function kitTexture(
   kit: Kit,
   number: number,
@@ -232,6 +283,19 @@ export function kitTexture(
   shadeGrad.addColorStop(1, "rgba(0,0,0,0.24)");
   ctx.fillStyle = shadeGrad;
   ctx.fillRect(0, 0, size, size);
+
+  // escudo do clube (brasão em escudo com faixa e estrela)
+  drawCrest(ctx, size * 0.17, size * 0.24, size * 0.11, kit);
+
+  // patrocínio no peito
+  const chestInk = luminance(kit.base) > 0.5 ? "rgba(16,20,24,0.85)" : "rgba(255,255,255,0.9)";
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `bold ${22 * s}px 'Barlow Condensed', system-ui, sans-serif`;
+  ctx.fillStyle = chestInk;
+  ctx.fillText("MANAGER 3D", size * 0.5, size * 0.44);
+  ctx.restore();
 
   const ink = luminance(kit.base) > 0.5 ? "#101418" : "#ffffff";
   ctx.textAlign = "center";
