@@ -6,15 +6,27 @@ import {
   ChevronDown,
   FastForward,
   Gauge,
+  MessageCircle,
   Pause,
   Play,
   Repeat,
+  ShoppingBag,
   SkipForward,
   Sparkles,
   Volume2,
   VolumeX,
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { ChatPanel } from "@/components/game/ChatPanel";
+import { StorePanel } from "@/components/game/StorePanel";
 
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
 import { Crest } from "@/components/game/Crest";
