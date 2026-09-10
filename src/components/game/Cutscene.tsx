@@ -467,6 +467,8 @@ export function Cutscene({
 
   if (!data || !line) return null;
   const speaker = SPEAKER_LABEL[line.who];
+  /** enquadramento determinístico por fala: leve travelling + zoom */
+  const shot = SHOTS[i % SHOTS.length]!;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 p-4">
