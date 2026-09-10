@@ -400,7 +400,11 @@ export class MatchSim {
     this.tickActions(dt);
 
     this.moveOffBall(dt);
+    this.separate();
+    this.drainStamina(dt);
     this.moveBall(dt);
+    this.sanitize();
+
 
     const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
     if (holder) {
