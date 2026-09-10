@@ -2253,6 +2253,13 @@ function Stadium3DImpl({
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = eff === "baixa" ? 0.95 : 1.02;
           gl.outputColorSpace = THREE.SRGBColorSpace;
+          // Texturas nítidas em ângulos rasantes (linhas do campo, publicidade,
+          // faixas de corte) — o custo é baixo e o ganho de definição é grande.
+          const maxAniso = gl.capabilities.getMaxAnisotropy?.() ?? 1;
+          THREE.Texture.DEFAULT_ANISOTROPY = Math.min(
+            eff === "alta" ? 16 : eff === "media" ? 8 : 4,
+            maxAniso,
+          );
         }}
       >
         <PerformanceMonitor
