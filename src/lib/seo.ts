@@ -83,8 +83,7 @@ export function gameLd() {
       "@context": "https://schema.org",
       "@type": "VideoGame",
       name: SITE_NAME,
-      description:
-        "Jogo de manager de futebol em 3D no navegador: comande um clube real, monte o elenco, defina a tática e assista aos 90 minutos.",
+      description: SITE_DESCRIPTION,
       url: SITE_URL,
       image: OG_IMAGE,
       inLanguage: "pt-BR",
