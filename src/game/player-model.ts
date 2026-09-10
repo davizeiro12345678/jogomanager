@@ -66,6 +66,8 @@ export type SleeveStyle = "short" | "long";
 
 export type BodyType = "slim" | "normal" | "strong" | "tall";
 
+export type CollarStyle = "crew" | "v" | "polo";
+
 export interface PlayerLook {
   /** semente derivada do id */
   seed: number;
@@ -93,6 +95,12 @@ export interface PlayerLook {
   bootColor: string;
   bootAccent: string;
   sockTape: boolean;
+  /** cor da íris */
+  eyeColor: string;
+  /** formato da gola da camisa */
+  collar: CollarStyle;
+  /** volume do cabelo (0.85 .. 1.2) */
+  hairVolume: number;
   /** leve variação de tom entre jogadores do mesmo time (iluminação/suor) */
   sweat: number;
 }
@@ -170,6 +178,11 @@ const BOOT_ACCENTS = ["#ffffff", "#101014", "#ffd34d", "#00d0ff", "#ff4d6d"];
 
 const GLOVE_COLORS = ["#f5f5f5", "#12e0a0", "#ff8a3d", "#2f6bff", "#151515"];
 
+/** tons de íris comuns entre atletas */
+const EYE_COLORS = ["#3a2a1c", "#2b1b12", "#4a3722", "#5a7a4a", "#3f6f8f", "#6b6b6b"];
+
+const COLLAR_POOL: CollarStyle[] = ["crew", "crew", "v", "polo"];
+
 /** monta a aparência completa e determinística de um jogador */
 export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook {
   const seed = hashId(id);
@@ -211,6 +224,9 @@ export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook 
     bootColor: BOOT_COLORS[Math.floor(rng() * BOOT_COLORS.length)] ?? "#101014",
     bootAccent: BOOT_ACCENTS[Math.floor(rng() * BOOT_ACCENTS.length)] ?? "#ffffff",
     sockTape: rng() < 0.4,
+    eyeColor: EYE_COLORS[Math.floor(rng() * EYE_COLORS.length)] ?? "#3a2a1c",
+    collar: COLLAR_POOL[Math.floor(rng() * COLLAR_POOL.length)] ?? "crew",
+    hairVolume: 0.85 + rng() * 0.35,
     sweat: rng(),
   };
 }

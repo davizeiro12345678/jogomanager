@@ -345,7 +345,19 @@ export interface CupState {
 
 export interface MatchEventLog {
   minute: number;
-  type: "goal" | "shot" | "save" | "foul" | "sub" | "kickoff" | "halftime" | "fulltime" | "chance";
+  type:
+    | "goal"
+    | "shot"
+    | "save"
+    | "foul"
+    | "sub"
+    | "kickoff"
+    | "halftime"
+    | "fulltime"
+    | "chance"
+    | "yellow"
+    | "red"
+    | "corner";
   side: "home" | "away" | "neutral";
   text: string;
 }
