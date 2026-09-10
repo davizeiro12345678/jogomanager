@@ -50,7 +50,7 @@ export function matchLook(homeId: string, awayId: string): MatchLook {
   const wet =
     weather === "chuva" ? 1 : weather === "molhado" ? 0.55 : weather === "neve" ? 0.25 : 0;
 
-  return {
+  const base: MatchLook = {
     time,
     weather,
     wet: Math.min(1, wet + (time === "noite" ? 0.12 : 0)),
@@ -59,4 +59,24 @@ export function matchLook(homeId: string, awayId: string): MatchLook {
     attendance: 0.62 + (((seed >> 11) % 100) / 100) * 0.38,
     hiVisBall: weather === "neve",
   };
+
+  return applyVisualLook(base, homeId);
 }
+
+/** Aplica as escolhas do usuário feitas em /visual sobre o visual sorteado. */
+function applyVisualLook(look: MatchLook, homeId: string): MatchLook {
+  const v = getVisual();
+  const out: MatchLook = { ...look };
+  if (v.time !== "auto") out.time = v.time;
+  if (v.weather !== "auto") {
+    out.weather = v.weather;
+    out.wet =
+      v.weather === "chuva" ? 1 : v.weather === "molhado" ? 0.55 : v.weather === "neve" ? 0.25 : 0;
+    out.hiVisBall = v.weather === "neve";
+  }
+  const byClub = v.mowByClub[homeId];
+  if (byClub) out.mow = byClub;
+  else if (v.mow !== "auto") out.mow = v.mow;
+  return out;
+}
+
