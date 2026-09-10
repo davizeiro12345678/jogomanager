@@ -85,7 +85,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "author", content: "Pro Football Manager 3D" },
       { name: "theme-color", content: "#0a8f3c" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-title", content: "PFM 3D" },
+      { name: "apple-mobile-web-app-title", content: "Pro Football Manager 3D" },
     ],
     links: [
       {
