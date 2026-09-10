@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Novo pedido (2026-09-10)
-- [ ] Página /visual: controles de texturas, geometria dos jogadores, clima e grama por clube, salvos no navegador
+- [x] Página /visual: controles de texturas, geometria dos jogadores, clima e grama por clube, salvos no navegador
 - [ ] Tela de criação de clube (nome, cidade, estádio, torcida, uniforme) com retrato do clube
 - [ ] Medir desempenho de partida longa no celular e ajustar qualidade/pós-processamento
 - [ ] Melhorias massivas: jogadores, cutscenes, stack visual do site
