@@ -38,6 +38,8 @@ import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
 import { matchLook, type TimeOfDay } from "@/game/matchday";
+import { useVisual } from "@/game/visual-settings";
+
 
 
 export type CameraMode = "broadcast" | "tactical" | "goal" | "fan" | "rail" | "behind";
@@ -101,8 +103,11 @@ function useBladeMaterial(color: string) {
 }
 
 function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
-  const short = quality === "alta" ? 12000 : 5000;
-  const tall = quality === "alta" ? 3600 : 1400;
+  const vis = useVisual();
+  const scale = Math.max(0, vis.grassDensity);
+  const short = Math.round((quality === "alta" ? 12000 : 5000) * scale);
+  const tall = Math.round((quality === "alta" ? 3600 : 1400) * scale);
+
   const shortRef = useRef<THREE.InstancedMesh>(null);
   const tallRef = useRef<THREE.InstancedMesh>(null);
   const { mat, uniforms } = useBladeMaterial("#2b8a4d");
@@ -1244,7 +1249,11 @@ function Stands({
   goalPulse: React.MutableRefObject<number>;
   night: boolean;
 }) {
-  const density = quality === "alta" ? 460 : quality === "media" ? 240 : 100;
+  const vis = useVisual();
+  const density = Math.round(
+    (quality === "alta" ? 460 : quality === "media" ? 240 : 100) * Math.max(0.1, vis.crowdDensity),
+  );
+
   const rings = quality === "alta" ? 14 : quality === "media" ? 9 : 5;
   const wallMat = useConcrete("#39424b", 14);
 
@@ -2046,6 +2055,8 @@ function Scene({
   look: ReturnType<typeof matchLook>;
 }) {
   const time = look.time;
+  const postOn = useVisual().postFx;
+
   const goalPulse = useRef(0);
   const lastGoals = useRef(0);
   const [replay, setReplay] = useState(false);
@@ -2182,11 +2193,12 @@ function Scene({
       <GoalFx goalPulse={goalPulse} quality={quality} />
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
       <PostFX
-        quality={quality}
+        quality={postOn ? quality : "baixa"}
         replay={replay}
         moment={moment}
         time={time}
       />
+
 
 
     </>

@@ -1,5 +1,17 @@
 # Roadmap
 
+## Novo pedido (2026-09-10)
+- [ ] Página /visual: controles de texturas, geometria dos jogadores, clima e grama por clube, salvos no navegador
+- [ ] Tela de criação de clube (nome, cidade, estádio, torcida, uniforme) com retrato do clube
+- [ ] Medir desempenho de partida longa no celular e ajustar qualidade/pós-processamento
+- [ ] Melhorias massivas: jogadores, cutscenes, stack visual do site
+- [ ] Carreira de treinador ligada de ponta a ponta (liga, finanças, pressão, contratações, temporada completa)
+- [ ] Narração e eventos dinâmicos adaptativos; conquistas de engajamento
+- [ ] Loja com packs baratos + chat com pessoas reais e com IA (Gemini Flash mais recente)
+- [ ] Editor/customização: elencos, escudos, kits, nomes, fotos, campeonatos e ligas; regens com foto
+- [ ] Atributos detalhados dos jogadores (personalidade, moral, histórico de clubes, fotos)
+
+
 ## Em andamento (plano aprovado 05/09)
 - [ ] Banco de dados de futebol (competições, clubes, estádios, kits, jogadores, ids externos, import_runs)
 - [ ] Importador das APIs (TheSportsDB / football-data.org / API-Football) + rota de sincronização

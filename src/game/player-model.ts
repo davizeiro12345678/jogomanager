@@ -13,6 +13,8 @@
 // ============================================================================
 
 import { HAIR_COLORS, SKIN_TONES } from "./kits";
+import { getVisual } from "./visual-settings";
+
 
 /* -------------------------------------------------------------------------- */
 /*  RNG determinístico                                                        */
@@ -262,12 +264,15 @@ export function proportionsFor(look: PlayerLook): Proportions {
 export type LodLevel = 0 | 1 | 2; // 0 = perto (tudo), 1 = médio, 2 = longe
 
 export function lodForDistance(dist: number, quality: "alta" | "media" | "baixa"): LodLevel {
-  const near = quality === "alta" ? 26 : quality === "media" ? 18 : 12;
-  const mid = quality === "alta" ? 62 : quality === "media" ? 46 : 32;
+  const detail = getVisual().playerDetail;
+  const bias = detail === "detalhado" ? 1.6 : detail === "simples" ? 0.5 : 1;
+  const near = (quality === "alta" ? 26 : quality === "media" ? 18 : 12) * bias;
+  const mid = (quality === "alta" ? 62 : quality === "media" ? 46 : 32) * bias;
   if (dist < near) return 0;
   if (dist < mid) return 1;
   return 2;
 }
+
 
 /** segmentos de geometria por LOD, para manter as draw calls baixas */
 export function segmentsFor(lod: LodLevel): { radial: number; cap: number } {
