@@ -13,9 +13,8 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       ...seoMeta({
-        title: "Pro Football Manager 3D — Jogo de manager de futebol grátis em 3D",
-        description:
-          "Comande um clube real, monte o elenco, defina a tática e assista aos 90 minutos em 3D. Brasileirão, Premier League, LaLiga, Serie A e mais de 30 ligas. Grátis no navegador.",
+        title: SITE_TITLE,
+        description: SITE_DESCRIPTION,
         path: "/",
       }),
       {
