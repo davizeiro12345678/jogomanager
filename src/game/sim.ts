@@ -515,7 +515,71 @@ export class MatchSim {
     }
   }
 
+  /** empurra jogadores sobrepostos para que não se atravessem */
+  private separate() {
+    const R = 0.85; // raio do corpo
+    const list = this.players;
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i]!;
+        const b = list[j]!;
+        let dx = b.x - a.x;
+        let dz = b.z - a.z;
+        let d = Math.hypot(dx, dz);
+        if (d > R * 2) continue;
+        if (d < 1e-4) {
+          dx = (this.rnd() - 0.5) * 0.02;
+          dz = (this.rnd() - 0.5) * 0.02;
+          d = Math.hypot(dx, dz) || 1e-4;
+        }
+        const push = (R * 2 - d) / 2;
+        const nx = (dx / d) * push;
+        const nz = (dz / d) * push;
+        // quem tem a bola cede menos espaço
+        const aw = a.id === this.ball.holder ? 0.3 : 1;
+        const bw = b.id === this.ball.holder ? 0.3 : 1;
+        a.x -= nx * aw;
+        a.z -= nz * aw;
+        b.x += nx * bw;
+        b.z += nz * bw;
+      }
+    }
+    for (const p of list) {
+      p.x = Math.max(-FIELD_X - 1, Math.min(FIELD_X + 1, p.x));
+      p.z = Math.max(-FIELD_Z - 1, Math.min(FIELD_Z + 1, p.z));
+    }
+  }
+
+  /** desgaste físico ao longo dos 90 minutos */
+  private drainStamina(dt: number) {
+    for (const p of this.players) {
+      const speed = Math.hypot(p.vx, p.vz);
+      const effort = 0.02 + (speed / 9) * 0.11 * (p.pos === "GK" ? 0.25 : 1);
+      const resist = 0.6 + (p.physical / 100) * 0.6;
+      p.stamina = Math.max(12, p.stamina - (effort / resist) * dt);
+    }
+  }
+
+  /** blindagem contra NaN/Infinity vindos de dados ruins */
+  private sanitize() {
+    const fix = (v: number, fallback: number) => (Number.isFinite(v) ? v : fallback);
+    for (const p of this.players) {
+      p.x = Math.max(-FIELD_X - 1, Math.min(FIELD_X + 1, fix(p.x, 0)));
+      p.z = Math.max(-FIELD_Z - 1, Math.min(FIELD_Z + 1, fix(p.z, 0)));
+      p.vx = Math.max(-14, Math.min(14, fix(p.vx, 0)));
+      p.vz = Math.max(-14, Math.min(14, fix(p.vz, 0)));
+      p.stamina = Math.max(0, Math.min(100, fix(p.stamina, 70)));
+    }
+    const b = this.ball;
+    b.x = Math.max(-FIELD_X - 2, Math.min(FIELD_X + 2, fix(b.x, 0)));
+    b.z = Math.max(-FIELD_Z - 2, Math.min(FIELD_Z + 2, fix(b.z, 0)));
+    b.vx = Math.max(-45, Math.min(45, fix(b.vx, 0)));
+    b.vz = Math.max(-45, Math.min(45, fix(b.vz, 0)));
+    b.height = Math.max(0.1, Math.min(9, fix(b.height, 0.12)));
+  }
+
   private moveBall(dt: number) {
+
     const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
     if (holder) {
       this.looseTime = 0;
