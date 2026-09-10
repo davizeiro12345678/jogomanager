@@ -1,7 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
-const BASE_URL = "https://soccer-manager.fun";
+const FALLBACK_BASE_URL = "https://stadium-stewards.lovable.app";
+
+/** O sitemap deve apontar sempre para o mesmo host que respondeu ao pedido. */
+function baseUrlFor(request: Request): string {
+  try {
+    return new URL(request.url).origin;
+  } catch {
+    return FALLBACK_BASE_URL;
+  }
+}
 
 interface SitemapEntry {
   path: string;
