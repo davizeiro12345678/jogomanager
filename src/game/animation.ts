@@ -761,8 +761,8 @@ const BASE_CLIPS = {
     }),
 } satisfies Record<string, Clip>;
 
-/** catálogo completo: clipes base + os 89 clipes extras */
-const CLIPS = { ...BASE_CLIPS, ...EXTRA_CLIPS };
+/** catálogo completo: clipes base + dois pacotes de 89 clipes extras */
+const CLIPS = { ...BASE_CLIPS, ...EXTRA_CLIPS, ...EXTRA2_CLIPS };
 
 export type ClipName = keyof typeof CLIPS;
 
