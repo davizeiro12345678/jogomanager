@@ -329,6 +329,10 @@ export class MatchSim {
     this.ball.vx = 0;
     this.ball.vz = 0;
     this.ball.height = 0;
+    this.ballVy = 0;
+    this.ballSpin = 0;
+    this.pendingShot = null;
+    this.pass = null;
     const team = this.players.filter((p) => p.side === side);
     const starter = team.find((p) => p.pos === "FW") ?? team[team.length - 1]!;
     starter.x = -0.6 * (side === "home" ? 1 : -1);
@@ -924,6 +928,10 @@ export class MatchSim {
     this.lastTouch = side;
     this.ball.vx = 0;
     this.ball.vz = 0;
+    this.ballVy = 0;
+    this.ballSpin = 0;
+    this.pendingShot = null;
+    this.pass = null;
     this.looseTime = 0;
     this.restartTimer = 0.8;
     this.trigger(best, kind, 0.9);
@@ -1051,24 +1059,40 @@ export class MatchSim {
     }
 
     if (!best) return;
-    const dist = Math.hypot(best.x - holder.x, best.z - holder.z);
-    const success = Math.min(0.96, (holder.passing / 100) * (1 - dist / 90) + 0.25);
-    const dx = best.x - holder.x;
-    const dz = best.z - holder.z;
+    const rawDist = Math.hypot(best.x - holder.x, best.z - holder.z);
+    const power = Math.min(31, 10 + rawDist * 0.8);
+    // passe na frente: mira onde o companheiro estará quando a bola chegar
+    const flight = rawDist / power;
+    const aimX = best.x + best.vx * flight * 0.8;
+    const aimZ = best.z + best.vz * flight * 0.8;
+
+    const success = Math.min(0.96, (holder.passing / 100) * (1 - rawDist / 90) + 0.25);
+    const err = success > this.rnd() ? 0 : (this.rnd() - 0.5) * 12;
+    const dx = aimX - holder.x;
+    const dz = aimZ - holder.z;
     const d = Math.hypot(dx, dz) || 1;
-    const power = Math.min(30, 9 + dist * 0.85);
-    const err = success > this.rnd() ? 0 : (this.rnd() - 0.5) * 14;
     const wide = Math.abs(holder.z) > FIELD_Z * 0.55 && Math.abs(best.x - dir * FIELD_X) < 30;
-    this.trigger(holder, wide ? "cross" : dist > 24 ? "passLong" : "pass", dist > 24 ? 0.85 : 0.6);
+    const lofted = wide || rawDist > 22;
+    this.trigger(holder, wide ? "cross" : rawDist > 24 ? "passLong" : "pass", rawDist > 24 ? 0.85 : 0.6);
     holder.passes++;
     this.stats[holder.side].passes++;
-    if (err === 0) this.stats[holder.side].passesOk++;
     this.lastPass[holder.side] = { id: holder.id, time: this.time };
     this.ball.holder = null;
     this.lastTouch = holder.side;
-    this.ball.vx = (dx / d) * power + err * 0.2;
+    this.pass = { to: best.id, from: holder.id, until: this.time + 0.45 };
+    this.ball.vx = (dx / d) * power + err * 0.18;
     this.ball.vz = (dz / d) * power + err;
-    this.ball.height = dist > 22 ? 1.6 : 0.3;
+    if (lofted) {
+      // bola alçada: sobe e cai perto do destino
+      const t = Math.max(0.4, d / power);
+      this.ball.height = 0.35;
+      this.ballVy = 4.905 * t;
+      this.ballSpin = wide ? (this.rnd() - 0.5) * 5 : 0;
+    } else {
+      this.ball.height = 0.12;
+      this.ballVy = 0;
+      this.ballSpin = 0;
+    }
   }
 
   private shoot(holder: SimPlayer, distGoal: number) {
@@ -1226,6 +1250,10 @@ export class MatchSim {
     this.ball.vx = 0;
     this.ball.vz = 0;
     this.ball.height = 0.12;
+    this.ballVy = 0;
+    this.ballSpin = 0;
+    this.pendingShot = null;
+    this.pass = null;
     this.looseTime = 0;
     this.restartTimer = 1.5;
     this.decisionTimer = 1.2;
