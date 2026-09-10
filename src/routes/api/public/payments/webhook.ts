@@ -1,9 +1,45 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { type StripeEnv, verifyWebhook } from "@/lib/stripe.server";
+import {
+  type StripeEnv,
+  createStripeClient,
+  verifyWebhook,
+} from "@/lib/stripe.server";
 import {
   fulfillOneTimePurchase,
+  markPurchaseFailed,
+  recordPendingPurchase,
   syncSubscription,
 } from "@/lib/fulfillment.server";
+
+/**
+ * A Stripe NÃO envia os itens comprados no corpo do evento: é preciso buscar a
+ * sessão com `line_items` expandido. Sem isso o jogo não descobre qual pacote
+ * foi pago e a entrega falha em silêncio.
+ */
+async function resolvePurchase(sessionId: string, env: StripeEnv) {
+  const stripe = createStripeClient(env);
+  const full = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ["line_items.data.price"],
+  });
+  const lineItem = full.line_items?.data?.[0];
+  const price = lineItem?.price;
+  const productKey =
+    price?.lookup_key ||
+    (price?.metadata?.["lovable_external_id"] as string | undefined) ||
+    price?.id;
+  const amount = lineItem?.amount_total ?? full.amount_total ?? 0;
+  return { productKey, amount, session: full };
+}
+
+async function fulfillSession(sessionId: string, userId: string, env: StripeEnv) {
+  const { productKey, amount } = await resolvePurchase(sessionId, env);
+  if (!productKey) {
+    await markPurchaseFailed(sessionId, "Item da compra não identificado");
+    throw new Error(`No product key on session ${sessionId}`);
+  }
+  await recordPendingPurchase(userId, productKey, sessionId, amount);
+  await fulfillOneTimePurchase(userId, productKey, sessionId, amount);
+}
 
 async function handleWebhook(req: Request, env: StripeEnv) {
   const event = await verifyWebhook(req, env);
@@ -23,39 +59,24 @@ async function handleWebhook(req: Request, env: StripeEnv) {
     }
     case "checkout.session.completed": {
       const session = event.data.object;
-      if (session.payment_status === "unpaid") {
-        // Delayed-notification payment methods: wait for async_payment_succeeded.
-        return;
-      }
-
       const userId = session.metadata?.userId;
       if (!userId) {
         console.error("No userId in checkout session metadata");
         return;
       }
-
-      const mode = session.mode;
-      if (mode === "payment") {
-        const lineItem = session.line_items?.data?.[0];
-        const price = lineItem?.price;
-        const productKey =
-          price?.lookup_key ||
-          price?.metadata?.lovable_external_id ||
-          price?.id;
-        const amount = lineItem?.amount_total ?? session.amount_total ?? 0;
-        await fulfillOneTimePurchase(
-          userId,
-          productKey,
-          session.id,
-          amount
-        );
-      } else if (mode === "subscription") {
-        // Subscription state is handled by the customer.subscription.* events above.
-        // We still mirror it here in case the subscription event is delayed.
-        if (session.subscription) {
-          // Subscription object is not expanded in this event; rely on customer.subscription.* events.
-        }
+      if (session.mode !== "payment") {
+        // Assinaturas são tratadas pelos eventos customer.subscription.*.
+        break;
       }
+      if (session.payment_status === "unpaid") {
+        // Boleto/PIX com confirmação lenta: registra pendente e espera.
+        const { productKey, amount } = await resolvePurchase(session.id, env);
+        if (productKey) {
+          await recordPendingPurchase(userId, productKey, session.id, amount);
+        }
+        return;
+      }
+      await fulfillSession(session.id, userId, env);
       break;
     }
     case "checkout.session.async_payment_succeeded": {
@@ -66,28 +87,16 @@ async function handleWebhook(req: Request, env: StripeEnv) {
         return;
       }
       if (session.mode === "payment") {
-        const lineItem = session.line_items?.data?.[0];
-        const price = lineItem?.price;
-        const productKey =
-          price?.lookup_key ||
-          price?.metadata?.lovable_external_id ||
-          price?.id;
-        const amount = lineItem?.amount_total ?? session.amount_total ?? 0;
-        await fulfillOneTimePurchase(
-          userId,
-          productKey,
-          session.id,
-          amount
-        );
+        await fulfillSession(session.id, userId, env);
       }
       break;
     }
     case "checkout.session.async_payment_failed": {
-      // Mark pending order as failed if you track pending orders.
-      // For now we just log; the user can retry from the store.
-      console.log("Async payment failed:", event.data.object.id);
+      const session = event.data.object;
+      await markPurchaseFailed(session.id, "Pagamento não foi concluído");
       break;
     }
+
     case "invoice.paid": {
       // Subscription renewals reconcile here; customer.subscription.updated
       // already keeps the row current. Use this for extra reconciliation if needed.

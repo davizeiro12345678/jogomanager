@@ -1,8 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { CheckCircle, XCircle, Loader2, Coins } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { getPurchases } from "@/lib/purchases.functions";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/checkout/return")({
   ssr: false,
@@ -30,17 +33,57 @@ export const Route = createFileRoute("/checkout/return")({
   component: CheckoutReturn,
 });
 
+const MAX_TRIES = 15; // ~30 segundos
+
 function CheckoutReturn() {
   const { session_id: sessionId } = Route.useSearch();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const fetchPurchases = useServerFn(getPurchases);
+  const [status, setStatus] = useState<"loading" | "delivered" | "slow" | "error">(
+    sessionId ? "loading" : "error",
+  );
+  const [coins, setCoins] = useState<number | null>(null);
+  const tries = useRef(0);
+
+  const check = useCallback(async (): Promise<boolean> => {
+    try {
+      const data = await fetchPurchases();
+      setCoins(data.coins);
+      const mine = data.purchases.find((p) => p.reference === sessionId);
+      if (mine?.status === "completed") {
+        setStatus("delivered");
+        track("compra_concluida", { produto: mine.productKey });
+        return true;
+      }
+      if (mine?.status === "failed") {
+        setStatus("error");
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }, [fetchPurchases, sessionId]);
 
   useEffect(() => {
-    if (!sessionId) {
-      setStatus("error");
-      return;
-    }
-    setStatus("success");
-  }, [sessionId]);
+    if (!sessionId) return;
+    let alive = true;
+    const timer = setInterval(() => {
+      void (async () => {
+        if (!alive) return;
+        tries.current += 1;
+        const done = await check();
+        if (done || tries.current >= MAX_TRIES) {
+          clearInterval(timer);
+          if (!done && alive) setStatus("slow");
+        }
+      })();
+    }, 2000);
+    void check();
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [sessionId, check]);
 
   return (
     <div className="pitch-bg flex min-h-screen items-center justify-center px-4 py-6">
@@ -48,36 +91,61 @@ function CheckoutReturn() {
         {status === "loading" && (
           <>
             <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-primary" />
-            <h1 className="font-display text-xl uppercase tracking-wide">Processando…</h1>
+            <h1 className="font-display text-xl uppercase tracking-wide">Confirmando…</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Aguardando confirmação do pagamento.
+              Estamos creditando seus itens. Isso leva alguns segundos.
             </p>
           </>
         )}
-        {status === "success" && (
+        {status === "delivered" && (
           <>
             <CheckCircle className="mx-auto mb-4 h-10 w-10 text-green-500" />
-            <h1 className="font-display text-xl uppercase tracking-wide">Pagamento confirmado</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Seus itens serão entregues em poucos segundos. Obrigado por apoiar o jogo!
+            <h1 className="font-display text-xl uppercase tracking-wide">Tudo certo!</h1>
+            <p className="mt-2 flex items-center justify-center gap-1 text-sm text-muted-foreground">
+              <Coins size={16} className="text-primary" />
+              Saldo agora: <strong className="text-foreground">{coins ?? 0}</strong> moedas
             </p>
-            <Button asChild className="mt-6 w-full">
-              <Link to="/loja">Voltar à loja</Link>
+          </>
+        )}
+        {status === "slow" && (
+          <>
+            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-primary" />
+            <h1 className="font-display text-xl uppercase tracking-wide">Quase lá</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              O banco ainda está confirmando o pagamento. Assim que confirmar, os itens entram
+              automaticamente na sua conta.
+            </p>
+            <Button
+              variant="secondary"
+              className="mt-4 w-full"
+              onClick={() => {
+                tries.current = 0;
+                setStatus("loading");
+                void check();
+              }}
+            >
+              Verificar de novo
             </Button>
           </>
         )}
         {status === "error" && (
           <>
             <XCircle className="mx-auto mb-4 h-10 w-10 text-red-500" />
-            <h1 className="font-display text-xl uppercase tracking-wide">Sessão não encontrada</h1>
+            <h1 className="font-display text-xl uppercase tracking-wide">Pagamento não concluído</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Não recebemos os dados da transação. Se o pagamento foi cobrado, os itens chegarão em breve.
+              Não recebemos a confirmação da transação. Se o valor foi cobrado, ele aparece em
+              minhas compras assim que o banco confirmar.
             </p>
-            <Button asChild className="mt-6 w-full">
-              <Link to="/loja">Voltar à loja</Link>
-            </Button>
           </>
         )}
+        <div className="mt-6 flex flex-col gap-2">
+          <Button asChild>
+            <Link to="/loja">Voltar à loja</Link>
+          </Button>
+          <Button asChild variant="ghost">
+            <Link to="/compras">Ver minhas compras</Link>
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -20,6 +20,7 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as ComoSerTecnicoDeFutebolRouteImport } from './routes/como-ser-tecnico-de-futebol'
 import { Route as ComparativoJogosManagerRouteImport } from './routes/comparativo-jogos-manager'
+import { Route as ComprasRouteImport } from './routes/compras'
 import { Route as ConquistasRouteImport } from './routes/conquistas'
 import { Route as CriadorRouteImport } from './routes/criador'
 import { Route as CupRouteImport } from './routes/cup'
@@ -122,6 +123,11 @@ const ComoSerTecnicoDeFutebolRoute = ComoSerTecnicoDeFutebolRouteImport.update({
 const ComparativoJogosManagerRoute = ComparativoJogosManagerRouteImport.update({
   id: '/comparativo-jogos-manager',
   path: '/comparativo-jogos-manager',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComprasRoute = ComprasRouteImport.update({
+  id: '/compras',
+  path: '/compras',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConquistasRoute = ConquistasRouteImport.update({
@@ -380,6 +386,7 @@ export interface FileRoutesByFullPath {
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
+  '/compras': typeof ComprasRoute
   '/conquistas': typeof ConquistasRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
@@ -441,6 +448,7 @@ export interface FileRoutesByTo {
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
+  '/compras': typeof ComprasRoute
   '/conquistas': typeof ConquistasRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
@@ -503,6 +511,7 @@ export interface FileRoutesById {
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
+  '/compras': typeof ComprasRoute
   '/conquistas': typeof ConquistasRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
@@ -566,6 +575,7 @@ export interface FileRouteTypes {
     | '/club'
     | '/como-ser-tecnico-de-futebol'
     | '/comparativo-jogos-manager'
+    | '/compras'
     | '/conquistas'
     | '/criador'
     | '/cup'
@@ -627,6 +637,7 @@ export interface FileRouteTypes {
     | '/club'
     | '/como-ser-tecnico-de-futebol'
     | '/comparativo-jogos-manager'
+    | '/compras'
     | '/conquistas'
     | '/criador'
     | '/cup'
@@ -688,6 +699,7 @@ export interface FileRouteTypes {
     | '/club'
     | '/como-ser-tecnico-de-futebol'
     | '/comparativo-jogos-manager'
+    | '/compras'
     | '/conquistas'
     | '/criador'
     | '/cup'
@@ -750,6 +762,7 @@ export interface RootRouteChildren {
   ClubRoute: typeof ClubRoute
   ComoSerTecnicoDeFutebolRoute: typeof ComoSerTecnicoDeFutebolRoute
   ComparativoJogosManagerRoute: typeof ComparativoJogosManagerRoute
+  ComprasRoute: typeof ComprasRoute
   ConquistasRoute: typeof ConquistasRoute
   CriadorRoute: typeof CriadorRoute
   CupRoute: typeof CupRoute
@@ -877,6 +890,13 @@ declare module '@tanstack/react-router' {
       path: '/comparativo-jogos-manager'
       fullPath: '/comparativo-jogos-manager'
       preLoaderRoute: typeof ComparativoJogosManagerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compras': {
+      id: '/compras'
+      path: '/compras'
+      fullPath: '/compras'
+      preLoaderRoute: typeof ComprasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/conquistas': {
@@ -1230,6 +1250,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClubRoute: ClubRoute,
   ComoSerTecnicoDeFutebolRoute: ComoSerTecnicoDeFutebolRoute,
   ComparativoJogosManagerRoute: ComparativoJogosManagerRoute,
+  ComprasRoute: ComprasRoute,
   ConquistasRoute: ConquistasRoute,
   CriadorRoute: CriadorRoute,
   CupRoute: CupRoute,

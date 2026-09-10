@@ -51,6 +51,40 @@ export function getProductEffect(productKey: string): ProductEffect | null {
   return EFFECTS[productKey] ?? null;
 }
 
+/** Marca a compra como pendente assim que o pagamento é iniciado/recebido. */
+export async function recordPendingPurchase(
+  userId: string,
+  productKey: string,
+  reference: string,
+  amountCents: number
+): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("user_purchases").upsert(
+    {
+      user_id: userId,
+      product_key: productKey,
+      amount_cents: amountCents,
+      status: "pending",
+      reference,
+    } as any,
+    { onConflict: "reference", ignoreDuplicates: true }
+  );
+  if (error) console.error("recordPendingPurchase falhou", error.message);
+}
+
+/** Registra falha de pagamento para aparecer no painel de compras. */
+export async function markPurchaseFailed(
+  reference: string,
+  message: string
+): Promise<void> {
+  const supabase = getSupabase();
+  await supabase
+    .from("user_purchases")
+    .update({ status: "failed", error: message.slice(0, 400) } as never)
+    .eq("reference", reference)
+    .neq("status", "completed");
+}
+
 export async function fulfillOneTimePurchase(
   userId: string,
   productKey: string,
@@ -59,18 +93,31 @@ export async function fulfillOneTimePurchase(
 ): Promise<void> {
   const effect = getProductEffect(productKey);
   if (!effect) {
+    await markPurchaseFailed(reference, `Produto desconhecido: ${productKey}`);
     throw new Error(`Unknown product key: ${productKey}`);
   }
 
   const supabase = getSupabase();
 
-  const { error: purchaseError } = await supabase.from("user_purchases").insert({
-    user_id: userId,
-    product_key: productKey,
-    amount_cents: amountCents,
-    status: "completed",
-    reference,
-  } as any);
+  // Idempotência: a mesma sessão da Stripe pode chegar mais de uma vez.
+  const { data: existing } = await supabase
+    .from("user_purchases")
+    .select("id, status")
+    .eq("reference", reference)
+    .maybeSingle();
+  if ((existing as { status?: string } | null)?.status === "completed") return;
+
+  const { error: purchaseError } = await supabase.from("user_purchases").upsert(
+    {
+      user_id: userId,
+      product_key: productKey,
+      amount_cents: amountCents,
+      status: "completed",
+      error: null,
+      reference,
+    } as any,
+    { onConflict: "reference" }
+  );
   if (purchaseError) throw new Error(purchaseError.message);
 
   const { data: rawWallet, error: walletFetchError } = await supabase
@@ -106,6 +153,7 @@ export async function fulfillOneTimePurchase(
   );
   if (walletError) throw new Error(walletError.message);
 }
+
 
 export async function syncSubscription(
   subscription: any,

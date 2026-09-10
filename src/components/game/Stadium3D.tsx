@@ -31,6 +31,7 @@ import {
 
 import { LINES_H, LINES_W, pitchLinesTexture } from "@/components/game/stadium/textures/lines";
 import { pitchWearTexture } from "@/components/game/stadium/textures/wear";
+import { skyTexture } from "@/components/game/stadium/textures/sky";
 import { bannerTexture, bigFlagTexture, mosaicTexture } from "@/components/game/stadium/textures/tifo";
 import { StadiumProps } from "@/components/game/stadium/Props";
 
@@ -1810,41 +1811,22 @@ function Rig({
 
 /* --------------------------------------------------------- pós-processamento */
 
-/** Céu em degradê + nuvens leves; substitui o fundo chapado. */
+/** Céu com degradê, nuvens volumosas, estrelas e sol/lua; gira bem devagar. */
 function SkyDome({ time }: { time: TimeOfDay }) {
-  const tex = useMemo(() => {
-    if (typeof document === "undefined") return null;
-    const w = 32;
-    const h = 256;
-    const c = document.createElement("canvas");
-    c.width = w;
-    c.height = h;
-    const ctx = c.getContext("2d");
-    if (!ctx) return null;
-    const stops: Record<TimeOfDay, [string, string, string]> = {
-      dia: ["#3f86d0", "#8fbfe8", "#d8ecf8"],
-      entardecer: ["#20304f", "#6b5570", "#ffb277"],
-      noite: ["#02040a", "#080f1c", "#16243a"],
-    };
-    const [top, mid, low] = stops[time];
-    const g = ctx.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, top);
-    g.addColorStop(0.55, mid);
-    g.addColorStop(1, low);
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
-    const t = new THREE.CanvasTexture(c);
-    t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  }, [time]);
+  const tex = useMemo(() => skyTexture(time), [time]);
+  const ref = useRef<THREE.Mesh>(null);
+  useFrame((_, dt) => {
+    if (ref.current) ref.current.rotation.y += dt * 0.0035;
+  });
   if (!tex) return null;
   return (
-    <mesh scale={[-1, 1, 1]}>
-      <sphereGeometry args={[420, 24, 16]} />
+    <mesh ref={ref} scale={[-1, 1, 1]}>
+      <sphereGeometry args={[420, 48, 28]} />
       <meshBasicMaterial map={tex} side={THREE.BackSide} depthWrite={false} fog={false} />
     </mesh>
   );
 }
+
 
 /* ------------------------------------------------------------------- cena */
 

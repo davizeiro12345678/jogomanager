@@ -64,7 +64,11 @@ const KIND_ICONS: Record<string, ReactNode> = {
 };
 
 const PRICE_IDS: Record<string, string> = {
+  coins_starter: "coins_starter",
   coins_small: "coins_small",
+  coins_large: "coins_large",
+  celebration_pack: "celebration_pack",
+  stadium_pack: "stadium_pack",
   coins_medium: "coins_medium",
   scout_pack: "scout_pack",
   training_pack: "training_pack",
