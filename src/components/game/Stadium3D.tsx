@@ -2191,11 +2191,12 @@ function Scene({
       <GoalFx goalPulse={goalPulse} quality={quality} />
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
       <PostFX
-        quality={quality}
+        quality={postOn ? quality : "baixa"}
         replay={replay}
         moment={moment}
         time={time}
       />
+
 
 
     </>
