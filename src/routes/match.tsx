@@ -337,6 +337,8 @@ function LiveMatch({
   const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [showStats, setShowStats] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  /** gaveta lateral: loja ou chat sem sair da partida (o jogo pausa) */
+  const [drawer, setDrawer] = useState<"none" | "store" | "chat">("none");
   const [done, setDone] = useState(false);
   const [narrating, setNarrating] = useState(false);
   const narratorRef = useRef<Narrator | null>(null);
