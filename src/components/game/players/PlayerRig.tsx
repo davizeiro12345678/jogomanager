@@ -807,6 +807,38 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     return (
       <group>
         {base}
+        {/* mechas soltas: franja, nuca e costeletas — só na qualidade alta */}
+        {hi && s !== "buzz" && (
+          <>
+            {Array.from({ length: 5 }).map((_, i) => {
+              const t = (i - 2) / 2;
+              return (
+                <mesh
+                  key={`fringe-${i}`}
+                  position={[t * P.headR * 0.62, P.headR * 0.5, P.headR * 0.78]}
+                  rotation={[0.85 + Math.abs(t) * 0.12, t * 0.35, t * 0.2]}
+                >
+                  <capsuleGeometry args={[P.headR * 0.1, P.headR * 0.42 * look.hairVolume, 2, 6]} />
+                  {hairMat}
+                </mesh>
+              );
+            })}
+            <mesh position={[0, P.headR * 0.12, -P.headR * 0.82]} rotation={[-0.35, 0, 0]}>
+              <capsuleGeometry args={[P.headR * 0.42, P.headR * 0.3 * look.hairVolume, 3, 10]} />
+              {hairMat}
+            </mesh>
+            {[-1, 1].map((sx) => (
+              <mesh
+                key={`side-${sx}`}
+                position={[sx * P.headR * 0.86, P.headR * 0.08, P.headR * 0.1]}
+                scale={[0.5, 1, 1]}
+              >
+                <capsuleGeometry args={[P.headR * 0.22, P.headR * 0.28, 2, 8]} />
+                {hairMat}
+              </mesh>
+            ))}
+          </>
+        )}
         {s === "mohawk" && (
           <mesh position={[0, P.headR * 0.95, 0]} scale={[0.24, 1, 1.05]}>
             <sphereGeometry args={[P.headR * 0.62, 10, 10, 0, Math.PI * 2, 0, Math.PI * 0.7]} />
