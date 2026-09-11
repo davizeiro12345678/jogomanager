@@ -1,16 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
-const FALLBACK_BASE_URL = "https://stadium-stewards.lovable.app";
-
-/** O sitemap deve apontar sempre para o mesmo host que respondeu ao pedido. */
-function baseUrlFor(request: Request): string {
-  try {
-    return new URL(request.url).origin;
-  } catch {
-    return FALLBACK_BASE_URL;
-  }
-}
+import { publicBaseUrlFor as baseUrlFor } from "@/lib/site-host";
 
 interface SitemapEntry {
   path: string;
