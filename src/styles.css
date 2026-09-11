@@ -293,6 +293,47 @@
   background-attachment: fixed;
 }
 
+/* superfície padrão de cartões: leve relevo, sem virar caixa chapada */
+@utility surface-card {
+  background-color: var(--color-card);
+  background-image: var(--gradient-surface, none);
+  box-shadow: var(--shadow-elegant, 0 8px 24px -18px rgb(0 0 0 / 0.6));
+}
+
+/* painéis translúcidos para cabeçalhos e barras fixas */
+@utility glass-panel {
+  background-color: color-mix(in oklab, var(--color-card) 78%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  border-color: var(--color-border);
+}
+
+/* destaque de números e títulos com o verde do gramado */
+@utility text-gradient {
+  background-image: var(--gradient-primary, none);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+@utility glow-primary {
+  box-shadow: var(--shadow-glow, none);
+}
+
+/* leve elevação ao passar o mouse em cartões clicáveis */
+@utility hover-lift {
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-elegant, none);
+    border-color: color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
+  }
+}
+
+
+
 
 /* ---------------------------------------------------------------
  * Cutscenes 2D — animações de cenário, atores e apresentação
