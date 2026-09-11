@@ -68,28 +68,28 @@ export function clubTheme(club: Club) {
   };
 }
 
-/** Aplica as cores do clube nas variáveis do tema enquanto a tela estiver aberta. */
+/**
+ * Aplica as cores do clube como detalhe da interface.
+ *
+ * A identidade visual do produto é o verde do gramado, então o clube entra
+ * apenas nos realces (--club-accent / --club-glow) e a cor principal dos
+ * botões e destaques permanece consistente em todas as telas.
+ */
 export function useClubTheme(club: Club | undefined) {
   useEffect(() => {
     if (!club || typeof document === "undefined") return;
     const t = clubTheme(club);
     const root = document.documentElement;
     const previous = {
-      primary: root.style.getPropertyValue("--primary"),
-      pf: root.style.getPropertyValue("--primary-foreground"),
-      ring: root.style.getPropertyValue("--ring"),
+      clubColor: root.style.getPropertyValue("--club-color"),
       accent: root.style.getPropertyValue("--club-accent"),
       glow: root.style.getPropertyValue("--club-glow"),
     };
-    root.style.setProperty("--primary", t.primary);
-    root.style.setProperty("--primary-foreground", t.primaryForeground);
-    root.style.setProperty("--ring", t.primary);
+    root.style.setProperty("--club-color", t.primary);
     root.style.setProperty("--club-accent", t.accent);
-    root.style.setProperty("--club-glow", t.glow);
+    root.style.setProperty("--club-glow", rgba(t.primary, 0.22));
     return () => {
-      root.style.setProperty("--primary", previous.primary);
-      root.style.setProperty("--primary-foreground", previous.pf);
-      root.style.setProperty("--ring", previous.ring);
+      root.style.setProperty("--club-color", previous.clubColor);
       root.style.setProperty("--club-accent", previous.accent);
       root.style.setProperty("--club-glow", previous.glow);
     };
