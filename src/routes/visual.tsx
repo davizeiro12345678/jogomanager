@@ -279,6 +279,20 @@ function VisualPage() {
                 className="size-5 accent-primary"
               />
             </label>
+            <label className="flex items-center justify-between gap-3 rounded-xl border border-border/60 p-3 text-sm">
+              <span>
+                Medidor de desempenho
+                <span className="block text-[11px] text-muted-foreground">
+                  Mostra na partida os quadros por segundo, a média e o pior caso (p95).
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={v.showFps}
+                onChange={(e) => setVisual({ showFps: e.target.checked })}
+                className="size-5 accent-primary"
+              />
+            </label>
             <label className="block rounded-xl border border-border/60 p-3 text-sm">
               <span>
                 Placas do estádio

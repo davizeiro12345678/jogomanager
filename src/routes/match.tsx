@@ -183,6 +183,7 @@ const CAMERAS = [
 
 function StatRow({ label, h, a }: { label: string; h: number; a: number }) {
   const total = Math.max(1, h + a);
+  const pct = (h / total) * 100;
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-[11px] text-white/70">
@@ -191,9 +192,71 @@ function StatRow({ label, h, a }: { label: string; h: number; a: number }) {
         <span className="font-display tabular-nums text-white">{a}</span>
       </div>
       <div className="flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-white/10">
-        <div className="rounded-l-full bg-primary" style={{ width: `${(h / total) * 100}%` }} />
+        <div
+          className="rounded-l-full bg-primary transition-[width] duration-500"
+          style={{ width: `${pct}%` }}
+        />
         <div className="flex-1 rounded-r-full bg-white/45" />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Pressão da partida: mede quem está criando mais nos últimos lances (chutes,
+ * chutes no gol, escanteios) com esquecimento gradual, para o HUD mostrar de
+ * quem é o jogo agora — e não o acumulado dos 90 minutos.
+ */
+function useMomentum(snap: Snap) {
+  const prev = useRef({ hs: 0, as: 0, ho: 0, ao: 0, hc: 0, ac: 0 });
+  const value = useRef(0);
+  const [shown, setShown] = useState(0);
+
+  useEffect(() => {
+    const p = prev.current;
+    const gain =
+      (snap.hShots - p.hs) * 1 +
+      (snap.hOn - p.ho) * 1.6 +
+      (snap.hCorners - p.hc) * 0.8 -
+      ((snap.aShots - p.as) * 1 + (snap.aOn - p.ao) * 1.6 + (snap.aCorners - p.ac) * 0.8);
+    prev.current = {
+      hs: snap.hShots,
+      as: snap.aShots,
+      ho: snap.hOn,
+      ao: snap.aOn,
+      hc: snap.hCorners,
+      ac: snap.aCorners,
+    };
+    // decai devagar e soma o lance novo; fica preso entre -1 e 1
+    const next = Math.max(-1, Math.min(1, value.current * 0.94 + gain * 0.35));
+    value.current = next;
+    setShown((v) => (Math.abs(v - next) > 0.02 ? next : v));
+  }, [snap.hShots, snap.aShots, snap.hOn, snap.aOn, snap.hCorners, snap.aCorners]);
+
+  return shown;
+}
+
+/** Linha do tempo com os marcos da partida (gols e cartões). */
+function Timeline({ minute, events }: { minute: number; events: Snap["events"] }) {
+  const marks = events.filter((e) => e.type === "goal" || e.type === "red");
+  return (
+    <div className="relative mx-4 mb-1 mt-1 h-1 rounded-full bg-white/12">
+      <div
+        className="h-full rounded-full bg-white/45 transition-[width] duration-700"
+        style={{ width: `${Math.min(100, (minute / 90) * 100)}%` }}
+      />
+      <span className="absolute inset-y-0 left-1/2 w-px bg-white/25" />
+      {marks.map((e, i) => (
+        <span
+          key={`${e.minute}-${i}`}
+          title={e.text}
+          className="absolute -top-[3px] h-[7px] w-[7px] -translate-x-1/2 rounded-full ring-1 ring-black/60"
+          style={{
+            left: `${Math.min(100, (e.minute / 90) * 100)}%`,
+            background: e.type === "red" ? "#ef4444" : "#ffffff",
+          }}
+        />
+      ))}
     </div>
   );
 }
@@ -212,6 +275,7 @@ const Scoreboard = memo(function Scoreboard({
   const home = CLUBS[homeId]!;
   const away = CLUBS[awayId]!;
   const [ph, pa] = snap.poss;
+  const momentum = useMomentum(snap);
   // pequeno destaque quando o placar muda
   const total = snap.hg + snap.ag;
   const [flash, setFlash] = useState(false);
@@ -269,7 +333,42 @@ const Scoreboard = memo(function Scoreboard({
           </span>
           <span>Posse {pa}%</span>
         </div>
+
+        {/* pressão: de quem é o jogo neste momento */}
+        <div className="px-4 pb-1">
+          <div className="relative h-1.5 overflow-hidden rounded-full bg-white/10">
+            <span className="absolute inset-y-0 left-1/2 w-px bg-white/25" />
+            <div
+              className="absolute inset-y-0 rounded-full transition-all duration-500"
+              style={{
+                left: momentum >= 0 ? "50%" : `${50 + momentum * 50}%`,
+                width: `${Math.abs(momentum) * 50}%`,
+                background: momentum >= 0 ? home.primary : away.primary,
+              }}
+            />
+          </div>
+          <p className="mt-0.5 text-center text-[9px] uppercase tracking-[0.25em] text-white/45">
+            Pressão
+          </p>
+        </div>
+
+        <Timeline minute={snap.minute} events={snap.events} />
+        <div className="flex justify-between px-4 pb-1.5 text-[9px] uppercase tracking-widest text-white/35">
+          <span>0&apos;</span>
+          <span>45&apos;</span>
+          <span>90&apos;</span>
+        </div>
       </div>
+
+      {/* faixa de gol: aparece por poucos segundos quando o placar muda */}
+      {flash ? (
+        <p
+          aria-live="polite"
+          className="cs-anim-rise mt-3 rounded-xl bg-primary px-6 py-1.5 font-display text-2xl uppercase tracking-[0.4em] text-primary-foreground shadow-2xl shadow-primary/40 sm:text-3xl"
+        >
+          Gol!
+        </p>
+      ) : null}
     </div>
   );
 });

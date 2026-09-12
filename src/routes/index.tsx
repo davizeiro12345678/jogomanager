@@ -89,47 +89,139 @@ function Landing() {
 
   return (
     <div className="pitch-bg min-h-screen">
-      <div className="relative mx-auto max-w-6xl px-4 py-16">
-        {/* brilho de refletor atrás do título */}
+      {/* ---------- herói em tela cheia ---------- */}
+      <header className="relative isolate overflow-hidden">
+        <img
+          src={heroStadium}
+          alt="Manager na beira do campo observando a partida em um estádio 3D lotado à noite"
+          width={1600}
+          height={912}
+          className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-45"
+        />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-24 left-1/4 h-72 w-[36rem] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]"
+          className="absolute inset-0 -z-10 bg-[radial-gradient(120%_80%_at_50%_0%,transparent_10%,hsl(var(--background)/0.7)_55%,hsl(var(--background))_100%)]"
         />
-        {/* linhas do gramado ao fundo, bem discretas */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] opacity-[0.07] [background-image:repeating-linear-gradient(90deg,transparent_0_44px,hsl(var(--foreground))_44px_45px)] [mask-image:linear-gradient(to_bottom,black,transparent)]"
+          className="pointer-events-none absolute -top-32 left-1/2 -z-10 h-80 w-[44rem] -translate-x-1/2 rounded-full bg-primary/25 blur-[130px]"
         />
-        <p className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-display text-[0.65rem] uppercase tracking-[0.35em] text-primary">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-          Temporada 2026
-        </p>
-        <h1 className="mt-3 max-w-3xl font-display text-5xl leading-[1.05] sm:text-7xl">
-          Você é o manager.
-          <br />
-          <span className="bg-gradient-to-r from-primary to-foreground bg-clip-text text-transparent">
-            O jogo acontece em 3D.
-          </span>
-        </h1>
-        <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-          Escolha um clube real, monte a escalação, defina a tática e assista aos 90 minutos ao vivo
-          num estádio 3D — dando ordens enquanto a bola rola. Sem cadastro: é só jogar.
-        </p>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[30rem] opacity-[0.06] [background-image:repeating-linear-gradient(90deg,transparent_0_44px,hsl(var(--foreground))_44px_45px)] [mask-image:linear-gradient(to_bottom,black,transparent)]"
+        />
 
-        <dl className="mt-8 grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:gap-x-10">
-          {[
-            [`${Object.keys(CLUBS).length}+`, "clubes reais"],
-            [`${LEAGUES.length}`, "ligas e copas"],
-            ["90'", "em 3D ao vivo"],
-            ["0", "custo para jogar"],
-          ].map(([v, k]) => (
-            <div key={k}>
-              <dt className="font-display text-3xl text-primary">{v}</dt>
-              <dd className="text-xs uppercase tracking-widest text-muted-foreground">{k}</dd>
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 pb-14 pt-20 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:pt-28">
+          <div>
+            <p className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-display text-[0.65rem] uppercase tracking-[0.35em] text-primary">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+              Temporada 2026
+            </p>
+            <h1 className="mt-4 max-w-3xl font-display text-5xl leading-[1.02] sm:text-7xl">
+              Você é o manager.
+              <br />
+              <span className="text-gradient">O jogo acontece em 3D.</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-lg text-muted-foreground">
+              Escolha um clube real, monte a escalação, defina a tática e assista aos 90 minutos ao
+              vivo num estádio 3D — dando ordens enquanto a bola rola. Sem cadastro: é só jogar.
+            </p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                to={hasCareer ? "/dashboard" : "/new"}
+                className="glow-primary flex-1 rounded-xl bg-primary px-7 py-4 text-center font-display text-sm uppercase tracking-widest text-primary-foreground transition hover:brightness-110 sm:flex-none"
+              >
+                {hasCareer ? "Continuar carreira" : "Jogar agora"}
+              </Link>
+              <Link
+                to="/partida-rapida"
+                className="flex-1 rounded-xl border border-border bg-background/40 px-7 py-4 text-center font-display text-sm uppercase tracking-widest text-foreground backdrop-blur transition hover:bg-secondary sm:flex-none"
+              >
+                Partida rápida
+              </Link>
             </div>
-          ))}
-        </dl>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Sem cadastro para jogar.{" "}
+              <Link to="/auth" className="underline underline-offset-4 hover:text-foreground">
+                Entrar
+              </Link>{" "}
+              só serve para salvar a carreira na nuvem.
+            </p>
 
+            <dl className="mt-9 grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:gap-x-10">
+              {[
+                [`${Object.keys(CLUBS).length}+`, "clubes reais"],
+                [`${LEAGUES.length}`, "ligas e copas"],
+                ["90'", "em 3D ao vivo"],
+                ["0", "custo para jogar"],
+              ].map(([v, k]) => (
+                <div key={k}>
+                  <dt className="font-display text-3xl text-primary">{v}</dt>
+                  <dd className="text-xs uppercase tracking-widest text-muted-foreground">{k}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          {/* placar de vitrine: mostra o clima de jogo ao vivo já na primeira tela */}
+          <div aria-hidden="true" className="hidden lg:block">
+            <div className="glass-panel rounded-3xl border border-border/60 p-5 shadow-2xl shadow-primary/10">
+              <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+                <span className="flex items-center gap-1.5 text-primary">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" /> ao vivo
+                </span>
+                <span>72&apos;</span>
+              </div>
+              <div className="mt-4 flex items-center justify-between gap-3">
+                {LEAGUES[0]?.clubs[0] ? <Crest club={LEAGUES[0].clubs[0]} size={44} /> : null}
+                <span className="font-display text-4xl tabular-nums">
+                  2 <span className="text-muted-foreground">:</span> 1
+                </span>
+                {LEAGUES[0]?.clubs[1] ? <Crest club={LEAGUES[0].clubs[1]} size={44} /> : null}
+              </div>
+              <div className="mt-5 space-y-3">
+                {[
+                  ["Posse", 58],
+                  ["Finalizações", 71],
+                  ["Passes certos", 84],
+                ].map(([label, pct]) => (
+                  <div key={label as string}>
+                    <div className="flex justify-between text-[11px] uppercase tracking-widest text-muted-foreground">
+                      <span>{label}</span>
+                      <span className="tabular-nums text-foreground">{pct}%</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-foreground/10">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${pct as number}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 flex gap-1.5">
+                {["V", "V", "E", "V", "D"].map((r, i) => (
+                  <span
+                    key={i}
+                    className={`grid h-7 flex-1 place-items-center rounded-md font-display text-xs ${
+                      r === "V"
+                        ? "bg-primary/25 text-primary"
+                        : r === "E"
+                          ? "bg-foreground/10 text-muted-foreground"
+                          : "bg-destructive/20 text-destructive"
+                    }`}
+                  >
+                    {r}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="relative mx-auto max-w-6xl px-4 pb-16">
         {/* faixa de escudos: mostra de cara que os clubes são reais */}
         <div
           aria-hidden="true"
@@ -150,16 +242,6 @@ function Landing() {
           </div>
         </div>
 
-        <figure className="mt-10 overflow-hidden rounded-3xl border border-border/60 shadow-2xl shadow-primary/10">
-          <img
-            src={heroStadium}
-            alt="Manager na beira do campo observando a partida em um estádio 3D lotado à noite"
-            width={1600}
-            height={912}
-            className="h-auto w-full"
-          />
-        </figure>
-
         {resume ? (
           <Link
             to="/dashboard"
@@ -177,28 +259,6 @@ function Landing() {
           </Link>
         ) : null}
 
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            to={hasCareer ? "/dashboard" : "/new"}
-            className="flex-1 rounded-lg bg-primary px-6 py-3 text-center font-display text-sm uppercase tracking-widest text-primary-foreground transition hover:brightness-110 sm:flex-none"
-          >
-            {hasCareer ? "Continuar carreira" : "Jogar agora"}
-          </Link>
-          <Link
-            to="/partida-rapida"
-            className="flex-1 rounded-lg border border-border px-6 py-3 text-center font-display text-sm uppercase tracking-widest text-foreground transition hover:bg-secondary sm:flex-none"
-          >
-            Partida rápida
-          </Link>
-        </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Sem cadastro para jogar.{" "}
-          <Link to="/auth" className="underline underline-offset-4 hover:text-foreground">
-            Entrar
-          </Link>{" "}
-          só serve para salvar a carreira na nuvem.
-        </p>
-
         <section className="mt-12">
           <h2 className="sr-only">Por onde começar</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -213,6 +273,38 @@ function Landing() {
               </Link>
             ))}
           </div>
+        </section>
+
+        <section className="mt-14">
+          <h2 className="font-display text-2xl uppercase tracking-wide">Como funciona</h2>
+          <ol className="mt-4 grid gap-4 sm:grid-cols-3">
+            {[
+              [
+                "01",
+                "Escolha o clube",
+                "Mais de mil times reais de 30+ ligas — ou crie o seu do zero.",
+              ],
+              [
+                "02",
+                "Monte o time",
+                "Escalação, formação, mentalidade, pressão e mercado de transferências.",
+              ],
+              [
+                "03",
+                "Assista em 3D",
+                "90 minutos ao vivo com narração, substituições e ordens no meio do jogo.",
+              ],
+            ].map(([n, t, d]) => (
+              <li
+                key={n}
+                className="surface-card hover-lift rounded-2xl border border-border/60 p-5"
+              >
+                <span className="font-display text-3xl text-primary/50">{n}</span>
+                <p className="mt-2 font-display text-lg">{t}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{d}</p>
+              </li>
+            ))}
+          </ol>
         </section>
 
         <nav className="mt-10 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground sm:text-sm">

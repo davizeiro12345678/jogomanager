@@ -2030,16 +2030,50 @@ function Officials({ sim, quality }: { sim: SimView; quality: Quality }) {
   );
 }
 
+/**
+ * Medidor de quadros: amostra o tempo entre quadros e reporta uma vez por
+ * segundo a taxa instantânea, a média e o pior caso (p95) da partida inteira.
+ * Fica dentro do Canvas para não forçar re-render da árvore 3D.
+ */
+function FpsMeter({ onSample }: { onSample: (s: FpsSample) => void }) {
+  const frames = useRef(0);
+  const acc = useRef(0);
+  const history = useRef<number[]>([]);
+
+  useFrame((_, dt) => {
+    frames.current += 1;
+    acc.current += dt;
+    if (acc.current < 1) return;
+    const fps = frames.current / acc.current;
+    frames.current = 0;
+    acc.current = 0;
+    const h = history.current;
+    h.push(fps);
+    if (h.length > 600) h.shift();
+    const avg = h.reduce((a, b) => a + b, 0) / h.length;
+    const sorted = [...h].sort((a, b) => a - b);
+    // p95 do pior caso = 5º percentil das taxas (os segundos mais lentos)
+    const p95 = sorted[Math.max(0, Math.floor(sorted.length * 0.05))] ?? fps;
+    onSample({ fps, avg, p95 });
+  });
+
+  return null;
+}
+
+type FpsSample = { fps: number; avg: number; p95: number };
+
 function Scene({
   sim,
   mode,
   quality,
   look,
+  shadows,
 }: {
   sim: SimView;
   mode: CameraMode;
   quality: Quality;
   look: ReturnType<typeof matchLook>;
+  shadows: boolean;
 }) {
   const time = look.time;
   const postOn = useVisual().postFx;
@@ -2124,8 +2158,8 @@ function Scene({
         position={[50, 80, 40]}
         intensity={sun}
         color={sunColor}
-        castShadow={quality === "alta"}
-        shadow-mapSize={[2048, 2048]}
+        castShadow={shadows}
+        shadow-mapSize={quality === "alta" ? [2048, 2048] : [1024, 1024]}
         shadow-bias={-0.0004}
         shadow-camera-left={-90}
         shadow-camera-right={90}
@@ -2213,6 +2247,7 @@ function Stadium3DImpl({
    * fica pesada; volta a subir só depois de um bom tempo estável.
    */
   const [eff, setEff] = useState<Quality>(quality);
+  const [fps, setFps] = useState<FpsSample | null>(null);
   useEffect(() => setEff(quality), [quality]);
   const declines = useRef(0);
 
@@ -2266,8 +2301,16 @@ function Stadium3DImpl({
             }}
           />
         ) : null}
-        <Scene sim={sim} mode={mode} quality={eff} look={look} />
+        <Scene sim={sim} mode={mode} quality={eff} look={look} shadows={shadowsOn} />
+        {vis.showFps ? <FpsMeter onSample={setFps} /> : null}
       </Canvas>
+      {vis.showFps && fps ? (
+        <div className="pointer-events-none absolute left-2 top-2 rounded-lg bg-black/55 px-2 py-1 font-mono text-[10px] leading-tight text-white/85">
+          <span className="text-white">{Math.round(fps.fps)} fps</span>
+          <span className="ml-2 text-white/60">med {Math.round(fps.avg)}</span>
+          <span className="ml-2 text-white/60">p95 {Math.round(fps.p95)}</span>
+        </div>
+      ) : null}
       {eff !== quality ? (
         <span className="pointer-events-none absolute right-2 top-2 rounded-full bg-black/45 px-2 py-0.5 text-[10px] uppercase tracking-widest text-white/80">
           Qualidade {eff}
