@@ -127,7 +127,6 @@ export function createCups(state: CareerState): CupState[] {
   const contIds = shuffled([state.clubId, ...contPool], rnd);
 
   return [
-
     {
       id: "national",
       name: CUP_NAMES[country] ?? `Copa ${country}`,
@@ -140,19 +139,111 @@ export function createCups(state: CareerState): CupState[] {
     {
       id: "continental",
       name: contName,
-      stage: 0,
-      ties: makeTies(contIds, 0),
+      // O continental começa na fase de grupos e entra no mata-mata nas quartas.
+      stage: 1,
+      ties: [],
       out: false,
       winner: null,
       everyRounds: 6,
+      groups: makeGroups(contIds),
+      groupRound: 0,
     },
   ];
+}
+
+/** Rodadas de um grupo de quatro: todos contra todos, turno único. */
+const GROUP_PAIRS: [number, number][][] = [
+  [
+    [0, 1],
+    [2, 3],
+  ],
+  [
+    [0, 2],
+    [1, 3],
+  ],
+  [
+    [0, 3],
+    [1, 2],
+  ],
+];
+
+export const GROUP_ROUNDS = GROUP_PAIRS.length;
+
+function makeGroups(ids: string[]): CupGroup[] {
+  const labels = ["A", "B", "C", "D", "E", "F", "G", "H"];
+  const groups: CupGroup[] = [];
+  for (let g = 0; g * 4 + 4 <= ids.length && g < labels.length; g++) {
+    const clubIds = ids.slice(g * 4, g * 4 + 4);
+    const matches: CupGroupMatch[] = GROUP_PAIRS.flatMap((pairs, round) =>
+      pairs.map(([a, b]) => ({ round, home: clubIds[a]!, away: clubIds[b]!, hg: null, ag: null })),
+    );
+    groups.push({ label: labels[g]!, clubIds, matches });
+  }
+  return groups;
+}
+
+export interface GroupRow {
+  clubId: string;
+  p: number;
+  w: number;
+  d: number;
+  l: number;
+  gf: number;
+  ga: number;
+  pts: number;
+}
+
+/** Classificação de um grupo: pontos, saldo e gols marcados. */
+export function groupTable(group: CupGroup): GroupRow[] {
+  const rows = new Map<string, GroupRow>(
+    group.clubIds.map((id) => [id, { clubId: id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }]),
+  );
+  for (const m of group.matches) {
+    if (m.hg === null || m.ag === null) continue;
+    const home = rows.get(m.home);
+    const away = rows.get(m.away);
+    if (!home || !away) continue;
+    home.p++;
+    away.p++;
+    home.gf += m.hg;
+    home.ga += m.ag;
+    away.gf += m.ag;
+    away.ga += m.hg;
+    if (m.hg > m.ag) {
+      home.w++;
+      home.pts += 3;
+      away.l++;
+    } else if (m.hg < m.ag) {
+      away.w++;
+      away.pts += 3;
+      home.l++;
+    } else {
+      home.d++;
+      away.d++;
+      home.pts++;
+      away.pts++;
+    }
+  }
+  return [...rows.values()].sort(
+    (a, b) => b.pts - a.pts || b.gf - b.ga - (a.gf - a.ga) || b.gf - a.gf,
+  );
 }
 
 const STAGE_NAMES = ["Oitavas de final", "Quartas de final", "Semifinal", "Final"];
 
 export function stageName(stage: number): string {
   return STAGE_NAMES[stage] ?? "Fase";
+}
+
+/** A fase de grupos ainda está em andamento? */
+export function inGroupStage(cup: CupState): boolean {
+  return Boolean(cup.groups?.length) && (cup.groupRound ?? GROUP_ROUNDS) < GROUP_ROUNDS;
+}
+
+/** Nome da próxima fase, considerando os grupos. */
+export function nextPhaseName(cup: CupState): string {
+  if (inGroupStage(cup)) return `Fase de grupos · rodada ${(cup.groupRound ?? 0) + 1}`;
+  return stageName(cup.stage);
 }
 
 /** Confrontos ainda por jogar na fase atual. */
