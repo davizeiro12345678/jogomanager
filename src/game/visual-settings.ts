@@ -54,6 +54,8 @@ export interface VisualSettings {
   particles: number;
   /** escala de resolução do 3D (0.6 a 1.2) */
   resolutionScale: number;
+  /** mostra o medidor de quadros por segundo durante a partida */
+  showFps: boolean;
 
   /* mundo */
   weather: Auto<Weather>;
@@ -82,6 +84,7 @@ export const DEFAULT_VISUAL: VisualSettings = {
   postIntensity: 1,
   particles: 1,
   resolutionScale: 1,
+  showFps: false,
   weather: "auto",
   time: "auto",
   mow: "auto",
@@ -106,6 +109,7 @@ export const VISUAL_SECTIONS = {
     "postIntensity",
     "particles",
     "resolutionScale",
+    "showFps",
   ],
   mundo: ["weather", "time", "mow", "wind", "grassTint", "grassWear"],
   clubes: ["byClub"],
@@ -158,6 +162,7 @@ function sanitize(v: VisualSettings): VisualSettings {
     postIntensity: clamp(v.postIntensity, 0.2, 1.4, 1),
     particles: clamp(v.particles, 0, 1.5, 1),
     resolutionScale: clamp(v.resolutionScale, 0.6, 1.2, 1),
+    showFps: v.showFps === true,
     grassTint: clamp(v.grassTint, -1, 1, 0),
     grassWear: clamp(v.grassWear, 0, 1, 0.5),
     wind: v.wind === "auto" ? "auto" : clamp(v.wind, 0, 1, 0.5),
