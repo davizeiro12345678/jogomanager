@@ -2,7 +2,7 @@ import { initCareer, advanceRound, migrateCareer } from "../src/game/career";
 import { computeTable, nextFixture } from "../src/game/season";
 import { quickSimulate } from "../src/game/career";
 
-let s = initCareer("brasileirao", "flamengo", "Davi");
+let s = initCareer("bra", "fla", "Davi");
 const start = { league: s.leagueId, season: s.season };
 let guard = 0;
 while (s.season <= 2 && guard++ < 3000) {
@@ -21,6 +21,6 @@ const bad = Object.values(s.players).filter((p: any) => !Number.isFinite(p.overa
 console.log("jogadores inválidos:", bad.length);
 
 // save antigo (v1) preservado
-const legacy = { version: 1, leagueId: "brasileirao", clubId: "flamengo", managerName: "Antigo", season: 4, round: 7, players: {}, fixtures: [], results: [], lineup: [], bench: [], tactics: { formation: "4-4-2", mentality: 2, pressing: 1, width: 1, tempo: 1 } };
+const legacy = { version: 1, leagueId: "bra", clubId: "fla", managerName: "Antigo", season: 4, round: 7, players: {}, fixtures: [], results: [], lineup: [], bench: [], tactics: { formation: "4-4-2", mentality: 2, pressing: 1, width: 1, tempo: 1 } };
 const m = migrateCareer(legacy as any);
 console.log("save antigo -> versão", m.version, "temporada", m.season, "rodada", m.round, "clube", m.clubId);
