@@ -1840,7 +1840,10 @@ function SkyDome({ time }: { time: TimeOfDay }) {
  * sinalizador subindo atrás do gol, tudo instanciado e disparado pelo pulso.
  */
 function GoalFx({ goalPulse, quality }: { goalPulse: React.MutableRefObject<number>; quality: Quality }) {
-  const COUNT = quality === "alta" ? 320 : 140;
+  const COUNT = Math.max(
+    0,
+    Math.round((quality === "alta" ? 320 : 140) * useVisual().particles),
+  );
   const ref = useRef<THREE.InstancedMesh>(null);
   const smoke = useRef<THREE.InstancedMesh>(null);
   const parts = useMemo(
