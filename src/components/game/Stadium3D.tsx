@@ -2226,12 +2226,24 @@ function Stadium3DImpl({
   useEffect(() => setEff(quality), [quality]);
   const declines = useRef(0);
 
+  // Sombras: preferência explícita do jogador vence a decisão automática.
+  const shadowsOn =
+    vis.shadows === "auto" ? eff === "alta" : vis.shadows === "ligadas";
+  // Escala de resolução escolhida em /visual, aplicada sobre o limite do aparelho.
+  const dpr = useMemo(() => {
+    const base = dprFor(eff);
+    const s = vis.resolutionScale;
+    return Array.isArray(base)
+      ? ([base[0] * s, base[1] * s] as [number, number])
+      : base * s;
+  }, [eff, vis.resolutionScale]);
+
   return (
     <div className="relative h-full w-full">
       <Canvas
-        shadows={eff === "alta"}
+        shadows={shadowsOn}
         frameloop={visible ? "always" : "demand"}
-        dpr={dprFor(eff)}
+        dpr={dpr}
         camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
         gl={{
           antialias: eff === "media",
