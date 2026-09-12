@@ -51,6 +51,31 @@ import { type SimView, type SimPlayer } from "@/game/sim";
 const BLEND_TIME = 0.18;
 const ease = (u: number) => u * u * (3 - 2 * u);
 
+/**
+ * Velocidade (m/s) para a qual cada ciclo de passada foi desenhado. A cadência
+ * do clipe é reescalada pela velocidade real do atleta, de modo que o pé de
+ * apoio acompanhe o deslocamento no gramado em vez de patinar.
+ */
+const GAIT_SPEED: Record<string, number> = {
+  walk: 1.6,
+  stroll: 1.3,
+  walkTalk: 1.5,
+  tired: 1.5,
+  exhaustedWalk: 1.2,
+  skipStep: 2.2,
+  jog: 3.4,
+  joggingBack: 3.0,
+  runRelaxed: 4.6,
+  checkShoulder: 4.4,
+  run: 5.5,
+  curveRunLeft: 5.8,
+  curveRunRight: 5.8,
+  sprint: 7.6,
+  sprintFlatOut: 8.2,
+  sprintEasing: 6.6,
+  recoverySprint: 8.0,
+};
+
 export type Quality = "alta" | "media" | "baixa";
 
 /* -------------------------------------------------------------------------- */
@@ -218,9 +243,18 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
       clipTime.current = 0;
       blend.current = 0;
     }
-    clipTime.current += adt;
-    prevTime.current += adt;
-    blend.current = Math.min(1, blend.current + adt / BLEND_TIME);
+    // ---- cadência sincronizada com o deslocamento real (sem patinar)
+    const nominal = GAIT_SPEED[clipName.current];
+    const cadence = nominal ? Math.max(0.55, Math.min(1.7, speed / nominal)) : 1;
+    const prevNominal = prevName.current ? GAIT_SPEED[prevName.current] : undefined;
+    const prevCadence = prevNominal
+      ? Math.max(0.55, Math.min(1.7, speed / prevNominal))
+      : 1;
+    clipTime.current += adt * cadence;
+    prevTime.current += adt * prevCadence;
+    // troca entre andar/correr pede mistura mais longa; ação com bola, mais curta
+    const blendTime = player.action ? BLEND_TIME * 0.6 : nominal ? BLEND_TIME * 1.4 : BLEND_TIME;
+    blend.current = Math.min(1, blend.current + adt / blendTime);
 
     const u =
       player.action && player.actionDur > 0
@@ -279,8 +313,12 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
 
     // ---- aplica nas juntas
     if (hips.current) {
+      // transferência de peso: o quadril desliza para o lado da perna de apoio
+      const support = c.legRPitch - c.legLPitch; // >0 = apoio na esquerda
+      const shift = Math.max(-1, Math.min(1, support)) * 0.045 * Math.min(1, speed / 4);
+      hips.current.position.x += (shift - hips.current.position.x) * Math.min(1, adt * 14);
       hips.current.position.y = P.hipY + c.hipY;
-      hips.current.rotation.set(c.hipPitch, c.hipYaw, c.hipRoll);
+      hips.current.rotation.set(c.hipPitch, c.hipYaw, c.hipRoll + shift * 1.2);
     }
     if (spine.current) spine.current.rotation.x = c.spine;
     if (chest.current) chest.current.rotation.x = c.chest;

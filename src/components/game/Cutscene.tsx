@@ -27,7 +27,8 @@ import {
 } from "@/content/cutscenes";
 import { ManagerPortrait } from "@/components/game/ManagerPortrait";
 import { prefersReducedMotion } from "@/game/device";
-import type { ManagerLook } from "@/game/types";
+import { Crest } from "@/components/game/Crest";
+import type { Club, ManagerLook } from "@/game/types";
 
 interface Props {
   scene: keyof typeof CUTSCENES | string;
@@ -36,6 +37,12 @@ interface Props {
   accent2?: string;
   /** número de troféus já conquistados (usado na sala de troféus) */
   trophies?: number;
+  /** clube da campanha: escudo e nome reais aparecem na cena */
+  club?: Club | undefined;
+  /** nome do treinador, usado no lugar de "Você" */
+  managerName?: string | undefined;
+  /** nome do capitão, usado no lugar de "Capitão" */
+  captainName?: string | undefined;
   onDone: () => void;
 }
 
@@ -401,6 +408,9 @@ export function Cutscene({
   accent = "#0a8f3c",
   accent2 = "#0b1220",
   trophies = 0,
+  club,
+  managerName,
+  captainName,
   onDone,
 }: Props) {
   const data: SceneData | undefined = CUTSCENES[scene];
@@ -474,7 +484,13 @@ export function Cutscene({
   }, [next]);
 
   if (!data || !line) return null;
-  const speaker = SPEAKER_LABEL[line.who];
+  const base = SPEAKER_LABEL[line.who];
+  const speaker =
+    line.who === "manager" && managerName
+      ? managerName
+      : line.who === "captain" && captainName
+        ? captainName
+        : base;
   /** enquadramento determinístico por fala: leve travelling + zoom */
   const shot = SHOTS[i % SHOTS.length]!;
 
@@ -605,6 +621,16 @@ export function Cutscene({
                 "linear-gradient(90deg, rgba(60,130,255,0.22), transparent 12%, transparent 88%, rgba(255,80,60,0.2))",
             }}
           />
+
+          {/* identidade do clube da campanha */}
+          {club ? (
+            <div className="absolute right-3 top-6 flex items-center gap-2 rounded-full bg-black/45 px-2.5 py-1 backdrop-blur-sm sm:top-7">
+              <Crest club={club} size={26} detail="simple" />
+              <span className="font-display text-sm uppercase tracking-wide text-white/90">
+                {club.short || club.name}
+              </span>
+            </div>
+          ) : null}
 
           {/* tarjas cinematográficas */}
           <div className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-black/80 sm:h-5" />
