@@ -4,10 +4,12 @@ import { useState } from "react";
 import { PlayerSheet } from "@/components/game/PlayerSheet";
 
 import { GameShell } from "@/components/game/GameShell";
+import { HudCard, HudChip, HudStat, toneFor } from "@/components/ui/hud";
 import { FORMATIONS } from "@/game/formations";
-import { formatMoney, formatWage } from "@/game/economy";
+import { formatMoney, formatWage, wageBill } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";
 import type { Player } from "@/game/types";
+
 
 export const Route = createFileRoute("/squad")({
   ssr: false,
