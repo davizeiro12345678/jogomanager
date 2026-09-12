@@ -20,6 +20,7 @@ import {
   setVisual,
   useVisual,
   type Auto,
+  type QualityPref,
   type ShadowPref,
 } from "@/game/visual-settings";
 import { useCareer } from "@/hooks/useCareer";
