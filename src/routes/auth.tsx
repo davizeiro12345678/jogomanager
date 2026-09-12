@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 
 function safeNext(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -9,6 +10,14 @@ function safeNext(value: unknown): string | undefined {
   if (!value.startsWith("/") || value.startsWith("//")) return undefined;
   return value;
 }
+
+type SocialProvider = "google" | "microsoft" | "apple";
+
+const SOCIALS: { id: SocialProvider; label: string }[] = [
+  { id: "google", label: "Google" },
+  { id: "microsoft", label: "Microsoft" },
+  { id: "apple", label: "Apple" },
+];
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -25,8 +34,15 @@ export const Route = createFileRoute("/auth")({
         content:
           "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Entrar · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content: "Entrar · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -74,6 +90,23 @@ function AuthPage() {
     else setError("Confirme o e-mail enviado para concluir o cadastro.");
   }
 
+  async function signInWith(provider: SocialProvider) {
+    setBusy(true);
+    setError(null);
+
+    const result = await lovable.auth.signInWithOAuth(provider, {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      setBusy(false);
+      setError(result.error.message);
+      return;
+    }
+    if (result.redirected) return;
+    setBusy(false);
+    navigate({ href: destination });
+  }
+
   return (
     <div className="pitch-bg flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/85 p-6 backdrop-blur-xl">
@@ -88,7 +121,9 @@ function AuthPage() {
         </p>
 
         <form onSubmit={submit} className="mt-5 space-y-3">
-          <label htmlFor="auth-email" className="sr-only">E-mail</label>
+          <label htmlFor="auth-email" className="sr-only">
+            E-mail
+          </label>
           <input
             id="auth-email"
             type="email"
@@ -98,7 +133,9 @@ function AuthPage() {
             placeholder="voce@email.com"
             className="w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
           />
-          <label htmlFor="auth-password" className="sr-only">Senha</label>
+          <label htmlFor="auth-password" className="sr-only">
+            Senha
+          </label>
           <input
             id="auth-password"
             type="password"
@@ -118,6 +155,26 @@ function AuthPage() {
             {busy ? "..." : mode === "in" ? "Entrar" : "Criar conta"}
           </button>
         </form>
+
+        <div className="mt-5 flex items-center gap-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+          <span className="h-px flex-1 bg-border" />
+          ou entre com
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
+        <div className="mt-3 grid gap-2">
+          {SOCIALS.map((social) => (
+            <button
+              key={social.id}
+              type="button"
+              disabled={busy}
+              onClick={() => signInWith(social.id)}
+              className="min-h-[44px] w-full rounded-lg border border-border bg-secondary/50 px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-secondary disabled:opacity-60"
+            >
+              Continuar com {social.label}
+            </button>
+          ))}
+        </div>
 
         <button
           onClick={() => setMode(mode === "in" ? "up" : "in")}
