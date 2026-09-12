@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
 import { Crest } from "@/components/game/Crest";
+import { HudCard, HudChip, HudStat, toneFor } from "@/components/ui/hud";
+
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { computeTable, roundFixtures } from "@/game/season";
 import { PYRAMID, PYRAMID_UP, hasPyramid, slotsFor } from "@/game/pyramid";
