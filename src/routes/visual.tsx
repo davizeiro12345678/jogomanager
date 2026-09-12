@@ -14,7 +14,14 @@ import { Crest } from "@/components/game/Crest";
 import { MOW_PATTERNS, type MowPattern } from "@/components/game/stadium/textures/grass";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import type { TimeOfDay, Weather } from "@/game/matchday";
-import { resetVisual, setVisual, useVisual, type Auto } from "@/game/visual-settings";
+import {
+  resetVisual,
+  setClubVisual,
+  setVisual,
+  useVisual,
+  type Auto,
+  type ShadowPref,
+} from "@/game/visual-settings";
 import { useCareer } from "@/hooks/useCareer";
 
 export const Route = createFileRoute("/visual")({
@@ -205,6 +212,57 @@ function VisualPage() {
                 className="size-5 accent-primary"
               />
             </label>
+            <Slider
+              label="Força dos efeitos"
+              value={v.postIntensity}
+              min={0.2}
+              max={1.4}
+              step={0.1}
+              onChange={(postIntensity) => setVisual({ postIntensity })}
+              hint="Quanto mais forte, mais 'cara de TV' — e mais pesado."
+            />
+            <Slider
+              label="Partículas"
+              value={v.particles}
+              min={0}
+              max={1.5}
+              step={0.1}
+              onChange={(particles) => setVisual({ particles })}
+              hint="Chuva, neve, confete e fumaça."
+            />
+            <Slider
+              label="Nitidez do 3D"
+              value={v.resolutionScale}
+              min={0.6}
+              max={1.2}
+              step={0.1}
+              onChange={(resolutionScale) => setVisual({ resolutionScale })}
+              hint="Abaixe para ganhar desempenho no celular."
+            />
+            <Chips
+              label="Sombras"
+              value={v.shadows}
+              onChange={(shadows) => setVisual({ shadows: shadows as ShadowPref })}
+              options={[
+                { id: "auto" as const, label: "Automático" },
+                { id: "ligadas" as const, label: "Ligadas" },
+                { id: "desligadas" as const, label: "Desligadas" },
+              ]}
+            />
+            <label className="flex items-center justify-between gap-3 rounded-xl border border-border/60 p-3 text-sm">
+              <span>
+                Ajuste automático
+                <span className="block text-[11px] text-muted-foreground">
+                  O jogo baixa ou sobe a qualidade sozinho para não travar.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={v.adaptive}
+                onChange={(e) => setVisual({ adaptive: e.target.checked })}
+                className="size-5 accent-primary"
+              />
+            </label>
             <label className="block rounded-xl border border-border/60 p-3 text-sm">
               <span>
                 Placas do estádio
@@ -268,6 +326,46 @@ function VisualPage() {
               ]}
             />
             <MowPreview pattern={effectiveMow} />
+            <Slider
+              label="Vento"
+              value={v.wind === "auto" ? 0.5 : v.wind}
+              min={0}
+              max={1}
+              step={0.1}
+              onChange={(wind) => setVisual({ wind })}
+              hint={
+                v.wind === "auto"
+                  ? "Automático: cada partida sorteia o vento. Mexa para fixar."
+                  : "Vento fixo em todas as partidas."
+              }
+            />
+            {v.wind !== "auto" ? (
+              <button
+                type="button"
+                onClick={() => setVisual({ wind: "auto" })}
+                className="rounded-full border border-border/60 px-3 py-1 text-[11px] text-muted-foreground hover:border-primary/50"
+              >
+                Voltar o vento para automático
+              </button>
+            ) : null}
+            <Slider
+              label="Tom do gramado"
+              value={v.grassTint}
+              min={-1}
+              max={1}
+              step={0.1}
+              onChange={(grassTint) => setVisual({ grassTint })}
+              hint="Negativo deixa a grama mais clara; positivo, mais escura."
+            />
+            <Slider
+              label="Desgaste do gramado"
+              value={v.grassWear}
+              min={0}
+              max={1}
+              step={0.1}
+              onChange={(grassWear) => setVisual({ grassWear })}
+              hint="Campo impecável ou bem castigado pelos jogos."
+            />
           </div>
         </article>
       </section>
@@ -280,7 +378,7 @@ function VisualPage() {
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {clubs.map((c) => {
-              const cur = v.mowByClub[c.id];
+              const cur = v.byClub[c.id]?.mow;
               return (
                 <div key={c.id} className="rounded-xl border border-border/60 p-3">
                   <div className="flex items-center gap-2">
@@ -290,11 +388,7 @@ function VisualPage() {
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <button
                       type="button"
-                      onClick={() => {
-                        const next = { ...v.mowByClub };
-                        delete next[c.id];
-                        setVisual({ mowByClub: next });
-                      }}
+                      onClick={() => setClubVisual(c.id, null)}
                       className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
                         !cur
                           ? "border-primary bg-primary/15 text-primary"
@@ -307,7 +401,7 @@ function VisualPage() {
                       <button
                         key={m}
                         type="button"
-                        onClick={() => setVisual({ mowByClub: { ...v.mowByClub, [c.id]: m } })}
+                        onClick={() => setClubVisual(c.id, { mow: m })}
                         className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
                           cur === m
                             ? "border-primary bg-primary/15 text-primary"

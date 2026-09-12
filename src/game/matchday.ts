@@ -1,5 +1,5 @@
 import type { MowPattern } from "@/components/game/stadium/textures/grass";
-import { getVisual } from "@/game/visual-settings";
+import { resolveVisual } from "@/game/visual-settings";
 
 
 /**
@@ -67,7 +67,7 @@ export function matchLook(homeId: string, awayId: string): MatchLook {
 
 /** Aplica as escolhas do usuário feitas em /visual sobre o visual sorteado. */
 function applyVisualLook(look: MatchLook, homeId: string): MatchLook {
-  const v = getVisual();
+  const v = resolveVisual(homeId);
   const out: MatchLook = { ...look };
   if (v.time !== "auto") out.time = v.time;
   if (v.weather !== "auto") {
@@ -76,9 +76,8 @@ function applyVisualLook(look: MatchLook, homeId: string): MatchLook {
       v.weather === "chuva" ? 1 : v.weather === "molhado" ? 0.55 : v.weather === "neve" ? 0.25 : 0;
     out.hiVisBall = v.weather === "neve";
   }
-  const byClub = v.mowByClub[homeId];
-  if (byClub) out.mow = byClub;
-  else if (v.mow !== "auto") out.mow = v.mow;
+  if (v.mow !== "auto") out.mow = v.mow;
+  if (v.wind !== "auto") out.wind = v.wind;
   return out;
 }
 
