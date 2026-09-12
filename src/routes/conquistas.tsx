@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
 import { GameShell } from "@/components/game/GameShell";
-import { ACHIEVEMENTS, type AchievementTier } from "@/game/achievements";
+import { ACHIEVEMENTS, careerMilestones, type AchievementTier } from "@/game/achievements";
 import { syncAchievements } from "@/lib/achievements.functions";
 import { useCareer, useSignedIn } from "@/hooks/useCareer";
 
