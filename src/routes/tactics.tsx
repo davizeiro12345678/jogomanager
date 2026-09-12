@@ -123,17 +123,45 @@ function TacticsPage() {
       p.tactics.tempo === t.tempo,
   );
 
+  const outOfPosition = lineup.filter((p, i) => {
+    const slot = slots[i];
+    return p && slot ? fit(p, slot.pos) === "ruim" : false;
+  }).length;
+  const adapted = lineup.filter((p, i) => {
+    const slot = slots[i];
+    return p && slot ? fit(p, slot.pos) === "meio" : false;
+  }).length;
+
   return (
     <GameShell career={career}>
-      <h1 className="font-display text-3xl uppercase tracking-wide">Plano de jogo</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Arraste um jogador sobre outro para trocar de posição — no celular, toque nos dois.
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">
+            Plano de jogo
+          </h1>
+          <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
+            Arraste um jogador sobre outro para trocar — no celular, toque nos dois.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <HudStat label="Formação" value={t.formation} />
+          <HudStat label="Estilo" value={activePreset?.name ?? "Personalizado"} />
+          <HudStat
+            label="Encaixe"
+            value={`${11 - outOfPosition - adapted}/11`}
+            hint={`${adapted} adaptados · ${outOfPosition} fora de posição`}
+            tone={outOfPosition > 1 ? "bad" : outOfPosition || adapted > 2 ? "warn" : "good"}
+          />
+        </div>
+      </div>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-[1.05fr_1fr]">
-        <section className="rounded-2xl border border-border/60 surface-card p-4">
-          <h2 className="font-display text-lg uppercase tracking-wide">Campo · {t.formation}</h2>
-          <div className="relative mt-3 aspect-[3/4] w-full overflow-hidden rounded-xl border border-border/60 bg-[linear-gradient(180deg,#14472c,#0d3521)]">
+      <div className="mt-5 grid items-start gap-4 hud-stagger lg:grid-cols-[1.05fr_1fr]">
+        <HudCard
+          title={`Campo · ${t.formation}`}
+          badge={<HudChip>{MENTALITIES[t.mentality]}</HudChip>}
+        >
+          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl border border-border/60 bg-[linear-gradient(180deg,#14472c,#0d3521)]">
+
             <div className="absolute inset-x-5 inset-y-4 rounded-md border border-white/20" />
             <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20" />
             <div className="absolute inset-x-0 top-1/2 h-px bg-white/20" />
