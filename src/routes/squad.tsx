@@ -77,14 +77,42 @@ function SquadPage() {
     });
   }
 
+  const avgOvr = players.reduce((s, p) => s + p.ovr, 0) / Math.max(1, players.length);
+  const avgAge = players.reduce((s, p) => s + p.age, 0) / Math.max(1, players.length);
+  const avgCondition = players.reduce((s, p) => s + p.condition, 0) / Math.max(1, players.length);
+  const injured = players.filter((p) => p.injuryWeeks > 0).length;
+  const suspended = players.filter((p) => p.suspended).length;
+  const week = wageBill(players);
+  const conditionTone = toneFor(avgCondition, { good: 82, warn: 65 });
+
   return (
     <GameShell career={career}>
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
-        <section className="rounded-2xl border border-border/60 surface-card p-4">
-          <h1 className="font-display text-xl uppercase tracking-wide">
-            Escalação · {career.tactics.formation}
-          </h1>
-          <div className="relative mt-4 aspect-[3/4] w-full overflow-hidden rounded-xl border border-border/60 bg-[linear-gradient(180deg,#12452a,#0e3a23)]">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">Elenco</h1>
+          <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
+            {players.length} jogadores · Formação {career.tactics.formation}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <HudStat label="OVR médio" value={Math.round(avgOvr)} tone={toneFor(avgOvr)} />
+          <HudStat label="Idade média" value={avgAge.toFixed(1)} />
+          <HudStat
+            label="Condição"
+            value={`${Math.round(avgCondition)}%`}
+            tone={conditionTone}
+            hint={`${injured} lesionados · ${suspended} suspensos`}
+          />
+          <HudStat label="Folha" value={`€${week.toLocaleString("pt-BR")}k/sem`} />
+        </div>
+      </div>
+
+      <div className="mt-5 grid items-start gap-4 hud-stagger lg:grid-cols-[1.1fr_1fr]">
+        <HudCard
+          title={`Escalação · ${career.tactics.formation}`}
+          badge={<HudChip>{lineup.length}/11</HudChip>}
+        >
+          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl border border-border/60 bg-[linear-gradient(180deg,#12452a,#0e3a23)]">
             <div className="absolute inset-x-6 inset-y-4 rounded-md border border-white/25" />
             <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25" />
             {lineup.map((p, i) => {
@@ -109,11 +137,15 @@ function SquadPage() {
               );
             })}
           </div>
-        </section>
+        </HudCard>
 
-        <section className="rounded-2xl border border-border/60 surface-card p-4">
-          <h2 className="font-display text-xl uppercase tracking-wide">Elenco</h2>
-          <div className="mt-3 max-h-[70vh] overflow-y-auto">
+        <HudCard
+          title="Plantel"
+          tone={injured + suspended >= 4 ? "bad" : injured + suspended >= 2 ? "warn" : "good"}
+          badge={<HudChip>{reserves.length} reservas</HudChip>}
+        >
+          <div className="max-h-[70vh] overflow-y-auto">
+
             <table className="w-full text-sm">
               <thead className="text-xs uppercase text-muted-foreground">
                 <tr>
