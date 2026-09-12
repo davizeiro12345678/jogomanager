@@ -39,7 +39,7 @@ import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
 import { matchLook, type TimeOfDay } from "@/game/matchday";
-import { useVisual } from "@/game/visual-settings";
+import { useResolvedVisual, useVisual } from "@/game/visual-settings";
 
 
 
@@ -242,6 +242,14 @@ function Pitch({
   const norm = useMemo(() => (quality === "baixa" ? null : grassNormal(mow)), [quality, mow]);
   const wear = useMemo(() => (quality === "baixa" ? null : pitchWearTexture()), [quality]);
 
+  // Tom e desgaste do gramado escolhidos em /visual (global ou por clube).
+  const vis = useResolvedVisual(sim.home.clubId);
+  const tint = useMemo(() => {
+    const k = 1 - vis.grassTint * 0.35; // >1 clareia, <1 escurece
+    return new THREE.Color(k, k, k);
+  }, [vis.grassTint]);
+  const wearOpacity = 0.1 + vis.grassWear * 0.48;
+
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
@@ -251,7 +259,7 @@ function Pitch({
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[FIELD_X * 2 + 10, FIELD_Z * 2 + 10]} />
         <meshPhysicalMaterial
-          {...(tex ? { map: tex } : { color: "#1d7a45" })}
+          {...(tex ? { map: tex, color: tint } : { color: "#1d7a45" })}
           {...(rough ? { roughnessMap: rough } : {})}
           {...(norm ? { normalMap: norm, normalScale: new THREE.Vector2(0.7, 0.7) } : {})}
           roughness={0.74}
@@ -271,7 +279,7 @@ function Pitch({
           <meshStandardMaterial
             map={wear}
             transparent
-            opacity={0.34}
+            opacity={wearOpacity}
 
             roughness={0.95}
             metalness={0}
@@ -356,7 +364,11 @@ function Weather({
 }) {
   const rain = weather === "chuva";
   const snow = weather === "neve";
-  const count = quality === "alta" ? (rain ? 2600 : 1500) : rain ? 1100 : 700;
+  const partScale = useVisual().particles;
+  const count = Math.max(
+    0,
+    Math.round((quality === "alta" ? (rain ? 2600 : 1500) : rain ? 1100 : 700) * partScale),
+  );
   const ref = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const drops = useMemo(
@@ -1836,7 +1848,10 @@ function SkyDome({ time }: { time: TimeOfDay }) {
  * sinalizador subindo atrás do gol, tudo instanciado e disparado pelo pulso.
  */
 function GoalFx({ goalPulse, quality }: { goalPulse: React.MutableRefObject<number>; quality: Quality }) {
-  const COUNT = quality === "alta" ? 320 : 140;
+  const COUNT = Math.max(
+    0,
+    Math.round((quality === "alta" ? 320 : 140) * useVisual().particles),
+  );
   const ref = useRef<THREE.InstancedMesh>(null);
   const smoke = useRef<THREE.InstancedMesh>(null);
   const parts = useMemo(
@@ -2195,12 +2210,15 @@ function Scene({
 function Stadium3DImpl({
   sim,
   mode,
-  quality,
+  quality: deviceQuality,
 }: {
   sim: SimView;
   mode: CameraMode;
   quality: Quality;
 }) {
+  const vis = useResolvedVisual(sim.home.clubId);
+  // Escolha do jogador em /visual manda; "auto" segue a detecção do aparelho.
+  const quality: Quality = vis.quality === "auto" ? deviceQuality : vis.quality;
   const look = useMemo(
     () => matchLook(sim.home.clubId, sim.away.clubId),
     [sim.home.clubId, sim.away.clubId],
@@ -2223,12 +2241,24 @@ function Stadium3DImpl({
   useEffect(() => setEff(quality), [quality]);
   const declines = useRef(0);
 
+  // Sombras: preferência explícita do jogador vence a decisão automática.
+  const shadowsOn =
+    vis.shadows === "auto" ? eff === "alta" : vis.shadows === "ligadas";
+  // Escala de resolução escolhida em /visual, aplicada sobre o limite do aparelho.
+  const dpr = useMemo(() => {
+    const base = dprFor(eff);
+    const s = vis.resolutionScale;
+    return Array.isArray(base)
+      ? ([base[0] * s, base[1] * s] as [number, number])
+      : base * s;
+  }, [eff, vis.resolutionScale]);
+
   return (
     <div className="relative h-full w-full">
       <Canvas
-        shadows={eff === "alta"}
+        shadows={shadowsOn}
         frameloop={visible ? "always" : "demand"}
-        dpr={dprFor(eff)}
+        dpr={dpr}
         camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
         gl={{
           antialias: eff === "media",
@@ -2249,19 +2279,21 @@ function Stadium3DImpl({
           );
         }}
       >
-        <PerformanceMonitor
-          onDecline={() => {
-            declines.current += 1;
-            if (declines.current >= 2) {
+        {vis.adaptive ? (
+          <PerformanceMonitor
+            onDecline={() => {
+              declines.current += 1;
+              if (declines.current >= 2) {
+                declines.current = 0;
+                setEff((q) => lowerQuality(q));
+              }
+            }}
+            onIncline={() => {
               declines.current = 0;
-              setEff((q) => lowerQuality(q));
-            }
-          }}
-          onIncline={() => {
-            declines.current = 0;
-            setEff((q) => (higherQuality(q) === quality ? higherQuality(q) : q));
-          }}
-        />
+              setEff((q) => (higherQuality(q) === quality ? higherQuality(q) : q));
+            }}
+          />
+        ) : null}
         <Scene sim={sim} mode={mode} quality={eff} look={look} />
       </Canvas>
       {eff !== quality ? (

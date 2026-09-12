@@ -20,6 +20,7 @@ import {
   setVisual,
   useVisual,
   type Auto,
+  type QualityPref,
   type ShadowPref,
 } from "@/game/visual-settings";
 import { useCareer } from "@/hooks/useCareer";
@@ -160,6 +161,17 @@ function VisualPage() {
         <article className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Qualidade</h2>
           <div className="mt-4 space-y-4">
+            <Chips
+              label="Nível geral"
+              value={v.quality}
+              onChange={(quality) => setVisual({ quality: quality as QualityPref })}
+              options={[
+                { id: "auto" as const, label: "Automático" },
+                { id: "baixa" as const, label: "Baixa" },
+                { id: "media" as const, label: "Média" },
+                { id: "alta" as const, label: "Alta" },
+              ]}
+            />
             <Chips
               label="Riqueza das texturas"
               value={v.textureDetail}
