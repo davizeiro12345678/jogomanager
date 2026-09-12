@@ -55,45 +55,90 @@ function LeaguePage() {
     return index < slots ? "acesso" : null;
   };
 
+  const myIndex = table.findIndex((r) => r.clubId === career.clubId);
+  const myRow = myIndex >= 0 ? table[myIndex] : undefined;
+  const pos = myIndex + 1;
+  const played = myRow ? myRow.p : 0;
+  const efficiency = played > 0 && myRow ? (myRow.pts / (played * 3)) * 100 : 0;
+  const myZone = myIndex >= 0 ? zoneOf(myIndex) : null;
+
   return (
     <GameShell career={career}>
-      <h1 className="font-display text-3xl uppercase tracking-wide">
-        <Flag league={league.id} size={28} /> {league.name}
-      </h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="flex items-center gap-2 font-display text-3xl uppercase tracking-wide sm:text-4xl">
+            <Flag league={league.id} size={28} /> {league.name}
+          </h1>
+          <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
+            Temporada {career.season} · Rodada {career.round}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <HudStat
+            label="Posição"
+            value={pos > 0 ? `${pos}º` : "—"}
+            hint={
+              myZone === "acesso"
+                ? "Zona de acesso"
+                : myZone === "rebaixamento"
+                  ? "Zona de rebaixamento"
+                  : `Objetivo ${career.objective}º`
+            }
+            tone={
+              myZone === "rebaixamento"
+                ? "bad"
+                : pos > 0 && pos <= career.objective
+                  ? "good"
+                  : "warn"
+            }
+          />
+          <HudStat label="Pontos" value={myRow ? myRow.pts : "—"} hint={`${played} jogos`} />
+          <HudStat
+            label="Aproveitamento"
+            value={`${Math.round(efficiency)}%`}
+            tone={toneFor(efficiency, { good: 60, warn: 40 })}
+          />
+          <HudStat
+            label="Saldo"
+            value={myRow ? (myRow.gf - myRow.ga > 0 ? `+${myRow.gf - myRow.ga}` : myRow.gf - myRow.ga) : "—"}
+            hint={myRow ? `${myRow.gf} pró · ${myRow.ga} contra` : undefined}
+          />
+        </div>
+      </div>
 
       {linked && (
-        <section className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl border border-border/60 surface-card p-4 text-sm">
-          <div>
-            <p className="font-display uppercase tracking-wide">Acesso e rebaixamento</p>
-            <p className="text-muted-foreground">
+        <HudCard title="Acesso e rebaixamento" tone="neutral" className="mt-5">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
+            <p className="flex-1 text-muted-foreground">
               {inTopDivision
                 ? `Os ${slots} últimos caem para a divisão de baixo no fim da temporada.`
                 : `Os ${slots} primeiros sobem para a divisão de cima no fim da temporada.`}
             </p>
+            <label className="flex items-center gap-2">
+              <span className="text-muted-foreground">Vagas</span>
+              <input
+                type="number"
+                min={1}
+                max={maxSlots}
+                value={slots}
+                onChange={(e) => {
+                  const next = Math.max(
+                    1,
+                    Math.min(maxSlots, Math.round(Number(e.target.value) || 1)),
+                  );
+                  update({ ...career, pyramidSlots: next });
+                }}
+                className="h-11 w-20 rounded-lg border border-border/60 bg-background px-3 text-center font-display"
+                aria-label="Número de vagas de acesso e rebaixamento"
+              />
+            </label>
           </div>
-          <label className="flex items-center gap-2">
-            <span className="text-muted-foreground">Vagas</span>
-            <input
-              type="number"
-              min={1}
-              max={maxSlots}
-              value={slots}
-              onChange={(e) => {
-                const next = Math.max(
-                  1,
-                  Math.min(maxSlots, Math.round(Number(e.target.value) || 1)),
-                );
-                update({ ...career, pyramidSlots: next });
-              }}
-              className="h-11 w-20 rounded-lg border border-border/60 bg-background px-3 text-center font-display"
-              aria-label="Número de vagas de acesso e rebaixamento"
-            />
-          </label>
-        </section>
+        </HudCard>
       )}
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <section className="overflow-hidden rounded-2xl border border-border/60 surface-card">
+      <div className="mt-4 grid items-start gap-4 hud-stagger lg:grid-cols-[1.4fr_1fr]">
+        <HudCard title="Classificação" bodyClassName="-mx-4 -mb-4 overflow-hidden sm:-mx-5 sm:-mb-5">
+
           <table className="w-full text-sm">
             <thead className="bg-secondary/60 text-xs uppercase text-muted-foreground">
               <tr>
