@@ -140,6 +140,7 @@ const ptBR: Dict = {
   "shell.season": "Temporada",
   "shell.round": "Rodada",
   "shell.language": "Idioma",
+  "shell.more": "Mais",
 };
 
 const ptPT: Dict = {
@@ -178,6 +179,7 @@ const ptPT: Dict = {
   "shell.season": "Época",
   "shell.round": "Jornada",
   "shell.language": "Idioma",
+  "shell.more": "Mais",
 };
 
 const en: Dict = {
@@ -214,6 +216,7 @@ const en: Dict = {
   "shell.season": "Season",
   "shell.round": "Round",
   "shell.language": "Language",
+  "shell.more": "More",
 };
 
 const es: Dict = {
@@ -241,6 +244,7 @@ const es: Dict = {
   "shell.season": "Temporada",
   "shell.round": "Jornada",
   "shell.language": "Idioma",
+  "shell.more": "Más",
 };
 
 const fr: Dict = {

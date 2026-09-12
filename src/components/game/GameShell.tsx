@@ -13,6 +13,7 @@ import {
   Home,
   LayoutGrid,
   Medal,
+  Menu,
   MessagesSquare,
   Newspaper,
   Play,
@@ -30,6 +31,12 @@ import {
 import type { ComponentType, ReactNode } from "react";
 
 import { OfflineBar, SyncBadge, useServiceWorker } from "@/components/OfflineBar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { CLUBS } from "@/game/data/leagues";
 import { useClubTheme } from "@/game/theme";
@@ -75,6 +82,9 @@ const TABS: {
 /** Atalhos mostrados na barra inferior do celular. */
 const MOBILE = ["/dashboard", "/squad", "/tactics", "/league", "/transfers"];
 
+/** Abas sempre visíveis no topo; o resto vive no menu "Mais". */
+const PRIMARY = ["/dashboard", "/squad", "/tactics", "/league", "/transfers", "/finances"];
+
 export function GameShell({
   career,
   children,
@@ -90,6 +100,10 @@ export function GameShell({
   const club = career ? CLUBS[career.clubId] : undefined;
   useClubTheme(club);
 
+  const primary = TABS.filter((tab) => PRIMARY.includes(tab.to));
+  const rest = TABS.filter((tab) => !PRIMARY.includes(tab.to));
+  const groups = Array.from(new Set(rest.map((tab) => tab.group)));
+
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
       <OfflineBar />
@@ -102,108 +116,139 @@ export function GameShell({
         }}
       />
       <header className="sticky top-0 z-30 border-b border-border/60 bg-card/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-3 lg:flex-row lg:items-center lg:gap-4">
-          <div className="flex items-center gap-3">
-            {club ? <Crest club={club} size={36} /> : null}
-            <div className="leading-tight">
-              <p className="font-display text-lg tracking-wide">{club?.name ?? "Manager 3D"}</p>
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5">
+          {/* Identidade do clube */}
+          <div className="flex min-w-0 items-center gap-2.5">
+            {club ? <Crest club={club} size={34} /> : null}
+            <div className="min-w-0 leading-tight">
+              <p className="truncate font-display text-base tracking-wide">
+                {club?.name ?? "Manager 3D"}
+              </p>
               {career ? (
-                <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px]">
-                  <span className="rounded-full bg-secondary px-2 py-0.5 text-muted-foreground">
-                    {t("shell.season")} {career.season}
-                  </span>
-                  <span className="rounded-full bg-secondary px-2 py-0.5 text-muted-foreground">
-                    {t("shell.round")} {career.round}
-                  </span>
-                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-primary">
-                    €{career.finances.budget.toFixed(1)}M
-                  </span>
-                </div>
+                <p className="hud-num truncate text-[10px] uppercase tracking-wider text-muted-foreground">
+                  {t("shell.season")} {career.season} · {t("shell.round")} {career.round} ·{" "}
+                  <span className="text-primary">€{career.finances.budget.toFixed(1)}M</span>
+                </p>
               ) : (
-                <p className="text-xs text-muted-foreground">{t("shell.career")}</p>
+                <p className="text-[11px] text-muted-foreground">{t("shell.career")}</p>
               )}
             </div>
-            <Link
-              to="/match"
-              className="ml-auto flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground lg:hidden"
-            >
-              <Play size={13} /> {t("action.play")}
-            </Link>
           </div>
 
-          <nav className="-mx-1 hidden flex-wrap items-center justify-end gap-0.5 md:flex lg:mx-0 lg:ml-auto">
-            {TABS.map((tab) => {
+          {/* Navegação principal */}
+          <nav className="ml-auto hidden items-center gap-0.5 md:flex">
+            {primary.map((tab) => {
               const Icon = tab.icon;
               return (
                 <Link
                   key={tab.to}
                   to={tab.to}
-                  className="flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-display text-xs uppercase tracking-wider text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
+                  className="flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-lg px-2.5 font-display text-xs uppercase tracking-wider text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
                 >
                   <Icon size={13} />
                   {t(tab.key)}
                 </Link>
               );
             })}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex min-h-[38px] items-center gap-1.5 rounded-lg px-2.5 font-display text-xs uppercase tracking-wider text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
+                <Menu size={13} />
+                {t("shell.more")}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[30rem] p-3">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  {groups.map((g) => (
+                    <div key={g}>
+                      <p className="mb-1 px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        {g}
+                      </p>
+                      {rest
+                        .filter((tab) => tab.group === g)
+                        .map((tab) => {
+                          const Icon = tab.icon;
+                          return (
+                            <DropdownMenuItem key={tab.to} asChild>
+                              <Link
+                                to={tab.to}
+                                className="flex min-h-[36px] cursor-pointer items-center gap-2 text-xs"
+                              >
+                                <Icon size={14} />
+                                {t(tab.key)}
+                              </Link>
+                            </DropdownMenuItem>
+                          );
+                        })}
+                    </div>
+                  ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </nav>
+
+          {/* Ações */}
+          <div className="ml-auto flex shrink-0 items-center gap-1 md:ml-2">
             <Link
               to="/match"
-              className="ml-1 hidden shrink-0 items-center gap-1 rounded-lg bg-primary px-3 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground lg:flex"
+              className="flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 font-display text-xs uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.03]"
             >
               <Play size={13} /> {t("action.play")}
             </Link>
-            <CommandPalette
-              items={TABS.map((tab) => ({ to: tab.to, label: t(tab.key), group: tab.group }))}
-            />
-            <SyncBadge sync={sync} className="ml-1" />
-            <label className="ml-1 flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-muted-foreground">
-              <Globe size={13} />
-              <span className="sr-only">{t("shell.language")}</span>
-              <select
-                aria-label={t("shell.language")}
-                value={lang}
-                onChange={(e) => setLang(e.target.value as Lang)}
-                className="max-w-[7.5rem] cursor-pointer bg-transparent text-xs outline-none [&>option]:bg-card [&>option]:text-foreground"
-              >
-                {LANGS.map((l) => (
-                  <option key={l} value={l}>
-                    {LANG_NAMES[l]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {signedIn ? (
-              <button
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  navigate({ to: "/" });
-                }}
-                className="ml-2 shrink-0 rounded-md px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-              >
-                {t("action.signOut")}
-              </button>
-            ) : (
-              <Link
-                to="/auth"
-                className="ml-2 shrink-0 rounded-md border border-primary/50 px-3 py-1.5 text-xs text-primary hover:bg-primary/10"
-              >
-                {t("action.saveCloud")}
-              </Link>
-            )}
-          </nav>
-
-          {/* Navegação secundária rolável no celular */}
-          <nav className="-mx-1 flex gap-1 overflow-x-auto pb-1 md:hidden">
-            {TABS.filter((tab) => !MOBILE.includes(tab.to)).map((tab) => (
-              <Link
-                key={tab.to}
-                to={tab.to}
-                className="shrink-0 rounded-lg bg-secondary/60 px-3 py-1.5 font-display text-[11px] uppercase tracking-wider text-muted-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
-              >
-                {t(tab.key)}
-              </Link>
-            ))}
-          </nav>
+            <div className="hidden items-center gap-1 xl:flex">
+              <CommandPalette
+                items={TABS.map((tab) => ({ to: tab.to, label: t(tab.key), group: tab.group }))}
+              />
+              <SyncBadge sync={sync} />
+              <label className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1.5 text-muted-foreground">
+                <Globe size={13} />
+                <span className="sr-only">{t("shell.language")}</span>
+                <select
+                  aria-label={t("shell.language")}
+                  value={lang}
+                  onChange={(e) => setLang(e.target.value as Lang)}
+                  className="max-w-[6rem] cursor-pointer bg-transparent text-xs outline-none [&>option]:bg-card [&>option]:text-foreground"
+                >
+                  {LANGS.map((l) => (
+                    <option key={l} value={l}>
+                      {LANG_NAMES[l]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {signedIn ? (
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    navigate({ to: "/" });
+                  }}
+                  className="shrink-0 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  {t("action.signOut")}
+                </button>
+              ) : (
+                <Link
+                  to="/auth"
+                  className="shrink-0 rounded-md border border-primary/50 px-2.5 py-1.5 text-xs text-primary hover:bg-primary/10"
+                >
+                  {t("action.saveCloud")}
+                </Link>
+              )}
+            </div>
+          </div>
         </div>
+
+        {/* Navegação secundária rolável no celular */}
+        <nav className="flex gap-1 overflow-x-auto px-4 pb-2 md:hidden">
+          {TABS.filter((tab) => !MOBILE.includes(tab.to)).map((tab) => (
+            <Link
+              key={tab.to}
+              to={tab.to}
+              className="shrink-0 rounded-lg bg-secondary/60 px-3 py-1.5 font-display text-[11px] uppercase tracking-wider text-muted-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
+            >
+              {t(tab.key)}
+            </Link>
+          ))}
+        </nav>
       </header>
 
       {signedIn === false && (
