@@ -259,7 +259,7 @@ function Pitch({
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[FIELD_X * 2 + 10, FIELD_Z * 2 + 10]} />
         <meshPhysicalMaterial
-          {...(tex ? { map: tex } : { color: "#1d7a45" })}
+          {...(tex ? { map: tex, color: tint } : { color: "#1d7a45" })}
           {...(rough ? { roughnessMap: rough } : {})}
           {...(norm ? { normalMap: norm, normalScale: new THREE.Vector2(0.7, 0.7) } : {})}
           roughness={0.74}
@@ -279,7 +279,7 @@ function Pitch({
           <meshStandardMaterial
             map={wear}
             transparent
-            opacity={0.34}
+            opacity={wearOpacity}
 
             roughness={0.95}
             metalness={0}
