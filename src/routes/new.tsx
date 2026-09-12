@@ -6,6 +6,7 @@ import { initCareer } from "@/game/career";
 import { Crest } from "@/components/game/Crest";
 import { useCareer } from "@/hooks/useCareer";
 import { loadRealSquad } from "@/lib/realSquads";
+import { startWorldForNewCareer } from "@/lib/world";
 import { Flag } from "@/components/game/Flag";
 import { ManagerPortrait, HAIR_COLORS } from "@/components/game/ManagerPortrait";
 import { Cutscene } from "@/components/game/Cutscene";
@@ -121,6 +122,8 @@ function NewCareer() {
 
   async function choose(clubId: string) {
     setLoadingClub(clubId);
+    // Campanha nova = mundo novo: nada do save anterior é levado junto.
+    startWorldForNewCareer(clubId);
     await loadRealSquad(clubId);
     update(initCareer(leagueId, clubId, name.trim() || "Técnico", profile(clubId)));
     setPending({ leagueId, clubId });
