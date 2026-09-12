@@ -263,9 +263,47 @@
   /* números de placar, estatísticas e moedas alinhados em colunas */
   time,
   data,
+  th,
+  td,
   .tabular {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
+  }
+
+  /* cabeçalhos de tabela discretos e legíveis em qualquer tela */
+  th {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--color-muted-foreground);
+  }
+
+  /* alvo de toque de 44px em telas sensíveis ao dedo */
+  @media (pointer: coarse) {
+    button,
+    a[role="button"],
+    [role="tab"],
+    summary,
+    select,
+    input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+    textarea {
+      min-height: 44px;
+    }
+
+    button,
+    a[role="button"],
+    [role="tab"] {
+      min-width: 44px;
+    }
+
+    /* links dentro de texto corrido continuam inline */
+    nav a,
+    [role="menuitem"] {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
   }
 }
 
