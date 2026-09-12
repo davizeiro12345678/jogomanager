@@ -303,7 +303,7 @@ function VisualPage() {
                       <button
                         key={m}
                         type="button"
-                        onClick={() => setVisual({ mowByClub: { ...v.mowByClub, [c.id]: m } })}
+                        onClick={() => setClubVisual(c.id, { mow: m })}
                         className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
                           cur === m
                             ? "border-primary bg-primary/15 text-primary"
