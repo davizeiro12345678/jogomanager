@@ -127,6 +127,7 @@ export function createCups(state: CareerState): CupState[] {
   const contIds = shuffled([state.clubId, ...contPool], rnd);
 
   return [
+
     {
       id: "national",
       name: CUP_NAMES[country] ?? `Copa ${country}`,
