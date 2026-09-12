@@ -269,6 +269,12 @@ function NewClubPage() {
                   ))}
                 </select>
               </Field>
+              {victim && (
+                <p className="rounded-lg border border-border/60 bg-background/50 px-3 py-2 text-xs text-muted-foreground">
+                  Para abrir vaga, <strong className="text-foreground">{victim.name}</strong> sai desta liga enquanto o
+                  seu clube existir. Apagar o seu clube devolve ele ao lugar de origem.
+                </p>
+              )}
               <Field label={`Força inicial do elenco: ${club.strength}`}>
                 <input
                   type="range"
