@@ -51,6 +51,31 @@ import { type SimView, type SimPlayer } from "@/game/sim";
 const BLEND_TIME = 0.18;
 const ease = (u: number) => u * u * (3 - 2 * u);
 
+/**
+ * Velocidade (m/s) para a qual cada ciclo de passada foi desenhado. A cadência
+ * do clipe é reescalada pela velocidade real do atleta, de modo que o pé de
+ * apoio acompanhe o deslocamento no gramado em vez de patinar.
+ */
+const GAIT_SPEED: Record<string, number> = {
+  walk: 1.6,
+  stroll: 1.3,
+  walkTalk: 1.5,
+  tired: 1.5,
+  exhaustedWalk: 1.2,
+  skipStep: 2.2,
+  jog: 3.4,
+  joggingBack: 3.0,
+  runRelaxed: 4.6,
+  checkShoulder: 4.4,
+  run: 5.5,
+  curveRunLeft: 5.8,
+  curveRunRight: 5.8,
+  sprint: 7.6,
+  sprintFlatOut: 8.2,
+  sprintEasing: 6.6,
+  recoverySprint: 8.0,
+};
+
 export type Quality = "alta" | "media" | "baixa";
 
 /* -------------------------------------------------------------------------- */
