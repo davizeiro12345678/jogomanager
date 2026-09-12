@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
 import { GameShell } from "@/components/game/GameShell";
-import { ACHIEVEMENTS, type AchievementTier } from "@/game/achievements";
+import { ACHIEVEMENTS, careerMilestones, type AchievementTier } from "@/game/achievements";
 import { syncAchievements } from "@/lib/achievements.functions";
 import { useCareer, useSignedIn } from "@/hooks/useCareer";
 
@@ -75,6 +75,7 @@ function ConquistasPage() {
   const draws = log.filter((m) => m.gf === m.ga).length;
   const played = log.length;
   const winRate = played > 0 ? Math.round(((wins + draws * 0.34) / played) * 100) : 0;
+  const milestones = careerMilestones(career);
 
   return (
     <GameShell career={career}>
@@ -109,6 +110,31 @@ function ConquistasPage() {
             <Stat label="Temporadas" value={String(seasonsCompleted)} />
             <Stat label="Títulos" value={String(titles)} />
             <Stat label="Aproveitamento" value={`${winRate}%`} />
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-border/60 surface-card p-5">
+          <h2 className="font-display text-xl uppercase tracking-wide">Marcos</h2>
+          <p className="mt-1 text-sm text-muted-foreground">O quanto falta para o próximo degrau da carreira.</p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {milestones.map((m) => {
+              const pct = Math.min(100, Math.round((m.value / Math.max(1, m.target)) * 100));
+              return (
+                <div key={m.id}>
+                  <div className="flex items-baseline justify-between text-sm">
+                    <span>{m.label}</span>
+                    <span className="font-display text-muted-foreground">
+                      {m.value}
+                      {m.suffix ?? ""} / {m.target}
+                      {m.suffix ?? ""}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 

@@ -109,6 +109,10 @@ export function signPlayer(state: CareerState, entry: MarketEntry): CareerState 
     ...state,
     players: { ...state.players, [id]: player },
     bench: [...state.bench, id],
+    records: {
+      ...(state.records ?? {}),
+      biggestSigning: Math.max(state.records?.biggestSigning ?? 0, entry.price),
+    },
     finances: {
       ...state.finances,
       budget: Math.round((state.finances.budget - entry.price) * 10) / 10,

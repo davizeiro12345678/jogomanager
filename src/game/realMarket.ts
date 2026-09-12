@@ -182,6 +182,10 @@ export function signRealPlayer(
     players: { ...state.players, [id]: player },
     bench: [...state.bench, id],
     transferredIn: [...(state.transferredIn ?? []), t.id],
+    records: {
+      ...(state.records ?? {}),
+      biggestSigning: Math.max(state.records?.biggestSigning ?? 0, cost),
+    },
     finances: {
       ...state.finances,
       budget: Math.round((state.finances.budget - cost) * 10) / 10,

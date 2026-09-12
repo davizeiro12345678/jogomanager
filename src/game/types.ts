@@ -267,6 +267,17 @@ export interface CareerState {
   leagueClubs?: Record<string, string[]>;
   /** vagas de acesso/rebaixamento escolhidas pelo jogador */
   pyramidSlots?: number;
+  /** marcos permanentes da carreira */
+  records?: CareerRecords;
+}
+
+export interface CareerRecords {
+  /** maior valor pago em uma contratação (M€) */
+  biggestSigning?: number;
+  /** acessos conquistados */
+  promotions?: number;
+  /** rebaixamentos sofridos */
+  relegations?: number;
 }
 
 export type ManagerPersonality = "calmo" | "motivador" | "durao" | "tatico" | "jovem";
