@@ -75,6 +75,7 @@ function ConquistasPage() {
   const draws = log.filter((m) => m.gf === m.ga).length;
   const played = log.length;
   const winRate = played > 0 ? Math.round(((wins + draws * 0.34) / played) * 100) : 0;
+  const milestones = careerMilestones(career);
 
   return (
     <GameShell career={career}>
