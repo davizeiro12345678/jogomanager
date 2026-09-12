@@ -226,10 +226,26 @@ function LeaguePage() {
           </table>
         </HudCard>
 
-        <HudCard
-          title={`Rodada ${career.round}`}
-          badge={<HudChip>{fixtures.length} jogos</HudChip>}
-        >
+        <div className="space-y-4">
+          <HudCard
+            title="Sua campanha"
+            tone={toneFor(efficiency, { good: 60, warn: 40 })}
+            badge={<HudChip>últimos {recent.length || 0} jogos</HudChip>}
+          >
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Pontos acumulados
+            </p>
+            <Sparkline data={cumulative} width={260} height={56} className="w-full" />
+            <p className="mb-2 mt-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Gols marcados por jogo
+            </p>
+            <SparkBars data={goalsSeries} height={48} />
+          </HudCard>
+
+          <HudCard
+            title={`Rodada ${career.round}`}
+            badge={<HudChip>{fixtures.length} jogos</HudChip>}
+          >
           <ul className="space-y-2 text-sm">
             {fixtures.map((f) => (
               <li
