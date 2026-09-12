@@ -232,11 +232,14 @@ function TacticsPage() {
           <HudCard title="Força por setor" badge={<HudChip>OVR médio</HudChip>}>
             <SparkBars data={sectorOvr} height={72} />
             <div className="mt-2 flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              {sectors.map((s, i) => (
-                <span key={s}>
-                  {s} {sectorOvr[i] > 0 ? sectorOvr[i] : "—"}
-                </span>
-              ))}
+              {sectors.map((s, i) => {
+                const v = sectorOvr[i] ?? 0;
+                return (
+                  <span key={s}>
+                    {s} {v > 0 ? v : "—"}
+                  </span>
+                );
+              })}
             </div>
             <div className="mt-4 border-t border-border/40 pt-3">
               <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
