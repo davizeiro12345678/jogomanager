@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
-
 function safeNext(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   // Only same-origin relative paths; never full URLs.
@@ -19,7 +18,6 @@ const SOCIALS: { id: SocialProvider; label: string }[] = [
   { id: "microsoft", label: "Microsoft" },
   { id: "apple", label: "Apple" },
 ];
-
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -36,8 +34,15 @@ export const Route = createFileRoute("/auth")({
         content:
           "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Entrar · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content: "Entrar · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -102,8 +107,6 @@ function AuthPage() {
     navigate({ href: destination });
   }
 
-
-
   return (
     <div className="pitch-bg flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/85 p-6 backdrop-blur-xl">
@@ -118,7 +121,9 @@ function AuthPage() {
         </p>
 
         <form onSubmit={submit} className="mt-5 space-y-3">
-          <label htmlFor="auth-email" className="sr-only">E-mail</label>
+          <label htmlFor="auth-email" className="sr-only">
+            E-mail
+          </label>
           <input
             id="auth-email"
             type="email"
@@ -128,7 +133,9 @@ function AuthPage() {
             placeholder="voce@email.com"
             className="w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
           />
-          <label htmlFor="auth-password" className="sr-only">Senha</label>
+          <label htmlFor="auth-password" className="sr-only">
+            Senha
+          </label>
           <input
             id="auth-password"
             type="password"
@@ -168,7 +175,6 @@ function AuthPage() {
             </button>
           ))}
         </div>
-
 
         <button
           onClick={() => setMode(mode === "in" ? "up" : "in")}

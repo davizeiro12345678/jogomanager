@@ -93,4 +93,3 @@ export function track(event: string, props?: Record<string, string | number | bo
     /* ignora: telemetria é best-effort */
   }
 }
-
