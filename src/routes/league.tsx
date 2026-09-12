@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
 import { Crest } from "@/components/game/Crest";
-import { HudCard, HudChip, HudStat, toneFor } from "@/components/ui/hud";
+import { HudCard, HudChip, HudStat, SparkBars, Sparkline, toneFor } from "@/components/ui/hud";
 
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { computeTable, roundFixtures } from "@/game/season";
@@ -63,6 +63,17 @@ function LeaguePage() {
   const played = myRow ? myRow.p : 0;
   const efficiency = played > 0 && myRow ? (myRow.pts / (played * 3)) * 100 : 0;
   const myZone = myIndex >= 0 ? zoneOf(myIndex) : null;
+
+  // histórico do clube para os gráficos de campanha
+  const mine = career.results.filter((r) => r.home === career.clubId || r.away === career.clubId);
+  const recent = mine.slice(-10).map((r) => {
+    const home = r.home === career.clubId;
+    return { gf: home ? r.hg : r.ag, ga: home ? r.ag : r.hg };
+  });
+  const pointsSeries = recent.map(({ gf, ga }) => (gf > ga ? 3 : gf === ga ? 1 : 0));
+  let acc = 0;
+  const cumulative = pointsSeries.map((p) => (acc += p));
+  const goalsSeries = recent.map((r) => r.gf);
 
   return (
     <GameShell career={career}>
