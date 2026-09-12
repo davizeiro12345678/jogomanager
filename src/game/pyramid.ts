@@ -3,12 +3,12 @@
 //  Divisões ligadas: acesso e rebaixamento entre a primeira e a segunda divisão
 //  do mesmo país. O número de vagas é editável (Brasil 4, demais países 3).
 //
-//  O mundo original nunca é alterado: o elenco de cada divisão na campanha fica
-//  guardado no próprio save (`leagueClubs`), então recarregar o jogo mantém a
-//  tabela exatamente como estava.
+//  O mundo original nunca é alterado: a composição de cada divisão na campanha
+//  fica guardada no próprio save (`leagueClubs`), então recarregar o jogo
+//  mantém a tabela exatamente como estava.
 // ============================================================================
 
-import { getLeague } from "./data/leagues";
+import { CLUBS, getLeague } from "./data/leagues";
 import type { CareerState, TableRow } from "./types";
 
 /** primeira divisão → segunda divisão do mesmo país */
@@ -35,12 +35,12 @@ export function slotsFor(topLeagueId: string, override?: number): number {
   return SLOTS[topLeagueId] ?? DEFAULT_SLOTS;
 }
 
-/** A divisão tem ligação de acesso/rebaixamento? */
+/** A divisão participa do sistema de acesso/rebaixamento? */
 export function hasPyramid(leagueId: string): boolean {
   return leagueId in PYRAMID || leagueId in PYRAMID_UP;
 }
 
-/** Lista de clubes da divisão dentro desta campanha (nunca a global). */
+/** Clubes da divisão dentro desta campanha (nunca a lista global). */
 export function leagueClubIds(state: CareerState, leagueId?: string): string[] {
   const id = leagueId ?? state.leagueId;
   const saved = state.leagueClubs?.[id];
@@ -51,12 +51,14 @@ export function leagueClubIds(state: CareerState, leagueId?: string): string[] {
 export interface PyramidMove {
   /** divisão do treinador na próxima temporada */
   leagueId: string;
-  /** composição das divisões afetadas depois da troca */
+  /** composição das duas divisões depois da troca */
   leagueClubs: Record<string, string[]>;
   moved: "subiu" | "desceu" | null;
   promoted: string[];
   relegated: string[];
 }
+
+const strengthOf = (id: string) => CLUBS[id]?.strength ?? 70;
 
 /**
  * Aplica acesso e rebaixamento ao fim da temporada.
@@ -69,63 +71,38 @@ export function applyPyramid(
 ): PyramidMove | null {
   const here = state.leagueId;
   const isTop = here in PYRAMID;
-  const other = isTop ? PYRAMID[here]! : PYRAMID_UP[here];
-  if (!other) return null;
+  const topId = isTop ? here : PYRAMID_UP[here];
+  const secondId = isTop ? PYRAMID[here] : here;
+  if (!topId || !secondId) return null;
 
-  const topId = isTop ? here : other;
   const slots = slotsFor(topId, slotsOverride);
+  const topIds = leagueClubIds(state, topId);
+  const secondIds = leagueClubIds(state, secondId);
+  if (topIds.length <= slots || secondIds.length <= slots) return null;
 
-  const hereIds = leagueClubIds(state, here);
-  const otherIds = leagueClubIds(state, other);
-  if (hereIds.length <= slots || otherIds.length <= slots) return null;
+  // A divisão que o treinador não disputou não roda simulação própria: a ordem
+  // vem da força dos clubes, o que é determinístico e não inventa resultados.
+  const byStrength = (ids: string[]) => [...ids].sort((a, b) => strengthOf(b) - strengthOf(a));
 
-  // classificação da outra divisão: sem simulação própria, usa a força dos
-  // clubes como ordem estável da temporada (determinístico e sem inventar).
-  const otherRanked = [...otherIds].sort((a, b) => strength(b) - strength(a));
-
-  let relegated: string[];
-  let promoted: string[];
-
-  if (isTop) {
-    // os últimos daqui descem, os primeiros de baixo sobem
-    relegated = table.slice(-slots).map((r) => r.clubId);
-    promoted = otherRanked.slice(0, slots);
-  } else {
-    // os primeiros daqui sobem, os últimos de cima descem
-    promoted = table.slice(0, slots).map((r) => r.clubId);
-    relegated = otherRanked.slice(-slots);
-  }
-
-  const topIds = isTop ? hereIds : otherIds;
-  const secondIds = isTop ? otherIds : hereIds;
+  const relegated = isTop
+    ? table.slice(-slots).map((r) => r.clubId)
+    : byStrength(topIds).slice(-slots);
+  const promoted = isTop
+    ? byStrength(secondIds).slice(0, slots)
+    : table.slice(0, slots).map((r) => r.clubId);
 
   const nextTop = [...topIds.filter((id) => !relegated.includes(id)), ...promoted];
   const nextSecond = [...secondIds.filter((id) => !promoted.includes(id)), ...relegated];
 
   const mine = state.clubId;
   const moved = promoted.includes(mine) ? "subiu" : relegated.includes(mine) ? "desceu" : null;
-  const leagueId = nextTop.includes(mine) ? topId : nextSecond.includes(mine) ? other === topId ? here : (isTop ? other : here) : here;
+  const leagueId = moved === "subiu" ? topId : moved === "desceu" ? secondId : here;
 
   return {
-    leagueId: moved === "subiu" ? topId : moved === "desceu" ? (isTop ? other : here) : leagueId,
-    leagueClubs: { [topId]: nextTop, [isTop ? other : here]: nextSecond },
+    leagueId,
+    leagueClubs: { [topId]: nextTop, [secondId]: nextSecond },
     moved,
     promoted,
     relegated,
   };
-}
-
-function strength(clubId: string): number {
-  for (const league of [] as never[]) void league;
-  return CLUB_STRENGTH[clubId] ?? 70;
-}
-
-/** força por clube, lida uma vez (a lista global é imutável durante o jogo) */
-const CLUB_STRENGTH: Record<string, number> = {};
-export function primeStrengthCache(ids: string[]) {
-  for (const id of ids) {
-    if (CLUB_STRENGTH[id] !== undefined) continue;
-    const club = getLeague("bra").clubs.find((c) => c.id === id);
-    if (club) CLUB_STRENGTH[id] = club.strength;
-  }
 }
