@@ -7,7 +7,7 @@ const PATH = "/gestao-financeira";
 const TITLE =
   "Gestão financeira no futebol: folha, orçamento e lucro no mercado · Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
+  "Aprenda a controlar folha salarial, orçamento de transferências e receitas para não quebrar o clube no Pro Football Manager 3D.";
 
 export const Route = createFileRoute("/gestao-financeira")({
   head: () => ({

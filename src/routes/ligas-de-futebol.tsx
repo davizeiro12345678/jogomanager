@@ -9,7 +9,7 @@ const PATH = "/ligas-de-futebol";
 const TITLE =
   "Ligas de futebol disponíveis no jogo de manager | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
+  "Mais de 30 ligas de futebol jogáveis: Brasileirão, Premier League, La Liga e mais. Escolha seu clube e comece a carreira de técnico.";
 
 export const Route = createFileRoute("/ligas-de-futebol")({
   head: () => ({

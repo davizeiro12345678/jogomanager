@@ -7,7 +7,7 @@ const PATH = "/mercado-de-transferencias";
 const TITLE =
   "Mercado de transferências: como contratar bem | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
+  "Como contratar bem no mercado de transferências: orçamento, salários, contratos e o momento certo de comprar e vender jogadores.";
 
 export const Route = createFileRoute("/mercado-de-transferencias")({
   head: () => ({

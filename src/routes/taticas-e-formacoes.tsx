@@ -7,7 +7,7 @@ const PATH = "/taticas-e-formacoes";
 const TITLE =
   "Melhores táticas e formações no manager de futebol | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
+  "Táticas e formações no Pro Football Manager 3D: monte o esquema ideal, ajuste o estilo de jogo e vença partidas com estratégia.";
 
 export const Route = createFileRoute("/taticas-e-formacoes")({
   head: () => ({

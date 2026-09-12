@@ -7,7 +7,7 @@ const PATH = "/jogar-offline";
 const TITLE =
   "Como jogar offline: carreira e partidas sem internet · Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
+  "Saiba como jogar o Pro Football Manager 3D offline: sua carreira fica salva no aparelho e sincroniza quando a internet voltar.";
 
 export const Route = createFileRoute("/jogar-offline")({
   head: () => ({
