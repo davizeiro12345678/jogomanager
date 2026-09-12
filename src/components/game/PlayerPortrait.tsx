@@ -1,12 +1,13 @@
-import { useId, useMemo } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 import { hairFor, skinFor } from "@/game/kits";
 import { hashSeed } from "@/game/rng";
 import type { Player } from "@/game/types";
 
 /**
- * Retrato vetorial determinístico do jogador: rosto, cabelo, barba, sobrancelha
- * e camisa nas cores do clube. Sem imagens externas — escala sem perder nitidez.
+ * Retrato do jogador. Com foto real (dados oficiais) ela é usada recortada no
+ * mesmo formato; sem foto, ou se a imagem falhar, cai no retrato vetorial
+ * determinístico (rosto, cabelo, barba e camisa do clube).
  */
 export function PlayerPortrait({
   player,
@@ -20,11 +21,16 @@ export function PlayerPortrait({
   secondary?: string;
 }) {
   const uid = useId().replace(/:/g, "");
+  const [photoFailed, setPhotoFailed] = useState(false);
+
+  // nova foto → nova tentativa de carregar
+  useEffect(() => setPhotoFailed(false), [player.photo]);
+
   const f = useMemo(() => {
     const h = hashSeed(`${player.id}-${player.name}`);
     const pick = <T,>(arr: readonly T[], salt: number) => arr[Math.floor(h / salt) % arr.length]!;
     return {
-      skin: player.photo ? skinFor(player.id) : skinFor(player.id),
+      skin: skinFor(player.id),
       hair: hairFor(player.id),
       hairStyle: pick(["curto", "raspado", "topete", "cacheado", "coque", "moicano"] as const, 3),
       beard: pick(["nenhuma", "cavanhaque", "cheia", "bigode"] as const, 11),
@@ -32,11 +38,52 @@ export function PlayerPortrait({
       jaw: 26 + ((h >> 9) % 6),
       ear: 1 + ((h >> 13) % 3) * 0.15,
     };
-  }, [player.id, player.name, player.photo]);
+  }, [player.id, player.name]);
 
   const bg = `bg${uid}`;
+  const clip = `clip${uid}`;
+  const photo = player.photo && !photoFailed ? player.photo : null;
+
+  if (photo) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+        role="img"
+        aria-label={`Foto de ${player.name}`}
+        className="shrink-0"
+      >
+        <defs>
+          <linearGradient id={bg} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={primary} stopOpacity="0.85" />
+            <stop offset="100%" stopColor={secondary} stopOpacity="0.35" />
+          </linearGradient>
+          <clipPath id={clip}>
+            <rect width="100" height="100" rx="14" />
+          </clipPath>
+        </defs>
+        <rect width="100" height="100" rx="14" fill={`url(#${bg})`} />
+        <image
+          href={photo}
+          x="0"
+          y="0"
+          width="100"
+          height="100"
+          preserveAspectRatio="xMidYMid slice"
+          clipPath={`url(#${clip})`}
+          onError={() => setPhotoFailed(true)}
+        />
+        <rect y="78" width="100" height="22" fill="#05100b" opacity="0.55" clipPath={`url(#${clip})`} />
+        <text x="50" y="94" textAnchor="middle" fontSize="12" fontWeight="700" fill={secondary} opacity="0.95">
+          {player.number}
+        </text>
+      </svg>
+    );
+  }
 
   return (
+
     <svg
       width={size}
       height={size}
