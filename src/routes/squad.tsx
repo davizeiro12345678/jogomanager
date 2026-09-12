@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PlayerSheet } from "@/components/game/PlayerSheet";
 
 import { GameShell } from "@/components/game/GameShell";
-import { HudCard, HudChip, HudStat, toneFor } from "@/components/ui/hud";
+import { HudBar, HudCard, HudChip, HudRing, HudStat, SparkBars, toneFor } from "@/components/ui/hud";
 import { FORMATIONS } from "@/game/formations";
 import { formatMoney, formatWage, wageBill } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";
@@ -79,10 +79,17 @@ function SquadPage() {
   const avgOvr = players.reduce((s, p) => s + p.ovr, 0) / Math.max(1, players.length);
   const avgAge = players.reduce((s, p) => s + p.age, 0) / Math.max(1, players.length);
   const avgCondition = players.reduce((s, p) => s + p.condition, 0) / Math.max(1, players.length);
+  const avgMorale = players.reduce((s, p) => s + p.morale, 0) / Math.max(1, players.length);
   const injured = players.filter((p) => p.injuryWeeks > 0).length;
   const suspended = players.filter((p) => p.suspended).length;
   const week = wageBill(players);
   const conditionTone = toneFor(avgCondition, { good: 82, warn: 65 });
+  const ageBuckets = [
+    players.filter((p) => p.age <= 21).length,
+    players.filter((p) => p.age >= 22 && p.age <= 25).length,
+    players.filter((p) => p.age >= 26 && p.age <= 29).length,
+    players.filter((p) => p.age >= 30).length,
+  ];
 
   return (
     <GameShell career={career}>
