@@ -103,7 +103,7 @@ function LeaguePage() {
           <HudStat
             label="Saldo"
             value={myRow ? (myRow.gf - myRow.ga > 0 ? `+${myRow.gf - myRow.ga}` : myRow.gf - myRow.ga) : "—"}
-            hint={myRow ? `${myRow.gf} pró · ${myRow.ga} contra` : undefined}
+            hint={myRow ? `${myRow.gf} pró · ${myRow.ga} contra` : ""}
           />
         </div>
       </div>
