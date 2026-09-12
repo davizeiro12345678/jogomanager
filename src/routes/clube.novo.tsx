@@ -282,6 +282,44 @@ function NewClubPage() {
         Funde um time do zero e coloque ele para brigar em uma liga real.
       </p>
 
+      {existing && (
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-border/60 surface-card p-3 text-sm">
+          <Crest
+            club={{
+              id: existing.id,
+              name: existing.name,
+              short: existing.short,
+              league: existing.leagueId,
+              primary: existing.primary,
+              secondary: existing.secondary,
+              strength: existing.strength,
+            }}
+            size={36}
+            detail="simple"
+          />
+          <span className="flex-1">
+            Você já tem o <strong>{existing.name}</strong> em jogo
+            {existing.replaced ? ` (no lugar do ${existing.replaced.name})` : ""}.
+          </span>
+          <button type="button" className={smallBtn} onClick={() => loadDraft({ key: "atual", version: 1, savedAt: Date.now(), club: existing })}>
+            Editar como cópia
+          </button>
+          <button
+            type="button"
+            className={smallBtn}
+            onClick={() => {
+              clearMyClub();
+              setExisting(null);
+              setNote("Clube removido — a liga voltou ao time original.");
+            }}
+          >
+            Apagar clube
+          </button>
+        </div>
+      )}
+
+
+
       <ol className="mt-5 flex flex-wrap gap-2">
         {STEPS.map((s, i) => (
           <li
