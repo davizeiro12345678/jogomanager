@@ -1,6 +1,6 @@
 import { CLUBS, LEAGUES } from "./data/leagues";
 import { makeRng } from "./rng";
-import type { CareerState, CupState, CupTie } from "./types";
+import type { CareerState, CupGroup, CupGroupMatch, CupState, CupTie } from "./types";
 
 /** Nomes de copa por país (fallback genérico). */
 const CUP_NAMES: Record<string, string> = {
