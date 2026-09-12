@@ -351,6 +351,39 @@ export type Database = {
         }
         Relationships: []
       }
+      player_profiles: {
+        Row: {
+          birth_year: number | null
+          created_at: string
+          guardian_approved_at: string | null
+          guardian_email: string | null
+          nickname: string | null
+          supervised: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          birth_year?: number | null
+          created_at?: string
+          guardian_approved_at?: string | null
+          guardian_email?: string | null
+          nickname?: string | null
+          supervised?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          birth_year?: number | null
+          created_at?: string
+          guardian_approved_at?: string | null
+          guardian_email?: string | null
+          nickname?: string | null
+          supervised?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       players: {
         Row: {
           age: number
@@ -617,11 +650,42 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_item_log: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: string
+          item: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          item: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          item?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      consume_wallet_item: {
+        Args: { _detail?: string; _item: string; _user_id: string }
+        Returns: {
+          scout_reports: number
+          training_boosts: number
+        }[]
+      }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
