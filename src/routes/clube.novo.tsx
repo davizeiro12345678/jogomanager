@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
 import { Chips, CREST_EMBLEMS, CREST_PATTERNS, CREST_SHAPES, EMBLEM_LABEL, KIT_PATTERNS } from "@/components/game/CrestBuilder";
@@ -7,7 +7,20 @@ import { initCareer } from "@/game/career";
 import { LEAGUES } from "@/game/data/leagues";
 import type { RoofKind, ChantKind } from "@/game/customStyle";
 import { useCareer } from "@/hooks/useCareer";
-import { DEFAULT_MY_CLUB, slugifyClubId, writeMyClub, type MyClub } from "@/lib/myClub";
+import {
+  DEFAULT_MY_CLUB,
+  clubToBeReplaced,
+  exportClubPack,
+  importClubPack,
+  listClubDrafts,
+  readMyClub,
+  clearMyClub,
+  saveClubDraft,
+  slugifyClubId,
+  writeMyClub,
+  type ClubDraft,
+  type MyClub,
+} from "@/lib/myClub";
 
 export const Route = createFileRoute("/clube/novo")({
   ssr: false,
@@ -55,6 +68,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const inputClass =
   "w-full rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary";
+
+const smallBtn =
+  "flex min-h-11 items-center justify-center rounded-lg border border-border/60 px-3 py-2 text-xs hover:border-primary";
 
 function KitPreview({ club }: { club: MyClub }) {
   const { kit } = club;
@@ -125,6 +141,17 @@ function NewClubPage() {
     setClub((c) => ({ ...c, stadium: { ...c.stadium, ...patch } }));
   const setFans = (patch: Partial<MyClub["fans"]>) => setClub((c) => ({ ...c, fans: { ...c.fans, ...patch } }));
 
+  const [draftKey, setDraftKey] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<ClubDraft[]>([]);
+  const [note, setNote] = useState("");
+  const [existing, setExisting] = useState<MyClub | null>(null);
+
+  useEffect(() => {
+    setDrafts(listClubDrafts());
+    setExisting(readMyClub());
+  }, []);
+
+
   const preview = useMemo(
     () => ({
       id: club.id,
@@ -138,9 +165,12 @@ function NewClubPage() {
     [club],
   );
 
-  function finish() {
+  /** clube que perde a vaga na liga escolhida */
+  const victim = useMemo(() => clubToBeReplaced(club.leagueId), [club.leagueId]);
+
+  function normalized(): MyClub {
     const id = slugifyClubId(club.name || "clube");
-    const finalClub: MyClub = {
+    return {
       ...club,
       id,
       name: club.name.trim() || "Seu Clube",
@@ -148,10 +178,102 @@ function NewClubPage() {
       crest: { ...club.crest, founded: club.founded },
       kit: { ...club.kit, base: club.primary, detail: club.secondary },
     };
+  }
+
+  function saveDraft() {
+    const d = saveClubDraft(normalized(), draftKey ?? undefined);
+    setDraftKey(d.key);
+    setDrafts(listClubDrafts());
+    setNote(`Rascunho salvo (versão ${d.version}).`);
+  }
+
+  function loadDraft(d: ClubDraft) {
+    setClub({ ...d.club });
+    setDraftKey(d.key);
+    setStep(0);
+    setNote(`Rascunho "${d.club.name || "sem nome"}" carregado — editar cria uma nova versão.`);
+  }
+
+  function exportPack() {
+    const text = exportClubPack(normalized());
+    const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${slugifyClubId(club.name || "clube")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importPack(file: File) {
+    const parsed = importClubPack(await file.text());
+    if (!parsed) {
+      setNote("Arquivo inválido — use um pacote exportado por este jogo.");
+      return;
+    }
+    setClub(parsed);
+    setNote(`Pacote "${parsed.name}" carregado.`);
+  }
+
+  /** retrato do clube em imagem (PNG 512×512) para usar fora do jogo */
+  function exportPortrait() {
+    const c = normalized();
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+    const g = canvas.getContext("2d");
+    if (!g) return;
+
+    const bg = g.createLinearGradient(0, 0, 0, 512);
+    bg.addColorStop(0, c.primary);
+    bg.addColorStop(1, "#0a0f0c");
+    g.fillStyle = bg;
+    g.fillRect(0, 0, 512, 512);
+
+    // escudo
+    g.beginPath();
+    g.moveTo(256, 96);
+    g.lineTo(392, 148);
+    g.quadraticCurveTo(392, 320, 256, 404);
+    g.quadraticCurveTo(120, 320, 120, 148);
+    g.closePath();
+    g.fillStyle = c.secondary;
+    g.fill();
+    g.lineWidth = 10;
+    g.strokeStyle = "rgba(0,0,0,0.35)";
+    g.stroke();
+
+    g.save();
+    g.clip();
+    g.fillStyle = c.primary;
+    for (let i = 0; i < 6; i++) g.fillRect(120 + i * 48, 96, 24, 320);
+    g.restore();
+
+    g.fillStyle = "#0a0f0c";
+    g.textAlign = "center";
+    g.font = "bold 84px system-ui, sans-serif";
+    g.fillText(c.short, 256, 290);
+
+    g.fillStyle = "#eafff2";
+    g.font = "bold 38px system-ui, sans-serif";
+    g.fillText(c.name.toUpperCase().slice(0, 22), 256, 456);
+    g.font = "22px system-ui, sans-serif";
+    g.fillStyle = "rgba(234,255,242,0.75)";
+    g.fillText(`${c.city || "—"} · ${c.founded}`, 256, 490);
+
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `${slugifyClubId(c.name)}-retrato.png`;
+    a.click();
+  }
+
+  function finish() {
+    const finalClub = normalized();
     writeMyClub(finalClub);
-    update(initCareer(finalClub.leagueId, id, manager.trim() || "Técnico"));
+    update(initCareer(finalClub.leagueId, finalClub.id, manager.trim() || "Técnico"));
     navigate({ to: "/club" });
   }
+
+
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -159,6 +281,44 @@ function NewClubPage() {
       <p className="mt-1 text-sm text-muted-foreground">
         Funde um time do zero e coloque ele para brigar em uma liga real.
       </p>
+
+      {existing && (
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-border/60 surface-card p-3 text-sm">
+          <Crest
+            club={{
+              id: existing.id,
+              name: existing.name,
+              short: existing.short,
+              league: existing.leagueId,
+              primary: existing.primary,
+              secondary: existing.secondary,
+              strength: existing.strength,
+            }}
+            size={36}
+            detail="simple"
+          />
+          <span className="flex-1">
+            Você já tem o <strong>{existing.name}</strong> em jogo
+            {existing.replaced ? ` (no lugar do ${existing.replaced.name})` : ""}.
+          </span>
+          <button type="button" className={smallBtn} onClick={() => loadDraft({ key: "atual", version: 1, savedAt: Date.now(), club: existing })}>
+            Editar como cópia
+          </button>
+          <button
+            type="button"
+            className={smallBtn}
+            onClick={() => {
+              clearMyClub();
+              setExisting(null);
+              setNote("Clube removido — a liga voltou ao time original.");
+            }}
+          >
+            Apagar clube
+          </button>
+        </div>
+      )}
+
+
 
       <ol className="mt-5 flex flex-wrap gap-2">
         {STEPS.map((s, i) => (
@@ -210,6 +370,12 @@ function NewClubPage() {
                   ))}
                 </select>
               </Field>
+              {victim && (
+                <p className="rounded-lg border border-border/60 bg-background/50 px-3 py-2 text-xs text-muted-foreground">
+                  Para abrir vaga, <strong className="text-foreground">{victim.name}</strong> sai desta liga enquanto o
+                  seu clube existir. Apagar o seu clube devolve ele ao lugar de origem.
+                </p>
+              )}
               <Field label={`Força inicial do elenco: ${club.strength}`}>
                 <input
                   type="range"
@@ -350,7 +516,52 @@ function NewClubPage() {
           <p className="text-xs text-muted-foreground">
             {club.stadium.name} · {club.stadium.capacity.toLocaleString("pt-BR")} lugares
           </p>
+
+          <div className="space-y-2 border-t border-border/60 pt-3 text-left">
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" className={smallBtn} onClick={saveDraft}>
+                Salvar rascunho
+              </button>
+              <button type="button" className={smallBtn} onClick={exportPortrait}>
+                Baixar retrato
+              </button>
+              <button type="button" className={smallBtn} onClick={exportPack}>
+                Exportar pacote
+              </button>
+              <label className={`${smallBtn} cursor-pointer text-center`}>
+                Importar
+                <input
+                  type="file"
+                  accept="application/json"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void importPack(f);
+                    e.currentTarget.value = "";
+                  }}
+                />
+              </label>
+            </div>
+            {note && <p className="text-xs text-primary">{note}</p>}
+            {drafts.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Rascunhos</p>
+                {drafts.map((d) => (
+                  <button
+                    key={d.key}
+                    type="button"
+                    onClick={() => loadDraft(d)}
+                    className="flex min-h-11 w-full items-center justify-between rounded-lg border border-border/50 px-3 py-2 text-left text-xs hover:border-primary"
+                  >
+                    <span className="truncate">{d.club.name || "Sem nome"}</span>
+                    <span className="text-muted-foreground">v{d.version}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </aside>
+
       </div>
     </main>
   );
