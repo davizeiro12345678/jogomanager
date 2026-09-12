@@ -102,7 +102,13 @@ function LeaguePage() {
           />
           <HudStat
             label="Saldo"
-            value={myRow ? (myRow.gf - myRow.ga > 0 ? `+${myRow.gf - myRow.ga}` : myRow.gf - myRow.ga) : "—"}
+            value={
+              myRow
+                ? myRow.gf - myRow.ga > 0
+                  ? `+${myRow.gf - myRow.ga}`
+                  : myRow.gf - myRow.ga
+                : "—"
+            }
             hint={myRow ? `${myRow.gf} pró · ${myRow.ga} contra` : ""}
           />
         </div>
@@ -139,7 +145,10 @@ function LeaguePage() {
       )}
 
       <div className="mt-4 grid items-start gap-4 hud-stagger lg:grid-cols-[1.4fr_1fr]">
-        <HudCard title="Classificação" bodyClassName="-mx-4 -mb-4 overflow-hidden sm:-mx-5 sm:-mb-5">
+        <HudCard
+          title="Classificação"
+          bodyClassName="-mx-4 -mb-4 overflow-hidden sm:-mx-5 sm:-mb-5"
+        >
           <table className="w-full text-sm">
             <thead className="bg-foreground/[0.05] text-[10px] uppercase tracking-wider text-muted-foreground">
               <tr>
@@ -206,7 +215,10 @@ function LeaguePage() {
           </table>
         </HudCard>
 
-        <HudCard title={`Rodada ${career.round}`} badge={<HudChip>{fixtures.length} jogos</HudChip>}>
+        <HudCard
+          title={`Rodada ${career.round}`}
+          badge={<HudChip>{fixtures.length} jogos</HudChip>}
+        >
           <ul className="space-y-2 text-sm">
             {fixtures.map((f) => (
               <li
@@ -224,7 +236,6 @@ function LeaguePage() {
             ))}
           </ul>
         </HudCard>
-
       </div>
     </GameShell>
   );

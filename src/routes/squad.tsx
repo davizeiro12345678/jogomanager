@@ -10,7 +10,6 @@ import { formatMoney, formatWage, wageBill } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";
 import type { Player } from "@/game/types";
 
-
 export const Route = createFileRoute("/squad")({
   ssr: false,
   head: () => ({
@@ -255,7 +254,6 @@ function SquadPage() {
             </table>
           </div>
         </HudCard>
-
       </div>
       {sheet ? <PlayerSheet player={sheet} onClose={() => setSheet(null)} /> : null}
     </GameShell>

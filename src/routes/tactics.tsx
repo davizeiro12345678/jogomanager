@@ -163,7 +163,6 @@ function TacticsPage() {
           badge={<HudChip>{MENTALITIES[t.mentality]}</HudChip>}
         >
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl border border-border/60 bg-[linear-gradient(180deg,#14472c,#0d3521)]">
-
             <div className="absolute inset-x-5 inset-y-4 rounded-md border border-white/20" />
             <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20" />
             <div className="absolute inset-x-0 top-1/2 h-px bg-white/20" />
@@ -285,7 +284,6 @@ function TacticsPage() {
             />
           </HudCard>
         </div>
-
       </div>
     </GameShell>
   );
