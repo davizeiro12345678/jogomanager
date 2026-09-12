@@ -39,7 +39,7 @@ import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
 import { matchLook, type TimeOfDay } from "@/game/matchday";
-import { useVisual } from "@/game/visual-settings";
+import { useResolvedVisual, useVisual } from "@/game/visual-settings";
 
 
 
