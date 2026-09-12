@@ -130,7 +130,7 @@ function VisualPage() {
 
   return (
     <GameShell career={career}>
-      <header className="rounded-2xl border border-border/60 bg-card/70 p-5">
+      <header className="rounded-2xl border border-border/60 surface-card p-5">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-2xl uppercase tracking-wide">Ajustes visuais</h1>
@@ -150,7 +150,7 @@ function VisualPage() {
       </header>
 
       <section className="mt-4 grid gap-4 lg:grid-cols-2">
-        <article className="rounded-2xl border border-border/60 bg-card/70 p-5">
+        <article className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Qualidade</h2>
           <div className="mt-4 space-y-4">
             <Chips
@@ -231,7 +231,7 @@ function VisualPage() {
           </div>
         </article>
 
-        <article className="rounded-2xl border border-border/60 bg-card/70 p-5">
+        <article className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Clima e horário</h2>
           <div className="mt-4 space-y-4">
             <Chips
@@ -273,7 +273,7 @@ function VisualPage() {
       </section>
 
       {clubs.length ? (
-        <section className="mt-4 rounded-2xl border border-border/60 bg-card/70 p-5">
+        <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Corte por clube</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Cada estádio pode ter o seu desenho de grama nos jogos em casa.

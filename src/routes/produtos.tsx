@@ -124,7 +124,7 @@ function ProdutosPage() {
             <article
               key={p.key}
               id={p.key}
-              className="flex flex-col overflow-hidden rounded-3xl border border-border/60 bg-card/70 transition-transform hover:-translate-y-1 hover:border-primary/50"
+              className="flex flex-col overflow-hidden rounded-3xl border border-border/60 surface-card transition-transform hover:-translate-y-1 hover:border-primary/50"
             >
               <div
                 className="relative h-52 w-full"
@@ -174,7 +174,7 @@ function ProdutosPage() {
 
         <div id="checkout-area" className="mt-10">
           {isOpen ? (
-            <div className="rounded-3xl border border-border/60 bg-card/70 p-5">
+            <div className="rounded-3xl border border-border/60 surface-card p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="font-display text-sm uppercase tracking-wide">Pagamento seguro</h2>
                 <Button variant="ghost" size="sm" onClick={closeCheckout}>

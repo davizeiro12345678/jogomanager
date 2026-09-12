@@ -178,7 +178,7 @@ function NewClubPage() {
       </ol>
 
       <div className="mt-6 grid gap-6 md:grid-cols-[1fr_260px]">
-        <section className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-4">
+        <section className="space-y-4 rounded-2xl border border-border/60 surface-card p-4">
           {step === 0 && (
             <>
               <Field label="Seu nome (treinador)">
@@ -336,7 +336,7 @@ function NewClubPage() {
           </div>
         </section>
 
-        <aside className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-4 text-center">
+        <aside className="space-y-4 rounded-2xl border border-border/60 surface-card p-4 text-center">
           <Crest club={preview} size={96} detail="full" />
           <div>
             <p className="font-display text-lg uppercase tracking-wide">{club.name || "Seu Clube"}</p>

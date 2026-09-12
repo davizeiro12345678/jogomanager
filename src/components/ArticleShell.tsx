@@ -49,7 +49,7 @@ export function ArticleShell({
 /** Bloco de seção com título e conteúdo. */
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-border/60 bg-card/60 p-5">
+    <section className="rounded-2xl border border-border/60 surface-card p-5">
       <h2 className="font-display text-xl">{title}</h2>
       <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">{children}</div>
     </section>

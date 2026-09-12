@@ -31,7 +31,7 @@ function HistoryPage() {
   return (
     <GameShell career={career}>
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+        <section className="rounded-2xl border border-border/60 surface-card p-5">
           <h1 className="font-display text-2xl uppercase tracking-wide">Sala de troféus</h1>
           {career.trophies.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
@@ -57,7 +57,7 @@ function HistoryPage() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+        <section className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-2xl uppercase tracking-wide">Temporadas</h2>
           {career.history.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">

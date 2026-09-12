@@ -79,7 +79,7 @@ function ConquistasPage() {
   return (
     <GameShell career={career}>
       <div className="space-y-4">
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+        <section className="rounded-2xl border border-border/60 surface-card p-5">
           <h1 className="font-display text-2xl uppercase tracking-wide">Conquistas</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {unlockedCount} de {total} conquistas desbloqueadas.
@@ -102,7 +102,7 @@ function ConquistasPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+        <section className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-xl uppercase tracking-wide">Carreira do treinador</h2>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Clubes" value={String(clubsCoached)} />

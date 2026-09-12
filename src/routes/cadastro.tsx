@@ -71,7 +71,7 @@ function readImage(file: File, size: number): Promise<string> {
 }
 
 const inputCls =
-  "w-full rounded-lg border border-input bg-card/70 px-3 py-2 text-sm outline-none focus:border-primary";
+  "w-full rounded-lg border border-input surface-card px-3 py-2 text-sm outline-none focus:border-primary";
 const labelCls = "text-xs uppercase tracking-wide text-muted-foreground";
 
 function CadastroPage() {
@@ -102,7 +102,7 @@ function CadastroPage() {
               className={`rounded-lg border px-4 py-2 font-display text-sm uppercase tracking-wide transition ${
                 tab === t
                   ? "border-primary bg-primary/15 text-foreground"
-                  : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
+                  : "border-border surface-card text-muted-foreground hover:text-foreground"
               }`}
             >
               {t}
@@ -110,7 +110,7 @@ function CadastroPage() {
           ))}
           <Link
             to="/new"
-            className="ml-auto rounded-lg border border-border bg-card/60 px-4 py-2 font-display text-sm uppercase tracking-wide text-muted-foreground transition hover:text-foreground"
+            className="ml-auto rounded-lg border border-border surface-card px-4 py-2 font-display text-sm uppercase tracking-wide text-muted-foreground transition hover:text-foreground"
           >
             Começar carreira
           </Link>
@@ -175,7 +175,7 @@ function ClubTab({ data, onChange }: { data: CustomData; onChange: () => void })
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
-      <div className="rounded-xl border border-border/60 bg-card/70 p-5 backdrop-blur">
+      <div className="rounded-xl border border-border/60 surface-card p-5 backdrop-blur">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={labelCls} htmlFor="liga">Liga</label>
@@ -267,7 +267,7 @@ function ClubTab({ data, onChange }: { data: CustomData; onChange: () => void })
         </div>
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-card/70 p-5 backdrop-blur">
+      <div className="rounded-xl border border-border/60 surface-card p-5 backdrop-blur">
         <h2 className="font-display text-sm uppercase tracking-wide">Prévia</h2>
         <div className="mt-4 flex items-center gap-3">
           {badge ? (
@@ -358,7 +358,7 @@ function PlayerTab({ data, onChange }: { data: CustomData; onChange: () => void 
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
-      <div className="rounded-xl border border-border/60 bg-card/70 p-5 backdrop-blur">
+      <div className="rounded-xl border border-border/60 surface-card p-5 backdrop-blur">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={labelCls} htmlFor="pliga">Liga</label>
@@ -440,7 +440,7 @@ function PlayerTab({ data, onChange }: { data: CustomData; onChange: () => void 
         </div>
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-card/70 p-5 backdrop-blur">
+      <div className="rounded-xl border border-border/60 surface-card p-5 backdrop-blur">
         <h2 className="font-display text-sm uppercase tracking-wide">Jogadores cadastrados</h2>
         <ul className="mt-3 space-y-3">
           {data.players.length === 0 && (

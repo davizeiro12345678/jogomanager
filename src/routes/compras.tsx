@@ -89,7 +89,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function PurchaseLine({ purchase }: { purchase: PurchaseRow }) {
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/50 bg-card/60 px-4 py-3">
+    <li className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/50 surface-card px-4 py-3">
       <div className="min-w-0">
         <p className="font-display text-sm uppercase tracking-wide">
           {PRODUCT_NAMES[purchase.productKey] ?? purchase.productKey}
@@ -153,7 +153,7 @@ function ComprasPage() {
             <Skeleton className="h-16 w-full rounded-xl" />
           </div>
         ) : query.isError ? (
-          <div className="mt-6 rounded-2xl border border-destructive/40 bg-card/70 p-6">
+          <div className="mt-6 rounded-2xl border border-destructive/40 surface-card p-6">
             <p className="text-sm text-destructive">
               Não foi possível carregar suas compras agora.
             </p>
@@ -164,25 +164,25 @@ function ComprasPage() {
         ) : (
           <>
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-2xl border border-border/60 bg-card/70 p-4">
+              <div className="rounded-2xl border border-border/60 surface-card p-4">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                   Total gasto
                 </p>
                 <p className="font-display text-xl">{money(data?.totalSpentCents ?? 0)}</p>
               </div>
-              <div className="rounded-2xl border border-border/60 bg-card/70 p-4">
+              <div className="rounded-2xl border border-border/60 surface-card p-4">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                   Compras
                 </p>
                 <p className="font-display text-xl">{data?.completedCount ?? 0}</p>
               </div>
-              <div className="rounded-2xl border border-border/60 bg-card/70 p-4">
+              <div className="rounded-2xl border border-border/60 surface-card p-4">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                   Pendentes
                 </p>
                 <p className="font-display text-xl">{data?.pendingCount ?? 0}</p>
               </div>
-              <div className="rounded-2xl border border-border/60 bg-card/70 p-4">
+              <div className="rounded-2xl border border-border/60 surface-card p-4">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                   Saldo
                 </p>
@@ -194,7 +194,7 @@ function ComprasPage() {
             </div>
 
             {(data?.pendingCount ?? 0) > 0 && (
-              <p className="mt-4 rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-xs text-muted-foreground">
+              <p className="mt-4 rounded-xl border border-border/60 surface-card px-4 py-3 text-xs text-muted-foreground">
                 Uma compra está sendo confirmada pelo banco. A entrega costuma levar poucos
                 segundos — esta página atualiza sozinha.
               </p>
@@ -208,7 +208,7 @@ function ComprasPage() {
                 ))}
               </ul>
             ) : (
-              <div className="mt-3 rounded-2xl border border-border/60 bg-card/70 p-6 text-center">
+              <div className="mt-3 rounded-2xl border border-border/60 surface-card p-6 text-center">
                 <ShoppingBag className="mx-auto mb-2 text-muted-foreground" size={24} />
                 <p className="text-sm text-muted-foreground">
                   Você ainda não comprou nada. Os pacotes ajudam o clube sem mudar o resultado das

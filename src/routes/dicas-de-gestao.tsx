@@ -53,7 +53,7 @@ function TipsPage() {
 
         <ol className="mt-10 space-y-4">
           {TIPS.map((t, i) => (
-            <li key={t} className="flex gap-4 rounded-xl border border-border/60 bg-card/60 p-4">
+            <li key={t} className="flex gap-4 rounded-xl border border-border/60 surface-card p-4">
               <span className="font-display text-2xl text-primary">{i + 1}</span>
               <p className="text-sm leading-relaxed text-muted-foreground">{t}</p>
             </li>

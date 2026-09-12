@@ -39,7 +39,7 @@ function CupPage() {
       </p>
 
       {cups.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-border/60 bg-card/70 p-5 text-sm text-muted-foreground">
+        <p className="mt-6 rounded-2xl border border-border/60 surface-card p-5 text-sm text-muted-foreground">
           O sorteio das copas acontece assim que a primeira rodada da temporada for disputada.
         </p>
       ) : (
@@ -65,7 +65,7 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
   const stages = [...new Set(cup.ties.map((t) => t.round))].sort((a, b) => a - b);
 
   return (
-    <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+    <section className="rounded-2xl border border-border/60 surface-card p-5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-display text-lg uppercase tracking-wide">{cup.name}</h2>
         <span

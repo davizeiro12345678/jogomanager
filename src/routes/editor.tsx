@@ -178,7 +178,7 @@ function ElencosTab({ data, onChange }: { data: CustomData; onChange: () => void
 
   return (
     <div className="mt-4 grid gap-4">
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border/60 bg-card/70 p-4">
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border/60 surface-card p-4">
         <div>
           <span className={labelCls}>Liga</span>
           <Select value={leagueId} onValueChange={onSelectLeague}>
@@ -207,7 +207,7 @@ function ElencosTab({ data, onChange }: { data: CustomData; onChange: () => void
         </Button>
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-card/70 p-4">
+      <div className="rounded-xl border border-border/60 surface-card p-4">
         <Table>
           <TableHeader>
             <TableRow>
@@ -501,7 +501,7 @@ function ClubesTab({ data, onChange }: { data: CustomData; onChange: () => void 
 
   return (
     <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_300px]">
-      <div className="space-y-4 rounded-xl border border-border/60 bg-card/70 p-4">
+      <div className="space-y-4 rounded-xl border border-border/60 surface-card p-4">
         <div className="flex flex-wrap gap-3">
           <div>
             <span className={labelCls}>Liga</span>
@@ -602,7 +602,7 @@ function ClubesTab({ data, onChange }: { data: CustomData; onChange: () => void 
         </div>
       </div>
 
-      <aside className="space-y-3 rounded-xl border border-border/60 bg-card/70 p-4 text-center">
+      <aside className="space-y-3 rounded-xl border border-border/60 surface-card p-4 text-center">
         <h2 className="font-display text-sm uppercase tracking-wide">Prévia</h2>
         <div className="flex justify-center">
           {form.badge ? (
@@ -640,7 +640,7 @@ function CompeticoesTab({ data, onChange }: { data: CustomData; onChange: () => 
         <Button onClick={() => { setEditing(EMPTY_COMP()); setOpen(true); }}>Nova competição</Button>
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-card/70 p-4">
+      <div className="rounded-xl border border-border/60 surface-card p-4">
         <Table>
           <TableHeader>
             <TableRow>
@@ -833,7 +833,7 @@ function ImportExportTab({ data, onChange }: { data: CustomData; onChange: () =>
 
   return (
     <div className="mt-4 grid gap-4 sm:grid-cols-2">
-      <div className="rounded-xl border border-border/60 bg-card/70 p-5">
+      <div className="rounded-xl border border-border/60 surface-card p-5">
         <h2 className="font-display text-sm uppercase tracking-wide">Exportar</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Baixe um arquivo .json com todos os clubes, jogadores e competições que você cadastrou.
@@ -844,7 +844,7 @@ function ImportExportTab({ data, onChange }: { data: CustomData; onChange: () =>
         <Button className="mt-4" onClick={download}>Baixar arquivo .json</Button>
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-card/70 p-5">
+      <div className="rounded-xl border border-border/60 surface-card p-5">
         <h2 className="font-display text-sm uppercase tracking-wide">Importar</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Importe um arquivo exportado anteriormente. Isso substitui os dados salvos neste navegador.

@@ -76,7 +76,7 @@ function GlossaryPage() {
     >
       <dl className="grid gap-3 sm:grid-cols-2">
         {TERMS.map(([term, def]) => (
-          <div key={term} className="rounded-xl border border-border/60 bg-card/60 p-4">
+          <div key={term} className="rounded-xl border border-border/60 surface-card p-4">
             <dt className="font-display text-base">{term}</dt>
             <dd className="mt-1 text-sm leading-relaxed text-muted-foreground">{def}</dd>
           </div>

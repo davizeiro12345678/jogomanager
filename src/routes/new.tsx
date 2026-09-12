@@ -142,7 +142,7 @@ function NewCareer() {
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[220px_1fr]">
-          <aside className="rounded-2xl border border-border/60 bg-card/70 p-4 text-center backdrop-blur">
+          <aside className="rounded-2xl border border-border/60 surface-card p-4 text-center backdrop-blur">
             <ManagerPortrait look={look} size={140} className="mx-auto" />
             <p className="mt-3 font-display text-xl leading-tight">{name || "Técnico"}</p>
             <p className="text-xs text-muted-foreground">
@@ -153,7 +153,7 @@ function NewCareer() {
             </p>
           </aside>
 
-          <section className="rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur">
+          <section className="rounded-2xl border border-border/60 surface-card p-5 backdrop-blur">
             {step === 0 && (
               <div className="space-y-5">
                 <div>
@@ -336,7 +336,7 @@ function NewCareer() {
                         className={`flex items-center gap-3 rounded-xl border p-3 text-left transition ${
                           locked
                             ? "cursor-not-allowed border-border/40 opacity-45"
-                            : "border-border/60 bg-card/70 hover:border-primary hover:bg-card"
+                            : "border-border/60 surface-card hover:border-primary hover:bg-card"
                         }`}
                       >
                         <Crest club={c} size={40} />

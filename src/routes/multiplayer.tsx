@@ -275,7 +275,7 @@ function MultiplayerPage() {
         </section>
       ) : (
         <>
-          <section className="rounded-2xl border border-border/60 bg-card/60 p-5">
+          <section className="rounded-2xl border border-border/60 surface-card p-5">
             <h2 className="font-display text-sm uppercase tracking-[0.25em] text-muted-foreground">
               Escolha seu clube
             </h2>
@@ -290,7 +290,7 @@ function MultiplayerPage() {
                   className={`rounded-lg border px-3 py-1.5 text-xs ${
                     l.id === leagueId
                       ? "border-primary bg-primary/15"
-                      : "border-border bg-card/60 text-muted-foreground"
+                      : "border-border surface-card text-muted-foreground"
                   }`}
                 >
                   {l.name}
@@ -335,7 +335,7 @@ function MultiplayerPage() {
             </div>
           </section>
 
-          <section className="mt-6 rounded-2xl border border-border/60 bg-card/60 p-5">
+          <section className="mt-6 rounded-2xl border border-border/60 surface-card p-5">
             <div className="flex items-center gap-2">
               <Users size={16} className="text-muted-foreground" />
               <h2 className="font-display text-sm uppercase tracking-[0.25em] text-muted-foreground">
@@ -377,7 +377,7 @@ function MultiplayerPage() {
           </section>
 
           {history.length > 0 && (
-            <section className="mt-6 rounded-2xl border border-border/60 bg-card/60 p-5">
+            <section className="mt-6 rounded-2xl border border-border/60 surface-card p-5">
               <h2 className="font-display text-sm uppercase tracking-[0.25em] text-muted-foreground">
                 Histórico de confrontos
               </h2>

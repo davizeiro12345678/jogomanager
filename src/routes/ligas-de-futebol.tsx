@@ -45,7 +45,7 @@ function LeaguesPage() {
           {LEAGUES.map((l) => (
             <section
               key={l.id}
-              className="rounded-xl border border-border/60 bg-card/60 p-5 backdrop-blur"
+              className="rounded-xl border border-border/60 surface-card p-5 backdrop-blur"
             >
               <div className="flex items-center gap-3">
                 <Flag league={l.id} size={28} />

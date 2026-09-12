@@ -29,7 +29,7 @@ function Page() {
       <h1 className="font-display text-4xl uppercase tracking-wide">Sobre o criador</h1>
       <p className="mt-4 text-lg text-muted-foreground">{CREATOR.bio}</p>
 
-      <section className="mt-8 rounded-2xl border border-border/60 bg-card/70 p-5">
+      <section className="mt-8 rounded-2xl border border-border/60 surface-card p-5">
         <p className="font-display text-xl uppercase tracking-wide">{CREATOR.name}</p>
         <p className="text-sm text-muted-foreground">{CREATOR.role}</p>
       </section>

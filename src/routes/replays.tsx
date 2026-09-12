@@ -71,7 +71,7 @@ function ReplaysPage() {
       ) : list === null ? (
         <p className="text-sm text-muted-foreground">Carregando…</p>
       ) : list.length === 0 ? (
-        <p className="rounded-2xl border border-border/60 bg-card/60 p-5 text-sm text-muted-foreground">
+        <p className="rounded-2xl border border-border/60 surface-card p-5 text-sm text-muted-foreground">
           Nenhuma repetição ainda. Jogue uma partida e ela aparece aqui automaticamente.
         </p>
       ) : (
@@ -79,7 +79,7 @@ function ReplaysPage() {
           {list.map((r) => (
             <li
               key={r.id}
-              className="rounded-2xl border border-border/60 bg-card/70 p-4"
+              className="rounded-2xl border border-border/60 surface-card p-4"
             >
               <p className="font-display text-lg uppercase tracking-wide">{r.title}</p>
               <p className="text-xs text-muted-foreground">
@@ -167,7 +167,7 @@ function ReplayPlayer({ replay, onClose }: { replay: Replay; onClose: () => void
   const dur = sim.duration || 1;
 
   return (
-    <section className="rounded-2xl border border-border/60 bg-card/70 p-4">
+    <section className="rounded-2xl border border-border/60 surface-card p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="font-display text-lg uppercase tracking-wide">{replay.title}</h2>
         <button
