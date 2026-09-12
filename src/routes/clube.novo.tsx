@@ -415,7 +415,52 @@ function NewClubPage() {
           <p className="text-xs text-muted-foreground">
             {club.stadium.name} · {club.stadium.capacity.toLocaleString("pt-BR")} lugares
           </p>
+
+          <div className="space-y-2 border-t border-border/60 pt-3 text-left">
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" className={smallBtn} onClick={saveDraft}>
+                Salvar rascunho
+              </button>
+              <button type="button" className={smallBtn} onClick={exportPortrait}>
+                Baixar retrato
+              </button>
+              <button type="button" className={smallBtn} onClick={exportPack}>
+                Exportar pacote
+              </button>
+              <label className={`${smallBtn} cursor-pointer text-center`}>
+                Importar
+                <input
+                  type="file"
+                  accept="application/json"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void importPack(f);
+                    e.currentTarget.value = "";
+                  }}
+                />
+              </label>
+            </div>
+            {note && <p className="text-xs text-primary">{note}</p>}
+            {drafts.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Rascunhos</p>
+                {drafts.map((d) => (
+                  <button
+                    key={d.key}
+                    type="button"
+                    onClick={() => loadDraft(d)}
+                    className="flex min-h-11 w-full items-center justify-between rounded-lg border border-border/50 px-3 py-2 text-left text-xs hover:border-primary"
+                  >
+                    <span className="truncate">{d.club.name || "Sem nome"}</span>
+                    <span className="text-muted-foreground">v{d.version}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </aside>
+
       </div>
     </main>
   );
