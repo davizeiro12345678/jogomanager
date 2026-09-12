@@ -261,6 +261,12 @@ export interface CareerState {
   achievements?: string[];
   /** data (ISO) em que cada conquista foi desbloqueada */
   achievementsUnlockedAt?: Record<string, string>;
+
+  /* ---------------------------------------------------------- v7 */
+  /** composição das divisões nesta campanha (acesso e rebaixamento) */
+  leagueClubs?: Record<string, string[]>;
+  /** vagas de acesso/rebaixamento escolhidas pelo jogador */
+  pyramidSlots?: number;
 }
 
 export type ManagerPersonality = "calmo" | "motivador" | "durao" | "tatico" | "jovem";
