@@ -14,7 +14,14 @@ import { Crest } from "@/components/game/Crest";
 import { MOW_PATTERNS, type MowPattern } from "@/components/game/stadium/textures/grass";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import type { TimeOfDay, Weather } from "@/game/matchday";
-import { resetVisual, setVisual, useVisual, type Auto } from "@/game/visual-settings";
+import {
+  resetVisual,
+  setClubVisual,
+  setVisual,
+  useVisual,
+  type Auto,
+  type ShadowPref,
+} from "@/game/visual-settings";
 import { useCareer } from "@/hooks/useCareer";
 
 export const Route = createFileRoute("/visual")({
