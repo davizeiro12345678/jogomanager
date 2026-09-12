@@ -212,6 +212,57 @@ function VisualPage() {
                 className="size-5 accent-primary"
               />
             </label>
+            <Slider
+              label="Força dos efeitos"
+              value={v.postIntensity}
+              min={0.2}
+              max={1.4}
+              step={0.1}
+              onChange={(postIntensity) => setVisual({ postIntensity })}
+              hint="Quanto mais forte, mais 'cara de TV' — e mais pesado."
+            />
+            <Slider
+              label="Partículas"
+              value={v.particles}
+              min={0}
+              max={1.5}
+              step={0.1}
+              onChange={(particles) => setVisual({ particles })}
+              hint="Chuva, neve, confete e fumaça."
+            />
+            <Slider
+              label="Nitidez do 3D"
+              value={v.resolutionScale}
+              min={0.6}
+              max={1.2}
+              step={0.1}
+              onChange={(resolutionScale) => setVisual({ resolutionScale })}
+              hint="Abaixe para ganhar desempenho no celular."
+            />
+            <Chips
+              label="Sombras"
+              value={v.shadows}
+              onChange={(shadows) => setVisual({ shadows: shadows as ShadowPref })}
+              options={[
+                { id: "auto" as const, label: "Automático" },
+                { id: "ligadas" as const, label: "Ligadas" },
+                { id: "desligadas" as const, label: "Desligadas" },
+              ]}
+            />
+            <label className="flex items-center justify-between gap-3 rounded-xl border border-border/60 p-3 text-sm">
+              <span>
+                Ajuste automático
+                <span className="block text-[11px] text-muted-foreground">
+                  O jogo baixa ou sobe a qualidade sozinho para não travar.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={v.adaptive}
+                onChange={(e) => setVisual({ adaptive: e.target.checked })}
+                className="size-5 accent-primary"
+              />
+            </label>
             <label className="block rounded-xl border border-border/60 p-3 text-sm">
               <span>
                 Placas do estádio
