@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { GameShell } from "@/components/game/GameShell";
+import { HudCard, HudChip, HudStat } from "@/components/ui/hud";
+
 import { FORMATIONS, MENTALITIES, PRESSING, TEMPOS, WIDTHS } from "@/game/formations";
 import { pickLineup } from "@/game/career";
 import { useCareer } from "@/hooks/useCareer";
