@@ -269,6 +269,8 @@ export interface CareerState {
   pyramidSlots?: number;
   /** marcos permanentes da carreira */
   records?: CareerRecords;
+  /** Evolução acumulada dos 28 atributos, por jogador. */
+  attrDeltas?: Record<string, Partial<Record<string, number>>>;
 }
 
 export interface CareerRecords {
