@@ -7,6 +7,7 @@ import { initCareer } from "@/game/career";
 import { LEAGUES } from "@/game/data/leagues";
 import type { RoofKind, ChantKind } from "@/game/customStyle";
 import { useCareer } from "@/hooks/useCareer";
+import { startWorldForNewCareer } from "@/lib/world";
 import {
   DEFAULT_MY_CLUB,
   clubToBeReplaced,
@@ -268,6 +269,8 @@ function NewClubPage() {
 
   function finish() {
     const finalClub = normalized();
+    // Clube criado vive na campanha nova, sem mexer nos outros saves.
+    startWorldForNewCareer(finalClub.id);
     writeMyClub(finalClub);
     update(initCareer(finalClub.leagueId, finalClub.id, manager.trim() || "Técnico"));
     navigate({ to: "/club" });

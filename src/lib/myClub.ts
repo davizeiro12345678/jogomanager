@@ -18,8 +18,13 @@ import {
   type StadiumStyle,
 } from "@/game/customStyle";
 import type { Club } from "@/game/types";
+import { scopedKey } from "@/lib/world-scope";
 
-const KEY = "manager3d.myclub.v1";
+/** Chave por campanha: cada save tem o seu clube criado. */
+function key() {
+  return scopedKey("manager3d.myclub.v1");
+}
+/** Rascunhos são modelos reutilizáveis: ficam fora do escopo da campanha. */
 const DRAFTS_KEY = "manager3d.clubdrafts.v1";
 
 export interface MyClub {
@@ -44,7 +49,7 @@ export interface MyClub {
 export function readMyClub(): MyClub | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = window.localStorage.getItem(key());
     return raw ? (JSON.parse(raw) as MyClub) : null;
   } catch {
     return null;
@@ -54,7 +59,7 @@ export function readMyClub(): MyClub | null {
 export function writeMyClub(club: MyClub) {
   if (typeof window === "undefined") return;
   const applied = registerMyClub(club);
-  window.localStorage.setItem(KEY, JSON.stringify(applied));
+  window.localStorage.setItem(key(), JSON.stringify(applied));
 }
 
 /** Remove o clube criado e devolve o clube original à liga. */
@@ -62,7 +67,7 @@ export function clearMyClub() {
   if (typeof window === "undefined") return;
   const my = readMyClub();
   if (my) restoreWorld(my);
-  window.localStorage.removeItem(KEY);
+  window.localStorage.removeItem(key());
 }
 
 /** Qual clube perderia a vaga se o usuário fundasse um clube nesta liga. */

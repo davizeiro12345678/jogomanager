@@ -15,6 +15,7 @@ import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
 import { applyRegens } from "./regen";
 import { applyPyramid } from "./pyramid";
+import { evolveSeason, setAttrDeltas } from "./attributes";
 
 import { computeTable, generateFixtures } from "./season";
 import { evaluateAchievements } from "./achievements";
@@ -242,8 +243,16 @@ export function initCareer(
 /** Migra estados antigos (v1/v2) para o formato atual. */
 export function migrateCareer(raw: unknown): CareerState {
   const s = raw as CareerState & { version?: number };
-  if (s && s.version === 3)
-    return { ...s, achievements: s.achievements ?? [], achievementsUnlockedAt: s.achievementsUnlockedAt ?? {} };
+  if (s && s.version === 3) {
+    const ready = {
+      ...s,
+      achievements: s.achievements ?? [],
+      achievementsUnlockedAt: s.achievementsUnlockedAt ?? {},
+      attrDeltas: s.attrDeltas ?? {},
+    };
+    setAttrDeltas(ready.attrDeltas);
+    return ready;
+  }
   const club = CLUBS[s.clubId];
   const players: Record<string, Player> = {};
   for (const [id, p] of Object.entries(s.players ?? {})) {
@@ -496,6 +505,10 @@ function endSeason(state: CareerState): CareerState {
   const squad = Object.values(players);
   const { lineup, bench } = pickLineup(squad, state.tactics.formation);
 
+  // Evolução dos 28 atributos: fica guardada na carreira e vale para sempre.
+  const attrDeltas = evolveSeason(squad, state.season, state.attrDeltas ?? {});
+  setAttrDeltas(attrDeltas);
+
   // acesso e rebaixamento entre as divisões do país
   const move = applyPyramid(state, table, state.pyramidSlots);
   const nextLeagueId = move?.leagueId ?? state.leagueId;
@@ -531,6 +544,7 @@ function endSeason(state: CareerState): CareerState {
       nextLeagueClubs?.[nextLeagueId],
     ),
     players,
+    attrDeltas,
     lineup,
     bench,
     results: [],
