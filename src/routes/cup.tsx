@@ -60,7 +60,7 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
       : `Campeão: ${CLUBS[cup.winner]?.name ?? "—"}`
     : cup.out
       ? "Eliminado"
-      : `Próxima fase: ${stageName(cup.stage)}`;
+      : `Próxima fase: ${nextPhaseName(cup)}`;
 
   const stages = [...new Set(cup.ties.map((t) => t.round))].sort((a, b) => a - b);
 
