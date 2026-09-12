@@ -209,21 +209,20 @@ function TacticsPage() {
               );
             })}
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-3 rounded-lg border-l-2 border-tone bg-foreground/[0.04] p-2 text-[11px] text-muted-foreground">
             Verde: jogador na posição natural · amarelo: posição adaptada · vermelho: fora de
             posição (rende menos).
           </p>
-        </section>
+        </HudCard>
 
         <div className="space-y-4">
-          <section className="rounded-2xl border border-border/60 surface-card p-5">
-            <h2 className="font-display text-lg uppercase tracking-wide">Formação</h2>
-            <div className="mt-3 grid grid-cols-2 gap-2">
+          <HudCard title="Formação" badge={<HudChip>{t.formation}</HudChip>}>
+            <div className="grid grid-cols-2 gap-2">
               {FORMATION_KEYS.map((f) => (
                 <button
                   key={f}
                   onClick={() => setFormation(f)}
-                  className={`rounded-lg border px-4 py-3 font-display text-lg transition ${
+                  className={`min-h-[44px] rounded-lg border px-4 py-3 font-display text-lg transition ${
                     f === t.formation
                       ? "border-primary bg-primary/15"
                       : "border-border hover:bg-secondary"
@@ -233,16 +232,18 @@ function TacticsPage() {
                 </button>
               ))}
             </div>
-          </section>
+          </HudCard>
 
-          <section className="rounded-2xl border border-border/60 surface-card p-5">
-            <h2 className="font-display text-lg uppercase tracking-wide">Estilos prontos</h2>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <HudCard
+            title="Estilos prontos"
+            badge={activePreset ? <HudChip>{activePreset.name}</HudChip> : null}
+          >
+            <div className="grid gap-2 sm:grid-cols-2">
               {PRESETS.map((p) => (
                 <button
                   key={p.name}
                   onClick={() => applyPreset(p)}
-                  className={`rounded-xl border p-3 text-left transition ${
+                  className={`min-h-[44px] rounded-xl border p-3 text-left transition ${
                     activePreset?.name === p.name
                       ? "border-primary bg-primary/15"
                       : "border-border hover:bg-secondary"
@@ -253,9 +254,9 @@ function TacticsPage() {
                 </button>
               ))}
             </div>
-          </section>
+          </HudCard>
 
-          <section className="space-y-4 rounded-2xl border border-border/60 surface-card p-5">
+          <HudCard title="Ajuste fino" bodyClassName="space-y-4">
             <Option
               label="Mentalidade"
               options={MENTALITIES}
@@ -280,8 +281,9 @@ function TacticsPage() {
               value={t.tempo}
               onChange={(v) => setSlider("tempo", v)}
             />
-          </section>
+          </HudCard>
         </div>
+
       </div>
     </GameShell>
   );
