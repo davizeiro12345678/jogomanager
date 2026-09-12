@@ -175,6 +175,69 @@ export interface PlayerProfile {
 
 const cache = new Map<string, PlayerProfile>();
 
+/* -------------------------------------------------------------------------- */
+/*  Evolução persistente                                                      */
+/*  A base dos 28 atributos continua determinística; o que a carreira guarda  */
+/*  é apenas a diferença acumulada (treino, idade, temporadas jogadas).       */
+/* -------------------------------------------------------------------------- */
+
+export type AttrDelta = Partial<Record<keyof DetailedAttributes, number>>;
+export type AttrDeltas = Record<string, AttrDelta>;
+
+let deltas: AttrDeltas = {};
+
+/** Liga a ficha dos jogadores à evolução guardada na carreira atual. */
+export function setAttrDeltas(next: AttrDeltas | undefined) {
+  deltas = next ?? {};
+  cache.clear();
+}
+
+export function getAttrDeltas(): AttrDeltas {
+  return deltas;
+}
+
+const ALL_KEYS = Object.keys(ATTR_LABELS) as (keyof DetailedAttributes)[];
+
+/**
+ * Uma temporada de evolução: jovens crescem até o potencial, veteranos perdem
+ * físico e ganham cabeça. O sorteio é determinístico por jogador e temporada.
+ */
+export function evolveSeason(players: Player[], season: number, current: AttrDeltas): AttrDeltas {
+  const out: AttrDeltas = { ...current };
+  for (const p of players) {
+    const rnd = makeRng(`evo-${p.id}-${season}`);
+    const base = profileFor(p).attrs;
+    const delta: AttrDelta = { ...(current[p.id] ?? {}) };
+    const potential = Math.max(p.ovr, p.potential ?? p.ovr);
+    const room = Math.max(0, potential - p.ovr);
+    const young = p.age <= 23 ? 1 : p.age <= 28 ? 0.45 : 0;
+    const old = p.age >= 31 ? (p.age - 30) * 0.6 : 0;
+    for (const k of ALL_KEYS) {
+      const physical = k === "pace" || k === "acceleration" || k === "stamina" || k === "agility" || k === "jumping";
+      const mental = k === "composure" || k === "leadership" || k === "decisions" || k === "positioning";
+      let move = young * (0.6 + room * 0.1) * (rnd() * 1.6 - 0.2);
+      if (physical) move -= old * (0.5 + rnd() * 0.8);
+      if (mental) move += (p.age >= 29 ? 0.5 : 0) + rnd() * 0.6;
+      const raw = (delta[k] ?? 0) + move;
+      // O resultado final nunca sai da faixa 20..99 do atributo.
+      const clamped = Math.max(20 - base[k], Math.min(99 - base[k], raw));
+      const rounded = Math.round(clamped * 10) / 10;
+      if (rounded !== 0) delta[k] = rounded;
+      else delete delta[k];
+    }
+    if (Object.keys(delta).length) out[p.id] = delta;
+    else delete out[p.id];
+  }
+  return out;
+}
+
+/** Ganho de treino aplicado fora do fim de temporada (impulsos, academia). */
+export function trainingGain(playerId: string, keys: (keyof DetailedAttributes)[], amount: number): AttrDeltas {
+  const delta: AttrDelta = { ...(deltas[playerId] ?? {}) };
+  for (const k of keys) delta[k] = Math.round(((delta[k] ?? 0) + amount) * 10) / 10;
+  return { ...deltas, [playerId]: delta };
+}
+
 function clamp(v: number) {
   return Math.max(20, Math.min(99, Math.round(v)));
 }
@@ -321,6 +384,13 @@ export function profileFor(p: Player): PlayerProfile {
     spells: buildSpells(p, rnd),
     rapport: Math.round(45 + rnd() * 45),
   };
+  const d = deltas[p.id];
+  if (d) {
+    for (const [k, v] of Object.entries(d)) {
+      const key = k as keyof DetailedAttributes;
+      attrs[key] = clamp(attrs[key] + v);
+    }
+  }
   cache.set(p.id, profile);
   return profile;
 }
