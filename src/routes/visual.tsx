@@ -326,6 +326,46 @@ function VisualPage() {
               ]}
             />
             <MowPreview pattern={effectiveMow} />
+            <Slider
+              label="Vento"
+              value={v.wind === "auto" ? 0.5 : v.wind}
+              min={0}
+              max={1}
+              step={0.1}
+              onChange={(wind) => setVisual({ wind })}
+              hint={
+                v.wind === "auto"
+                  ? "Automático: cada partida sorteia o vento. Mexa para fixar."
+                  : "Vento fixo em todas as partidas."
+              }
+            />
+            {v.wind !== "auto" ? (
+              <button
+                type="button"
+                onClick={() => setVisual({ wind: "auto" })}
+                className="rounded-full border border-border/60 px-3 py-1 text-[11px] text-muted-foreground hover:border-primary/50"
+              >
+                Voltar o vento para automático
+              </button>
+            ) : null}
+            <Slider
+              label="Tom do gramado"
+              value={v.grassTint}
+              min={-1}
+              max={1}
+              step={0.1}
+              onChange={(grassTint) => setVisual({ grassTint })}
+              hint="Negativo deixa a grama mais clara; positivo, mais escura."
+            />
+            <Slider
+              label="Desgaste do gramado"
+              value={v.grassWear}
+              min={0}
+              max={1}
+              step={0.1}
+              onChange={(grassWear) => setVisual({ grassWear })}
+              hint="Campo impecável ou bem castigado pelos jogos."
+            />
           </div>
         </article>
       </section>
