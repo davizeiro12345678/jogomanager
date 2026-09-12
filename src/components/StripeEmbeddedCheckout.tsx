@@ -28,7 +28,10 @@ export function StripeEmbeddedCheckout({
   };
 
   return (
-    <div id="checkout" className="w-full rounded-xl overflow-hidden border border-border/60 bg-card">
+    <div
+      id="checkout"
+      className="w-full rounded-xl overflow-hidden border border-border/60 bg-card"
+    >
       <EmbeddedCheckoutProvider stripe={getStripe()} options={{ fetchClientSecret }}>
         <EmbeddedCheckout />
       </EmbeddedCheckoutProvider>

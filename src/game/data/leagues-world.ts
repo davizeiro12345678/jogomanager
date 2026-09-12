@@ -4,7 +4,14 @@ import type { Club, League } from "../types";
  * Terceiro lote de competições reais (expansão mundial).
  * Mesmo formato dos catálogos anteriores.
  */
-type Raw = [id: string, name: string, short: string, primary: string, secondary: string, strength: number];
+type Raw = [
+  id: string,
+  name: string,
+  short: string,
+  primary: string,
+  secondary: string,
+  strength: number,
+];
 
 const WAL: Raw[] = [
   ["wal_tns", "The New Saints", "TNS", "#0a5cb8", "#ffffff", 66],

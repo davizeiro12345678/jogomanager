@@ -19,7 +19,10 @@ export const Route = createFileRoute("/brasileirao")({
       links: canonical(PATH),
       scripts: [
         articleLd({ headline: "Brasileirão no jogo de manager", description: DESC, path: PATH }),
-        itemListLd("Clubes do Brasileirão jogáveis", [...a.clubs, ...b.clubs].map((c) => c.name)),
+        itemListLd(
+          "Clubes do Brasileirão jogáveis",
+          [...a.clubs, ...b.clubs].map((c) => c.name),
+        ),
         breadcrumbLd([
           { name: "Início", path: "/" },
           { name: "Brasileirão", path: PATH },

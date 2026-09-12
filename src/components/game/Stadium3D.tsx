@@ -32,7 +32,11 @@ import {
 import { LINES_H, LINES_W, pitchLinesTexture } from "@/components/game/stadium/textures/lines";
 import { pitchWearTexture } from "@/components/game/stadium/textures/wear";
 import { skyTexture } from "@/components/game/stadium/textures/sky";
-import { bannerTexture, bigFlagTexture, mosaicTexture } from "@/components/game/stadium/textures/tifo";
+import {
+  bannerTexture,
+  bigFlagTexture,
+  mosaicTexture,
+} from "@/components/game/stadium/textures/tifo";
 import { StadiumProps } from "@/components/game/stadium/Props";
 
 import { dprFor, higherQuality, lowerQuality } from "@/game/device";
@@ -41,19 +45,14 @@ import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
 import { matchLook, type TimeOfDay } from "@/game/matchday";
 import { useResolvedVisual, useVisual } from "@/game/visual-settings";
 
-
-
 export type CameraMode = "broadcast" | "tactical" | "goal" | "fan" | "rail" | "behind";
 export type Quality = "alta" | "media" | "baixa";
-
-
 
 const SKY: Record<TimeOfDay, string> = {
   dia: "#8fbfe8",
   entardecer: "#4a3630",
   noite: "#060a10",
 };
-
 
 /* ---------------------------------------------------------------- gramado */
 
@@ -122,7 +121,11 @@ function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
         const x = (Math.random() * 2 - 1) * (FIELD_X + 5);
         const z = (Math.random() * 2 - 1) * (FIELD_Z + 5);
         d.position.set(x, tallLayer ? 0.09 : 0.05, z);
-        d.rotation.set(0, Math.random() * Math.PI, (Math.random() - 0.5) * (tallLayer ? 0.4 : 0.22));
+        d.rotation.set(
+          0,
+          Math.random() * Math.PI,
+          (Math.random() - 0.5) * (tallLayer ? 0.4 : 0.22),
+        );
         const s = tallLayer ? 0.7 + Math.random() * 0.8 : 0.5 + Math.random() * 0.5;
         d.scale.set(s, s * (0.75 + Math.random() * 0.7), s);
         d.updateMatrix();
@@ -167,8 +170,6 @@ function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
   );
 }
 
-
-
 /**
  * Marcas de pisada e rastro de deslize: um pool de manchas escuras deixadas
  * pela bola e pelos jogadores, que desbotam com o tempo.
@@ -176,9 +177,7 @@ function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
 function PitchMarks({ sim }: { sim: SimView }) {
   const COUNT = 90;
   const ref = useRef<THREE.InstancedMesh>(null);
-  const slots = useRef(
-    Array.from({ length: COUNT }, () => ({ x: 0, z: 0, life: 0, s: 1, r: 0 })),
-  );
+  const slots = useRef(Array.from({ length: COUNT }, () => ({ x: 0, z: 0, life: 0, s: 1, r: 0 })));
   const next = useRef(0);
   const timer = useRef(0);
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -422,10 +421,6 @@ function Weather({
   );
 }
 
-
-
-
-
 /**
  * Marcação do campo pintada: um plano com a textura de cal por cima do
  * gramado. Substitui as antigas linhas de 1 pixel, que serrilhavam e
@@ -512,10 +507,6 @@ function useNetMaterial(repeatX: number, repeatY: number) {
     return mat;
   }, [repeatX, repeatY]);
 }
-
-
-
-
 
 /**
  * Rede simulada: malha de pontos com equação de onda no eixo de profundidade.
@@ -617,9 +608,7 @@ function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: Sim
   const backMat = useNetMaterial(14, 5);
   const sideMat = useNetMaterial(4, 5);
   const topMat = useNetMaterial(4, 14);
-  const post = (
-    <meshStandardMaterial color="#fdfdfd" roughness={0.22} metalness={0.08} />
-  );
+  const post = <meshStandardMaterial color="#fdfdfd" roughness={0.22} metalness={0.08} />;
   return (
     <group position={[x, 0, 0]}>
       {[-3.66, 3.66].map((z) => (
@@ -651,17 +640,12 @@ function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: Sim
           <planeGeometry args={[1.9, 2.44]} />
         </mesh>
       ))}
-      <mesh
-        position={[side * 0.95, 2.4, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        material={topMat}
-      >
+      <mesh position={[side * 0.95, 2.4, 0]} rotation={[-Math.PI / 2, 0, 0]} material={topMat}>
         <planeGeometry args={[1.9, 7.32]} />
       </mesh>
     </group>
   );
 }
-
 
 function CornerFlags() {
   const ref = useRef<THREE.Group>(null);
@@ -694,7 +678,6 @@ function CornerFlags() {
     </group>
   );
 }
-
 
 /* -------------------------------------------------------------- estrutura */
 
@@ -763,7 +746,6 @@ function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: stri
     </group>
   );
 }
-
 
 /**
  * Telão do estádio com texto 3D nítido (troika SDF) em vez de textura de
@@ -919,7 +901,12 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
                   />
                 </sprite>
                 {quality !== "baixa" && (
-                  <pointLight position={[0, 28, 0]} intensity={1400} distance={230} color="#e8f2ff" />
+                  <pointLight
+                    position={[0, 28, 0]}
+                    intensity={1400}
+                    distance={230}
+                    color="#e8f2ff"
+                  />
                 )}
               </>
             )}
@@ -946,11 +933,9 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
             />
           </mesh>
         ))}
-
     </group>
   );
 }
-
 
 /** Concreto compartilhado por toda a estrutura (um material só, muitas peças). */
 function useConcrete(color = "#6d747b", repeat = 6) {
@@ -1082,7 +1067,6 @@ function Tiers({
     }
   }
 
-
   return (
     <group>
       {steps}
@@ -1181,7 +1165,7 @@ function Roof({ rings }: { rings: number }) {
         <mesh
           key={`c${i}`}
           position={[sx! * (FIELD_X + outer + 2), height, sz! * (FIELD_Z + outer + 2)]}
-          rotation={[0, sx! * sz! * Math.PI / 4, 0]}
+          rotation={[0, (sx! * sz! * Math.PI) / 4, 0]}
         >
           <boxGeometry args={[26, 0.6, depth]} />
           <meshStandardMaterial color="#49545f" roughness={0.8} metalness={0.2} />
@@ -1190,7 +1174,6 @@ function Roof({ rings }: { rings: number }) {
     </group>
   );
 }
-
 
 /**
  * Faixas de torcida organizada e mosaico de cartolinas dos setores atrás
@@ -1253,7 +1236,6 @@ function Banners({ color, alt, rings }: { color: string; alt: string; rings: num
   );
 }
 
-
 function Stands({
   homeColor,
   awayColor,
@@ -1294,9 +1276,9 @@ function Stands({
     const SECTORS = 14;
     const sectorColor = (sector: number, side: number) => {
       const s = (sector + (side > 0 ? 0 : 7)) % SECTORS;
-      if (s < 3) return home;              // arquibancada organizada mandante
+      if (s < 3) return home; // arquibancada organizada mandante
       if (s === 3 || s === 10) return homeAlt; // bloco do terceiro uniforme
-      if (s >= 11) return away;            // setor visitante
+      if (s >= 11) return away; // setor visitante
       return neutral[s % neutral.length]!;
     };
     const shirtFor = (sector: number, side: number, i: number, ring: number) => {
@@ -1348,7 +1330,6 @@ function Stands({
     }
     return { positions, colors, skins };
   }, [homeColor, awayColor, density, rings]);
-
 
   const ref = useRef<THREE.InstancedMesh>(null);
   const headRef = useRef<THREE.InstancedMesh>(null);
@@ -1416,7 +1397,7 @@ function Stands({
       // balanço lateral: a massa nunca fica perfeitamente enfileirada
       const swayX = Math.sin(t * 1.6 + i * 0.7) * 0.05 * (0.4 + pulse);
       const yaw = ((i % 7) - 3) * 0.06 + Math.sin(t * 0.8 + i) * 0.05;
-      const tall = 0.9 + ((i % 5) * 0.045);
+      const tall = 0.9 + (i % 5) * 0.045;
       dummy.position.set(p.x + swayX, y, p.z);
       dummy.scale.set(1, tall, 1);
       dummy.rotation.set(0, yaw, Math.sin(t * 1.9 + i * 1.3) * 0.03);
@@ -1448,7 +1429,10 @@ function Stands({
       // braços: palmas no ritmo, erguidos na comemoração e na ola
       const arms = armsRef.current;
       if (arms && i < armCount) {
-        const raise = Math.min(1, pulse * 1.2 + (wave > 0 ? 0.8 : 0) + (Math.sin(t * 6 + i) > 0.7 ? 0.25 : 0));
+        const raise = Math.min(
+          1,
+          pulse * 1.2 + (wave > 0 ? 0.8 : 0) + (Math.sin(t * 6 + i) > 0.7 ? 0.25 : 0),
+        );
         dummy.position.set(p.x + swayX, y + 0.42 + raise * 0.3, p.z);
         dummy.rotation.set(-raise * 1.5, yaw, 0);
         dummy.scale.set(1, 0.5 + raise * 0.7, 1);
@@ -1498,8 +1482,14 @@ function Stands({
       <CrowdFlags color={homeColor} alt={awayColor} rings={rings} quality={quality} />
 
       {/* tronco: ombros mais largos que o quadril, tecido fosco */}
-      <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, crowd.positions.length]}>
-        <capsuleGeometry args={[0.22, 0.44, quality === "alta" ? 4 : 3, quality === "alta" ? 10 : 6]} />
+      <instancedMesh
+        ref={ref}
+        frustumCulled={false}
+        args={[undefined, undefined, crowd.positions.length]}
+      >
+        <capsuleGeometry
+          args={[0.22, 0.44, quality === "alta" ? 4 : 3, quality === "alta" ? 10 : 6]}
+        />
         <meshStandardMaterial roughness={0.9} />
       </instancedMesh>
       <instancedMesh
@@ -1534,7 +1524,11 @@ function Stands({
         </instancedMesh>
       )}
       {flashCount > 0 && (
-        <instancedMesh ref={flashRef} frustumCulled={false} args={[undefined, undefined, flashCount]}>
+        <instancedMesh
+          ref={flashRef}
+          frustumCulled={false}
+          args={[undefined, undefined, flashCount]}
+        >
           <sphereGeometry args={[0.13, 6, 6]} />
           <meshBasicMaterial color="#ffffff" toneMapped={false} transparent opacity={0.9} />
         </instancedMesh>
@@ -1542,7 +1536,6 @@ function Stands({
     </group>
   );
 }
-
 
 /**
  * Bandeirões da torcida: planos com ondulação no vertex shader, espalhados
@@ -1566,7 +1559,7 @@ function CrowdFlags({
     const out: { pos: [number, number, number]; rot: number; c: string; s: number }[] = [];
     for (let i = 0; i < count; i++) {
       const behind = i % 2 === 0;
-      const ring = 1 + (i * 3) % Math.max(1, rings - 1);
+      const ring = 1 + ((i * 3) % Math.max(1, rings - 1));
       const t = ((i * 37) % 100) / 100;
       const y = 3.4 + ring * 1.45;
       if (behind) {
@@ -1575,7 +1568,7 @@ function CrowdFlags({
           pos: [-FIELD_X - 8 + t * (FIELD_X * 2 + 16), y, zSide * (FIELD_Z + 7 + ring * 1.5)],
           rot: zSide > 0 ? Math.PI : 0,
           c: t < 0.45 ? color : alt,
-          s: 0.8 + ((i % 3) * 0.35),
+          s: 0.8 + (i % 3) * 0.35,
         });
       } else {
         const xSide = i % 4 < 2 ? -1 : 1;
@@ -1583,39 +1576,42 @@ function CrowdFlags({
           pos: [xSide * (FIELD_X + 10 + ring * 1.5), y, -FIELD_Z - 6 + t * (FIELD_Z * 2 + 12)],
           rot: xSide > 0 ? -Math.PI / 2 : Math.PI / 2,
           c: xSide > 0 ? color : alt,
-          s: 0.8 + ((i % 4) * 0.3),
+          s: 0.8 + (i % 4) * 0.3,
         });
       }
     }
     return out;
   }, [count, rings, color, alt]);
 
-  const materials = useMemo(() => flags.map((f, i) => {
-    // bandeirões grandes ganham estampa (listras + escudo); os pequenos ficam
-    // só na cor, para não pesar em aparelho fraco
-    const printed = i % 3 === 0 ? bigFlagTexture(f.c, f.c === color ? alt : color) : null;
-    const m = new THREE.MeshStandardMaterial({
-      color: printed ? "#ffffff" : f.c,
-      ...(printed ? { map: printed } : {}),
-      side: THREE.DoubleSide,
-      roughness: 0.85,
-      metalness: 0,
-    });
-    m.onBeforeCompile = (shader) => {
-      shader.uniforms["uTime"] = uTime.current;
-      shader.vertexShader = shader.vertexShader
-        .replace("#include <common>", "#include <common>\nuniform float uTime;")
-        .replace(
-          "#include <begin_vertex>",
-          `#include <begin_vertex>
+  const materials = useMemo(
+    () =>
+      flags.map((f, i) => {
+        // bandeirões grandes ganham estampa (listras + escudo); os pequenos ficam
+        // só na cor, para não pesar em aparelho fraco
+        const printed = i % 3 === 0 ? bigFlagTexture(f.c, f.c === color ? alt : color) : null;
+        const m = new THREE.MeshStandardMaterial({
+          color: printed ? "#ffffff" : f.c,
+          ...(printed ? { map: printed } : {}),
+          side: THREE.DoubleSide,
+          roughness: 0.85,
+          metalness: 0,
+        });
+        m.onBeforeCompile = (shader) => {
+          shader.uniforms["uTime"] = uTime.current;
+          shader.vertexShader = shader.vertexShader
+            .replace("#include <common>", "#include <common>\nuniform float uTime;")
+            .replace(
+              "#include <begin_vertex>",
+              `#include <begin_vertex>
            float wave = sin(uTime * 2.2 + position.x * 3.0) * 0.12
                       + sin(uTime * 3.7 + position.y * 2.0) * 0.05;
            transformed.z += wave * (0.4 + position.x + 0.5);`,
-        );
-    };
-    return m;
-  }), [flags, color, alt]);
-
+            );
+        };
+        return m;
+      }),
+    [flags, color, alt],
+  );
 
   useFrame(({ clock }) => {
     uTime.current.value = clock.elapsedTime;
@@ -1640,9 +1636,6 @@ function CrowdFlags({
 }
 
 /* --------------------------------------------------------------- jogadores */
-
-
-
 
 /** Textura da bola: painéis escuros + costuras, gerada uma vez por sessão. */
 let _ballTex: THREE.Texture | null | undefined;
@@ -1746,12 +1739,7 @@ function Ball({
       {quality === "baixa" ? (
         ball
       ) : (
-        <Trail
-          width={1.1}
-          length={5.5}
-          color="#dff2ff"
-          attenuation={(t) => t * t}
-        >
+        <Trail width={1.1} length={5.5} color="#dff2ff" attenuation={(t) => t * t}>
           {ball}
         </Trail>
       )}
@@ -1839,19 +1827,20 @@ function SkyDome({ time }: { time: TimeOfDay }) {
   );
 }
 
-
 /* ------------------------------------------------------------------- cena */
-
 
 /**
  * Festa do gol: papel picado colorido caindo sobre o gramado e fumaça de
  * sinalizador subindo atrás do gol, tudo instanciado e disparado pelo pulso.
  */
-function GoalFx({ goalPulse, quality }: { goalPulse: React.MutableRefObject<number>; quality: Quality }) {
-  const COUNT = Math.max(
-    0,
-    Math.round((quality === "alta" ? 320 : 140) * useVisual().particles),
-  );
+function GoalFx({
+  goalPulse,
+  quality,
+}: {
+  goalPulse: React.MutableRefObject<number>;
+  quality: Quality;
+}) {
+  const COUNT = Math.max(0, Math.round((quality === "alta" ? 320 : 140) * useVisual().particles));
   const ref = useRef<THREE.InstancedMesh>(null);
   const smoke = useRef<THREE.InstancedMesh>(null);
   const parts = useMemo(
@@ -1923,11 +1912,7 @@ function GoalFx({ goalPulse, quality }: { goalPulse: React.MutableRefObject<numb
       for (let i = 0; i < 12; i++) {
         const side = i < 6 ? -1 : 1;
         const t = (clock.elapsedTime * 0.35 + i * 0.17) % 1;
-        dummy.position.set(
-          side * (FIELD_X + 6),
-          1 + t * 12,
-          (i % 6) * 6 - 15,
-        );
+        dummy.position.set(side * (FIELD_X + 6), 1 + t * 12, (i % 6) * 6 - 15);
         dummy.rotation.set(0, 0, t * 1.5);
         dummy.scale.setScalar(glow > 0.05 ? (2 + t * 9) * glow : 0.0001);
         dummy.updateMatrix();
@@ -2075,9 +2060,7 @@ function Scene({
     setReplay((v) => (v === r ? v : r));
     const m = goalPulse.current > 0.82 ? "drama" : r ? "replay" : "match";
     setMoment((v) => (v === m ? v : m));
-
   });
-
 
   const awayClash = colorClash(sim.home.primary, sim.away.primary);
   const homeKit = useMemo(
@@ -2194,15 +2177,7 @@ function Scene({
       ))}
       <GoalFx goalPulse={goalPulse} quality={quality} />
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
-      <PostFX
-        quality={postOn ? quality : "baixa"}
-        replay={replay}
-        moment={moment}
-        time={time}
-      />
-
-
-
+      <PostFX quality={postOn ? quality : "baixa"} replay={replay} moment={moment} time={time} />
     </>
   );
 }
@@ -2242,15 +2217,12 @@ function Stadium3DImpl({
   const declines = useRef(0);
 
   // Sombras: preferência explícita do jogador vence a decisão automática.
-  const shadowsOn =
-    vis.shadows === "auto" ? eff === "alta" : vis.shadows === "ligadas";
+  const shadowsOn = vis.shadows === "auto" ? eff === "alta" : vis.shadows === "ligadas";
   // Escala de resolução escolhida em /visual, aplicada sobre o limite do aparelho.
   const dpr = useMemo(() => {
     const base = dprFor(eff);
     const s = vis.resolutionScale;
-    return Array.isArray(base)
-      ? ([base[0] * s, base[1] * s] as [number, number])
-      : base * s;
+    return Array.isArray(base) ? ([base[0] * s, base[1] * s] as [number, number]) : base * s;
   }, [eff, vis.resolutionScale]);
 
   return (
@@ -2320,5 +2292,3 @@ function Stadium3DImpl({
  * reconstruir a árvore 3D. Só mudanças reais de sim/câmera/qualidade renderizam.
  */
 export const Stadium3D = memo(Stadium3DImpl);
-
-

@@ -55,7 +55,6 @@ async function getJson<T>(url: string, headers: Record<string, string> = {}): Pr
   return null;
 }
 
-
 /* ------------------------------------------------------------------ */
 /* TheSportsDB                                                         */
 /* ------------------------------------------------------------------ */
@@ -191,7 +190,9 @@ export async function sdbSearchTeam(name: string, country?: string): Promise<Rem
  * Fetch every team of a league in a single request.
  * Far cheaper than one search per club on the rate-limited free tier.
  */
-export async function sdbAllTeams(league: string): Promise<(RemoteTeam & { alternate?: string | undefined })[]> {
+export async function sdbAllTeams(
+  league: string,
+): Promise<(RemoteTeam & { alternate?: string | undefined })[]> {
   const key = process.env["THESPORTSDB_API_KEY"] ?? "123";
   const json = await getJson<{ teams: (SdbTeam & { strTeamAlternate?: string })[] | null }>(
     `https://www.thesportsdb.com/api/v1/json/${key}/search_all_teams.php?l=${encodeURIComponent(league)}`,
@@ -201,9 +202,6 @@ export async function sdbAllTeams(league: string): Promise<(RemoteTeam & { alter
     alternate: t.strTeamAlternate ?? undefined,
   }));
 }
-
-
-
 
 /* ------------------------------------------------------------------ */
 /* football-data.org                                                   */
@@ -271,10 +269,11 @@ export async function apiFootballSquad(teamId: string): Promise<RemotePlayer[]> 
 export async function apiFootballTeamId(name: string, country?: string): Promise<string | null> {
   const key = process.env["APIFOOTBALL_API_KEY"];
   if (!key) return null;
-  const json = await getJson<{ response?: { team?: { id?: number; name?: string; country?: string } }[] }>(
-    `https://v3.football.api-sports.io/teams?search=${encodeURIComponent(name)}`,
-    { "x-apisports-key": key },
-  );
+  const json = await getJson<{
+    response?: { team?: { id?: number; name?: string; country?: string } }[];
+  }>(`https://v3.football.api-sports.io/teams?search=${encodeURIComponent(name)}`, {
+    "x-apisports-key": key,
+  });
   const list = json?.response ?? [];
   if (!list.length) return null;
   const wanted = normalise(name);

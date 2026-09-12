@@ -61,18 +61,9 @@ const PT: Pack = {
     "Arriscou de fora da área o {team}!",
     "Finaliza o {team}, e o goleiro leva perigo!",
   ],
-  post: [
-    "NA TRAVE! O {team} quase marcou!",
-    "Explodiu no poste! Que azar do {team}!",
-  ],
-  chance: [
-    "Perigo! O {team} chega com tudo!",
-    "Que jogada do {team}! O ataque desceu bonito!",
-  ],
-  foul: [
-    "Faltou o {team}. O árbitro marca.",
-    "Parou o lance: falta do {team}.",
-  ],
+  post: ["NA TRAVE! O {team} quase marcou!", "Explodiu no poste! Que azar do {team}!"],
+  chance: ["Perigo! O {team} chega com tudo!", "Que jogada do {team}! O ataque desceu bonito!"],
+  foul: ["Faltou o {team}. O árbitro marca.", "Parou o lance: falta do {team}."],
   card: [
     "Cartão para o {team}! O árbitro não perdoou.",
     "Vai anotar! Cartão para o jogador do {team}.",
@@ -89,10 +80,7 @@ const EN: Pack = {
     "OH, THAT IS BRILLIANT! Goal for {team}!",
     "The stadium erupts — {team} score!",
   ],
-  save: [
-    "WHAT A SAVE! The {team} keeper is on fire!",
-    "Superb stop! {team} survive that one!",
-  ],
+  save: ["WHAT A SAVE! The {team} keeper is on fire!", "Superb stop! {team} survive that one!"],
   shot: ["{team} let fly — just wide!", "A crack at goal from {team}!"],
   post: ["OFF THE WOODWORK! So close for {team}!", "The post denies {team}!"],
   chance: ["Danger here! {team} pour forward!", "Lovely move from {team}!"],

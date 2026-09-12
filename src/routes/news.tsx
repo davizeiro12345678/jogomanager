@@ -12,10 +12,18 @@ export const Route = createFileRoute("/news")({
       { title: "Notícias · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Notícias · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content: "Notícias · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -44,10 +52,7 @@ function NewsPage() {
           {career.news.map((n) => {
             const style = KIND_STYLE[n.kind] ?? KIND_STYLE.sistema;
             return (
-              <li
-                key={n.id}
-                className="rounded-xl border border-border/40 bg-background/40 p-4"
-              >
+              <li key={n.id} className="rounded-xl border border-border/40 bg-background/40 p-4">
                 <div className="flex items-center gap-2">
                   <span
                     className={`rounded px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${style.cls}`}
@@ -64,7 +69,9 @@ function NewsPage() {
             );
           })}
           {career.news.length === 0 ? (
-            <li className="text-muted-foreground">Nenhuma notícia ainda. Jogue a primeira rodada!</li>
+            <li className="text-muted-foreground">
+              Nenhuma notícia ainda. Jogue a primeira rodada!
+            </li>
           ) : null}
         </ul>
       </section>

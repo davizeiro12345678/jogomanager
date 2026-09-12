@@ -21,16 +21,45 @@ function chanceToRetire(p: Player, rnd: () => number) {
 function attrs(pos: Position, ovr: number, rnd: () => number) {
   const j = (v: number) => Math.max(35, Math.min(99, Math.round(v + rnd() * 8 - 4)));
   if (pos === "GK")
-    return { pace: j(ovr - 20), shooting: j(ovr - 40), passing: j(ovr - 12), defending: j(ovr), physical: j(ovr - 4) };
+    return {
+      pace: j(ovr - 20),
+      shooting: j(ovr - 40),
+      passing: j(ovr - 12),
+      defending: j(ovr),
+      physical: j(ovr - 4),
+    };
   if (pos === "DF")
-    return { pace: j(ovr - 4), shooting: j(ovr - 25), passing: j(ovr - 8), defending: j(ovr + 4), physical: j(ovr + 3) };
+    return {
+      pace: j(ovr - 4),
+      shooting: j(ovr - 25),
+      passing: j(ovr - 8),
+      defending: j(ovr + 4),
+      physical: j(ovr + 3),
+    };
   if (pos === "MF")
-    return { pace: j(ovr - 2), shooting: j(ovr - 8), passing: j(ovr + 4), defending: j(ovr - 6), physical: j(ovr - 2) };
-  return { pace: j(ovr + 3), shooting: j(ovr + 4), passing: j(ovr - 6), defending: j(ovr - 22), physical: j(ovr - 2) };
+    return {
+      pace: j(ovr - 2),
+      shooting: j(ovr - 8),
+      passing: j(ovr + 4),
+      defending: j(ovr - 6),
+      physical: j(ovr - 2),
+    };
+  return {
+    pace: j(ovr + 3),
+    shooting: j(ovr + 4),
+    passing: j(ovr - 6),
+    defending: j(ovr - 22),
+    physical: j(ovr - 2),
+  };
 }
 
 /** Cria um jovem da base do clube, já com potencial e personalidade. */
-export function makeYouth(clubId: string, index: number, season: number, rnd: () => number): Player {
+export function makeYouth(
+  clubId: string,
+  index: number,
+  season: number,
+  rnd: () => number,
+): Player {
   const club = CLUBS[clubId];
   const pool = poolForLeague(club?.league ?? "bra");
   const name = `${pool.first[Math.floor(rnd() * pool.first.length)]} ${pool.last[Math.floor(rnd() * pool.last.length)]}`;

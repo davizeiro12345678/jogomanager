@@ -20,16 +20,24 @@ export const Route = createFileRoute("/cadastro")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Cadastrar clubes e jogadores · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      {
+        title:
+          "Cadastrar clubes e jogadores · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
       {
         name: "description",
         content:
           "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Cadastro de clubes e jogadores · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      {
+        property: "og:title",
+        content:
+          "Cadastro de clubes e jogadores · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
       {
         property: "og:description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -178,7 +186,9 @@ function ClubTab({ data, onChange }: { data: CustomData; onChange: () => void })
       <div className="rounded-xl border border-border/60 surface-card p-5 backdrop-blur">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className={labelCls} htmlFor="liga">Liga</label>
+            <label className={labelCls} htmlFor="liga">
+              Liga
+            </label>
             <select
               id="liga"
               className={inputCls}
@@ -193,7 +203,9 @@ function ClubTab({ data, onChange }: { data: CustomData; onChange: () => void })
             </select>
           </div>
           <div>
-            <label className={labelCls} htmlFor="clube">Clube que você quer personalizar</label>
+            <label className={labelCls} htmlFor="clube">
+              Clube que você quer personalizar
+            </label>
             <select
               id="clube"
               className={inputCls}
@@ -208,11 +220,20 @@ function ClubTab({ data, onChange }: { data: CustomData; onChange: () => void })
             </select>
           </div>
           <div>
-            <label className={labelCls} htmlFor="nome">Nome</label>
-            <input id="nome" className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
+            <label className={labelCls} htmlFor="nome">
+              Nome
+            </label>
+            <input
+              id="nome"
+              className={inputCls}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
           <div>
-            <label className={labelCls} htmlFor="sigla">Sigla (3 letras)</label>
+            <label className={labelCls} htmlFor="sigla">
+              Sigla (3 letras)
+            </label>
             <input
               id="sigla"
               className={inputCls}
@@ -222,15 +243,33 @@ function ClubTab({ data, onChange }: { data: CustomData; onChange: () => void })
             />
           </div>
           <div>
-            <label className={labelCls} htmlFor="cor1">Cor principal do uniforme</label>
-            <input id="cor1" type="color" className={`${inputCls} h-11 p-1`} value={primary} onChange={(e) => setPrimary(e.target.value)} />
+            <label className={labelCls} htmlFor="cor1">
+              Cor principal do uniforme
+            </label>
+            <input
+              id="cor1"
+              type="color"
+              className={`${inputCls} h-11 p-1`}
+              value={primary}
+              onChange={(e) => setPrimary(e.target.value)}
+            />
           </div>
           <div>
-            <label className={labelCls} htmlFor="cor2">Cor secundária</label>
-            <input id="cor2" type="color" className={`${inputCls} h-11 p-1`} value={secondary} onChange={(e) => setSecondary(e.target.value)} />
+            <label className={labelCls} htmlFor="cor2">
+              Cor secundária
+            </label>
+            <input
+              id="cor2"
+              type="color"
+              className={`${inputCls} h-11 p-1`}
+              value={secondary}
+              onChange={(e) => setSecondary(e.target.value)}
+            />
           </div>
           <div className="sm:col-span-2">
-            <label className={labelCls} htmlFor="escudo">Escudo (imagem)</label>
+            <label className={labelCls} htmlFor="escudo">
+              Escudo (imagem)
+            </label>
             <input
               id="escudo"
               type="file"
@@ -361,8 +400,15 @@ function PlayerTab({ data, onChange }: { data: CustomData; onChange: () => void 
       <div className="rounded-xl border border-border/60 surface-card p-5 backdrop-blur">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className={labelCls} htmlFor="pliga">Liga</label>
-            <select id="pliga" className={inputCls} value={leagueId} onChange={(e) => setLeagueId(e.target.value)}>
+            <label className={labelCls} htmlFor="pliga">
+              Liga
+            </label>
+            <select
+              id="pliga"
+              className={inputCls}
+              value={leagueId}
+              onChange={(e) => setLeagueId(e.target.value)}
+            >
               {LEAGUES.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.name} — {l.country}
@@ -371,8 +417,15 @@ function PlayerTab({ data, onChange }: { data: CustomData; onChange: () => void 
             </select>
           </div>
           <div>
-            <label className={labelCls} htmlFor="pclube">Clube</label>
-            <select id="pclube" className={inputCls} value={clubId} onChange={(e) => setClubId(e.target.value)}>
+            <label className={labelCls} htmlFor="pclube">
+              Clube
+            </label>
+            <select
+              id="pclube"
+              className={inputCls}
+              value={clubId}
+              onChange={(e) => setClubId(e.target.value)}
+            >
               {league.clubs.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -381,12 +434,26 @@ function PlayerTab({ data, onChange }: { data: CustomData; onChange: () => void 
             </select>
           </div>
           <div>
-            <label className={labelCls} htmlFor="pnome">Nome</label>
-            <input id="pnome" className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
+            <label className={labelCls} htmlFor="pnome">
+              Nome
+            </label>
+            <input
+              id="pnome"
+              className={inputCls}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
           <div>
-            <label className={labelCls} htmlFor="ppos">Posição</label>
-            <select id="ppos" className={inputCls} value={pos} onChange={(e) => setPos(e.target.value as Position)}>
+            <label className={labelCls} htmlFor="ppos">
+              Posição
+            </label>
+            <select
+              id="ppos"
+              className={inputCls}
+              value={pos}
+              onChange={(e) => setPos(e.target.value as Position)}
+            >
               {POSITIONS.map((p) => (
                 <option key={p} value={p}>
                   {POS_LABEL[p]}
@@ -395,27 +462,79 @@ function PlayerTab({ data, onChange }: { data: CustomData; onChange: () => void 
             </select>
           </div>
           <div>
-            <label className={labelCls} htmlFor="pidade">Idade</label>
-            <input id="pidade" type="number" min={15} max={44} className={inputCls} value={age} onChange={(e) => setAge(Number(e.target.value))} />
+            <label className={labelCls} htmlFor="pidade">
+              Idade
+            </label>
+            <input
+              id="pidade"
+              type="number"
+              min={15}
+              max={44}
+              className={inputCls}
+              value={age}
+              onChange={(e) => setAge(Number(e.target.value))}
+            />
           </div>
           <div>
-            <label className={labelCls} htmlFor="povr">Nível geral (35–99)</label>
-            <input id="povr" type="number" min={35} max={99} className={inputCls} value={ovr} onChange={(e) => setOvr(Number(e.target.value))} />
+            <label className={labelCls} htmlFor="povr">
+              Nível geral (35–99)
+            </label>
+            <input
+              id="povr"
+              type="number"
+              min={35}
+              max={99}
+              className={inputCls}
+              value={ovr}
+              onChange={(e) => setOvr(Number(e.target.value))}
+            />
           </div>
           <div>
-            <label className={labelCls} htmlFor="pcont">Contrato (anos)</label>
-            <input id="pcont" type="number" min={1} max={6} className={inputCls} value={contractYears} onChange={(e) => setContractYears(Number(e.target.value))} />
+            <label className={labelCls} htmlFor="pcont">
+              Contrato (anos)
+            </label>
+            <input
+              id="pcont"
+              type="number"
+              min={1}
+              max={6}
+              className={inputCls}
+              value={contractYears}
+              onChange={(e) => setContractYears(Number(e.target.value))}
+            />
           </div>
           <div>
-            <label className={labelCls} htmlFor="psal">Salário semanal (milhões)</label>
-            <input id="psal" type="number" step="0.05" min={0} className={inputCls} value={wage} onChange={(e) => setWage(Number(e.target.value))} />
+            <label className={labelCls} htmlFor="psal">
+              Salário semanal (milhões)
+            </label>
+            <input
+              id="psal"
+              type="number"
+              step="0.05"
+              min={0}
+              className={inputCls}
+              value={wage}
+              onChange={(e) => setWage(Number(e.target.value))}
+            />
           </div>
           <div>
-            <label className={labelCls} htmlFor="pval">Valor de mercado (milhões)</label>
-            <input id="pval" type="number" step="0.5" min={0} className={inputCls} value={value} onChange={(e) => setValue(Number(e.target.value))} />
+            <label className={labelCls} htmlFor="pval">
+              Valor de mercado (milhões)
+            </label>
+            <input
+              id="pval"
+              type="number"
+              step="0.5"
+              min={0}
+              className={inputCls}
+              value={value}
+              onChange={(e) => setValue(Number(e.target.value))}
+            />
           </div>
           <div>
-            <label className={labelCls} htmlFor="pfoto">Foto</label>
+            <label className={labelCls} htmlFor="pfoto">
+              Foto
+            </label>
             <input
               id="pfoto"
               type="file"

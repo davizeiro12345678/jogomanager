@@ -84,7 +84,9 @@ function clamp(v: number, a: number, b: number) {
 /** Aplica os efeitos da escolha da semana antes de resolver a rodada. */
 export function applyWeekAction(state: CareerState, action: WeekActionId): CareerState {
   const players = { ...state.players };
-  const bump = (fn: (p: CareerState["players"][string]) => Partial<CareerState["players"][string]>) => {
+  const bump = (
+    fn: (p: CareerState["players"][string]) => Partial<CareerState["players"][string]>,
+  ) => {
     for (const id of Object.keys(players)) {
       const p = players[id]!;
       if (p.clubId !== state.clubId) continue;
@@ -101,7 +103,10 @@ export function applyWeekAction(state: CareerState, action: WeekActionId): Caree
   switch (action) {
     case "treino-tatico":
       intensity = 1;
-      bump((p) => ({ morale: clamp(p.morale + 2, 0, 100), form: clamp((p.form ?? 60) + 4, 0, 100) }));
+      bump((p) => ({
+        morale: clamp(p.morale + 2, 0, 100),
+        form: clamp((p.form ?? 60) + 4, 0, 100),
+      }));
       break;
     case "treino-fisico":
       intensity = 2;
@@ -149,7 +154,15 @@ export function applyWeekAction(state: CareerState, action: WeekActionId): Caree
   const focus = FOCUS_BY_ACTION[action];
   if (focus) training = focus;
 
-  return { ...state, players, approval, fanApproval, pressure, training, trainingIntensity: intensity };
+  return {
+    ...state,
+    players,
+    approval,
+    fanApproval,
+    pressure,
+    training,
+    trainingIntensity: intensity,
+  };
 }
 
 export interface CoachWeek extends AutoWeek {
@@ -160,7 +173,11 @@ export interface CoachWeek extends AutoWeek {
 }
 
 /** Escolhe uma cena de história de acordo com o momento da carreira. */
-export function pickStoryScene(before: CareerState, after: CareerState, week: AutoWeek): string | undefined {
+export function pickStoryScene(
+  before: CareerState,
+  after: CareerState,
+  week: AutoWeek,
+): string | undefined {
   const seen = new Set(after.seenScenes ?? []);
   const once = (id: string) => (seen.has(id) ? undefined : id);
 

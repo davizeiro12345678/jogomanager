@@ -13,7 +13,6 @@ import {
   footballDataSquad,
 } from "./football-api.server";
 
-
 type Admin = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 
 async function admin(): Promise<Admin> {
@@ -102,10 +101,12 @@ async function enrichOne(db: Admin, club: ClubRow): Promise<boolean> {
   }
 
   if (remote.kitUrl) {
-    await db.from("kits").upsert(
-      { club_id: club.id, season: "2025-2026", kind: "home", image_url: remote.kitUrl },
-      { onConflict: "club_id,season,kind" },
-    );
+    await db
+      .from("kits")
+      .upsert(
+        { club_id: club.id, season: "2025-2026", kind: "home", image_url: remote.kitUrl },
+        { onConflict: "club_id,season,kind" },
+      );
   }
 
   return true;
@@ -321,21 +322,33 @@ export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
 
       if (hit.externalId) {
         await db.from("club_external_ids").upsert(
-          { club_id: club.id, source: "thesportsdb", external_id: hit.externalId, confirmed: true },
+          {
+            club_id: club.id,
+            source: "thesportsdb",
+            external_id: hit.externalId,
+            confirmed: true,
+          },
           { onConflict: "club_id,source" },
         );
       }
       if (hit.apiFootballId) {
         await db.from("club_external_ids").upsert(
-          { club_id: club.id, source: "api-football", external_id: hit.apiFootballId, confirmed: true },
+          {
+            club_id: club.id,
+            source: "api-football",
+            external_id: hit.apiFootballId,
+            confirmed: true,
+          },
           { onConflict: "club_id,source" },
         );
       }
       if (hit.kitUrl) {
-        await db.from("kits").upsert(
-          { club_id: club.id, season: "2025-2026", kind: "home", image_url: hit.kitUrl },
-          { onConflict: "club_id,season,kind" },
-        );
+        await db
+          .from("kits")
+          .upsert(
+            { club_id: club.id, season: "2025-2026", kind: "home", image_url: hit.kitUrl },
+            { onConflict: "club_id,season,kind" },
+          );
       }
       matched += 1;
     }
@@ -343,7 +356,6 @@ export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
 
   return { matched, fetchedTeams, unmatched };
 }
-
 
 /** Import real squads for a batch of clubs, using whichever squad API has a key. */
 export async function importSquads(limit = 200, offset = 0, concurrency = 6, budgetMs = 45_000) {
@@ -359,7 +371,11 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
   let imported = 0;
 
   await pool(rows ?? [], concurrency, deadline, async (club) => {
-    const { data: existing } = await db.from("players").select("id").eq("club_id", club.id).limit(1);
+    const { data: existing } = await db
+      .from("players")
+      .select("id")
+      .eq("club_id", club.id)
+      .limit(1);
     if (existing && existing.length) return;
 
     const { data: ext } = await db
@@ -454,7 +470,6 @@ export async function importEverything(opts: {
   };
 }
 
-
 export async function runSync(opts: {
   scope?: string;
   limit?: number;
@@ -477,13 +492,27 @@ export async function runSync(opts: {
       const r = await seedFromBundledData();
       items = r.clubs;
     } else if (scope === "squads") {
-      items = (await importSquads(opts.limit ?? 200, opts.offset ?? 0, opts.concurrency ?? 6, opts.budgetMs ?? 45_000)).imported;
+      items = (
+        await importSquads(
+          opts.limit ?? 200,
+          opts.offset ?? 0,
+          opts.concurrency ?? 6,
+          opts.budgetMs ?? 45_000,
+        )
+      ).imported;
     } else if (scope === "all") {
       const r = await importEverything(opts);
       detail = r;
       items = r.bulkMatched + r.clubsEnriched + r.playersImported;
     } else {
-      items = (await enrichClubs(opts.limit ?? 400, opts.offset ?? 0, opts.concurrency ?? 8, opts.budgetMs ?? 45_000)).imported;
+      items = (
+        await enrichClubs(
+          opts.limit ?? 400,
+          opts.offset ?? 0,
+          opts.concurrency ?? 8,
+          opts.budgetMs ?? 45_000,
+        )
+      ).imported;
     }
     if (run?.id) {
       await db
@@ -493,7 +522,6 @@ export async function runSync(opts: {
     }
     return { ok: true as const, scope, items, detail };
   } catch (e) {
-
     const message = e instanceof Error ? e.message : String(e);
     if (run?.id) {
       await db

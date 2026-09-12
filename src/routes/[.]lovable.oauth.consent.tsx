@@ -7,8 +7,7 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   // Browser-only: the Supabase session lives in localStorage, absent on SSR.
   ssr: false,
   validateSearch: (s: Record<string, unknown>) => ({
-    authorization_id:
-      typeof s["authorization_id"] === "string" ? s["authorization_id"] : "",
+    authorization_id: typeof s["authorization_id"] === "string" ? s["authorization_id"] : "",
   }),
   beforeLoad: async ({ search, location }) => {
     if (!search.authorization_id) throw new Error("Missing authorization_id");
@@ -19,11 +18,8 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
     }
   },
   loader: async ({ location }) => {
-    const authorizationId = new URLSearchParams(location.search).get(
-      "authorization_id",
-    )!;
-    const { data, error } =
-      await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
+    const authorizationId = new URLSearchParams(location.search).get("authorization_id")!;
+    const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
     if (error) throw error;
     const details = data as {
       redirect_url?: string;
@@ -65,9 +61,7 @@ function Consent() {
       setError(error.message);
       return;
     }
-    const result = data as
-      | { redirect_url?: string; redirect_to?: string }
-      | null;
+    const result = data as { redirect_url?: string; redirect_to?: string } | null;
     const target = result?.redirect_url ?? result?.redirect_to;
     if (!target) {
       setBusy(false);
@@ -80,18 +74,13 @@ function Consent() {
   return (
     <main className="pitch-bg flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/85 p-6 backdrop-blur-xl">
-        <Link
-          to="/"
-          className="font-display text-xs uppercase tracking-[0.3em] text-primary"
-        >
+        <Link to="/" className="font-display text-xs uppercase tracking-[0.3em] text-primary">
           Manager 3D
         </Link>
-        <h1 className="mt-2 font-display text-2xl">
-          Conectar {clientName} à sua conta
-        </h1>
+        <h1 className="mt-2 font-display text-2xl">Conectar {clientName} à sua conta</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Isso permite que {clientName} use o Manager 3D como você — ler e
-          atualizar sua carreira de técnico enquanto você estiver conectado.
+          Isso permite que {clientName} use o Manager 3D como você — ler e atualizar sua carreira de
+          técnico enquanto você estiver conectado.
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
           Isso não ignora as permissões e políticas de dados do jogo.

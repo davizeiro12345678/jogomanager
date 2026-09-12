@@ -15,10 +15,18 @@ export const Route = createFileRoute("/cup")({
       { title: "Copas e torneios · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Copas e torneios · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content: "Copas e torneios · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -85,7 +93,9 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {cup.groups.map((g) => (
             <div key={g.label} className="rounded-xl bg-secondary/40 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Grupo {g.label}</p>
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Grupo {g.label}
+              </p>
               <table className="mt-1.5 w-full text-sm">
                 <thead className="text-[11px] uppercase text-muted-foreground">
                   <tr>
@@ -99,7 +109,13 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
                   {groupTable(g).map((r, i) => (
                     <tr
                       key={r.clubId}
-                      className={r.clubId === clubId ? "bg-primary/10" : i < 2 ? "text-foreground" : "text-muted-foreground"}
+                      className={
+                        r.clubId === clubId
+                          ? "bg-primary/10"
+                          : i < 2
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                      }
                     >
                       <td className="truncate py-0.5">
                         <span className="flex items-center gap-1.5">
@@ -125,7 +141,9 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
       <div className="mt-4 space-y-4">
         {stages.map((s) => (
           <div key={s}>
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{stageName(s)}</p>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              {stageName(s)}
+            </p>
             <ul className="mt-1.5 space-y-1">
               {cup.ties
                 .filter((t) => t.round === s)

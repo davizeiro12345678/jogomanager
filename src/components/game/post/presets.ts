@@ -74,11 +74,7 @@ const TIME_TINT: Record<PostTime, Partial<PostPreset>> = {
 };
 
 /** Preset final combinando momento, horário e nível de qualidade. */
-export function postPreset(
-  quality: PostQuality,
-  moment: PostMoment,
-  time: PostTime,
-): PostPreset {
+export function postPreset(quality: PostQuality, moment: PostMoment, time: PostTime): PostPreset {
   const base = BASE[moment];
   const tint = TIME_TINT[time];
   const p: PostPreset = {

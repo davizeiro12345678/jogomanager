@@ -9,7 +9,6 @@ import { getPurchases } from "@/lib/purchases.functions";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { track } from "@/lib/analytics";
 
-
 export const Route = createFileRoute("/checkout/return")({
   ssr: false,
   head: () => ({
@@ -18,12 +17,17 @@ export const Route = createFileRoute("/checkout/return")({
       { title: "Resultado do pagamento · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Resultado do pagamento · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      {
+        property: "og:title",
+        content: "Resultado do pagamento · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
       {
         property: "og:description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -68,7 +72,6 @@ function CheckoutReturn() {
     }
   }, [fetchPurchases, sessionId]);
 
-
   useEffect(() => {
     if (!sessionId) return;
     let alive = true;
@@ -103,7 +106,6 @@ function CheckoutReturn() {
       clearInterval(timer);
     };
   }, [sessionId, check, claimSession]);
-
 
   return (
     <div className="pitch-bg flex min-h-screen items-center justify-center px-4 py-6">
@@ -151,7 +153,9 @@ function CheckoutReturn() {
         {status === "error" && (
           <>
             <XCircle className="mx-auto mb-4 h-10 w-10 text-red-500" />
-            <h1 className="font-display text-xl uppercase tracking-wide">Pagamento não concluído</h1>
+            <h1 className="font-display text-xl uppercase tracking-wide">
+              Pagamento não concluído
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Não recebemos a confirmação da transação. Se o valor foi cobrado, ele aparece em
               minhas compras assim que o banco confirmar.

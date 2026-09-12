@@ -34,7 +34,10 @@ const hit = (u: number, peak = 0.45) =>
 const ease = (u: number) => u * u * (3 - 2 * u);
 
 /** ciclo genérico de passada (caminhar / correr / sprintar) */
-function gait(c: ClipCtx, opts: { rate: number; amp: number; knee: number; armAmp: number; lean: number; bob: number }): Pose {
+function gait(
+  c: ClipCtx,
+  opts: { rate: number; amp: number; knee: number; armAmp: number; lean: number; bob: number },
+): Pose {
   const t = c.t * opts.rate + c.seed;
   const s = sin(t);
   const s2 = sin(t + Math.PI);
@@ -85,17 +88,35 @@ function idleBase(c: ClipCtx, k = 1): Pose {
 const BASE_CLIPS = {
   // ---- locomoção (12)
   idle: (c) => idleBase(c),
-  breathe: (c) => mixPose(idleBase(c), pose({ chest: 0.1, spine: 0.1, headPitch: 0.06 }), 0.4 + sin(c.t * 1.2) * 0.3),
+  breathe: (c) =>
+    mixPose(
+      idleBase(c),
+      pose({ chest: 0.1, spine: 0.1, headPitch: 0.06 }),
+      0.4 + sin(c.t * 1.2) * 0.3,
+    ),
   weightShift: (c) =>
-    mixPose(idleBase(c), pose({ hipRoll: sin(c.t * 0.8 + c.seed) * 0.12, hipYaw: sin(c.t * 0.5) * 0.1, kneeL: -0.2 }), 0.6),
+    mixPose(
+      idleBase(c),
+      pose({ hipRoll: sin(c.t * 0.8 + c.seed) * 0.12, hipYaw: sin(c.t * 0.5) * 0.1, kneeL: -0.2 }),
+      0.6,
+    ),
   walk: (c) => gait(c, { rate: 4.4, amp: 0.42, knee: 0.7, armAmp: 0.3, lean: 0.05, bob: 0.02 }),
   jog: (c) => gait(c, { rate: 7, amp: 0.6, knee: 1.05, armAmp: 0.55, lean: 0.12, bob: 0.035 }),
   run: (c) => gait(c, { rate: 9, amp: 0.78, knee: 1.35, armAmp: 0.8, lean: 0.2, bob: 0.05 }),
-  sprint: (c) => gait(c, { rate: 11.5, amp: 0.95, knee: 1.65, armAmp: 1.05, lean: 0.32, bob: 0.06 }),
+  sprint: (c) =>
+    gait(c, { rate: 11.5, amp: 0.95, knee: 1.65, armAmp: 1.05, lean: 0.32, bob: 0.06 }),
   decelerate: (c) =>
-    mixPose(gait(c, { rate: 5, amp: 0.5, knee: 0.9, armAmp: 0.5, lean: -0.12, bob: 0.02 }), pose({ hipPitch: -0.22, legLPitch: 0.5, kneeR: -0.7, armLRoll: 0.6, armRRoll: -0.6 }), 0.5),
+    mixPose(
+      gait(c, { rate: 5, amp: 0.5, knee: 0.9, armAmp: 0.5, lean: -0.12, bob: 0.02 }),
+      pose({ hipPitch: -0.22, legLPitch: 0.5, kneeR: -0.7, armLRoll: 0.6, armRRoll: -0.6 }),
+      0.5,
+    ),
   turn: (c) =>
-    mixPose(gait(c, { rate: 7, amp: 0.5, knee: 1, armAmp: 0.5, lean: 0.1, bob: 0.03 }), pose({ hipYaw: 0.35, hipRoll: 0.14, chest: -0.12, headYaw: 0.3 }), 0.6),
+    mixPose(
+      gait(c, { rate: 7, amp: 0.5, knee: 1, armAmp: 0.5, lean: 0.1, bob: 0.03 }),
+      pose({ hipYaw: 0.35, hipRoll: 0.14, chest: -0.12, headYaw: 0.3 }),
+      0.6,
+    ),
   sideStep: (c) =>
     pose({
       hipY: Math.abs(sin(c.t * 6)) * 0.03,
@@ -113,13 +134,38 @@ const BASE_CLIPS = {
       spine: 0.12,
     }),
   backpedal: (c) =>
-    mixPose(gait(c, { rate: 6.5, amp: 0.45, knee: 0.9, armAmp: 0.45, lean: -0.16, bob: 0.03 }), pose({ headPitch: 0.12, chest: -0.1 }), 0.5),
+    mixPose(
+      gait(c, { rate: 6.5, amp: 0.45, knee: 0.9, armAmp: 0.45, lean: -0.16, bob: 0.03 }),
+      pose({ headPitch: 0.12, chest: -0.1 }),
+      0.5,
+    ),
   tired: (c) =>
-    mixPose(gait(c, { rate: 5, amp: 0.4, knee: 0.8, armAmp: 0.25, lean: 0.28, bob: 0.02 }), pose({ spine: 0.4, headPitch: 0.3, armLRoll: 0.4, armRRoll: -0.4, elbowL: -1.1, elbowR: -1.1 }), 0.55),
+    mixPose(
+      gait(c, { rate: 5, amp: 0.4, knee: 0.8, armAmp: 0.25, lean: 0.28, bob: 0.02 }),
+      pose({
+        spine: 0.4,
+        headPitch: 0.3,
+        armLRoll: 0.4,
+        armRRoll: -0.4,
+        elbowL: -1.1,
+        elbowR: -1.1,
+      }),
+      0.55,
+    ),
 
   // ---- com a bola (10)
-  dribbleLight: (c) => mixPose(gait(c, { rate: 6, amp: 0.5, knee: 1, armAmp: 0.4, lean: 0.14, bob: 0.03 }), pose({ headPitch: 0.22, spine: 0.16 }), 0.5),
-  dribbleFast: (c) => mixPose(gait(c, { rate: 10, amp: 0.85, knee: 1.4, armAmp: 0.9, lean: 0.28, bob: 0.05 }), pose({ headPitch: 0.16 }), 0.35),
+  dribbleLight: (c) =>
+    mixPose(
+      gait(c, { rate: 6, amp: 0.5, knee: 1, armAmp: 0.4, lean: 0.14, bob: 0.03 }),
+      pose({ headPitch: 0.22, spine: 0.16 }),
+      0.5,
+    ),
+  dribbleFast: (c) =>
+    mixPose(
+      gait(c, { rate: 10, amp: 0.85, knee: 1.4, armAmp: 0.9, lean: 0.28, bob: 0.05 }),
+      pose({ headPitch: 0.16 }),
+      0.35,
+    ),
   feint: (c) =>
     pose({
       hipRoll: sin(c.t * 9) * 0.28,
@@ -469,7 +515,12 @@ const BASE_CLIPS = {
       armRRoll: -0.9,
       headPitch: 0.2,
     }),
-  recover: (c) => mixPose(gait(c, { rate: 10, amp: 0.85, knee: 1.4, armAmp: 0.9, lean: 0.3, bob: 0.05 }), pose({ headYaw: sin(c.t * 2) * 0.35 }), 0.4),
+  recover: (c) =>
+    mixPose(
+      gait(c, { rate: 10, amp: 0.85, knee: 1.4, armAmp: 0.9, lean: 0.3, bob: 0.05 }),
+      pose({ headYaw: sin(c.t * 2) * 0.35 }),
+      0.4,
+    ),
 
   // ---- goleiro (8)
   gkStance: (c) =>
@@ -674,9 +725,30 @@ const BASE_CLIPS = {
       headPitch: 0.2,
     }),
   whistleStop: (c) =>
-    mixPose(idleBase(c, 0.6), pose({ hipRoll: 0.06, armLRoll: 0.3, armRRoll: -0.3, headYaw: sin(c.t * 0.9) * 0.35, spine: 0.08 }), 0.7),
+    mixPose(
+      idleBase(c, 0.6),
+      pose({
+        hipRoll: 0.06,
+        armLRoll: 0.3,
+        armRRoll: -0.3,
+        headYaw: sin(c.t * 0.9) * 0.35,
+        spine: 0.08,
+      }),
+      0.7,
+    ),
   restart: (c) =>
-    mixPose(idleBase(c, 0.5), pose({ legLPitch: 0.18, kneeL: -0.3, armLRoll: 0.4, armRRoll: -0.4, headPitch: 0.12, hipRoll: sin(c.t * 1.6) * 0.08 }), 0.75),
+    mixPose(
+      idleBase(c, 0.5),
+      pose({
+        legLPitch: 0.18,
+        kneeL: -0.3,
+        armLRoll: 0.4,
+        armRRoll: -0.4,
+        headPitch: 0.12,
+        hipRoll: sin(c.t * 1.6) * 0.08,
+      }),
+      0.75,
+    ),
 
   // ---- reações (6)
   celebrateArms: (c) =>
@@ -697,7 +769,19 @@ const BASE_CLIPS = {
       kneeR: -0.35,
     }),
   celebrateRun: (c) =>
-    mixPose(gait(c, { rate: 10, amp: 0.8, knee: 1.3, armAmp: 0.3, lean: 0.1, bob: 0.06 }), pose({ armLPitch: -2.2, armRPitch: -2.2, armLRoll: 1.1, armRRoll: -1.1, headPitch: -0.25, elbowL: -0.2, elbowR: -0.2 }), 0.65),
+    mixPose(
+      gait(c, { rate: 10, amp: 0.8, knee: 1.3, armAmp: 0.3, lean: 0.1, bob: 0.06 }),
+      pose({
+        armLPitch: -2.2,
+        armRPitch: -2.2,
+        armLRoll: 1.1,
+        armRRoll: -1.1,
+        headPitch: -0.25,
+        elbowL: -0.2,
+        elbowR: -0.2,
+      }),
+      0.65,
+    ),
   kneeSlide: (c) =>
     pose({
       hipY: -0.42,
@@ -892,13 +976,26 @@ export function selectClip(c: SelectCtx): ClipName {
     if (c.speed > 1.6) return pick<ClipName>(["gkShuffle", "gkSideShuffle"], c, 2);
     if (c.ballDist < 14) return pick<ClipName>(["gkPenaltyReady", "gkStance"], c, 4);
     if (c.ballDist > 55)
-      return pick<ClipName>(["gkStance", "gkWallSetup", "gkOrganize", "gkBounceBall", "handsOnHips"], c, 6);
+      return pick<ClipName>(
+        ["gkStance", "gkWallSetup", "gkOrganize", "gkBounceBall", "handsOnHips"],
+        c,
+        6,
+      );
     return pick<ClipName>(["gkStance", "gkOrganize"], c, 5);
   }
 
   if (c.stopped)
     return pick<ClipName>(
-      ["whistleStop", "restart", "lineUpPose", "freeKickWall", "handsOnHips", "huddleTalk", "drinkWater", "adjustSocks"],
+      [
+        "whistleStop",
+        "restart",
+        "lineUpPose",
+        "freeKickWall",
+        "handsOnHips",
+        "huddleTalk",
+        "drinkWater",
+        "adjustSocks",
+      ],
       c,
       3,
     );
@@ -906,15 +1003,39 @@ export function selectClip(c: SelectCtx): ClipName {
   const sp = c.speed;
   if (c.hasBall) {
     if (sp > 7.2) return "knockOn";
-    if (sp > 5.4) return pick<ClipName>(["dribbleFast", "dribbleSlalom", "oneTwoRun", "crossoverDribble"], c, 2);
+    if (sp > 5.4)
+      return pick<ClipName>(
+        ["dribbleFast", "dribbleSlalom", "oneTwoRun", "crossoverDribble"],
+        c,
+        2,
+      );
     if (sp > 2.4)
-      return pick<ClipName>(["dribbleLight", "closeControl", "dribbleSlalom", "dragPush", "crossoverDribble"], c, 2);
-    if (sp > 1.2) return pick<ClipName>(["closeControl", "shieldBall", "ballRollSole", "shieldTurnOut"], c, 2);
+      return pick<ClipName>(
+        ["dribbleLight", "closeControl", "dribbleSlalom", "dragPush", "crossoverDribble"],
+        c,
+        2,
+      );
+    if (sp > 1.2)
+      return pick<ClipName>(["closeControl", "shieldBall", "ballRollSole", "shieldTurnOut"], c, 2);
     return pick<ClipName>(
       [
-        "feint", "stepover", "scissorsDouble", "dragBack", "cruyffTurn", "heelFlick", "rouletteSpin",
-        "elasticoOut", "elasticoIn", "stepOverSlow", "bodyFeintLeft", "bodyFeintRight", "flipFlap",
-        "fakeShotStop", "scoopLift", "firstTouchAway", "juggleKeepUp",
+        "feint",
+        "stepover",
+        "scissorsDouble",
+        "dragBack",
+        "cruyffTurn",
+        "heelFlick",
+        "rouletteSpin",
+        "elasticoOut",
+        "elasticoIn",
+        "stepOverSlow",
+        "bodyFeintLeft",
+        "bodyFeintRight",
+        "flipFlap",
+        "fakeShotStop",
+        "scoopLift",
+        "firstTouchAway",
+        "juggleKeepUp",
       ],
       c,
       2,
@@ -923,36 +1044,65 @@ export function selectClip(c: SelectCtx): ClipName {
 
   if (sp < 0.35) {
     if (c.defending && c.ballDist < 18)
-      return pick<ClipName>(["mark", "markTight", "jockey", "shoulderToShoulder", "armBarHold"], c, 3);
+      return pick<ClipName>(
+        ["mark", "markTight", "jockey", "shoulderToShoulder", "armBarHold"],
+        c,
+        3,
+      );
     if (c.stamina < 30)
       return pick<ClipName>(["catchBreathKnees", "handsOnHips", "tired", "missSighs"], c, 3);
     return pick<ClipName>(
       [
-        "idle", "breathe", "weightShift", "handsOnHips", "applaudFans", "handsOnHead",
-        "encourageTeammate", "protestHandsOut", "warmUpStretch",
+        "idle",
+        "breathe",
+        "weightShift",
+        "handsOnHips",
+        "applaudFans",
+        "handsOnHead",
+        "encourageTeammate",
+        "protestHandsOut",
+        "warmUpStretch",
       ],
       c,
     );
   }
   if (sp < 1.2) {
     if (c.defending && c.ballDist < 12)
-      return pick<ClipName>(["sideStep", "shuffleLeft", "shuffleRight", "jockey", "sideGallopL", "sideGallopR"], c, 2);
+      return pick<ClipName>(
+        ["sideStep", "shuffleLeft", "shuffleRight", "jockey", "sideGallopL", "sideGallopR"],
+        c,
+        2,
+      );
     if (c.stamina < 28) return "exhaustedWalk";
     return pick<ClipName>(["walk", "stroll", "walkTalk"], c, 5);
   }
   if (sp < 2.6)
-    return c.stamina < 45 ? pick<ClipName>(["tired", "exhaustedWalk"], c, 4) : pick<ClipName>(["walk", "stroll", "joggingBack", "skipStep"], c, 4);
+    return c.stamina < 45
+      ? pick<ClipName>(["tired", "exhaustedWalk"], c, 4)
+      : pick<ClipName>(["walk", "stroll", "joggingBack", "skipStep"], c, 4);
   if (sp < 4.2)
     return c.stamina < 40
       ? pick<ClipName>(["tired", "runTired"], c, 4)
       : pick<ClipName>(["jog", "joggingBack", "runRelaxed", "checkShoulder"], c, 4);
   if (sp < 6.2)
     return c.defending
-      ? pick<ClipName>(["recover", "pressTrigger", "backpedalFast", "leanIntoTurnL", "leanIntoTurnR"], c, 3)
+      ? pick<ClipName>(
+          ["recover", "pressTrigger", "backpedalFast", "leanIntoTurnL", "leanIntoTurnR"],
+          c,
+          3,
+        )
       : c.stamina < 35
         ? pick<ClipName>(["runTired", "runHeavy"], c, 3)
-        : pick<ClipName>(["run", "curveRunLeft", "curveRunRight", "dummyRun", "runHeavy", "accelBurst"], c, 3);
+        : pick<ClipName>(
+            ["run", "curveRunLeft", "curveRunRight", "dummyRun", "runHeavy", "accelBurst"],
+            c,
+            3,
+          );
   return c.defending
     ? pick<ClipName>(["recoverySprint", "sprintFlatOut"], c, 3)
-    : pick<ClipName>(["sprint", "curveRunLeft", "curveRunRight", "sprintFlatOut", "sprintEasing"], c, 3);
+    : pick<ClipName>(
+        ["sprint", "curveRunLeft", "curveRunRight", "sprintFlatOut", "sprintEasing"],
+        c,
+        3,
+      );
 }

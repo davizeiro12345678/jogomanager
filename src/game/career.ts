@@ -35,7 +35,6 @@ import type {
   TransferOffer,
 } from "./types";
 
-
 export function pickLineup(players: Player[], formation: FormationKey) {
   const slots = FORMATIONS[formation];
   const available = [...players]
@@ -54,7 +53,10 @@ export function pickLineup(players: Player[], formation: FormationKey) {
     }
   }
 
-  const bench = available.filter((p) => !taken.has(p.id)).slice(0, 7).map((p) => p.id);
+  const bench = available
+    .filter((p) => !taken.has(p.id))
+    .slice(0, 7)
+    .map((p) => p.id);
   return { lineup, bench };
 }
 
@@ -78,13 +80,20 @@ function enrichPlayer(p: Player): Player {
     injuryWeeks: p.injuryWeeks ?? 0,
     potential:
       p.potential ??
-      Math.min(99, p.ovr + (p.age <= 20 ? 6 + Math.floor(rnd() * 8) : p.age <= 24 ? 3 + Math.floor(rnd() * 6) : Math.floor(rnd() * 3))),
+      Math.min(
+        99,
+        p.ovr +
+          (p.age <= 20
+            ? 6 + Math.floor(rnd() * 8)
+            : p.age <= 24
+              ? 3 + Math.floor(rnd() * 6)
+              : Math.floor(rnd() * 3)),
+      ),
     personality: p.personality ?? PERSONALITIES[Math.floor(rnd() * PERSONALITIES.length)]!,
     form: p.form ?? Math.round((p.morale + p.condition) / 2),
     contractYears: p.contractYears ?? 1 + Math.floor(rnd() * 4),
     releaseClause:
-      p.releaseClause ??
-      Math.round(valueFor(p.ovr, p.age) * (1.8 + rnd() * 1.4) * 10) / 10,
+      p.releaseClause ?? Math.round(valueFor(p.ovr, p.age) * (1.8 + rnd() * 1.4) * 10) / 10,
     unhappy: p.unhappy ?? false,
   };
 }
@@ -123,9 +132,7 @@ function withCustomPlayers(clubId: string, squad: Player[]): Player[] {
     usedNumbers.add(num);
     const player = enrichPlayer(toGamePlayer(cp, num));
 
-    const samePos = list
-      .filter((p) => p.pos === cp.pos)
-      .sort((a, b) => a.ovr - b.ovr)[0];
+    const samePos = list.filter((p) => p.pos === cp.pos).sort((a, b) => a.ovr - b.ovr)[0];
     const weakest = [...list].sort((a, b) => a.ovr - b.ovr)[0];
     const target = samePos ?? weakest;
     const idx = target ? list.findIndex((p) => p.id === target.id) : -1;
@@ -170,9 +177,6 @@ function withRealPlayers(clubId: string, squad: Player[]): Player[] {
   });
 }
 
-
-
-
 export function initCareer(
   leagueId: string,
   clubId: string,
@@ -191,10 +195,7 @@ export function initCareer(
   const rep = profile?.reputation ?? 3;
   const loved = profile?.favClub === clubId;
   const budget = Math.round(club.strength * 0.9 * (0.7 + rep * 0.12) * 10) / 10;
-  const approval = Math.max(
-    20,
-    Math.min(95, (profile?.approval ?? 62) + (loved ? 8 : 0)),
-  );
+  const approval = Math.max(20, Math.min(95, (profile?.approval ?? 62) + (loved ? 8 : 0)));
 
   return {
     version: 3,
@@ -239,7 +240,6 @@ export function initCareer(
   };
 }
 
-
 /** Migra estados antigos (v1/v2) para o formato atual. */
 export function migrateCareer(raw: unknown): CareerState {
   const s = raw as CareerState & { version?: number };
@@ -270,7 +270,8 @@ export function migrateCareer(raw: unknown): CareerState {
       income: 0,
     },
     approval: s.approval ?? 62,
-    objective: s.objective ?? Math.max(1, Math.min(15, Math.round((96 - (club?.strength ?? 70)) / 4))),
+    objective:
+      s.objective ?? Math.max(1, Math.min(15, Math.round((96 - (club?.strength ?? 70)) / 4))),
     news: s.news ?? [],
     trophies: s.trophies ?? [],
     history: s.history ?? [],
@@ -286,13 +287,13 @@ export function migrateCareer(raw: unknown): CareerState {
     jobOffers: s.jobOffers ?? [],
     scoutReports: s.scoutReports ?? [],
     sacked: s.sacked ?? false,
-    managerHistory:
-      s.managerHistory ?? [{ clubId: s.clubId, from: s.season ?? 1, to: null, note: "Contratado" }],
+    managerHistory: s.managerHistory ?? [
+      { clubId: s.clubId, from: s.season ?? 1, to: null, note: "Contratado" },
+    ],
     achievements: s.achievements ?? [],
     achievementsUnlockedAt: s.achievementsUnlockedAt ?? {},
   };
 }
-
 
 export function orderedPositions(): Position[] {
   return ["GK", "DF", "MF", "FW"];
@@ -355,13 +356,14 @@ function applyWeeklyDevelopment(
   // treino leve recupera mais e evolui menos; treino intenso é o contrário
   // Impulso semanal comprado na loja: +25% de treino e +5 de recuperação.
   const boosted = !!state.boostUntil && new Date(state.boostUntil).getTime() > Date.now();
-  const condRegen = baseRegen + (intensity === 0 ? 5 : intensity === 2 ? -5 : 0) + (boosted ? 5 : 0);
+  const condRegen =
+    baseRegen + (intensity === 0 ? 5 : intensity === 2 ? -5 : 0) + (boosted ? 5 : 0);
   const growthMult = (0.75 + intensity * 0.3) * (boosted ? 1.25 : 1);
   const injuryMult = 0.7 + intensity * 0.4;
 
   const next: Record<string, Player> = {};
   for (const [id, p] of Object.entries(players)) {
-    let q = { ...p };
+    const q = { ...p };
 
     // recuperação de lesão e suspensão cumprida
     if (q.injuryWeeks > 0) {
@@ -381,17 +383,11 @@ function applyWeeklyDevelopment(
 
     // condição e moral
     q.condition = Math.max(45, Math.min(100, q.condition + condRegen - 4 + Math.floor(rnd() * 6)));
-    q.morale = Math.max(
-      30,
-      Math.min(99, q.morale + (won ? 3 : -2) + Math.floor(rnd() * 5) - 2),
-    );
+    q.morale = Math.max(30, Math.min(99, q.morale + (won ? 3 : -2) + Math.floor(rnd() * 5) - 2));
 
     // desenvolvimento por idade
     if (q.age <= 23 && rnd() < 0.16 * growthMult) {
-      (q as unknown as Record<string, number>)[attr] = Math.min(
-        99,
-        (q[attr] as number) + 1,
-      );
+      (q as unknown as Record<string, number>)[attr] = Math.min(99, (q[attr] as number) + 1);
       if (rnd() < 0.35) {
         q.ovr = Math.min(99, q.ovr + 1);
         news.push({
@@ -514,7 +510,9 @@ function endSeason(state: CareerState): CareerState {
   // acesso e rebaixamento entre as divisões do país
   const move = applyPyramid(state, table, state.pyramidSlots);
   const nextLeagueId = move?.leagueId ?? state.leagueId;
-  const nextLeagueClubs = move ? { ...(state.leagueClubs ?? {}), ...move.leagueClubs } : state.leagueClubs;
+  const nextLeagueClubs = move
+    ? { ...(state.leagueClubs ?? {}), ...move.leagueClubs }
+    : state.leagueClubs;
   if (move?.moved) {
     const up = move.moved === "subiu";
     news.push({
@@ -639,8 +637,6 @@ export function advanceRound(
     `${state.clubId}-${round}-dev`,
   );
 
-
-
   // finanças semanais
   const table = computeTable({ ...state, fixtures });
   const position = table.findIndex((r) => r.clubId === state.clubId) + 1;
@@ -655,13 +651,13 @@ export function advanceRound(
   const budget = Math.round((state.finances.budget + income - costs) * 100) / 100;
 
   // aprovação da diretoria e da torcida
-  const approval = Math.max(
-    5,
-    Math.min(100, state.approval + (won ? 2.5 : draw ? 0.5 : -2.5)),
-  );
+  const approval = Math.max(5, Math.min(100, state.approval + (won ? 2.5 : draw ? 0.5 : -2.5)));
   const fanApproval = Math.max(
     5,
-    Math.min(100, (state.fanApproval ?? 60) + (won ? 3 : draw ? 0 : -3) - (state.ticketPrice - 45) / 25),
+    Math.min(
+      100,
+      (state.fanApproval ?? 60) + (won ? 3 : draw ? 0 : -3) - (state.ticketPrice - 45) / 25,
+    ),
   );
   const pressure = Math.max(
     0,
@@ -690,7 +686,6 @@ export function advanceRound(
       ? `${CLUBS[played.home]?.name} ${userResult.hg} x ${userResult.ag} ${CLUBS[played.away]?.name} — Rodada ${round}.`
       : "",
   };
-
 
   // histórico partida a partida
   const logEntry = played
@@ -773,7 +768,6 @@ export function advanceRound(
 
   return next;
 }
-
 
 /** Roda as fases de copa que caem nesta rodada. */
 function processCups(state: CareerState, round: number): CareerState {
@@ -924,7 +918,10 @@ export function takeJob(state: CareerState, jobId: string): CareerState {
     jobOffers: [],
     sacked: false,
 
-    managerHistory: [...history, { clubId: job.clubId, from: state.season, to: null, note: "Contratado" }],
+    managerHistory: [
+      ...history,
+      { clubId: job.clubId, from: state.season, to: null, note: "Contratado" },
+    ],
     news: [
       {
         id: `hire-${job.id}`,
@@ -981,7 +978,10 @@ function pickRandomClubId(rnd: () => number, exclude: string): string {
 }
 
 /** Melhora um membro do staff (custo imediato em M€). */
-export function upgradeStaff(state: CareerState, role: keyof ReturnType<typeof defaultStaff>): CareerState {
+export function upgradeStaff(
+  state: CareerState,
+  role: keyof ReturnType<typeof defaultStaff>,
+): CareerState {
   const staff = state.staff ?? defaultStaff();
   const level = staff[role];
   if (level >= 5) return state;
@@ -1024,4 +1024,3 @@ export function runScouting(state: CareerState): CareerState {
   }
   return { ...state, scoutReports: reports };
 }
-

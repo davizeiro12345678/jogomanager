@@ -295,7 +295,10 @@ export function recordCanvas(canvas: HTMLCanvasElement, fps = 30) {
   const mime = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"].find((m) =>
     MediaRecorder.isTypeSupported(m),
   );
-  const rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 6_000_000 } : undefined);
+  const rec = new MediaRecorder(
+    stream,
+    mime ? { mimeType: mime, videoBitsPerSecond: 6_000_000 } : undefined,
+  );
   const chunks: BlobPart[] = [];
   rec.ondataavailable = (e) => {
     if (e.data.size) chunks.push(e.data);

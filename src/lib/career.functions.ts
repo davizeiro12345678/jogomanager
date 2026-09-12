@@ -18,7 +18,6 @@ export const loadCareer = createServerFn({ method: "GET" })
     };
   });
 
-
 export const saveCareer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { state: CareerState }) => input)
@@ -36,10 +35,7 @@ export const saveCareer = createServerFn({ method: "POST" })
 export const deleteCareer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { error } = await context.supabase
-      .from("careers")
-      .delete()
-      .eq("user_id", context.userId);
+    const { error } = await context.supabase.from("careers").delete().eq("user_id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

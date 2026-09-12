@@ -21,7 +21,8 @@ const PackScene = lazy(() =>
 );
 
 const PATH = "/produtos";
-const TITLE = "Pacotes e passe de temporada · Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE =
+  "Pacotes e passe de temporada · Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
   "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
@@ -115,8 +116,8 @@ function ProdutosPage() {
           Pacotes e passe de temporada
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          Tudo aqui é opcional e não muda o resultado das partidas: são atalhos de tempo,
-          informação de olheiros e itens visuais para o seu clube.
+          Tudo aqui é opcional e não muda o resultado das partidas: são atalhos de tempo, informação
+          de olheiros e itens visuais para o seu clube.
         </p>
 
         <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">

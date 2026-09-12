@@ -91,7 +91,12 @@ export function gameLd() {
       gamePlatform: ["Web Browser"],
       applicationCategory: "GameApplication",
       operatingSystem: "Any",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "BRL", availability: "https://schema.org/InStock" },
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "BRL",
+        availability: "https://schema.org/InStock",
+      },
     }),
   };
 }

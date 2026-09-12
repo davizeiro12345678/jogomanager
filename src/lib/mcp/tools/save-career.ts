@@ -22,10 +22,7 @@ export default defineTool({
     const supabase = supabaseForUser(ctx);
     const { error } = await supabase
       .from("careers")
-      .upsert(
-        { user_id: ctx.getUserId(), state: state as never },
-        { onConflict: "user_id" },
-      );
+      .upsert({ user_id: ctx.getUserId(), state: state as never }, { onConflict: "user_id" });
     return error
       ? { content: [{ type: "text", text: error.message }], isError: true }
       : {

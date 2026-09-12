@@ -64,7 +64,8 @@ export function mosaicTexture(a: string, b: string) {
       const band = Math.floor((x + y * 1.4) / 46) % 2 === 0;
       let col = band ? a : b;
       const r = rand();
-      if (r < 0.07) col = "#20252b"; // cartolina não levantada
+      if (r < 0.07)
+        col = "#20252b"; // cartolina não levantada
       else if (r < 0.1) col = "#e8e8e8";
       ctx.fillStyle = col;
       ctx.globalAlpha = 0.82 + rand() * 0.18;

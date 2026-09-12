@@ -18,7 +18,6 @@ const SHOTS = [
   { x: -4, y: 6, z: 0.09 },
 ] as const;
 
-
 import {
   CUTSCENES,
   SPEAKER_LABEL,
@@ -80,7 +79,14 @@ function Person({
   );
 }
 
-function Crowd({ a, b, rows = 4, cols = 22, y = 32, reduced }: {
+function Crowd({
+  a,
+  b,
+  rows = 4,
+  cols = 22,
+  y = 32,
+  reduced,
+}: {
   a: string;
   b: string;
   rows?: number;
@@ -159,7 +165,14 @@ function Backdrop({
           ))}
           <rect x="0" y="160" width="400" height="40" fill="#101a12" />
           <Person x={120} y={140} shirt={a} anim={anim("cs-anim-enter")} />
-          <Person x={150} y={142} s={0.9} shirt="#2b3440" anim={anim("cs-anim-enter")} delay={200} />
+          <Person
+            x={150}
+            y={142}
+            s={0.9}
+            shirt="#2b3440"
+            anim={anim("cs-anim-enter")}
+            delay={200}
+          />
         </>
       )}
 
@@ -212,7 +225,15 @@ function Backdrop({
         <>
           <rect x="0" y="70" width="400" height="130" fill="url(#cs-grass)" />
           {Array.from({ length: 10 }).map((_, i) => (
-            <rect key={i} x={i * 40} y={70} width="20" height="130" fill="#ffffff" opacity="0.035" />
+            <rect
+              key={i}
+              x={i * 40}
+              y={70}
+              width="20"
+              height="130"
+              fill="#ffffff"
+              opacity="0.035"
+            />
           ))}
           {art === "tactics" ? (
             <>
@@ -264,7 +285,14 @@ function Backdrop({
           {[0, 1, 2].map((i) => (
             <g key={i} transform={`translate(${70 + i * 110} 120)`}>
               <rect x="-30" y="22" width="60" height="8" rx="4" fill="#2b3742" />
-              <Person x={0} y={0} s={0.95} shirt={i % 2 ? a : b} anim={anim("cs-anim-bob")} delay={i * 320} />
+              <Person
+                x={0}
+                y={0}
+                s={0.95}
+                shirt={i % 2 ? a : b}
+                anim={anim("cs-anim-bob")}
+                delay={i * 320}
+              />
               <rect x="-26" y="4" width="52" height="4" rx="2" fill="#8a949e" />
               <circle cx="-28" cy="6" r="7" fill="#5b6670" />
               <circle cx="28" cy="6" r="7" fill="#5b6670" />
@@ -305,12 +333,23 @@ function Backdrop({
                 const idx = row * 7 + i;
                 const filled = idx < Math.max(1, trophies);
                 return (
-                  <g key={i} transform={`translate(${58 + i * 48} ${80 + row * 58})`} opacity={filled ? 1 : 0.16}>
+                  <g
+                    key={i}
+                    transform={`translate(${58 + i * 48} ${80 + row * 58})`}
+                    opacity={filled ? 1 : 0.16}
+                  >
                     <path d="M-9 -30 h18 v10 a9 9 0 0 1 -18 0 z" fill="#d9b45b" />
                     <rect x="-2" y="-20" width="4" height="12" fill="#c8a24a" />
                     <rect x="-8" y="-8" width="16" height="6" rx="2" fill="#8f7430" />
                     {filled && !reduced && (
-                      <circle cx="0" cy="-26" r="12" fill="#ffe9a8" opacity="0.18" className="cs-anim-shine" />
+                      <circle
+                        cx="0"
+                        cy="-26"
+                        r="12"
+                        fill="#ffe9a8"
+                        opacity="0.18"
+                        className="cs-anim-shine"
+                      />
                     )}
                   </g>
                 );
@@ -328,7 +367,14 @@ function Backdrop({
           <rect x="90" y="136" width="220" height="64" fill="#101821" />
           <Person x={130} y={86} s={1.05} shirt="#243043" anim={anim("cs-anim-enter")} />
           <Person x={200} y={84} s={1.1} shirt="#1b2432" anim={anim("cs-anim-enter")} delay={160} />
-          <Person x={270} y={86} s={1.05} shirt="#33404f" anim={anim("cs-anim-enter")} delay={320} />
+          <Person
+            x={270}
+            y={86}
+            s={1.05}
+            shirt="#33404f"
+            anim={anim("cs-anim-enter")}
+            delay={320}
+          />
           <rect x="24" y="60" width="70" height="46" rx="4" fill={a} opacity="0.25" />
         </>
       )}
@@ -439,7 +485,6 @@ export function Cutscene({
     },
     [reduced],
   );
-
 
   const line = data?.lines[i];
   const full = line?.text ?? "";
@@ -644,7 +689,9 @@ export function Cutscene({
           <div className="absolute bottom-3 left-4 flex items-end gap-3">
             <ManagerPortrait look={look} size={72} accent={accent} />
             <div>
-              <p className="font-display text-xl uppercase tracking-wide drop-shadow">{data.title}</p>
+              <p className="font-display text-xl uppercase tracking-wide drop-shadow">
+                {data.title}
+              </p>
               {data.mood && data.mood !== "neutral" && (
                 <span
                   className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] uppercase tracking-widest ${
@@ -664,7 +711,9 @@ export function Cutscene({
           {speaker && (
             <p className="text-xs uppercase tracking-widest text-muted-foreground">{speaker}</p>
           )}
-          <p className={`mt-1 min-h-14 text-lg ${line.who === "narrator" ? "italic text-muted-foreground" : ""}`}>
+          <p
+            className={`mt-1 min-h-14 text-lg ${line.who === "narrator" ? "italic text-muted-foreground" : ""}`}
+          >
             {full.slice(0, typed)}
             {typed < full.length && <span className="opacity-50">▍</span>}
           </p>

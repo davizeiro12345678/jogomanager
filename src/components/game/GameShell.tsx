@@ -72,7 +72,6 @@ const TABS: {
   { to: "/visual", key: "nav.visual", icon: SlidersHorizontal, group: "Extras" },
 ];
 
-
 /** Atalhos mostrados na barra inferior do celular. */
 const MOBILE = ["/dashboard", "/squad", "/tactics", "/league", "/transfers"];
 

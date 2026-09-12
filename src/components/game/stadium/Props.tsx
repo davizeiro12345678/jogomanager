@@ -218,7 +218,12 @@ function TvCameras({ ball }: { ball: { x: number; z: number } }) {
               <meshStandardMaterial color="#20262c" roughness={0.8} />
             </mesh>
           ))}
-          <group ref={(el) => { refs.current[i] = el; }} position={[0, 1.75, 0]}>
+          <group
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            position={[0, 1.75, 0]}
+          >
             <mesh castShadow>
               <boxGeometry args={[0.5, 0.42, 1.1]} />
               <meshStandardMaterial color="#101418" roughness={0.7} metalness={0.2} />

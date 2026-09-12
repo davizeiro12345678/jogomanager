@@ -4,7 +4,14 @@ import type { Club, League } from "../types";
  * Ligas adicionais (expansão do mundo do jogo).
  * Mesmo formato do catálogo principal.
  */
-type Raw = [id: string, name: string, short: string, primary: string, secondary: string, strength: number];
+type Raw = [
+  id: string,
+  name: string,
+  short: string,
+  primary: string,
+  secondary: string,
+  strength: number,
+];
 
 const RUS: Raw[] = [
   ["rus_zen", "Zenit", "ZEN", "#0a5cb8", "#8ec63f", 79],

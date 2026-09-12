@@ -20,7 +20,8 @@ export function detectQuality(): QualityLevel {
   const cores = navigator.hardwareConcurrency ?? 4;
   const mem = (navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 4;
   const mobile = isCoarsePointer();
-  const small = typeof window !== "undefined" && Math.min(window.innerWidth, window.innerHeight) < 500;
+  const small =
+    typeof window !== "undefined" && Math.min(window.innerWidth, window.innerHeight) < 500;
 
   if (cores <= 4 || mem <= 3 || (mobile && small)) return "baixa";
   if (mobile || cores <= 6 || mem <= 6) return "media";

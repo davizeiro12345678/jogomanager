@@ -4,9 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { type StripeEnv, createStripeClient } from "@/lib/stripe.server";
 
 export type ClaimResult =
-  | { status: "delivered" }
-  | { status: "pending" }
-  | { status: "error"; message: string };
+  { status: "delivered" } | { status: "pending" } | { status: "error"; message: string };
 
 /**
  * Entrega a compra a partir da página de retorno.
@@ -56,9 +54,8 @@ export const claimCheckoutSession = createServerFn({ method: "POST" })
       }
 
       const amount = lineItem?.amount_total ?? session.amount_total ?? 0;
-      const { fulfillOneTimePurchase, recordPendingPurchase } = await import(
-        "@/lib/fulfillment.server"
-      );
+      const { fulfillOneTimePurchase, recordPendingPurchase } =
+        await import("@/lib/fulfillment.server");
       await recordPendingPurchase(context.userId, productKey, session.id, amount);
       await fulfillOneTimePurchase(context.userId, productKey, session.id, amount);
       return { status: "delivered" };

@@ -74,7 +74,9 @@ export function Chips<T extends string>({
 }) {
   return (
     <div>
-      <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
           <button

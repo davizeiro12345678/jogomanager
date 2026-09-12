@@ -20,7 +20,6 @@ export const PUBLIC_PAGES = [
   { to: "/produtos", label: "Pacotes e passe de temporada" },
   { to: "/sobre", label: "Sobre o jogo" },
   { to: "/criador", label: "Sobre o criador" },
-
 ] as const;
 
 export function PublicLinks({ exclude }: { exclude?: string }) {

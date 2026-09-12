@@ -19,12 +19,7 @@ export interface League {
 }
 
 export type Personality =
-  | "líder"
-  | "profissional"
-  | "ambicioso"
-  | "temperamental"
-  | "caseiro"
-  | "determinado";
+  "líder" | "profissional" | "ambicioso" | "temperamental" | "caseiro" | "determinado";
 
 export interface Player {
   id: string;
@@ -67,7 +62,6 @@ export interface Player {
   nationality?: string;
   photo?: string;
 }
-
 
 export type FormationKey = "4-3-3" | "4-4-2" | "3-5-2" | "4-2-3-1";
 
@@ -381,8 +375,6 @@ export interface CupState {
   /** próxima rodada da fase de grupos; ausente ou >= 3 significa fase concluída */
   groupRound?: number;
 }
-
-
 
 export interface MatchEventLog {
   minute: number;

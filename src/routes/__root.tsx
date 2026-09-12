@@ -132,9 +132,6 @@ function RootComponent() {
     void import("../lib/analytics").then((m) => m.initAnalytics());
   }, []);
 
-
-
-
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>

@@ -8,7 +8,11 @@
 export const PUBLISHED_BASE_URL = "https://stadium-stewards.lovable.app";
 
 function isPreviewHost(hostname: string): boolean {
-  return hostname.includes("id-preview") || hostname.endsWith(".lovableproject.com") || hostname === "localhost";
+  return (
+    hostname.includes("id-preview") ||
+    hostname.endsWith(".lovableproject.com") ||
+    hostname === "localhost"
+  );
 }
 
 export function publicBaseUrlFor(request: Request): string {

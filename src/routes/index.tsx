@@ -63,7 +63,9 @@ const HUB = [
 
 function Landing() {
   const [hasCareer, setHasCareer] = useState(false);
-  const [resume, setResume] = useState<{ club: string; season: number; round: number } | null>(null);
+  const [resume, setResume] = useState<{ club: string; season: number; round: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     let alive = true;
@@ -110,8 +112,8 @@ function Landing() {
           </span>
         </h1>
         <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-          Escolha um clube real, monte a escalação, defina a tática e assista aos 90 minutos ao
-          vivo num estádio 3D — dando ordens enquanto a bola rola. Sem cadastro: é só jogar.
+          Escolha um clube real, monte a escalação, defina a tática e assista aos 90 minutos ao vivo
+          num estádio 3D — dando ordens enquanto a bola rola. Sem cadastro: é só jogar.
         </p>
 
         <dl className="mt-8 grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:gap-x-10">
@@ -134,16 +136,17 @@ function Landing() {
           className="mt-8 -mx-4 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]"
         >
           <div className="flex w-max gap-3 px-4 motion-safe:animate-[marquee_38s_linear_infinite]">
-            {[...LEAGUES.flatMap((l) => l.clubs.slice(0, 5)), ...LEAGUES.flatMap((l) => l.clubs.slice(0, 5))].map(
-              (c, i) => (
-                <span
-                  key={`${c.id}-${i}`}
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-border/50 surface-card backdrop-blur"
-                >
-                  <Crest club={c} size={26} />
-                </span>
-              ),
-            )}
+            {[
+              ...LEAGUES.flatMap((l) => l.clubs.slice(0, 5)),
+              ...LEAGUES.flatMap((l) => l.clubs.slice(0, 5)),
+            ].map((c, i) => (
+              <span
+                key={`${c.id}-${i}`}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-border/50 surface-card backdrop-blur"
+              >
+                <Crest club={c} size={26} />
+              </span>
+            ))}
           </div>
         </div>
 
@@ -195,7 +198,6 @@ function Landing() {
           </Link>{" "}
           só serve para salvar a carreira na nuvem.
         </p>
-
 
         <section className="mt-12">
           <h2 className="sr-only">Por onde começar</h2>
@@ -252,9 +254,6 @@ function Landing() {
           </Link>
         </nav>
 
-
-
-
         <section className="mt-16">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="font-display text-2xl uppercase tracking-wide">Ligas disponíveis</h2>
@@ -284,7 +283,6 @@ function Landing() {
             ))}
           </div>
         </section>
-
       </div>
     </div>
   );

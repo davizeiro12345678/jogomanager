@@ -3,8 +3,7 @@ import getCareerTool from "./tools/get-career";
 import saveCareerTool from "./tools/save-career";
 import deleteCareerTool from "./tools/delete-career";
 
-const projectRef =
-  import.meta.env["VITE_SUPABASE_PROJECT_ID"] ?? "project-ref-unset";
+const projectRef = import.meta.env["VITE_SUPABASE_PROJECT_ID"] ?? "project-ref-unset";
 
 export default defineMcp({
   name: "pro-football-manager-3d",

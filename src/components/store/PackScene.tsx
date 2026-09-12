@@ -136,15 +136,7 @@ function Trophy({ accent, accent2 }: { accent: string; accent2: string }) {
   );
 }
 
-function Spinner({
-  kind,
-  accent,
-  accent2,
-}: {
-  kind: PackKind;
-  accent: string;
-  accent2: string;
-}) {
+function Spinner({ kind, accent, accent2 }: { kind: PackKind; accent: string; accent2: string }) {
   const ref = useRef<THREE.Group>(null);
   useFrame((_, dt) => {
     if (ref.current) ref.current.rotation.y += dt * 0.55;

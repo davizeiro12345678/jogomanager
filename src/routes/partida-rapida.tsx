@@ -18,14 +18,24 @@ export const Route = createFileRoute("/partida-rapida")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Partida rápida contra o computador · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      {
+        title:
+          "Partida rápida contra o computador · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
       {
         name: "description",
         content:
           "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Partida rápida · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content: "Partida rápida · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -189,7 +199,9 @@ function TeamPicker({
             onClick={() => onChange(id)}
             disabled={id === disabled}
             className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
-              id === value ? "bg-primary/15 text-foreground" : "text-muted-foreground hover:bg-muted/40"
+              id === value
+                ? "bg-primary/15 text-foreground"
+                : "text-muted-foreground hover:bg-muted/40"
             } disabled:opacity-30`}
           >
             <Crest club={CLUBS[id]!} size={20} detail="simple" />
@@ -433,7 +445,11 @@ function QuickLive({
           <SkipForward size={16} />
         </button>
         <button
-          onClick={() => setCamera((c) => (c === "broadcast" ? "tactical" : c === "tactical" ? "fan" : "broadcast"))}
+          onClick={() =>
+            setCamera((c) =>
+              c === "broadcast" ? "tactical" : c === "tactical" ? "fan" : "broadcast",
+            )
+          }
           className="rounded-full px-3 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
         >
           Câmera

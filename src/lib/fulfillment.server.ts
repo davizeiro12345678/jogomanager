@@ -6,7 +6,7 @@ function getSupabase() {
   if (!_supabase) {
     _supabase = createClient(
       process.env["SUPABASE_URL"]!,
-      process.env["SUPABASE_SERVICE_ROLE_KEY"]!
+      process.env["SUPABASE_SERVICE_ROLE_KEY"]!,
     );
   }
   return _supabase;
@@ -46,7 +46,6 @@ const EFFECTS: Record<string, ProductEffect> = {
   },
 };
 
-
 export function getProductEffect(productKey: string): ProductEffect | null {
   return EFFECTS[productKey] ?? null;
 }
@@ -56,7 +55,7 @@ export async function recordPendingPurchase(
   userId: string,
   productKey: string,
   reference: string,
-  amountCents: number
+  amountCents: number,
 ): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase.from("user_purchases").upsert(
@@ -67,16 +66,13 @@ export async function recordPendingPurchase(
       status: "pending",
       reference,
     } as any,
-    { onConflict: "reference", ignoreDuplicates: true }
+    { onConflict: "reference", ignoreDuplicates: true },
   );
   if (error) console.error("recordPendingPurchase falhou", error.message);
 }
 
 /** Registra falha de pagamento para aparecer no painel de compras. */
-export async function markPurchaseFailed(
-  reference: string,
-  message: string
-): Promise<void> {
+export async function markPurchaseFailed(reference: string, message: string): Promise<void> {
   const supabase = getSupabase();
   await supabase
     .from("user_purchases")
@@ -89,7 +85,7 @@ export async function fulfillOneTimePurchase(
   userId: string,
   productKey: string,
   reference: string,
-  amountCents: number
+  amountCents: number,
 ): Promise<void> {
   const effect = getProductEffect(productKey);
   if (!effect) {
@@ -116,7 +112,7 @@ export async function fulfillOneTimePurchase(
       error: null,
       reference,
     } as any,
-    { onConflict: "reference" }
+    { onConflict: "reference" },
   );
   if (purchaseError) throw new Error(purchaseError.message);
 
@@ -138,8 +134,7 @@ export async function fulfillOneTimePurchase(
 
   const nextCoins = (existingWallet?.coins ?? 0) + effect.coins;
   const nextScout = (existingWallet?.scout_reports ?? 0) + effect.scoutReports;
-  const nextTraining =
-    (existingWallet?.training_boosts ?? 0) + effect.trainingBoosts;
+  const nextTraining = (existingWallet?.training_boosts ?? 0) + effect.trainingBoosts;
 
   const { error: walletError } = await supabase.from("user_wallet").upsert(
     {
@@ -149,16 +144,12 @@ export async function fulfillOneTimePurchase(
       training_boosts: nextTraining,
       unlocked_themes: Array.from(currentThemes),
     } as any,
-    { onConflict: "user_id" }
+    { onConflict: "user_id" },
   );
   if (walletError) throw new Error(walletError.message);
 }
 
-
-export async function syncSubscription(
-  subscription: any,
-  env: StripeEnv
-): Promise<void> {
+export async function syncSubscription(subscription: any, env: StripeEnv): Promise<void> {
   const userId = subscription.metadata?.userId;
   if (!userId) {
     throw new Error("No userId in subscription metadata");
@@ -166,14 +157,10 @@ export async function syncSubscription(
 
   const item = subscription.items?.data?.[0];
   const priceId =
-    item?.price?.lookup_key ||
-    item?.price?.metadata?.lovable_external_id ||
-    item?.price?.id;
+    item?.price?.lookup_key || item?.price?.metadata?.lovable_external_id || item?.price?.id;
   const productId = item?.price?.product;
-  const periodStart =
-    item?.current_period_start ?? subscription.current_period_start;
-  const periodEnd =
-    item?.current_period_end ?? subscription.current_period_end;
+  const periodStart = item?.current_period_start ?? subscription.current_period_start;
+  const periodEnd = item?.current_period_end ?? subscription.current_period_end;
 
   const supabase = getSupabase();
 
@@ -185,17 +172,13 @@ export async function syncSubscription(
       product_id: productId,
       price_id: priceId,
       status: subscription.status,
-      current_period_start: periodStart
-        ? new Date(periodStart * 1000).toISOString()
-        : null,
-      current_period_end: periodEnd
-        ? new Date(periodEnd * 1000).toISOString()
-        : null,
+      current_period_start: periodStart ? new Date(periodStart * 1000).toISOString() : null,
+      current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
       cancel_at_period_end: subscription.cancel_at_period_end || false,
       environment: env,
       updated_at: new Date().toISOString(),
     } as any,
-    { onConflict: "stripe_subscription_id" }
+    { onConflict: "stripe_subscription_id" },
   );
 
   // Mirror active subscription into wallet.season_pass_until
@@ -204,23 +187,17 @@ export async function syncSubscription(
     periodEnd &&
     new Date(periodEnd * 1000) > new Date();
   const canceledButValid =
-    subscription.status === "canceled" &&
-    periodEnd &&
-    new Date(periodEnd * 1000) > new Date();
+    subscription.status === "canceled" && periodEnd && new Date(periodEnd * 1000) > new Date();
 
   const seasonPassUntil =
-    active || canceledButValid
-      ? new Date(periodEnd * 1000).toISOString()
-      : null;
+    active || canceledButValid ? new Date(periodEnd * 1000).toISOString() : null;
 
-  await supabase
-    .from("user_wallet")
-    .upsert(
-      {
-        user_id: userId,
-        season_pass: !!seasonPassUntil,
-        season_pass_until: seasonPassUntil,
-      } as any,
-      { onConflict: "user_id" }
-    );
+  await supabase.from("user_wallet").upsert(
+    {
+      user_id: userId,
+      season_pass: !!seasonPassUntil,
+      season_pass_until: seasonPassUntil,
+    } as any,
+    { onConflict: "user_id" },
+  );
 }

@@ -27,7 +27,12 @@ const STOPS: Record<SkyTime, [string, string, string]> = {
 
 const CLOUD: Record<SkyTime, { light: string; dark: string; alpha: number; count: number }> = {
   dia: { light: "rgba(255,255,255,0.95)", dark: "rgba(176,192,210,0.85)", alpha: 0.9, count: 26 },
-  entardecer: { light: "rgba(255,214,186,0.92)", dark: "rgba(112,86,104,0.8)", alpha: 0.85, count: 22 },
+  entardecer: {
+    light: "rgba(255,214,186,0.92)",
+    dark: "rgba(112,86,104,0.8)",
+    alpha: 0.85,
+    count: 22,
+  },
   noite: { light: "rgba(120,134,158,0.5)", dark: "rgba(20,28,44,0.7)", alpha: 0.5, count: 16 },
 };
 

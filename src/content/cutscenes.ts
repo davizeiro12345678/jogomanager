@@ -71,7 +71,10 @@ function scene(
 export const CUTSCENES: Record<string, Cutscene> = {
   /* ------------------------------------------------ história */
   arrival: scene("arrival", "Chegada ao clube", "arrival", [
-    { who: "narrator", text: "O carro para em frente ao centro de treinamento. Câmeras por toda parte." },
+    {
+      who: "narrator",
+      text: "O carro para em frente ao centro de treinamento. Câmeras por toda parte.",
+    },
     { who: "president", text: "Bem-vindo. A torcida está ansiosa — e a diretoria também." },
     { who: "manager", text: "Vim para trabalhar. Me dê tempo e time para brigar lá em cima." },
     { who: "narrator", text: "Portões se abrem. O escudo do clube brilha sob o sol da tarde." },
@@ -127,7 +130,10 @@ export const CUTSCENES: Record<string, Cutscene> = {
     { who: "manager", text: "Sem pressa. Prefiro perder um jogo a perder um jogador." },
   ]),
   "training-talk": scene("training-talk", "Conversa individual", "staff", [
-    { who: "manager", text: "Sei que você quer jogar mais. Eu preciso de você pronto quando chamar." },
+    {
+      who: "manager",
+      text: "Sei que você quer jogar mais. Eu preciso de você pronto quando chamar.",
+    },
     { who: "captain", text: "Eu estou. Só quero minha chance." },
     { who: "manager", text: "Ela vem. Continue treinando assim." },
   ]),
@@ -223,7 +229,10 @@ export const CUTSCENES: Record<string, Cutscene> = {
     "bad",
   ),
   "cup-draw": scene("cup-draw", "Sorteio da copa", "board", [
-    { who: "narrator", text: "Bolinhas giram no globo de vidro. A sala inteira prende a respiração." },
+    {
+      who: "narrator",
+      text: "Bolinhas giram no globo de vidro. A sala inteira prende a respiração.",
+    },
     { who: "press", text: "E o adversário do seu time na próxima fase é..." },
     { who: "manager", text: "Seja quem for, a gente estuda e enfrenta. Copa é jogo de detalhe." },
     { who: "assistant", text: "Já peço os vídeos dos últimos cinco jogos deles." },
@@ -235,7 +244,10 @@ export const CUTSCENES: Record<string, Cutscene> = {
     [
       { who: "narrator", text: "Sala apertada, microfones ligados, ninguém sorrindo." },
       { who: "press", text: "O time não criou nada. O senhor errou a escalação?" },
-      { who: "manager", text: "A responsabilidade é minha. Amanhã cedo estamos no campo corrigindo." },
+      {
+        who: "manager",
+        text: "A responsabilidade é minha. Amanhã cedo estamos no campo corrigindo.",
+      },
       { who: "press", text: "A diretoria te garantiu no cargo?" },
       { who: "manager", text: "Meu emprego se garante ganhando. É o que pretendo fazer." },
     ],
@@ -246,10 +258,16 @@ export const CUTSCENES: Record<string, Cutscene> = {
     "Renovação de contrato",
     "board",
     [
-      { who: "president", text: "O conselho aprovou por unanimidade. Queremos você por mais tempo." },
+      {
+        who: "president",
+        text: "O conselho aprovou por unanimidade. Queremos você por mais tempo.",
+      },
       { who: "manager", text: "Aceito — mas quero decidir as contratações da próxima janela." },
       { who: "president", text: "Fechado. Assine aqui e vamos brindar." },
-      { who: "narrator", text: "Flashes, aperto de mão e uma caneta que vale uma temporada inteira." },
+      {
+        who: "narrator",
+        text: "Flashes, aperto de mão e uma caneta que vale uma temporada inteira.",
+      },
     ],
     "good",
   ),
@@ -258,10 +276,16 @@ export const CUTSCENES: Record<string, Cutscene> = {
     "Despedida do ídolo",
     "farewell",
     [
-      { who: "narrator", text: "Estádio cheio num amistoso de terça. Todos vieram por um homem só." },
+      {
+        who: "narrator",
+        text: "Estádio cheio num amistoso de terça. Todos vieram por um homem só.",
+      },
       { who: "captain", text: "Foram doze anos. Vou sentir falta do cheiro da grama molhada." },
       { who: "fan", text: "Eterno! Eterno!" },
-      { who: "manager", text: "A camisa sai de campo, mas a régua que ele deixou fica no vestiário." },
+      {
+        who: "manager",
+        text: "A camisa sai de campo, mas a régua que ele deixou fica no vestiário.",
+      },
     ],
     "good",
   ),
@@ -279,7 +303,10 @@ export const CUTSCENES: Record<string, Cutscene> = {
     "good",
   ),
   "derby-week": scene("derby-week", "Semana de clássico", "dressing", [
-    { who: "narrator", text: "A cidade amanheceu dividida. Bandeiras nas janelas, faixas nos postes." },
+    {
+      who: "narrator",
+      text: "A cidade amanheceu dividida. Bandeiras nas janelas, faixas nos postes.",
+    },
     { who: "captain", text: "Professor, esse aqui vale por três." },
     { who: "manager", text: "Vale por um. Mas jogamos como se valesse a temporada inteira." },
     { who: "assistant", text: "Marcação individual nas bolas paradas. Eles vivem disso." },
@@ -307,8 +334,6 @@ export const CUTSCENES: Record<string, Cutscene> = {
     "bad",
   ),
 };
-
-
 
 /** Cenas de treino sorteadas semana a semana no modo carreira. */
 export const TRAINING_SCENE_IDS = [

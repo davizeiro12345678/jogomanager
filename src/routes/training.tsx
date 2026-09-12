@@ -15,8 +15,15 @@ export const Route = createFileRoute("/training")({
         content:
           "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Treino da semana · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content: "Treino da semana · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -46,7 +53,10 @@ function TrainingPage() {
   const avgCond = players.reduce((s, p) => s + p.condition, 0) / Math.max(1, players.length);
   const avgMorale = players.reduce((s, p) => s + p.morale, 0) / Math.max(1, players.length);
   const intensity = career.trainingIntensity ?? 1;
-  const youngsters = players.filter((p) => p.age <= 23).sort((a, b) => b.ovr - a.ovr).slice(0, 6);
+  const youngsters = players
+    .filter((p) => p.age <= 23)
+    .sort((a, b) => b.ovr - a.ovr)
+    .slice(0, 6);
 
   return (
     <GameShell career={career}>

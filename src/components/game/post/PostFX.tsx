@@ -43,10 +43,7 @@ export function PostFX({
 }) {
   const m: PostMoment = moment ?? (replay ? "replay" : "match");
   const p = useMemo(() => postPreset(quality, m, time), [quality, m, time]);
-  const ab = useMemo(
-    () => new THREE.Vector2(p.aberration, p.aberration * 1.4),
-    [p.aberration],
-  );
+  const ab = useMemo(() => new THREE.Vector2(p.aberration, p.aberration * 1.4), [p.aberration]);
 
   if (quality === "baixa") return null;
 

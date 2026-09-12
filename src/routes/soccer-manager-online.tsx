@@ -4,7 +4,8 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/soccer-manager-online";
-const TITLE = "Soccer manager online: jogue no navegador em 3D | Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE =
+  "Soccer manager online: jogue no navegador em 3D | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
   "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
@@ -24,12 +25,30 @@ export const Route = createFileRoute("/soccer-manager-online")({
 });
 
 const FEATURES = [
-  ["Partidas em 3D", "Câmera de transmissão, jogadores animados, gols, faltas e defesas — ou pule direto para o resultado."],
-  ["Ligas e clubes reais", "Brasileirão, Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Primeira Liga e muitas outras."],
-  ["Mercado de transferências", "Propostas, negociação de salário, cláusulas, empréstimos e clubes interessados nos seus jogadores."],
-  ["Elenco vivo", "Idade, potencial, forma, moral, personalidade, lesões e evolução ao longo das temporadas."],
-  ["Diretoria e torcida", "Objetivo de temporada, aprovação, pressão por resultado e risco real de demissão."],
-  ["Finanças", "Folha salarial, bilheteria, patrocínios, capacidade do estádio e orçamento de contratações."],
+  [
+    "Partidas em 3D",
+    "Câmera de transmissão, jogadores animados, gols, faltas e defesas — ou pule direto para o resultado.",
+  ],
+  [
+    "Ligas e clubes reais",
+    "Brasileirão, Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Primeira Liga e muitas outras.",
+  ],
+  [
+    "Mercado de transferências",
+    "Propostas, negociação de salário, cláusulas, empréstimos e clubes interessados nos seus jogadores.",
+  ],
+  [
+    "Elenco vivo",
+    "Idade, potencial, forma, moral, personalidade, lesões e evolução ao longo das temporadas.",
+  ],
+  [
+    "Diretoria e torcida",
+    "Objetivo de temporada, aprovação, pressão por resultado e risco real de demissão.",
+  ],
+  [
+    "Finanças",
+    "Folha salarial, bilheteria, patrocínios, capacidade do estádio e orçamento de contratações.",
+  ],
 ];
 
 function Page() {

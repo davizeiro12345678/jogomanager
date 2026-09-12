@@ -26,9 +26,7 @@ export function MatchReport({
   const home = CLUBS[homeId]!;
   const away = CLUBS[awayId]!;
   const [ph, pa] = sim.possessionPct();
-  const mine = ratings
-    .filter((r) => r.side === mySide)
-    .sort((a, b) => b.rating - a.rating);
+  const mine = ratings.filter((r) => r.side === mySide).sort((a, b) => b.rating - a.rating);
 
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 p-3 backdrop-blur">
@@ -178,7 +176,17 @@ export function MatchReport({
   );
 }
 
-function Bar({ label, h, a, suffix = "" }: { label: string; h: number; a: number; suffix?: string }) {
+function Bar({
+  label,
+  h,
+  a,
+  suffix = "",
+}: {
+  label: string;
+  h: number;
+  a: number;
+  suffix?: string;
+}) {
   const total = Math.max(1, h + a);
   return (
     <div>
@@ -195,7 +203,10 @@ function Bar({ label, h, a, suffix = "" }: { label: string; h: number; a: number
       </div>
       <div className="mt-1 flex h-2 overflow-hidden rounded-full bg-secondary">
         <div className="bg-primary" style={{ width: `${(h / total) * 100}%` }} />
-        <div className="ml-auto bg-muted-foreground/50" style={{ width: `${(a / total) * 100}%` }} />
+        <div
+          className="ml-auto bg-muted-foreground/50"
+          style={{ width: `${(a / total) * 100}%` }}
+        />
       </div>
     </div>
   );

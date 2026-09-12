@@ -76,7 +76,7 @@ export function jerseyWeaveNormal(): THREE.CanvasTexture | null {
     const cell = 8;
     for (let y = 0; y < size; y += cell) {
       for (let x = 0; x < size; x += cell) {
-        const up = ((x / cell + y / cell) % 2) === 0;
+        const up = (x / cell + y / cell) % 2 === 0;
         ctx.fillStyle = up ? "#d8d8d8" : "#565656";
         ctx.fillRect(x + 1, y + 1, cell - 2, cell - 2);
       }

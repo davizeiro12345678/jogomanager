@@ -1,11 +1,5 @@
 import { PlayerPortrait } from "@/components/game/PlayerPortrait";
-import {
-  ATTR_LABELS,
-  attrTone,
-  groupsFor,
-  PERSONALITY_DESC,
-  profileFor,
-} from "@/game/attributes";
+import { ATTR_LABELS, attrTone, groupsFor, PERSONALITY_DESC, profileFor } from "@/game/attributes";
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, formatWage } from "@/game/economy";
 import type { Player } from "@/game/types";
@@ -49,7 +43,8 @@ export function PlayerSheet({ player, onClose }: { player: Player; onClose: () =
               #{player.number} · {player.pos} · {player.age} anos · {club?.name ?? "sem clube"}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {prof.height} cm · {prof.weight} kg · pé {prof.foot} · afinidade com você {prof.rapport}%
+              {prof.height} cm · {prof.weight} kg · pé {prof.foot} · afinidade com você{" "}
+              {prof.rapport}%
             </p>
           </div>
           <div className="text-right">
@@ -74,7 +69,10 @@ export function PlayerSheet({ player, onClose }: { player: Player; onClose: () =
             ["Salário", formatWage(player.wage)],
             ["Valor", formatMoney(player.value)],
           ].map(([k, v]) => (
-            <div key={k} className="rounded-xl border border-border/50 bg-background/40 p-2 text-center">
+            <div
+              key={k}
+              className="rounded-xl border border-border/50 bg-background/40 p-2 text-center"
+            >
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{k}</p>
               <p className="text-sm font-semibold">{v}</p>
             </div>
@@ -88,7 +86,10 @@ export function PlayerSheet({ player, onClose }: { player: Player; onClose: () =
           <p className="mt-1 text-sm">{PERSONALITY_DESC[prof.personality]}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {prof.traits.map((t) => (
-              <span key={t} className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] text-primary">
+              <span
+                key={t}
+                className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] text-primary"
+              >
                 {t}
               </span>
             ))}
@@ -97,7 +98,10 @@ export function PlayerSheet({ player, onClose }: { player: Player; onClose: () =
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           {groups.map((g) => (
-            <section key={g.label} className="rounded-xl border border-border/50 bg-background/40 p-3">
+            <section
+              key={g.label}
+              className="rounded-xl border border-border/50 bg-background/40 p-3"
+            >
               <h3 className="text-xs uppercase tracking-wide text-muted-foreground">{g.label}</h3>
               <ul className="mt-2 space-y-1">
                 {g.keys.map((k) => (
@@ -115,7 +119,9 @@ export function PlayerSheet({ player, onClose }: { player: Player; onClose: () =
         </div>
 
         <section className="mt-4 rounded-xl border border-border/50 bg-background/40 p-3">
-          <h3 className="text-xs uppercase tracking-wide text-muted-foreground">Passagem por clubes</h3>
+          <h3 className="text-xs uppercase tracking-wide text-muted-foreground">
+            Passagem por clubes
+          </h3>
           <ul className="mt-2 space-y-1 text-sm">
             {prof.spells.map((s, i) => (
               <li key={`${s.clubId}-${i}`} className="flex justify-between gap-3">

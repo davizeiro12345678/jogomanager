@@ -104,8 +104,23 @@ export function PlayerPortrait({
             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
           />
         </foreignObject>
-        <rect y="78" width="100" height="22" fill="#05100b" opacity="0.55" clipPath={`url(#${clip})`} />
-        <text x="50" y="94" textAnchor="middle" fontSize="12" fontWeight="700" fill={secondary} opacity="0.95">
+        <rect
+          y="78"
+          width="100"
+          height="22"
+          fill="#05100b"
+          opacity="0.55"
+          clipPath={`url(#${clip})`}
+        />
+        <text
+          x="50"
+          y="94"
+          textAnchor="middle"
+          fontSize="12"
+          fontWeight="700"
+          fill={secondary}
+          opacity="0.95"
+        >
           {player.number}
         </text>
       </svg>
@@ -113,7 +128,6 @@ export function PlayerPortrait({
   }
 
   return (
-
     <svg
       width={size}
       height={size}
@@ -165,7 +179,11 @@ export function PlayerPortrait({
       )}
       {f.hairStyle === "coque" && <circle cx="50" cy="12" r="7" fill={f.hair} />}
       {f.hairStyle === "raspado" && (
-        <path d="M30 40 q0 -18 20 -18 q20 0 20 18 q-6 -8 -20 -8 q-14 0 -20 8" fill={f.hair} opacity="0.55" />
+        <path
+          d="M30 40 q0 -18 20 -18 q20 0 20 18 q-6 -8 -20 -8 q-14 0 -20 8"
+          fill={f.hair}
+          opacity="0.55"
+        />
       )}
 
       {/* sobrancelhas + olhos */}
@@ -178,14 +196,29 @@ export function PlayerPortrait({
 
       {/* nariz e boca */}
       <path d="M50 51 l-2.5 8 q2.5 2 5 0 z" fill="#000000" opacity="0.14" />
-      <path d="M44 64 q6 4 12 0" stroke="#000000" strokeOpacity="0.35" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path
+        d="M44 64 q6 4 12 0"
+        stroke="#000000"
+        strokeOpacity="0.35"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+      />
 
       {/* barba */}
       {f.beard === "cheia" && (
-        <path d="M32 52 q2 22 18 22 q16 0 18 -22 q-4 16 -18 16 q-14 0 -18 -16" fill={f.hair} opacity="0.85" />
+        <path
+          d="M32 52 q2 22 18 22 q16 0 18 -22 q-4 16 -18 16 q-14 0 -18 -16"
+          fill={f.hair}
+          opacity="0.85"
+        />
       )}
-      {f.beard === "cavanhaque" && <ellipse cx="50" cy="67" rx="7" ry="6" fill={f.hair} opacity="0.85" />}
-      {f.beard === "bigode" && <rect x="44" y="59" width="12" height="3" rx="1.5" fill={f.hair} opacity="0.85" />}
+      {f.beard === "cavanhaque" && (
+        <ellipse cx="50" cy="67" rx="7" ry="6" fill={f.hair} opacity="0.85" />
+      )}
+      {f.beard === "bigode" && (
+        <rect x="44" y="59" width="12" height="3" rx="1.5" fill={f.hair} opacity="0.85" />
+      )}
 
       {/* número da camisa */}
       <text

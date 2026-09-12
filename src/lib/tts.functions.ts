@@ -35,8 +35,7 @@ const NarrateInput = z.object({
 });
 
 export type NarrateResult =
-  | { ok: true; audio: string }
-  | { ok: false; reason: "unavailable" | "error" };
+  { ok: true; audio: string } | { ok: false; reason: "unavailable" | "error" };
 
 /** Remove qualquer coisa que não pareça um nome de clube. */
 function safeTeam(raw: string): string {

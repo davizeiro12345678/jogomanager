@@ -31,7 +31,10 @@ function paintLogos(
   const token = import.meta.env["VITE_LOVABLE_CONNECTOR_LOGO_DEV_API_KEY"];
   if (!token) return;
   domains.slice(0, SPONSORS.length).forEach((domain, i) => {
-    const clean = domain.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    const clean = domain
+      .trim()
+      .replace(/^https?:\/\//, "")
+      .replace(/\/.*$/, "");
     if (!clean) return;
     const img = new Image();
     img.crossOrigin = "anonymous";

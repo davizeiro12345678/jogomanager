@@ -251,7 +251,10 @@ export function subscribeVisualPreview(fn: (p: Partial<VisualSettings> | null) =
 
 /** Hook: devolve os ajustes atuais (com prévia) e re-renderiza quando mudam. */
 export function useVisual(): VisualSettings {
-  const [v, setV] = useState<VisualSettings>(() => ({ ...getVisual(), ...(getVisualPreview() ?? {}) }));
+  const [v, setV] = useState<VisualSettings>(() => ({
+    ...getVisual(),
+    ...(getVisualPreview() ?? {}),
+  }));
   useEffect(() => {
     const sync = () => setV({ ...getVisual(), ...(getVisualPreview() ?? {}) });
     const offA = subscribeVisual(sync);

@@ -17,7 +17,10 @@ export const ESTIMATED_COST_CENTS: Record<BudgetKind, number> = {
  * Reserva o custo de um pedido. Devolve false quando o teto do mês já foi
  * atingido — nesse caso o chamador deve recusar o pedido sem chamar o provedor.
  */
-export async function reserveAiBudget(kind: BudgetKind, cents = ESTIMATED_COST_CENTS[kind]): Promise<boolean> {
+export async function reserveAiBudget(
+  kind: BudgetKind,
+  cents = ESTIMATED_COST_CENTS[kind],
+): Promise<boolean> {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin.rpc("reserve_ai_budget", {

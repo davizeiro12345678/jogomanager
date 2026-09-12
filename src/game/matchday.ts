@@ -1,7 +1,6 @@
 import type { MowPattern } from "@/components/game/stadium/textures/grass";
 import { resolveVisual } from "@/game/visual-settings";
 
-
 /**
  * "Cara" da partida: horário, clima, corte do gramado, vento e público.
  *
@@ -80,4 +79,3 @@ function applyVisualLook(look: MatchLook, homeId: string): MatchLook {
   if (v.wind !== "auto") out.wind = v.wind;
   return out;
 }
-

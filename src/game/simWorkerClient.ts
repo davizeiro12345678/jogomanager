@@ -26,7 +26,11 @@ function getWorker(): Worker | null {
   }
 }
 
-function call<T>(payload: Record<string, unknown>, fallback: () => T, timeoutMs = 20_000): Promise<T> {
+function call<T>(
+  payload: Record<string, unknown>,
+  fallback: () => T,
+  timeoutMs = 20_000,
+): Promise<T> {
   const w = getWorker();
   if (!w) return Promise.resolve(fallback());
   const id = ++seq;
