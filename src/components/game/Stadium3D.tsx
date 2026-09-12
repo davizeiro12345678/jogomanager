@@ -356,7 +356,11 @@ function Weather({
 }) {
   const rain = weather === "chuva";
   const snow = weather === "neve";
-  const count = quality === "alta" ? (rain ? 2600 : 1500) : rain ? 1100 : 700;
+  const partScale = useVisual().particles;
+  const count = Math.max(
+    0,
+    Math.round((quality === "alta" ? (rain ? 2600 : 1500) : rain ? 1100 : 700) * partScale),
+  );
   const ref = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const drops = useMemo(
