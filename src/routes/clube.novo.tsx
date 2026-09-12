@@ -136,6 +136,12 @@ function NewClubPage() {
     setClub((c) => ({ ...c, stadium: { ...c.stadium, ...patch } }));
   const setFans = (patch: Partial<MyClub["fans"]>) => setClub((c) => ({ ...c, fans: { ...c.fans, ...patch } }));
 
+  const [draftKey, setDraftKey] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<ClubDraft[]>([]);
+  const [note, setNote] = useState("");
+
+  useEffect(() => setDrafts(listClubDrafts()), []);
+
   const preview = useMemo(
     () => ({
       id: club.id,
@@ -149,9 +155,12 @@ function NewClubPage() {
     [club],
   );
 
-  function finish() {
+  /** clube que perde a vaga na liga escolhida */
+  const victim = useMemo(() => clubToBeReplaced(club.leagueId), [club.leagueId]);
+
+  function normalized(): MyClub {
     const id = slugifyClubId(club.name || "clube");
-    const finalClub: MyClub = {
+    return {
       ...club,
       id,
       name: club.name.trim() || "Seu Clube",
@@ -159,10 +168,49 @@ function NewClubPage() {
       crest: { ...club.crest, founded: club.founded },
       kit: { ...club.kit, base: club.primary, detail: club.secondary },
     };
+  }
+
+  function saveDraft() {
+    const d = saveClubDraft(normalized(), draftKey ?? undefined);
+    setDraftKey(d.key);
+    setDrafts(listClubDrafts());
+    setNote(`Rascunho salvo (versão ${d.version}).`);
+  }
+
+  function loadDraft(d: ClubDraft) {
+    setClub({ ...d.club });
+    setDraftKey(d.key);
+    setStep(0);
+    setNote(`Rascunho "${d.club.name || "sem nome"}" carregado — editar cria uma nova versão.`);
+  }
+
+  function exportPack() {
+    const text = exportClubPack(normalized());
+    const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${slugifyClubId(club.name || "clube")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importPack(file: File) {
+    const parsed = importClubPack(await file.text());
+    if (!parsed) {
+      setNote("Arquivo inválido — use um pacote exportado por este jogo.");
+      return;
+    }
+    setClub(parsed);
+    setNote(`Pacote "${parsed.name}" carregado.`);
+  }
+
+  function finish() {
+    const finalClub = normalized();
     writeMyClub(finalClub);
-    update(initCareer(finalClub.leagueId, id, manager.trim() || "Técnico"));
+    update(initCareer(finalClub.leagueId, finalClub.id, manager.trim() || "Técnico"));
     navigate({ to: "/club" });
   }
+
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
