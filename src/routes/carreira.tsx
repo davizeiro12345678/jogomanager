@@ -88,6 +88,14 @@ function CoachCareerPage() {
     };
   }, [career]);
 
+  // capitão: jogador de melhor média no elenco do clube da campanha
+  const captainName = useMemo(() => {
+    if (!career) return undefined;
+    const mine = Object.values(career.players).filter((p) => p.clubId === career.clubId);
+    if (!mine.length) return undefined;
+    return mine.reduce((best, p) => (p.rating > best.rating ? p : best), mine[0]!).name;
+  }, [career]);
+
   if (!career)
     return (
       <div className="flex min-h-screen items-center justify-center text-muted-foreground">
@@ -115,6 +123,9 @@ function CoachCareerPage() {
           accent={club?.primary ?? "#0a8f3c"}
           accent2={club?.secondary ?? "#0b1220"}
           trophies={career.trophies.length}
+          club={club}
+          managerName={career.managerName}
+          captainName={captainName}
           onDone={() => setScene(null)}
         />
       ) : null}
