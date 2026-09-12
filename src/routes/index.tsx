@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
       }),
       {
         name: "google-site-verification",
-        content: "1sTqcpbIZ8YXA8ZcEqrb0sah5l9fOaE2LMAR0JjRgK4",
+        content: "9-Zd904UdMNTsHjsofdwIFhjWPMF7c0N35kOm5-1H14",
       },
     ],
     links: canonical("/"),
