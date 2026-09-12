@@ -161,6 +161,17 @@ function VisualPage() {
           <h2 className="font-display text-lg uppercase tracking-wide">Qualidade</h2>
           <div className="mt-4 space-y-4">
             <Chips
+              label="Nível geral"
+              value={v.quality}
+              onChange={(quality) => setVisual({ quality: quality as QualityPref })}
+              options={[
+                { id: "auto" as const, label: "Automático" },
+                { id: "baixa" as const, label: "Baixa" },
+                { id: "media" as const, label: "Média" },
+                { id: "alta" as const, label: "Alta" },
+              ]}
+            />
+            <Chips
               label="Riqueza das texturas"
               value={v.textureDetail}
               onChange={(textureDetail) => setVisual({ textureDetail })}
