@@ -346,6 +346,22 @@ export interface CupTie {
   ag: number | null;
 }
 
+export interface CupGroupMatch {
+  /** rodada da fase de grupos (0, 1, 2) */
+  round: number;
+  home: string;
+  away: string;
+  hg: number | null;
+  ag: number | null;
+}
+
+export interface CupGroup {
+  /** rótulo do grupo: A, B, C... */
+  label: string;
+  clubIds: string[];
+  matches: CupGroupMatch[];
+}
+
 export interface CupState {
   id: "national" | "continental";
   name: string;
@@ -356,6 +372,10 @@ export interface CupState {
   winner: string | null;
   /** a cada quantas rodadas de liga acontece uma fase */
   everyRounds: number;
+  /** fase de grupos (só em torneios que a usam; ausente = mata-mata direto) */
+  groups?: CupGroup[];
+  /** próxima rodada da fase de grupos; ausente ou >= 3 significa fase concluída */
+  groupRound?: number;
 }
 
 

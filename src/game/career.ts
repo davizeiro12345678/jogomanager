@@ -18,7 +18,7 @@ import { applyPyramid } from "./pyramid";
 
 import { computeTable, generateFixtures } from "./season";
 import { evaluateAchievements } from "./achievements";
-import { createCups, cupPrize, playCupStage, stageName } from "./cup";
+import { createCups, cupPrize, inGroupStage, nextPhaseName, playCupStage, stageName } from "./cup";
 import { buildSquad } from "./squad";
 import type {
   CareerState,
@@ -770,15 +770,29 @@ function processCups(state: CareerState, round: number): CareerState {
   const updated = cups.map((cup) => {
     if (cup.winner || round % cup.everyRounds !== 0) return cup;
     if (cup.out) return cup;
+    const wasGroupStage = inGroupStage(cup);
     const res = playCupStage(cup, state);
     if (res.userPlayed) {
       const opp = res.opponentId ? CLUBS[res.opponentId]?.name : "adversário";
-      if (res.userWon) {
+      const newsId = `cup-${cup.id}-${state.season}-${wasGroupStage ? `g${cup.groupRound ?? 0}` : cup.stage}`;
+      if (wasGroupStage) {
+        // Na fase de grupos um tropeço não elimina: só a classificação final decide.
+        news.push({
+          id: newsId,
+          season: state.season,
+          round,
+          kind: "resultado",
+          title: `${cup.name}: ${res.userScore} contra ${opp}`,
+          body: res.cup.out
+            ? `Fim de caminhada ainda na fase de grupos.`
+            : `${nextPhaseName(res.cup)} pela frente.`,
+        });
+      } else if (res.userWon) {
         const prize = cupPrize(cup.id, cup.stage);
         budget = Math.round((budget + prize) * 10) / 10;
         income = Math.round((income + prize) * 10) / 10;
         news.push({
-          id: `cup-${cup.id}-${state.season}-${cup.stage}`,
+          id: newsId,
           season: state.season,
           round,
           kind: "premio",
@@ -787,7 +801,7 @@ function processCups(state: CareerState, round: number): CareerState {
         });
       } else {
         news.push({
-          id: `cup-${cup.id}-${state.season}-${cup.stage}`,
+          id: newsId,
           season: state.season,
           round,
           kind: "resultado",
