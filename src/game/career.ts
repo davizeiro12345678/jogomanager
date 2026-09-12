@@ -495,12 +495,35 @@ function endSeason(state: CareerState): CareerState {
   const squad = Object.values(players);
   const { lineup, bench } = pickLineup(squad, state.tactics.formation);
 
+  // acesso e rebaixamento entre as divisões do país
+  const move = applyPyramid(state, table, state.pyramidSlots);
+  const nextLeagueId = move?.leagueId ?? state.leagueId;
+  const nextLeagueClubs = move ? { ...(state.leagueClubs ?? {}), ...move.leagueClubs } : state.leagueClubs;
+  if (move?.moved) {
+    const up = move.moved === "subiu";
+    news.push({
+      id: `${move.moved}-${state.season}`,
+      season: state.season,
+      round: state.round,
+      kind: "premio",
+      title: up ? `⬆️ ${club.name} conquista o acesso!` : `⬇️ ${club.name} é rebaixado`,
+      body: up
+        ? `Com o ${position}º lugar, o clube sobe para a ${getLeague(move.leagueId).name} na próxima temporada.`
+        : `O ${position}º lugar levou o clube para a ${getLeague(move.leagueId).name} na próxima temporada.`,
+    });
+  }
 
   return {
     ...state,
     season: state.season + 1,
     round: 1,
-    fixtures: generateFixtures(state.leagueId, `${state.clubId}-${state.managerName}-s${state.season + 1}`),
+    leagueId: nextLeagueId,
+    ...(nextLeagueClubs ? { leagueClubs: nextLeagueClubs } : {}),
+    fixtures: generateFixtures(
+      nextLeagueId,
+      `${state.clubId}-${state.managerName}-s${state.season + 1}`,
+      nextLeagueClubs?.[nextLeagueId],
+    ),
     players,
     lineup,
     bench,
