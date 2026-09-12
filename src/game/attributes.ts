@@ -206,7 +206,8 @@ export function evolveSeason(players: Player[], season: number, current: AttrDel
   const out: AttrDeltas = { ...current };
   for (const p of players) {
     const rnd = makeRng(`evo-${p.id}-${season}`);
-    const base = profileFor(p).attrs;
+    // Ficha já evoluída: a base "limpa" é ela menos o que já foi acumulado.
+    const evolved = profileFor(p).attrs;
     const delta: AttrDelta = { ...(current[p.id] ?? {}) };
     const potential = Math.max(p.ovr, p.potential ?? p.ovr);
     const room = Math.max(0, potential - p.ovr);
@@ -220,7 +221,8 @@ export function evolveSeason(players: Player[], season: number, current: AttrDel
       if (mental) move += (p.age >= 29 ? 0.5 : 0) + rnd() * 0.6;
       const raw = (delta[k] ?? 0) + move;
       // O resultado final nunca sai da faixa 20..99 do atributo.
-      const clamped = Math.max(20 - base[k], Math.min(99 - base[k], raw));
+      const base = evolved[k] - (current[p.id]?.[k] ?? 0);
+      const clamped = Math.max(20 - base, Math.min(99 - base, raw));
       const rounded = Math.round(clamped * 10) / 10;
       if (rounded !== 0) delta[k] = rounded;
       else delete delta[k];
