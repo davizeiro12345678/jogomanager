@@ -145,18 +145,18 @@ function SquadPage() {
           badge={<HudChip>{reserves.length} reservas</HudChip>}
         >
           <div className="max-h-[70vh] overflow-y-auto">
-
             <table className="w-full text-sm">
-              <thead className="text-xs uppercase text-muted-foreground">
+              <thead className="sticky top-0 z-10 bg-card/95 text-[10px] uppercase tracking-wider text-muted-foreground backdrop-blur">
                 <tr>
-                  <th className="p-1 text-left">Jogador</th>
-                  <th className="p-1">Pos</th>
-                  <th className="p-1">OVR</th>
-                  <th className="p-1">Cond</th>
-                  <th className="p-1">Valor</th>
-                  <th className="p-1"></th>
+                  <th className="p-2 text-left">Jogador</th>
+                  <th className="p-2">Pos</th>
+                  <th className="p-2">OVR</th>
+                  <th className="p-2">Cond</th>
+                  <th className="p-2">Valor</th>
+                  <th className="p-2"></th>
                 </tr>
               </thead>
+
               <tbody>
                 {[...lineup, ...reserves].map((p) => {
                   const starting = career!.lineup.includes(p.id);
