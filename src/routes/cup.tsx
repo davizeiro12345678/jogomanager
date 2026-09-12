@@ -81,6 +81,47 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
         </span>
       </div>
 
+      {cup.groups?.length ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {cup.groups.map((g) => (
+            <div key={g.label} className="rounded-xl bg-secondary/40 p-3">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Grupo {g.label}</p>
+              <table className="mt-1.5 w-full text-sm">
+                <thead className="text-[11px] uppercase text-muted-foreground">
+                  <tr>
+                    <th className="text-left font-normal">Clube</th>
+                    <th className="w-8 font-normal">J</th>
+                    <th className="w-8 font-normal">SG</th>
+                    <th className="w-8 font-normal">P</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groupTable(g).map((r, i) => (
+                    <tr
+                      key={r.clubId}
+                      className={r.clubId === clubId ? "bg-primary/10" : i < 2 ? "text-foreground" : "text-muted-foreground"}
+                    >
+                      <td className="truncate py-0.5">
+                        <span className="flex items-center gap-1.5">
+                          <span
+                            aria-hidden
+                            className={`h-3 w-1 rounded-full ${i < 2 ? "bg-primary" : "bg-transparent"}`}
+                          />
+                          {CLUBS[r.clubId]?.short ?? r.clubId}
+                        </span>
+                      </td>
+                      <td className="text-center tabular-nums">{r.p}</td>
+                      <td className="text-center tabular-nums">{r.gf - r.ga}</td>
+                      <td className="text-center font-display tabular-nums">{r.pts}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       <div className="mt-4 space-y-4">
         {stages.map((s) => (
           <div key={s}>
