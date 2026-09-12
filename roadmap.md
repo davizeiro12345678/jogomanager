@@ -13,6 +13,11 @@
 - [ ] Editor/customização: elencos, escudos, kits, nomes, fotos, campeonatos e ligas; regens com foto
 - [ ] Atributos detalhados dos jogadores (personalidade, moral, histórico de clubes, fotos)
 
+## Novo pedido (2026-09-12)
+- [ ] Salto visual 3D: jogadores, torcida, gramado, texturas e cutscenes
+- [ ] Corrigir gargalos e avisos da partida 3D sem reduzir a qualidade escolhida
+- [ ] Ampliar importação oficial com fotos de estádios e uniformes alternativos
+
 
 ## Em andamento (plano aprovado 05/09)
 - [ ] Banco de dados de futebol (competições, clubes, estádios, kits, jogadores, ids externos, import_runs)

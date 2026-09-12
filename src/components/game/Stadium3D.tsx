@@ -30,7 +30,7 @@ import {
 } from "@/components/game/stadium/textures/grass";
 
 import { LINES_H, LINES_W, pitchLinesTexture } from "@/components/game/stadium/textures/lines";
-import { pitchWearTexture } from "@/components/game/stadium/textures/wear";
+import { pitchWearTexture, wearRoughness } from "@/components/game/stadium/textures/wear";
 import { skyTexture } from "@/components/game/stadium/textures/sky";
 import {
   bannerTexture,
@@ -115,24 +115,30 @@ function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
   useEffect(() => {
     const d = new THREE.Object3D();
     const col = new THREE.Color();
+    let randomState = 0x6d2b79f5;
+    const random = () => {
+      randomState = Math.imul(randomState ^ (randomState >>> 15), 1 | randomState);
+      randomState ^= randomState + Math.imul(randomState ^ (randomState >>> 7), 61 | randomState);
+      return ((randomState ^ (randomState >>> 14)) >>> 0) / 4294967296;
+    };
     const fill = (mesh: THREE.InstancedMesh | null, n: number, tallLayer: boolean) => {
       if (!mesh) return;
       for (let i = 0; i < n; i++) {
-        const x = (Math.random() * 2 - 1) * (FIELD_X + 5);
-        const z = (Math.random() * 2 - 1) * (FIELD_Z + 5);
+        const x = (random() * 2 - 1) * (FIELD_X + 5);
+        const z = (random() * 2 - 1) * (FIELD_Z + 5);
         d.position.set(x, tallLayer ? 0.09 : 0.05, z);
         d.rotation.set(
           0,
-          Math.random() * Math.PI,
-          (Math.random() - 0.5) * (tallLayer ? 0.4 : 0.22),
+          random() * Math.PI,
+          (random() - 0.5) * (tallLayer ? 0.4 : 0.22),
         );
-        const s = tallLayer ? 0.7 + Math.random() * 0.8 : 0.5 + Math.random() * 0.5;
-        d.scale.set(s, s * (0.75 + Math.random() * 0.7), s);
+        const s = tallLayer ? 0.7 + random() * 0.8 : 0.5 + random() * 0.5;
+        d.scale.set(s, s * (0.75 + random() * 0.7), s);
         d.updateMatrix();
         mesh.setMatrixAt(i, d.matrix);
         // faixas de corte: alternância clara/escura também nas fibras
         const stripe = Math.floor((z + FIELD_Z) / 6) % 2 === 0 ? 0.05 : 0;
-        col.setHSL(0.33 + Math.random() * 0.03, 0.5, 0.22 + stripe + Math.random() * 0.1);
+        col.setHSL(0.33 + random() * 0.03, 0.5, 0.22 + stripe + random() * 0.1);
         mesh.setColorAt(i, col);
       }
       mesh.instanceMatrix.needsUpdate = true;
@@ -240,6 +246,7 @@ function Pitch({
   const rough = useMemo(() => grassRoughness(mow), [mow]);
   const norm = useMemo(() => (quality === "baixa" ? null : grassNormal(mow)), [quality, mow]);
   const wear = useMemo(() => (quality === "baixa" ? null : pitchWearTexture()), [quality]);
+  const wearRough = useMemo(() => (quality === "alta" ? wearRoughness() : null), [quality]);
 
   // Tom e desgaste do gramado escolhidos em /visual (global ou por clube).
   const vis = useResolvedVisual(sim.home.clubId);
@@ -259,7 +266,7 @@ function Pitch({
         <planeGeometry args={[FIELD_X * 2 + 10, FIELD_Z * 2 + 10]} />
         <meshPhysicalMaterial
           {...(tex ? { map: tex, color: tint } : { color: "#1d7a45" })}
-          {...(rough ? { roughnessMap: rough } : {})}
+          {...(wearRough ? { roughnessMap: wearRough } : rough ? { roughnessMap: rough } : {})}
           {...(norm ? { normalMap: norm, normalScale: new THREE.Vector2(0.7, 0.7) } : {})}
           roughness={0.74}
           metalness={0.0}
@@ -2277,6 +2284,7 @@ function Stadium3DImpl({
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = eff === "baixa" ? 0.95 : 1.02;
           gl.outputColorSpace = THREE.SRGBColorSpace;
+          gl.shadowMap.type = THREE.PCFShadowMap;
           // Texturas nítidas em ângulos rasantes (linhas do campo, publicidade,
           // faixas de corte) — o custo é baixo e o ganho de definição é grande.
           const maxAniso = gl.capabilities.getMaxAnisotropy?.() ?? 1;

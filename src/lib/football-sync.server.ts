@@ -6,11 +6,12 @@
 import { LEAGUES } from "@/game/data/leagues";
 import {
   sdbSearchTeam,
-  sdbAllTeams,
+  sdbAllTeams, sdbSearchLeague,
   sdbSquad,
   apiFootballTeamId,
   apiFootballSquad,
   footballDataSquad,
+  sdbTeamKits,
 } from "./football-api.server";
 
 type Admin = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
@@ -70,7 +71,9 @@ async function enrichOne(db: Admin, club: ClubRow): Promise<boolean> {
           name: remote.stadium,
           city: remote.city ?? null,
           country: remote.country ?? club.country,
+          photo_url: remote.stadiumPhoto ?? null,
           capacity: remote.stadiumCapacity ?? null,
+          photo_url: remote.stadiumPhotoUrl ?? null,
         },
         { onConflict: "name" },
       )
@@ -107,6 +110,21 @@ async function enrichOne(db: Admin, club: ClubRow): Promise<boolean> {
         { club_id: club.id, season: "2025-2026", kind: "home", image_url: remote.kitUrl },
         { onConflict: "club_id,season,kind" },
       );
+  }
+
+  if (remote.externalId) {
+    const equipment = await sdbTeamKits(remote.externalId);
+    if (equipment.length) {
+      await db.from("kits").upsert(
+        equipment.map((item) => ({
+          club_id: club.id,
+          season: item.season,
+          kind: item.kind,
+          image_url: item.imageUrl,
+        })),
+        { onConflict: "club_id,season,kind" },
+      );
+    }
   }
 
   return true;
@@ -265,6 +283,16 @@ export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
   await pool(LEAGUES, concurrency, deadline, async (league) => {
     const sdbName = SDB_LEAGUE[league.id];
     if (!sdbName) return;
+    
+    try {
+      const logo = await sdbSearchLeague(sdbName);
+      if (logo) {
+        await db.from("competitions").update({ logo_url: logo }).eq("id", league.id);
+      }
+    } catch {
+      /* ignore league logo failures */
+    }
+
     const remote = await sdbAllTeams(sdbName);
     if (!remote.length) return;
     fetchedTeams += remote.length;
@@ -301,7 +329,9 @@ export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
               name: hit.stadium,
               city: hit.city ?? null,
               country: hit.country ?? league.country,
+              photo_url: hit.stadiumPhoto ?? null,
               capacity: hit.stadiumCapacity ?? null,
+              photo_url: hit.stadiumPhotoUrl ?? null,
             },
             { onConflict: "name" },
           )
@@ -362,7 +392,7 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
   const db = await admin();
   const { data: rows, error } = await db
     .from("clubs")
-    .select("id, name, country")
+    .select("id, name, country, strength")
     .order("strength", { ascending: false })
     .range(offset, offset + limit - 1);
   if (error) throw new Error(error.message);
@@ -409,16 +439,22 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
 
     if (!players.length) return;
 
-    const rowsToInsert = players.slice(0, 30).map((p) => ({
-      club_id: club.id,
-      name: p.name,
-      position: p.position,
-      age: p.age ?? 24,
-      shirt_number: p.shirtNumber ?? null,
-      nationality: p.nationality ?? null,
-      photo_url: p.photoUrl ?? null,
-      source: p.source,
-    }));
+    const rowsToInsert = players.slice(0, 30).map((p) => {
+      const base = (club as any).strength ?? 70;
+      const variation = Math.floor(Math.random() * 12) - 6; // -6 to +5
+      const ovr = Math.min(99, Math.max(45, base + variation));
+      return {
+        club_id: club.id,
+        name: p.name,
+        position: p.position,
+        age: p.age ?? 24,
+        shirt_number: p.shirtNumber ?? null,
+        nationality: p.nationality ?? null,
+        photo_url: p.photoUrl ?? null,
+        overall: ovr,
+        source: p.source,
+      };
+    });
     const res = await db.from("players").insert(rowsToInsert);
     if (!res.error) imported += rowsToInsert.length;
   });
