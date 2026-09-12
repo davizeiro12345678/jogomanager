@@ -518,6 +518,11 @@ function endSeason(state: CareerState): CareerState {
     ...state,
     season: state.season + 1,
     round: 1,
+    records: {
+      ...(state.records ?? {}),
+      promotions: (state.records?.promotions ?? 0) + (move?.moved === "subiu" ? 1 : 0),
+      relegations: (state.records?.relegations ?? 0) + (move?.moved === "desceu" ? 1 : 0),
+    },
     leagueId: nextLeagueId,
     ...(nextLeagueClubs ? { leagueClubs: nextLeagueClubs } : {}),
     fixtures: generateFixtures(
