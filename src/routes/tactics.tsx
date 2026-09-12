@@ -312,7 +312,7 @@ function Option({
           <button
             key={o}
             onClick={() => onChange(i)}
-            className={`rounded-lg border px-3 py-1.5 text-sm transition ${
+            className={`min-h-[40px] rounded-lg border px-3 py-1.5 text-sm transition ${
               i === value ? "border-primary bg-primary/15" : "border-border hover:bg-secondary"
             }`}
           >
