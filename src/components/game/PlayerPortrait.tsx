@@ -21,10 +21,37 @@ export function PlayerPortrait({
   secondary?: string;
 }) {
   const uid = useId().replace(/:/g, "");
-  const [photoFailed, setPhotoFailed] = useState(false);
+  const [photoOk, setPhotoOk] = useState(false);
 
-  // nova foto → nova tentativa de carregar
-  useEffect(() => setPhotoFailed(false), [player.photo]);
+  // A foto é carregada antes de entrar no SVG: assim uma URL quebrada (link
+  // antigo, bloqueio de hotlink) nunca deixa um buraco no lugar do retrato.
+  useEffect(() => {
+    const url = player.photo;
+    setPhotoOk(false);
+    if (!url || typeof window === "undefined") return;
+    if (FAILED_PHOTOS.has(url)) return;
+    if (url.startsWith("data:")) {
+      setPhotoOk(true);
+      return;
+    }
+    let alive = true;
+    const img = new window.Image();
+    img.referrerPolicy = "no-referrer";
+    img.decoding = "async";
+    img.onload = () => {
+      if (alive) setPhotoOk(true);
+    };
+    img.onerror = () => {
+      FAILED_PHOTOS.add(url);
+      if (alive) setPhotoOk(false);
+    };
+    img.src = url;
+    return () => {
+      alive = false;
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [player.photo]);
 
   const f = useMemo(() => {
     const h = hashSeed(`${player.id}-${player.name}`);
