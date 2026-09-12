@@ -262,7 +262,8 @@ function LeaguePage() {
               </li>
             ))}
           </ul>
-        </HudCard>
+          </HudCard>
+        </div>
       </div>
     </GameShell>
   );
