@@ -182,58 +182,60 @@ export function GameShell({
                     </div>
                   ))}
                 </div>
+                <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/60 pt-3">
+                  <label className="flex items-center gap-1.5 text-muted-foreground">
+                    <Globe size={14} />
+                    <span className="sr-only">{t("shell.language")}</span>
+                    <select
+                      aria-label={t("shell.language")}
+                      value={lang}
+                      onChange={(e) => setLang(e.target.value as Lang)}
+                      className="cursor-pointer bg-transparent text-xs outline-none [&>option]:bg-card [&>option]:text-foreground"
+                    >
+                      {LANGS.map((l) => (
+                        <option key={l} value={l}>
+                          {LANG_NAMES[l]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <SyncBadge sync={sync} />
+                  {signedIn ? (
+                    <button
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        navigate({ to: "/" });
+                      }}
+                      className="shrink-0 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      {t("action.signOut")}
+                    </button>
+                  ) : (
+                    <Link
+                      to="/auth"
+                      className="shrink-0 rounded-md border border-primary/50 px-2.5 py-1.5 text-xs text-primary hover:bg-primary/10"
+                    >
+                      {t("action.saveCloud")}
+                    </Link>
+                  )}
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           </nav>
 
           {/* Ações */}
           <div className="ml-auto flex shrink-0 items-center gap-1 md:ml-2">
+            <div className="hidden lg:block">
+              <CommandPalette
+                items={TABS.map((tab) => ({ to: tab.to, label: t(tab.key), group: tab.group }))}
+              />
+            </div>
             <Link
               to="/match"
               className="flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 font-display text-xs uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.03]"
             >
               <Play size={13} /> {t("action.play")}
             </Link>
-            <div className="hidden items-center gap-1 xl:flex">
-              <CommandPalette
-                items={TABS.map((tab) => ({ to: tab.to, label: t(tab.key), group: tab.group }))}
-              />
-              <SyncBadge sync={sync} />
-              <label className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1.5 text-muted-foreground">
-                <Globe size={13} />
-                <span className="sr-only">{t("shell.language")}</span>
-                <select
-                  aria-label={t("shell.language")}
-                  value={lang}
-                  onChange={(e) => setLang(e.target.value as Lang)}
-                  className="max-w-[6rem] cursor-pointer bg-transparent text-xs outline-none [&>option]:bg-card [&>option]:text-foreground"
-                >
-                  {LANGS.map((l) => (
-                    <option key={l} value={l}>
-                      {LANG_NAMES[l]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {signedIn ? (
-                <button
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    navigate({ to: "/" });
-                  }}
-                  className="shrink-0 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  {t("action.signOut")}
-                </button>
-              ) : (
-                <Link
-                  to="/auth"
-                  className="shrink-0 rounded-md border border-primary/50 px-2.5 py-1.5 text-xs text-primary hover:bg-primary/10"
-                >
-                  {t("action.saveCloud")}
-                </Link>
-              )}
-            </div>
           </div>
         </div>
 
