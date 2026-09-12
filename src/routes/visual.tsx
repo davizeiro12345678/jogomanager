@@ -280,7 +280,7 @@ function VisualPage() {
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {clubs.map((c) => {
-              const cur = v.mowByClub[c.id];
+              const cur = v.byClub[c.id]?.mow;
               return (
                 <div key={c.id} className="rounded-xl border border-border/60 p-3">
                   <div className="flex items-center gap-2">
