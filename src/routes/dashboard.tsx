@@ -2,6 +2,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
+import {
+  CountUp,
+  FormPips,
+  HudBar,
+  HudCard,
+  HudChip,
+  HudRing,
+  HudStat,
+  SparkBars,
+  Sparkline,
+  toneFor,
+} from "@/components/ui/hud";
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, wageBill } from "@/game/economy";
 import { formOf } from "@/game/events";
@@ -35,34 +47,6 @@ export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
 });
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-2xl border border-border/60 surface-card p-4">
-      <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
-        {title}
-      </h2>
-      <div className="mt-2">{children}</div>
-    </section>
-  );
-}
-
-function Bar({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="mt-2">
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span>{label}</span>
-        <span>{Math.round(value)}%</span>
-      </div>
-      <div className="mt-1 h-2 rounded-full bg-secondary">
-        <div
-          className="h-2 rounded-full bg-primary"
-          style={{ width: `${Math.max(2, Math.min(100, value))}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
 function Dashboard() {
   const { career } = useCareer();
   if (!career)
@@ -74,129 +58,278 @@ function Dashboard() {
 
   const club = CLUBS[career.clubId]!;
   const fixture = nextFixture(career);
-  const opponentId = fixture
-    ? fixture.home === career.clubId
-      ? fixture.away
-      : fixture.home
-    : null;
+  const atHome = fixture ? fixture.home === career.clubId : false;
+  const opponentId = fixture ? (atHome ? fixture.away : fixture.home) : null;
   const opponent = opponentId ? CLUBS[opponentId] : undefined;
+
   const table = computeTable(career);
   const pos = table.findIndex((r) => r.clubId === career.clubId) + 1;
+  const myRow = table.find((r) => r.clubId === career.clubId);
+  const oppRow = opponentId ? table.find((r) => r.clubId === opponentId) : undefined;
+
   const players = Object.values(career.players);
   const morale = players.reduce((s, p) => s + p.morale, 0) / Math.max(1, players.length);
   const form = players.reduce((s, p) => s + formOf(p), 0) / Math.max(1, players.length);
-  const last5 = career.results.slice(-5).map((r) => {
+  const injured = players.filter((p) => p.injuryWeeks > 0).length;
+  const suspended = players.filter((p) => p.suspended).length;
+  const unhappy = players.filter((p) => p.unhappy).length;
+
+  // histórico do clube para os micrográficos
+  const mine = career.results.filter((r) => r.home === career.clubId || r.away === career.clubId);
+  const recent = mine.slice(-10).map((r) => {
     const home = r.home === career.clubId;
-    const gf = home ? r.hg : r.ag;
-    const ga = home ? r.ag : r.hg;
-    return gf > ga ? "V" : gf === ga ? "E" : "D";
+    return { gf: home ? r.hg : r.ag, ga: home ? r.ag : r.hg };
   });
+  const last5 = recent.slice(-5).map(({ gf, ga }) => (gf > ga ? "V" : gf === ga ? "E" : "D"));
+  const pointsSeries = recent.map(({ gf, ga }) => (gf > ga ? 3 : gf === ga ? 1 : 0));
+  const goalsFor = recent.reduce((s, r) => s + r.gf, 0);
+  const goalsAgainst = recent.reduce((s, r) => s + r.ga, 0);
+  const wageWeek = wageBill(players);
+  // folha anual em M€ comparada ao caixa disponível
+  const wageYear = (wageWeek * 52) / 1000;
+  const payrollShare = Math.min(
+    100,
+    (wageYear / Math.max(0.1, wageYear + Math.max(0, career.finances.budget))) * 100,
+  );
+
+  // tons por desempenho
+  const formTone = toneFor(form);
+  const moraleTone = toneFor(morale);
+  const boardTone = toneFor(career.approval);
+  const objectiveTone: "good" | "warn" | "bad" =
+    pos > 0 && pos <= career.objective ? "good" : pos <= career.objective + 3 ? "warn" : "bad";
+  const squadTone = injured + suspended >= 4 ? "bad" : injured + suspended >= 2 ? "warn" : "good";
+
+  const topScorers = [...players]
+    .sort((a, b) => (b.goals ?? 0) - (a.goals ?? 0) || b.ovr - a.ovr)
+    .slice(0, 4);
 
   return (
     <GameShell career={career}>
-      <h1 className="font-display text-3xl uppercase tracking-wide">Painel do treinador</h1>
-      <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card title="Próxima partida">
-          {opponent ? (
-            <div className="flex items-center gap-3">
-              <Crest club={opponent} size={44} />
-              <div>
-                <p className="font-medium">{opponent.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  Rodada {fixture?.round} ·{" "}
-                  {fixture?.home === career.clubId ? "Em casa" : "Fora de casa"}
-                </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">
+            Painel do treinador
+          </h1>
+          <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
+            {club.name} · Temporada {career.season} · Rodada {career.round}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <HudStat
+            label="Posição"
+            value={pos > 0 ? `${pos}º` : "—"}
+            hint={`Objetivo ${career.objective}º`}
+            tone={objectiveTone}
+          />
+          <HudStat
+            label="Caixa"
+            value={formatMoney(career.finances.budget)}
+            hint={`Folha €${wageWeek.toLocaleString("pt-BR")}k/sem`}
+          />
+        </div>
+      </div>
+
+      <div className="mt-5 grid items-start gap-4 hud-stagger md:grid-cols-2 lg:grid-cols-3">
+        {/* Próxima partida — cartão herói */}
+        <HudCard
+          title="Próxima partida"
+          tone={fixture ? "good" : "neutral"}
+          className="md:col-span-2"
+          badge={
+            fixture ? <HudChip>{atHome ? "Em casa" : "Fora"} · Rodada {fixture.round}</HudChip> : null
+          }
+        >
+          {opponent && fixture ? (
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+              <div className="flex flex-1 items-center justify-between gap-4">
+                <div className="flex min-w-0 flex-col items-center gap-2 text-center">
+                  <Crest club={club} size={56} />
+                  <p className="truncate font-display text-sm uppercase">{club.name}</p>
+                  <p className="hud-num text-[10px] text-muted-foreground">
+                    {myRow ? `${myRow.pts} pts · ${pos}º` : "—"}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="font-display text-3xl italic text-muted-foreground">VS</p>
+                  <p className="hud-num mt-1 text-[10px] uppercase text-muted-foreground">
+                    {atHome ? "Mando seu" : "Mando do rival"}
+                  </p>
+                </div>
+                <div className="flex min-w-0 flex-col items-center gap-2 text-center">
+                  <Crest club={opponent} size={56} />
+                  <p className="truncate font-display text-sm uppercase">{opponent.name}</p>
+                  <p className="hud-num text-[10px] text-muted-foreground">
+                    {oppRow ? `${oppRow.pts} pts` : "—"}
+                  </p>
+                </div>
               </div>
-              <Link
-                to="/match"
-                className="ml-auto rounded-lg bg-primary px-3 py-2 font-display text-sm uppercase text-primary-foreground"
-              >
-                Jogar
-              </Link>
+              <div className="flex flex-col gap-3 sm:w-48">
+                <Link
+                  to="/match"
+                  className="grid min-h-[44px] place-items-center rounded-xl bg-primary px-4 font-display text-sm uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.02]"
+                >
+                  Jogar agora
+                </Link>
+                <Link
+                  to="/tactics"
+                  className="grid min-h-[44px] place-items-center rounded-xl border border-border px-4 font-display text-sm uppercase tracking-wider transition-colors hover:border-primary/60"
+                >
+                  Ajustar tática
+                </Link>
+              </div>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">Temporada encerrada.</p>
           )}
-        </Card>
+        </HudCard>
 
-        <Card title="Forma recente">
-          <div className="flex gap-1">
-            {last5.length === 0 ? (
-              <span className="text-sm text-muted-foreground">Sem jogos ainda.</span>
-            ) : (
-              last5.map((r, i) => (
-                <span
-                  key={i}
-                  className={`grid h-8 w-8 place-items-center rounded-md font-display text-sm ${
-                    r === "V"
-                      ? "bg-primary/25 text-primary"
-                      : r === "E"
-                        ? "bg-secondary text-foreground"
-                        : "bg-destructive/25 text-destructive"
+        {/* Forma recente */}
+        <HudCard
+          title="Forma recente"
+          tone={formTone}
+          badge={<Sparkline data={pointsSeries} width={72} height={22} />}
+        >
+          <FormPips results={last5} />
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <HudStat label="Gols pró" value={<CountUp value={goalsFor} />} />
+            <HudStat label="Gols contra" value={<CountUp value={goalsAgainst} />} />
+            <HudStat
+              label="Sequência"
+              value={
+                career.streak > 0 ? `${career.streak}V` : career.streak < 0 ? `${-career.streak}D` : "—"
+              }
+            />
+          </div>
+        </HudCard>
+
+        {/* Finanças */}
+        <HudCard
+          title="Finanças"
+          tone={career.finances.budget > 0 ? "good" : "bad"}
+          action={
+            <Link to="/finances" className="text-[10px] font-bold uppercase text-tone">
+              Abrir
+            </Link>
+          }
+        >
+          <p className="hud-num text-3xl font-bold text-foreground">
+            {formatMoney(career.finances.budget)}
+          </p>
+          <SparkBars className="mt-3" data={[3, 5, 4, 6, 5, 7, 6, 8]} />
+          <div className="mt-3">
+            <HudBar label="Peso da folha" value={payrollShare} />
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Patrocínio {formatMoney(career.sponsor)} · Folha €
+            {wageWeek.toLocaleString("pt-BR")}k/sem
+          </p>
+        </HudCard>
+
+        {/* Elenco */}
+        <HudCard
+          title="Elenco principal"
+          tone={squadTone}
+          className="md:col-span-2"
+          action={
+            <Link to="/squad" className="text-[10px] font-bold uppercase text-tone">
+              Ver todos
+            </Link>
+          }
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-3">
+              <HudBar label="Moral média" value={morale} tone={moraleTone} />
+              <HudBar label="Forma média" value={form} tone={formTone} />
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                <HudStat label="Lesionados" value={injured} tone={injured ? "bad" : "good"} />
+                <HudStat label="Suspensos" value={suspended} tone={suspended ? "warn" : "good"} />
+                <HudStat label="Insatisfeitos" value={unhappy} tone={unhappy ? "warn" : "good"} />
+              </div>
+            </div>
+            <ul className="space-y-2">
+              {topScorers.map((p) => (
+                <li
+                  key={p.id}
+                  className={`flex items-center gap-3 rounded-lg border border-border/60 bg-foreground/[0.03] p-2 ${
+                    toneFor(formOf(p)) === "good"
+                      ? "tone-good"
+                      : toneFor(formOf(p)) === "warn"
+                        ? "tone-warn"
+                        : "tone-bad"
                   }`}
                 >
-                  {r}
-                </span>
-              ))
-            )}
+                  <span className="hud-num grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border text-[10px] font-bold uppercase">
+                    {p.pos}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold">{p.name}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <div className="hud-bar flex-1">
+                        <div className="hud-bar-fill" style={{ width: `${formOf(p)}%` }} />
+                      </div>
+                      <span className="hud-num text-[10px] font-bold text-tone">
+                        {Math.round(formOf(p))}%
+                      </span>
+                    </div>
+                  </div>
+                  <span className="hud-num text-sm font-bold">{p.ovr}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Sequência atual:{" "}
-            {career.streak > 0
-              ? `${career.streak} vitória(s)`
-              : career.streak < 0
-                ? `${-career.streak} derrota(s)`
-                : "neutra"}
-          </p>
-        </Card>
+        </HudCard>
 
-        <Card title="Finanças">
-          <p className="font-display text-2xl">{formatMoney(career.finances.budget)}</p>
-          <p className="text-xs text-muted-foreground">
-            Folha: €{wageBill(players).toLocaleString("pt-BR")}k/sem · Patrocínio:{" "}
-            {formatMoney(career.sponsor)}
+        {/* Diretoria */}
+        <HudCard
+          title="Diretoria"
+          tone={boardTone}
+          action={
+            <Link to="/board" className="text-[10px] font-bold uppercase text-tone">
+              Sala
+            </Link>
+          }
+        >
+          <div className="flex items-center gap-4">
+            <HudRing value={career.approval} label="Confiança" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <HudBar label="Torcida" value={career.fanApproval} />
+              <HudBar
+                label="Pressão"
+                value={career.pressure}
+                tone={career.pressure > 60 ? "bad" : career.pressure > 35 ? "warn" : "good"}
+              />
+            </div>
+          </div>
+          <p className="mt-3 rounded-lg border-l-2 border-tone bg-foreground/[0.04] p-2 text-[11px] text-muted-foreground">
+            Objetivo da temporada: terminar em {career.objective}º ou melhor — hoje você está em{" "}
+            {pos > 0 ? `${pos}º` : "—"}.
           </p>
-          <Link to="/finances" className="mt-2 inline-block text-xs text-primary underline">
-            Abrir finanças
-          </Link>
-        </Card>
+        </HudCard>
 
-        <Card title="Elenco">
-          <Bar value={morale} label="Moral média" />
-          <Bar value={form} label="Forma média" />
-          <p className="mt-2 text-xs text-muted-foreground">
-            {players.filter((p) => p.injuryWeeks > 0).length} lesionado(s) ·{" "}
-            {players.filter((p) => p.suspended).length} suspenso(s) ·{" "}
-            {players.filter((p) => p.unhappy).length} insatisfeito(s)
-          </p>
-        </Card>
-
-        <Card title="Diretoria">
-          <Bar value={career.approval} label="Aprovação da diretoria" />
-          <Bar value={career.fanApproval} label="Aprovação da torcida" />
-          <Bar value={career.pressure} label="Pressão" />
-          <p className="mt-2 text-xs text-muted-foreground">
-            {pos}º lugar · objetivo {career.objective}º
-          </p>
-          <Link to="/board" className="mt-1 inline-block text-xs text-primary underline">
-            Sala da diretoria
-          </Link>
-        </Card>
-
-        <Card title="Últimas notícias">
-          <ul className="space-y-2 text-sm">
-            {career.news.slice(0, 4).map((n) => (
-              <li key={n.id}>
-                <p className="font-medium">{n.title}</p>
-                <p className="text-xs text-muted-foreground">{n.body}</p>
+        {/* Notícias */}
+        <HudCard
+          title="Notícias"
+          tone="neutral"
+          action={
+            <Link to="/news" className="text-[10px] font-bold uppercase text-tone">
+              Tudo
+            </Link>
+          }
+        >
+          <ul className="space-y-3">
+            {career.news.slice(0, 3).map((n) => (
+              <li key={n.id} className="border-b border-border/50 pb-3 last:border-0 last:pb-0">
+                <p className="text-xs font-semibold leading-snug">{n.title}</p>
+                <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">{n.body}</p>
               </li>
             ))}
+            {career.news.length === 0 && (
+              <li className="text-sm text-muted-foreground">Nenhuma notícia ainda.</li>
+            )}
           </ul>
-        </Card>
+        </HudCard>
       </div>
-      <p className="mt-4 text-xs text-muted-foreground">
-        {club.name} · Temporada {career.season}
-      </p>
     </GameShell>
   );
 }
