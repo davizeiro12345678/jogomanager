@@ -15,8 +15,23 @@ import {
   type StadiumStyle,
 } from "@/game/customStyle";
 import type { Club, League, Player, Position } from "@/game/types";
+import { scopedKey } from "@/lib/world-scope";
 
-const KEY = "manager3d.custom.v1";
+/** Dados do editor, por campanha. */
+function key() {
+  return scopedKey("manager3d.custom.v1");
+}
+/** Histórico de versões do editor (cópia antes de cada gravação). */
+function snapsKey() {
+  return scopedKey("manager3d.custom.snapshots.v1");
+}
+const MAX_SNAPSHOTS = 10;
+
+export interface CustomSnapshot {
+  version: number;
+  savedAt: number;
+  data: CustomData;
+}
 
 export interface ClubOverride {
   id: string;
@@ -87,7 +102,7 @@ const EMPTY: CustomData = { clubs: {}, players: [], competitions: [] };
 export function readCustom(): CustomData {
   if (typeof window === "undefined") return EMPTY;
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = window.localStorage.getItem(key());
     if (!raw) return EMPTY;
     const parsed = JSON.parse(raw) as Partial<CustomData>;
     return {
@@ -100,10 +115,52 @@ export function readCustom(): CustomData {
   }
 }
 
+/** Versões anteriores do editor, da mais nova para a mais antiga. */
+export function listCustomSnapshots(): CustomSnapshot[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(snapsKey());
+    const list = raw ? (JSON.parse(raw) as CustomSnapshot[]) : [];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Guarda a versão atual antes de sobrescrever (editar gera cópia). */
+function pushSnapshot(previous: CustomData) {
+  if (typeof window === "undefined") return;
+  const list = listCustomSnapshots();
+  const snap: CustomSnapshot = {
+    version: (list[0]?.version ?? 0) + 1,
+    savedAt: Date.now(),
+    data: previous,
+  };
+  try {
+    window.localStorage.setItem(
+      snapsKey(),
+      JSON.stringify([snap, ...list].slice(0, MAX_SNAPSHOTS)),
+    );
+  } catch {
+    /* espaço cheio: a gravação principal continua */
+  }
+}
+
+/** Volta o editor para uma versão anterior. */
+export function restoreCustomSnapshot(version: number): boolean {
+  const snap = listCustomSnapshots().find((s) => s.version === version);
+  if (!snap) return false;
+  writeCustom(snap.data);
+  return true;
+}
+
 export function writeCustom(data: CustomData) {
   if (typeof window === "undefined") return;
+  const previous = readCustom();
+  const changed = JSON.stringify(previous) !== JSON.stringify(data);
+  if (changed) pushSnapshot(previous);
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(data));
+    window.localStorage.setItem(key(), JSON.stringify(data));
   } catch {
     /* espaço cheio: ignora */
   }
