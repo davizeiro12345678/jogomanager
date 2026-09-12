@@ -4,6 +4,7 @@ import { GameShell } from "@/components/game/GameShell";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { computeTable, roundFixtures } from "@/game/season";
+import { PYRAMID, PYRAMID_UP, hasPyramid, slotsFor } from "@/game/pyramid";
 import { useCareer } from "@/hooks/useCareer";
 import { Flag } from "@/components/game/Flag";
 
