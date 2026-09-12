@@ -2195,12 +2195,15 @@ function Scene({
 function Stadium3DImpl({
   sim,
   mode,
-  quality,
+  quality: deviceQuality,
 }: {
   sim: SimView;
   mode: CameraMode;
   quality: Quality;
 }) {
+  const vis = useResolvedVisual(sim.home.clubId);
+  // Escolha do jogador em /visual manda; "auto" segue a detecção do aparelho.
+  const quality: Quality = vis.quality === "auto" ? deviceQuality : vis.quality;
   const look = useMemo(
     () => matchLook(sim.home.clubId, sim.away.clubId),
     [sim.home.clubId, sim.away.clubId],
