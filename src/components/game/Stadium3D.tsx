@@ -242,6 +242,14 @@ function Pitch({
   const norm = useMemo(() => (quality === "baixa" ? null : grassNormal(mow)), [quality, mow]);
   const wear = useMemo(() => (quality === "baixa" ? null : pitchWearTexture()), [quality]);
 
+  // Tom e desgaste do gramado escolhidos em /visual (global ou por clube).
+  const vis = useResolvedVisual(sim.home.clubId);
+  const tint = useMemo(() => {
+    const k = 1 - vis.grassTint * 0.35; // >1 clareia, <1 escurece
+    return new THREE.Color(k, k, k);
+  }, [vis.grassTint]);
+  const wearOpacity = 0.1 + vis.grassWear * 0.48;
+
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
