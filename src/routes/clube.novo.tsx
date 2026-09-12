@@ -67,6 +67,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const inputClass =
   "w-full rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary";
 
+const smallBtn =
+  "flex min-h-11 items-center justify-center rounded-lg border border-border/60 px-3 py-2 text-xs hover:border-primary";
+
 function KitPreview({ club }: { club: MyClub }) {
   const { kit } = club;
   return (
