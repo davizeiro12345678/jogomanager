@@ -7,7 +7,18 @@ import { initCareer } from "@/game/career";
 import { LEAGUES } from "@/game/data/leagues";
 import type { RoofKind, ChantKind } from "@/game/customStyle";
 import { useCareer } from "@/hooks/useCareer";
-import { DEFAULT_MY_CLUB, slugifyClubId, writeMyClub, type MyClub } from "@/lib/myClub";
+import {
+  DEFAULT_MY_CLUB,
+  clubToBeReplaced,
+  exportClubPack,
+  importClubPack,
+  listClubDrafts,
+  saveClubDraft,
+  slugifyClubId,
+  writeMyClub,
+  type ClubDraft,
+  type MyClub,
+} from "@/lib/myClub";
 
 export const Route = createFileRoute("/clube/novo")({
   ssr: false,
