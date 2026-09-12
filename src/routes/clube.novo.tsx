@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
 import { Chips, CREST_EMBLEMS, CREST_PATTERNS, CREST_SHAPES, EMBLEM_LABEL, KIT_PATTERNS } from "@/components/game/CrestBuilder";
