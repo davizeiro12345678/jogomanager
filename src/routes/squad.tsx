@@ -4,8 +4,9 @@ import { useState } from "react";
 import { PlayerSheet } from "@/components/game/PlayerSheet";
 
 import { GameShell } from "@/components/game/GameShell";
+import { HudCard, HudChip, HudStat, toneFor } from "@/components/ui/hud";
 import { FORMATIONS } from "@/game/formations";
-import { formatMoney, formatWage } from "@/game/economy";
+import { formatMoney, formatWage, wageBill } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";
 import type { Player } from "@/game/types";
 
@@ -75,14 +76,42 @@ function SquadPage() {
     });
   }
 
+  const avgOvr = players.reduce((s, p) => s + p.ovr, 0) / Math.max(1, players.length);
+  const avgAge = players.reduce((s, p) => s + p.age, 0) / Math.max(1, players.length);
+  const avgCondition = players.reduce((s, p) => s + p.condition, 0) / Math.max(1, players.length);
+  const injured = players.filter((p) => p.injuryWeeks > 0).length;
+  const suspended = players.filter((p) => p.suspended).length;
+  const week = wageBill(players);
+  const conditionTone = toneFor(avgCondition, { good: 82, warn: 65 });
+
   return (
     <GameShell career={career}>
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
-        <section className="rounded-2xl border border-border/60 surface-card p-4">
-          <h1 className="font-display text-xl uppercase tracking-wide">
-            Escalação · {career.tactics.formation}
-          </h1>
-          <div className="relative mt-4 aspect-[3/4] w-full overflow-hidden rounded-xl border border-border/60 bg-[linear-gradient(180deg,#12452a,#0e3a23)]">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">Elenco</h1>
+          <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
+            {players.length} jogadores · Formação {career.tactics.formation}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <HudStat label="OVR médio" value={Math.round(avgOvr)} tone={toneFor(avgOvr)} />
+          <HudStat label="Idade média" value={avgAge.toFixed(1)} />
+          <HudStat
+            label="Condição"
+            value={`${Math.round(avgCondition)}%`}
+            tone={conditionTone}
+            hint={`${injured} lesionados · ${suspended} suspensos`}
+          />
+          <HudStat label="Folha" value={`€${week.toLocaleString("pt-BR")}k/sem`} />
+        </div>
+      </div>
+
+      <div className="mt-5 grid items-start gap-4 hud-stagger lg:grid-cols-[1.1fr_1fr]">
+        <HudCard
+          title={`Escalação · ${career.tactics.formation}`}
+          badge={<HudChip>{lineup.length}/11</HudChip>}
+        >
+          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl border border-border/60 bg-[linear-gradient(180deg,#12452a,#0e3a23)]">
             <div className="absolute inset-x-6 inset-y-4 rounded-md border border-white/25" />
             <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25" />
             {lineup.map((p, i) => {
@@ -107,29 +136,39 @@ function SquadPage() {
               );
             })}
           </div>
-        </section>
+        </HudCard>
 
-        <section className="rounded-2xl border border-border/60 surface-card p-4">
-          <h2 className="font-display text-xl uppercase tracking-wide">Elenco</h2>
-          <div className="mt-3 max-h-[70vh] overflow-y-auto">
+        <HudCard
+          title="Plantel"
+          tone={injured + suspended >= 4 ? "bad" : injured + suspended >= 2 ? "warn" : "good"}
+          badge={<HudChip>{reserves.length} reservas</HudChip>}
+        >
+          <div className="max-h-[70vh] overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="text-xs uppercase text-muted-foreground">
+              <thead className="sticky top-0 z-10 bg-card/95 text-[10px] uppercase tracking-wider text-muted-foreground backdrop-blur">
                 <tr>
-                  <th className="p-1 text-left">Jogador</th>
-                  <th className="p-1">Pos</th>
-                  <th className="p-1">OVR</th>
-                  <th className="p-1">Cond</th>
-                  <th className="p-1">Valor</th>
-                  <th className="p-1"></th>
+                  <th className="p-2 text-left">Jogador</th>
+                  <th className="p-2">Pos</th>
+                  <th className="p-2">OVR</th>
+                  <th className="p-2">Cond</th>
+                  <th className="p-2">Valor</th>
+                  <th className="p-2"></th>
                 </tr>
               </thead>
+
               <tbody>
                 {[...lineup, ...reserves].map((p) => {
                   const starting = career!.lineup.includes(p.id);
                   const unavailable = p.injuryWeeks > 0 || p.suspended;
+                  const condTone = toneFor(p.condition, { good: 80, warn: 60 });
                   return (
-                    <tr key={p.id} className="border-t border-border/40">
-                      <td className="p-1">
+                    <tr
+                      key={p.id}
+                      className={`border-t border-border/40 transition-colors hover:bg-foreground/[0.04] ${
+                        starting ? "bg-primary/[0.06]" : ""
+                      }`}
+                    >
+                      <td className="p-2">
                         {p.photo ? (
                           <img
                             src={p.photo}
@@ -138,11 +177,11 @@ function SquadPage() {
                             className="mr-2 inline-block h-7 w-7 rounded-full object-cover align-middle ring-1 ring-border/60"
                           />
                         ) : null}
-                        <span className="text-muted-foreground">{p.number} </span>
+                        <span className="hud-num text-muted-foreground">{p.number} </span>
                         <button
                           type="button"
                           onClick={() => setSheet(p)}
-                          className="text-left underline-offset-2 hover:text-primary hover:underline"
+                          className="text-left font-semibold underline-offset-2 hover:text-primary hover:underline"
                         >
                           {p.name}
                         </button>
@@ -157,26 +196,35 @@ function SquadPage() {
                         ) : null}
                         <div className="mt-0.5 flex gap-1">{statusBadge(p)}</div>
                       </td>
-                      <td className="p-1 text-center text-muted-foreground">{p.pos}</td>
-                      <td className="p-1 text-center font-display">{p.ovr}</td>
-                      <td className="p-1 text-center">
-                        <span
-                          className={
-                            p.condition > 80
-                              ? "text-primary"
-                              : p.condition > 60
-                                ? "text-amber-400"
-                                : "text-destructive"
-                          }
-                        >
-                          {p.condition}%
+                      <td className="p-2 text-center">
+                        <span className="hud-num rounded-md border border-border px-1.5 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">
+                          {p.pos}
                         </span>
                       </td>
-                      <td className="p-1 text-center text-xs text-muted-foreground">
+                      <td className="hud-num p-2 text-center font-bold">{p.ovr}</td>
+                      <td className="p-2">
+                        <div
+                          className={
+                            condTone === "good"
+                              ? "tone-good"
+                              : condTone === "warn"
+                                ? "tone-warn"
+                                : "tone-bad"
+                          }
+                        >
+                          <div className="hud-bar">
+                            <div className="hud-bar-fill" style={{ width: `${p.condition}%` }} />
+                          </div>
+                          <p className="hud-num mt-1 text-center text-[10px] font-bold text-tone">
+                            {p.condition}%
+                          </p>
+                        </div>
+                      </td>
+                      <td className="hud-num p-2 text-center text-xs text-muted-foreground">
                         {formatMoney(p.value)}
                         <div className="text-[10px]">{formatWage(p.wage)}</div>
                       </td>
-                      <td className="p-1 text-right">
+                      <td className="p-2 text-right">
                         {starting ? (
                           <span className="rounded bg-primary/20 px-1.5 py-0.5 text-[10px] uppercase text-primary">
                             Titular
@@ -186,7 +234,7 @@ function SquadPage() {
                         ) : (
                           <select
                             aria-label={`Substituir titular por ${p.name}`}
-                            className="rounded border border-input bg-background/60 px-1 py-0.5 text-xs"
+                            className="min-h-[36px] rounded-lg border border-input bg-background/60 px-2 text-xs"
                             value=""
                             onChange={(e) => e.target.value && swap(e.target.value, p.id)}
                           >
@@ -205,7 +253,7 @@ function SquadPage() {
               </tbody>
             </table>
           </div>
-        </section>
+        </HudCard>
       </div>
       {sheet ? <PlayerSheet player={sheet} onClose={() => setSheet(null)} /> : null}
     </GameShell>

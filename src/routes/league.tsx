@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
 import { Crest } from "@/components/game/Crest";
+import { HudCard, HudChip, HudStat, toneFor } from "@/components/ui/hud";
+
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { computeTable, roundFixtures } from "@/game/season";
 import { PYRAMID, PYRAMID_UP, hasPyramid, slotsFor } from "@/game/pyramid";
@@ -55,47 +57,100 @@ function LeaguePage() {
     return index < slots ? "acesso" : null;
   };
 
+  const myIndex = table.findIndex((r) => r.clubId === career.clubId);
+  const myRow = myIndex >= 0 ? table[myIndex] : undefined;
+  const pos = myIndex + 1;
+  const played = myRow ? myRow.p : 0;
+  const efficiency = played > 0 && myRow ? (myRow.pts / (played * 3)) * 100 : 0;
+  const myZone = myIndex >= 0 ? zoneOf(myIndex) : null;
+
   return (
     <GameShell career={career}>
-      <h1 className="font-display text-3xl uppercase tracking-wide">
-        <Flag league={league.id} size={28} /> {league.name}
-      </h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="flex items-center gap-2 font-display text-3xl uppercase tracking-wide sm:text-4xl">
+            <Flag league={league.id} size={28} /> {league.name}
+          </h1>
+          <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
+            Temporada {career.season} · Rodada {career.round}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <HudStat
+            label="Posição"
+            value={pos > 0 ? `${pos}º` : "—"}
+            hint={
+              myZone === "acesso"
+                ? "Zona de acesso"
+                : myZone === "rebaixamento"
+                  ? "Zona de rebaixamento"
+                  : `Objetivo ${career.objective}º`
+            }
+            tone={
+              myZone === "rebaixamento"
+                ? "bad"
+                : pos > 0 && pos <= career.objective
+                  ? "good"
+                  : "warn"
+            }
+          />
+          <HudStat label="Pontos" value={myRow ? myRow.pts : "—"} hint={`${played} jogos`} />
+          <HudStat
+            label="Aproveitamento"
+            value={`${Math.round(efficiency)}%`}
+            tone={toneFor(efficiency, { good: 60, warn: 40 })}
+          />
+          <HudStat
+            label="Saldo"
+            value={
+              myRow
+                ? myRow.gf - myRow.ga > 0
+                  ? `+${myRow.gf - myRow.ga}`
+                  : myRow.gf - myRow.ga
+                : "—"
+            }
+            hint={myRow ? `${myRow.gf} pró · ${myRow.ga} contra` : ""}
+          />
+        </div>
+      </div>
 
       {linked && (
-        <section className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl border border-border/60 surface-card p-4 text-sm">
-          <div>
-            <p className="font-display uppercase tracking-wide">Acesso e rebaixamento</p>
-            <p className="text-muted-foreground">
+        <HudCard title="Acesso e rebaixamento" tone="neutral" className="mt-5">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
+            <p className="flex-1 text-muted-foreground">
               {inTopDivision
                 ? `Os ${slots} últimos caem para a divisão de baixo no fim da temporada.`
                 : `Os ${slots} primeiros sobem para a divisão de cima no fim da temporada.`}
             </p>
+            <label className="flex items-center gap-2">
+              <span className="text-muted-foreground">Vagas</span>
+              <input
+                type="number"
+                min={1}
+                max={maxSlots}
+                value={slots}
+                onChange={(e) => {
+                  const next = Math.max(
+                    1,
+                    Math.min(maxSlots, Math.round(Number(e.target.value) || 1)),
+                  );
+                  update({ ...career, pyramidSlots: next });
+                }}
+                className="h-11 w-20 rounded-lg border border-border/60 bg-background px-3 text-center font-display"
+                aria-label="Número de vagas de acesso e rebaixamento"
+              />
+            </label>
           </div>
-          <label className="flex items-center gap-2">
-            <span className="text-muted-foreground">Vagas</span>
-            <input
-              type="number"
-              min={1}
-              max={maxSlots}
-              value={slots}
-              onChange={(e) => {
-                const next = Math.max(
-                  1,
-                  Math.min(maxSlots, Math.round(Number(e.target.value) || 1)),
-                );
-                update({ ...career, pyramidSlots: next });
-              }}
-              className="h-11 w-20 rounded-lg border border-border/60 bg-background px-3 text-center font-display"
-              aria-label="Número de vagas de acesso e rebaixamento"
-            />
-          </label>
-        </section>
+        </HudCard>
       )}
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <section className="overflow-hidden rounded-2xl border border-border/60 surface-card">
+      <div className="mt-4 grid items-start gap-4 hud-stagger lg:grid-cols-[1.4fr_1fr]">
+        <HudCard
+          title="Classificação"
+          bodyClassName="-mx-4 -mb-4 overflow-hidden sm:-mx-5 sm:-mb-5"
+        >
           <table className="w-full text-sm">
-            <thead className="bg-secondary/60 text-xs uppercase text-muted-foreground">
+            <thead className="bg-foreground/[0.05] text-[10px] uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="p-2 text-left">#</th>
                 <th className="p-2 text-left">Clube</th>
@@ -115,16 +170,22 @@ function LeaguePage() {
                 return (
                   <tr
                     key={r.clubId}
-                    className={`border-t border-border/40 ${mine ? "bg-primary/10" : ""}`}
+                    className={`border-t border-border/40 transition-colors hover:bg-foreground/[0.04] ${
+                      mine ? "bg-primary/10 font-semibold" : ""
+                    }`}
                   >
-                    <td className="p-2 text-muted-foreground">
+                    <td className="hud-num p-2 text-muted-foreground">
                       <span className="flex items-center gap-2">
-                        {zone && (
-                          <span
-                            aria-hidden
-                            className={`h-4 w-1 rounded-full ${zone === "acesso" ? "bg-primary" : "bg-destructive"}`}
-                          />
-                        )}
+                        <span
+                          aria-hidden
+                          className={`h-5 w-1 rounded-full ${
+                            zone === "acesso"
+                              ? "bg-primary"
+                              : zone === "rebaixamento"
+                                ? "bg-destructive"
+                                : "bg-transparent"
+                          }`}
+                        />
                         <span className="sr-only">
                           {zone === "acesso"
                             ? "Zona de acesso."
@@ -141,36 +202,40 @@ function LeaguePage() {
                         <span className="truncate">{club.name}</span>
                       </span>
                     </td>
-                    <td className="p-2 text-center">{r.p}</td>
-                    <td className="p-2 text-center">{r.w}</td>
-                    <td className="p-2 text-center">{r.d}</td>
-                    <td className="p-2 text-center">{r.l}</td>
-                    <td className="p-2 text-center">{r.gf - r.ga}</td>
-                    <td className="p-2 text-center font-display">{r.pts}</td>
+                    <td className="hud-num p-2 text-center text-muted-foreground">{r.p}</td>
+                    <td className="hud-num p-2 text-center">{r.w}</td>
+                    <td className="hud-num p-2 text-center">{r.d}</td>
+                    <td className="hud-num p-2 text-center">{r.l}</td>
+                    <td className="hud-num p-2 text-center">{r.gf - r.ga}</td>
+                    <td className="hud-num p-2 text-center font-bold">{r.pts}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-        </section>
+        </HudCard>
 
-        <section className="rounded-2xl border border-border/60 surface-card p-4">
-          <h2 className="font-display text-lg uppercase tracking-wide">Rodada {career.round}</h2>
-          <ul className="mt-3 space-y-2 text-sm">
+        <HudCard
+          title={`Rodada ${career.round}`}
+          badge={<HudChip>{fixtures.length} jogos</HudChip>}
+        >
+          <ul className="space-y-2 text-sm">
             {fixtures.map((f) => (
               <li
                 key={`${f.home}-${f.away}`}
-                className="flex items-center justify-between border-b border-border/30 pb-1"
+                className={`flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-foreground/[0.03] px-3 py-2 ${
+                  f.home === career.clubId || f.away === career.clubId ? "border-primary/50" : ""
+                }`}
               >
-                <span className="truncate">{CLUBS[f.home]?.short}</span>
-                <span className="font-display text-muted-foreground">
+                <span className="flex-1 truncate">{CLUBS[f.home]?.short}</span>
+                <span className="hud-num rounded-md border border-border px-2 py-0.5 text-xs font-bold">
                   {f.homeGoals === null ? "x" : `${f.homeGoals} - ${f.awayGoals}`}
                 </span>
-                <span className="truncate text-right">{CLUBS[f.away]?.short}</span>
+                <span className="flex-1 truncate text-right">{CLUBS[f.away]?.short}</span>
               </li>
             ))}
           </ul>
-        </section>
+        </HudCard>
       </div>
     </GameShell>
   );
