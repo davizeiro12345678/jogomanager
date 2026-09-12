@@ -142,8 +142,13 @@ function NewClubPage() {
   const [draftKey, setDraftKey] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<ClubDraft[]>([]);
   const [note, setNote] = useState("");
+  const [existing, setExisting] = useState<MyClub | null>(null);
 
-  useEffect(() => setDrafts(listClubDrafts()), []);
+  useEffect(() => {
+    setDrafts(listClubDrafts());
+    setExisting(readMyClub());
+  }, []);
+
 
   const preview = useMemo(
     () => ({
