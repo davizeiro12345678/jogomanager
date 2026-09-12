@@ -14,6 +14,7 @@ import { realSquadFor, type RealPlayer } from "@/lib/realSquads";
 import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
 import { applyRegens } from "./regen";
+import { applyPyramid } from "./pyramid";
 
 import { computeTable, generateFixtures } from "./season";
 import { evaluateAchievements } from "./achievements";
