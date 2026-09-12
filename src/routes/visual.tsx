@@ -290,11 +290,7 @@ function VisualPage() {
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <button
                       type="button"
-                      onClick={() => {
-                        const next = { ...v.mowByClub };
-                        delete next[c.id];
-                        setVisual({ mowByClub: next });
-                      }}
+                      onClick={() => setClubVisual(c.id, null)}
                       className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
                         !cur
                           ? "border-primary bg-primary/15 text-primary"
