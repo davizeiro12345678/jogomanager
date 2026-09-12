@@ -321,30 +321,26 @@ export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
         .eq("id", club.id);
 
       if (hit.externalId) {
-        await db
-          .from("club_external_ids")
-          .upsert(
-            {
-              club_id: club.id,
-              source: "thesportsdb",
-              external_id: hit.externalId,
-              confirmed: true,
-            },
-            { onConflict: "club_id,source" },
-          );
+        await db.from("club_external_ids").upsert(
+          {
+            club_id: club.id,
+            source: "thesportsdb",
+            external_id: hit.externalId,
+            confirmed: true,
+          },
+          { onConflict: "club_id,source" },
+        );
       }
       if (hit.apiFootballId) {
-        await db
-          .from("club_external_ids")
-          .upsert(
-            {
-              club_id: club.id,
-              source: "api-football",
-              external_id: hit.apiFootballId,
-              confirmed: true,
-            },
-            { onConflict: "club_id,source" },
-          );
+        await db.from("club_external_ids").upsert(
+          {
+            club_id: club.id,
+            source: "api-football",
+            external_id: hit.apiFootballId,
+            confirmed: true,
+          },
+          { onConflict: "club_id,source" },
+        );
       }
       if (hit.kitUrl) {
         await db
