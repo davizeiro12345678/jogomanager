@@ -113,7 +113,26 @@ function SquadPage() {
         </div>
       </div>
 
-      <div className="mt-5 grid items-start gap-4 hud-stagger lg:grid-cols-[1.1fr_1fr]">
+      <div className="mt-5 grid gap-4 hud-stagger sm:grid-cols-3">
+        <HudCard title="Condição do grupo" tone={conditionTone} bodyClassName="flex justify-center">
+          <HudRing value={avgCondition} label="condição" sub={`${injured} lesionados`} />
+        </HudCard>
+        <HudCard title="Faixa etária" badge={<HudChip>{players.length} atletas</HudChip>}>
+          <SparkBars data={ageBuckets} height={72} />
+          <div className="mt-2 flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span>≤21</span>
+            <span>22–25</span>
+            <span>26–29</span>
+            <span>30+</span>
+          </div>
+        </HudCard>
+        <HudCard title="Vestíário" bodyClassName="space-y-5 pt-1">
+          <HudBar label="Moral média" value={avgMorale} tone={toneFor(avgMorale)} />
+          <HudBar label="Condição média" value={avgCondition} tone={conditionTone} />
+        </HudCard>
+      </div>
+
+      <div className="mt-4 grid items-start gap-4 hud-stagger lg:grid-cols-[1.1fr_1fr]">
         <HudCard
           title={`Escalação · ${career.tactics.formation}`}
           badge={<HudChip>{lineup.length}/11</HudChip>}
