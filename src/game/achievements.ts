@@ -144,8 +144,12 @@ export function evaluateAchievements(state: CareerState): string[] {
   if (state.trophies.length >= 10) unlock("dez-titulos");
   if ((state.matchLog ?? []).length >= 100) unlock("cem-jogos");
 
+  // maior contratação da carreira (registro permanente, não zera na temporada)
+  if ((state.records?.biggestSigning ?? 0) >= 50) unlock("contratacao-50m");
+
   const history = state.managerHistory ?? [];
   if (history.length >= 2) unlock("resiliencia");
+  if ((state.records?.promotions ?? 0) >= 1) unlock("acesso-elite");
   for (let i = 1; i < history.length; i++) {
     const prev = CLUBS[history[i - 1]!.clubId]?.strength ?? 0;
     const cur = CLUBS[history[i]!.clubId]?.strength ?? 0;
@@ -153,4 +157,40 @@ export function evaluateAchievements(state: CareerState): string[] {
   }
 
   return unlocked;
+}
+
+export interface Milestone {
+  id: string;
+  label: string;
+  value: number;
+  target: number;
+  suffix?: string;
+}
+
+/** Marcos de progresso: mostram o quanto falta para o próximo degrau. */
+export function careerMilestones(state: CareerState): Milestone[] {
+  const log = state.matchLog ?? [];
+  const wins = careerWins(state);
+  const step = (v: number, steps: number[]) => steps.find((s) => v < s) ?? steps[steps.length - 1]!;
+
+  const goals = log.reduce((sum, m) => sum + m.gf, 0);
+  const titles = state.trophies.length;
+  const budget = Math.max(0, Math.round(state.finances?.budget ?? 0));
+
+  return [
+    { id: "jogos", label: "Partidas comandadas", value: log.length, target: step(log.length, [10, 50, 100, 250, 500]) },
+    { id: "vitorias", label: "Vitórias", value: wins, target: step(wins, [1, 10, 50, 100, 250]) },
+    { id: "gols", label: "Gols marcados", value: goals, target: step(goals, [50, 150, 400, 1000]) },
+    { id: "titulos", label: "Troféus", value: titles, target: step(titles, [1, 3, 5, 10, 20]) },
+    { id: "temporadas", label: "Temporadas completas", value: state.history.length, target: step(state.history.length, [1, 3, 5, 10]) },
+    { id: "acessos", label: "Acessos conquistados", value: state.records?.promotions ?? 0, target: step(state.records?.promotions ?? 0, [1, 2, 3]) },
+    { id: "caixa", label: "Caixa do clube", value: budget, target: step(budget, [25, 100, 250, 500]), suffix: "M€" },
+    {
+      id: "contratacao",
+      label: "Maior contratação",
+      value: Math.round(state.records?.biggestSigning ?? 0),
+      target: step(state.records?.biggestSigning ?? 0, [10, 25, 50, 100]),
+      suffix: "M€",
+    },
+  ];
 }
