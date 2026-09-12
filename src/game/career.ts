@@ -18,7 +18,7 @@ import { applyPyramid } from "./pyramid";
 
 import { computeTable, generateFixtures } from "./season";
 import { evaluateAchievements } from "./achievements";
-import { createCups, cupPrize, playCupStage, stageName } from "./cup";
+import { createCups, cupPrize, inGroupStage, nextPhaseName, playCupStage, stageName } from "./cup";
 import { buildSquad } from "./squad";
 import type {
   CareerState,
