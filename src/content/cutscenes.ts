@@ -278,7 +278,36 @@ export const CUTSCENES: Record<string, Cutscene> = {
     ],
     "good",
   ),
+  "derby-week": scene("derby-week", "Semana de clássico", "dressing", [
+    { who: "narrator", text: "A cidade amanheceu dividida. Bandeiras nas janelas, faixas nos postes." },
+    { who: "captain", text: "Professor, esse aqui vale por três." },
+    { who: "manager", text: "Vale por um. Mas jogamos como se valesse a temporada inteira." },
+    { who: "assistant", text: "Marcação individual nas bolas paradas. Eles vivem disso." },
+  ]),
+  "youth-debut": scene(
+    "youth-debut",
+    "Estreia do garoto da base",
+    "tunnel",
+    [
+      { who: "scout", text: "Ele treina com o profissional desde os quinze. Está pronto." },
+      { who: "manager", text: "Garoto, joga do teu jeito. Se errar, o erro é meu." },
+      { who: "narrator", text: "O número dele aparece na quarta placa. O estádio levanta." },
+    ],
+    "good",
+  ),
+  "injury-blow": scene(
+    "injury-blow",
+    "Lesão do craque",
+    "gym",
+    [
+      { who: "doctor", text: "Exame confirmou. Fora por seis semanas, no melhor cenário." },
+      { who: "manager", text: "Ninguém substitui ele sozinho. Vamos substituir em quatro." },
+      { who: "captain", text: "O grupo cobre. Diga só como você quer." },
+    ],
+    "bad",
+  ),
 };
+
 
 
 /** Cenas de treino sorteadas semana a semana no modo carreira. */
