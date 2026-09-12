@@ -99,12 +99,26 @@ function LeaguePage() {
               {table.map((r, i) => {
                 const club = CLUBS[r.clubId]!;
                 const mine = r.clubId === career.clubId;
+                const zone = zoneOf(i);
                 return (
                   <tr
                     key={r.clubId}
                     className={`border-t border-border/40 ${mine ? "bg-primary/10" : ""}`}
                   >
-                    <td className="p-2 text-muted-foreground">{i + 1}</td>
+                    <td className="p-2 text-muted-foreground">
+                      <span className="flex items-center gap-2">
+                        {zone && (
+                          <span
+                            aria-hidden
+                            className={`h-4 w-1 rounded-full ${zone === "acesso" ? "bg-primary" : "bg-destructive"}`}
+                          />
+                        )}
+                        <span className="sr-only">
+                          {zone === "acesso" ? "Zona de acesso." : zone === "rebaixamento" ? "Zona de rebaixamento." : ""}
+                        </span>
+                        {i + 1}
+                      </span>
+                    </td>
                     <td className="p-2">
                       <span className="flex items-center gap-2">
                         <Crest club={club} size={20} />
