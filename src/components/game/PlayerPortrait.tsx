@@ -4,6 +4,9 @@ import { hairFor, skinFor } from "@/game/kits";
 import { hashSeed } from "@/game/rng";
 import type { Player } from "@/game/types";
 
+/** URLs de foto que já falharam nesta sessão: não tentamos de novo. */
+const FAILED_PHOTOS = new Set<string>();
+
 /**
  * Retrato do jogador. Com foto real (dados oficiais) ela é usada recortada no
  * mesmo formato; sem foto, ou se a imagem falhar, cai no retrato vetorial
@@ -69,7 +72,7 @@ export function PlayerPortrait({
 
   const bg = `bg${uid}`;
   const clip = `clip${uid}`;
-  const photo = player.photo && !photoFailed ? player.photo : null;
+  const photo = player.photo && photoOk ? player.photo : null;
 
   if (photo) {
     return (
@@ -91,16 +94,16 @@ export function PlayerPortrait({
           </clipPath>
         </defs>
         <rect width="100" height="100" rx="14" fill={`url(#${bg})`} />
-        <image
-          href={photo}
-          x="0"
-          y="0"
-          width="100"
-          height="100"
-          preserveAspectRatio="xMidYMid slice"
-          clipPath={`url(#${clip})`}
-          onError={() => setPhotoFailed(true)}
-        />
+        <foreignObject x="0" y="0" width="100" height="100" clipPath={`url(#${clip})`}>
+          <img
+            src={photo}
+            alt=""
+            referrerPolicy="no-referrer"
+            loading="lazy"
+            decoding="async"
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+        </foreignObject>
         <rect y="78" width="100" height="22" fill="#05100b" opacity="0.55" clipPath={`url(#${clip})`} />
         <text x="50" y="94" textAnchor="middle" fontSize="12" fontWeight="700" fill={secondary} opacity="0.95">
           {player.number}
