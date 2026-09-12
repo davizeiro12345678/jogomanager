@@ -353,8 +353,10 @@ function applyWeeklyDevelopment(
   const intensity = state.trainingIntensity ?? 1;
   const baseRegen = state.training === "fisico" ? 16 : state.training === "equilibrado" ? 12 : 9;
   // treino leve recupera mais e evolui menos; treino intenso é o contrário
-  const condRegen = baseRegen + (intensity === 0 ? 5 : intensity === 2 ? -5 : 0);
-  const growthMult = 0.75 + intensity * 0.3;
+  // Impulso semanal comprado na loja: +25% de treino e +5 de recuperação.
+  const boosted = !!state.boostUntil && new Date(state.boostUntil).getTime() > Date.now();
+  const condRegen = baseRegen + (intensity === 0 ? 5 : intensity === 2 ? -5 : 0) + (boosted ? 5 : 0);
+  const growthMult = (0.75 + intensity * 0.3) * (boosted ? 1.25 : 1);
   const injuryMult = 0.7 + intensity * 0.4;
 
   const next: Record<string, Player> = {};
