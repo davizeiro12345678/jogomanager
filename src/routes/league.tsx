@@ -138,9 +138,8 @@ function LeaguePage() {
 
       <div className="mt-4 grid items-start gap-4 hud-stagger lg:grid-cols-[1.4fr_1fr]">
         <HudCard title="Classificação" bodyClassName="-mx-4 -mb-4 overflow-hidden sm:-mx-5 sm:-mb-5">
-
           <table className="w-full text-sm">
-            <thead className="bg-secondary/60 text-xs uppercase text-muted-foreground">
+            <thead className="bg-foreground/[0.05] text-[10px] uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="p-2 text-left">#</th>
                 <th className="p-2 text-left">Clube</th>
@@ -160,16 +159,22 @@ function LeaguePage() {
                 return (
                   <tr
                     key={r.clubId}
-                    className={`border-t border-border/40 ${mine ? "bg-primary/10" : ""}`}
+                    className={`border-t border-border/40 transition-colors hover:bg-foreground/[0.04] ${
+                      mine ? "bg-primary/10 font-semibold" : ""
+                    }`}
                   >
-                    <td className="p-2 text-muted-foreground">
+                    <td className="hud-num p-2 text-muted-foreground">
                       <span className="flex items-center gap-2">
-                        {zone && (
-                          <span
-                            aria-hidden
-                            className={`h-4 w-1 rounded-full ${zone === "acesso" ? "bg-primary" : "bg-destructive"}`}
-                          />
-                        )}
+                        <span
+                          aria-hidden
+                          className={`h-5 w-1 rounded-full ${
+                            zone === "acesso"
+                              ? "bg-primary"
+                              : zone === "rebaixamento"
+                                ? "bg-destructive"
+                                : "bg-transparent"
+                          }`}
+                        />
                         <span className="sr-only">
                           {zone === "acesso"
                             ? "Zona de acesso."
@@ -186,36 +191,38 @@ function LeaguePage() {
                         <span className="truncate">{club.name}</span>
                       </span>
                     </td>
-                    <td className="p-2 text-center">{r.p}</td>
-                    <td className="p-2 text-center">{r.w}</td>
-                    <td className="p-2 text-center">{r.d}</td>
-                    <td className="p-2 text-center">{r.l}</td>
-                    <td className="p-2 text-center">{r.gf - r.ga}</td>
-                    <td className="p-2 text-center font-display">{r.pts}</td>
+                    <td className="hud-num p-2 text-center text-muted-foreground">{r.p}</td>
+                    <td className="hud-num p-2 text-center">{r.w}</td>
+                    <td className="hud-num p-2 text-center">{r.d}</td>
+                    <td className="hud-num p-2 text-center">{r.l}</td>
+                    <td className="hud-num p-2 text-center">{r.gf - r.ga}</td>
+                    <td className="hud-num p-2 text-center font-bold">{r.pts}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-        </section>
+        </HudCard>
 
-        <section className="rounded-2xl border border-border/60 surface-card p-4">
-          <h2 className="font-display text-lg uppercase tracking-wide">Rodada {career.round}</h2>
-          <ul className="mt-3 space-y-2 text-sm">
+        <HudCard title={`Rodada ${career.round}`} badge={<HudChip>{fixtures.length} jogos</HudChip>}>
+          <ul className="space-y-2 text-sm">
             {fixtures.map((f) => (
               <li
                 key={`${f.home}-${f.away}`}
-                className="flex items-center justify-between border-b border-border/30 pb-1"
+                className={`flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-foreground/[0.03] px-3 py-2 ${
+                  f.home === career.clubId || f.away === career.clubId ? "border-primary/50" : ""
+                }`}
               >
-                <span className="truncate">{CLUBS[f.home]?.short}</span>
-                <span className="font-display text-muted-foreground">
+                <span className="flex-1 truncate">{CLUBS[f.home]?.short}</span>
+                <span className="hud-num rounded-md border border-border px-2 py-0.5 text-xs font-bold">
                   {f.homeGoals === null ? "x" : `${f.homeGoals} - ${f.awayGoals}`}
                 </span>
-                <span className="truncate text-right">{CLUBS[f.away]?.short}</span>
+                <span className="flex-1 truncate text-right">{CLUBS[f.away]?.short}</span>
               </li>
             ))}
           </ul>
-        </section>
+        </HudCard>
+
       </div>
     </GameShell>
   );
