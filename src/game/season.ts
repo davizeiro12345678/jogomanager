@@ -54,10 +54,9 @@ export function generateFixtures(leagueId: string, seed: string, clubIds?: strin
 }
 
 export function computeTable(state: CareerState): TableRow[] {
-  const clubs = getLeague(state.leagueId).clubs;
   const rows: Record<string, TableRow> = {};
-  clubs.forEach((c) => {
-    rows[c.id] = { clubId: c.id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+  leagueClubIds(state).forEach((id) => {
+    rows[id] = { clubId: id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
   });
 
   for (const f of state.fixtures) {
