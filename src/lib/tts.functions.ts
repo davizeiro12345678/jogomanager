@@ -49,6 +49,10 @@ export const narrateEvent = createServerFn({ method: "POST" })
     const apiKey = process.env["ELEVENLABS_API_KEY"];
     if (!apiKey) return { ok: false, reason: "unavailable" };
 
+    // Teto mensal de voz: sem saldo, o jogo cai na narração local.
+    const { reserveAiBudget } = await import("@/lib/ai-budget.server");
+    if (!(await reserveAiBudget("voice"))) return { ok: false, reason: "unavailable" };
+
     const lang = data.lang as NarrationLang;
     const event = data.event as NarrationEvent;
     const text = narrationLine(lang, event, safeTeam(data.team), data.variant);

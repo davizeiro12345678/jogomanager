@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_budget_usage: {
+        Row: {
+          kind: string
+          month: string
+          requests: number
+          spent_cents: number
+          updated_at: string
+        }
+        Insert: {
+          kind: string
+          month: string
+          requests?: number
+          spent_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          kind?: string
+          month?: string
+          requests?: number
+          spent_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       careers: {
         Row: {
           created_at: string
@@ -64,6 +88,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      chat_reports: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string
+          reason: string
+          reporter_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id: string
+          reason: string
+          reporter_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string
+          reason?: string
+          reporter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_reports_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       club_external_ids: {
         Row: {
@@ -581,6 +637,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          blocked_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          blocked_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_boosts: {
+        Row: {
+          training_until: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          training_until?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          training_until?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_purchases: {
         Row: {
           amount_cents: number
@@ -679,6 +771,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_training_boost: {
+        Args: { _user_id: string }
+        Returns: {
+          training_boosts: number
+          training_until: string
+        }[]
+      }
       consume_wallet_item: {
         Args: { _detail?: string; _item: string; _user_id: string }
         Returns: {
@@ -688,6 +787,10 @@ export type Database = {
       }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
+        Returns: boolean
+      }
+      reserve_ai_budget: {
+        Args: { _cents: number; _kind: string }
         Returns: boolean
       }
       send_chat_message_for: {

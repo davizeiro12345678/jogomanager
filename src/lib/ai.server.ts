@@ -50,6 +50,12 @@ export async function callModel(messages: ChatMessage[]): Promise<string> {
     throw new AiError("unknown", "IA indisponível no momento. Tente novamente mais tarde.");
   }
 
+  // Teto mensal de gasto: reserva antes de gerar custo.
+  const { reserveAiBudget } = await import("@/lib/ai-budget.server");
+  if (!(await reserveAiBudget("text"))) {
+    throw new AiError("no_credits", "O limite de IA deste mês foi atingido. Volte no mês que vem.");
+  }
+
   let res: Response;
   try {
     res = await fetch(GATEWAY_URL, {

@@ -269,6 +269,8 @@ export interface CareerState {
   pyramidSlots?: number;
   /** marcos permanentes da carreira */
   records?: CareerRecords;
+  /** Fim do impulso de treino semanal (ISO). Só vale na carreira individual. */
+  boostUntil?: string;
   /** Evolução acumulada dos 28 atributos, por jogador. */
   attrDeltas?: Record<string, Partial<Record<string, number>>>;
 }
