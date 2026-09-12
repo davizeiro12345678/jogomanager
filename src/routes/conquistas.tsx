@@ -112,6 +112,31 @@ function ConquistasPage() {
           </div>
         </section>
 
+        <section className="rounded-2xl border border-border/60 surface-card p-5">
+          <h2 className="font-display text-xl uppercase tracking-wide">Marcos</h2>
+          <p className="mt-1 text-sm text-muted-foreground">O quanto falta para o próximo degrau da carreira.</p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {milestones.map((m) => {
+              const pct = Math.min(100, Math.round((m.value / Math.max(1, m.target)) * 100));
+              return (
+                <div key={m.id}>
+                  <div className="flex items-baseline justify-between text-sm">
+                    <span>{m.label}</span>
+                    <span className="font-display text-muted-foreground">
+                      {m.value}
+                      {m.suffix ?? ""} / {m.target}
+                      {m.suffix ?? ""}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {ACHIEVEMENTS.map((a) => {
             const unlocked = unlockedSet.has(a.id);
