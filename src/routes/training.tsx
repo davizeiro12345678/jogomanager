@@ -56,7 +56,7 @@ function TrainingPage() {
       </p>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+        <section className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Foco</h2>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {FOCUS.map((f) => (
@@ -76,7 +76,7 @@ function TrainingPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+        <section className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Intensidade</h2>
           <div className="mt-3 space-y-2">
             {INTENSITY.map((i) => (
@@ -102,7 +102,7 @@ function TrainingPage() {
         </section>
       </div>
 
-      <section className="mt-4 rounded-2xl border border-border/60 bg-card/70 p-5">
+      <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
         <h2 className="font-display text-lg uppercase tracking-wide">Promessas em evolução</h2>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {youngsters.map((p) => (

@@ -118,7 +118,7 @@ function TransfersPage() {
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+        <section className="rounded-2xl border border-border/60 surface-card p-5">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-display text-2xl uppercase tracking-wide">Mercado da bola</h1>
             <span
@@ -299,7 +299,7 @@ function SellPanel({
     .slice(0, 40);
 
   return (
-    <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+    <section className="rounded-2xl border border-border/60 surface-card p-5">
       <h2 className="font-display text-xl uppercase tracking-wide">Vender ou dispensar</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         A venda entra direto no caixa. Rescisão custa 20% do valor. Elenco mínimo: 16 atletas.

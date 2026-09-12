@@ -70,7 +70,7 @@ function ComparePage() {
       intro="Cada tipo de jogo de manager resolve um problema diferente. Veja onde este jogo se encaixa e quando outro formato faz mais sentido para você."
       path={PATH}
     >
-      <div className="overflow-x-auto rounded-2xl border border-border/60 bg-card/60">
+      <div className="overflow-x-auto rounded-2xl border border-border/60 surface-card">
         <table className="w-full text-left text-sm">
           <thead className="text-xs uppercase tracking-widest text-muted-foreground">
             <tr>

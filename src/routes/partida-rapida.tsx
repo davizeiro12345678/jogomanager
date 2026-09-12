@@ -97,7 +97,7 @@ function QuickMatchPage() {
               className={`rounded-lg border px-3 py-2 font-display text-xs uppercase tracking-wide transition ${
                 l.id === leagueId
                   ? "border-primary bg-primary/15 text-foreground"
-                  : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
+                  : "border-border surface-card text-muted-foreground hover:text-foreground"
               }`}
             >
               <Flag league={l.id} size={16} /> {l.name}
@@ -131,7 +131,7 @@ function QuickMatchPage() {
                 className={`rounded-lg border px-3 py-2 font-display text-xs uppercase tracking-wide ${
                   difficulty === d.id
                     ? "border-primary bg-primary/15"
-                    : "border-border bg-card/60 text-muted-foreground"
+                    : "border-border surface-card text-muted-foreground"
                 }`}
               >
                 {d.label}
@@ -140,7 +140,7 @@ function QuickMatchPage() {
           </div>
           <button
             onClick={randomize}
-            className="flex items-center gap-2 rounded-lg border border-border bg-card/60 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-2 rounded-lg border border-border surface-card px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground"
           >
             <Shuffle size={14} /> Sortear confronto
           </button>
@@ -174,7 +174,7 @@ function TeamPicker({
   disabled: string;
 }) {
   return (
-    <section className="rounded-2xl border border-border/60 bg-card/60 p-4">
+    <section className="rounded-2xl border border-border/60 surface-card p-4">
       <h2 className="font-display text-xs uppercase tracking-[0.25em] text-muted-foreground">
         {title}
       </h2>

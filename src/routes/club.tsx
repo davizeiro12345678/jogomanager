@@ -93,7 +93,7 @@ function ClubHub() {
           </div>
 
           {fixture && opponent ? (
-            <div className="mt-6 rounded-xl border border-border/60 bg-card/70 p-4 backdrop-blur">
+            <div className="mt-6 rounded-xl border border-border/60 surface-card p-4 backdrop-blur">
               <p className="font-display text-xs uppercase tracking-[0.25em] text-primary">
                 Rodada {career.round} · {fixture.home === career.clubId ? "Em casa" : "Fora"}
               </p>
@@ -133,7 +133,7 @@ function ClubHub() {
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-2xl border border-border/60 bg-card/70 p-5">
+          <div className="rounded-2xl border border-border/60 surface-card p-5">
             <h2 className="font-display text-lg uppercase tracking-wide">Finanças</h2>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between">
@@ -161,7 +161,7 @@ function ClubHub() {
             </Link>
           </div>
 
-          <div className="rounded-2xl border border-border/60 bg-card/70 p-5">
+          <div className="rounded-2xl border border-border/60 surface-card p-5">
             <h2 className="font-display text-lg uppercase tracking-wide">Treino da semana</h2>
             <label className="mt-2 block text-xs text-muted-foreground" htmlFor="training-select">
               Foco do treinamento
@@ -184,7 +184,7 @@ function ClubHub() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/60 bg-card/70 p-5">
+        <div className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Últimos resultados</h2>
           <ul className="mt-3 space-y-2 text-sm">
             {career.results
@@ -204,7 +204,7 @@ function ClubHub() {
           </ul>
         </div>
 
-        <div className="rounded-2xl border border-border/60 bg-card/70 p-5 lg:col-span-2">
+        <div className="rounded-2xl border border-border/60 surface-card p-5 lg:col-span-2">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg uppercase tracking-wide">Notícias</h2>
             <Link to="/news" className="text-xs text-primary hover:underline">

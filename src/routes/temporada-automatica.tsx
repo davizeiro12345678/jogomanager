@@ -82,7 +82,7 @@ function AutoSeasonPage() {
 
   return (
     <GameShell career={career}>
-      <header className="rounded-2xl border border-border/60 bg-card/70 p-5">
+      <header className="rounded-2xl border border-border/60 surface-card p-5">
         <h1 className="font-display text-2xl uppercase tracking-wide">Temporada automática</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           O computador escala o time, joga as partidas e devolve o resumo. Você continua no comando
@@ -133,7 +133,7 @@ function AutoSeasonPage() {
                 win
                   ? "border-emerald-500/40 bg-emerald-500/10"
                   : draw
-                    ? "border-border/60 bg-card/70"
+                    ? "border-border/60 surface-card"
                     : "border-destructive/40 bg-destructive/10"
               }`}
               style={calm ? undefined : { animationDelay: `${Math.min(i, 10) * 45}ms` }}

@@ -38,7 +38,7 @@ function NewsPage() {
 
   return (
     <GameShell career={career}>
-      <section className="mx-auto max-w-3xl rounded-2xl border border-border/60 bg-card/70 p-5">
+      <section className="mx-auto max-w-3xl rounded-2xl border border-border/60 surface-card p-5">
         <h1 className="font-display text-2xl uppercase tracking-wide">Central de notícias</h1>
         <ul className="mt-4 space-y-3">
           {career.news.map((n) => {

@@ -61,7 +61,7 @@ function ScoutingPage() {
             return (
               <li
                 key={r.id}
-                className="flex items-center gap-3 rounded-xl border border-border/40 bg-card/70 p-3"
+                className="flex items-center gap-3 rounded-xl border border-border/40 surface-card p-3"
               >
                 {c ? <Crest club={c} size={36} /> : null}
                 <div>

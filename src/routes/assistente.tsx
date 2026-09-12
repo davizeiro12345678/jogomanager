@@ -118,7 +118,7 @@ function ToolCard({
   children?: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-border/60 bg-card/70 p-4">
+    <section className="rounded-2xl border border-border/60 surface-card p-4">
       <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
         {title}
       </h2>
@@ -390,7 +390,7 @@ function AssistenteContent({ career }: { career: CareerState }) {
         </ToolCard>
       </div>
 
-      <section className="rounded-2xl border border-border/60 bg-card/70 p-4">
+      <section className="rounded-2xl border border-border/60 surface-card p-4">
         <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
           Coletiva de imprensa
         </h2>
@@ -433,7 +433,7 @@ function AssistenteContent({ career }: { career: CareerState }) {
         ) : null}
       </section>
 
-      <section className="rounded-2xl border border-border/60 bg-card/70 p-4">
+      <section className="rounded-2xl border border-border/60 surface-card p-4">
         <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
           Chat com o assistente
         </h2>

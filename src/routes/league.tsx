@@ -41,7 +41,7 @@ function LeaguePage() {
       </h1>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <section className="overflow-hidden rounded-2xl border border-border/60 bg-card/70">
+        <section className="overflow-hidden rounded-2xl border border-border/60 surface-card">
           <table className="w-full text-sm">
             <thead className="bg-secondary/60 text-xs uppercase text-muted-foreground">
               <tr>
@@ -84,7 +84,7 @@ function LeaguePage() {
           </table>
         </section>
 
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-4">
+        <section className="rounded-2xl border border-border/60 surface-card p-4">
           <h2 className="font-display text-lg uppercase tracking-wide">Rodada {career.round}</h2>
           <ul className="mt-3 space-y-2 text-sm">
             {fixtures.map((f) => (

@@ -124,7 +124,7 @@ function TacticsPage() {
       </p>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1.05fr_1fr]">
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-4">
+        <section className="rounded-2xl border border-border/60 surface-card p-4">
           <h2 className="font-display text-lg uppercase tracking-wide">
             Campo · {t.formation}
           </h2>
@@ -183,7 +183,7 @@ function TacticsPage() {
         </section>
 
         <div className="space-y-4">
-          <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+          <section className="rounded-2xl border border-border/60 surface-card p-5">
             <h2 className="font-display text-lg uppercase tracking-wide">Formação</h2>
             <div className="mt-3 grid grid-cols-2 gap-2">
               {FORMATION_KEYS.map((f) => (
@@ -202,7 +202,7 @@ function TacticsPage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+          <section className="rounded-2xl border border-border/60 surface-card p-5">
             <h2 className="font-display text-lg uppercase tracking-wide">Estilos prontos</h2>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {PRESETS.map((p) => (
@@ -222,7 +222,7 @@ function TacticsPage() {
             </div>
           </section>
 
-          <section className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-5">
+          <section className="space-y-4 rounded-2xl border border-border/60 surface-card p-5">
             <Option
               label="Mentalidade"
               options={MENTALITIES}

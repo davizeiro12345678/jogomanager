@@ -199,7 +199,7 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border/60 bg-card/70 p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border/60 surface-card p-4">
         {loading ? (
           <p className="text-sm text-muted-foreground">Carregando mensagens…</p>
         ) : visibleMessages.length === 0 ? (

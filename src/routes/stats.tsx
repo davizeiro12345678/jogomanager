@@ -70,7 +70,7 @@ function StatsPage() {
 
 
       {selected.length === 2 ? (
-        <section className="mt-4 rounded-2xl border border-border/60 bg-card/70 p-4">
+        <section className="mt-4 rounded-2xl border border-border/60 surface-card p-4">
           <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
             Comparação
           </h2>
@@ -107,7 +107,7 @@ function StatsPage() {
         </section>
       ) : null}
 
-      <section className="mt-4 overflow-x-auto rounded-2xl border border-border/60 bg-card/70">
+      <section className="mt-4 overflow-x-auto rounded-2xl border border-border/60 surface-card">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
@@ -165,7 +165,7 @@ function MatchHistory({ career }: { career: CareerState }) {
   if (!log.length) return null;
 
   return (
-    <section className="mt-4 rounded-2xl border border-border/60 bg-card/70 p-4">
+    <section className="mt-4 rounded-2xl border border-border/60 surface-card p-4">
       <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
         Partida a partida
       </h2>

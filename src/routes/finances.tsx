@@ -84,7 +84,7 @@ function FinancesPage() {
   return (
     <GameShell career={career}>
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+        <section className="rounded-2xl border border-border/60 surface-card p-5">
           <h1 className="font-display text-2xl uppercase tracking-wide">Finanças</h1>
           <dl className="mt-4 divide-y divide-border/40 text-sm">
             {rows.map(([k, v]) => (
@@ -101,7 +101,7 @@ function FinancesPage() {
           </p>
         </section>
 
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-5">
+        <section className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-xl uppercase tracking-wide">Bilheteria e estádio</h2>
           <label htmlFor="ticket" className="mt-4 block text-sm text-muted-foreground">
             Preço do ingresso: €{career.ticketPrice}

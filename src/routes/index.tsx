@@ -138,7 +138,7 @@ function Landing() {
               (c, i) => (
                 <span
                   key={`${c.id}-${i}`}
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-border/50 bg-card/60 backdrop-blur"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-border/50 surface-card backdrop-blur"
                 >
                   <Crest club={c} size={26} />
                 </span>
@@ -204,7 +204,7 @@ function Landing() {
               <Link
                 key={c.to}
                 to={c.to}
-                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-card hover:shadow-lg"
+                className="group relative overflow-hidden rounded-2xl border border-border/60 surface-card p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-card hover:shadow-lg"
               >
                 <p className="font-display text-lg group-hover:text-primary">{c.title}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{c.text}</p>
@@ -269,7 +269,7 @@ function Landing() {
             {LEAGUES.slice(0, 8).map((l) => (
               <div
                 key={l.id}
-                className="rounded-xl border border-border/60 bg-card/70 p-4 backdrop-blur"
+                className="rounded-xl border border-border/60 surface-card p-4 backdrop-blur"
               >
                 <p className="font-display text-lg">
                   <Flag league={l.id} size={20} /> {l.name}

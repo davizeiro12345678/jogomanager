@@ -71,7 +71,7 @@ function SquadPage() {
   return (
     <GameShell career={career}>
       <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-4">
+        <section className="rounded-2xl border border-border/60 surface-card p-4">
           <h1 className="font-display text-xl uppercase tracking-wide">
             Escalação · {career.tactics.formation}
           </h1>
@@ -102,7 +102,7 @@ function SquadPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-4">
+        <section className="rounded-2xl border border-border/60 surface-card p-4">
           <h2 className="font-display text-xl uppercase tracking-wide">Elenco</h2>
           <div className="mt-3 max-h-[70vh] overflow-y-auto">
             <table className="w-full text-sm">

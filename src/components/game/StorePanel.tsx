@@ -175,7 +175,7 @@ export function StorePanel({
 
   return (
     <div>
-      <div className="mb-4 rounded-2xl border border-border/60 bg-card/70 p-4">
+      <div className="mb-4 rounded-2xl border border-border/60 surface-card p-4">
         <div className="flex flex-wrap items-center gap-3">
           <Coins className="text-primary" size={20} />
           <span className="font-display text-sm uppercase tracking-wide">
@@ -217,7 +217,7 @@ export function StorePanel({
         <>
           <div className={`grid gap-4 ${columns === 2 ? "sm:grid-cols-2" : ""}`}>
             {productsQuery.data?.map((p) => (
-              <Card key={p.key} className="flex flex-col bg-card/70">
+              <Card key={p.key} className="flex flex-col surface-card">
                 <CardHeader>
                   <div className="flex items-center justify-between gap-2">
                     <CardTitle className="font-display text-base uppercase tracking-wide">

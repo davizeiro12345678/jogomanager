@@ -74,7 +74,7 @@ function SobrePage() {
           {FACTS.map((f) => (
             <div
               key={f.label}
-              className="rounded-xl border border-border/60 bg-card/70 px-4 py-3 text-center"
+              className="rounded-xl border border-border/60 surface-card px-4 py-3 text-center"
             >
               <dt className="text-xs uppercase tracking-widest text-muted-foreground">{f.label}</dt>
               <dd className="font-display text-2xl text-primary">{f.value}</dd>

@@ -119,7 +119,7 @@ function CoachCareerPage() {
         />
       ) : null}
 
-      <header className="rounded-2xl border border-border/60 bg-card/70 p-5">
+      <header className="rounded-2xl border border-border/60 surface-card p-5">
         <div className="flex items-center gap-3">
           {club ? <Crest club={club} size={44} detail="simple" /> : null}
           <div className="min-w-0 flex-1">
@@ -151,7 +151,7 @@ function CoachCareerPage() {
       </header>
 
       {gallery ? (
-        <section className="mt-4 rounded-2xl border border-border/60 bg-card/70 p-5">
+        <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Galeria de cenas</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             {seen.size} de {SCENE_LIST.length} cenas vistas nesta carreira.
@@ -186,7 +186,7 @@ function CoachCareerPage() {
             <button
               key={a.id}
               onClick={() => run(a.id)}
-              className="rounded-2xl border border-border/60 bg-card/70 p-4 text-left transition-transform hover:-translate-y-0.5 hover:border-primary/50"
+              className="rounded-2xl border border-border/60 surface-card p-4 text-left transition-transform hover:-translate-y-0.5 hover:border-primary/50"
             >
               <p className="font-display text-sm uppercase tracking-wide">{a.label}</p>
               <p className="mt-1 text-xs text-muted-foreground">{a.desc}</p>
@@ -207,7 +207,7 @@ function CoachCareerPage() {
                 win
                   ? "border-emerald-500/40 bg-emerald-500/10"
                   : draw
-                    ? "border-border/60 bg-card/70"
+                    ? "border-border/60 surface-card"
                     : "border-destructive/40 bg-destructive/10"
               }`}
               style={calm ? undefined : { animationDelay: `${Math.min(i, 10) * 45}ms` }}
