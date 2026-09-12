@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { GameShell } from "@/components/game/GameShell";
-import { HudCard, HudChip, HudStat } from "@/components/ui/hud";
+import { HudCard, HudChip, HudStat, SparkBars, Sparkline } from "@/components/ui/hud";
 
 import { FORMATIONS, MENTALITIES, PRESSING, TEMPOS, WIDTHS } from "@/game/formations";
 import { pickLineup } from "@/game/career";
@@ -134,6 +134,18 @@ function TacticsPage() {
     return p && slot ? fit(p, slot.pos) === "meio" : false;
   }).length;
 
+  // força média por setor e OVR de cada titular, para os gráficos
+  const sectors = ["GOL", "DEF", "MEI", "ATA"] as const;
+  const sectorOf = (pos: string) =>
+    pos === "GK" ? 0 : pos === "DF" ? 1 : pos === "MF" ? 2 : 3;
+  const sectorOvr = sectors.map((_, s) => {
+    const inSector = lineup.filter((p, i) => p && slots[i] && sectorOf(slots[i]!.pos) === s);
+    return inSector.length
+      ? Math.round(inSector.reduce((sum, p) => sum + (p?.ovr ?? 0), 0) / inSector.length)
+      : 0;
+  });
+  const lineupOvr = lineup.map((p) => p?.ovr ?? 0);
+
   return (
     <GameShell career={career}>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -217,6 +229,26 @@ function TacticsPage() {
         </HudCard>
 
         <div className="space-y-4">
+          <HudCard title="Força por setor" badge={<HudChip>OVR médio</HudChip>}>
+            <SparkBars data={sectorOvr} height={72} />
+            <div className="mt-2 flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {sectors.map((s, i) => {
+                const v = sectorOvr[i] ?? 0;
+                return (
+                  <span key={s}>
+                    {s} {v > 0 ? v : "—"}
+                  </span>
+                );
+              })}
+            </div>
+            <div className="mt-4 border-t border-border/40 pt-3">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                OVR do onze, do goleiro ao ataque
+              </p>
+              <Sparkline data={lineupOvr} width={260} height={40} className="w-full text-primary" />
+            </div>
+          </HudCard>
+
           <HudCard title="Formação" badge={<HudChip>{t.formation}</HudChip>}>
             <div className="grid grid-cols-2 gap-2">
               {FORMATION_KEYS.map((f) => (

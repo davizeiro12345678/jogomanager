@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PlayerSheet } from "@/components/game/PlayerSheet";
 
 import { GameShell } from "@/components/game/GameShell";
-import { HudCard, HudChip, HudStat, toneFor } from "@/components/ui/hud";
+import { HudBar, HudCard, HudChip, HudRing, HudStat, SparkBars, toneFor } from "@/components/ui/hud";
 import { FORMATIONS } from "@/game/formations";
 import { formatMoney, formatWage, wageBill } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";
@@ -79,10 +79,17 @@ function SquadPage() {
   const avgOvr = players.reduce((s, p) => s + p.ovr, 0) / Math.max(1, players.length);
   const avgAge = players.reduce((s, p) => s + p.age, 0) / Math.max(1, players.length);
   const avgCondition = players.reduce((s, p) => s + p.condition, 0) / Math.max(1, players.length);
+  const avgMorale = players.reduce((s, p) => s + p.morale, 0) / Math.max(1, players.length);
   const injured = players.filter((p) => p.injuryWeeks > 0).length;
   const suspended = players.filter((p) => p.suspended).length;
   const week = wageBill(players);
   const conditionTone = toneFor(avgCondition, { good: 82, warn: 65 });
+  const ageBuckets = [
+    players.filter((p) => p.age <= 21).length,
+    players.filter((p) => p.age >= 22 && p.age <= 25).length,
+    players.filter((p) => p.age >= 26 && p.age <= 29).length,
+    players.filter((p) => p.age >= 30).length,
+  ];
 
   return (
     <GameShell career={career}>
@@ -106,7 +113,26 @@ function SquadPage() {
         </div>
       </div>
 
-      <div className="mt-5 grid items-start gap-4 hud-stagger lg:grid-cols-[1.1fr_1fr]">
+      <div className="mt-5 grid gap-4 hud-stagger sm:grid-cols-3">
+        <HudCard title="Condição do grupo" tone={conditionTone} bodyClassName="flex justify-center">
+          <HudRing value={avgCondition} label="condição" sub={`${injured} lesionados`} />
+        </HudCard>
+        <HudCard title="Faixa etária" badge={<HudChip>{players.length} atletas</HudChip>}>
+          <SparkBars data={ageBuckets} height={72} />
+          <div className="mt-2 flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span>≤21</span>
+            <span>22–25</span>
+            <span>26–29</span>
+            <span>30+</span>
+          </div>
+        </HudCard>
+        <HudCard title="Vestíário" bodyClassName="space-y-5 pt-1">
+          <HudBar label="Moral média" value={avgMorale} tone={toneFor(avgMorale)} />
+          <HudBar label="Condição média" value={avgCondition} tone={conditionTone} />
+        </HudCard>
+      </div>
+
+      <div className="mt-4 grid items-start gap-4 hud-stagger lg:grid-cols-[1.1fr_1fr]">
         <HudCard
           title={`Escalação · ${career.tactics.formation}`}
           badge={<HudChip>{lineup.length}/11</HudChip>}

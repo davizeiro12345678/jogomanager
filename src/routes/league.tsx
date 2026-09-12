@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
 import { Crest } from "@/components/game/Crest";
-import { HudCard, HudChip, HudStat, toneFor } from "@/components/ui/hud";
+import { HudCard, HudChip, HudStat, SparkBars, Sparkline, toneFor } from "@/components/ui/hud";
 
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { computeTable, roundFixtures } from "@/game/season";
@@ -63,6 +63,17 @@ function LeaguePage() {
   const played = myRow ? myRow.p : 0;
   const efficiency = played > 0 && myRow ? (myRow.pts / (played * 3)) * 100 : 0;
   const myZone = myIndex >= 0 ? zoneOf(myIndex) : null;
+
+  // histórico do clube para os gráficos de campanha
+  const mine = career.results.filter((r) => r.home === career.clubId || r.away === career.clubId);
+  const recent = mine.slice(-10).map((r) => {
+    const home = r.home === career.clubId;
+    return { gf: home ? r.hg : r.ag, ga: home ? r.ag : r.hg };
+  });
+  const pointsSeries = recent.map(({ gf, ga }) => (gf > ga ? 3 : gf === ga ? 1 : 0));
+  let acc = 0;
+  const cumulative = pointsSeries.map((p) => (acc += p));
+  const goalsSeries = recent.map((r) => r.gf);
 
   return (
     <GameShell career={career}>
@@ -215,10 +226,26 @@ function LeaguePage() {
           </table>
         </HudCard>
 
-        <HudCard
-          title={`Rodada ${career.round}`}
-          badge={<HudChip>{fixtures.length} jogos</HudChip>}
-        >
+        <div className="space-y-4">
+          <HudCard
+            title="Sua campanha"
+            tone={toneFor(efficiency, { good: 60, warn: 40 })}
+            badge={<HudChip>últimos {recent.length || 0} jogos</HudChip>}
+          >
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Pontos acumulados
+            </p>
+            <Sparkline data={cumulative} width={260} height={56} className="w-full" />
+            <p className="mb-2 mt-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Gols marcados por jogo
+            </p>
+            <SparkBars data={goalsSeries} height={48} />
+          </HudCard>
+
+          <HudCard
+            title={`Rodada ${career.round}`}
+            badge={<HudChip>{fixtures.length} jogos</HudChip>}
+          >
           <ul className="space-y-2 text-sm">
             {fixtures.map((f) => (
               <li
@@ -235,7 +262,8 @@ function LeaguePage() {
               </li>
             ))}
           </ul>
-        </HudCard>
+          </HudCard>
+        </div>
       </div>
     </GameShell>
   );
