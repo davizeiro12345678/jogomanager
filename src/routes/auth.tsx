@@ -76,6 +76,29 @@ function AuthPage() {
     else setError("Confirme o e-mail enviado para concluir o cadastro.");
   }
 
+  async function signInWith(provider: SocialProvider) {
+    setBusy(true);
+    setError(null);
+    try {
+      sessionStorage.setItem(NEXT_KEY, destination);
+    } catch {
+      /* armazenamento indisponível: segue para a home após entrar */
+    }
+    const result = await lovable.auth.signInWithOAuth(provider, {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      setBusy(false);
+      setError(result.error.message);
+      return;
+    }
+    if (result.redirected) return;
+    setBusy(false);
+    navigate({ href: destination });
+  }
+
+
+
   return (
     <div className="pitch-bg flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/85 p-6 backdrop-blur-xl">
@@ -120,6 +143,27 @@ function AuthPage() {
             {busy ? "..." : mode === "in" ? "Entrar" : "Criar conta"}
           </button>
         </form>
+
+        <div className="mt-5 flex items-center gap-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+          <span className="h-px flex-1 bg-border" />
+          ou entre com
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
+        <div className="mt-3 grid gap-2">
+          {SOCIALS.map((social) => (
+            <button
+              key={social.id}
+              type="button"
+              disabled={busy}
+              onClick={() => signInWith(social.id)}
+              className="min-h-[44px] w-full rounded-lg border border-border bg-secondary/50 px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-secondary disabled:opacity-60"
+            >
+              Continuar com {social.label}
+            </button>
+          ))}
+        </div>
+
 
         <button
           onClick={() => setMode(mode === "in" ? "up" : "in")}
