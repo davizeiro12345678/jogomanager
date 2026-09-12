@@ -8,7 +8,7 @@ const PATH = "/jogo-de-manager-de-futebol";
 const TITLE =
   "Jogo de manager de futebol grátis online em 3D | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
+  "Jogo de manager de futebol grátis e online: monte o elenco, defina a tática e assista às partidas em 3D no navegador, sem instalar nada.";
 
 export const Route = createFileRoute("/jogo-de-manager-de-futebol")({
   head: () => ({

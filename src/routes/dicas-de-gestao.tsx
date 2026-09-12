@@ -7,7 +7,7 @@ const PATH = "/dicas-de-gestao";
 const TITLE =
   "Dicas de gestão para soccer manager: 12 táticas que funcionam · Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
+  "Dicas práticas de gestão para vencer no manager de futebol: elenco, moral, condição física, finanças do clube e leitura de jogo.";
 
 export const Route = createFileRoute("/dicas-de-gestao")({
   head: () => ({

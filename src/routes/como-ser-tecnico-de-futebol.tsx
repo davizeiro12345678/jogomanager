@@ -7,7 +7,7 @@ const PATH = "/como-ser-tecnico-de-futebol";
 const TITLE =
   "Como ser técnico de futebol no jogo: passo a passo | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
+  "Passo a passo para começar sua carreira de técnico: escolha do clube, primeira escalação, tática inicial e como vencer as primeiras partidas no jogo.";
 
 export const Route = createFileRoute("/como-ser-tecnico-de-futebol")({
   head: () => ({

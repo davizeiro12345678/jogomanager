@@ -8,7 +8,7 @@ const PATH = "/criador";
 const TITLE =
   "Sobre o criador e novidades do jogo | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
+  "Conheça quem criou o Pro Football Manager 3D e acompanhe as novidades e atualizações mais recentes do jogo de manager de futebol online.";
 
 export const Route = createFileRoute("/criador")({
   head: () => ({

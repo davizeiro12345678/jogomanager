@@ -7,7 +7,7 @@ const PATH = "/comparativo-jogos-manager";
 const TITLE =
   "Comparativo de jogos de manager de futebol grátis no navegador · Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
+  "Comparativo honesto entre jogos de manager de futebol: o que o Pro Football Manager 3D faz diferente, com partidas em 3D, clubes reais e jogo grátis no navegador.";
 
 export const Route = createFileRoute("/comparativo-jogos-manager")({
   head: () => ({

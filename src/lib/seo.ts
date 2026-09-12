@@ -1,4 +1,4 @@
-export const SITE_URL = "https://soccer-manager.fun";
+export const SITE_URL = "https://futebolmanager.xyz";
 export const SITE_NAME = "Pro Football Manager 3D";
 export const SITE_TITLE = "Pro Football Manager 3D: Jogo de Futebol Manager Online";
 export const SITE_DESCRIPTION =

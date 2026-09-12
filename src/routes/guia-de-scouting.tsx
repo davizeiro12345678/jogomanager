@@ -7,7 +7,7 @@ const PATH = "/guia-de-scouting";
 const TITLE =
   "Guia de scouting: como achar jovens craques antes dos rivais · Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
+  "Guia de scouting: como observar jogadores, ler relatórios de olheiros e encontrar joias baratas antes dos rivais no mercado.";
 
 export const Route = createFileRoute("/guia-de-scouting")({
   head: () => ({

@@ -7,7 +7,7 @@ const PATH = "/perguntas-frequentes";
 const TITLE =
   "Perguntas frequentes sobre o jogo | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
+  "Perguntas frequentes sobre o Pro Football Manager 3D: é grátis? Precisa instalar? Funciona no celular? Todas as respostas.";
 
 export const Route = createFileRoute("/perguntas-frequentes")({
   head: () => ({

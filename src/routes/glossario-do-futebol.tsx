@@ -7,7 +7,7 @@ const PATH = "/glossario-do-futebol";
 const TITLE =
   "Glossário do futebol: 40 termos de tática e gestão explicados · Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
+  "Glossário do futebol: entenda os termos táticos e de gestão usados no jogo, de 4-3-3 e pressão alta a xG e passe em profundidade.";
 
 export const Route = createFileRoute("/glossario-do-futebol")({
   head: () => ({
