@@ -405,15 +405,19 @@ function Backdrop({
 export function Cutscene({
   scene,
   look,
-  accent = "#0a8f3c",
-  accent2 = "#0b1220",
+  accent: accentProp,
+  accent2: accent2Prop,
   trophies = 0,
   club,
   managerName,
   captainName,
   onDone,
 }: Props) {
+  // uniforme real do clube tinge o cenário quando nenhuma cor é forçada
+  const accent = accentProp ?? club?.primary ?? "#0a8f3c";
+  const accent2 = accent2Prop ?? club?.secondary ?? "#0b1220";
   const data: SceneData | undefined = CUTSCENES[scene];
+
   const [i, setI] = useState(0);
   const [typed, setTyped] = useState(0);
   const reduced = useMemo(() => prefersReducedMotion(), []);
