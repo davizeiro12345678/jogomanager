@@ -1,4 +1,5 @@
 import { getLeague } from "./data/leagues";
+import { leagueClubIds } from "./pyramid";
 import { makeRng } from "./rng";
 import type { CareerState, Fixture, TableRow } from "./types";
 
