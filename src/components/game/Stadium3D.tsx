@@ -2264,19 +2264,21 @@ function Stadium3DImpl({
           );
         }}
       >
-        <PerformanceMonitor
-          onDecline={() => {
-            declines.current += 1;
-            if (declines.current >= 2) {
+        {vis.adaptive ? (
+          <PerformanceMonitor
+            onDecline={() => {
+              declines.current += 1;
+              if (declines.current >= 2) {
+                declines.current = 0;
+                setEff((q) => lowerQuality(q));
+              }
+            }}
+            onIncline={() => {
               declines.current = 0;
-              setEff((q) => lowerQuality(q));
-            }
-          }}
-          onIncline={() => {
-            declines.current = 0;
-            setEff((q) => (higherQuality(q) === quality ? higherQuality(q) : q));
-          }}
-        />
+              setEff((q) => (higherQuality(q) === quality ? higherQuality(q) : q));
+            }}
+          />
+        ) : null}
         <Scene sim={sim} mode={mode} quality={eff} look={look} />
       </Canvas>
       {eff !== quality ? (
