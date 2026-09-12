@@ -93,7 +93,7 @@ function CoachCareerPage() {
     if (!career) return undefined;
     const mine = Object.values(career.players).filter((p) => p.clubId === career.clubId);
     if (!mine.length) return undefined;
-    return mine.reduce((best, p) => (p.rating > best.rating ? p : best), mine[0]!).name;
+    return mine.reduce((best, p) => (p.ovr > best.ovr ? p : best), mine[0]!).name;
   }, [career]);
 
   if (!career)
