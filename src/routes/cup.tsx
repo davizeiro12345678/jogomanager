@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { GameShell } from "@/components/game/GameShell";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
-import { stageName } from "@/game/cup";
+import { groupTable, nextPhaseName, stageName } from "@/game/cup";
 import { useCareer } from "@/hooks/useCareer";
 import type { CupState, CupTie } from "@/game/types";
 
