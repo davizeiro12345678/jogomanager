@@ -72,7 +72,7 @@ function LeaguePage() {
               value={slots}
               onChange={(e) => {
                 const next = Math.max(1, Math.min(maxSlots, Math.round(Number(e.target.value) || 1)));
-                update((prev) => ({ ...prev, pyramidSlots: next }));
+                update({ ...career, pyramidSlots: next });
               }}
               className="h-11 w-20 rounded-lg border border-border/60 bg-background px-3 text-center font-display"
               aria-label="Número de vagas de acesso e rebaixamento"
