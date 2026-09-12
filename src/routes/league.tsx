@@ -4,6 +4,7 @@ import { GameShell } from "@/components/game/GameShell";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { computeTable, roundFixtures } from "@/game/season";
+import { PYRAMID, PYRAMID_UP, hasPyramid, slotsFor } from "@/game/pyramid";
 import { useCareer } from "@/hooks/useCareer";
 import { Flag } from "@/components/game/Flag";
 
@@ -27,18 +28,58 @@ export const Route = createFileRoute("/league")({
 });
 
 function LeaguePage() {
-  const { career } = useCareer();
+  const { career, update } = useCareer();
   if (!career) return <div className="p-10 text-muted-foreground">Nenhuma carreira ativa.</div>;
 
   const league = getLeague(career.leagueId);
   const table = computeTable(career);
   const fixtures = roundFixtures(career, career.round);
 
+  const linked = hasPyramid(career.leagueId);
+  const topId = career.leagueId in PYRAMID ? career.leagueId : PYRAMID_UP[career.leagueId];
+  const inTopDivision = career.leagueId in PYRAMID;
+  const slots = linked && topId ? slotsFor(topId, career.pyramidSlots) : 0;
+  const maxSlots = Math.max(1, Math.min(8, Math.floor(table.length / 2) || 1));
+
+  const zoneOf = (index: number): "acesso" | "rebaixamento" | null => {
+    if (!linked || slots <= 0) return null;
+    if (inTopDivision) return index >= table.length - slots ? "rebaixamento" : null;
+    return index < slots ? "acesso" : null;
+  };
+
   return (
     <GameShell career={career}>
       <h1 className="font-display text-3xl uppercase tracking-wide">
         <Flag league={league.id} size={28} /> {league.name}
       </h1>
+
+      {linked && (
+        <section className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl border border-border/60 surface-card p-4 text-sm">
+          <div>
+            <p className="font-display uppercase tracking-wide">Acesso e rebaixamento</p>
+            <p className="text-muted-foreground">
+              {inTopDivision
+                ? `Os ${slots} últimos caem para a divisão de baixo no fim da temporada.`
+                : `Os ${slots} primeiros sobem para a divisão de cima no fim da temporada.`}
+            </p>
+          </div>
+          <label className="flex items-center gap-2">
+            <span className="text-muted-foreground">Vagas</span>
+            <input
+              type="number"
+              min={1}
+              max={maxSlots}
+              value={slots}
+              onChange={(e) => {
+                const next = Math.max(1, Math.min(maxSlots, Math.round(Number(e.target.value) || 1)));
+                update({ ...career, pyramidSlots: next });
+              }}
+              className="h-11 w-20 rounded-lg border border-border/60 bg-background px-3 text-center font-display"
+              aria-label="Número de vagas de acesso e rebaixamento"
+            />
+          </label>
+        </section>
+      )}
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <section className="overflow-hidden rounded-2xl border border-border/60 surface-card">
@@ -59,12 +100,26 @@ function LeaguePage() {
               {table.map((r, i) => {
                 const club = CLUBS[r.clubId]!;
                 const mine = r.clubId === career.clubId;
+                const zone = zoneOf(i);
                 return (
                   <tr
                     key={r.clubId}
                     className={`border-t border-border/40 ${mine ? "bg-primary/10" : ""}`}
                   >
-                    <td className="p-2 text-muted-foreground">{i + 1}</td>
+                    <td className="p-2 text-muted-foreground">
+                      <span className="flex items-center gap-2">
+                        {zone && (
+                          <span
+                            aria-hidden
+                            className={`h-4 w-1 rounded-full ${zone === "acesso" ? "bg-primary" : "bg-destructive"}`}
+                          />
+                        )}
+                        <span className="sr-only">
+                          {zone === "acesso" ? "Zona de acesso." : zone === "rebaixamento" ? "Zona de rebaixamento." : ""}
+                        </span>
+                        {i + 1}
+                      </span>
+                    </td>
                     <td className="p-2">
                       <span className="flex items-center gap-2">
                         <Crest club={club} size={20} />
