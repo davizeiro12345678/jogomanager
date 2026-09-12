@@ -12,6 +12,15 @@ function safeNext(value: unknown): string | undefined {
   return value;
 }
 
+type SocialProvider = "google" | "microsoft" | "apple";
+
+const SOCIALS: { id: SocialProvider; label: string }[] = [
+  { id: "google", label: "Google" },
+  { id: "microsoft", label: "Microsoft" },
+  { id: "apple", label: "Apple" },
+];
+
+
 export const Route = createFileRoute("/auth")({
   ssr: false,
   validateSearch: (s: Record<string, unknown>): { next?: string } => {
@@ -79,11 +88,7 @@ function AuthPage() {
   async function signInWith(provider: SocialProvider) {
     setBusy(true);
     setError(null);
-    try {
-      sessionStorage.setItem(NEXT_KEY, destination);
-    } catch {
-      /* armazenamento indisponível: segue para a home após entrar */
-    }
+
     const result = await lovable.auth.signInWithOAuth(provider, {
       redirect_uri: window.location.origin,
     });
