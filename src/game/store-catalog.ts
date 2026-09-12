@@ -43,7 +43,6 @@ export const STORE_PACKS: StorePack[] = [
     accent2: "#8a6a12",
   },
   {
-
     key: "coins_small",
     priceId: "coins_small",
     name: "Punhado de moedas",
@@ -99,7 +98,11 @@ export const STORE_PACKS: StorePack[] = [
     currency: "brl",
     coins: 0,
     kind: "cosmetic",
-    contents: ["8 comemorações novas em 3D", "Câmera exclusiva no replay", "Vale para todo o elenco"],
+    contents: [
+      "8 comemorações novas em 3D",
+      "Câmera exclusiva no replay",
+      "Vale para todo o elenco",
+    ],
     accent: "#fb7185",
     accent2: "#651224",
   },
@@ -119,7 +122,6 @@ export const STORE_PACKS: StorePack[] = [
     accent2: "#064e3b",
   },
   {
-
     key: "scout_pack",
     priceId: "scout_pack",
     name: "Pacote de olheiros",
@@ -130,7 +132,11 @@ export const STORE_PACKS: StorePack[] = [
     currency: "brl",
     coins: 0,
     kind: "scout",
-    contents: ["10 relatórios completos", "Potencial e personalidade revelados", "Alerta de joias da base"],
+    contents: [
+      "10 relatórios completos",
+      "Potencial e personalidade revelados",
+      "Alerta de joias da base",
+    ],
     accent: "#57b6ff",
     accent2: "#0f3f6b",
   },
@@ -145,7 +151,11 @@ export const STORE_PACKS: StorePack[] = [
     currency: "brl",
     coins: 0,
     kind: "training",
-    contents: ["10 impulsos de treino", "Evolução acelerada por semana", "Recuperação física extra"],
+    contents: [
+      "10 impulsos de treino",
+      "Evolução acelerada por semana",
+      "Recuperação física extra",
+    ],
     accent: "#4ade80",
     accent2: "#14532d",
   },

@@ -2,7 +2,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
-import { Chips, CREST_EMBLEMS, CREST_PATTERNS, CREST_SHAPES, EMBLEM_LABEL, KIT_PATTERNS } from "@/components/game/CrestBuilder";
+import {
+  Chips,
+  CREST_EMBLEMS,
+  CREST_PATTERNS,
+  CREST_SHAPES,
+  EMBLEM_LABEL,
+  KIT_PATTERNS,
+} from "@/components/game/CrestBuilder";
 import { initCareer } from "@/game/career";
 import { LEAGUES } from "@/game/data/leagues";
 import type { RoofKind, ChantKind } from "@/game/customStyle";
@@ -33,10 +40,14 @@ export const Route = createFileRoute("/clube/novo")({
         content:
           "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Criar seu clube · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      {
+        property: "og:title",
+        content: "Criar seu clube · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
       {
         property: "og:description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -61,7 +72,9 @@ const STEPS = ["Identidade", "Escudo", "Uniforme", "Estádio", "Torcida"];
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block text-sm">
-      <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
       {children}
     </label>
   );
@@ -82,16 +95,23 @@ function KitPreview({ club }: { club: MyClub }) {
           <path d="M50 8 l18 6 l14 8 l-8 16 l-8 -4 v64 h-32 v-64 l-8 4 l-8 -16 l14 -8 z" />
         </clipPath>
       </defs>
-      <path d="M50 8 l18 6 l14 8 l-8 16 l-8 -4 v64 h-32 v-64 l-8 4 l-8 -16 l14 -8 z" fill={kit.base} />
+      <path
+        d="M50 8 l18 6 l14 8 l-8 16 l-8 -4 v64 h-32 v-64 l-8 4 l-8 -16 l14 -8 z"
+        fill={kit.base}
+      />
       <g clipPath="url(#shirt)">
         {kit.pattern === "stripes" &&
           [0, 1, 2, 3, 4].map((i) => (
             <rect key={i} x={22 + i * 12} y="0" width="6" height="110" fill={kit.detail} />
           ))}
         {kit.pattern === "hoops" &&
-          [0, 1, 2, 3, 4].map((i) => <rect key={i} x="0" y={20 + i * 16} width="100" height="8" fill={kit.detail} />)}
+          [0, 1, 2, 3, 4].map((i) => (
+            <rect key={i} x="0" y={20 + i * 16} width="100" height="8" fill={kit.detail} />
+          ))}
         {kit.pattern === "sash" && <path d="M10 10 L95 80 L85 95 L0 26 z" fill={kit.detail} />}
-        {kit.pattern === "halves" && <rect x="50" y="0" width="50" height="110" fill={kit.detail} />}
+        {kit.pattern === "halves" && (
+          <rect x="50" y="0" width="50" height="110" fill={kit.detail} />
+        )}
         {kit.pattern === "band" && <rect x="0" y="46" width="100" height="16" fill={kit.detail} />}
         {kit.pattern === "sleeves" && (
           <>
@@ -115,7 +135,9 @@ function KitPreview({ club }: { club: MyClub }) {
               opacity="0.8"
             />
           ))}
-        {kit.pattern === "gradient" && <rect x="0" y="55" width="100" height="55" fill={kit.detail} opacity="0.55" />}
+        {kit.pattern === "gradient" && (
+          <rect x="0" y="55" width="100" height="55" fill={kit.detail} opacity="0.55" />
+        )}
       </g>
       <path
         d="M50 8 l18 6 l14 8 l-8 16 l-8 -4 v64 h-32 v-64 l-8 4 l-8 -16 l14 -8 z"
@@ -136,11 +158,14 @@ function NewClubPage() {
   const [club, setClub] = useState<MyClub>(() => ({ ...DEFAULT_MY_CLUB, id: "my-clube" }));
 
   const set = <K extends keyof MyClub>(k: K, v: MyClub[K]) => setClub((c) => ({ ...c, [k]: v }));
-  const setKit = (patch: Partial<MyClub["kit"]>) => setClub((c) => ({ ...c, kit: { ...c.kit, ...patch } }));
-  const setCrest = (patch: Partial<MyClub["crest"]>) => setClub((c) => ({ ...c, crest: { ...c.crest, ...patch } }));
+  const setKit = (patch: Partial<MyClub["kit"]>) =>
+    setClub((c) => ({ ...c, kit: { ...c.kit, ...patch } }));
+  const setCrest = (patch: Partial<MyClub["crest"]>) =>
+    setClub((c) => ({ ...c, crest: { ...c.crest, ...patch } }));
   const setStadium = (patch: Partial<MyClub["stadium"]>) =>
     setClub((c) => ({ ...c, stadium: { ...c.stadium, ...patch } }));
-  const setFans = (patch: Partial<MyClub["fans"]>) => setClub((c) => ({ ...c, fans: { ...c.fans, ...patch } }));
+  const setFans = (patch: Partial<MyClub["fans"]>) =>
+    setClub((c) => ({ ...c, fans: { ...c.fans, ...patch } }));
 
   const [draftKey, setDraftKey] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<ClubDraft[]>([]);
@@ -151,7 +176,6 @@ function NewClubPage() {
     setDrafts(listClubDrafts());
     setExisting(readMyClub());
   }, []);
-
 
   const preview = useMemo(
     () => ({
@@ -276,8 +300,6 @@ function NewClubPage() {
     navigate({ to: "/club" });
   }
 
-
-
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
       <h1 className="font-display text-2xl uppercase tracking-wide">Crie o seu clube</h1>
@@ -304,7 +326,13 @@ function NewClubPage() {
             Você já tem o <strong>{existing.name}</strong> em jogo
             {existing.replaced ? ` (no lugar do ${existing.replaced.name})` : ""}.
           </span>
-          <button type="button" className={smallBtn} onClick={() => loadDraft({ key: "atual", version: 1, savedAt: Date.now(), club: existing })}>
+          <button
+            type="button"
+            className={smallBtn}
+            onClick={() =>
+              loadDraft({ key: "atual", version: 1, savedAt: Date.now(), club: existing })
+            }
+          >
             Editar como cópia
           </button>
           <button
@@ -320,8 +348,6 @@ function NewClubPage() {
           </button>
         </div>
       )}
-
-
 
       <ol className="mt-5 flex flex-wrap gap-2">
         {STEPS.map((s, i) => (
@@ -345,27 +371,61 @@ function NewClubPage() {
           {step === 0 && (
             <>
               <Field label="Seu nome (treinador)">
-                <input className={inputClass} value={manager} onChange={(e) => setManager(e.target.value)} placeholder="Ex.: Marina Torres" />
+                <input
+                  className={inputClass}
+                  value={manager}
+                  onChange={(e) => setManager(e.target.value)}
+                  placeholder="Ex.: Marina Torres"
+                />
               </Field>
               <Field label="Nome do clube">
-                <input className={inputClass} value={club.name} onChange={(e) => set("name", e.target.value)} placeholder="Ex.: Atlético Litoral" />
+                <input
+                  className={inputClass}
+                  value={club.name}
+                  onChange={(e) => set("name", e.target.value)}
+                  placeholder="Ex.: Atlético Litoral"
+                />
               </Field>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Sigla">
-                  <input className={inputClass} value={club.short} maxLength={4} onChange={(e) => set("short", e.target.value.toUpperCase())} placeholder="ATL" />
+                  <input
+                    className={inputClass}
+                    value={club.short}
+                    maxLength={4}
+                    onChange={(e) => set("short", e.target.value.toUpperCase())}
+                    placeholder="ATL"
+                  />
                 </Field>
                 <Field label="Ano de fundação">
-                  <input type="number" className={inputClass} value={club.founded} onChange={(e) => set("founded", Number(e.target.value))} />
+                  <input
+                    type="number"
+                    className={inputClass}
+                    value={club.founded}
+                    onChange={(e) => set("founded", Number(e.target.value))}
+                  />
                 </Field>
                 <Field label="Cidade">
-                  <input className={inputClass} value={club.city} onChange={(e) => set("city", e.target.value)} placeholder="Santos" />
+                  <input
+                    className={inputClass}
+                    value={club.city}
+                    onChange={(e) => set("city", e.target.value)}
+                    placeholder="Santos"
+                  />
                 </Field>
                 <Field label="País">
-                  <input className={inputClass} value={club.country} onChange={(e) => set("country", e.target.value)} />
+                  <input
+                    className={inputClass}
+                    value={club.country}
+                    onChange={(e) => set("country", e.target.value)}
+                  />
                 </Field>
               </div>
               <Field label="Liga onde vai jogar">
-                <select className={inputClass} value={club.leagueId} onChange={(e) => set("leagueId", e.target.value)}>
+                <select
+                  className={inputClass}
+                  value={club.leagueId}
+                  onChange={(e) => set("leagueId", e.target.value)}
+                >
                   {LEAGUES.map((l) => (
                     <option key={l.id} value={l.id}>
                       {l.flag} {l.name} · {l.country}
@@ -375,8 +435,9 @@ function NewClubPage() {
               </Field>
               {victim && (
                 <p className="rounded-lg border border-border/60 bg-background/50 px-3 py-2 text-xs text-muted-foreground">
-                  Para abrir vaga, <strong className="text-foreground">{victim.name}</strong> sai desta liga enquanto o
-                  seu clube existir. Apagar o seu clube devolve ele ao lugar de origem.
+                  Para abrir vaga, <strong className="text-foreground">{victim.name}</strong> sai
+                  desta liga enquanto o seu clube existir. Apagar o seu clube devolve ele ao lugar
+                  de origem.
                 </p>
               )}
               <Field label={`Força inicial do elenco: ${club.strength}`}>
@@ -396,33 +457,83 @@ function NewClubPage() {
             <>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Cor principal">
-                  <input type="color" className={inputClass} value={club.primary} onChange={(e) => set("primary", e.target.value)} />
+                  <input
+                    type="color"
+                    className={inputClass}
+                    value={club.primary}
+                    onChange={(e) => set("primary", e.target.value)}
+                  />
                 </Field>
                 <Field label="Cor secundária">
-                  <input type="color" className={inputClass} value={club.secondary} onChange={(e) => set("secondary", e.target.value)} />
+                  <input
+                    type="color"
+                    className={inputClass}
+                    value={club.secondary}
+                    onChange={(e) => set("secondary", e.target.value)}
+                  />
                 </Field>
               </div>
-              <Chips label="Formato" value={club.crest.shape} onChange={(v) => setCrest({ shape: v })} options={CREST_SHAPES.map((s) => ({ id: s, label: s }))} />
-              <Chips label="Estampa" value={club.crest.pattern} onChange={(v) => setCrest({ pattern: v })} options={CREST_PATTERNS.map((s) => ({ id: s, label: s }))} />
-              <Chips label="Símbolo" value={club.crest.emblem} onChange={(v) => setCrest({ emblem: v })} options={CREST_EMBLEMS.map((s) => ({ id: s, label: EMBLEM_LABEL[s] }))} />
+              <Chips
+                label="Formato"
+                value={club.crest.shape}
+                onChange={(v) => setCrest({ shape: v })}
+                options={CREST_SHAPES.map((s) => ({ id: s, label: s }))}
+              />
+              <Chips
+                label="Estampa"
+                value={club.crest.pattern}
+                onChange={(v) => setCrest({ pattern: v })}
+                options={CREST_PATTERNS.map((s) => ({ id: s, label: s }))}
+              />
+              <Chips
+                label="Símbolo"
+                value={club.crest.emblem}
+                onChange={(v) => setCrest({ emblem: v })}
+                options={CREST_EMBLEMS.map((s) => ({ id: s, label: EMBLEM_LABEL[s] }))}
+              />
             </>
           )}
 
           {step === 2 && (
             <>
-              <Chips label="Padrão da camisa" value={club.kit.pattern} onChange={(v) => setKit({ pattern: v })} options={KIT_PATTERNS.map((k) => ({ id: k, label: k }))} />
+              <Chips
+                label="Padrão da camisa"
+                value={club.kit.pattern}
+                onChange={(v) => setKit({ pattern: v })}
+                options={KIT_PATTERNS.map((k) => ({ id: k, label: k }))}
+              />
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Calção">
-                  <input type="color" className={inputClass} value={club.kit.shorts} onChange={(e) => setKit({ shorts: e.target.value })} />
+                  <input
+                    type="color"
+                    className={inputClass}
+                    value={club.kit.shorts}
+                    onChange={(e) => setKit({ shorts: e.target.value })}
+                  />
                 </Field>
                 <Field label="Meião">
-                  <input type="color" className={inputClass} value={club.kit.socks} onChange={(e) => setKit({ socks: e.target.value })} />
+                  <input
+                    type="color"
+                    className={inputClass}
+                    value={club.kit.socks}
+                    onChange={(e) => setKit({ socks: e.target.value })}
+                  />
                 </Field>
                 <Field label="Camisa reserva">
-                  <input type="color" className={inputClass} value={club.kit.awayBase} onChange={(e) => setKit({ awayBase: e.target.value })} />
+                  <input
+                    type="color"
+                    className={inputClass}
+                    value={club.kit.awayBase}
+                    onChange={(e) => setKit({ awayBase: e.target.value })}
+                  />
                 </Field>
                 <Field label="Detalhe reserva">
-                  <input type="color" className={inputClass} value={club.kit.awayDetail} onChange={(e) => setKit({ awayDetail: e.target.value })} />
+                  <input
+                    type="color"
+                    className={inputClass}
+                    value={club.kit.awayDetail}
+                    onChange={(e) => setKit({ awayDetail: e.target.value })}
+                  />
                 </Field>
               </div>
             </>
@@ -431,7 +542,11 @@ function NewClubPage() {
           {step === 3 && (
             <>
               <Field label="Nome do estádio">
-                <input className={inputClass} value={club.stadium.name} onChange={(e) => setStadium({ name: e.target.value })} />
+                <input
+                  className={inputClass}
+                  value={club.stadium.name}
+                  onChange={(e) => setStadium({ name: e.target.value })}
+                />
               </Field>
               <Field label={`Capacidade: ${club.stadium.capacity.toLocaleString("pt-BR")} lugares`}>
                 <input
@@ -444,9 +559,19 @@ function NewClubPage() {
                   className="w-full accent-primary"
                 />
               </Field>
-              <Chips label="Cobertura" value={club.stadium.roof} onChange={(v) => setStadium({ roof: v })} options={ROOFS} />
+              <Chips
+                label="Cobertura"
+                value={club.stadium.roof}
+                onChange={(v) => setStadium({ roof: v })}
+                options={ROOFS}
+              />
               <Field label="Cor das cadeiras">
-                <input type="color" className={inputClass} value={club.stadium.seatColor} onChange={(e) => setStadium({ seatColor: e.target.value })} />
+                <input
+                  type="color"
+                  className={inputClass}
+                  value={club.stadium.seatColor}
+                  onChange={(e) => setStadium({ seatColor: e.target.value })}
+                />
               </Field>
             </>
           )}
@@ -463,13 +588,28 @@ function NewClubPage() {
                   { id: "2", label: "Gigante" },
                 ]}
               />
-              <Chips label="Clima na arquibancada" value={club.fans.chant} onChange={(v) => setFans({ chant: v })} options={CHANTS} />
+              <Chips
+                label="Clima na arquibancada"
+                value={club.fans.chant}
+                onChange={(v) => setFans({ chant: v })}
+                options={CHANTS}
+              />
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Cor das bandeiras">
-                  <input type="color" className={inputClass} value={club.fans.flagA} onChange={(e) => setFans({ flagA: e.target.value })} />
+                  <input
+                    type="color"
+                    className={inputClass}
+                    value={club.fans.flagA}
+                    onChange={(e) => setFans({ flagA: e.target.value })}
+                  />
                 </Field>
                 <Field label="Cor do mosaico">
-                  <input type="color" className={inputClass} value={club.fans.flagB} onChange={(e) => setFans({ flagB: e.target.value })} />
+                  <input
+                    type="color"
+                    className={inputClass}
+                    value={club.fans.flagB}
+                    onChange={(e) => setFans({ flagB: e.target.value })}
+                  />
                 </Field>
               </div>
             </>
@@ -508,7 +648,9 @@ function NewClubPage() {
         <aside className="space-y-4 rounded-2xl border border-border/60 surface-card p-4 text-center">
           <Crest club={preview} size={96} detail="full" />
           <div>
-            <p className="font-display text-lg uppercase tracking-wide">{club.name || "Seu Clube"}</p>
+            <p className="font-display text-lg uppercase tracking-wide">
+              {club.name || "Seu Clube"}
+            </p>
             <p className="text-xs text-muted-foreground">
               {club.city || "Cidade"} · {club.country} · fundado em {club.founded}
             </p>
@@ -564,7 +706,6 @@ function NewClubPage() {
             )}
           </div>
         </aside>
-
       </div>
     </main>
   );

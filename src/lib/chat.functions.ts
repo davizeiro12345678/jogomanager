@@ -8,8 +8,7 @@ const SendMessageInput = z.object({
 });
 
 export type SendMessageResult =
-  | { ok: true; id: string }
-  | { ok: false; reason: "rate_limited" | "invalid_length" | "error" };
+  { ok: true; id: string } | { ok: false; reason: "rate_limited" | "invalid_length" | "error" };
 
 /**
  * Envio de mensagem no chat global. Só quem está logado consegue chamar:

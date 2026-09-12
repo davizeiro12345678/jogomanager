@@ -8,7 +8,7 @@ function paymentsEnvironment(): StripeEnv {
   if (clientToken?.startsWith("pk_test_")) return "sandbox";
   if (clientToken?.startsWith("pk_live_")) return "live";
   throw new Error(
-    "Pagamentos não configurados para esta versão. Complete a ativação de pagamentos no projeto para aceitar pagamentos reais."
+    "Pagamentos não configurados para esta versão. Complete a ativação de pagamentos no projeto para aceitar pagamentos reais.",
   );
 }
 

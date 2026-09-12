@@ -32,10 +32,7 @@ const FIELD_H = 68;
 
 function toPx(mx: number, mz: number) {
   // metros (centro do campo na origem) -> pixels da textura
-  return [
-    ((mx + FIELD_W / 2) / FIELD_W) * SIZE,
-    ((mz + FIELD_H / 2) / FIELD_H) * SIZE,
-  ] as const;
+  return [((mx + FIELD_W / 2) / FIELD_W) * SIZE, ((mz + FIELD_H / 2) / FIELD_H) * SIZE] as const;
 }
 
 function blob(
@@ -108,7 +105,6 @@ function dirtPatch(
   }
 }
 
-
 function make() {
   if (typeof document === "undefined") return null;
   const c = document.createElement("canvas");
@@ -151,7 +147,6 @@ function make() {
     const [x, y] = toPx(mx, mz);
     blob(ctx, x, y, 8 + rand() * 26, 0.012 + rand() * 0.02, "rgba(190,182,140,ALPHA)");
   }
-
 
   // ---- lama: manchas escuras e úmidas nos cantos e atrás das metas
   for (let i = 0; i < 40; i++) {

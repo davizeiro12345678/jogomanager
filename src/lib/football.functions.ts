@@ -9,7 +9,8 @@ function publicClient() {
     global: {
       fetch: (input, init) => {
         const h = new Headers(init?.headers);
-        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`)
+          h.delete("Authorization");
         h.set("apikey", key);
         return fetch(input, { ...init, headers: h });
       },
@@ -29,7 +30,10 @@ export const getOfficialAssets = createServerFn({ method: "GET" }).handler(
     const crests: Record<string, string> = {};
     const kits: Record<string, string> = {};
 
-    const { data: clubs } = await db.from("clubs").select("id, crest_url").not("crest_url", "is", null);
+    const { data: clubs } = await db
+      .from("clubs")
+      .select("id, crest_url")
+      .not("crest_url", "is", null);
     for (const c of clubs ?? []) if (c.crest_url) crests[c.id] = c.crest_url;
 
     const { data: kitRows } = await db
@@ -105,4 +109,3 @@ export const searchRealPlayers = createServerFn({ method: "GET" })
     const list = (rows ?? []) as MarketRow[];
     return { rows: list.slice(0, PAGE), page, hasMore: list.length > PAGE };
   });
-

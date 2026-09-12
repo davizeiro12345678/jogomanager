@@ -28,10 +28,14 @@ export const Route = createFileRoute("/carreira")({
         content:
           "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Carreira de treinador · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      {
+        property: "og:title",
+        content: "Carreira de treinador · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
       {
         property: "og:description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -237,7 +241,10 @@ function CoachCareerPage() {
               </div>
               {w.scorers.length ? (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  ⚽ {w.scorers.map((s) => `${s.name}${s.goals > 1 ? ` (${s.goals})` : ""}`).join(", ")}
+                  ⚽{" "}
+                  {w.scorers
+                    .map((s) => `${s.name}${s.goals > 1 ? ` (${s.goals})` : ""}`)
+                    .join(", ")}
                 </p>
               ) : null}
               {w.scene ? (

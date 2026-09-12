@@ -66,7 +66,17 @@ const EUROPE = new Set([
   "Islândia",
 ]);
 
-const AFRICA = new Set(["Egito", "Nigéria", "África do Sul", "Marrocos", "Argélia", "Tunísia", "Gana", "Quênia", "Angola"]);
+const AFRICA = new Set([
+  "Egito",
+  "Nigéria",
+  "África do Sul",
+  "Marrocos",
+  "Argélia",
+  "Tunísia",
+  "Gana",
+  "Quênia",
+  "Angola",
+]);
 
 function clubCountry(clubId: string): string {
   const club = CLUBS[clubId];
@@ -78,7 +88,12 @@ function continentalName(country: string): string {
   if (CONTINENTAL[country]) return CONTINENTAL[country]!;
   if (EUROPE.has(country)) return "Champions League";
   if (AFRICA.has(country)) return "CAF Champions League";
-  if (country === "Estados Unidos" || country === "México" || country === "Canadá" || country === "Costa Rica")
+  if (
+    country === "Estados Unidos" ||
+    country === "México" ||
+    country === "Canadá" ||
+    country === "Costa Rica"
+  )
     return "CONCACAF Champions Cup";
   return "AFC Champions League";
 }
@@ -117,9 +132,14 @@ export function createCups(state: CareerState): CupState[] {
 
   // Continental: 16 clubes fortes do continente
   const contName = continentalName(country);
-  const sameGroup = LEAGUES.filter((l) => continentalName(l.country) === contName).flatMap((l) => l.clubs);
+  const sameGroup = LEAGUES.filter((l) => continentalName(l.country) === contName).flatMap(
+    (l) => l.clubs,
+  );
   const contPool = shuffled(
-    sameGroup.filter((c) => c.id !== state.clubId).sort((a, b) => b.strength - a.strength).slice(0, 40),
+    sameGroup
+      .filter((c) => c.id !== state.clubId)
+      .sort((a, b) => b.strength - a.strength)
+      .slice(0, 40),
     rnd,
   )
     .slice(0, 15)
@@ -288,7 +308,10 @@ function playTie(tie: CupTie, seed: string): CupTie {
 
 /** Placar de um jogo de grupo: pode terminar empatado. */
 function playGroupMatch(match: CupGroupMatch, seed: string): CupGroupMatch {
-  const tie = playTie({ round: match.round, home: match.home, away: match.away, hg: null, ag: null }, seed);
+  const tie = playTie(
+    { round: match.round, home: match.home, away: match.away, hg: null, ag: null },
+    seed,
+  );
   const rnd = makeRng(`${seed}-draw`);
   // playTie desempata sempre; no grupo devolvemos o empate em parte dos jogos.
   if (Math.abs((tie.hg ?? 0) - (tie.ag ?? 0)) === 1 && rnd() < 0.3) {
@@ -335,7 +358,11 @@ function playGroupRound(cup: CupState, state: CareerState): CupResult {
   let ties = cup.ties;
   let out = cup.out;
   if (finished) {
-    const qualified = groups.flatMap((g) => groupTable(g).slice(0, 2).map((r) => r.clubId));
+    const qualified = groups.flatMap((g) =>
+      groupTable(g)
+        .slice(0, 2)
+        .map((r) => r.clubId),
+    );
     out = !qualified.includes(state.clubId);
     ties = makeTies(qualified, cup.stage);
   }
@@ -352,10 +379,17 @@ function playGroupRound(cup: CupState, state: CareerState): CupResult {
 
 /** Joga a fase atual da copa e devolve o novo estado dela. */
 export function playCupStage(cup: CupState, state: CareerState): CupResult {
-  if (cup.out || cup.winner) return { cup, userPlayed: false, userWon: false, userScore: null, opponentId: null, champion: cup.winner };
+  if (cup.out || cup.winner)
+    return {
+      cup,
+      userPlayed: false,
+      userWon: false,
+      userScore: null,
+      opponentId: null,
+      champion: cup.winner,
+    };
 
   if (inGroupStage(cup)) return playGroupRound(cup, state);
-
 
   const ties = cup.ties.map((t) =>
     t.round === cup.stage && t.hg === null

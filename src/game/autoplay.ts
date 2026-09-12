@@ -39,7 +39,11 @@ function pickWeighted(list: Player[], rnd: () => number): Player | undefined {
 }
 
 /** Monta a lista de desempenho do elenco titular para um placar já definido. */
-export function buildPerformances(state: CareerState, gf: number, seed: string): MatchPerformance[] {
+export function buildPerformances(
+  state: CareerState,
+  gf: number,
+  seed: string,
+): MatchPerformance[] {
   const rnd = makeRng(seed);
   const starters = state.lineup.map((id) => state.players[id]).filter(Boolean) as Player[];
   if (!starters.length) return [];
@@ -111,7 +115,10 @@ export function autoWeek(state: CareerState): AutoWeek | null {
 }
 
 /** Roda semanas seguidas até acabar a temporada (ou o limite de segurança). */
-export function autoSeason(state: CareerState, maxWeeks = 60): { weeks: AutoWeek[]; state: CareerState } {
+export function autoSeason(
+  state: CareerState,
+  maxWeeks = 60,
+): { weeks: AutoWeek[]; state: CareerState } {
   const weeks: AutoWeek[] = [];
   let cur = state;
   const startSeason = state.season;

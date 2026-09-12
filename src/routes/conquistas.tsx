@@ -15,10 +15,18 @@ export const Route = createFileRoute("/conquistas")({
       { title: "Conquistas · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Conquistas · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content: "Conquistas · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -115,7 +123,9 @@ function ConquistasPage() {
 
         <section className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-xl uppercase tracking-wide">Marcos</h2>
-          <p className="mt-1 text-sm text-muted-foreground">O quanto falta para o próximo degrau da carreira.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            O quanto falta para o próximo degrau da carreira.
+          </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {milestones.map((m) => {
               const pct = Math.min(100, Math.round((m.value / Math.max(1, m.target)) * 100));
@@ -130,7 +140,10 @@ function ConquistasPage() {
                     </span>
                   </div>
                   <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
                 </div>
               );

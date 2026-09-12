@@ -23,10 +23,14 @@ export const Route = createFileRoute("/compras")({
         content:
           "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Minhas compras · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      {
+        property: "og:title",
+        content: "Minhas compras · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
       {
         property: "og:description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -50,9 +54,7 @@ const PRODUCT_NAMES: Record<string, string> = {
 };
 
 function money(cents: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-    cents / 100,
-  );
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 }
 
 function when(iso: string): string {
@@ -95,9 +97,7 @@ function PurchaseLine({ purchase }: { purchase: PurchaseRow }) {
           {PRODUCT_NAMES[purchase.productKey] ?? purchase.productKey}
         </p>
         <p className="text-xs text-muted-foreground">{when(purchase.createdAt)}</p>
-        {purchase.error ? (
-          <p className="mt-1 text-xs text-destructive">{purchase.error}</p>
-        ) : null}
+        {purchase.error ? <p className="mt-1 text-xs text-destructive">{purchase.error}</p> : null}
       </div>
       <div className="flex items-center gap-3">
         <span className="font-display text-sm">{money(purchase.amountCents)}</span>
@@ -171,9 +171,7 @@ function ComprasPage() {
                 <p className="font-display text-xl">{money(data?.totalSpentCents ?? 0)}</p>
               </div>
               <div className="rounded-2xl border border-border/60 surface-card p-4">
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Compras
-                </p>
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Compras</p>
                 <p className="font-display text-xl">{data?.completedCount ?? 0}</p>
               </div>
               <div className="rounded-2xl border border-border/60 surface-card p-4">
@@ -183,9 +181,7 @@ function ComprasPage() {
                 <p className="font-display text-xl">{data?.pendingCount ?? 0}</p>
               </div>
               <div className="rounded-2xl border border-border/60 surface-card p-4">
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Saldo
-                </p>
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Saldo</p>
                 <p className="flex items-center gap-1 font-display text-xl">
                   <Coins size={16} className="text-primary" />
                   {data?.coins ?? 0}
@@ -195,8 +191,8 @@ function ComprasPage() {
 
             {(data?.pendingCount ?? 0) > 0 && (
               <p className="mt-4 rounded-xl border border-border/60 surface-card px-4 py-3 text-xs text-muted-foreground">
-                Uma compra está sendo confirmada pelo banco. A entrega costuma levar poucos
-                segundos — esta página atualiza sozinha.
+                Uma compra está sendo confirmada pelo banco. A entrega costuma levar poucos segundos
+                — esta página atualiza sozinha.
               </p>
             )}
 

@@ -4,7 +4,8 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guias";
-const TITLE = "Guias de manager de futebol: como começar bem | Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE =
+  "Guias de manager de futebol: como começar bem | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
   "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
@@ -59,9 +60,9 @@ function GuidesPage() {
           Guias de manager de futebol
         </h1>
         <p className="mt-4 text-muted-foreground">
-          Tudo que você precisa para comandar um clube: escolha do time, escalação, tática,
-          finanças e relação com a diretoria. Depois de ler, é só assumir um clube e jogar direto
-          no navegador.
+          Tudo que você precisa para comandar um clube: escolha do time, escalação, tática, finanças
+          e relação com a diretoria. Depois de ler, é só assumir um clube e jogar direto no
+          navegador.
         </p>
 
         <div className="mt-10 space-y-8">

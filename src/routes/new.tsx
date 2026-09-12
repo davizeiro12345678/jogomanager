@@ -10,7 +10,12 @@ import { startWorldForNewCareer } from "@/lib/world";
 import { Flag } from "@/components/game/Flag";
 import { ManagerPortrait, HAIR_COLORS } from "@/components/game/ManagerPortrait";
 import { Cutscene } from "@/components/game/Cutscene";
-import type { ManagerAttributes, ManagerLook, ManagerPersonality, ManagerProfile } from "@/game/types";
+import type {
+  ManagerAttributes,
+  ManagerLook,
+  ManagerPersonality,
+  ManagerProfile,
+} from "@/game/types";
 
 export const Route = createFileRoute("/new")({
   ssr: false,
@@ -20,10 +25,18 @@ export const Route = createFileRoute("/new")({
       { title: "Criar treinador · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Criar treinador · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content: "Criar treinador · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -92,10 +105,7 @@ function NewCareer() {
   const [pending, setPending] = useState<{ leagueId: string; clubId: string } | null>(null);
 
   const league = getLeague(leagueId);
-  const spent = useMemo(
-    () => Object.values(attrs).reduce((a, b) => a + b, 0),
-    [attrs],
-  );
+  const spent = useMemo(() => Object.values(attrs).reduce((a, b) => a + b, 0), [attrs]);
   const left = TOTAL_POINTS - spent;
   const maxStrength = 66 + reputation * 6; // reputação baixa limita clubes grandes (5★ libera todos)
 
@@ -131,7 +141,9 @@ function NewCareer() {
     setScene(true);
   }
 
-  const accent = pending ? getLeague(pending.leagueId).clubs.find((c) => c.id === pending.clubId)?.primary : undefined;
+  const accent = pending
+    ? getLeague(pending.leagueId).clubs.find((c) => c.id === pending.clubId)?.primary
+    : undefined;
 
   return (
     <div className="pitch-bg min-h-screen px-4 py-10">
@@ -152,7 +164,8 @@ function NewCareer() {
               {getLeague(country).country} · {age} anos
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
-              {PERSONALITIES.find((p) => p.id === personality)?.label} · reputação {"★".repeat(reputation)}
+              {PERSONALITIES.find((p) => p.id === personality)?.label} · reputação{" "}
+              {"★".repeat(reputation)}
             </p>
           </aside>
 
@@ -209,14 +222,22 @@ function NewCareer() {
               <div className="space-y-5">
                 <Row label="Tom de pele">
                   {[0, 1, 2, 3, 4, 5].map((s) => (
-                    <Chip key={s} active={look.skin === s} onClick={() => setLook({ ...look, skin: s })}>
+                    <Chip
+                      key={s}
+                      active={look.skin === s}
+                      onClick={() => setLook({ ...look, skin: s })}
+                    >
                       {s + 1}
                     </Chip>
                   ))}
                 </Row>
                 <Row label="Cabelo">
                   {[0, 1, 2, 3, 4, 5, 6].map((h) => (
-                    <Chip key={h} active={look.hair === h} onClick={() => setLook({ ...look, hair: h })}>
+                    <Chip
+                      key={h}
+                      active={look.hair === h}
+                      onClick={() => setLook({ ...look, hair: h })}
+                    >
                       {h === 0 ? "Curto" : h === 6 ? "Careca" : `Estilo ${h}`}
                     </Chip>
                   ))}
@@ -236,14 +257,22 @@ function NewCareer() {
                 </Row>
                 <Row label="Barba">
                   {[0, 1, 2, 3, 4].map((b) => (
-                    <Chip key={b} active={look.beard === b} onClick={() => setLook({ ...look, beard: b })}>
+                    <Chip
+                      key={b}
+                      active={look.beard === b}
+                      onClick={() => setLook({ ...look, beard: b })}
+                    >
                       {b === 0 ? "Sem barba" : `Estilo ${b}`}
                     </Chip>
                   ))}
                 </Row>
                 <Row label="Roupa">
                   {["Terno", "Agasalho", "Casual"].map((o, i) => (
-                    <Chip key={o} active={look.outfit === i} onClick={() => setLook({ ...look, outfit: i })}>
+                    <Chip
+                      key={o}
+                      active={look.outfit === i}
+                      onClick={() => setLook({ ...look, outfit: i })}
+                    >
                       {o}
                     </Chip>
                   ))}
@@ -419,7 +448,9 @@ function Chip({
     <button
       onClick={onClick}
       className={`rounded-lg border px-3 py-1.5 text-xs transition ${
-        active ? "border-primary bg-primary/15" : "border-border text-muted-foreground hover:text-foreground"
+        active
+          ? "border-primary bg-primary/15"
+          : "border-border text-muted-foreground hover:text-foreground"
       }`}
     >
       {children}

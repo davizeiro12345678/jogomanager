@@ -22,10 +22,18 @@ export const Route = createFileRoute("/replays")({
       { title: "Galeria de replays · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Galeria de replays · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content: "Galeria de replays · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -77,13 +85,11 @@ function ReplaysPage() {
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((r) => (
-            <li
-              key={r.id}
-              className="rounded-2xl border border-border/60 surface-card p-4"
-            >
+            <li key={r.id} className="rounded-2xl border border-border/60 surface-card p-4">
               <p className="font-display text-lg uppercase tracking-wide">{r.title}</p>
               <p className="text-xs text-muted-foreground">
-                {new Date(r.createdAt).toLocaleString()} · {Math.round(r.frames.length / 4)}s de jogo
+                {new Date(r.createdAt).toLocaleString()} · {Math.round(r.frames.length / 4)}s de
+                jogo
               </p>
               <div className="mt-3 flex gap-2">
                 <button
@@ -108,7 +114,9 @@ function ReplaysPage() {
     </div>
   );
 
-  return career ? <GameShell career={career}>{body}</GameShell> : (
+  return career ? (
+    <GameShell career={career}>{body}</GameShell>
+  ) : (
     <div className="pitch-bg min-h-screen px-4 py-14">
       <div className="mx-auto max-w-5xl">{body}</div>
     </div>

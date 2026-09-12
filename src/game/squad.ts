@@ -101,9 +101,7 @@ export function buildSquad(clubId: string): Player[] {
   if (named) {
     named.split(";").forEach((entry, i) => {
       const [pos, name, age, ovr] = entry.split("|");
-      players.push(
-        makePlayer(club, i, name!, pos as Position, Number(age), Number(ovr), rnd),
-      );
+      players.push(makePlayer(club, i, name!, pos as Position, Number(age), Number(ovr), rnd));
     });
   }
 

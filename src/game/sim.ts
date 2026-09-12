@@ -177,9 +177,6 @@ export class MatchSim {
   /** passe em voo: quem deve receber e até quando o passador não retoma a bola */
   private pass: { to: string; from: string; until: number } | null = null;
 
-
-
-
   constructor(
     public home: TeamSetup,
     public away: TeamSetup,
@@ -287,7 +284,10 @@ export class MatchSim {
   playerRatings(): PlayerRating[] {
     const all = [...this.players, ...this.subsOut];
     return all.map((p) => {
-      const mins = Math.max(1, p.minutes + (this.subsOut.includes(p) ? 0 : this.minute() - p.onSince));
+      const mins = Math.max(
+        1,
+        p.minutes + (this.subsOut.includes(p) ? 0 : this.minute() - p.onSince),
+      );
       const conceded = this.stats[p.side === "home" ? "away" : "home"].goals;
       let r = 6;
       r += p.goals * 1.35 + p.assists * 0.85;
@@ -425,7 +425,6 @@ export class MatchSim {
     this.moveBall(dt);
     this.sanitize();
 
-
     const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
     if (holder) {
       this.dribble(holder, dt);
@@ -505,8 +504,7 @@ export class MatchSim {
       tz = Math.max(-FIELD_Z + 2, Math.min(FIELD_Z - 2, tz));
 
       const stam = 0.75 + (p.stamina / 100) * 0.25;
-      const speed =
-        (3.6 + (p.pace / 100) * 4.6) * (p.pos === "GK" ? 0.6 : 1) * sprint * stam;
+      const speed = (3.6 + (p.pace / 100) * 4.6) * (p.pos === "GK" ? 0.6 : 1) * sprint * stam;
       const dx = tx - p.x;
       const dz = tz - p.z;
       const d = Math.hypot(dx, dz);
@@ -823,7 +821,13 @@ export class MatchSim {
       const dive = this.ball.z - gk.z;
       this.trigger(
         gk,
-        Math.abs(dive) < 1.2 ? (this.rnd() < 0.5 ? "catch" : "save") : dive > 0 ? "diveRight" : "diveLeft",
+        Math.abs(dive) < 1.2
+          ? this.rnd() < 0.5
+            ? "catch"
+            : "save"
+          : dive > 0
+            ? "diveRight"
+            : "diveLeft",
         1.1,
       );
       gk.saves++;
@@ -893,7 +897,11 @@ export class MatchSim {
     });
     this.scorers.push({ minute: this.minute(), side, name: shooter?.name ?? "" });
     const celeb = this.rnd();
-    this.trigger(shooter, celeb < 0.34 ? "kneeSlide" : celeb < 0.67 ? "celebrateRun" : "celebrate", 6);
+    this.trigger(
+      shooter,
+      celeb < 0.34 ? "kneeSlide" : celeb < 0.67 ? "celebrateRun" : "celebrate",
+      6,
+    );
     for (const m of this.players) {
       if (m.side === side && m.id !== shooter?.id)
         this.trigger(m, m.pos === "GK" ? "celebrate" : "hug", 5.2);
@@ -948,7 +956,6 @@ export class MatchSim {
     }
   }
 
-
   private dribble(holder: SimPlayer, dt: number) {
     if (this.restartTimer > 0) {
       const k = Math.exp(-7 * dt);
@@ -970,7 +977,6 @@ export class MatchSim {
     holder.x = Math.max(-FIELD_X + 1, Math.min(FIELD_X - 1, holder.x));
     holder.z = Math.max(-FIELD_Z + 1, Math.min(FIELD_Z - 1, holder.z));
   }
-
 
   private pressure(holder: SimPlayer, dt: number) {
     const { opp, dist } = this.nearestOpponent(holder);
@@ -1052,8 +1058,7 @@ export class MatchSim {
       if (dist < 4 || dist > 42) continue;
       const forward = (m.x - holder.x) * dir;
       const { dist: cover } = this.nearestOpponent(m);
-      const score =
-        forward * (0.7 + mentality * 0.12) + cover * 1.7 - dist * 0.32 + this.rnd() * 8;
+      const score = forward * (0.7 + mentality * 0.12) + cover * 1.7 - dist * 0.32 + this.rnd() * 8;
       if (score > bestScore) {
         bestScore = score;
         best = m;
@@ -1075,7 +1080,11 @@ export class MatchSim {
     const d = Math.hypot(dx, dz) || 1;
     const wide = Math.abs(holder.z) > FIELD_Z * 0.55 && Math.abs(best.x - dir * FIELD_X) < 30;
     const lofted = wide || rawDist > 22;
-    this.trigger(holder, wide ? "cross" : rawDist > 24 ? "passLong" : "pass", rawDist > 24 ? 0.85 : 0.6);
+    this.trigger(
+      holder,
+      wide ? "cross" : rawDist > 24 ? "passLong" : "pass",
+      rawDist > 24 ? 0.85 : 0.6,
+    );
     holder.passes++;
     this.stats[holder.side].passes++;
     this.lastPass[holder.side] = { id: holder.id, time: this.time };
@@ -1143,8 +1152,7 @@ export class MatchSim {
 
     // 2) trajetória física: a bola voa com arco e o desfecho só acontece na meta
     const inside = (this.rnd() - 0.5) * GOAL_Z * 1.5; // dentro das traves
-    const outsideZ =
-      Math.sign(this.rnd() - 0.5 || 1) * (GOAL_Z + 1.2 + this.rnd() * GOAL_Z * 1.6);
+    const outsideZ = Math.sign(this.rnd() - 0.5 || 1) * (GOAL_Z + 1.2 + this.rnd() * GOAL_Z * 1.6);
     const targetZ = outcome === "off" ? outsideZ : inside;
     // altura de chegada: no alvo sempre abaixo do travessão; fora pode ir por cima
     const targetH =
@@ -1191,7 +1199,6 @@ export class MatchSim {
       });
     }
   }
-
 
   private scheduleRestart(side: Side) {
     const gk = this.players.find((p) => p.side === side && p.pos === "GK");

@@ -21,8 +21,16 @@ export const getBoostState = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<BoostState> => {
     const [boost, wallet] = await Promise.all([
-      context.supabase.from("user_boosts").select("training_until").eq("user_id", context.userId).maybeSingle(),
-      context.supabase.from("user_wallet").select("training_boosts").eq("user_id", context.userId).maybeSingle(),
+      context.supabase
+        .from("user_boosts")
+        .select("training_until")
+        .eq("user_id", context.userId)
+        .maybeSingle(),
+      context.supabase
+        .from("user_wallet")
+        .select("training_boosts")
+        .eq("user_id", context.userId)
+        .maybeSingle(),
     ]);
     return {
       activeUntil: boost.data?.training_until ?? null,

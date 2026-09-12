@@ -4,7 +4,8 @@ import { ArticleShell } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/glossario-do-futebol";
-const TITLE = "Glossário do futebol: 40 termos de tática e gestão explicados · Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE =
+  "Glossário do futebol: 40 termos de tática e gestão explicados · Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
   "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
@@ -26,16 +27,25 @@ export const Route = createFileRoute("/glossario-do-futebol")({
 const TERMS: [string, string][] = [
   ["Bloco baixo", "Time inteiro recuado perto da própria área, esperando o erro do adversário."],
   ["Bloco alto", "Linha defensiva adiantada para sufocar a saída de bola do rival."],
-  ["Gegenpressing", "Pressionar imediatamente após perder a bola, antes que o adversário organize."],
+  [
+    "Gegenpressing",
+    "Pressionar imediatamente após perder a bola, antes que o adversário organize.",
+  ],
   ["Transição", "O momento entre perder e recuperar a bola — onde a maioria dos gols nasce."],
   ["Falso 9", "Centroavante que recua para o meio, puxando o zagueiro e abrindo espaço."],
-  ["Ala", "Jogador de lado do campo em esquemas de três zagueiros; ataca e defende a faixa inteira."],
+  [
+    "Ala",
+    "Jogador de lado do campo em esquemas de três zagueiros; ataca e defende a faixa inteira.",
+  ],
   ["Volante de contenção", "Meia defensivo que protege a zaga e distribui bolas curtas."],
   ["Amplitude", "Quanto o time se abre no campo; mais amplitude estica a defesa rival."],
   ["Compactação", "Distância entre a linha de defesa e a de ataque; time compacto sofre menos."],
   ["Marcação por zona", "Cada jogador cobre um espaço, não um adversário específico."],
   ["Marcação individual", "Cada defensor persegue um atacante determinado."],
-  ["Linha de impedimento", "Altura da última linha defensiva usada para deixar o rival em impedimento."],
+  [
+    "Linha de impedimento",
+    "Altura da última linha defensiva usada para deixar o rival em impedimento.",
+  ],
   ["Posse útil", "Posse de bola que gera finalização, não apenas troca de passes atrás."],
   ["xG", "Gols esperados: a qualidade das chances criadas, independente do placar."],
   ["Overall", "Nota geral do jogador, resumo dos atributos."],

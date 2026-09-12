@@ -82,14 +82,32 @@ export const ATTR_LABELS: Record<keyof DetailedAttributes, string> = {
 };
 
 export const FIELD_GROUPS: AttributeGroup[] = [
-  { label: "Técnico", keys: ["finishing", "dribbling", "passing", "vision", "crossing", "firstTouch", "longShots", "setPieces"] },
+  {
+    label: "Técnico",
+    keys: [
+      "finishing",
+      "dribbling",
+      "passing",
+      "vision",
+      "crossing",
+      "firstTouch",
+      "longShots",
+      "setPieces",
+    ],
+  },
   { label: "Defensivo", keys: ["marking", "tackling", "heading", "interceptions"] },
   { label: "Físico", keys: ["pace", "acceleration", "strength", "stamina", "agility", "jumping"] },
-  { label: "Mental", keys: ["positioning", "composure", "leadership", "workRate", "discipline", "decisions"] },
+  {
+    label: "Mental",
+    keys: ["positioning", "composure", "leadership", "workRate", "discipline", "decisions"],
+  },
 ];
 
 export const GK_GROUPS: AttributeGroup[] = [
-  { label: "Goleiro", keys: ["reflexes", "handling", "aerialReach", "distribution", "positioning"] },
+  {
+    label: "Goleiro",
+    keys: ["reflexes", "handling", "aerialReach", "distribution", "positioning"],
+  },
   { label: "Com os pés", keys: ["passing", "firstTouch", "composure", "decisions"] },
   { label: "Físico", keys: ["agility", "jumping", "strength", "stamina", "pace"] },
   { label: "Mental", keys: ["leadership", "workRate", "discipline", "vision"] },
@@ -214,8 +232,14 @@ export function evolveSeason(players: Player[], season: number, current: AttrDel
     const young = p.age <= 23 ? 1 : p.age <= 28 ? 0.45 : 0;
     const old = p.age >= 31 ? (p.age - 30) * 0.6 : 0;
     for (const k of ALL_KEYS) {
-      const physical = k === "pace" || k === "acceleration" || k === "stamina" || k === "agility" || k === "jumping";
-      const mental = k === "composure" || k === "leadership" || k === "decisions" || k === "positioning";
+      const physical =
+        k === "pace" ||
+        k === "acceleration" ||
+        k === "stamina" ||
+        k === "agility" ||
+        k === "jumping";
+      const mental =
+        k === "composure" || k === "leadership" || k === "decisions" || k === "positioning";
       let move = young * (0.6 + room * 0.1) * (rnd() * 1.6 - 0.2);
       if (physical) move -= old * (0.5 + rnd() * 0.8);
       if (mental) move += (p.age >= 29 ? 0.5 : 0) + rnd() * 0.6;
@@ -234,7 +258,11 @@ export function evolveSeason(players: Player[], season: number, current: AttrDel
 }
 
 /** Ganho de treino aplicado fora do fim de temporada (impulsos, academia). */
-export function trainingGain(playerId: string, keys: (keyof DetailedAttributes)[], amount: number): AttrDeltas {
+export function trainingGain(
+  playerId: string,
+  keys: (keyof DetailedAttributes)[],
+  amount: number,
+): AttrDeltas {
   const delta: AttrDelta = { ...(deltas[playerId] ?? {}) };
   for (const k of keys) delta[k] = Math.round(((delta[k] ?? 0) + amount) * 10) / 10;
   return { ...deltas, [playerId]: delta };

@@ -111,7 +111,15 @@ function Custom({ k }: { k: string }) {
           <rect width="24" height="16" fill="#da291c" />
           <rect width="9.6" height="16" fill="#046a38" />
           <circle cx="9.6" cy="8" r="3" fill="#ffe900" stroke="#da291c" strokeWidth="0.6" />
-          <rect x="8.2" y="6.6" width="2.8" height="2.8" fill="#ffffff" stroke="#002776" strokeWidth="0.5" />
+          <rect
+            x="8.2"
+            y="6.6"
+            width="2.8"
+            height="2.8"
+            fill="#ffffff"
+            stroke="#002776"
+            strokeWidth="0.5"
+          />
         </>
       );
     case "crescent-red":
@@ -168,7 +176,10 @@ function Custom({ k }: { k: string }) {
           <rect width="24" height="16" fill="#ffffff" />
           <rect y="8" width="24" height="8" fill="#d52b1e" />
           <rect width="8" height="8" fill="#0039a6" />
-          <path d="M4 2.2 l0.7 2.1 2.2 0 -1.8 1.3 0.7 2.1 -1.8 -1.3 -1.8 1.3 0.7 -2.1 -1.8 -1.3 2.2 0z" fill="#ffffff" />
+          <path
+            d="M4 2.2 l0.7 2.1 2.2 0 -1.8 1.3 0.7 2.1 -1.8 -1.3 -1.8 1.3 0.7 -2.1 -1.8 -1.3 2.2 0z"
+            fill="#ffffff"
+          />
         </>
       );
     case "col":
@@ -207,8 +218,14 @@ function Custom({ k }: { k: string }) {
       return (
         <>
           <rect width="24" height="16" fill="#ffffff" />
-          <path d="M12 4.4 a3.6 3.6 0 0 1 0 7.2 a1.8 1.8 0 0 1 0 -3.6 a1.8 1.8 0 0 0 0 -3.6z" fill="#cd2e3a" />
-          <path d="M12 4.4 a3.6 3.6 0 0 0 0 7.2 a1.8 1.8 0 0 0 0 -3.6 a1.8 1.8 0 0 1 0 -3.6z" fill="#0047a0" />
+          <path
+            d="M12 4.4 a3.6 3.6 0 0 1 0 7.2 a1.8 1.8 0 0 1 0 -3.6 a1.8 1.8 0 0 0 0 -3.6z"
+            fill="#cd2e3a"
+          />
+          <path
+            d="M12 4.4 a3.6 3.6 0 0 0 0 7.2 a1.8 1.8 0 0 0 0 -3.6 a1.8 1.8 0 0 1 0 -3.6z"
+            fill="#0047a0"
+          />
         </>
       );
     case "cze":
@@ -226,21 +243,32 @@ function Custom({ k }: { k: string }) {
           <rect width="24" height="8" fill="#de3831" />
           <path d="M0 0 L9 8 L0 16 Z" fill="#000000" />
           <path d="M0 2 L7.4 8 L0 14 Z" fill="#ffb612" />
-          <path d="M-1 6.2 L6 6.2 L12 1.2 L24 1.2 L24 5.2 L13.5 5.2 L7.6 8 L13.5 10.8 L24 10.8 L24 14.8 L12 14.8 L6 9.8 L-1 9.8 Z" fill="#007a4d" />
+          <path
+            d="M-1 6.2 L6 6.2 L12 1.2 L24 1.2 L24 5.2 L13.5 5.2 L7.6 8 L13.5 10.8 L24 10.8 L24 14.8 L12 14.8 L6 9.8 L-1 9.8 Z"
+            fill="#007a4d"
+          />
         </>
       );
     case "mar":
       return (
         <>
           <rect width="24" height="16" fill="#c1272d" />
-          <path d="M12 4.6 l1.5 4.5 -3.8-2.8 h4.6 l-3.8 2.8z" fill="none" stroke="#006233" strokeWidth="0.9" />
+          <path
+            d="M12 4.6 l1.5 4.5 -3.8-2.8 h4.6 l-3.8 2.8z"
+            fill="none"
+            stroke="#006233"
+            strokeWidth="0.9"
+          />
         </>
       );
     case "qat":
       return (
         <>
           <rect width="24" height="16" fill="#8d1b3d" />
-          <path d="M0 0 H7 L9.6 1.8 L7 3.6 L9.6 5.4 L7 7.2 L9.6 9 L7 10.8 L9.6 12.6 L7 14.4 L9.6 16 H0 Z" fill="#ffffff" />
+          <path
+            d="M0 0 H7 L9.6 1.8 L7 3.6 L9.6 5.4 L7 7.2 L9.6 9 L7 10.8 L9.6 12.6 L7 14.4 L9.6 16 H0 Z"
+            fill="#ffffff"
+          />
         </>
       );
     case "uae":
@@ -266,7 +294,10 @@ function Custom({ k }: { k: string }) {
           <rect width="24" height="16" fill="#ffffff" />
           <rect width="6" height="16" fill="#d80621" />
           <rect x="18" width="6" height="16" fill="#d80621" />
-          <path d="M12 3.4 l1 2.6 2.2-1 -1 2.6 2.3 .5 -2.6 1.6 .6 2.1 -2.5-.8 -.6 2.4 -.6-2.4 -2.5 .8 .6-2.1 -2.6-1.6 2.3-.5 -1-2.6 2.2 1z" fill="#d80621" />
+          <path
+            d="M12 3.4 l1 2.6 2.2-1 -1 2.6 2.3 .5 -2.6 1.6 .6 2.1 -2.5-.8 -.6 2.4 -.6-2.4 -2.5 .8 .6-2.1 -2.6-1.6 2.3-.5 -1-2.6 2.2 1z"
+            fill="#d80621"
+          />
         </>
       );
     default:

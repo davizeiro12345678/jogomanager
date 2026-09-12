@@ -59,7 +59,9 @@ function readable(hex: string) {
 
 export function clubTheme(club: Club) {
   const primary = readable(club.primary);
-  const accent = readable(club.secondary === club.primary ? shift(club.secondary, 0.3) : club.secondary);
+  const accent = readable(
+    club.secondary === club.primary ? shift(club.secondary, 0.3) : club.secondary,
+  );
   return {
     primary,
     accent,

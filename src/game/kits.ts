@@ -59,8 +59,7 @@ function shortsAndSocks(base: string, detail: string, seed: string) {
   const h = hash(seed);
   const pick = h % 3;
   const dark = luminance(base) < 0.18;
-  const shorts =
-    pick === 0 ? detail : pick === 1 ? base : dark ? "#f2f2f2" : "#16181c";
+  const shorts = pick === 0 ? detail : pick === 1 ? base : dark ? "#f2f2f2" : "#16181c";
   const socks = pick === 2 ? detail : shade(base, 0.75);
   return { shorts, socks };
 }
@@ -83,7 +82,6 @@ export function kitFor(clubId: string, primary: string, secondary: string, away 
   const { shorts, socks } = shortsAndSocks(base, detail, `${clubId}-ss`);
   return { base, detail, pattern: p, shorts, socks };
 }
-
 
 /** Uniforme de goleiro: cores vibrantes determinísticas. */
 export function gkKitFor(clubId: string): Kit {
@@ -116,7 +114,7 @@ const cache = new Map<string, THREE.CanvasTexture>();
 /** Ruído fino de tecido — tira o aspecto de plástico liso. */
 function fabricNoise(ctx: CanvasRenderingContext2D, size: number, seed: number) {
   let s = seed || 1;
-  const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
   ctx.save();
   ctx.globalAlpha = 0.06;
   for (let i = 0; i < size * 6; i++) {
@@ -129,13 +127,7 @@ function fabricNoise(ctx: CanvasRenderingContext2D, size: number, seed: number) 
 }
 
 /** Brasão simples do clube: escudo com faixa diagonal e estrela. */
-function drawCrest(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  r: number,
-  kit: Kit,
-) {
+function drawCrest(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, kit: Kit) {
   ctx.save();
   ctx.translate(cx, cy);
   ctx.beginPath();
@@ -179,11 +171,7 @@ function drawCrest(
   ctx.restore();
 }
 
-export function kitTexture(
-  kit: Kit,
-  number: number,
-  name?: string,
-): THREE.CanvasTexture | null {
+export function kitTexture(kit: Kit, number: number, name?: string): THREE.CanvasTexture | null {
   if (typeof document === "undefined") return null;
   const key = `${kit.base}|${kit.detail}|${kit.pattern}|${number}|${name ?? ""}`;
   const hit = cache.get(key);
@@ -326,7 +314,6 @@ export function kitTexture(
   cache.set(key, tex);
   return tex;
 }
-
 
 export const SKIN_TONES = ["#8d5524", "#c68642", "#e0ac69", "#f1c27d", "#6b4226", "#a9714b"];
 export const HAIR_COLORS = ["#14100c", "#20160f", "#3a2410", "#6b4423", "#0d0d0d", "#c8a24a"];

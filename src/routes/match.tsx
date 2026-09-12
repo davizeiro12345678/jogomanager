@@ -58,8 +58,15 @@ export const Route = createFileRoute("/match")({
         content:
           "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Partida ao vivo em 3D · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content: "Partida ao vivo em 3D · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -346,7 +353,6 @@ function LiveMatch({
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
   const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
 
-
   const speedRef = useRef(speed);
   speedRef.current = speed;
   const pausedRef = useRef(paused);
@@ -361,7 +367,6 @@ function LiveMatch({
       n.dispose();
       narratorRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sim, lang, narrating]);
 
   useEffect(() => {
@@ -400,7 +405,11 @@ function LiveMatch({
     const rec = recorderRef.current;
     if (!rec || savedRef.current) return;
     savedRef.current = true;
-    void saveReplay(rec.build(`${sim.home.short} ${sim.stats.home.goals}-${sim.stats.away.goals} ${sim.away.short}`));
+    void saveReplay(
+      rec.build(
+        `${sim.home.short} ${sim.stats.home.goals}-${sim.stats.away.goals} ${sim.away.short}`,
+      ),
+    );
   }, [sim]);
 
   useEffect(() => {
@@ -438,7 +447,6 @@ function LiveMatch({
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", onVis);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sim, storeReplay]);
 
   const skip = useCallback(() => {
@@ -454,7 +462,8 @@ function LiveMatch({
   // Atalhos de teclado
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.target instanceof HTMLElement && /input|select|textarea/i.test(e.target.tagName)) return;
+      if (e.target instanceof HTMLElement && /input|select|textarea/i.test(e.target.tagName))
+        return;
       if (e.code === "Space") {
         e.preventDefault();
         setPaused((p) => !p);
@@ -491,8 +500,6 @@ function LiveMatch({
       navigate({ to: "/club" });
     });
   }
-
-
 
   function setMentality(v: number) {
     const setup = mySide === "home" ? sim.home : sim.away;
@@ -687,10 +694,7 @@ function LiveMatch({
 
       {/* Loja e chat sem sair da partida */}
       <Sheet open={drawer !== "none"} onOpenChange={(o) => !o && setDrawer("none")}>
-        <SheetContent
-          side="right"
-          className="flex w-full flex-col overflow-y-auto sm:max-w-md"
-        >
+        <SheetContent side="right" className="flex w-full flex-col overflow-y-auto sm:max-w-md">
           <SheetHeader>
             <SheetTitle className="font-display uppercase tracking-wide">
               {drawer === "store" ? "Loja" : "Chat global"}
@@ -710,7 +714,6 @@ function LiveMatch({
           </div>
         </SheetContent>
       </Sheet>
-
 
       {/* Painel de controle */}
       <div

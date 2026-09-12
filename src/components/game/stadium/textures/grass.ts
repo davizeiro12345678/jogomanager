@@ -61,7 +61,6 @@ function withStripes(
   ctx.restore();
 }
 
-
 function canvas(size: number) {
   if (typeof document === "undefined") return null;
   const c = document.createElement("canvas");
@@ -147,15 +146,11 @@ function buildAlbedo(pattern: MowPattern = "checker", size = 2048) {
     const strong = pattern === "checker" ? 2.6 : 1;
     for (let i = 0; i < spec.count; i += 2) {
       ctx.fillStyle =
-        i % 4 === 0
-          ? `rgba(230,255,220,${0.028 * strong})`
-          : `rgba(0,22,9,${0.032 * strong})`;
+        i % 4 === 0 ? `rgba(230,255,220,${0.028 * strong})` : `rgba(0,22,9,${0.032 * strong})`;
       ctx.fillRect(i * cellW, 0, cellW, size * 2);
     }
     ctx.restore();
   }
-
-
 
   // manchas grandes de solo/irrigação guiadas por ruído simplex (orgânicas)
   {
@@ -254,7 +249,7 @@ function buildNormal(pattern: MowPattern = "checker", size = 1024) {
     const y = rand() * size;
     const r = size * (0.04 + rand() * 0.1);
     const rg = ctx.createRadialGradient(x, y, 0, x, y, r);
-    rg.addColorStop(0, `rgba(${110 + rand() * 40 | 0},${110 + rand() * 40 | 0},255,0.22)`);
+    rg.addColorStop(0, `rgba(${(110 + rand() * 40) | 0},${(110 + rand() * 40) | 0},255,0.22)`);
     rg.addColorStop(1, "rgba(128,128,255,0)");
     ctx.fillStyle = rg;
     ctx.fillRect(x - r, y - r, r * 2, r * 2);
@@ -303,15 +298,7 @@ function buildRoughness(pattern: MowPattern = "checker", size = 1024) {
       ? `rgba(0,0,0,${0.03 + rand() * 0.07})`
       : `rgba(255,255,255,${0.03 + rand() * 0.06})`;
     ctx.beginPath();
-    ctx.ellipse(
-      rand() * size,
-      rand() * size,
-      5 + rand() * 22,
-      3 + rand() * 10,
-      rand() * 3,
-      0,
-      7,
-    );
+    ctx.ellipse(rand() * size, rand() * size, 5 + rand() * 22, 3 + rand() * 10, rand() * 3, 0, 7);
     ctx.fill();
   }
 

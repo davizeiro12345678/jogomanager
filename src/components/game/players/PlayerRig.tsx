@@ -92,11 +92,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
   // O usuário pode forçar mais ou menos detalhe na página /visual.
   const detail = useVisual().playerDetail;
   const quality: Quality =
-    detail === "detalhado"
-      ? "alta"
-      : detail === "simples"
-        ? "baixa"
-        : baseQuality;
+    detail === "detalhado" ? "alta" : detail === "simples" ? "baixa" : baseQuality;
 
   /* ------------------------------------------------------------ aparência */
 
@@ -121,9 +117,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     const g = parseInt(h.slice(2, 4), 16) / 255;
     const b = parseInt(h.slice(4, 6), 16) / 255;
     const l = 0.299 * r + 0.587 * g + 0.114 * b;
-    return l > 0.55
-      ? (["#101418", "#f2f2f2"] as const)
-      : (["#f5f5f2", "#101418"] as const);
+    return l > 0.55 ? (["#101418", "#f2f2f2"] as const) : (["#f5f5f2", "#101418"] as const);
   }, [kit.base]);
 
   const isGK = player.pos === "GK";
@@ -170,7 +164,6 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
   const acc = useRef(0);
   const seed = look.seed % 97;
 
-
   useFrame((state, rawDt) => {
     const g = root.current;
     if (!g) return;
@@ -209,9 +202,6 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     g.rotation.x += (leanF - g.rotation.x) * Math.min(1, dt * 6);
     g.rotation.z += (leanS - g.rotation.z) * Math.min(1, dt * 6);
 
-
-
-
     // ---- passo de animação em taxa reduzida longe da câmera
     const step = lod === 0 ? 0 : lod === 1 ? 1 / 40 : 1 / 20;
     acc.current += dt;
@@ -247,9 +237,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     const nominal = GAIT_SPEED[clipName.current];
     const cadence = nominal ? Math.max(0.55, Math.min(1.7, speed / nominal)) : 1;
     const prevNominal = prevName.current ? GAIT_SPEED[prevName.current] : undefined;
-    const prevCadence = prevNominal
-      ? Math.max(0.55, Math.min(1.7, speed / prevNominal))
-      : 1;
+    const prevCadence = prevNominal ? Math.max(0.55, Math.min(1.7, speed / prevNominal)) : 1;
     clipTime.current += adt * cadence;
     prevTime.current += adt * prevCadence;
     // troca entre andar/correr pede mistura mais longa; ação com bola, mais curta
@@ -307,7 +295,8 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     const c = cur.current;
 
     // ---- balanço secundário dos braços (atrasa em relação ao tronco)
-    const sway = Math.sin(state.clock.elapsedTime * 3.1 + seed) * 0.03 * (0.4 + Math.min(1, speed / 6));
+    const sway =
+      Math.sin(state.clock.elapsedTime * 3.1 + seed) * 0.03 * (0.4 + Math.min(1, speed / 6));
     c.armLPitch += sway;
     c.armRPitch -= sway;
 
@@ -336,7 +325,6 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     if (kneeRRef.current) kneeRRef.current.rotation.x = c.kneeR;
     if (ankleLRef.current) ankleLRef.current.rotation.x = c.ankleL;
     if (ankleRRef.current) ankleRRef.current.rotation.x = c.ankleR;
-
 
     // ---- piscada ocasional (só perto da câmera, onde o rosto aparece)
     if (blinkRef.current && lod === 0) {
@@ -460,9 +448,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     <meshStandardMaterial color={look.bootColor} roughness={0.34} metalness={0.22} />
   );
   const bootAccentMat = <meshStandardMaterial color={look.bootAccent} roughness={0.4} />;
-  const soleMat = (
-    <meshStandardMaterial color={shade(look.bootColor, -0.55)} roughness={0.6} />
-  );
+  const soleMat = <meshStandardMaterial color={shade(look.bootColor, -0.55)} roughness={0.6} />;
   const gloveMat = <meshStandardMaterial color={look.gloveColor} roughness={0.7} />;
 
   const handMat = look.gloves ? gloveMat : skinMat;
@@ -480,10 +466,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     foreRef: React.RefObject<THREE.Group | null>;
   }) {
     return (
-      <group
-        ref={armRef}
-        position={[side * P.shoulderW * 0.52, P.chestLen * 0.84, 0]}
-      >
+      <group ref={armRef} position={[side * P.shoulderW * 0.52, P.chestLen * 0.84, 0]}>
         {/* ombro */}
         <mesh position={[0, 0, 0]} castShadow={shadows}>
           <sphereGeometry args={[P.armR * 1.35, segs.radial, segs.radial]} />
@@ -693,13 +676,15 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
                 </mesh>
               ))}
               {/* travas */}
-              {([
-                [-0.3, 0.36],
-                [0.3, 0.36],
-                [-0.32, 0.02],
-                [0.32, 0.02],
-                [0, -0.28],
-              ] as const).map(([sx, sz], i) => (
+              {(
+                [
+                  [-0.3, 0.36],
+                  [0.3, 0.36],
+                  [-0.32, 0.02],
+                  [0.32, 0.02],
+                  [0, -0.28],
+                ] as const
+              ).map(([sx, sz], i) => (
                 <mesh
                   key={i}
                   position={[sx * P.footH, -P.footH * 0.78, sz * P.footLen]}
@@ -846,7 +831,9 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
         position={[0, -P.headR * 0.35, P.headR * 0.12]}
         scale={[1.01, look.beard === "full" ? 0.85 : 0.6, 1.01]}
       >
-        <sphereGeometry args={[P.headR * 0.98, 12, 12, 0, Math.PI * 2, Math.PI * 0.42, Math.PI * 0.4]} />
+        <sphereGeometry
+          args={[P.headR * 0.98, 12, 12, 0, Math.PI * 2, Math.PI * 0.42, Math.PI * 0.4]}
+        />
         {hairMat}
       </mesh>
     );
@@ -860,7 +847,10 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     const capHeight = (s === "buzz" ? 0.96 : s === "short" ? 1.02 : 1.06) * look.hairVolume;
     const capWide = 1.02 + (look.hairVolume - 1) * 0.5;
     const base = (
-      <mesh position={[0, P.headR * 0.16, -P.headR * 0.04]} scale={[capWide, capHeight, capWide + 0.02]}>
+      <mesh
+        position={[0, P.headR * 0.16, -P.headR * 0.04]}
+        scale={[capWide, capHeight, capWide + 0.02]}
+      >
         <sphereGeometry args={[P.headR * 0.99, 14, 14, 0, Math.PI * 2, 0, Math.PI * 0.62]} />
         {hairMat}
       </mesh>
@@ -930,11 +920,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
             return (
               <mesh
                 key={i}
-                position={[
-                  Math.cos(a) * P.headR * 0.7,
-                  P.headR * 0.1,
-                  Math.sin(a) * P.headR * 0.7,
-                ]}
+                position={[Math.cos(a) * P.headR * 0.7, P.headR * 0.1, Math.sin(a) * P.headR * 0.7]}
                 rotation={[0.25, 0, 0]}
               >
                 <capsuleGeometry args={[P.headR * 0.09, P.headR * 0.9, 2, 6]} />
@@ -1018,10 +1004,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
               </mesh>
             ) : null}
             {look.collar === "polo" ? (
-              <mesh
-                position={[0, P.chestLen * 0.9, P.chestD * 0.46]}
-                rotation={[-0.5, 0, 0]}
-              >
+              <mesh position={[0, P.chestLen * 0.9, P.chestD * 0.46]} rotation={[-0.5, 0, 0]}>
                 <boxGeometry args={[P.neckR * 2.1, P.neckR * 0.9, P.neckR * 0.14]} />
                 {trimMat}
               </mesh>

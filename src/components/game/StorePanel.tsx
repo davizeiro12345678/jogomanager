@@ -85,13 +85,7 @@ function formatDate(iso: string | null | undefined): string {
  * Vitrine da loja reutilizável: usada na página /loja e dentro da partida.
  * `columns` deixa o layout de uma coluna quando aparece numa gaveta estreita.
  */
-export function StorePanel({
-  next = "/loja",
-  columns = 2,
-}: {
-  next?: string;
-  columns?: 1 | 2;
-}) {
+export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; columns?: 1 | 2 }) {
   const signedIn = useSignedIn();
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [openingKey, setOpeningKey] = useState<string | null>(null);
@@ -141,7 +135,9 @@ export function StorePanel({
   function buy(productKey: string) {
     if (!signedIn) return;
     setOpeningKey(productKey);
-    void import("@/lib/analytics").then((m) => m.track("checkout_iniciado", { produto: productKey }));
+    void import("@/lib/analytics").then((m) =>
+      m.track("checkout_iniciado", { produto: productKey }),
+    );
     try {
       const priceId = PRICE_IDS[productKey];
       if (!priceId) throw new Error("Produto não configurado para checkout.");

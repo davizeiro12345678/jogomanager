@@ -281,7 +281,8 @@ export function applyCustomToWorld() {
     if (o.short.trim()) club.short = o.short.trim().toUpperCase().slice(0, 4);
     if (o.primary) club.primary = o.primary;
     if (o.secondary) club.secondary = o.secondary;
-    if (typeof o.force === "number") club.strength = Math.max(35, Math.min(99, Math.round(o.force)));
+    if (typeof o.force === "number")
+      club.strength = Math.max(35, Math.min(99, Math.round(o.force)));
     if (o.badge) badges.set(o.id, o.badge);
     setClubStyle(o.id, {
       ...(o.crest ? { crest: o.crest } : {}),
@@ -371,12 +372,36 @@ export function importCustomJson(raw: string): { ok: true } | { ok: false; error
 function attrsFor(pos: Position, ovr: number) {
   const c = (v: number) => Math.max(35, Math.min(99, Math.round(v)));
   if (pos === "GK")
-    return { pace: c(ovr - 20), shooting: c(ovr - 40), passing: c(ovr - 12), defending: c(ovr), physical: c(ovr - 4) };
+    return {
+      pace: c(ovr - 20),
+      shooting: c(ovr - 40),
+      passing: c(ovr - 12),
+      defending: c(ovr),
+      physical: c(ovr - 4),
+    };
   if (pos === "DF")
-    return { pace: c(ovr - 4), shooting: c(ovr - 25), passing: c(ovr - 8), defending: c(ovr + 4), physical: c(ovr + 3) };
+    return {
+      pace: c(ovr - 4),
+      shooting: c(ovr - 25),
+      passing: c(ovr - 8),
+      defending: c(ovr + 4),
+      physical: c(ovr + 3),
+    };
   if (pos === "MF")
-    return { pace: c(ovr - 2), shooting: c(ovr - 6), passing: c(ovr + 4), defending: c(ovr - 5), physical: c(ovr - 2) };
-  return { pace: c(ovr + 3), shooting: c(ovr + 4), passing: c(ovr - 4), defending: c(ovr - 22), physical: c(ovr - 2) };
+    return {
+      pace: c(ovr - 2),
+      shooting: c(ovr - 6),
+      passing: c(ovr + 4),
+      defending: c(ovr - 5),
+      physical: c(ovr - 2),
+    };
+  return {
+    pace: c(ovr + 3),
+    shooting: c(ovr + 4),
+    passing: c(ovr - 4),
+    defending: c(ovr - 22),
+    physical: c(ovr - 2),
+  };
 }
 
 /** transforma um cadastro do usuário num jogador completo do jogo */

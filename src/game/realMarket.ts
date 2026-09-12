@@ -127,12 +127,36 @@ function nextNumber(players: Record<string, Player>, wanted: number | null): num
 function attrs(pos: Position, ovr: number, rnd: () => number) {
   const j = (v: number) => Math.max(35, Math.min(99, Math.round(v + (rnd() * 8 - 4))));
   if (pos === "GK")
-    return { pace: j(ovr - 20), shooting: j(ovr - 40), passing: j(ovr - 12), defending: j(ovr), physical: j(ovr - 4) };
+    return {
+      pace: j(ovr - 20),
+      shooting: j(ovr - 40),
+      passing: j(ovr - 12),
+      defending: j(ovr),
+      physical: j(ovr - 4),
+    };
   if (pos === "DF")
-    return { pace: j(ovr - 4), shooting: j(ovr - 25), passing: j(ovr - 8), defending: j(ovr + 4), physical: j(ovr + 3) };
+    return {
+      pace: j(ovr - 4),
+      shooting: j(ovr - 25),
+      passing: j(ovr - 8),
+      defending: j(ovr + 4),
+      physical: j(ovr + 3),
+    };
   if (pos === "MF")
-    return { pace: j(ovr - 2), shooting: j(ovr - 6), passing: j(ovr + 4), defending: j(ovr - 5), physical: j(ovr - 2) };
-  return { pace: j(ovr + 3), shooting: j(ovr + 4), passing: j(ovr - 4), defending: j(ovr - 22), physical: j(ovr - 2) };
+    return {
+      pace: j(ovr - 2),
+      shooting: j(ovr - 6),
+      passing: j(ovr + 4),
+      defending: j(ovr - 5),
+      physical: j(ovr - 2),
+    };
+  return {
+    pace: j(ovr + 3),
+    shooting: j(ovr + 4),
+    passing: j(ovr - 4),
+    defending: j(ovr - 22),
+    physical: j(ovr - 2),
+  };
 }
 
 export interface SignOptions {
@@ -142,11 +166,7 @@ export interface SignOptions {
 }
 
 /** Fecha a contratação: elenco, caixa, folha e notícia. */
-export function signRealPlayer(
-  state: CareerState,
-  t: RealTarget,
-  opts: SignOptions,
-): CareerState {
+export function signRealPlayer(state: CareerState, t: RealTarget, opts: SignOptions): CareerState {
   const cost = opts.loan ? Math.round(opts.fee * 0.25 * 10) / 10 : opts.fee;
   if (state.finances.budget < cost) return state;
   const id = `real-${t.id}`;

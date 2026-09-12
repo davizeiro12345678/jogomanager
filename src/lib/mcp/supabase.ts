@@ -26,10 +26,7 @@ function supabaseProjectUrl(): string {
 }
 
 function supabasePublishableKey(): string {
-  const direct = configuredEnv([
-    "SUPABASE_PUBLISHABLE_KEY",
-    "VITE_SUPABASE_PUBLISHABLE_KEY",
-  ]);
+  const direct = configuredEnv(["SUPABASE_PUBLISHABLE_KEY", "VITE_SUPABASE_PUBLISHABLE_KEY"]);
   if (direct) return direct;
   const keyset = runtimeEnv("SUPABASE_PUBLISHABLE_KEYS");
   if (keyset) {
@@ -38,10 +35,7 @@ function supabasePublishableKey(): string {
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
         const keys = parsed as Record<string, unknown>;
         const key = [keys["default"], ...Object.values(keys)]
-          .find(
-            (v): v is string =>
-              typeof v === "string" && v.trim().startsWith("sb_publishable_"),
-          )
+          .find((v): v is string => typeof v === "string" && v.trim().startsWith("sb_publishable_"))
           ?.trim();
         if (key) return key;
       }
@@ -59,8 +53,7 @@ function supabasePublishableKey(): string {
 // Forwards the verified bearer token so RLS runs as the signed-in user.
 export function supabaseForUser(ctx: ToolContext) {
   const token = ctx.getToken();
-  if (!token)
-    throw new Error("supabaseForUser requires a verified OAuth token");
+  if (!token) throw new Error("supabaseForUser requires a verified OAuth token");
   return createClient(supabaseProjectUrl(), supabasePublishableKey(), {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },

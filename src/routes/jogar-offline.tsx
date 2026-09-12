@@ -4,7 +4,8 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/jogar-offline";
-const TITLE = "Como jogar offline: carreira e partidas sem internet · Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE =
+  "Como jogar offline: carreira e partidas sem internet · Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
   "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 

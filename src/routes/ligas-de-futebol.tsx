@@ -6,7 +6,8 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { breadcrumbLd, canonical, itemListLd, seoMeta } from "@/lib/seo";
 
 const PATH = "/ligas-de-futebol";
-const TITLE = "Ligas de futebol disponíveis no jogo de manager | Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE =
+  "Ligas de futebol disponíveis no jogo de manager | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
   "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
@@ -15,7 +16,10 @@ export const Route = createFileRoute("/ligas-de-futebol")({
     meta: seoMeta({ title: TITLE, description: DESC, path: PATH }),
     links: canonical(PATH),
     scripts: [
-      itemListLd("Ligas jogáveis", LEAGUES.map((l) => l.name)),
+      itemListLd(
+        "Ligas jogáveis",
+        LEAGUES.map((l) => l.name),
+      ),
       breadcrumbLd([
         { name: "Início", path: "/" },
         { name: "Ligas de futebol", path: PATH },
@@ -37,8 +41,8 @@ function LeaguesPage() {
         </h1>
         <p className="mt-4 max-w-2xl text-muted-foreground">
           São {LEAGUES.length} campeonatos e {clubCount} clubes para comandar. Escolha qualquer um
-          deles, monte o elenco e dispute a temporada com partidas em 3D no navegador — sem
-          instalar nada.
+          deles, monte o elenco e dispute a temporada com partidas em 3D no navegador — sem instalar
+          nada.
         </p>
 
         <div className="mt-10 grid gap-5 sm:grid-cols-2">

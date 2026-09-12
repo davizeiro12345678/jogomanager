@@ -198,7 +198,6 @@ function buildSeats(a: string, b: string, size = 1024) {
   return tex;
 }
 
-
 let _albedo: THREE.Texture | null | undefined;
 let _rough: THREE.Texture | null | undefined;
 const _seats = new Map<string, THREE.Texture | null>();

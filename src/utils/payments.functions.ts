@@ -1,20 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import {
-  type StripeEnv,
-  createStripeClient,
-  getStripeErrorMessage,
-} from "@/lib/stripe.server";
+import { type StripeEnv, createStripeClient, getStripeErrorMessage } from "@/lib/stripe.server";
 
-export type CheckoutSessionResult =
-  | { clientSecret: string }
-  | { error: string };
+export type CheckoutSessionResult = { clientSecret: string } | { error: string };
 
 export type PortalSessionResult = { url: string } | { error: string };
 
 async function resolveOrCreateCustomer(
   stripe: ReturnType<typeof createStripeClient>,
-  options: { email?: string; userId?: string }
+  options: { email?: string; userId?: string },
 ): Promise<string> {
   if (options.userId && !/^[a-zA-Z0-9_-]+$/.test(options.userId)) {
     throw new Error("Invalid userId");
@@ -51,17 +45,12 @@ async function resolveOrCreateCustomer(
 export const createCheckoutSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (data: {
-      priceId: string;
-      quantity?: number;
-      returnUrl: string;
-      environment: StripeEnv;
-    }) => {
+    (data: { priceId: string; quantity?: number; returnUrl: string; environment: StripeEnv }) => {
       if (!/^[a-zA-Z0-9_-]+$/.test(data.priceId)) {
         throw new Error("Invalid priceId");
       }
       return data;
-    }
+    },
   )
   .handler(async ({ data, context }): Promise<CheckoutSessionResult> => {
     try {
@@ -74,10 +63,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       const stripePrice = prices.data[0]!;
       const isRecurring = stripePrice.type === "recurring";
 
-      const email =
-        typeof context.claims?.email === "string"
-          ? context.claims.email
-          : undefined;
+      const email = typeof context.claims?.email === "string" ? context.claims.email : undefined;
 
       const customerId = await resolveOrCreateCustomer(stripe, {
         ...(email ? { email } : {}),
@@ -87,17 +73,13 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       let productDescription: string | undefined;
       if (!isRecurring) {
         const productId =
-          typeof stripePrice.product === "string"
-            ? stripePrice.product
-            : stripePrice.product.id;
+          typeof stripePrice.product === "string" ? stripePrice.product : stripePrice.product.id;
         const product = await stripe.products.retrieve(productId);
         productDescription = product.name;
       }
 
       const session = await stripe.checkout.sessions.create({
-        line_items: [
-          { price: stripePrice.id, quantity: data.quantity || 1 },
-        ],
+        line_items: [{ price: stripePrice.id, quantity: data.quantity || 1 }],
         mode: isRecurring ? "subscription" : "payment",
         ui_mode: "embedded_page",
         return_url: data.returnUrl,
@@ -119,9 +101,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
 
 export const createPortalSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (data: { returnUrl?: string; environment: StripeEnv }) => data
-  )
+  .inputValidator((data: { returnUrl?: string; environment: StripeEnv }) => data)
   .handler(async ({ data, context }): Promise<PortalSessionResult> => {
     try {
       const { data: sub, error: subError } = await context.supabase

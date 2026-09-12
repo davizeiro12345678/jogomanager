@@ -20,8 +20,15 @@ export const Route = createFileRoute("/board")({
         content:
           "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Sala da diretoria · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content: "Sala da diretoria · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -117,7 +124,9 @@ function BoardPage() {
         </section>
 
         <section className="rounded-2xl border border-border/60 surface-card p-5 lg:col-span-2">
-          <h2 className="font-display text-xl uppercase tracking-wide">Clubes interessados em você</h2>
+          <h2 className="font-display text-xl uppercase tracking-wide">
+            Clubes interessados em você
+          </h2>
           {career.jobOffers.length === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">
               Nenhum convite no momento. Bons resultados atraem propostas.

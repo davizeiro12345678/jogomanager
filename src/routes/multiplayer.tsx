@@ -22,10 +22,14 @@ export const Route = createFileRoute("/multiplayer")({
         content:
           "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Multiplayer online 1x1 · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      {
+        property: "og:title",
+        content: "Multiplayer online 1x1 · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
       {
         property: "og:description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -112,7 +116,11 @@ function MultiplayerPage() {
       .subscribe();
     // Reconexão automática: revalida a sala periodicamente.
     const timer = window.setInterval(async () => {
-      const { data } = await supabase.from("match_rooms").select("*").eq("id", room.id).maybeSingle();
+      const { data } = await supabase
+        .from("match_rooms")
+        .select("*")
+        .eq("id", room.id)
+        .maybeSingle();
       if (data) setRoom(data as unknown as Room);
     }, 8000);
     return () => {
@@ -524,15 +532,7 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string | null })
  * (mesma semente), então o placar é idêntico sem enviar cada lance pela rede.
  * O anfitrião publica o minuto e o resultado final.
  */
-function LiveRoom({
-  room,
-  isHost,
-  onExit,
-}: {
-  room: Room;
-  isHost: boolean;
-  onExit: () => void;
-}) {
+function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExit: () => void }) {
   const sim = useMemo(
     () => new MatchSim(buildTeamSetup(room.host_club), buildTeamSetup(room.guest_club!), room.seed),
     [room.host_club, room.guest_club, room.seed],
@@ -604,7 +604,9 @@ function LiveRoom({
       <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl">
         <button
           onClick={() =>
-            setCamera((c) => (c === "broadcast" ? "tactical" : c === "tactical" ? "fan" : "broadcast"))
+            setCamera((c) =>
+              c === "broadcast" ? "tactical" : c === "tactical" ? "fan" : "broadcast",
+            )
           }
           className="rounded-full px-4 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
         >

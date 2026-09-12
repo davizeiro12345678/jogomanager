@@ -2,14 +2,7 @@ import { CLUBS, getLeague, LEAGUES } from "./data/leagues";
 import { valueFor, wageFor } from "./economy";
 import { makeRng } from "./rng";
 import { computeTable } from "./season";
-import type {
-  CareerState,
-  JobOffer,
-  NewsItem,
-  Player,
-  ScoutReport,
-  TransferOffer,
-} from "./types";
+import type { CareerState, JobOffer, NewsItem, Player, ScoutReport, TransferOffer } from "./types";
 
 /* ------------------------------------------------------------ helpers */
 
@@ -26,7 +19,10 @@ export function staffBill(state: CareerState): number {
   const s = state.staff ?? defaultStaff();
   return (
     Math.round(
-      (staffCost(s.assistente) + staffCost(s.preparador) + staffCost(s.medico) + staffCost(s.olheiro)) *
+      (staffCost(s.assistente) +
+        staffCost(s.preparador) +
+        staffCost(s.medico) +
+        staffCost(s.olheiro)) *
         100,
     ) / 100
   );
@@ -34,8 +30,13 @@ export function staffBill(state: CareerState): number {
 
 /** receita de bilheteria por rodada em casa (M€) */
 export function gateIncome(state: CareerState): number {
-  const fill = Math.max(0.35, Math.min(1, (state.fanApproval ?? 60) / 100 + 0.25 - (state.ticketPrice - 40) / 220));
-  return Math.round(((state.capacity ?? 45000) * fill * state.ticketPrice) / 1_000_000 * 100) / 100;
+  const fill = Math.max(
+    0.35,
+    Math.min(1, (state.fanApproval ?? 60) / 100 + 0.25 - (state.ticketPrice - 40) / 220),
+  );
+  return (
+    Math.round((((state.capacity ?? 45000) * fill * state.ticketPrice) / 1_000_000) * 100) / 100
+  );
 }
 
 export function potentialOf(p: Player): number {
@@ -128,7 +129,11 @@ const DRESSING_EVENTS = [
     kind: "sistema" as const,
     title: (n: string) => `${n} é eleito líder do vestiário`,
     body: (n: string) => `O elenco reconhece a liderança de ${n}, e a moral do grupo sobe.`,
-    apply: (p: Player): Player => ({ ...p, personality: "líder", morale: Math.min(99, p.morale + 6) }),
+    apply: (p: Player): Player => ({
+      ...p,
+      personality: "líder",
+      morale: Math.min(99, p.morale + 6),
+    }),
   },
   {
     kind: "premio" as const,

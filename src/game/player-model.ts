@@ -15,7 +15,6 @@
 import { HAIR_COLORS, SKIN_TONES } from "./kits";
 import { getVisual } from "./visual-settings";
 
-
 /* -------------------------------------------------------------------------- */
 /*  RNG determinístico                                                        */
 /* -------------------------------------------------------------------------- */
@@ -289,7 +288,6 @@ export function lodForDistance(dist: number, quality: "alta" | "media" | "baixa"
   return 2;
 }
 
-
 /** segmentos de geometria por LOD, para manter as draw calls baixas */
 export function segmentsFor(lod: LodLevel): { radial: number; cap: number } {
   if (lod === 0) return { radial: 14, cap: 6 };
@@ -303,7 +301,15 @@ export function segmentsFor(lod: LodLevel): { radial: number; cap: number } {
 
 export function shade(hex: string, amount: number): string {
   const c = hex.replace("#", "");
-  const n = parseInt(c.length === 3 ? c.split("").map((x) => x + x).join("") : c, 16);
+  const n = parseInt(
+    c.length === 3
+      ? c
+          .split("")
+          .map((x) => x + x)
+          .join("")
+      : c,
+    16,
+  );
   let r = (n >> 16) & 255;
   let g = (n >> 8) & 255;
   let b = n & 255;

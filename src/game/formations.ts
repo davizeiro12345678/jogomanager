@@ -62,13 +62,7 @@ export const FORMATIONS: Record<FormationKey, Slot[]> = {
   ],
 };
 
-export const MENTALITIES = [
-  "Retrancado",
-  "Defensivo",
-  "Equilibrado",
-  "Ofensivo",
-  "All out attack",
-];
+export const MENTALITIES = ["Retrancado", "Defensivo", "Equilibrado", "Ofensivo", "All out attack"];
 
 export const PRESSING = ["Bloco baixo", "Padrão", "Pressão alta"];
 export const WIDTHS = ["Estreito", "Padrão", "Aberto"];

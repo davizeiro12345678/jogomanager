@@ -2,7 +2,14 @@ import type { Club, League } from "../types";
 import { EXTRA_LEAGUES } from "./leagues-extra";
 import { WORLD_LEAGUES } from "./leagues-world";
 
-type Raw = [id: string, name: string, short: string, primary: string, secondary: string, strength: number];
+type Raw = [
+  id: string,
+  name: string,
+  short: string,
+  primary: string,
+  secondary: string,
+  strength: number,
+];
 
 const BRA: Raw[] = [
   ["fla", "Flamengo", "FLA", "#c52613", "#111111", 88],
@@ -731,8 +738,6 @@ const FRA2: Raw[] = [
   ["fra2_lor", "Red Star", "RS", "#0a7a3c", "#ffffff", 68],
   ["fra2_troy", "Troyes", "TRO", "#7ec8e3", "#111111", 70],
 ];
-
-
 
 const HRV: Raw[] = [
   ["hrv_din", "Dinamo Zagreb", "DIN", "#1f4fa0", "#ffffff", 78],

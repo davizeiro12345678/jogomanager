@@ -4,7 +4,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { AiError, callGemini } from "@/lib/ai.server";
 
-const BREVITY = "Responda sempre em português do Brasil, em prosa corrida, com no máximo ~120 palavras. Seja direto e objetivo.";
+const BREVITY =
+  "Responda sempre em português do Brasil, em prosa corrida, com no máximo ~120 palavras. Seja direto e objetivo.";
 
 function wrap<T>(fn: () => Promise<T>) {
   return fn().catch((err) => {
@@ -38,7 +39,9 @@ const diretorEsportivoSchema = z.object({
 
 export const diretorEsportivo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: z.infer<typeof diretorEsportivoSchema>) => diretorEsportivoSchema.parse(input))
+  .inputValidator((input: z.infer<typeof diretorEsportivoSchema>) =>
+    diretorEsportivoSchema.parse(input),
+  )
   .handler(async ({ data }) =>
     wrap(async () => {
       const system =
@@ -116,7 +119,9 @@ const assistenteTaticoSchema = z.object({
 
 export const assistenteTatico = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: z.infer<typeof assistenteTaticoSchema>) => assistenteTaticoSchema.parse(input))
+  .inputValidator((input: z.infer<typeof assistenteTaticoSchema>) =>
+    assistenteTaticoSchema.parse(input),
+  )
   .handler(async ({ data }) =>
     wrap(async () => {
       const system =

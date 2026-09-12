@@ -76,12 +76,11 @@ function build() {
     ctx.lineTo(X(x1), Y(z1));
     ctx.stroke();
   };
-  const arc =
-    (x: number, z: number, r: number, a0: number, a1: number) => () => {
-      ctx.beginPath();
-      ctx.arc(X(x), Y(z), r * PX_PER_M, a0, a1);
-      ctx.stroke();
-    };
+  const arc = (x: number, z: number, r: number, a0: number, a1: number) => () => {
+    ctx.beginPath();
+    ctx.arc(X(x), Y(z), r * PX_PER_M, a0, a1);
+    ctx.stroke();
+  };
 
   // contorno, meio-campo e círculo central
   paint(rect(-FIELD_X, -FIELD_Z, FIELD_X, FIELD_Z));
@@ -111,16 +110,7 @@ function build() {
     ctx.fill();
     // cantos
     for (const z of [1, -1]) {
-      paint(
-        arc(
-          s * FIELD_X,
-          z * FIELD_Z,
-          1,
-          0,
-          Math.PI * 2,
-        ),
-        0.1,
-      );
+      paint(arc(s * FIELD_X, z * FIELD_Z, 1, 0, Math.PI * 2), 0.1);
     }
   }
   // ponto central

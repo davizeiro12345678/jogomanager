@@ -94,17 +94,31 @@ export function ManagerPortrait({ look, size = 96, accent, className }: ManagerP
 
         {/* nariz e boca */}
         <path d="M50 46 L48 52 L52 52 Z" fill="#00000022" />
-        <path d="M45 57 Q50 60 55 57" stroke="#00000055" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+        <path
+          d="M45 57 Q50 60 55 57"
+          stroke="#00000055"
+          strokeWidth="1.6"
+          fill="none"
+          strokeLinecap="round"
+        />
 
         {/* barba */}
         {b === 1 ? (
           <path d="M44 57 h12 v3 h-12 Z" fill={hair} opacity="0.85" />
         ) : b === 2 ? (
-          <path d="M33 46 C34 62 42 68 50 68 C58 68 66 62 67 46 C64 60 56 63 50 63 C44 63 36 60 33 46 Z" fill={hair} opacity="0.8" />
+          <path
+            d="M33 46 C34 62 42 68 50 68 C58 68 66 62 67 46 C64 60 56 63 50 63 C44 63 36 60 33 46 Z"
+            fill={hair}
+            opacity="0.8"
+          />
         ) : b === 3 ? (
           <path d="M34 48 C35 66 44 72 50 72 C56 72 65 66 66 48 C62 66 38 66 34 48 Z" fill={hair} />
         ) : b === 4 ? (
-          <path d="M36 52 C38 64 44 66 50 66 C56 66 62 64 64 52 C58 62 42 62 36 52 Z" fill={hair} opacity="0.45" />
+          <path
+            d="M36 52 C38 64 44 66 50 66 C56 66 62 64 64 52 C58 62 42 62 36 52 Z"
+            fill={hair}
+            opacity="0.45"
+          />
         ) : null}
       </g>
       <circle cx="50" cy="50" r="47" fill="none" stroke={ring} strokeWidth="2.5" />
@@ -112,4 +126,12 @@ export function ManagerPortrait({ look, size = 96, accent, className }: ManagerP
   );
 }
 
-export const HAIR_COLORS = ["#2b2118", "#131313", "#6b4423", "#b07d3a", "#d8cdbd", "#8c8c8c", "#7a2f1d"];
+export const HAIR_COLORS = [
+  "#2b2118",
+  "#131313",
+  "#6b4423",
+  "#b07d3a",
+  "#d8cdbd",
+  "#8c8c8c",
+  "#7a2f1d",
+];

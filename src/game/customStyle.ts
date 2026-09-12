@@ -8,35 +8,13 @@
 import type { KitPattern } from "./kits";
 
 export type CrestShape =
-  | "shield"
-  | "round"
-  | "pointed"
-  | "diamond"
-  | "hex"
-  | "english"
-  | "split"
-  | "banner";
+  "shield" | "round" | "pointed" | "diamond" | "hex" | "english" | "split" | "banner";
 
 export type CrestPattern =
-  | "sash"
-  | "halves"
-  | "stripes"
-  | "rings"
-  | "quarters"
-  | "chevron"
-  | "hoop"
-  | "rays"
-  | "solid";
+  "sash" | "halves" | "stripes" | "rings" | "quarters" | "chevron" | "hoop" | "rays" | "solid";
 
 export type CrestEmblem =
-  | "ball"
-  | "lion"
-  | "eagle"
-  | "crown"
-  | "anchor"
-  | "leaf"
-  | "mountain"
-  | "bolt";
+  "ball" | "lion" | "eagle" | "crown" | "anchor" | "leaf" | "mountain" | "bolt";
 
 export interface CrestStyle {
   shape: CrestShape;

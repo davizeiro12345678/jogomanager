@@ -5,7 +5,8 @@ import { LEAGUES } from "@/game/data/leagues";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/jogo-de-manager-de-futebol";
-const TITLE = "Jogo de manager de futebol grátis online em 3D | Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE =
+  "Jogo de manager de futebol grátis online em 3D | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
   "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.";
 
@@ -14,7 +15,11 @@ export const Route = createFileRoute("/jogo-de-manager-de-futebol")({
     meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
     links: canonical(PATH),
     scripts: [
-      articleLd({ headline: "Jogo de manager de futebol grátis online em 3D", description: DESC, path: PATH }),
+      articleLd({
+        headline: "Jogo de manager de futebol grátis online em 3D",
+        description: DESC,
+        path: PATH,
+      }),
       breadcrumbLd([
         { name: "Início", path: "/" },
         { name: "Jogo de manager de futebol", path: PATH },

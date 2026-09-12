@@ -29,10 +29,14 @@ export const Route = createFileRoute("/assistente")({
         content:
           "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Assistente de IA · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      {
+        property: "og:title",
+        content: "Assistente de IA · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
       {
         property: "og:description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -48,12 +52,7 @@ export const Route = createFileRoute("/assistente")({
 
 /* ------------------------------------------------------------ cache por rodada */
 
-type CacheKey =
-  | "diretor"
-  | "olheiro"
-  | "jornalista"
-  | "tatico"
-  | `coletiva:${string}`;
+type CacheKey = "diretor" | "olheiro" | "jornalista" | "tatico" | `coletiva:${string}`;
 
 function cacheStorageKey(clubId: string, season: number, round: number, key: CacheKey) {
   return `pfm3d:ai:${clubId}:${season}:${round}:${key}`;
@@ -81,7 +80,10 @@ function resumoJogadores(players: Record<string, Player>, lineup: string[]) {
   const all = Object.values(players).sort((a, b) => b.ovr - a.ovr);
   const titulares = new Set(lineup);
   // manda o elenco inteiro (titulares primeiro) para a IA não achar que o time só tem 11 jogadores
-  const list = [...all.filter((p) => titulares.has(p.id)), ...all.filter((p) => !titulares.has(p.id))];
+  const list = [
+    ...all.filter((p) => titulares.has(p.id)),
+    ...all.filter((p) => !titulares.has(p.id)),
+  ];
   return list.slice(0, 26).map((p) => ({
     titular: titulares.has(p.id),
     nome: p.name,
@@ -152,10 +154,7 @@ function ToolCard({
   );
 }
 
-function useCachedTool<TInput>(
-  fn: (data: TInput) => Promise<string>,
-  cacheKey: string,
-) {
+function useCachedTool<TInput>(fn: (data: TInput) => Promise<string>, cacheKey: string) {
   const [result, setResult] = useState<string | null>(() => readCache(cacheKey));
   const mutation = useMutation({
     mutationFn: fn,

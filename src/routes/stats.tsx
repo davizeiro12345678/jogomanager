@@ -19,8 +19,15 @@ export const Route = createFileRoute("/stats")({
         content:
           "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Estatísticas do elenco · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content: "Estatísticas do elenco · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -57,17 +64,13 @@ function StatsPage() {
   const selected = compare.map((id) => career.players[id]).filter(Boolean) as Player[];
 
   const toggle = (id: string) =>
-    setCompare((cur) =>
-      cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id].slice(-2),
-    );
+    setCompare((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id].slice(-2)));
 
   return (
     <GameShell career={career}>
       <h1 className="font-display text-2xl uppercase tracking-wide">Estatísticas</h1>
 
       <MatchHistory career={career} />
-
-
 
       {selected.length === 2 ? (
         <section className="mt-4 rounded-2xl border border-border/60 surface-card p-4">
@@ -210,7 +213,9 @@ function MatchHistory({ career }: { career: CareerState }) {
                         <li key={p.pid}>
                           {career.players[p.pid]?.name ?? "—"}
                           {p.goals ? ` · ${p.goals} gol${p.goals > 1 ? "s" : ""}` : ""}
-                          {p.assists ? ` · ${p.assists} assistência${p.assists > 1 ? "s" : ""}` : ""}
+                          {p.assists
+                            ? ` · ${p.assists} assistência${p.assists > 1 ? "s" : ""}`
+                            : ""}
                           {` · nota ${p.rating.toFixed(1)}`}
                         </li>
                       ))}

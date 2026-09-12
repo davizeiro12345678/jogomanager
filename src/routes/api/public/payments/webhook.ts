@@ -1,9 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  type StripeEnv,
-  createStripeClient,
-  verifyWebhook,
-} from "@/lib/stripe.server";
+import { type StripeEnv, createStripeClient, verifyWebhook } from "@/lib/stripe.server";
 import {
   fulfillOneTimePurchase,
   markPurchaseFailed,
@@ -51,10 +47,7 @@ async function handleWebhook(req: Request, env: StripeEnv) {
       break;
     }
     case "customer.subscription.deleted": {
-      await syncSubscription(
-        { ...event.data.object, status: "canceled" },
-        env
-      );
+      await syncSubscription({ ...event.data.object, status: "canceled" }, env);
       break;
     }
     case "checkout.session.completed": {
@@ -113,10 +106,7 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
       POST: async ({ request }) => {
         const rawEnv = new URL(request.url).searchParams.get("env");
         if (rawEnv !== "sandbox" && rawEnv !== "live") {
-          console.error(
-            "Webhook received with invalid or missing env query parameter:",
-            rawEnv
-          );
+          console.error("Webhook received with invalid or missing env query parameter:", rawEnv);
           return Response.json({ received: true, ignored: "invalid env" });
         }
         const env: StripeEnv = rawEnv;

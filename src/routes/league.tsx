@@ -16,10 +16,18 @@ export const Route = createFileRoute("/league")({
       { title: "Tabela e calendário · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
       {
         name: "description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Tabela e calendário · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content: "Tabela e calendário · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -71,7 +79,10 @@ function LeaguePage() {
               max={maxSlots}
               value={slots}
               onChange={(e) => {
-                const next = Math.max(1, Math.min(maxSlots, Math.round(Number(e.target.value) || 1)));
+                const next = Math.max(
+                  1,
+                  Math.min(maxSlots, Math.round(Number(e.target.value) || 1)),
+                );
                 update({ ...career, pyramidSlots: next });
               }}
               className="h-11 w-20 rounded-lg border border-border/60 bg-background px-3 text-center font-display"
@@ -115,7 +126,11 @@ function LeaguePage() {
                           />
                         )}
                         <span className="sr-only">
-                          {zone === "acesso" ? "Zona de acesso." : zone === "rebaixamento" ? "Zona de rebaixamento." : ""}
+                          {zone === "acesso"
+                            ? "Zona de acesso."
+                            : zone === "rebaixamento"
+                              ? "Zona de rebaixamento."
+                              : ""}
                         </span>
                         {i + 1}
                       </span>

@@ -29,13 +29,25 @@ export const Route = createFileRoute("/transfers")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Mercado de transferências · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      {
+        title:
+          "Mercado de transferências · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
       {
         name: "description",
-        content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
-      { property: "og:title", content: "Mercado de transferências · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      { property: "og:description", content: "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas." },
+      {
+        property: "og:title",
+        content:
+          "Mercado de transferências · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+      },
+      {
+        property: "og:description",
+        content:
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -161,7 +173,9 @@ function TransfersPage() {
                     setPage(0);
                   }}
                   className={`rounded-md px-3 py-1.5 text-xs uppercase tracking-wider transition ${
-                    pos === f ? "bg-primary text-primary-foreground" : "bg-secondary hover:brightness-125"
+                    pos === f
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary hover:brightness-125"
                   }`}
                 >
                   {f === "ALL" ? "Todos" : f}
@@ -285,13 +299,7 @@ function SkeletonRows() {
 
 type Career = NonNullable<ReturnType<typeof useCareer>["career"]>;
 
-function SellPanel({
-  career,
-  update,
-}: {
-  career: Career;
-  update: (s: Career) => void;
-}) {
+function SellPanel({ career, update }: { career: Career; update: (s: Career) => void }) {
   const players = Object.values(career.players).sort((a, b) => a.ovr - b.ovr);
   const buyers = Object.values(CLUBS)
     .filter((c) => c.id !== career.clubId)
@@ -389,7 +397,10 @@ function NegotiationDialog({
               {target.pos} · {target.age} anos · OVR {target.ovr} · {clubName(target.clubId)}
             </p>
           </div>
-          <button onClick={onClose} className="ml-auto text-sm text-muted-foreground hover:text-foreground">
+          <button
+            onClick={onClose}
+            className="ml-auto text-sm text-muted-foreground hover:text-foreground"
+          >
             Fechar
           </button>
         </div>
@@ -412,8 +423,9 @@ function NegotiationDialog({
             />
           </label>
           <label className="block text-xs text-muted-foreground">
-            Salário oferecido: <span className="font-display text-foreground">{formatWage(wage)}</span>{" "}
-            (pedido {formatWage(wageAsk(target))})
+            Salário oferecido:{" "}
+            <span className="font-display text-foreground">{formatWage(wage)}</span> (pedido{" "}
+            {formatWage(wageAsk(target))})
             <input
               type="range"
               min={Math.round(wageAsk(target) * 0.5)}
@@ -451,7 +463,13 @@ function NegotiationDialog({
             onClick={close}
             className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-40"
           >
-            {agreed ? (affordable ? (wageOk ? "Fechar contrato" : "Salário baixo") : "Sem caixa") : "Aguardando acordo"}
+            {agreed
+              ? affordable
+                ? wageOk
+                  ? "Fechar contrato"
+                  : "Salário baixo"
+                : "Sem caixa"
+              : "Aguardando acordo"}
           </button>
         </div>
       </div>

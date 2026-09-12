@@ -5,7 +5,6 @@ import { crestStyleFor } from "@/game/customStyle";
 import { badgeFor } from "@/lib/customData";
 import { loadOfficialAssets, officialCrest, subscribeOfficial } from "@/lib/officialAssets";
 
-
 function hash(str: string) {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {
@@ -15,26 +14,10 @@ function hash(str: string) {
   return Math.abs(h);
 }
 
-type Shape =
-  | "shield"
-  | "round"
-  | "pointed"
-  | "diamond"
-  | "hex"
-  | "english"
-  | "split"
-  | "banner";
+type Shape = "shield" | "round" | "pointed" | "diamond" | "hex" | "english" | "split" | "banner";
 
 type Pattern =
-  | "sash"
-  | "halves"
-  | "stripes"
-  | "rings"
-  | "quarters"
-  | "chevron"
-  | "hoop"
-  | "rays"
-  | "solid";
+  "sash" | "halves" | "stripes" | "rings" | "quarters" | "chevron" | "hoop" | "rays" | "solid";
 
 type Emblem = "ball" | "lion" | "eagle" | "crown" | "anchor" | "leaf" | "mountain" | "bolt";
 
@@ -54,7 +37,8 @@ const EMBLEMS: Record<Emblem, string> = {
   lion: "M0 -8 C4 -8 7 -5 7 -1 C7 3 4 7 0 8 C-4 7 -7 3 -7 -1 C-7 -5 -4 -8 0 -8 M-3 -2 h1.6 v1.6 h-1.6 Z M1.4 -2 h1.6 v1.6 h-1.6 Z M-2.6 2.6 h5.2 v1.4 h-5.2 Z",
   eagle: "M0 -7 L2 -3 L8 -5 L4 0 L8 5 L2 3 L0 7 L-2 3 L-8 5 L-4 0 L-8 -5 L-2 -3 Z",
   crown: "M-8 4 L-8 -4 L-4 0 L0 -6 L4 0 L8 -4 L8 4 Z",
-  anchor: "M-0.9 -7 h1.8 v3 h2.4 v1.8 h-2.4 V5 C3 4.6 5.4 2.6 6 -0.2 L8 0.4 C7 4.6 3.6 7.4 0 7.6 C-3.6 7.4 -7 4.6 -8 0.4 L-6 -0.2 C-5.4 2.6 -3 4.6 -0.9 5 Z",
+  anchor:
+    "M-0.9 -7 h1.8 v3 h2.4 v1.8 h-2.4 V5 C3 4.6 5.4 2.6 6 -0.2 L8 0.4 C7 4.6 3.6 7.4 0 7.6 C-3.6 7.4 -7 4.6 -8 0.4 L-6 -0.2 C-5.4 2.6 -3 4.6 -0.9 5 Z",
   leaf: "M0 8 C-6 4 -7 -4 0 -8 C7 -4 6 4 0 8 Z",
   mountain: "M-8 6 L-2.5 -5 L1 1 L3.5 -3 L8 6 Z",
   bolt: "M1.5 -8 L-5 1 H-0.5 L-2 8 L5 -1 H0.5 Z",
@@ -108,7 +92,6 @@ export function Crest({
       off();
     };
   }, [club.id]);
-
 
   const h = hash(club.id);
   const style = crestStyleFor(club.id);
