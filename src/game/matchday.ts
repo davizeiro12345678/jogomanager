@@ -1,5 +1,5 @@
 import type { MowPattern } from "@/components/game/stadium/textures/grass";
-import { getVisual } from "@/game/visual-settings";
+import { resolveVisual } from "@/game/visual-settings";
 
 
 /**
