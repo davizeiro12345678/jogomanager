@@ -146,9 +146,11 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
   const nextBlink = useRef(1 + Math.random() * 4);
 
   // grupos de LOD: detalhes finos (rosto, dedos, costuras) e corpo médio
-  const lod0 = useRef<THREE.Group>(null);
-  const lod1 = useRef<THREE.Group>(null);
-  const spareRef = useRef<THREE.Group>(null);
+  const faceDetailRef = useRef<THREE.Group>(null);
+  const handDetailLRef = useRef<THREE.Group>(null);
+  const handDetailRRef = useRef<THREE.Group>(null);
+  const bootDetailLRef = useRef<THREE.Group>(null);
+  const bootDetailRRef = useRef<THREE.Group>(null);
   const lodState = useRef<LodLevel>(1);
 
   /* ---------------------------------------------------------- animação */
@@ -170,16 +172,23 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     const dt = Math.min(rawDt, 0.05);
 
     // ---- posição suavizada no gramado
-    g.position.x += (player.x - g.position.x) * 0.34;
-    g.position.z += (player.z - g.position.z) * 0.34;
+    const moveBlend = 1 - Math.exp(-25 * dt);
+    g.position.x += (player.x - g.position.x) * moveBlend;
+    g.position.z += (player.z - g.position.z) * moveBlend;
 
     // ---- LOD por distância
     const camDist = state.camera.position.distanceTo(g.position);
     const lod = lodForDistance(camDist, quality);
     if (lod !== lodState.current) {
       lodState.current = lod;
-      if (lod0.current) lod0.current.visible = lod === 0;
-      if (lod1.current) lod1.current.visible = lod <= 1;
+      const nearDetails = [faceDetailRef.current, handDetailLRef.current, handDetailRRef.current];
+      const mediumDetails = [bootDetailLRef.current, bootDetailRRef.current];
+      nearDetails.forEach((detailGroup) => {
+        if (detailGroup) detailGroup.visible = lod === 0;
+      });
+      mediumDetails.forEach((detailGroup) => {
+        if (detailGroup) detailGroup.visible = lod <= 1;
+      });
     }
 
     // ---- orientação: olha para onde corre; sem bola, olha para a bola
@@ -193,7 +202,8 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     let d = want - g.rotation.y;
     while (d > Math.PI) d -= Math.PI * 2;
     while (d < -Math.PI) d += Math.PI * 2;
-    const turnRate = d * (dirLen > 0.5 ? 0.2 : 0.08);
+    const turnBlend = 1 - Math.exp(-(dirLen > 0.5 ? 13 : 5) * dt);
+    const turnRate = d * turnBlend;
     g.rotation.y += turnRate;
 
     // ---- inclinação do corpo: para a frente na aceleração, para dentro na curva
@@ -210,7 +220,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     acc.current = 0;
 
     const speed = dirLen;
-    const stopped = goalPulse.current > 0.05 && player.action === null ? false : false;
+    const stopped = false;
 
     const next = selectClip({
       isGK,
@@ -526,7 +536,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
               <sphereGeometry args={[handR, segs.radial, segs.radial]} />
               {handMat}
             </mesh>
-            <group ref={side === 1 ? lod0 : spareRef}>
+            <group ref={side === 1 ? handDetailLRef : handDetailRRef}>
               {/* dedos, só no LOD mais próximo */}
               {[0, 1, 2, 3].map((i) => (
                 <mesh
@@ -663,7 +673,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
               <boxGeometry args={[P.footH * 1.0, P.footH * 0.16, P.footLen * 0.86]} />
               {soleMat}
             </mesh>
-            <group ref={side === 1 ? lod1 : spareRef}>
+            <group ref={side === 1 ? bootDetailLRef : bootDetailRRef}>
               {/* cadarços */}
               {[0, 1, 2].map((i) => (
                 <mesh
@@ -1064,7 +1074,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
                   <sphereGeometry args={[P.headR, 12, 12]} />
                   {skinMat}
                 </mesh>
-                <group ref={lod0}>{face}</group>
+                <group ref={faceDetailRef}>{face}</group>
                 {beard}
                 {hair}
               </group>

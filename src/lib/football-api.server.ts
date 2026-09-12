@@ -16,8 +16,10 @@ export interface RemoteTeam {
   name: string;
   crestUrl?: string | undefined;
   kitUrl?: string | undefined;
+  stadiumPhoto?: string | undefined;
   stadium?: string | undefined;
   stadiumCapacity?: number | undefined;
+  stadiumPhotoUrl?: string | undefined;
   city?: string | undefined;
   country?: string | undefined;
   founded?: number | undefined;
@@ -70,8 +72,10 @@ interface SdbTeam {
   strTeamJersey?: string;
   strStadium?: string;
   intStadiumCapacity?: string;
+  strStadiumThumb?: string;
   strLocation?: string;
   strCountry?: string;
+  strStadiumThumb?: string;
   intFormedYear?: string;
 }
 
@@ -89,9 +93,11 @@ function mapSdb(t: SdbTeam): RemoteTeam {
     externalId: String(t.idTeam ?? ""),
     name: t.strTeam ?? "",
     crestUrl: t.strBadge ?? t.strTeamBadge ?? undefined,
+    stadiumPhoto: t.strStadiumThumb ?? undefined,
     kitUrl: t.strEquipment ?? t.strTeamJersey ?? undefined,
     stadium: t.strStadium ?? undefined,
     stadiumCapacity: t.intStadiumCapacity ? Number(t.intStadiumCapacity) || undefined : undefined,
+    stadiumPhotoUrl: t.strStadiumThumb ?? undefined,
     city: t.strLocation ?? undefined,
     country: t.strCountry ?? undefined,
     founded: t.intFormedYear ? Number(t.intFormedYear) || undefined : undefined,
@@ -201,6 +207,38 @@ export async function sdbAllTeams(
     ...mapSdb(t),
     alternate: t.strTeamAlternate ?? undefined,
   }));
+}
+
+interface SdbEquipment {
+  strEquipment?: string;
+  strSeason?: string;
+  strType?: string;
+}
+
+export interface RemoteKit {
+  imageUrl: string;
+  season: string;
+  kind: "home" | "away" | "third" | "goalkeeper";
+}
+
+/** Uniformes oficiais disponíveis para o clube, incluindo visitante e terceiro. */
+export async function sdbTeamKits(teamId: string): Promise<RemoteKit[]> {
+  const key = process.env["THESPORTSDB_API_KEY"] ?? "123";
+  const json = await getJson<{ equipment?: SdbEquipment[] | null }>(
+    `https://www.thesportsdb.com/api/v1/json/${key}/lookupequipment.php?id=${encodeURIComponent(teamId)}`,
+  );
+  return (json?.equipment ?? []).flatMap((item) => {
+    if (!item.strEquipment) return [];
+    const rawType = (item.strType ?? "home").toLowerCase();
+    const kind: RemoteKit["kind"] = rawType.includes("away")
+      ? "away"
+      : rawType.includes("third")
+        ? "third"
+        : rawType.includes("goal")
+          ? "goalkeeper"
+          : "home";
+    return [{ imageUrl: item.strEquipment, season: item.strSeason ?? "2025-2026", kind }];
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -343,4 +381,12 @@ export async function sdbSquad(teamId: string): Promise<RemotePlayer[]> {
       nationality: p.strNationality ?? undefined,
       photoUrl: p.strCutout ?? p.strThumb ?? undefined,
     }));
+}
+
+export async function sdbSearchLeague(name: string): Promise<string | null> {
+  const key = process.env["THESPORTSDB_API_KEY"] ?? "123";
+  const url = `https://www.thesportsdb.com/api/v1/json/${key}/searchleagues.php?l=${encodeURIComponent(name)}`;
+  const json = await getJson<{ countrys: { strBadge?: string; strLogo?: string }[] | null }>(url);
+  const hit = json?.countrys?.[0];
+  return hit?.strBadge ?? hit?.strLogo ?? null;
 }
