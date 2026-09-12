@@ -240,6 +240,34 @@ export function badgeFor(clubId: string): string | undefined {
   return badges.get(clubId);
 }
 
+/** Retrato do clube oficial antes de qualquer edição, para poder desfazer. */
+type ClubSnapshot = Pick<Club, "name" | "short" | "primary" | "secondary" | "strength">;
+const originals = new Map<string, ClubSnapshot>();
+
+function remember(club: Club) {
+  if (originals.has(club.id)) return;
+  originals.set(club.id, {
+    name: club.name,
+    short: club.short,
+    primary: club.primary,
+    secondary: club.secondary,
+    strength: club.strength,
+  });
+}
+
+/** Devolve todos os clubes editados ao estado oficial (troca de campanha). */
+export function revertCustomWorld() {
+  for (const [id, snap] of originals) {
+    const club = CLUBS[id];
+    if (club) Object.assign(club, snap);
+  }
+  originals.clear();
+  badges.clear();
+  for (let i = LEAGUES.length - 1; i >= 0; i--) {
+    if (LEAGUES[i]!.id.startsWith("custom-")) LEAGUES.splice(i, 1);
+  }
+}
+
 /** aplica nome, cores, escudo, força, uniforme e estádio sobre os clubes do jogo */
 export function applyCustomToWorld() {
   if (typeof window === "undefined") return;
@@ -248,6 +276,7 @@ export function applyCustomToWorld() {
   for (const o of Object.values(data.clubs)) {
     const club = CLUBS[o.id];
     if (!club) continue;
+    remember(club);
     if (o.name.trim()) club.name = o.name.trim();
     if (o.short.trim()) club.short = o.short.trim().toUpperCase().slice(0, 4);
     if (o.primary) club.primary = o.primary;
