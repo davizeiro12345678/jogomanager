@@ -130,7 +130,7 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 hud-stagger md:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-5 grid items-start gap-4 hud-stagger md:grid-cols-2 lg:grid-cols-3">
         {/* Próxima partida — cartão herói */}
         <HudCard
           title="Próxima partida"
