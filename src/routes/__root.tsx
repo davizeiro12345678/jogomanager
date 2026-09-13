@@ -94,10 +94,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap",
-      },
+      // Fontes carregadas sem bloquear a primeira pintura: entram como "print"
+      // e o script abaixo as libera assim que o navegador as baixa.
+      { rel: "preload", as: "style", href: GOOGLE_FONTS },
+      { rel: "stylesheet", href: GOOGLE_FONTS, media: "print", id: "google-fonts" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/favicon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
