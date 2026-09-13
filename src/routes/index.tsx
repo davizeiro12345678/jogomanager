@@ -63,6 +63,13 @@ const HUB = [
   },
 ] as const;
 
+/**
+ * Faixa de escudos: apenas uma amostra (duplicada para o loop contínuo).
+ * Renderizar todos os clubes custava centenas de SVGs no primeiro paint.
+ */
+const MARQUEE_SAMPLE = LEAGUES.slice(0, 12).flatMap((l) => l.clubs.slice(0, 2));
+const MARQUEE_CLUBS = [...MARQUEE_SAMPLE, ...MARQUEE_SAMPLE];
+
 function Landing() {
   const [hasCareer, setHasCareer] = useState(false);
   const [resume, setResume] = useState<{ club: string; season: number; round: number } | null>(
@@ -236,10 +243,7 @@ function Landing() {
           className="mt-8 -mx-4 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]"
         >
           <div className="flex w-max gap-3 px-4 motion-safe:animate-[marquee_38s_linear_infinite]">
-            {[
-              ...LEAGUES.flatMap((l) => l.clubs.slice(0, 5)),
-              ...LEAGUES.flatMap((l) => l.clubs.slice(0, 5)),
-            ].map((c, i) => (
+            {MARQUEE_CLUBS.map((c, i) => (
               <span
                 key={`${c.id}-${i}`}
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-border/50 surface-card backdrop-blur"
