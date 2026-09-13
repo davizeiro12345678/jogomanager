@@ -93,13 +93,19 @@ function Landing() {
     <div className="pitch-bg min-h-screen">
       {/* ---------- herói em tela cheia ---------- */}
       <header className="relative isolate overflow-hidden">
-        <img
-          src={heroStadium}
-          alt="Manager na beira do campo observando a partida em um estádio 3D lotado à noite"
-          width={1600}
-          height={912}
-          className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-45"
-        />
+        <picture>
+          <source type="image/avif" srcSet={heroAvif} sizes="100vw" />
+          <source type="image/webp" srcSet={heroWebp} sizes="100vw" />
+          <img
+            src={heroFallback}
+            alt="Manager na beira do campo observando a partida em um estádio 3D lotado à noite"
+            width={1600}
+            height={912}
+            fetchPriority="high"
+            decoding="async"
+            className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-45"
+          />
+        </picture>
         <div
           aria-hidden="true"
           className="absolute inset-0 -z-10 bg-[radial-gradient(120%_80%_at_50%_0%,transparent_10%,hsl(var(--background)/0.7)_55%,hsl(var(--background))_100%)]"
