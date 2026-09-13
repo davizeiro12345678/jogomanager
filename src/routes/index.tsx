@@ -7,7 +7,9 @@ import { Crest } from "@/components/game/Crest";
 import { readLocalCareer } from "@/lib/careerStorage";
 import { Flag } from "@/components/game/Flag";
 import { canonical, gameLd, seoMeta, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
-import heroStadium from "@/assets/hero-stadium.jpg";
+import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1600&quality=52&as=srcset";
+import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1600&quality=62&as=srcset";
+import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -61,6 +63,13 @@ const HUB = [
   },
 ] as const;
 
+/**
+ * Faixa de escudos: apenas uma amostra (duplicada para o loop contínuo).
+ * Renderizar todos os clubes custava centenas de SVGs no primeiro paint.
+ */
+const MARQUEE_SAMPLE = LEAGUES.slice(0, 12).flatMap((l) => l.clubs.slice(0, 2));
+const MARQUEE_CLUBS = [...MARQUEE_SAMPLE, ...MARQUEE_SAMPLE];
+
 function Landing() {
   const [hasCareer, setHasCareer] = useState(false);
   const [resume, setResume] = useState<{ club: string; season: number; round: number } | null>(
@@ -91,13 +100,19 @@ function Landing() {
     <div className="pitch-bg min-h-screen">
       {/* ---------- herói em tela cheia ---------- */}
       <header className="relative isolate overflow-hidden">
-        <img
-          src={heroStadium}
-          alt="Manager na beira do campo observando a partida em um estádio 3D lotado à noite"
-          width={1600}
-          height={912}
-          className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-45"
-        />
+        <picture>
+          <source type="image/avif" srcSet={heroAvif} sizes="100vw" />
+          <source type="image/webp" srcSet={heroWebp} sizes="100vw" />
+          <img
+            src={heroFallback}
+            alt="Manager na beira do campo observando a partida em um estádio 3D lotado à noite"
+            width={1600}
+            height={912}
+            fetchPriority="high"
+            decoding="async"
+            className="absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-45"
+          />
+        </picture>
         <div
           aria-hidden="true"
           className="absolute inset-0 -z-10 bg-[radial-gradient(120%_80%_at_50%_0%,transparent_10%,hsl(var(--background)/0.7)_55%,hsl(var(--background))_100%)]"
@@ -228,10 +243,7 @@ function Landing() {
           className="mt-8 -mx-4 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]"
         >
           <div className="flex w-max gap-3 px-4 motion-safe:animate-[marquee_38s_linear_infinite]">
-            {[
-              ...LEAGUES.flatMap((l) => l.clubs.slice(0, 5)),
-              ...LEAGUES.flatMap((l) => l.clubs.slice(0, 5)),
-            ].map((c, i) => (
+            {MARQUEE_CLUBS.map((c, i) => (
               <span
                 key={`${c.id}-${i}`}
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-border/50 surface-card backdrop-blur"
