@@ -7,7 +7,9 @@ import { Crest } from "@/components/game/Crest";
 import { readLocalCareer } from "@/lib/careerStorage";
 import { Flag } from "@/components/game/Flag";
 import { canonical, gameLd, seoMeta, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
-import heroStadium from "@/assets/hero-stadium.jpg";
+import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1600&quality=52&as=srcset";
+import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1600&quality=62&as=srcset";
+import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
 
 export const Route = createFileRoute("/")({
   head: () => ({
