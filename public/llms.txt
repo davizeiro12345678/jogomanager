@@ -1,0 +1,40 @@
+# Pro Football Manager 3D
+
+> Jogo de manager de futebol online e gratuito, jogado no navegador. O treinador
+> escolhe um clube real, monta o elenco, define a tática e assiste aos 90 minutos
+> em 3D, com narração ao vivo. Em português do Brasil, sem instalação e sem
+> obrigação de pagar.
+
+Site oficial: https://futebolmanager.xyz
+
+## Páginas principais
+
+- [Início](https://futebolmanager.xyz/): visão geral do jogo e início rápido de carreira.
+- [Jogo de manager de futebol](https://futebolmanager.xyz/jogo-de-manager-de-futebol): o que é o jogo e como começar.
+- [Soccer manager online](https://futebolmanager.xyz/soccer-manager-online): versão em inglês do mesmo conceito.
+- [Ligas de futebol](https://futebolmanager.xyz/ligas-de-futebol): ligas e copas disponíveis.
+- [Brasileirão](https://futebolmanager.xyz/brasileirao): campeonato brasileiro dentro do jogo.
+- [Táticas e formações](https://futebolmanager.xyz/taticas-e-formacoes): esquemas e quando usar cada um.
+- [Melhores formações](https://futebolmanager.xyz/melhores-formacoes): comparação prática de formações.
+- [Mercado de transferências](https://futebolmanager.xyz/mercado-de-transferencias): contratações, salários e negociação.
+- [Guia de scouting](https://futebolmanager.xyz/guia-de-scouting): como avaliar jogadores e potencial.
+- [Gestão financeira](https://futebolmanager.xyz/gestao-financeira): orçamento, folha salarial e receitas.
+- [Guias](https://futebolmanager.xyz/guias) e [Dicas de gestão](https://futebolmanager.xyz/dicas-de-gestao): material para iniciantes.
+- [Glossário do futebol](https://futebolmanager.xyz/glossario-do-futebol): termos usados no jogo.
+- [Perguntas frequentes](https://futebolmanager.xyz/perguntas-frequentes): dúvidas comuns.
+- [Jogar offline](https://futebolmanager.xyz/jogar-offline): instalar como aplicativo.
+- [Pacotes e passe de temporada](https://futebolmanager.xyz/produtos): itens opcionais da loja.
+
+## Sobre e políticas
+
+- [Sobre o jogo](https://futebolmanager.xyz/sobre)
+- [Sobre o criador](https://futebolmanager.xyz/criador)
+- [Contato](https://futebolmanager.xyz/contato)
+- [Política de privacidade](https://futebolmanager.xyz/privacidade)
+- [Termos de uso](https://futebolmanager.xyz/termos)
+
+## Observações
+
+- Conteúdo em português do Brasil; a interface do jogo suporta dezenas de idiomas.
+- Nomes de clubes e jogadores reais são usados apenas como referência esportiva pública.
+- As compras da loja são cosméticas ou de conveniência e não alteram o resultado das partidas.
