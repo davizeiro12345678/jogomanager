@@ -20,6 +20,9 @@ export const PUBLIC_PAGES = [
   { to: "/produtos", label: "Pacotes e passe de temporada" },
   { to: "/sobre", label: "Sobre o jogo" },
   { to: "/criador", label: "Sobre o criador" },
+  { to: "/contato", label: "Contato e suporte" },
+  { to: "/privacidade", label: "Política de privacidade" },
+  { to: "/termos", label: "Termos de uso" },
 ] as const;
 
 export function PublicLinks({ exclude }: { exclude?: string }) {
