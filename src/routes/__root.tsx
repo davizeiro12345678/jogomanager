@@ -142,8 +142,16 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
+        <a
+          href="#conteudo"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-3 focus:font-display focus:text-sm focus:uppercase focus:tracking-widest focus:text-primary-foreground"
+        >
+          Pular para o conteúdo
+        </a>
+        <div id="conteudo">
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </div>
       </I18nProvider>
     </QueryClientProvider>
   );
