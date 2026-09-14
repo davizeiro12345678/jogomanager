@@ -387,6 +387,77 @@ function Landing() {
             ))}
           </div>
         </section>
+
+        {/* Texto de contexto: dá corpo à página e casa com o que os buscadores leem. */}
+        <section className="mt-16 max-w-3xl">
+          <h2 className="font-display text-2xl uppercase tracking-wide">
+            O que é o Pro Football Manager 3D
+          </h2>
+          <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+            <p>
+              O <strong className="text-foreground">Pro Football Manager 3D</strong> é um jogo de
+              manager de futebol online e gratuito que roda direto no navegador, sem instalar nada.
+              Você assume o comando de um clube real, monta o elenco, define a formação e a postura
+              tática, cuida do orçamento e assiste a cada partida em 3D, com narração, torcida e
+              placar ao vivo.
+            </p>
+            <p>
+              Cada temporada tem liga por pontos corridos, copa em mata-mata, janela de
+              transferências, folha salarial, pressão da diretoria e humor da torcida. Ganhar
+              títulos abre portas em clubes maiores; sequências ruins podem custar o emprego. O
+              calendário avança rodada a rodada, com treinos, lesões, suspensões, renovações de
+              contrato e a evolução dos jovens da base.
+            </p>
+            <p>
+              Durante os 90 minutos você continua no comando: troca o esquema, muda a marcação,
+              manda subir a linha, faz substituições e vê o efeito na posse, nas finalizações e na
+              pressão do adversário. O estádio, o gramado, as arquibancadas e os jogadores são
+              gerados pelo próprio jogo, com clima, horário e desgaste do campo — e a qualidade
+              gráfica se ajusta sozinha ao aparelho, então roda bem no computador e no celular.
+            </p>
+            <p>
+              As regras seguem as{" "}
+              <a
+                href="https://www.theifab.com/laws-of-the-game-documents/"
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="underline underline-offset-4 hover:text-foreground"
+              >
+                Regras do Jogo da IFAB
+              </a>
+              , e os formatos das competições reproduzem os calendários oficiais publicados por
+              entidades como a{" "}
+              <a
+                href="https://www.cbf.com.br/futebol-brasileiro/competicoes"
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="underline underline-offset-4 hover:text-foreground"
+              >
+                CBF
+              </a>
+              . Escudos, elencos e tabelas vêm de bases esportivas abertas, revisadas antes de
+              entrar no jogo.
+            </p>
+            <p>
+              Dá para jogar uma carreira inteira sem gastar nada: a loja vende só conveniência —
+              moedas, relatórios de olheiro, impulsos de treino e temas visuais — e nada disso muda
+              o resultado das partidas.{" "}
+              <Link to="/guias" className="underline underline-offset-4 hover:text-foreground">
+                Comece pelos guias
+              </Link>{" "}
+              se for a sua primeira carreira, ou vá direto para a{" "}
+              <Link
+                to="/partida-rapida"
+                className="underline underline-offset-4 hover:text-foreground"
+              >
+                partida rápida
+              </Link>
+              .
+            </p>
+          </div>
+        </section>
+
+        <SiteFooter path="/" />
       </div>
     </div>
   );
