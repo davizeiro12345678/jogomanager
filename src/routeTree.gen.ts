@@ -22,6 +22,7 @@ import { Route as ComoSerTecnicoDeFutebolRouteImport } from './routes/como-ser-t
 import { Route as ComparativoJogosManagerRouteImport } from './routes/comparativo-jogos-manager'
 import { Route as ComprasRouteImport } from './routes/compras'
 import { Route as ConquistasRouteImport } from './routes/conquistas'
+import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as CriadorRouteImport } from './routes/criador'
 import { Route as CupRouteImport } from './routes/cup'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -47,6 +48,7 @@ import { Route as NewRouteImport } from './routes/new'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as PartidaRapidaRouteImport } from './routes/partida-rapida'
 import { Route as PerguntasFrequentesRouteImport } from './routes/perguntas-frequentes'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as ReplaysRouteImport } from './routes/replays'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
@@ -59,6 +61,7 @@ import { Route as StatsRouteImport } from './routes/stats'
 import { Route as TacticsRouteImport } from './routes/tactics'
 import { Route as TaticasEFormacoesRouteImport } from './routes/taticas-e-formacoes'
 import { Route as TemporadaAutomaticaRouteImport } from './routes/temporada-automatica'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as TrainingRouteImport } from './routes/training'
 import { Route as TransfersRouteImport } from './routes/transfers'
 import { Route as VisualRouteImport } from './routes/visual'
@@ -135,6 +138,11 @@ const ComprasRoute = ComprasRouteImport.update({
 const ConquistasRoute = ConquistasRouteImport.update({
   id: '/conquistas',
   path: '/conquistas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContatoRoute = ContatoRouteImport.update({
+  id: '/contato',
+  path: '/contato',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CriadorRoute = CriadorRouteImport.update({
@@ -262,6 +270,11 @@ const PerguntasFrequentesRoute = PerguntasFrequentesRouteImport.update({
   path: '/perguntas-frequentes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProdutosRoute = ProdutosRouteImport.update({
   id: '/produtos',
   path: '/produtos',
@@ -320,6 +333,11 @@ const TaticasEFormacoesRoute = TaticasEFormacoesRouteImport.update({
 const TemporadaAutomaticaRoute = TemporadaAutomaticaRouteImport.update({
   id: '/temporada-automatica',
   path: '/temporada-automatica',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TrainingRoute = TrainingRouteImport.update({
@@ -400,6 +418,7 @@ export interface FileRoutesByFullPath {
   '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
   '/compras': typeof ComprasRoute
   '/conquistas': typeof ConquistasRoute
+  '/contato': typeof ContatoRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
   '/dashboard': typeof DashboardRoute
@@ -425,6 +444,7 @@ export interface FileRoutesByFullPath {
   '/news': typeof NewsRoute
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/replays': typeof ReplaysRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -437,6 +457,7 @@ export interface FileRoutesByFullPath {
   '/tactics': typeof TacticsRoute
   '/taticas-e-formacoes': typeof TaticasEFormacoesRoute
   '/temporada-automatica': typeof TemporadaAutomaticaRoute
+  '/termos': typeof TermosRoute
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/visual': typeof VisualRoute
@@ -464,6 +485,7 @@ export interface FileRoutesByTo {
   '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
   '/compras': typeof ComprasRoute
   '/conquistas': typeof ConquistasRoute
+  '/contato': typeof ContatoRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
   '/dashboard': typeof DashboardRoute
@@ -489,6 +511,7 @@ export interface FileRoutesByTo {
   '/news': typeof NewsRoute
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/replays': typeof ReplaysRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -501,6 +524,7 @@ export interface FileRoutesByTo {
   '/tactics': typeof TacticsRoute
   '/taticas-e-formacoes': typeof TaticasEFormacoesRoute
   '/temporada-automatica': typeof TemporadaAutomaticaRoute
+  '/termos': typeof TermosRoute
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/visual': typeof VisualRoute
@@ -529,6 +553,7 @@ export interface FileRoutesById {
   '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
   '/compras': typeof ComprasRoute
   '/conquistas': typeof ConquistasRoute
+  '/contato': typeof ContatoRoute
   '/criador': typeof CriadorRoute
   '/cup': typeof CupRoute
   '/dashboard': typeof DashboardRoute
@@ -554,6 +579,7 @@ export interface FileRoutesById {
   '/news': typeof NewsRoute
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/replays': typeof ReplaysRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -566,6 +592,7 @@ export interface FileRoutesById {
   '/tactics': typeof TacticsRoute
   '/taticas-e-formacoes': typeof TaticasEFormacoesRoute
   '/temporada-automatica': typeof TemporadaAutomaticaRoute
+  '/termos': typeof TermosRoute
   '/training': typeof TrainingRoute
   '/transfers': typeof TransfersRoute
   '/visual': typeof VisualRoute
@@ -595,6 +622,7 @@ export interface FileRouteTypes {
     | '/comparativo-jogos-manager'
     | '/compras'
     | '/conquistas'
+    | '/contato'
     | '/criador'
     | '/cup'
     | '/dashboard'
@@ -620,6 +648,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/partida-rapida'
     | '/perguntas-frequentes'
+    | '/privacidade'
     | '/produtos'
     | '/replays'
     | '/robots.txt'
@@ -632,6 +661,7 @@ export interface FileRouteTypes {
     | '/tactics'
     | '/taticas-e-formacoes'
     | '/temporada-automatica'
+    | '/termos'
     | '/training'
     | '/transfers'
     | '/visual'
@@ -659,6 +689,7 @@ export interface FileRouteTypes {
     | '/comparativo-jogos-manager'
     | '/compras'
     | '/conquistas'
+    | '/contato'
     | '/criador'
     | '/cup'
     | '/dashboard'
@@ -684,6 +715,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/partida-rapida'
     | '/perguntas-frequentes'
+    | '/privacidade'
     | '/produtos'
     | '/replays'
     | '/robots.txt'
@@ -696,6 +728,7 @@ export interface FileRouteTypes {
     | '/tactics'
     | '/taticas-e-formacoes'
     | '/temporada-automatica'
+    | '/termos'
     | '/training'
     | '/transfers'
     | '/visual'
@@ -723,6 +756,7 @@ export interface FileRouteTypes {
     | '/comparativo-jogos-manager'
     | '/compras'
     | '/conquistas'
+    | '/contato'
     | '/criador'
     | '/cup'
     | '/dashboard'
@@ -748,6 +782,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/partida-rapida'
     | '/perguntas-frequentes'
+    | '/privacidade'
     | '/produtos'
     | '/replays'
     | '/robots.txt'
@@ -760,6 +795,7 @@ export interface FileRouteTypes {
     | '/tactics'
     | '/taticas-e-formacoes'
     | '/temporada-automatica'
+    | '/termos'
     | '/training'
     | '/transfers'
     | '/visual'
@@ -788,6 +824,7 @@ export interface RootRouteChildren {
   ComparativoJogosManagerRoute: typeof ComparativoJogosManagerRoute
   ComprasRoute: typeof ComprasRoute
   ConquistasRoute: typeof ConquistasRoute
+  ContatoRoute: typeof ContatoRoute
   CriadorRoute: typeof CriadorRoute
   CupRoute: typeof CupRoute
   DashboardRoute: typeof DashboardRoute
@@ -813,6 +850,7 @@ export interface RootRouteChildren {
   NewsRoute: typeof NewsRoute
   PartidaRapidaRoute: typeof PartidaRapidaRoute
   PerguntasFrequentesRoute: typeof PerguntasFrequentesRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
   ProdutosRoute: typeof ProdutosRoute
   ReplaysRoute: typeof ReplaysRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
@@ -825,6 +863,7 @@ export interface RootRouteChildren {
   TacticsRoute: typeof TacticsRoute
   TaticasEFormacoesRoute: typeof TaticasEFormacoesRoute
   TemporadaAutomaticaRoute: typeof TemporadaAutomaticaRoute
+  TermosRoute: typeof TermosRoute
   TrainingRoute: typeof TrainingRoute
   TransfersRoute: typeof TransfersRoute
   VisualRoute: typeof VisualRoute
@@ -930,6 +969,13 @@ declare module '@tanstack/react-router' {
       path: '/conquistas'
       fullPath: '/conquistas'
       preLoaderRoute: typeof ConquistasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contato': {
+      id: '/contato'
+      path: '/contato'
+      fullPath: '/contato'
+      preLoaderRoute: typeof ContatoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/criador': {
@@ -1107,6 +1153,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerguntasFrequentesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/produtos': {
       id: '/produtos'
       path: '/produtos'
@@ -1189,6 +1242,13 @@ declare module '@tanstack/react-router' {
       path: '/temporada-automatica'
       fullPath: '/temporada-automatica'
       preLoaderRoute: typeof TemporadaAutomaticaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/training': {
@@ -1292,6 +1352,7 @@ const rootRouteChildren: RootRouteChildren = {
   ComparativoJogosManagerRoute: ComparativoJogosManagerRoute,
   ComprasRoute: ComprasRoute,
   ConquistasRoute: ConquistasRoute,
+  ContatoRoute: ContatoRoute,
   CriadorRoute: CriadorRoute,
   CupRoute: CupRoute,
   DashboardRoute: DashboardRoute,
@@ -1317,6 +1378,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewsRoute: NewsRoute,
   PartidaRapidaRoute: PartidaRapidaRoute,
   PerguntasFrequentesRoute: PerguntasFrequentesRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   ProdutosRoute: ProdutosRoute,
   ReplaysRoute: ReplaysRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
@@ -1329,6 +1391,7 @@ const rootRouteChildren: RootRouteChildren = {
   TacticsRoute: TacticsRoute,
   TaticasEFormacoesRoute: TaticasEFormacoesRoute,
   TemporadaAutomaticaRoute: TemporadaAutomaticaRoute,
+  TermosRoute: TermosRoute,
   TrainingRoute: TrainingRoute,
   TransfersRoute: TransfersRoute,
   VisualRoute: VisualRoute,
