@@ -42,7 +42,7 @@ const CSP = [
   "object-src 'none'",
   "form-action 'self' https://*.stripe.com",
   "frame-ancestors 'self' https://*.lovable.app https://*.lovable.dev https://lovable.dev",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.posthog.com https://*.i.posthog.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.posthog.com https://*.i.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://cdn.gpteng.co https://*.lovable.app https://*.lovable.dev",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
