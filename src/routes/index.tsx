@@ -6,6 +6,7 @@ import { CLUBS, LEAGUES } from "@/game/data/leagues";
 import { Crest } from "@/components/game/Crest";
 import { readLocalCareer } from "@/lib/careerStorage";
 import { Flag } from "@/components/game/Flag";
+import { SiteFooter } from "@/components/SiteFooter";
 import { canonical, gameLd, seoMeta, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
 import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1600&quality=52&as=srcset";
 import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1600&quality=62&as=srcset";

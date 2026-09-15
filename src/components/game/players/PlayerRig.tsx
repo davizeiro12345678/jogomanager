@@ -164,6 +164,8 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
   const prevTime = useRef(0);
   const blend = useRef(1);
   const acc = useRef(0);
+  // tempo acumulado abaixo do limiar de caminhada, para decidir clipes de parada
+  const idleFor = useRef(0);
   const seed = look.seed % 97;
 
   useFrame((state, rawDt) => {
@@ -220,7 +222,11 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     acc.current = 0;
 
     const speed = dirLen;
-    const stopped = false;
+    // histerese: só é "parado" depois de ~0,25 s praticamente sem deslocamento,
+    // e volta a "em movimento" assim que anda de verdade (evita piscar clipes).
+    if (speed < 0.45) idleFor.current += adt;
+    else if (speed > 0.9) idleFor.current = 0;
+    const stopped = idleFor.current > 0.25;
 
     const next = selectClip({
       isGK,

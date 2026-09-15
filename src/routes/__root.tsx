@@ -138,7 +138,21 @@ function RootComponent() {
 
   useEffect(() => {
     void import("../lib/world").then((m) => m.applyWorld());
-    void import("../lib/analytics").then((m) => m.initAnalytics());
+
+    // Estatísticas de uso não podem competir com a primeira pintura: só sobem
+    // quando o navegador fica ocioso (fallback por timer onde não há idle).
+    const start = () => void import("../lib/analytics").then((m) => m.initAnalytics());
+    const ric = (window as unknown as { requestIdleCallback?: typeof requestIdleCallback })
+      .requestIdleCallback;
+    if (typeof ric === "function") {
+      const id = ric(start, { timeout: 5000 });
+      return () =>
+        (
+          window as unknown as { cancelIdleCallback?: (h: number) => void }
+        ).cancelIdleCallback?.(id);
+    }
+    const timer = window.setTimeout(start, 3000);
+    return () => window.clearTimeout(timer);
   }, []);
 
   return (
