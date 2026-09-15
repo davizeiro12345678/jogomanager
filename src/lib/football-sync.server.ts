@@ -71,9 +71,8 @@ async function enrichOne(db: Admin, club: ClubRow): Promise<boolean> {
           name: remote.stadium,
           city: remote.city ?? null,
           country: remote.country ?? club.country,
-          photo_url: remote.stadiumPhoto ?? null,
           capacity: remote.stadiumCapacity ?? null,
-          photo_url: remote.stadiumPhotoUrl ?? null,
+          photo_url: remote.stadiumPhotoUrl ?? remote.stadiumPhoto ?? null,
         },
         { onConflict: "name" },
       )
@@ -329,9 +328,8 @@ export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
               name: hit.stadium,
               city: hit.city ?? null,
               country: hit.country ?? league.country,
-              photo_url: hit.stadiumPhoto ?? null,
               capacity: hit.stadiumCapacity ?? null,
-              photo_url: hit.stadiumPhotoUrl ?? null,
+              photo_url: hit.stadiumPhotoUrl ?? hit.stadiumPhoto ?? null,
             },
             { onConflict: "name" },
           )

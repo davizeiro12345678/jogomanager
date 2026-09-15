@@ -75,7 +75,6 @@ interface SdbTeam {
   strStadiumThumb?: string;
   strLocation?: string;
   strCountry?: string;
-  strStadiumThumb?: string;
   intFormedYear?: string;
 }
 
