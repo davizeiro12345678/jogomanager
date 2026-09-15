@@ -79,7 +79,7 @@ const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => 
   if (contentType.includes("text/html")) {
     headers.set("content-security-policy", CSP);
   }
-  return response;
+  return result;
 });
 
 export const startInstance = createStart(() => ({
