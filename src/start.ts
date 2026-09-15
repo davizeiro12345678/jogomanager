@@ -66,10 +66,9 @@ const PERMISSIONS_POLICY = [
 ].join(", ");
 
 const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => {
-  const response = await next();
-  const res = response as unknown as { headers?: Headers };
-  const headers = res.headers;
-  if (!headers || typeof headers.set !== "function") return response;
+  const result = await next();
+  const headers = result.response?.headers;
+  if (!headers || typeof headers.set !== "function") return result;
 
   const contentType = headers.get("content-type") ?? "";
   headers.set("x-content-type-options", "nosniff");
