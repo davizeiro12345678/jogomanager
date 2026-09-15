@@ -164,6 +164,8 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
   const prevTime = useRef(0);
   const blend = useRef(1);
   const acc = useRef(0);
+  // tempo acumulado abaixo do limiar de caminhada, para decidir clipes de parada
+  const idleFor = useRef(0);
   const seed = look.seed % 97;
 
   useFrame((state, rawDt) => {
