@@ -221,6 +221,93 @@ function Backdrop({
         </>
       )}
 
+      {art === "kitroom" && (
+        <>
+          <rect x="0" y="40" width="400" height="160" fill="#0e161e" />
+          <rect x="16" y="58" width="368" height="5" rx="2.5" fill="#33414f" />
+          {Array.from({ length: 7 }).map((_, i) => (
+            <g key={i} transform={`translate(${44 + i * 52} 63)`}>
+              <rect x="-1.5" y="0" width="3" height="10" fill="#6b7684" />
+              {/* camisa pendurada com número nas costas */}
+              <path d="M-17 10 h34 l7 9 -9 7 -3 -3 v39 h-24 v-39 l-3 3 -9 -7 z" fill={i % 2 ? b : a} />
+              <text
+                x="0"
+                y="46"
+                textAnchor="middle"
+                fontSize="15"
+                fontWeight="700"
+                fill="#ffffff"
+                opacity="0.8"
+              >
+                {i + 2}
+              </text>
+              {!reduced && (
+                <animateTransform
+                  attributeName="transform"
+                  type="rotate"
+                  values="-1;1.4;-1"
+                  dur={`${3 + (i % 3) * 0.6}s`}
+                  begin={`${i * 0.2}s`}
+                  repeatCount="indefinite"
+                  additive="sum"
+                />
+              )}
+            </g>
+          ))}
+          <rect x="0" y="152" width="400" height="48" fill="#0a1015" />
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <g key={i} transform={`translate(${52 + i * 58} 168)`}>
+              <rect x="-12" y="0" width="24" height="9" rx="4" fill={i % 2 ? a : "#1b2430"} />
+            </g>
+          ))}
+          <ellipse cx="200" cy="40" rx="170" ry="52" fill="url(#cs-spot)" opacity="0.6" />
+        </>
+      )}
+
+      {art === "pitchentry" && (
+        <>
+          <rect x="0" y="0" width="400" height="120" fill="#060b12" />
+          <Crowd a={a} b={b} reduced={reduced} rows={5} cols={26} y={12} />
+          {!reduced &&
+            Array.from({ length: 16 }).map((_, i) => (
+              <circle
+                key={i}
+                cx={(i * 53) % 396}
+                cy={16 + ((i * 29) % 60)}
+                r="3"
+                fill="#ffffff"
+                opacity="0.5"
+                className="cs-anim-flash"
+                style={{ animationDelay: `${(i % 8) * 190}ms` }}
+              />
+            ))}
+          {[70, 200, 330].map((x) => (
+            <g key={x}>
+              <rect x={x - 3} y="0" width="6" height="28" fill="#20303c" />
+              <rect x={x - 22} y="24" width="44" height="9" rx="3" fill="#dfe8ef" opacity="0.85" />
+              <ellipse
+                cx={x}
+                cy="52"
+                rx="40"
+                ry="26"
+                fill="#ffffff"
+                opacity={reduced ? 0.1 : 0.14}
+                className={anim("cs-anim-shine")}
+              />
+            </g>
+          ))}
+          <rect x="0" y="112" width="400" height="88" fill="url(#cs-grass)" />
+          {Array.from({ length: 10 }).map((_, i) => (
+            <rect key={i} x={i * 40} y={112} width="20" height="88" fill="#ffffff" opacity="0.04" />
+          ))}
+          <ellipse cx="200" cy="156" rx="52" ry="20" fill="none" stroke="#ffffff" strokeOpacity="0.5" />
+          <circle cx="200" cy="156" r="5" fill="#f7f7f5" className={anim("cs-anim-bob")} />
+          <Person x={140} y={132} s={0.95} shirt={a} anim={anim("cs-anim-enter")} />
+          <Person x={262} y={132} s={0.95} shirt={b} anim={anim("cs-anim-enter")} delay={180} />
+          <Person x={200} y={124} s={0.85} shirt="#1b2430" anim={anim("cs-anim-enter")} delay={360} />
+        </>
+      )}
+
       {(art === "training" || art === "tactics") && (
         <>
           <rect x="0" y="70" width="400" height="130" fill="url(#cs-grass)" />
