@@ -47,7 +47,34 @@ import { buildSquad } from "@/game/squad";
 import { pickLineup } from "@/game/career";
 import { useCareer } from "@/hooks/useCareer";
 import { useT } from "@/i18n";
-import type { CareerState, Player } from "@/game/types";
+import type { CareerState, ManagerLook, Player } from "@/game/types";
+
+/** Aparência padrão do treinador nas cenas, quando a carreira não tem uma. */
+const FALLBACK_LOOK: ManagerLook = {
+  skin: 2,
+  hair: 1,
+  hairColor: "#2b1d14",
+  beard: 0,
+  outfit: 0,
+};
+
+const INTRO_KEY = "manager3d.prematchIntro";
+
+function prematchIntroEnabled(): boolean {
+  try {
+    return localStorage.getItem(INTRO_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+function storePrematchIntro(on: boolean) {
+  try {
+    localStorage.setItem(INTRO_KEY, on ? "on" : "off");
+  } catch {
+    /* armazenamento indisponível: a preferência vale só para esta sessão */
+  }
+}
 
 export const Route = createFileRoute("/match")({
   ssr: false,
