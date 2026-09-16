@@ -337,6 +337,14 @@ export const CUTSCENES: Record<string, Cutscene> = {
   ),
 };
 
+/** Sequência imersiva antes do apito inicial. */
+export const PREMATCH_SCENE_IDS = [
+  "prematch-locker",
+  "prematch-kit",
+  "prematch-tunnel",
+  "prematch-whistle",
+] as const;
+
 /** Cenas de treino sorteadas semana a semana no modo carreira. */
 export const TRAINING_SCENE_IDS = [
   "training-warmup",
