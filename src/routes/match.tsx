@@ -446,6 +446,9 @@ function LiveMatch({
   /** gaveta lateral: loja ou chat sem sair da partida (o jogo pausa) */
   const [drawer, setDrawer] = useState<"none" | "store" | "chat">("none");
   const [done, setDone] = useState(false);
+  /** sequência imersiva (vestiário → camisas → túnel → apito) antes do pontapé */
+  const [introStep, setIntroStep] = useState(() => (prematchIntroEnabled() ? 0 : -1));
+  const introActive = introStep >= 0 && introStep < PREMATCH_SCENE_IDS.length;
   const [narrating, setNarrating] = useState(false);
   const narratorRef = useRef<Narrator | null>(null);
   const narrCursorRef = useRef(0);
