@@ -14,6 +14,8 @@ export type SceneArt =
   | "board"
   | "transfer"
   | "tunnel"
+  | "kitroom"
+  | "pitchentry"
   | "celebration"
   | "defeat"
   | "farewell";
