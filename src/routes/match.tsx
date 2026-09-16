@@ -29,6 +29,8 @@ import { ChatPanel } from "@/components/game/ChatPanel";
 import { StorePanel } from "@/components/game/StorePanel";
 
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { Cutscene } from "@/components/game/Cutscene";
+import { PREMATCH_SCENE_IDS } from "@/content/cutscenes";
 import { Crest } from "@/components/game/Crest";
 import { MatchReport } from "@/components/game/MatchReport";
 import { CLUBS } from "@/game/data/leagues";
@@ -45,7 +47,34 @@ import { buildSquad } from "@/game/squad";
 import { pickLineup } from "@/game/career";
 import { useCareer } from "@/hooks/useCareer";
 import { useT } from "@/i18n";
-import type { CareerState, Player } from "@/game/types";
+import type { CareerState, ManagerLook, Player } from "@/game/types";
+
+/** Aparência padrão do treinador nas cenas, quando a carreira não tem uma. */
+const FALLBACK_LOOK: ManagerLook = {
+  skin: 2,
+  hair: 1,
+  hairColor: "#2b1d14",
+  beard: 0,
+  outfit: 0,
+};
+
+const INTRO_KEY = "manager3d.prematchIntro";
+
+function prematchIntroEnabled(): boolean {
+  try {
+    return localStorage.getItem(INTRO_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+function storePrematchIntro(on: boolean) {
+  try {
+    localStorage.setItem(INTRO_KEY, on ? "on" : "off");
+  } catch {
+    /* armazenamento indisponível: a preferência vale só para esta sessão */
+  }
+}
 
 export const Route = createFileRoute("/match")({
   ssr: false,
@@ -446,6 +475,9 @@ function LiveMatch({
   /** gaveta lateral: loja ou chat sem sair da partida (o jogo pausa) */
   const [drawer, setDrawer] = useState<"none" | "store" | "chat">("none");
   const [done, setDone] = useState(false);
+  /** sequência imersiva (vestiário → camisas → túnel → apito) antes do pontapé */
+  const [introStep, setIntroStep] = useState(() => (prematchIntroEnabled() ? 0 : -1));
+  const introActive = introStep >= 0 && introStep < PREMATCH_SCENE_IDS.length;
   const [narrating, setNarrating] = useState(false);
   const narratorRef = useRef<Narrator | null>(null);
   const narrCursorRef = useRef(0);
@@ -455,7 +487,7 @@ function LiveMatch({
   const speedRef = useRef(speed);
   speedRef.current = speed;
   const pausedRef = useRef(paused);
-  pausedRef.current = paused;
+  pausedRef.current = paused || introActive;
 
   // Narração: consome eventos novos do simulador e fala via Web Speech API.
   useEffect(() => {
@@ -646,6 +678,48 @@ function LiveMatch({
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
       <Stadium3D sim={sim} mode={camera} quality={quality} />
+
+      {/* Vestiário → camisas → túnel → apito: só começa o jogo ao fim (ou ao pular) */}
+      {introActive ? (
+        <>
+          <Cutscene
+            key={PREMATCH_SCENE_IDS[introStep]}
+            scene={PREMATCH_SCENE_IDS[introStep]!}
+            look={career.manager?.look ?? FALLBACK_LOOK}
+            club={myClub}
+            managerName={career.managerName}
+            trophies={career.trophies.length}
+            onDone={() => setIntroStep((s) => s + 1)}
+          />
+          <div className="pointer-events-auto fixed inset-x-0 bottom-4 z-[60] flex flex-col items-center gap-2">
+            <div className="flex gap-1.5" aria-hidden="true">
+              {PREMATCH_SCENE_IDS.map((id, idx) => (
+                <span
+                  key={id}
+                  className={`h-1.5 w-6 rounded-full ${idx <= introStep ? "bg-primary" : "bg-white/25"}`}
+                />
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIntroStep(PREMATCH_SCENE_IDS.length)}
+                className="rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs uppercase tracking-widest text-white/85 backdrop-blur"
+              >
+                Pular para o jogo
+              </button>
+              <button
+                onClick={() => {
+                  storePrematchIntro(false);
+                  setIntroStep(PREMATCH_SCENE_IDS.length);
+                }}
+                className="rounded-full border border-white/10 bg-black/60 px-4 py-2 text-xs uppercase tracking-widest text-white/60 backdrop-blur"
+              >
+                Não mostrar mais
+              </button>
+            </div>
+          </div>
+        </>
+      ) : null}
 
       <h1 className="sr-only">
         {CLUBS[fixture.home]!.name} x {CLUBS[fixture.away]!.name} — partida ao vivo em 3D

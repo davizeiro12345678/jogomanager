@@ -14,6 +14,8 @@ export type SceneArt =
   | "board"
   | "transfer"
   | "tunnel"
+  | "kitroom"
+  | "pitchentry"
   | "celebration"
   | "defeat"
   | "farewell";
@@ -322,6 +324,32 @@ export const CUTSCENES: Record<string, Cutscene> = {
     ],
     "good",
   ),
+  /* ------------------------------------------------ antes do apito */
+  "prematch-locker": scene("prematch-locker", "Vestiário", "dressing", [
+    { who: "narrator", text: "Cheiro de cânfora, rádio baixinho e o quadro tático ainda molhado." },
+    { who: "assistant", text: "Escalação no quadro, professor. Todos liberados pelo departamento." },
+    { who: "manager", text: "Primeiros quinze minutos intensos. Depois a gente controla o jogo." },
+    { who: "captain", text: "O grupo entendeu. Ninguém sai de campo com dúvida hoje." },
+  ]),
+  "prematch-kit": scene("prematch-kit", "Vestindo a camisa", "kitroom", [
+    { who: "narrator", text: "Camisas numeradas penduradas em fila, cada uma no seu gancho." },
+    { who: "captain", text: "Essa camisa pesa. Hoje ela pesa a nosso favor." },
+    { who: "manager", text: "Veste com respeito. Tem gente na arquibancada que juntou a semana pra estar aqui." },
+    { who: "narrator", text: "Chuteiras amarradas, caneleiras no lugar, o último abraço no roupeiro." },
+  ]),
+  "prematch-tunnel": scene("prematch-tunnel", "Túnel de acesso", "tunnel", [
+    { who: "narrator", text: "Fila formada no escuro. Lá na frente, a boca do túnel em luz branca." },
+    { who: "captain", text: "Mão na mão. Ninguém anda sozinho aqui." },
+    { who: "manager", text: "Cabeça erguida. O jogo começa no primeiro passo." },
+    { who: "fan", text: "Vamos, vamos, o time não pode parar!" },
+  ]),
+  "prematch-whistle": scene("prematch-whistle", "O apito inicial", "pitchentry", [
+    { who: "narrator", text: "O gramado abre em verde sob os refletores. Setenta mil de pé." },
+    { who: "narrator", text: "Moeda no ar, aperto de mãos, bola no círculo central." },
+    { who: "manager", text: "Agora é com vocês." },
+    { who: "narrator", text: "O árbitro leva o apito à boca. Começa o jogo." },
+  ]),
+
   "injury-blow": scene(
     "injury-blow",
     "Lesão do craque",
@@ -334,6 +362,14 @@ export const CUTSCENES: Record<string, Cutscene> = {
     "bad",
   ),
 };
+
+/** Sequência imersiva antes do apito inicial. */
+export const PREMATCH_SCENE_IDS = [
+  "prematch-locker",
+  "prematch-kit",
+  "prematch-tunnel",
+  "prematch-whistle",
+] as const;
 
 /** Cenas de treino sorteadas semana a semana no modo carreira. */
 export const TRAINING_SCENE_IDS = [
