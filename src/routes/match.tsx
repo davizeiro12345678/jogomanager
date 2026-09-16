@@ -458,7 +458,7 @@ function LiveMatch({
   const speedRef = useRef(speed);
   speedRef.current = speed;
   const pausedRef = useRef(paused);
-  pausedRef.current = paused;
+  pausedRef.current = paused || introActive;
 
   // Narração: consome eventos novos do simulador e fala via Web Speech API.
   useEffect(() => {
