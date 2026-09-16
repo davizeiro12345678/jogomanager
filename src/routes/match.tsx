@@ -679,6 +679,48 @@ function LiveMatch({
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
       <Stadium3D sim={sim} mode={camera} quality={quality} />
 
+      {/* Vestiário → camisas → túnel → apito: só começa o jogo ao fim (ou ao pular) */}
+      {introActive ? (
+        <>
+          <Cutscene
+            key={PREMATCH_SCENE_IDS[introStep]}
+            scene={PREMATCH_SCENE_IDS[introStep]!}
+            look={career.manager?.look ?? FALLBACK_LOOK}
+            club={myClub}
+            managerName={career.managerName}
+            trophies={career.trophies.length}
+            onDone={() => setIntroStep((s) => s + 1)}
+          />
+          <div className="pointer-events-auto fixed inset-x-0 bottom-4 z-[60] flex flex-col items-center gap-2">
+            <div className="flex gap-1.5" aria-hidden="true">
+              {PREMATCH_SCENE_IDS.map((id, idx) => (
+                <span
+                  key={id}
+                  className={`h-1.5 w-6 rounded-full ${idx <= introStep ? "bg-primary" : "bg-white/25"}`}
+                />
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIntroStep(PREMATCH_SCENE_IDS.length)}
+                className="rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs uppercase tracking-widest text-white/85 backdrop-blur"
+              >
+                Pular para o jogo
+              </button>
+              <button
+                onClick={() => {
+                  storePrematchIntro(false);
+                  setIntroStep(PREMATCH_SCENE_IDS.length);
+                }}
+                className="rounded-full border border-white/10 bg-black/60 px-4 py-2 text-xs uppercase tracking-widest text-white/60 backdrop-blur"
+              >
+                Não mostrar mais
+              </button>
+            </div>
+          </div>
+        </>
+      ) : null}
+
       <h1 className="sr-only">
         {CLUBS[fixture.home]!.name} x {CLUBS[fixture.away]!.name} — partida ao vivo em 3D
       </h1>
