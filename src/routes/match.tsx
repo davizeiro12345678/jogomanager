@@ -561,10 +561,12 @@ function LiveMatch({
       if (pausedRef.current || hidden) return;
       const steps = Math.max(1, Math.round(speedRef.current));
       for (let i = 0; i < steps; i++) sim.step(dt * 6);
-      recorderRef.current?.sample();
       acc += dt;
       if (acc >= 0.1 || sim.finished) {
         acc = 0;
+        // grava o replay na mesma taxa do HUD (~10 Hz): amostrar a cada quadro
+        // custava caro sem ganho visível na reprodução
+        recorderRef.current?.sample();
         setSnap(snapshot(sim));
       }
       if (sim.finished) {
