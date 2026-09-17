@@ -388,23 +388,42 @@ export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
 /** Import real squads for a batch of clubs, using whichever squad API has a key. */
 export async function importSquads(limit = 200, offset = 0, concurrency = 6, budgetMs = 45_000) {
   const db = await admin();
-  const { data: rows, error } = await db
-    .from("clubs")
-    .select("id, name, country, strength")
-    .order("strength", { ascending: false })
-    .range(offset, offset + limit - 1);
-  if (error) throw new Error(error.message);
+
+  // Clubes que já têm elenco: buscados uma vez para não gastar o lote em quem
+  // já está pronto (antes o lote batia sempre nos mesmos clubes fortes).
+  const withPlayers = new Set<string>();
+  for (let from = 0; ; from += 1000) {
+    const { data } = await db
+      .from("players")
+      .select("club_id")
+      .range(from, from + 999);
+    if (!data?.length) break;
+    for (const r of data) if (r.club_id) withPlayers.add(r.club_id);
+    if (data.length < 1000) break;
+  }
+
+  // Varre os clubes por força até juntar `limit` candidatos sem elenco.
+  const rows: { id: string; name: string; country: string | null; strength: number | null }[] = [];
+  for (let from = offset; rows.length < limit; from += 500) {
+    const { data, error } = await db
+      .from("clubs")
+      .select("id, name, country, strength")
+      .order("strength", { ascending: false })
+      .range(from, from + 499);
+    if (error) throw new Error(error.message);
+    if (!data?.length) break;
+    for (const c of data) {
+      if (!withPlayers.has(c.id)) rows.push(c as (typeof rows)[number]);
+      if (rows.length >= limit) break;
+    }
+    if (data.length < 500) break;
+  }
 
   const deadline = Date.now() + budgetMs;
   let imported = 0;
 
-  await pool(rows ?? [], concurrency, deadline, async (club) => {
-    const { data: existing } = await db
-      .from("players")
-      .select("id")
-      .eq("club_id", club.id)
-      .limit(1);
-    if (existing && existing.length) return;
+  await pool(rows, concurrency, deadline, async (club) => {
+
 
     const { data: ext } = await db
       .from("club_external_ids")

@@ -1382,9 +1382,29 @@ function Stands({
   }, [crowd]);
 
   // atualiza a torcida em taxa reduzida fora da qualidade alta: o movimento
-  // continua contínuo aos olhos, mas o custo por quadro cai pela metade/terço
+  // continua contínuo aos olhos, mas o custo por quadro cai bastante
   const tick = useRef(0);
-  const everyN = quality === "alta" ? 1 : quality === "media" ? 2 : 3;
+  const everyN = quality === "alta" ? 1 : quality === "media" ? 2 : 4;
+
+  // constantes por torcedor: tira módulo e trigonometria de índice do laço quente
+  const seat = useMemo(() => {
+    const n = crowd.positions.length;
+    const tall = new Float32Array(n);
+    const yaw0 = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      tall[i] = 0.9 + (i % 5) * 0.045;
+      yaw0[i] = ((i % 7) - 3) * 0.06;
+    }
+    return { tall, yaw0 };
+  }, [crowd]);
+
+  // tabela de seno: o laço roda milhares de vezes por quadro, Math.sin domina o custo
+  const SIN = useMemo(() => {
+    const t = new Float32Array(1024);
+    for (let i = 0; i < 1024; i++) t[i] = Math.sin((i / 1024) * Math.PI * 2);
+    return t;
+  }, []);
+  const fsin = (x: number) => SIN[((x * 162.9746617) | 0) & 1023]!;
 
   useFrame(({ clock }) => {
     const mesh = ref.current;
@@ -1396,51 +1416,53 @@ function Stands({
     const shoulders = shoulderRef.current;
     const t = clock.elapsedTime;
     const pulse = goalPulse.current;
-    for (let i = 0; i < crowd.positions.length; i++) {
+    const arms = armsRef.current;
+    const n = crowd.positions.length;
+    for (let i = 0; i < n; i++) {
       const p = crowd.positions[i]!;
-      const wave = Math.sin(t * 1.1 - p.x * 0.06) > 0.86 ? 0.5 : 0;
-      const jump = pulse > 0 ? Math.abs(Math.sin(t * 9 + i)) * 0.75 * pulse : 0;
-      const y = p.y + Math.sin(t * 3 + i) * 0.06 + wave + jump;
+      const wave = fsin(t * 1.1 - p.x * 0.06) > 0.86 ? 0.5 : 0;
+      const jump = pulse > 0 ? Math.abs(fsin(t * 9 + i)) * 0.75 * pulse : 0;
+      const y = p.y + fsin(t * 3 + i) * 0.06 + wave + jump;
       // balanço lateral: a massa nunca fica perfeitamente enfileirada
-      const swayX = Math.sin(t * 1.6 + i * 0.7) * 0.05 * (0.4 + pulse);
-      const yaw = ((i % 7) - 3) * 0.06 + Math.sin(t * 0.8 + i) * 0.05;
-      const tall = 0.9 + (i % 5) * 0.045;
-      dummy.position.set(p.x + swayX, y, p.z);
+      const swayX = fsin(t * 1.6 + i * 0.7) * 0.05 * (0.4 + pulse);
+      const yaw = seat.yaw0[i]! + fsin(t * 0.8 + i) * 0.05;
+      const tall = seat.tall[i]!;
+      const px = p.x + swayX;
+      dummy.position.set(px, y, p.z);
       dummy.scale.set(1, tall, 1);
-      dummy.rotation.set(0, yaw, Math.sin(t * 1.9 + i * 1.3) * 0.03);
+      dummy.rotation.set(0, yaw, fsin(t * 1.9 + i * 1.3) * 0.03);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
       if (shoulders) {
-        dummy.position.set(p.x + swayX, y + 0.3 * tall, p.z);
+        dummy.position.set(px, y + 0.3 * tall, p.z);
         dummy.scale.set(1.5, 0.55, 1);
         dummy.rotation.set(0, yaw, Math.PI / 2);
         dummy.updateMatrix();
         shoulders.setMatrixAt(i, dummy.matrix);
       }
       const headY = y + 0.5 * tall + 0.06;
-      const headPitch = Math.sin(t * 2 + i) * 0.05;
+      const headPitch = fsin(t * 2 + i) * 0.05;
       if (head) {
-        dummy.position.set(p.x + swayX, headY, p.z);
+        dummy.position.set(px, headY, p.z);
         dummy.scale.setScalar(1);
         dummy.rotation.set(headPitch, yaw, 0);
         dummy.updateMatrix();
         head.setMatrixAt(i, dummy.matrix);
       }
       if (hair) {
-        dummy.position.set(p.x + swayX, headY + 0.015, p.z);
+        dummy.position.set(px, headY + 0.015, p.z);
         dummy.scale.set(1, i % 4 === 0 ? 0.7 : 1, 1);
         dummy.rotation.set(headPitch, yaw, 0);
         dummy.updateMatrix();
         hair.setMatrixAt(i, dummy.matrix);
       }
       // braços: palmas no ritmo, erguidos na comemoração e na ola
-      const arms = armsRef.current;
       if (arms && i < armCount) {
         const raise = Math.min(
           1,
-          pulse * 1.2 + (wave > 0 ? 0.8 : 0) + (Math.sin(t * 6 + i) > 0.7 ? 0.25 : 0),
+          pulse * 1.2 + (wave > 0 ? 0.8 : 0) + (fsin(t * 6 + i) > 0.7 ? 0.25 : 0),
         );
-        dummy.position.set(p.x + swayX, y + 0.42 + raise * 0.3, p.z);
+        dummy.position.set(px, y + 0.42 + raise * 0.3, p.z);
         dummy.rotation.set(-raise * 1.5, yaw, 0);
         dummy.scale.set(1, 0.5 + raise * 0.7, 1);
         dummy.updateMatrix();
@@ -1451,14 +1473,14 @@ function Stands({
     if (head) head.instanceMatrix.needsUpdate = true;
     if (hair) hair.instanceMatrix.needsUpdate = true;
     if (shoulders) shoulders.instanceMatrix.needsUpdate = true;
-    if (armsRef.current && armCount) armsRef.current.instanceMatrix.needsUpdate = true;
+    if (arms && armCount) arms.instanceMatrix.needsUpdate = true;
 
     // flashes de câmera na torcida (mais intensos após o gol)
     const fm = flashRef.current;
     if (fm && flashCount) {
       for (let i = 0; i < flashCount; i++) {
-        const p = crowd.positions[(i * 37) % crowd.positions.length]!;
-        const on = Math.sin(t * (6 + (i % 5)) + i * 2.3) > (pulse > 0.05 ? 0.55 : 0.95);
+        const p = crowd.positions[(i * 37) % n]!;
+        const on = fsin(t * (6 + (i % 5)) + i * 2.3) > (pulse > 0.05 ? 0.55 : 0.95);
         dummy.position.set(p.x, p.y + 0.45, p.z);
         dummy.rotation.set(0, 0, 0);
         dummy.scale.setScalar(on ? 1 : 0.0001);
