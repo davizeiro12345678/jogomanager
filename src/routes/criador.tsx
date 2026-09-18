@@ -33,6 +33,17 @@ function Page() {
       <section className="mt-8 rounded-2xl border border-border/60 surface-card p-5">
         <p className="font-display text-xl uppercase tracking-wide">{CREATOR.name}</p>
         <p className="text-sm text-muted-foreground">{CREATOR.role}</p>
+        <p className="mt-3 text-sm">
+          Canal no YouTube:{" "}
+          <a
+            href={CREATOR.youtube}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center text-primary underline underline-offset-4 hover:text-foreground"
+          >
+            {CREATOR.youtubeLabel}
+          </a>
+        </p>
       </section>
 
       <h2 className="mt-12 font-display text-2xl uppercase tracking-wide">Novidades</h2>
