@@ -39,6 +39,8 @@ const MIN_GAP: Partial<Record<NarrationEvent, number>> = {
   foul: 12000,
   card: 6000,
   save: 5000,
+  corner: 14000,
+  sub: 10000,
 };
 
 interface QueueItem {
