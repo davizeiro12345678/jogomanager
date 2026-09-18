@@ -57,6 +57,8 @@ export interface Cutscene {
   title: string;
   art: SceneArt;
   mood?: SceneMood;
+  /** cena híbrida: encenação com câmera em 3D real sobre as camadas ilustradas */
+  hybrid?: boolean;
   lines: CutsceneLine[];
 }
 
@@ -585,3 +587,9 @@ export const MOMENT_SCENE_IDS = [
 
 /** Todas as cenas que a galeria pode listar. */
 export const SCENE_LIST = Object.values(CUTSCENES);
+
+/** As 25 cenas híbridas: câmera 3D real (perspectiva, plano de chão, paralaxe). */
+for (const id of MOMENT_SCENE_IDS) {
+  const s = CUTSCENES[id];
+  if (s) s.hybrid = true;
+}

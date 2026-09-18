@@ -176,6 +176,7 @@ export type Database = {
           stadium_id: string | null
           strength: number
           updated_at: string
+          website: string | null
         }
         Insert: {
           city?: string | null
@@ -193,6 +194,7 @@ export type Database = {
           stadium_id?: string | null
           strength?: number
           updated_at?: string
+          website?: string | null
         }
         Update: {
           city?: string | null
@@ -210,6 +212,7 @@ export type Database = {
           stadium_id?: string | null
           strength?: number
           updated_at?: string
+          website?: string | null
         }
         Relationships: [
           {

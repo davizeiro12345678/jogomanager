@@ -8,6 +8,13 @@
       "when": 1789756537213,
       "tag": "0000_storage_objects_owner_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789760458141,
+      "tag": "0001_clubs_website",
+      "breakpoints": true
     }
   ]
 }

@@ -24,6 +24,7 @@ export interface RemoteTeam {
   country?: string | undefined;
   founded?: number | undefined;
   apiFootballId?: string | undefined;
+  website?: string | undefined;
 }
 
 export interface RemotePlayer {
@@ -75,6 +76,7 @@ interface SdbTeam {
   strStadiumThumb?: string;
   strLocation?: string;
   strCountry?: string;
+  strWebsite?: string;
   intFormedYear?: string;
 }
 
@@ -97,6 +99,7 @@ function mapSdb(t: SdbTeam): RemoteTeam {
     stadium: t.strStadium ?? undefined,
     stadiumCapacity: t.intStadiumCapacity ? Number(t.intStadiumCapacity) || undefined : undefined,
     stadiumPhotoUrl: t.strStadiumThumb ?? undefined,
+    website: t.strWebsite ?? undefined,
     city: t.strLocation ?? undefined,
     country: t.strCountry ?? undefined,
     founded: t.intFormedYear ? Number(t.intFormedYear) || undefined : undefined,
@@ -389,3 +392,94 @@ export async function sdbSearchLeague(name: string): Promise<string | null> {
   const hit = json?.countrys?.[0];
   return hit?.strBadge ?? hit?.strLogo ?? null;
 }
+
+/* ------------------------------------------------------------------ */
+/* Sportmonks                                                          */
+/* ------------------------------------------------------------------ */
+
+interface SmTeam {
+  id?: number;
+  name?: string;
+  short_code?: string;
+  image_path?: string;
+}
+
+interface SmSquadRow {
+  jersey_number?: number | null;
+  player?: {
+    id?: number;
+    display_name?: string;
+    name?: string;
+    image_path?: string;
+    date_of_birth?: string | null;
+    position_id?: number | null;
+  } | null;
+}
+
+/** Sportmonks position ids: 24 GK, 25 DF, 26 MF, 27 FW. */
+function smPosition(id?: number | null): "GK" | "DF" | "MF" | "FW" {
+  if (id === 24) return "GK";
+  if (id === 25) return "DF";
+  if (id === 27) return "FW";
+  return "MF";
+}
+
+let smIndex: Map<string, string> | null = null;
+
+/**
+ * Build (once per server instance) a name -> team id index with every team the
+ * current Sportmonks subscription exposes. The free plan only unlocks a few
+ * competitions, so this stays small and cheap.
+ */
+async function sportmonksIndex(): Promise<Map<string, string>> {
+  if (smIndex) return smIndex;
+  const token = process.env["SPORTMONKS_API_KEY"];
+  const map = new Map<string, string>();
+  smIndex = map;
+  if (!token) return map;
+  let page = 1;
+  while (page <= 12) {
+    const json = await getJson<{ data?: SmTeam[]; pagination?: { has_more?: boolean } }>(
+      `https://api.sportmonks.com/v3/football/teams?api_token=${token}&per_page=50&page=${page}`,
+    );
+    const list = json?.data ?? [];
+    for (const t of list) {
+      if (t.name && t.id) map.set(normalise(t.name), String(t.id));
+    }
+    if (!json?.pagination?.has_more || !list.length) break;
+    page += 1;
+  }
+  return map;
+}
+
+export async function sportmonksTeamId(name: string): Promise<string | null> {
+  const idx = await sportmonksIndex();
+  if (!idx.size) return null;
+  const key = normalise(name);
+  if (idx.has(key)) return idx.get(key)!;
+  for (const [k, v] of idx) {
+    if (k.length > 4 && (k.includes(key) || key.includes(k))) return v;
+  }
+  return null;
+}
+
+export async function sportmonksSquad(teamId: string): Promise<RemotePlayer[]> {
+  const token = process.env["SPORTMONKS_API_KEY"];
+  if (!token) return [];
+  const json = await getJson<{ data?: SmSquadRow[] }>(
+    `https://api.sportmonks.com/v3/football/squads/teams/${encodeURIComponent(teamId)}?api_token=${token}&include=player`,
+  );
+  const rows = json?.data ?? [];
+  return rows
+    .filter((r) => r.player?.display_name || r.player?.name)
+    .map((r) => ({
+      source: "sportmonks",
+      externalId: String(r.player?.id ?? ""),
+      name: (r.player?.display_name ?? r.player?.name)!,
+      position: smPosition(r.player?.position_id),
+      age: r.player?.date_of_birth ? ageFrom(r.player.date_of_birth) : undefined,
+      shirtNumber: r.jersey_number ?? undefined,
+      photoUrl: r.player?.image_path ?? undefined,
+    }));
+}
+
