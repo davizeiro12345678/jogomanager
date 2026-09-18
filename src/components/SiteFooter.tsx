@@ -69,14 +69,24 @@ export function SiteFooter({ path = "/" }: { path?: string }) {
             Quem escreve
           </h2>
           <p className="mt-3">
-            Conteúdo produzido pela equipe editorial do{" "}
-            <strong className="text-foreground">Pro Football Manager 3D</strong>, que também
-            desenvolve o jogo — dez anos acompanhando futebol e jogos de gestão esportiva.
+            Jogo e conteúdo criados por{" "}
+            <strong className="text-foreground">{CREATOR.name}</strong>, que acompanha futebol e
+            jogos de gestão esportiva há mais de dez anos.
           </p>
           <p className="mt-2">
             <Link to="/criador" className="underline underline-offset-4 hover:text-foreground">
               Conheça o criador
             </Link>
+          </p>
+          <p className="mt-2">
+            <a
+              href={CREATOR.youtube}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              Canal no YouTube: {CREATOR.youtubeLabel}
+            </a>
           </p>
           <p className="mt-2">
             Revisado em{" "}
