@@ -2316,9 +2316,11 @@ function Stadium3DImpl({
         performance={{ min: 0.5 }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = eff === "baixa" ? 0.95 : 1.02;
+          gl.toneMappingExposure = eff === "baixa" ? 0.95 : eff === "media" ? 1.04 : 1.08;
           gl.outputColorSpace = THREE.SRGBColorSpace;
-          gl.shadowMap.type = THREE.PCFShadowMap;
+          // borda de sombra suave só na qualidade alta: o filtro extra custa
+          // pouco lá e é o que mais aproxima a imagem de uma transmissão
+          gl.shadowMap.type = eff === "alta" ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
           // Texturas nítidas em ângulos rasantes (linhas do campo, publicidade,
           // faixas de corte) — o custo é baixo e o ganho de definição é grande.
           const maxAniso = gl.capabilities.getMaxAnisotropy?.() ?? 1;
