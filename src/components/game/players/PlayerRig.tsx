@@ -151,7 +151,9 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
   const handDetailRRef = useRef<THREE.Group>(null);
   const bootDetailLRef = useRef<THREE.Group>(null);
   const bootDetailRRef = useRef<THREE.Group>(null);
-  const lodState = useRef<LodLevel>(1);
+  const lodState = useRef<LodLevel | null>(null);
+  const castState = useRef<boolean | null>(null);
+
 
   /* ---------------------------------------------------------- animação */
 
