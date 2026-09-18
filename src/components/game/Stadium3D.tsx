@@ -2306,29 +2306,68 @@ function Stadium3DImpl({
     return Array.isArray(base) ? ([base[0] * s, base[1] * s] as [number, number]) : base * s;
   }, [eff, vis.resolutionScale]);
 
+  // Backend gráfico: WebGPU quando o aparelho suporta, senão WebGL2.
+  // A detecção acontece uma vez, antes de montar o palco, para não recriar
+  // o contexto (e perder todas as texturas) no meio da partida.
+  const [backend, setBackend] = useState<GpuBackend | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void detectWebGPU().then((ok) => {
+      if (alive) setBackend(ok ? "webgpu" : "webgl2");
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const glProp = useMemo(() => {
+    const base = {
+      antialias: eff === "media",
+      powerPreference: "high-performance" as const,
+      stencil: false,
+    };
+    if (backend !== "webgpu") return base;
+    return async (props: Record<string, unknown>) => {
+      const renderer = await createWebGPURenderer({ ...props, ...base });
+      if (renderer) return renderer as never;
+      // Adaptador sumiu entre a detecção e a criação: volta para WebGL2.
+      setBackend("webgl2");
+      const { WebGLRenderer } = THREE;
+      return new WebGLRenderer({ ...(props as object), ...base }) as never;
+    };
+  }, [backend, eff]);
+
+  if (!backend) return <div className="h-full w-full bg-[#0a0f0c]" aria-hidden />;
+
   return (
     <div className="relative h-full w-full">
       <Canvas
+        key={backend}
         shadows={shadowsOn}
         frameloop={visible ? "always" : "demand"}
         dpr={dpr}
         camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
-        gl={{
-          antialias: eff === "media",
-          powerPreference: "high-performance",
-          stencil: false,
-        }}
+        gl={glProp}
         performance={{ min: 0.5 }}
         onCreated={({ gl }) => {
-          gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = eff === "baixa" ? 0.95 : eff === "media" ? 1.04 : 1.08;
-          gl.outputColorSpace = THREE.SRGBColorSpace;
+          const r = gl as unknown as {
+            toneMapping: THREE.ToneMapping;
+            toneMappingExposure: number;
+            outputColorSpace: string;
+            shadowMap?: { type?: THREE.ShadowMapType };
+            capabilities?: { getMaxAnisotropy?: () => number };
+          };
+          r.toneMapping = THREE.ACESFilmicToneMapping;
+          r.toneMappingExposure = eff === "baixa" ? 0.95 : eff === "media" ? 1.04 : 1.08;
+          r.outputColorSpace = THREE.SRGBColorSpace;
           // borda de sombra suave só na qualidade alta: o filtro extra custa
           // pouco lá e é o que mais aproxima a imagem de uma transmissão
-          gl.shadowMap.type = eff === "alta" ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+          if (r.shadowMap) {
+            r.shadowMap.type = eff === "alta" ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+          }
           // Texturas nítidas em ângulos rasantes (linhas do campo, publicidade,
           // faixas de corte) — o custo é baixo e o ganho de definição é grande.
-          const maxAniso = gl.capabilities.getMaxAnisotropy?.() ?? 1;
+          const maxAniso = r.capabilities?.getMaxAnisotropy?.() ?? 16;
           THREE.Texture.DEFAULT_ANISOTROPY = Math.min(
             eff === "alta" ? 16 : eff === "media" ? 8 : 4,
             maxAniso,
