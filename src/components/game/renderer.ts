@@ -50,7 +50,7 @@ export async function createWebGPURenderer(
     if (!extended) {
       // Disponibiliza os materiais/nós WebGPU como elementos JSX; as classes
       // de núcleo (geometrias, luzes, malhas) são as mesmas do three padrão.
-      fiber.extend(webgpu as unknown as Record<string, unknown>);
+      (fiber.extend as (catalogue: unknown) => void)(webgpu);
       extended = true;
     }
     const renderer = new webgpu.WebGPURenderer({
