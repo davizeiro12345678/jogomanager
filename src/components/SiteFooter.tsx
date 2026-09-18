@@ -54,7 +54,7 @@ const SOURCES = [
 ];
 
 export function SiteFooter({ path = "/" }: { path?: string }) {
-  const url = `https://futebolmanager.xyz${path}`;
+  const url = `https://jogomanager.com${path}`;
   const updated = new Date(`${CONTENT_UPDATED}T12:00:00Z`).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "long",
