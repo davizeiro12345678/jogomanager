@@ -11,12 +11,14 @@ const GRAIN =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.6'/></svg>\")";
 
 /** enquadramentos alternados: cada fala reposiciona levemente a câmera */
+/** enquadramentos: posição inicial + direção do travelling contínuo */
 const SHOTS = [
-  { x: 0, y: 0, z: 0 },
-  { x: -10, y: -4, z: 0.06 },
-  { x: 9, y: 3, z: 0.03 },
-  { x: -4, y: 6, z: 0.09 },
+  { x: 0, y: 0, z: 0, dx: 10, dy: -3, dz: 0.05 },
+  { x: -10, y: -4, z: 0.06, dx: 12, dy: 4, dz: 0.04 },
+  { x: 9, y: 3, z: 0.03, dx: -14, dy: -5, dz: 0.06 },
+  { x: -4, y: 6, z: 0.09, dx: 6, dy: -8, dz: 0.03 },
 ] as const;
+
 
 import {
   CUTSCENES,
