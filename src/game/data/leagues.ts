@@ -53,6 +53,8 @@ const BRA2: Raw[] = [
   ["ath_ba", "Athletic Club-MG", "ATH", "#111111", "#ffffff", 62],
   ["vol", "Volta Redonda", "VRE", "#111111", "#f5b400", 61],
   ["ama", "Amazonas", "AMA", "#0a8f3c", "#f5b400", 61],
+  ["bra2_bot", "Botafogo-SP", "BSP", "#f5f5f5", "#111111", 62],
+  ["bra2_nau", "Náutico", "NAU", "#e30613", "#ffffff", 63],
 ];
 
 const ENG: Raw[] = [
@@ -97,6 +99,12 @@ const ENG2: Raw[] = [
   ["stk", "Stoke City", "STK", "#e03a3e", "#ffffff", 65],
   ["der", "Derby County", "DER", "#f5f5f5", "#111111", 65],
   ["por", "Portsmouth", "POR", "#001489", "#ffffff", 64],
+  ["eng2_shw", "Sheffield Wednesday", "SHW", "#1f4fa0", "#ffffff", 65],
+  ["eng2_blb", "Blackburn Rovers", "BLB", "#1f4fa0", "#ffffff", 65],
+  ["eng2_car", "Cardiff City", "CAR", "#c8102e", "#ffffff", 64],
+  ["eng2_lut", "Luton Town", "LUT", "#f5820a", "#111111", 64],
+  ["eng2_oxf", "Oxford United", "OXF", "#f5c400", "#1f4fa0", 62],
+  ["eng2_ply", "Plymouth Argyle", "PLY", "#0a7a3c", "#ffffff", 62],
 ];
 
 const ESP: Raw[] = [
@@ -290,6 +298,18 @@ const USA: Raw[] = [
   ["dal", "FC Dallas", "DAL", "#e30613", "#12326b", 73],
   ["hou", "Houston Dynamo", "HOU", "#f56600", "#111111", 73],
   ["skc_u", "Sporting Kansas City", "SKC", "#7ec8e3", "#111111", 73],
+  ["usa_van", "Vancouver Whitecaps", "VAN", "#7ec8e3", "#12326b", 73],
+  ["usa_rsl", "Real Salt Lake", "RSL", "#7a1020", "#f5d200", 72],
+  ["usa_col", "Colorado Rapids", "COL", "#7a1020", "#7ec8e3", 72],
+  ["usa_sjo", "San Jose Earthquakes", "SJ", "#12326b", "#111111", 70],
+  ["usa_stl", "St. Louis City", "STL", "#e30613", "#12326b", 72],
+  ["usa_cha", "Charlotte FC", "CLT", "#12326b", "#7ec8e3", 72],
+  ["usa_dcu", "DC United", "DCU", "#111111", "#e30613", 70],
+  ["usa_ner", "New England Revolution", "NE", "#12326b", "#e30613", 72],
+  ["usa_chi", "Chicago Fire", "CHI", "#12326b", "#e30613", 71],
+  ["usa_tor", "Toronto FC", "TOR", "#e30613", "#111111", 70],
+  ["usa_mtl", "CF Montréal", "MTL", "#12326b", "#7ec8e3", 70],
+  ["usa_sdi", "San Diego FC", "SD", "#f5d200", "#111111", 73],
 ];
 
 const TUR: Raw[] = [
@@ -395,6 +415,8 @@ const JPN: Raw[] = [
   ["shonan", "Shonan Bellmare", "SHO", "#0a8f3c", "#7ec8e3", 70],
   ["nii", "Albirex Niigata", "NII", "#f5d200", "#12326b", 70],
   ["oka", "Fagiano Okayama", "OKA", "#e30613", "#111111", 69],
+  ["jpn_tky", "Tokyo Verdy", "TKV", "#0a8f3c", "#ffffff", 70],
+  ["jpn_jub", "Júbilo Iwata", "JUB", "#7ec8e3", "#111111", 69],
 ];
 
 const GRE: Raw[] = [
@@ -680,6 +702,12 @@ const ESP2: Raw[] = [
   ["esp2_alb", "Albacete", "ALB", "#ffffff", "#111111", 68],
   ["esp2_bur", "Burgos", "BUR", "#111111", "#e30613", 68],
   ["esp2_mlg", "Málaga", "MAL", "#1f4fa0", "#ffffff", 70],
+  ["esp2_elc", "Elche", "ELC", "#0a7a3c", "#ffffff", 72],
+  ["esp2_ten", "Tenerife", "TEN", "#1f4fa0", "#ffffff", 69],
+  ["esp2_cor", "Córdoba", "COR", "#0a7a3c", "#ffffff", 68],
+  ["esp2_fer", "Racing Ferrol", "FER", "#0a7a3c", "#ffffff", 67],
+  ["esp2_val", "Real Valladolid", "VLL", "#7a1020", "#ffffff", 72],
+  ["esp2_leg", "Leganés", "LEG", "#1f4fa0", "#ffffff", 71],
 ];
 
 const ITA2: Raw[] = [
@@ -699,6 +727,10 @@ const ITA2: Raw[] = [
   ["ita2_fro", "Frosinone", "FRO", "#f5c400", "#1f4fa0", 70],
   ["ita2_jus", "Juve Stabia", "JST", "#f5c400", "#1f4fa0", 68],
   ["ita2_man", "Mantova", "MAN", "#e30613", "#ffffff", 68],
+  ["ita2_pis", "Pisa", "PIS", "#111111", "#7ec8e3", 71],
+  ["ita2_cit", "Cittadella", "CIT", "#7a1020", "#12326b", 67],
+  ["ita2_car", "Carrarese", "CAR", "#f5d200", "#1f4fa0", 67],
+  ["ita2_cos", "Cosenza", "COS", "#e30613", "#1f4fa0", 67],
 ];
 
 const GER2: Raw[] = [
@@ -718,6 +750,8 @@ const GER2: Raw[] = [
   ["ger2_ulm", "SSV Ulm", "ULM", "#ffffff", "#111111", 68],
   ["ger2_mun", "1860 München", "M60", "#7ec8e3", "#ffffff", 69],
   ["ger2_ros", "Hansa Rostock", "HAN", "#1f4fa0", "#ffffff", 68],
+  ["ger2_dar", "SV Darmstadt 98", "D98", "#1f4fa0", "#ffffff", 71],
+  ["ger2_mst", "Preußen Münster", "PRM", "#0a7a3c", "#ffffff", 68],
 ];
 
 const FRA2: Raw[] = [
@@ -737,6 +771,8 @@ const FRA2: Raw[] = [
   ["fra2_cae", "SM Caen", "CAE", "#e30613", "#1f4fa0", 70],
   ["fra2_lor", "Red Star", "RS", "#0a7a3c", "#ffffff", 68],
   ["fra2_troy", "Troyes", "TRO", "#7ec8e3", "#111111", 70],
+  ["fra2_par", "Paris FC", "PFC", "#1f4fa0", "#ffffff", 72],
+  ["fra2_nan", "AS Nancy", "ASN", "#e30613", "#ffffff", 67],
 ];
 
 const HRV: Raw[] = [
