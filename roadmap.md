@@ -74,3 +74,10 @@
 - [ ] PageSpeed: cota diária da API do Google esgotada hoje
 - [ ] Ampliar elencos: 415 clubes ainda sem elenco; fonte gratuita não devolve jogadores (precisa de chave paga API-Football/football-data)
 - [ ] Salto visual 3D (luz/câmera/texturas) e revisão de painel/elenco/loja
+
+## Novo pedido (2026-09-18) — plano aprovado
+- [ ] Renderização WebGPU (three.js WebGPURenderer) com volta automática para WebGL2
+- [ ] Revisão visual: partida, carreira, elenco, loja
+- [ ] Ampliar elencos/escudos com Logo.dev, Firecrawl e Perplexity
+- [ ] 25 novas cutscenes + 25 cenas híbridas
+- [ ] PlayerRig: novos estados e transições; PostFX por qualidade; Crest mais nítido
