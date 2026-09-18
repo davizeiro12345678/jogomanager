@@ -2328,7 +2328,10 @@ function Stadium3DImpl({
     };
     if (backend !== "webgpu") return base;
     return async (props: Record<string, unknown>) => {
-      const renderer = await createWebGPURenderer({ ...props, ...base });
+      const renderer = await createWebGPURenderer({ ...props, ...base }, () =>
+        setBackend("webgl2"),
+      );
+
       if (renderer) return renderer as never;
       // Adaptador sumiu entre a detecção e a criação: volta para WebGL2.
       setBackend("webgl2");

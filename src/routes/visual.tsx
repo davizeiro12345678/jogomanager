@@ -5,6 +5,8 @@
  * "cara" da partida: texturas, densidade da grama, detalhe dos jogadores,
  * torcida, clima, horário, corte do gramado (geral e por clube) e efeitos.
  */
+import { useEffect, useState } from "react";
+
 import { createFileRoute } from "@tanstack/react-router";
 import { RotateCcw } from "lucide-react";
 
@@ -23,6 +25,7 @@ import {
   type QualityPref,
   type ShadowPref,
 } from "@/game/visual-settings";
+import { setWebgpuEnabled, webgpuEnabled } from "@/components/game/renderer";
 import { useCareer } from "@/hooks/useCareer";
 
 export const Route = createFileRoute("/visual")({
@@ -131,6 +134,8 @@ function Slider({
 }
 
 function VisualPage() {
+  const [gpu, setGpu] = useState(false);
+  useEffect(() => setGpu(webgpuEnabled()), []);
   const { career } = useCareer();
   const v = useVisual();
 
@@ -228,6 +233,25 @@ function VisualPage() {
                 className="size-5 accent-primary"
               />
             </label>
+            <label className="flex items-center justify-between gap-3 rounded-xl border border-border/60 p-3 text-sm">
+              <span>
+                Modo gráfico experimental (WebGPU)
+                <span className="block text-[11px] text-muted-foreground">
+                  Pode render mais rápido em placas novas. Se der erro, o jogo volta sozinho para o
+                  modo estável.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={gpu}
+                onChange={(e) => {
+                  setWebgpuEnabled(e.target.checked);
+                  setGpu(e.target.checked);
+                }}
+                className="size-5 accent-primary"
+              />
+            </label>
+
             <Slider
               label="Força dos efeitos"
               value={v.postIntensity}
