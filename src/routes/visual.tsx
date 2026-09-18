@@ -228,6 +228,25 @@ function VisualPage() {
                 className="size-5 accent-primary"
               />
             </label>
+            <label className="flex items-center justify-between gap-3 rounded-xl border border-border/60 p-3 text-sm">
+              <span>
+                Modo gráfico experimental (WebGPU)
+                <span className="block text-[11px] text-muted-foreground">
+                  Pode render mais rápido em placas novas. Se der erro, o jogo volta sozinho para o
+                  modo estável.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={gpu}
+                onChange={(e) => {
+                  setWebgpuEnabled(e.target.checked);
+                  setGpu(e.target.checked);
+                }}
+                className="size-5 accent-primary"
+              />
+            </label>
+
             <Slider
               label="Força dos efeitos"
               value={v.postIntensity}
