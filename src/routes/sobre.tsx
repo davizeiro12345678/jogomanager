@@ -53,8 +53,8 @@ const BLOCKS = [
 ];
 
 const FACTS = [
-  { label: "Ligas", value: "20+" },
-  { label: "Clubes", value: "500+" },
+  { label: "Ligas", value: "115" },
+  { label: "Clubes", value: "1.400+" },
   { label: "Idiomas", value: "39" },
   { label: "Preço", value: "Grátis" },
 ];
