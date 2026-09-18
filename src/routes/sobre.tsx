@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { PublicLinks } from "@/components/PublicLinks";
+import { CREATOR } from "@/content/changelog";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/sobre";
