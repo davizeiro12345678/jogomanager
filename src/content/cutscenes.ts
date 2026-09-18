@@ -361,6 +361,179 @@ export const CUTSCENES: Record<string, Cutscene> = {
     ],
     "bad",
   ),
+
+  /* ------------------------------------------------ novas cenas de jornada */
+  "bus-arrival": scene("bus-arrival", "Chegada do ônibus", "arrival", [
+    { who: "narrator", text: "Sinalizadores vermelhos cercam o ônibus a dois quarteirões do estádio." },
+    { who: "captain", text: "Olha o tamanho disso, professor." },
+    { who: "manager", text: "É por isso que a gente treina. Aproveita cada metro desse corredor." },
+  ]),
+  "warmup-pitch": scene("warmup-pitch", "Aquecimento no gramado", "training", [
+    { who: "assistant", text: "Gramado firme, bola corre. Chuteira de trava curta serve." },
+    { who: "manager", text: "Avisa a linha de trás: bola rápida exige linha mais compacta." },
+  ]),
+  "team-talk": scene("team-talk", "Preleção final", "dressing", [
+    { who: "manager", text: "Três coisas: pressão alta, bola pro lado forte, ninguém reclama do árbitro." },
+    { who: "captain", text: "Entendido. A gente resolve dentro de campo." },
+  ]),
+  "coin-toss": scene("coin-toss", "Sorteio no círculo", "pitchentry", [
+    { who: "narrator", text: "Capitães frente a frente. A moeda sobe e brilha sob o refletor." },
+    { who: "captain", text: "Escolhemos o campo. O vento vem do nosso lado no segundo tempo." },
+  ]),
+  anthem: scene("anthem", "Hino no gramado", "pitchentry", [
+    { who: "narrator", text: "Bandeirão cobre a arquibancada inteira, de trave a trave." },
+    { who: "fan", text: "Canta, canta, essa camisa é nossa vida!" },
+    { who: "manager", text: "Se o time jogar com metade disso, ninguém segura." },
+  ]),
+  "crowd-entry": scene("crowd-entry", "Entrada da torcida", "pitchentry", [
+    { who: "narrator", text: "Portões abrem e a arquibancada enche em ondas de cor." },
+    { who: "fan", text: "Chegamos cedo porque hoje não dá pra perder nada." },
+  ]),
+  "goal-roar": scene(
+    "goal-roar",
+    "O gol que explodiu o estádio",
+    "celebration",
+    [
+      { who: "narrator", text: "A bola entra no ângulo e o estádio inteiro sai do chão." },
+      { who: "fan", text: "Gooool! Gooool!" },
+      { who: "manager", text: "Comemora rápido e volta pra posição. O jogo não acabou." },
+    ],
+    "good",
+  ),
+  "penalty-decisive": scene(
+    "penalty-decisive",
+    "Pênalti decisivo",
+    "pitchentry",
+    [
+      { who: "narrator", text: "Bola na marca da cal, goleiro dançando na linha." },
+      { who: "captain", text: "Deixa comigo, professor." },
+      { who: "narrator", text: "Silêncio absoluto por dois segundos. Depois, o barulho." },
+    ],
+    "good",
+  ),
+  "red-card": scene(
+    "red-card",
+    "Cartão vermelho",
+    "tactics",
+    [
+      { who: "narrator", text: "O árbitro leva a mão ao bolso e o estádio protesta em coro." },
+      { who: "manager", text: "Um a menos: fecha o meio, joga com a linha baixa e contra-ataque." },
+      { who: "captain", text: "Ninguém entra em desespero. Um passe de cada vez." },
+    ],
+    "bad",
+  ),
+  substitution: scene("substitution", "A troca que muda o jogo", "tactics", [
+    { who: "assistant", text: "Ele está a mil. Entrando agora, pega a zaga cansada." },
+    { who: "manager", text: "Entra pelo lado, encara o marcador e não pensa duas vezes." },
+  ]),
+  "halftime-fix": scene("halftime-fix", "Intervalo", "dressing", [
+    { who: "manager", text: "Perdemos o meio-campo. Um volante recua, o lateral sobe por dentro." },
+    { who: "captain", text: "Melhor assim. Estávamos correndo atrás da sombra deles." },
+  ]),
+  "press-after-win": scene(
+    "press-after-win",
+    "Coletiva após a vitória",
+    "press",
+    [
+      { who: "press", text: "Foi a melhor atuação do ano?" },
+      { who: "manager", text: "Foi a mais madura. Melhor não existe enquanto a temporada corre." },
+    ],
+    "good",
+  ),
+  "press-after-loss": scene(
+    "press-after-loss",
+    "Coletiva após a derrota",
+    "press",
+    [
+      { who: "press", text: "O senhor sente o cargo ameaçado?" },
+      { who: "manager", text: "Sinto responsabilidade. A resposta é no treino de segunda." },
+    ],
+    "bad",
+  ),
+  "trophy-lift": scene(
+    "trophy-lift",
+    "A taça erguida",
+    "trophy",
+    [
+      { who: "narrator", text: "Papel picado, palco montado e a taça pesando nas mãos do capitão." },
+      { who: "captain", text: "Isso aqui é de quem acordou cedo o ano inteiro." },
+    ],
+    "good",
+  ),
+  "promotion-night": scene(
+    "promotion-night",
+    "Noite do acesso",
+    "celebration",
+    [
+      { who: "narrator", text: "Apito final e a cidade inteira parece ter entrado em campo." },
+      { who: "president", text: "Subimos de divisão. Agora vem o difícil: ficar lá." },
+    ],
+    "good",
+  ),
+  "relegation-night": scene(
+    "relegation-night",
+    "Noite do rebaixamento",
+    "defeat",
+    [
+      { who: "narrator", text: "Arquibancada vazia antes do apito. Silêncio pesado no gramado." },
+      { who: "manager", text: "A culpa é minha. A reconstrução começa amanhã de manhã." },
+    ],
+    "bad",
+  ),
+  "derby-week": scene("derby-week", "Semana de clássico", "tactics", [
+    { who: "press", text: "Clássico se ganha no detalhe ou na raça?" },
+    { who: "manager", text: "Nos dois. Detalhe pra criar, raça pra não devolver o que é nosso." },
+  ]),
+  "scout-report": scene("scout-report", "Relatório do olheiro", "scout" as SceneArt, [
+    { who: "scout", text: "Garoto de 19 anos, canhoto, joga por dentro e por fora." },
+    { who: "manager", text: "Traz ele pra treinar com o grupo antes de qualquer proposta." },
+  ]),
+  "agent-offer": scene("agent-offer", "Proposta do empresário", "transfer", [
+    { who: "agent", text: "Tenho uma oferta alta por ele. O jogador já sabe." },
+    { who: "manager", text: "Se sair, sai pelo valor certo e com substituto assinado." },
+  ]),
+  "board-review": scene("board-review", "Reunião de diretoria", "board", [
+    { who: "president", text: "Folha salarial no limite. Precisamos vender ou cortar." },
+    { who: "manager", text: "Vendo um, promovo dois da base. Economia e identidade juntas." },
+  ]),
+  "youth-debut": scene(
+    "youth-debut",
+    "Estreia do garoto da base",
+    "pitchentry",
+    [
+      { who: "assistant", text: "Ele chorou no vestiário quando viu a camisa com o nome dele." },
+      { who: "manager", text: "Entra tranquilo. Erra pra frente que ninguém vai te cobrar." },
+    ],
+    "good",
+  ),
+  "medical-room": scene(
+    "medical-room",
+    "Departamento médico",
+    "gym",
+    [
+      { who: "doctor", text: "Três atletas na fisioterapia. Dois voltam na semana que vem." },
+      { who: "manager", text: "Nada de pressa. Recaída custa o dobro de jogos." },
+    ],
+    "bad",
+  ),
+  "fan-meeting": scene("fan-meeting", "Encontro com a torcida", "arrival", [
+    { who: "fan", text: "A gente só quer ver o time correr, professor." },
+    { who: "manager", text: "Correr é o mínimo. Prometo time organizado também." },
+  ]),
+  "contract-renewal": scene(
+    "contract-renewal",
+    "Renovação do capitão",
+    "board",
+    [
+      { who: "captain", text: "Quero terminar a carreira aqui, mas preciso me sentir importante." },
+      { who: "manager", text: "Você é a espinha do time. A diretoria já tem minha recomendação." },
+    ],
+    "good",
+  ),
+  "season-farewell": scene("season-farewell", "Último jogo da temporada", "farewell", [
+    { who: "narrator", text: "Volta olímpica lenta, crianças no gramado, câmeras ao fundo." },
+    { who: "manager", text: "Guarda essa imagem. Ela é o combustível da pré-temporada." },
+  ]),
 };
 
 /** Sequência imersiva antes do apito inicial. */
