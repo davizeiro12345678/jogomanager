@@ -208,7 +208,13 @@ export class Narrator {
     }
     this.lastByEvent.set(event, now);
 
-    const variant = Math.floor(Math.random() * lineCount(this.lang, event));
+    // nunca repete a frase anterior do mesmo lance: com muitas variações, ouvir
+    // a mesma fala duas vezes seguidas é o que mais quebra a imersão
+    const total = lineCount(this.lang, event);
+    const prev = this.lastVariant.get(event);
+    let variant = Math.floor(Math.random() * total);
+    if (total > 1 && variant === prev) variant = (variant + 1) % total;
+    this.lastVariant.set(event, variant);
     const item: QueueItem = {
       event,
       lang: this.lang,
