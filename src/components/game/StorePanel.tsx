@@ -132,6 +132,15 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
   const subscriptionQuery = useSubscription();
   const subscriptionActive = isSubscriptionActive(subscriptionQuery.data);
 
+  // Destaca o pacote de moedas com mais moedas por real, para o jogador
+  // comparar sem fazer conta de cabeça.
+  const bestValueKey = (productsQuery.data ?? [])
+    .filter((p) => p.coins > 0 && p.price_cents > 0)
+    .reduce<{ key: string; ratio: number } | null>((best, p) => {
+      const ratio = p.coins / p.price_cents;
+      return !best || ratio > best.ratio ? { key: p.key, ratio } : best;
+    }, null)?.key;
+
   function buy(productKey: string) {
     if (!signedIn) return;
     setOpeningKey(productKey);
