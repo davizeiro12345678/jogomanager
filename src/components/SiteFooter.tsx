@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
 
+import { CREATOR } from "@/content/changelog";
+
 /**
  * Rodapé de confiança das páginas públicas.
  *
