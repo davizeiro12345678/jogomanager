@@ -1834,9 +1834,18 @@ function Rig({
     // damping independente de framerate (maath)
     const smooth = effective === "behind" ? 0.35 : effective === "rail" ? 0.28 : 0.75;
     easing.damp3(camera.position, target, smooth, dt);
-    look.set(bx * 0.6, 0.8, bz * 0.6);
+    look.set(bx * 0.6, 0.8 + Math.min(2.4, sim.ball.height * 0.5), bz * 0.6);
     easing.damp3(smoothLook, look, 0.35, dt);
     camera.lookAt(smoothLook);
+    // leve fechamento de foco no gol: dá peso cinematográfico sem custo de GPU
+    const cam = camera as THREE.PerspectiveCamera;
+    if (cam.isPerspectiveCamera) {
+      const wantFov = 50 - pulse * 6;
+      if (Math.abs(cam.fov - wantFov) > 0.01) {
+        cam.fov += (wantFov - cam.fov) * Math.min(1, dt * 3);
+        cam.updateProjectionMatrix();
+      }
+    }
   });
   return null;
 }
