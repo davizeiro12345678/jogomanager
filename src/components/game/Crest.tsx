@@ -82,8 +82,10 @@ export function Crest({
 }) {
   const uid = useId().replace(/:/g, "");
   const [custom, setCustom] = useState<string | undefined>(undefined);
+  const [imgFailed, setImgFailed] = useState(false);
 
   useEffect(() => {
+    setImgFailed(false);
     const sync = () => setCustom(badgeFor(club.id) ?? officialCrest(club.id));
     sync();
     void loadOfficialAssets().then(sync);
