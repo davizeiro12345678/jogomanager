@@ -666,29 +666,32 @@ export function Cutscene({
           onPointerMove={onPointerMove}
           className="relative h-48 overflow-hidden sm:h-64"
         >
-          {/* enquadramento muda a cada fala, como corte de câmera */}
+          {/* corte de câmera a cada fala + travelling contínuo dentro da fala */}
           {/* camada de fundo: mais lenta, levemente desfocada (profundidade) */}
           <div
-            className={`absolute -inset-6 ${reduced ? "" : "cs-anim-zoom"}`}
+            key={`bg${i}`}
+            className={`absolute -inset-6 ${reduced ? "" : "cs-anim-cut"}`}
             style={{
-              transform: `translate3d(${par.x * 6 + shot.x * 0.4}px, ${par.y * 4 + shot.y * 0.4}px, 0) scale(${1.12 + shot.z * 0.5})`,
+              transform: `translate3d(${par.x * 6 + (shot.x + shot.dx * dolly) * 0.4}px, ${par.y * 4 + (shot.y + shot.dy * dolly) * 0.4}px, 0) scale(${1.12 + (shot.z + shot.dz * dolly) * 0.5})`,
               filter: "blur(3px) saturate(0.85)",
               opacity: 0.85,
-              transition: reduced ? undefined : "transform 700ms cubic-bezier(.2,.7,.2,1)",
+              transition: reduced ? undefined : "transform 220ms linear",
             }}
           >
             <Backdrop art={data.art} a={accent2} b={accent} reduced={reduced} trophies={trophies} />
           </div>
           {/* camada principal */}
           <div
-            className={`absolute inset-0 ${reduced ? "" : "cs-anim-zoom"}`}
+            key={`fg${i}`}
+            className={`absolute inset-0 ${reduced ? "" : "cs-anim-cut"}`}
             style={{
-              transform: `translate3d(${par.x * -14 + shot.x}px, ${par.y * -9 + shot.y}px, 0) scale(${1 + shot.z})`,
-              transition: reduced ? undefined : "transform 700ms cubic-bezier(.2,.7,.2,1)",
+              transform: `translate3d(${par.x * -14 + shot.x + shot.dx * dolly}px, ${par.y * -9 + shot.y + shot.dy * dolly}px, 0) scale(${1.04 + shot.z + shot.dz * dolly})`,
+              transition: reduced ? undefined : "transform 220ms linear",
             }}
           >
             <Backdrop art={data.art} a={accent} b={accent2} reduced={reduced} trophies={trophies} />
           </div>
+
           {/* luzes desfocadas ao fundo (bokeh de refletores) */}
           {!reduced && (
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
