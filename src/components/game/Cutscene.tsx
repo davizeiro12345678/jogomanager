@@ -11,12 +11,14 @@ const GRAIN =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.6'/></svg>\")";
 
 /** enquadramentos alternados: cada fala reposiciona levemente a câmera */
+/** enquadramentos: posição inicial + direção do travelling contínuo */
 const SHOTS = [
-  { x: 0, y: 0, z: 0 },
-  { x: -10, y: -4, z: 0.06 },
-  { x: 9, y: 3, z: 0.03 },
-  { x: -4, y: 6, z: 0.09 },
+  { x: 0, y: 0, z: 0, dx: 10, dy: -3, dz: 0.05 },
+  { x: -10, y: -4, z: 0.06, dx: 12, dy: 4, dz: 0.04 },
+  { x: 9, y: 3, z: 0.03, dx: -14, dy: -5, dz: 0.06 },
+  { x: -4, y: 6, z: 0.09, dx: 6, dy: -8, dz: 0.03 },
 ] as const;
+
 
 import {
   CUTSCENES,
@@ -558,6 +560,28 @@ export function Cutscene({
   doneRef.current = onDone;
   const stageRef = useRef<HTMLDivElement>(null);
   const [par, setPar] = useState({ x: 0, y: 0 });
+  /** travelling contínuo da câmera dentro de cada fala (0..1) */
+  const [dolly, setDolly] = useState(0);
+
+  useEffect(() => {
+    if (reduced) {
+      setDolly(0);
+      return;
+    }
+    let raf = 0;
+    const t0 = performance.now();
+    const DUR = 9000;
+    const tick = (t: number) => {
+      const u = Math.min(1, (t - t0) / DUR);
+      // easing suave: sem solavanco no início nem no fim
+      setDolly(u * u * (3 - 2 * u));
+      if (u < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [i, reduced]);
+
+
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -642,29 +666,32 @@ export function Cutscene({
           onPointerMove={onPointerMove}
           className="relative h-48 overflow-hidden sm:h-64"
         >
-          {/* enquadramento muda a cada fala, como corte de câmera */}
+          {/* corte de câmera a cada fala + travelling contínuo dentro da fala */}
           {/* camada de fundo: mais lenta, levemente desfocada (profundidade) */}
           <div
-            className={`absolute -inset-6 ${reduced ? "" : "cs-anim-zoom"}`}
+            key={`bg${i}`}
+            className="absolute -inset-6"
             style={{
-              transform: `translate3d(${par.x * 6 + shot.x * 0.4}px, ${par.y * 4 + shot.y * 0.4}px, 0) scale(${1.12 + shot.z * 0.5})`,
+              transform: `translate3d(${par.x * 6 + (shot.x + shot.dx * dolly) * 0.4}px, ${par.y * 4 + (shot.y + shot.dy * dolly) * 0.4}px, 0) scale(${1.12 + (shot.z + shot.dz * dolly) * 0.5})`,
               filter: "blur(3px) saturate(0.85)",
               opacity: 0.85,
-              transition: reduced ? undefined : "transform 700ms cubic-bezier(.2,.7,.2,1)",
+              transition: reduced ? undefined : "transform 220ms linear",
             }}
           >
             <Backdrop art={data.art} a={accent2} b={accent} reduced={reduced} trophies={trophies} />
           </div>
           {/* camada principal */}
           <div
-            className={`absolute inset-0 ${reduced ? "" : "cs-anim-zoom"}`}
+            key={`fg${i}`}
+            className={`absolute inset-0 ${reduced ? "" : "cs-anim-cut"}`}
             style={{
-              transform: `translate3d(${par.x * -14 + shot.x}px, ${par.y * -9 + shot.y}px, 0) scale(${1 + shot.z})`,
-              transition: reduced ? undefined : "transform 700ms cubic-bezier(.2,.7,.2,1)",
+              transform: `translate3d(${par.x * -14 + shot.x + shot.dx * dolly}px, ${par.y * -9 + shot.y + shot.dy * dolly}px, 0) scale(${1.04 + shot.z + shot.dz * dolly})`,
+              transition: reduced ? undefined : "transform 220ms linear",
             }}
           >
             <Backdrop art={data.art} a={accent} b={accent2} reduced={reduced} trophies={trophies} />
           </div>
+
           {/* luzes desfocadas ao fundo (bokeh de refletores) */}
           {!reduced && (
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
