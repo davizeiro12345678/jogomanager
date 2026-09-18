@@ -243,6 +243,15 @@ export function Crest({
 
       <path d={path} fill="none" stroke={`url(#${metal})`} strokeWidth="3" />
       <path d={path} fill="none" stroke="#000000" strokeWidth="0.9" opacity="0.42" />
+      {/* bisel interno: dá relevo à borda e separa o escudo do fundo escuro */}
+      <path
+        d={path}
+        fill="none"
+        stroke="#ffffff"
+        strokeWidth="0.8"
+        opacity="0.35"
+        transform="translate(32 32) scale(0.945) translate(-32 -32)"
+      />
 
       {stars > 0 && (
         <g>
