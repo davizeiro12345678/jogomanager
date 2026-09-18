@@ -92,6 +92,31 @@ function SobrePage() {
           ))}
         </div>
 
+        <section className="mt-12 rounded-2xl border border-border/60 surface-card p-6">
+          <h2 className="font-display text-2xl">Quem faz o jogo</h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            O Pro Football Manager 3D é criado e mantido por{" "}
+            <strong className="text-foreground">{CREATOR.name}</strong> — {CREATOR.role.toLowerCase()}
+            . Bastidores, novidades e vídeos das partidas saem no canal do YouTube.
+          </p>
+          <p className="mt-3 flex flex-wrap gap-3 text-sm">
+            <a
+              href={CREATOR.youtube}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 font-display text-xs uppercase tracking-widest transition hover:bg-secondary"
+            >
+              Canal {CREATOR.youtubeLabel}
+            </a>
+            <Link
+              to="/criador"
+              className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 font-display text-xs uppercase tracking-widest transition hover:bg-secondary"
+            >
+              Sobre o criador
+            </Link>
+          </p>
+        </section>
+
         <div className="mt-12 flex flex-wrap gap-3">
           <Link
             to="/new"
