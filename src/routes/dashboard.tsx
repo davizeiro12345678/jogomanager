@@ -178,7 +178,7 @@ function Dashboard() {
               <div className="flex flex-col gap-3 sm:w-48">
                 <Link
                   to="/match"
-                  className="grid min-h-[44px] place-items-center rounded-xl bg-primary px-4 font-display text-sm uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.02]"
+                  className="grid min-h-[44px] place-items-center rounded-xl bg-primary px-4 font-display text-sm uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.02] motion-reduce:transform-none"
                 >
                   Jogar agora
                 </Link>
