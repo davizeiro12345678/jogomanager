@@ -69,6 +69,7 @@ let extended = false;
  */
 export async function createWebGPURenderer(
   props: Record<string, unknown>,
+  onDeviceError?: () => void,
 ): Promise<unknown | null> {
   if (!(await detectWebGPU())) return null;
   try {
@@ -87,7 +88,23 @@ export async function createWebGPURenderer(
       forceWebGL: false,
     });
     await renderer.init();
+
+    // Qualquer erro de validação do driver derruba o modo experimental na hora:
+    // gravamos a falha e o chamador remonta o palco em WebGL2.
+    const device = (renderer as unknown as { backend?: { device?: GPUDeviceLike } }).backend?.device;
+    if (device) {
+      let tripped = false;
+      const trip = () => {
+        if (tripped) return;
+        tripped = true;
+        markWebgpuFailed();
+        onDeviceError?.();
+      };
+      device.onuncapturederror = trip;
+      void device.lost?.then(trip);
+    }
     return renderer;
+
   } catch (err) {
     console.warn("WebGPU indisponível, seguindo em WebGL2:", err);
     return null;
