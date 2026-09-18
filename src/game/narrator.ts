@@ -58,6 +58,7 @@ export class Narrator {
   private realistic: boolean;
   private volume: number;
   private lastByEvent = new Map<NarrationEvent, number>();
+  private lastVariant = new Map<NarrationEvent, number>();
   private synth: SpeechSynthesis | null;
   private audio: HTMLAudioElement | null = null;
   private queue: QueueItem[] = [];
