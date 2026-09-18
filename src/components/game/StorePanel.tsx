@@ -132,6 +132,15 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
   const subscriptionQuery = useSubscription();
   const subscriptionActive = isSubscriptionActive(subscriptionQuery.data);
 
+  // Destaca o pacote de moedas com mais moedas por real, para o jogador
+  // comparar sem fazer conta de cabeça.
+  const bestValueKey = (productsQuery.data ?? [])
+    .filter((p) => p.coins > 0 && p.price_cents > 0)
+    .reduce<{ key: string; ratio: number } | null>((best, p) => {
+      const ratio = p.coins / p.price_cents;
+      return !best || ratio > best.ratio ? { key: p.key, ratio } : best;
+    }, null)?.key;
+
   function buy(productKey: string) {
     if (!signedIn) return;
     setOpeningKey(productKey);
@@ -202,18 +211,47 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
       </div>
 
       {productsQuery.isLoading ? (
-        <p className="text-sm text-muted-foreground">Carregando produtos…</p>
+        <div className={`grid gap-4 ${columns === 2 ? "sm:grid-cols-2" : ""}`}>
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-44 animate-pulse rounded-xl border border-border/60 bg-card/60"
+              aria-hidden
+            />
+          ))}
+          <span className="sr-only">Carregando produtos…</span>
+        </div>
       ) : productsQuery.isError ? (
-        <p className="text-sm text-destructive">
-          Não foi possível carregar os produtos. Tente novamente em instantes.
-        </p>
+        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4">
+          <p className="text-sm text-destructive">
+            Não foi possível carregar os produtos. Verifique sua conexão e tente de novo.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => void productsQuery.refetch()}
+          >
+            Tentar de novo
+          </Button>
+        </div>
       ) : productsQuery.data?.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum produto disponível no momento.</p>
       ) : (
         <>
           <div className={`grid gap-4 ${columns === 2 ? "sm:grid-cols-2" : ""}`}>
             {productsQuery.data?.map((p) => (
-              <Card key={p.key} className="flex flex-col surface-card">
+              <Card
+                key={p.key}
+                className={`relative flex flex-col surface-card transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-glow)] motion-reduce:transform-none motion-reduce:transition-none ${
+                  p.key === bestValueKey ? "border-primary/70" : ""
+                }`}
+              >
+                {p.key === bestValueKey && (
+                  <span className="absolute -top-2 right-3 rounded-full bg-primary px-2 py-0.5 font-display text-[10px] uppercase tracking-wider text-primary-foreground">
+                    Melhor valor
+                  </span>
+                )}
                 <CardHeader>
                   <div className="flex items-center justify-between gap-2">
                     <CardTitle className="font-display text-base uppercase tracking-wide">
@@ -226,12 +264,14 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                   </div>
                   <CardDescription>{p.description}</CardDescription>
                 </CardHeader>
-                <CardContent className="mt-auto flex flex-col gap-1">
-                  <span className="font-display text-lg">
+                <CardContent className="mt-auto flex flex-wrap items-baseline gap-2">
+                  <span className="font-display text-2xl leading-none">
                     {formatBRL(p.price_cents, p.currency)}
                   </span>
                   {p.coins > 0 && (
-                    <span className="text-xs text-muted-foreground">+{p.coins} moedas</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                      <Coins size={12} /> +{p.coins} moedas
+                    </span>
                   )}
                 </CardContent>
                 <CardFooter>

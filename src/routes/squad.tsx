@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { PlayerSheet } from "@/components/game/PlayerSheet";
@@ -126,7 +126,7 @@ function SquadPage() {
             <span>30+</span>
           </div>
         </HudCard>
-        <HudCard title="Vestíário" bodyClassName="space-y-5 pt-1">
+        <HudCard title="Vestiário" bodyClassName="space-y-5 pt-1">
           <HudBar label="Moral média" value={avgMorale} tone={toneFor(avgMorale)} />
           <HudBar label="Condição média" value={avgCondition} tone={conditionTone} />
         </HudCard>
@@ -288,8 +288,17 @@ function SquadPage() {
 
 function Empty() {
   return (
-    <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-      Nenhuma carreira ativa.
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
+      <p className="font-display text-lg uppercase tracking-wide">Nenhuma carreira ativa</p>
+      <p className="max-w-sm text-sm text-muted-foreground">
+        Escolha um clube para montar o elenco, definir a escalação e começar a temporada.
+      </p>
+      <Link
+        to="/new"
+        className="inline-flex min-h-11 items-center rounded-lg bg-primary px-5 font-display text-sm uppercase tracking-wider text-primary-foreground"
+      >
+        Começar carreira
+      </Link>
     </div>
   );
 }
