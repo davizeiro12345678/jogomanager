@@ -313,8 +313,8 @@ export const CUTSCENES: Record<string, Cutscene> = {
     { who: "manager", text: "Vale por um. Mas jogamos como se valesse a temporada inteira." },
     { who: "assistant", text: "Marcação individual nas bolas paradas. Eles vivem disso." },
   ]),
-  "youth-debut-night": scene(
-    "youth-debut-night",
+  "youth-debut": scene(
+    "youth-debut",
     "Estreia do garoto da base",
     "tunnel",
     [
