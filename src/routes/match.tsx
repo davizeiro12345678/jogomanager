@@ -554,13 +554,25 @@ function LiveMatch({
     };
     document.addEventListener("visibilitychange", onVis);
 
+    // Passo fixo: a física roda a 30 Hz independentemente da taxa de quadros
+    // da tela (em telas de 120 Hz o custo caía pela metade do orçamento de
+    // quadro). O ritmo da partida continua igual, só deixa de competir com o
+    // desenho a cada quadro.
+    const SIM_HZ = 30;
+    const SIM_DT = 1 / SIM_HZ;
+    let simAcc = 0;
+
     function loop(t: number) {
       raf = requestAnimationFrame(loop);
       const dt = Math.min(0.05, (t - (last || t)) / 1000);
       last = t;
       if (pausedRef.current || hidden) return;
       const steps = Math.max(1, Math.round(speedRef.current));
-      for (let i = 0; i < steps; i++) sim.step(dt * 6);
+      simAcc = Math.min(simAcc + dt, SIM_DT * 4);
+      while (simAcc >= SIM_DT && !sim.finished) {
+        simAcc -= SIM_DT;
+        for (let i = 0; i < steps; i++) sim.step(SIM_DT * 6);
+      }
       acc += dt;
       if (acc >= 0.1 || sim.finished) {
         acc = 0;
@@ -569,6 +581,7 @@ function LiveMatch({
         recorderRef.current?.sample();
         setSnap(snapshot(sim));
       }
+
       if (sim.finished) {
         storeReplay();
         setDone(true);

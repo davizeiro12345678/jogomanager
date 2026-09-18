@@ -151,7 +151,9 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
   const handDetailRRef = useRef<THREE.Group>(null);
   const bootDetailLRef = useRef<THREE.Group>(null);
   const bootDetailRRef = useRef<THREE.Group>(null);
-  const lodState = useRef<LodLevel>(1);
+  const lodState = useRef<LodLevel | null>(null);
+  const castState = useRef<boolean | null>(null);
+
 
   /* ---------------------------------------------------------- animação */
 
@@ -182,6 +184,7 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     const camDist = state.camera.position.distanceTo(g.position);
     const lod = lodForDistance(camDist, quality);
     if (lod !== lodState.current) {
+      const first = lodState.current === null;
       lodState.current = lod;
       const nearDetails = [faceDetailRef.current, handDetailLRef.current, handDetailRRef.current];
       const mediumDetails = [bootDetailLRef.current, bootDetailRRef.current];
@@ -191,7 +194,19 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
       mediumDetails.forEach((detailGroup) => {
         if (detailGroup) detailGroup.visible = lod <= 1;
       });
+      // Sombra projetada custa uma segunda passada de desenho por malha.
+      // Só o atleta perto da câmera entra no mapa de sombras; os demais ficam
+      // com a sombra de contato no gramado, que é uma malha só.
+      const cast = shadows && lod === 0;
+      if (cast !== castState.current || first) {
+        castState.current = cast;
+        g.traverse((o) => {
+          const m = o as THREE.Mesh;
+          if (m.isMesh && m !== shadowRef.current) m.castShadow = cast;
+        });
+      }
     }
+
 
     // ---- orientação: olha para onde corre; sem bola, olha para a bola
     const dirLen = Math.hypot(player.vx, player.vz);
