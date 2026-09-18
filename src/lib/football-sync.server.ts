@@ -11,7 +11,10 @@ import {
   apiFootballTeamId,
   apiFootballSquad,
   footballDataSquad,
+  sportmonksTeamId,
+  sportmonksSquad,
   sdbTeamKits,
+
 } from "./football-api.server";
 
 type Admin = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
