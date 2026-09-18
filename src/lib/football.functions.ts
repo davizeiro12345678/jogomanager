@@ -30,11 +30,17 @@ export const getOfficialAssets = createServerFn({ method: "GET" }).handler(
     const crests: Record<string, string> = {};
     const kits: Record<string, string> = {};
 
-    const { data: clubs } = await db
-      .from("clubs")
-      .select("id, crest_url")
-      .not("crest_url", "is", null);
-    for (const c of clubs ?? []) if (c.crest_url) crests[c.id] = c.crest_url;
+    // Escudo oficial importado; quando ele falta, usa o logo do site oficial
+    // do clube pelo Logo.dev (chave publicável, pode ir para o cliente).
+    const logoToken = process.env["LOGO_DEV_API_KEY"];
+    const { data: clubs } = await db.from("clubs").select("id, crest_url, website");
+    for (const c of clubs ?? []) {
+      if (c.crest_url) crests[c.id] = c.crest_url;
+      else if (c.website && logoToken) {
+        crests[c.id] = `https://img.logo.dev/${c.website}?token=${logoToken}&size=256&format=png`;
+      }
+    }
+
 
     const { data: kitRows } = await db
       .from("kits")
