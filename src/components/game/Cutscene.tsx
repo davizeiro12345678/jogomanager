@@ -560,6 +560,28 @@ export function Cutscene({
   doneRef.current = onDone;
   const stageRef = useRef<HTMLDivElement>(null);
   const [par, setPar] = useState({ x: 0, y: 0 });
+  /** travelling contínuo da câmera dentro de cada fala (0..1) */
+  const [dolly, setDolly] = useState(0);
+
+  useEffect(() => {
+    if (reduced) {
+      setDolly(0);
+      return;
+    }
+    let raf = 0;
+    const t0 = performance.now();
+    const DUR = 9000;
+    const tick = (t: number) => {
+      const u = Math.min(1, (t - t0) / DUR);
+      // easing suave: sem solavanco no início nem no fim
+      setDolly(u * u * (3 - 2 * u));
+      if (u < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [i, reduced]);
+
+
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
