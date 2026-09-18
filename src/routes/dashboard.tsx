@@ -51,8 +51,19 @@ function Dashboard() {
   const { career } = useCareer();
   if (!career)
     return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Nenhuma carreira ativa.
+      <div className="flex min-h-screen items-center justify-center px-6">
+        <div className="surface-card w-full max-w-md p-8 text-center">
+          <h1 className="font-display text-2xl uppercase tracking-wide">Nenhuma carreira ativa</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Escolha um clube, monte o elenco e comande a temporada inteira em 3D.
+          </p>
+          <Link
+            to="/new"
+            className="mt-6 inline-grid min-h-[44px] place-items-center rounded-xl bg-primary px-6 font-display text-sm uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.02] motion-reduce:transform-none"
+          >
+            Começar carreira
+          </Link>
+        </div>
       </div>
     );
 
