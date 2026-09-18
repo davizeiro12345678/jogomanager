@@ -110,3 +110,9 @@ export async function createWebGPURenderer(
     return null;
   }
 }
+
+/** Superfície mínima do dispositivo WebGPU que usamos (evita depender dos tipos globais). */
+interface GPUDeviceLike {
+  onuncapturederror: ((ev: unknown) => void) | null;
+  lost?: Promise<unknown>;
+}
