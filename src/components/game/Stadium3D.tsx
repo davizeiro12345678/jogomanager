@@ -2109,15 +2109,19 @@ function Scene({
   quality,
   look,
   shadows,
+  backend,
 }: {
   sim: SimView;
   mode: CameraMode;
   quality: Quality;
   look: ReturnType<typeof matchLook>;
   shadows: boolean;
+  backend: GpuBackend;
 }) {
   const time = look.time;
-  const postOn = useVisual().postFx;
+  // O pós-processamento atual roda em WebGL2; no caminho WebGPU a imagem sai
+  // direto do renderizador (tone mapping e exposição continuam ativos).
+  const postOn = useVisual().postFx && backend === "webgl2";
 
   const goalPulse = useRef(0);
   const lastGoals = useRef(0);
