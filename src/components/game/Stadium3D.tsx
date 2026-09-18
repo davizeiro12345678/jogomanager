@@ -1795,8 +1795,11 @@ function Rig({
   const look = useMemo(() => new THREE.Vector3(), []);
   const smoothLook = useMemo(() => new THREE.Vector3(0, 0.8, 0), []);
   useFrame(({ camera, clock }, dt) => {
-    const bx = sim.ball.x;
-    const bz = sim.ball.z;
+    // antecipação de transmissão: a câmera "lidera" a bola no sentido do lance,
+    // como um cinegrafista faz — sem isso a jogada sempre parece atrasada
+    const lead = Math.min(1, Math.hypot(sim.ball.vx, sim.ball.vz) / 22);
+    const bx = sim.ball.x + sim.ball.vx * 0.32 * lead;
+    const bz = sim.ball.z + sim.ball.vz * 0.32 * lead;
     const pulse = goalPulse.current;
     // replay automático: no gol a câmera vai para trás da bola em órbita lenta
     const effective: CameraMode = pulse > 0.55 ? "behind" : mode;
@@ -1831,9 +1834,18 @@ function Rig({
     // damping independente de framerate (maath)
     const smooth = effective === "behind" ? 0.35 : effective === "rail" ? 0.28 : 0.75;
     easing.damp3(camera.position, target, smooth, dt);
-    look.set(bx * 0.6, 0.8, bz * 0.6);
+    look.set(bx * 0.6, 0.8 + Math.min(2.4, sim.ball.height * 0.5), bz * 0.6);
     easing.damp3(smoothLook, look, 0.35, dt);
     camera.lookAt(smoothLook);
+    // leve fechamento de foco no gol: dá peso cinematográfico sem custo de GPU
+    const cam = camera as THREE.PerspectiveCamera;
+    if (cam.isPerspectiveCamera) {
+      const wantFov = 42 - pulse * 5;
+      if (Math.abs(cam.fov - wantFov) > 0.01) {
+        cam.fov += (wantFov - cam.fov) * Math.min(1, dt * 3);
+        cam.updateProjectionMatrix();
+      }
+    }
   });
   return null;
 }
@@ -2304,9 +2316,11 @@ function Stadium3DImpl({
         performance={{ min: 0.5 }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = eff === "baixa" ? 0.95 : 1.02;
+          gl.toneMappingExposure = eff === "baixa" ? 0.95 : eff === "media" ? 1.04 : 1.08;
           gl.outputColorSpace = THREE.SRGBColorSpace;
-          gl.shadowMap.type = THREE.PCFShadowMap;
+          // borda de sombra suave só na qualidade alta: o filtro extra custa
+          // pouco lá e é o que mais aproxima a imagem de uma transmissão
+          gl.shadowMap.type = eff === "alta" ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
           // Texturas nítidas em ângulos rasantes (linhas do campo, publicidade,
           // faixas de corte) — o custo é baixo e o ganho de definição é grande.
           const maxAniso = gl.capabilities.getMaxAnisotropy?.() ?? 1;

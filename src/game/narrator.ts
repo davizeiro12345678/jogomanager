@@ -39,6 +39,8 @@ const MIN_GAP: Partial<Record<NarrationEvent, number>> = {
   foul: 12000,
   card: 6000,
   save: 5000,
+  corner: 14000,
+  sub: 10000,
 };
 
 interface QueueItem {
@@ -56,6 +58,7 @@ export class Narrator {
   private realistic: boolean;
   private volume: number;
   private lastByEvent = new Map<NarrationEvent, number>();
+  private lastVariant = new Map<NarrationEvent, number>();
   private synth: SpeechSynthesis | null;
   private audio: HTMLAudioElement | null = null;
   private queue: QueueItem[] = [];
@@ -206,7 +209,13 @@ export class Narrator {
     }
     this.lastByEvent.set(event, now);
 
-    const variant = Math.floor(Math.random() * lineCount(this.lang, event));
+    // nunca repete a frase anterior do mesmo lance: com muitas variações, ouvir
+    // a mesma fala duas vezes seguidas é o que mais quebra a imersão
+    const total = lineCount(this.lang, event);
+    const prev = this.lastVariant.get(event);
+    let variant = Math.floor(Math.random() * total);
+    if (total > 1 && variant === prev) variant = (variant + 1) % total;
+    this.lastVariant.set(event, variant);
     const item: QueueItem = {
       event,
       lang: this.lang,
