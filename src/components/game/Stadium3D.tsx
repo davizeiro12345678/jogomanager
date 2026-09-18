@@ -1795,8 +1795,11 @@ function Rig({
   const look = useMemo(() => new THREE.Vector3(), []);
   const smoothLook = useMemo(() => new THREE.Vector3(0, 0.8, 0), []);
   useFrame(({ camera, clock }, dt) => {
-    const bx = sim.ball.x;
-    const bz = sim.ball.z;
+    // antecipação de transmissão: a câmera "lidera" a bola no sentido do lance,
+    // como um cinegrafista faz — sem isso a jogada sempre parece atrasada
+    const lead = Math.min(1, Math.hypot(sim.ball.vx, sim.ball.vz) / 22);
+    const bx = sim.ball.x + sim.ball.vx * 0.32 * lead;
+    const bz = sim.ball.z + sim.ball.vz * 0.32 * lead;
     const pulse = goalPulse.current;
     // replay automático: no gol a câmera vai para trás da bola em órbita lenta
     const effective: CameraMode = pulse > 0.55 ? "behind" : mode;
