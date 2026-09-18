@@ -50,6 +50,8 @@ import { type SimView, type SimPlayer } from "@/game/sim";
 /** duração da transição cruzada entre dois movimentos, em segundos */
 const BLEND_TIME = 0.18;
 const ease = (u: number) => u * u * (3 - 2 * u);
+// vetor reaproveitado no laço de quadro: alocar dentro do useFrame gera lixo
+const CAM_DIR = new THREE.Vector3();
 
 /**
  * Velocidade (m/s) para a qual cada ciclo de passada foi desenhado. A cadência
