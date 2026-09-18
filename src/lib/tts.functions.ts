@@ -26,6 +26,8 @@ const NarrateInput = z.object({
     "foul",
     "card",
     "chance",
+    "corner",
+    "sub",
     "kickoff",
     "halftime",
     "fulltime",
