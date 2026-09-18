@@ -67,3 +67,10 @@
 - [x] PostHog — eventos de uso e checkout (sem dados pessoais)
 - [x] Logo.dev — logos reais de marcas nas placas de LED (configurável em /visual)
 - [x] Resend — conta ligada; falta um domínio verificado para enviar e-mails
+
+## Verificações (2026-09-18)
+- [x] Compra real de ponta a ponta na loja: R$4,90 → saldo 1500 → 1700 moedas, tela "Tudo certo!"
+- [ ] FPS no navegador: sandbox usa renderização por software (sem placa de vídeo) — medição não representativa
+- [ ] PageSpeed: cota diária da API do Google esgotada hoje
+- [ ] Ampliar elencos: 415 clubes ainda sem elenco; fonte gratuita não devolve jogadores (precisa de chave paga API-Football/football-data)
+- [ ] Salto visual 3D (luz/câmera/texturas) e revisão de painel/elenco/loja
