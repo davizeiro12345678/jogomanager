@@ -115,12 +115,21 @@ export function Crest({
   const rimA = stars >= 2 ? "#fdf0b8" : "#e8e8ee";
   const rimB = stars >= 2 ? "#a9812c" : "#7d7d88";
 
-  if (custom) {
+  // Imagem oficial: se ela falhar (link morto, bloqueio de rede), caímos no
+  // escudo desenhado em vez de deixar um quadrado quebrado na tela.
+  if (custom && !imgFailed) {
     return (
       <img
         src={custom}
         width={size}
         height={size}
+        // pedimos o dobro do tamanho na tela para o escudo não sair borrado
+        // em telas de alta densidade
+        style={{ width: size, height: size, imageRendering: "auto" }}
+        decoding="async"
+        loading="lazy"
+        draggable={false}
+        onError={() => setImgFailed(true)}
         alt={`Escudo do ${club.name}`}
         className="shrink-0 rounded-md object-contain drop-shadow-[0_3px_8px_rgba(0,0,0,0.5)]"
       />
