@@ -941,7 +941,7 @@ function LiveMatch({
         <div className="hidden items-center gap-1 md:flex">
           <button
             onClick={() => setPaused((p) => !p)}
-            className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-primary px-2 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground"
+            className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-primary px-2 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-95 motion-reduce:transform-none"
           >
             {paused ? <Play size={13} /> : <Pause size={13} />}
             {paused ? "Seguir" : "Pausar"}
@@ -950,13 +950,16 @@ function LiveMatch({
             <button
               key={s}
               onClick={() => setSpeed(s)}
-              className={`w-9 rounded-lg py-1.5 text-xs ${
-                speed === s ? "bg-white/25 text-white" : "bg-white/10 text-white/70"
+              aria-label={`Velocidade ${s}x`}
+              aria-pressed={speed === s}
+              className={`w-9 rounded-lg py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                speed === s ? "bg-white/25 text-white" : "bg-white/10 text-white/70 hover:bg-white/20"
               }`}
             >
               {s}x
             </button>
           ))}
+
           <button
             onClick={() => setNarrating((v) => !v)}
             aria-label={narrating ? "Desligar narração" : "Ligar narração"}
