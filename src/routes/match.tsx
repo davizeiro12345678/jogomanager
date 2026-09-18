@@ -836,7 +836,7 @@ function LiveMatch({
         <button
           onClick={() => setPaused((p) => !p)}
           aria-label={paused ? "Retomar partida" : "Pausar partida"}
-          className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground"
+          className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-95 motion-reduce:transform-none"
         >
           {paused ? <Play size={16} /> : <Pause size={16} />}
         </button>
@@ -844,8 +844,10 @@ function LiveMatch({
           <button
             key={s}
             onClick={() => setSpeed(s)}
-            className={`h-9 w-9 rounded-full font-display text-xs ${
-              speed === s ? "bg-white/25 text-white" : "text-white/70"
+            aria-label={`Velocidade ${s}x`}
+            aria-pressed={speed === s}
+            className={`h-9 w-9 rounded-full font-display text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              speed === s ? "bg-white/25 text-white" : "text-white/70 hover:bg-white/10"
             }`}
           >
             {s}x
@@ -854,14 +856,16 @@ function LiveMatch({
         <button
           onClick={() => setShowStats((s) => !s)}
           aria-label="Ver estatísticas"
-          className={`grid h-9 w-9 place-items-center rounded-full ${showStats ? "bg-white/25 text-white" : "text-white/70"}`}
+          aria-pressed={showStats}
+          className={`grid h-9 w-9 place-items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${showStats ? "bg-white/25 text-white" : "text-white/70 hover:bg-white/10"}`}
         >
           <BarChart3 size={16} />
         </button>
         <button
           onClick={() => setNarrating((v) => !v)}
           aria-label={narrating ? "Desligar narração" : "Ligar narração"}
-          className={`grid h-9 w-9 place-items-center rounded-full ${narrating ? "text-primary" : "text-white/60"}`}
+          aria-pressed={narrating}
+          className={`grid h-9 w-9 place-items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${narrating ? "text-primary" : "text-white/60 hover:bg-white/10"}`}
         >
           {narrating ? <Volume2 size={16} /> : <VolumeX size={16} />}
         </button>
@@ -871,7 +875,7 @@ function LiveMatch({
             setDrawer("store");
           }}
           aria-label="Abrir loja"
-          className="grid h-9 w-9 place-items-center rounded-full text-white/80"
+          className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <ShoppingBag size={16} />
         </button>
@@ -881,24 +885,26 @@ function LiveMatch({
             setDrawer("chat");
           }}
           aria-label="Abrir chat"
-          className="grid h-9 w-9 place-items-center rounded-full text-white/80"
+          className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <MessageCircle size={16} />
         </button>
         <button
           onClick={skip}
           aria-label="Pular para o fim"
-          className="grid h-9 w-9 place-items-center rounded-full text-white/80"
+          className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <SkipForward size={16} />
         </button>
         <button
           onClick={() => setPanelOpen((v) => !v)}
           aria-label="Abrir controles"
-          className="grid h-9 w-9 place-items-center rounded-full text-white/80"
+          aria-expanded={panelOpen}
+          className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <ChevronDown size={16} className={panelOpen ? "" : "rotate-180"} />
         </button>
+
       </div>
 
       {/* Loja e chat sem sair da partida */}
@@ -935,7 +941,7 @@ function LiveMatch({
         <div className="hidden items-center gap-1 md:flex">
           <button
             onClick={() => setPaused((p) => !p)}
-            className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-primary px-2 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground"
+            className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-primary px-2 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-95 motion-reduce:transform-none"
           >
             {paused ? <Play size={13} /> : <Pause size={13} />}
             {paused ? "Seguir" : "Pausar"}
@@ -944,13 +950,16 @@ function LiveMatch({
             <button
               key={s}
               onClick={() => setSpeed(s)}
-              className={`w-9 rounded-lg py-1.5 text-xs ${
-                speed === s ? "bg-white/25 text-white" : "bg-white/10 text-white/70"
+              aria-label={`Velocidade ${s}x`}
+              aria-pressed={speed === s}
+              className={`w-9 rounded-lg py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                speed === s ? "bg-white/25 text-white" : "bg-white/10 text-white/70 hover:bg-white/20"
               }`}
             >
               {s}x
             </button>
           ))}
+
           <button
             onClick={() => setNarrating((v) => !v)}
             aria-label={narrating ? "Desligar narração" : "Ligar narração"}
