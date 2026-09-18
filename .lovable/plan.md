@@ -1,45 +1,55 @@
-# Grande atualização: visual, cenas e base de dados
+# Gráficos, engine, jogadores e narrador
 
-## Ponto importante antes de começar: trocar de motor 3D
+## 1. Corrigir o bug da engine (prioridade)
 
-Todo o 3D do jogo (estádio, jogadores, torcida, grama, escudos, cutscenes, pacotes da loja) roda hoje sobre um motor só — são cerca de 4.800 linhas nos arquivos principais e 15 arquivos que dependem dele. Trocar para Babylon.js significa reescrever tudo isso do zero: partida ao vivo, câmeras, iluminação, texturas procedurais, animação dos jogadores e as cutscenes. É um trabalho longo e, durante ele, o jogo fica instável.
+Os registros do seu navegador mostram falhas reais no novo modo de renderização (WebGPU) durante a partida: erros de validação repetidos ("Vertex buffer slot 1 ... was not set", comandos inválidos) e uma falha de inicialização de módulo em segundo plano. É isso que causa tela quebrada/travada e queda de desempenho.
 
-Existe um caminho que entrega o mesmo ganho (WebGPU, imagem melhor, mais desempenho) sem parar o jogo: o motor atual já tem renderização WebGPU, com volta automática para o modo antigo em quem não tem suporte. Recomendo esse caminho e deixo Babylon como decisão sua.
+Correção:
+- Voltar a renderização padrão para o modo estável (WebGL2) e manter o WebGPU atrás de uma opção explícita nas Configurações, marcada como experimental.
+- Detectar o primeiro erro do renderizador e trocar automaticamente para o modo estável, sem recarregar a página.
+- Corrigir a causa do erro: a grama instanciada e a torcida usam atributos por instância que o caminho WebGPU não recebe; passam a ser criados de forma compatível com os dois modos.
+- Remover a inicialização de trabalho em segundo plano que falha ("init did not return a callable function").
 
-Vou precisar da sua escolha nesse ponto antes de mexer no motor — o resto do plano abaixo independe dela e começa já.
+## 2. Sombras, luz e texturas
 
-## 1. Revisão visual das telas
+- Luz principal com sombra em cascata simples: mapa maior e ajustado ao redor da bola, para sombra nítida perto da jogada e barata longe dela.
+- Sombra de contato suave em todos os jogadores (mancha elíptica que responde à altura do salto), com sombra projetada real nos jogadores próximos.
+- Refletores do estádio com brilho e halo corretos, e luz de rebote do gramado para os jogadores não ficarem "chapados".
+- Texturas novas em resolução maior: gramado com padrão de corte, desgaste, marcas de trava e poças; concreto das arquibancadas; rede do gol; pele e tecido dos uniformes com rugosidade variável.
+- Filtro anisotrópico e mapas de normal em tudo que aparece perto da câmera; versões reduzidas nas qualidades média e baixa.
 
-- Partida ao vivo: placar, estatísticas e controles com mesmo espaçamento, mesma tipografia e retorno visual claro ao tocar; painel lateral no computador e gaveta no celular com a mesma linguagem.
-- Carreira e elenco: cabeçalho padronizado, cartões de jogador com hierarquia (nome, posição, nota, condição), filtros e ordenação visíveis, estados de vazio e carregando.
-- Loja: pacotes em grade consistente, preço e conteúdo destacados, confirmação e erro claros durante a compra.
-- Transições suaves entre telas, respeitando quem prefere menos movimento.
+## 3. Realismo dos jogadores
 
-## 2. Ampliar elencos e escudos
+- Proporções e articulações revisadas (ombros, quadril, joelhos, pescoço), com pés que apoiam no chão sem deslizar.
+- Transições suaves entre parado, andando, correndo, disputa, chute, defesa e comemoração, com mistura por tempo e não por troca seca.
+- Movimento com inércia: inclinação nas curvas, frenagem, passada que acompanha a velocidade real.
+- Cabelo, pele e uniformes com variação por jogador, mantendo a identidade estável entre partidas.
+- Goleiro com mergulho, palma e encaixe próprios.
 
-- Logo.dev para escudos em alta definição dos clubes sem imagem oficial.
-- Firecrawl para páginas públicas de elenco dos clubes que faltam (415 clubes hoje sem jogadores).
-- Perplexity para completar dados faltantes (posição, idade, nacionalidade) com fonte citada.
-- Gravação em lote com indicador de progresso, sem duplicar jogadores já existentes e sem sobrescrever dados editados pelo usuário.
+## 4. Engine e simulação
 
-## 3. Cutscenes e cenas híbridas
+- Passo fixo separado do desenho (já iniciado) com interpolação, para movimento sem trepidação.
+- Física de bola revisada: quique, efeito, bloqueios, altura e desvios.
+- Marcação, coberturas e linhas mais coerentes; menos aglomeração em volta da bola.
+- Cansaço influenciando velocidade, precisão e decisão ao longo dos 90 minutos.
 
-- 25 novas cutscenes: chegada do ônibus, aquecimento, preleção, sorteio, hino, entrada da torcida, bandeirão, gol comemorado, pênalti decisivo, cartão vermelho, substituição, lesão, intervalo, coletiva, taça erguida, entre outras.
-- 25 cenas híbridas (3D em tempo real + camadas cinematográficas) ligadas à identidade real do clube: cores, escudo, uniforme e estádio.
-- Câmera cinematográfica contínua, cortes suaves, carregamento antecipado para não travar.
+## 5. Narrador: triplicar as falas
 
-## 4. Animações e arquivos centrais
-
-- PlayerRig: mais estados (parado, trote, corrida, disputa, chute, comemoração, queda, levantar) com transição suave entre eles e sem tremor.
-- PostFX: efeitos ajustados por nível de qualidade, sem custo em máquinas fracas.
-- Crest: escudos mais nítidos, com imagem oficial quando existir e desenho procedural melhor quando não existir.
-
-## 5. Verificação
-
-Compilação, verificação de tipos, teste no navegador das telas revisadas e das cutscenes, e relatório final do que ficou de fora.
+- Passar de cerca de 70 para mais de 200 falas por idioma (português, inglês, espanhol).
+- Novos momentos narrados: quase-gol, defesa difícil, contra-ataque, bola na trave, falta perigosa, pênalti, expulsão, virada, empate no fim, tempo acrescido, goleada, zebra, estreia de jovem, retorno de lesionado.
+- Falas com intensidade: calma, empolgada e explosiva, escolhidas conforme o peso do lance (placar, minuto, importância do jogo).
+- Nomes de clube, jogador e minuto dentro das frases.
+- Nunca repetir a mesma frase seguida (regra já existente, estendida a todos os eventos) e voz em nuvem com entonação por intensidade.
 
 ## Detalhes técnicos
 
-- Migração Babylon.js exigiria reescrever `Stadium3D.tsx` (2.381 linhas), `PlayerRig.tsx` (1.134), `Cutscene.tsx` (860), `PostFX.tsx`, `Crest.tsx`, `PackScene.tsx`, `Props.tsx` e os 8 módulos de texturas procedurais, além de substituir `@react-three/fiber`, `drei`, `postprocessing` e `rapier`.
-- Alternativa recomendada: `WebGPURenderer` do three.js com fallback WebGL2, mantendo o grafo de cena atual; ganho principal em instancing e compute, sem reescrita.
-- Importação de dados continua em `src/lib/football-sync.server.ts`, somando as fontes Logo.dev, Firecrawl e Perplexity às existentes.
+- `src/components/game/renderer.ts` e `Stadium3D.tsx`: WebGPU passa a ser opt-in com fallback automático em `onuncapturederror`; atributos de instância declarados via `InstancedBufferAttribute` compatível.
+- `src/components/game/players/PlayerRig.tsx`: máquina de estados de animação com cross-fade por tempo e IK simples de pés.
+- `src/game/sim.ts`: passo fixo + interpolação, física de bola e marcação.
+- `src/game/narration-lines.ts`, `narrator.ts`, `src/lib/tts.functions.ts`, `src/routes/match.tsx`: novos eventos e níveis de intensidade.
+- Verificação: checagem de tipos, compilação e teste no navegador sem erros no console da partida.
+
+## O que não entra
+
+- Não vou trocar o motor 3D (decisão já aprovada anteriormente).
+- Medição de FPS real e medição de velocidade da página seguem dependendo da sua máquina e da cota diária do Google.
