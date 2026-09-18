@@ -670,7 +670,7 @@ export function Cutscene({
           {/* camada de fundo: mais lenta, levemente desfocada (profundidade) */}
           <div
             key={`bg${i}`}
-            className={`absolute -inset-6 ${reduced ? "" : "cs-anim-cut"}`}
+            className="absolute -inset-6"
             style={{
               transform: `translate3d(${par.x * 6 + (shot.x + shot.dx * dolly) * 0.4}px, ${par.y * 4 + (shot.y + shot.dy * dolly) * 0.4}px, 0) scale(${1.12 + (shot.z + shot.dz * dolly) * 0.5})`,
               filter: "blur(3px) saturate(0.85)",
