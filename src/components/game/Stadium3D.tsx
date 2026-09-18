@@ -2389,7 +2389,14 @@ function Stadium3DImpl({
             }}
           />
         ) : null}
-        <Scene sim={sim} mode={mode} quality={eff} look={look} shadows={shadowsOn} />
+        <Scene
+          sim={sim}
+          mode={mode}
+          quality={eff}
+          look={look}
+          shadows={shadowsOn}
+          backend={backend}
+        />
         {vis.showFps ? <FpsMeter onSample={setFps} /> : null}
       </Canvas>
       {vis.showFps && fps ? (
