@@ -758,9 +758,9 @@ function LiveMatch({
         <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-30 max-h-[62vh] space-y-3 overflow-y-auto rounded-t-3xl border-t border-white/12 bg-black/85 p-4 pb-20 backdrop-blur-xl md:inset-x-auto md:bottom-auto md:right-3 md:top-24 md:max-h-none md:w-64 md:rounded-2xl md:border md:p-3 md:pb-3">
           <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-white/25 md:hidden" />
           <div className="flex items-center justify-between">
-            <p className="font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
+            <h2 className="font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
               Estatísticas
-            </p>
+            </h2>
             <button
               onClick={() => setShowStats(false)}
               className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/70 md:hidden"
@@ -957,9 +957,9 @@ function LiveMatch({
         </div>
 
         <div>
-          <p className="flex items-center gap-1 font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
+          <h2 className="flex items-center gap-1 font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
             <Camera size={11} /> Câmera
-          </p>
+          </h2>
           <div className="mt-1 grid grid-cols-3 gap-1">
             {CAMERAS.map(([m, label]) => (
               <button
@@ -976,9 +976,9 @@ function LiveMatch({
         </div>
 
         <div>
-          <p className="flex items-center gap-1 font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
+          <h2 className="flex items-center gap-1 font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
             <Gauge size={11} /> Gráficos
-          </p>
+          </h2>
           <div className="mt-1 grid grid-cols-3 gap-1">
             {(["alta", "media", "baixa"] as const).map((q) => (
               <button
