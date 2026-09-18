@@ -59,6 +59,23 @@ function FormationsPage() {
       title="Melhores formações e quando usar cada uma"
       intro="Não existe formação perfeita — existe a formação certa para o seu elenco e para o adversário da rodada. Veja o que cada esquema entrega e o que ele cobra."
       path={PATH}
+      readMinutes={5}
+      level="Iniciante"
+      updated="setembro de 2026"
+      toc={[
+        ...FORMATIONS.map((f) => ({ id: f.name, title: f.name })),
+        { id: "escolher", title: "Como escolher na prática" },
+      ]}
+      faq={[
+        {
+          q: "Qual formação é a mais segura para um elenco fraco?",
+          a: "5-3-2 fora de casa e 4-4-2 em casa: as duas mantêm duas linhas compactas e reduzem as chances do adversário.",
+        },
+        {
+          q: "Devo copiar a formação do time adversário?",
+          a: "Não. Escolha pelo seu elenco e use os ajustes de linha e marcação para neutralizar o ponto forte do rival.",
+        },
+      ]}
     >
       {FORMATIONS.map((f) => (
         <Section key={f.name} title={f.name}>
