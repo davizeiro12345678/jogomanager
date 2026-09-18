@@ -509,9 +509,19 @@ function LiveMatch({
       const ev: NarrationEvent | null =
         e.type === "yellow" || e.type === "red"
           ? "card"
-          : (["goal", "save", "shot", "foul", "kickoff", "halftime", "fulltime"] as const).includes(
-                e.type as never,
-              )
+          : (
+                [
+                  "goal",
+                  "save",
+                  "shot",
+                  "foul",
+                  "corner",
+                  "sub",
+                  "kickoff",
+                  "halftime",
+                  "fulltime",
+                ] as const
+              ).includes(e.type as never)
             ? (e.type as NarrationEvent)
             : null;
       if (!ev) continue;
