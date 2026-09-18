@@ -88,6 +88,7 @@ async function enrichOne(db: Admin, club: ClubRow): Promise<boolean> {
     .from("clubs")
     .update({
       crest_url: remote.crestUrl ?? null,
+      website: remote.website ? remote.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0] : null,
       founded: remote.founded ?? null,
       city: remote.city ?? null,
       ...(stadiumId ? { stadium_id: stadiumId } : {}),

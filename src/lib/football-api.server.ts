@@ -24,6 +24,7 @@ export interface RemoteTeam {
   country?: string | undefined;
   founded?: number | undefined;
   apiFootballId?: string | undefined;
+  website?: string | undefined;
 }
 
 export interface RemotePlayer {
@@ -75,6 +76,7 @@ interface SdbTeam {
   strStadiumThumb?: string;
   strLocation?: string;
   strCountry?: string;
+  strWebsite?: string;
   intFormedYear?: string;
 }
 
@@ -97,6 +99,7 @@ function mapSdb(t: SdbTeam): RemoteTeam {
     stadium: t.strStadium ?? undefined,
     stadiumCapacity: t.intStadiumCapacity ? Number(t.intStadiumCapacity) || undefined : undefined,
     stadiumPhotoUrl: t.strStadiumThumb ?? undefined,
+    website: t.strWebsite ?? undefined,
     city: t.strLocation ?? undefined,
     country: t.strCountry ?? undefined,
     founded: t.intFormedYear ? Number(t.intFormedYear) || undefined : undefined,
