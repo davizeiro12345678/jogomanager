@@ -440,6 +440,23 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
     }
 
     if (!players.length) {
+      const sm =
+        ext?.find((e) => e.source === "sportmonks")?.external_id ??
+        (await sportmonksTeamId(club.name));
+      if (sm) {
+        players = await sportmonksSquad(sm);
+        if (players.length) {
+          await db
+            .from("club_external_ids")
+            .upsert(
+              { club_id: club.id, source: "sportmonks", external_id: sm, confirmed: true },
+              { onConflict: "club_id,source" },
+            );
+        }
+      }
+    }
+
+    if (!players.length) {
       const af =
         ext?.find((e) => e.source === "api-football")?.external_id ??
         (await apiFootballTeamId(club.name, club.country ?? undefined));
@@ -453,6 +470,7 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
           );
       }
     }
+
 
     if (!players.length) return;
 
