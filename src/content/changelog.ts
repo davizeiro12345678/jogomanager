@@ -6,9 +6,11 @@ export interface ChangelogEntry {
 }
 
 export const CREATOR = {
-  name: "Davi Davizeiro",
+  name: "Davi Andrian Thomazini",
   role: "Criador e desenvolvedor",
   bio: "Fã de futebol e de jogos de gestão, construindo um manager 3D gratuito que roda direto no navegador, em qualquer celular ou computador.",
+  youtube: "https://www.youtube.com/@Davizeirogames",
+  youtubeLabel: "@Davizeirogames",
 };
 
 export const CHANGELOG: ChangelogEntry[] = [

@@ -50,6 +50,8 @@ import { type SimView, type SimPlayer } from "@/game/sim";
 /** duração da transição cruzada entre dois movimentos, em segundos */
 const BLEND_TIME = 0.18;
 const ease = (u: number) => u * u * (3 - 2 * u);
+// vetor reaproveitado no laço de quadro: alocar dentro do useFrame gera lixo
+const CAM_DIR = new THREE.Vector3();
 
 /**
  * Velocidade (m/s) para a qual cada ciclo de passada foi desenhado. A cadência
@@ -224,10 +226,26 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
     g.rotation.y += turnRate;
 
     // ---- inclinação do corpo: para a frente na aceleração, para dentro na curva
+    // usa velocidade angular (rad/s), não o passo do quadro: assim a inclinação
+    // é a mesma a 30, 60 ou 120 quadros por segundo (antes variava e tremia)
+    const yawRate = dt > 0 ? turnRate / dt : 0;
     const leanF = Math.min(0.26, dirLen * 0.032);
-    const leanS = Math.max(-0.3, Math.min(0.3, -turnRate * 6 * Math.min(1, dirLen / 5)));
-    g.rotation.x += (leanF - g.rotation.x) * Math.min(1, dt * 6);
-    g.rotation.z += (leanS - g.rotation.z) * Math.min(1, dt * 6);
+    const leanS = Math.max(-0.3, Math.min(0.3, -yawRate * 0.09 * Math.min(1, dirLen / 5)));
+    const leanBlend = 1 - Math.exp(-7 * dt);
+    g.rotation.x += (leanF - g.rotation.x) * leanBlend;
+    g.rotation.z += (leanS - g.rotation.z) * leanBlend;
+
+    // ---- fora do campo de visão: mantém a posição, congela a animação
+    // (ninguém vê o gesto; economiza a avaliação de pose de metade do elenco)
+    state.camera.getWorldDirection(CAM_DIR);
+    const toX = g.position.x - state.camera.position.x;
+    const toZ = g.position.z - state.camera.position.z;
+    const facing = toX * CAM_DIR.x + toZ * CAM_DIR.z;
+    const dist2 = toX * toX + toZ * toZ;
+    if (facing < 0 && dist2 > 144) {
+      acc.current = 0;
+      return;
+    }
 
     // ---- passo de animação em taxa reduzida longe da câmera
     const step = lod === 0 ? 0 : lod === 1 ? 1 / 40 : 1 / 20;
