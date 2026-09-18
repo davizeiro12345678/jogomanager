@@ -126,7 +126,7 @@ function SquadPage() {
             <span>30+</span>
           </div>
         </HudCard>
-        <HudCard title="Vestíário" bodyClassName="space-y-5 pt-1">
+        <HudCard title="Vestiário" bodyClassName="space-y-5 pt-1">
           <HudBar label="Moral média" value={avgMorale} tone={toneFor(avgMorale)} />
           <HudBar label="Condição média" value={avgCondition} tone={conditionTone} />
         </HudCard>
