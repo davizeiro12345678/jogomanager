@@ -484,7 +484,7 @@ export const CUTSCENES: Record<string, Cutscene> = {
     { who: "press", text: "Clássico se ganha no detalhe ou na raça?" },
     { who: "manager", text: "Nos dois. Detalhe pra criar, raça pra não devolver o que é nosso." },
   ]),
-  "scout-report": scene("scout-report", "Relatório do olheiro", "scout" as SceneArt, [
+  "scout-report": scene("scout-report", "Relatório do olheiro", "staff", [
     { who: "scout", text: "Garoto de 19 anos, canhoto, joga por dentro e por fora." },
     { who: "manager", text: "Traz ele pra treinar com o grupo antes de qualquer proposta." },
   ]),
@@ -552,6 +552,35 @@ export const TRAINING_SCENE_IDS = [
   "training-gym",
   "training-talk",
   "staffroom",
+] as const;
+
+/** Cenas de momento sorteadas ao longo da temporada. */
+export const MOMENT_SCENE_IDS = [
+  "bus-arrival",
+  "warmup-pitch",
+  "team-talk",
+  "coin-toss",
+  "anthem",
+  "crowd-entry",
+  "goal-roar",
+  "penalty-decisive",
+  "red-card",
+  "substitution",
+  "halftime-fix",
+  "press-after-win",
+  "press-after-loss",
+  "trophy-lift",
+  "promotion-night",
+  "relegation-night",
+  "derby-week",
+  "scout-report",
+  "agent-offer",
+  "board-review",
+  "youth-debut",
+  "medical-room",
+  "fan-meeting",
+  "contract-renewal",
+  "season-farewell",
 ] as const;
 
 /** Todas as cenas que a galeria pode listar. */
