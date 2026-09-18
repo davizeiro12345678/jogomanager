@@ -313,8 +313,8 @@ export const CUTSCENES: Record<string, Cutscene> = {
     { who: "manager", text: "Vale por um. Mas jogamos como se valesse a temporada inteira." },
     { who: "assistant", text: "Marcação individual nas bolas paradas. Eles vivem disso." },
   ]),
-  "youth-debut": scene(
-    "youth-debut",
+  "youth-debut-night": scene(
+    "youth-debut-night",
     "Estreia do garoto da base",
     "tunnel",
     [
@@ -480,7 +480,7 @@ export const CUTSCENES: Record<string, Cutscene> = {
     ],
     "bad",
   ),
-  "derby-week": scene("derby-week", "Semana de clássico", "tactics", [
+  "derby-week-buildup": scene("derby-week-buildup", "Véspera de clássico", "tactics", [
     { who: "press", text: "Clássico se ganha no detalhe ou na raça?" },
     { who: "manager", text: "Nos dois. Detalhe pra criar, raça pra não devolver o que é nosso." },
   ]),
@@ -496,8 +496,8 @@ export const CUTSCENES: Record<string, Cutscene> = {
     { who: "president", text: "Folha salarial no limite. Precisamos vender ou cortar." },
     { who: "manager", text: "Vendo um, promovo dois da base. Economia e identidade juntas." },
   ]),
-  "youth-debut": scene(
-    "youth-debut",
+  "youth-debut-night": scene(
+    "youth-debut-night",
     "Estreia do garoto da base",
     "pitchentry",
     [
@@ -572,11 +572,11 @@ export const MOMENT_SCENE_IDS = [
   "trophy-lift",
   "promotion-night",
   "relegation-night",
-  "derby-week",
+  "derby-week-buildup",
   "scout-report",
   "agent-offer",
   "board-review",
-  "youth-debut",
+  "youth-debut-night",
   "medical-room",
   "fan-meeting",
   "contract-renewal",
