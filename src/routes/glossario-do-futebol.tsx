@@ -83,6 +83,19 @@ function GlossaryPage() {
       title="Glossário do futebol e dos jogos de manager"
       intro="Quarenta termos que aparecem nas telas do jogo e nas transmissões, explicados em uma linha cada."
       path={PATH}
+      readMinutes={8}
+      level="Iniciante"
+      updated="setembro de 2026"
+      faq={[
+        {
+          q: "Preciso decorar todos esses termos?",
+          a: "Não. Eles aparecem nas telas do jogo; volte aqui quando encontrar um que não conhece.",
+        },
+        {
+          q: "Onde vejo esses conceitos na prática?",
+          a: "Na tela de táticas e no HUD da partida ao vivo: mentalidade, linha, marcação e condição física estão todos ali.",
+        },
+      ]}
     >
       <dl className="grid gap-3 sm:grid-cols-2">
         {TERMS.map(([term, def]) => (

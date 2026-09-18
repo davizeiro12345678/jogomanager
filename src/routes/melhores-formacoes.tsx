@@ -78,7 +78,7 @@ function FormationsPage() {
       ]}
     >
       {FORMATIONS.map((f) => (
-        <Section key={f.name} title={f.name}>
+        <Section key={f.name} id={f.name} title={f.name}>
           <p>
             <strong className="text-foreground">Forte em:</strong> {f.good}
           </p>
@@ -87,7 +87,7 @@ function FormationsPage() {
           </p>
         </Section>
       ))}
-      <Section title="Como escolher na prática">
+      <Section id="escolher" title="Como escolher na prática">
         <p>
           Comece pela sua melhor posição: se os dois melhores jogadores são pontas, jogue 4-3-3; se
           são dois centroavantes, 4-4-2. Trocar de esquema no intervalo é normal — ajuste a
