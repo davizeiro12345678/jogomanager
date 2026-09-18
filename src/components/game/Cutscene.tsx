@@ -665,6 +665,11 @@ export function Cutscene({
           ref={stageRef}
           onPointerMove={onPointerMove}
           className="relative h-48 overflow-hidden sm:h-64"
+          style={
+            data.hybrid && !reduced
+              ? { perspective: "900px", perspectiveOrigin: "50% 45%" }
+              : undefined
+          }
         >
           {/* corte de câmera a cada fala + travelling contínuo dentro da fala */}
           {/* camada de fundo: mais lenta, levemente desfocada (profundidade) */}
@@ -672,7 +677,9 @@ export function Cutscene({
             key={`bg${i}`}
             className="absolute -inset-6"
             style={{
-              transform: `translate3d(${par.x * 6 + (shot.x + shot.dx * dolly) * 0.4}px, ${par.y * 4 + (shot.y + shot.dy * dolly) * 0.4}px, 0) scale(${1.12 + (shot.z + shot.dz * dolly) * 0.5})`,
+              transform: data.hybrid
+                ? `translate3d(${par.x * 6 + (shot.x + shot.dx * dolly) * 0.4}px, ${par.y * 4 + (shot.y + shot.dy * dolly) * 0.4}px, -220px) rotateY(${par.x * 2.5}deg) rotateX(${par.y * -1.6}deg) scale(1.34)`
+                : `translate3d(${par.x * 6 + (shot.x + shot.dx * dolly) * 0.4}px, ${par.y * 4 + (shot.y + shot.dy * dolly) * 0.4}px, 0) scale(${1.12 + (shot.z + shot.dz * dolly) * 0.5})`,
               filter: "blur(3px) saturate(0.85)",
               opacity: 0.85,
               transition: reduced ? undefined : "transform 220ms linear",
@@ -685,12 +692,29 @@ export function Cutscene({
             key={`fg${i}`}
             className={`absolute inset-0 ${reduced ? "" : "cs-anim-cut"}`}
             style={{
-              transform: `translate3d(${par.x * -14 + shot.x + shot.dx * dolly}px, ${par.y * -9 + shot.y + shot.dy * dolly}px, 0) scale(${1.04 + shot.z + shot.dz * dolly})`,
+              transform: data.hybrid
+                ? `translate3d(${par.x * -14 + shot.x + shot.dx * dolly}px, ${par.y * -9 + shot.y + shot.dy * dolly}px, ${40 + (shot.z + shot.dz * dolly) * 120}px) rotateY(${par.x * -4}deg) rotateX(${par.y * 2.4}deg)`
+                : `translate3d(${par.x * -14 + shot.x + shot.dx * dolly}px, ${par.y * -9 + shot.y + shot.dy * dolly}px, 0) scale(${1.04 + shot.z + shot.dz * dolly})`,
               transition: reduced ? undefined : "transform 220ms linear",
             }}
           >
             <Backdrop art={data.art} a={accent} b={accent2} reduced={reduced} trophies={trophies} />
           </div>
+
+          {/* plano de chão inclinado: dá volume real à cena híbrida */}
+          {data.hybrid && !reduced && (
+            <div
+              className="pointer-events-none absolute inset-x-[-20%] bottom-[-28%] h-1/2"
+              style={{
+                transform: `rotateX(72deg) translateZ(${-30 + dolly * 8}px)`,
+                transformOrigin: "50% 0%",
+                background: `linear-gradient(to bottom, ${accent}33, transparent 72%), repeating-linear-gradient(90deg, #ffffff12 0 2px, transparent 2px 46px)`,
+                filter: "blur(0.4px)",
+                opacity: 0.75,
+              }}
+            />
+          )}
+
 
           {/* luzes desfocadas ao fundo (bokeh de refletores) */}
           {!reduced && (
