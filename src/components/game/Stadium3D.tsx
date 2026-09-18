@@ -1840,7 +1840,7 @@ function Rig({
     // leve fechamento de foco no gol: dá peso cinematográfico sem custo de GPU
     const cam = camera as THREE.PerspectiveCamera;
     if (cam.isPerspectiveCamera) {
-      const wantFov = 50 - pulse * 6;
+      const wantFov = 42 - pulse * 5;
       if (Math.abs(cam.fov - wantFov) > 0.01) {
         cam.fov += (wantFov - cam.fov) * Math.min(1, dt * 3);
         cam.updateProjectionMatrix();
