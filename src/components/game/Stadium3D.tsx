@@ -15,7 +15,9 @@ import * as THREE from "three";
 import { PlayerRig } from "@/components/game/players/PlayerRig";
 import { PostFX } from "@/components/game/post/PostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
-import { DISPLAY_FONT } from "@/components/game/fonts";
+import { DISPLAY_FONT, configureText3D } from "@/components/game/fonts";
+
+configureText3D();
 import { adTexture } from "@/components/game/stadium/textures/ads";
 import {
   concreteAlbedo,
