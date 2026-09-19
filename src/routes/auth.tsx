@@ -66,7 +66,20 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ href: destination });
+      if (data.session) {
+        const metadata = data.session.user.user_metadata;
+        void supabase.from("profiles").upsert(
+          {
+            user_id: data.session.user.id,
+            display_name:
+              typeof metadata["full_name"] === "string" ? metadata["full_name"] : null,
+            avatar_url: typeof metadata["avatar_url"] === "string" ? metadata["avatar_url"] : null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" },
+        );
+        navigate({ href: destination });
+      }
     });
   }, [navigate, destination]);
 

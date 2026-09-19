@@ -128,8 +128,10 @@ export class Narrator {
       const utter = new SpeechSynthesisUtterance(item.text);
       utter.lang = SPEECH_TAG[item.lang];
       utter.volume = this.volume;
-      utter.rate = item.event === "goal" ? this.rate * 1.08 : this.rate;
-      utter.pitch = item.event === "goal" ? 1.2 : 1;
+      const explosive = item.event === "goal" || item.event === "post";
+      const excited = item.event === "save" || item.event === "chance" || item.event === "card";
+      utter.rate = this.rate * (explosive ? 1.1 : excited ? 1.04 : 0.98);
+      utter.pitch = explosive ? 1.18 : excited ? 1.08 : 0.98;
       const v = this.voice();
       if (v) utter.voice = v;
       utter.onend = () => resolve();
