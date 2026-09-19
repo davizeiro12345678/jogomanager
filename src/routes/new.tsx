@@ -130,6 +130,26 @@ function NewCareer() {
   const [pending, setPending] = useState<{ leagueId: string; clubId: string } | null>(null);
 
   const league = getLeague(leagueId);
+  const queryText = clubQuery.trim().toLowerCase();
+  const visibleLeagues = useMemo(
+    () =>
+      queryText
+        ? LEAGUES.filter(
+            (l) =>
+              l.name.toLowerCase().includes(queryText) ||
+              l.country.toLowerCase().includes(queryText) ||
+              l.clubs.some((c) => c.name.toLowerCase().includes(queryText)),
+          )
+        : LEAGUES,
+    [queryText],
+  );
+  const visibleClubs = useMemo(
+    () =>
+      queryText
+        ? league.clubs.filter((c) => c.name.toLowerCase().includes(queryText))
+        : league.clubs,
+    [league, queryText],
+  );
   const spent = useMemo(() => Object.values(attrs).reduce((a, b) => a + b, 0), [attrs]);
   const left = TOTAL_POINTS - spent;
   const maxStrength = 66 + reputation * 6; // reputação baixa limita clubes grandes (5★ libera todos)
@@ -381,8 +401,18 @@ function NewCareer() {
 
             {step === 3 && (
               <div>
+                <label htmlFor="club-search" className="text-sm text-muted-foreground">
+                  Buscar liga ou clube
+                </label>
+                <input
+                  id="club-search"
+                  value={clubQuery}
+                  onChange={(e) => setClubQuery(e.target.value)}
+                  placeholder="Ex.: Brasileirão, Fluminense, Portugal…"
+                  className="mb-3 mt-1 w-full rounded-lg border border-input bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary"
+                />
                 <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto">
-                  {LEAGUES.map((l) => (
+                  {visibleLeagues.map((l) => (
                     <button
                       key={l.id}
                       onClick={() => setLeagueId(l.id)}
@@ -397,8 +427,14 @@ function NewCareer() {
                   ))}
                 </div>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {league.clubs.map((c) => {
+                <p className="mt-3 text-xs text-muted-foreground">
+                  {league.name} · {league.clubs.length} clubes ·{" "}
+                  {league.clubs.filter((c) => c.strength <= maxStrength).length} liberados para a
+                  sua reputação
+                </p>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {visibleClubs.map((c) => {
                     const locked = c.strength > maxStrength;
                     return (
                       <button
