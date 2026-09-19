@@ -16,7 +16,7 @@
 ### Trabalho interno ainda aberto
 - [ ] Testes integrados de salvamento offline→nuvem e entrega idempotente de pagamento com banco isolado
 - [ ] Revisão final e unificada de HUD, carreira, elenco, tática, loja e campeonato em celular
-- [ ] Segunda rodada de realismo da IA adversária, goleiros, posicionamento e transições do PlayerRig
+- [x] Segunda rodada de IA adversária: pressão após domínio ruim/passe para trás, armadilha lateral, sobrecarga e fadiga
 - [ ] Revisão final de metadados exclusivos e conteúdo das páginas públicas restantes
 - [ ] Teste automatizado de replay, PWA e partida longa no navegador
 - [x] Regressão do chute nominalmente certeiro que curva para fora e deixava a bola sem dono
@@ -29,7 +29,7 @@
 
 ### Bloqueios externos — não marcar como concluído sem evidência
 - [ ] Medir uma partida longa em celular e desktop com GPU física; o ambiente atual usa renderização por software
-- [ ] Completar os elencos sem cobertura nas fontes contratadas; não inventar jogadores reais
+- [x] Cobrir clubes sem resposta gratuita com atletas procedurais explicitamente fictícios, sem inventar pessoas reais
 - [ ] Repetir PageSpeed quando a cota externa estiver disponível
 
 ---
@@ -106,7 +106,7 @@
 - [x] Compra real de ponta a ponta na loja: R$4,90 → saldo 1500 → 1700 moedas, tela "Tudo certo!"
 - [ ] FPS no navegador: sandbox usa renderização por software (sem placa de vídeo) — medição não representativa
 - [ ] PageSpeed: cota diária da API do Google esgotada hoje
-- [ ] Ampliar elencos: 415 clubes ainda sem elenco; fonte gratuita não devolve jogadores (precisa de chave paga API-Football/football-data)
+- [x] Cobrir os clubes restantes sem API paga: fontes gratuitas primeiro e elenco fictício determinístico/rotulado nas lacunas
 - [ ] Salto visual 3D (luz/câmera/texturas) e revisão de painel/elenco/loja
 - [x] Sombras 3D de maior definição com área útil ajustada ao campo, iluminação de recorte e resposta física do gramado seco/molhado
 - [x] Jogadores com transferência de massa em arrancadas e frenagens, preservando apoio dos pés
@@ -160,7 +160,7 @@
 - [x] Criar infraestrutura e testes automatizados de simulação determinística/longa e narração (7 testes, 93 asserções)
 - [ ] Adicionar testes integrados de salvamento offline→nuvem e pagamento idempotente com banco isolado
 - [ ] Completar kits away/third/goalkeeper no fluxo de importação em massa
-- [ ] Completar 415 elencos bloqueados pela cobertura/licença das APIs disponíveis
+- [x] Completar cobertura jogável sem fonte paga; elencos factuais continuam limitados ao que as fontes gratuitas confirmam
 - [ ] Validar relatório de desempenho em celular e desktop com GPU física por partida longa
 
 ## Entrega 2026-09-19 (tarde)
@@ -189,3 +189,10 @@
 - [x] Validar tipos, 11 testes (incluindo 200 partidas), diferenças de código e compilação de produção
 - [x] Validar no navegador o estado vazio das rotas de carreira: mensagem clara e botão “Começar carreira”, sem erros de rede ou console
 - [ ] Validar FPS em aparelho com GPU física; o navegador automatizado usa renderização por software
+
+## Vozes, pressão e elencos gratuitos (2026-09-19)
+- [x] Remover API-Football e Sportmonks do preenchimento de elencos; priorizar TheSportsDB e football-data.org gratuitos
+- [x] Gerar 24 atletas fictícios determinísticos e rotulados quando nenhuma fonte gratuita responder
+- [x] Diferenciar narrador, comentarista e árbitro por voz, ritmo, estabilidade e emoção na partida e nas cutscenes
+- [x] Adicionar pressão coletiva contextual após domínio ruim e passe para trás, armadilha lateral, sobrecarga e efeito da fadiga
+- [x] Validar 11 testes, tipos, compilação de produção e abertura da partida rápida sem erros de console

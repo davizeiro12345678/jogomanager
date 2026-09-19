@@ -11,6 +11,7 @@ import {
   lineCount,
   narrationLang,
   narrationLine,
+  broadcastRole,
   SPEECH_TAG,
   type NarrationContext,
   type NarrationEvent,
@@ -175,7 +176,7 @@ export class Narrator {
     const contextKey = item.context
       ? `${item.context.minute ?? 0}|${item.context.homeGoals ?? 0}-${item.context.awayGoals ?? 0}|${item.context.player ?? ""}|${item.context.importance ?? "routine"}`
       : "base";
-    const key = `${item.lang}|${item.event}|${item.variant}|${item.team}|${contextKey}`;
+    const key = `${item.lang}|${broadcastRole(item.event)}|${item.event}|${item.variant}|${item.team}|${contextKey}`;
     const cached = await readVoiceCache(key);
     if (cached) {
       await this.playBase64(cached);

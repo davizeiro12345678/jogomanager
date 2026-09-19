@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import {
   narrationLine,
+  BROADCAST_VOICE,
+  broadcastRole,
   VOICE_BY_LANG,
   type NarrationContext,
   type NarrationEvent,
@@ -78,7 +80,8 @@ export const narrateEvent = createServerFn({ method: "POST" })
         }
       : undefined;
     const text = narrationLine(lang, event, safeTeam(data.team), data.variant, context);
-    const voiceId = VOICE_BY_LANG[lang];
+    const role = broadcastRole(event);
+    const voiceId = BROADCAST_VOICE[lang][role];
     const hype = event === "goal" || event === "save" || event === "post" || event === "redCard";
 
     // Emoção por contexto: gol no fim de jogo apertado sai eufórico; lance
@@ -90,12 +93,13 @@ export const narrateEvent = createServerFn({ method: "POST" })
     const decisive = context?.importance === "decisive" || (hype && late && tight);
     const calm = context?.importance === "routine" && !hype;
 
+    const isReferee = role === "referee";
     const settings = {
-      stability: decisive ? 0.16 : hype ? 0.26 : calm ? 0.48 : 0.4,
-      similarity_boost: 0.82,
-      style: decisive ? 0.95 : hype ? 0.82 : calm ? 0.45 : 0.6,
+      stability: isReferee ? 0.78 : decisive ? 0.16 : hype ? 0.26 : calm ? 0.48 : 0.4,
+      similarity_boost: isReferee ? 0.9 : 0.82,
+      style: isReferee ? 0.16 : decisive ? 0.95 : hype ? 0.82 : calm ? 0.45 : 0.6,
       use_speaker_boost: true,
-      speed: decisive ? 1.16 : hype ? 1.1 : calm ? 0.99 : 1.04,
+      speed: isReferee ? 0.92 : decisive ? 1.16 : hype ? 1.1 : calm ? 0.99 : 1.04,
     };
 
     const audio = await synthesize({
@@ -170,6 +174,8 @@ const SceneNarrateInput = z.object({
  */
 const SCENE_VOICE: Record<string, string> = {
   narrator: "JBFqnCBsd6RMkjVDRZzb", // George — locução
+  commentator: "TX3LPaxmHKxFdv7VOQHJ", // Liam — transmissão empolgada
+  referee: "nPczCjzI2devNBz1zQrb", // Brian — autoridade e clareza
   manager: "onwK4e9ZLuTAKqWW03F9", // Daniel — firme
   president: "nPczCjzI2devNBz1zQrb", // Brian — grave
   press: "cgSgspJ2msm6clMCkdW9", // Jessica — repórter
@@ -196,7 +202,9 @@ export const narrateScene = createServerFn({ method: "POST" })
     // contexto das falas vizinhas: mantém a prosódia contínua entre linhas
     const previousText = scene.lines[data.line - 1]?.text;
     const nextText = scene.lines[data.line + 1]?.text;
-    const emphatic = current.who === "fan" || current.who === "narrator";
+    const emphatic = current.who === "fan" || current.who === "commentator";
+    const authoritative = current.who === "referee" || current.who === "president";
+    const reflective = current.who === "narrator";
 
     const audio = await synthesize({
       apiKey,
@@ -209,11 +217,11 @@ export const narrateScene = createServerFn({ method: "POST" })
         ...(nextText ? { next_text: nextText } : {}),
       },
       voiceSettings: {
-        stability: scene.mood === "bad" ? 0.58 : emphatic ? 0.34 : 0.46,
-        similarity_boost: 0.85,
-        style: scene.mood === "good" ? (emphatic ? 0.8 : 0.62) : 0.5,
+        stability: authoritative ? 0.78 : reflective ? 0.58 : scene.mood === "bad" ? 0.56 : emphatic ? 0.28 : 0.46,
+        similarity_boost: authoritative ? 0.9 : 0.85,
+        style: authoritative ? 0.18 : reflective ? 0.42 : scene.mood === "good" ? (emphatic ? 0.88 : 0.62) : 0.5,
         use_speaker_boost: true,
-        speed: scene.mood === "bad" ? 0.94 : 0.99,
+        speed: authoritative ? 0.92 : emphatic ? 1.08 : scene.mood === "bad" ? 0.94 : 0.99,
       },
     });
     return audio ? { ok: true, audio } : { ok: false, reason: "error" };

@@ -52,6 +52,21 @@ export const VOICE_BY_LANG: Record<NarrationLang, string> = {
   es: "iP95p4xoKVk53GoZ742B", // Chris — animado
 };
 
+export type BroadcastRole = "narrator" | "commentator" | "referee";
+
+/** Papéis de transmissão: ritmo de jogo, análise e decisões têm timbres próprios. */
+export const BROADCAST_VOICE: Record<NarrationLang, Record<BroadcastRole, string>> = {
+  pt: { narrator: "JBFqnCBsd6RMkjVDRZzb", commentator: "TX3LPaxmHKxFdv7VOQHJ", referee: "nPczCjzI2devNBz1zQrb" },
+  en: { narrator: "JBFqnCBsd6RMkjVDRZzb", commentator: "TX3LPaxmHKxFdv7VOQHJ", referee: "nPczCjzI2devNBz1zQrb" },
+  es: { narrator: "iP95p4xoKVk53GoZ742B", commentator: "TX3LPaxmHKxFdv7VOQHJ", referee: "nPczCjzI2devNBz1zQrb" },
+};
+
+export function broadcastRole(event: NarrationEvent): BroadcastRole {
+  if (event === "foul" || event === "card" || event === "redCard") return "referee";
+  if (event === "goal" || event === "save" || event === "shot" || event === "post" || event === "chance" || event === "corner") return "commentator";
+  return "narrator";
+}
+
 type Pack = Record<NarrationEvent, string[]>;
 
 const PT: Pack = {
