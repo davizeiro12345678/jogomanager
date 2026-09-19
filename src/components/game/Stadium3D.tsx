@@ -762,7 +762,11 @@ function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: stri
 function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
   const [label, setLabel] = useState("");
   const [clockText, setClockText] = useState("0'");
+  // O painel só muda de minuto em minuto: montar as strings a 60 Hz era
+  // trabalho puro de CPU no caminho crítico do quadro.
+  const tick = useRef(0);
   useFrame(() => {
+    if (++tick.current % 12 !== 0) return;
     const l = `${sim.home.short}  ${sim.stats.home.goals} – ${sim.stats.away.goals}  ${sim.away.short}`;
     const c = `${sim.minute()}'`;
     if (l !== label) setLabel(l);
