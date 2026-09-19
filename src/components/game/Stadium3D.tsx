@@ -1427,14 +1427,18 @@ function Stands({
       const p = crowd.positions[i]!;
       const wave = fsin(t * 1.1 - p.x * 0.06) > 0.86 ? 0.5 : 0;
       const jump = pulse > 0 ? Math.abs(fsin(t * 9 + i)) * 0.75 * pulse : 0;
-      const y = p.y + fsin(t * 3 + i) * 0.06 + wave + jump;
+      // sentado: mais baixo e encolhido; levanta na ola e na comemoração
+      const stand = Math.min(1, pulse * 1.6 + (wave > 0 ? 1 : 0));
+      const sit = seat.sit[i]! * (1 - stand);
+      const y = p.y + fsin(t * 3 + i) * 0.06 + wave + jump - sit * 0.34;
       // balanço lateral: a massa nunca fica perfeitamente enfileirada
       const swayX = fsin(t * 1.6 + i * 0.7) * 0.05 * (0.4 + pulse);
       const yaw = seat.yaw0[i]! + fsin(t * 0.8 + i) * 0.05;
-      const tall = seat.tall[i]!;
+      const tall = seat.tall[i]! * (1 - sit * 0.3);
       const px = p.x + swayX;
       dummy.position.set(px, y, p.z);
-      dummy.scale.set(1, tall, 1);
+      dummy.scale.set(1 + sit * 0.08, tall, 1);
+
       dummy.rotation.set(0, yaw, fsin(t * 1.9 + i * 1.3) * 0.03);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
