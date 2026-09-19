@@ -105,31 +105,57 @@ const SceneNarrateInput = z.object({
   line: z.number().int().min(0).max(12),
 });
 
-/** Voz das cenas; o texto também é escolhido no servidor pelo roteiro fixo. */
+/**
+ * Voz por papel na cena: cada personagem fala com um timbre diferente, o que
+ * dá variedade e realismo à encenação. O texto continua vindo do roteiro fixo.
+ */
+const SCENE_VOICE: Record<string, string> = {
+  narrator: "JBFqnCBsd6RMkjVDRZzb", // George — locução
+  manager: "onwK4e9ZLuTAKqWW03F9", // Daniel — firme
+  president: "nPczCjzI2devNBz1zQrb", // Brian — grave
+  press: "cgSgspJ2msm6clMCkdW9", // Jessica — repórter
+  captain: "bIHbv24MWmeRgasZH58o", // Will — jovem
+  assistant: "cjVigY5qzO86Huf0OWal", // Eric
+  doctor: "pFZP5JQG7iQjIQuC4Bku", // Lily
+  scout: "N2lVS1w4EtoT3dr4eOWO", // Callum
+  agent: "iP95p4xoKVk53GoZ742B", // Chris
+  fan: "TX3LPaxmHKxFdv7VOQHJ", // Liam — empolgado
+};
+
 export const narrateScene = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => SceneNarrateInput.parse(input))
   .handler(async ({ data }): Promise<NarrateResult> => {
     const apiKey = process.env["ELEVENLABS_API_KEY"];
     const scene = CUTSCENES[data.scene];
-    const text = scene?.lines[data.line]?.text;
-    if (!apiKey || !text) return { ok: false, reason: "unavailable" };
+    const current = scene?.lines[data.line];
+    const text = current?.text;
+    if (!apiKey || !scene || !text) return { ok: false, reason: "unavailable" };
     const { reserveAiBudget } = await import("@/lib/ai-budget.server");
     if (!(await reserveAiBudget("voice"))) return { ok: false, reason: "unavailable" };
+
+    const voiceId = SCENE_VOICE[current.who] ?? VOICE_BY_LANG.pt;
+    // contexto das falas vizinhas: mantém a prosódia contínua entre linhas
+    const previousText = scene.lines[data.line - 1]?.text;
+    const nextText = scene.lines[data.line + 1]?.text;
+    const emphatic = current.who === "fan" || current.who === "narrator";
+
     try {
       const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_BY_LANG.pt}?output_format=mp3_22050_32`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
         {
           method: "POST",
           headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
           body: JSON.stringify({
             text,
             model_id: "eleven_multilingual_v2",
+            ...(previousText ? { previous_text: previousText } : {}),
+            ...(nextText ? { next_text: nextText } : {}),
             voice_settings: {
-              stability: scene.mood === "bad" ? 0.52 : 0.38,
-              similarity_boost: 0.82,
-              style: scene.mood === "good" ? 0.74 : 0.58,
+              stability: scene.mood === "bad" ? 0.58 : emphatic ? 0.34 : 0.46,
+              similarity_boost: 0.85,
+              style: scene.mood === "good" ? (emphatic ? 0.8 : 0.62) : 0.5,
               use_speaker_boost: true,
-              speed: 0.98,
+              speed: scene.mood === "bad" ? 0.94 : 0.99,
             },
           }),
         },

@@ -716,7 +716,15 @@ export function Cutscene({
               : undefined
           }
         >
-          {cinematic && !reduced ? <CinematicStage3D art={data.art} primary={accent} secondary={accent2} /> : null}
+          {cinematic && !reduced ? (
+            <CinematicStage3D
+              art={data.art}
+              primary={accent}
+              secondary={accent2}
+              beat={i}
+              mood={data.mood ?? "neutral"}
+            />
+          ) : null}
           {/* corte de câmera a cada fala + travelling contínuo dentro da fala */}
           {/* camada de fundo: mais lenta, levemente desfocada (profundidade) */}
           <div
