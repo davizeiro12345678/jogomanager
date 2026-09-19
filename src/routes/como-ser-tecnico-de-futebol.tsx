@@ -5,9 +5,9 @@ import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/como-ser-tecnico-de-futebol";
 const TITLE =
-  "Como ser técnico de futebol no jogo: passo a passo | Pro Football Manager 3D: Jogo de Futebol Manager Online";
+  "Carreira de técnico de futebol: como começar do zero | Pro Football Manager 3D";
 const DESC =
-  "Passo a passo para começar sua carreira de técnico: escolha do clube, primeira escalação, tática inicial e como vencer as primeiras partidas no jogo.";
+  "Carreira de treinador passo a passo: escolher o clube certo, montar a primeira escalação, definir a tática de estreia, controlar salários e sobreviver às dez primeiras rodadas. Guia gratuito, jogável direto no navegador.";
 
 export const Route = createFileRoute("/como-ser-tecnico-de-futebol")({
   head: () => ({
