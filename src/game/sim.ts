@@ -152,6 +152,7 @@ export class MatchSim {
   private lastPass: Record<Side, { id: string; time: number } | null> = { home: null, away: null };
   /** jogadores em "freeze" curto após um chute próximo */
   private reactionUntil = new Map<string, number>();
+  private mentalityCache: Record<Side, number> | null = null;
   /** Reused every tick to avoid allocating/sorting temporary chase arrays. */
   private chaseIds = new Set<string>();
   finished = false;
@@ -354,8 +355,11 @@ export class MatchSim {
   }
 
   private mentalityShift(side: Side) {
-    const t = this.setup(side).tactics;
-    return (t.mentality - 2) * 6 * this.attackDir(side);
+    if (this.mentalityCache) return this.mentalityCache[side];
+    const h = (this.home.tactics.mentality - 2) * 6 * 1;
+    const a = (this.away.tactics.mentality - 2) * 6 * -1;
+    this.mentalityCache = { home: h, away: a };
+    return this.mentalityCache[side];
   }
 
   private pushEvent(e: MatchEventLog) {
@@ -400,21 +404,22 @@ export class MatchSim {
 
   private nearestOpponent(p: SimPlayer) {
     let best: SimPlayer | null = null;
-    let bestD = Infinity;
+    let bestD2 = Infinity;
     for (const o of this.players) {
       if (o.side === p.side) continue;
-      const d = (o.x - p.x) ** 2 + (o.z - p.z) ** 2;
-      if (d < bestD) {
-        bestD = d;
+      const d2 = (o.x - p.x) ** 2 + (o.z - p.z) ** 2;
+      if (d2 < bestD2) {
+        bestD2 = d2;
         best = o;
       }
     }
-    return { opp: best, dist: Math.sqrt(bestD) };
+    return { opp: best, dist: Math.sqrt(bestD2) };
   }
 
   step(dt: number) {
     if (this.finished) return;
     this.time += dt;
+    this.mentalityCache = null;
 
     if (this.time >= 5400) {
       this.finished = true;
@@ -579,7 +584,9 @@ export class MatchSim {
         const b = list[j]!;
         let dx = b.x - a.x;
         let dz = b.z - a.z;
-        let d = Math.hypot(dx, dz);
+        const d2 = dx * dx + dz * dz;
+        if (d2 > 2.89) continue; // (0.85 * 2)^2
+        let d = Math.sqrt(d2);
         if (d > R * 2) continue;
         if (d < 1e-4) {
           dx = (this.rnd() - 0.5) * 0.02;
