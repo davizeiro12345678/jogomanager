@@ -145,7 +145,11 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
   const ankleRRef = useRef<THREE.Group>(null);
   const shadowRef = useRef<THREE.Mesh>(null);
   const blinkRef = useRef<THREE.Group>(null);
+  const clavLRef = useRef<THREE.Group>(null);
+  const clavRRef = useRef<THREE.Group>(null);
+  const jawRef = useRef<THREE.Group>(null);
   const nextBlink = useRef(1 + Math.random() * 4);
+
 
   // grupos de LOD: detalhes finos (rosto, dedos, costuras) e corpo médio
   const faceDetailRef = useRef<THREE.Group>(null);
@@ -382,10 +386,25 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
       neck.current.rotation.x = c.headPitch;
       neck.current.rotation.y = c.headYaw;
     }
-    if (armLRef.current) armLRef.current.rotation.set(c.armLPitch, 0, c.armLRoll);
-    if (armRRef.current) armRRef.current.rotation.set(c.armRPitch, 0, c.armRRoll);
+    // clavícula: acompanha parte do movimento do braço, como no corpo real
+    if (clavLRef.current) {
+      clavLRef.current.rotation.x = c.armLPitch * 0.16;
+      clavLRef.current.rotation.z = -c.armLRoll * 0.12;
+    }
+    if (clavRRef.current) {
+      clavRRef.current.rotation.x = c.armRPitch * 0.16;
+      clavRRef.current.rotation.z = -c.armRRoll * 0.12;
+    }
+    if (armLRef.current) armLRef.current.rotation.set(c.armLPitch * 0.84, 0, c.armLRoll * 0.88);
+    if (armRRef.current) armRRef.current.rotation.set(c.armRPitch * 0.84, 0, c.armRRoll * 0.88);
     if (foreLRef.current) foreLRef.current.rotation.x = c.elbowL;
     if (foreRRef.current) foreRRef.current.rotation.x = c.elbowR;
+    // mandíbula: abre conforme o esforço, fechando quando o jogador descansa
+    if (jawRef.current && lod === 0) {
+      const effort = Math.min(1, speed / 7);
+      jawRef.current.rotation.x = 0.06 + effort * 0.16 + Math.sin(state.clock.elapsedTime * 4 + seed) * 0.03 * effort;
+    }
+
     if (legLRef.current) legLRef.current.rotation.set(c.legLPitch, 0, c.legLRoll);
     if (legRRef.current) legRRef.current.rotation.set(c.legRPitch, 0, c.legRRoll);
     if (kneeLRef.current) kneeLRef.current.rotation.x = c.kneeL;
@@ -850,18 +869,21 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
           {skinMat}
         </mesh>
       ))}
-      {/* maxilar */}
-      {hi ? (
-        <mesh position={[0, -P.headR * 0.48, P.headR * 0.2]} scale={[0.94, 0.5, 0.94]}>
-          <sphereGeometry args={[P.headR * 0.9, 12, 12]} />
+      {/* mandíbula articulada: maxilar, queixo e lábio inferior num só osso */}
+      <group ref={jawRef}>
+        {hi ? (
+          <mesh position={[0, -P.headR * 0.48, P.headR * 0.2]} scale={[0.94, 0.5, 0.94]}>
+            <sphereGeometry args={[P.headR * 0.9, 12, 12]} />
+            {skinMat}
+          </mesh>
+        ) : null}
+        {/* lábio inferior + queixo */}
+        <mesh position={[0, -P.headR * 0.55, P.headR * 0.78]} scale={[0.9, 0.6, 0.7]}>
+          <sphereGeometry args={[P.headR * 0.24, 8, 8]} />
           {skinMat}
         </mesh>
-      ) : null}
-      {/* lábio inferior + queixo */}
-      <mesh position={[0, -P.headR * 0.55, P.headR * 0.78]} scale={[0.9, 0.6, 0.7]}>
-        <sphereGeometry args={[P.headR * 0.24, 8, 8]} />
-        {skinMat}
-      </mesh>
+      </group>
+
       {/* lábio superior */}
       {hi ? (
         <mesh position={[0, -P.headR * 0.36, P.headR * 0.84]} scale={[1, 0.45, 0.6]}>
@@ -1140,8 +1162,15 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
               </group>
             </group>
 
-            <Arm side={1} armRef={armLRef} foreRef={foreLRef} />
-            <Arm side={-1} armRef={armRRef} foreRef={foreRRef} />
+            {/* clavículas: o ombro acompanha o braço em vez de ficar cravado
+                no tronco, o que dá o balanço correto na corrida */}
+            <group ref={clavLRef}>
+              <Arm side={1} armRef={armLRef} foreRef={foreLRef} />
+            </group>
+            <group ref={clavRRef}>
+              <Arm side={-1} armRef={armRRef} foreRef={foreRRef} />
+            </group>
+
           </group>
         </group>
 

@@ -155,3 +155,7 @@
 - [ ] Completar kits away/third/goalkeeper no fluxo de importação em massa
 - [ ] Completar 415 elencos bloqueados pela cobertura/licença das APIs disponíveis
 - [ ] Validar relatório de desempenho em celular e desktop com GPU física por partida longa
+
+## Entrega 2026-09-19 (tarde)
+- [x] Repertório do narrador ampliado outra vez: novas falas por emoção (rotina, tensão, euforia, decepção, ironia) em PT/EN/ES e dez entradas de locutor
+- [x] Esqueleto dos jogadores com clavículas articuladas (ombro acompanha o braço) e mandíbula que abre conforme o esforço
