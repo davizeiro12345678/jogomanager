@@ -101,6 +101,8 @@
 - [ ] PageSpeed: cota diária da API do Google esgotada hoje
 - [ ] Ampliar elencos: 415 clubes ainda sem elenco; fonte gratuita não devolve jogadores (precisa de chave paga API-Football/football-data)
 - [ ] Salto visual 3D (luz/câmera/texturas) e revisão de painel/elenco/loja
+- [x] Sombras 3D de maior definição com área útil ajustada ao campo, iluminação de recorte e resposta física do gramado seco/molhado
+- [x] Jogadores com transferência de massa em arrancadas e frenagens, preservando apoio dos pés
 
 ## Novo pedido (2026-09-18) — plano aprovado
 - [x] Renderização WebGPU experimental e opt-in, com volta automática para WebGL2 e bloqueio após falha
