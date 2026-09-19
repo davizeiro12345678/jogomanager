@@ -30,6 +30,7 @@ import { ManagerPortrait } from "@/components/game/ManagerPortrait";
 import { prefersReducedMotion } from "@/game/device";
 import { Crest } from "@/components/game/Crest";
 import type { Club, ManagerLook } from "@/game/types";
+import { CinematicStage3D } from "@/components/game/CinematicStage3D";
 
 interface Props {
   scene: keyof typeof CUTSCENES | string;
@@ -44,6 +45,10 @@ interface Props {
   managerName?: string | undefined;
   /** nome do capitão, usado no lugar de "Capitão" */
   captainName?: string | undefined;
+  /** Liga voz à sequência quando ela faz parte de uma partida. */
+  narrate?: boolean;
+  /** Mantém o estádio 3D visível atrás da encenação. */
+  cinematic?: boolean;
   onDone: () => void;
 }
 
@@ -546,6 +551,8 @@ export function Cutscene({
   club,
   managerName,
   captainName,
+  narrate = false,
+  cinematic = false,
   onDone,
 }: Props) {
   // uniforme real do clube tinge o cenário quando nenhuma cor é forçada
@@ -562,6 +569,7 @@ export function Cutscene({
   const [par, setPar] = useState({ x: 0, y: 0 });
   /** travelling contínuo da câmera dentro de cada fala (0..1) */
   const [dolly, setDolly] = useState(0);
+  const voiceRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (reduced) {
@@ -599,6 +607,40 @@ export function Cutscene({
 
   const line = data?.lines[i];
   const full = line?.text ?? "";
+
+  useEffect(() => {
+    if (!narrate || !data || !line) return;
+    let alive = true;
+    voiceRef.current?.pause();
+    voiceRef.current = null;
+    window.speechSynthesis?.cancel();
+    const fallback = () => {
+      if (!alive || !("speechSynthesis" in window)) return;
+      const utterance = new SpeechSynthesisUtterance(line.text);
+      utterance.lang = "pt-BR";
+      utterance.rate = 0.96;
+      utterance.pitch = data.mood === "good" ? 1.04 : data.mood === "bad" ? 0.94 : 1;
+      window.speechSynthesis.speak(utterance);
+    };
+    void import("@/lib/tts.functions")
+      .then(({ narrateScene }) => narrateScene({ data: { scene: data.id, line: i } }))
+      .then((result) => {
+        if (!alive || !result.ok) {
+          fallback();
+          return;
+        }
+        const audio = new Audio(`data:audio/mpeg;base64,${result.audio}`);
+        voiceRef.current = audio;
+        void audio.play().catch(fallback);
+      })
+      .catch(fallback);
+    return () => {
+      alive = false;
+      voiceRef.current?.pause();
+      voiceRef.current = null;
+      window.speechSynthesis?.cancel();
+    };
+  }, [data, i, line, narrate]);
 
   // máquina de escrever
   useEffect(() => {
@@ -655,22 +697,26 @@ export function Cutscene({
   const shot = SHOTS[i % SHOTS.length]!;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 p-4">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${cinematic ? "bg-background/65 backdrop-blur-[2px]" : "bg-background/95"}`}>
       <div
-        className={`w-full max-w-3xl overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl ${
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cutscene-title"
+        className={`w-full ${cinematic ? "max-w-5xl" : "max-w-3xl"} overflow-hidden rounded-2xl border border-border/60 bg-card/95 shadow-2xl ${
           reduced ? "" : "animate-scale-in"
         }`}
       >
         <div
           ref={stageRef}
           onPointerMove={onPointerMove}
-          className="relative h-48 overflow-hidden sm:h-64"
+          className={`relative overflow-hidden ${cinematic ? "h-64 sm:h-[28rem]" : "h-48 sm:h-64"}`}
           style={
             data.hybrid && !reduced
               ? { perspective: "900px", perspectiveOrigin: "50% 45%" }
               : undefined
           }
         >
+          {cinematic && !reduced ? <CinematicStage3D art={data.art} primary={accent} secondary={accent2} /> : null}
           {/* corte de câmera a cada fala + travelling contínuo dentro da fala */}
           {/* camada de fundo: mais lenta, levemente desfocada (profundidade) */}
           <div
@@ -681,11 +727,11 @@ export function Cutscene({
                 ? `translate3d(${par.x * 6 + (shot.x + shot.dx * dolly) * 0.4}px, ${par.y * 4 + (shot.y + shot.dy * dolly) * 0.4}px, -220px) rotateY(${par.x * 2.5}deg) rotateX(${par.y * -1.6}deg) scale(1.34)`
                 : `translate3d(${par.x * 6 + (shot.x + shot.dx * dolly) * 0.4}px, ${par.y * 4 + (shot.y + shot.dy * dolly) * 0.4}px, 0) scale(${1.12 + (shot.z + shot.dz * dolly) * 0.5})`,
               filter: "blur(3px) saturate(0.85)",
-              opacity: 0.85,
+              opacity: cinematic ? 0.28 : 0.85,
               transition: reduced ? undefined : "transform 220ms linear",
             }}
           >
-            <Backdrop art={data.art} a={accent2} b={accent} reduced={reduced} trophies={trophies} />
+              <Backdrop art={data.art} a={accent2} b={accent} reduced={reduced} trophies={trophies} />
           </div>
           {/* camada principal */}
           <div
@@ -696,6 +742,7 @@ export function Cutscene({
                 ? `translate3d(${par.x * -14 + shot.x + shot.dx * dolly}px, ${par.y * -9 + shot.y + shot.dy * dolly}px, ${40 + (shot.z + shot.dz * dolly) * 120}px) rotateY(${par.x * -4}deg) rotateX(${par.y * 2.4}deg)`
                 : `translate3d(${par.x * -14 + shot.x + shot.dx * dolly}px, ${par.y * -9 + shot.y + shot.dy * dolly}px, 0) scale(${1.04 + shot.z + shot.dz * dolly})`,
               transition: reduced ? undefined : "transform 220ms linear",
+              opacity: cinematic ? 0.34 : 1,
             }}
           >
             <Backdrop art={data.art} a={accent} b={accent2} reduced={reduced} trophies={trophies} />
@@ -738,6 +785,14 @@ export function Cutscene({
               ))}
             </div>
           )}
+          {!reduced && (data.art === "pitchentry" || data.art === "tunnel") ? (
+            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+              <span className="cs-anim-fog absolute -bottom-12 left-[-10%] h-28 w-[75%] rounded-full bg-foreground/10 blur-3xl" />
+              <span className="cs-anim-fog absolute -bottom-16 right-[-18%] h-32 w-[82%] rounded-full bg-primary/10 blur-3xl [animation-delay:1.2s]" />
+              <span className="cs-anim-beam absolute -top-16 left-[18%] h-[150%] w-16 origin-top rotate-[-18deg] bg-gradient-to-b from-foreground/20 to-transparent blur-xl" />
+              <span className="cs-anim-beam absolute -top-16 right-[18%] h-[150%] w-16 origin-top rotate-[18deg] bg-gradient-to-b from-foreground/20 to-transparent blur-xl [animation-delay:1.7s]" />
+            </div>
+          ) : null}
           {/* varredura de luz */}
           {!reduced && (
             <div
@@ -827,7 +882,7 @@ export function Cutscene({
           <div className="absolute bottom-3 left-4 flex items-end gap-3">
             <ManagerPortrait look={look} size={72} accent={accent} />
             <div>
-              <p className="font-display text-xl uppercase tracking-wide drop-shadow">
+              <p id="cutscene-title" className="font-display text-xl uppercase tracking-wide drop-shadow">
                 {data.title}
               </p>
               {data.mood && data.mood !== "neutral" && (
@@ -845,7 +900,7 @@ export function Cutscene({
           </div>
         </div>
 
-        <button onClick={next} className="block w-full p-5 text-left">
+          <button type="button" onClick={next} className="block w-full p-5 text-left">
           {speaker && (
             <p className="text-xs uppercase tracking-widest text-muted-foreground">{speaker}</p>
           )}
@@ -872,6 +927,7 @@ export function Cutscene({
 
         <div className="flex justify-end border-t border-border/60 p-3">
           <button
+            type="button"
             onClick={() => doneRef.current()}
             className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
           >

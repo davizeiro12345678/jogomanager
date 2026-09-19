@@ -30,7 +30,7 @@ import { StorePanel } from "@/components/game/StorePanel";
 
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
 import { Cutscene } from "@/components/game/Cutscene";
-import { PREMATCH_SCENE_IDS } from "@/content/cutscenes";
+import { POSTMATCH_SCENE_IDS, PREMATCH_SCENE_IDS } from "@/content/cutscenes";
 import { Crest } from "@/components/game/Crest";
 import { MatchReport } from "@/components/game/MatchReport";
 import { CLUBS } from "@/game/data/leagues";
@@ -495,6 +495,7 @@ function LiveMatch({
   /** gaveta lateral: loja ou chat sem sair da partida (o jogo pausa) */
   const [drawer, setDrawer] = useState<"none" | "store" | "chat">("none");
   const [done, setDone] = useState(false);
+  const [postMatchStep, setPostMatchStep] = useState<number | null>(null);
   const [advancing, setAdvancing] = useState(false);
   /** sequência imersiva (vestiário → camisas → túnel → apito) antes do pontapé */
   const [introStep, setIntroStep] = useState(() => (prematchIntroEnabled() ? 0 : -1));
@@ -582,7 +583,7 @@ function LiveMatch({
       },
       onFinished: (view) => {
         setSnap(snapshot(view));
-        setDone(true);
+        setPostMatchStep(0);
       },
       onError: (message) => toast.warning(message),
     });
@@ -636,7 +637,6 @@ function LiveMatch({
       .filter((r) => r.side === mySide)
       .map((r) => ({ pid: r.pid, goals: r.goals, assists: r.assists, played: true }));
     setAdvancing(true);
-    setAdvancing(true);
     void advanceRoundAsync(career, { hg: snap.hg, ag: snap.ag }, perf).then((next) => {
       const before = new Set(career.achievements ?? []);
       for (const id of next.achievements ?? []) {
@@ -646,7 +646,6 @@ function LiveMatch({
         }
       }
       update(next);
-      setAdvancing(false);
       setAdvancing(false);
       navigate({ to: "/club" });
     });
@@ -722,6 +721,8 @@ function LiveMatch({
             club={myClub}
             managerName={career.managerName}
             trophies={career.trophies.length}
+            narrate
+            cinematic
             onDone={() => setIntroStep((s) => s + 1)}
           />
           <div className="pointer-events-auto fixed inset-x-0 bottom-4 z-[60] flex flex-col items-center gap-2">
@@ -1106,6 +1107,26 @@ function LiveMatch({
           Espaço pausa · 1–4 velocidade · C câmera · E estatísticas · S pular
         </p>
       </div>
+
+      {postMatchStep !== null && postMatchStep < POSTMATCH_SCENE_IDS.length ? (
+        <Cutscene
+          key={POSTMATCH_SCENE_IDS[postMatchStep]}
+          scene={POSTMATCH_SCENE_IDS[postMatchStep]!}
+          look={career.manager?.look ?? FALLBACK_LOOK}
+          club={myClub}
+          managerName={career.managerName}
+          trophies={career.trophies.length}
+          narrate
+          cinematic
+          onDone={() => {
+            const next = postMatchStep + 1;
+            if (next >= POSTMATCH_SCENE_IDS.length) {
+              setPostMatchStep(null);
+              setDone(true);
+            } else setPostMatchStep(next);
+          }}
+        />
+      ) : null}
 
       {done ? (
         <MatchReport

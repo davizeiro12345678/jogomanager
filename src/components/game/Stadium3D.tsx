@@ -2681,7 +2681,7 @@ function Stadium3DImpl({
     };
   }, [backend, eff]);
 
-  if (!backend) return <div className="h-full w-full bg-[#0a0f0c]" aria-hidden />;
+  if (!backend) return <div className="h-full w-full bg-background" aria-hidden />;
 
   return (
     <div className="relative h-full w-full">

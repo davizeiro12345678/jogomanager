@@ -351,6 +351,22 @@ export const CUTSCENES: Record<string, Cutscene> = {
     { who: "manager", text: "Agora é com vocês." },
     { who: "narrator", text: "O árbitro leva o apito à boca. Começa o jogo." },
   ]),
+  "postmatch-tunnel": scene("postmatch-tunnel", "De volta ao túnel", "tunnel", [
+    { who: "narrator", text: "As luzes do campo ficam para trás. No túnel, cada chuteira devolve o eco dos noventa minutos." },
+    { who: "captain", text: "Respira, professor. O grupo vai junto até o fim." },
+    { who: "manager", text: "Cabeça erguida. O resultado termina aqui; o trabalho continua agora." },
+  ]),
+  "postmatch-locker": scene("postmatch-locker", "A porta do vestiário", "dressing", [
+    { who: "narrator", text: "A porta fecha, o barulho da arquibancada vira um rumor distante e o placar ainda pesa no silêncio." },
+    { who: "assistant", text: "Os dados já chegaram. Há respostas no vídeo e no próximo treino." },
+    { who: "manager", text: "Guardem a emoção. Amanhã transformamos cada lance em decisão melhor." },
+  ]),
+  "postmatch-press": scene("postmatch-press", "Coletiva pós-jogo", "press", [
+    { who: "narrator", text: "Luzes acesas, gravadores na mesa e dezenas de perguntas esperando uma frase." },
+    { who: "press", text: "Qual é a leitura do resultado e o que muda para a próxima partida?" },
+    { who: "manager", text: "Assumo as decisões. Vamos analisar sem desculpas e voltar mais fortes." },
+    { who: "narrator", text: "O último flash dispara. A noite termina, mas a temporada segue aberta." },
+  ]),
 
   "injury-blow": scene(
     "injury-blow",
@@ -544,6 +560,13 @@ export const PREMATCH_SCENE_IDS = [
   "prematch-kit",
   "prematch-tunnel",
   "prematch-whistle",
+] as const;
+
+/** Continuidade cinematográfica entre o apito final e o relatório. */
+export const POSTMATCH_SCENE_IDS = [
+  "postmatch-tunnel",
+  "postmatch-locker",
+  "postmatch-press",
 ] as const;
 
 /** Cenas de treino sorteadas semana a semana no modo carreira. */

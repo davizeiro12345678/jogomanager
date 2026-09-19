@@ -6,6 +6,17 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/.lovable/oauth/consent")({
   // Browser-only: the Supabase session lives in localStorage, absent on SSR.
   ssr: false,
+  head: () => ({
+    meta: [
+      { title: "Autorizar acesso · Pro Football Manager 3D" },
+      { name: "description", content: "Revise e autorize com segurança o acesso de um aplicativo à sua carreira." },
+      { property: "og:title", content: "Autorizar acesso · Pro Football Manager 3D" },
+      { property: "og:description", content: "Revise e autorize com segurança o acesso de um aplicativo à sua carreira." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   validateSearch: (s: Record<string, unknown>) => ({
     authorization_id: typeof s["authorization_id"] === "string" ? s["authorization_id"] : "",
   }),

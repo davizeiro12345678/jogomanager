@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildTeamSetup } from "./quickMatch";
-import { MatchSim } from "./sim";
+import { FIELD_X, MatchSim } from "./sim";
 
 function create(seed = "engine-regression") {
   return new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), seed);
@@ -40,5 +40,45 @@ describe("MatchSim", () => {
       expect(sim.finished, `seed stability-${index}`).toBe(true);
       expect(guard, `seed stability-${index}`).toBeLessThanOrEqual(14_000);
     }
+  });
+
+  it("releases a nominal goal that physically bends outside the posts", () => {
+    const sim = create("curved-near-miss");
+    const shooter = sim.players.find((player) => player.side === "home" && player.pos !== "GK");
+    expect(shooter).toBeDefined();
+    if (!shooter) return;
+
+    const internals = sim as unknown as {
+      pendingShot: {
+        side: "home";
+        shooter: string;
+        outcome: "goal";
+        fromX: number;
+        fromZ: number;
+        targetZ: number;
+      } | null;
+      resolveShot: () => boolean;
+      looseTime: number;
+    };
+    sim.ball.holder = null;
+    sim.ball.x = FIELD_X - 1;
+    sim.ball.z = 3.9;
+    sim.ball.height = 1.1;
+    sim.ball.vx = 12;
+    sim.ball.vz = 1.5;
+    internals.pendingShot = {
+      side: "home",
+      shooter: shooter.id,
+      outcome: "goal",
+      fromX: 18,
+      fromZ: 0,
+      targetZ: 3.61,
+    };
+
+    expect(internals.resolveShot()).toBe(false);
+    expect(internals.pendingShot).toBeNull();
+
+    for (let tick = 0; tick < 30 && !sim.ball.holder; tick += 1) sim.step(0.2);
+    expect(sim.ball.holder !== null || internals.looseTime < 3.5).toBe(true);
   });
 });

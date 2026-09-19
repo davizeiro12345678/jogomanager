@@ -147,7 +147,7 @@ function NewCareer() {
     : undefined;
 
   return (
-    <div className="pitch-bg min-h-screen px-4 py-10">
+    <main className="pitch-bg min-h-screen px-4 py-10">
       <div className="mx-auto max-w-5xl">
         <h1 className="font-display text-4xl uppercase tracking-wide">Novo treinador</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -426,7 +426,7 @@ function NewCareer() {
           }}
         />
       )}
-    </div>
+    </main>
   );
 }
 

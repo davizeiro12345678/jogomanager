@@ -21,7 +21,7 @@ export const Route = createFileRoute("/multiplayer")({
       {
         name: "description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Crie uma sala, convide um amigo e dispute partidas online 1x1 com táticas e transmissão em 3D no navegador.",
       },
       {
         property: "og:title",
@@ -30,7 +30,7 @@ export const Route = createFileRoute("/multiplayer")({
       {
         property: "og:description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Crie uma sala, convide um amigo e dispute partidas online 1x1 com táticas e transmissão em 3D no navegador.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

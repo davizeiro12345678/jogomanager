@@ -19,6 +19,13 @@
 - [ ] Segunda rodada de realismo da IA adversária, goleiros, posicionamento e transições do PlayerRig
 - [ ] Revisão final de metadados exclusivos e conteúdo das páginas públicas restantes
 - [ ] Teste automatizado de replay, PWA e partida longa no navegador
+- [x] Regressão do chute nominalmente certeiro que curva para fora e deixava a bola sem dono
+- [x] Sequência cinematográfica de vestiário, túnel, entrada no estádio e coletiva, com narração
+- [x] Cenários 3D procedurais próprios para vestiário, túnel, gramado e coletiva, carregados somente durante as cenas
+- [x] Falas exatas de cada cena narradas pela ElevenLabs, com voz local como fallback
+- [x] Convite pós-jogo explicando o que o Google preserva na nuvem
+- [x] Correções prioritárias de anúncio de placar/login, redução de movimento e SEO técnico das rotas utilitárias
+- [x] Navegações rotuladas, seletor de idioma compatível com teclado e foco reforçado no campo tático
 
 ### Bloqueios externos — não marcar como concluído sem evidência
 - [ ] Medir uma partida longa em celular e desktop com GPU física; o ambiente atual usa renderização por software

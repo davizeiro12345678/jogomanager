@@ -100,7 +100,7 @@ function AuthPage() {
     const { data, error: err } = await fn;
     setBusy(false);
     if (err) {
-      setError(err.message);
+      setError("Não foi possível entrar. Confira seu e-mail e senha e tente novamente.");
       return;
     }
     if (data.session) navigate({ href: destination });
@@ -117,7 +117,7 @@ function AuthPage() {
     });
     if (result.error) {
       setBusy(false);
-      setError(result.error.message);
+      setError(`Não foi possível continuar com ${provider}. Tente novamente ou use seu e-mail.`);
       return;
     }
     if (result.redirected) return;
@@ -224,7 +224,7 @@ function AuthPage() {
              aria-invalid={error ? true : undefined}
             className="w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
           />
-          {error ? <p id="auth-error" role="alert" className="text-sm text-destructive">{error}</p> : null}
+          {error ? <p id="auth-error" role="alert" aria-live="assertive" className="text-sm text-destructive">{error}</p> : null}
           <Button
             type="submit"
             disabled={busy}

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Cloud, ShieldCheck } from "lucide-react";
+import { Check, Cloud, ShieldCheck } from "lucide-react";
 
 import { useSignedIn } from "@/hooks/useCareer";
 
@@ -17,10 +17,15 @@ export function GuestCloudPrompt({ next, compact = false }: { next: string; comp
           <Cloud size={18} aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-display text-base uppercase">Não perca seus títulos</p>
+          <p className="font-display text-base uppercase">Seu clube já está criado. Proteja esta carreira.</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Você está jogando como visitante. Entre em um clique para manter esta carreira em outros aparelhos.
+            Falta apenas entrar com Google para guardar o progresso na nuvem e continuar em qualquer aparelho.
           </p>
+          <ul className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-3">
+            <li className="flex items-center gap-1"><Check size={13} className="text-primary" /> Clube preservado</li>
+            <li className="flex items-center gap-1"><Check size={13} className="text-primary" /> Partidas e títulos</li>
+            <li className="flex items-center gap-1"><Check size={13} className="text-primary" /> Compras vinculadas</li>
+          </ul>
           <Link
             to="/auth"
             search={{ next }}
