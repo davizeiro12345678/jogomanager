@@ -498,7 +498,7 @@ export class MatchSim {
     // equipe para a frente; quem está ganhando recua e segura o resultado.
     const remaining = Math.max(0, 90 - this.time / 60);
     const lateGame = remaining < 15;
-    const goalDiff = this.score.home - this.score.away;
+    const goalDiff = this.stats.home.goals - this.stats.away.goals;
     const urgency = (side: Side) => {
       if (!lateGame) return 0;
       const diff = side === "home" ? goalDiff : -goalDiff;
