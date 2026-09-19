@@ -29,6 +29,8 @@ import { ChatPanel } from "@/components/game/ChatPanel";
 import { StorePanel } from "@/components/game/StorePanel";
 
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { FpsPanel } from "@/components/game/FpsPanel";
+import { fpsMeter } from "@/game/fps-meter";
 import { Cutscene } from "@/components/game/Cutscene";
 import { POSTMATCH_SCENE_IDS, PREMATCH_SCENE_IDS } from "@/content/cutscenes";
 import { Crest } from "@/components/game/Crest";
@@ -521,6 +523,39 @@ function LiveMatch({
     };
   }, []);
 
+  /**
+   * Equilíbrio automático: mede os quadros reais do aparelho e desce (ou sobe)
+   * um degrau de qualidade. Só age enquanto o jogador não escolher manualmente,
+   * e espera alguns segundos entre trocas para não ficar oscilando.
+   */
+  useEffect(() => {
+    let lastChange = 0;
+    const off = fpsMeter.subscribe((s) => {
+      if (qualityTouched.current) return;
+      if (s.seconds < 6) return;
+      const now = Date.now();
+      if (now - lastChange < 12_000) return;
+      setQuality((q) => {
+        if (s.avg < 28 && q !== "baixa") {
+          lastChange = now;
+          const next = q === "alta" ? "media" : "baixa";
+          toast.info(`Gráficos em "${next}" para manter a partida fluida.`);
+          return next;
+        }
+        if (s.avg > 58 && s.worst > 48 && q !== "alta") {
+          lastChange = now;
+          const next = q === "baixa" ? "media" : "alta";
+          toast.info(`Sobra desempenho: gráficos em "${next}".`);
+          return next;
+        }
+        return q;
+      });
+    });
+    return off;
+  }, []);
+
+
+
   const speedRef = useRef(speed);
   speedRef.current = speed;
   const pausedRef = useRef(paused);
@@ -727,6 +762,10 @@ function LiveMatch({
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
       <Stadium3D sim={sim} mode={camera} quality={quality} />
+      <div className="pointer-events-none absolute right-3 top-3 z-20">
+        <FpsPanel quality={quality} detail={{ Câmera: camera, Velocidade: speed }} />
+      </div>
+
       {narrating && caption ? (
         <div
           role="status"

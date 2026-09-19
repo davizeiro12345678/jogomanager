@@ -27,6 +27,7 @@ import {
   Trophy,
   Users,
   Wrench,
+  UserRound,
 } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 
@@ -76,6 +77,7 @@ const TABS: {
   { to: "/carreira", key: "nav.coach", icon: Clapperboard, group: "Carreira" },
   { to: "/temporada-automatica", key: "nav.auto", icon: FastForward, group: "Carreira" },
   { to: "/conquistas", key: "nav.awards", icon: Medal, group: "Carreira" },
+  { to: "/perfil", key: "nav.profile", icon: UserRound, group: "Carreira" },
   { to: "/assistente", key: "nav.ai", icon: Sparkles, group: "Extras" },
   { to: "/editor", key: "nav.editor", icon: Wrench, group: "Extras" },
   { to: "/chat", key: "nav.chat", icon: MessagesSquare, group: "Extras" },
