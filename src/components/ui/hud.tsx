@@ -104,8 +104,7 @@ export function HudCard({
   children: React.ReactNode;
 }) {
   return (
-    <section
-      className={cn(
+    <section aria-labelledby={title ?  : undefined} className={cn(
         "hud-card p-4 sm:p-5",
         toneClass[tone],
         interactive && "hud-card-interactive",
@@ -114,7 +113,7 @@ export function HudCard({
     >
       {(title || badge || action) && (
         <header className="mb-4 flex items-center justify-between gap-3">
-          {title ? <h2 className="hud-label">{title}</h2> : <span />}
+          {title ? <h2 id={`hud-title-${title.replace(/\s/g, "-")}`} className="hud-label">{title}</h2> : <span />}
           <div className="flex items-center gap-2">
             {badge}
             {action}

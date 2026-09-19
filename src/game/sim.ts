@@ -152,6 +152,8 @@ export class MatchSim {
   private lastPass: Record<Side, { id: string; time: number } | null> = { home: null, away: null };
   /** jogadores em "freeze" curto após um chute próximo */
   private reactionUntil = new Map<string, number>();
+  /** Reused every tick to avoid allocating/sorting temporary chase arrays. */
+  private chaseIds = new Set<string>();
   finished = false;
   lastEventId = 0;
   private decisionTimer = 0;
@@ -453,15 +455,31 @@ export class MatchSim {
 
   /** ids dos jogadores designados a perseguir a bola solta */
   private chasers(): Set<string> {
-    const set = new Set<string>();
+    const set = this.chaseIds;
+    set.clear();
     if (this.ball.holder) return set;
     for (const side of ["home", "away"] as Side[]) {
-      const list = this.players
-        .filter((p) => p.side === side && p.pos !== "GK")
-        .map((p) => ({ p, d: Math.hypot(p.x - this.ball.x, p.z - this.ball.z) }))
-        .sort((a, b) => a.d - b.d)
-        .slice(0, 2);
-      for (const c of list) set.add(c.p.id);
+      let first: SimPlayer | null = null;
+      let second: SimPlayer | null = null;
+      let firstDistance = Infinity;
+      let secondDistance = Infinity;
+      for (const player of this.players) {
+        if (player.side !== side || player.pos === "GK") continue;
+        const dx = player.x - this.ball.x;
+        const dz = player.z - this.ball.z;
+        const distance = dx * dx + dz * dz;
+        if (distance < firstDistance) {
+          second = first;
+          secondDistance = firstDistance;
+          first = player;
+          firstDistance = distance;
+        } else if (distance < secondDistance) {
+          second = player;
+          secondDistance = distance;
+        }
+      }
+      if (first) set.add(first.id);
+      if (second) set.add(second.id);
     }
     return set;
   }
@@ -563,16 +581,18 @@ export class MatchSim {
           dz = (this.rnd() - 0.5) * 0.02;
           d = Math.hypot(dx, dz) || 1e-4;
         }
-        const push = (R * 2 - d) / 2;
-        const nx = (dx / d) * push;
-        const nz = (dz / d) * push;
-        // quem tem a bola cede menos espaço
-        const aw = a.id === this.ball.holder ? 0.3 : 1;
-        const bw = b.id === this.ball.holder ? 0.3 : 1;
-        a.x -= nx * aw;
-        a.z -= nz * aw;
-        b.x += nx * bw;
-        b.z += nz * bw;
+        const overlap = R * 2 - d;
+        // Quem conduz a bola cede menos, mas a soma dos deslocamentos sempre
+        // resolve toda a sobreposição para não deixar atletas grudados.
+        const aWeight = a.id === this.ball.holder ? 0.25 : 1;
+        const bWeight = b.id === this.ball.holder ? 0.25 : 1;
+        const totalWeight = aWeight + bWeight;
+        const nx = dx / d;
+        const nz = dz / d;
+        a.x -= nx * overlap * (aWeight / totalWeight);
+        a.z -= nz * overlap * (aWeight / totalWeight);
+        b.x += nx * overlap * (bWeight / totalWeight);
+        b.z += nz * overlap * (bWeight / totalWeight);
       }
     }
     for (const p of list) {
@@ -632,9 +652,11 @@ export class MatchSim {
     const airborne = this.ball.height > 0.14;
     if (this.ballSpin !== 0 && airborne) {
       // Magnus: acelera perpendicular à direção do movimento
-      const sp = Math.hypot(this.ball.vx, this.ball.vz) || 1;
-      this.ball.vx += (-this.ball.vz / sp) * this.ballSpin * dt;
-      this.ball.vz += (this.ball.vx / sp) * this.ballSpin * dt;
+      const vx = this.ball.vx;
+      const vz = this.ball.vz;
+      const sp = Math.hypot(vx, vz) || 1;
+      this.ball.vx += (-vz / sp) * this.ballSpin * dt;
+      this.ball.vz += (vx / sp) * this.ballSpin * dt;
       this.ballSpin *= Math.exp(-0.8 * dt);
     }
     const drag = airborne ? 0.28 : 1.5; // grama freia muito mais que o ar

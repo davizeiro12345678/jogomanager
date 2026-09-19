@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 
 import { createFileRoute } from "@tanstack/react-router";
 import { RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import { GameShell } from "@/components/game/GameShell";
 import { Chips } from "@/components/game/CrestBuilder";
@@ -157,13 +158,13 @@ function VisualPage() {
               todas as partidas.
             </p>
           </div>
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={() => resetVisual()}
-            className="inline-flex items-center gap-2 rounded-xl border border-border/60 px-3 py-2 text-sm hover:border-primary/50"
           >
             <RotateCcw size={16} /> Restaurar
-          </button>
+          </Button>
         </div>
       </header>
 

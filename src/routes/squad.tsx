@@ -169,8 +169,9 @@ function SquadPage() {
           tone={injured + suspended >= 4 ? "bad" : injured + suspended >= 2 ? "warn" : "good"}
           badge={<HudChip>{reserves.length} reservas</HudChip>}
         >
-          <div className="max-h-[70vh] overflow-y-auto">
+          <div className="max-h-[70vh] overflow-auto" tabIndex={0} aria-label="Tabela do elenco">
             <table className="w-full text-sm">
+              <caption className="sr-only">Jogadores titulares e reservas do clube</caption>
               <thead className="sticky top-0 z-10 bg-card/95 text-[10px] uppercase tracking-wider text-muted-foreground backdrop-blur">
                 <tr>
                   <th className="p-2 text-left">Jogador</th>
@@ -207,6 +208,7 @@ function SquadPage() {
                         <button
                           type="button"
                           onClick={() => setSheet(p)}
+                          aria-label={`Abrir ficha de ${p.name}`}
                           className="text-left font-semibold underline-offset-2 hover:text-primary hover:underline"
                         >
                           {p.name}

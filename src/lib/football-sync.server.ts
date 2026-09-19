@@ -385,6 +385,24 @@ export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
             { onConflict: "club_id,season,kind" },
           );
       }
+      if (hit.externalId && Date.now() < deadline) {
+        try {
+          const equipment = await sdbTeamKits(hit.externalId);
+          if (equipment.length) {
+            await db.from("kits").upsert(
+              equipment.map((item) => ({
+                club_id: club.id,
+                season: item.season,
+                kind: item.kind,
+                image_url: item.imageUrl,
+              })),
+              { onConflict: "club_id,season,kind" },
+            );
+          }
+        } catch {
+          // O uniforme principal e os outros clubes ainda podem ser importados.
+        }
+      }
       matched += 1;
     }
   });
