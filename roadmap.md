@@ -101,11 +101,11 @@
 - [x] Tornar placar, eventos, autenticação e navegações mais acessíveis
 - [x] Corrigir noindex de ferramentas pessoais e canonical do multiplayer
 - [x] Distinguir expulsão na narração com novas falas PT/EN/ES
-- [ ] Desacoplar a simulação ao vivo completa para Worker com snapshots interpolados
+- [x] Desacoplar partidas de carreira e rápida para Worker persistente, comandos e snapshots interpolados
 - [ ] Validar FPS representativo em aparelho com GPU real e partida longa
 
 ## Conclusão total do plano (2026-09-19)
-- [ ] Concluir Worker da simulação ao vivo com comandos, snapshots e interpolação
+- [x] Concluir Worker das partidas de carreira e rápida com comandos, snapshots, interpolação e fallback local
 - [ ] Medir FPS, frame time, 1% low, GPU/backend, memória e estabilidade em partida longa
 - [ ] Aplicar salto gráfico escalável em iluminação, sombras, texturas, gramado, estádio e pós-processamento
 - [ ] Melhorar anatomia, materiais, LOD, transições e animações dos jogadores sem sacrificar fluidez

@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Crest } from "@/components/game/Crest";
 import { GuestCloudPrompt } from "@/components/GuestCloudPrompt";
 import { CLUBS } from "@/game/data/leagues";
-import type { MatchSim } from "@/game/sim";
+import type { MatchRuntime } from "@/game/live-match";
 
 type Tab = "resumo" | "notas" | "chutes" | "sumula";
 
@@ -15,7 +15,7 @@ export function MatchReport({
   mySide,
   onFinish,
 }: {
-  sim: MatchSim;
+  sim: MatchRuntime;
   homeId: string;
   awayId: string;
   mySide: "home" | "away";
