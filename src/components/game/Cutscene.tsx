@@ -39,7 +39,7 @@ const pendingSceneVoice = new Map<string, Promise<string | null>>();
 
 async function sceneVoice(scene: string, line: number): Promise<string | null> {
   const key = `scene|${scene}|${line}`;
-  const cached = await readVoiceCache(key);
+  const cached = await readVoiceCache(key).catch(() => null);
   if (cached) return cached;
   let request = pendingSceneVoice.get(key);
   if (!request) {
