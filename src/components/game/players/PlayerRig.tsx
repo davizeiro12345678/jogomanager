@@ -29,12 +29,7 @@ import {
   type Pose,
 } from "@/game/animation";
 import { kitTexture, type Kit } from "@/game/kits";
-import {
-  bootGrainNormal,
-  jerseyWeaveNormal,
-  skinPoreNormal,
-  sockRibNormal,
-} from "@/game/textures/fabric";
+import { playerMaterials } from "@/game/player-materials";
 import { useVisual } from "@/game/visual-settings";
 import {
   lodForDistance,
@@ -440,111 +435,25 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
   // GPU sem alterar silhueta, materiais ou animações.
   const segs = segmentsFor(quality === "alta" ? 0 : quality === "media" ? 1 : 2);
 
-  // relevo procedural (trama da malha, canelado do meião, poros, couro)
-  const weave = useMemo(() => (hi ? jerseyWeaveNormal() : null), [hi]);
-  const rib = useMemo(() => (hi ? sockRibNormal() : null), [hi]);
-  const pores = useMemo(() => (hi ? skinPoreNormal() : null), [hi]);
-  const grain = useMemo(() => (hi ? bootGrainNormal() : null), [hi]);
-  const nScale = useMemo(() => new THREE.Vector2(0.55, 0.55), []);
-
-  const skinMat = hi ? (
-    <meshPhysicalMaterial
-      color={look.skin}
-      roughness={0.6 - look.sweat * 0.16}
-      normalMap={pores ?? null}
-      normalScale={nScale}
-      clearcoat={0.28 + look.sweat * 0.25}
-      envMapIntensity={0.95}
-      clearcoatRoughness={0.5}
-      sheen={0.35}
-      sheenRoughness={0.6}
-      sheenColor="#ffd9c0"
-      specularIntensity={0.45}
-      specularColor="#fff1e4"
-    />
-  ) : (
-    <meshStandardMaterial color={look.skin} roughness={0.7} />
+  // Materiais compartilhados entre jogadores com a mesma combinação de
+  // uniforme/aparência: derruba o número de programas de shader e de objetos
+  // de material de ~200 para poucas dezenas numa partida.
+  const mats = useMemo(
+    () => playerMaterials(look, kit, tex ?? null, quality),
+    [look, kit, tex, quality],
   );
 
-  const skinDark = <meshStandardMaterial color={skinShadow(look.skin)} roughness={0.72} />;
-
-  const jerseyMat = hi ? (
-    <meshPhysicalMaterial
-      color={kit.base}
-      map={tex ?? null}
-      normalMap={weave ?? null}
-      normalScale={nScale}
-      roughness={0.76 - look.sweat * 0.14}
-      envMapIntensity={0.85}
-      clearcoat={look.sweat * 0.3}
-      clearcoatRoughness={0.6}
-      sheen={0.5}
-      sheenRoughness={0.7}
-      sheenColor={shade(kit.base, 0.4)}
-    />
-  ) : (
-    <meshStandardMaterial color={kit.base} map={tex ?? null} roughness={0.85} />
-  );
-
-  const shortsMat = hi ? (
-    <meshPhysicalMaterial
-      color={kit.shorts}
-      roughness={0.84}
-      normalMap={weave ?? null}
-      normalScale={nScale}
-      sheen={0.4}
-      sheenColor={shade(kit.shorts, 0.35)}
-    />
-  ) : (
-    <meshStandardMaterial color={kit.shorts} roughness={0.86} />
-  );
-  const socksMat = hi ? (
-    <meshPhysicalMaterial
-      color={kit.socks}
-      roughness={0.92}
-      normalMap={rib ?? null}
-      normalScale={nScale}
-      sheen={0.6}
-      sheenRoughness={0.8}
-      sheenColor={shade(kit.socks, 0.45)}
-    />
-  ) : (
-    <meshStandardMaterial color={kit.socks} roughness={0.9} />
-  );
-  const trimMat = <meshStandardMaterial color={kit.detail} roughness={0.8} />;
-  const hairMat = hi ? (
-    <meshPhysicalMaterial
-      color={look.hairColor}
-      roughness={0.62}
-      metalness={0.04}
-      clearcoat={0.35}
-      clearcoatRoughness={0.42}
-      sheen={0.85}
-      sheenRoughness={0.55}
-      sheenColor={shade(look.hairColor, 0.55)}
-      anisotropy={0.55}
-      anisotropyRotation={Math.PI / 2}
-      envMapIntensity={0.75}
-    />
-  ) : (
-    <meshStandardMaterial color={look.hairColor} roughness={0.85} metalness={0.02} />
-  );
-  const bootMat = hi ? (
-    <meshPhysicalMaterial
-      color={look.bootColor}
-      roughness={0.22}
-      normalMap={grain ?? null}
-      normalScale={nScale}
-      metalness={0.1}
-      clearcoat={0.85}
-      clearcoatRoughness={0.18}
-    />
-  ) : (
-    <meshStandardMaterial color={look.bootColor} roughness={0.34} metalness={0.22} />
-  );
-  const bootAccentMat = <meshStandardMaterial color={look.bootAccent} roughness={0.4} />;
-  const soleMat = <meshStandardMaterial color={shade(look.bootColor, -0.55)} roughness={0.6} />;
-  const gloveMat = <meshStandardMaterial color={look.gloveColor} roughness={0.7} />;
+  const skinMat = <primitive object={mats.skin} attach="material" />;
+  const skinDark = <primitive object={mats.skinDark} attach="material" />;
+  const jerseyMat = <primitive object={mats.jersey} attach="material" />;
+  const shortsMat = <primitive object={mats.shorts} attach="material" />;
+  const socksMat = <primitive object={mats.socks} attach="material" />;
+  const trimMat = <primitive object={mats.trim} attach="material" />;
+  const hairMat = <primitive object={mats.hair} attach="material" />;
+  const bootMat = <primitive object={mats.boot} attach="material" />;
+  const bootAccentMat = <primitive object={mats.bootAccent} attach="material" />;
+  const soleMat = <primitive object={mats.sole} attach="material" />;
+  const gloveMat = <primitive object={mats.glove} attach="material" />;
 
   const handMat = look.gloves ? gloveMat : skinMat;
   const handR = look.gloves ? P.handR * 1.25 : P.handR;
