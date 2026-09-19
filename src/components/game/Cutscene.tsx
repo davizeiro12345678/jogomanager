@@ -5,6 +5,7 @@
  */
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Volume2, VolumeX } from "lucide-react";
 
 /** granulado de filme reutilizado na moldura da cena */
 const GRAIN =
@@ -31,6 +32,27 @@ import { prefersReducedMotion } from "@/game/device";
 import { Crest } from "@/components/game/Crest";
 import type { Club, ManagerLook } from "@/game/types";
 import { CinematicStage3D } from "@/components/game/CinematicStage3D";
+import { Button } from "@/components/ui/button";
+import { audioBlobUrl, readVoiceCache, writeVoiceCache } from "@/game/audio-cache";
+
+const pendingSceneVoice = new Map<string, Promise<string | null>>();
+
+async function sceneVoice(scene: string, line: number): Promise<string | null> {
+  const key = `scene|${scene}|${line}`;
+  const cached = await readVoiceCache(key);
+  if (cached) return cached;
+  let request = pendingSceneVoice.get(key);
+  if (!request) {
+    request = import("@/lib/tts.functions").then(async ({ narrateScene }) => {
+      const result = await narrateScene({ data: { scene, line } });
+      return result.ok ? result.audio : null;
+    });
+    pendingSceneVoice.set(key, request);
+  }
+  const audio = await request.finally(() => pendingSceneVoice.delete(key));
+  if (audio) await writeVoiceCache(key, audio);
+  return audio;
+}
 
 interface Props {
   scene: keyof typeof CUTSCENES | string;
@@ -570,6 +592,17 @@ export function Cutscene({
   /** travelling contínuo da câmera dentro de cada fala (0..1) */
   const [dolly, setDolly] = useState(0);
   const voiceRef = useRef<HTMLAudioElement | null>(null);
+  const voiceUrlRef = useRef<string | null>(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(narrate);
+  const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing" | "fallback">("idle");
+
+  const stopVoice = useCallback(() => {
+    voiceRef.current?.pause();
+    voiceRef.current = null;
+    if (voiceUrlRef.current) URL.revokeObjectURL(voiceUrlRef.current);
+    voiceUrlRef.current = null;
+    window.speechSynthesis?.cancel();
+  }, []);
 
   useEffect(() => {
     if (reduced) {
@@ -609,38 +642,47 @@ export function Cutscene({
   const full = line?.text ?? "";
 
   useEffect(() => {
-    if (!narrate || !data || !line) return;
+    if (!narrate || !voiceEnabled || !data || !line) {
+      stopVoice();
+      setVoiceState("idle");
+      return;
+    }
     let alive = true;
-    voiceRef.current?.pause();
-    voiceRef.current = null;
-    window.speechSynthesis?.cancel();
+    stopVoice();
+    setVoiceState("loading");
     const fallback = () => {
       if (!alive || !("speechSynthesis" in window)) return;
+      setVoiceState("fallback");
       const utterance = new SpeechSynthesisUtterance(line.text);
-      utterance.lang = "pt-BR";
+      const lang = document.documentElement.lang || navigator.language || "pt-BR";
+      utterance.lang = lang;
       utterance.rate = 0.96;
       utterance.pitch = data.mood === "good" ? 1.04 : data.mood === "bad" ? 0.94 : 1;
       window.speechSynthesis.speak(utterance);
     };
-    void import("@/lib/tts.functions")
-      .then(({ narrateScene }) => narrateScene({ data: { scene: data.id, line: i } }))
-      .then((result) => {
-        if (!alive || !result.ok) {
+    void sceneVoice(data.id, i)
+      .then((audioData) => {
+        if (!alive || !audioData) {
           fallback();
           return;
         }
-        const audio = new Audio(`data:audio/mpeg;base64,${result.audio}`);
+        const url = audioBlobUrl(audioData);
+        voiceUrlRef.current = url;
+        const audio = new Audio(url);
+        audio.preload = "auto";
+        audio.onplaying = () => alive && setVoiceState("playing");
+        audio.onended = () => alive && setVoiceState("idle");
         voiceRef.current = audio;
         void audio.play().catch(fallback);
       })
       .catch(fallback);
+    const nextLine = i + 1;
+    if (nextLine < data.lines.length) void sceneVoice(data.id, nextLine).catch(() => undefined);
     return () => {
       alive = false;
-      voiceRef.current?.pause();
-      voiceRef.current = null;
-      window.speechSynthesis?.cancel();
+      stopVoice();
     };
-  }, [data, i, line, narrate]);
+  }, [data, i, line, narrate, stopVoice, voiceEnabled]);
 
   // máquina de escrever
   useEffect(() => {
@@ -933,14 +975,25 @@ export function Cutscene({
           </div>
         </button>
 
-        <div className="flex justify-end border-t border-border/60 p-3">
-          <button
-            type="button"
-            onClick={() => doneRef.current()}
-            className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
-          >
+        <div className="flex items-center justify-between gap-3 border-t border-border/60 p-3">
+          {narrate ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-pressed={!voiceEnabled}
+              onClick={() => setVoiceEnabled((enabled) => !enabled)}
+            >
+              {voiceEnabled ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
+              {voiceEnabled ? "Voz ligada" : "Voz desligada"}
+            </Button>
+          ) : <span />}
+          <span className="sr-only" aria-live="polite">
+            {voiceState === "loading" ? "Carregando narração" : voiceState === "playing" ? "Narração em reprodução" : ""}
+          </span>
+          <Button type="button" variant="outline" size="sm" onClick={() => doneRef.current()}>
             Pular cena
-          </button>
+          </Button>
         </div>
       </div>
     </div>

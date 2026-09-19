@@ -99,6 +99,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
   let liveWorker: Worker | null = null;
   let localSim: MatchSim | null = null;
   let localTimer: ReturnType<typeof setInterval> | null = null;
+  let localSkipTimer: ReturnType<typeof setTimeout> | null = null;
   let disposed = false;
   let localPaused = false;
   let localSpeed = 1;
@@ -114,7 +115,9 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
 
   const stopLocal = () => {
     if (localTimer) clearInterval(localTimer);
+    if (localSkipTimer) clearTimeout(localSkipTimer);
     localTimer = null;
+    localSkipTimer = null;
   };
 
   const startFallback = (reason?: string) => {
@@ -212,11 +215,21 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     },
     skip() {
       if (localSim) {
-        let guard = 0;
-        while (!localSim.finished && guard++ < 14_000) localSim.step(0.4);
-        sequence += 1;
-        apply(resultMatch(localSim, sequence));
         stopLocal();
+        let guard = 0;
+        const finishInChunks = () => {
+          if (!localSim || disposed) return;
+          const end = Math.min(guard + 240, 14_000);
+          while (!localSim.finished && guard++ < end) localSim.step(0.4);
+          if (localSim.finished || guard >= 14_000) {
+            sequence += 1;
+            apply(resultMatch(localSim, sequence));
+            localSkipTimer = null;
+            return;
+          }
+          localSkipTimer = setTimeout(finishInChunks, 0);
+        };
+        finishInChunks();
       } else send({ type: "skipLive" });
     },
     dispose() {

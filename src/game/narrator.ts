@@ -150,15 +150,19 @@ export class Narrator {
       const url = audioBlobUrl(mp3);
       const el = this.audio ?? new Audio();
       el.src = url;
+      el.preload = "auto";
       el.volume = this.volume;
       this.audio = el;
+      let settled = false;
       const finish = () => {
+        if (settled) return;
+        settled = true;
         URL.revokeObjectURL(url);
         resolve();
       };
       el.onended = finish;
       el.onerror = finish;
-      void el.play().catch(() => resolve());
+      void el.play().catch(finish);
       window.setTimeout(finish, 12000);
     });
   }
