@@ -65,20 +65,16 @@ export function PostFX({
   const cinema = m !== "match";
 
   return (
-    <EffectComposer key={`alta-${m}`} enableNormalPass={!cinema} multisampling={0}>
+    <EffectComposer key={`alta-${m}`} enableNormalPass multisampling={0}>
       {/* oclusão de contato: sombra suave onde jogadores e estruturas encostam */}
-      {!cinema ? (
-        <N8AO
-          color="#0b1016"
-          aoRadius={1.1}
-          distanceFalloff={0.85}
-          intensity={2.6}
-          halfRes
-          screenSpaceRadius={false}
-        />
-      ) : (
-        <></>
-      )}
+      <N8AO
+        color="#0b1016"
+        aoRadius={cinema ? 0.6 : 1.1}
+        distanceFalloff={0.85}
+        intensity={cinema ? 2 : 2.6}
+        halfRes
+        screenSpaceRadius={false}
+      />
       {p.dof > 0 ? (
         <DepthOfField
           focusDistance={m === "drama" ? 0.012 : 0.02}
