@@ -11,6 +11,7 @@ let sequence = 0;
 let lastTick = 0;
 let accumulator = 0;
 let commandId = 0;
+let skipToken = 0;
 
 function post(message: unknown) {
   self.postMessage(message);
@@ -21,6 +22,7 @@ function stopTimer() {
   timer = null;
   lastTick = 0;
   accumulator = 0;
+  skipToken += 1;
 }
 
 function publishSnapshot() {
@@ -74,6 +76,7 @@ self.onmessage = (event: MessageEvent<LiveWorkerRequest>) => {
     if (message.type === "pauseLive") {
       paused = message.paused;
       lastTick = 0;
+      if (!paused) ensureTimer();
       post({ id: message.id, ok: true, type: "command" });
       return;
     }
@@ -95,9 +98,21 @@ self.onmessage = (event: MessageEvent<LiveWorkerRequest>) => {
       return;
     }
     if (message.type === "skipLive" && live) {
+      paused = true;
+      stopTimer();
+      const token = skipToken;
       let guard = 0;
-      while (!live.finished && guard++ < 14_000) live.step(0.4);
-      publishFinished();
+      const finishInChunks = () => {
+        if (!live || token !== skipToken) return;
+        const end = Math.min(guard + 320, 14_000);
+        while (!live.finished && guard++ < end) live.step(0.4);
+        if (live.finished || guard >= 14_000) {
+          publishFinished();
+          return;
+        }
+        setTimeout(finishInChunks, 0);
+      };
+      finishInChunks();
       return;
     }
     if (message.type === "stopLive") {

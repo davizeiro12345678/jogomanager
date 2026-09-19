@@ -9,11 +9,13 @@
 // ============================================================================
 
 import { Environment, Lightformer, Float } from "@react-three/drei";
+import { PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { memo, useMemo, useRef } from "react";
+import { memo, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import type { SceneArt } from "@/content/cutscenes";
+import { detectQuality, lowerQuality, type QualityLevel } from "@/game/device";
 
 type SetKind = "locker" | "tunnel" | "press" | "pitch" | "stands" | "office";
 
@@ -582,12 +584,14 @@ function Stage({
   primary,
   secondary,
   mood,
+  quality,
 }: {
   kind: SetKind;
   beat: number;
   primary: string;
   secondary: string;
   mood: "good" | "bad" | "neutral";
+  quality: QualityLevel;
 }) {
   const warm = mood === "good" ? "#fff3d6" : mood === "bad" ? "#cfe0ff" : "#effff4";
   const indoor = kind === "locker" || kind === "press" || kind === "office" || kind === "tunnel";
@@ -601,12 +605,12 @@ function Stage({
         position={[5, 11, 6]}
         intensity={indoor ? 1.4 : 2.6}
         color={warm}
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={quality === "alta" ? [2048, 2048] : [1024, 1024]}
         shadow-bias={-0.0004}
       />
       {/* luz de recorte atrás dos personagens */}
       <spotLight position={[-5, 6, -5]} angle={0.7} penumbra={0.9} intensity={28} color={primary} />
-      <Environment resolution={96} frames={1}>
+      <Environment resolution={quality === "alta" ? 96 : 64} frames={1}>
         <Lightformer position={[0, 6, 2]} scale={[10, 3, 1]} intensity={2.2} color={warm} />
         <Lightformer position={[-6, 3, -4]} scale={[6, 4, 1]} intensity={1.1} color={primary} />
         <Lightformer position={[6, 3, -4]} scale={[6, 4, 1]} intensity={1.1} color={secondary} />
@@ -636,11 +640,13 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   mood?: "good" | "bad" | "neutral";
 }) {
   const kind = SET_BY_ART[art] ?? "locker";
+  const initialQuality = useMemo(() => detectQuality(), []);
+  const [quality, setQuality] = useState<QualityLevel>(initialQuality);
   return (
     <div className="absolute inset-0" aria-hidden="true">
       <Canvas
-        shadows
-        dpr={[0.8, 1.5]}
+        shadows={quality !== "baixa"}
+        dpr={quality === "alta" ? [0.9, 1.4] : quality === "media" ? [0.75, 1.1] : 0.7}
         camera={{ position: [0, 2.2, 6.5], fov: 42 }}
         gl={{ antialias: true, powerPreference: "high-performance", stencil: false }}
         onCreated={({ gl }) => {
@@ -648,7 +654,8 @@ export const CinematicStage3D = memo(function CinematicStage3D({
           gl.toneMappingExposure = 1.05;
         }}
       >
-        <Stage kind={kind} beat={beat} primary={primary} secondary={secondary} mood={mood} />
+        <PerformanceMonitor flipflops={2} onDecline={() => setQuality((current) => lowerQuality(current))} />
+        <Stage kind={kind} beat={beat} primary={primary} secondary={secondary} mood={mood} quality={quality} />
       </Canvas>
     </div>
   );
