@@ -727,6 +727,10 @@ function LiveMatch({
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
       <Stadium3D sim={sim} mode={camera} quality={quality} />
+      <div className="pointer-events-none absolute right-3 top-3 z-20">
+        <FpsPanel quality={quality} detail={{ Câmera: camera, Velocidade: speed }} />
+      </div>
+
       {narrating && caption ? (
         <div
           role="status"
