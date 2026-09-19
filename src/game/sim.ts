@@ -152,6 +152,7 @@ export class MatchSim {
   private lastPass: Record<Side, { id: string; time: number } | null> = { home: null, away: null };
   /** jogadores em "freeze" curto após um chute próximo */
   private reactionUntil = new Map<string, number>();
+  private mentalityCache: Record<Side, number> | null = null;
   /** Reused every tick to avoid allocating/sorting temporary chase arrays. */
   private chaseIds = new Set<string>();
   finished = false;
@@ -354,8 +355,11 @@ export class MatchSim {
   }
 
   private mentalityShift(side: Side) {
-    const t = this.setup(side).tactics;
-    return (t.mentality - 2) * 6 * this.attackDir(side);
+    if (this.mentalityCache) return this.mentalityCache[side];
+    const h = (this.home.tactics.mentality - 2) * 6 * 1;
+    const a = (this.away.tactics.mentality - 2) * 6 * -1;
+    this.mentalityCache = { home: h, away: a };
+    return this.mentalityCache[side];
   }
 
   private pushEvent(e: MatchEventLog) {
@@ -400,21 +404,22 @@ export class MatchSim {
 
   private nearestOpponent(p: SimPlayer) {
     let best: SimPlayer | null = null;
-    let bestD = Infinity;
+    let bestD2 = Infinity;
     for (const o of this.players) {
       if (o.side === p.side) continue;
-      const d = (o.x - p.x) ** 2 + (o.z - p.z) ** 2;
-      if (d < bestD) {
-        bestD = d;
+      const d2 = (o.x - p.x) ** 2 + (o.z - p.z) ** 2;
+      if (d2 < bestD2) {
+        bestD2 = d2;
         best = o;
       }
     }
-    return { opp: best, dist: Math.sqrt(bestD) };
+    return { opp: best, dist: Math.sqrt(bestD2) };
   }
 
   step(dt: number) {
     if (this.finished) return;
     this.time += dt;
+    this.mentalityCache = null;
 
     if (this.time >= 5400) {
       this.finished = true;
@@ -505,8 +510,13 @@ export class MatchSim {
       const ballDist = Math.hypot(bx - p.x, bz - p.z);
 
       if (p.pos === "GK") {
-        tx = dir * -FIELD_X * 0.95 + bx * 0.04;
-        tz = bz * 0.16;
+        // Goleiro acompanha ângulo e profundidade: protege o primeiro pau sem
+        // abandonar a linha quando a bola ainda está longe.
+        const ownGoalX = dir * -FIELD_X;
+        const ballToGoal = Math.abs(bx - ownGoalX);
+        const stepOut = Math.max(0, Math.min(9, (24 - ballToGoal) * 0.42));
+        tx = ownGoalX + dir * stepOut;
+        tz = Math.max(-GOAL_Z + 0.45, Math.min(GOAL_Z - 0.45, bz * (0.12 + stepOut * 0.022)));
         // goleiro sai da área para bola solta muito perto
         if (!this.ball.holder && ballDist < 9 && Math.abs(bx - dir * -FIELD_X) < 14) {
           tx = bx;
@@ -574,7 +584,9 @@ export class MatchSim {
         const b = list[j]!;
         let dx = b.x - a.x;
         let dz = b.z - a.z;
-        let d = Math.hypot(dx, dz);
+        const d2 = dx * dx + dz * dz;
+        if (d2 > 2.89) continue; // (0.85 * 2)^2
+        let d = Math.sqrt(d2);
         if (d > R * 2) continue;
         if (d < 1e-4) {
           dx = (this.rnd() - 0.5) * 0.02;
@@ -1110,7 +1122,20 @@ export class MatchSim {
       if (dist < 4 || dist > 42) continue;
       const forward = (m.x - holder.x) * dir;
       const { dist: cover } = this.nearestOpponent(m);
-      const score = forward * (0.7 + mentality * 0.12) + cover * 1.7 - dist * 0.32 + this.rnd() * 8;
+        // Evita passes atravessando um marcador alinhado ao corredor da bola.
+        let laneRisk = 0;
+        const mdx = m.x - holder.x;
+        const mdz = m.z - holder.z;
+        const len2 = mdx * mdx + mdz * mdz || 1;
+        for (const opponent of this.players) {
+          if (opponent.side === holder.side) continue;
+          const t = Math.max(0, Math.min(1, ((opponent.x - holder.x) * mdx + (opponent.z - holder.z) * mdz) / len2));
+          const laneX = holder.x + mdx * t;
+          const laneZ = holder.z + mdz * t;
+          const laneDistance = Math.hypot(opponent.x - laneX, opponent.z - laneZ);
+          if (laneDistance < 2.2) laneRisk += (2.2 - laneDistance) * 2.8;
+        }
+        const score = forward * (0.7 + mentality * 0.12) + cover * 1.7 - dist * 0.32 - laneRisk + this.rnd() * 8;
       if (score > bestScore) {
         bestScore = score;
         best = m;

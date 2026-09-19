@@ -50,8 +50,6 @@ import { type SimView, type SimPlayer } from "@/game/sim";
 /** duração da transição cruzada entre dois movimentos, em segundos */
 const BLEND_TIME = 0.18;
 const ease = (u: number) => u * u * (3 - 2 * u);
-// vetor reaproveitado no laço de quadro: alocar dentro do useFrame gera lixo
-const CAM_DIR = new THREE.Vector3();
 
 /**
  * Velocidade (m/s) para a qual cada ciclo de passada foi desenhado. A cadência
@@ -189,8 +187,20 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     g.position.x += (player.x - g.position.x) * moveBlend;
     g.position.z += (player.z - g.position.z) * moveBlend;
 
+    // Fora do enquadramento atualiza apenas posição. A direção vem diretamente
+    // da matriz da câmera, evitando 22 normalizações de vetor por quadro.
+    const cameraMatrix = state.camera.matrixWorld.elements;
+    const toX = g.position.x - state.camera.position.x;
+    const toZ = g.position.z - state.camera.position.z;
+    const facing = toX * -cameraMatrix[8]! + toZ * -cameraMatrix[10]!;
+    const dist2 = toX * toX + toZ * toZ;
+    if (facing < -4 && dist2 > 144) {
+      acc.current = 0;
+      return;
+    }
+
     // ---- LOD por distância
-    const camDist = state.camera.position.distanceTo(g.position);
+    const camDist = Math.sqrt(dist2);
     const lod = lodForDistance(camDist, quality);
     if (lod !== lodState.current) {
       const first = lodState.current === null;
@@ -252,20 +262,8 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     g.rotation.x += (leanF - g.rotation.x) * leanBlend;
     g.rotation.z += (leanS - g.rotation.z) * leanBlend;
 
-    // ---- fora do campo de visão: mantém a posição, congela a animação
-    // (ninguém vê o gesto; economiza a avaliação de pose de metade do elenco)
-    state.camera.getWorldDirection(CAM_DIR);
-    const toX = g.position.x - state.camera.position.x;
-    const toZ = g.position.z - state.camera.position.z;
-    const facing = toX * CAM_DIR.x + toZ * CAM_DIR.z;
-    const dist2 = toX * toX + toZ * toZ;
-    if (facing < 0 && dist2 > 144) {
-      acc.current = 0;
-      return;
-    }
-
     // ---- passo de animação em taxa reduzida longe da câmera
-    const step = lod === 0 ? 0 : lod === 1 ? 1 / 40 : 1 / 20;
+    const step = lod === 0 ? 0 : lod === 1 ? 1 / 36 : 1 / 16;
     acc.current += dt;
     if (acc.current < step) return;
     const adt = acc.current;

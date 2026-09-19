@@ -28,6 +28,7 @@ export interface NarratorOptions {
   /** Usa voz realista quando disponível. */
   realistic?: boolean;
   volume?: number;
+  onCaption?: (text: string | null) => void;
 }
 
 const pendingAudio = new Map<string, Promise<string | null>>();
@@ -69,6 +70,7 @@ export class Narrator {
   /** Desliga a voz realista após uma falha para não insistir em erro. */
   private remoteBroken = false;
   private remoteFailures = 0;
+  private onCaption: ((text: string | null) => void) | undefined;
 
   constructor(opts: NarratorOptions) {
     this.lang = narrationLang(opts.lang);
@@ -76,6 +78,7 @@ export class Narrator {
     this.rate = opts.rate ?? 1.05;
     this.realistic = opts.realistic ?? true;
     this.volume = opts.volume ?? 1;
+    this.onCaption = opts.onCaption;
     this.synth =
       typeof window !== "undefined" && "speechSynthesis" in window ? window.speechSynthesis : null;
   }
@@ -106,6 +109,7 @@ export class Narrator {
       this.audio.pause();
       this.audio = null;
     }
+    this.onCaption?.(null);
   }
 
   /** Seleciona voz do navegador cujo idioma bate com o da narração. */
@@ -218,9 +222,11 @@ export class Narrator {
     try {
       while (this.queue.length && this.enabled && !this.disposed) {
         const item = this.queue.shift()!;
+        this.onCaption?.(item.text);
         let spoke = false;
         if (this.realistic && !this.remoteBroken) spoke = await this.speakRemote(item);
         if (!spoke && this.enabled && !this.disposed) await this.speakLocal(item);
+        this.onCaption?.(null);
       }
     } finally {
       this.busy = false;

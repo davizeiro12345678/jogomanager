@@ -105,10 +105,12 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
   let localSpeed = 1;
   let sequence = 0;
   let command = 0;
+  let latestState: LiveResult | Parameters<WorkerMatchView["apply"]>[0] | null = null;
 
   const apply = (state: LiveResult | Parameters<WorkerMatchView["apply"]>[0]) => {
     if (disposed) return;
     view.apply(state);
+    latestState = state;
     options.onSnapshot(view);
     if (state.finished) options.onFinished(view);
   };
@@ -126,6 +128,15 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     if (disposed || localSim) return;
     options.onError?.(reason ?? "Worker indisponível; simulação local ativada.");
     localSim = new MatchSim(options.home, options.away, options.seed);
+    // Em caso de falha tardia, avança rapidamente até o último instante
+    // confirmado antes de voltar à thread principal. Evita reiniciar o placar.
+    if (latestState?.time) {
+      let catchUp = 0;
+      while (localSim.time < latestState.time && !localSim.finished && catchUp++ < 28_000) {
+        localSim.step(Math.min(0.2, latestState.time - localSim.time));
+      }
+    }
+    apply(snapshotMatch(localSim, ++sequence));
     let last = performance.now();
     let accumulator = 0;
     localTimer = setInterval(() => {
