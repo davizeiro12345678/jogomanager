@@ -2545,7 +2545,6 @@ function Scene({
         shadow-radius={quality === "alta" ? 2.4 : 1.2}
         shadow-camera-near={12}
         shadow-camera-far={165}
-        {/* enquadra só o gramado: mais texels de sombra por metro */}
         shadow-camera-left={-52}
         shadow-camera-right={52}
         shadow-camera-top={38}
