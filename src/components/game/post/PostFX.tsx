@@ -60,6 +60,9 @@ export function PostFX({
         <HueSaturation saturation={p.saturation} hue={p.hue} />
         <BrightnessContrast brightness={p.brightness} contrast={p.contrast} />
         <Vignette offset={0.3} darkness={p.vignette} />
+        {/* serrilhado nas linhas do campo e nos jogadores incomodava mais que o
+            custo do SMAA em meia resolução */}
+        <SMAA />
       </EffectComposer>
     );
   }
@@ -73,7 +76,8 @@ export function PostFX({
         color="#0b1016"
         aoRadius={cinema ? 0.6 : 1.1}
         distanceFalloff={0.85}
-        intensity={cinema ? 2 : 2.6}
+        // à noite o contato com o gramado some sob a luz dura dos refletores
+        intensity={(cinema ? 2 : 2.6) * (time === "noite" ? 1.25 : 1)}
         halfRes
         screenSpaceRadius={false}
       />
