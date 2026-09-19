@@ -107,8 +107,8 @@ function useBladeMaterial(color: string) {
 function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
   const vis = useVisual();
   const scale = Math.max(0, vis.grassDensity);
-  const short = Math.round((quality === "alta" ? 12000 : 5000) * scale);
-  const tall = Math.round((quality === "alta" ? 3600 : 1400) * scale);
+  const short = Math.round((quality === "alta" ? 14000 : 4200) * scale);
+  const tall = Math.round((quality === "alta" ? 4200 : 1000) * scale);
 
   const shortRef = useRef<THREE.InstancedMesh>(null);
   const tallRef = useRef<THREE.InstancedMesh>(null);
@@ -150,7 +150,10 @@ function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
     fill(tallRef.current, tall, true);
   }, [short, tall]);
 
+  const frame = useRef(0);
   useFrame(({ clock }) => {
+    frame.current += 1;
+    if (quality === "media" && frame.current % 2 !== 0) return;
     uniforms.uTime.value = clock.elapsedTime;
     uniforms.uBall.value.set(sim.ball.x, 0, sim.ball.z);
     uniforms.uWind.value = 0.8 + Math.sin(clock.elapsedTime * 0.23) * 0.35;
@@ -160,7 +163,7 @@ function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
     <group>
       <instancedMesh
         ref={shortRef}
-        frustumCulled={false}
+        frustumCulled
         material={mat}
         args={[undefined, undefined, short]}
       >
@@ -168,7 +171,7 @@ function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
       </instancedMesh>
       <instancedMesh
         ref={tallRef}
-        frustumCulled={false}
+        frustumCulled
         material={mat}
         args={[undefined, undefined, tall]}
       >
@@ -247,6 +250,10 @@ function Pitch({
   const tex = useMemo(() => grassAlbedo(mow), [mow]);
   const rough = useMemo(() => grassRoughness(mow), [mow]);
   const norm = useMemo(() => (quality === "baixa" ? null : grassNormal(mow)), [quality, mow]);
+  const normalScale = useMemo(
+    () => new THREE.Vector2(quality === "alta" ? 1.18 : 0.82, quality === "alta" ? 1.18 : 0.82),
+    [quality],
+  );
   const wear = useMemo(() => (quality === "baixa" ? null : pitchWearTexture()), [quality]);
   const wearRough = useMemo(() => (quality === "alta" ? wearRoughness() : null), [quality]);
 
@@ -269,7 +276,7 @@ function Pitch({
         <meshPhysicalMaterial
           {...(tex ? { map: tex, color: tint } : { color: "#1d7a45" })}
           {...(wearRough ? { roughnessMap: wearRough } : rough ? { roughnessMap: rough } : {})}
-          {...(norm ? { normalMap: norm, normalScale: new THREE.Vector2(1.05, 1.05) } : {})}
+          {...(norm ? { normalMap: norm, normalScale } : {})}
           roughness={0.8 - wet * 0.2}
           metalness={0.0}
           clearcoat={quality === "alta" ? 0.12 + wet * 0.62 : quality === "media" ? wet * 0.3 : 0}
@@ -2561,7 +2568,7 @@ function Scene({
         intensity={sun}
         color={sunColor}
         castShadow={shadows}
-        shadow-mapSize={quality === "alta" ? [3072, 3072] : quality === "media" ? [1536, 1536] : [1024, 1024]}
+        shadow-mapSize={quality === "alta" ? [2048, 2048] : quality === "media" ? [1024, 1024] : [512, 512]}
         shadow-bias={-0.00014}
         shadow-normalBias={quality === "alta" ? 0.014 : 0.03}
         shadow-radius={quality === "alta" ? 2.4 : 1.2}
