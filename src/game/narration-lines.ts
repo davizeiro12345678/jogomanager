@@ -22,6 +22,14 @@ export type NarrationEvent =
 
 export type NarrationLang = "pt" | "en" | "es";
 
+export interface NarrationContext {
+  minute?: number;
+  homeGoals?: number;
+  awayGoals?: number;
+  player?: string;
+  importance?: "routine" | "pressure" | "decisive";
+}
+
 /** Idiomas suportados pela narração; qualquer outro cai para inglês. */
 export function narrationLang(tag: string | undefined): NarrationLang {
   const base = (tag ?? "en").toLowerCase().split("-")[0];
@@ -496,8 +504,29 @@ export function narrationLine(
   event: NarrationEvent,
   team: string,
   variant: number,
+  context?: NarrationContext,
 ): string {
   const pool = PACKS[lang][event];
   const tpl = pool[Math.abs(variant) % pool.length] ?? pool[0]!;
-  return tpl.replaceAll("{team}", team.trim() || "o time");
+  const base = tpl.replaceAll("{team}", team.trim() || "o time");
+  if (!context) return base;
+  const minute = Math.max(0, Math.min(120, Math.round(context.minute ?? 0)));
+  const score = `${Math.max(0, context.homeGoals ?? 0)} a ${Math.max(0, context.awayGoals ?? 0)}`;
+  const player = context.player?.trim();
+  if (event === "goal" && context.importance === "decisive") {
+    if (lang === "en") return `${base} A decisive moment in the ${minute}th minute, ${score}!`;
+    if (lang === "es") return `${base} ¡Momento decisivo en el minuto ${minute}, ${score}!`;
+    return `${base} Momento decisivo aos ${minute}, placar de ${score}!`;
+  }
+  if ((event === "shot" || event === "save") && player) {
+    if (lang === "en") return `${base} ${player} was at the heart of it.`;
+    if (lang === "es") return `${base} ${player} fue protagonista.`;
+    return `${base} ${player} foi protagonista no lance.`;
+  }
+  if (event === "fulltime") {
+    if (lang === "en") return `${base} Final score: ${score}.`;
+    if (lang === "es") return `${base} Marcador final: ${score}.`;
+    return `${base} Placar final: ${score}.`;
+  }
+  return base;
 }

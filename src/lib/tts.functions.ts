@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   narrationLine,
   VOICE_BY_LANG,
+  type NarrationContext,
   type NarrationEvent,
   type NarrationLang,
 } from "@/game/narration-lines";
@@ -36,6 +37,15 @@ const NarrateInput = z.object({
   ]),
   team: z.string().max(28).default(""),
   variant: z.number().int().min(0).max(99).default(0),
+  context: z
+    .object({
+      minute: z.number().int().min(0).max(120).optional(),
+      homeGoals: z.number().int().min(0).max(99).optional(),
+      awayGoals: z.number().int().min(0).max(99).optional(),
+      player: z.string().max(36).optional(),
+      importance: z.enum(["routine", "pressure", "decisive"]).optional(),
+    })
+    .optional(),
 });
 
 export type NarrateResult =
@@ -58,13 +68,16 @@ export const narrateEvent = createServerFn({ method: "POST" })
 
     const lang = data.lang as NarrationLang;
     const event = data.event as NarrationEvent;
-    const text = narrationLine(lang, event, safeTeam(data.team), data.variant);
+    const context: NarrationContext | undefined = data.context
+      ? { ...data.context, player: data.context.player ? safeTeam(data.context.player) : undefined }
+      : undefined;
+    const text = narrationLine(lang, event, safeTeam(data.team), data.variant, context);
     const voiceId = VOICE_BY_LANG[lang];
     const hype = event === "goal" || event === "save" || event === "post" || event === "redCard";
 
     try {
       const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_22050_32`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_64`,
         {
           method: "POST",
           headers: {
