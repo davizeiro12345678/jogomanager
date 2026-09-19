@@ -495,6 +495,7 @@ function LiveMatch({
   /** gaveta lateral: loja ou chat sem sair da partida (o jogo pausa) */
   const [drawer, setDrawer] = useState<"none" | "store" | "chat">("none");
   const [done, setDone] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
   /** sequência imersiva (vestiário → camisas → túnel → apito) antes do pontapé */
   const [introStep, setIntroStep] = useState(() => (prematchIntroEnabled() ? 0 : -1));
   const introActive = introStep >= 0 && introStep < PREMATCH_SCENE_IDS.length;
@@ -634,6 +635,7 @@ function LiveMatch({
       .playerRatings()
       .filter((r) => r.side === mySide)
       .map((r) => ({ pid: r.pid, goals: r.goals, assists: r.assists, played: true }));
+    setAdvancing(true);
     void advanceRoundAsync(career, { hg: snap.hg, ag: snap.ag }, perf).then((next) => {
       const before = new Set(career.achievements ?? []);
       for (const id of next.achievements ?? []) {
@@ -643,6 +645,7 @@ function LiveMatch({
         }
       }
       update(next);
+      setAdvancing(false);
       navigate({ to: "/club" });
     });
   }

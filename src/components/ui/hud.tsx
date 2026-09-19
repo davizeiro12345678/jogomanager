@@ -103,8 +103,11 @@ export function HudCard({
   interactive?: boolean;
   children: React.ReactNode;
 }) {
+  const titleId = title ? `title-${title.toLowerCase().replace(/\s+/g, "-")}` : undefined;
   return (
-    <section aria-labelledby={title ?  : undefined} className={cn(
+    <section
+      aria-labelledby={titleId}
+      className={cn(
         "hud-card p-4 sm:p-5",
         toneClass[tone],
         interactive && "hud-card-interactive",
@@ -113,7 +116,13 @@ export function HudCard({
     >
       {(title || badge || action) && (
         <header className="mb-4 flex items-center justify-between gap-3">
-          {title ? <h2 id={`hud-title-${title.replace(/\s/g, "-")}`} className="hud-label">{title}</h2> : <span />}
+          {title ? (
+            <h2 id={titleId} className="hud-label">
+              {title}
+            </h2>
+          ) : (
+            <span />
+          )}
           <div className="flex items-center gap-2">
             {badge}
             {action}
@@ -319,10 +328,11 @@ export function FormPips({ results }: { results: string[] }) {
   if (results.length === 0)
     return <span className="text-sm text-muted-foreground">Sem jogos ainda.</span>;
   return (
-    <div className="flex gap-1.5">
+    <div className="flex gap-1.5" role="list" aria-label="Resultados recentes">
       {results.map((r, i) => (
         <span
           key={i}
+          role="listitem"
           className={cn(
             "grid h-9 w-9 place-items-center rounded-lg border font-display text-sm font-bold",
             r === "V"
@@ -355,7 +365,7 @@ export function HudStat({
   return (
     <div className={cn("min-w-0", tone && toneClass[tone])}>
       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="hud-num mt-0.5 truncate text-xl font-bold text-foreground">{value}</p>
+      <div className="hud-num mt-0.5 truncate text-xl font-bold text-foreground">{value}</div>
       {hint && <p className="truncate text-[10px] text-muted-foreground">{hint}</p>}
     </div>
   );
