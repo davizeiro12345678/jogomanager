@@ -35,10 +35,15 @@ import { Crest } from "@/components/game/Crest";
 import { MatchReport } from "@/components/game/MatchReport";
 import { CLUBS } from "@/game/data/leagues";
 import { MENTALITIES, PRESSING } from "@/game/formations";
-import { MatchSim, type TeamSetup } from "@/game/sim";
+import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
+import type { TeamSetup } from "@/game/sim";
 import { ReplayRecorder, saveReplay } from "@/game/replay";
 import { Narrator, type NarrationEvent } from "@/game/narrator";
-import { advanceRoundAsync } from "@/game/simWorkerClient";
+import {
+  advanceRoundAsync,
+  createLiveMatchController,
+  type LiveMatchController,
+} from "@/game/simWorkerClient";
 import { achievementById } from "@/game/achievements";
 import { detectQuality } from "@/game/device";
 
@@ -183,7 +188,7 @@ interface Snap {
   finished: boolean;
 }
 
-function snapshot(sim: MatchSim): Snap {
+function snapshot(sim: MatchRuntime): Snap {
   const started = sim.stats.home.possessionTicks + sim.stats.away.possessionTicks > 30;
   const [ph, pa] = started ? sim.possessionPct() : ([50, 50] as [number, number]);
   return {
@@ -460,7 +465,7 @@ function LiveMatch({
   const myClub = CLUBS[career.clubId]!;
   const oppId = isHome ? fixture.away : fixture.home;
 
-  const sim = useMemo(() => {
+  const setups = useMemo(() => {
     const mySetup: TeamSetup = {
       clubId: myClub.id,
       name: myClub.name,
@@ -471,13 +476,14 @@ function LiveMatch({
       tactics: career.tactics,
     };
     const oppSetup = buildOpponent(oppId);
-    return new MatchSim(
-      isHome ? mySetup : oppSetup,
-      isHome ? oppSetup : mySetup,
-      `${career.clubId}-${career.round}`,
-    );
+    return {
+      home: isHome ? mySetup : oppSetup,
+      away: isHome ? oppSetup : mySetup,
+      seed: `${career.clubId}-${career.round}`,
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [career.round]);
+  const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
 
   const mySide = isHome ? "home" : "away";
   const { lang } = useT();
@@ -497,6 +503,7 @@ function LiveMatch({
   const narrCursorRef = useRef(0);
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
   const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
+  const controllerRef = useRef<LiveMatchController | null>(null);
 
   const speedRef = useRef(speed);
   speedRef.current = speed;
@@ -549,15 +556,8 @@ function LiveMatch({
     }
   }, [snap, sim]);
 
-  // Laço de simulação desacoplado do React: o HUD só atualiza ~10x por segundo,
-  // então a árvore 3D (memoizada) nunca é reconciliada por quadro.
   const recorderRef = useRef<ReplayRecorder | null>(null);
   const savedRef = useRef(false);
-  useEffect(() => {
-    recorderRef.current = new ReplayRecorder(sim);
-    savedRef.current = false;
-  }, [sim]);
-
   const storeReplay = useCallback(() => {
     const rec = recorderRef.current;
     if (!rec || savedRef.current) return;
@@ -570,66 +570,40 @@ function LiveMatch({
   }, [sim]);
 
   useEffect(() => {
-    let raf = 0;
-    let last = 0;
-    let acc = 0;
-    let hidden = false;
-    const onVis = () => {
-      hidden = document.hidden;
-      last = 0;
-    };
-    document.addEventListener("visibilitychange", onVis);
-
-    // Passo fixo: a física roda a 30 Hz independentemente da taxa de quadros
-    // da tela (em telas de 120 Hz o custo caía pela metade do orçamento de
-    // quadro). O ritmo da partida continua igual, só deixa de competir com o
-    // desenho a cada quadro.
-    const SIM_HZ = 30;
-    const SIM_DT = 1 / SIM_HZ;
-    let simAcc = 0;
-
-    function loop(t: number) {
-      raf = requestAnimationFrame(loop);
-      const dt = Math.min(0.05, (t - (last || t)) / 1000);
-      last = t;
-      if (pausedRef.current || hidden) return;
-      const steps = Math.max(1, Math.round(speedRef.current));
-      simAcc = Math.min(simAcc + dt, SIM_DT * 4);
-      while (simAcc >= SIM_DT && !sim.finished) {
-        simAcc -= SIM_DT;
-        for (let i = 0; i < steps; i++) sim.step(SIM_DT * 6);
-      }
-      acc += dt;
-      if (acc >= 0.1 || sim.finished) {
-        acc = 0;
-        // grava o replay na mesma taxa do HUD (~10 Hz): amostrar a cada quadro
-        // custava caro sem ganho visível na reprodução
+    recorderRef.current = new ReplayRecorder(sim);
+    savedRef.current = false;
+    const controller = createLiveMatchController({
+      ...setups,
+      view: sim,
+      onSnapshot: (view) => {
         recorderRef.current?.sample();
-        setSnap(snapshot(sim));
-      }
-
-      if (sim.finished) {
-        storeReplay();
+        setSnap(snapshot(view));
+      },
+      onFinished: (view) => {
+        setSnap(snapshot(view));
         setDone(true);
-        cancelAnimationFrame(raf);
-      }
-    }
-    raf = requestAnimationFrame(loop);
+      },
+      onError: (message) => toast.warning(message),
+    });
+    controllerRef.current = controller;
+    const onVisibility = () => controller.pause(document.hidden || pausedRef.current);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      cancelAnimationFrame(raf);
-      document.removeEventListener("visibilitychange", onVis);
+      document.removeEventListener("visibilitychange", onVisibility);
+      controller.dispose();
+      controllerRef.current = null;
     };
-  }, [sim, storeReplay]);
+  }, [setups, sim]);
+
+  useEffect(() => controllerRef.current?.pause(paused || introActive), [paused, introActive]);
+  useEffect(() => controllerRef.current?.setSpeed(speed), [speed]);
+  useEffect(() => {
+    if (done) storeReplay();
+  }, [done, storeReplay]);
 
   const skip = useCallback(() => {
-    while (!sim.finished) {
-      sim.step(0.4);
-      recorderRef.current?.sample();
-    }
-    storeReplay();
-    setSnap(snapshot(sim));
-    setDone(true);
-  }, [sim, storeReplay]);
+    controllerRef.current?.skip();
+  }, []);
 
   // Atalhos de teclado
   useEffect(() => {
@@ -675,12 +649,14 @@ function LiveMatch({
 
   function setMentality(v: number) {
     const setup = mySide === "home" ? sim.home : sim.away;
-    setup.tactics = { ...setup.tactics, mentality: v };
+    const tactics = { ...setup.tactics, mentality: v };
+    controllerRef.current?.setTactics(mySide, tactics);
     setSnap(snapshot(sim));
   }
   function setPressing(v: number) {
     const setup = mySide === "home" ? sim.home : sim.away;
-    setup.tactics = { ...setup.tactics, pressing: v };
+    const tactics = { ...setup.tactics, pressing: v };
+    controllerRef.current?.setTactics(mySide, tactics);
     setSnap(snapshot(sim));
   }
 
@@ -705,10 +681,10 @@ function LiveMatch({
     .filter((p) => p && !usedIds.has(p.id) && p.injuryWeeks === 0 && !p.suspended);
   const subsUsed = sim.subsUsed[mySide];
 
-  function makeSub() {
+  async function makeSub() {
     const incoming = career.players[inId];
     if (!outPid || !incoming || subsUsed >= 5) return;
-    if (sim.substitute(mySide, outPid, incoming)) {
+    if (await controllerRef.current?.substitute(mySide, outPid, incoming)) {
       setOutPid("");
       setInId("");
       setSubTick((n) => n + 1);

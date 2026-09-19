@@ -2121,6 +2121,10 @@ function Scene({
   shadows: boolean;
   backend: GpuBackend;
 }) {
+  useFrame(() => {
+    const interpolated = sim as SimView & { renderTick?: (now?: number) => void };
+    interpolated.renderTick?.();
+  });
   const time = look.time;
   // O pós-processamento atual roda em WebGL2; no caminho WebGPU a imagem sai
   // direto do renderizador (tone mapping e exposição continuam ativos).

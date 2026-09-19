@@ -10,7 +10,8 @@ import { CLUBS, LEAGUES, getLeague } from "@/game/data/leagues";
 import { detectQuality } from "@/game/device";
 import { Narrator, type NarrationEvent } from "@/game/narrator";
 import { aiTactics, buildTeamSetup, type Difficulty } from "@/game/quickMatch";
-import { MatchSim } from "@/game/sim";
+import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
+import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
 import { useT } from "@/i18n";
 
 export const Route = createFileRoute("/partida-rapida")({
@@ -224,7 +225,7 @@ interface Snap {
   finished: boolean;
 }
 
-function snapshot(sim: MatchSim): Snap {
+function snapshot(sim: MatchRuntime): Snap {
   const started = sim.stats.home.possessionTicks + sim.stats.away.possessionTicks > 30;
   const [ph, pa] = started ? sim.possessionPct() : ([50, 50] as [number, number]);
   return {
@@ -252,14 +253,15 @@ function QuickLive({
   seed: string;
   onExit: () => void;
 }) {
-  const sim = useMemo(() => {
+  const setups = useMemo(() => {
     const ai = aiTactics(difficulty);
-    return new MatchSim(
-      buildTeamSetup(myId),
-      buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing),
+    return {
+      home: buildTeamSetup(myId),
+      away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing),
       seed,
-    );
+    };
   }, [myId, oppId, difficulty, seed]);
+  const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
 
   const { lang } = useT();
   const [quality] = useState<Quality>(() => {
@@ -276,6 +278,7 @@ function QuickLive({
   const [narrating, setNarrating] = useState(false);
   const [done, setDone] = useState(false);
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
+  const controllerRef = useRef<LiveMatchController | null>(null);
 
   const speedRef = useRef(speed);
   speedRef.current = speed;
@@ -318,45 +321,31 @@ function QuickLive({
   }, [snap, sim]);
 
   useEffect(() => {
-    let raf = 0;
-    let last = 0;
-    let acc = 0;
-    let hidden = false;
-    const onVis = () => {
-      hidden = document.hidden;
-      last = 0;
-    };
-    document.addEventListener("visibilitychange", onVis);
-    function loop(t: number) {
-      raf = requestAnimationFrame(loop);
-      const dt = Math.min(0.05, (t - (last || t)) / 1000);
-      last = t;
-      if (pausedRef.current || hidden) return;
-      const steps = Math.max(1, Math.round(speedRef.current));
-      for (let i = 0; i < steps; i++) sim.step(dt * 6);
-      acc += dt;
-      if (acc >= 0.1 || sim.finished) {
-        acc = 0;
-        setSnap(snapshot(sim));
-      }
-      if (sim.finished) {
+    const controller = createLiveMatchController({
+      ...setups,
+      view: sim,
+      onSnapshot: (view) => setSnap(snapshot(view)),
+      onFinished: (view) => {
+        setSnap(snapshot(view));
         setDone(true);
-        cancelAnimationFrame(raf);
-      }
-    }
-    raf = requestAnimationFrame(loop);
+      },
+    });
+    controllerRef.current = controller;
+    const onVisibility = () => controller.pause(document.hidden || pausedRef.current);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      cancelAnimationFrame(raf);
-      document.removeEventListener("visibilitychange", onVis);
+      document.removeEventListener("visibilitychange", onVisibility);
+      controller.dispose();
+      controllerRef.current = null;
     };
-  }, [sim]);
+  }, [setups, sim]);
+
+  useEffect(() => controllerRef.current?.pause(paused), [paused]);
+  useEffect(() => controllerRef.current?.setSpeed(speed), [speed]);
 
   const skip = useCallback(() => {
-    let guard = 0;
-    while (!sim.finished && guard++ < 200_000) sim.step(0.4);
-    setSnap(snapshot(sim));
-    setDone(true);
-  }, [sim]);
+    controllerRef.current?.skip();
+  }, []);
 
   const home = CLUBS[myId]!;
   const away = CLUBS[oppId]!;
