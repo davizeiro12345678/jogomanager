@@ -148,7 +148,7 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
               {stageName(s)}
             </p>
-            <ul className="mt-1.5 space-y-1">
+            <ul className="mt-1.5 space-y-1" role="list" aria-label="Confrontos da fase">
               {cup.ties
                 .filter((t) => t.round === s)
                 .map((t, i) => (
@@ -168,6 +168,8 @@ function TieRow({ tie, clubId }: { tie: CupTie; clubId: string }) {
   const mine = tie.home === clubId || tie.away === clubId;
   return (
     <li
+      role="listitem"
+      aria-label={`${home?.name || "A definir"} contra ${away?.name || "A definir"}. Placar: ${tie.hg === null ? "Não realizado" : tie.hg + " a " + tie.ag}`}
       className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm ${
         mine ? "bg-primary/10 ring-1 ring-primary/30" : "bg-secondary/40"
       }`}

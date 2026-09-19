@@ -1,5 +1,32 @@
 # Roadmap
 
+## Estado real auditado — 2026-09-19
+
+### Concluído e validado
+- [x] Física ao vivo em Worker nas partidas de carreira, rápida e multiplayer, com interpolação e fallback
+- [x] Engine determinística, coleções limitadas, perseguição sem alocação/ordenação por passo e colisão ponderada
+- [x] Curva da bola corrigida para usar o mesmo vetor de velocidade nos dois eixos
+- [x] Medidor de FPS, média, p95, 1% low, tempo de quadro, memória, qualidade e renderizador
+- [x] Qualidade adaptativa, WebGPU experimental com fallback WebGL2, três LODs e 237 clipes de animação
+- [x] 57 cutscenes, incluindo 25 cenas híbridas
+- [x] Narrador expandido para 350 falas PT, 250 EN e 235 ES
+- [x] Importação em massa de uniformes home/away/third/goalkeeper quando a fonte os oferece
+- [x] Testes atuais: 7 testes, 93 verificações; tipos e diferenças de código sem erro
+
+### Trabalho interno ainda aberto
+- [ ] Testes integrados de salvamento offline→nuvem e entrega idempotente de pagamento com banco isolado
+- [ ] Revisão final e unificada de HUD, carreira, elenco, tática, loja e campeonato em celular
+- [ ] Segunda rodada de realismo da IA adversária, goleiros, posicionamento e transições do PlayerRig
+- [ ] Revisão final de metadados exclusivos e conteúdo das páginas públicas restantes
+- [ ] Teste automatizado de replay, PWA e partida longa no navegador
+
+### Bloqueios externos — não marcar como concluído sem evidência
+- [ ] Medir uma partida longa em celular e desktop com GPU física; o ambiente atual usa renderização por software
+- [ ] Completar os elencos sem cobertura nas fontes contratadas; não inventar jogadores reais
+- [ ] Repetir PageSpeed quando a cota externa estiver disponível
+
+---
+
 ## Novo pedido (2026-09-10)
 - [x] Página /visual: controles de texturas, geometria dos jogadores, clima e grama por clube, salvos no navegador
 - [x] Tela de criação de clube (nome, cidade, estádio, torcida, uniforme) com retrato do clube

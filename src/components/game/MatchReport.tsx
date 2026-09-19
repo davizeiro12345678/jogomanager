@@ -13,6 +13,7 @@ export function MatchReport({
   homeId,
   awayId,
   mySide,
+  advancing,
   onFinish,
 }: {
   sim: MatchRuntime;
@@ -20,6 +21,7 @@ export function MatchReport({
   awayId: string;
   mySide: "home" | "away";
   onFinish: () => void;
+  advancing?: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("resumo");
   const ratings = useMemo(() => sim.playerRatings(), [sim]);
@@ -171,10 +173,11 @@ export function MatchReport({
         </div>
 
         <button
+          disabled={advancing}
           onClick={onFinish}
-          className="mt-5 w-full rounded-lg bg-primary px-4 py-2.5 font-display text-sm uppercase tracking-widest text-primary-foreground"
+          className="mt-5 w-full rounded-lg bg-primary px-4 py-2.5 font-display text-sm uppercase tracking-widest text-primary-foreground disabled:opacity-50 disabled:cursor-wait"
         >
-          Voltar à central
+          {advancing ? "Processando..." : "Voltar à central"}
         </button>
       </div>
     </div>
