@@ -166,3 +166,14 @@
 ## Entrega 2026-09-19 (tarde)
 - [x] Repertório do narrador ampliado outra vez: novas falas por emoção (rotina, tensão, euforia, decepção, ironia) em PT/EN/ES e dez entradas de locutor
 - [x] Esqueleto dos jogadores com clavículas articuladas (ombro acompanha o braço) e mandíbula que abre conforme o esforço
+
+## Evolução integrada aprovada — 2026-09-19
+- [ ] Redesenhar e aliviar a página inicial e consolidar o sistema visual global
+- [ ] Reorganizar a interface móvel da partida e unificar os fluxos principais
+- [ ] Corrigir passos grandes da bola e ampliar física, goleiros e IA adversária
+- [ ] Reduzir snapshots/alocações do Worker e melhorar pausa/fallback
+- [ ] Recalibrar iluminação, sombras, materiais, PlayerRig e pós-processamento adaptativo
+- [ ] Tornar a narração contextual com cache LRU, buffer, legenda e recuperação de falhas
+- [ ] Otimizar cutscenes 3D por qualidade, sincronizar voz e pré-carregar a próxima fala
+- [ ] Aplicar AVIF/WebP responsivo onde compatível e limitar/versionar caches da PWA
+- [ ] Validar simulação, navegador, acessibilidade, mídia, cache e desempenho representativo
