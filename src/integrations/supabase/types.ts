@@ -159,6 +159,50 @@ export type Database = {
           },
         ]
       }
+      club_honours: {
+        Row: {
+          club_id: string
+          competition: string
+          created_at: string
+          external_id: string | null
+          id: string
+          seasons: string[]
+          source: string
+          title_count: number
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          competition: string
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          seasons?: string[]
+          source: string
+          title_count?: number
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          competition?: string
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          seasons?: string[]
+          source?: string
+          title_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_honours_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clubs: {
         Row: {
           city: string | null
@@ -166,6 +210,9 @@ export type Database = {
           country: string | null
           created_at: string
           crest_url: string | null
+          data_source: string | null
+          data_updated_at: string | null
+          description: string | null
           founded: number | null
           full_name: string | null
           id: string
@@ -184,6 +231,9 @@ export type Database = {
           country?: string | null
           created_at?: string
           crest_url?: string | null
+          data_source?: string | null
+          data_updated_at?: string | null
+          description?: string | null
           founded?: number | null
           full_name?: string | null
           id: string
@@ -202,6 +252,9 @@ export type Database = {
           country?: string | null
           created_at?: string
           crest_url?: string | null
+          data_source?: string | null
+          data_updated_at?: string | null
+          description?: string | null
           founded?: number | null
           full_name?: string | null
           id?: string
