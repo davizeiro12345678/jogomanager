@@ -15,6 +15,13 @@
       "when": 1789760458141,
       "tag": "0001_clubs_website",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789826676962,
+      "tag": "0002_create_user_profiles",
+      "breakpoints": true
     }
   ]
 }
