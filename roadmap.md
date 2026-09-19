@@ -180,10 +180,12 @@
 - [ ] Validar FPS representativo em aparelho com GPU física e partida longa
 
 ## Novo pedido — dados reais e salto gráfico (2026-09-19)
-- [ ] Reconciliar todas as pendências do plano com o estado atual
-- [ ] Conectar somente fontes úteis e acessíveis para importar dados reais
-- [ ] Ampliar banco com história, troféus e metadados de estádio dos clubes
-- [ ] Importar o máximo permitido de kits, escudos, jogadores, fotos, estádios, história e troféus sem inventar dados
-- [ ] Exibir história e troféus reais nos painéis de clube/manager
-- [ ] Aplicar novo ciclo massivo de realismo 3D preservando o modo Fluidez
-- [ ] Validar tipos, testes, build e principais telas no navegador
+- [x] Reconciliar todas as pendências do plano com o estado atual
+- [x] Usar somente fontes úteis e acessíveis; não conectar armazenamento/mapas sem uma base esportiva identificada
+- [x] Ampliar banco com biografia rastreável, fonte/data de atualização e títulos históricos normalizados
+- [ ] Continuar importação em lotes: 1.368 clubes, 1.103 escudos, 937 estádios, 953 com elenco, 658 kits e 4.115 fotos; primeiro lote trouxe 15 biografias, mas nenhuma honraria confirmada
+- [x] Exibir história e títulos reais nos painéis de clube/manager, separados das conquistas da carreira
+- [x] Aplicar novo ciclo de materiais PBR, grama adaptativa, culling e sombras escaláveis preservando o modo Fluidez
+- [x] Validar tipos, 11 testes (incluindo 200 partidas), diferenças de código e compilação de produção
+- [x] Validar no navegador o estado vazio das rotas de carreira: mensagem clara e botão “Começar carreira”, sem erros de rede ou console
+- [ ] Validar FPS em aparelho com GPU física; o navegador automatizado usa renderização por software

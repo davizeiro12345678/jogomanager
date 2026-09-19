@@ -20,7 +20,9 @@ import * as THREE from "three";
 import {
   bootGrainNormal,
   jerseyWeaveNormal,
+  jerseyRoughness,
   skinPoreNormal,
+  skinRoughness,
   sockRibNormal,
 } from "@/game/textures/fabric";
 import type { Kit } from "@/game/kits";
@@ -101,6 +103,8 @@ export function playerMaterials(
   const rib = hi ? sockRibNormal() : null;
   const pores = hi ? skinPoreNormal() : null;
   const grain = hi ? bootGrainNormal() : null;
+  const jerseyRough = hi ? jerseyRoughness() : null;
+  const skinRough = hi ? skinRoughness() : null;
 
   const set: PlayerMaterials = {
     skin: hi
@@ -108,6 +112,7 @@ export function playerMaterials(
           color: look.skin,
           roughness: 0.6 - sweat * 0.16,
           normalMap: pores,
+          roughnessMap: skinRough,
           normalScale: NORMAL_SCALE,
           clearcoat: 0.28 + sweat * 0.25,
           clearcoatRoughness: 0.5,
@@ -128,6 +133,7 @@ export function playerMaterials(
           color: kit.base,
           map: tex,
           normalMap: weave,
+          roughnessMap: jerseyRough,
           normalScale: NORMAL_SCALE,
           roughness: 0.76 - sweat * 0.14,
           envMapIntensity: 0.85,
@@ -143,6 +149,7 @@ export function playerMaterials(
           color: kit.shorts,
           roughness: 0.84,
           normalMap: weave,
+          roughnessMap: jerseyRough,
           normalScale: NORMAL_SCALE,
           sheen: 0.4,
           sheenColor: new THREE.Color(shade(kit.shorts, 0.35)),

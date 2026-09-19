@@ -156,3 +156,41 @@ export function bootGrainNormal(): THREE.CanvasTexture | null {
     heightToNormal(ctx, size, 1.6);
   });
 }
+
+/** variação de brilho do tecido: áreas comprimidas e molhadas deixam de parecer plástico uniforme */
+export function jerseyRoughness(): THREE.CanvasTexture | null {
+  return make("jersey-roughness", 128, 10, (ctx, size) => {
+    const image = ctx.createImageData(size, size);
+    let seed = 0x51f15e;
+    for (let i = 0; i < image.data.length; i += 4) {
+      seed = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      const x = (i / 4) % size;
+      const weave = Math.sin(x * 0.72) * 8;
+      const value = Math.max(96, Math.min(232, 184 + weave + ((seed >>> 24) - 128) * 0.12));
+      image.data[i] = value;
+      image.data[i + 1] = value;
+      image.data[i + 2] = value;
+      image.data[i + 3] = 255;
+    }
+    ctx.putImageData(image, 0, 0);
+  });
+}
+
+/** rugosidade irregular da pele, compartilhada por todos os jogadores em qualidade alta */
+export function skinRoughness(): THREE.CanvasTexture | null {
+  return make("skin-roughness", 128, 6, (ctx, size) => {
+    const image = ctx.createImageData(size, size);
+    let seed = 0x93a11;
+    for (let i = 0; i < image.data.length; i += 4) {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      const value = 142 + ((seed >>> 25) & 31);
+      image.data[i] = value;
+      image.data[i + 1] = value;
+      image.data[i + 2] = value;
+      image.data[i + 3] = 255;
+    }
+    ctx.putImageData(image, 0, 0);
+  });
+}

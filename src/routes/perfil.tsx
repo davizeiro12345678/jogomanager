@@ -9,6 +9,7 @@ import { achievementById, careerMilestones, ACHIEVEMENTS } from "@/game/achievem
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";
+import { ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
 
 const FALLBACK_LOOK = {
   skin: 0,
@@ -242,6 +243,8 @@ function Perfil() {
             </p>
           )}
         </HudCard>
+
+        <ClubHonoursPanel clubId={career.clubId} className="md:col-span-2" />
 
         <HudCard title="Preferências" tone="neutral">
           <p className="text-xs text-muted-foreground">

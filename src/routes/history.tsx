@@ -4,6 +4,7 @@ import { GameShell } from "@/components/game/GameShell";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
 import { useCareer } from "@/hooks/useCareer";
+import { ClubHeritagePanel, ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
 
 export const Route = createFileRoute("/history")({
   ssr: false,
@@ -39,8 +40,10 @@ function HistoryPage() {
   return (
     <GameShell career={career}>
       <div className="grid gap-4 lg:grid-cols-2">
+        <ClubHeritagePanel clubId={career.clubId} />
+        <ClubHonoursPanel clubId={career.clubId} />
         <section className="rounded-2xl border border-border/60 surface-card p-5">
-          <h1 className="font-display text-2xl uppercase tracking-wide">Sala de troféus</h1>
+          <h1 className="font-display text-2xl uppercase tracking-wide">Troféus do treinador</h1>
           {career.trophies.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
               Nenhum título ainda. Vença a liga para levantar o primeiro troféu!
