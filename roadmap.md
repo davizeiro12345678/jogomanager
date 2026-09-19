@@ -178,3 +178,12 @@
 - [x] Manter AVIF/WebP responsivo da home e limitar/versionar caches da PWA
 - [x] Validar simulação, tipos, compilação e navegador desktop sem erros
 - [ ] Validar FPS representativo em aparelho com GPU física e partida longa
+
+## Novo pedido — dados reais e salto gráfico (2026-09-19)
+- [ ] Reconciliar todas as pendências do plano com o estado atual
+- [ ] Conectar somente fontes úteis e acessíveis para importar dados reais
+- [ ] Ampliar banco com história, troféus e metadados de estádio dos clubes
+- [ ] Importar o máximo permitido de kits, escudos, jogadores, fotos, estádios, história e troféus sem inventar dados
+- [ ] Exibir história e troféus reais nos painéis de clube/manager
+- [ ] Aplicar novo ciclo massivo de realismo 3D preservando o modo Fluidez
+- [ ] Validar tipos, testes, build e principais telas no navegador
