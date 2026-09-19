@@ -105,7 +105,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preload", as: "style", href: GOOGLE_FONTS },
       { rel: "stylesheet", href: GOOGLE_FONTS, media: "print", id: "google-fonts" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
-      { rel: "apple-touch-icon", href: "/favicon.png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       // Resumo do site para assistentes de IA (padrão llms.txt)
       { rel: "llms", type: "text/plain", href: "/llms.txt" },

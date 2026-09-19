@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { Apple, CheckCircle2, Cloud, Gamepad2, Mail, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
@@ -11,12 +13,13 @@ function safeNext(value: unknown): string | undefined {
   return value;
 }
 
-type SocialProvider = "google" | "microsoft" | "apple";
+type SocialProvider = "google" | "microsoft" | "apple" | "lovable";
 
 const SOCIALS: { id: SocialProvider; label: string }[] = [
   { id: "google", label: "Google" },
   { id: "microsoft", label: "Microsoft" },
   { id: "apple", label: "Apple" },
+  { id: "lovable", label: "Lovable" },
 ];
 
 export const Route = createFileRoute("/auth")({
@@ -59,6 +62,7 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -77,7 +81,7 @@ function AuthPage() {
             email,
             password,
             options: {
-              emailRedirectTo: `${window.location.origin}${destination}`,
+              emailRedirectTo: `${window.location.origin}/auth?next=${encodeURIComponent(destination)}`,
             },
           });
     const { data, error: err } = await fn;
@@ -87,13 +91,14 @@ function AuthPage() {
       return;
     }
     if (data.session) navigate({ href: destination });
-    else setError("Confirme o e-mail enviado para concluir o cadastro.");
+    else setConfirmationSent(true);
   }
 
   async function signInWith(provider: SocialProvider) {
     setBusy(true);
     setError(null);
 
+    window.sessionStorage.setItem("manager3d.auth.next", destination);
     const result = await lovable.auth.signInWithOAuth(provider, {
       redirect_uri: window.location.origin,
     });
@@ -108,17 +113,73 @@ function AuthPage() {
   }
 
   return (
-    <div className="pitch-bg flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/85 p-6 backdrop-blur-xl">
-        <Link to="/" className="font-display text-xs uppercase tracking-[0.3em] text-primary">
-          Manager 3D
-        </Link>
-        <h1 className="mt-2 font-display text-3xl">
-          {mode === "in" ? "Entrar no vestiário" : "Criar conta"}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Sua carreira fica salva e acompanha você em qualquer dispositivo.
-        </p>
+    <main className="pitch-bg grid min-h-screen place-items-center px-4 py-10">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-xl border border-border/60 bg-card/90 shadow-2xl backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="hidden border-r border-border/60 bg-secondary/40 p-10 lg:flex lg:flex-col lg:justify-between">
+          <div>
+            <Link to="/" className="inline-flex items-center gap-2 font-display text-sm uppercase text-primary">
+              <Gamepad2 size={18} /> Pro Football Manager 3D
+            </Link>
+            <h1 className="mt-14 max-w-md font-display text-5xl uppercase leading-none">
+              Sua carreira não precisa ficar presa a um aparelho.
+            </h1>
+            <p className="mt-5 max-w-md text-muted-foreground">
+              Entre uma vez e continue do mesmo ponto no celular ou computador.
+            </p>
+          </div>
+          <ul className="space-y-3 text-sm">
+            <li className="flex items-center gap-3"><Cloud className="text-primary" /> Carreira sincronizada automaticamente</li>
+            <li className="flex items-center gap-3"><ShieldCheck className="text-primary" /> Compras e progresso ligados à sua conta</li>
+            <li className="flex items-center gap-3"><CheckCircle2 className="text-primary" /> Jogue offline e sincronize ao voltar</li>
+          </ul>
+        </section>
+
+        <section className="p-6 sm:p-9">
+          <Link to="/" className="font-display text-xs uppercase text-primary lg:hidden">← Manager 3D</Link>
+          <p className="font-display text-xs uppercase text-primary">Nuvem do treinador</p>
+          <h2 className="mt-2 font-display text-3xl uppercase">
+            {mode === "in" ? "Entrar e continuar" : "Criar sua conta"}
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            O Google é a forma mais rápida: um clique, sem senha nova.
+          </p>
+
+          <Button
+            type="button"
+            size="lg"
+            disabled={busy}
+            onClick={() => signInWith("google")}
+            className="mt-6 h-12 w-full text-base"
+          >
+            Continuar com Google
+          </Button>
+
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {SOCIALS.filter((social) => social.id !== "google").map((social) => (
+              <Button
+                key={social.id}
+                type="button"
+                variant="outline"
+                disabled={busy}
+                onClick={() => signInWith(social.id)}
+                className="min-h-11 px-2 text-xs"
+              >
+                {social.id === "apple" ? <Apple /> : null}
+                {social.label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="mt-6 flex items-center gap-2 text-[11px] uppercase text-muted-foreground">
+            <span className="h-px flex-1 bg-border" /> ou use e-mail <span className="h-px flex-1 bg-border" />
+          </div>
+
+          {confirmationSent ? (
+            <div className="mt-5 rounded-lg border border-primary/35 bg-primary/10 p-4 text-sm">
+              <p className="font-medium text-foreground">Confira sua caixa de entrada</p>
+              <p className="mt-1 text-muted-foreground">Enviamos um link para confirmar seu e-mail e concluir o cadastro.</p>
+            </div>
+          ) : (
 
         <form onSubmit={submit} className="mt-5 space-y-3">
           <label htmlFor="auth-email" className="sr-only">
@@ -147,42 +208,29 @@ function AuthPage() {
             className="w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
           />
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <button
+          <Button
             type="submit"
             disabled={busy}
-            className="w-full rounded-lg bg-primary px-4 py-2.5 font-display text-sm uppercase tracking-widest text-primary-foreground transition hover:brightness-110 disabled:opacity-60"
+            className="w-full"
           >
-            {busy ? "..." : mode === "in" ? "Entrar" : "Criar conta"}
-          </button>
+            <Mail /> {busy ? "Aguarde…" : mode === "in" ? "Entrar com e-mail" : "Criar conta com e-mail"}
+          </Button>
         </form>
+          )}
 
-        <div className="mt-5 flex items-center gap-2 text-[11px] uppercase tracking-widest text-muted-foreground">
-          <span className="h-px flex-1 bg-border" />
-          ou entre com
-          <span className="h-px flex-1 bg-border" />
-        </div>
-
-        <div className="mt-3 grid gap-2">
-          {SOCIALS.map((social) => (
-            <button
-              key={social.id}
-              type="button"
-              disabled={busy}
-              onClick={() => signInWith(social.id)}
-              className="min-h-[44px] w-full rounded-lg border border-border bg-secondary/50 px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-secondary disabled:opacity-60"
-            >
-              Continuar com {social.label}
-            </button>
-          ))}
-        </div>
-
-        <button
+        <Button
+          type="button"
+          variant="ghost"
           onClick={() => setMode(mode === "in" ? "up" : "in")}
-          className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground"
+          className="mt-4 w-full text-xs text-muted-foreground"
         >
           {mode === "in" ? "Não tem conta? Cadastre-se" : "Já tem conta? Entrar"}
-        </button>
+        </Button>
+        <p className="mt-4 text-center text-[11px] text-muted-foreground">
+          Ao continuar, você concorda com os <Link to="/termos" className="underline">Termos</Link> e a <Link to="/privacidade" className="underline">Privacidade</Link>.
+        </p>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

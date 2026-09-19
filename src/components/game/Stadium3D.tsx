@@ -1354,7 +1354,7 @@ function Stands({
     if (!mesh) return;
     crowd.colors.forEach((c, i) => mesh.setColorAt(i, c));
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    const shoulders = shoulderRef.current;
+    const shoulders = quality === "baixa" ? null : shoulderRef.current;
     if (shoulders) {
       crowd.colors.forEach((c, i) => shoulders.setColorAt(i, c));
       if (shoulders.instanceColor) shoulders.instanceColor.needsUpdate = true;
@@ -1380,7 +1380,7 @@ function Stands({
     const mat = mesh.material as THREE.Material | THREE.Material[];
     if (Array.isArray(mat)) mat.forEach((m) => (m.needsUpdate = true));
     else mat.needsUpdate = true;
-  }, [crowd]);
+  }, [crowd, quality]);
 
   // atualiza a torcida em taxa reduzida fora da qualidade alta: o movimento
   // continua contínuo aos olhos, mas o custo por quadro cai bastante
@@ -1414,7 +1414,7 @@ function Stands({
     if (tick.current % everyN !== 0) return;
     const head = headRef.current;
     const hair = hairRef.current;
-    const shoulders = shoulderRef.current;
+    const shoulders = quality === "baixa" ? null : shoulderRef.current;
     const t = clock.elapsedTime;
     const pulse = goalPulse.current;
     const arms = armsRef.current;
@@ -1522,14 +1522,16 @@ function Stands({
         />
         <meshStandardMaterial roughness={0.9} />
       </instancedMesh>
-      <instancedMesh
-        ref={shoulderRef}
-        frustumCulled={false}
-        args={[undefined, undefined, crowd.positions.length]}
-      >
-        <capsuleGeometry args={[0.13, 0.3, 2, quality === "alta" ? 8 : 5]} />
-        <meshStandardMaterial roughness={0.9} />
-      </instancedMesh>
+      {quality !== "baixa" ? (
+        <instancedMesh
+          ref={shoulderRef}
+          frustumCulled={false}
+          args={[undefined, undefined, crowd.positions.length]}
+        >
+          <capsuleGeometry args={[0.13, 0.3, 2, quality === "alta" ? 8 : 5]} />
+          <meshStandardMaterial roughness={0.9} />
+        </instancedMesh>
+      ) : null}
       <instancedMesh
         ref={headRef}
         frustumCulled={false}

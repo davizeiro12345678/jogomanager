@@ -20,6 +20,7 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as ComoSerTecnicoDeFutebolRouteImport } from './routes/como-ser-tecnico-de-futebol'
 import { Route as ComparativoJogosManagerRouteImport } from './routes/comparativo-jogos-manager'
+import { Route as CompartilharRouteImport } from './routes/compartilhar'
 import { Route as ComprasRouteImport } from './routes/compras'
 import { Route as ConquistasRouteImport } from './routes/conquistas'
 import { Route as ContatoRouteImport } from './routes/contato'
@@ -128,6 +129,11 @@ const ComoSerTecnicoDeFutebolRoute = ComoSerTecnicoDeFutebolRouteImport.update({
 const ComparativoJogosManagerRoute = ComparativoJogosManagerRouteImport.update({
   id: '/comparativo-jogos-manager',
   path: '/comparativo-jogos-manager',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompartilharRoute = CompartilharRouteImport.update({
+  id: '/compartilhar',
+  path: '/compartilhar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComprasRoute = ComprasRouteImport.update({
@@ -416,6 +422,7 @@ export interface FileRoutesByFullPath {
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
+  '/compartilhar': typeof CompartilharRoute
   '/compras': typeof ComprasRoute
   '/conquistas': typeof ConquistasRoute
   '/contato': typeof ContatoRoute
@@ -483,6 +490,7 @@ export interface FileRoutesByTo {
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
+  '/compartilhar': typeof CompartilharRoute
   '/compras': typeof ComprasRoute
   '/conquistas': typeof ConquistasRoute
   '/contato': typeof ContatoRoute
@@ -551,6 +559,7 @@ export interface FileRoutesById {
   '/club': typeof ClubRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
+  '/compartilhar': typeof CompartilharRoute
   '/compras': typeof ComprasRoute
   '/conquistas': typeof ConquistasRoute
   '/contato': typeof ContatoRoute
@@ -620,6 +629,7 @@ export interface FileRouteTypes {
     | '/club'
     | '/como-ser-tecnico-de-futebol'
     | '/comparativo-jogos-manager'
+    | '/compartilhar'
     | '/compras'
     | '/conquistas'
     | '/contato'
@@ -687,6 +697,7 @@ export interface FileRouteTypes {
     | '/club'
     | '/como-ser-tecnico-de-futebol'
     | '/comparativo-jogos-manager'
+    | '/compartilhar'
     | '/compras'
     | '/conquistas'
     | '/contato'
@@ -754,6 +765,7 @@ export interface FileRouteTypes {
     | '/club'
     | '/como-ser-tecnico-de-futebol'
     | '/comparativo-jogos-manager'
+    | '/compartilhar'
     | '/compras'
     | '/conquistas'
     | '/contato'
@@ -822,6 +834,7 @@ export interface RootRouteChildren {
   ClubRoute: typeof ClubRoute
   ComoSerTecnicoDeFutebolRoute: typeof ComoSerTecnicoDeFutebolRoute
   ComparativoJogosManagerRoute: typeof ComparativoJogosManagerRoute
+  CompartilharRoute: typeof CompartilharRoute
   ComprasRoute: typeof ComprasRoute
   ConquistasRoute: typeof ConquistasRoute
   ContatoRoute: typeof ContatoRoute
@@ -955,6 +968,13 @@ declare module '@tanstack/react-router' {
       path: '/comparativo-jogos-manager'
       fullPath: '/comparativo-jogos-manager'
       preLoaderRoute: typeof ComparativoJogosManagerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compartilhar': {
+      id: '/compartilhar'
+      path: '/compartilhar'
+      fullPath: '/compartilhar'
+      preLoaderRoute: typeof CompartilharRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compras': {
@@ -1350,6 +1370,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClubRoute: ClubRoute,
   ComoSerTecnicoDeFutebolRoute: ComoSerTecnicoDeFutebolRoute,
   ComparativoJogosManagerRoute: ComparativoJogosManagerRoute,
+  CompartilharRoute: CompartilharRoute,
   ComprasRoute: ComprasRoute,
   ConquistasRoute: ConquistasRoute,
   ContatoRoute: ContatoRoute,
