@@ -19,6 +19,7 @@ import { formatMoney, wageBill } from "@/game/economy";
 import { formOf } from "@/game/events";
 import { computeTable, nextFixture } from "@/game/season";
 import { useCareer } from "@/hooks/useCareer";
+import { GuestCloudPrompt } from "@/components/GuestCloudPrompt";
 
 export const Route = createFileRoute("/dashboard")({
   ssr: false,
@@ -117,6 +118,9 @@ function Dashboard() {
 
   return (
     <GameShell career={career}>
+      <div className="mb-5">
+        <GuestCloudPrompt next="/dashboard" compact />
+      </div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">

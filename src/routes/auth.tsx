@@ -100,7 +100,7 @@ function AuthPage() {
 
     window.sessionStorage.setItem("manager3d.auth.next", destination);
     const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/auth?next=${encodeURIComponent(destination)}`,
     });
     if (result.error) {
       setBusy(false);

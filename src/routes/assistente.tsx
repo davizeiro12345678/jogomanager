@@ -304,7 +304,7 @@ function AssistenteContent({ career }: { career: CareerState }) {
     mutationFn: async (nextMessages: { role: "user" | "assistant"; text: string }[]) =>
       chatFn({
         data: {
-          resumoCarreira: `${club?.name ?? career.clubId}, temporada ${career.season}, rodada ${career.round}, posição ${posicaoAtual}, orçamento ${career.finances.budget}M€, pressão ${career.pressure}%.`,
+          resumoCarreira: `${club?.name ?? career.clubId}, temporada ${career.season}, rodada ${career.round}, posição ${posicaoAtual}, orçamento ${career.finances.budget}M€, pressão ${career.pressure}%, aprovação ${career.approval}%, sequência ${career.streak}, formação ${career.tactics.formation}, próximo rival ${opponent?.name ?? "a definir"}, força rival ${opponent?.strength ?? "desconhecida"}, último placar ${career.results.at(-1) ? `${career.results.at(-1)!.hg} x ${career.results.at(-1)!.ag}` : "sem jogo"}.`,
           mensagens: nextMessages.slice(-10),
         },
       }),

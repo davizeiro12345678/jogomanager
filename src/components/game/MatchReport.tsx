@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
+import { GuestCloudPrompt } from "@/components/GuestCloudPrompt";
 import { CLUBS } from "@/game/data/leagues";
 import type { MatchSim } from "@/game/sim";
 
@@ -163,6 +164,10 @@ export function MatchReport({
               ))}
             </ul>
           ) : null}
+        </div>
+
+        <div className="mt-5">
+          <GuestCloudPrompt next="/club" compact />
         </div>
 
         <button
