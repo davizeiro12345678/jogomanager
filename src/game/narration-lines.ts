@@ -284,24 +284,198 @@ const ES: Pack = {
   ],
 };
 
-const LEAD_INS: Record<NarrationLang, string[]> = {
-  pt: ["", "Olha o lance! ", "Atenção, torcedor! ", "Que momento! ", "No detalhe: "],
-  en: ["", "Watch this! ", "Listen to that crowd! ", "What a moment! ", "In a flash, "],
-  es: ["", "¡Atención! ", "¡Mira la jugada! ", "¡Qué momento! ", "En un instante, "],
+/**
+ * Segunda leva de falas — amplia o repertório sem tocar nas frases originais.
+ * Aqui entram variações de emoção: rotina, tensão, euforia, decepção e ironia.
+ */
+const EXTRA: Record<NarrationLang, Partial<Pack>> = {
+  pt: {
+    goal: [
+      "É DELE! É DO {team}! O estádio treme!",
+      "Que sofrimento valeu a pena: GOL DO {team}!",
+      "Bateu rasteiro, no cantinho. Gol do {team}!",
+      "O goleiro voou, mas não alcançou. Gol do {team}!",
+      "De cabeça, com categoria! Gol do {team}!",
+      "Contra-ataque mortal e o {team} não perdoa!",
+      "Mudou o jogo! O {team} vira a chave no placar.",
+      "Gol de artilheiro: o {team} estava só esperando a chance.",
+      "Sem chance de defesa. Gol do {team} e olha o abraço!",
+    ],
+    save: [
+      "Que colocação! O goleiro do {team} tinha lido o lance.",
+      "Fechou o ângulo e defendeu. Aula do goleiro do {team}.",
+      "No susto, mas segurou! O {team} agradece.",
+      "Saiu bem do gol o arqueiro do {team}.",
+      "Rebateu e ninguém pegou a sobra. Uff, {team}!",
+    ],
+    shot: [
+      "Mandou por cima o {team}. A torcida leva a mão à cabeça.",
+      "De fora da área, o {team} tentou surpreender.",
+      "Que bicicleta do {team}! Faltou pontaria.",
+      "Chutou cruzado o {team}. Passou beijando a trave.",
+      "Isolou. Dá pra ver a decepção no banco do {team}.",
+    ],
+    post: [
+      "Na trave e na sobra também não entrou! Que dia do {team}...",
+      "O poste salvou o goleiro! O {team} não acredita.",
+      "Duas traves no mesmo lance! Futebol é cruel com o {team}.",
+    ],
+    chance: [
+      "O {team} está com a faca nos dentes agora.",
+      "Olha o espaço nas costas da zaga: o {team} viu!",
+      "Trama bonita do {team}, tudo de primeira.",
+      "A defesa está desarrumada e o {team} aproveita.",
+      "Cruzamento na medida do {team}! Faltou o toque final.",
+    ],
+    corner: [
+      "Escanteio curto do {team}? A zaga se assusta.",
+      "Todos na área, inclusive o goleiro? Não, ainda não. Córner do {team}.",
+      "Bola alçada pelo {team}. Confusão na pequena área.",
+    ],
+    sub: [
+      "Muda a estratégia o {team}: entra gente de velocidade.",
+      "O técnico do {team} tira o time do sufoco com essa mudança.",
+      "Reforço no meio-campo do {team}.",
+    ],
+    foul: [
+      "Falta dura do {team}. O árbitro conversa com o jogador.",
+      "Puxou a camisa e o juiz viu. Falta do {team}.",
+      "Interrompeu o contra-ataque: falta tática do {team}.",
+    ],
+    card: [
+      "Reclamou demais e levou. Cartão no {team}.",
+      "Terceira falta do mesmo jogador: amarelo no {team}.",
+      "Agora tem que jogar com cuidado o {team}.",
+    ],
+    kickoff: [
+      "Times perfilados, hino cantado: começa o jogo!",
+      "Bola no centro, apito na boca: vai começar!",
+    ],
+    halftime: ["Quinze minutos para arrumar a casa.", "Vai terminando a primeira etapa."],
+    fulltime: ["Está encerrado. O placar conta a história.", "Fim de jogo e muita coisa para analisar."],
+  },
+  en: {
+    goal: [
+      "Low and hard into the corner — {team}!",
+      "A header, and it's in! {team} lead the way.",
+      "Counter-attack, clinical finish. {team}!",
+      "That changes everything for {team}.",
+      "The keeper never moved. {team} score!",
+    ],
+    save: [
+      "Great positioning from the {team} keeper.",
+      "Spread himself well — {team} survive.",
+      "Parried, and nobody followed in. Relief for {team}.",
+    ],
+    shot: [
+      "High and wide from {team}. Heads in hands.",
+      "An audacious effort from {team}!",
+      "Curled just past the post by {team}.",
+    ],
+    post: ["Post, then safety! Cruel on {team}.", "Twice off the frame — {team} cannot believe it."],
+    chance: [
+      "{team} have the scent of blood now.",
+      "Space in behind and {team} have spotted it.",
+      "Lovely one-touch football from {team}.",
+    ],
+    corner: ["Short corner from {team}.", "Whipped in by {team} — chaos in the six-yard box."],
+    sub: ["Pace introduced by {team}.", "{team} reinforce the midfield."],
+    foul: ["Cynical foul from {team} to stop the break.", "Shirt pull — the referee saw it. {team}."],
+    card: ["Dissent, and he's booked. {team}.", "Third foul by the same man — yellow for {team}."],
+    kickoff: ["Anthems done, here we go!", "Ball on the spot — we're away."],
+    halftime: ["Fifteen minutes to fix it.", "The first half winds down."],
+    fulltime: ["It's finished. The scoreline tells the story.", "Full time, and plenty to digest."],
+  },
+  es: {
+    goal: [
+      "¡Raso al palo largo! ¡Gol del {team}!",
+      "¡De cabeza y adentro! ¡Marca el {team}!",
+      "¡Contragolpe letal del {team}!",
+      "¡El portero ni se movió! ¡Gol del {team}!",
+    ],
+    save: [
+      "¡Bien colocado el arquero del {team}!",
+      "¡Se agrandó el portero del {team}!",
+      "Rechazó y nadie llegó al rebote. ¡Uf, {team}!",
+    ],
+    shot: ["¡Por encima del travesaño, {team}!", "¡Qué atrevimiento del {team}!", "¡Rozó el palo del {team}!"],
+    post: ["¡Al palo y afuera! Cruel para el {team}.", "¡Dos veces la madera! El {team} no lo cree."],
+    chance: [
+      "¡El {team} huele sangre!",
+      "¡Espacio a la espalda de la defensa y el {team} lo vio!",
+      "¡Toque y toque del {team}!",
+    ],
+    corner: ["Córner en corto del {team}.", "Centro del {team} y lío en el área chica."],
+    sub: ["Entra velocidad en el {team}.", "El {team} refuerza el mediocampo."],
+    foul: ["Falta táctica del {team}.", "Agarrón y el árbitro lo vio. {team}."],
+    card: ["Protestó y ahí está la amarilla. {team}.", "Tercera falta del mismo: amarilla al {team}."],
+    kickoff: ["¡Himnos cantados, comienza!", "Balón al centro: ¡arrancamos!"],
+    halftime: ["Quince minutos para corregir.", "Se acaba la primera parte."],
+    fulltime: ["Terminó. El marcador cuenta la historia.", "Final, y mucho para analizar."],
+  },
 };
 
 /**
- * Cinco leituras editoriais para cada frase-base. Isso leva cada idioma a mais
- * de 200 combinações sem entregar texto livre ao endpoint de voz, preservando
- * cache estável, segurança e a identidade de cada tipo de lance.
+ * Entradas do narrador. Cada uma dá um tom diferente à mesma frase-base:
+ * rotina, tensão, euforia, decepção e ironia.
+ */
+const LEAD_INS: Record<NarrationLang, string[]> = {
+  pt: [
+    "",
+    "Olha o lance! ",
+    "Atenção, torcedor! ",
+    "Que momento! ",
+    "No detalhe: ",
+    "Preste atenção nisso: ",
+    "Coração na mão: ",
+    "E agora, senhoras e senhores: ",
+    "Vai com tudo: ",
+    "Quem diria... ",
+  ],
+  en: [
+    "",
+    "Watch this! ",
+    "Listen to that crowd! ",
+    "What a moment! ",
+    "In a flash, ",
+    "Hold your breath: ",
+    "Well, well: ",
+    "And now, ladies and gentlemen: ",
+    "Here it comes: ",
+    "You could feel it coming: ",
+  ],
+  es: [
+    "",
+    "¡Atención! ",
+    "¡Mira la jugada! ",
+    "¡Qué momento! ",
+    "En un instante, ",
+    "Aguanten la respiración: ",
+    "Vaya, vaya: ",
+    "Y ahora, señoras y señores: ",
+    "Aquí viene: ",
+    "Se venía venir: ",
+  ],
+};
+
+/**
+ * Cada frase-base ganha uma leitura editorial por entrada do narrador. Com o
+ * repertório ampliado, cada idioma passa de 600 combinações sem entregar texto
+ * livre ao endpoint de voz, preservando cache estável e segurança.
  */
 function expandPack(lang: NarrationLang, pack: Pack): Pack {
   const leads = LEAD_INS[lang];
+  const extra = EXTRA[lang];
   return Object.fromEntries(
-    Object.entries(pack).map(([event, lines]) => [
-      event,
-      lines.flatMap((line, index) => leads.map((lead, style) => (style === index % leads.length ? line : `${lead}${line}`))),
-    ]),
+    Object.entries(pack).map(([event, lines]) => {
+      const all = [...lines, ...(extra[event as NarrationEvent] ?? [])];
+      return [
+        event,
+        all.flatMap((line, index) =>
+          leads.map((lead, style) => (style === index % leads.length ? line : `${lead}${line}`)),
+        ),
+      ];
+    }),
   ) as Pack;
 }
 
@@ -310,6 +484,7 @@ const PACKS: Record<NarrationLang, Pack> = {
   en: expandPack("en", EN),
   es: expandPack("es", ES),
 };
+
 
 export function lineCount(lang: NarrationLang, event: NarrationEvent): number {
   return PACKS[lang][event].length;
