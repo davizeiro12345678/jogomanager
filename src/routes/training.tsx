@@ -57,7 +57,19 @@ const INTENSITY: { key: 0 | 1 | 2; label: string; desc: string }[] = [
 
 function TrainingPage() {
   const { career, update } = useCareer();
+  const [friendlyLeague, setFriendlyLeague] = useState(() => career?.leagueId ?? LEAGUES[0]!.id);
+  const [friendlyOpp, setFriendlyOpp] = useState("");
+  const [friendlyMsg, setFriendlyMsg] = useState("");
+  const opponents = useMemo(() => {
+    const league = getLeague(friendlyLeague);
+    return league.clubs.filter((c) => c.id !== career?.clubId);
+  }, [friendlyLeague, career?.clubId]);
+
   if (!career) return <div className="p-10 text-muted-foreground">Nenhuma carreira ativa.</div>;
+
+  const doneDrill = drillDoneThisRound(career);
+  const doneFriendly = friendlyDoneThisRound(career);
+  const lastFriendlies = (career.friendlies ?? []).slice(0, 4);
 
   const players = Object.values(career.players);
   const avgCond = players.reduce((s, p) => s + p.condition, 0) / Math.max(1, players.length);
