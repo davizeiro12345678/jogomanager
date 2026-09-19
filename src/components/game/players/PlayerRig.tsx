@@ -429,7 +429,7 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
       // compensa a inclinação do corpo para a sombra ficar colada no gramado
       shadowRef.current.rotation.set(-Math.PI / 2 - g.rotation.x, 0, -g.rotation.z);
       const m = shadowRef.current.material as THREE.MeshBasicMaterial;
-      m.opacity = 0.3 * s;
+      m.opacity = 0.36 * s;
     }
   });
 
@@ -454,10 +454,13 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
       normalMap={pores ?? null}
       normalScale={nScale}
       clearcoat={0.28 + look.sweat * 0.25}
-      envMapIntensity={0.8}
+      envMapIntensity={0.95}
       clearcoatRoughness={0.5}
-      sheen={0.2}
+      sheen={0.35}
+      sheenRoughness={0.6}
       sheenColor="#ffd9c0"
+      specularIntensity={0.45}
+      specularColor="#fff1e4"
     />
   ) : (
     <meshStandardMaterial color={look.skin} roughness={0.7} />
@@ -471,9 +474,12 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
       map={tex ?? null}
       normalMap={weave ?? null}
       normalScale={nScale}
-      roughness={0.76}
-      envMapIntensity={0.7}
+      roughness={0.76 - look.sweat * 0.14}
+      envMapIntensity={0.85}
+      clearcoat={look.sweat * 0.3}
+      clearcoatRoughness={0.6}
       sheen={0.5}
+      sheenRoughness={0.7}
       sheenColor={shade(kit.base, 0.4)}
     />
   ) : (
@@ -516,7 +522,9 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
       sheen={0.85}
       sheenRoughness={0.55}
       sheenColor={shade(look.hairColor, 0.55)}
-      envMapIntensity={0.6}
+      anisotropy={0.55}
+      anisotropyRotation={Math.PI / 2}
+      envMapIntensity={0.75}
     />
   ) : (
     <meshStandardMaterial color={look.hairColor} roughness={0.85} metalness={0.02} />
