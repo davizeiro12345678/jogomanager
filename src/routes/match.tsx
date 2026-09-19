@@ -507,6 +507,19 @@ function LiveMatch({
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
   const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
   const controllerRef = useRef<LiveMatchController | null>(null);
+  const qualityTouched = useRef(false);
+
+  // Ajuste fino pela placa de vídeo real, logo depois do primeiro quadro.
+  // Se o jogador já mexeu no nível gráfico, a escolha dele manda.
+  useEffect(() => {
+    let alive = true;
+    void detectQualityByGpu().then((q) => {
+      if (alive && !qualityTouched.current) setQuality(q as Quality);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const speedRef = useRef(speed);
   speedRef.current = speed;
