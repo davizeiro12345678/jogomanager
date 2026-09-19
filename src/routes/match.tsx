@@ -1038,7 +1038,10 @@ function LiveMatch({
             {(["alta", "media", "baixa"] as const).map((q) => (
               <button
                 key={q}
-                onClick={() => setQuality(q)}
+                onClick={() => {
+                  qualityTouched.current = true;
+                  setQuality(q);
+                }}
                 className={`rounded-lg px-2 py-1 text-xs capitalize transition-colors ${
                   quality === q ? "bg-primary text-primary-foreground" : "bg-white/10 text-white"
                 }`}
