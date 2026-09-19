@@ -2531,7 +2531,7 @@ function Scene({
         intensity={sun}
         color={sunColor}
         castShadow={shadows}
-        shadow-mapSize={quality === "alta" ? [4096, 4096] : [2048, 2048]}
+        shadow-mapSize={quality === "alta" ? [2048, 2048] : [1024, 1024]}
         shadow-bias={-0.00018}
         shadow-normalBias={quality === "alta" ? 0.018 : 0.035}
         shadow-radius={quality === "alta" ? 1.8 : 1}
@@ -2643,6 +2643,7 @@ function Stadium3DImpl({
   const [fps, setFps] = useState<FpsSample | null>(null);
   useEffect(() => setEff(quality), [quality]);
   const declines = useRef(0);
+  const inclines = useRef(0);
 
   // Sombras: preferência explícita do jogador vence a decisão automática.
   const shadowsOn = vis.shadows === "auto" ? eff === "alta" : vis.shadows === "ligadas";
@@ -2727,15 +2728,23 @@ function Stadium3DImpl({
         {vis.adaptive ? (
           <PerformanceMonitor
             onDecline={() => {
+              inclines.current = 0;
               declines.current += 1;
-              if (declines.current >= 2) {
+              if (declines.current >= 3) {
                 declines.current = 0;
                 setEff((q) => lowerQuality(q));
               }
             }}
             onIncline={() => {
               declines.current = 0;
-              setEff((q) => (higherQuality(q) === quality ? higherQuality(q) : q));
+              inclines.current += 1;
+              if (inclines.current >= 6) {
+                inclines.current = 0;
+                setEff((q) => {
+                  const higher = higherQuality(q);
+                  return higher === quality ? higher : q;
+                });
+              }
             }}
           />
         ) : null}

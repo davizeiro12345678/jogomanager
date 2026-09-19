@@ -501,6 +501,7 @@ function LiveMatch({
   const [introStep, setIntroStep] = useState(() => (prematchIntroEnabled() ? 0 : -1));
   const introActive = introStep >= 0 && introStep < PREMATCH_SCENE_IDS.length;
   const [narrating, setNarrating] = useState(false);
+  const [caption, setCaption] = useState<string | null>(null);
   const narratorRef = useRef<Narrator | null>(null);
   const narrCursorRef = useRef(0);
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
@@ -514,7 +515,7 @@ function LiveMatch({
 
   // Narração: consome eventos novos do simulador e fala via Web Speech API.
   useEffect(() => {
-    const n = new Narrator({ lang, enabled: narrating });
+    const n = new Narrator({ lang, enabled: narrating, onCaption: setCaption });
     narratorRef.current = n;
     narrCursorRef.current = sim.events.length;
     return () => {
@@ -713,6 +714,15 @@ function LiveMatch({
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
       <Stadium3D sim={sim} mode={camera} quality={quality} />
+      {narrating && caption ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none absolute inset-x-3 bottom-24 z-20 mx-auto max-w-2xl rounded-md bg-background/90 px-4 py-2 text-center text-sm font-medium text-foreground shadow-lg backdrop-blur md:bottom-20"
+        >
+          {caption}
+        </div>
+      ) : null}
       <div className="sr-only" aria-hidden="false">
         <h2>Atalhos de teclado</h2>
         <ul>

@@ -276,6 +276,7 @@ function QuickLive({
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
   const [narrating, setNarrating] = useState(false);
+  const [caption, setCaption] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
   const controllerRef = useRef<LiveMatchController | null>(null);
@@ -288,7 +289,7 @@ function QuickLive({
   const cursorRef = useRef(0);
 
   useEffect(() => {
-    const n = new Narrator({ lang, enabled: narrating });
+    const n = new Narrator({ lang, enabled: narrating, onCaption: setCaption });
     narratorRef.current = n;
     cursorRef.current = sim.events.length;
     return () => {
@@ -316,7 +317,14 @@ function QuickLive({
       if (!ev) continue;
       const neutral = ev === "kickoff" || ev === "halftime" || ev === "fulltime";
       if (e.side === "neutral" && !neutral) continue;
-      n.speak(ev, e.side === "away" ? sim.away.short : sim.home.short);
+      const goalDifference = Math.abs(snap.hg - snap.ag);
+      const importance = snap.minute >= 80 && goalDifference <= 1 ? "decisive" : snap.minute >= 65 ? "pressure" : "routine";
+      n.speak(ev, e.side === "away" ? sim.away.short : sim.home.short, {
+        minute: e.minute,
+        homeGoals: snap.hg,
+        awayGoals: snap.ag,
+        importance,
+      });
     }
   }, [snap, sim]);
 
@@ -353,6 +361,11 @@ function QuickLive({
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
       <Stadium3D sim={sim} mode={camera} quality={quality} />
+      {narrating && caption ? (
+        <div role="status" aria-live="polite" className="pointer-events-none absolute inset-x-3 bottom-24 z-20 mx-auto max-w-2xl rounded-md bg-background/90 px-4 py-2 text-center text-sm font-medium text-foreground shadow-lg backdrop-blur md:bottom-20">
+          {caption}
+        </div>
+      ) : null}
       <h1 className="sr-only">
         Partida rápida: {home.name} x {away.name}
       </h1>

@@ -25,6 +25,8 @@ export interface LiveSnapshot {
   subsUsed: Record<Side, number>;
 }
 
+const eventCache = new WeakMap<MatchSim, { seq: number; events: MatchSim["events"] }>();
+
 export interface LiveResult extends LiveSnapshot {
   ratings: PlayerRating[];
   scorers: Scorer[];
@@ -68,6 +70,11 @@ export interface MatchRuntime extends SimView {
 }
 
 export function snapshotMatch(sim: MatchSim, seq: number): LiveSnapshot {
+  const cachedEvents = eventCache.get(sim);
+  const events = cachedEvents?.seq === sim.lastEventId
+    ? cachedEvents.events
+    : sim.events.map((event) => ({ ...event }));
+  if (cachedEvents?.seq !== sim.lastEventId) eventCache.set(sim, { seq: sim.lastEventId, events });
   return {
     seq,
     sentAt: performance.now(),
@@ -76,7 +83,7 @@ export function snapshotMatch(sim: MatchSim, seq: number): LiveSnapshot {
     ball: { ...sim.ball },
     possession: sim.possession,
     stats: { home: { ...sim.stats.home }, away: { ...sim.stats.away } },
-    events: sim.events.map((event) => ({ ...event })),
+    events,
     eventSeq: sim.lastEventId,
     finished: sim.finished,
     subsUsed: { ...sim.subsUsed },
@@ -130,7 +137,8 @@ export class WorkerMatchView implements MatchRuntime {
     this.previous.clear();
     for (const player of this.players) this.previous.set(player.id, { x: player.x, z: player.z });
     this.previousBall = { x: this.ball.x, z: this.ball.z, height: this.ball.height };
-    this.targets = new Map(next.players.map((player) => [player.id, player]));
+    this.targets.clear();
+    for (const player of next.players) this.targets.set(player.id, player);
     if (!this.players.length || this.players.length !== next.players.length) {
       this.players = next.players.map((player) => ({ ...player }));
     } else {
@@ -149,7 +157,7 @@ export class WorkerMatchView implements MatchRuntime {
     this.time = next.time;
     this.possession = next.possession;
     this.stats = cloneStats(next.stats);
-    this.events = next.events.map((event) => ({ ...event }));
+    if (next.eventSeq !== this.eventSeq) this.events = next.events.map((event) => ({ ...event }));
     this.eventSeq = next.eventSeq;
     this.finished = next.finished;
     this.subsUsed = { ...next.subsUsed };
