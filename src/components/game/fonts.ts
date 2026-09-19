@@ -1,3 +1,5 @@
+import { configureTextBuilder } from "troika-three-text";
+
 /**
  * Fonte de exibição usada pelo texto 3D (troika): placar do estádio e
  * nomes/números nas costas dos jogadores. Fica em `public/fonts` para ser
@@ -13,10 +15,9 @@ export const DISPLAY_FONT = "/fonts/BarlowCondensed-Bold.ttf";
  * engasgo no quadro. Como o nosso texto 3D é pouco e curto (placar e nome nas
  * costas), sai mais barato gerar na própria thread e nunca pagar a falha.
  */
+let configured = false;
 export function configureText3D() {
-  if (typeof window === "undefined") return;
-  void (import("troika-three-text") as Promise<unknown>).then((m) => {
-    const mod = m as { configureTextBuilder?: (o: { useWorker: boolean }) => void };
-    mod.configureTextBuilder?.({ useWorker: false });
-  });
+  if (typeof window === "undefined" || configured) return;
+  configured = true;
+  configureTextBuilder({ useWorker: false });
 }
