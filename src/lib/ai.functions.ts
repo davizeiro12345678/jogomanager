@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { AiError, callGemini } from "@/lib/ai.server";
 
 const BREVITY =
-  "Responda sempre em português do Brasil, em prosa corrida, com no máximo ~120 palavras. Seja direto e objetivo.";
+  "Responda sempre em português do Brasil, em no máximo 3 pontos acionáveis e até 120 palavras. Use jargões legítimos como bloco baixo, pressão pós-perda, cobertura, entrelinhas e transição rápida pelas pontas apenas quando forem adequados. Cite números do contexto recebido e nunca invente dados.";
 
 function wrap<T>(fn: () => Promise<T>) {
   return fn().catch((err) => {
@@ -177,7 +177,7 @@ export const chatIA = createServerFn({ method: "POST" })
       const system =
         `Você é o assistente de IA de um jogo de gestão de futebol, conversando com o treinador ` +
         `sobre a carreira dele. Use o resumo da carreira como contexto. ${BREVITY}\n` +
-        `Resumo da carreira: ${data.resumoCarreira}`;
+        `Resumo da carreira: ${data.resumoCarreira}. Cada recomendação deve se apoiar explicitamente nesses dados; se faltar informação, diga o que precisa verificar.`;
       const history = data.mensagens
         .map((m) => `${m.role === "user" ? "Treinador" : "Assistente"}: ${m.text}`)
         .join("\n");

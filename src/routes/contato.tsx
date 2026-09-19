@@ -73,6 +73,29 @@ function ContatoPage() {
           <time dateTime={CONTENT_UPDATED}>14 de setembro de 2026</time>.
         </p>
 
+        <section className="surface-card mt-6 rounded-xl border border-primary/30 p-5">
+          <h2 className="font-display text-xl uppercase">Contato direto</h2>
+          <div className="mt-3 flex flex-wrap gap-3 text-sm">
+            <a
+              href="mailto:davizeiro10.jogos@gmail.com"
+              className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-primary hover:bg-primary/10"
+            >
+              davizeiro10.jogos@gmail.com
+            </a>
+            <a
+              href="https://wa.me/5527997294771"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-primary hover:bg-primary/10"
+            >
+              WhatsApp: +55 27 99729-4771
+            </a>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Nunca envie senha, código de acesso ou dados completos de cartão por e-mail ou WhatsApp.
+          </p>
+        </section>
+
         <div className="mt-8 space-y-4">
           {CHANNELS.map((c) => (
             <section key={c.title} className="surface-card rounded-xl border border-border/60 p-5">

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 
 import { CREATOR } from "@/content/changelog";
+import { shareDestinations } from "@/lib/share";
 
 /**
  * Rodapé de confiança das páginas públicas.
@@ -12,27 +13,6 @@ import { CREATOR } from "@/content/changelog";
 
 /** Data da última revisão editorial do conteúdo público. */
 export const CONTENT_UPDATED = "2026-09-14";
-
-const SHARE_TEXT = "Pro Football Manager 3D — jogo de manager de futebol online e grátis";
-
-function shareLinks(url: string) {
-  const u = encodeURIComponent(url);
-  const t = encodeURIComponent(SHARE_TEXT);
-  return [
-    { label: "Compartilhar no WhatsApp", short: "WhatsApp", href: `https://wa.me/?text=${t}%20${u}` },
-    { label: "Compartilhar no X", short: "X", href: `https://twitter.com/intent/tweet?text=${t}&url=${u}` },
-    {
-      label: "Compartilhar no Facebook",
-      short: "Facebook",
-      href: `https://www.facebook.com/sharer/sharer.php?u=${u}`,
-    },
-    {
-      label: "Compartilhar no Telegram",
-      short: "Telegram",
-      href: `https://t.me/share/url?url=${u}&text=${t}`,
-    },
-  ];
-}
 
 const SOURCES = [
   {
@@ -149,20 +129,25 @@ export function SiteFooter({ path = "/" }: { path?: string }) {
             Compartilhar
           </h2>
           <ul className="mt-3 flex flex-wrap gap-2">
-            {shareLinks(url).map((s) => (
-              <li key={s.short}>
+            {shareDestinations(url).map((s) => (
+              <li key={s.id}>
                 <a
                   href={s.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={s.label}
+                  aria-label={`Compartilhar no ${s.label}`}
                   className="inline-flex min-h-11 items-center rounded-lg border border-border/60 px-3 text-xs uppercase tracking-widest hover:border-primary hover:text-foreground"
                 >
-                  {s.short}
+                  {s.label}
                 </a>
               </li>
             ))}
           </ul>
+          <p className="mt-3">
+            <Link to="/compartilhar" className="text-primary underline underline-offset-4">
+              Ver todas as formas de compartilhar
+            </Link>
+          </p>
           <p className="mt-4 text-xs">
             Jogo gratuito, sem anúncios e sem obrigação de compra. Compras opcionais são processadas
             pela Stripe.

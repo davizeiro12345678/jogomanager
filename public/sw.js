@@ -3,7 +3,7 @@
    - Documentos: rede primeiro, com a última versão em cache como reserva.
    - Assets (js/css/imagens/escudos): cache primeiro, atualizando em segundo plano.
    - Chamadas de API e do backend nunca são cacheadas. */
-const VERSION = "pfm3d-v3";
+const VERSION = "pfm3d-v4";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 const OFFLINE_URL = "/";
@@ -12,7 +12,15 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(SHELL)
-      .then((c) => c.addAll([OFFLINE_URL, "/manifest.webmanifest", "/favicon.png", "/fonts/BarlowCondensed-Bold.ttf"]))
+      .then((c) =>
+        c.addAll([
+          OFFLINE_URL,
+          "/manifest.webmanifest",
+          "/favicon.png",
+          "/icon-192.png",
+          "/fonts/BarlowCondensed-Bold.ttf",
+        ]),
+      )
       .catch(() => undefined)
       .then(() => self.skipWaiting()),
   );
@@ -47,6 +55,8 @@ self.addEventListener("fetch", (event) => {
   // Nunca interceptar backend, pagamentos, autenticação ou APIs.
   if (
     url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/~oauth") ||
+    url.pathname.startsWith("/auth") ||
     url.pathname.startsWith("/_serverFn") ||
     url.hostname.endsWith("supabase.co") ||
     url.hostname.includes("stripe")

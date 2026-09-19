@@ -225,6 +225,15 @@ export function GameShell({
 
           {/* Ações */}
           <div className="ml-auto flex shrink-0 items-center gap-1 md:ml-2">
+            {signedIn === false ? (
+              <Link
+                to="/auth"
+                search={{ next: "/dashboard" }}
+                className="hidden min-h-[38px] items-center rounded-lg border border-primary/50 px-3 font-display text-xs uppercase text-primary sm:inline-flex"
+              >
+                Salvar carreira
+              </Link>
+            ) : null}
             <div className="hidden lg:block">
               <CommandPalette
                 items={TABS.map((tab) => ({ to: tab.to, label: t(tab.key), group: tab.group }))}
@@ -257,7 +266,7 @@ export function GameShell({
         <div className="border-b border-border/50 bg-secondary/40">
           <p className="mx-auto max-w-6xl px-4 py-2 text-xs text-muted-foreground">
             {t("guest.line1")}{" "}
-            <Link to="/auth" className="text-primary underline underline-offset-2">
+            <Link to="/auth" search={{ next: "/dashboard" }} className="text-primary underline underline-offset-2">
               {t("guest.cta")}
             </Link>{" "}
             {t("guest.line2")}

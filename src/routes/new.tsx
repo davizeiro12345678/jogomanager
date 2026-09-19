@@ -10,6 +10,7 @@ import { startWorldForNewCareer } from "@/lib/world";
 import { Flag } from "@/components/game/Flag";
 import { ManagerPortrait, HAIR_COLORS } from "@/components/game/ManagerPortrait";
 import { Cutscene } from "@/components/game/Cutscene";
+import { GuestCloudPrompt } from "@/components/GuestCloudPrompt";
 import type {
   ManagerAttributes,
   ManagerLook,
@@ -152,6 +153,9 @@ function NewCareer() {
         <p className="mt-1 text-sm text-muted-foreground">
           Quatro passos: identidade, aparência, perfil e clube.
         </p>
+        <div className="mt-4 max-w-xl">
+          <GuestCloudPrompt next="/new" compact />
+        </div>
         <div className="mt-4">
           <StepDots step={step} />
         </div>

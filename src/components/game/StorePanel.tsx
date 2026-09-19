@@ -252,6 +252,11 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                     Melhor valor
                   </span>
                 )}
+                <div className="mx-5 mt-5 grid h-28 place-items-center overflow-hidden rounded-lg border border-border/50 bg-secondary/45">
+                  <div className="grid h-16 w-16 place-items-center rounded-full border border-primary/30 bg-primary/10 text-primary [&>svg]:h-8 [&>svg]:w-8">
+                    {KIND_ICONS[p.kind] ?? <Package />}
+                  </div>
+                </div>
                 <CardHeader>
                   <div className="flex items-center justify-between gap-2">
                     <CardTitle className="font-display text-base uppercase tracking-wide">
@@ -275,17 +280,20 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                   )}
                 </CardContent>
                 <CardFooter>
-                  <Button
-                    className="w-full"
-                    disabled={openingKey === p.key || (p.kind === "pass" && subscriptionActive)}
-                    onClick={() => buy(p.key)}
-                  >
-                    {openingKey === p.key
-                      ? "Abrindo checkout…"
-                      : p.kind === "pass" && subscriptionActive
-                        ? "Assinatura ativa"
-                        : "Comprar"}
-                  </Button>
+                  <div className="w-full space-y-2">
+                    <Button
+                      className="w-full"
+                      disabled={openingKey === p.key || (p.kind === "pass" && subscriptionActive)}
+                      onClick={() => buy(p.key)}
+                    >
+                      {openingKey === p.key
+                        ? "Abrindo checkout…"
+                        : p.kind === "pass" && subscriptionActive
+                          ? "Assinatura ativa"
+                          : "Comprar com segurança"}
+                    </Button>
+                    <p className="text-center text-[11px] text-muted-foreground">Entrega automática na sua conta</p>
+                  </div>
                 </CardFooter>
               </Card>
             ))}

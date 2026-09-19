@@ -19,6 +19,9 @@ export const Route = createFileRoute("/")({
         title: SITE_TITLE,
         description: SITE_DESCRIPTION,
         path: "/",
+        ogTitle: "Pro Football Manager 3D | Seja o Treinador do Seu Próprio Clube",
+        ogDescription:
+          "Assuma o controle tático, dispute campeonatos reais em 3D imersivo, gerencie finanças e construa um elenco campeão.",
       }),
       {
         name: "google-site-verification",
@@ -140,7 +143,8 @@ function Landing() {
             </h1>
             <p className="mt-5 max-w-xl text-lg text-muted-foreground">
               Escolha um clube real, monte a escalação, defina a tática e assista aos 90 minutos ao
-              vivo num estádio 3D — dando ordens enquanto a bola rola. Sem cadastro: é só jogar.
+              vivo num estádio 3D — dando ordens enquanto a bola rola. Comece sem cadastro e salve
+              na nuvem quando quiser continuar em outro aparelho.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -158,11 +162,11 @@ function Landing() {
               </Link>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              Sem cadastro para jogar.{" "}
-              <Link to="/auth" className="underline underline-offset-4 hover:text-foreground">
-                Entrar
+              Seu progresso fica neste aparelho até você salvar na nuvem.{" "}
+              <Link to="/auth" className="font-medium text-primary underline underline-offset-4 hover:text-foreground">
+                Salvar com Google
               </Link>{" "}
-              só serve para salvar a carreira na nuvem.
+              leva um clique.
             </p>
 
             <dl className="mt-9 grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:gap-x-10">

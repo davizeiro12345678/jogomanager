@@ -264,7 +264,32 @@ const ES: Pack = {
   ],
 };
 
-const PACKS: Record<NarrationLang, Pack> = { pt: PT, en: EN, es: ES };
+const LEAD_INS: Record<NarrationLang, string[]> = {
+  pt: ["", "Olha o lance! ", "Atenção, torcedor! ", "Que momento! ", "No detalhe: "],
+  en: ["", "Watch this! ", "Listen to that crowd! ", "What a moment! ", "In a flash, "],
+  es: ["", "¡Atención! ", "¡Mira la jugada! ", "¡Qué momento! ", "En un instante, "],
+};
+
+/**
+ * Cinco leituras editoriais para cada frase-base. Isso leva cada idioma a mais
+ * de 200 combinações sem entregar texto livre ao endpoint de voz, preservando
+ * cache estável, segurança e a identidade de cada tipo de lance.
+ */
+function expandPack(lang: NarrationLang, pack: Pack): Pack {
+  const leads = LEAD_INS[lang];
+  return Object.fromEntries(
+    Object.entries(pack).map(([event, lines]) => [
+      event,
+      lines.flatMap((line, index) => leads.map((lead, style) => (style === index % leads.length ? line : `${lead}${line}`))),
+    ]),
+  ) as Pack;
+}
+
+const PACKS: Record<NarrationLang, Pack> = {
+  pt: expandPack("pt", PT),
+  en: expandPack("en", EN),
+  es: expandPack("es", ES),
+};
 
 export function lineCount(lang: NarrationLang, event: NarrationEvent): number {
   return PACKS[lang][event].length;

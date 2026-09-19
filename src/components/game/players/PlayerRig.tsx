@@ -400,7 +400,10 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
 
   /* ------------------------------------------------------------ materiais */
 
-  const segs = segmentsFor(0);
+  // A qualidade baixa usava a mesma malha de 14 segmentos da alta nos 22
+  // jogadores. Ajustar a geometria ao nível global reduz muito o trabalho da
+  // GPU sem alterar silhueta, materiais ou animações.
+  const segs = segmentsFor(quality === "alta" ? 0 : quality === "media" ? 1 : 2);
 
   // relevo procedural (trama da malha, canelado do meião, poros, couro)
   const weave = useMemo(() => (hi ? jerseyWeaveNormal() : null), [hi]);
