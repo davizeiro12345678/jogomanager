@@ -1392,12 +1392,16 @@ function Stands({
     const n = crowd.positions.length;
     const tall = new Float32Array(n);
     const yaw0 = new Float32Array(n);
+    // parte do público fica sentado e só levanta na ola, no gol e no perigo
+    const sit = new Float32Array(n);
     for (let i = 0; i < n; i++) {
       tall[i] = 0.9 + (i % 5) * 0.045;
       yaw0[i] = ((i % 7) - 3) * 0.06;
+      sit[i] = (i * 11) % 10 < 3 ? 1 : 0;
     }
-    return { tall, yaw0 };
+    return { tall, yaw0, sit };
   }, [crowd]);
+
 
   // tabela de seno: o laço roda milhares de vezes por quadro, Math.sin domina o custo
   const SIN = useMemo(() => {
