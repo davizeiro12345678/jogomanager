@@ -2,7 +2,7 @@
 
 ## Novo pedido (2026-09-10)
 - [x] Página /visual: controles de texturas, geometria dos jogadores, clima e grama por clube, salvos no navegador
-- [ ] Tela de criação de clube (nome, cidade, estádio, torcida, uniforme) com retrato do clube
+- [x] Tela de criação de clube (nome, cidade, estádio, torcida, uniforme) com retrato do clube
 - [ ] Medir desempenho de partida longa no celular e ajustar qualidade/pós-processamento
 - [ ] Melhorias massivas: jogadores, cutscenes, stack visual do site
 - [ ] Carreira de treinador ligada de ponta a ponta (liga, finanças, pressão, contratações, temporada completa)
@@ -10,7 +10,7 @@
 - [x] Tela inicial enxuta no celular (2 botões, ligas resumidas)
 - [x] Novos pacotes na loja (moedas iniciais, cofre, comemorações, estádio)
 - [x] Loja com packs baratos + chat com pessoas reais e com IA (também dentro da partida, em gaveta)
-- [ ] Editor/customização: elencos, escudos, kits, nomes, fotos, campeonatos e ligas; regens com foto
+- [x] Editor/customização: elencos, escudos, kits, nomes, fotos, campeonatos e ligas; regens com foto
 - [ ] Atributos detalhados dos jogadores (personalidade, moral, histórico de clubes, fotos)
 
 ## Novo pedido (2026-09-12)
@@ -20,9 +20,9 @@
 
 
 ## Em andamento (plano aprovado 05/09)
-- [ ] Banco de dados de futebol (competições, clubes, estádios, kits, jogadores, ids externos, import_runs)
-- [ ] Importador das APIs (TheSportsDB / football-data.org / API-Football) + rota de sincronização
-- [ ] Escudos e camisas oficiais na interface e no 3D, com alternância oficial/próprio
+- [x] Banco de dados de futebol (competições, clubes, estádios, kits, jogadores, ids externos, import_runs)
+- [x] Importador das APIs (TheSportsDB / football-data.org / API-Football/Sportmonks) + rota de sincronização
+- [x] Escudos e camisas oficiais na interface e no 3D, com alternância oficial/próprio
 - [ ] Elencos reais nos 224 clubes (API + reserva escrita à mão)
 - [x] Gramado, redes e iluminação (texturas em camadas + cal desgastada)
 - [x] Torcida, arquibancadas e estádio (setores, bandeirões, mosaico, cobertura, props)
@@ -63,7 +63,7 @@
 
 ## Conectores
 - [x] ElevenLabs — narração com voz realista na partida (fallback para a voz do navegador)
-- [ ] Logo.dev, Firecrawl, PostHog, Resend (avaliar valor real antes de ligar)
+- [x] Logo.dev e PostHog ligados; Firecrawl/Perplexity avaliados, mas não usados como fonte factual de elencos
 - [x] PostHog — eventos de uso e checkout (sem dados pessoais)
 - [x] Logo.dev — logos reais de marcas nas placas de LED (configurável em /visual)
 - [x] Resend — conta ligada; falta um domínio verificado para enviar e-mails
@@ -76,22 +76,22 @@
 - [ ] Salto visual 3D (luz/câmera/texturas) e revisão de painel/elenco/loja
 
 ## Novo pedido (2026-09-18) — plano aprovado
-- [ ] Renderização WebGPU (three.js WebGPURenderer) com volta automática para WebGL2
+- [x] Renderização WebGPU experimental e opt-in, com volta automática para WebGL2 e bloqueio após falha
 - [ ] Revisão visual: partida, carreira, elenco, loja
 - [ ] Ampliar elencos/escudos com Logo.dev, Firecrawl e Perplexity
-- [ ] 25 novas cutscenes + 25 cenas híbridas
-- [ ] PlayerRig: novos estados e transições; PostFX por qualidade; Crest mais nítido
+- [x] 25 novas cutscenes + 25 cenas híbridas (57 cenas totais; 25 marcadas como híbridas)
+- [x] PlayerRig: novos estados e transições; PostFX por qualidade; Crest mais nítido
 
 ## Mega atualização integrada (2026-09-19)
-- [ ] Página acessível de compartilhamento com mensagem pronta e compartilhamento nativo
-- [ ] CTA “Salvar na nuvem” no topo/painel e convite inteligente para visitantes
-- [ ] Redesenhar autenticação com Google em destaque, perfis e provedores habilitados
-- [ ] Publicar WhatsApp e e-mail confirmados na página de contato
-- [ ] Aplicar novo ícone oficial ao favicon e PWA
-- [ ] Atualizar descrições da home e padronizar páginas públicas prioritárias
+- [x] Página acessível de compartilhamento com mensagem pronta e compartilhamento nativo
+- [x] CTA “Salvar na nuvem” no topo/painel e convite inteligente para visitantes
+- [x] Redesenhar autenticação com Google em destaque, perfis e provedores habilitados
+- [x] Publicar WhatsApp e e-mail confirmados na página de contato
+- [x] Aplicar novo ícone oficial ao favicon e PWA
+- [x] Atualizar descrições da home e padronizar páginas públicas prioritárias
 - [ ] Otimizar carregamento, cache, imagens e execução da partida 3D
 - [ ] Melhorar sombras, iluminação, texturas, jogadores, simulação e IA adversária
-- [ ] Triplicar a variedade do narrador e aprimorar o assistente com contexto real
+- [x] Triplicar a variedade do narrador (350 PT, 250 EN e 235 ES) e alimentar o assistente com contexto do save
 - [ ] Redesenhar HUD, painel, elenco, tática, loja e imagens dos pacotes
 - [ ] Validar acesso, salvamento, compartilhamento, compra, mobile e partida longa
 
@@ -106,11 +106,22 @@
 
 ## Conclusão total do plano (2026-09-19)
 - [x] Concluir Worker das partidas de carreira e rápida com comandos, snapshots, interpolação e fallback local
-- [ ] Medir FPS, frame time, 1% low, GPU/backend, memória e estabilidade em partida longa
+- [x] Instrumentar FPS, frame time, 1% low, backend, qualidade e memória; estabilidade longa em GPU física segue pendente
 - [ ] Aplicar salto gráfico escalável em iluminação, sombras, texturas, gramado, estádio e pós-processamento
 - [ ] Melhorar anatomia, materiais, LOD, transições e animações dos jogadores sem sacrificar fluidez
 - [ ] Corrigir bugs restantes da engine, física da bola, goleiros, colisões, posicionamento e IA adversária
-- [ ] Ampliar variedade, contexto, emoção e segurança da narração em todos os eventos relevantes
+- [x] Ampliar variedade, contexto, emoção e segurança da narração em todos os eventos relevantes
 - [ ] Concluir redesign e acessibilidade das telas de partida, carreira, elenco, tática, loja e campeonato
 - [ ] Revisar metadados únicos, indexação, páginas públicas e conteúdo institucional
 - [ ] Validar fluxos completos, compra, salvamento, replay, PWA, mobile, console, tipos, testes e compilação
+
+## Reconciliação auditada (2026-09-19)
+- [x] Partida ao vivo em Worker também no multiplayer; snapshots interpolados e fallback local
+- [x] Corrigir crescimento de `reactionUntil` e limitar o mapa de chutes da engine
+- [x] Confirmar sincronização offline→nuvem: outbox drenada ao reconectar e a cada 30 segundos
+- [x] Confirmar catálogo visual: 237 clipes procedurais, 57 cutscenes e 25 cenas híbridas
+- [x] Indexar `/compartilhar` no sitemap e na navegação pública
+- [ ] Criar testes automatizados de simulação, salvamento, pagamento idempotente e narração
+- [ ] Completar kits away/third/goalkeeper no fluxo de importação em massa
+- [ ] Completar 415 elencos bloqueados pela cobertura/licença das APIs disponíveis
+- [ ] Validar relatório de desempenho em celular e desktop com GPU física por partida longa
