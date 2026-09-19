@@ -47,6 +47,12 @@ const PATTERNS: KitPattern[] = [
   "sleeves",
   "gradient",
   "pin",
+  "quarters",
+  "chevron",
+  "diagonal",
+  "shadow",
+  "argyle",
+  "mesh",
 ];
 
 function shade(hex: string, f: number): string {
