@@ -119,15 +119,11 @@ function Landing() {
         </picture>
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-[radial-gradient(120%_80%_at_50%_0%,transparent_10%,hsl(var(--background)/0.7)_55%,hsl(var(--background))_100%)]"
+          className="absolute inset-0 -z-10 bg-gradient-to-b from-background/10 via-background/70 to-background"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-32 left-1/2 -z-10 h-80 w-[44rem] -translate-x-1/2 rounded-full bg-primary/25 blur-[130px]"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[30rem] opacity-[0.06] [background-image:repeating-linear-gradient(90deg,transparent_0_44px,hsl(var(--foreground))_44px_45px)] [mask-image:linear-gradient(to_bottom,black,transparent)]"
+          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[30rem] opacity-[0.06] [background-image:repeating-linear-gradient(90deg,transparent_0_44px,currentColor_44px_45px)] [mask-image:linear-gradient(to_bottom,black,transparent)]"
         />
 
         <div className="mx-auto grid max-w-6xl gap-10 px-4 pb-14 pt-20 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:pt-28">
