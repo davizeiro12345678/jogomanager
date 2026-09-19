@@ -869,18 +869,21 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
           {skinMat}
         </mesh>
       ))}
-      {/* maxilar */}
-      {hi ? (
-        <mesh position={[0, -P.headR * 0.48, P.headR * 0.2]} scale={[0.94, 0.5, 0.94]}>
-          <sphereGeometry args={[P.headR * 0.9, 12, 12]} />
+      {/* mandíbula articulada: maxilar, queixo e lábio inferior num só osso */}
+      <group ref={jawRef}>
+        {hi ? (
+          <mesh position={[0, -P.headR * 0.48, P.headR * 0.2]} scale={[0.94, 0.5, 0.94]}>
+            <sphereGeometry args={[P.headR * 0.9, 12, 12]} />
+            {skinMat}
+          </mesh>
+        ) : null}
+        {/* lábio inferior + queixo */}
+        <mesh position={[0, -P.headR * 0.55, P.headR * 0.78]} scale={[0.9, 0.6, 0.7]}>
+          <sphereGeometry args={[P.headR * 0.24, 8, 8]} />
           {skinMat}
         </mesh>
-      ) : null}
-      {/* lábio inferior + queixo */}
-      <mesh position={[0, -P.headR * 0.55, P.headR * 0.78]} scale={[0.9, 0.6, 0.7]}>
-        <sphereGeometry args={[P.headR * 0.24, 8, 8]} />
-        {skinMat}
-      </mesh>
+      </group>
+
       {/* lábio superior */}
       {hi ? (
         <mesh position={[0, -P.headR * 0.36, P.headR * 0.84]} scale={[1, 0.45, 0.6]}>
