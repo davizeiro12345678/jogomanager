@@ -44,6 +44,32 @@ export function dprFor(q: QualityLevel): number | [number, number] {
   return 0.75;
 }
 
+/**
+ * Refino por placa de vídeo real (`detect-gpu` compara o modelo com uma tabela
+ * de desempenho medido). A heurística acima responde na hora; esta versão
+ * chega alguns milissegundos depois e corrige casos como notebook com muitos
+ * núcleos e vídeo integrado fraco, ou celular novo com GPU forte.
+ */
+let gpuTier: Promise<QualityLevel> | null = null;
+
+export function detectQualityByGpu(): Promise<QualityLevel> {
+  if (gpuTier) return gpuTier;
+  gpuTier = (async () => {
+    const fallback = detectQuality();
+    if (typeof navigator === "undefined") return fallback;
+    try {
+      const { getGPUTier } = await import("detect-gpu");
+      const tier = await getGPUTier({ failIfMajorPerformanceCaveat: false });
+      if (tier.type === "BLOCKLISTED" || tier.tier <= 1) return "baixa";
+      if (tier.tier === 2) return fallback === "baixa" ? "baixa" : "media";
+      return fallback === "baixa" ? "media" : "alta";
+    } catch {
+      return fallback;
+    }
+  })();
+  return gpuTier;
+}
+
 /** Um degrau abaixo/acima na escala de qualidade. */
 export function lowerQuality(q: QualityLevel): QualityLevel {
   return q === "alta" ? "media" : "baixa";

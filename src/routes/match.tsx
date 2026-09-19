@@ -45,7 +45,7 @@ import {
   type LiveMatchController,
 } from "@/game/simWorkerClient";
 import { achievementById } from "@/game/achievements";
-import { detectQuality } from "@/game/device";
+import { detectQuality, detectQualityByGpu } from "@/game/device";
 
 import { nextFixture } from "@/game/season";
 import { buildSquad } from "@/game/squad";
@@ -507,6 +507,19 @@ function LiveMatch({
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
   const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
   const controllerRef = useRef<LiveMatchController | null>(null);
+  const qualityTouched = useRef(false);
+
+  // Ajuste fino pela placa de vídeo real, logo depois do primeiro quadro.
+  // Se o jogador já mexeu no nível gráfico, a escolha dele manda.
+  useEffect(() => {
+    let alive = true;
+    void detectQualityByGpu().then((q) => {
+      if (alive && !qualityTouched.current) setQuality(q as Quality);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const speedRef = useRef(speed);
   speedRef.current = speed;
@@ -1025,7 +1038,10 @@ function LiveMatch({
             {(["alta", "media", "baixa"] as const).map((q) => (
               <button
                 key={q}
-                onClick={() => setQuality(q)}
+                onClick={() => {
+                  qualityTouched.current = true;
+                  setQuality(q);
+                }}
                 className={`rounded-lg px-2 py-1 text-xs capitalize transition-colors ${
                   quality === q ? "bg-primary text-primary-foreground" : "bg-white/10 text-white"
                 }`}

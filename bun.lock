@@ -65,6 +65,7 @@
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
         "date-fns": "^4.1.0",
+        "detect-gpu": "^5.0.70",
         "embla-carousel-react": "^8.6.0",
         "gsap": "^3.15.0",
         "idb-keyval": "^6.3.0",

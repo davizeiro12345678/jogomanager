@@ -493,6 +493,30 @@ export class MatchSim {
     const bx = this.ball.x;
     const bz = this.ball.z;
     const chase = this.chasers();
+
+    // Urgência pelo placar e pelo relógio: quem está perdendo no fim empurra a
+    // equipe para a frente; quem está ganhando recua e segura o resultado.
+    const remaining = Math.max(0, 90 - this.time / 60);
+    const lateGame = remaining < 15;
+    const goalDiff = this.stats.home.goals - this.stats.away.goals;
+    const urgency = (side: Side) => {
+      if (!lateGame) return 0;
+      const diff = side === "home" ? goalDiff : -goalDiff;
+      if (diff < 0) return Math.min(1, (15 - remaining) / 15) * (diff <= -2 ? 1 : 0.8);
+      if (diff > 0) return -Math.min(1, (15 - remaining) / 15) * 0.6;
+      return 0;
+    };
+
+    // Linha defensiva conjunta: a referência é o zagueiro mais recuado do lado
+    // sem a bola, o que permite subir junto e armar impedimento.
+    const lineX: Record<Side, number> = { home: FIELD_X, away: -FIELD_X };
+    for (const q of this.players) {
+      if (q.pos === "GK") continue;
+      if (q.side === "home") {
+        if (q.x < lineX.home) lineX.home = q.x;
+      } else if (q.x > lineX.away) lineX.away = q.x;
+    }
+
     for (const p of this.players) {
       if (p.id === this.ball.holder) continue;
       const setup = this.setup(p.side);
@@ -529,13 +553,60 @@ export class MatchSim {
         tz = bz + this.ball.vz * 0.22;
         sprint = 1.35;
       } else if (!attacking) {
+        // Linha defensiva conjunta: os defensores sobem/descem juntos em vez de
+        // cada um seguir a bola por conta própria — é isso que cria a linha reta
+        // e permite a armadilha de impedimento.
+        if (p.pos === "DF") {
+          const line = lineX[p.side];
+          const trap =
+            setup.tactics.pressing >= 3 && Math.abs(bx - line) > 14 ? dir * 3.5 : 0;
+          tx = tx * 0.35 + (line + trap) * 0.65;
+          // marcação por zona: cobre o adversário mais perigoso da sua faixa
+          let markZ: number | null = null;
+          let best = 9;
+          for (const q of this.players) {
+            if (q.side === p.side || q.pos === "GK") continue;
+            const gap = Math.abs(q.z - tz);
+            if (gap < best && Math.abs(q.x - tx) < 16) {
+              best = gap;
+              markZ = q.z;
+            }
+          }
+          if (markZ !== null) tz = tz * 0.55 + markZ * 0.45;
+        }
         if (ballDist < 18) {
-          tx += (bx - tx) * 0.6;
-          tz += (bz - tz) * 0.6;
+          const pull = p.pos === "DF" ? 0.35 : 0.6;
+          tx += (bx - tx) * pull;
+          tz += (bz - tz) * pull;
           sprint = 1.15;
         }
+        // perdendo no fim: a equipe inteira sobe para pressionar
+        tx += urgency(p.side) * 7 * dir;
       } else {
-        tz += Math.sin(this.time * 0.4 + p.number) * 1.6;
+        // Movimento sem bola de verdade, em vez de balanço aleatório:
+        // atacante ataca as costas da linha, ponta corta para dentro,
+        // lateral faz a sobreposição e o meia oferece o apoio de recuo.
+        const holder = this.players.find((q) => q.id === this.ball.holder);
+        const ahead = holder ? (holder.x - p.x) * dir : 0;
+        if (p.pos === "FW") {
+          const backline = lineX[p.side === "home" ? "away" : "home"];
+          tx = tx * 0.4 + (backline + dir * 1.2) * 0.6;
+          tz += (p.number % 2 === 0 ? 1 : -1) * 3.2;
+        } else if (p.pos === "MF") {
+          if (Math.abs(p.slotZ) > 0.45) {
+            tz *= 0.55; // ponta cortando para dentro
+            tx += dir * 4;
+          } else if (ahead > 6) {
+            tx -= dir * 3.5; // apoio de recuo atrás da linha da bola
+          }
+        } else if (p.pos === "DF" && Math.abs(p.slotZ) > 0.5 && ahead > -4) {
+          // sobreposição do lateral pela linha de fundo
+          tx += dir * 12;
+          tz += Math.sign(p.slotZ) * 3.5;
+          sprint = 1.2;
+        }
+        tz += Math.sin(this.time * 0.4 + p.number) * 0.9;
+        tx += urgency(p.side) * 5 * dir;
       }
 
       tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, tx));
