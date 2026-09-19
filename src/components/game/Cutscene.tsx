@@ -43,14 +43,18 @@ async function sceneVoice(scene: string, line: number): Promise<string | null> {
   if (cached) return cached;
   let request = pendingSceneVoice.get(key);
   if (!request) {
-    request = import("@/lib/tts.functions").then(async ({ narrateScene }) => {
-      const result = await narrateScene({ data: { scene, line } });
-      return result.ok ? result.audio : null;
-    });
+    // A voz é enfeite: qualquer falha (rede, cota, servidor) vira silêncio,
+    // nunca um erro que derruba a cena.
+    request = import("@/lib/tts.functions")
+      .then(async ({ narrateScene }) => {
+        const result = await narrateScene({ data: { scene, line } });
+        return result.ok ? result.audio : null;
+      })
+      .catch(() => null);
     pendingSceneVoice.set(key, request);
   }
   const audio = await request.finally(() => pendingSceneVoice.delete(key));
-  if (audio) await writeVoiceCache(key, audio);
+  if (audio) await writeVoiceCache(key, audio).catch(() => {});
   return audio;
 }
 
