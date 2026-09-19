@@ -74,7 +74,12 @@ const TIME_TINT: Record<PostTime, Partial<PostPreset>> = {
 };
 
 /** Preset final combinando momento, horário e nível de qualidade. */
-export function postPreset(quality: PostQuality, moment: PostMoment, time: PostTime): PostPreset {
+export function postPreset(
+  quality: PostQuality,
+  moment: PostMoment,
+  time: PostTime,
+  intensity = 1,
+): PostPreset {
   const base = BASE[moment];
   const tint = TIME_TINT[time];
   const p: PostPreset = {
@@ -94,5 +99,15 @@ export function postPreset(quality: PostQuality, moment: PostMoment, time: PostT
     p.tilt = 0;
     p.vignette *= 0.85;
   }
+  const amount = Math.max(0.2, Math.min(1.4, intensity));
+  p.bloom *= amount;
+  p.saturation *= amount;
+  p.brightness *= amount;
+  p.contrast *= amount;
+  p.vignette *= amount;
+  p.grain *= amount;
+  p.aberration *= amount;
+  p.dof *= amount;
+  p.tilt *= amount;
   return p;
 }

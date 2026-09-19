@@ -3,10 +3,18 @@
    - Documentos: rede primeiro, com a última versão em cache como reserva.
    - Assets (js/css/imagens/escudos): cache primeiro, atualizando em segundo plano.
    - Chamadas de API e do backend nunca são cacheadas. */
-const VERSION = "pfm3d-v4";
+const VERSION = "pfm3d-v5";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 const OFFLINE_URL = "/";
+const MAX_ASSETS = 180;
+
+async function trimCache(name, maxEntries) {
+  const cache = await caches.open(name);
+  const keys = await cache.keys();
+  if (keys.length <= maxEntries) return;
+  await Promise.all(keys.slice(0, keys.length - maxEntries).map((key) => cache.delete(key)));
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -84,7 +92,11 @@ self.addEventListener("fetch", (event) => {
           .then((res) => {
             if (res && res.status === 200 && (sameOrigin || res.type === "cors")) {
               const copy = res.clone();
-              caches.open(ASSETS).then((c) => c.put(req, copy).catch(() => undefined));
+              caches
+                .open(ASSETS)
+                .then((c) => c.put(req, copy))
+                .then(() => trimCache(ASSETS, MAX_ASSETS))
+                .catch(() => undefined);
             }
             return res;
           })

@@ -2,7 +2,6 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import {
   Environment,
   Lightformer,
-  AdaptiveDpr,
   AdaptiveEvents,
   PerformanceMonitor,
   Text,
@@ -2433,6 +2432,7 @@ function Scene({
   look,
   shadows,
   backend,
+  postIntensity,
 }: {
   sim: SimView;
   mode: CameraMode;
@@ -2440,6 +2440,7 @@ function Scene({
   look: ReturnType<typeof matchLook>;
   shadows: boolean;
   backend: GpuBackend;
+  postIntensity: number;
 }) {
   useFrame(() => {
     const interpolated = sim as SimView & { renderTick?: (now?: number) => void };
@@ -2485,7 +2486,6 @@ function Scene({
     <>
       <color attach="background" args={[SKY[time]]} />
       <fog attach="fog" args={[SKY[time], 110, 300]} />
-      <AdaptiveDpr pixelated={false} />
       <AdaptiveEvents />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
@@ -2598,7 +2598,13 @@ function Scene({
       ))}
       <GoalFx goalPulse={goalPulse} quality={quality} />
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
-      <PostFX quality={postOn ? quality : "baixa"} replay={replay} moment={moment} time={time} />
+      <PostFX
+        quality={postOn ? quality : "baixa"}
+        replay={replay}
+        moment={moment}
+        time={time}
+        intensity={postIntensity}
+      />
     </>
   );
 }
@@ -2740,6 +2746,7 @@ function Stadium3DImpl({
           look={look}
           shadows={shadowsOn}
           backend={backend}
+          postIntensity={vis.postIntensity}
         />
         {vis.showFps ? <FpsMeter onSample={setFps} backend={backend} quality={eff} /> : null}
       </Canvas>
