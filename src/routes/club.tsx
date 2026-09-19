@@ -7,6 +7,7 @@ import { formatMoney, formatWage, wageBill } from "@/game/economy";
 import { computeTable, nextFixture } from "@/game/season";
 import { useCareer } from "@/hooks/useCareer";
 import type { TrainingFocus } from "@/game/types";
+import { ClubHeritagePanel, ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
 
 export const Route = createFileRoute("/club")({
   ssr: false,
@@ -230,6 +231,9 @@ function ClubHub() {
             ))}
           </ul>
         </div>
+
+        <ClubHeritagePanel clubId={career.clubId} compact className="lg:col-span-2" />
+        <ClubHonoursPanel clubId={career.clubId} />
       </div>
     </GameShell>
   );

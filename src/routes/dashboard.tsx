@@ -21,6 +21,7 @@ import { formOf } from "@/game/events";
 import { computeTable, nextFixture } from "@/game/season";
 import { useCareer } from "@/hooks/useCareer";
 import { GuestCloudPrompt } from "@/components/GuestCloudPrompt";
+import { ClubHeritagePanel, ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
 
 export const Route = createFileRoute("/dashboard")({
   ssr: false,
@@ -406,6 +407,9 @@ function Dashboard() {
             )}
           </ul>
         </HudCard>
+
+        <ClubHeritagePanel clubId={career.clubId} compact className="md:col-span-2" />
+        <ClubHonoursPanel clubId={career.clubId} />
 
 
 
