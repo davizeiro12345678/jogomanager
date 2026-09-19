@@ -70,7 +70,7 @@ export class Narrator {
   /** Desliga a voz realista após uma falha para não insistir em erro. */
   private remoteBroken = false;
   private remoteFailures = 0;
-  private onCaption?: (text: string | null) => void;
+  private onCaption: ((text: string | null) => void) | undefined;
 
   constructor(opts: NarratorOptions) {
     this.lang = narrationLang(opts.lang);
