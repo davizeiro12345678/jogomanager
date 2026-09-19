@@ -96,7 +96,7 @@ self.onmessage = (event: MessageEvent<LiveWorkerRequest>) => {
     }
     if (message.type === "skipLive" && live) {
       let guard = 0;
-      while (!live.finished && guard++ < 200_000) live.step(0.4);
+      while (!live.finished && guard++ < 14_000) live.step(0.4);
       publishFinished();
       return;
     }
@@ -110,7 +110,7 @@ self.onmessage = (event: MessageEvent<LiveWorkerRequest>) => {
     if (message.type === "simulate") {
       const sim = new MatchSim(message.home, message.away, message.seed);
       let guard = 0;
-      while (!sim.finished && guard++ < 200_000) sim.step(0.4);
+      while (!sim.finished && guard++ < 14_000) sim.step(0.4);
       post({ id: message.id, ok: true, result: resultMatch(sim, 1) });
       return;
     }

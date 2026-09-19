@@ -150,7 +150,15 @@ function TacticsPage() {
     <GameShell career={career}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">
+          
+          <p className="sr-only">
+            Para trocar jogadores usando o teclado: selecione um jogador com Espaço ou Enter, depois selecione outro para realizar a troca.
+          </p>
+
+          <p className="sr-only">
+            Para trocar jogadores usando o teclado: selecione um jogador com Espaço ou Enter, depois selecione outro para realizar a troca.
+          </p>
+<h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">
             Plano de jogo
           </h1>
           <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
@@ -185,6 +193,7 @@ function TacticsPage() {
               return (
                 <button
                   key={p.id}
+                  type="button"
                   draggable
                   onDragStart={(e) => e.dataTransfer.setData("text/plain", String(i))}
                   onDragOver={(e) => e.preventDefault()}
@@ -195,7 +204,8 @@ function TacticsPage() {
                     setPicked(null);
                   }}
                   onClick={() => onSlotActivate(i)}
-                  aria-label={`${p.name}, ${slot.label}`}
+                  aria-label={`${p.name}, ${slot.label}. ${picked === i ? "Selecionado para troca." : "Pressione para selecionar para troca."} `}
+                  aria-pressed={picked === i}
                   className="absolute flex -translate-x-1/2 -translate-y-1/2 cursor-grab flex-col items-center active:cursor-grabbing"
                   style={{ left: `${50 + slot.z * 40}%`, top: `${50 - slot.x * 42}%` }}
                 >
@@ -254,7 +264,9 @@ function TacticsPage() {
               {FORMATION_KEYS.map((f) => (
                 <button
                   key={f}
+                  type="button"
                   onClick={() => setFormation(f)}
+                  aria-pressed={f === t.formation}
                   className={`min-h-[44px] rounded-lg border px-4 py-3 font-display text-lg transition ${
                     f === t.formation
                       ? "border-primary bg-primary/15"
@@ -275,7 +287,9 @@ function TacticsPage() {
               {PRESETS.map((p) => (
                 <button
                   key={p.name}
+                  type="button"
                   onClick={() => applyPreset(p)}
+                  aria-pressed={activePreset?.name === p.name}
                   className={`min-h-[44px] rounded-xl border p-3 text-left transition ${
                     activePreset?.name === p.name
                       ? "border-primary bg-primary/15"
@@ -341,7 +355,9 @@ function Option({
         {options.map((o, i) => (
           <button
             key={o}
+            type="button"
             onClick={() => onChange(i)}
+            aria-pressed={i === value}
             className={`min-h-[40px] rounded-lg border px-3 py-1.5 text-sm transition ${
               i === value ? "border-primary bg-primary/15" : "border-border hover:bg-secondary"
             }`}

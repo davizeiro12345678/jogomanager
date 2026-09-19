@@ -31,4 +31,14 @@ describe("MatchSim", () => {
     expect(sim.players.every((player) => Number.isFinite(player.x) && Number.isFinite(player.z))).toBe(true);
     expect(Number.isFinite(sim.ball.x) && Number.isFinite(sim.ball.z)).toBe(true);
   });
+
+  it("finishes many seeded matches without a stuck phase", () => {
+    for (let index = 0; index < 8; index += 1) {
+      const sim = create(`stability-${index}`);
+      let guard = 0;
+      while (!sim.finished && guard++ < 14_000) sim.step(0.4);
+      expect(sim.finished, `seed stability-${index}`).toBe(true);
+      expect(guard, `seed stability-${index}`).toBeLessThanOrEqual(14_000);
+    }
+  });
 });

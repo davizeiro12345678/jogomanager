@@ -2250,6 +2250,8 @@ function Scene({
         castShadow={shadows}
         shadow-mapSize={quality === "alta" ? [2048, 2048] : [1024, 1024]}
         shadow-bias={-0.0004}
+        shadow-normalBias={quality === "alta" ? 0.035 : 0.055}
+        shadow-radius={quality === "alta" ? 2.5 : 1}
         shadow-camera-left={-90}
         shadow-camera-right={90}
         shadow-camera-top={70}

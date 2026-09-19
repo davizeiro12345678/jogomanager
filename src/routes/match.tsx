@@ -495,6 +495,7 @@ function LiveMatch({
   /** gaveta lateral: loja ou chat sem sair da partida (o jogo pausa) */
   const [drawer, setDrawer] = useState<"none" | "store" | "chat">("none");
   const [done, setDone] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
   /** sequência imersiva (vestiário → camisas → túnel → apito) antes do pontapé */
   const [introStep, setIntroStep] = useState(() => (prematchIntroEnabled() ? 0 : -1));
   const introActive = introStep >= 0 && introStep < PREMATCH_SCENE_IDS.length;
@@ -634,6 +635,8 @@ function LiveMatch({
       .playerRatings()
       .filter((r) => r.side === mySide)
       .map((r) => ({ pid: r.pid, goals: r.goals, assists: r.assists, played: true }));
+    setAdvancing(true);
+    setAdvancing(true);
     void advanceRoundAsync(career, { hg: snap.hg, ag: snap.ag }, perf).then((next) => {
       const before = new Set(career.achievements ?? []);
       for (const id of next.achievements ?? []) {
@@ -643,6 +646,8 @@ function LiveMatch({
         }
       }
       update(next);
+      setAdvancing(false);
+      setAdvancing(false);
       navigate({ to: "/club" });
     });
   }
@@ -695,6 +700,17 @@ function LiveMatch({
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
       <Stadium3D sim={sim} mode={camera} quality={quality} />
+      <div className="sr-only" aria-hidden="false">
+        <h2>Atalhos de teclado</h2>
+        <ul>
+          <li>Espaço: Pausar/Retomar</li>
+          <li>1, 2, 3, 4: Alterar velocidade</li>
+          <li>C: Alternar câmeras</li>
+          <li>E: Ver estatísticas</li>
+          <li>S: Pular partida</li>
+        </ul>
+      </div>
+
 
       {/* Vestiário → camisas → túnel → apito: só começa o jogo ao fim (ou ao pular) */}
       {introActive ? (
@@ -813,7 +829,7 @@ function LiveMatch({
       ) : null}
 
       {/* Barra de transporte sempre visível */}
-      <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl md:hidden">
+      <div role="toolbar" aria-label="Controles da partida" className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl md:hidden">
         <button
           onClick={() => setPaused((p) => !p)}
           aria-label={paused ? "Retomar partida" : "Pausar partida"}
@@ -1097,7 +1113,7 @@ function LiveMatch({
           homeId={fixture.home}
           awayId={fixture.away}
           mySide={mySide}
-          onFinish={finish}
+          onFinish={finish} advancing={advancing}
         />
       ) : null}
     </div>

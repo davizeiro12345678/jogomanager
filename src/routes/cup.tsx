@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Trophy } from "lucide-react";
 
 import { GameShell } from "@/components/game/GameShell";
 import { Crest } from "@/components/game/Crest";
@@ -64,7 +65,7 @@ function CupPage() {
 function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
   const status = cup.winner
     ? cup.winner === clubId
-      ? "Campeão! 🏆"
+      ? "Campeão"
       : `Campeão: ${CLUBS[cup.winner]?.name ?? "—"}`
     : cup.out
       ? "Eliminado"
@@ -77,6 +78,7 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-display text-lg uppercase tracking-wide">{cup.name}</h2>
         <span
+          role="status"
           className={`rounded-full px-2.5 py-1 text-[11px] uppercase tracking-wider ${
             cup.winner === clubId
               ? "bg-yellow-500/15 text-yellow-500"
@@ -85,6 +87,7 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
                 : "bg-primary/15 text-primary"
           }`}
         >
+          {cup.winner === clubId ? <Trophy aria-hidden className="mr-1 inline size-3" /> : null}
           {status}
         </span>
       </div>
@@ -97,6 +100,7 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
                 Grupo {g.label}
               </p>
               <table className="mt-1.5 w-full text-sm">
+                <caption className="sr-only">Classificação do grupo {g.label}</caption>
                 <thead className="text-[11px] uppercase text-muted-foreground">
                   <tr>
                     <th className="text-left font-normal">Clube</th>
@@ -144,7 +148,7 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
               {stageName(s)}
             </p>
-            <ul className="mt-1.5 space-y-1">
+            <ul className="mt-1.5 space-y-1" role="list" aria-label="Confrontos da fase">
               {cup.ties
                 .filter((t) => t.round === s)
                 .map((t, i) => (
@@ -164,6 +168,8 @@ function TieRow({ tie, clubId }: { tie: CupTie; clubId: string }) {
   const mine = tie.home === clubId || tie.away === clubId;
   return (
     <li
+      role="listitem"
+      aria-label={`${home?.name || "A definir"} contra ${away?.name || "A definir"}. Placar: ${tie.hg === null ? "Não realizado" : tie.hg + " a " + tie.ag}`}
       className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm ${
         mine ? "bg-primary/10 ring-1 ring-primary/30" : "bg-secondary/40"
       }`}

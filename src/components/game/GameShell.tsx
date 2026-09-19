@@ -284,6 +284,7 @@ export function GameShell({
             <Link
               key={tab.to}
               to={tab.to}
+              aria-label={t(tab.key)}
               className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] uppercase tracking-wider text-muted-foreground [&.active]:text-primary"
             >
               <Icon size={17} />
