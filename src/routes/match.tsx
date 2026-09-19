@@ -523,6 +523,39 @@ function LiveMatch({
     };
   }, []);
 
+  /**
+   * Equilíbrio automático: mede os quadros reais do aparelho e desce (ou sobe)
+   * um degrau de qualidade. Só age enquanto o jogador não escolher manualmente,
+   * e espera alguns segundos entre trocas para não ficar oscilando.
+   */
+  useEffect(() => {
+    let lastChange = 0;
+    const off = fpsMeter.subscribe((s) => {
+      if (qualityTouched.current) return;
+      if (s.seconds < 6) return;
+      const now = Date.now();
+      if (now - lastChange < 12_000) return;
+      setQuality((q) => {
+        if (s.avg < 28 && q !== "baixa") {
+          lastChange = now;
+          const next = q === "alta" ? "media" : "baixa";
+          toast.info(`Gráficos em "${next}" para manter a partida fluida.`);
+          return next;
+        }
+        if (s.avg > 58 && s.worst > 48 && q !== "alta") {
+          lastChange = now;
+          const next = q === "baixa" ? "media" : "alta";
+          toast.info(`Sobra desempenho: gráficos em "${next}".`);
+          return next;
+        }
+        return q;
+      });
+    });
+    return off;
+  }, []);
+
+
+
   const speedRef = useRef(speed);
   speedRef.current = speed;
   const pausedRef = useRef(paused);
