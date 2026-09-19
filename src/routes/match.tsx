@@ -554,7 +554,21 @@ function LiveMatch({
       if (e.side === "neutral" && !neutral) continue;
       const team =
         e.side === "home" ? sim.home.short : e.side === "away" ? sim.away.short : sim.home.short;
-      n.speak(ev, team);
+      const player = e.text.match(/'\s+([^.!]+?)(?:\s+faz|\s+finaliza|\s+marca|!|\.)/)?.[1];
+      const goalDifference = Math.abs(snap.hg - snap.ag);
+      const importance =
+        snap.minute >= 80 && goalDifference <= 1
+          ? "decisive"
+          : snap.minute >= 65 && goalDifference <= 2
+            ? "pressure"
+            : "routine";
+      n.speak(ev, team, {
+        minute: e.minute,
+        homeGoals: snap.hg,
+        awayGoals: snap.ag,
+        importance,
+        ...(player ? { player } : {}),
+      });
     }
   }, [snap, sim]);
 

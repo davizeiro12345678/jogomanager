@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { ArrowRight, Gamepad2, Menu, ShieldCheck, Sparkles, X } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { CLUBS, LEAGUES } from "@/game/data/leagues";
@@ -11,6 +12,7 @@ import { canonical, gameLd, seoMeta, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/
 import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1600&quality=52&as=srcset";
 import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1600&quality=62&as=srcset";
 import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -79,6 +81,7 @@ function Landing() {
   const [resume, setResume] = useState<{ club: string; season: number; round: number } | null>(
     null,
   );
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -104,6 +107,43 @@ function Landing() {
     <main className="pitch-bg min-h-screen">
       {/* ---------- herói em tela cheia ---------- */}
       <header className="relative isolate overflow-hidden">
+        <nav
+          aria-label="Navegação principal"
+          className="absolute inset-x-0 top-0 z-20 border-b border-border/50 bg-background/70 backdrop-blur-md"
+        >
+          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+            <Link to="/" className="flex items-center gap-2 font-display text-sm uppercase text-foreground">
+              <span className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">
+                <Gamepad2 className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span>Pro Football Manager <span className="text-primary">3D</span></span>
+            </Link>
+            <div className="hidden items-center gap-1 md:flex">
+              <Button variant="ghost" asChild><Link to="/guias">Guias</Link></Button>
+              <Button variant="ghost" asChild><Link to="/ligas-de-futebol">Ligas</Link></Button>
+              <Button variant="ghost" asChild><Link to="/auth">Entrar</Link></Button>
+              <Button asChild><Link to={hasCareer ? "/dashboard" : "/new"}>{hasCareer ? "Continuar" : "Jogar agora"}</Link></Button>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+            </Button>
+          </div>
+          {menuOpen ? (
+            <div className="grid gap-1 border-t border-border/50 bg-background p-3 md:hidden">
+              <Button variant="ghost" asChild><Link to="/guias" onClick={() => setMenuOpen(false)}>Guias</Link></Button>
+              <Button variant="ghost" asChild><Link to="/ligas-de-futebol" onClick={() => setMenuOpen(false)}>Ligas</Link></Button>
+              <Button variant="outline" asChild><Link to="/auth" onClick={() => setMenuOpen(false)}>Entrar</Link></Button>
+              <Button asChild><Link to={hasCareer ? "/dashboard" : "/new"} onClick={() => setMenuOpen(false)}>{hasCareer ? "Continuar carreira" : "Jogar agora"}</Link></Button>
+            </div>
+          ) : null}
+        </nav>
         <picture>
           <source type="image/avif" srcSet={heroAvif} sizes="100vw" />
           <source type="image/webp" srcSet={heroWebp} sizes="100vw" />
@@ -126,7 +166,7 @@ function Landing() {
           className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[30rem] opacity-[0.06] [background-image:repeating-linear-gradient(90deg,transparent_0_44px,currentColor_44px_45px)] [mask-image:linear-gradient(to_bottom,black,transparent)]"
         />
 
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 pb-14 pt-20 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:pt-28">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 pb-14 pt-32 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:pt-40">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-display text-[0.65rem] uppercase tracking-[0.35em] text-primary">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
@@ -144,18 +184,15 @@ function Landing() {
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                to={hasCareer ? "/dashboard" : "/new"}
-                className="glow-primary flex-1 rounded-xl bg-primary px-7 py-4 text-center font-display text-sm uppercase tracking-widest text-primary-foreground transition hover:brightness-110 sm:flex-none"
-              >
+              <Button size="lg" className="glow-primary flex-1 sm:flex-none" asChild>
+                <Link to={hasCareer ? "/dashboard" : "/new"}>
                 {hasCareer ? "Continuar carreira" : "Jogar agora"}
-              </Link>
-              <Link
-                to="/partida-rapida"
-                className="flex-1 rounded-xl border border-border bg-background/40 px-7 py-4 text-center font-display text-sm uppercase tracking-widest text-foreground backdrop-blur transition hover:bg-secondary sm:flex-none"
-              >
-                Partida rápida
-              </Link>
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="flex-1 bg-background/45 backdrop-blur sm:flex-none" asChild>
+                <Link to="/partida-rapida">Partida rápida</Link>
+              </Button>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
               Seu progresso fica neste aparelho até você salvar na nuvem.{" "}
@@ -236,6 +273,24 @@ function Landing() {
           </div>
         </div>
       </header>
+
+      <section aria-label="Destaques do jogo" className="border-y border-border/60 bg-card/35">
+        <div className="mx-auto grid max-w-6xl gap-px bg-border/60 sm:grid-cols-3">
+          {[
+            [Gamepad2, "Partidas completas", "Tática e decisões durante os 90 minutos"],
+            [Sparkles, "Estádio em 3D", "Qualidade automática para cada aparelho"],
+            [ShieldCheck, "Progresso seguro", "Jogue agora e salve na nuvem quando quiser"],
+          ].map(([Icon, title, detail]) => {
+            const FeatureIcon = Icon as typeof Gamepad2;
+            return (
+              <div key={title as string} className="flex gap-3 bg-background/90 px-5 py-4">
+                <FeatureIcon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                <div><p className="font-display text-sm">{title as string}</p><p className="text-xs text-muted-foreground">{detail as string}</p></div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       <div className="relative mx-auto max-w-6xl px-4 pb-16">
         {/* faixa de escudos: mostra de cara que os clubes são reais */}

@@ -34,14 +34,16 @@ export function PostFX({
   replay = false,
   moment,
   time = "dia",
+  intensity = 1,
 }: {
   quality: PostQuality;
   replay?: boolean;
   moment?: PostMoment;
   time?: PostTime;
+  intensity?: number;
 }) {
   const m: PostMoment = moment ?? (replay ? "replay" : "match");
-  const p = useMemo(() => postPreset(quality, m, time), [quality, m, time]);
+  const p = useMemo(() => postPreset(quality, m, time, intensity), [quality, m, time, intensity]);
   const ab = useMemo(() => new THREE.Vector2(p.aberration, p.aberration * 1.4), [p.aberration]);
 
   if (quality === "baixa") return null;
@@ -91,11 +93,10 @@ export function PostFX({
         mipmapBlur
       />
       {p.tilt > 0 ? <TiltShift2 blur={p.tilt} /> : <></>}
-      {/* aberração só nas bordas, como lente de transmissão real */}
-      <ChromaticAberration offset={ab} radialModulation modulationOffset={0.35} />
+      {cinema ? <ChromaticAberration offset={ab} radialModulation modulationOffset={0.35} /> : <></>}
       <HueSaturation saturation={p.saturation} hue={p.hue} />
       <BrightnessContrast brightness={p.brightness} contrast={p.contrast} />
-      <Noise opacity={p.grain} blendFunction={BlendFunction.OVERLAY} />
+      {cinema ? <Noise opacity={p.grain} blendFunction={BlendFunction.OVERLAY} /> : <></>}
       <Vignette offset={cinema ? 0.15 : 0.26} darkness={p.vignette} />
       {/* O renderer já aplica ACES; uma segunda curva aqui esmagava médios e realces. */}
       <SMAA />

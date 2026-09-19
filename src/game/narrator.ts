@@ -12,9 +12,11 @@ import {
   narrationLang,
   narrationLine,
   SPEECH_TAG,
+  type NarrationContext,
   type NarrationEvent,
   type NarrationLang,
 } from "./narration-lines";
+import { audioBlobUrl, readVoiceCache, writeVoiceCache } from "./audio-cache";
 
 export type { NarrationEvent } from "./narration-lines";
 
@@ -28,9 +30,7 @@ export interface NarratorOptions {
   volume?: number;
 }
 
-/** Cache global de áudios já gerados — cada frase custa uma chamada de API. */
-const audioCache = new Map<string, string>();
-const MAX_CACHE = 80;
+const pendingAudio = new Map<string, Promise<string | null>>();
 
 /** Espaçamento mínimo entre falas do mesmo tipo (ms). */
 const MIN_GAP: Partial<Record<NarrationEvent, number>> = {
@@ -50,6 +50,7 @@ interface QueueItem {
   lang: NarrationLang;
   variant: number;
   team: string;
+  context?: NarrationContext;
 }
 
 export class Narrator {
@@ -67,6 +68,7 @@ export class Narrator {
   private disposed = false;
   /** Desliga a voz realista após uma falha para não insistir em erro. */
   private remoteBroken = false;
+  private remoteFailures = 0;
 
   constructor(opts: NarratorOptions) {
     this.lang = narrationLang(opts.lang);
@@ -145,42 +147,67 @@ export class Narrator {
 
   private playBase64(mp3: string): Promise<void> {
     return new Promise((resolve) => {
-      const el = new Audio(`data:audio/mpeg;base64,${mp3}`);
+      const url = audioBlobUrl(mp3);
+      const el = this.audio ?? new Audio();
+      el.src = url;
+      el.preload = "auto";
       el.volume = this.volume;
       this.audio = el;
-      el.onended = () => resolve();
-      el.onerror = () => resolve();
-      void el.play().catch(() => resolve());
-      window.setTimeout(resolve, 12000);
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        URL.revokeObjectURL(url);
+        resolve();
+      };
+      el.onended = finish;
+      el.onerror = finish;
+      void el.play().catch(finish);
+      window.setTimeout(finish, 12000);
     });
   }
 
   private async speakRemote(item: QueueItem): Promise<boolean> {
-    const key = `${item.lang}|${item.event}|${item.variant}|${item.team}`;
-    const cached = audioCache.get(key);
+    const contextKey = item.context
+      ? `${item.context.minute ?? 0}|${item.context.homeGoals ?? 0}-${item.context.awayGoals ?? 0}|${item.context.player ?? ""}|${item.context.importance ?? "routine"}`
+      : "base";
+    const key = `${item.lang}|${item.event}|${item.variant}|${item.team}|${contextKey}`;
+    const cached = await readVoiceCache(key);
     if (cached) {
       await this.playBase64(cached);
       return true;
     }
     try {
-      const { narrateEvent } = await import("@/lib/tts.functions");
-      const res = await narrateEvent({
-        data: { lang: item.lang, event: item.event, team: item.team, variant: item.variant },
-      });
-      if (!res.ok) {
-        this.remoteBroken = true;
+      let request = pendingAudio.get(key);
+      if (!request) {
+        request = import("@/lib/tts.functions").then(async ({ narrateEvent }) => {
+          const res = await narrateEvent({
+            data: {
+              lang: item.lang,
+              event: item.event,
+              team: item.team,
+              variant: item.variant,
+              context: item.context,
+            },
+          });
+          return res.ok ? res.audio : null;
+        });
+        pendingAudio.set(key, request);
+      }
+      const audio = await request.finally(() => pendingAudio.delete(key));
+      if (!audio) {
+        this.remoteFailures += 1;
+        this.remoteBroken = this.remoteFailures >= 2;
         return false;
       }
-      if (audioCache.size >= MAX_CACHE) {
-        const first = audioCache.keys().next().value;
-        if (first) audioCache.delete(first);
-      }
-      audioCache.set(key, res.audio);
+      this.remoteFailures = 0;
+      await writeVoiceCache(key, audio);
       if (!this.enabled || this.disposed) return true;
-      await this.playBase64(res.audio);
+      await this.playBase64(audio);
       return true;
     } catch {
-      this.remoteBroken = true;
+      this.remoteFailures += 1;
+      this.remoteBroken = this.remoteFailures >= 2;
       return false;
     }
   }
@@ -201,7 +228,7 @@ export class Narrator {
   }
 
   /** Enfileira uma fala para o evento; `goal` tem prioridade máxima. */
-  speak(event: NarrationEvent, team: string) {
+  speak(event: NarrationEvent, team: string, context?: NarrationContext) {
     if (!this.enabled || this.disposed) return;
 
     const now = typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -224,7 +251,8 @@ export class Narrator {
       lang: this.lang,
       variant,
       team,
-      text: narrationLine(this.lang, event, team, variant),
+      text: narrationLine(this.lang, event, team, variant, context),
+      ...(context ? { context } : {}),
     };
 
     if (event === "goal" || event === "redCard" || event === "fulltime") {
