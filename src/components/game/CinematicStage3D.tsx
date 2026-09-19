@@ -553,15 +553,32 @@ function Director({ kind, beat }: { kind: SetKind; beat: number }) {
   const current = useRef(new THREE.Vector3());
   const currentLook = useRef(new THREE.Vector3());
   const started = useRef(false);
+  // tempo desde a troca de plano: o corte começa devagar e acelera, como um
+  // travelling de verdade, em vez de saltar para a posição nova
+  const since = useRef(0);
+  const lastBeat = useRef(beat);
+  const reduced = useMemo(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
+    [],
+  );
 
   useFrame(({ camera, clock }, delta) => {
     const shot = shots[beat % shots.length]!;
     const t = clock.elapsedTime;
+    if (lastBeat.current !== beat) {
+      lastBeat.current = beat;
+      since.current = 0;
+    }
+    since.current += delta;
+
+    const drift = reduced ? 0 : 1;
     // travelling lento + micro tremor de câmera na mão
     target.set(
-      shot[0] + Math.sin(t * 0.16) * 0.5 + Math.sin(t * 2.7) * 0.012,
-      shot[1] + Math.sin(t * 0.21) * 0.11 + Math.sin(t * 3.1) * 0.008,
-      shot[2] - t * 0 + Math.cos(t * 0.13) * 0.32,
+      shot[0] + (Math.sin(t * 0.16) * 0.5 + Math.sin(t * 2.7) * 0.012) * drift,
+      shot[1] + (Math.sin(t * 0.21) * 0.11 + Math.sin(t * 3.1) * 0.008) * drift,
+      shot[2] + Math.cos(t * 0.13) * 0.32 * drift,
     );
     look.set(shot[3], shot[4], shot[5]);
     if (!started.current) {
@@ -569,11 +586,25 @@ function Director({ kind, beat }: { kind: SetKind; beat: number }) {
       currentLook.current.copy(look);
       started.current = true;
     }
-    const k = 1 - Math.pow(0.0015, delta);
+    // aceleração suave do plano: 0 → 1 em ~1,2 s (ease-in-out)
+    const u = Math.min(1, since.current / 1.2);
+    const eased = u * u * (3 - 2 * u);
+    const speed = reduced ? 0.0002 : 0.02 - eased * 0.0186;
+    const k = 1 - Math.pow(speed, delta);
     current.current.lerp(target, k);
     currentLook.current.lerp(look, k);
     camera.position.copy(current.current);
     camera.lookAt(currentLook.current);
+
+    // leve aproximação de lente ao longo do plano: dá respiro cinematográfico
+    const cam = camera as THREE.PerspectiveCamera;
+    if (cam.isPerspectiveCamera) {
+      const wanted = reduced ? 42 : 44 - eased * 3.4;
+      if (Math.abs(cam.fov - wanted) > 0.01) {
+        cam.fov += (wanted - cam.fov) * Math.min(1, delta * 2.4);
+        cam.updateProjectionMatrix();
+      }
+    }
   });
   return null;
 }

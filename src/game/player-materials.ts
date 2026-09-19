@@ -1,0 +1,215 @@
+// ============================================================================
+//  player-materials.ts
+//
+//  Cache de materiais dos jogadores.
+//
+//  Cada PlayerRig criava o seu próprio conjunto de materiais (pele, camisa,
+//  calção, meião, cabelo, chuteira…). Com 22 atletas em campo isso virava
+//  ~200 materiais distintos e, pior, dezenas de programas de shader para o
+//  MeshPhysicalMaterial — o que custa compilação no primeiro minuto e memória
+//  de GPU o jogo inteiro. Como a aparência só depende de (uniforme, tom de
+//  pele, cabelo, chuteira, qualidade), os materiais podem ser compartilhados
+//  entre jogadores com a mesma combinação.
+//
+//  O cache é limitado: uma partida usa poucas dezenas de combinações e as
+//  entradas mais antigas são descartadas com dispose() quando o limite estoura.
+// ============================================================================
+
+import * as THREE from "three";
+
+import {
+  bootGrainNormal,
+  jerseyWeaveNormal,
+  skinPoreNormal,
+  sockRibNormal,
+} from "@/game/textures/fabric";
+import type { Kit } from "@/game/kits";
+import { shade, skinShadow } from "@/game/player-model";
+
+export type MaterialQuality = "alta" | "media" | "baixa";
+
+export interface PlayerLookLike {
+  skin: string;
+  sweat: number;
+  hairColor: string;
+  bootColor: string;
+  bootAccent: string;
+  gloveColor: string;
+}
+
+export interface PlayerMaterials {
+  skin: THREE.Material;
+  skinDark: THREE.Material;
+  jersey: THREE.Material;
+  shorts: THREE.Material;
+  socks: THREE.Material;
+  trim: THREE.Material;
+  hair: THREE.Material;
+  boot: THREE.Material;
+  bootAccent: THREE.Material;
+  sole: THREE.Material;
+  glove: THREE.Material;
+}
+
+const NORMAL_SCALE = new THREE.Vector2(0.55, 0.55);
+const MAX_ENTRIES = 96;
+const cache = new Map<string, PlayerMaterials>();
+
+/** arredonda o suor para poucos degraus: evita um material por jogador */
+const sweatStep = (s: number) => Math.round(Math.max(0, Math.min(1, s)) * 4) / 4;
+
+function dispose(set: PlayerMaterials) {
+  Object.values(set).forEach((m) => m.dispose());
+}
+
+/**
+ * Devolve (e memoriza) o conjunto de materiais de um jogador.
+ * `tex` é a textura do uniforme, que já vem de um cache próprio em kits.ts.
+ */
+export function playerMaterials(
+  look: PlayerLookLike,
+  kit: Kit,
+  tex: THREE.Texture | null,
+  quality: MaterialQuality,
+): PlayerMaterials {
+  const sweat = sweatStep(look.sweat);
+  const key = [
+    quality,
+    look.skin,
+    sweat,
+    look.hairColor,
+    look.bootColor,
+    look.bootAccent,
+    look.gloveColor,
+    kit.base,
+    kit.shorts,
+    kit.socks,
+    kit.detail,
+    tex?.uuid ?? "-",
+  ].join("|");
+
+  const hit = cache.get(key);
+  if (hit) {
+    // LRU simples: reinsere para marcar como recente
+    cache.delete(key);
+    cache.set(key, hit);
+    return hit;
+  }
+
+  const hi = quality === "alta";
+  const weave = hi ? jerseyWeaveNormal() : null;
+  const rib = hi ? sockRibNormal() : null;
+  const pores = hi ? skinPoreNormal() : null;
+  const grain = hi ? bootGrainNormal() : null;
+
+  const set: PlayerMaterials = {
+    skin: hi
+      ? new THREE.MeshPhysicalMaterial({
+          color: look.skin,
+          roughness: 0.6 - sweat * 0.16,
+          normalMap: pores,
+          normalScale: NORMAL_SCALE,
+          clearcoat: 0.28 + sweat * 0.25,
+          clearcoatRoughness: 0.5,
+          envMapIntensity: 0.95,
+          sheen: 0.35,
+          sheenRoughness: 0.6,
+          sheenColor: new THREE.Color("#ffd9c0"),
+          specularIntensity: 0.45,
+          specularColor: new THREE.Color("#fff1e4"),
+        })
+      : new THREE.MeshStandardMaterial({ color: look.skin, roughness: 0.7 }),
+    skinDark: new THREE.MeshStandardMaterial({
+      color: skinShadow(look.skin),
+      roughness: 0.72,
+    }),
+    jersey: hi
+      ? new THREE.MeshPhysicalMaterial({
+          color: kit.base,
+          map: tex,
+          normalMap: weave,
+          normalScale: NORMAL_SCALE,
+          roughness: 0.76 - sweat * 0.14,
+          envMapIntensity: 0.85,
+          clearcoat: sweat * 0.3,
+          clearcoatRoughness: 0.6,
+          sheen: 0.5,
+          sheenRoughness: 0.7,
+          sheenColor: new THREE.Color(shade(kit.base, 0.4)),
+        })
+      : new THREE.MeshStandardMaterial({ color: kit.base, map: tex, roughness: 0.85 }),
+    shorts: hi
+      ? new THREE.MeshPhysicalMaterial({
+          color: kit.shorts,
+          roughness: 0.84,
+          normalMap: weave,
+          normalScale: NORMAL_SCALE,
+          sheen: 0.4,
+          sheenColor: new THREE.Color(shade(kit.shorts, 0.35)),
+        })
+      : new THREE.MeshStandardMaterial({ color: kit.shorts, roughness: 0.86 }),
+    socks: hi
+      ? new THREE.MeshPhysicalMaterial({
+          color: kit.socks,
+          roughness: 0.92,
+          normalMap: rib,
+          normalScale: NORMAL_SCALE,
+          sheen: 0.6,
+          sheenRoughness: 0.8,
+          sheenColor: new THREE.Color(shade(kit.socks, 0.45)),
+        })
+      : new THREE.MeshStandardMaterial({ color: kit.socks, roughness: 0.9 }),
+    trim: new THREE.MeshStandardMaterial({ color: kit.detail, roughness: 0.8 }),
+    hair: hi
+      ? new THREE.MeshPhysicalMaterial({
+          color: look.hairColor,
+          roughness: 0.62,
+          metalness: 0.04,
+          clearcoat: 0.35,
+          clearcoatRoughness: 0.42,
+          sheen: 0.85,
+          sheenRoughness: 0.55,
+          sheenColor: new THREE.Color(shade(look.hairColor, 0.55)),
+          anisotropy: 0.55,
+          anisotropyRotation: Math.PI / 2,
+          envMapIntensity: 0.75,
+        })
+      : new THREE.MeshStandardMaterial({
+          color: look.hairColor,
+          roughness: 0.85,
+          metalness: 0.02,
+        }),
+    boot: hi
+      ? new THREE.MeshPhysicalMaterial({
+          color: look.bootColor,
+          roughness: 0.22,
+          normalMap: grain,
+          normalScale: NORMAL_SCALE,
+          metalness: 0.1,
+          clearcoat: 0.85,
+          clearcoatRoughness: 0.18,
+        })
+      : new THREE.MeshStandardMaterial({
+          color: look.bootColor,
+          roughness: 0.34,
+          metalness: 0.22,
+        }),
+    bootAccent: new THREE.MeshStandardMaterial({ color: look.bootAccent, roughness: 0.4 }),
+    sole: new THREE.MeshStandardMaterial({
+      color: shade(look.bootColor, -0.55),
+      roughness: 0.6,
+    }),
+    glove: new THREE.MeshStandardMaterial({ color: look.gloveColor, roughness: 0.7 }),
+  };
+
+  cache.set(key, set);
+  if (cache.size > MAX_ENTRIES) {
+    const oldest = cache.keys().next().value;
+    if (oldest) {
+      const victim = cache.get(oldest);
+      cache.delete(oldest);
+      if (victim) dispose(victim);
+    }
+  }
+  return set;
+}

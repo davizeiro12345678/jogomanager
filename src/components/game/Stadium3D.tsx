@@ -15,7 +15,9 @@ import * as THREE from "three";
 import { PlayerRig } from "@/components/game/players/PlayerRig";
 import { PostFX } from "@/components/game/post/PostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
-import { DISPLAY_FONT } from "@/components/game/fonts";
+import { DISPLAY_FONT, configureText3D } from "@/components/game/fonts";
+
+configureText3D();
 import { adTexture } from "@/components/game/stadium/textures/ads";
 import {
   concreteAlbedo,
@@ -762,7 +764,11 @@ function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: stri
 function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
   const [label, setLabel] = useState("");
   const [clockText, setClockText] = useState("0'");
+  // O painel só muda de minuto em minuto: montar as strings a 60 Hz era
+  // trabalho puro de CPU no caminho crítico do quadro.
+  const tick = useRef(0);
   useFrame(() => {
+    if (++tick.current % 12 !== 0) return;
     const l = `${sim.home.short}  ${sim.stats.home.goals} – ${sim.stats.away.goals}  ${sim.away.short}`;
     const c = `${sim.minute()}'`;
     if (l !== label) setLabel(l);

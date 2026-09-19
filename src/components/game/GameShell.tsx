@@ -281,7 +281,7 @@ export function GameShell({
         </div>
       )}
 
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">{children}</main>
+      <main className="page-enter mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">{children}</main>
 
       {/* Barra inferior do celular */}
       <nav aria-label="Navegação principal no celular" className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-card/95 backdrop-blur-xl md:hidden">
