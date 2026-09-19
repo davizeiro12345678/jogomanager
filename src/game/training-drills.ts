@@ -4,7 +4,7 @@ import { makeRng } from "./rng";
 import type { CareerState, NewsItem, Player, Position } from "./types";
 
 /** Atributos que um exercício pode desenvolver. */
-type DrillAttr = "pac" | "sho" | "pas" | "dri" | "def" | "phy";
+type DrillAttr = "pace" | "shooting" | "passing" | "defending" | "physical";
 
 export interface Drill {
   id: string;
@@ -27,7 +27,7 @@ export const DRILLS: readonly Drill[] = [
     id: "posse",
     label: "Rondo de posse",
     desc: "Quadrado reduzido com dois toques. Melhora passe e saída de bola sob pressão.",
-    attr: "pas",
+    attr: "passing",
     targets: ["MF", "DF"],
     fatigue: 4,
     morale: 2,
@@ -36,7 +36,7 @@ export const DRILLS: readonly Drill[] = [
     id: "linha",
     label: "Linha defensiva em bloco",
     desc: "Sobe e desce a linha em conjunto para treinar impedimento e compactação.",
-    attr: "def",
+    attr: "defending",
     targets: ["DF", "MF"],
     fatigue: 5,
     morale: 1,
@@ -45,7 +45,7 @@ export const DRILLS: readonly Drill[] = [
     id: "finalizacao",
     label: "Finalização em velocidade",
     desc: "Cruzamentos e chutes de primeira dentro da área. Melhora a pontaria dos atacantes.",
-    attr: "sho",
+    attr: "shooting",
     targets: ["FW", "MF"],
     fatigue: 5,
     morale: 3,
@@ -54,7 +54,7 @@ export const DRILLS: readonly Drill[] = [
     id: "transicao",
     label: "Transição rápida",
     desc: "Recuperou, ataca em cinco segundos. Treina contra-ataque e tomada de decisão.",
-    attr: "pac",
+    attr: "pace",
     targets: ["FW", "MF", "DF"],
     fatigue: 7,
     morale: 2,
@@ -63,7 +63,7 @@ export const DRILLS: readonly Drill[] = [
     id: "bolaparada",
     label: "Bola parada",
     desc: "Escanteios, faltas ensaiadas e marcação por zona na área.",
-    attr: "sho",
+    attr: "shooting",
     targets: ["DF", "FW"],
     fatigue: 3,
     morale: 2,
@@ -72,7 +72,7 @@ export const DRILLS: readonly Drill[] = [
     id: "drible",
     label: "Um contra um",
     desc: "Duelos individuais pelos lados. Desenvolve drible e marcação em espaço aberto.",
-    attr: "dri",
+    attr: "pace",
     targets: ["FW", "MF"],
     fatigue: 6,
     morale: 3,
@@ -81,7 +81,7 @@ export const DRILLS: readonly Drill[] = [
     id: "forca",
     label: "Força e resistência",
     desc: "Trabalho físico pesado: aguenta melhor os minutos finais, mas cansa a semana.",
-    attr: "phy",
+    attr: "physical",
     targets: ["GK", "DF", "MF", "FW"],
     fatigue: 9,
     morale: -1,
@@ -90,7 +90,7 @@ export const DRILLS: readonly Drill[] = [
     id: "goleiros",
     label: "Treino de goleiros",
     desc: "Reflexo, saída de gol e reposição com o pé para os arqueiros.",
-    attr: "def",
+    attr: "defending",
     targets: ["GK"],
     fatigue: 3,
     morale: 1,
