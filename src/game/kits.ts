@@ -255,6 +255,65 @@ export function kitTexture(kit: Kit, number: number, name?: string): THREE.Canva
       ctx.fillRect(0, 0, size, size);
       break;
     }
+    case "quarters":
+      ctx.fillStyle = kit.detail;
+      ctx.fillRect(size / 2, 0, size / 2, size / 2);
+      ctx.fillRect(0, size / 2, size / 2, size / 2);
+      break;
+    case "chevron": {
+      ctx.fillStyle = kit.detail;
+      for (let i = 0; i < 5; i++) {
+        const y = size * 0.18 + i * 46 * s;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(size / 2, y + 26 * s);
+        ctx.lineTo(size, y);
+        ctx.lineTo(size, y + 14 * s);
+        ctx.lineTo(size / 2, y + 40 * s);
+        ctx.lineTo(0, y + 14 * s);
+        ctx.closePath();
+        ctx.fill();
+      }
+      break;
+    }
+    case "diagonal":
+      ctx.save();
+      ctx.fillStyle = kit.detail;
+      ctx.translate(size / 2, size / 2);
+      ctx.rotate(Math.PI / 5);
+      for (let i = -10; i < 10; i++) ctx.fillRect(i * 34 * s, -size, 17 * s, size * 2);
+      ctx.restore();
+      break;
+    case "shadow":
+      // listras "sombra": mesmo tom do corpo, só um degrau mais escuro
+      ctx.fillStyle = shade(kit.base, 0.82);
+      for (let i = 0; i < 10; i++) ctx.fillRect((i * 26 + 6) * s, 0, 13 * s, size);
+      break;
+    case "argyle": {
+      ctx.fillStyle = kit.detail;
+      const step = 64 * s;
+      for (let y = 0; y < size + step; y += step) {
+        for (let x = 0; x < size + step; x += step) {
+          ctx.beginPath();
+          ctx.moveTo(x, y - step / 2);
+          ctx.lineTo(x + step / 2, y);
+          ctx.lineTo(x, y + step / 2);
+          ctx.lineTo(x - step / 2, y);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+      break;
+    }
+    case "mesh": {
+      // malha de goleiro: furos finos deixando o tom escuro aparecer
+      ctx.fillStyle = shade(kit.base, 0.7);
+      for (let y = 0; y < size; y += 10 * s)
+        for (let x = 0; x < size; x += 10 * s) ctx.fillRect(x, y, 4 * s, 4 * s);
+      ctx.fillStyle = kit.detail;
+      ctx.fillRect(0, size * 0.42, size, 10 * s);
+      break;
+    }
     default:
       break;
   }
