@@ -7,6 +7,7 @@ import {
   type NarrationEvent,
   type NarrationLang,
 } from "@/game/narration-lines";
+import { CUTSCENES } from "@/content/cutscenes";
 
 /**
  * Narração da partida com voz realista (ElevenLabs).
@@ -95,6 +96,51 @@ export const narrateEvent = createServerFn({ method: "POST" })
       return { ok: true, audio: Buffer.from(buf).toString("base64") };
     } catch (err) {
       console.error("ElevenLabs TTS erro de rede", err);
+      return { ok: false, reason: "error" };
+    }
+  });
+
+const SceneNarrateInput = z.object({
+  scene: z.string().min(1).max(48),
+  line: z.number().int().min(0).max(12),
+});
+
+/** Voz das cenas; o texto também é escolhido no servidor pelo roteiro fixo. */
+export const narrateScene = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => SceneNarrateInput.parse(input))
+  .handler(async ({ data }): Promise<NarrateResult> => {
+    const apiKey = process.env["ELEVENLABS_API_KEY"];
+    const scene = CUTSCENES[data.scene];
+    const text = scene?.lines[data.line]?.text;
+    if (!apiKey || !text) return { ok: false, reason: "unavailable" };
+    const { reserveAiBudget } = await import("@/lib/ai-budget.server");
+    if (!(await reserveAiBudget("voice"))) return { ok: false, reason: "unavailable" };
+    try {
+      const res = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_BY_LANG.pt}?output_format=mp3_22050_32`,
+        {
+          method: "POST",
+          headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text,
+            model_id: "eleven_multilingual_v2",
+            voice_settings: {
+              stability: scene.mood === "bad" ? 0.52 : 0.38,
+              similarity_boost: 0.82,
+              style: scene.mood === "good" ? 0.74 : 0.58,
+              use_speaker_boost: true,
+              speed: 0.98,
+            },
+          }),
+        },
+      );
+      if (!res.ok) {
+        console.error(`ElevenLabs cutscene TTS falhou [${res.status}]: ${await res.text()}`);
+        return { ok: false, reason: "error" };
+      }
+      return { ok: true, audio: Buffer.from(await res.arrayBuffer()).toString("base64") };
+    } catch (error) {
+      console.error("ElevenLabs cutscene TTS erro de rede", error);
       return { ok: false, reason: "error" };
     }
   });

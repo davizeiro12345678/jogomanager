@@ -30,7 +30,6 @@ import { ManagerPortrait } from "@/components/game/ManagerPortrait";
 import { prefersReducedMotion } from "@/game/device";
 import { Crest } from "@/components/game/Crest";
 import type { Club, ManagerLook } from "@/game/types";
-import { Narrator, type NarrationEvent } from "@/game/narrator";
 import { CinematicStage3D } from "@/components/game/CinematicStage3D";
 
 interface Props {
@@ -570,7 +569,7 @@ export function Cutscene({
   const [par, setPar] = useState({ x: 0, y: 0 });
   /** travelling contínuo da câmera dentro de cada fala (0..1) */
   const [dolly, setDolly] = useState(0);
-  const narrationRef = useRef<Narrator | null>(null);
+  const voiceRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (reduced) {
@@ -610,20 +609,38 @@ export function Cutscene({
   const full = line?.text ?? "";
 
   useEffect(() => {
-    if (!narrate || !data) return;
-    const narrator = new Narrator({ lang: "pt-BR", enabled: true, realistic: true, rate: 0.96 });
-    narrationRef.current = narrator;
-    return () => {
-      narrator.dispose();
-      narrationRef.current = null;
-    };
-  }, [data, narrate]);
-
-  useEffect(() => {
     if (!narrate || !data || !line) return;
-    const event: NarrationEvent = data.art === "press" ? "fulltime" : "kickoff";
-    narrationRef.current?.speak(event, club?.short || club?.name || "o time");
-  }, [club?.name, club?.short, data, i, line, narrate]);
+    let alive = true;
+    voiceRef.current?.pause();
+    voiceRef.current = null;
+    window.speechSynthesis?.cancel();
+    const fallback = () => {
+      if (!alive || !("speechSynthesis" in window)) return;
+      const utterance = new SpeechSynthesisUtterance(line.text);
+      utterance.lang = "pt-BR";
+      utterance.rate = 0.96;
+      utterance.pitch = data.mood === "good" ? 1.04 : data.mood === "bad" ? 0.94 : 1;
+      window.speechSynthesis.speak(utterance);
+    };
+    void import("@/lib/tts.functions")
+      .then(({ narrateScene }) => narrateScene({ data: { scene: data.id, line: i } }))
+      .then((result) => {
+        if (!alive || !result.ok) {
+          fallback();
+          return;
+        }
+        const audio = new Audio(`data:audio/mpeg;base64,${result.audio}`);
+        voiceRef.current = audio;
+        void audio.play().catch(fallback);
+      })
+      .catch(fallback);
+    return () => {
+      alive = false;
+      voiceRef.current?.pause();
+      voiceRef.current = null;
+      window.speechSynthesis?.cancel();
+    };
+  }, [data, i, line, narrate]);
 
   // máquina de escrever
   useEffect(() => {
