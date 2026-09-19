@@ -1140,8 +1140,15 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
               </group>
             </group>
 
-            <Arm side={1} armRef={armLRef} foreRef={foreLRef} />
-            <Arm side={-1} armRef={armRRef} foreRef={foreRRef} />
+            {/* clavículas: o ombro acompanha o braço em vez de ficar cravado
+                no tronco, o que dá o balanço correto na corrida */}
+            <group ref={clavLRef}>
+              <Arm side={1} armRef={armLRef} foreRef={foreLRef} />
+            </group>
+            <group ref={clavRRef}>
+              <Arm side={-1} armRef={armRRef} foreRef={foreRRef} />
+            </group>
+
           </group>
         </group>
 
