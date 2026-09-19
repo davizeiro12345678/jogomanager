@@ -14,6 +14,7 @@ import {
   sportmonksTeamId,
   sportmonksSquad,
   sdbTeamKits,
+  sdbTeamHonours,
 
 } from "./football-api.server";
 
@@ -94,6 +95,9 @@ async function enrichOne(db: Admin, club: ClubRow): Promise<boolean> {
 
       founded: remote.founded ?? null,
       city: remote.city ?? null,
+      description: remote.description ?? null,
+      data_source: "thesportsdb",
+      data_updated_at: new Date().toISOString(),
       ...(stadiumId ? { stadium_id: stadiumId } : {}),
     })
     .eq("id", club.id);
@@ -129,6 +133,21 @@ async function enrichOne(db: Admin, club: ClubRow): Promise<boolean> {
           image_url: item.imageUrl,
         })),
         { onConflict: "club_id,season,kind" },
+      );
+    }
+    const honours = await sdbTeamHonours(remote.externalId);
+    if (honours.length) {
+      await db.from("club_honours").upsert(
+        honours.map((honour) => ({
+          club_id: club.id,
+          competition: honour.competition,
+          title_count: honour.count,
+          seasons: honour.seasons,
+          source: "thesportsdb",
+          external_id: honour.externalId ?? null,
+          updated_at: new Date().toISOString(),
+        })),
+        { onConflict: "club_id,competition,source" },
       );
     }
   }
@@ -351,6 +370,9 @@ export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
           crest_url: hit.crestUrl ?? null,
           founded: hit.founded ?? null,
           city: hit.city ?? null,
+          description: hit.description ?? null,
+          data_source: "thesportsdb",
+          data_updated_at: new Date().toISOString(),
           ...(stadiumId ? { stadium_id: stadiumId } : {}),
         })
         .eq("id", club.id);
@@ -401,6 +423,25 @@ export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
           }
         } catch {
           // O uniforme principal e os outros clubes ainda podem ser importados.
+        }
+        try {
+          const honours = await sdbTeamHonours(hit.externalId);
+          if (honours.length) {
+            await db.from("club_honours").upsert(
+              honours.map((honour) => ({
+                club_id: club.id,
+                competition: honour.competition,
+                title_count: honour.count,
+                seasons: honour.seasons,
+                source: "thesportsdb",
+                external_id: honour.externalId ?? null,
+                updated_at: new Date().toISOString(),
+              })),
+              { onConflict: "club_id,competition,source" },
+            );
+          }
+        } catch {
+          // A ausência de honrarias não invalida escudo, estádio ou uniformes.
         }
       }
       matched += 1;

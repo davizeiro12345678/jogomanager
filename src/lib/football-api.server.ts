@@ -25,6 +25,14 @@ export interface RemoteTeam {
   founded?: number | undefined;
   apiFootballId?: string | undefined;
   website?: string | undefined;
+  description?: string | undefined;
+}
+
+export interface RemoteHonour {
+  competition: string;
+  seasons: string[];
+  count: number;
+  externalId?: string | undefined;
 }
 
 export interface RemotePlayer {
@@ -78,6 +86,8 @@ interface SdbTeam {
   strCountry?: string;
   strWebsite?: string;
   intFormedYear?: string;
+  strDescriptionPT?: string;
+  strDescriptionEN?: string;
 }
 
 function normalise(s: string) {
@@ -104,6 +114,7 @@ function mapSdb(t: SdbTeam): RemoteTeam {
     country: t.strCountry ?? undefined,
     founded: t.intFormedYear ? Number(t.intFormedYear) || undefined : undefined,
     apiFootballId: t.idAPIfootball || undefined,
+    description: t.strDescriptionPT ?? t.strDescriptionEN ?? undefined,
   };
 }
 
@@ -241,6 +252,35 @@ export async function sdbTeamKits(teamId: string): Promise<RemoteKit[]> {
           : "home";
     return [{ imageUrl: item.strEquipment, season: item.strSeason ?? "2025-2026", kind }];
   });
+}
+
+interface SdbHonour {
+  id?: string;
+  strHonour?: string;
+  strSeason?: string;
+}
+
+/** Honrarias históricas declaradas pela fonte, agrupadas por competição. */
+export async function sdbTeamHonours(teamId: string): Promise<RemoteHonour[]> {
+  const key = process.env["THESPORTSDB_API_KEY"] ?? "123";
+  const json = await getJson<{ honours?: SdbHonour[] | null }>(
+    `https://www.thesportsdb.com/api/v1/json/${key}/lookuphonours.php?id=${encodeURIComponent(teamId)}`,
+  );
+  const grouped = new Map<string, RemoteHonour>();
+  for (const item of json?.honours ?? []) {
+    const competition = item.strHonour?.trim();
+    if (!competition) continue;
+    const current = grouped.get(competition) ?? {
+      competition,
+      seasons: [],
+      count: 0,
+      externalId: item.id,
+    };
+    current.count += 1;
+    if (item.strSeason && !current.seasons.includes(item.strSeason)) current.seasons.push(item.strSeason);
+    grouped.set(competition, current);
+  }
+  return [...grouped.values()].sort((a, b) => b.count - a.count || a.competition.localeCompare(b.competition));
 }
 
 /* ------------------------------------------------------------------ */
