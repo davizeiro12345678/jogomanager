@@ -162,6 +162,8 @@ export class MatchSim {
   private restartTimer = 0;
   /** tempo com a bola solta, usado para destravar a jogada */
   private looseTime = 0;
+  /** Pressão coletiva curta disparada por erro técnico ou passe para trás. */
+  private pressSurge: Record<Side, number> = { home: 0, away: 0 };
   /** último lado que tocou na bola — define lateral, escanteio e tiro de meta */
   private lastTouch: Side = "home";
   /** velocidade vertical da bola (m/s) — a altura passa a ser física de verdade */
@@ -419,6 +421,8 @@ export class MatchSim {
   step(dt: number) {
     if (this.finished) return;
     this.time += dt;
+    this.pressSurge.home = Math.max(0, this.pressSurge.home - dt);
+    this.pressSurge.away = Math.max(0, this.pressSurge.away - dt);
     this.mentalityCache = null;
 
     if (this.time >= 5400) {
@@ -522,10 +526,12 @@ export class MatchSim {
       const setup = this.setup(p.side);
       const dir = this.attackDir(p.side);
       const attacking = this.possession === p.side;
-      const widthFactor = 0.62 + setup.tactics.width * 0.14;
+      const defendingWide = !attacking && Math.abs(bz) > FIELD_Z * 0.7;
+      const widthFactor = (0.62 + setup.tactics.width * 0.14) * (defendingWide ? 0.76 : 1);
+      const surge = !attacking && this.pressSurge[p.side] > 0;
       const pressLine = attacking
         ? 10 + setup.tactics.mentality * 5
-        : -6 + setup.tactics.pressing * 7;
+        : -6 + setup.tactics.pressing * 7 + (surge ? 7 : 0);
 
       let tx = p.slotX * FIELD_X * 0.9 + this.mentalityShift(p.side) + bx * 0.22 + pressLine * dir;
       let tz = p.slotZ * FIELD_Z * widthFactor + bz * 0.28;
@@ -578,7 +584,7 @@ export class MatchSim {
           const pull = p.pos === "DF" ? 0.35 : 0.6;
           tx += (bx - tx) * pull;
           tz += (bz - tz) * pull;
-          sprint = 1.15;
+          sprint = (surge ? 1.3 : 1.15) * (0.82 + p.stamina / 550);
         }
         // perdendo no fim: a equipe inteira sobe para pressionar
         tx += urgency(p.side) * 7 * dir;
@@ -874,6 +880,8 @@ export class MatchSim {
     this.ball.height = h > 0.9 ? 0.9 : 0.12;
     this.ballVy = h > 0.9 ? 1.4 : 0;
     this.looseTime = 0.4;
+    const pressingSide: Side = p.side === "home" ? "away" : "home";
+    this.pressSurge[pressingSide] = Math.max(this.pressSurge[pressingSide], 2.5);
   }
 
   /**
@@ -1117,10 +1125,19 @@ export class MatchSim {
     const { opp, dist } = this.nearestOpponent(holder);
     if (!opp || dist > 2.2 || this.restartTimer > 0) return;
     const press = 0.55 + this.setup(opp.side).tactics.pressing * 0.22;
+    let support = 0;
+    for (const defender of this.players) {
+      if (defender.side !== opp.side || defender.id === opp.id) continue;
+      if (Math.hypot(defender.x - holder.x, defender.z - holder.z) < 3.2) support += 1;
+    }
+    const overload = 1 + Math.min(2, support) * 0.28;
+    const fatigue = 0.55 + (opp.stamina / 100) * 0.45;
     const chance =
       ((opp.defending * 0.7 + opp.physical * 0.3) /
         (holder.pace * 0.45 + holder.physical * 0.3 + holder.passing * 0.25 + 60)) *
       press *
+      overload *
+      fatigue *
       dt *
       1.6;
     if (this.rnd() < chance) {
@@ -1215,6 +1232,11 @@ export class MatchSim {
 
     if (!best) return;
     const rawDist = Math.hypot(best.x - holder.x, best.z - holder.z);
+    const isBackPass = (best.x - holder.x) * dir < -2;
+    if (isBackPass) {
+      const pressingSide: Side = holder.side === "home" ? "away" : "home";
+      this.pressSurge[pressingSide] = Math.max(this.pressSurge[pressingSide], 1.6);
+    }
     const power = Math.min(31, 10 + rawDist * 0.8);
     // passe na frente: mira onde o companheiro estará quando a bola chegar
     const flight = rawDist / power;

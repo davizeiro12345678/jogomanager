@@ -660,8 +660,8 @@ export function Cutscene({
       const utterance = new SpeechSynthesisUtterance(line.text);
       const lang = document.documentElement.lang || navigator.language || "pt-BR";
       utterance.lang = lang;
-      utterance.rate = 0.96;
-      utterance.pitch = data.mood === "good" ? 1.04 : data.mood === "bad" ? 0.94 : 1;
+      utterance.rate = line.who === "referee" ? 0.9 : line.who === "commentator" ? 1.08 : 0.96;
+      utterance.pitch = line.who === "referee" ? 0.88 : line.who === "commentator" ? 1.08 : data.mood === "good" ? 1.04 : data.mood === "bad" ? 0.94 : 1;
       window.speechSynthesis.speak(utterance);
     };
     void sceneVoice(data.id, i)

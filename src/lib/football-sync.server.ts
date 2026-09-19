@@ -4,17 +4,15 @@
  * from the public APIs.
  */
 import { LEAGUES } from "@/game/data/leagues";
+import { makeRng } from "@/game/rng";
 import {
   sdbSearchTeam,
   sdbAllTeams, sdbSearchLeague,
   sdbSquad,
-  apiFootballTeamId,
-  apiFootballSquad,
   footballDataSquad,
-  sportmonksTeamId,
-  sportmonksSquad,
   sdbTeamKits,
   sdbTeamHonours,
+  type RemotePlayer,
 
 } from "./football-api.server";
 
@@ -60,6 +58,25 @@ export async function seedFromBundledData() {
 }
 
 type ClubRow = { id: string; name: string; country: string | null; crest_url?: string | null };
+
+const FICTIONAL_POSITIONS = ["GK", "GK", "GK", "DF", "DF", "DF", "DF", "DF", "DF", "DF", "DF", "MF", "MF", "MF", "MF", "MF", "MF", "MF", "MF", "FW", "FW", "FW", "FW", "FW"] as const;
+
+/**
+ * Reserva legal para clubes sem elenco nas fontes gratuitas. Os atletas são
+ * determinísticos e explicitamente fictícios; nunca simulam identidades reais.
+ */
+export function generatedSquad(clubId: string, country: string | null): RemotePlayer[] {
+  const random = makeRng(`free-squad:${clubId}`);
+  return FICTIONAL_POSITIONS.map((position, index) => ({
+    source: "generated-fictional",
+    externalId: `${clubId}-fictional-${index + 1}`,
+    name: `Jogador fictício ${String(index + 1).padStart(2, "0")}`,
+    position,
+    age: 18 + Math.floor(random() * 17),
+    shirtNumber: index + 1,
+    nationality: country ?? "Internacional",
+  }));
+}
 
 /** Enrich a single club with crest / kit / stadium / external ids. */
 async function enrichOne(db: Admin, club: ClubRow): Promise<boolean> {
@@ -450,7 +467,7 @@ export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
   return { matched, fetchedTeams, unmatched };
 }
 
-/** Import real squads for a batch of clubs, using whichever squad API has a key. */
+/** Importa fontes gratuitas primeiro e garante cobertura com reservas fictícios rotulados. */
 export async function importSquads(limit = 200, offset = 0, concurrency = 6, budgetMs = 45_000) {
   const db = await admin();
 
@@ -495,7 +512,7 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
       .select("source, external_id")
       .eq("club_id", club.id);
 
-    let players = [] as Awaited<ReturnType<typeof apiFootballSquad>>;
+    let players: RemotePlayer[] = [];
     const sdb = ext?.find((e) => e.source === "thesportsdb");
     if (sdb) players = await sdbSquad(sdb.external_id);
 
@@ -504,44 +521,12 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
       if (fd) players = await footballDataSquad(fd.external_id);
     }
 
-    if (!players.length) {
-      const sm =
-        ext?.find((e) => e.source === "sportmonks")?.external_id ??
-        (await sportmonksTeamId(club.name));
-      if (sm) {
-        players = await sportmonksSquad(sm);
-        if (players.length) {
-          await db
-            .from("club_external_ids")
-            .upsert(
-              { club_id: club.id, source: "sportmonks", external_id: sm, confirmed: true },
-              { onConflict: "club_id,source" },
-            );
-        }
-      }
-    }
-
-    if (!players.length) {
-      const af =
-        ext?.find((e) => e.source === "api-football")?.external_id ??
-        (await apiFootballTeamId(club.name, club.country ?? undefined));
-      if (af) {
-        players = await apiFootballSquad(af);
-        await db
-          .from("club_external_ids")
-          .upsert(
-            { club_id: club.id, source: "api-football", external_id: af, confirmed: true },
-            { onConflict: "club_id,source" },
-          );
-      }
-    }
-
-
-    if (!players.length) return;
+    if (!players.length) players = generatedSquad(club.id, club.country);
 
     const rowsToInsert = players.slice(0, 30).map((p) => {
-      const base = (club as any).strength ?? 70;
-      const variation = Math.floor(Math.random() * 12) - 6; // -6 to +5
+      const base = club.strength ?? 70;
+      const random = makeRng(`${club.id}:${p.externalId}`);
+      const variation = Math.floor(random() * 12) - 6; // -6 to +5
       const ovr = Math.min(99, Math.max(45, base + variation));
       return {
         club_id: club.id,

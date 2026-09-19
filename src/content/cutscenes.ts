@@ -26,6 +26,8 @@ export type Speaker =
   | "press"
   | "captain"
   | "narrator"
+  | "commentator"
+  | "referee"
   | "assistant"
   | "doctor"
   | "scout"
@@ -38,6 +40,8 @@ export const SPEAKER_LABEL: Record<Speaker, string> = {
   press: "Imprensa",
   captain: "Capitão",
   narrator: "",
+  commentator: "Comentarista",
+  referee: "Árbitro",
   assistant: "Auxiliar",
   doctor: "Médico",
   scout: "Olheiro",
@@ -347,9 +351,9 @@ export const CUTSCENES: Record<string, Cutscene> = {
   ]),
   "prematch-whistle": scene("prematch-whistle", "O apito inicial", "pitchentry", [
     { who: "narrator", text: "O gramado abre em verde sob os refletores. Setenta mil de pé." },
-    { who: "narrator", text: "Moeda no ar, aperto de mãos, bola no círculo central." },
+    { who: "commentator", text: "Moeda no ar, aperto de mãos, bola no círculo central. Está tudo pronto para uma grande partida." },
     { who: "manager", text: "Agora é com vocês." },
-    { who: "narrator", text: "O árbitro leva o apito à boca. Começa o jogo." },
+    { who: "referee", text: "Capitães avisados. Ao meu apito... valendo!" },
   ]),
   "postmatch-tunnel": scene("postmatch-tunnel", "De volta ao túnel", "tunnel", [
     { who: "narrator", text: "As luzes do campo ficam para trás. No túnel, cada chuteira devolve o eco dos noventa minutos." },
@@ -412,7 +416,7 @@ export const CUTSCENES: Record<string, Cutscene> = {
     "O gol que explodiu o estádio",
     "celebration",
     [
-      { who: "narrator", text: "A bola entra no ângulo e o estádio inteiro sai do chão." },
+      { who: "commentator", text: "A bola entra no ângulo! Que finalização espetacular — o estádio inteiro sai do chão!" },
       { who: "fan", text: "Gooool! Gooool!" },
       { who: "manager", text: "Comemora rápido e volta pra posição. O jogo não acabou." },
     ],
