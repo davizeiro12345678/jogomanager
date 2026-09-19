@@ -1785,6 +1785,141 @@ function Ball({
 
 /* ------------------------------------------------------------------ câmera */
 
+/**
+ * Diretor de câmera.
+ *
+ * Em vez de um único enquadramento seguindo a bola (que treme e cansa), a cena
+ * tem um repertório de planos de transmissão. O diretor escolhe o plano pelo
+ * contexto do lance, respeita um tempo mínimo em cada corte e evita repetir o
+ * mesmo enquadramento em sequência. O amortecimento é por tempo real, com zona
+ * morta ao redor da bola, o que elimina o tremor de alta frequência.
+ */
+type ShotId =
+  | "wide"
+  | "drone"
+  | "lowline"
+  | "duel"
+  | "tower"
+  | "netcam"
+  | "celebration"
+  | "orbit";
+
+type Framing = { px: number; py: number; pz: number; lx: number; ly: number; lz: number; fov: number };
+
+/** Contexto simples do lance usado para escolher o plano. */
+type ShotContext = {
+  bx: number;
+  bz: number;
+  speed: number;
+  height: number;
+  attackDir: number; // +1 ataca para +X
+  pulse: number;
+  nearGoal: number; // 0..1 proximidade da grande área
+};
+
+function framingFor(id: ShotId, c: ShotContext, t: number): Framing {
+  const { bx, bz, attackDir } = c;
+  switch (id) {
+    case "drone":
+      return {
+        px: bx - attackDir * 26,
+        py: 20 + c.height * 0.4,
+        pz: bz * 0.6 + 16,
+        lx: bx + attackDir * 6,
+        ly: 1 + Math.min(3, c.height * 0.5),
+        lz: bz * 0.7,
+        fov: 46,
+      };
+    case "lowline":
+      return {
+        px: bx * 0.7,
+        py: 3.2,
+        pz: FIELD_Z + 9,
+        lx: bx,
+        ly: 1.2 + c.height * 0.4,
+        lz: bz,
+        fov: 40,
+      };
+    case "duel":
+      return {
+        px: bx - attackDir * 9,
+        py: 4.4,
+        pz: bz + 11,
+        lx: bx,
+        ly: 1.5 + c.height * 0.5,
+        lz: bz,
+        fov: 34,
+      };
+    case "tower":
+      return { px: bx * 0.25, py: 58, pz: FIELD_Z + 28, lx: bx * 0.5, ly: 0.8, lz: bz * 0.5, fov: 44 };
+    case "netcam":
+      return {
+        px: (FIELD_X + 6) * attackDir,
+        py: 6.5,
+        pz: bz * 0.35,
+        lx: bx,
+        ly: 1.4 + c.height * 0.6,
+        lz: bz,
+        fov: 38,
+      };
+    case "celebration":
+      return {
+        px: bx + Math.cos(t * 0.5) * 11,
+        py: 3.6,
+        pz: bz + Math.sin(t * 0.5) * 11,
+        lx: bx,
+        ly: 1.7,
+        lz: bz,
+        fov: 33,
+      };
+    case "orbit": {
+      const a = t * 0.35;
+      return {
+        px: bx + Math.cos(a) * 17,
+        py: 7.5,
+        pz: bz + Math.sin(a) * 17,
+        lx: bx,
+        ly: 1.2,
+        lz: bz,
+        fov: 36,
+      };
+    }
+    case "wide":
+    default:
+      return {
+        px: bx * 0.55,
+        py: 44,
+        pz: FIELD_Z + 42,
+        lx: bx * 0.6,
+        ly: 0.9 + Math.min(2.4, c.height * 0.5),
+        lz: bz * 0.6,
+        fov: 42,
+      };
+  }
+}
+
+/** Planos manuais: o jogador escolheu um enquadramento fixo, o diretor obedece. */
+const MANUAL_SHOT: Partial<Record<CameraMode, ShotId>> = {
+  broadcast: "wide",
+  tactical: "tower",
+  goal: "netcam",
+  fan: "wide",
+  rail: "lowline",
+  behind: "drone",
+};
+
+/** Tempo mínimo em cada plano (s) — impede corte nervoso. */
+const SHOT_MIN_TIME: Record<ShotId, number> = {
+  wide: 4.5,
+  drone: 3.5,
+  lowline: 3,
+  duel: 2.2,
+  tower: 5,
+  netcam: 2.6,
+  celebration: 2.4,
+  orbit: 2.6,
+};
+
 function Rig({
   sim,
   mode,
@@ -1794,64 +1929,99 @@ function Rig({
   mode: CameraMode;
   goalPulse: React.MutableRefObject<number>;
 }) {
-  const target = useMemo(() => new THREE.Vector3(), []);
+  const pos = useMemo(() => new THREE.Vector3(), []);
   const look = useMemo(() => new THREE.Vector3(), []);
   const smoothLook = useMemo(() => new THREE.Vector3(0, 0.8, 0), []);
-  useFrame(({ camera, clock }, dt) => {
-    // antecipação de transmissão: a câmera "lidera" a bola no sentido do lance,
-    // como um cinegrafista faz — sem isso a jogada sempre parece atrasada
-    const lead = Math.min(1, Math.hypot(sim.ball.vx, sim.ball.vz) / 22);
-    const bx = sim.ball.x + sim.ball.vx * 0.32 * lead;
-    const bz = sim.ball.z + sim.ball.vz * 0.32 * lead;
+  const anchor = useMemo(() => new THREE.Vector2(), []); // bola com zona morta
+  const state = useRef({ shot: "wide" as ShotId, since: 0, prev: "wide" as ShotId, cut: 0 });
+
+  useFrame(({ camera, clock }, dtRaw) => {
+    const dt = Math.min(0.05, dtRaw); // trava picos de frame para não dar solavanco
+    const s = state.current;
+    s.since += dt;
+    s.cut = Math.max(0, s.cut - dt);
+
+    const speed = Math.hypot(sim.ball.vx, sim.ball.vz);
+    const lead = Math.min(1, speed / 22);
+    const rawX = sim.ball.x + sim.ball.vx * 0.3 * lead;
+    const rawZ = sim.ball.z + sim.ball.vz * 0.3 * lead;
+    // zona morta: só move o alvo quando a bola sai de um raio pequeno
+    const dead = 0.9;
+    const dx = rawX - anchor.x;
+    const dz = rawZ - anchor.y;
+    const dist = Math.hypot(dx, dz);
+    if (dist > dead) {
+      const k = (dist - dead) / dist;
+      anchor.x += dx * k;
+      anchor.y += dz * k;
+    }
+
     const pulse = goalPulse.current;
-    // replay automático: no gol a câmera vai para trás da bola em órbita lenta
-    const effective: CameraMode = pulse > 0.55 ? "behind" : mode;
-    switch (effective) {
-      case "broadcast":
-        target.set(bx * 0.55, 46, FIELD_Z + 44);
-        break;
-      case "tactical":
-        target.set(bx * 0.2, 72, 6);
-        break;
-      case "goal":
-        target.set(FIELD_X + 34, 22, bz * 0.3);
-        break;
-      case "fan":
-        target.set(bx * 0.3, 17, FIELD_Z + 22);
-        break;
-      case "rail":
-        target.set(bx, 9, FIELD_Z + 13);
-        break;
-      case "behind": {
-        const a = clock.elapsedTime * 0.15;
-        target.set(bx + Math.cos(a) * 16, 6.5, bz + Math.sin(a) * 16);
-        break;
-      }
+    const attackDir = sim.possession === "home" ? 1 : -1;
+    const nearGoal = Math.min(1, Math.max(0, (Math.abs(anchor.x) - FIELD_X * 0.45) / (FIELD_X * 0.55)));
+    const ctx: ShotContext = {
+      bx: anchor.x,
+      bz: anchor.y,
+      speed,
+      height: sim.ball.height,
+      attackDir,
+      pulse,
+      nearGoal,
+    };
+
+    // ---------- escolha do plano
+    const manual = MANUAL_SHOT[mode];
+    let want: ShotId;
+    if (pulse > 0.9) want = "celebration";
+    else if (pulse > 0.5) want = s.prev === "netcam" ? "orbit" : "netcam";
+    else if (manual && mode !== "broadcast") want = manual;
+    else if (nearGoal > 0.75 && speed > 12) want = "netcam";
+    else if (sim.ball.height > 4) want = "drone";
+    else if (speed > 17) want = s.shot === "drone" ? "lowline" : "drone";
+    else if (speed < 2.5 && sim.ball.holder) want = "duel";
+    else want = nearGoal > 0.4 ? "lowline" : "wide";
+
+    // repetição: se o diretor insistir no mesmo plano do corte anterior num
+    // momento calmo, alterna para um plano irmão para variar a transmissão
+    if (want === s.prev && pulse < 0.4 && s.since > SHOT_MIN_TIME[want] * 2.4) {
+      want = want === "wide" ? "tower" : want === "drone" ? "lowline" : "wide";
     }
-    // tremor sutil em lances de perigo / comemoração
+    if (want !== s.shot && s.since >= SHOT_MIN_TIME[s.shot]) {
+      s.prev = s.shot;
+      s.shot = want;
+      s.since = 0;
+      s.cut = 0.45; // janela de corte: aproxima rápido, depois suaviza
+    }
+
+    const f = framingFor(s.shot, ctx, clock.elapsedTime);
+    pos.set(f.px, f.py, f.pz);
+    look.set(f.lx, f.ly, f.lz);
+
+    // tremor discreto só em comemoração/perigo, com amplitude limitada
     if (pulse > 0.05) {
-      const s = pulse * 0.5;
-      target.x += Math.sin(clock.elapsedTime * 21) * s;
-      target.y += Math.cos(clock.elapsedTime * 17) * s * 0.6;
+      const amp = Math.min(0.45, pulse * 0.5);
+      pos.x += Math.sin(clock.elapsedTime * 19) * amp;
+      pos.y += Math.cos(clock.elapsedTime * 15) * amp * 0.5;
     }
-    // damping independente de framerate (maath)
-    const smooth = effective === "behind" ? 0.35 : effective === "rail" ? 0.28 : 0.75;
-    easing.damp3(camera.position, target, smooth, dt);
-    look.set(bx * 0.6, 0.8 + Math.min(2.4, sim.ball.height * 0.5), bz * 0.6);
-    easing.damp3(smoothLook, look, 0.35, dt);
+
+    // amortecimento por tempo real + limite de velocidade linear
+    const base = s.cut > 0 ? 0.18 : s.shot === "duel" || s.shot === "celebration" ? 0.3 : 0.55;
+    easing.damp3(camera.position, pos, base, dt);
+    easing.damp3(smoothLook, look, s.cut > 0 ? 0.16 : 0.3, dt);
     camera.lookAt(smoothLook);
-    // leve fechamento de foco no gol: dá peso cinematográfico sem custo de GPU
+
     const cam = camera as THREE.PerspectiveCamera;
     if (cam.isPerspectiveCamera) {
-      const wantFov = 42 - pulse * 5;
+      const wantFov = f.fov - pulse * 4;
       if (Math.abs(cam.fov - wantFov) > 0.01) {
-        cam.fov += (wantFov - cam.fov) * Math.min(1, dt * 3);
+        cam.fov += (wantFov - cam.fov) * Math.min(1, dt * 3.2);
         cam.updateProjectionMatrix();
       }
     }
   });
   return null;
 }
+
 
 /* --------------------------------------------------------- pós-processamento */
 
