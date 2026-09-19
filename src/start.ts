@@ -65,7 +65,32 @@ const PERMISSIONS_POLICY = [
   "interest-cohort=()",
 ].join(", ");
 
-const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => {
+/**
+ * Ciclo de vida de cache.
+ *
+ * Arquivos com hash no nome (`/assets/…-a1b2c3.js`) nunca mudam de conteúdo:
+ * podem ficar um ano no navegador como `immutable`. Arquivos públicos sem
+ * hash (ícones, manifest, capa social, fontes) ficam um dia e revalidam.
+ * HTML nunca é guardado por muito tempo, senão o jogador fica preso numa
+ * versão antiga do jogo.
+ */
+const IMMUTABLE = "public, max-age=31536000, immutable";
+const REVALIDATE_DAY = "public, max-age=86400, stale-while-revalidate=604800";
+const HTML_CACHE = "public, max-age=0, must-revalidate";
+
+const HASHED_PREFIXES = ["/assets/", "/_build/", "/_serverFn/assets/"];
+const PUBLIC_STATIC = /\.(?:png|jpe?g|webp|avif|gif|svg|ico|ttf|woff2?|webmanifest|txt)$/i;
+
+function cacheControlFor(pathname: string, contentType: string): string | null {
+  if (HASHED_PREFIXES.some((p) => pathname.startsWith(p))) return IMMUTABLE;
+  // Vite injeta hash de 8 caracteres antes da extensão nos bundles.
+  if (/-[A-Za-z0-9_]{8}\.(?:js|mjs|css|woff2)$/.test(pathname)) return IMMUTABLE;
+  if (PUBLIC_STATIC.test(pathname)) return REVALIDATE_DAY;
+  if (contentType.includes("text/html")) return HTML_CACHE;
+  return null;
+}
+
+const securityHeadersMiddleware = createMiddleware().server(async ({ next, request }) => {
   const result = await next();
   const headers = result.response?.headers;
   if (!headers || typeof headers.set !== "function") return result;
@@ -78,6 +103,17 @@ const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => 
   headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");
   if (contentType.includes("text/html")) {
     headers.set("content-security-policy", CSP);
+  }
+
+  if (!headers.get("cache-control")) {
+    let pathname = "/";
+    try {
+      pathname = new URL(request.url).pathname;
+    } catch {
+      pathname = "/";
+    }
+    const cache = cacheControlFor(pathname, contentType);
+    if (cache) headers.set("cache-control", cache);
   }
   return result;
 });
