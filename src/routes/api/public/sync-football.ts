@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
  * Manual / scheduled importer trigger.
  * Protected by a shared secret so it can be called by cron but not by the public.
  *
- *   POST /api/public/sync-football?scope=seed|clubs|squads&limit=40&offset=0
+ *   POST /api/public/sync-football?scope=seed|clubs|squads|history|all&limit=40&offset=0
  *   Header: x-sync-secret: <LOVABLE_CRON_SECRET>
  */
 export const Route = createFileRoute("/api/public/sync-football")({
@@ -19,10 +19,10 @@ export const Route = createFileRoute("/api/public/sync-football")({
         const url = new URL(request.url);
         const scope = url.searchParams.get("scope") ?? "clubs";
         const num = (k: string, d: number) => Number(url.searchParams.get(k) ?? d) || d;
-        const limit = num("limit", scope === "all" ? 600 : 40);
+        const limit = Math.min(600, Math.max(1, num("limit", scope === "all" ? 600 : 40)));
         const offset = num("offset", 0);
-        const concurrency = num("concurrency", 8);
-        const budgetMs = num("budgetMs", scope === "all" ? 90_000 : 45_000);
+        const concurrency = Math.min(8, Math.max(1, num("concurrency", 8)));
+        const budgetMs = Math.min(120_000, Math.max(5_000, num("budgetMs", scope === "all" ? 90_000 : 45_000)));
 
         const { runSync } = await import("@/lib/football-sync.server");
         const result = await runSync({ scope, limit, offset, concurrency, budgetMs });

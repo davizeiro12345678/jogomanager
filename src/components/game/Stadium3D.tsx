@@ -145,6 +145,7 @@ function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
       }
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      mesh.computeBoundingSphere();
     };
     fill(shortRef.current, short, false);
     fill(tallRef.current, tall, true);

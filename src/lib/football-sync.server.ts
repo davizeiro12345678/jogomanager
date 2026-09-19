@@ -562,6 +562,68 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
   return { imported };
 }
 
+/** Importa biografia e honrarias mesmo para clubes que já possuem escudo. */
+export async function importClubHeritage(
+  limit = 120,
+  offset = 0,
+  concurrency = 4,
+  budgetMs = 45_000,
+) {
+  const db = await admin();
+  const { data: ids, error } = await db
+    .from("club_external_ids")
+    .select("club_id, external_id")
+    .eq("source", "thesportsdb")
+    .eq("confirmed", true)
+    .order("club_id")
+    .range(offset, offset + limit - 1);
+  if (error) throw new Error(error.message);
+
+  const deadline = Date.now() + budgetMs;
+  let clubsUpdated = 0;
+  let honoursImported = 0;
+  await pool(ids ?? [], concurrency, deadline, async (external) => {
+    const { data: club } = await db
+      .from("clubs")
+      .select("id, name, country, description")
+      .eq("id", external.club_id)
+      .maybeSingle();
+    if (!club) return;
+
+    const [remote, honours] = await Promise.all([
+      club.description ? Promise.resolve(null) : sdbSearchTeam(club.name, club.country ?? undefined),
+      sdbTeamHonours(external.external_id),
+    ]);
+    if (remote?.description) {
+      const result = await db
+        .from("clubs")
+        .update({
+          description: remote.description,
+          data_source: "thesportsdb",
+          data_updated_at: new Date().toISOString(),
+        })
+        .eq("id", club.id);
+      if (!result.error) clubsUpdated += 1;
+    }
+    if (honours.length) {
+      const result = await db.from("club_honours").upsert(
+        honours.map((honour) => ({
+          club_id: club.id,
+          competition: honour.competition,
+          title_count: honour.count,
+          seasons: honour.seasons,
+          source: "thesportsdb",
+          external_id: honour.externalId ?? null,
+          updated_at: new Date().toISOString(),
+        })),
+        { onConflict: "club_id,competition,source" },
+      );
+      if (!result.error) honoursImported += honours.length;
+    }
+  });
+  return { scanned: ids?.length ?? 0, clubsUpdated, honoursImported };
+}
+
 /**
  * One-shot importer: seeds every bundled competition/club, enriches as many
  * clubs as fit in the time budget, then pulls squads for the same batch.
@@ -636,6 +698,15 @@ export async function runSync(opts: {
           opts.budgetMs ?? 45_000,
         )
       ).imported;
+    } else if (scope === "history") {
+      const r = await importClubHeritage(
+        opts.limit ?? 120,
+        opts.offset ?? 0,
+        Math.min(4, opts.concurrency ?? 4),
+        opts.budgetMs ?? 45_000,
+      );
+      detail = r;
+      items = r.clubsUpdated + r.honoursImported;
     } else if (scope === "all") {
       const r = await importEverything(opts);
       detail = r;
