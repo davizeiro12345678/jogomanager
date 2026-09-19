@@ -6,8 +6,9 @@ import { Crest } from "@/components/game/Crest";
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
 import { CLUBS, LEAGUES, getLeague } from "@/game/data/leagues";
 import { detectQuality } from "@/game/device";
+import { WorkerMatchView } from "@/game/live-match";
 import { buildTeamSetup } from "@/game/quickMatch";
-import { MatchSim } from "@/game/sim";
+import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
 import { useOnline } from "@/hooks/useOnline";
 import { useSignedIn } from "@/hooks/useCareer";
 import { supabase } from "@/integrations/supabase/client";
@@ -534,39 +535,51 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string | null })
  * O anfitrião publica o minuto e o resultado final.
  */
 function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExit: () => void }) {
-  const sim = useMemo(
-    () => new MatchSim(buildTeamSetup(room.host_club), buildTeamSetup(room.guest_club!), room.seed),
+  const setups = useMemo(
+    () => ({
+      home: buildTeamSetup(room.host_club),
+      away: buildTeamSetup(room.guest_club!),
+      seed: room.seed,
+    }),
     [room.host_club, room.guest_club, room.seed],
   );
+  const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
   const [quality] = useState<Quality>(() => detectQuality() as Quality);
   const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [snap, setSnap] = useState({ minute: 0, hg: 0, ag: 0, finished: false });
   const published = useRef(false);
+  const controllerRef = useRef<LiveMatchController | null>(null);
 
   useEffect(() => {
-    let raf = 0;
-    let last = 0;
-    let acc = 0;
-    function loop(t: number) {
-      raf = requestAnimationFrame(loop);
-      const dt = Math.min(0.05, (t - (last || t)) / 1000);
-      last = t;
-      sim.step(dt * 6);
-      acc += dt;
-      if (acc >= 0.15 || sim.finished) {
-        acc = 0;
+    const controller = createLiveMatchController({
+      ...setups,
+      view: sim,
+      onSnapshot: (view) => {
         setSnap({
-          minute: sim.minute(),
-          hg: sim.stats.home.goals,
-          ag: sim.stats.away.goals,
-          finished: sim.finished,
+          minute: view.minute(),
+          hg: view.stats.home.goals,
+          ag: view.stats.away.goals,
+          finished: view.finished,
         });
-      }
-      if (sim.finished) cancelAnimationFrame(raf);
-    }
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [sim]);
+      },
+      onFinished: (view) => {
+        setSnap({
+          minute: view.minute(),
+          hg: view.stats.home.goals,
+          ag: view.stats.away.goals,
+          finished: true,
+        });
+      },
+    });
+    controllerRef.current = controller;
+    const onVisibility = () => controller.pause(document.hidden);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      controller.dispose();
+      controllerRef.current = null;
+    };
+  }, [setups, sim]);
 
   useEffect(() => {
     if (!isHost) return;
