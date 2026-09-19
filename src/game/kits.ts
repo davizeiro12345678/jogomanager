@@ -11,7 +11,13 @@ export type KitPattern =
   | "band"
   | "sleeves"
   | "gradient"
-  | "pin";
+  | "pin"
+  | "quarters"
+  | "chevron"
+  | "diagonal"
+  | "shadow"
+  | "argyle"
+  | "mesh";
 
 export interface Kit {
   base: string;
