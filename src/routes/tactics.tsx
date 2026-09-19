@@ -204,7 +204,7 @@ function TacticsPage() {
                     setPicked(null);
                   }}
                   onClick={() => onSlotActivate(i)}
-                  aria-label={`${p.name}, ${slot.label}. ${picked === i ? "Selecionado para troca." : "Pressione para selecionar para troca."} `} aria-pressed={picked === i}
+                  aria-label={`${p.name}, ${slot.label}. ${picked === i ? "Selecionado para troca." : "Pressione para selecionar para troca."} `}
                   aria-pressed={picked === i}
                   className="absolute flex -translate-x-1/2 -translate-y-1/2 cursor-grab flex-col items-center active:cursor-grabbing"
                   style={{ left: `${50 + slot.z * 40}%`, top: `${50 - slot.x * 42}%` }}
