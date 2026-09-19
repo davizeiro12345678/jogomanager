@@ -62,6 +62,10 @@ const MOW_LABEL: Record<MowPattern, string> = {
   rings: "Anéis",
   diagonal: "Diagonal",
   wide: "Faixas largas",
+  diamond: "Losango",
+  fine: "Xadrez fino",
+  spiral: "Caracol",
+  bands: "Faixas transversais",
 };
 
 const WEATHER_LABEL: Record<Weather, string> = {
