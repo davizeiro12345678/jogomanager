@@ -177,6 +177,11 @@
     overflow-x: hidden;
     overscroll-behavior-y: none;
     padding-bottom: env(safe-area-inset-bottom);
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--color-primary) 3%, transparent),
+      transparent 28rem
+    );
   }
 
   /* foco visível e consistente para teclado */
@@ -325,7 +330,7 @@
     radial-gradient(120% 80% at 50% -10%, oklch(0.79 0.19 148 / 0.16), transparent 60%),
     radial-gradient(90% 60% at 90% 10%, oklch(0.83 0.17 88 / 0.1), transparent 65%),
     repeating-linear-gradient(90deg, oklch(0.98 0.02 150 / 0.028) 0 60px, transparent 60px 120px);
-  background-attachment: fixed;
+  background-attachment: scroll;
 }
 
 /* superfície padrão de cartões: leve relevo, sem virar caixa chapada */
@@ -333,6 +338,19 @@
   background-color: var(--color-card);
   background-image: var(--gradient-surface, none);
   box-shadow: var(--shadow-elegant, 0 8px 24px -18px rgb(0 0 0 / 0.6));
+}
+
+@media (min-width: 64rem) and (hover: hover) {
+  .pitch-bg {
+    background-attachment: fixed;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .glass-panel,
+  .hud-card {
+    backdrop-filter: blur(8px) saturate(120%);
+  }
 }
 
 /* painéis translúcidos para cabeçalhos e barras fixas */
@@ -633,7 +651,7 @@
   font-family: var(--font-display);
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--color-muted-foreground);
 }
@@ -643,7 +661,7 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 /* entrada em cascata dos cartões */
