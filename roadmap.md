@@ -81,3 +81,16 @@
 - [ ] Ampliar elencos/escudos com Logo.dev, Firecrawl e Perplexity
 - [ ] 25 novas cutscenes + 25 cenas híbridas
 - [ ] PlayerRig: novos estados e transições; PostFX por qualidade; Crest mais nítido
+
+## Mega atualização integrada (2026-09-19)
+- [ ] Página acessível de compartilhamento com mensagem pronta e compartilhamento nativo
+- [ ] CTA “Salvar na nuvem” no topo/painel e convite inteligente para visitantes
+- [ ] Redesenhar autenticação com Google em destaque, perfis e provedores habilitados
+- [ ] Publicar WhatsApp e e-mail confirmados na página de contato
+- [ ] Aplicar novo ícone oficial ao favicon e PWA
+- [ ] Atualizar descrições da home e padronizar páginas públicas prioritárias
+- [ ] Otimizar carregamento, cache, imagens e execução da partida 3D
+- [ ] Melhorar sombras, iluminação, texturas, jogadores, simulação e IA adversária
+- [ ] Triplicar a variedade do narrador e aprimorar o assistente com contexto real
+- [ ] Redesenhar HUD, painel, elenco, tática, loja e imagens dos pacotes
+- [ ] Validar acesso, salvamento, compartilhamento, compra, mobile e partida longa
