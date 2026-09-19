@@ -88,14 +88,13 @@ async function enrichOne(db: Admin, club: ClubRow): Promise<boolean> {
   await db
     .from("clubs")
     .update({
-      crest_url: remote.crestUrl ?? null,
-      website: remote.website
-        ? (remote.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0] ?? null)
-        : null,
-
-      founded: remote.founded ?? null,
-      city: remote.city ?? null,
-      description: remote.description ?? null,
+      ...(remote.crestUrl ? { crest_url: remote.crestUrl } : {}),
+      ...(remote.website
+        ? { website: remote.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0] }
+        : {}),
+      ...(remote.founded ? { founded: remote.founded } : {}),
+      ...(remote.city ? { city: remote.city } : {}),
+      ...(remote.description ? { description: remote.description } : {}),
       data_source: "thesportsdb",
       data_updated_at: new Date().toISOString(),
       ...(stadiumId ? { stadium_id: stadiumId } : {}),
@@ -367,10 +366,10 @@ export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
       await db
         .from("clubs")
         .update({
-          crest_url: hit.crestUrl ?? null,
-          founded: hit.founded ?? null,
-          city: hit.city ?? null,
-          description: hit.description ?? null,
+          ...(hit.crestUrl ? { crest_url: hit.crestUrl } : {}),
+          ...(hit.founded ? { founded: hit.founded } : {}),
+          ...(hit.city ? { city: hit.city } : {}),
+          ...(hit.description ? { description: hit.description } : {}),
           data_source: "thesportsdb",
           data_updated_at: new Date().toISOString(),
           ...(stadiumId ? { stadium_id: stadiumId } : {}),

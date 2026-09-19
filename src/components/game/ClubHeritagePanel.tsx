@@ -15,7 +15,7 @@ export function ClubHeritagePanel({ clubId, compact = false, className }: ClubHe
   const { data, isPending, isError } = useClubHeritage(clubId);
 
   return (
-    <HudCard title="Identidade do clube" tone="neutral" className={className}>
+    <HudCard title="Identidade do clube" tone="neutral" {...(className ? { className } : {})}>
       {isPending ? (
         <div className="space-y-3" aria-label="Carregando história do clube">
           <div className="h-5 w-3/4 animate-pulse rounded bg-foreground/10" />
@@ -25,6 +25,15 @@ export function ClubHeritagePanel({ clubId, compact = false, className }: ClubHe
         <p className="text-sm text-muted-foreground">A ficha histórica ainda não está disponível para este clube.</p>
       ) : (
         <>
+          {data.stadium?.photoUrl ? (
+            <img
+              src={data.stadium.photoUrl}
+              alt={`Vista do ${data.stadium.name}`}
+              className="mb-3 aspect-[16/7] w-full rounded-lg border border-border/60 object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : null}
           <dl className="grid gap-2 text-xs sm:grid-cols-2">
             <div className="flex items-center gap-2 rounded-lg border border-border/60 p-2">
               <CalendarDays className="size-4 text-primary" aria-hidden />
@@ -59,7 +68,7 @@ export function ClubHeritagePanel({ clubId, compact = false, className }: ClubHe
 export function ClubHonoursPanel({ clubId, className }: Pick<ClubHeritagePanelProps, "clubId" | "className">) {
   const { data, isPending, isError } = useClubHeritage(clubId);
   return (
-    <HudCard title="Títulos históricos do clube" tone={data?.honours.length ? "good" : "neutral"} className={className}>
+    <HudCard title="Títulos históricos do clube" tone={data?.honours.length ? "good" : "neutral"} {...(className ? { className } : {})}>
       {isPending ? <div className="h-20 animate-pulse rounded bg-foreground/5" aria-label="Carregando títulos reais" /> : null}
       {!isPending && (isError || !data?.honours.length) ? (
         <p className="text-sm text-muted-foreground">Nenhum título histórico foi confirmado pela fonte para este clube.</p>
