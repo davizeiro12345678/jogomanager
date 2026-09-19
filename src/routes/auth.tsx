@@ -205,6 +205,8 @@ function AuthPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="voce@email.com"
+             aria-describedby={error ? "auth-error" : undefined}
+             aria-invalid={error ? true : undefined}
             className="w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
           />
           <label htmlFor="auth-password" className="sr-only">
@@ -218,9 +220,11 @@ function AuthPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Senha"
+             aria-describedby={error ? "auth-error" : undefined}
+             aria-invalid={error ? true : undefined}
             className="w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
           />
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error ? <p id="auth-error" role="alert" className="text-sm text-destructive">{error}</p> : null}
           <Button
             type="submit"
             disabled={busy}

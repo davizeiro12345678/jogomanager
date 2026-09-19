@@ -101,7 +101,7 @@ function Landing() {
   }, []);
 
   return (
-    <div className="pitch-bg min-h-screen">
+    <main className="pitch-bg min-h-screen">
       {/* ---------- herói em tela cheia ---------- */}
       <header className="relative isolate overflow-hidden">
         <picture>
@@ -464,6 +464,6 @@ function Landing() {
 
         <SiteFooter path="/" />
       </div>
-    </div>
+    </main>
   );
 }

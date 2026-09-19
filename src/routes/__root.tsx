@@ -74,7 +74,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 const GOOGLE_FONTS =
-  "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap";
+  "https://fonts.googleapis.com/css2?family=Archivo+Black&family=Hind:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap";
 
 /** Libera as fontes (carregadas como "print") sem bloquear a primeira pintura. */
 const ENABLE_FONTS = `(function(){var l=document.getElementById('google-fonts');if(!l)return;var go=function(){l.media='all'};if(l.sheet){go()}else{l.addEventListener('load',go);setTimeout(go,1500)}})();`;
@@ -164,7 +164,7 @@ function RootComponent() {
         >
           Pular para o conteúdo
         </a>
-        <div id="conteudo">
+        <div id="conteudo" tabIndex={-1}>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
         </div>
