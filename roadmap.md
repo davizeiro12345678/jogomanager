@@ -121,7 +121,8 @@
 - [x] Confirmar sincronização offline→nuvem: outbox drenada ao reconectar e a cada 30 segundos
 - [x] Confirmar catálogo visual: 237 clipes procedurais, 57 cutscenes e 25 cenas híbridas
 - [x] Indexar `/compartilhar` no sitemap e na navegação pública
-- [ ] Criar testes automatizados de simulação, salvamento, pagamento idempotente e narração
+- [x] Criar infraestrutura e testes automatizados de simulação determinística/longa e narração (7 testes, 93 asserções)
+- [ ] Adicionar testes integrados de salvamento offline→nuvem e pagamento idempotente com banco isolado
 - [ ] Completar kits away/third/goalkeeper no fluxo de importação em massa
 - [ ] Completar 415 elencos bloqueados pela cobertura/licença das APIs disponíveis
 - [ ] Validar relatório de desempenho em celular e desktop com GPU física por partida longa
