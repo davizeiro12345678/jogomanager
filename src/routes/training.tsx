@@ -135,6 +135,108 @@ function TrainingPage() {
       </div>
 
       <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
+        <h2 className="font-display text-lg uppercase tracking-wide">Exercícios táticos</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Um exercício por rodada. Ele cansa o elenco, mas desenvolve o atributo treinado.
+          {doneDrill
+            ? ` Esta semana você já aplicou: ${getDrill(doneDrill)?.label ?? doneDrill}.`
+            : ""}
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {DRILLS.map((d) => {
+            const applied = doneDrill === d.id;
+            return (
+              <button
+                key={d.id}
+                type="button"
+                disabled={Boolean(doneDrill)}
+                aria-pressed={applied}
+                onClick={() => update(runDrill(career, d.id))}
+                className={`rounded-xl border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                  applied ? "border-primary bg-primary/15" : "border-border hover:bg-secondary"
+                }`}
+              >
+                <p className="font-display text-sm uppercase tracking-wide">{d.label}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{d.desc}</p>
+                <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  desgaste {d.fatigue} · {d.targets.join(" / ")}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
+        <h2 className="font-display text-lg uppercase tracking-wide">Amistoso</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Um amistoso por rodada contra qualquer clube real. Vale moral e ritmo de jogo, e cansa
+          quem está relacionado.
+        </p>
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <label className="text-xs text-muted-foreground">
+            Liga
+            <select
+              value={friendlyLeague}
+              onChange={(e) => {
+                setFriendlyLeague(e.target.value);
+                setFriendlyOpp("");
+              }}
+              className="mt-1 block rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+            >
+              {LEAGUES.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.flag} {l.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Adversário
+            <select
+              value={friendlyOpp}
+              onChange={(e) => setFriendlyOpp(e.target.value)}
+              className="mt-1 block rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+            >
+              <option value="">Escolher clube…</option>
+              {opponents.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            disabled={!friendlyOpp || doneFriendly}
+            onClick={() => {
+              const res = playFriendly(career, friendlyOpp);
+              if (!res) return;
+              update(res.state);
+              setFriendlyMsg(`${res.hg} x ${res.ag} contra ${res.opponent}.`);
+            }}
+            className="rounded-lg bg-primary px-4 py-2 font-display text-sm uppercase tracking-wide text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Disputar amistoso
+          </button>
+        </div>
+        <p role="status" aria-live="polite" className="mt-3 text-sm text-muted-foreground">
+          {friendlyMsg ||
+            (doneFriendly ? "Amistoso desta rodada já disputado." : "Nenhum amistoso nesta rodada.")}
+        </p>
+        {lastFriendlies.length > 0 && (
+          <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+            {lastFriendlies.map((f) => (
+              <li key={`${f.season}-${f.round}-${f.opponentId}`}>
+                T{f.season} · R{f.round} — {f.hg} x {f.ag} {CLUBS[f.opponentId]?.short ?? "?"}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+
+      <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
         <h2 className="font-display text-lg uppercase tracking-wide">Promessas em evolução</h2>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {youngsters.map((p) => (
