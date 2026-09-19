@@ -1,7 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 
 import { GameShell } from "@/components/game/GameShell";
 import { useCareer } from "@/hooks/useCareer";
+import { CLUBS, LEAGUES, getLeague } from "@/game/data/leagues";
+import {
+  DRILLS,
+  drillDoneThisRound,
+  friendlyDoneThisRound,
+  getDrill,
+  playFriendly,
+  runDrill,
+} from "@/game/training-drills";
 import type { TrainingFocus } from "@/game/types";
 
 export const Route = createFileRoute("/training")({
