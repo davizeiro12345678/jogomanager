@@ -566,8 +566,8 @@ function LiveMatch({
         minute: e.minute,
         homeGoals: snap.hg,
         awayGoals: snap.ag,
-        player,
         importance,
+        ...(player ? { player } : {}),
       });
     }
   }, [snap, sim]);

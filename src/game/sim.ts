@@ -647,6 +647,7 @@ export class MatchSim {
     }
 
     this.looseTime += dt;
+    const previousBall = { x: this.ball.x, z: this.ball.z, height: this.ball.height };
 
     // --- integração física: gravidade, arrasto no ar, atrito no chão e efeito ---
     const airborne = this.ball.height > 0.14;
@@ -685,7 +686,7 @@ export class MatchSim {
     if (this.tryBlock(dt)) return;
 
     // --- finalização em voo: resolve quando a bola chega na área do gol ---
-    if (this.pendingShot && this.resolveShot()) return;
+    if (this.pendingShot && this.resolveShot(previousBall)) return;
 
     // lateral: sai pela linha lateral, reposição do time que não tocou por último
     if (Math.abs(this.ball.z) > FIELD_Z - 0.5) {
@@ -839,18 +840,30 @@ export class MatchSim {
    * Resolve a finalização quando a bola chega à meta: gol entre as traves,
    * defesa do goleiro no plano da linha, ou segue viva para fora.
    */
-  private resolveShot(): boolean {
+  private resolveShot(previous = { x: this.ball.x, z: this.ball.z, height: this.ball.height }): boolean {
     const s = this.pendingShot!;
     const dir = this.attackDir(s.side);
     const goalX = dir * FIELD_X;
     const gk = this.players.find((p) => p.side !== s.side && p.pos === "GK") ?? null;
     const shooter = this.players.find((p) => p.id === s.shooter) ?? null;
-    const reached = dir > 0 ? this.ball.x >= goalX - 1.6 : this.ball.x <= goalX + 1.6;
+    const planeX = goalX - dir * 1.6;
+    const crossed = dir > 0
+      ? previous.x < planeX && this.ball.x >= planeX
+      : previous.x > planeX && this.ball.x <= planeX;
+    const reached = crossed || (dir > 0 ? this.ball.x >= planeX : this.ball.x <= planeX);
     if (!reached) return false;
+    // Resolve no ponto exato em que a trajetória cruza o plano da meta. Assim,
+    // avanços rápidos não transformam um gol em tiro de meta por tunneling.
+    const segment = this.ball.x - previous.x;
+    const ratio = crossed && Math.abs(segment) > 0.0001
+      ? Math.max(0, Math.min(1, (planeX - previous.x) / segment))
+      : 1;
+    const crossingZ = previous.z + (this.ball.z - previous.z) * ratio;
+    const crossingHeight = previous.height + (this.ball.height - previous.height) * ratio;
 
     // defesa do goleiro
     if (s.outcome === "saved" && gk) {
-      const dive = this.ball.z - gk.z;
+      const dive = crossingZ - gk.z;
       this.trigger(
         gk,
         Math.abs(dive) < 1.2
@@ -898,7 +911,7 @@ export class MatchSim {
     }
 
     if (s.outcome === "goal") {
-      if (Math.abs(this.ball.z) < GOAL_Z && this.ball.height < 2.44) {
+      if (Math.abs(crossingZ) < GOAL_Z && crossingHeight < 2.44) {
         this.pendingShot = null;
         this.scoreGoal(s.side, shooter, s.fromX, s.fromZ);
         return true;

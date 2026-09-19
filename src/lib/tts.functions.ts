@@ -69,7 +69,13 @@ export const narrateEvent = createServerFn({ method: "POST" })
     const lang = data.lang as NarrationLang;
     const event = data.event as NarrationEvent;
     const context: NarrationContext | undefined = data.context
-      ? { ...data.context, player: data.context.player ? safeTeam(data.context.player) : undefined }
+      ? {
+          ...(data.context.minute !== undefined ? { minute: data.context.minute } : {}),
+          ...(data.context.homeGoals !== undefined ? { homeGoals: data.context.homeGoals } : {}),
+          ...(data.context.awayGoals !== undefined ? { awayGoals: data.context.awayGoals } : {}),
+          ...(data.context.importance ? { importance: data.context.importance } : {}),
+          ...(data.context.player ? { player: safeTeam(data.context.player) } : {}),
+        }
       : undefined;
     const text = narrationLine(lang, event, safeTeam(data.team), data.variant, context);
     const voiceId = VOICE_BY_LANG[lang];

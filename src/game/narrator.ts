@@ -248,7 +248,7 @@ export class Narrator {
       variant,
       team,
       text: narrationLine(this.lang, event, team, variant, context),
-      context,
+      ...(context ? { context } : {}),
     };
 
     if (event === "goal" || event === "redCard" || event === "fulltime") {
