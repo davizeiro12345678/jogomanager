@@ -29,6 +29,8 @@ import { ChatPanel } from "@/components/game/ChatPanel";
 import { StorePanel } from "@/components/game/StorePanel";
 
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { FpsPanel } from "@/components/game/FpsPanel";
+import { fpsMeter } from "@/game/fps-meter";
 import { Cutscene } from "@/components/game/Cutscene";
 import { POSTMATCH_SCENE_IDS, PREMATCH_SCENE_IDS } from "@/content/cutscenes";
 import { Crest } from "@/components/game/Crest";
