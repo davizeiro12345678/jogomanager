@@ -213,7 +213,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     skip() {
       if (localSim) {
         let guard = 0;
-        while (!localSim.finished && guard++ < 200_000) localSim.step(0.4);
+        while (!localSim.finished && guard++ < 14_000) localSim.step(0.4);
         sequence += 1;
         apply(resultMatch(localSim, sequence));
         stopLocal();

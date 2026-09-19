@@ -4,6 +4,7 @@ import { Crest } from "@/components/game/Crest";
 import { GuestCloudPrompt } from "@/components/GuestCloudPrompt";
 import { CLUBS } from "@/game/data/leagues";
 import type { MatchRuntime } from "@/game/live-match";
+import { Button } from "@/components/ui/button";
 
 type Tab = "resumo" | "notas" | "chutes" | "sumula";
 
@@ -32,9 +33,9 @@ export function MatchReport({
   const mine = ratings.filter((r) => r.side === mySide).sort((a, b) => b.rating - a.rating);
 
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 p-3 backdrop-blur">
-      <div className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border/60 bg-card p-5">
-        <p className="text-center font-display text-xs uppercase tracking-[0.3em] text-primary">
+    <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/85 p-3 backdrop-blur">
+      <div role="dialog" aria-modal="true" aria-labelledby="match-report-title" className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border/60 bg-card p-5">
+        <p id="match-report-title" className="text-center font-display text-xs uppercase tracking-[0.3em] text-primary">
           Fim de jogo
         </p>
         <div className="mt-3 flex items-center justify-center gap-4">
@@ -72,15 +73,19 @@ export function MatchReport({
               ["sumula", "Súmula"],
             ] as [Tab, string][]
           ).map(([k, label]) => (
-            <button
+            <Button
               key={k}
+              type="button"
+              variant="ghost"
               onClick={() => setTab(k)}
+              role="tab"
+              aria-selected={tab === k}
               className={`flex-1 rounded-lg py-1.5 font-display uppercase tracking-wide transition ${
                 tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"
               }`}
             >
               {label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -172,13 +177,13 @@ export function MatchReport({
           <GuestCloudPrompt next="/club" compact />
         </div>
 
-        <button
+        <Button
           disabled={advancing}
           onClick={onFinish}
           className="mt-5 w-full rounded-lg bg-primary px-4 py-2.5 font-display text-sm uppercase tracking-widest text-primary-foreground disabled:opacity-50 disabled:cursor-wait"
         >
           {advancing ? "Processando..." : "Voltar à central"}
-        </button>
+        </Button>
       </div>
     </div>
   );

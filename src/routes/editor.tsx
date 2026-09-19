@@ -77,7 +77,7 @@ export const Route = createFileRoute("/editor")({
       {
         name: "description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Personalize clubes, competições, jogadores, elencos e dados do seu mundo de futebol manager.",
       },
       {
         property: "og:title",
@@ -86,7 +86,7 @@ export const Route = createFileRoute("/editor")({
       {
         property: "og:description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Personalize clubes, competições, jogadores, elencos e dados do seu mundo de futebol manager.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

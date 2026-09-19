@@ -37,6 +37,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { CLUBS } from "@/game/data/leagues";
 import { useClubTheme } from "@/game/theme";
@@ -183,22 +190,22 @@ export function GameShell({
                   ))}
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/60 pt-3">
-                  <label className="flex items-center gap-1.5 text-muted-foreground">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
                     <Globe size={14} />
-                    <span className="sr-only">{t("shell.language")}</span>
-                    <select
-                      aria-label={t("shell.language")}
+                    <Select
                       value={lang}
-                      onChange={(e) => setLang(e.target.value as Lang)}
-                      className="cursor-pointer bg-transparent text-xs outline-none [&>option]:bg-card [&>option]:text-foreground"
+                      onValueChange={(value) => setLang(value as Lang)}
                     >
-                      {LANGS.map((l) => (
-                        <option key={l} value={l}>
-                          {LANG_NAMES[l]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                      <SelectTrigger aria-label={t("shell.language")} className="h-8 w-32 border-border/60 bg-background/60 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LANGS.map((l) => (
+                          <SelectItem key={l} value={l}>{LANG_NAMES[l]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <SyncBadge sync={sync} />
                   {signedIn ? (
                     <button

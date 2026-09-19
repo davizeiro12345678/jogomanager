@@ -154,10 +154,6 @@ function TacticsPage() {
           <p className="sr-only">
             Para trocar jogadores usando o teclado: selecione um jogador com Espaço ou Enter, depois selecione outro para realizar a troca.
           </p>
-
-          <p className="sr-only">
-            Para trocar jogadores usando o teclado: selecione um jogador com Espaço ou Enter, depois selecione outro para realizar a troca.
-          </p>
 <h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">
             Plano de jogo
           </h1>
@@ -206,7 +202,7 @@ function TacticsPage() {
                   onClick={() => onSlotActivate(i)}
                   aria-label={`${p.name}, ${slot.label}. ${picked === i ? "Selecionado para troca." : "Pressione para selecionar para troca."} `}
                   aria-pressed={picked === i}
-                  className="absolute flex -translate-x-1/2 -translate-y-1/2 cursor-grab flex-col items-center active:cursor-grabbing"
+                   className="absolute flex -translate-x-1/2 -translate-y-1/2 cursor-grab flex-col items-center rounded-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background active:cursor-grabbing"
                   style={{ left: `${50 + slot.z * 40}%`, top: `${50 - slot.x * 42}%` }}
                 >
                   <span
