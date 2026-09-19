@@ -94,3 +94,12 @@
 - [ ] Triplicar a variedade do narrador e aprimorar o assistente com contexto real
 - [ ] Redesenhar HUD, painel, elenco, tática, loja e imagens dos pacotes
 - [ ] Validar acesso, salvamento, compartilhamento, compra, mobile e partida longa
+
+## Atualização visual, engine, acessibilidade e SEO (2026-09-19)
+- [x] Aplicar Archivo Black + Hind e remover dourado dos estados comuns
+- [x] Corrigir tone mapping duplicado e melhorar foco/redução de movimento
+- [x] Tornar placar, eventos, autenticação e navegações mais acessíveis
+- [x] Corrigir noindex de ferramentas pessoais e canonical do multiplayer
+- [x] Distinguir expulsão na narração com novas falas PT/EN/ES
+- [ ] Desacoplar a simulação ao vivo completa para Worker com snapshots interpolados
+- [ ] Validar FPS representativo em aparelho com GPU real e partida longa

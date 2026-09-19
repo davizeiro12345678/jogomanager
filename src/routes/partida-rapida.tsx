@@ -301,8 +301,10 @@ function QuickLive({
     cursorRef.current = sim.events.length;
     for (const e of fresh) {
       const ev: NarrationEvent | null =
-        e.type === "yellow" || e.type === "red"
-          ? "card"
+        e.type === "red"
+          ? "redCard"
+          : e.type === "yellow"
+            ? "card"
           : (["goal", "save", "shot", "foul", "kickoff", "halftime", "fulltime"] as const).includes(
                 e.type as never,
               )

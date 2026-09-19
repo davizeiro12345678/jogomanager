@@ -49,6 +49,7 @@ export const Route = createFileRoute("/visual")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
   component: VisualPage,

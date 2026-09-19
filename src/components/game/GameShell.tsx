@@ -136,7 +136,7 @@ export function GameShell({
           </div>
 
           {/* Navegação principal */}
-          <nav className="ml-auto hidden items-center gap-0.5 md:flex">
+          <nav aria-label="Navegação principal da carreira" className="ml-auto hidden items-center gap-0.5 md:flex">
             {primary.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -249,7 +249,7 @@ export function GameShell({
         </div>
 
         {/* Navegação secundária rolável no celular */}
-        <nav className="flex gap-1 overflow-x-auto px-4 pb-2 md:hidden">
+        <nav aria-label="Mais áreas da carreira" className="flex gap-1 overflow-x-auto px-4 pb-2 md:hidden">
           {TABS.filter((tab) => !MOBILE.includes(tab.to)).map((tab) => (
             <Link
               key={tab.to}
@@ -277,7 +277,7 @@ export function GameShell({
       <main className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">{children}</main>
 
       {/* Barra inferior do celular */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-card/95 backdrop-blur-xl md:hidden">
+      <nav aria-label="Navegação principal no celular" className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-card/95 backdrop-blur-xl md:hidden">
         {TABS.filter((tab) => MOBILE.includes(tab.to)).map((tab) => {
           const Icon = tab.icon;
           return (

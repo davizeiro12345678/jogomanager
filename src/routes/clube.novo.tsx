@@ -51,6 +51,7 @@ export const Route = createFileRoute("/clube/novo")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
   component: NewClubPage,

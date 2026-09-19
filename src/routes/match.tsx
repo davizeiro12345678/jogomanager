@@ -330,6 +330,9 @@ const Scoreboard = memo(function Scoreboard({
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex flex-col items-center px-3">
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {`${home.name} ${snap.hg}, ${away.name} ${snap.ag}. ${paused ? "Partida pausada" : `${snap.minute} minutos`}.`}
+      </p>
       <div
         className={`w-full max-w-md overflow-hidden rounded-2xl border bg-black/70 shadow-2xl backdrop-blur-xl transition-all duration-500 ${
           flash ? "scale-[1.03] border-primary/70 shadow-primary/30" : "border-white/12"
@@ -428,7 +431,7 @@ function eventIcon(type: string) {
 
 const Feed = memo(function Feed({ events }: { events: Snap["events"] }) {
   return (
-    <div className="pointer-events-auto absolute bottom-24 left-3 z-10 hidden max-h-52 w-72 overflow-y-auto rounded-2xl border border-white/10 bg-black/60 p-3 text-xs text-white/85 backdrop-blur-xl md:bottom-4 md:block">
+    <div aria-label="Eventos da partida" role="log" className="pointer-events-auto absolute bottom-24 left-3 z-10 hidden max-h-52 w-72 overflow-y-auto rounded-2xl border border-white/10 bg-black/60 p-3 text-xs text-white/85 backdrop-blur-xl md:bottom-4 md:block">
       {[...events].reverse().map((e, i) => (
         <p
           key={`${e.minute}-${i}-${e.text.slice(0, 8)}`}
@@ -518,8 +521,10 @@ function LiveMatch({
     narrCursorRef.current = sim.events.length;
     for (const e of fresh) {
       const ev: NarrationEvent | null =
-        e.type === "yellow" || e.type === "red"
-          ? "card"
+        e.type === "red"
+          ? "redCard"
+          : e.type === "yellow"
+            ? "card"
           : (
                 [
                   "goal",

@@ -38,6 +38,7 @@ const MIN_GAP: Partial<Record<NarrationEvent, number>> = {
   chance: 9000,
   foul: 12000,
   card: 6000,
+  redCard: 1000,
   save: 5000,
   corner: 14000,
   sub: 10000,
@@ -128,7 +129,7 @@ export class Narrator {
       const utter = new SpeechSynthesisUtterance(item.text);
       utter.lang = SPEECH_TAG[item.lang];
       utter.volume = this.volume;
-      const explosive = item.event === "goal" || item.event === "post";
+      const explosive = item.event === "goal" || item.event === "post" || item.event === "redCard";
       const excited = item.event === "save" || item.event === "chance" || item.event === "card";
       utter.rate = this.rate * (explosive ? 1.1 : excited ? 1.04 : 0.98);
       utter.pitch = explosive ? 1.18 : excited ? 1.08 : 0.98;
@@ -226,7 +227,7 @@ export class Narrator {
       text: narrationLine(this.lang, event, team, variant),
     };
 
-    if (event === "goal" || event === "fulltime") {
+    if (event === "goal" || event === "redCard" || event === "fulltime") {
       // Lance decisivo: corta o que estiver tocando e fala agora.
       this.queue = [];
       this.synth?.cancel();

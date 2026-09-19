@@ -15,7 +15,7 @@
 import { useFrame } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import type React from "react";
-import { Suspense, useMemo, useRef } from "react";
+import { memo, Suspense, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import { DISPLAY_FONT } from "@/components/game/fonts";
@@ -90,7 +90,7 @@ interface RigProps {
   quality: Quality;
 }
 
-export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }: RigProps) {
+export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }: RigProps) {
   // O usuário pode forçar mais ou menos detalhe na página /visual.
   const detail = useVisual().playerDetail;
   const quality: Quality =
@@ -1132,6 +1132,6 @@ export function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }:
       </group>
     </group>
   );
-}
+});
 
 export default PlayerRig;

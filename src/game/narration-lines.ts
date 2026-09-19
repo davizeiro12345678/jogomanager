@@ -12,6 +12,7 @@ export type NarrationEvent =
   | "post"
   | "foul"
   | "card"
+  | "redCard"
   | "chance"
   | "corner"
   | "sub"
@@ -118,6 +119,13 @@ const PT: Pack = {
     "Amarelo merecido para o {team}. Tem que segurar a bronca.",
     "O árbitro leva a mão ao bolso: cartão no {team}.",
   ],
+  redCard: [
+    "EXPULSO! Cartão vermelho para o {team}! O jogo muda agora!",
+    "VERMELHO DIRETO! O {team} vai terminar com um a menos!",
+    "O árbitro não hesitou: rua para o jogador do {team}!",
+    "Que prejuízo para o {team}! Expulsão em um momento decisivo.",
+    "O {team} perde um jogador. Agora é reorganizar tudo em campo!",
+  ],
   kickoff: [
     "A BOLA VAI ROLAR! Começa o jogo!",
     "Apitou o árbitro: começa a partida!",
@@ -193,6 +201,12 @@ const EN: Pack = {
     "The referee reaches for his pocket — {team}.",
     "Booked. {team} will have to be careful now.",
   ],
+  redCard: [
+    "HE IS OFF! A straight red card for {team}!",
+    "RED CARD! {team} must finish with ten players!",
+    "The referee has no doubt — dismissal for {team}!",
+    "A huge turning point. {team} are a player down.",
+  ],
   kickoff: ["We are underway!", "Kick-off! Here we go!", "The referee blows and we're off."],
   halftime: ["That's half-time.", "The whistle goes for the break.", "Forty-five gone."],
   fulltime: [
@@ -254,6 +268,12 @@ const ES: Pack = {
     "¡Tarjeta para el {team}!",
     "El árbitro amonesta al {team}.",
     "Amarilla para el {team}. Ojo con eso.",
+  ],
+  redCard: [
+    "¡EXPULSADO! ¡Tarjeta roja para el {team}!",
+    "¡ROJA DIRECTA! El {team} se queda con diez.",
+    "El árbitro no duda: expulsión para el {team}.",
+    "Momento decisivo. El {team} pierde a un jugador.",
   ],
   kickoff: ["¡Rueda el balón! ¡Comienza el partido!", "¡Arrancó el juego!", "¡Se pone en marcha!"],
   halftime: ["Final del primer tiempo.", "Nos vamos al descanso.", "Cuarenta y cinco cumplidos."],

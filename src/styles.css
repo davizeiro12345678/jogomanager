@@ -110,8 +110,8 @@
   --secondary-foreground: oklch(0.96 0.012 150);
   --muted: oklch(0.245 0.03 167);
   --muted-foreground: oklch(0.75 0.03 158);
-  --accent: oklch(0.83 0.17 88);
-  --accent-foreground: oklch(0.2 0.05 90);
+  --accent: oklch(0.255 0.032 167);
+  --accent-foreground: oklch(0.96 0.012 150);
   --destructive: oklch(0.63 0.22 25);
   --destructive-foreground: oklch(0.98 0.005 150);
   --border: oklch(0.9 0.05 150 / 14%);
@@ -145,8 +145,8 @@
 }
 
 @theme inline {
-  --font-display: "Barlow Condensed", "Oswald", system-ui, sans-serif;
-  --font-sans: "Inter Tight", system-ui, sans-serif;
+  --font-display: "Archivo Black", system-ui, sans-serif;
+  --font-sans: "Hind", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
@@ -181,8 +181,8 @@
 
   /* foco visível e consistente para teclado */
   :focus-visible {
-    outline: 2px solid var(--color-ring);
-    outline-offset: 2px;
+    outline: 3px solid var(--color-ring);
+    outline-offset: 3px;
     border-radius: var(--radius-sm);
   }
 
@@ -495,6 +495,21 @@
 }
 @utility cs-anim-confetti {
   animation: cs-confetti 2.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-anim-drift,
+  .cs-anim-bob,
+  .cs-anim-run,
+  .cs-anim-flash,
+  .cs-anim-sway,
+  .cs-anim-shine,
+  .cs-anim-zoom,
+  .cs-anim-rise,
+  .cs-anim-enter,
+  .cs-anim-confetti {
+    animation: none !important;
+  }
 }
 
 @keyframes cs-sweep {

@@ -34,6 +34,7 @@ export const Route = createFileRoute("/multiplayer")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://jogomanager.com/multiplayer" }],
   }),
   component: MultiplayerPage,
 });
@@ -414,7 +415,7 @@ function MultiplayerPage() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="pitch-bg min-h-[100dvh] px-4 py-10">
+    <main className="pitch-bg min-h-[100dvh] px-4 py-10">
       <div className="mx-auto max-w-4xl">
         <h1 className="flex items-center gap-2 font-display text-4xl uppercase tracking-wide">
           <Swords className="text-primary" /> Multiplayer 1x1
@@ -427,7 +428,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           Voltar ao painel
         </Link>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -582,7 +583,7 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
   const away = CLUBS[room.guest_club!]!;
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
+    <main className="relative h-[100dvh] w-full overflow-hidden bg-background">
       <Stadium3D sim={sim} mode={camera} quality={quality} />
       <h1 className="sr-only">
         Multiplayer: {home.name} x {away.name}
@@ -619,6 +620,6 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
           {snap.finished ? "Encerrar" : "Abandonar"}
         </button>
       </div>
-    </div>
+    </main>
   );
 }
