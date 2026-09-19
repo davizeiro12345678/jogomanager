@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
+    "test": "vitest run",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -131,7 +132,8 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "8.1.5",
-    "vite-imagetools": "^12.0.1"
+    "vite-imagetools": "^12.0.1",
+    "vitest": "^5.0.1"
   },
   "pnpm": {
     "overrides": {
