@@ -63,18 +63,41 @@ const ATTR_LABELS: { key: keyof ManagerAttributes; label: string }[] = [
 
 const TOTAL_POINTS = 30;
 
-function StepDots({ step }: { step: number }) {
+const STEP_LABELS = ["Identidade", "Aparência", "Perfil", "Clube"] as const;
+
+function StepDots({ step, onGo }: { step: number; onGo: (i: number) => void }) {
   return (
-    <div className="flex gap-2">
-      {[0, 1, 2, 3].map((i) => (
-        <span
-          key={i}
-          className={`h-1.5 w-10 rounded-full ${i <= step ? "bg-primary" : "bg-border"}`}
-        />
+    <ol className="flex flex-wrap gap-2" aria-label="Etapas da criação">
+      {STEP_LABELS.map((label, i) => (
+        <li key={label}>
+          <button
+            type="button"
+            onClick={() => onGo(i)}
+            disabled={i > step}
+            aria-current={i === step ? "step" : undefined}
+            className={`rounded-full border px-3 py-1 text-xs transition disabled:opacity-40 ${
+              i === step
+                ? "border-primary bg-primary/15 text-foreground"
+                : i < step
+                  ? "border-primary/50 text-muted-foreground hover:text-foreground"
+                  : "border-border text-muted-foreground"
+            }`}
+          >
+            {i + 1}. {label}
+          </button>
+        </li>
       ))}
-    </div>
+    </ol>
   );
 }
+
+/** Perfis prontos de habilidade, para quem não quer distribuir ponto a ponto. */
+const ATTR_PRESETS: { id: string; label: string; attrs: ManagerAttributes }[] = [
+  { id: "tecnico", label: "Treinador de campo", attrs: { attack: 8, defense: 8, market: 4, squad: 6, media: 4 } },
+  { id: "negociador", label: "Negociador", attrs: { attack: 5, defense: 5, market: 9, squad: 6, media: 5 } },
+  { id: "lider", label: "Líder de vestiário", attrs: { attack: 5, defense: 6, market: 4, squad: 9, media: 6 } },
+  { id: "equilibrado", label: "Equilibrado", attrs: { attack: 6, defense: 6, market: 6, squad: 6, media: 6 } },
+];
 
 function NewCareer() {
   const navigate = useNavigate();
@@ -102,6 +125,7 @@ function NewCareer() {
   });
   const [leagueId, setLeagueId] = useState(LEAGUES[0]!.id);
   const [loadingClub, setLoadingClub] = useState<string | null>(null);
+  const [clubQuery, setClubQuery] = useState("");
   const [scene, setScene] = useState(false);
   const [pending, setPending] = useState<{ leagueId: string; clubId: string } | null>(null);
 
@@ -157,7 +181,7 @@ function NewCareer() {
           <GuestCloudPrompt next="/new" compact />
         </div>
         <div className="mt-4">
-          <StepDots step={step} />
+          <StepDots step={step} onGo={setStep} />
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[220px_1fr]">
@@ -203,8 +227,8 @@ function NewCareer() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">País de origem</p>
-                  <div className="mt-2 flex max-h-48 flex-wrap gap-2 overflow-y-auto">
-                    {LEAGUES.slice(0, 40).map((l) => (
+                  <div className="mt-2 flex max-h-48 flex-wrap gap-2 overflow-y-auto pr-1">
+                    {LEAGUES.map((l) => (
                       <button
                         key={l.id}
                         onClick={() => setCountry(l.id)}
@@ -322,6 +346,18 @@ function NewCareer() {
                   <p className="text-sm text-muted-foreground">
                     Habilidades · pontos restantes: <strong>{left}</strong>
                   </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {ATTR_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => setAttrs(preset.attrs)}
+                        className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary hover:text-foreground"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
                   <div className="mt-2 space-y-2">
                     {ATTR_LABELS.map((a) => (
                       <div key={a.key} className="flex items-center gap-3">
