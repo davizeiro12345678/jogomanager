@@ -2079,7 +2079,15 @@ function Officials({ sim, quality }: { sim: SimView; quality: Quality }) {
  * segundo a taxa instantânea, a média e o pior caso (p95) da partida inteira.
  * Fica dentro do Canvas para não forçar re-render da árvore 3D.
  */
-function FpsMeter({ onSample }: { onSample: (s: FpsSample) => void }) {
+function FpsMeter({
+  onSample,
+  backend,
+  quality,
+}: {
+  onSample: (s: FpsSample) => void;
+  backend: GpuBackend;
+  quality: Quality;
+}) {
   const frames = useRef(0);
   const acc = useRef(0);
   const history = useRef<number[]>([]);
@@ -2098,13 +2106,42 @@ function FpsMeter({ onSample }: { onSample: (s: FpsSample) => void }) {
     const sorted = [...h].sort((a, b) => a - b);
     // p95 do pior caso = 5º percentil das taxas (os segundos mais lentos)
     const p95 = sorted[Math.max(0, Math.floor(sorted.length * 0.05))] ?? fps;
-    onSample({ fps, avg, p95 });
+    const frameMs = 1000 / Math.max(1, fps);
+    const onePercentLow = sorted[Math.max(0, Math.floor(sorted.length * 0.01))] ?? fps;
+    const memory = performance as Performance & { memory?: { usedJSHeapSize: number } };
+    const sample = {
+      fps,
+      avg,
+      p95,
+      onePercentLow,
+      frameMs,
+      backend,
+      quality,
+      memoryMb: memory.memory ? Math.round(memory.memory.usedJSHeapSize / 1_048_576) : null,
+      measuredAt: new Date().toISOString(),
+    };
+    onSample(sample);
+    try {
+      localStorage.setItem("manager3d.performance.latest", JSON.stringify(sample));
+    } catch {
+      // Medição continua visível quando o armazenamento está indisponível.
+    }
   });
 
   return null;
 }
 
-type FpsSample = { fps: number; avg: number; p95: number };
+type FpsSample = {
+  fps: number;
+  avg: number;
+  p95: number;
+  onePercentLow: number;
+  frameMs: number;
+  backend: GpuBackend;
+  quality: Quality;
+  memoryMb: number | null;
+  measuredAt: string;
+};
 
 function Scene({
   sim,
@@ -2406,13 +2443,17 @@ function Stadium3DImpl({
           shadows={shadowsOn}
           backend={backend}
         />
-        {vis.showFps ? <FpsMeter onSample={setFps} /> : null}
+        {vis.showFps ? <FpsMeter onSample={setFps} backend={backend} quality={eff} /> : null}
       </Canvas>
       {vis.showFps && fps ? (
         <div className="pointer-events-none absolute left-2 top-2 rounded-lg bg-black/55 px-2 py-1 font-mono text-[10px] leading-tight text-white/85">
           <span className="text-white">{Math.round(fps.fps)} fps</span>
           <span className="ml-2 text-white/60">med {Math.round(fps.avg)}</span>
           <span className="ml-2 text-white/60">p95 {Math.round(fps.p95)}</span>
+          <span className="ml-2 text-white/60">1% {Math.round(fps.onePercentLow)}</span>
+          <span className="ml-2 text-white/60">{fps.frameMs.toFixed(1)} ms</span>
+          <span className="ml-2 uppercase text-white/60">{fps.backend}</span>
+          {fps.memoryMb ? <span className="ml-2 text-white/60">{fps.memoryMb} MB</span> : null}
         </div>
       ) : null}
       {eff !== quality ? (

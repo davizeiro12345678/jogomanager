@@ -362,6 +362,11 @@ export class MatchSim {
     if (this.events.length > 80) this.events.shift();
   }
 
+  private recordShot(shot: ShotRecord) {
+    this.shotMap.push(shot);
+    if (this.shotMap.length > 120) this.shotMap.shift();
+  }
+
   /** dispara uma animação curta no jogador */
   trigger(p: SimPlayer | null | undefined, action: PlayerAction, dur = 0.7) {
     if (!p) return;
@@ -378,6 +383,11 @@ export class MatchSim {
           p.actionT = 0;
           p.action = null;
         }
+      }
+    }
+    if (this.reactionUntil.size) {
+      for (const [id, until] of this.reactionUntil) {
+        if (until <= this.time) this.reactionUntil.delete(id);
       }
     }
   }
@@ -832,7 +842,7 @@ export class MatchSim {
       );
       gk.saves++;
       this.stats[s.side].onTarget++;
-      this.shotMap.push({
+      this.recordShot({
         x: s.fromX,
         z: s.fromZ,
         side: s.side,
@@ -887,7 +897,7 @@ export class MatchSim {
       if (provider) provider.assists++;
     }
     this.lastPass[side] = null;
-    this.shotMap.push({
+    this.recordShot({
       x: fromX,
       z: fromZ,
       side,
@@ -1183,7 +1193,7 @@ export class MatchSim {
     if (outcome === "off") {
       // parte das finalizações erradas desvia na defesa e vira escanteio
       if (this.rnd() < 0.22) this.lastTouch = side === "home" ? "away" : "home";
-      this.shotMap.push({
+      this.recordShot({
         x: holder.x,
         z: holder.z,
         side,

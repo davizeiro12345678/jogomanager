@@ -21,6 +21,7 @@ export const PUBLIC_PAGES = [
   { to: "/sobre", label: "Sobre o jogo" },
   { to: "/criador", label: "Sobre o criador" },
   { to: "/contato", label: "Contato e suporte" },
+  { to: "/compartilhar", label: "Compartilhar o jogo" },
   { to: "/privacidade", label: "Política de privacidade" },
   { to: "/termos", label: "Termos de uso" },
 ] as const;
