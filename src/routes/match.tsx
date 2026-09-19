@@ -45,7 +45,7 @@ import {
   type LiveMatchController,
 } from "@/game/simWorkerClient";
 import { achievementById } from "@/game/achievements";
-import { detectQuality } from "@/game/device";
+import { detectQuality, detectQualityByGpu } from "@/game/device";
 
 import { nextFixture } from "@/game/season";
 import { buildSquad } from "@/game/squad";
