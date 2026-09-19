@@ -103,3 +103,14 @@
 - [x] Distinguir expulsão na narração com novas falas PT/EN/ES
 - [ ] Desacoplar a simulação ao vivo completa para Worker com snapshots interpolados
 - [ ] Validar FPS representativo em aparelho com GPU real e partida longa
+
+## Conclusão total do plano (2026-09-19)
+- [ ] Concluir Worker da simulação ao vivo com comandos, snapshots e interpolação
+- [ ] Medir FPS, frame time, 1% low, GPU/backend, memória e estabilidade em partida longa
+- [ ] Aplicar salto gráfico escalável em iluminação, sombras, texturas, gramado, estádio e pós-processamento
+- [ ] Melhorar anatomia, materiais, LOD, transições e animações dos jogadores sem sacrificar fluidez
+- [ ] Corrigir bugs restantes da engine, física da bola, goleiros, colisões, posicionamento e IA adversária
+- [ ] Ampliar variedade, contexto, emoção e segurança da narração em todos os eventos relevantes
+- [ ] Concluir redesign e acessibilidade das telas de partida, carreira, elenco, tática, loja e campeonato
+- [ ] Revisar metadados únicos, indexação, páginas públicas e conteúdo institucional
+- [ ] Validar fluxos completos, compra, salvamento, replay, PWA, mobile, console, tipos, testes e compilação
