@@ -11,7 +11,7 @@
 - [x] 57 cutscenes, incluindo 25 cenas híbridas
 - [x] Narrador expandido para 350 falas PT, 250 EN e 235 ES
 - [x] Importação em massa de uniformes home/away/third/goalkeeper quando a fonte os oferece
-- [x] Testes atuais: 7 testes, 93 verificações; tipos e diferenças de código sem erro
+- [x] Testes atuais: 8 testes, 109 verificações; tipos, compilação e diferenças de código sem erro
 
 ### Trabalho interno ainda aberto
 - [ ] Testes integrados de salvamento offline→nuvem e entrega idempotente de pagamento com banco isolado
