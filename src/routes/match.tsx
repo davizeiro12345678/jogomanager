@@ -521,8 +521,10 @@ function LiveMatch({
     narrCursorRef.current = sim.events.length;
     for (const e of fresh) {
       const ev: NarrationEvent | null =
-        e.type === "yellow" || e.type === "red"
-          ? "card"
+        e.type === "red"
+          ? "redCard"
+          : e.type === "yellow"
+            ? "card"
           : (
                 [
                   "goal",

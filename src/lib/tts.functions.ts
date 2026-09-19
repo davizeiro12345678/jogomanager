@@ -25,6 +25,7 @@ const NarrateInput = z.object({
     "post",
     "foul",
     "card",
+    "redCard",
     "chance",
     "corner",
     "sub",
@@ -58,7 +59,7 @@ export const narrateEvent = createServerFn({ method: "POST" })
     const event = data.event as NarrationEvent;
     const text = narrationLine(lang, event, safeTeam(data.team), data.variant);
     const voiceId = VOICE_BY_LANG[lang];
-    const hype = event === "goal" || event === "save" || event === "post";
+    const hype = event === "goal" || event === "save" || event === "post" || event === "redCard";
 
     try {
       const res = await fetch(
