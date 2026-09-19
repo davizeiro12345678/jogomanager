@@ -2485,11 +2485,19 @@ function Scene({
   return (
     <>
       <color attach="background" args={[SKY[time]]} />
-      <fog attach="fog" args={[SKY[time], 110, 300]} />
+      {/* Profundidade por horário: de noite a névoa fecha antes e dá volume às luzes */}
+      <fog
+        attach="fog"
+        args={[
+          SKY[time],
+          time === "noite" ? 80 : time === "entardecer" ? 95 : 120,
+          time === "noite" ? 230 : time === "entardecer" ? 270 : 330,
+        ]}
+      />
       <AdaptiveEvents />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
-      <Environment resolution={quality === "alta" ? 256 : 128} frames={1}>
+      <Environment resolution={quality === "alta" ? 512 : quality === "media" ? 256 : 128} frames={1}>
         <color attach="background" args={[SKY[time]]} />
         <Lightformer
           intensity={time === "dia" ? 3 : 1.6}
@@ -2531,16 +2539,16 @@ function Scene({
         intensity={sun}
         color={sunColor}
         castShadow={shadows}
-        shadow-mapSize={quality === "alta" ? [2048, 2048] : [1024, 1024]}
-        shadow-bias={-0.00018}
-        shadow-normalBias={quality === "alta" ? 0.018 : 0.035}
-        shadow-radius={quality === "alta" ? 1.8 : 1}
-        shadow-camera-near={10}
-        shadow-camera-far={180}
-        shadow-camera-left={-58}
-        shadow-camera-right={58}
-        shadow-camera-top={42}
-        shadow-camera-bottom={-42}
+        shadow-mapSize={quality === "alta" ? [3072, 3072] : quality === "media" ? [1536, 1536] : [1024, 1024]}
+        shadow-bias={-0.00014}
+        shadow-normalBias={quality === "alta" ? 0.014 : 0.03}
+        shadow-radius={quality === "alta" ? 2.4 : 1.2}
+        shadow-camera-near={12}
+        shadow-camera-far={165}
+        shadow-camera-left={-52}
+        shadow-camera-right={52}
+        shadow-camera-top={38}
+        shadow-camera-bottom={-38}
       />
       <directionalLight
         position={[-55, 48, -35]}
@@ -2709,7 +2717,7 @@ function Stadium3DImpl({
             capabilities?: { getMaxAnisotropy?: () => number };
           };
           r.toneMapping = THREE.ACESFilmicToneMapping;
-          r.toneMappingExposure = eff === "baixa" ? 0.95 : eff === "media" ? 1.04 : 1.08;
+          r.toneMappingExposure = eff === "baixa" ? 0.98 : eff === "media" ? 1.06 : 1.12;
           r.outputColorSpace = THREE.SRGBColorSpace;
           // borda de sombra suave só na qualidade alta: o filtro extra custa
           // pouco lá e é o que mais aproxima a imagem de uma transmissão

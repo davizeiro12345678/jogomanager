@@ -267,6 +267,18 @@ export interface CareerState {
   boostUntil?: string;
   /** Evolução acumulada dos 28 atributos, por jogador. */
   attrDeltas?: Record<string, Partial<Record<string, number>>>;
+
+  /* ---------------------------------------------------------- v8 */
+  /** exercício tático já feito em cada rodada, na chave "temporada-rodada" */
+  drillsByRound?: Record<string, string>;
+  /** amistosos disputados fora do calendário oficial */
+  friendlies?: {
+    season: number;
+    round: number;
+    opponentId: string;
+    hg: number;
+    ag: number;
+  }[];
 }
 
 export interface CareerRecords {
