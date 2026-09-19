@@ -29,9 +29,28 @@ function rng(seed: number) {
 }
 
 /** Padrões de corte usados pelos clubes. */
-export type MowPattern = "stripes" | "checker" | "rings" | "diagonal" | "wide";
+export type MowPattern =
+  | "stripes"
+  | "checker"
+  | "rings"
+  | "diagonal"
+  | "wide"
+  | "diamond"
+  | "fine"
+  | "spiral"
+  | "bands";
 
-export const MOW_PATTERNS: MowPattern[] = ["stripes", "checker", "rings", "diagonal", "wide"];
+export const MOW_PATTERNS: MowPattern[] = [
+  "stripes",
+  "checker",
+  "rings",
+  "diagonal",
+  "wide",
+  "diamond",
+  "fine",
+  "spiral",
+  "bands",
+];
 
 type MowSpec = { angle: number; count: number; rings: boolean; cross: boolean };
 
@@ -41,6 +60,14 @@ const MOW: Record<MowPattern, MowSpec> = {
   rings: { angle: -0.22, count: 32, rings: true, cross: false },
   diagonal: { angle: -0.62, count: 44, rings: false, cross: true },
   wide: { angle: 0, count: 20, rings: false, cross: false },
+  // corte em losango: duas passagens cruzadas a 45°
+  diamond: { angle: Math.PI / 4, count: 34, rings: false, cross: true },
+  // xadrez fino: cortador estreito, duas passagens
+  fine: { angle: -0.22, count: 76, rings: false, cross: true },
+  // caracol completo: anéis somados ao xadrez
+  spiral: { angle: 0.1, count: 28, rings: true, cross: true },
+  // faixas transversais largas (de lateral a lateral)
+  bands: { angle: Math.PI / 2, count: 16, rings: false, cross: false },
 };
 
 /** Ruído simplex determinístico (mesma semente da textura). */
