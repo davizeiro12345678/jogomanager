@@ -145,7 +145,11 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
   const ankleRRef = useRef<THREE.Group>(null);
   const shadowRef = useRef<THREE.Mesh>(null);
   const blinkRef = useRef<THREE.Group>(null);
+  const clavLRef = useRef<THREE.Group>(null);
+  const clavRRef = useRef<THREE.Group>(null);
+  const jawRef = useRef<THREE.Group>(null);
   const nextBlink = useRef(1 + Math.random() * 4);
+
 
   // grupos de LOD: detalhes finos (rosto, dedos, costuras) e corpo médio
   const faceDetailRef = useRef<THREE.Group>(null);
