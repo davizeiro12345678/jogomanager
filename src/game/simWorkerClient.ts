@@ -132,8 +132,8 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     // confirmado antes de voltar à thread principal. Evita reiniciar o placar.
     if (latestState?.time) {
       let catchUp = 0;
-      while (localSim.time < latestState.time && !localSim.finished && catchUp++ < 14_000) {
-        localSim.step(Math.min(0.4, latestState.time - localSim.time));
+      while (localSim.time < latestState.time && !localSim.finished && catchUp++ < 28_000) {
+        localSim.step(Math.min(0.2, latestState.time - localSim.time));
       }
     }
     apply(snapshotMatch(localSim, ++sequence));
@@ -189,7 +189,6 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     },
     pause(value) {
       localPaused = value;
-      if (!value && localSim && !localTimer) startFallback();
       send({ type: "pauseLive", paused: value });
     },
     setSpeed(value) {
