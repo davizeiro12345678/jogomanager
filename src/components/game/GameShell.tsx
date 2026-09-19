@@ -27,6 +27,7 @@ import {
   Trophy,
   Users,
   Wrench,
+  UserRound,
 } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 
