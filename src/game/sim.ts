@@ -509,15 +509,12 @@ export class MatchSim {
 
     // Linha defensiva conjunta: a referência é o zagueiro mais recuado do lado
     // sem a bola, o que permite subir junto e armar impedimento.
-    const lineX: Record<Side, number> = { home: 0, away: 0 };
-    for (const side of ["home", "away"] as Side[]) {
-      const dir = this.attackDir(side);
-      let deepest = dir * -FIELD_X;
-      for (const q of this.players) {
-        if (q.side !== side || q.pos === "GK") continue;
-        if (dir > 0 ? q.x < deepest || deepest === dir * -FIELD_X : q.x > deepest) deepest = q.x;
-      }
-      lineX[side] = deepest;
+    const lineX: Record<Side, number> = { home: FIELD_X, away: -FIELD_X };
+    for (const q of this.players) {
+      if (q.pos === "GK") continue;
+      if (q.side === "home") {
+        if (q.x < lineX.home) lineX.home = q.x;
+      } else if (q.x > lineX.away) lineX.away = q.x;
     }
 
     for (const p of this.players) {
