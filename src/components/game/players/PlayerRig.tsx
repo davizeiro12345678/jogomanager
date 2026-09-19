@@ -386,10 +386,25 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
       neck.current.rotation.x = c.headPitch;
       neck.current.rotation.y = c.headYaw;
     }
-    if (armLRef.current) armLRef.current.rotation.set(c.armLPitch, 0, c.armLRoll);
-    if (armRRef.current) armRRef.current.rotation.set(c.armRPitch, 0, c.armRRoll);
+    // clavícula: acompanha parte do movimento do braço, como no corpo real
+    if (clavLRef.current) {
+      clavLRef.current.rotation.x = c.armLPitch * 0.16;
+      clavLRef.current.rotation.z = -c.armLRoll * 0.12;
+    }
+    if (clavRRef.current) {
+      clavRRef.current.rotation.x = c.armRPitch * 0.16;
+      clavRRef.current.rotation.z = -c.armRRoll * 0.12;
+    }
+    if (armLRef.current) armLRef.current.rotation.set(c.armLPitch * 0.84, 0, c.armLRoll * 0.88);
+    if (armRRef.current) armRRef.current.rotation.set(c.armRPitch * 0.84, 0, c.armRRoll * 0.88);
     if (foreLRef.current) foreLRef.current.rotation.x = c.elbowL;
     if (foreRRef.current) foreRRef.current.rotation.x = c.elbowR;
+    // mandíbula: abre conforme o esforço, fechando quando o jogador descansa
+    if (jawRef.current && lod === 0) {
+      const effort = Math.min(1, speed / 7);
+      jawRef.current.rotation.x = 0.06 + effort * 0.16 + Math.sin(state.clock.elapsedTime * 4 + seed) * 0.03 * effort;
+    }
+
     if (legLRef.current) legLRef.current.rotation.set(c.legLPitch, 0, c.legLRoll);
     if (legRRef.current) legRRef.current.rotation.set(c.legRPitch, 0, c.legRRoll);
     if (kneeLRef.current) kneeLRef.current.rotation.x = c.kneeL;
