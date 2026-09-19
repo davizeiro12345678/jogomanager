@@ -1,6 +1,7 @@
 import type { Club, League } from "../types";
 import { EXTRA_LEAGUES } from "./leagues-extra";
 import { WORLD_LEAGUES } from "./leagues-world";
+import { applyLeagueFill } from "./leagues-fill";
 
 type Raw = [
   id: string,
@@ -1054,7 +1055,7 @@ function build(id: string, name: string, country: string, flag: string, raw: Raw
   return { id, name, country, flag, clubs };
 }
 
-export const LEAGUES: League[] = [
+const BASE_LEAGUES: League[] = [
   build("bra", "Brasileirão Série A", "Brasil", "🇧🇷", BRA),
   build("bra2", "Brasileirão Série B", "Brasil", "🇧🇷", BRA2),
   build("eng", "Premier League", "Inglaterra", "🏴󠁧󠁢󠁥󠁮󠁧󠁿", ENG),
@@ -1110,6 +1111,12 @@ export const LEAGUES: League[] = [
   ...EXTRA_LEAGUES,
   ...WORLD_LEAGUES,
 ];
+
+/** Cada liga sai com o número real de clubes do campeonato correspondente. */
+export const LEAGUES: League[] = BASE_LEAGUES.map((l) => ({
+  ...l,
+  clubs: applyLeagueFill(l.id, l.clubs),
+}));
 
 export const CLUBS: Record<string, Club> = Object.fromEntries(
   LEAGUES.flatMap((l) => l.clubs).map((c) => [c.id, c]),

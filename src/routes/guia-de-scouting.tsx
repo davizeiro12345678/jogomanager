@@ -5,9 +5,9 @@ import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guia-de-scouting";
 const TITLE =
-  "Guia de scouting: como achar jovens craques antes dos rivais · Pro Football Manager 3D: Jogo de Futebol Manager Online";
+  "Scouting no futebol: como achar jovens craques baratos | Pro Football Manager 3D";
 const DESC =
-  "Guia de scouting: como observar jogadores, ler relatórios de olheiros e encontrar joias baratas antes dos rivais no mercado.";
+  "Como funciona o trabalho de olheiro: ler potencial e nota atual, escolher a faixa de idade certa, contratar por carência do elenco e reconhecer os quatro sinais de jogador barato.";
 
 export const Route = createFileRoute("/guia-de-scouting")({
   head: () => ({

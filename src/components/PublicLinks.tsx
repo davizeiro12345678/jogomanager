@@ -12,6 +12,7 @@ export const PUBLIC_PAGES = [
   { to: "/dicas-de-gestao", label: "Dicas de gestão" },
   { to: "/melhores-formacoes", label: "Melhores formações" },
   { to: "/guia-de-scouting", label: "Guia de scouting" },
+  { to: "/regras", label: "Regras do futebol" },
   { to: "/gestao-financeira", label: "Gestão financeira" },
   { to: "/glossario-do-futebol", label: "Glossário do futebol" },
   { to: "/jogar-offline", label: "Como jogar offline" },

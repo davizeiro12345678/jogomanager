@@ -51,6 +51,7 @@ import { Route as PartidaRapidaRouteImport } from './routes/partida-rapida'
 import { Route as PerguntasFrequentesRouteImport } from './routes/perguntas-frequentes'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ProdutosRouteImport } from './routes/produtos'
+import { Route as RegrasRouteImport } from './routes/regras'
 import { Route as ReplaysRouteImport } from './routes/replays'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as ScoutingRouteImport } from './routes/scouting'
@@ -286,6 +287,11 @@ const ProdutosRoute = ProdutosRouteImport.update({
   path: '/produtos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RegrasRoute = RegrasRouteImport.update({
+  id: '/regras',
+  path: '/regras',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReplaysRoute = ReplaysRouteImport.update({
   id: '/replays',
   path: '/replays',
@@ -453,6 +459,7 @@ export interface FileRoutesByFullPath {
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
+  '/regras': typeof RegrasRoute
   '/replays': typeof ReplaysRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/scouting': typeof ScoutingRoute
@@ -521,6 +528,7 @@ export interface FileRoutesByTo {
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
+  '/regras': typeof RegrasRoute
   '/replays': typeof ReplaysRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/scouting': typeof ScoutingRoute
@@ -590,6 +598,7 @@ export interface FileRoutesById {
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
+  '/regras': typeof RegrasRoute
   '/replays': typeof ReplaysRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/scouting': typeof ScoutingRoute
@@ -660,6 +669,7 @@ export interface FileRouteTypes {
     | '/perguntas-frequentes'
     | '/privacidade'
     | '/produtos'
+    | '/regras'
     | '/replays'
     | '/robots.txt'
     | '/scouting'
@@ -728,6 +738,7 @@ export interface FileRouteTypes {
     | '/perguntas-frequentes'
     | '/privacidade'
     | '/produtos'
+    | '/regras'
     | '/replays'
     | '/robots.txt'
     | '/scouting'
@@ -796,6 +807,7 @@ export interface FileRouteTypes {
     | '/perguntas-frequentes'
     | '/privacidade'
     | '/produtos'
+    | '/regras'
     | '/replays'
     | '/robots.txt'
     | '/scouting'
@@ -865,6 +877,7 @@ export interface RootRouteChildren {
   PerguntasFrequentesRoute: typeof PerguntasFrequentesRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ProdutosRoute: typeof ProdutosRoute
+  RegrasRoute: typeof RegrasRoute
   ReplaysRoute: typeof ReplaysRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   ScoutingRoute: typeof ScoutingRoute
@@ -1187,6 +1200,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/regras': {
+      id: '/regras'
+      path: '/regras'
+      fullPath: '/regras'
+      preLoaderRoute: typeof RegrasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/replays': {
       id: '/replays'
       path: '/replays'
@@ -1401,6 +1421,7 @@ const rootRouteChildren: RootRouteChildren = {
   PerguntasFrequentesRoute: PerguntasFrequentesRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ProdutosRoute: ProdutosRoute,
+  RegrasRoute: RegrasRoute,
   ReplaysRoute: ReplaysRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   ScoutingRoute: ScoutingRoute,

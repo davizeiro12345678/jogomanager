@@ -27,6 +27,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/dicas-de-gestao", changefreq: "weekly", priority: "0.8" },
           { path: "/melhores-formacoes", changefreq: "weekly", priority: "0.8" },
           { path: "/guia-de-scouting", changefreq: "weekly", priority: "0.8" },
+          { path: "/regras", changefreq: "monthly", priority: "0.8" },
           { path: "/gestao-financeira", changefreq: "weekly", priority: "0.8" },
           { path: "/glossario-do-futebol", changefreq: "monthly", priority: "0.7" },
           { path: "/jogar-offline", changefreq: "monthly", priority: "0.7" },
