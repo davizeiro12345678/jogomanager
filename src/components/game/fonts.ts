@@ -15,7 +15,8 @@ export const DISPLAY_FONT = "/fonts/BarlowCondensed-Bold.ttf";
  */
 export function configureText3D() {
   if (typeof window === "undefined") return;
-  void import("troika-three-text").then((m) => {
-    m.configureTextBuilder?.({ useWorker: false });
+  void (import("troika-three-text") as Promise<unknown>).then((m) => {
+    const mod = m as { configureTextBuilder?: (o: { useWorker: boolean }) => void };
+    mod.configureTextBuilder?.({ useWorker: false });
   });
 }
