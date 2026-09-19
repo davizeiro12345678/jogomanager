@@ -91,6 +91,10 @@ function MowPreview({ pattern }: { pattern: MowPattern }) {
     diagonal: `repeating-linear-gradient(45deg, ${a} 0 14px, ${b} 14px 28px)`,
     checker: `repeating-linear-gradient(90deg, ${a} 0 16px, ${b} 16px 32px), repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0 16px, transparent 16px 32px)`,
     rings: `repeating-radial-gradient(circle at 50% 50%, ${a} 0 12px, ${b} 12px 24px)`,
+    diamond: `repeating-linear-gradient(45deg, ${a} 0 14px, ${b} 14px 28px), repeating-linear-gradient(-45deg, rgba(255,255,255,.07) 0 14px, transparent 14px 28px)`,
+    fine: `repeating-linear-gradient(90deg, ${a} 0 8px, ${b} 8px 16px), repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0 8px, transparent 8px 16px)`,
+    spiral: `repeating-radial-gradient(circle at 50% 50%, ${a} 0 10px, ${b} 10px 20px), repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 18px, transparent 18px 36px)`,
+    bands: `repeating-linear-gradient(0deg, ${a} 0 20px, ${b} 20px 40px)`,
   };
   return (
     <div
