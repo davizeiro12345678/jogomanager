@@ -830,7 +830,7 @@ function LiveMatch({
       ) : null}
 
       {/* Barra de transporte sempre visível */}
-      <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl md:hidden">
+      <div role="toolbar" aria-label="Controles da partida" className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl md:hidden">
         <button
           onClick={() => setPaused((p) => !p)}
           aria-label={paused ? "Retomar partida" : "Pausar partida"}
