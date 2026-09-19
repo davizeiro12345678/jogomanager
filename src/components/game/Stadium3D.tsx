@@ -1416,7 +1416,10 @@ function Stands({
   }, []);
   const fsin = (x: number) => SIN[((x * 162.9746617) | 0) & 1023]!;
 
-  useFrame(({ clock }) => {
+  // reaproveitado a cada quadro: o laço da torcida não pode alocar nada
+  const camFwd = useMemo(() => new THREE.Vector3(), []);
+
+  useFrame(({ clock, camera: cam }) => {
     const mesh = ref.current;
     if (!mesh) return;
     tick.current++;
@@ -1428,8 +1431,21 @@ function Stands({
     const pulse = goalPulse.current;
     const arms = armsRef.current;
     const n = crowd.positions.length;
+    // Só anima quem a câmera pode ver: fora do campo de visão ou muito longe,
+    // a matriz antiga continua valendo e o custo por quadro cai bastante.
+    cam.getWorldDirection(camFwd);
+    const cx = cam.position.x;
+    const cz = cam.position.z;
+    const far2 = quality === "alta" ? 150 * 150 : quality === "media" ? 120 * 120 : 95 * 95;
     for (let i = 0; i < n; i++) {
       const p = crowd.positions[i]!;
+      const dx = p.x - cx;
+      const dz = p.z - cz;
+      const d2 = dx * dx + dz * dz;
+      if (d2 > far2) continue;
+      // atrás da câmera (com folga lateral para não "pipocar" ao girar)
+      if (dx * camFwd.x + dz * camFwd.z < -0.35 * Math.sqrt(d2)) continue;
+
       const wave = fsin(t * 1.1 - p.x * 0.06) > 0.86 ? 0.5 : 0;
       const jump = pulse > 0 ? Math.abs(fsin(t * 9 + i)) * 0.75 * pulse : 0;
       // sentado: mais baixo e encolhido; levanta na ola e na comemoração
