@@ -15,6 +15,7 @@ import {
   toneFor,
 } from "@/components/ui/hud";
 import { CLUBS } from "@/game/data/leagues";
+import { FORMATIONS, MENTALITIES, PRESSING, TEMPOS, WIDTHS } from "@/game/formations";
 import { formatMoney, wageBill } from "@/game/economy";
 import { formOf } from "@/game/events";
 import { computeTable, nextFixture } from "@/game/season";
