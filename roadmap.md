@@ -187,5 +187,5 @@
 - [x] Exibir história e títulos reais nos painéis de clube/manager, separados das conquistas da carreira
 - [x] Aplicar novo ciclo de materiais PBR, grama adaptativa, culling e sombras escaláveis preservando o modo Fluidez
 - [x] Validar tipos, 11 testes (incluindo 200 partidas), diferenças de código e compilação de produção
-- [ ] Corrigir e validar no navegador o estado vazio observado nas rotas de carreira sem save carregado
+- [x] Validar no navegador o estado vazio das rotas de carreira: mensagem clara e botão “Começar carreira”, sem erros de rede ou console
 - [ ] Validar FPS em aparelho com GPU física; o navegador automatizado usa renderização por software
