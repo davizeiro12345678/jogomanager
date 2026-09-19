@@ -897,14 +897,21 @@ export class MatchSim {
       return true;
     }
 
-    if (s.outcome === "goal" && Math.abs(this.ball.z) < GOAL_Z && this.ball.height < 2.44) {
+    if (s.outcome === "goal") {
+      if (Math.abs(this.ball.z) < GOAL_Z && this.ball.height < 2.44) {
+        this.pendingShot = null;
+        this.scoreGoal(s.side, shooter, s.fromX, s.fromZ);
+        return true;
+      }
+      // A curva/altura física pode levar uma finalização nominalmente certeira
+      // para fora ou na trave. Libera a bola para a reposição em vez de manter
+      // pendingShot ativo e bloquear para sempre o restante da jogada.
       this.pendingShot = null;
-      this.scoreGoal(s.side, shooter, s.fromX, s.fromZ);
-      return true;
+      return false;
     }
 
     // fora: a bola segue viva e o lance termina pela linha de fundo/lateral
-    if (s.outcome !== "goal") this.pendingShot = null;
+    this.pendingShot = null;
     return false;
   }
 
