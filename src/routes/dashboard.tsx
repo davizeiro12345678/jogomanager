@@ -322,6 +322,92 @@ function Dashboard() {
           </p>
         </HudCard>
 
+        {/* Tática atual */}
+        <HudCard
+          title="Tática atual"
+          tone="neutral"
+          badge={<HudChip>{career.tactics.formation}</HudChip>}
+          action={
+            <Link to="/tactics" className="text-[10px] font-bold uppercase text-tone">
+              Editar
+            </Link>
+          }
+        >
+          <div className="relative aspect-[5/3] w-full overflow-hidden rounded-lg border border-border/60 bg-[color-mix(in_oklab,var(--primary)_14%,transparent)]">
+            <span className="absolute inset-y-2 left-1/2 w-px bg-foreground/15" aria-hidden />
+            <span className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-foreground/15" aria-hidden />
+            {FORMATIONS[career.tactics.formation].map((slot, i) => (
+              <span
+                key={`${slot.label}-${i}`}
+                className="hud-num absolute grid h-6 w-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground"
+                style={{ left: `${((slot.x + 1) / 2) * 90 + 5}%`, top: `${((slot.z + 1) / 2) * 80 + 10}%` }}
+              >
+                {slot.label}
+              </span>
+            ))}
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+            <p>Mentalidade: {MENTALITIES[career.tactics.mentality]}</p>
+            <p>Marcação: {PRESSING[career.tactics.pressing]}</p>
+            <p>Largura: {WIDTHS[career.tactics.width]}</p>
+            <p>Ritmo: {TEMPOS[career.tactics.tempo]}</p>
+          </div>
+        </HudCard>
+
+        {/* Histórico de jogos */}
+        <HudCard
+          title="Últimos jogos"
+          tone="neutral"
+          action={
+            <Link to="/history" className="text-[10px] font-bold uppercase text-tone">
+              Histórico
+            </Link>
+          }
+        >
+          <ul className="space-y-2">
+            {mine
+              .slice(-6)
+              .reverse()
+              .map((r, i) => {
+                const home = r.home === career.clubId;
+                const gf = home ? r.hg : r.ag;
+                const ga = home ? r.ag : r.hg;
+                const rivalId = home ? r.away : r.home;
+                const rival = CLUBS[rivalId];
+                const res = gf > ga ? "V" : gf === ga ? "E" : "D";
+                return (
+                  <li
+                    key={`${r.round}-${rivalId}-${i}`}
+                    className="flex items-center gap-2 rounded-lg border border-border/60 bg-foreground/[0.03] px-2 py-1.5"
+                  >
+                    <span
+                      className={`hud-num grid h-6 w-6 place-items-center rounded-md text-[10px] font-bold ${
+                        res === "V"
+                          ? "bg-emerald-500/20 text-emerald-300"
+                          : res === "E"
+                            ? "bg-amber-500/20 text-amber-300"
+                            : "bg-rose-500/20 text-rose-300"
+                      }`}
+                    >
+                      {res}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-xs">
+                      {home ? "vs" : "@"} {rival?.name ?? rivalId}
+                    </span>
+                    <span className="hud-num text-xs font-bold">
+                      {gf}–{ga}
+                    </span>
+                  </li>
+                );
+              })}
+            {mine.length === 0 && (
+              <li className="text-sm text-muted-foreground">Nenhuma partida disputada ainda.</li>
+            )}
+          </ul>
+        </HudCard>
+
+
+
         {/* Notícias */}
         <HudCard
           title="Notícias"
