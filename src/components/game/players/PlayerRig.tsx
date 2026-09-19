@@ -37,7 +37,6 @@ import {
   proportionsFor,
   segmentsFor,
   shade,
-  skinShadow,
   type LodLevel,
 } from "@/game/player-model";
 import { type SimView, type SimPlayer } from "@/game/sim";
