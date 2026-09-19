@@ -15,7 +15,7 @@
 import { useFrame } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import type React from "react";
-import { memo, Suspense, useMemo, useRef } from "react";
+import { createElement, memo, Suspense, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import { DISPLAY_FONT } from "@/components/game/fonts";
@@ -442,17 +442,21 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     [look, kit, tex, quality],
   );
 
-  const skinMat = <primitive object={mats.skin} attach="material" />;
-  const skinDark = <primitive object={mats.skinDark} attach="material" />;
-  const jerseyMat = <primitive object={mats.jersey} attach="material" />;
-  const shortsMat = <primitive object={mats.shorts} attach="material" />;
-  const socksMat = <primitive object={mats.socks} attach="material" />;
-  const trimMat = <primitive object={mats.trim} attach="material" />;
-  const hairMat = <primitive object={mats.hair} attach="material" />;
-  const bootMat = <primitive object={mats.boot} attach="material" />;
-  const bootAccentMat = <primitive object={mats.bootAccent} attach="material" />;
-  const soleMat = <primitive object={mats.sole} attach="material" />;
-  const gloveMat = <primitive object={mats.glove} attach="material" />;
+  // createElement (e não JSX) de propósito: o plugin de desenvolvimento injeta
+  // atributos de origem no JSX e o R3F não aceita isso num <primitive>.
+  const matEl = (m: THREE.Material) =>
+    createElement("primitive", { object: m, attach: "material" });
+  const skinMat = matEl(mats.skin);
+  const skinDark = matEl(mats.skinDark);
+  const jerseyMat = matEl(mats.jersey);
+  const shortsMat = matEl(mats.shorts);
+  const socksMat = matEl(mats.socks);
+  const trimMat = matEl(mats.trim);
+  const hairMat = matEl(mats.hair);
+  const bootMat = matEl(mats.boot);
+  const bootAccentMat = matEl(mats.bootAccent);
+  const soleMat = matEl(mats.sole);
+  const gloveMat = matEl(mats.glove);
 
   const handMat = look.gloves ? gloveMat : skinMat;
   const handR = look.gloves ? P.handR * 1.25 : P.handR;
