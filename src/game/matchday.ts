@@ -35,7 +35,7 @@ function hash(s: string) {
   return Math.abs(h);
 }
 
-const MOWS: MowPattern[] = ["stripes", "checker", "rings", "diagonal", "wide"];
+const MOWS: MowPattern[] = ["stripes", "checker", "rings", "diagonal", "wide", "diamond", "fine", "spiral", "bands"];
 const TIMES: TimeOfDay[] = ["dia", "entardecer", "noite"];
 
 export function matchLook(homeId: string, awayId: string): MatchLook {
