@@ -198,34 +198,23 @@ export const narrateScene = createServerFn({ method: "POST" })
     const nextText = scene.lines[data.line + 1]?.text;
     const emphatic = current.who === "fan" || current.who === "narrator";
 
-    try {
-      const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
-        {
-          method: "POST",
-          headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text,
-            model_id: "eleven_multilingual_v2",
-            ...(previousText ? { previous_text: previousText } : {}),
-            ...(nextText ? { next_text: nextText } : {}),
-            voice_settings: {
-              stability: scene.mood === "bad" ? 0.58 : emphatic ? 0.34 : 0.46,
-              similarity_boost: 0.85,
-              style: scene.mood === "good" ? (emphatic ? 0.8 : 0.62) : 0.5,
-              use_speaker_boost: true,
-              speed: scene.mood === "bad" ? 0.94 : 0.99,
-            },
-          }),
-        },
-      );
-      if (!res.ok) {
-        console.error(`ElevenLabs cutscene TTS falhou [${res.status}]: ${await res.text()}`);
-        return { ok: false, reason: "error" };
-      }
-      return { ok: true, audio: Buffer.from(await res.arrayBuffer()).toString("base64") };
-    } catch (error) {
-      console.error("ElevenLabs cutscene TTS erro de rede", error);
-      return { ok: false, reason: "error" };
-    }
+    const audio = await synthesize({
+      apiKey,
+      voiceId,
+      text,
+      format: "mp3_44100_128",
+      models: [SCENE_MODEL, FALLBACK_MODEL],
+      extra: {
+        ...(previousText ? { previous_text: previousText } : {}),
+        ...(nextText ? { next_text: nextText } : {}),
+      },
+      voiceSettings: {
+        stability: scene.mood === "bad" ? 0.58 : emphatic ? 0.34 : 0.46,
+        similarity_boost: 0.85,
+        style: scene.mood === "good" ? (emphatic ? 0.8 : 0.62) : 0.5,
+        use_speaker_boost: true,
+        speed: scene.mood === "bad" ? 0.94 : 0.99,
+      },
+    });
+    return audio ? { ok: true, audio } : { ok: false, reason: "error" };
   });
