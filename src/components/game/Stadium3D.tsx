@@ -268,15 +268,15 @@ function Pitch({
         <meshPhysicalMaterial
           {...(tex ? { map: tex, color: tint } : { color: "#1d7a45" })}
           {...(wearRough ? { roughnessMap: wearRough } : rough ? { roughnessMap: rough } : {})}
-          {...(norm ? { normalMap: norm, normalScale: new THREE.Vector2(0.7, 0.7) } : {})}
-          roughness={0.74}
+          {...(norm ? { normalMap: norm, normalScale: new THREE.Vector2(1.05, 1.05) } : {})}
+          roughness={0.8 - wet * 0.2}
           metalness={0.0}
-          clearcoat={quality === "alta" ? 0.32 + wet * 0.4 : quality === "media" ? 0.14 : 0}
-          clearcoatRoughness={0.62 - wet * 0.3}
-          sheen={quality === "alta" ? 0.34 + wet * 0.3 : 0}
+          clearcoat={quality === "alta" ? 0.12 + wet * 0.62 : quality === "media" ? wet * 0.3 : 0}
+          clearcoatRoughness={0.72 - wet * 0.48}
+          sheen={quality === "alta" ? 0.24 + wet * 0.42 : 0}
           sheenRoughness={0.75}
           sheenColor="#5fae7c"
-          envMapIntensity={0.45 + wet * 0.4}
+          envMapIntensity={0.5 + wet * 0.7}
         />
       </mesh>
       {/* desgaste, lama e terra exposta por cima do gramado */}
@@ -2195,7 +2195,7 @@ function Scene({
     [sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash],
   );
 
-  const sun = time === "dia" ? 1.9 : time === "entardecer" ? 1.5 : 1.2;
+  const sun = time === "dia" ? 2.25 : time === "entardecer" ? 1.85 : 1.35;
   const sunColor = time === "entardecer" ? "#ffc79a" : time === "dia" ? "#fff6e0" : "#bcd8ff";
 
   return (
@@ -2237,9 +2237,9 @@ function Scene({
         />
       </Environment>
 
-      <ambientLight intensity={0.32} />
+      <ambientLight intensity={time === "dia" ? 0.22 : 0.16} />
       <hemisphereLight
-        intensity={time === "dia" ? 0.5 : 0.32}
+        intensity={time === "dia" ? 0.44 : 0.3}
         groundColor="#0d2a18"
         color={time === "entardecer" ? "#ffd8ba" : "#cfe4ff"}
       />
@@ -2248,16 +2248,29 @@ function Scene({
         intensity={sun}
         color={sunColor}
         castShadow={shadows}
-        shadow-mapSize={quality === "alta" ? [2048, 2048] : [1024, 1024]}
-        shadow-bias={-0.0004}
-        shadow-normalBias={quality === "alta" ? 0.035 : 0.055}
-        shadow-radius={quality === "alta" ? 2.5 : 1}
-        shadow-camera-left={-90}
-        shadow-camera-right={90}
-        shadow-camera-top={70}
-        shadow-camera-bottom={-70}
+        shadow-mapSize={quality === "alta" ? [4096, 4096] : [2048, 2048]}
+        shadow-bias={-0.00018}
+        shadow-normalBias={quality === "alta" ? 0.018 : 0.035}
+        shadow-radius={quality === "alta" ? 1.8 : 1}
+        shadow-camera-near={10}
+        shadow-camera-far={180}
+        shadow-camera-left={-58}
+        shadow-camera-right={58}
+        shadow-camera-top={42}
+        shadow-camera-bottom={-42}
       />
-      <directionalLight position={[-60, 60, -40]} intensity={0.6} color="#bcd8ff" />
+      <directionalLight
+        position={[-55, 48, -35]}
+        intensity={time === "noite" ? 0.9 : 0.48}
+        color="#bcd8ff"
+      />
+      {quality === "alta" ? (
+        <directionalLight
+          position={[0, 18, -55]}
+          intensity={time === "entardecer" ? 0.72 : 0.38}
+          color={time === "entardecer" ? "#ff9b62" : "#91c9ff"}
+        />
+      ) : null}
 
       <SkyDome time={time} />
       <Pitch quality={quality} sim={sim} wet={look.wet} mow={look.mow} />

@@ -170,6 +170,9 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
   const acc = useRef(0);
   // tempo acumulado abaixo do limiar de caminhada, para decidir clipes de parada
   const idleFor = useRef(0);
+  const previousVx = useRef(player.vx);
+  const previousVz = useRef(player.vz);
+  const accelerationLean = useRef(0);
   const seed = look.seed % 97;
 
   useFrame((state, rawDt) => {
@@ -229,7 +232,17 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     // usa velocidade angular (rad/s), não o passo do quadro: assim a inclinação
     // é a mesma a 30, 60 ou 120 quadros por segundo (antes variava e tremia)
     const yawRate = dt > 0 ? turnRate / dt : 0;
-    const leanF = Math.min(0.26, dirLen * 0.032);
+    const forwardX = Math.sin(g.rotation.y);
+    const forwardZ = Math.cos(g.rotation.y);
+    const accelerationX = (player.vx - previousVx.current) / Math.max(dt, 1 / 120);
+    const accelerationZ = (player.vz - previousVz.current) / Math.max(dt, 1 / 120);
+    previousVx.current = player.vx;
+    previousVz.current = player.vz;
+    const forwardAcceleration = accelerationX * forwardX + accelerationZ * forwardZ;
+    const accelerationTarget = Math.max(-0.09, Math.min(0.12, forwardAcceleration * 0.012));
+    accelerationLean.current +=
+      (accelerationTarget - accelerationLean.current) * (1 - Math.exp(-9 * dt));
+    const leanF = Math.min(0.22, dirLen * 0.026) + accelerationLean.current;
     const leanS = Math.max(-0.3, Math.min(0.3, -yawRate * 0.09 * Math.min(1, dirLen / 5)));
     const leanBlend = 1 - Math.exp(-7 * dt);
     g.rotation.x += (leanF - g.rotation.x) * leanBlend;
@@ -327,6 +340,11 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     p.headYaw += gaze * 0.75;
     p.chest += Math.min(0.12, gaze * gaze * 0.1);
     p.headPitch += ballH < 6 ? 0.12 : -0.03;
+
+    // Arranque e frenagem deslocam a massa do tronco sem mover os pés do chão.
+    // A raiz fica mais estável e a mudança de ritmo deixa de parecer deslizamento.
+    p.spine += accelerationLean.current * 0.85;
+    p.chest -= accelerationLean.current * 0.32;
 
     // ---- cansaço: respiração pesada, ombros caídos, tronco mais curvado
     const tired = 1 - Math.min(1, Math.max(0, player.stamina) / 100);
