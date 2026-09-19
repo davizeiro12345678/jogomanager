@@ -493,6 +493,33 @@ export class MatchSim {
     const bx = this.ball.x;
     const bz = this.ball.z;
     const chase = this.chasers();
+
+    // Urgência pelo placar e pelo relógio: quem está perdendo no fim empurra a
+    // equipe para a frente; quem está ganhando recua e segura o resultado.
+    const remaining = Math.max(0, 90 - this.time / 60);
+    const lateGame = remaining < 15;
+    const goalDiff = this.score.home - this.score.away;
+    const urgency = (side: Side) => {
+      if (!lateGame) return 0;
+      const diff = side === "home" ? goalDiff : -goalDiff;
+      if (diff < 0) return Math.min(1, (15 - remaining) / 15) * (diff <= -2 ? 1 : 0.8);
+      if (diff > 0) return -Math.min(1, (15 - remaining) / 15) * 0.6;
+      return 0;
+    };
+
+    // Linha defensiva conjunta: a referência é o zagueiro mais recuado do lado
+    // sem a bola, o que permite subir junto e armar impedimento.
+    const lineX: Record<Side, number> = { home: 0, away: 0 };
+    for (const side of ["home", "away"] as Side[]) {
+      const dir = this.attackDir(side);
+      let deepest = dir * -FIELD_X;
+      for (const q of this.players) {
+        if (q.side !== side || q.pos === "GK") continue;
+        if (dir > 0 ? q.x < deepest || deepest === dir * -FIELD_X : q.x > deepest) deepest = q.x;
+      }
+      lineX[side] = deepest;
+    }
+
     for (const p of this.players) {
       if (p.id === this.ball.holder) continue;
       const setup = this.setup(p.side);
