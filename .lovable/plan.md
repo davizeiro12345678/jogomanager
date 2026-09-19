@@ -25,7 +25,9 @@ Entregar uma atualização única e coerente, preservando a identidade **Gramado
 - Melhorar marcação individual e por zona, coberturas, linha defensiva, impedimento, movimentação sem bola, sobreposição, ocupação de espaços, pressão coordenada e decisões conforme placar e tempo.
 - Refinar goleiros: posicionamento pelo ângulo, tempo de saída, escolha entre encaixe/espalmada, rebote seguro e reposição contextual.
 - Manter limites rígidos para laços, eventos, filas e coleções; ampliar testes por semente, partidas longas e invariantes contra bola travada, jogadores inválidos e resultados impossíveis.
+- Corrigir a detecção contínua de cruzamento da linha do gol para impedir que a bola atravesse a zona de resolução em passos grandes durante avanço rápido ou simulação instantânea.
 - Reduzir o tráfego entre Worker e tela com snapshots compactos/diferenciais, buffers reutilizáveis e interpolação visual independente da frequência da simulação.
+- Unificar o relógio do Worker e do modo compatível, pausar corretamente em aba oculta e impedir que o fallback de “pular partida” bloqueie a interface.
 
 ## 4. Gráficos 3D e pós-processamento escalável
 
@@ -34,6 +36,7 @@ Entregar uma atualização única e coerente, preservando a identidade **Gramado
 - Refinar `PlayerRig`: hierarquia corporal completa, proporções e articulações mais naturais, transferência de peso, apoio dos pés, mudança de direção, condução, passe, chute, cabeceio, queda, recuperação e comemoração com transições contínuas.
 - Otimizar torcida, árbitros, bandeirinhas e jogadores com instancing, LOD, atualização reduzida fora da câmera, descarte de objetos invisíveis e ausência de alocações por quadro.
 - Reequilibrar o pós-processamento: eliminar passagens imperceptíveis durante jogo normal; reservar profundidade de campo, aberração e efeitos dramáticos para replay/cutscene; adaptar resolução, AO, bloom e sombras pela qualidade medida.
+- Ligar de fato o controle existente de intensidade dos efeitos e substituir os dois ajustes automáticos concorrentes por um único controlador com histerese, evitando oscilações de qualidade.
 - Manter WebGL2 como caminho estável e WebGPU apenas opcional com fallback automático.
 
 ## 5. Narração dinâmica, voz, cache e buffer
