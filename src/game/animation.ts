@@ -40,7 +40,12 @@ function gait(
 ): Pose {
   const t = c.t * opts.rate + c.seed;
   const s = sin(t);
-  const s2 = sin(t + Math.PI);
+  const s2 = -s;
+  // A perna em balanço dobra cedo para o pé limpar o gramado; perto do apoio,
+  // o joelho estende e o tornozelo compensa. Isso elimina a passada rígida e
+  // reduz a impressão de patinação sem exigir IK caro em cada quadro.
+  const liftL = clamp01(-s * 1.35);
+  const liftR = clamp01(-s2 * 1.35);
   return pose({
     hipY: Math.abs(sin(t * 2)) * opts.bob,
     hipPitch: opts.lean,
@@ -51,10 +56,10 @@ function gait(
     headPitch: -opts.lean * 0.7,
     legLPitch: s * opts.amp,
     legRPitch: s2 * opts.amp,
-    kneeL: -clamp01(-s + 0.35) * opts.knee,
-    kneeR: -clamp01(-s2 + 0.35) * opts.knee,
-    ankleL: s * 0.25,
-    ankleR: s2 * 0.25,
+    kneeL: -liftL * opts.knee,
+    kneeR: -liftR * opts.knee,
+    ankleL: s * 0.18 + liftL * 0.24,
+    ankleR: s2 * 0.18 + liftR * 0.24,
     armLPitch: s2 * opts.armAmp,
     armRPitch: s * opts.armAmp,
     elbowL: -0.5 - Math.abs(s2) * 0.5,

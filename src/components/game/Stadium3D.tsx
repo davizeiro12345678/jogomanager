@@ -13,6 +13,7 @@ import { memo, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { PlayerRig } from "@/components/game/players/PlayerRig";
+import { LowPlayers } from "@/components/game/players/LowPlayers";
 import { PostFX } from "@/components/game/post/PostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
 import { DISPLAY_FONT, configureText3D } from "@/components/game/fonts";
@@ -1398,7 +1399,7 @@ function Stands({
   // atualiza a torcida em taxa reduzida fora da qualidade alta: o movimento
   // continua contínuo aos olhos, mas o custo por quadro cai bastante
   const tick = useRef(0);
-  const everyN = quality === "alta" ? 1 : quality === "media" ? 2 : 4;
+  const everyN = quality === "alta" ? 1 : quality === "media" ? 2 : 12;
 
   // constantes por torcedor: tira módulo e trigonometria de índice do laço quente
   const seat = useMemo(() => {
@@ -2551,7 +2552,7 @@ function Scene({
       <AdaptiveEvents />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
-      <Environment resolution={quality === "alta" ? 512 : quality === "media" ? 256 : 128} frames={1}>
+      {quality !== "baixa" ? <Environment resolution={quality === "alta" ? 512 : 256} frames={1}>
         <color attach="background" args={[SKY[time]]} />
         <Lightformer
           intensity={time === "dia" ? 3 : 1.6}
@@ -2580,7 +2581,7 @@ function Scene({
           position={[0, 6, -40]}
           scale={[60, 8, 1]}
         />
-      </Environment>
+      </Environment> : null}
 
       <ambientLight intensity={time === "dia" ? 0.22 : 0.16} />
       <hemisphereLight
@@ -2642,7 +2643,15 @@ function Scene({
       />
       <Scoreboard sim={sim} replay={replay} />
       <Ball sim={sim} quality={quality} hiVis={look.hiVisBall} wet={look.wet} />
-      {sim.players.map((p) => (
+      {quality === "baixa" ? (
+        <LowPlayers
+          sim={sim}
+          homeKit={homeKit}
+          awayKit={awayKit}
+          homeGkKit={gkKitFor(sim.home.clubId)}
+          awayGkKit={gkKitFor(sim.away.clubId)}
+        />
+      ) : sim.players.map((p) => (
         <PlayerRig
           key={p.id}
           player={p}
