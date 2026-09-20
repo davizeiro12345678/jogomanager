@@ -1,0 +1,1 @@
+REVOKE SELECT ON public.activity_rankings FROM anon, authenticated;
