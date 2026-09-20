@@ -44,13 +44,18 @@ export function NativeSponsoredCard({
   const ad = useAd(context, placement);
   if (!ad) return null;
   return (
-    <article className={cn("ad-native border border-primary/25 bg-primary/[0.055] p-4", className)} aria-label={ad.label}>
+    <article
+      className={cn("ad-native border border-primary/25 bg-primary/[0.055] p-4", className)}
+      aria-label={ad.label}
+    >
       <div className="flex items-start gap-3">
         <div className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-md bg-primary/12 text-primary">
           <Megaphone size={16} aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-primary/80">{ad.label} · {ad.brand}</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-primary/80">
+            {ad.label} · {ad.brand}
+          </p>
           <h3 className="mt-1 font-display text-sm uppercase">{ad.title}</h3>
           {!compact ? <p className="mt-1 text-xs text-muted-foreground">{ad.body}</p> : null}
         </div>
@@ -65,11 +70,15 @@ export function SidebarAd({ context }: { context: AdContext }) {
   if (!ad) return null;
   return (
     <aside className="ad-native border border-border/70 bg-card p-4" aria-label={ad.label}>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{ad.label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+        {ad.label}
+      </p>
       <Sparkles className="mt-4 text-primary" size={20} aria-hidden />
       <h2 className="mt-2 font-display text-base uppercase">{ad.title}</h2>
       <p className="mt-2 text-xs text-muted-foreground">{ad.body}</p>
-      <div className="mt-4"><AdAction ad={ad} placement="sidebar" /></div>
+      <div className="mt-4">
+        <AdAction ad={ad} placement="sidebar" />
+      </div>
     </aside>
   );
 }
@@ -89,7 +98,10 @@ export function CornerAd({ context, delayMs = 1200 }: { context: AdContext; dela
   }, [visible]);
   if (!ad || !visible) return null;
   return (
-    <aside className="ad-corner fixed bottom-20 right-3 z-40 w-[min(22rem,calc(100vw-1.5rem))] border border-primary/30 bg-card p-4 shadow-xl md:bottom-5" aria-label={ad.label}>
+    <aside
+      className="ad-corner fixed bottom-20 right-3 z-40 w-[min(22rem,calc(100vw-1.5rem))] border border-primary/30 bg-card p-4 shadow-xl md:bottom-5"
+      aria-label={ad.label}
+    >
       <Button
         type="button"
         variant="ghost"
@@ -103,17 +115,27 @@ export function CornerAd({ context, delayMs = 1200 }: { context: AdContext; dela
       >
         <X size={16} aria-hidden />
       </Button>
-      <p className="pr-9 text-[10px] font-bold uppercase tracking-widest text-primary/80">{ad.label}</p>
+      <p className="pr-9 text-[10px] font-bold uppercase tracking-widest text-primary/80">
+        {ad.label}
+      </p>
       <h2 className="mt-1 pr-8 font-display text-base uppercase">{ad.title}</h2>
       <p className="mt-2 text-xs text-muted-foreground">{ad.body}</p>
-      <div className="mt-3"><AdAction ad={ad} placement="corner" /></div>
+      <div className="mt-3">
+        <AdAction ad={ad} placement="corner" />
+      </div>
     </aside>
   );
 }
 
 export function SponsoredFeed({ context, itemCount }: { context: AdContext; itemCount: number }) {
   const interval = 3 + (itemCount % 3);
-  return { interval, render: (index: number) => (index > 0 && index % interval === 0 ? <NativeSponsoredCard key={`ad-${index}`} context={context} placement="feed" /> : null) };
+  return {
+    interval,
+    render: (index: number) =>
+      index > 0 && index % interval === 0 ? (
+        <NativeSponsoredCard key={`ad-${index}`} context={context} placement="feed" />
+      ) : null,
+  };
 }
 
 export function AdBetweenPosts({
