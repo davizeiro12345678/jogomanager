@@ -212,3 +212,9 @@
 - [x] Corrigir HUD móvel, cabeçalho e painel de salvamento conforme a referência
 - [x] Criar métricas de tempo ativo e ranking público opcional com privacidade
 - [ ] Validar engine, tipos, build, navegador desktop/celular e registrar limite de GPU física
+
+## Ciclo de articulação e FPS baixo (2026-09-20)
+- [x] Substituir centenas de peças individuais por corpo articulado instanciado no modo baixo
+- [x] Preservar quadril, ombros, joelhos, tornozelos, inclinação, passada e chute no corpo leve
+- [x] Reduzir atualização da torcida e remover iluminação de ambiente pré-calculada no modo baixo
+- [ ] Medir FPS em GPU física após publicação
