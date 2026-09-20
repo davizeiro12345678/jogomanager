@@ -767,6 +767,42 @@ function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: stri
  * legíveis de qualquer distância e custam quase nada para atualizar.
  */
 function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
+  const board = useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 320;
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    return { canvas, texture, last: "" };
+  }, []);
+  const tick = useRef(0);
+  useFrame(() => {
+    if (!board || ++tick.current % 12 !== 0) return;
+    const key = `${sim.home.short}|${sim.stats.home.goals}|${sim.stats.away.goals}|${sim.away.short}|${sim.minute()}|${replay}`;
+    if (board.last === key) return;
+    board.last = key;
+    const ctx = board.canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, board.canvas.width, board.canvas.height);
+    ctx.fillStyle = replay ? "#5f151b" : "#07140d";
+    ctx.fillRect(0, 0, board.canvas.width, board.canvas.height);
+    ctx.fillStyle = "#25e77f";
+    ctx.fillRect(0, 0, board.canvas.width, 12);
+    ctx.fillRect(0, board.canvas.height - 12, board.canvas.width, 12);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "700 92px sans-serif";
+    ctx.fillStyle = "#eafff2";
+    ctx.fillText(`${sim.home.short}  ${sim.stats.home.goals} — ${sim.stats.away.goals}  ${sim.away.short}`, 512, 132);
+    ctx.font = "700 52px sans-serif";
+    ctx.fillStyle = replay ? "#ffd2d5" : "#ffd76a";
+    ctx.fillText(replay ? `REPLAY  •  ${sim.minute()}'` : `${sim.minute()}'`, 512, 240);
+    board.texture.needsUpdate = true;
+  });
+  useEffect(() => () => board?.texture.dispose(), [board]);
   return (
     <group position={[0, 22, -(FIELD_Z + 26)]}>
       <mesh>
@@ -788,10 +824,12 @@ function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
       </mesh>
       {/* O placar DOM concentra os dados. O painel físico continua emissivo,
           sem gerar atlas de fonte/worker dentro do caminho crítico da partida. */}
-      <mesh position={[0, 0, 0.62]}>
-        <planeGeometry args={[22, 3.2]} />
-        <meshBasicMaterial color={replay ? "#5f151b" : "#123322"} toneMapped={false} />
-      </mesh>
+      {board ? (
+        <mesh position={[0, 0, 0.62]}>
+          <planeGeometry args={[28.2, 8.9]} />
+          <meshBasicMaterial map={board.texture} toneMapped={false} />
+        </mesh>
+      ) : null}
     </group>
   );
 }
@@ -869,7 +907,7 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
                     blending={THREE.AdditiveBlending}
                   />
                 </sprite>
-                {quality !== "baixa" && (
+                {quality === "alta" && (
                   <pointLight
                     position={[0, 28, 0]}
                     intensity={1400}
@@ -2499,10 +2537,10 @@ function Scene({
       <AdaptiveEvents />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
-      {quality === "alta" ? <Environment resolution={384} frames={1}>
+      {quality !== "baixa" ? <Environment resolution={quality === "alta" ? 384 : 128} frames={1}>
         <color attach="background" args={[SKY[time]]} />
         <Lightformer
-          intensity={time === "dia" ? 3 : 1.6}
+          intensity={time === "dia" ? (quality === "alta" ? 3 : 2.1) : 1.6}
           color={sunColor}
           position={[0, 24, 0]}
           rotation={[Math.PI / 2, 0, 0]}

@@ -33,6 +33,8 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
   const thighsRef = useRef<THREE.InstancedMesh>(null);
   const shinsRef = useRef<THREE.InstancedMesh>(null);
   const bootsRef = useRef<THREE.InstancedMesh>(null);
+  const neckRef = useRef<THREE.InstancedMesh>(null);
+  const shadowRef = useRef<THREE.InstancedMesh>(null);
 
   const phase = useRef(new Float32Array(BODY_PARTS));
   const yaw = useRef(new Float32Array(BODY_PARTS));
@@ -68,6 +70,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
       torsoRef.current?.setColorAt(index, new THREE.Color(kit.base));
       hipsRef.current?.setColorAt(index, new THREE.Color(kit.shorts));
       headRef.current?.setColorAt(index, new THREE.Color(look.skin));
+      neckRef.current?.setColorAt(index, new THREE.Color(look.skin));
       hairRef.current?.setColorAt(index, new THREE.Color(look.hairColor));
       bootsRef.current?.setColorAt(index * 2, new THREE.Color(look.bootColor));
       bootsRef.current?.setColorAt(index * 2 + 1, new THREE.Color(look.bootColor));
@@ -78,7 +81,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
         shinsRef.current?.setColorAt(limbIndex, new THREE.Color(kit.socks));
       }
     });
-    for (const mesh of [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, thighsRef.current, shinsRef.current, bootsRef.current]) {
+    for (const mesh of [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, thighsRef.current, shinsRef.current, bootsRef.current, neckRef.current, shadowRef.current]) {
       if (mesh?.instanceColor) mesh.instanceColor.needsUpdate = true;
       if (mesh) mesh.frustumCulled = false;
     }
@@ -86,7 +89,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
 
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.05);
-    const meshes = [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, thighsRef.current, shinsRef.current, bootsRef.current];
+    const meshes = [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, thighsRef.current, shinsRef.current, bootsRef.current, neckRef.current, shadowRef.current];
     if (meshes.some((mesh) => !mesh)) return;
 
     const { root, joint, part, translate, rotate, scale, thighEnd, shinEnd, position, quaternion, euler, unit } = tmp;
@@ -153,6 +156,13 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
       setPart(torsoRef.current as THREE.InstancedMesh, index, root, 0, hipY + p.spineLen + p.chestLen * 0.48, 0, lean * 0.35, -turnLean * 0.35, p.chestW * 4.9, p.chestLen * 2.1, p.chestD * 4.5);
       setPart(headRef.current as THREE.InstancedMesh, index, root, 0, hipY + p.spineLen + p.chestLen + p.neckLen + p.headR * 1.8, 0, -lean * 0.35, 0, p.headR * 2, p.headR * 2.25, p.headR * 2.05);
       setPart(hairRef.current as THREE.InstancedMesh, index, root, 0, hipY + p.spineLen + p.chestLen + p.neckLen + p.headR * 2.25, -p.headR * 0.03, -lean * 0.35, 0, p.headR * 2.04, p.headR * 0.72, p.headR * 2.08);
+      setPart(neckRef.current as THREE.InstancedMesh, index, root, 0, hipY + p.spineLen + p.chestLen + p.neckLen * 0.5, 0, -lean * 0.2, 0, p.neckR * 2, p.neckLen, p.neckR * 2);
+
+      position.set(player.x, 0.014, player.z);
+      quaternion.setFromEuler(euler.set(-Math.PI / 2, 0, -(yaw.current[index] ?? 0)));
+      scale.set(0.38 + gait * 0.08, 0.68 + gait * 0.12, 1);
+      part.compose(position, quaternion, scale);
+      (shadowRef.current as THREE.InstancedMesh).setMatrixAt(index, part);
 
       for (const side of [-1, 1] as const) {
         const limbIndex = index * 2 + (side === -1 ? 0 : 1);
@@ -180,10 +190,15 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
       <instancedMesh ref={hipsRef} args={[undefined, undefined, BODY_PARTS]}>{material}<sphereGeometry args={[0.5, 7, 5]} /></instancedMesh>
       <instancedMesh ref={headRef} args={[undefined, undefined, BODY_PARTS]}>{material}<sphereGeometry args={[0.5, 8, 6]} /></instancedMesh>
       <instancedMesh ref={hairRef} args={[undefined, undefined, BODY_PARTS]}>{material}<sphereGeometry args={[0.5, 7, 4, 0, Math.PI * 2, 0, Math.PI * 0.62]} /></instancedMesh>
+      <instancedMesh ref={neckRef} args={[undefined, undefined, BODY_PARTS]}>{material}<cylinderGeometry args={[0.5, 0.5, 1, 6]} /></instancedMesh>
       <instancedMesh ref={armsRef} args={[undefined, undefined, LIMB_PARTS]}>{material}<cylinderGeometry args={[0.5, 0.42, 1, 6]} /></instancedMesh>
       <instancedMesh ref={thighsRef} args={[undefined, undefined, LIMB_PARTS]}>{material}<cylinderGeometry args={[0.5, 0.42, 1, 6]} /></instancedMesh>
       <instancedMesh ref={shinsRef} args={[undefined, undefined, LIMB_PARTS]}>{material}<cylinderGeometry args={[0.44, 0.34, 1, 6]} /></instancedMesh>
       <instancedMesh ref={bootsRef} args={[undefined, undefined, LIMB_PARTS]}>{material}<boxGeometry args={[1, 1, 1]} /></instancedMesh>
+      <instancedMesh ref={shadowRef} args={[undefined, undefined, BODY_PARTS]} frustumCulled={false} renderOrder={1}>
+        <circleGeometry args={[1, 14]} />
+        <meshBasicMaterial color="#050806" transparent opacity={0.28} depthWrite={false} />
+      </instancedMesh>
     </group>
   );
 }
