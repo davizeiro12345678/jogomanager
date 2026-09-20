@@ -2682,7 +2682,9 @@ function Stadium3DImpl({
 }) {
   const vis = useResolvedVisual(sim.home.clubId);
   // Escolha do jogador em /visual manda; "auto" segue a detecção do aparelho.
-  const quality: Quality = vis.quality === "auto" ? deviceQuality : vis.quality;
+  // Cinema usa a geometria alta e amplia seletivamente resolução/efeitos sem
+  // duplicar toda a árvore 3D nem quebrar configurações antigas.
+  const quality: Quality = vis.quality === "auto" ? deviceQuality : vis.quality === "cinema" ? "alta" : vis.quality;
   const look = useMemo(
     () => matchLook(sim.home.clubId, sim.away.clubId),
     [sim.home.clubId, sim.away.clubId],
@@ -2712,7 +2714,7 @@ function Stadium3DImpl({
   // Escala de resolução escolhida em /visual, aplicada sobre o limite do aparelho.
   const dpr = useMemo(() => {
     const base = dprFor(eff);
-    const s = vis.resolutionScale;
+    const s = vis.resolutionScale * (vis.quality === "cinema" ? 1.08 : 1);
     return Array.isArray(base) ? ([base[0] * s, base[1] * s] as [number, number]) : base * s;
   }, [eff, vis.resolutionScale]);
 
@@ -2817,7 +2819,7 @@ function Stadium3DImpl({
           look={look}
           shadows={shadowsOn}
           backend={backend}
-          postIntensity={vis.postIntensity}
+          postIntensity={vis.postIntensity * (vis.quality === "cinema" ? 1.12 : 1)}
         />
         {vis.showFps ? <FpsMeter onSample={setFps} backend={backend} quality={eff} /> : null}
       </Canvas>

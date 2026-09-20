@@ -18,7 +18,7 @@ import type { TimeOfDay, Weather } from "@/game/matchday";
 
 export type Auto<T extends string> = "auto" | T;
 
-export type QualityPref = "auto" | "baixa" | "media" | "alta";
+export type QualityPref = "auto" | "baixa" | "media" | "alta" | "cinema";
 export type ShadowPref = "auto" | "ligadas" | "desligadas";
 export type TextureDetail = "baixa" | "media" | "alta";
 export type PlayerDetail = "simples" | "padrao" | "detalhado";
