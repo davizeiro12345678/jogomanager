@@ -761,11 +761,7 @@ function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: stri
   );
 }
 
-/**
- * Telão do estádio com texto 3D nítido (troika SDF) em vez de textura de
- * canvas refeita a cada mudança: placar, relógio e selo de REPLAY ficam
- * legíveis de qualquer distância e custam quase nada para atualizar.
- */
+/** Telão atualizado no máximo cinco vezes por segundo, sem worker de fontes. */
 function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
   const board = useMemo(() => {
     if (typeof document === "undefined") return null;

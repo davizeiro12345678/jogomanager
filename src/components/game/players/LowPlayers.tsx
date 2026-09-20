@@ -49,6 +49,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
     thighEnd: new THREE.Matrix4(),
     shinEnd: new THREE.Matrix4(),
     position: new THREE.Vector3(),
+    shadowScale: new THREE.Vector3(),
     quaternion: new THREE.Quaternion(),
     euler: new THREE.Euler(),
     unit: new THREE.Vector3(1, 1, 1),
@@ -92,7 +93,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
     const meshes = [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, thighsRef.current, shinsRef.current, bootsRef.current, neckRef.current, shadowRef.current];
     if (meshes.some((mesh) => !mesh)) return;
 
-    const { root, joint, part, translate, rotate, scale, thighEnd, shinEnd, position, quaternion, euler, unit } = tmp;
+    const { root, joint, part, translate, rotate, scale, thighEnd, shinEnd, position, shadowScale, quaternion, euler, unit } = tmp;
     const setPart = (
       mesh: THREE.InstancedMesh,
       index: number,
@@ -160,8 +161,8 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
 
       position.set(player.x, 0.014, player.z);
       quaternion.setFromEuler(euler.set(-Math.PI / 2, 0, -(yaw.current[index] ?? 0)));
-      scale.set(0.38 + gait * 0.08, 0.68 + gait * 0.12, 1);
-      part.compose(position, quaternion, scale);
+      shadowScale.set(0.38 + gait * 0.08, 0.68 + gait * 0.12, 1);
+      part.compose(position, quaternion, shadowScale);
       (shadowRef.current as THREE.InstancedMesh).setMatrixAt(index, part);
 
       for (const side of [-1, 1] as const) {
