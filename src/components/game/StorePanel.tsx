@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { recordAdMetric } from "@/features/ads/ad-manager";
 
 interface StoreProduct {
   key: string;
@@ -243,13 +244,16 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
             {productsQuery.data?.map((p) => (
               <Card
                 key={p.key}
+                onMouseEnter={() => {
+                  if (p.key === bestValueKey) recordAdMetric(`store-${p.key}`, "inventory", "impression");
+                }}
                 className={`relative flex flex-col surface-card transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-glow)] motion-reduce:transform-none motion-reduce:transition-none ${
                   p.key === bestValueKey ? "border-primary/70" : ""
                 }`}
               >
                 {p.key === bestValueKey && (
                   <span className="absolute -top-2 right-3 rounded-full bg-primary px-2 py-0.5 font-display text-[10px] uppercase tracking-wider text-primary-foreground">
-                    Melhor valor
+                    Destaque · melhor valor
                   </span>
                 )}
                 <div className="mx-5 mt-5 grid h-28 place-items-center overflow-hidden rounded-lg border border-border/50 bg-secondary/45">
@@ -285,6 +289,9 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                       className="w-full"
                       disabled={openingKey === p.key || (p.kind === "pass" && subscriptionActive)}
                       onClick={() => buy(p.key)}
+                       onPointerDown={() => {
+                         if (p.key === bestValueKey) recordAdMetric(`store-${p.key}`, "inventory", "click");
+                       }}
                     >
                       {openingKey === p.key
                         ? "Abrindo checkout…"

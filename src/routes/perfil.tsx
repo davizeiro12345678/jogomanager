@@ -10,6 +10,8 @@ import { CLUBS } from "@/game/data/leagues";
 import { formatMoney } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";
 import { ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
+import { AdMetricsPanel } from "@/features/ads/AdMetricsPanel";
+import { SidebarAd } from "@/features/ads/AdZones";
 
 const FALLBACK_LOOK = {
   skin: 0,
@@ -245,6 +247,10 @@ function Perfil() {
         </HudCard>
 
         <ClubHonoursPanel clubId={career.clubId} className="md:col-span-2" />
+
+        <SidebarAd context="profile" />
+
+        <AdMetricsPanel />
 
         <HudCard title="Preferências" tone="neutral">
           <p className="text-xs text-muted-foreground">
