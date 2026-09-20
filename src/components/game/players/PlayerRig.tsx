@@ -13,12 +13,9 @@
 // ============================================================================
 
 import { useFrame } from "@react-three/fiber";
-import { Text } from "@react-three/drei";
 import type React from "react";
-import { createElement, memo, Suspense, useMemo, useRef } from "react";
+import { createElement, memo, useMemo, useRef } from "react";
 import * as THREE from "three";
-
-import { DISPLAY_FONT } from "@/components/game/fonts";
 
 import {
   emptyPose,
@@ -100,18 +97,14 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     [kit, player.number, player.name],
   );
 
-  // sobrenome grande nas costas + cor de tinta que contrasta com a camisa
-  const surname = useMemo(() => {
-    const parts = player.name.trim().split(/\s+/);
-    return (parts[parts.length - 1] ?? player.name).toUpperCase().slice(0, 12);
-  }, [player.name]);
-  const [jerseyInk, jerseyInkOutline] = useMemo(() => {
+  // Cor de identificação que contrasta com a camisa.
+  const jerseyInk = useMemo(() => {
     const h = kit.base.replace("#", "");
     const r = parseInt(h.slice(0, 2), 16) / 255;
     const g = parseInt(h.slice(2, 4), 16) / 255;
     const b = parseInt(h.slice(4, 6), 16) / 255;
     const l = 0.299 * r + 0.587 * g + 0.114 * b;
-    return l > 0.55 ? (["#101418", "#f2f2f2"] as const) : (["#f5f5f2", "#101418"] as const);
+    return l > 0.55 ? "#101418" : "#f5f5f2";
   }, [kit.base]);
 
   const isGK = player.pos === "GK";
@@ -1020,37 +1013,12 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
               </mesh>
             ) : null}
 
-            {/* nome + número 3D nítidos nas costas (só na qualidade alta) */}
+            {/* Identificação em geometria simples: evita atlas/worker de fonte por atleta. */}
             {hi ? (
-              <Suspense fallback={null}>
-                <Text
-                  font={DISPLAY_FONT}
-                  position={[0, P.chestLen * 0.74, -(P.chestD + 0.02)]}
-                  rotation={[0, Math.PI, 0]}
-                  fontSize={0.1}
-                  letterSpacing={0.06}
-                  color={jerseyInk}
-                  anchorX="center"
-                  anchorY="middle"
-                  outlineWidth={0.008}
-                  outlineColor={jerseyInkOutline}
-                >
-                  {surname}
-                </Text>
-                <Text
-                  font={DISPLAY_FONT}
-                  position={[0, P.chestLen * 0.36, -(P.chestD + 0.02)]}
-                  rotation={[0, Math.PI, 0]}
-                  fontSize={0.24}
-                  color={jerseyInk}
-                  anchorX="center"
-                  anchorY="middle"
-                  outlineWidth={0.01}
-                  outlineColor={jerseyInkOutline}
-                >
-                  {String(player.number)}
-                </Text>
-              </Suspense>
+              <mesh position={[0, P.chestLen * 0.38, -(P.chestD + 0.018)]} rotation={[0, Math.PI, 0]}>
+                <circleGeometry args={[0.105, 12]} />
+                <meshBasicMaterial color={jerseyInk} toneMapped={false} />
+              </mesh>
             ) : null}
 
             {/* pescoço + cabeça */}

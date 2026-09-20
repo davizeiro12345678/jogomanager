@@ -341,7 +341,7 @@ const Scoreboard = memo(function Scoreboard({
         {`${home.name} ${snap.hg}, ${away.name} ${snap.ag}. ${paused ? "Partida pausada" : `${snap.minute} minutos`}.`}
       </p>
       <div
-        className={`w-full max-w-md overflow-hidden rounded-2xl border bg-black/70 shadow-2xl backdrop-blur-xl transition-all duration-500 ${
+        className={`w-full max-w-[22rem] overflow-hidden rounded-lg border bg-black/75 shadow-xl backdrop-blur-md transition-all duration-500 sm:max-w-sm ${
           flash ? "scale-[1.03] border-primary/70 shadow-primary/30" : "border-white/12"
         }`}
       >
@@ -349,22 +349,22 @@ const Scoreboard = memo(function Scoreboard({
           <div className="flex-1" style={{ background: home.primary }} />
           <div className="flex-1" style={{ background: away.primary }} />
         </div>
-        <div className="flex items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4">
-          <Crest club={home} size={28} detail="simple" />
-          <span className="font-display text-base tracking-wide text-white sm:text-lg">
+        <div className="flex min-h-11 items-center gap-1.5 px-2 py-1.5 sm:gap-2 sm:px-3">
+          <Crest club={home} size={24} detail="simple" />
+          <span className="font-display text-sm tracking-wide text-white sm:text-base">
             {home.short}
           </span>
           <span
-            className={`mx-auto font-display text-2xl tabular-nums text-white transition-transform duration-300 sm:text-3xl ${
+            className={`mx-auto font-display text-xl tabular-nums text-white transition-transform duration-300 sm:text-2xl ${
               flash ? "scale-125" : ""
             }`}
           >
             {snap.hg} <span className="text-white/35">:</span> {snap.ag}
           </span>
-          <span className="font-display text-base tracking-wide text-white sm:text-lg">
+          <span className="font-display text-sm tracking-wide text-white sm:text-base">
             {away.short}
           </span>
-          <Crest club={away} size={28} detail="simple" />
+          <Crest club={away} size={24} detail="simple" />
           <span className="ml-1 rounded-md bg-primary px-2 py-0.5 font-display text-xs tabular-nums text-primary-foreground sm:text-sm">
             {paused ? "||" : `${snap.minute}'`}
           </span>
@@ -376,7 +376,7 @@ const Scoreboard = memo(function Scoreboard({
           />
           <div className="flex-1" style={{ background: away.primary }} />
         </div>
-        <div className="flex justify-between px-4 py-1 text-[10px] uppercase tracking-widest text-white/60">
+        <div className="hidden justify-between px-3 py-1 text-[10px] uppercase tracking-widest text-white/60 sm:flex">
           <span>Posse {ph}%</span>
           <span>
             Chutes {snap.hShots} – {snap.aShots}
@@ -385,7 +385,7 @@ const Scoreboard = memo(function Scoreboard({
         </div>
 
         {/* pressão: de quem é o jogo neste momento */}
-        <div className="px-4 pb-1">
+        <div className="hidden px-3 pb-1 sm:block">
           <div className="relative h-1.5 overflow-hidden rounded-full bg-white/10">
             <span className="absolute inset-y-0 left-1/2 w-px bg-white/25" />
             <div
@@ -402,8 +402,8 @@ const Scoreboard = memo(function Scoreboard({
           </p>
         </div>
 
-        <Timeline minute={snap.minute} events={snap.events} />
-        <div className="flex justify-between px-4 pb-1.5 text-[9px] uppercase tracking-widest text-white/35">
+        <div className="hidden sm:block"><Timeline minute={snap.minute} events={snap.events} /></div>
+        <div className="hidden justify-between px-4 pb-1.5 text-[9px] uppercase tracking-widest text-white/35 sm:flex">
           <span>0&apos;</span>
           <span>45&apos;</span>
           <span>90&apos;</span>
@@ -536,7 +536,7 @@ function LiveMatch({
       const now = Date.now();
       if (now - lastChange < 12_000) return;
       setQuality((q) => {
-        if (s.avg < 28 && q !== "baixa") {
+        if ((s.avg < 34 || s.low1 < 22) && q !== "baixa") {
           lastChange = now;
           const next = q === "alta" ? "media" : "baixa";
           toast.info(`Gráficos em "${next}" para manter a partida fluida.`);

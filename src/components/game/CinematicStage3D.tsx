@@ -395,6 +395,7 @@ function PressRoom({ primary, secondary }: { primary: string; secondary: string 
 
 function Crowd({ rows = 8, cols = 40, y = 3, z = -14, tint }: { rows?: number; cols?: number; y?: number; z?: number; tint: string }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
+  const matrix = useMemo(() => new THREE.Matrix4(), []);
   const count = rows * cols;
   const colors = useMemo(() => {
     const base = new THREE.Color(tint);
@@ -410,15 +411,14 @@ function Crowd({ rows = 8, cols = 40, y = 3, z = -14, tint }: { rows?: number; c
 
   useFrame(({ clock }) => {
     if (!mesh.current) return;
-    const m = new THREE.Matrix4();
     const t = clock.elapsedTime;
     for (let i = 0; i < count; i += 1) {
       const row = Math.floor(i / cols);
       const col = i % cols;
       const x = -cols * 0.35 + col * 0.7 + (hash(i) - 0.5) * 0.18;
       const sway = Math.sin(t * 2 + col * 0.35 + row) * 0.05;
-      m.makeTranslation(x, y + row * 0.62 + sway, z - row * 0.7);
-      mesh.current.setMatrixAt(i, m);
+      matrix.makeTranslation(x, y + row * 0.62 + sway, z - row * 0.7);
+      mesh.current.setMatrixAt(i, matrix);
     }
     mesh.current.instanceMatrix.needsUpdate = true;
   });
@@ -684,7 +684,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.05;
           gl.outputColorSpace = THREE.SRGBColorSpace;
-          gl.shadowMap.type = quality === "alta" ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+          gl.shadowMap.type = THREE.PCFShadowMap;
         }}
       >
         <PerformanceMonitor flipflops={2} onDecline={() => setQuality((current) => lowerQuality(current))} />

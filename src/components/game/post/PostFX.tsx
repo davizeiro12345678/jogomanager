@@ -10,7 +10,6 @@ import {
   DepthOfField,
   HueSaturation,
   Noise,
-  TiltShift2,
 } from "@react-three/postprocessing";
 import { BlendFunction } from "postprocessing";
 import * as THREE from "three";
@@ -50,18 +49,10 @@ export function PostFX({
 
   if (quality === "media") {
     return (
-      <EffectComposer key="media" enableNormalPass={false} resolutionScale={0.75}>
-        <Bloom
-          intensity={Math.max(0.05, p.bloom)}
-          luminanceThreshold={p.bloomThreshold}
-          luminanceSmoothing={0.25}
-          mipmapBlur
-        />
+      <EffectComposer key="media" enableNormalPass={false} multisampling={0} resolutionScale={0.62}>
         <HueSaturation saturation={p.saturation} hue={p.hue} />
         <BrightnessContrast brightness={p.brightness} contrast={p.contrast} />
-        <Vignette offset={0.3} darkness={p.vignette} />
-        {/* serrilhado nas linhas do campo e nos jogadores incomodava mais que o
-            custo do SMAA em meia resolução */}
+        <Vignette offset={0.34} darkness={p.vignette * 0.55} />
         <SMAA />
       </EffectComposer>
     );
@@ -70,17 +61,17 @@ export function PostFX({
   const cinema = m !== "match";
 
   return (
-      <EffectComposer key={`alta-${m}`} enableNormalPass multisampling={0} resolutionScale={cinema ? 0.9 : 0.78}>
-      {/* oclusão de contato: sombra suave onde jogadores e estruturas encostam */}
-      <N8AO
-        color="#0b1016"
-        aoRadius={cinema ? 0.6 : 1.1}
-        distanceFalloff={0.85}
-        // à noite o contato com o gramado some sob a luz dura dos refletores
-        intensity={(cinema ? 1.8 : 1.65) * (time === "noite" ? 1.15 : 1)}
-        halfRes
-        screenSpaceRadius={false}
-      />
+      <EffectComposer key={`alta-${m}`} enableNormalPass={cinema} multisampling={0} resolutionScale={cinema ? 0.82 : 0.72}>
+      {cinema ? (
+        <N8AO
+          color="#0b1016"
+          aoRadius={0.6}
+          distanceFalloff={0.85}
+          intensity={1.55 * (time === "noite" ? 1.1 : 1)}
+          halfRes
+          screenSpaceRadius={false}
+        />
+      ) : <></>}
       {p.dof > 0 ? (
         <DepthOfField
           focusDistance={m === "drama" ? 0.012 : 0.02}
@@ -96,7 +87,6 @@ export function PostFX({
         luminanceSmoothing={0.35}
         mipmapBlur
       />
-      {p.tilt > 0 ? <TiltShift2 blur={p.tilt} /> : <></>}
       {cinema ? <ChromaticAberration offset={ab} radialModulation modulationOffset={0.35} /> : <></>}
       <HueSaturation saturation={p.saturation} hue={p.hue} />
       <BrightnessContrast brightness={p.brightness} contrast={p.contrast} />

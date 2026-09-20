@@ -26,17 +26,17 @@ export type PostPreset = {
 
 const BASE: Record<PostMoment, PostPreset> = {
   match: {
-    bloom: 0.55,
-    bloomThreshold: 0.7,
-    saturation: 0.13,
+    bloom: 0.22,
+    bloomThreshold: 0.86,
+    saturation: 0.07,
     hue: 0,
     brightness: 0.012,
-    contrast: 0.11,
-    vignette: 0.58,
+    contrast: 0.07,
+    vignette: 0.34,
     grain: 0.018,
     aberration: 0.0006,
     dof: 0,
-    tilt: 0.09,
+    tilt: 0,
   },
   replay: {
     bloom: 0.95,
