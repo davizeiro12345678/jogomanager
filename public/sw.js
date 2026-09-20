@@ -3,7 +3,7 @@
    - Documentos: rede primeiro, com a última versão em cache como reserva.
    - Assets (js/css/imagens/escudos): cache primeiro, atualizando em segundo plano.
    - Chamadas de API e do backend nunca são cacheadas. */
-const VERSION = "pfm3d-v6";
+const VERSION = "pfm3d-v7";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 const OFFLINE_URL = "/";
@@ -15,6 +15,29 @@ async function trimCache(name, maxEntries) {
   const keys = await cache.keys();
   if (keys.length <= maxEntries) return;
   await Promise.all(keys.slice(0, keys.length - maxEntries).map((key) => cache.delete(key)));
+}
+
+function canCache(requestUrl) {
+  const url = new URL(requestUrl, self.location.origin);
+  return url.origin === self.location.origin && isAsset(url);
+}
+
+async function cacheProgressively(urls) {
+  const cache = await caches.open(ASSETS);
+  for (const value of urls.slice(0, 24)) {
+    if (typeof value !== "string" || !canCache(value)) continue;
+    const request = new Request(value, { credentials: "same-origin" });
+    try {
+      const response = await fetch(request);
+      const size = Number(response.headers.get("content-length") || 0);
+      if (response.ok && (size === 0 || size <= MAX_ASSET_BYTES)) {
+        await cache.put(request, response);
+      }
+    } catch {
+      // O recurso continua disponível pela rede quando a conexão voltar.
+    }
+  }
+  await trimCache(ASSETS, MAX_ASSETS);
 }
 
 self.addEventListener("install", (event) => {
@@ -44,6 +67,11 @@ self.addEventListener("activate", (event) => {
       )
       .then(() => self.clients.claim()),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "CACHE_RESOURCES" || !Array.isArray(event.data.urls)) return;
+  event.waitUntil(cacheProgressively(event.data.urls));
 });
 
 function isAsset(url) {

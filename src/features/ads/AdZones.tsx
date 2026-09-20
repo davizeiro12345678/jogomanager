@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Megaphone, Sparkles, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -114,4 +114,24 @@ export function CornerAd({ context, delayMs = 1200 }: { context: AdContext; dela
 export function SponsoredFeed({ context, itemCount }: { context: AdContext; itemCount: number }) {
   const interval = 3 + (itemCount % 3);
   return { interval, render: (index: number) => (index > 0 && index % interval === 0 ? <NativeSponsoredCard key={`ad-${index}`} context={context} placement="feed" /> : null) };
+}
+
+export function AdBetweenPosts({
+  context,
+  items,
+  renderItem,
+}: {
+  context: AdContext;
+  items: readonly unknown[];
+  renderItem: (item: unknown, index: number) => ReactNode;
+}) {
+  const interval = 3 + (items.length % 3);
+  return items.map((item, index) => (
+    <Fragment key={index}>
+      {index > 0 && index % interval === 0 ? (
+        <NativeSponsoredCard context={context} placement="feed" />
+      ) : null}
+      {renderItem(item, index)}
+    </Fragment>
+  ));
 }
