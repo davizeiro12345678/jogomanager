@@ -547,8 +547,19 @@ export class MatchSim {
         const stepOut = Math.max(0, Math.min(9, (24 - ballToGoal) * 0.42));
         tx = ownGoalX + dir * stepOut;
         tz = Math.max(-GOAL_Z + 0.45, Math.min(GOAL_Z - 0.45, bz * (0.12 + stepOut * 0.022)));
+        // A leitura do chute começa na batida, não apenas quando a bola cruza a
+        // linha. O goleiro fecha o alvo previsto sem teletransportar ou conhecer
+        // o resultado sorteado da finalização.
+        const incoming = this.pendingShot?.side !== p.side ? this.pendingShot : null;
+        if (incoming) {
+          const reaction = 0.32 + p.defending / 220;
+          tz += (Math.max(-GOAL_Z + 0.35, Math.min(GOAL_Z - 0.35, incoming.targetZ)) - tz) * reaction;
+          tx += dir * Math.min(1.4, ballDist * 0.04);
+          sprint = 1.18;
+        }
         // goleiro sai da área para bola solta muito perto
-        if (!this.ball.holder && ballDist < 9 && Math.abs(bx - dir * -FIELD_X) < 14) {
+        const sweepRange = 9 + setup.tactics.mentality * 1.35 + p.pace / 35;
+        if (!this.ball.holder && !incoming && ballDist < sweepRange && Math.abs(bx - dir * -FIELD_X) < 18) {
           tx = bx;
           tz = bz;
           sprint = 1.25;
@@ -1348,6 +1359,14 @@ export class MatchSim {
       fromZ: holder.z,
       targetZ,
     };
+    if (gk && outcome === "saved") {
+      const dive = targetZ - gk.z;
+      this.trigger(
+        gk,
+        Math.abs(dive) < 1.15 ? "save" : dive > 0 ? "diveRight" : "diveLeft",
+        1.15,
+      );
+    }
     this.restartTimer = 0.35;
 
     if (outcome === "off") {

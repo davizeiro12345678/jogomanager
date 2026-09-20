@@ -196,3 +196,12 @@
 - [x] Diferenciar narrador, comentarista e árbitro por voz, ritmo, estabilidade e emoção na partida e nas cutscenes
 - [x] Adicionar pressão coletiva contextual após domínio ruim e passe para trás, armadilha lateral, sobrecarga e efeito da fadiga
 - [x] Validar 11 testes, tipos, compilação de produção e abertura da partida rápida sem erros de console
+
+## Anúncios nativos, desempenho e versão offline (2026-09-20)
+- [x] Gerenciador JSON com campanhas próprias, contexto, limite por sessão, cooldown e métricas locais
+- [x] Anúncios entre itens, lateral, pós-jogo e destaque integrado à loja, sempre dispensáveis e sem áudio
+- [x] Contratos versionados de perfil gráfico, manifesto de recursos e transferência verificada de carreira
+- [x] Perfil Cinema adaptativo e telemetria por tempo de quadro com aquecimento, p95, 1% low, triângulos e draws
+- [x] Goleiros antecipatórios, saída contextual e validação determinística de 200 partidas
+- [x] Cache PWA progressivo, versionado, limitado por tamanho e restrito a recursos da mesma origem
+- [ ] Medir três sessões de 180 segundos em aparelho com GPU física identificada

@@ -33,6 +33,7 @@ class FpsMeter {
   private acc = 0;
   private countInSecond = 0;
   private running = false;
+  private warmupMs = 2000;
 
   start() {
     if (this.running || typeof requestAnimationFrame === "undefined") return;
@@ -41,10 +42,17 @@ class FpsMeter {
     const loop = (t: number) => {
       const dt = t - this.last;
       this.last = t;
-      // quadros absurdos (aba em segundo plano) não contam
-      if (dt > 0 && dt < 2000) {
+      // Aba em segundo plano, retomada e aquecimento não contaminam a medição.
+      if (document.hidden || dt <= 0 || dt > 250) {
+        this.acc = 0;
+        this.countInSecond = 0;
+      } else if (this.warmupMs > 0) {
+        this.warmupMs = Math.max(0, this.warmupMs - dt);
+      } else {
         this.frames.push(dt);
-        if (this.frames.length > 60 * WINDOW_SECONDS) this.frames.shift();
+        if (this.frames.length > 60 * WINDOW_SECONDS) {
+          this.frames.splice(0, this.frames.length - 60 * WINDOW_SECONDS);
+        }
         this.acc += dt;
         this.countInSecond++;
         if (this.acc >= 1000) {
@@ -71,6 +79,7 @@ class FpsMeter {
     this.perSecond = [];
     this.acc = 0;
     this.countInSecond = 0;
+    this.warmupMs = 2000;
   }
 
   sample(): FpsSample {

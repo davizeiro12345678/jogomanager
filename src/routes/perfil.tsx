@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useRef, useState } from "react";
+import { Download, Upload } from "lucide-react";
 
 import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
@@ -10,6 +12,11 @@ import { CLUBS } from "@/game/data/leagues";
 import { formatMoney } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";
 import { ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
+import { AdMetricsPanel } from "@/features/ads/AdMetricsPanel";
+import { SidebarAd } from "@/features/ads/AdZones";
+import { exportCareerFile, importCareerFile } from "@/game/contracts/career-transfer";
+import { saveLocalCareer } from "@/lib/offline/store";
+import { Button } from "@/components/ui/button";
 
 const FALLBACK_LOOK = {
   skin: 0,
@@ -44,7 +51,9 @@ export const Route = createFileRoute("/perfil")({
 });
 
 function Perfil() {
-  const { career } = useCareer();
+  const { career, update } = useCareer();
+  const importRef = useRef<HTMLInputElement>(null);
+  const [transferStatus, setTransferStatus] = useState("");
 
   if (!career)
     return (
@@ -246,6 +255,10 @@ function Perfil() {
 
         <ClubHonoursPanel clubId={career.clubId} className="md:col-span-2" />
 
+        <SidebarAd context="profile" />
+
+        <AdMetricsPanel />
+
         <HudCard title="Preferências" tone="neutral">
           <p className="text-xs text-muted-foreground">
             Nível gráfico, narração e legendas são ajustados dentro da partida, no painel de
@@ -270,7 +283,48 @@ function Perfil() {
             >
               Painel
             </Link>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const blob = new Blob([exportCareerFile(career)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const anchor = document.createElement("a");
+                anchor.href = url;
+                anchor.download = `carreira-${career.managerName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.pfm3d.json`;
+                anchor.click();
+                URL.revokeObjectURL(url);
+                setTransferStatus("Cópia da carreira exportada.");
+              }}
+            >
+              <Download size={14} /> Exportar carreira
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => importRef.current?.click()}>
+              <Upload size={14} /> Importar carreira
+            </Button>
+            <input
+              ref={importRef}
+              type="file"
+              accept="application/json,.json"
+              className="sr-only"
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                try {
+                  const imported = importCareerFile(await file.text());
+                  await saveLocalCareer(imported, "importação");
+                  update(imported);
+                  setTransferStatus("Carreira importada e salva neste aparelho.");
+                } catch (error) {
+                  setTransferStatus(error instanceof Error ? error.message : "Não foi possível importar a carreira.");
+                } finally {
+                  event.target.value = "";
+                }
+              }}
+            />
           </div>
+          {transferStatus ? <p role="status" className="mt-3 text-xs text-primary">{transferStatus}</p> : null}
         </HudCard>
       </div>
     </GameShell>

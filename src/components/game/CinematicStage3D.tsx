@@ -683,6 +683,8 @@ export const CinematicStage3D = memo(function CinematicStage3D({
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.05;
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+          gl.shadowMap.type = quality === "alta" ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
         }}
       >
         <PerformanceMonitor flipflops={2} onDecline={() => setQuality((current) => lowerQuality(current))} />

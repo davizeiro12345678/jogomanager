@@ -189,6 +189,7 @@ function VisualPage() {
                 { id: "baixa" as const, label: "Baixa" },
                 { id: "media" as const, label: "Média" },
                 { id: "alta" as const, label: "Alta" },
+                { id: "cinema" as const, label: "Cinema" },
               ]}
             />
             <Chips

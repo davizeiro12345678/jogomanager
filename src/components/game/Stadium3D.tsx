@@ -2400,35 +2400,55 @@ function FpsMeter({
   backend: GpuBackend;
   quality: Quality;
 }) {
-  const frames = useRef(0);
+  const frameTimes = useRef<number[]>([]);
+  const secondFrames = useRef<number[]>([]);
   const acc = useRef(0);
-  const history = useRef<number[]>([]);
+  const warmup = useRef(2);
 
-  useFrame((_, dt) => {
-    frames.current += 1;
-    acc.current += dt;
-    if (acc.current < 1) return;
-    const fps = frames.current / acc.current;
-    frames.current = 0;
+  useEffect(() => {
+    frameTimes.current = [];
+    secondFrames.current = [];
     acc.current = 0;
-    const h = history.current;
-    h.push(fps);
-    if (h.length > 600) h.shift();
-    const avg = h.reduce((a, b) => a + b, 0) / h.length;
-    const sorted = [...h].sort((a, b) => a - b);
-    // p95 do pior caso = 5º percentil das taxas (os segundos mais lentos)
-    const p95 = sorted[Math.max(0, Math.floor(sorted.length * 0.05))] ?? fps;
-    const frameMs = 1000 / Math.max(1, fps);
-    const onePercentLow = sorted[Math.max(0, Math.floor(sorted.length * 0.01))] ?? fps;
+    warmup.current = 2;
+  }, [quality, backend]);
+
+  useFrame((state, dt) => {
+    if (document.hidden || dt <= 0 || dt > 0.25) return;
+    acc.current += dt;
+    secondFrames.current.push(dt * 1000);
+    if (acc.current < 1) return;
+    if (warmup.current > 0) {
+      warmup.current -= 1;
+      acc.current = 0;
+      secondFrames.current = [];
+      return;
+    }
+    const current = secondFrames.current;
+    const fps = current.length / acc.current;
+    acc.current = 0;
+    secondFrames.current = [];
+    const history = frameTimes.current;
+    history.push(...current);
+    if (history.length > 180 * 60) history.splice(0, history.length - 180 * 60);
+    const sorted = [...history].sort((a, b) => a - b);
+    const meanMs = history.reduce((a, b) => a + b, 0) / Math.max(1, history.length);
+    const p95FrameMs = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] ?? meanMs;
+    const p99FrameMs = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.99))] ?? meanMs;
+    const info = state.gl.info;
+    const canvas = state.gl.domElement;
     const memory = performance as Performance & { memory?: { usedJSHeapSize: number } };
     const sample = {
       fps,
-      avg,
-      p95,
-      onePercentLow,
-      frameMs,
+      avg: 1000 / Math.max(1, meanMs),
+      p95FrameMs,
+      onePercentLow: 1000 / Math.max(1, p99FrameMs),
+      frameMs: meanMs,
       backend,
       quality,
+      width: canvas.width,
+      height: canvas.height,
+      triangles: info.render.triangles,
+      drawCalls: info.render.calls,
       memoryMb: memory.memory ? Math.round(memory.memory.usedJSHeapSize / 1_048_576) : null,
       measuredAt: new Date().toISOString(),
     };
@@ -2446,11 +2466,15 @@ function FpsMeter({
 type FpsSample = {
   fps: number;
   avg: number;
-  p95: number;
+  p95FrameMs: number;
   onePercentLow: number;
   frameMs: number;
   backend: GpuBackend;
   quality: Quality;
+  width: number;
+  height: number;
+  triangles: number;
+  drawCalls: number;
   memoryMb: number | null;
   measuredAt: string;
 };
@@ -2658,7 +2682,9 @@ function Stadium3DImpl({
 }) {
   const vis = useResolvedVisual(sim.home.clubId);
   // Escolha do jogador em /visual manda; "auto" segue a detecção do aparelho.
-  const quality: Quality = vis.quality === "auto" ? deviceQuality : vis.quality;
+  // Cinema usa a geometria alta e amplia seletivamente resolução/efeitos sem
+  // duplicar toda a árvore 3D nem quebrar configurações antigas.
+  const quality: Quality = vis.quality === "auto" ? deviceQuality : vis.quality === "cinema" ? "alta" : vis.quality;
   const look = useMemo(
     () => matchLook(sim.home.clubId, sim.away.clubId),
     [sim.home.clubId, sim.away.clubId],
@@ -2688,7 +2714,7 @@ function Stadium3DImpl({
   // Escala de resolução escolhida em /visual, aplicada sobre o limite do aparelho.
   const dpr = useMemo(() => {
     const base = dprFor(eff);
-    const s = vis.resolutionScale;
+    const s = vis.resolutionScale * (vis.quality === "cinema" ? 1.08 : 1);
     return Array.isArray(base) ? ([base[0] * s, base[1] * s] as [number, number]) : base * s;
   }, [eff, vis.resolutionScale]);
 
@@ -2793,7 +2819,7 @@ function Stadium3DImpl({
           look={look}
           shadows={shadowsOn}
           backend={backend}
-          postIntensity={vis.postIntensity}
+          postIntensity={vis.postIntensity * (vis.quality === "cinema" ? 1.12 : 1)}
         />
         {vis.showFps ? <FpsMeter onSample={setFps} backend={backend} quality={eff} /> : null}
       </Canvas>
@@ -2801,10 +2827,12 @@ function Stadium3DImpl({
         <div className="pointer-events-none absolute left-2 top-2 rounded-lg bg-black/55 px-2 py-1 font-mono text-[10px] leading-tight text-white/85">
           <span className="text-white">{Math.round(fps.fps)} fps</span>
           <span className="ml-2 text-white/60">med {Math.round(fps.avg)}</span>
-          <span className="ml-2 text-white/60">p95 {Math.round(fps.p95)}</span>
+          <span className="ml-2 text-white/60">p95 {fps.p95FrameMs.toFixed(1)} ms</span>
           <span className="ml-2 text-white/60">1% {Math.round(fps.onePercentLow)}</span>
           <span className="ml-2 text-white/60">{fps.frameMs.toFixed(1)} ms</span>
           <span className="ml-2 uppercase text-white/60">{fps.backend}</span>
+          <span className="ml-2 text-white/60">{fps.triangles.toLocaleString("pt-BR")} tri</span>
+          <span className="ml-2 text-white/60">{fps.drawCalls} draws</span>
           {fps.memoryMb ? <span className="ml-2 text-white/60">{fps.memoryMb} MB</span> : null}
         </div>
       ) : null}

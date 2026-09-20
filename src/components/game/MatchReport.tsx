@@ -5,6 +5,7 @@ import { GuestCloudPrompt } from "@/components/GuestCloudPrompt";
 import { CLUBS } from "@/game/data/leagues";
 import type { MatchRuntime } from "@/game/live-match";
 import { Button } from "@/components/ui/button";
+import { CornerAd, NativeSponsoredCard } from "@/features/ads/AdZones";
 
 type Tab = "resumo" | "notas" | "chutes" | "sumula";
 
@@ -177,6 +178,8 @@ export function MatchReport({
           <GuestCloudPrompt next="/club" compact />
         </div>
 
+        <NativeSponsoredCard context="postmatch" compact className="mt-3" />
+
         <Button
           disabled={advancing}
           onClick={onFinish}
@@ -185,6 +188,7 @@ export function MatchReport({
           {advancing ? "Processando..." : "Voltar à central"}
         </Button>
       </div>
+      <CornerAd context="postmatch" delayMs={1800} />
     </div>
   );
 }
