@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "campaigns": [
+    {
+      "id": "career-training",
+      "brand": "Pro Football Manager 3D",
+      "title": "Prepare o time antes da próxima rodada",
+      "body": "Treinos táticos melhoram entrosamento, forma e confiança sem interromper a carreira.",
+      "label": "Dica patrocinada",
+      "cta": "Abrir treinos",
+      "href": "/training",
+      "contexts": ["dashboard", "squad", "tactics", "news", "postmatch"],
+      "placements": ["feed", "sidebar", "corner", "native"],
+      "priority": 10,
+      "kind": "own"
+    },
+    {
+      "id": "visual-profile",
+      "brand": "Pro Football Manager 3D",
+      "title": "Ajuste o estádio ao seu computador",
+      "body": "Escolha fluidez, equilíbrio ou qualidade visual e acompanhe o tempo de cada quadro.",
+      "label": "Conteúdo patrocinado",
+      "cta": "Ajustar gráficos",
+      "href": "/visual",
+      "contexts": ["match", "postmatch", "dashboard", "profile"],
+      "placements": ["sidebar", "corner", "native"],
+      "priority": 9,
+      "kind": "own"
+    },
+    {
+      "id": "scouting-tools",
+      "brand": "Pro Football Manager 3D",
+      "title": "Encontre opções para o seu elenco",
+      "body": "Compare posição, idade e nível antes de abrir uma negociação.",
+      "label": "Patrocinado",
+      "cta": "Abrir scouting",
+      "href": "/scouting",
+      "contexts": ["transfers", "squad", "news"],
+      "placements": ["feed", "sidebar", "native"],
+      "priority": 8,
+      "kind": "own"
+    },
+    {
+      "id": "career-cloud",
+      "brand": "Pro Football Manager 3D",
+      "title": "Leve sua carreira para outro aparelho",
+      "body": "Vincule a carreira para preservar temporadas, títulos e preferências.",
+      "label": "Destaque",
+      "cta": "Salvar carreira",
+      "href": "/auth?next=/dashboard",
+      "contexts": ["dashboard", "profile", "postmatch"],
+      "placements": ["corner", "native"],
+      "priority": 7,
+      "kind": "own"
+    }
+  ]
+}
