@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_rankings: {
+        Row: {
+          active_seconds: number
+          active_streak: number
+          club_id: string | null
+          created_at: string
+          last_active_date: string | null
+          last_heartbeat_at: string | null
+          matches_completed: number
+          matches_started: number
+          opted_in: boolean
+          public_name: string
+          seasons: number
+          updated_at: string
+          user_id: string
+          week_key: string
+          weekly_active_seconds: number
+          wins: number
+        }
+        Insert: {
+          active_seconds?: number
+          active_streak?: number
+          club_id?: string | null
+          created_at?: string
+          last_active_date?: string | null
+          last_heartbeat_at?: string | null
+          matches_completed?: number
+          matches_started?: number
+          opted_in?: boolean
+          public_name?: string
+          seasons?: number
+          updated_at?: string
+          user_id: string
+          week_key?: string
+          weekly_active_seconds?: number
+          wins?: number
+        }
+        Update: {
+          active_seconds?: number
+          active_streak?: number
+          club_id?: string | null
+          created_at?: string
+          last_active_date?: string | null
+          last_heartbeat_at?: string | null
+          matches_completed?: number
+          matches_started?: number
+          opted_in?: boolean
+          public_name?: string
+          seasons?: number
+          updated_at?: string
+          user_id?: string
+          week_key?: string
+          weekly_active_seconds?: number
+          wins?: number
+        }
+        Relationships: []
+      }
       ai_budget_usage: {
         Row: {
           kind: string
@@ -868,9 +925,45 @@ export type Database = {
           training_boosts: number
         }[]
       }
+      get_own_activity_ranking: {
+        Args: never
+        Returns: {
+          active_seconds: number
+          active_streak: number
+          club_id: string
+          matches_completed: number
+          opted_in: boolean
+          public_name: string
+          weekly_active_seconds: number
+          wins: number
+        }[]
+      }
+      get_public_activity_rankings: {
+        Args: { p_limit?: number }
+        Returns: {
+          active_streak: number
+          club_id: string
+          matches_completed: number
+          public_name: string
+          rank: number
+          weekly_active_seconds: number
+          wins: number
+        }[]
+      }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
+      }
+      record_active_time: {
+        Args: {
+          p_club_id: string
+          p_matches_completed?: number
+          p_matches_started?: number
+          p_public_name: string
+          p_seasons?: number
+          p_wins?: number
+        }
+        Returns: undefined
       }
       reserve_ai_budget: {
         Args: { _cents: number; _kind: string }
@@ -879,6 +972,10 @@ export type Database = {
       send_chat_message_for: {
         Args: { _user_id: string; message_body: string }
         Returns: string
+      }
+      set_activity_ranking_preferences: {
+        Args: { p_club_id: string; p_opted_in: boolean; p_public_name: string }
+        Returns: undefined
       }
       spend_coins_for: {
         Args: { _user_id: string; amount: number }

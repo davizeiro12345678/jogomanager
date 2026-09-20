@@ -70,14 +70,14 @@ export function PostFX({
   const cinema = m !== "match";
 
   return (
-    <EffectComposer key={`alta-${m}`} enableNormalPass multisampling={0}>
+      <EffectComposer key={`alta-${m}`} enableNormalPass multisampling={0} resolutionScale={cinema ? 0.9 : 0.78}>
       {/* oclusão de contato: sombra suave onde jogadores e estruturas encostam */}
       <N8AO
         color="#0b1016"
         aoRadius={cinema ? 0.6 : 1.1}
         distanceFalloff={0.85}
         // à noite o contato com o gramado some sob a luz dura dos refletores
-        intensity={(cinema ? 2 : 2.6) * (time === "noite" ? 1.25 : 1)}
+        intensity={(cinema ? 1.8 : 1.65) * (time === "noite" ? 1.15 : 1)}
         halfRes
         screenSpaceRadius={false}
       />

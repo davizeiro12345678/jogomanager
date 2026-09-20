@@ -205,3 +205,10 @@
 - [x] Goleiros antecipatórios, saída contextual e validação determinística de 200 partidas
 - [x] Cache PWA progressivo, versionado, limitado por tamanho e restrito a recursos da mesma origem
 - [ ] Medir três sessões de 180 segundos em aparelho com GPU física identificada
+
+## Ciclo aprovado — velocidade, gráficos, interface e ranking (2026-09-20)
+- [x] Recalibrar velocidade física, aceleração, frenagem e interpolação dos jogadores
+- [x] Otimizar LOD, culling, sombras, gramado, pós-processamento e telemetria 3D
+- [x] Corrigir HUD móvel, cabeçalho e painel de salvamento conforme a referência
+- [x] Criar métricas de tempo ativo e ranking público opcional com privacidade
+- [ ] Validar engine, tipos, build, navegador desktop/celular e registrar limite de GPU física

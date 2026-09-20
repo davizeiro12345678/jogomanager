@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import { advanceRound } from "./career";
 import { resultMatch, snapshotMatch, type LiveWorkerRequest } from "./live-match";
-import { MatchSim } from "./sim";
+import { LIVE_MATCH_CLOCK_SCALE, MAX_LIVE_MOTION_SCALE, MatchSim } from "./sim";
 
 let live: MatchSim | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -48,7 +48,8 @@ function tick() {
   accumulator = Math.min(accumulator + elapsed, fixed * 5);
   while (accumulator >= fixed && !live.finished) {
     accumulator -= fixed;
-    live.step(fixed * 6 * speed);
+    const motionScale = Math.min(speed, MAX_LIVE_MOTION_SCALE);
+    live.step(fixed * motionScale, (LIVE_MATCH_CLOCK_SCALE * speed) / motionScale);
   }
   if (live.finished) publishFinished();
   else publishSnapshot();

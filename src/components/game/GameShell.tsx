@@ -53,6 +53,7 @@ import { LANGS, LANG_NAMES, useT, type Lang } from "@/i18n";
 import { CommandPalette } from "./CommandPalette";
 import { Crest } from "./Crest";
 import type { CareerState } from "@/game/types";
+import { useActiveTimeTracking } from "@/features/activity/ActivityRanking";
 
 const TABS: {
   to: string;
@@ -108,6 +109,7 @@ export function GameShell({
   useServiceWorker();
   const club = career ? CLUBS[career.clubId] : undefined;
   useClubTheme(club);
+  useActiveTimeTracking(career, signedIn);
 
   const primary = TABS.filter((tab) => PRIMARY.includes(tab.to));
   const rest = TABS.filter((tab) => !PRIMARY.includes(tab.to));
@@ -125,7 +127,7 @@ export function GameShell({
         }}
       />
       <header className="sticky top-0 z-30 border-b border-border/60 bg-card/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5">
+        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5">
           {/* Identidade do clube */}
           <div className="flex min-w-0 items-center gap-2.5">
             {club ? <Crest club={club} size={34} /> : null}
@@ -145,7 +147,7 @@ export function GameShell({
           </div>
 
           {/* Navegação principal */}
-          <nav aria-label="Navegação principal da carreira" className="ml-auto hidden items-center gap-0.5 md:flex">
+          <nav aria-label="Navegação principal da carreira" className="ml-auto hidden items-center gap-0.5 lg:flex">
             {primary.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -165,7 +167,7 @@ export function GameShell({
                 <Menu size={13} />
                 {t("shell.more")}
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[30rem] p-3">
+               <DropdownMenuContent align="end" className="max-h-[75vh] w-[min(30rem,calc(100vw-2rem))] overflow-y-auto p-3">
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   {groups.map((g) => (
                     <div key={g}>
@@ -233,12 +235,12 @@ export function GameShell({
           </nav>
 
           {/* Ações */}
-          <div className="ml-auto flex shrink-0 items-center gap-1 md:ml-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1 lg:ml-2">
             {signedIn === false ? (
               <Link
                 to="/auth"
                 search={{ next: "/dashboard" }}
-                className="hidden min-h-[38px] items-center rounded-lg border border-primary/50 px-3 font-display text-xs uppercase text-primary sm:inline-flex"
+                className="hidden min-h-[38px] items-center rounded-lg border border-primary/50 px-3 font-display text-xs uppercase text-primary xl:inline-flex"
               >
                 Salvar carreira
               </Link>
@@ -258,7 +260,7 @@ export function GameShell({
         </div>
 
         {/* Navegação secundária rolável no celular */}
-        <nav aria-label="Mais áreas da carreira" className="flex gap-1 overflow-x-auto px-4 pb-2 md:hidden">
+        <nav aria-label="Mais áreas da carreira" className="game-scroll-nav flex gap-1 overflow-x-auto px-4 pb-2 lg:hidden">
           {TABS.filter((tab) => !MOBILE.includes(tab.to)).map((tab) => (
             <Link
               key={tab.to}
@@ -283,10 +285,10 @@ export function GameShell({
         </div>
       )}
 
-      <main className="page-enter mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">{children}</main>
+      <main className="page-enter mx-auto max-w-7xl px-4 py-5 pb-24 md:py-6 md:pb-6">{children}</main>
 
       {/* Barra inferior do celular */}
-      <nav aria-label="Navegação principal no celular" className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-card/95 backdrop-blur-xl md:hidden">
+      <nav aria-label="Navegação principal no celular" className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
         {TABS.filter((tab) => MOBILE.includes(tab.to)).map((tab) => {
           const Icon = tab.icon;
           return (

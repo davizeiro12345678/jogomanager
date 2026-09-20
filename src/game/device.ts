@@ -39,8 +39,8 @@ export function dprFor(q: QualityLevel): number | [number, number] {
     if (q === "media") return [0.75, 1.1];
     return [0.7, 0.9];
   }
-  if (q === "alta") return [1, 2];
-  if (q === "media") return [1, 1.5];
+  if (q === "alta") return [1, 1.75];
+  if (q === "media") return [0.9, 1.35];
   return 0.75;
 }
 

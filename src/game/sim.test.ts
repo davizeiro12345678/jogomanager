@@ -42,6 +42,19 @@ describe("MatchSim", () => {
     }
   });
 
+  it("keeps player acceleration and top speed in a human range", () => {
+    const sim = create("movement-envelope");
+    let maximumReportedSpeed = 0;
+    const dt = 1 / 30;
+    for (let tick = 0; tick < 900; tick += 1) {
+      sim.step(dt, 6);
+      for (const player of sim.players) {
+        maximumReportedSpeed = Math.max(maximumReportedSpeed, Math.hypot(player.vx, player.vz));
+      }
+    }
+    expect(maximumReportedSpeed).toBeLessThanOrEqual(7.6);
+  });
+
   it("releases a nominal goal that physically bends outside the posts", () => {
     const sim = create("curved-near-miss");
     const shooter = sim.players.find((player) => player.side === "home" && player.pos !== "GK");

@@ -176,10 +176,10 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     if (!g) return;
     const dt = Math.min(rawDt, 0.05);
 
-    // ---- posição suavizada no gramado
-    const moveBlend = 1 - Math.exp(-25 * dt);
-    g.position.x += (player.x - g.position.x) * moveBlend;
-    g.position.z += (player.z - g.position.z) * moveBlend;
+    // A vista do Worker já interpola snapshots. Uma segunda mola aqui fazia o
+    // corpo perseguir um alvo em movimento e criava jitter em FPS variável.
+    g.position.x = player.x;
+    g.position.z = player.z;
 
     // Fora do enquadramento atualiza apenas posição. A direção vem diretamente
     // da matriz da câmera, evitando 22 normalizações de vetor por quadro.

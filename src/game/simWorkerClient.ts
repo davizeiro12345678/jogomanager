@@ -11,7 +11,13 @@ import {
   type LiveWorkerRequest,
   type LiveWorkerResponse,
 } from "./live-match";
-import { MatchSim, type Side, type TeamSetup } from "./sim";
+import {
+  LIVE_MATCH_CLOCK_SCALE,
+  MAX_LIVE_MOTION_SCALE,
+  MatchSim,
+  type Side,
+  type TeamSetup,
+} from "./sim";
 import type { CareerState } from "./types";
 import type { Player, Tactics } from "./types";
 
@@ -147,7 +153,8 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
       const fixed = 1 / 30;
       while (accumulator >= fixed && !localSim.finished) {
         accumulator -= fixed;
-        localSim.step(fixed * 6 * localSpeed);
+        const motionScale = Math.min(localSpeed, MAX_LIVE_MOTION_SCALE);
+        localSim.step(fixed * motionScale, (LIVE_MATCH_CLOCK_SCALE * localSpeed) / motionScale);
       }
       sequence += 1;
       apply(localSim.finished ? resultMatch(localSim, sequence) : snapshotMatch(localSim, sequence));

@@ -246,7 +246,7 @@
   h3,
   h4 {
     font-family: var(--font-display);
-    letter-spacing: -0.005em;
+    letter-spacing: 0;
     line-height: 1.08;
     text-wrap: balance;
   }
@@ -317,7 +317,16 @@
 @utility font-display {
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: -0.005em;
+  letter-spacing: 0;
+}
+
+@utility game-scroll-nav {
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent 0, black 1rem, black calc(100% - 2rem), transparent 100%);
+}
+
+.game-scroll-nav::-webkit-scrollbar {
+  display: none;
 }
 
 @utility tabular {
