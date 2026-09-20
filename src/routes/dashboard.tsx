@@ -120,19 +120,19 @@ function Dashboard() {
 
   return (
     <GameShell career={career}>
-      <div className="mb-5">
+      <div className="mb-4">
         <GuestCloudPrompt next="/dashboard" compact />
       </div>
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">
+          <h1 className="font-display text-2xl uppercase sm:text-3xl">
             Painel do treinador
           </h1>
           <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
             {club.name} · Temporada {career.season} · Rodada {career.round}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <HudStat
             label="Posição"
             value={pos > 0 ? `${pos}º` : "—"}

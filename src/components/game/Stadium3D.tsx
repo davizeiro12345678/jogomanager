@@ -107,8 +107,8 @@ function useBladeMaterial(color: string) {
 function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
   const vis = useVisual();
   const scale = Math.max(0, vis.grassDensity);
-  const short = Math.round((quality === "alta" ? 14000 : 4200) * scale);
-  const tall = Math.round((quality === "alta" ? 4200 : 1000) * scale);
+  const short = Math.round((quality === "alta" ? 10500 : 3200) * scale);
+  const tall = Math.round((quality === "alta" ? 2600 : 700) * scale);
 
   const shortRef = useRef<THREE.InstancedMesh>(null);
   const tallRef = useRef<THREE.InstancedMesh>(null);
@@ -164,7 +164,7 @@ function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
     <group>
       <instancedMesh
         ref={shortRef}
-        frustumCulled
+        frustumCulled={false}
         material={mat}
         args={[undefined, undefined, short]}
       >
@@ -1551,7 +1551,7 @@ function Stands({
       {/* tronco: ombros mais largos que o quadril, tecido fosco */}
       <instancedMesh
         ref={ref}
-        frustumCulled={false}
+        frustumCulled
         args={[undefined, undefined, crowd.positions.length]}
       >
         <capsuleGeometry
@@ -1979,9 +1979,9 @@ function Rig({
     s.cut = Math.max(0, s.cut - dt);
 
     const speed = Math.hypot(sim.ball.vx, sim.ball.vz);
-    const lead = Math.min(1, speed / 22);
-    const rawX = sim.ball.x + sim.ball.vx * 0.3 * lead;
-    const rawZ = sim.ball.z + sim.ball.vz * 0.3 * lead;
+    const lead = Math.min(1, speed / 26);
+    const rawX = sim.ball.x + sim.ball.vx * 0.18 * lead;
+    const rawZ = sim.ball.z + sim.ball.vz * 0.18 * lead;
     // zona morta: só move o alvo quando a bola sai de um raio pequeno
     const dead = 0.9;
     const dx = rawX - anchor.x;
@@ -2714,8 +2714,10 @@ function Stadium3DImpl({
   // Escala de resolução escolhida em /visual, aplicada sobre o limite do aparelho.
   const dpr = useMemo(() => {
     const base = dprFor(eff);
-    const s = vis.resolutionScale * (vis.quality === "cinema" ? 1.08 : 1);
-    return Array.isArray(base) ? ([base[0] * s, base[1] * s] as [number, number]) : base * s;
+    const s = vis.resolutionScale * (vis.quality === "cinema" ? 1.04 : 1);
+    return Array.isArray(base)
+      ? ([Math.min(2, base[0] * s), Math.min(2, base[1] * s)] as [number, number])
+      : Math.min(2, base * s);
   }, [eff, vis.resolutionScale]);
 
   // Backend gráfico: WebGPU quando o aparelho suporta, senão WebGL2.

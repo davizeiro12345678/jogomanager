@@ -840,7 +840,7 @@ function LiveMatch({
 
       {/* Estatísticas ao vivo — gaveta no celular, painel lateral no desktop */}
       {showStats ? (
-        <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-30 max-h-[62vh] space-y-3 overflow-y-auto rounded-t-3xl border-t border-white/12 bg-black/85 p-4 pb-20 backdrop-blur-xl md:inset-x-auto md:bottom-auto md:right-3 md:top-24 md:max-h-none md:w-64 md:rounded-2xl md:border md:p-3 md:pb-3">
+        <div className="pointer-events-auto absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 max-h-[55vh] space-y-3 overflow-y-auto rounded-3xl border border-white/12 bg-black/88 p-4 backdrop-blur-xl md:inset-x-auto md:bottom-auto md:right-3 md:top-24 md:max-h-none md:w-64 md:rounded-2xl md:p-3">
           <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-white/25 md:hidden" />
           <div className="flex items-center justify-between">
             <h2 className="font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
@@ -848,7 +848,7 @@ function LiveMatch({
             </h2>
             <button
               onClick={() => setShowStats(false)}
-              className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/70 md:hidden"
+              className="min-h-11 rounded-full bg-white/10 px-4 text-xs text-white/70 md:hidden"
             >
               Fechar
             </button>
@@ -906,11 +906,11 @@ function LiveMatch({
       ) : null}
 
       {/* Barra de transporte sempre visível */}
-      <div role="toolbar" aria-label="Controles da partida" className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl md:hidden">
+      <div role="toolbar" aria-label="Controles da partida" className="absolute bottom-[calc(.75rem+env(safe-area-inset-bottom))] left-1/2 z-20 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-0.5 overflow-x-auto rounded-full border border-white/12 bg-black/75 p-1.5 backdrop-blur-xl md:hidden">
         <button
           onClick={() => setPaused((p) => !p)}
           aria-label={paused ? "Retomar partida" : "Pausar partida"}
-          className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-95 motion-reduce:transform-none"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-95 motion-reduce:transform-none"
         >
           {paused ? <Play size={16} /> : <Pause size={16} />}
         </button>
@@ -920,7 +920,7 @@ function LiveMatch({
             onClick={() => setSpeed(s)}
             aria-label={`Velocidade ${s}x`}
             aria-pressed={speed === s}
-            className={`h-9 w-9 rounded-full font-display text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+            className={`h-11 w-11 shrink-0 rounded-full font-display text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
               speed === s ? "bg-white/25 text-white" : "text-white/70 hover:bg-white/10"
             }`}
           >
@@ -931,7 +931,7 @@ function LiveMatch({
           onClick={() => setShowStats((s) => !s)}
           aria-label="Ver estatísticas"
           aria-pressed={showStats}
-          className={`grid h-9 w-9 place-items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${showStats ? "bg-white/25 text-white" : "text-white/70 hover:bg-white/10"}`}
+          className={`grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${showStats ? "bg-white/25 text-white" : "text-white/70 hover:bg-white/10"}`}
         >
           <BarChart3 size={16} />
         </button>
@@ -939,7 +939,7 @@ function LiveMatch({
           onClick={() => setNarrating((v) => !v)}
           aria-label={narrating ? "Desligar narração" : "Ligar narração"}
           aria-pressed={narrating}
-          className={`grid h-9 w-9 place-items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${narrating ? "text-primary" : "text-white/60 hover:bg-white/10"}`}
+          className={`grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${narrating ? "text-primary" : "text-white/60 hover:bg-white/10"}`}
         >
           {narrating ? <Volume2 size={16} /> : <VolumeX size={16} />}
         </button>
@@ -949,7 +949,7 @@ function LiveMatch({
             setDrawer("store");
           }}
           aria-label="Abrir loja"
-          className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <ShoppingBag size={16} />
         </button>
@@ -959,14 +959,14 @@ function LiveMatch({
             setDrawer("chat");
           }}
           aria-label="Abrir chat"
-          className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <MessageCircle size={16} />
         </button>
         <button
           onClick={skip}
           aria-label="Pular para o fim"
-          className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <SkipForward size={16} />
         </button>
@@ -974,7 +974,7 @@ function LiveMatch({
           onClick={() => setPanelOpen((v) => !v)}
           aria-label="Abrir controles"
           aria-expanded={panelOpen}
-          className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <ChevronDown size={16} className={panelOpen ? "" : "rotate-180"} />
         </button>
@@ -1081,7 +1081,8 @@ function LiveMatch({
                   qualityTouched.current = true;
                   setQuality(q);
                 }}
-                className={`rounded-lg px-2 py-1 text-xs capitalize transition-colors ${
+                aria-pressed={quality === q}
+                className={`min-h-10 rounded-lg px-2 py-1 text-xs capitalize transition-colors ${
                   quality === q ? "bg-primary text-primary-foreground" : "bg-white/10 text-white"
                 }`}
               >
@@ -1100,7 +1101,7 @@ function LiveMatch({
               aria-label="Mentalidade da equipe"
               value={myTactics.mentality}
               onChange={(e) => setMentality(Number(e.target.value))}
-              className="mt-1 w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
+              className="mt-1 min-h-10 w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
             >
               {MENTALITIES.map((m, i) => (
                 <option key={m} value={i} className="text-black">
@@ -1117,7 +1118,7 @@ function LiveMatch({
               aria-label="Intensidade de pressão"
               value={myTactics.pressing}
               onChange={(e) => setPressing(Number(e.target.value))}
-              className="mt-1 w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
+              className="mt-1 min-h-10 w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
             >
               {PRESSING.map((m, i) => (
                 <option key={m} value={i} className="text-black">
@@ -1140,7 +1141,7 @@ function LiveMatch({
               aria-label="Jogador que sai"
               value={outPid}
               onChange={(e) => setOutPid(e.target.value)}
-              className="w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
+              className="min-h-10 w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
             >
               <option value="" className="text-black">
                 Sai…
@@ -1155,7 +1156,7 @@ function LiveMatch({
               aria-label="Jogador que entra"
               value={inId}
               onChange={(e) => setInId(e.target.value)}
-              className="w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
+              className="min-h-10 w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
             >
               <option value="" className="text-black">
                 Entra…

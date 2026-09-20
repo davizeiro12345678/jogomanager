@@ -6,6 +6,8 @@ import type { MatchEventLog, Player, Tactics } from "./types";
 export const FIELD_X = 52.5;
 export const FIELD_Z = 34;
 const GOAL_Z = 3.66;
+export const LIVE_MATCH_CLOCK_SCALE = 6;
+export const MAX_LIVE_MOTION_SCALE = 2;
 
 export type Side = "home" | "away";
 
@@ -418,9 +420,10 @@ export class MatchSim {
     return { opp: best, dist: Math.sqrt(bestD2) };
   }
 
-  step(dt: number) {
+  step(dt: number, clockScale = 1) {
     if (this.finished) return;
-    this.time += dt;
+    const clockDt = dt * Math.max(1, clockScale);
+    this.time += clockDt;
     this.pressSurge.home = Math.max(0, this.pressSurge.home - dt);
     this.pressSurge.away = Math.max(0, this.pressSurge.away - dt);
     this.mentalityCache = null;
@@ -436,13 +439,13 @@ export class MatchSim {
       return;
     }
 
-    this.stats[this.possession].possessionTicks += dt;
+    this.stats[this.possession].possessionTicks += clockDt;
     if (this.restartTimer > 0) this.restartTimer -= dt;
     this.tickActions(dt);
 
     this.moveOffBall(dt);
     this.separate();
-    this.drainStamina(dt);
+    this.drainStamina(clockDt);
     this.moveBall(dt);
     this.sanitize();
 
@@ -629,8 +632,9 @@ export class MatchSim {
       tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, tx));
       tz = Math.max(-FIELD_Z + 2, Math.min(FIELD_Z - 2, tz));
 
-      const stam = 0.75 + (p.stamina / 100) * 0.25;
-      const speed = (3.6 + (p.pace / 100) * 4.6) * (p.pos === "GK" ? 0.6 : 1) * sprint * stam;
+      const stam = 0.78 + (p.stamina / 100) * 0.22;
+      const baseSpeed = 2.45 + (p.pace / 100) * 3.65;
+      const speed = baseSpeed * (p.pos === "GK" ? 0.68 : 1) * Math.min(1.22, sprint) * stam;
       const dx = tx - p.x;
       const dz = tz - p.z;
       const d = Math.hypot(dx, dz);
@@ -645,15 +649,24 @@ export class MatchSim {
         }
         // reação tardia a um chute próximo
         if ((this.reactionUntil.get(p.id) ?? 0) > this.time) speedEff *= 0.3;
-        const step = Math.min(d, speedEff * dt);
-        p.x += (dx / d) * step;
-        p.z += (dz / d) * step;
-        // velocidade real em m/s, suavizada (aceleração)
+        // A velocidade armazenada é a autoridade do deslocamento. Antes a
+        // posição saltava direto na velocidade-alvo e apenas o vetor era
+        // suavizado, criando arrancadas instantâneas e pés deslizando.
         const tvx = (dx / d) * speedEff;
         const tvz = (dz / d) * speedEff;
-        const k = 1 - Math.exp(-6 * dt);
+        const accelerating = tvx * p.vx + tvz * p.vz >= 0;
+        const response = accelerating ? 3.2 : 5.4;
+        const k = 1 - Math.exp(-response * dt);
         p.vx += (tvx - p.vx) * k;
         p.vz += (tvz - p.vz) * k;
+        const currentSpeed = Math.hypot(p.vx, p.vz);
+        if (currentSpeed > speedEff) {
+          p.vx *= speedEff / currentSpeed;
+          p.vz *= speedEff / currentSpeed;
+        }
+        const step = Math.min(d, Math.hypot(p.vx, p.vz) * dt);
+        p.x += (p.vx / Math.max(0.001, Math.hypot(p.vx, p.vz))) * step;
+        p.z += (p.vz / Math.max(0.001, Math.hypot(p.vx, p.vz))) * step;
       } else {
         const k = Math.exp(-7 * dt);
         p.vx *= k;
@@ -1122,12 +1135,14 @@ export class MatchSim {
     const dx = targetX - holder.x;
     const dz = -holder.z * 0.25 + Math.sin(this.time * 0.9 + holder.number) * 4;
     const d = Math.hypot(dx, dz) || 1;
-    const speed = (3.0 + (holder.pace / 100) * 4.4) * (0.8 + (holder.stamina / 100) * 0.2);
-    holder.x += (dx / d) * speed * dt;
-    holder.z += (dz / d) * speed * dt;
-    const k = 1 - Math.exp(-6 * dt);
-    holder.vx += ((dx / d) * speed - holder.vx) * k;
-    holder.vz += ((dz / d) * speed - holder.vz) * k;
+    const speed = (2.35 + (holder.pace / 100) * 3.55) * (0.82 + (holder.stamina / 100) * 0.18);
+    const targetVx = (dx / d) * speed;
+    const targetVz = (dz / d) * speed;
+    const k = 1 - Math.exp(-3.4 * dt);
+    holder.vx += (targetVx - holder.vx) * k;
+    holder.vz += (targetVz - holder.vz) * k;
+    holder.x += holder.vx * dt;
+    holder.z += holder.vz * dt;
     holder.x = Math.max(-FIELD_X + 1, Math.min(FIELD_X - 1, holder.x));
     holder.z = Math.max(-FIELD_Z + 1, Math.min(FIELD_Z - 1, holder.z));
   }

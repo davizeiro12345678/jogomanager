@@ -17,6 +17,7 @@ import { SidebarAd } from "@/features/ads/AdZones";
 import { exportCareerFile, importCareerFile } from "@/game/contracts/career-transfer";
 import { saveLocalCareer } from "@/lib/offline/store";
 import { Button } from "@/components/ui/button";
+import { ActivityRanking } from "@/features/activity/ActivityRanking";
 
 const FALLBACK_LOOK = {
   skin: 0,
@@ -51,7 +52,7 @@ export const Route = createFileRoute("/perfil")({
 });
 
 function Perfil() {
-  const { career, update } = useCareer();
+  const { career, update, signedIn } = useCareer();
   const importRef = useRef<HTMLInputElement>(null);
   const [transferStatus, setTransferStatus] = useState("");
 
@@ -258,6 +259,8 @@ function Perfil() {
         <SidebarAd context="profile" />
 
         <AdMetricsPanel />
+
+        <ActivityRanking career={career} signedIn={signedIn} />
 
         <HudCard title="Preferências" tone="neutral">
           <p className="text-xs text-muted-foreground">
