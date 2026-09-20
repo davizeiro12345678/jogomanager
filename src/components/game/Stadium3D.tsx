@@ -4,7 +4,6 @@ import {
   Lightformer,
   AdaptiveEvents,
   PerformanceMonitor,
-  Text,
   Trail,
 } from "@react-three/drei";
 import { easing } from "maath";
@@ -16,9 +15,6 @@ import { PlayerRig } from "@/components/game/players/PlayerRig";
 import { LowPlayers } from "@/components/game/players/LowPlayers";
 import { PostFX } from "@/components/game/post/PostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
-import { DISPLAY_FONT, configureText3D } from "@/components/game/fonts";
-
-configureText3D();
 import { adTexture } from "@/components/game/stadium/textures/ads";
 import {
   concreteAlbedo,
@@ -771,8 +767,8 @@ function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: stri
  * legíveis de qualquer distância e custam quase nada para atualizar.
  */
 function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
-  const [label, setLabel] = useState("");
-  const [clockText, setClockText] = useState("0'");
+  const [, setLabel] = useState("");
+  const [, setClockText] = useState("0'");
   // O painel só muda de minuto em minuto: montar as strings a 60 Hz era
   // trabalho puro de CPU no caminho crítico do quadro.
   const tick = useRef(0);
@@ -802,49 +798,12 @@ function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
         <boxGeometry args={[29.2, 0.22, 0.05]} />
         <meshBasicMaterial color="#1de07a" toneMapped={false} />
       </mesh>
-      <Suspense fallback={null}>
-        <Text
-          font={DISPLAY_FONT}
-          position={[0, 1.1, 0.62]}
-          fontSize={3.4}
-          letterSpacing={0.05}
-          color="#9dffc4"
-          anchorX="center"
-          anchorY="middle"
-          outlineWidth={0.06}
-          outlineColor="#02130a"
-        >
-          {label}
-        </Text>
-        <Text
-          font={DISPLAY_FONT}
-          position={[0, -2.6, 0.62]}
-          fontSize={2}
-          letterSpacing={0.08}
-          color="#ffd76a"
-          anchorX="center"
-          anchorY="middle"
-          outlineWidth={0.05}
-          outlineColor="#130d02"
-        >
-          {clockText}
-        </Text>
-        {replay ? (
-          <Text
-            font={DISPLAY_FONT}
-            position={[0, 3.9, 0.62]}
-            fontSize={1.5}
-            letterSpacing={0.3}
-            color="#ff5d5d"
-            anchorX="center"
-            anchorY="middle"
-            outlineWidth={0.04}
-            outlineColor="#1a0202"
-          >
-            REPLAY
-          </Text>
-        ) : null}
-      </Suspense>
+      {/* O placar DOM concentra os dados. O painel físico continua emissivo,
+          sem gerar atlas de fonte/worker dentro do caminho crítico da partida. */}
+      <mesh position={[0, 0, 0.62]}>
+        <planeGeometry args={[22, 3.2]} />
+        <meshBasicMaterial color={replay ? "#5f151b" : "#123322"} toneMapped={false} />
+      </mesh>
     </group>
   );
 }
@@ -2788,9 +2747,7 @@ function Stadium3DImpl({
           r.outputColorSpace = THREE.SRGBColorSpace;
           // borda de sombra suave só na qualidade alta: o filtro extra custa
           // pouco lá e é o que mais aproxima a imagem de uma transmissão
-          if (r.shadowMap) {
-            r.shadowMap.type = eff === "alta" ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
-          }
+          if (r.shadowMap) r.shadowMap.type = THREE.PCFShadowMap;
           // Texturas nítidas em ângulos rasantes (linhas do campo, publicidade,
           // faixas de corte) — o custo é baixo e o ganho de definição é grande.
           const maxAniso = r.capabilities?.getMaxAnisotropy?.() ?? 16;
