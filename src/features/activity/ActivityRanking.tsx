@@ -9,7 +9,7 @@ import type { CareerState } from "@/game/types";
 import { supabase } from "@/integrations/supabase/client";
 
 type RankingRow = {
-  user_id: string;
+  rank?: number;
   public_name: string;
   club_id: string | null;
   active_seconds: number;
@@ -78,23 +78,13 @@ export function ActivityRanking({ career, signedIn }: { career: CareerState; sig
     setError("");
     const [{ data: session }, ranking] = await Promise.all([
       supabase.auth.getSession(),
-      supabase
-        .from("activity_rankings")
-        .select("user_id,public_name,club_id,active_seconds,weekly_active_seconds,matches_completed,wins,active_streak,opted_in")
-        .eq("opted_in", true)
-        .order("weekly_active_seconds", { ascending: false })
-        .limit(20),
+      supabase.rpc("get_public_activity_rankings", { p_limit: 20 }),
     ]);
     if (ranking.error) setError("O ranking está temporariamente indisponível.");
     setRows((ranking.data ?? []) as RankingRow[]);
-    const userId = session.session?.user.id;
-    if (userId) {
-      const own = await supabase
-        .from("activity_rankings")
-        .select("user_id,public_name,club_id,active_seconds,weekly_active_seconds,matches_completed,wins,active_streak,opted_in")
-        .eq("user_id", userId)
-        .maybeSingle();
-      setMine((own.data as RankingRow | null) ?? null);
+    if (session.session?.user.id) {
+      const own = await supabase.rpc("get_own_activity_ranking");
+      setMine(((own.data?.[0] as RankingRow | undefined) ?? null));
     }
     setLoading(false);
   };
@@ -145,8 +135,8 @@ export function ActivityRanking({ career, signedIn }: { career: CareerState; sig
         {rows.map((row, index) => {
           const club = row.club_id ? CLUBS[row.club_id] : undefined;
           return (
-            <li key={row.user_id} className="grid grid-cols-[2rem_1fr_auto] items-center gap-3 py-3">
-              <span className="hud-num text-center text-sm font-bold text-muted-foreground">{index + 1}</span>
+            <li key={`${row.rank}-${row.public_name}-${row.club_id}`} className="grid grid-cols-[2rem_1fr_auto] items-center gap-3 py-3">
+              <span className="hud-num text-center text-sm font-bold text-muted-foreground">{row.rank ?? index + 1}</span>
               <div className="flex min-w-0 items-center gap-3">
                 {club ? <Crest club={club} size={32} detail="simple" /> : <BarChart3 className="text-muted-foreground" size={26} />}
                 <div className="min-w-0">
