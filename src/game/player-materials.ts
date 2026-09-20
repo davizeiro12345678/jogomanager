@@ -166,7 +166,15 @@ export function playerMaterials(
           sheenColor: new THREE.Color(shade(kit.socks, 0.45)),
         })
       : new THREE.MeshStandardMaterial({ color: kit.socks, roughness: 0.9 }),
-    trim: new THREE.MeshStandardMaterial({ color: kit.detail, roughness: 0.8 }),
+    trim: hi
+      ? new THREE.MeshPhysicalMaterial({
+          color: kit.detail,
+          roughness: 0.58,
+          sheen: 0.32,
+          sheenRoughness: 0.72,
+          sheenColor: new THREE.Color(shade(kit.detail, 0.35)),
+        })
+      : new THREE.MeshStandardMaterial({ color: kit.detail, roughness: 0.8 }),
     hair: hi
       ? new THREE.MeshPhysicalMaterial({
           color: look.hairColor,
@@ -201,12 +209,28 @@ export function playerMaterials(
           roughness: 0.34,
           metalness: 0.22,
         }),
-    bootAccent: new THREE.MeshStandardMaterial({ color: look.bootAccent, roughness: 0.4 }),
+    bootAccent: hi
+      ? new THREE.MeshPhysicalMaterial({
+          color: look.bootAccent,
+          roughness: 0.2,
+          clearcoat: 0.7,
+          clearcoatRoughness: 0.2,
+        })
+      : new THREE.MeshStandardMaterial({ color: look.bootAccent, roughness: 0.4 }),
     sole: new THREE.MeshStandardMaterial({
       color: shade(look.bootColor, -0.55),
       roughness: 0.6,
     }),
-    glove: new THREE.MeshStandardMaterial({ color: look.gloveColor, roughness: 0.7 }),
+    glove: hi
+      ? new THREE.MeshPhysicalMaterial({
+          color: look.gloveColor,
+          roughness: 0.46,
+          clearcoat: 0.24,
+          clearcoatRoughness: 0.45,
+          sheen: 0.2,
+          sheenRoughness: 0.75,
+        })
+      : new THREE.MeshStandardMaterial({ color: look.gloveColor, roughness: 0.7 }),
   };
 
   cache.set(key, set);

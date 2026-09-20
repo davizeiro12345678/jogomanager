@@ -840,7 +840,7 @@ function LiveMatch({
 
       {/* Estatísticas ao vivo — gaveta no celular, painel lateral no desktop */}
       {showStats ? (
-        <div className="pointer-events-auto absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 max-h-[55vh] space-y-3 overflow-y-auto rounded-3xl border border-white/12 bg-black/88 p-4 backdrop-blur-xl md:inset-x-auto md:bottom-auto md:right-3 md:top-24 md:max-h-none md:w-64 md:rounded-2xl md:p-3">
+        <div className="pointer-events-auto absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 max-h-[55vh] space-y-3 overflow-y-auto rounded-xl border border-primary/25 bg-[#07100d]/95 p-4 shadow-2xl shadow-black/40 backdrop-blur-xl md:inset-x-auto md:bottom-auto md:right-3 md:top-24 md:max-h-none md:w-64 md:rounded-xl md:p-3">
           <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-white/25 md:hidden" />
           <div className="flex items-center justify-between">
             <h2 className="font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
@@ -1006,7 +1006,7 @@ function LiveMatch({
 
       {/* Painel de controle */}
       <div
-        className={`absolute bottom-16 right-3 z-20 w-[calc(100%-1.5rem)] max-w-xs space-y-3 rounded-2xl border border-white/10 bg-black/70 p-3 backdrop-blur-xl transition-all duration-300 md:bottom-4 md:w-72 md:translate-y-0 md:opacity-100 ${
+        className={`absolute bottom-16 right-3 z-20 w-[calc(100%-1.5rem)] max-w-xs space-y-3 rounded-xl border border-primary/25 bg-[#07100d]/90 p-3 shadow-2xl shadow-black/40 backdrop-blur-xl transition-all duration-300 md:bottom-4 md:w-72 md:translate-y-0 md:opacity-100 ${
           panelOpen
             ? "translate-y-0 opacity-100"
             : "pointer-events-none translate-y-4 opacity-0 md:pointer-events-auto"

@@ -126,8 +126,8 @@ export function GameShell({
             "radial-gradient(70% 100% at 50% 0%, var(--club-glow, transparent), transparent 70%)",
         }}
       />
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-card/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5">
+      <header className="sticky top-0 z-30 border-b border-primary/15 bg-background/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
           {/* Identidade do clube */}
           <div className="flex min-w-0 items-center gap-2.5">
             {club ? <Crest club={club} size={34} /> : null}
@@ -154,7 +154,7 @@ export function GameShell({
                 <Link
                   key={tab.to}
                   to={tab.to}
-                  className="flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-lg px-2.5 font-display text-xs uppercase tracking-wider text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
+                  className="flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-md px-2.5 font-display text-xs uppercase tracking-wider text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
                 >
                   <Icon size={13} />
                   {t(tab.key)}

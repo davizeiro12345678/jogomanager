@@ -349,6 +349,17 @@
   box-shadow: var(--shadow-elegant, 0 8px 24px -18px rgb(0 0 0 / 0.6));
 }
 
+/* superfícies operacionais: mais recorte e menos efeito de "cartão flutuante" */
+@utility surface-frame {
+  border: 1px solid color-mix(in oklab, var(--color-primary) 18%, var(--color-border));
+  background:
+    linear-gradient(135deg, color-mix(in oklab, var(--color-primary) 8%, transparent), transparent 42%),
+    color-mix(in oklab, var(--color-card) 94%, black);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 7%, transparent),
+    0 18px 42px -30px rgb(0 0 0 / 0.9);
+}
+
 @utility ad-native {
   border-radius: var(--radius-lg);
   box-shadow: 0 12px 32px -24px color-mix(in oklab, var(--color-primary) 45%, transparent);
@@ -656,9 +667,9 @@
 /* superfície base do HUD: vidro escuro, borda fina, brilho interno */
 @utility hud-card {
   position: relative;
-  border-radius: var(--radius-2xl);
+  border-radius: 0.75rem;
   border: 1px solid color-mix(in oklab, var(--hud-tone, var(--color-primary)) 26%, transparent);
-  background-color: color-mix(in oklab, var(--color-card) 62%, transparent);
+  background-color: color-mix(in oklab, var(--color-card) 82%, transparent);
   background-image:
     radial-gradient(
       120% 100% at 100% 0%,
@@ -666,7 +677,7 @@
       transparent 62%
     ),
     var(--gradient-surface, none);
-  backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(135%);
   box-shadow:
     inset 0 1px 0 color-mix(in oklab, white 8%, transparent),
     0 18px 46px -26px oklch(0.08 0.03 165 / 0.95);
@@ -719,7 +730,7 @@
   font-family: var(--font-display);
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-muted-foreground);
 }

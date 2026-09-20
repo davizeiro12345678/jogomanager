@@ -109,7 +109,7 @@ function Landing() {
       <header className="relative isolate overflow-hidden">
         <nav
           aria-label="Navegação principal"
-          className="absolute inset-x-0 top-0 z-20 border-b border-border/50 bg-background/70 backdrop-blur-md"
+            className="absolute inset-x-0 top-0 z-20 border-b border-primary/15 bg-background/55 backdrop-blur-xl"
         >
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
             <Link to="/" className="flex items-center gap-2 font-display text-sm uppercase text-foreground">
@@ -219,7 +219,7 @@ function Landing() {
 
           {/* placar de vitrine: mostra o clima de jogo ao vivo já na primeira tela */}
           <div aria-hidden="true" className="hidden lg:block">
-            <div className="glass-panel rounded-3xl border border-border/60 p-5 shadow-2xl shadow-primary/10">
+            <div className="surface-frame rounded-xl p-5 shadow-2xl shadow-primary/10">
               <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
                 <span className="flex items-center gap-1.5 text-primary">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" /> ao vivo
@@ -334,7 +334,7 @@ function Landing() {
               <Link
                 key={c.to}
                 to={c.to}
-                className="group relative overflow-hidden rounded-2xl border border-border/60 surface-card p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-card hover:shadow-lg"
+                className="group relative overflow-hidden rounded-xl border border-border/60 surface-card p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-card hover:shadow-lg"
               >
                 <p className="font-display text-lg group-hover:text-primary">{c.title}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{c.text}</p>

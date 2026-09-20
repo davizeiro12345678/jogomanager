@@ -314,6 +314,39 @@ function Gates({ rings, color }: { rings: number; color: string }) {
   return <group>{out}</group>;
 }
 
+function RoofCanopy({ rings, color }: { rings: number; color: string }) {
+  const metal = useMetal("#737e88", 4);
+  const top = 7 + rings * 1.45;
+  const edge = FIELD_Z + 11 + rings * 1.5;
+  const length = FIELD_X * 2 + 34;
+
+  return (
+    <group>
+      {[-1, 1].map((side) => (
+        <group key={side} position={[0, top, side * edge]}>
+          <mesh material={metal} castShadow>
+            <boxGeometry args={[length, 0.28, 5.8]} />
+          </mesh>
+          <mesh position={[0, -0.16, -side * 2.55]}>
+            <boxGeometry args={[length - 2, 0.08, 0.08]} />
+            <meshBasicMaterial color={color} toneMapped={false} />
+          </mesh>
+          {[-1, -0.5, 0, 0.5, 1].map((fraction) => (
+            <mesh
+              key={fraction}
+              position={[fraction * (length - 4), -1.45, -side * 1.7]}
+              rotation={[0, 0, side * 0.18]}
+              material={metal}
+            >
+              <boxGeometry args={[0.16, 2.9, 0.16]} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
+  );
+}
+
 /* ------------------------------------------------------------- conjunto */
 
 export function StadiumProps({
@@ -337,6 +370,7 @@ export function StadiumProps({
       {quality !== "baixa" && <SectorGrilles rings={rings} />}
       {quality !== "baixa" && <TvCameras ball={ball} />}
       {quality === "alta" && <PressBoxes rings={rings} />}
+      {quality === "alta" && <RoofCanopy rings={rings} color={homeColor} />}
       {quality === "alta" && <Gates rings={rings} color={homeColor} />}
     </group>
   );

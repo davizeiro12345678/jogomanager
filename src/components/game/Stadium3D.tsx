@@ -279,6 +279,8 @@ function Pitch({
           metalness={0.0}
           clearcoat={quality === "alta" ? 0.12 + wet * 0.62 : quality === "media" ? wet * 0.3 : 0}
           clearcoatRoughness={0.72 - wet * 0.48}
+          iridescence={quality === "alta" ? wet * 0.08 : 0}
+          iridescenceIOR={1.28}
           sheen={quality === "alta" ? 0.24 + wet * 0.42 : 0}
           sheenRoughness={0.75}
           sheenColor="#5fae7c"
@@ -832,6 +834,8 @@ function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
 
 function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
   const on = time !== "dia";
+  const lampColor = time === "entardecer" ? "#ffe2c7" : "#e8f2ff";
+  const haloColor = time === "entardecer" ? "#ffd1aa" : "#cfe3ff";
   const spots: [number, number][] = [
     [-1, -1],
     [1, -1],
@@ -869,8 +873,8 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
                   <boxGeometry args={[1.5, 1.3, 0.3]} />
                   <meshStandardMaterial
                     color="#f5f8ff"
-                    emissive={on ? "#dceaff" : "#2b3138"}
-                    emissiveIntensity={on ? 3.4 : 0}
+                    emissive={on ? lampColor : "#2b3138"}
+                    emissiveIntensity={on ? (time === "entardecer" ? 2.8 : 3.6) : 0}
                     toneMapped={false}
                   />
                 </mesh>
@@ -883,7 +887,7 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
                   <mesh position={[0, 26, 0]} rotation={[Math.PI, 0, 0]}>
                     <coneGeometry args={[5.5, 9, 14, 1, true]} />
                     <meshBasicMaterial
-                      color="#cfe3ff"
+                      color={haloColor}
                       transparent
                       opacity={0.05}
                       depthWrite={false}
@@ -896,8 +900,8 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
 
                 <sprite position={[0, 28.5, 0]} scale={[30, 30, 1]}>
                   <spriteMaterial
-                    color="#cfe3ff"
-                    opacity={0.18}
+                    color={haloColor}
+                    opacity={time === "entardecer" ? 0.14 : 0.18}
                     transparent
                     depthWrite={false}
                     blending={THREE.AdditiveBlending}
@@ -906,9 +910,9 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
                 {quality === "alta" && (
                   <pointLight
                     position={[0, 28, 0]}
-                    intensity={1400}
+                    intensity={time === "entardecer" ? 1050 : 1400}
                     distance={230}
-                    color="#e8f2ff"
+                    color={lampColor}
                   />
                 )}
               </>
@@ -1539,7 +1543,11 @@ function Stands({
         <capsuleGeometry
           args={[0.22, 0.44, quality === "alta" ? 4 : 3, quality === "alta" ? 10 : 6]}
         />
-        <meshStandardMaterial roughness={0.9} />
+        {quality === "alta" ? (
+          <meshPhysicalMaterial roughness={0.78} sheen={0.22} sheenRoughness={0.82} />
+        ) : (
+          <meshStandardMaterial roughness={0.9} />
+        )}
       </instancedMesh>
       {quality !== "baixa" ? (
         <instancedMesh
@@ -1548,7 +1556,11 @@ function Stands({
           args={[undefined, undefined, crowd.positions.length]}
         >
           <capsuleGeometry args={[0.13, 0.3, 2, quality === "alta" ? 8 : 5]} />
-          <meshStandardMaterial roughness={0.9} />
+          {quality === "alta" ? (
+            <meshPhysicalMaterial roughness={0.8} sheen={0.18} sheenRoughness={0.84} />
+          ) : (
+            <meshStandardMaterial roughness={0.9} />
+          )}
         </instancedMesh>
       ) : null}
       <instancedMesh
@@ -1557,7 +1569,11 @@ function Stands({
         args={[undefined, undefined, crowd.positions.length]}
       >
         <sphereGeometry args={[0.16, quality === "alta" ? 10 : 6, quality === "alta" ? 8 : 5]} />
-        <meshStandardMaterial roughness={0.72} />
+        {quality === "alta" ? (
+          <meshPhysicalMaterial roughness={0.66} clearcoat={0.12} clearcoatRoughness={0.58} />
+        ) : (
+          <meshStandardMaterial roughness={0.72} />
+        )}
       </instancedMesh>
       {/* cabelo/boné: quebra a fileira de cabeças todas iguais */}
       <instancedMesh
@@ -1566,12 +1582,21 @@ function Stands({
         args={[undefined, undefined, crowd.positions.length]}
       >
         <sphereGeometry args={[0.165, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.62]} />
-        <meshStandardMaterial roughness={0.9} />
+        {quality === "alta" ? (
+          <meshPhysicalMaterial roughness={0.7} sheen={0.48} sheenRoughness={0.62} />
+        ) : (
+          <meshStandardMaterial roughness={0.9} />
+        )}
       </instancedMesh>
       {armCount > 0 && (
         <instancedMesh ref={armsRef} frustumCulled={false} args={[undefined, undefined, armCount]}>
           <capsuleGeometry args={[0.07, 0.34, 2, 4]} />
-          <meshStandardMaterial color="#d7a377" roughness={0.8} />
+          <meshPhysicalMaterial
+            color="#d7a377"
+            roughness={0.72}
+            sheen={0.18}
+            sheenRoughness={0.82}
+          />
         </instancedMesh>
       )}
       {flashCount > 0 && (
@@ -2564,15 +2589,17 @@ function Scene({
         />
       </Environment> : null}
 
-      <ambientLight intensity={time === "dia" ? 0.22 : 0.16} />
+      <ambientLight intensity={time === "dia" ? 0.16 : 0.1} />
       <hemisphereLight
-        intensity={time === "dia" ? 0.44 : 0.3}
-        groundColor="#0d2a18"
-        color={time === "entardecer" ? "#ffd8ba" : "#cfe4ff"}
+        intensity={time === "dia" ? 0.52 : time === "entardecer" ? 0.38 : 0.28}
+        groundColor={time === "noite" ? "#08131a" : "#102c1d"}
+        color={
+          time === "entardecer" ? "#ffe0c6" : time === "noite" ? "#a9c9ef" : "#d9edff"
+        }
       />
       <directionalLight
         position={[50, 80, 40]}
-        intensity={sun}
+        intensity={sun * 1.08}
         color={sunColor}
         castShadow={shadows}
         shadow-mapSize={quality === "alta" ? [2048, 2048] : quality === "media" ? [1024, 1024] : [512, 512]}
@@ -2588,13 +2615,13 @@ function Scene({
       />
       <directionalLight
         position={[-55, 48, -35]}
-        intensity={time === "noite" ? 0.9 : 0.48}
-        color="#bcd8ff"
+        intensity={time === "noite" ? 0.72 : 0.36}
+        color={time === "entardecer" ? "#b9c9ff" : "#bcd8ff"}
       />
       {quality === "alta" ? (
         <directionalLight
           position={[0, 18, -55]}
-          intensity={time === "entardecer" ? 0.72 : 0.38}
+          intensity={time === "entardecer" ? 0.58 : time === "noite" ? 0.3 : 0.28}
           color={time === "entardecer" ? "#ff9b62" : "#91c9ff"}
         />
       ) : null}

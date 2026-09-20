@@ -15,6 +15,7 @@ import { memo, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import type { SceneArt } from "@/content/cutscenes";
+import { PostFX } from "@/components/game/post/PostFX";
 import { detectQuality, lowerQuality, type QualityLevel } from "@/game/device";
 
 type SetKind = "locker" | "tunnel" | "press" | "pitch" | "stands" | "office";
@@ -687,8 +688,24 @@ export const CinematicStage3D = memo(function CinematicStage3D({
           gl.shadowMap.type = THREE.PCFShadowMap;
         }}
       >
-        <PerformanceMonitor flipflops={2} onDecline={() => setQuality((current) => lowerQuality(current))} />
-        <Stage kind={kind} beat={beat} primary={primary} secondary={secondary} mood={mood} quality={quality} />
+        <PerformanceMonitor
+          flipflops={2}
+          onDecline={() => setQuality((current) => lowerQuality(current))}
+        />
+        <Stage
+          kind={kind}
+          beat={beat}
+          primary={primary}
+          secondary={secondary}
+          mood={mood}
+          quality={quality}
+        />
+        <PostFX
+          quality={quality === "alta" ? "alta" : quality === "media" ? "media" : "baixa"}
+          moment="drama"
+          time="entardecer"
+          intensity={quality === "alta" ? 0.72 : 0.5}
+        />
       </Canvas>
     </div>
   );
