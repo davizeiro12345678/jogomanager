@@ -50,6 +50,12 @@ export function PostFX({
   if (quality === "media") {
     return (
       <EffectComposer key="media" enableNormalPass={false} multisampling={0} resolutionScale={0.62}>
+        <Bloom
+          intensity={Math.max(0.04, p.bloom * 0.55)}
+          luminanceThreshold={0.92}
+          luminanceSmoothing={0.18}
+          mipmapBlur
+        />
         <HueSaturation saturation={p.saturation} hue={p.hue} />
         <BrightnessContrast brightness={p.brightness} contrast={p.contrast} />
         <Vignette offset={0.34} darkness={p.vignette * 0.55} />
