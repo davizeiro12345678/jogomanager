@@ -2499,7 +2499,7 @@ function Scene({
       <AdaptiveEvents />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
-      {quality !== "baixa" ? <Environment resolution={quality === "alta" ? 512 : 256} frames={1}>
+      {quality === "alta" ? <Environment resolution={384} frames={1}>
         <color attach="background" args={[SKY[time]]} />
         <Lightformer
           intensity={time === "dia" ? 3 : 1.6}
@@ -2590,7 +2590,7 @@ function Scene({
       />
       <Scoreboard sim={sim} replay={replay} />
       <Ball sim={sim} quality={quality} hiVis={look.hiVisBall} wet={look.wet} />
-      {quality === "baixa" ? (
+      {quality !== "alta" ? (
         <LowPlayers
           sim={sim}
           homeKit={homeKit}

@@ -35,13 +35,13 @@ export function detectQuality(): QualityLevel {
 export function dprFor(q: QualityLevel): number | [number, number] {
   const mobile = isCoarsePointer();
   if (mobile) {
-    if (q === "alta") return [0.85, 1.25];
-    if (q === "media") return [0.75, 1.1];
-    return [0.7, 0.9];
+    if (q === "alta") return [0.8, 1.15];
+    if (q === "media") return [0.7, 0.95];
+    return [0.62, 0.8];
   }
-  if (q === "alta") return [1, 1.75];
-  if (q === "media") return [0.9, 1.35];
-  return 0.75;
+  if (q === "alta") return [0.95, 1.5];
+  if (q === "media") return [0.8, 1.2];
+  return 0.7;
 }
 
 /**
