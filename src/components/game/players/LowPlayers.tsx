@@ -44,6 +44,8 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
     translate: new THREE.Matrix4(),
     rotate: new THREE.Matrix4(),
     scale: new THREE.Matrix4(),
+    thighEnd: new THREE.Matrix4(),
+    shinEnd: new THREE.Matrix4(),
     position: new THREE.Vector3(),
     quaternion: new THREE.Quaternion(),
     euler: new THREE.Euler(),
@@ -57,7 +59,6 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
   const proportions = useMemo(() => looks.map(proportionsFor), [looks]);
 
   useEffect(() => {
-    const white = new THREE.Color("#ffffff");
     sim.players.forEach((player, index) => {
       const kit = player.pos === "GK"
         ? player.side === "home" ? homeGkKit : awayGkKit
@@ -79,10 +80,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
     });
     for (const mesh of [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, thighsRef.current, shinsRef.current, bootsRef.current]) {
       if (mesh?.instanceColor) mesh.instanceColor.needsUpdate = true;
-      if (mesh) {
-        mesh.frustumCulled = false;
-        mesh.setColorAt(mesh.count - 1, mesh.instanceColor ? new THREE.Color().fromBufferAttribute(mesh.instanceColor, mesh.count - 1) : white);
-      }
+      if (mesh) mesh.frustumCulled = false;
     }
   }, [awayGkKit, awayKit, homeGkKit, homeKit, looks, sim.players]);
 
@@ -91,7 +89,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
     const meshes = [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, thighsRef.current, shinsRef.current, bootsRef.current];
     if (meshes.some((mesh) => !mesh)) return;
 
-    const { root, joint, part, translate, rotate, scale, position, quaternion, euler, unit } = tmp;
+    const { root, joint, part, translate, rotate, scale, thighEnd, shinEnd, position, quaternion, euler, unit } = tmp;
     const setPart = (
       mesh: THREE.InstancedMesh,
       index: number,
@@ -104,6 +102,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
       sizeX: number,
       sizeY: number,
       sizeZ: number,
+      end?: THREE.Matrix4,
     ) => {
       translate.makeTranslation(offsetX, offsetY, offsetZ);
       joint.multiplyMatrices(parent, translate);
@@ -115,7 +114,11 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
       scale.makeScale(sizeX, sizeY, sizeZ);
       part.multiply(scale);
       mesh.setMatrixAt(index, part);
-      return joint.clone().multiply(rotate).multiply(new THREE.Matrix4().makeTranslation(0, -sizeY, 0));
+      if (end) {
+        end.multiplyMatrices(joint, rotate);
+        translate.makeTranslation(0, -sizeY, 0);
+        end.multiply(translate);
+      }
     };
 
     sim.players.forEach((player, index) => {
@@ -158,9 +161,9 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
 
         const legPitch = side === -1 ? stride + kick * 0.95 : -stride;
         const knee = side === -1 ? liftL : liftR;
-        const thighEnd = setPart(thighsRef.current as THREE.InstancedMesh, limbIndex, root, side * p.hipW * 0.5, hipY, 0, legPitch, side * 0.025, p.legR * 2.15, p.thigh, p.legR * 2.15);
+        setPart(thighsRef.current as THREE.InstancedMesh, limbIndex, root, side * p.hipW * 0.5, hipY, 0, legPitch, side * 0.025, p.legR * 2.15, p.thigh, p.legR * 2.15, thighEnd);
         const shinPitch = -knee * (0.55 + gait * 0.75) - kick * 0.35;
-        const shinEnd = setPart(shinsRef.current as THREE.InstancedMesh, limbIndex, thighEnd, 0, 0, 0, shinPitch, 0, p.legR * 1.82, p.shin, p.legR * 1.82);
+        setPart(shinsRef.current as THREE.InstancedMesh, limbIndex, thighEnd, 0, 0, 0, shinPitch, 0, p.legR * 1.82, p.shin, p.legR * 1.82, shinEnd);
         setPart(bootsRef.current as THREE.InstancedMesh, limbIndex, shinEnd, 0, 0, p.footLen * 0.2, 0.18 + knee * 0.2, 0, p.footH * 1.8, p.footH * 0.82, p.footLen * 1.25);
       }
     });
