@@ -8,7 +8,7 @@ import {
 } from "@react-three/drei";
 import { easing } from "maath";
 import type React from "react";
-import { memo, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { PlayerRig } from "@/components/game/players/PlayerRig";
@@ -767,18 +767,6 @@ function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: stri
  * legíveis de qualquer distância e custam quase nada para atualizar.
  */
 function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
-  const [, setLabel] = useState("");
-  const [, setClockText] = useState("0'");
-  // O painel só muda de minuto em minuto: montar as strings a 60 Hz era
-  // trabalho puro de CPU no caminho crítico do quadro.
-  const tick = useRef(0);
-  useFrame(() => {
-    if (++tick.current % 12 !== 0) return;
-    const l = `${sim.home.short}  ${sim.stats.home.goals} – ${sim.stats.away.goals}  ${sim.away.short}`;
-    const c = `${sim.minute()}'`;
-    if (l !== label) setLabel(l);
-    if (c !== clockText) setClockText(c);
-  });
   return (
     <group position={[0, 22, -(FIELD_Z + 26)]}>
       <mesh>

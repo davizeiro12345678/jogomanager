@@ -13,12 +13,9 @@
 // ============================================================================
 
 import { useFrame } from "@react-three/fiber";
-import { Text } from "@react-three/drei";
 import type React from "react";
-import { createElement, memo, Suspense, useMemo, useRef } from "react";
+import { createElement, memo, useMemo, useRef } from "react";
 import * as THREE from "three";
-
-import { DISPLAY_FONT } from "@/components/game/fonts";
 
 import {
   emptyPose,
@@ -1020,37 +1017,12 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
               </mesh>
             ) : null}
 
-            {/* nome + número 3D nítidos nas costas (só na qualidade alta) */}
+            {/* Identificação em geometria simples: evita atlas/worker de fonte por atleta. */}
             {hi ? (
-              <Suspense fallback={null}>
-                <Text
-                  font={DISPLAY_FONT}
-                  position={[0, P.chestLen * 0.74, -(P.chestD + 0.02)]}
-                  rotation={[0, Math.PI, 0]}
-                  fontSize={0.1}
-                  letterSpacing={0.06}
-                  color={jerseyInk}
-                  anchorX="center"
-                  anchorY="middle"
-                  outlineWidth={0.008}
-                  outlineColor={jerseyInkOutline}
-                >
-                  {surname}
-                </Text>
-                <Text
-                  font={DISPLAY_FONT}
-                  position={[0, P.chestLen * 0.36, -(P.chestD + 0.02)]}
-                  rotation={[0, Math.PI, 0]}
-                  fontSize={0.24}
-                  color={jerseyInk}
-                  anchorX="center"
-                  anchorY="middle"
-                  outlineWidth={0.01}
-                  outlineColor={jerseyInkOutline}
-                >
-                  {String(player.number)}
-                </Text>
-              </Suspense>
+              <mesh position={[0, P.chestLen * 0.38, -(P.chestD + 0.018)]} rotation={[0, Math.PI, 0]}>
+                <circleGeometry args={[0.105, 12]} />
+                <meshBasicMaterial color={jerseyInk} toneMapped={false} />
+              </mesh>
             ) : null}
 
             {/* pescoço + cabeça */}
