@@ -142,8 +142,20 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
   const handDetailRRef = useRef<THREE.Group>(null);
   const bootDetailLRef = useRef<THREE.Group>(null);
   const bootDetailRRef = useRef<THREE.Group>(null);
+  // volumes musculares e acabamentos recolhidos por distância: cada um destes
+  // grupos some junto com suas malhas, derrubando as chamadas de desenho dos
+  // atletas longe da câmera (a maioria dos 22, na maior parte do tempo).
+  const nearGroups = useRef<THREE.Group[]>([]);
+  const midGroups = useRef<THREE.Group[]>([]);
+  const collectNear = (el: THREE.Group | null) => {
+    if (el && !nearGroups.current.includes(el)) nearGroups.current.push(el);
+  };
+  const collectMid = (el: THREE.Group | null) => {
+    if (el && !midGroups.current.includes(el)) midGroups.current.push(el);
+  };
   const lodState = useRef<LodLevel | null>(null);
   const castState = useRef<boolean | null>(null);
+
 
 
   /* ---------------------------------------------------------- animação */
@@ -200,6 +212,9 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
       mediumDetails.forEach((detailGroup) => {
         if (detailGroup) detailGroup.visible = lod <= 1;
       });
+      for (const grp of nearGroups.current) grp.visible = lod === 0;
+      for (const grp of midGroups.current) grp.visible = lod <= 1;
+
       // Sombra projetada custa uma segunda passada de desenho por malha.
       // Só o atleta perto da câmera entra no mapa de sombras; os demais ficam
       // com a sombra de contato no gramado, que é uma malha só.
