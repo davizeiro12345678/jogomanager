@@ -9,6 +9,7 @@
 // ============================================================================
 
 import { BASE_CLIPS } from "./animation";
+import type { ClipName } from "./animation";
 import { EXTRA_CLIPS } from "./animation-extra";
 import { EXTRA2_CLIPS } from "./animation-extra2";
 

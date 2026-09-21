@@ -24,7 +24,7 @@ export type ReactionType =
   | "fall"
   | "recovery"
   | "celebrate";
-export type DominantFoot = "left" | "right";
+export type DominantFoot = "left" | "right" | "both";
 
 export type JointName =
   | "hipY"

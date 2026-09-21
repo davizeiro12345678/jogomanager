@@ -77,7 +77,7 @@ export const STANDARD_MARKERS: Record<string, ClipMarker[]> = {
 };
 
 /** Metadados padrão por família */
-export const FAMILY_METADATA: { [K in AnimationFamily]: Partial<ClipMetadata> } = {
+export const FAMILY_METADATA: { [K in AnimationFamily]: Pick<ClipMetadata, 'loop' | 'priority' | 'interruptible'> & Partial<Omit<ClipMetadata, 'loop' | 'priority' | 'interruptible'>> } = {
   locomotion: {
     family: "locomotion" as const,
     loop: true,
