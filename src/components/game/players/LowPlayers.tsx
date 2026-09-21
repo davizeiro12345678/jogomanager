@@ -189,18 +189,23 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
     }
   });
 
-  const material = <meshStandardMaterial color="#ffffff" roughness={0.78} metalness={0} />;
+  // Tecido, pele e couro têm respostas de luz diferentes: separar os três dá
+  // volume real aos atletas sem custar desenho extra (o número de lotes é o mesmo).
+  const cloth = <meshStandardMaterial color="#ffffff" roughness={0.82} metalness={0} envMapIntensity={0.55} />;
+  const skin = <meshStandardMaterial color="#ffffff" roughness={0.58} metalness={0} envMapIntensity={0.75} />;
+  const leather = <meshStandardMaterial color="#ffffff" roughness={0.36} metalness={0.06} envMapIntensity={0.9} />;
   return (
     <group>
-      <instancedMesh ref={torsoRef} args={[undefined, undefined, BODY_PARTS]}>{material}<sphereGeometry args={[0.5, 7, 5]} /></instancedMesh>
-      <instancedMesh ref={hipsRef} args={[undefined, undefined, BODY_PARTS]}>{material}<sphereGeometry args={[0.5, 7, 5]} /></instancedMesh>
-      <instancedMesh ref={headRef} args={[undefined, undefined, BODY_PARTS]}>{material}<sphereGeometry args={[0.5, 8, 6]} /></instancedMesh>
-      <instancedMesh ref={hairRef} args={[undefined, undefined, BODY_PARTS]}>{material}<sphereGeometry args={[0.5, 7, 4, 0, Math.PI * 2, 0, Math.PI * 0.62]} /></instancedMesh>
-      <instancedMesh ref={neckRef} args={[undefined, undefined, BODY_PARTS]}>{material}<cylinderGeometry args={[0.5, 0.5, 1, 6]} /></instancedMesh>
-      <instancedMesh ref={armsRef} args={[undefined, undefined, LIMB_PARTS]}>{material}<cylinderGeometry args={[0.5, 0.42, 1, 6]} /></instancedMesh>
-      <instancedMesh ref={thighsRef} args={[undefined, undefined, LIMB_PARTS]}>{material}<cylinderGeometry args={[0.5, 0.42, 1, 6]} /></instancedMesh>
-      <instancedMesh ref={shinsRef} args={[undefined, undefined, LIMB_PARTS]}>{material}<cylinderGeometry args={[0.44, 0.34, 1, 6]} /></instancedMesh>
-      <instancedMesh ref={bootsRef} args={[undefined, undefined, LIMB_PARTS]}>{material}<boxGeometry args={[1, 1, 1]} /></instancedMesh>
+      <instancedMesh ref={torsoRef} args={[undefined, undefined, BODY_PARTS]} castShadow>{cloth}<sphereGeometry args={[0.5, 8, 6]} /></instancedMesh>
+      <instancedMesh ref={hipsRef} args={[undefined, undefined, BODY_PARTS]} castShadow>{cloth}<sphereGeometry args={[0.5, 8, 6]} /></instancedMesh>
+      <instancedMesh ref={headRef} args={[undefined, undefined, BODY_PARTS]}>{skin}<sphereGeometry args={[0.5, 10, 8]} /></instancedMesh>
+      <instancedMesh ref={hairRef} args={[undefined, undefined, BODY_PARTS]}>{cloth}<sphereGeometry args={[0.5, 8, 5, 0, Math.PI * 2, 0, Math.PI * 0.62]} /></instancedMesh>
+      <instancedMesh ref={neckRef} args={[undefined, undefined, BODY_PARTS]}>{skin}<cylinderGeometry args={[0.5, 0.5, 1, 6]} /></instancedMesh>
+      <instancedMesh ref={armsRef} args={[undefined, undefined, LIMB_PARTS]}>{skin}<cylinderGeometry args={[0.5, 0.42, 1, 7]} /></instancedMesh>
+      <instancedMesh ref={sleevesRef} args={[undefined, undefined, LIMB_PARTS]}>{cloth}<cylinderGeometry args={[0.5, 0.46, 1, 7]} /></instancedMesh>
+      <instancedMesh ref={thighsRef} args={[undefined, undefined, LIMB_PARTS]} castShadow>{cloth}<cylinderGeometry args={[0.5, 0.42, 1, 7]} /></instancedMesh>
+      <instancedMesh ref={shinsRef} args={[undefined, undefined, LIMB_PARTS]}>{cloth}<cylinderGeometry args={[0.44, 0.34, 1, 7]} /></instancedMesh>
+      <instancedMesh ref={bootsRef} args={[undefined, undefined, LIMB_PARTS]}>{leather}<boxGeometry args={[1, 1, 1]} /></instancedMesh>
       <instancedMesh ref={shadowRef} args={[undefined, undefined, BODY_PARTS]} frustumCulled={false} renderOrder={1}>
         <circleGeometry args={[1, 14]} />
         <meshBasicMaterial color="#050806" transparent opacity={0.28} depthWrite={false} />
