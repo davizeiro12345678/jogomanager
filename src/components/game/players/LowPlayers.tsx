@@ -34,6 +34,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
   const shinsRef = useRef<THREE.InstancedMesh>(null);
   const bootsRef = useRef<THREE.InstancedMesh>(null);
   const neckRef = useRef<THREE.InstancedMesh>(null);
+  const sleevesRef = useRef<THREE.InstancedMesh>(null);
   const shadowRef = useRef<THREE.InstancedMesh>(null);
 
   const phase = useRef(new Float32Array(BODY_PARTS));
