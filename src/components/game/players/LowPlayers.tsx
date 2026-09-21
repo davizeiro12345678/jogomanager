@@ -34,6 +34,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
   const shinsRef = useRef<THREE.InstancedMesh>(null);
   const bootsRef = useRef<THREE.InstancedMesh>(null);
   const neckRef = useRef<THREE.InstancedMesh>(null);
+  const sleevesRef = useRef<THREE.InstancedMesh>(null);
   const shadowRef = useRef<THREE.InstancedMesh>(null);
 
   const phase = useRef(new Float32Array(BODY_PARTS));
@@ -78,11 +79,12 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
       for (const offset of [0, 1]) {
         const limbIndex = index * 2 + offset;
         armsRef.current?.setColorAt(limbIndex, new THREE.Color(look.skin));
+        sleevesRef.current?.setColorAt(limbIndex, new THREE.Color(kit.pattern === "sleeves" ? kit.detail : kit.base));
         thighsRef.current?.setColorAt(limbIndex, new THREE.Color(kit.shorts));
         shinsRef.current?.setColorAt(limbIndex, new THREE.Color(kit.socks));
       }
     });
-    for (const mesh of [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, thighsRef.current, shinsRef.current, bootsRef.current, neckRef.current, shadowRef.current]) {
+    for (const mesh of [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, sleevesRef.current, thighsRef.current, shinsRef.current, bootsRef.current, neckRef.current, shadowRef.current]) {
       if (mesh?.instanceColor) mesh.instanceColor.needsUpdate = true;
       if (mesh) mesh.frustumCulled = false;
     }
@@ -90,7 +92,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
 
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.05);
-    const meshes = [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, thighsRef.current, shinsRef.current, bootsRef.current, neckRef.current, shadowRef.current];
+    const meshes = [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, sleevesRef.current, thighsRef.current, shinsRef.current, bootsRef.current, neckRef.current, shadowRef.current];
     if (meshes.some((mesh) => !mesh)) return;
 
     const { root, joint, part, translate, rotate, scale, thighEnd, shinEnd, position, shadowScale, quaternion, euler, unit } = tmp;
@@ -168,7 +170,10 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
       for (const side of [-1, 1] as const) {
         const limbIndex = index * 2 + (side === -1 ? 0 : 1);
         const armPitch = -stride * 0.82 * side;
-        setPart(armsRef.current as THREE.InstancedMesh, limbIndex, root, side * p.shoulderW, hipY + p.spineLen + p.chestLen * 0.85, 0, armPitch, side * 0.1, p.armR * 2, (p.upperArm + p.foreArm) * 0.92, p.armR * 2);
+        const shoulderY = hipY + p.spineLen + p.chestLen * 0.85;
+        setPart(armsRef.current as THREE.InstancedMesh, limbIndex, root, side * p.shoulderW, shoulderY, 0, armPitch, side * 0.1, p.armR * 2, (p.upperArm + p.foreArm) * 0.92, p.armR * 2);
+        // manga curta da camisa cobrindo o topo do braço
+        setPart(sleevesRef.current as THREE.InstancedMesh, limbIndex, root, side * p.shoulderW, shoulderY + 0.012, 0, armPitch, side * 0.1, p.armR * 2.42, p.upperArm * 0.58, p.armR * 2.42);
 
         const legPitch = side === -1 ? stride + kick * 0.95 : -stride;
         const knee = side === -1 ? liftL : liftR;
@@ -184,18 +189,23 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
     }
   });
 
-  const material = <meshStandardMaterial color="#ffffff" roughness={0.78} metalness={0} />;
+  // Tecido, pele e couro têm respostas de luz diferentes: separar os três dá
+  // volume real aos atletas sem custar desenho extra (o número de lotes é o mesmo).
+  const cloth = <meshStandardMaterial color="#ffffff" roughness={0.82} metalness={0} envMapIntensity={0.55} />;
+  const skin = <meshStandardMaterial color="#ffffff" roughness={0.58} metalness={0} envMapIntensity={0.75} />;
+  const leather = <meshStandardMaterial color="#ffffff" roughness={0.36} metalness={0.06} envMapIntensity={0.9} />;
   return (
     <group>
-      <instancedMesh ref={torsoRef} args={[undefined, undefined, BODY_PARTS]}>{material}<sphereGeometry args={[0.5, 7, 5]} /></instancedMesh>
-      <instancedMesh ref={hipsRef} args={[undefined, undefined, BODY_PARTS]}>{material}<sphereGeometry args={[0.5, 7, 5]} /></instancedMesh>
-      <instancedMesh ref={headRef} args={[undefined, undefined, BODY_PARTS]}>{material}<sphereGeometry args={[0.5, 8, 6]} /></instancedMesh>
-      <instancedMesh ref={hairRef} args={[undefined, undefined, BODY_PARTS]}>{material}<sphereGeometry args={[0.5, 7, 4, 0, Math.PI * 2, 0, Math.PI * 0.62]} /></instancedMesh>
-      <instancedMesh ref={neckRef} args={[undefined, undefined, BODY_PARTS]}>{material}<cylinderGeometry args={[0.5, 0.5, 1, 6]} /></instancedMesh>
-      <instancedMesh ref={armsRef} args={[undefined, undefined, LIMB_PARTS]}>{material}<cylinderGeometry args={[0.5, 0.42, 1, 6]} /></instancedMesh>
-      <instancedMesh ref={thighsRef} args={[undefined, undefined, LIMB_PARTS]}>{material}<cylinderGeometry args={[0.5, 0.42, 1, 6]} /></instancedMesh>
-      <instancedMesh ref={shinsRef} args={[undefined, undefined, LIMB_PARTS]}>{material}<cylinderGeometry args={[0.44, 0.34, 1, 6]} /></instancedMesh>
-      <instancedMesh ref={bootsRef} args={[undefined, undefined, LIMB_PARTS]}>{material}<boxGeometry args={[1, 1, 1]} /></instancedMesh>
+      <instancedMesh ref={torsoRef} args={[undefined, undefined, BODY_PARTS]} castShadow>{cloth}<sphereGeometry args={[0.5, 8, 6]} /></instancedMesh>
+      <instancedMesh ref={hipsRef} args={[undefined, undefined, BODY_PARTS]} castShadow>{cloth}<sphereGeometry args={[0.5, 8, 6]} /></instancedMesh>
+      <instancedMesh ref={headRef} args={[undefined, undefined, BODY_PARTS]}>{skin}<sphereGeometry args={[0.5, 10, 8]} /></instancedMesh>
+      <instancedMesh ref={hairRef} args={[undefined, undefined, BODY_PARTS]}>{cloth}<sphereGeometry args={[0.5, 8, 5, 0, Math.PI * 2, 0, Math.PI * 0.62]} /></instancedMesh>
+      <instancedMesh ref={neckRef} args={[undefined, undefined, BODY_PARTS]}>{skin}<cylinderGeometry args={[0.5, 0.5, 1, 6]} /></instancedMesh>
+      <instancedMesh ref={armsRef} args={[undefined, undefined, LIMB_PARTS]}>{skin}<cylinderGeometry args={[0.5, 0.42, 1, 7]} /></instancedMesh>
+      <instancedMesh ref={sleevesRef} args={[undefined, undefined, LIMB_PARTS]}>{cloth}<cylinderGeometry args={[0.5, 0.46, 1, 7]} /></instancedMesh>
+      <instancedMesh ref={thighsRef} args={[undefined, undefined, LIMB_PARTS]} castShadow>{cloth}<cylinderGeometry args={[0.5, 0.42, 1, 7]} /></instancedMesh>
+      <instancedMesh ref={shinsRef} args={[undefined, undefined, LIMB_PARTS]}>{cloth}<cylinderGeometry args={[0.44, 0.34, 1, 7]} /></instancedMesh>
+      <instancedMesh ref={bootsRef} args={[undefined, undefined, LIMB_PARTS]}>{leather}<boxGeometry args={[1, 1, 1]} /></instancedMesh>
       <instancedMesh ref={shadowRef} args={[undefined, undefined, BODY_PARTS]} frustumCulled={false} renderOrder={1}>
         <circleGeometry args={[1, 14]} />
         <meshBasicMaterial color="#050806" transparent opacity={0.28} depthWrite={false} />

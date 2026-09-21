@@ -284,7 +284,7 @@ function Pitch({
           sheen={quality === "alta" ? 0.24 + wet * 0.42 : 0}
           sheenRoughness={0.75}
           sheenColor="#5fae7c"
-          envMapIntensity={0.5 + wet * 0.7}
+          envMapIntensity={0.72 + wet * 0.8}
         />
       </mesh>
       {/* desgaste, lama e terra exposta por cima do gramado */}
@@ -2558,10 +2558,10 @@ function Scene({
       <AdaptiveEvents />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
-      {quality !== "baixa" ? <Environment resolution={quality === "alta" ? 384 : 128} frames={1}>
+      {quality !== "baixa" ? <Environment resolution={quality === "alta" ? 384 : 192} frames={1}>
         <color attach="background" args={[SKY[time]]} />
         <Lightformer
-          intensity={time === "dia" ? (quality === "alta" ? 3 : 2.1) : 1.6}
+          intensity={time === "dia" ? (quality === "alta" ? 3 : 2.6) : 1.8}
           color={sunColor}
           position={[0, 24, 0]}
           rotation={[Math.PI / 2, 0, 0]}
@@ -2618,13 +2618,17 @@ function Scene({
         intensity={time === "noite" ? 0.72 : 0.36}
         color={time === "entardecer" ? "#b9c9ff" : "#bcd8ff"}
       />
-      {quality === "alta" ? (
-        <directionalLight
-          position={[0, 18, -55]}
-          intensity={time === "entardecer" ? 0.58 : time === "noite" ? 0.3 : 0.28}
-          color={time === "entardecer" ? "#ff9b62" : "#91c9ff"}
-        />
-      ) : null}
+      {/* Contraluz de transmissão: recorta a silhueta dos atletas contra o gramado. */}
+      <directionalLight
+        position={[0, 18, -55]}
+        intensity={(time === "entardecer" ? 0.58 : time === "noite" ? 0.34 : 0.3) * (quality === "alta" ? 1 : 0.82)}
+        color={time === "entardecer" ? "#ff9b62" : "#91c9ff"}
+      />
+      <directionalLight
+        position={[0, 14, 52]}
+        intensity={time === "noite" ? 0.24 : 0.2}
+        color={time === "entardecer" ? "#ffd2a8" : "#cfe6ff"}
+      />
 
       <SkyDome time={time} />
       <Pitch quality={quality} sim={sim} wet={look.wet} mow={look.mow} />
