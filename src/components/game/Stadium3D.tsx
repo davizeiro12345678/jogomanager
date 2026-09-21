@@ -2629,18 +2629,6 @@ function Scene({
         intensity={time === "noite" ? 0.24 : 0.2}
         color={time === "entardecer" ? "#ffd2a8" : "#cfe6ff"}
       />
-      {quality !== "baixa" ? (
-        <ContactShadows
-          position={[0, 0.02, 0]}
-          scale={quality === "alta" ? 150 : 120}
-          resolution={quality === "alta" ? 768 : 384}
-          blur={2.4}
-          opacity={0.32}
-          far={6}
-          frames={1}
-          color="#04120a"
-        />
-      ) : null}
 
       <SkyDome time={time} />
       <Pitch quality={quality} sim={sim} wet={look.wet} mow={look.mow} />
