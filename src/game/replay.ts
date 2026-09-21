@@ -10,8 +10,16 @@ import { get, set } from "idb-keyval";
 import type { PlayerAction } from "./animation";
 import { emptyStats } from "./sim";
 import type { MatchStats, Side, SimPlayer, SimView, TeamSetup } from "./sim";
+import {
+  emptyActionContext,
+  emptyContactContext,
+  emptyVersionedVisualData,
+  migrateVisualData,
+  type VersionedVisualData,
+  VISUAL_CONTEXT_VERSION,
+} from "./visual-context";
 
-const KEY = "manager3d.replays.v1";
+const KEY = "manager3d.replays.v2";
 const MAX_REPLAYS = 20;
 /** amostras por segundo de jogo simulado */
 const HZ = 4;
@@ -37,6 +45,8 @@ export interface ReplayFrame {
   hg: number;
   ag: number;
   poss: Side;
+  /** dados visuais versionados (v2+) - null para replays antigos */
+  v?: VersionedVisualData;
 }
 
 export interface Replay {
@@ -81,6 +91,13 @@ export class ReplayRecorder {
       p.push(round(pl.x), round(pl.z), round(pl.vx), round(pl.vz));
       a.push(pl.action);
     }
+    
+    // Gera dados visuais se o sim tiver o metodo
+    let visualData: VersionedVisualData | undefined;
+    if (typeof (sim as any).generateVisualContext === "function") {
+      visualData = (sim as any).generateVisualContext();
+    }
+    
     this.frames.push({
       t: sim.time,
       b: [round(sim.ball.x), round(sim.ball.z), round(sim.ball.height)],
@@ -89,6 +106,7 @@ export class ReplayRecorder {
       hg: sim.stats.home.goals,
       ag: sim.stats.away.goals,
       poss: sim.possession,
+      ...(visualData && { v: visualData }),
     });
   }
 
@@ -131,6 +149,8 @@ export class ReplaySim implements SimView {
   speed = 1;
 
   private i = 0;
+  /** Cache de dados visuais para o frame atual */
+  private currentVisualData: VersionedVisualData | null = null;
 
   constructor(private replay: Replay) {
     this.home = replay.home;
@@ -146,6 +166,20 @@ export class ReplaySim implements SimView {
 
   minute() {
     return Math.min(90, Math.floor(this.time / 60));
+  }
+
+  /**
+   * Gera contexto visual a partir dos dados gravados no replay.
+   * Para replays antigos (sem dados visuais), retorna dados vazios.
+   */
+  generateVisualContext(): VersionedVisualData {
+    // Se ja temos dados cacheados para o frame atual, retorna eles
+    if (this.currentVisualData) {
+      return this.currentVisualData;
+    }
+
+    // Caso contrario, gera dados vazios (serao atualizados em apply())
+    return emptyVersionedVisualData(this.players.length);
   }
 
   /** Avança o tempo de reprodução. */
@@ -189,6 +223,16 @@ export class ReplaySim implements SimView {
     this.possession = a.poss;
     this.stats.home.goals = a.hg;
     this.stats.away.goals = a.ag;
+    
+    // Extrair dados visuais do frame (se existirem)
+    if (a.v) {
+      // Se o frame tem dados visuais, migra para a versao atual e cache
+      this.currentVisualData = migrateVisualData(a.v, this.players.length);
+    } else {
+      // Frame sem dados visuais (replay antigo), cria dados vazios
+      this.currentVisualData = emptyVersionedVisualData(this.players.length);
+    }
+    
     for (let n = 0; n < this.players.length; n++) {
       const p = this.players[n]!;
       const o = n * 4;
