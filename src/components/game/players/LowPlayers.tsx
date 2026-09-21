@@ -79,7 +79,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
       for (const offset of [0, 1]) {
         const limbIndex = index * 2 + offset;
         armsRef.current?.setColorAt(limbIndex, new THREE.Color(look.skin));
-        sleevesRef.current?.setColorAt(limbIndex, new THREE.Color(kit.sleeve ?? kit.base));
+        sleevesRef.current?.setColorAt(limbIndex, new THREE.Color(kit.pattern === "sleeves" ? kit.detail : kit.base));
         thighsRef.current?.setColorAt(limbIndex, new THREE.Color(kit.shorts));
         shinsRef.current?.setColorAt(limbIndex, new THREE.Color(kit.socks));
       }
@@ -92,7 +92,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
 
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.05);
-    const meshes = [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, thighsRef.current, shinsRef.current, bootsRef.current, neckRef.current, shadowRef.current];
+    const meshes = [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, sleevesRef.current, thighsRef.current, shinsRef.current, bootsRef.current, neckRef.current, shadowRef.current];
     if (meshes.some((mesh) => !mesh)) return;
 
     const { root, joint, part, translate, rotate, scale, thighEnd, shinEnd, position, shadowScale, quaternion, euler, unit } = tmp;
