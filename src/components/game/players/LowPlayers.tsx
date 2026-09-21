@@ -79,11 +79,12 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
       for (const offset of [0, 1]) {
         const limbIndex = index * 2 + offset;
         armsRef.current?.setColorAt(limbIndex, new THREE.Color(look.skin));
+        sleevesRef.current?.setColorAt(limbIndex, new THREE.Color(kit.sleeve ?? kit.base));
         thighsRef.current?.setColorAt(limbIndex, new THREE.Color(kit.shorts));
         shinsRef.current?.setColorAt(limbIndex, new THREE.Color(kit.socks));
       }
     });
-    for (const mesh of [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, thighsRef.current, shinsRef.current, bootsRef.current, neckRef.current, shadowRef.current]) {
+    for (const mesh of [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, sleevesRef.current, thighsRef.current, shinsRef.current, bootsRef.current, neckRef.current, shadowRef.current]) {
       if (mesh?.instanceColor) mesh.instanceColor.needsUpdate = true;
       if (mesh) mesh.frustumCulled = false;
     }
