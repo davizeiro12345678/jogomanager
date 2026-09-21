@@ -5,6 +5,15 @@ import * as THREE from "three";
 import type { Kit } from "@/game/kits";
 import { lookFor, proportionsFor } from "@/game/player-model";
 import type { SimView } from "@/game/sim";
+import {
+  emptyActionContext,
+  emptyContactContext,
+  getDominantFoot,
+  type ActionContext,
+  type ContactContext,
+  type DominantFoot,
+} from "@/game/visual-context";
+import { solveFullIK } from "@/game/ik-solver";
 
 type LowPlayersProps = {
   sim: SimView;
@@ -95,6 +104,9 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
     const meshes = [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, armsRef.current, sleevesRef.current, thighsRef.current, shinsRef.current, bootsRef.current, neckRef.current, shadowRef.current];
     if (meshes.some((mesh) => !mesh)) return;
 
+    // Obtém contexto visual do sim (se disponível)
+    const visualCtx = sim.generateVisualContext?.();
+
     const { root, joint, part, translate, rotate, scale, thighEnd, shinEnd, position, shadowScale, quaternion, euler, unit } = tmp;
     const setPart = (
       mesh: THREE.InstancedMesh,
@@ -130,6 +142,39 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
     sim.players.forEach((player, index) => {
       const p = proportions[index];
       if (!p) return;
+      
+      // Obtém ActionContext e ContactContext para este jogador
+      const actionContext: ActionContext = 
+        visualCtx && index >= 0 && index < visualCtx.actionContexts.length
+          ? visualCtx.actionContexts[index] ?? emptyActionContext()
+          : emptyActionContext();
+      const contactContext: ContactContext = 
+        visualCtx && index >= 0 && index < visualCtx.contactContexts.length
+          ? visualCtx.contactContexts[index] ?? emptyContactContext()
+          : emptyContactContext();
+      
+      // Determina pé dominante do jogador
+      const dominantFoot: DominantFoot = getDominantFoot(player.pid);
+      
+      // Aplica correções baseadas no contexto visual
+      let kick = 0;
+      let action = String(player.action ?? "");
+      
+      // Se tiver contexto de ação, usa ele para melhorar a animação
+      if (actionContext.action && player.action) {
+        // Calcula kick com base no progresso da acao
+        const actionProgress = actionContext.actionDur > 0 
+          ? Math.max(0, 1 - actionContext.actionT / actionContext.actionDur) 
+          : 0;
+        kick = Math.sin(Math.PI * actionProgress);
+        
+        // Se for uma acao de chute/passe, usa o pe determinado
+        if (actionContext.usedFoot && /shoot|pass|cross|clear/i.test(action)) {
+          // Ajusta a perna com base no pe usado
+          // (em LowPlayers, simplificamos: so usamos o kick generico)
+        }
+      }
+      
       const speed = Math.hypot(player.vx, player.vz);
       const movingYaw = speed > 0.28 ? Math.atan2(player.vx, player.vz) : yaw.current[index] ?? 0;
       let yawDelta = movingYaw - (yaw.current[index] ?? 0);
@@ -147,8 +192,6 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
       previousSpeed.current[index] = speed;
       const lean = THREE.MathUtils.clamp(speed * 0.018 + acceleration * 0.006, -0.1, 0.2);
       const turnLean = THREE.MathUtils.clamp(-yawDelta * 0.7, -0.22, 0.22);
-      const action = String(player.action ?? "");
-      const kick = /shoot|pass|cross|clear/i.test(action) ? Math.sin(Math.PI * Math.max(0, 1 - player.actionT / Math.max(0.01, player.actionDur))) : 0;
 
       position.set(player.x, 0, player.z);
       quaternion.setFromEuler(euler.set(lean, yaw.current[index] ?? 0, turnLean, "YXZ"));
@@ -167,6 +210,15 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
       part.compose(position, quaternion, shadowScale);
       (shadowRef.current as THREE.InstancedMesh).setMatrixAt(index, part);
 
+      // Aplica correções baseadas no contexto de contato
+      // Se um pe esta no chao, ajusta o movimento da perna correspondente
+      const groundFoot = contactContext.groundFoot;
+      const leftOnGround = groundFoot === "left" || groundFoot === null;
+      const rightOnGround = groundFoot === "right" || groundFoot === null;
+      
+      // Intensidade do contato para ajustar a pose
+      const contactForce = contactContext.force;
+      
       for (const side of [-1, 1] as const) {
         const limbIndex = index * 2 + (side === -1 ? 0 : 1);
         const armPitch = -stride * 0.82 * side;
@@ -175,12 +227,28 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
         // manga curta da camisa cobrindo o topo do braço
         setPart(sleevesRef.current as THREE.InstancedMesh, limbIndex, root, side * p.shoulderW, shoulderY + 0.012, 0, armPitch, side * 0.1, p.armR * 2.42, p.upperArm * 0.58, p.armR * 2.42);
 
-        const legPitch = side === -1 ? stride + kick * 0.95 : -stride;
-        const knee = side === -1 ? liftL : liftR;
+        // Ajusta o movimento das pernas com base no contexto de contato
+        const isLeft = side === -1;
+        const isRight = side === 1;
+        
+        // Se o pe esquerdo esta no chao, reduz o movimento da perna esquerda
+        const leftGroundFactor = leftOnGround ? 0.3 : 1;
+        const rightGroundFactor = rightOnGround ? 0.3 : 1;
+        
+        const legPitch = isLeft 
+          ? stride + kick * 0.95 * leftGroundFactor
+          : -stride * rightGroundFactor;
+        const knee = isLeft ? liftL * leftGroundFactor : liftR * rightGroundFactor;
+        
         setPart(thighsRef.current as THREE.InstancedMesh, limbIndex, root, side * p.hipW * 0.5, hipY, 0, legPitch, side * 0.025, p.legR * 2.15, p.thigh, p.legR * 2.15, thighEnd);
         const shinPitch = -knee * (0.55 + gait * 0.75) - kick * 0.35;
         setPart(shinsRef.current as THREE.InstancedMesh, limbIndex, thighEnd, 0, 0, 0, shinPitch, 0, p.legR * 1.82, p.shin, p.legR * 1.82, shinEnd);
-        setPart(bootsRef.current as THREE.InstancedMesh, limbIndex, shinEnd, 0, 0, p.footLen * 0.2, 0.18 + knee * 0.2, 0, p.footH * 1.8, p.footH * 0.82, p.footLen * 1.25);
+        
+        // Ajusta o pe com base no contato com o chao
+        const footContactOffset = (isLeft && leftOnGround) || (isRight && rightOnGround) 
+          ? contactForce * 0.05 
+          : 0;
+        setPart(bootsRef.current as THREE.InstancedMesh, limbIndex, shinEnd, 0, 0, p.footLen * 0.2, 0.18 + knee * 0.2 + footContactOffset, 0, p.footH * 1.8, p.footH * 0.82, p.footLen * 1.25);
       }
     });
 
