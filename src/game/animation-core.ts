@@ -146,7 +146,7 @@ export interface ClipMetadata {
   /** Prioridade de selecao (0-1, maior = mais importante) */
   priority: number;
   /** Marcadores de eventos */
-  markers: ClipMarker[];
+  markers?: ClipMarker[];
   /** Pe dominante sugerido (para acoes de chute/passe) */
   dominantFoot?: DominantFoot;
   /** Se o clipe pode ser interrompido */
