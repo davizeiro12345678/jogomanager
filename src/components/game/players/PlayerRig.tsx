@@ -212,6 +212,9 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
       mediumDetails.forEach((detailGroup) => {
         if (detailGroup) detailGroup.visible = lod <= 1;
       });
+      for (const grp of nearGroups.current) grp.visible = lod === 0;
+      for (const grp of midGroups.current) grp.visible = lod <= 1;
+
       // Sombra projetada custa uma segunda passada de desenho por malha.
       // Só o atleta perto da câmera entra no mapa de sombras; os demais ficam
       // com a sombra de contato no gramado, que é uma malha só.
