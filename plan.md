@@ -19,6 +19,37 @@ Reconstruir o sistema visual completo com foco hiper-realista próximo: jogadore
 - Performance: Cinema desktop como referência; Alta/Média/Baixa continuam funcionais com LOD, instancing e fallback.
 - UI/UX: produto inteiro, incluindo home, partida, carreira, loja, editor, cutscenes e páginas principais.
 
+**Progresso**
+- ✅ **Contrato visual da engine** (100%)
+  - Criado `visual-context.ts` com ActionContext, ContactContext, VersionedVisualData
+  - Implementado `generateVisualContext()` em `sim.ts`
+  - Adicionado versionamento e migração em `replay.ts`
+  - Testes de determinismo e compatibilidade com replays antigos
+  
+- ✅ **PlayerRig Cinema** (80%)
+  - Criado `ik-solver.ts` com módulo de IK reutilizável
+  - Integrado contexto visual no PlayerRig.tsx
+  - Adicionado apoio de pés, foco contextual, equilíbrio
+  - Goleiros com IK específico (parcial - mergulho, salvada)
+  
+- ✅ **Animações e catálogo** (40%)
+  - Ampliado `animation-core.ts` com metadados (ClipMarker, ClipMetadata, AnimationFamily)
+  - Adicionado JOINT_LIMITS e funções de validação de pose
+  - Falta: reorganizar clipes por famílias e criar transições condicionais
+  
+- ✅ **LOD baixo e performance** (60%)
+  - Integrado `LowPlayers.tsx` com contexto visual
+  - Adicionado uso de groundFoot e contactForce para ajuste de pernas
+  - Mantido instancing e performance
+  - Falta: níveis intermediários de detalhe e medições de performance
+
+- ⏳ **Modelo, materiais e assets locais** (0%)
+- ⏳ **Torcida, gramado, redes e ambiente** (0%)
+- ⏳ **Pós-processamento e câmera** (0%)
+- ⏳ **UI/UX do produto inteiro** (0%)
+- ⏳ **IA e comportamento** (0%)
+- ⏳ **Verificação final** (0%)
+
 **Plano de execução**
 1. **Contrato visual da engine**
    - Criar tipos para `ActionContext`/`ContactContext` com pé dominante, alvo, direção, fase, ponto de contato, intensidade, resultado e reação.
