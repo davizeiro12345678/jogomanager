@@ -56,9 +56,9 @@ export function PostFX({
           luminanceSmoothing={0.18}
           mipmapBlur
         />
-        <HueSaturation saturation={p.saturation} hue={p.hue} />
-        <BrightnessContrast brightness={p.brightness} contrast={p.contrast} />
-        <Vignette offset={0.34} darkness={p.vignette * 0.55} />
+        <HueSaturation saturation={p.saturation * 1.25} hue={p.hue} />
+        <BrightnessContrast brightness={p.brightness + 0.012} contrast={p.contrast * 1.2} />
+        <Vignette offset={0.3} darkness={p.vignette * 0.7} />
         <SMAA />
       </EffectComposer>
     );
