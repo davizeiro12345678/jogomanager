@@ -2558,10 +2558,10 @@ function Scene({
       <AdaptiveEvents />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
-      {quality !== "baixa" ? <Environment resolution={quality === "alta" ? 384 : 128} frames={1}>
+      {quality !== "baixa" ? <Environment resolution={quality === "alta" ? 384 : 192} frames={1}>
         <color attach="background" args={[SKY[time]]} />
         <Lightformer
-          intensity={time === "dia" ? (quality === "alta" ? 3 : 2.1) : 1.6}
+          intensity={time === "dia" ? (quality === "alta" ? 3 : 2.6) : 1.8}
           color={sunColor}
           position={[0, 24, 0]}
           rotation={[Math.PI / 2, 0, 0]}
