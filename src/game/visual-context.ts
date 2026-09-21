@@ -340,7 +340,6 @@ export function emptyVersionedVisualData(playerCount: number): VersionedVisualDa
     version: VISUAL_CONTEXT_VERSION,
     actionContexts: Array(playerCount).fill(null),
     contactContexts: Array(playerCount).fill(null),
-    metadata: undefined,
   };
 }
 
@@ -366,11 +365,25 @@ export function migrateVisualData(
   
   // Se a versao for a atual, apenas preenche campos missing
   if (oldData.version === VISUAL_CONTEXT_VERSION) {
+    const actionContexts = oldData.actionContexts ?? [];
+    const contactContexts = oldData.contactContexts ?? [];
+    
+    // Garante que os arrays tem o tamanho correto
+    const filledActionContexts = Array(playerCount).fill(null);
+    const filledContactContexts = Array(playerCount).fill(null);
+    
+    for (let i = 0; i < Math.min(actionContexts.length, playerCount); i++) {
+      filledActionContexts[i] = actionContexts[i];
+    }
+    for (let i = 0; i < Math.min(contactContexts.length, playerCount); i++) {
+      filledContactContexts[i] = contactContexts[i];
+    }
+    
     return {
       version: VISUAL_CONTEXT_VERSION,
-      actionContexts: oldData.actionContexts ?? Array(playerCount).fill(null),
-      contactContexts: oldData.contactContexts ?? Array(playerCount).fill(null),
-      metadata: oldData.metadata,
+      actionContexts: filledActionContexts,
+      contactContexts: filledContactContexts,
+      ...(oldData.metadata !== undefined && { metadata: oldData.metadata }),
     };
   }
   

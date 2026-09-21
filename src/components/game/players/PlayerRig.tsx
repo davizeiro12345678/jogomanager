@@ -37,6 +37,16 @@ import {
   type LodLevel,
 } from "@/game/player-model";
 import { type SimView, type SimPlayer } from "@/game/sim";
+import {
+  emptyActionContext,
+  emptyContactContext,
+  getDominantFoot,
+  type ActionContext,
+  type ContactContext,
+  type VisualState,
+  type DominantFoot,
+} from "@/game/visual-context";
+import { solveFullIK } from "@/game/ik-solver";
 
 /** duração da transição cruzada entre dois movimentos, em segundos */
 const BLEND_TIME = 0.18;
@@ -84,6 +94,25 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
   const detail = useVisual().playerDetail;
   const quality: Quality =
     detail === "detalhado" ? "alta" : detail === "simples" ? "baixa" : baseQuality;
+
+  /* ---------------------------------------------------------- contexto visual */
+  
+  // Obtém contexto visual do sim (se disponível)
+  const visualCtx = sim.generateVisualContext?.();
+  
+  // Obtém ActionContext e ContactContext para este jogador
+  const playerIndex = sim.players.findIndex((p) => p.id === player.id);
+  const actionContext: ActionContext = 
+    visualCtx && playerIndex >= 0 && playerIndex < visualCtx.actionContexts.length
+      ? visualCtx.actionContexts[playerIndex] ?? emptyActionContext()
+      : emptyActionContext();
+  const contactContext: ContactContext = 
+    visualCtx && playerIndex >= 0 && playerIndex < visualCtx.contactContexts.length
+      ? visualCtx.contactContexts[playerIndex] ?? emptyContactContext()
+      : emptyContactContext();
+  
+  // Determina pé dominante do jogador
+  const dominantFoot: DominantFoot = getDominantFoot(player.pid);
 
   /* ------------------------------------------------------------ aparência */
 
@@ -332,6 +361,23 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
         u: (prevTime.current % 1.4) / 1.4,
       });
       p = mixPose(prev, p, ease(blend.current), blendBuf.current);
+    }
+
+    // ---- Aplicar IK de contexto visual se disponível
+    if (visualCtx && actionContext && contactContext) {
+      const playerInfo = {
+        x: player.x,
+        z: player.z,
+        vx: player.vx,
+        vz: player.vz,
+        rotationY: g.rotation.y,
+        actionT: player.actionT,
+        actionDur: player.actionDur,
+        isGK: player.pos === "GK",
+      };
+      
+      // Aplica IK completo
+      p = solveFullIK(p, actionContext, contactContext, playerInfo);
     }
 
     // ---- camada superior: tronco e cabeça acompanham a bola
