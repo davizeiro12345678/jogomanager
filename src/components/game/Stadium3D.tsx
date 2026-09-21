@@ -284,7 +284,7 @@ function Pitch({
           sheen={quality === "alta" ? 0.24 + wet * 0.42 : 0}
           sheenRoughness={0.75}
           sheenColor="#5fae7c"
-          envMapIntensity={0.5 + wet * 0.7}
+          envMapIntensity={0.72 + wet * 0.8}
         />
       </mesh>
       {/* desgaste, lama e terra exposta por cima do gramado */}
@@ -2618,11 +2618,27 @@ function Scene({
         intensity={time === "noite" ? 0.72 : 0.36}
         color={time === "entardecer" ? "#b9c9ff" : "#bcd8ff"}
       />
-      {quality === "alta" ? (
-        <directionalLight
-          position={[0, 18, -55]}
-          intensity={time === "entardecer" ? 0.58 : time === "noite" ? 0.3 : 0.28}
-          color={time === "entardecer" ? "#ff9b62" : "#91c9ff"}
+      {/* Contraluz de transmissão: recorta a silhueta dos atletas contra o gramado. */}
+      <directionalLight
+        position={[0, 18, -55]}
+        intensity={(time === "entardecer" ? 0.58 : time === "noite" ? 0.34 : 0.3) * (quality === "alta" ? 1 : 0.82)}
+        color={time === "entardecer" ? "#ff9b62" : "#91c9ff"}
+      />
+      <directionalLight
+        position={[0, 14, 52]}
+        intensity={time === "noite" ? 0.24 : 0.2}
+        color={time === "entardecer" ? "#ffd2a8" : "#cfe6ff"}
+      />
+      {quality !== "baixa" ? (
+        <ContactShadows
+          position={[0, 0.02, 0]}
+          scale={quality === "alta" ? 150 : 120}
+          resolution={quality === "alta" ? 768 : 384}
+          blur={2.4}
+          opacity={0.32}
+          far={6}
+          frames={1}
+          color="#04120a"
         />
       ) : null}
 
