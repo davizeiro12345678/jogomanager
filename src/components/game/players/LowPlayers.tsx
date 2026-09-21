@@ -170,7 +170,10 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
       for (const side of [-1, 1] as const) {
         const limbIndex = index * 2 + (side === -1 ? 0 : 1);
         const armPitch = -stride * 0.82 * side;
-        setPart(armsRef.current as THREE.InstancedMesh, limbIndex, root, side * p.shoulderW, hipY + p.spineLen + p.chestLen * 0.85, 0, armPitch, side * 0.1, p.armR * 2, (p.upperArm + p.foreArm) * 0.92, p.armR * 2);
+        const shoulderY = hipY + p.spineLen + p.chestLen * 0.85;
+        setPart(armsRef.current as THREE.InstancedMesh, limbIndex, root, side * p.shoulderW, shoulderY, 0, armPitch, side * 0.1, p.armR * 2, (p.upperArm + p.foreArm) * 0.92, p.armR * 2);
+        // manga curta da camisa cobrindo o topo do braço
+        setPart(sleevesRef.current as THREE.InstancedMesh, limbIndex, root, side * p.shoulderW, shoulderY + 0.012, 0, armPitch, side * 0.1, p.armR * 2.42, p.upperArm * 0.58, p.armR * 2.42);
 
         const legPitch = side === -1 ? stride + kick * 0.95 : -stride;
         const knee = side === -1 ? liftL : liftR;
