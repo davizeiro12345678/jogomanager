@@ -90,7 +90,7 @@ function idleBase(c: ClipCtx, k = 1): Pose {
 
 // ---------------------------------------------------------------- clipes
 
-const BASE_CLIPS = {
+export const BASE_CLIPS = {
   // ---- locomoção (12)
   idle: (c) => idleBase(c),
   breathe: (c) =>
