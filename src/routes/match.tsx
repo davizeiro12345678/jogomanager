@@ -29,6 +29,7 @@ import { ChatPanel } from "@/components/game/ChatPanel";
 import { StorePanel } from "@/components/game/StorePanel";
 
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { CAMERA_OPTIONS, nextCameraMode } from "@/game/camera-modes";
 import { FpsPanel } from "@/components/game/FpsPanel";
 import { fpsMeter } from "@/game/fps-meter";
 import { Cutscene } from "@/components/game/Cutscene";
@@ -219,14 +220,7 @@ function snapshot(sim: MatchRuntime): Snap {
   };
 }
 
-const CAMERAS = [
-  ["broadcast", "TV"],
-  ["tactical", "Tática"],
-  ["goal", "Gol"],
-  ["fan", "Torcida"],
-  ["rail", "Trilho"],
-  ["behind", "Replay"],
-] as const;
+const CAMERAS = CAMERA_OPTIONS.map(({ id, shortLabel }) => [id, shortLabel] as const);
 
 function StatRow({ label, h, a }: { label: string; h: number; a: number }) {
   const total = Math.max(1, h + a);
@@ -348,6 +342,13 @@ const Scoreboard = memo(function Scoreboard({
         <div className="flex h-1 w-full">
           <div className="flex-1" style={{ background: home.primary }} />
           <div className="flex-1" style={{ background: away.primary }} />
+        </div>
+        <div className="flex items-center justify-between px-3 pt-1.5 font-display text-[9px] uppercase tracking-[0.22em] text-white/55">
+          <span className="flex items-center gap-1.5">
+            <i className={`h-1.5 w-1.5 rounded-full ${paused ? "bg-amber-300" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,.9)]"}`} />
+            {paused ? "Pausado" : "Ao vivo"}
+          </span>
+          <span>{snap.minute <= 45 ? "1º tempo" : "2º tempo"}</span>
         </div>
         <div className="flex min-h-11 items-center gap-1.5 px-2 py-1.5 sm:gap-2 sm:px-3">
           <Crest club={home} size={24} detail="simple" />
@@ -683,10 +684,7 @@ function LiveMatch({
       else if (e.key === "3") setSpeed(4);
       else if (e.key === "4") setSpeed(8);
       else if (e.key.toLowerCase() === "c")
-        setCamera((c) => {
-          const i = CAMERAS.findIndex(([m]) => m === c);
-          return CAMERAS[(i + 1) % CAMERAS.length]![0];
-        });
+        setCamera((c) => nextCameraMode(c));
       else if (e.key.toLowerCase() === "e") setShowStats((s) => !s);
       else if (e.key.toLowerCase() === "s") skip();
     }
@@ -990,13 +988,13 @@ function LiveMatch({
             </SheetTitle>
             <SheetDescription>
               {drawer === "store"
-                ? "A partida fica pausada enquanto você compra."
+                ? "Se precisar entrar, a loja abre em outra página e esta partida ao vivo não é salva. Com conta, o jogo fica pausado durante o checkout."
                 : "Converse com outros técnicos sem perder o jogo."}
             </SheetDescription>
           </SheetHeader>
           <div className="mt-4 flex min-h-0 flex-1 flex-col">
             {drawer === "store" ? (
-              <StorePanel next="/match" columns={1} />
+              <StorePanel next="/loja" columns={1} />
             ) : drawer === "chat" ? (
               <ChatPanel next="/match" />
             ) : null}

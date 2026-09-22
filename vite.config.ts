@@ -17,7 +17,9 @@ Object.assign(process.env, serverEnv);
 
 export default defineConfig({
   vite: {
-    plugins: [mcpPlugin(), imagetools()],
+    // The MCP generator currently rejects Windows path separators. Explicit
+    // local verification can reuse the already committed generated routes.
+    plugins: [...(process.env["PFM_LOCAL_VERIFY"] === "1" ? [] : [mcpPlugin()]), imagetools()],
     resolve: {
       alias: {
         "entities/lib/decode.js": path.resolve(import.meta.dirname, "node_modules/entities/lib/decode.js"),

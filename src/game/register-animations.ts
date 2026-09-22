@@ -15,7 +15,7 @@ import { EXTRA2_CLIPS } from "./animation-extra2";
 
 import type { Clip, ClipCtx, Pose } from "./animation-core";
 import type { AnimationFamily, AnnotatedClip, ClipMetadata } from "./animation-catalog";
-import { ANIMATION_CATALOG, FAMILY_METADATA } from "./animation-catalog";
+import { ANIMATION_CATALOG, FAMILY_METADATA, STANDARD_MARKERS } from "./animation-catalog";
 
 // ============================================================================
 // Mapeamento de clipes para famílias
@@ -86,12 +86,17 @@ const CLIP_FAMILY_MAP: Record<string, AnimationFamily> = {
   shotPlaced: "shooting",
   volley: "shooting",
   header: "shooting",
+  bicycle: "shooting",
+  bicycleKick: "shooting",
   
   // ---- Defense ----
   tackle: "defense",
   slide: "defense",
   block: "defense",
   intercept: "defense",
+  slideTackle: "defense",
+  standTackle: "defense",
+  slideTackleLong: "defense",
   
   // ---- Goalkeeper ----
   save: "goalkeeper",
@@ -105,11 +110,40 @@ const CLIP_FAMILY_MAP: Record<string, AnimationFamily> = {
   // ---- Celebration ----
   goal: "celebration",
   celebrate: "celebration",
+  celebrateArms: "celebration",
+  celebrateRun: "celebration",
+  kneeSlide: "celebration",
+  groupHug: "celebration",
+  celebrateSlideStop: "celebration",
+  celebrateHeart: "celebration",
+  celebrateShush: "celebration",
+  celebrateSiuu: "celebration",
+  celebrateSpin: "celebration",
+  celebrateCornerFlag: "celebration",
+  celebrateShirtPull: "celebration",
+  celebratePoint: "celebration",
+  celebrateCalm: "celebration",
+  celebrateTeamLine: "celebration",
+  celebrateFistPump: "celebration",
+  celebrateJumpHug: "celebration",
+  celebrateKneeSlide: "celebration",
+  celebrateArmsWide: "celebration",
+  celebrateBadgeKiss: "celebration",
+  celebrateRockCradle: "celebration",
+  celebrateDanceStep: "celebration",
+  celebrateSlidingKnees: "celebration",
+  celebrateSalute: "celebration",
+  celebrateRunAway: "celebration",
+  celebrateCameraPose: "celebration",
   armsUp: "celebration",
   
   // ---- Recovery ----
   getUp: "recovery",
   injured: "recovery",
+  recover: "recovery",
+  getUpFast: "recovery",
+  fallForward: "recovery",
+  fallBack: "recovery",
   recoverySprint: "recovery",
   
   // ---- Fallback ----
@@ -218,9 +252,14 @@ export function initializeAnimationCatalog(): void {
   
   // Registra todos os clipes
   for (const [name, clip] of Object.entries(ALL_CLIPS)) {
-    const family = CLIP_FAMILY_MAP[name] || "idle";
+    const family = CLIP_FAMILY_MAP[name] ?? (name.startsWith("gk") ? "goalkeeper" : "idle");
     const overrides = CLIP_METADATA_OVERRIDES[name] || {};
-    const metadata = { ...FAMILY_METADATA[family], ...overrides, family };
+    const metadata: ClipMetadata = { ...FAMILY_METADATA[family], ...overrides, family };
+    if (family === "shooting" || family === "passing") {
+      metadata.markers = STANDARD_MARKERS[family === "shooting" ? "shot" : "pass"]!.map(marker => ({ ...marker }));
+      metadata.dominantFoot = name.toLowerCase().includes("bicycle") ? "both" : "right";
+    }
+    if (name === "gkStance" || name === "gkShuffle") { metadata.loop = true; metadata.interruptible = true; }
     
     const annotatedClip: AnnotatedClip = { clip, metadata };
     

@@ -297,21 +297,31 @@ export function canTransition(
   if (!from.metadata.interruptible && from.metadata.loop) {
     return false;
   }
-  
+
+  const remainingActionRatio =
+    !from.metadata.loop &&
+    ctx.actionT !== undefined &&
+    ctx.actionDur !== undefined &&
+    ctx.actionDur > 0
+      ? Math.max(0, ctx.actionT) / ctx.actionDur
+      : undefined;
+
+  // actionT é o tempo restante: uma ação concluída deve liberar a locomoção,
+  // inclusive para um clipe de menor prioridade.
+  if (remainingActionRatio !== undefined && remainingActionRatio <= 0.1) {
+    return true;
+  }
+
   // Se o clipe de destino tem prioridade menor, não transiciona
   if (to.metadata.priority <= from.metadata.priority) {
     return false;
   }
-  
+
   // Se o clipe atual é uma ação fixa (não loop), deixa ele terminar
-  if (!from.metadata.loop && ctx.actionDur && ctx.actionT !== undefined) {
-    const progress = ctx.actionT / ctx.actionDur;
-    // Permite transição apenas nos últimos 10% da ação
-    if (progress < 0.9) {
-      return false;
-    }
+  if (remainingActionRatio !== undefined) {
+    return false;
   }
-  
+
   return true;
 }
 

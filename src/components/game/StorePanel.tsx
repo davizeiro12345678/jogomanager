@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { recordAdMetric } from "@/features/ads/ad-manager";
+import { STORE_PACKS } from "@/game/store-catalog";
 
 interface StoreProduct {
   key: string;
@@ -40,6 +41,22 @@ interface Wallet {
   training_boosts: number;
   unlocked_themes: string[];
 }
+
+/**
+ * A vitrine continua útil quando a leitura anônima falha (por exemplo, sem
+ * rede ou durante uma indisponibilidade de política). O checkout continua
+ * verificando preço e identidade no servidor autenticado.
+ */
+const FALLBACK_PRODUCTS: StoreProduct[] = STORE_PACKS.map((pack) => ({
+  key: pack.key,
+  name: pack.name,
+  description: pack.description,
+  price_cents: pack.priceCents,
+  currency: pack.currency,
+  coins: pack.coins,
+  kind: pack.kind,
+  active: true,
+}));
 
 function formatBRL(cents: number, currency: string): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -82,17 +99,26 @@ function formatDate(iso: string | null | undefined): string {
   return new Date(iso).toLocaleDateString("pt-BR");
 }
 
+function loginDestination(next: string, productKey: string): string {
+  const [path = next, hash] = next.split("#", 2);
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}produto=${encodeURIComponent(productKey)}${hash ? `#${hash}` : ""}`;
+}
+
 /**
  * Vitrine da loja reutilizável: usada na página /loja e dentro da partida.
  * `columns` deixa o layout de uma coluna quando aparece numa gaveta estreita.
  */
 export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; columns?: 1 | 2 }) {
   const signedIn = useSignedIn();
+  const search = useLocation({ select: (location) => location.searchStr });
+  const selectedProduct = new URLSearchParams(search).get("produto");
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [openingKey, setOpeningKey] = useState<string | null>(null);
 
   const productsQuery = useQuery({
     queryKey: ["store_products"],
+    enabled: signedIn === true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("store_products")
@@ -132,10 +158,17 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
 
   const subscriptionQuery = useSubscription();
   const subscriptionActive = isSubscriptionActive(subscriptionQuery.data);
+  const isGuest = signedIn === false;
+  const isSessionLoading = signedIn === null;
+  const usingPublicCatalog = signedIn !== true;
+  // A vitrine pública precisa coincidir com /produtos e não depende do banco.
+  // A lista da base fica reservada à conta autenticada e ao checkout real.
+  const products = usingPublicCatalog ? FALLBACK_PRODUCTS : (productsQuery.data ?? FALLBACK_PRODUCTS);
+  const showingFallback = usingPublicCatalog || productsQuery.isError;
 
   // Destaca o pacote de moedas com mais moedas por real, para o jogador
   // comparar sem fazer conta de cabeça.
-  const bestValueKey = (productsQuery.data ?? [])
+  const bestValueKey = products
     .filter((p) => p.coins > 0 && p.price_cents > 0)
     .reduce<{ key: string; ratio: number } | null>((best, p) => {
       const ratio = p.coins / p.price_cents;
@@ -143,7 +176,9 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
     }, null)?.key;
 
   function buy(productKey: string) {
-    if (!signedIn) return;
+    // Não criar checkout a partir de uma sessão desconhecida ou anônima. O
+    // middleware requireSupabaseAuth mantém essa mesma regra no servidor.
+    if (signedIn !== true) return;
     setOpeningKey(productKey);
     void import("@/lib/analytics").then((m) =>
       m.track("checkout_iniciado", { produto: productKey }),
@@ -162,30 +197,13 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
     }
   }
 
-  if (!signedIn) {
-    return (
-      <div className="rounded-2xl border border-border/60 bg-card/85 p-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          Entre na sua conta para comprar itens da loja.
-        </p>
-        <Link
-          to="/auth"
-          search={{ next }}
-          className="mt-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 font-display text-sm uppercase tracking-wider text-primary-foreground"
-        >
-          Entrar
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div>
       <div className="mb-4 rounded-2xl border border-border/60 surface-card p-4">
         <div className="flex flex-wrap items-center gap-3">
           <Coins className="text-primary" size={20} />
           <span className="font-display text-sm uppercase tracking-wide">
-            {walletQuery.data?.coins ?? 0} moedas
+            {isGuest || isSessionLoading ? "Vitrine da loja" : `${walletQuery.data?.coins ?? 0} moedas`}
           </span>
           {walletQuery.data && walletQuery.data.scout_reports > 0 && (
             <Badge variant="secondary" className="gap-1">
@@ -204,14 +222,35 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
             </Badge>
           )}
         </div>
-        {walletQuery.data && walletQuery.data.unlocked_themes.length > 0 && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Temas desbloqueados: {walletQuery.data.unlocked_themes.join(", ")}
+        {isSessionLoading ? (
+          <p role="status" className="mt-2 text-xs text-muted-foreground">
+            Verificando sua conta para mostrar a ação de compra segura…
           </p>
+        ) : isGuest ? (
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+            <p>Veja todos os pacotes e preços antes de entrar. A compra é vinculada à sua conta no checkout.</p>
+            <Link to="/auth" search={{ next }} className="font-medium text-primary underline underline-offset-4">
+              Entrar para salvar e comprar
+            </Link>
+          </div>
+        ) : (
+          <>
+            {walletQuery.data && walletQuery.data.unlocked_themes.length > 0 ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Temas desbloqueados: {walletQuery.data.unlocked_themes.join(", ")}
+              </p>
+            ) : null}
+            {selectedProduct ? (
+              <p role="status" className="mt-2 text-xs text-primary">
+                Seu pacote escolhido está destacado abaixo. Revise os detalhes antes de abrir o
+                pagamento seguro.
+              </p>
+            ) : null}
+          </>
         )}
       </div>
 
-      {productsQuery.isLoading ? (
+      {productsQuery.isLoading && !usingPublicCatalog ? (
         <div className={`grid gap-4 ${columns === 2 ? "sm:grid-cols-2" : ""}`}>
           {[0, 1, 2, 3].map((i) => (
             <div
@@ -222,33 +261,41 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           ))}
           <span className="sr-only">Carregando produtos…</span>
         </div>
-      ) : productsQuery.isError ? (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4">
-          <p className="text-sm text-destructive">
-            Não foi possível carregar os produtos. Verifique sua conexão e tente de novo.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-3"
-            onClick={() => void productsQuery.refetch()}
-          >
-            Tentar de novo
-          </Button>
-        </div>
-      ) : productsQuery.data?.length === 0 ? (
+      ) : products.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum produto disponível no momento.</p>
       ) : (
         <>
+          {showingFallback ? (
+            <div
+              role="status"
+              className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-secondary/40 p-3 text-xs text-muted-foreground"
+            >
+              <p>
+                {usingPublicCatalog
+                  ? "Catálogo público: compare os pacotes antes de entrar. O checkout confirma preço e disponibilidade."
+                  : "Exibindo o catálogo disponível neste aparelho. O pagamento seguro confirma preço e disponibilidade."}
+              </p>
+              {productsQuery.isError && !usingPublicCatalog ? (
+                <Button variant="outline" size="sm" onClick={() => void productsQuery.refetch()}>
+                  Atualizar catálogo
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
           <div className={`grid gap-4 ${columns === 2 ? "sm:grid-cols-2" : ""}`}>
-            {productsQuery.data?.map((p) => (
+            {products.map((p) => (
               <Card
                 key={p.key}
+                id={`store-product-${p.key}`}
                 onMouseEnter={() => {
                   if (p.key === bestValueKey) recordAdMetric(`store-${p.key}`, "inventory", "impression");
                 }}
                 className={`relative flex flex-col surface-card transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-glow)] motion-reduce:transform-none motion-reduce:transition-none ${
-                  p.key === bestValueKey ? "border-primary/70" : ""
+                  selectedProduct === p.key
+                    ? "border-primary/80 bg-primary/5 ring-1 ring-primary/40"
+                    : p.key === bestValueKey
+                      ? "border-primary/70"
+                      : ""
                 }`}
               >
                 {p.key === bestValueKey && (
@@ -285,21 +332,39 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                 </CardContent>
                 <CardFooter>
                   <div className="w-full space-y-2">
-                    <Button
-                      className="w-full"
-                      disabled={openingKey === p.key || (p.kind === "pass" && subscriptionActive)}
-                      onClick={() => buy(p.key)}
-                       onPointerDown={() => {
-                         if (p.key === bestValueKey) recordAdMetric(`store-${p.key}`, "inventory", "click");
-                       }}
-                    >
-                      {openingKey === p.key
-                        ? "Abrindo checkout…"
-                        : p.kind === "pass" && subscriptionActive
-                          ? "Assinatura ativa"
-                          : "Comprar com segurança"}
-                    </Button>
-                    <p className="text-center text-[11px] text-muted-foreground">Entrega automática na sua conta</p>
+                    {isSessionLoading ? (
+                      <Button className="w-full" disabled>
+                        Verificando conta…
+                      </Button>
+                    ) : isGuest ? (
+                      <Button className="w-full" asChild>
+                        <Link to="/auth" search={{ next: loginDestination(next, p.key) }}>
+                          Entrar para comprar
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button
+                        className="w-full"
+                        disabled={openingKey === p.key || (p.kind === "pass" && subscriptionActive)}
+                        onClick={() => buy(p.key)}
+                        onPointerDown={() => {
+                          if (p.key === bestValueKey) recordAdMetric(`store-${p.key}`, "inventory", "click");
+                        }}
+                      >
+                        {openingKey === p.key
+                          ? "Abrindo checkout…"
+                          : p.kind === "pass" && subscriptionActive
+                            ? "Assinatura ativa"
+                            : "Comprar com segurança"}
+                      </Button>
+                    )}
+                    <p className="text-center text-[11px] text-muted-foreground">
+                      {isSessionLoading
+                        ? "Aguarde a verificação da conta"
+                        : isGuest
+                          ? "Você verá o checkout depois de entrar"
+                          : "Entrega automática na sua conta"}
+                    </p>
                   </div>
                 </CardFooter>
               </Card>

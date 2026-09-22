@@ -22,6 +22,8 @@ type LowPlayersProps = {
   awayKit: Kit;
   homeGkKit: Kit;
   awayGkKit: Kit;
+  excluded?: ReadonlySet<string>;
+  simplified?: boolean;
 };
 
 const BODY_PARTS = 22;
@@ -34,7 +36,7 @@ const UP = new THREE.Vector3(0, 1, 0);
  * centenas de objetos individuais. A silhueta continua articulada em quadril,
  * ombros, cotovelos, joelhos e tornozelos.
  */
-export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowPlayersProps) {
+export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit, excluded }: LowPlayersProps) {
   const torsoRef = useRef<THREE.InstancedMesh>(null);
   const hipsRef = useRef<THREE.InstancedMesh>(null);
   const headRef = useRef<THREE.InstancedMesh>(null);
@@ -143,6 +145,14 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
     sim.players.forEach((player, index) => {
       const p = proportions[index];
       if (!p) return;
+      if (excluded?.has(player.id)) {
+        tmp.part.makeScale(0, 0, 0);
+        for (const mesh of [torsoRef.current, hipsRef.current, headRef.current, hairRef.current, neckRef.current, shadowRef.current]) mesh?.setMatrixAt(index, tmp.part);
+        for (const mesh of [armsRef.current, sleevesRef.current, thighsRef.current, shinsRef.current, bootsRef.current]) {
+          mesh?.setMatrixAt(index * 2, tmp.part); mesh?.setMatrixAt(index * 2 + 1, tmp.part);
+        }
+        return;
+      }
       
       // Obtém ActionContext e ContactContext para este jogador
       const actionContext: ActionContext = 
@@ -265,8 +275,8 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
   const leather = <meshStandardMaterial color="#ffffff" roughness={0.36} metalness={0.06} envMapIntensity={0.9} />;
   return (
     <group>
-      <instancedMesh ref={torsoRef} args={[undefined, undefined, BODY_PARTS]} castShadow>{cloth}<sphereGeometry args={[0.5, 8, 6]} /></instancedMesh>
-      <instancedMesh ref={hipsRef} args={[undefined, undefined, BODY_PARTS]} castShadow>{cloth}<sphereGeometry args={[0.5, 8, 6]} /></instancedMesh>
+      <instancedMesh ref={torsoRef} args={[undefined, undefined, BODY_PARTS]} castShadow>{cloth}<capsuleGeometry args={[0.5, 0.48, 4, 8]} /></instancedMesh>
+      <instancedMesh ref={hipsRef} args={[undefined, undefined, BODY_PARTS]} castShadow>{cloth}<boxGeometry args={[1, 1, 1]} /></instancedMesh>
       <instancedMesh ref={headRef} args={[undefined, undefined, BODY_PARTS]}>{skin}<sphereGeometry args={[0.5, 10, 8]} /></instancedMesh>
       <instancedMesh ref={hairRef} args={[undefined, undefined, BODY_PARTS]}>{cloth}<sphereGeometry args={[0.5, 8, 5, 0, Math.PI * 2, 0, Math.PI * 0.62]} /></instancedMesh>
       <instancedMesh ref={neckRef} args={[undefined, undefined, BODY_PARTS]}>{skin}<cylinderGeometry args={[0.5, 0.5, 1, 6]} /></instancedMesh>

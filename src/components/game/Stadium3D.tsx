@@ -1,9 +1,14 @@
+import { RuntimeBudget, QualityPressure, useQualityPressure } from "@/components/game/RuntimeBudget";
+import { GRAPHICS_PROFILES } from "@/game/contracts/graphics-profile";
+import { resolutionForStage } from "@/game/quality-governor";
+import { broadcastInterest, ShotHold } from "@/game/broadcast-interest";
+import { StaticBatch } from "@/components/game/stadium/StaticBatch";
+import { GrassChunks } from "@/components/game/stadium/GrassChunks";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
   Environment,
   Lightformer,
   AdaptiveEvents,
-  PerformanceMonitor,
   Trail,
 } from "@react-three/drei";
 import { easing } from "maath";
@@ -12,7 +17,9 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { PlayerRig } from "@/components/game/players/PlayerRig";
-import { LowPlayers } from "@/components/game/players/LowPlayers";
+import { FrameProbe } from "@/components/game/FrameProbe";
+import { MatchPlayers } from "@/components/game/players/MatchPlayers";
+import { CrowdLod } from "@/components/game/stadium/CrowdLod";
 import { PostFX } from "@/components/game/post/PostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
 import { adTexture } from "@/components/game/stadium/textures/ads";
@@ -39,13 +46,15 @@ import {
 import { StadiumProps } from "@/components/game/stadium/Props";
 
 import { dprFor, higherQuality, lowerQuality } from "@/game/device";
+import type { CameraMode } from "@/game/camera-modes";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
 import { matchLook, type TimeOfDay } from "@/game/matchday";
 import { useResolvedVisual, useVisual } from "@/game/visual-settings";
 
-export type CameraMode = "broadcast" | "tactical" | "goal" | "fan" | "rail" | "behind";
+export type { CameraMode } from "@/game/camera-modes";
 export type Quality = "alta" | "media" | "baixa";
+const SHADOW_SETTINGS = { type: THREE.PCFShadowMap };
 
 const SKY: Record<TimeOfDay, string> = {
   dia: "#8fbfe8",
@@ -68,7 +77,7 @@ function useBladeMaterial(color: string) {
     uWind: { value: 1 },
   });
   const mat = useMemo(() => {
-    const m = new THREE.MeshStandardMaterial({ color, roughness: 0.94, metalness: 0 });
+    const m = new THREE.MeshStandardMaterial({ color, roughness: 0.94, metalness: 0, vertexColors: true });
     m.onBeforeCompile = (shader) => {
       shader.uniforms["uTime"] = uniforms.current.uTime;
       shader.uniforms["uBall"] = uniforms.current.uBall;
@@ -103,82 +112,16 @@ function useBladeMaterial(color: string) {
 
 function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
   const vis = useVisual();
-  const scale = Math.max(0, vis.grassDensity);
-  const short = Math.round((quality === "alta" ? 10500 : 3200) * scale);
-  const tall = Math.round((quality === "alta" ? 2600 : 700) * scale);
-
-  const shortRef = useRef<THREE.InstancedMesh>(null);
-  const tallRef = useRef<THREE.InstancedMesh>(null);
-  const { mat, uniforms } = useBladeMaterial("#2b8a4d");
-
-  useEffect(() => {
-    const d = new THREE.Object3D();
-    const col = new THREE.Color();
-    let randomState = 0x6d2b79f5;
-    const random = () => {
-      randomState = Math.imul(randomState ^ (randomState >>> 15), 1 | randomState);
-      randomState ^= randomState + Math.imul(randomState ^ (randomState >>> 7), 61 | randomState);
-      return ((randomState ^ (randomState >>> 14)) >>> 0) / 4294967296;
-    };
-    const fill = (mesh: THREE.InstancedMesh | null, n: number, tallLayer: boolean) => {
-      if (!mesh) return;
-      for (let i = 0; i < n; i++) {
-        const x = (random() * 2 - 1) * (FIELD_X + 5);
-        const z = (random() * 2 - 1) * (FIELD_Z + 5);
-        d.position.set(x, tallLayer ? 0.09 : 0.05, z);
-        d.rotation.set(
-          0,
-          random() * Math.PI,
-          (random() - 0.5) * (tallLayer ? 0.4 : 0.22),
-        );
-        const s = tallLayer ? 0.7 + random() * 0.8 : 0.5 + random() * 0.5;
-        d.scale.set(s, s * (0.75 + random() * 0.7), s);
-        d.updateMatrix();
-        mesh.setMatrixAt(i, d.matrix);
-        // faixas de corte: alternância clara/escura também nas fibras
-        const stripe = Math.floor((z + FIELD_Z) / 6) % 2 === 0 ? 0.05 : 0;
-        col.setHSL(0.33 + random() * 0.03, 0.5, 0.22 + stripe + random() * 0.1);
-        mesh.setColorAt(i, col);
-      }
-      mesh.instanceMatrix.needsUpdate = true;
-      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-      mesh.computeBoundingSphere();
-    };
-    fill(shortRef.current, short, false);
-    fill(tallRef.current, tall, true);
-  }, [short, tall]);
-
-  const frame = useRef(0);
+  const pressure = useQualityPressure();
+  const { mat, uniforms } = useBladeMaterial("#46824b");
+  useEffect(() => () => mat.dispose(), [mat]);
   useFrame(({ clock }) => {
-    frame.current += 1;
-    if (quality === "media" && frame.current % 2 !== 0) return;
     uniforms.uTime.value = clock.elapsedTime;
     uniforms.uBall.value.set(sim.ball.x, 0, sim.ball.z);
-    uniforms.uWind.value = 0.8 + Math.sin(clock.elapsedTime * 0.23) * 0.35;
+    uniforms.uWind.value = 0.9;
   });
-
-  return (
-    <group>
-      <instancedMesh
-        ref={shortRef}
-        frustumCulled={false}
-        material={mat}
-        args={[undefined, undefined, short]}
-      >
-        <coneGeometry args={[0.045, 0.12, 3]} />
-      </instancedMesh>
-      <instancedMesh
-        ref={tallRef}
-        frustumCulled
-        material={mat}
-        args={[undefined, undefined, tall]}
-      >
-        <coneGeometry args={[0.06, 0.22, 4]} />
-      </instancedMesh>
-    </group>
-  );
+  return <GrassChunks pressure={pressure} material={mat} density={vis.grassDensity * (quality === "alta" ? 1 : 0.3)} />;
 }
-
 /**
  * Marcas de pisada e rastro de deslize: um pool de manchas escuras deixadas
  * pela bola e pelos jogadores, que desbotam com o tempo.
@@ -275,16 +218,16 @@ function Pitch({
           {...(tex ? { map: tex, color: tint } : { color: "#1d7a45" })}
           {...(wearRough ? { roughnessMap: wearRough } : rough ? { roughnessMap: rough } : {})}
           {...(norm ? { normalMap: norm, normalScale } : {})}
-          roughness={0.8 - wet * 0.2}
+          roughness={0.94 - wet * 0.22}
           metalness={0.0}
-          clearcoat={quality === "alta" ? 0.12 + wet * 0.62 : quality === "media" ? wet * 0.3 : 0}
+          clearcoat={quality === "alta" ? wet * 0.22 : quality === "media" ? wet * 0.3 : 0}
           clearcoatRoughness={0.72 - wet * 0.48}
           iridescence={quality === "alta" ? wet * 0.08 : 0}
           iridescenceIOR={1.28}
-          sheen={quality === "alta" ? 0.24 + wet * 0.42 : 0}
+          sheen={quality === "alta" ? 0.05 + wet * 0.1 : 0}
           sheenRoughness={0.75}
           sheenColor="#5fae7c"
-          envMapIntensity={0.72 + wet * 0.8}
+          envMapIntensity={0.32 + wet * 0.35}
         />
       </mesh>
       {/* desgaste, lama e terra exposta por cima do gramado */}
@@ -779,7 +722,9 @@ function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
   const tick = useRef(0);
   useFrame(() => {
     if (!board || ++tick.current % 12 !== 0) return;
-    const key = `${sim.home.short}|${sim.stats.home.goals}|${sim.stats.away.goals}|${sim.away.short}|${sim.minute()}|${replay}`;
+    const possessionTotal = sim.stats.home.possessionTicks + sim.stats.away.possessionTicks;
+    const homePossession = possessionTotal > 0 ? Math.round((sim.stats.home.possessionTicks / possessionTotal) * 100) : 50;
+    const key = `${sim.home.short}|${sim.stats.home.goals}|${sim.stats.away.goals}|${sim.away.short}|${sim.minute()}|${replay}|${homePossession}|${sim.stats.home.shots}|${sim.stats.away.shots}`;
     if (board.last === key) return;
     board.last = key;
     const ctx = board.canvas.getContext("2d");
@@ -790,14 +735,26 @@ function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
     ctx.fillStyle = "#25e77f";
     ctx.fillRect(0, 0, board.canvas.width, 12);
     ctx.fillRect(0, board.canvas.height - 12, board.canvas.width, 12);
-    ctx.textAlign = "center";
+    ctx.textAlign = "left";
     ctx.textBaseline = "middle";
+    ctx.font = "700 30px sans-serif";
+    ctx.fillStyle = replay ? "#ffb3ba" : "#39f18b";
+    ctx.fillText(replay ? "REPLAY" : "AO VIVO", 42, 48);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#9eb8aa";
+    ctx.font = "600 26px sans-serif";
+    ctx.fillText(`${sim.minute()}'`, 982, 48);
+    ctx.textAlign = "center";
     ctx.font = "700 92px sans-serif";
     ctx.fillStyle = "#eafff2";
     ctx.fillText(`${sim.home.short}  ${sim.stats.home.goals} — ${sim.stats.away.goals}  ${sim.away.short}`, 512, 132);
-    ctx.font = "700 52px sans-serif";
+    ctx.font = "700 30px sans-serif";
     ctx.fillStyle = replay ? "#ffd2d5" : "#ffd76a";
-    ctx.fillText(replay ? `REPLAY  •  ${sim.minute()}'` : `${sim.minute()}'`, 512, 240);
+    ctx.fillText(`${homePossession}% POSSE  ·  ${sim.stats.home.shots}–${sim.stats.away.shots} CHUTES`, 512, 232);
+    ctx.fillStyle = "#2de67e";
+    ctx.fillRect(42, 272, 940 * (homePossession / 100), 12);
+    ctx.fillStyle = "#4c6a79";
+    ctx.fillRect(42 + 940 * (homePossession / 100), 272, 940 * (1 - homePossession / 100), 12);
     board.texture.needsUpdate = true;
   });
   useEffect(() => () => board?.texture.dispose(), [board]);
@@ -844,7 +801,7 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
   ];
   const lamps = [-2.6, -0.9, 0.9, 2.6];
   return (
-    <group>
+    <StaticBatch signature={`floodlights:${time}:${quality}`}>
       {spots.map(([sx, sz], i) => {
         const px = sx * (FIELD_X + 20);
         const pz = sz * (FIELD_Z + 22);
@@ -940,7 +897,7 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
             />
           </mesh>
         ))}
-    </group>
+    </StaticBatch>
   );
 }
 
@@ -990,7 +947,9 @@ function Tiers({
     if (t) {
       const c = t.clone();
       c.needsUpdate = true;
-      c.repeat.set(14, 1);
+      // Cada degrau já representa uma fileira. Repetir as doze fileiras da
+      // textura em 1,2 m criava listras escuras e moiré à distância.
+      c.repeat.set(14, 0.12);
       m.map = c;
     } else {
       m.color = new THREE.Color(homeColor);
@@ -1002,7 +961,7 @@ function Tiers({
     if (c.map) {
       const t = c.map.clone();
       t.needsUpdate = true;
-      t.repeat.set(10, 1);
+      t.repeat.set(10, 0.12);
       c.map = t;
     }
     return c;
@@ -1075,10 +1034,10 @@ function Tiers({
   }
 
   return (
-    <group>
+    <StaticBatch signature={`tiers:${rings}:${homeColor}:${awayColor}`}>
       {steps}
       {stairs}
-    </group>
+    </StaticBatch>
   );
 }
 
@@ -1119,7 +1078,7 @@ function Roof({ rings }: { rings: number }) {
     }
   }
   return (
-    <group>
+    <StaticBatch signature={`roof:${rings}`}>
       {trusses}
       {[-1, 1].map((z) => (
         <group key={`rz${z}`}>
@@ -1178,7 +1137,7 @@ function Roof({ rings }: { rings: number }) {
           <meshStandardMaterial color="#49545f" roughness={0.8} metalness={0.2} />
         </mesh>
       ))}
-    </group>
+    </StaticBatch>
   );
 }
 
@@ -1243,6 +1202,87 @@ function Banners({ color, alt, rings }: { color: string; alt: string; rings: num
   );
 }
 
+/**
+ * Massa de torcida para planos abertos. As arquibancadas continuam com degraus
+ * físicos e espectadores próximos 3D; esta camada resolve o detalhe que o
+ * olho lê à distância em só quatro superfícies, sem milhares de meshes.
+ */
+function crowdBackdropTexture(homeColor: string, awayColor: string) {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
+  canvas.height = 320;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = "rgba(9, 15, 20, 0.88)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const neutral = ["#d6dbe0", "#55708c", "#d1b36e", "#80909e", "#adbac4"];
+  let seed = 0x9e3779b9;
+  const random = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
+    return (seed >>> 0) / 4294967296;
+  };
+  const rows = 20;
+  const columns = 86;
+  for (let row = 0; row < rows; row++) {
+    const y = 5 + row * 16 + random() * 2;
+    for (let col = 0; col < columns; col++) {
+      const x = 3 + col * 12 + random() * 2;
+      const sector = col / columns;
+      const shirt = sector < 0.3 ? homeColor : sector > 0.82 ? awayColor : neutral[(row * 3 + col) % neutral.length]!;
+      const height = 7 + random() * 5;
+      ctx.fillStyle = shirt;
+      ctx.fillRect(x, y + 5, 8 + random() * 2, height);
+      ctx.fillStyle = ["#f0c9a5", "#d79d70", "#9b603a", "#70401f"][Math.floor(random() * 4)]!;
+      ctx.beginPath();
+      ctx.arc(x + 4.5, y + 3.5, 3 + random() * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+      // cabeças, braços e bandeiras não ficam regulares como um grid de UI
+      if (random() > 0.91) {
+        ctx.fillStyle = shirt;
+        ctx.fillRect(x - 1, y - 6 - random() * 12, 1.5, 11 + random() * 8);
+        ctx.fillRect(x, y - 6 - random() * 12, 9, 5);
+      }
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.anisotropy = 8;
+  return texture;
+}
+
+function CrowdBackdrop({ homeColor, awayColor, rings }: { homeColor: string; awayColor: string; rings: number }) {
+  const texture = useMemo(() => crowdBackdropTexture(homeColor, awayColor), [homeColor, awayColor]);
+  useEffect(() => () => texture?.dispose(), [texture]);
+  if (!texture) return null;
+  const height = Math.max(9, rings * 1.45 + 0.6);
+  const y = 1.9 + height * 0.5;
+  // Os degraus finais são volumes opacos. A massa de silhuetas fica alguns
+  // centímetros para dentro deles: assim ela fica visível acima das cadeiras
+  // sem aparecer através da estrutura quando a câmera muda de lado.
+  const zEdge = FIELD_Z + 6 + (rings - 1) * 1.5;
+  const xEdge = FIELD_X + 9 + (rings - 1) * 1.5;
+  return (
+    <group renderOrder={1}>
+      {[-1, 1].map((z) => (
+        <mesh key={`crowd-z-${z}`} position={[0, y, z * zEdge]} rotation={[0, z > 0 ? Math.PI : 0, 0]}>
+          <planeGeometry args={[FIELD_X * 2 + 24, height]} />
+          <meshBasicMaterial map={texture} transparent opacity={0.9} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+      {[-1, 1].map((x) => (
+        <mesh key={`crowd-x-${x}`} position={[x * xEdge, y, 0]} rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}>
+          <planeGeometry args={[FIELD_Z * 2 + 18, height]} />
+          <meshBasicMaterial map={texture} transparent opacity={0.84} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 function Stands({
   homeColor,
   awayColor,
@@ -1257,6 +1297,7 @@ function Stands({
   night: boolean;
 }) {
   const vis = useVisual();
+  const pressure = useQualityPressure();
   const density = Math.round(
     (quality === "alta" ? 460 : quality === "media" ? 240 : 100) * Math.max(0.1, vis.crowdDensity),
   );
@@ -1338,183 +1379,6 @@ function Stands({
     return { positions, colors, skins };
   }, [homeColor, awayColor, density, rings]);
 
-  const ref = useRef<THREE.InstancedMesh>(null);
-  const headRef = useRef<THREE.InstancedMesh>(null);
-  const hairRef = useRef<THREE.InstancedMesh>(null);
-  const shoulderRef = useRef<THREE.InstancedMesh>(null);
-  const flashRef = useRef<THREE.InstancedMesh>(null);
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-  const flashCount = night ? Math.min(200, Math.round(crowd.positions.length * 0.05)) : 0;
-  const armsRef = useRef<THREE.InstancedMesh>(null);
-  const armCount = quality === "alta" ? Math.round(crowd.positions.length * 0.45) : 0;
-
-  useEffect(() => {
-    const mesh = ref.current;
-    if (!mesh) return;
-    crowd.colors.forEach((c, i) => mesh.setColorAt(i, c));
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    const shoulders = quality === "baixa" ? null : shoulderRef.current;
-    if (shoulders) {
-      crowd.colors.forEach((c, i) => shoulders.setColorAt(i, c));
-      if (shoulders.instanceColor) shoulders.instanceColor.needsUpdate = true;
-    }
-    const head = headRef.current;
-    if (head) {
-      crowd.skins.forEach((c, i) => head.setColorAt(i, c));
-      if (head.instanceColor) head.instanceColor.needsUpdate = true;
-    }
-    const hair = hairRef.current;
-    if (hair) {
-      const hairs = ["#221a14", "#3d2a19", "#7a5a33", "#c9b48a", "#101010", "#5e5e5e", "#e8e8e8"];
-      for (let i = 0; i < crowd.positions.length; i++) {
-        // 1 em cada 4 usa boné na cor do setor, o resto usa cabelo
-        const cap = i % 4 === 0;
-        hair.setColorAt(
-          i,
-          cap ? crowd.colors[i]! : new THREE.Color(hairs[(i * 7) % hairs.length]!),
-        );
-      }
-      if (hair.instanceColor) hair.instanceColor.needsUpdate = true;
-    }
-    const mat = mesh.material as THREE.Material | THREE.Material[];
-    if (Array.isArray(mat)) mat.forEach((m) => (m.needsUpdate = true));
-    else mat.needsUpdate = true;
-  }, [crowd, quality]);
-
-  // atualiza a torcida em taxa reduzida fora da qualidade alta: o movimento
-  // continua contínuo aos olhos, mas o custo por quadro cai bastante
-  const tick = useRef(0);
-  const everyN = quality === "alta" ? 1 : quality === "media" ? 2 : 12;
-
-  // constantes por torcedor: tira módulo e trigonometria de índice do laço quente
-  const seat = useMemo(() => {
-    const n = crowd.positions.length;
-    const tall = new Float32Array(n);
-    const yaw0 = new Float32Array(n);
-    // parte do público fica sentado e só levanta na ola, no gol e no perigo
-    const sit = new Float32Array(n);
-    for (let i = 0; i < n; i++) {
-      tall[i] = 0.9 + (i % 5) * 0.045;
-      yaw0[i] = ((i % 7) - 3) * 0.06;
-      sit[i] = (i * 11) % 10 < 3 ? 1 : 0;
-    }
-    return { tall, yaw0, sit };
-  }, [crowd]);
-
-
-  // tabela de seno: o laço roda milhares de vezes por quadro, Math.sin domina o custo
-  const SIN = useMemo(() => {
-    const t = new Float32Array(1024);
-    for (let i = 0; i < 1024; i++) t[i] = Math.sin((i / 1024) * Math.PI * 2);
-    return t;
-  }, []);
-  const fsin = (x: number) => SIN[((x * 162.9746617) | 0) & 1023]!;
-
-  // reaproveitado a cada quadro: o laço da torcida não pode alocar nada
-  const camFwd = useMemo(() => new THREE.Vector3(), []);
-
-  useFrame(({ clock, camera: cam }) => {
-    const mesh = ref.current;
-    if (!mesh) return;
-    tick.current++;
-    if (tick.current % everyN !== 0) return;
-    const head = headRef.current;
-    const hair = hairRef.current;
-    const shoulders = quality === "baixa" ? null : shoulderRef.current;
-    const t = clock.elapsedTime;
-    const pulse = goalPulse.current;
-    const arms = armsRef.current;
-    const n = crowd.positions.length;
-    // Só anima quem a câmera pode ver: fora do campo de visão ou muito longe,
-    // a matriz antiga continua valendo e o custo por quadro cai bastante.
-    cam.getWorldDirection(camFwd);
-    const cx = cam.position.x;
-    const cz = cam.position.z;
-    const far2 = quality === "alta" ? 150 * 150 : quality === "media" ? 120 * 120 : 95 * 95;
-    for (let i = 0; i < n; i++) {
-      const p = crowd.positions[i]!;
-      const dx = p.x - cx;
-      const dz = p.z - cz;
-      const d2 = dx * dx + dz * dz;
-      if (d2 > far2) continue;
-      // atrás da câmera (com folga lateral para não "pipocar" ao girar)
-      if (dx * camFwd.x + dz * camFwd.z < -0.35 * Math.sqrt(d2)) continue;
-
-      const wave = fsin(t * 1.1 - p.x * 0.06) > 0.86 ? 0.5 : 0;
-      const jump = pulse > 0 ? Math.abs(fsin(t * 9 + i)) * 0.75 * pulse : 0;
-      // sentado: mais baixo e encolhido; levanta na ola e na comemoração
-      const stand = Math.min(1, pulse * 1.6 + (wave > 0 ? 1 : 0));
-      const sit = seat.sit[i]! * (1 - stand);
-      const y = p.y + fsin(t * 3 + i) * 0.06 + wave + jump - sit * 0.34;
-      // balanço lateral: a massa nunca fica perfeitamente enfileirada
-      const swayX = fsin(t * 1.6 + i * 0.7) * 0.05 * (0.4 + pulse);
-      const yaw = seat.yaw0[i]! + fsin(t * 0.8 + i) * 0.05;
-      const tall = seat.tall[i]! * (1 - sit * 0.3);
-      const px = p.x + swayX;
-      dummy.position.set(px, y, p.z);
-      dummy.scale.set(1 + sit * 0.08, tall, 1);
-
-      dummy.rotation.set(0, yaw, fsin(t * 1.9 + i * 1.3) * 0.03);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-      if (shoulders) {
-        dummy.position.set(px, y + 0.3 * tall, p.z);
-        dummy.scale.set(1.5, 0.55, 1);
-        dummy.rotation.set(0, yaw, Math.PI / 2);
-        dummy.updateMatrix();
-        shoulders.setMatrixAt(i, dummy.matrix);
-      }
-      const headY = y + 0.5 * tall + 0.06;
-      const headPitch = fsin(t * 2 + i) * 0.05;
-      if (head) {
-        dummy.position.set(px, headY, p.z);
-        dummy.scale.setScalar(1);
-        dummy.rotation.set(headPitch, yaw, 0);
-        dummy.updateMatrix();
-        head.setMatrixAt(i, dummy.matrix);
-      }
-      if (hair) {
-        dummy.position.set(px, headY + 0.015, p.z);
-        dummy.scale.set(1, i % 4 === 0 ? 0.7 : 1, 1);
-        dummy.rotation.set(headPitch, yaw, 0);
-        dummy.updateMatrix();
-        hair.setMatrixAt(i, dummy.matrix);
-      }
-      // braços: palmas no ritmo, erguidos na comemoração e na ola
-      if (arms && i < armCount) {
-        const raise = Math.min(
-          1,
-          pulse * 1.2 + (wave > 0 ? 0.8 : 0) + (fsin(t * 6 + i) > 0.7 ? 0.25 : 0),
-        );
-        dummy.position.set(px, y + 0.42 + raise * 0.3, p.z);
-        dummy.rotation.set(-raise * 1.5, yaw, 0);
-        dummy.scale.set(1, 0.5 + raise * 0.7, 1);
-        dummy.updateMatrix();
-        arms.setMatrixAt(i, dummy.matrix);
-      }
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-    if (head) head.instanceMatrix.needsUpdate = true;
-    if (hair) hair.instanceMatrix.needsUpdate = true;
-    if (shoulders) shoulders.instanceMatrix.needsUpdate = true;
-    if (arms && armCount) arms.instanceMatrix.needsUpdate = true;
-
-    // flashes de câmera na torcida (mais intensos após o gol)
-    const fm = flashRef.current;
-    if (fm && flashCount) {
-      for (let i = 0; i < flashCount; i++) {
-        const p = crowd.positions[(i * 37) % n]!;
-        const on = fsin(t * (6 + (i % 5)) + i * 2.3) > (pulse > 0.05 ? 0.55 : 0.95);
-        dummy.position.set(p.x, p.y + 0.45, p.z);
-        dummy.rotation.set(0, 0, 0);
-        dummy.scale.setScalar(on ? 1 : 0.0001);
-        dummy.updateMatrix();
-        fm.setMatrixAt(i, dummy.matrix);
-      }
-      fm.instanceMatrix.needsUpdate = true;
-    }
-  });
-
   return (
     <group>
       {/* muro externo (atrás das arquibancadas) */}
@@ -1531,84 +1395,11 @@ function Stands({
 
       <Tiers rings={rings} homeColor={homeColor} awayColor={awayColor} />
       <Roof rings={rings} />
+      <CrowdBackdrop homeColor={homeColor} awayColor={awayColor} rings={rings} />
       <Banners color={homeColor} alt={awayColor} rings={rings} />
       <CrowdFlags color={homeColor} alt={awayColor} rings={rings} quality={quality} />
 
-      {/* tronco: ombros mais largos que o quadril, tecido fosco */}
-      <instancedMesh
-        ref={ref}
-        frustumCulled
-        args={[undefined, undefined, crowd.positions.length]}
-      >
-        <capsuleGeometry
-          args={[0.22, 0.44, quality === "alta" ? 4 : 3, quality === "alta" ? 10 : 6]}
-        />
-        {quality === "alta" ? (
-          <meshPhysicalMaterial roughness={0.78} sheen={0.22} sheenRoughness={0.82} />
-        ) : (
-          <meshStandardMaterial roughness={0.9} />
-        )}
-      </instancedMesh>
-      {quality !== "baixa" ? (
-        <instancedMesh
-          ref={shoulderRef}
-          frustumCulled={false}
-          args={[undefined, undefined, crowd.positions.length]}
-        >
-          <capsuleGeometry args={[0.13, 0.3, 2, quality === "alta" ? 8 : 5]} />
-          {quality === "alta" ? (
-            <meshPhysicalMaterial roughness={0.8} sheen={0.18} sheenRoughness={0.84} />
-          ) : (
-            <meshStandardMaterial roughness={0.9} />
-          )}
-        </instancedMesh>
-      ) : null}
-      <instancedMesh
-        ref={headRef}
-        frustumCulled={false}
-        args={[undefined, undefined, crowd.positions.length]}
-      >
-        <sphereGeometry args={[0.16, quality === "alta" ? 10 : 6, quality === "alta" ? 8 : 5]} />
-        {quality === "alta" ? (
-          <meshPhysicalMaterial roughness={0.66} clearcoat={0.12} clearcoatRoughness={0.58} />
-        ) : (
-          <meshStandardMaterial roughness={0.72} />
-        )}
-      </instancedMesh>
-      {/* cabelo/boné: quebra a fileira de cabeças todas iguais */}
-      <instancedMesh
-        ref={hairRef}
-        frustumCulled={false}
-        args={[undefined, undefined, crowd.positions.length]}
-      >
-        <sphereGeometry args={[0.165, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.62]} />
-        {quality === "alta" ? (
-          <meshPhysicalMaterial roughness={0.7} sheen={0.48} sheenRoughness={0.62} />
-        ) : (
-          <meshStandardMaterial roughness={0.9} />
-        )}
-      </instancedMesh>
-      {armCount > 0 && (
-        <instancedMesh ref={armsRef} frustumCulled={false} args={[undefined, undefined, armCount]}>
-          <capsuleGeometry args={[0.07, 0.34, 2, 4]} />
-          <meshPhysicalMaterial
-            color="#d7a377"
-            roughness={0.72}
-            sheen={0.18}
-            sheenRoughness={0.82}
-          />
-        </instancedMesh>
-      )}
-      {flashCount > 0 && (
-        <instancedMesh
-          ref={flashRef}
-          frustumCulled={false}
-          args={[undefined, undefined, flashCount]}
-        >
-          <sphereGeometry args={[0.13, 6, 6]} />
-          <meshBasicMaterial color="#ffffff" toneMapped={false} transparent opacity={0.9} />
-        </instancedMesh>
-      )}
+      <CrowdLod crowd={crowd} pulse={goalPulse} pressure={pressure} />
     </group>
   );
 }
@@ -1841,10 +1632,15 @@ function Ball({
 type ShotId =
   | "wide"
   | "drone"
+  | "skycam"
   | "lowline"
+  | "sideline"
   | "duel"
+  | "playercam"
   | "tower"
   | "netcam"
+  | "stand"
+  | "crane"
   | "celebration"
   | "orbit";
 
@@ -1859,11 +1655,25 @@ type ShotContext = {
   attackDir: number; // +1 ataca para +X
   pulse: number;
   nearGoal: number; // 0..1 proximidade da grande área
+  holder: SimPlayer | null;
+  heading: number;
 };
 
 function framingFor(id: ShotId, c: ShotContext, t: number): Framing {
-  const { bx, bz, attackDir } = c;
+  const { bx, bz, attackDir, holder, heading } = c;
   switch (id) {
+    case "skycam": {
+      const sweep = Math.sin(t * 0.21) * 7;
+      return {
+        px: bx * 0.56 - attackDir * 10,
+        py: 64 + Math.sin(t * 0.34) * 2.4,
+        pz: bz * 0.34 + sweep,
+        lx: bx + attackDir * 4,
+        ly: 0.7,
+        lz: bz * 0.78,
+        fov: 34,
+      };
+    }
     case "drone":
       return {
         px: bx - attackDir * 26,
@@ -1874,6 +1684,30 @@ function framingFor(id: ShotId, c: ShotContext, t: number): Framing {
         lz: bz * 0.7,
         fov: 46,
       };
+    case "crane": {
+      const arc = t * 0.18;
+      return {
+        px: bx - attackDir * 12 + Math.sin(arc) * 4.2,
+        py: 11.5 + Math.cos(arc * 1.3) * 1.4,
+        pz: bz * 0.5 + 13 + Math.cos(arc) * 2.4,
+        lx: bx + attackDir * 2.8,
+        ly: 1.05 + Math.min(1.8, c.height * 0.35),
+        lz: bz * 0.76,
+        fov: 37,
+      };
+    }
+    case "sideline": {
+      const side = bz >= 0 ? 1 : -1;
+      return {
+        px: bx * 0.88 - attackDir * 2.5,
+        py: 3.65,
+        pz: side * (FIELD_Z + 7.5),
+        lx: bx + attackDir * 3.6,
+        ly: 1.15 + Math.min(1.4, c.height * 0.34),
+        lz: bz,
+        fov: 39,
+      };
+    }
     case "lowline":
       return {
         px: bx * 0.7,
@@ -1894,6 +1728,21 @@ function framingFor(id: ShotId, c: ShotContext, t: number): Framing {
         lz: bz,
         fov: 34,
       };
+    case "playercam": {
+      const focusX = holder?.x ?? bx;
+      const focusZ = holder?.z ?? bz;
+      const forwardX = Math.sin(heading);
+      const forwardZ = Math.cos(heading);
+      return {
+        px: focusX - forwardX * 7.2 + forwardZ * 1.15,
+        py: 2.45,
+        pz: focusZ - forwardZ * 7.2 - forwardX * 1.15,
+        lx: focusX + forwardX * 3.2,
+        ly: 1.18 + Math.min(1.2, c.height * 0.3),
+        lz: focusZ + forwardZ * 3.2,
+        fov: 41,
+      };
+    }
     case "tower":
       return { px: bx * 0.25, py: 58, pz: FIELD_Z + 28, lx: bx * 0.5, ly: 0.8, lz: bz * 0.5, fov: 44 };
     case "netcam":
@@ -1906,6 +1755,18 @@ function framingFor(id: ShotId, c: ShotContext, t: number): Framing {
         lz: bz,
         fov: 38,
       };
+    case "stand": {
+      const side = bz >= 0 ? 1 : -1;
+      return {
+        px: bx * 0.58,
+        py: 13.5,
+        pz: side * (FIELD_Z + 20),
+        lx: bx * 0.72,
+        ly: 1,
+        lz: bz * 0.78,
+        fov: 40,
+      };
+    }
     case "celebration":
       return {
         px: bx + Math.cos(t * 0.5) * 11,
@@ -1947,19 +1808,28 @@ const MANUAL_SHOT: Partial<Record<CameraMode, ShotId>> = {
   broadcast: "wide",
   tactical: "tower",
   goal: "netcam",
-  fan: "wide",
+  fan: "stand",
   rail: "lowline",
   behind: "drone",
+  cinematic: "crane",
+  player: "playercam",
+  sideline: "sideline",
+  skycam: "skycam",
 };
 
 /** Tempo mínimo em cada plano (s) — impede corte nervoso. */
 const SHOT_MIN_TIME: Record<ShotId, number> = {
   wide: 4.5,
   drone: 3.5,
+  skycam: 4,
   lowline: 3,
+  sideline: 3.2,
   duel: 2.2,
+  playercam: 2.6,
   tower: 5,
   netcam: 2.6,
+  stand: 4.2,
+  crane: 4.4,
   celebration: 2.4,
   orbit: 2.6,
 };
@@ -1977,6 +1847,7 @@ function Rig({
   const look = useMemo(() => new THREE.Vector3(), []);
   const smoothLook = useMemo(() => new THREE.Vector3(0, 0.8, 0), []);
   const anchor = useMemo(() => new THREE.Vector2(), []); // bola com zona morta
+  const hold = useRef(new ShotHold<ShotId>("wide"));
   const state = useRef({ shot: "wide" as ShotId, since: 0, prev: "wide" as ShotId, cut: 0 });
 
   useFrame(({ camera, clock }, dtRaw) => {
@@ -1986,7 +1857,8 @@ function Rig({
     s.cut = Math.max(0, s.cut - dt);
 
     const speed = Math.hypot(sim.ball.vx, sim.ball.vz);
-    const lead = Math.min(1, speed / 26);
+    const interest = broadcastInterest(sim);
+    const lead = interest.lead / 0.18;
     const rawX = sim.ball.x + sim.ball.vx * 0.18 * lead;
     const rawZ = sim.ball.z + sim.ball.vz * 0.18 * lead;
     // zona morta: só move o alvo quando a bola sai de um raio pequeno
@@ -2003,6 +1875,12 @@ function Rig({
     const pulse = goalPulse.current;
     const attackDir = sim.possession === "home" ? 1 : -1;
     const nearGoal = Math.min(1, Math.max(0, (Math.abs(anchor.x) - FIELD_X * 0.45) / (FIELD_X * 0.55)));
+    const holder = sim.players.find((player) => player.id === sim.ball.holder) ?? null;
+    const holderSpeed = holder ? Math.hypot(holder.vx, holder.vz) : 0;
+    const heading =
+      holder && holderSpeed > 0.3
+        ? Math.atan2(holder.vx, holder.vz)
+        : Math.atan2(sim.ball.vx || attackDir, sim.ball.vz || 0);
     const ctx: ShotContext = {
       bx: anchor.x,
       bz: anchor.y,
@@ -2011,34 +1889,67 @@ function Rig({
       attackDir,
       pulse,
       nearGoal,
+      holder,
+      heading,
     };
 
-    // ---------- escolha do plano
-    const manual = MANUAL_SHOT[mode];
+    const manual = mode !== "broadcast" ? MANUAL_SHOT[mode] : undefined;
+    // O modo broadcast escolhe planos com intenção editorial. Cada condição
+    // tem uma composição própria; o ShotHold impede cortes frenéticos quando a
+    // bola cruza o meio-campo ou o simulador oscila entre dois limiares.
     let want: ShotId;
-    if (pulse > 0.9) want = "celebration";
-    else if (pulse > 0.5) want = s.prev === "netcam" ? "orbit" : "netcam";
-    else if (manual && mode !== "broadcast") want = manual;
-    else if (nearGoal > 0.75 && speed > 12) want = "netcam";
-    else if (sim.ball.height > 4) want = "drone";
-    else if (speed > 17) want = s.shot === "drone" ? "lowline" : "drone";
-    else if (speed < 2.5 && sim.ball.holder) want = "duel";
-    else want = nearGoal > 0.4 ? "lowline" : "wide";
-
-    // repetição: se o diretor insistir no mesmo plano do corte anterior num
-    // momento calmo, alterna para um plano irmão para variar a transmissão
-    if (want === s.prev && pulse < 0.4 && s.since > SHOT_MIN_TIME[want] * 2.4) {
-      want = want === "wide" ? "tower" : want === "drone" ? "lowline" : "wide";
+    if (manual) {
+      want = manual;
+    } else if (mode === "director") {
+      // Diretor cinematográfico: alterna planos com uma lógica editorial
+      // determinística. A ordem evita câmera de jogador em bola aérea e mantém
+      // os cortes interessantes sem perder a leitura tática da jogada.
+      if (pulse > 0.88) {
+        want = "celebration";
+      } else if (pulse > 0.5) {
+        want = s.prev === "netcam" ? "orbit" : "netcam";
+      } else if (interest.danger > 0.78 && speed > 11) {
+        want = "netcam";
+      } else if (ctx.height > 4.2 || interest.counter || speed > 17) {
+        want = "skycam";
+      } else if (interest.nearby >= 3 && speed < 6.2) {
+        want = "playercam";
+      } else if (ctx.nearGoal > 0.46) {
+        want = "sideline";
+      } else if (s.since > 10) {
+        want = s.shot === "crane" ? "orbit" : s.shot === "orbit" ? "sideline" : "crane";
+      } else {
+        want = "crane";
+      }
+    } else if (pulse > 0.88) {
+      want = "celebration";
+    } else if (pulse > 0.5) {
+      want = s.prev === "netcam" ? "orbit" : "netcam";
+    } else if (interest.counter) {
+      want = s.shot === "drone" ? "lowline" : "drone";
+    } else if (ctx.height > 4.2) {
+      want = "drone";
+    } else if (interest.danger > 0.78 && speed > 12) {
+      want = "netcam";
+    } else if (interest.nearby >= 3 && interest.danger > 0.35 && speed < 5.5) {
+      want = "duel";
+    } else if (speed > 17) {
+      want = s.shot === "drone" ? "lowline" : "drone";
+    } else if (ctx.nearGoal > 0.48) {
+      want = "lowline";
+    } else if (interest.nearby >= 2 && ctx.nearGoal > 0.32 && speed < 2.5) {
+      want = "duel";
+    } else if (s.since > 12 && s.shot === "wide") {
+      want = "tower";
+    } else {
+      want = "wide";
     }
-    if (want !== s.shot && s.since >= SHOT_MIN_TIME[s.shot]) {
-      s.prev = s.shot;
-      s.shot = want;
-      s.since = 0;
-      s.cut = 0.45; // janela de corte: aproxima rápido, depois suaviza
-    }
-
+    const selected = hold.current.update(want, dt, SHOT_MIN_TIME[s.shot], Boolean(manual));
+    if (selected !== s.shot) { s.prev = s.shot; s.shot = selected; s.since = 0; s.cut = 0.45; }
     const f = framingFor(s.shot, ctx, clock.elapsedTime);
     pos.set(f.px, f.py, f.pz);
+    // Nenhum modo manual coloca a lente abaixo do gramado, mesmo após o shake.
+    pos.y = Math.max(2.1, pos.y);
     look.set(f.lx, f.ly, f.lz);
 
     // tremor discreto só em comemoração/perigo, com amplitude limitada
@@ -2049,16 +1960,18 @@ function Rig({
     }
 
     // amortecimento por tempo real + limite de velocidade linear
-    const base = s.cut > 0 ? 0.18 : s.shot === "duel" || s.shot === "celebration" ? 0.3 : 0.55;
+    const closeShot = s.shot === "duel" || s.shot === "playercam" || s.shot === "celebration";
+    const base = s.cut > 0 ? 0.18 : closeShot ? 0.3 : s.shot === "skycam" ? 0.7 : 0.55;
     easing.damp3(camera.position, pos, base, dt);
     easing.damp3(smoothLook, look, s.cut > 0 ? 0.16 : 0.3, dt);
     camera.lookAt(smoothLook);
 
     const cam = camera as THREE.PerspectiveCamera;
     if (cam.isPerspectiveCamera) {
-      const wantFov = f.fov - pulse * 4;
+      const horizontalFov = f.fov - pulse * 2;
+      const wantFov = cam.aspect < 1.4 ? THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(horizontalFov / 2)) * 1.4 / Math.max(0.6, cam.aspect))) : horizontalFov;
       if (Math.abs(cam.fov - wantFov) > 0.01) {
-        cam.fov += (wantFov - cam.fov) * Math.min(1, dt * 3.2);
+        cam.fov += (wantFov - cam.fov) * (1 - Math.exp(-dt * 3.2));
         cam.updateProjectionMatrix();
       }
     }
@@ -2508,6 +2421,7 @@ function Scene({
     interpolated.renderTick?.();
   });
   const time = look.time;
+  const pressure = useQualityPressure();
   // O pós-processamento atual roda em WebGL2; no caminho WebGPU a imagem sai
   // direto do renderizador (tone mapping e exposição continuam ativos).
   const postOn = useVisual().postFx && backend === "webgl2";
@@ -2516,6 +2430,7 @@ function Scene({
   const lastGoals = useRef(0);
   const [replay, setReplay] = useState(false);
   const [moment, setMoment] = useState<"match" | "replay" | "drama">("match");
+  const momentRef = useRef<"match" | "replay" | "drama">("match");
 
   useFrame((_, dt) => {
     const total = sim.stats.home.goals + sim.stats.away.goals;
@@ -2525,9 +2440,9 @@ function Scene({
     }
     if (goalPulse.current > 0) goalPulse.current = Math.max(0, goalPulse.current - dt * 0.22);
     const r = goalPulse.current > 0.55;
-    setReplay((v) => (v === r ? v : r));
+
     const m = goalPulse.current > 0.82 ? "drama" : r ? "replay" : "match";
-    setMoment((v) => (v === m ? v : m));
+    if (momentRef.current !== m) { momentRef.current = m; setMoment(m); setReplay(r); }
   });
 
   const awayClash = colorClash(sim.home.primary, sim.away.primary);
@@ -2540,7 +2455,7 @@ function Scene({
     [sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash],
   );
 
-  const sun = time === "dia" ? 2.25 : time === "entardecer" ? 1.85 : 1.35;
+  const sun = time === "dia" ? 1.72 : time === "entardecer" ? 1.5 : 1.18;
   const sunColor = time === "entardecer" ? "#ffc79a" : time === "dia" ? "#fff6e0" : "#bcd8ff";
 
   return (
@@ -2556,12 +2471,13 @@ function Scene({
         ]}
       />
       <AdaptiveEvents />
+      <FrameProbe />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
       {quality !== "baixa" ? <Environment resolution={quality === "alta" ? 384 : 192} frames={1}>
         <color attach="background" args={[SKY[time]]} />
         <Lightformer
-          intensity={time === "dia" ? (quality === "alta" ? 3 : 2.6) : 1.8}
+          intensity={time === "dia" ? (quality === "alta" ? 2.1 : 1.75) : 1.45}
           color={sunColor}
           position={[0, 24, 0]}
           rotation={[Math.PI / 2, 0, 0]}
@@ -2589,9 +2505,9 @@ function Scene({
         />
       </Environment> : null}
 
-      <ambientLight intensity={time === "dia" ? 0.16 : 0.1} />
+      <ambientLight intensity={time === "dia" ? 0.1 : 0.075} />
       <hemisphereLight
-        intensity={time === "dia" ? 0.52 : time === "entardecer" ? 0.38 : 0.28}
+        intensity={time === "dia" ? 0.34 : time === "entardecer" ? 0.3 : 0.22}
         groundColor={time === "noite" ? "#08131a" : "#102c1d"}
         color={
           time === "entardecer" ? "#ffe0c6" : time === "noite" ? "#a9c9ef" : "#d9edff"
@@ -2602,7 +2518,7 @@ function Scene({
         intensity={sun * 1.08}
         color={sunColor}
         castShadow={shadows}
-        shadow-mapSize={quality === "alta" ? [2048, 2048] : quality === "media" ? [1024, 1024] : [512, 512]}
+        shadow-mapSize={quality === "alta" && pressure < 5 ? [2048, 2048] : quality === "media" ? [1024, 1024] : [512, 512]}
         shadow-bias={-0.00014}
         shadow-normalBias={quality === "alta" ? 0.014 : 0.03}
         shadow-radius={quality === "alta" ? 2.4 : 1.2}
@@ -2655,38 +2571,16 @@ function Scene({
       />
       <Scoreboard sim={sim} replay={replay} />
       <Ball sim={sim} quality={quality} hiVis={look.hiVisBall} wet={look.wet} />
-      {quality !== "alta" ? (
-        <LowPlayers
-          sim={sim}
-          homeKit={homeKit}
-          awayKit={awayKit}
-          homeGkKit={gkKitFor(sim.home.clubId)}
-          awayGkKit={gkKitFor(sim.away.clubId)}
-        />
-      ) : sim.players.map((p) => (
-        <PlayerRig
-          key={p.id}
-          player={p}
-          sim={sim}
-          kit={
-            p.pos === "GK"
-              ? gkKitFor(p.side === "home" ? sim.home.clubId : sim.away.clubId)
-              : p.side === "home"
-                ? homeKit
-                : awayKit
-          }
-          goalPulse={goalPulse}
-          quality={quality}
-        />
-      ))}
+      <MatchPlayers sim={sim} homeKit={homeKit} awayKit={awayKit} goalPulse={goalPulse} quality={quality} />
       <GoalFx goalPulse={goalPulse} quality={quality} />
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
       <PostFX
-        quality={postOn ? quality : "baixa"}
+        quality={postOn ? pressure >= 6 ? "media" : quality : "baixa"}
         replay={replay}
         moment={moment}
         time={time}
         intensity={postIntensity}
+        cinematic={mode === "cinematic" || mode === "director"}
       />
     </>
   );
@@ -2696,10 +2590,12 @@ function Stadium3DImpl({
   sim,
   mode,
   quality: deviceQuality,
+  pixelRatio,
 }: {
   sim: SimView;
   mode: CameraMode;
   quality: Quality;
+  pixelRatio?: number;
 }) {
   const vis = useResolvedVisual(sim.home.clubId);
   // Escolha do jogador em /visual manda; "auto" segue a detecção do aparelho.
@@ -2724,9 +2620,10 @@ function Stadium3DImpl({
    * (resolução, pós-processamento e torcida antes de tudo) quando a partida
    * fica pesada; volta a subir só depois de um bom tempo estável.
    */
-  const [eff, setEff] = useState<Quality>(quality);
+  const eff = quality;
+  const [pressure, setPressure] = useState(0);
   const [fps, setFps] = useState<FpsSample | null>(null);
-  useEffect(() => setEff(quality), [quality]);
+
   const declines = useRef(0);
   const inclines = useRef(0);
 
@@ -2735,11 +2632,12 @@ function Stadium3DImpl({
   // Escala de resolução escolhida em /visual, aplicada sobre o limite do aparelho.
   const dpr = useMemo(() => {
     const base = dprFor(eff);
-    const s = vis.resolutionScale * (vis.quality === "cinema" ? 1.04 : 1);
+    const s = vis.resolutionScale * resolutionForStage(pressure);
+    const cap = GRAPHICS_PROFILES[vis.quality === "cinema" ? "cinema" : quality].maxPixelRatio;
     return Array.isArray(base)
-      ? ([Math.min(2, base[0] * s), Math.min(2, base[1] * s)] as [number, number])
-      : Math.min(2, base * s);
-  }, [eff, vis.resolutionScale]);
+      ? ([Math.min(cap, base[0] * s), Math.min(cap, base[1] * s)] as [number, number])
+      : Math.min(cap, base * s);
+  }, [eff, vis.resolutionScale, vis.quality, pressure]);
 
   // Backend gráfico: WebGPU quando o aparelho suporta, senão WebGL2.
   // A detecção acontece uma vez, antes de montar o palco, para não recriar
@@ -2781,9 +2679,9 @@ function Stadium3DImpl({
     <div className="relative h-full w-full">
       <Canvas
         key={backend}
-        shadows={shadowsOn}
+        shadows={shadowsOn ? SHADOW_SETTINGS : false}
         frameloop={visible ? "always" : "demand"}
-        dpr={dpr}
+        dpr={pixelRatio === undefined ? dpr : Math.min(GRAPHICS_PROFILES[quality].maxPixelRatio, Math.max(0.6, pixelRatio))}
         camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
         gl={glProp}
         performance={{ min: 0.5 }}
@@ -2796,7 +2694,7 @@ function Stadium3DImpl({
             capabilities?: { getMaxAnisotropy?: () => number };
           };
           r.toneMapping = THREE.ACESFilmicToneMapping;
-          r.toneMappingExposure = eff === "baixa" ? 0.98 : eff === "media" ? 1.06 : 1.12;
+          r.toneMappingExposure = look.time === "dia" ? 0.78 : look.time === "entardecer" ? 0.9 : 0.98;
           r.outputColorSpace = THREE.SRGBColorSpace;
           // borda de sombra suave só na qualidade alta: o filtro extra custa
           // pouco lá e é o que mais aproxima a imagem de uma transmissão
@@ -2810,29 +2708,8 @@ function Stadium3DImpl({
           );
         }}
       >
-        {vis.adaptive ? (
-          <PerformanceMonitor
-            onDecline={() => {
-              inclines.current = 0;
-              declines.current += 1;
-              if (declines.current >= 3) {
-                declines.current = 0;
-                setEff((q) => lowerQuality(q));
-              }
-            }}
-            onIncline={() => {
-              declines.current = 0;
-              inclines.current += 1;
-              if (inclines.current >= 6) {
-                inclines.current = 0;
-                setEff((q) => {
-                  const higher = higherQuality(q);
-                  return higher === quality ? higher : q;
-                });
-              }
-            }}
-          />
-        ) : null}
+        <RuntimeBudget tier={vis.quality === "cinema" ? "cinema" : quality} enabled={vis.adaptive} onChange={setPressure} />
+        <QualityPressure.Provider value={pressure}>
         <Scene
           sim={sim}
           mode={mode}
@@ -2842,6 +2719,7 @@ function Stadium3DImpl({
           backend={backend}
           postIntensity={vis.postIntensity * (vis.quality === "cinema" ? 1.12 : 1)}
         />
+        </QualityPressure.Provider>
         {vis.showFps ? <FpsMeter onSample={setFps} backend={backend} quality={eff} /> : null}
       </Canvas>
       {vis.showFps && fps ? (
@@ -2857,9 +2735,9 @@ function Stadium3DImpl({
           {fps.memoryMb ? <span className="ml-2 text-white/60">{fps.memoryMb} MB</span> : null}
         </div>
       ) : null}
-      {eff !== quality ? (
+      {vis.adaptive && pressure > 0 ? (
         <span className="pointer-events-none absolute right-2 top-2 rounded-full bg-black/45 px-2 py-0.5 text-[10px] uppercase tracking-widest text-white/80">
-          Qualidade {eff}
+          Resolução adaptativa · {Math.round(resolutionForStage(pressure) * 100)}%
         </span>
       ) : null}
       {quality === "baixa" ? (

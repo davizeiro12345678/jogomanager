@@ -5,7 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Crest } from "@/components/game/Crest";
 import { Flag } from "@/components/game/Flag";
 import { MatchReport } from "@/components/game/MatchReport";
-import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { Stadium3D, type Quality } from "@/components/game/Stadium3D";
+import { cameraOption, nextCameraMode, type CameraMode } from "@/game/camera-modes";
 import { CLUBS, LEAGUES, getLeague } from "@/game/data/leagues";
 import { detectQuality } from "@/game/device";
 import { Narrator, type NarrationEvent } from "@/game/narrator";
@@ -449,14 +450,12 @@ function QuickLive({
           <SkipForward size={16} />
         </button>
         <button
-          onClick={() =>
-            setCamera((c) =>
-              c === "broadcast" ? "tactical" : c === "tactical" ? "fan" : "broadcast",
-            )
-          }
+          onClick={() => setCamera((current) => nextCameraMode(current))}
+          aria-label={`Alternar câmera; atual: ${cameraOption(camera).label}`}
+          title={cameraOption(camera).description}
           className="rounded-full px-3 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
         >
-          Câmera
+          Câmera · {cameraOption(camera).shortLabel}
         </button>
       </div>
 

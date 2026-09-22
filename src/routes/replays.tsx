@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { GameShell } from "@/components/game/GameShell";
-import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { Stadium3D, type Quality } from "@/components/game/Stadium3D";
+import { CAMERA_OPTIONS, type CameraMode } from "@/game/camera-modes";
 import { detectQuality } from "@/game/device";
 import {
   canExportVideo,
@@ -40,14 +41,6 @@ export const Route = createFileRoute("/replays")({
   }),
   component: ReplaysPage,
 });
-
-const CAMERAS: [CameraMode, string][] = [
-  ["broadcast", "Transmissão"],
-  ["goal", "Atrás do gol"],
-  ["tactical", "Tática"],
-  ["fan", "Torcida"],
-  ["rail", "Rente ao campo"],
-];
 
 function ReplaysPage() {
   const { career } = useCareer();
@@ -220,9 +213,9 @@ function ReplayPlayer({ replay, onClose }: { replay: Replay; onClose: () => void
           className="rounded-lg border border-border/60 bg-background px-2 py-1.5 text-xs"
           aria-label="Câmera"
         >
-          {CAMERAS.map(([m, label]) => (
-            <option key={m} value={m}>
-              {label}
+          {CAMERA_OPTIONS.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
             </option>
           ))}
         </select>

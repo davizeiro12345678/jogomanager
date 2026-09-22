@@ -12,6 +12,7 @@ import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { PublicLinks } from "@/components/PublicLinks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useSignedIn } from "@/hooks/useCareer";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { STORE_PACKS, formatPrice, type PackKind } from "@/game/store-catalog";
 import { SITE_NAME, SITE_URL, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
@@ -87,10 +88,14 @@ const KIND_LABEL: Record<PackKind, string> = {
 };
 
 function ProdutosPage() {
+  const signedIn = useSignedIn();
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [opening, setOpening] = useState<string | null>(null);
 
   function buy(priceId: string, key: string) {
+    // Esta página pode ser explorada sem conta, mas a sessão de checkout nunca
+    // é criada até existir uma identidade autenticada.
+    if (signedIn !== true) return;
     setOpening(key);
     try {
       openCheckout({
@@ -119,6 +124,26 @@ function ProdutosPage() {
           Tudo aqui é opcional e não muda o resultado das partidas: são atalhos de tempo, informação
           de olheiros e itens visuais para o seu clube.
         </p>
+        {signedIn === false ? (
+          <div
+            role="status"
+            className="mt-5 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/5 p-4 text-sm sm:flex-row sm:items-center sm:justify-between"
+          >
+            <p className="text-muted-foreground">
+              Compare os pacotes à vontade. Entre apenas quando quiser vincular uma compra à sua
+              conta.
+            </p>
+            <Button asChild variant="outline" className="shrink-0">
+              <Link to="/auth" search={{ next: PATH }}>
+                Entrar ou criar conta
+              </Link>
+            </Button>
+          </div>
+        ) : signedIn === null ? (
+          <p role="status" className="mt-5 text-sm text-muted-foreground">
+            Verificando sua conta para mostrar a ação de compra segura…
+          </p>
+        ) : null}
 
         <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {STORE_PACKS.map((p) => (
@@ -164,9 +189,19 @@ function ProdutosPage() {
                       <span className="ml-1 text-xs text-muted-foreground">/mês</span>
                     ) : null}
                   </span>
-                  <Button onClick={() => buy(p.priceId, p.key)} disabled={opening === p.key}>
-                    {opening === p.key ? "Abrindo…" : "Comprar agora"}
-                  </Button>
+                  {signedIn === true ? (
+                    <Button onClick={() => buy(p.priceId, p.key)} disabled={opening === p.key}>
+                      {opening === p.key ? "Abrindo…" : "Comprar agora"}
+                    </Button>
+                  ) : signedIn === false ? (
+                    <Button asChild>
+                      <Link to="/auth" search={{ next: `${PATH}?produto=${encodeURIComponent(p.key)}` }}>
+                        Entrar para comprar
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button disabled>Verificando conta…</Button>
+                  )}
                 </div>
               </div>
             </article>

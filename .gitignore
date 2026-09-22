@@ -8,6 +8,10 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.npm-cache/
+*.tsbuildinfo
+.codex-ui-dev.*
+.codex-camera-benchmark.*
 dist
 dist-ssr
 .output
