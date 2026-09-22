@@ -14,6 +14,7 @@ import {
   type DominantFoot,
 } from "@/game/visual-context";
 import { solveFullIK } from "@/game/ik-solver";
+import { visualDataFor } from "@/game/visual-frame-cache";
 
 type LowPlayersProps = {
   sim: SimView;
@@ -105,7 +106,7 @@ export function LowPlayers({ sim, homeKit, awayKit, homeGkKit, awayGkKit }: LowP
     if (meshes.some((mesh) => !mesh)) return;
 
     // Obtém contexto visual do sim (se disponível)
-    const visualCtx = sim.generateVisualContext?.();
+    const visualCtx = visualDataFor(sim);
 
     const { root, joint, part, translate, rotate, scale, thighEnd, shinEnd, position, shadowScale, quaternion, euler, unit } = tmp;
     const setPart = (
