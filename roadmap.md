@@ -218,3 +218,13 @@
 - [x] Preservar quadril, ombros, joelhos, tornozelos, inclinação, passada e chute no corpo leve
 - [x] Reduzir atualização da torcida e remover iluminação de ambiente pré-calculada no modo baixo
 - [ ] Medir FPS em GPU física após publicação
+
+## Atualização gráfica e performance extrema — batches medidos (2026-09-22)
+- [ ] Batch A: baseline reproduzível do Alto, Camera Director, iluminação e tone mapping
+- [ ] Batch B: ritmo de animação, foot locking, stride/motion warping e giro parado
+- [ ] Batch C: LOD2 realmente barato para jogadores e cache único de contexto visual
+- [ ] Batch D: chunks de grama, LOD hierárquico da torcida e sombras por distância
+- [ ] Batch E: governador adaptativo baseado em p95 e tiers de pós-processamento
+- [ ] Batch F: reinvestir o orçamento recuperado no PlayerRig próximo, estádio, rede, bola e cinematics
+- [ ] Comparar antes/depois com FPS, p95, draw calls, triângulos e recursos realmente medidos
+- [ ] Validar Worker/fallback WebGL2, reentrada na partida, UI desktop/mobile, replays e console
