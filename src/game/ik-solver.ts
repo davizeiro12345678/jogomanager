@@ -4,7 +4,7 @@
 // ============================================================================
 
 import type { ActionContext, ContactContext, DominantFoot } from "./visual-context";
-import type { Pose } from "./animation-core";
+import { JOINTS, type Pose } from "./animation-core";
 
 /** Comprimentos padrao das partes do corpo (em metros) */
 export const BODY_LENGTHS = {
@@ -68,42 +68,75 @@ function applyFootSupport(pose: Pose, contact: ContactContext): void {
   const leftOnGround = contact.groundFoot === "left" || contact.groundFoot === null;
   const rightOnGround = contact.groundFoot === "right" || contact.groundFoot === null;
 
-  // Inclinacao do quadril baseada no peso
-  pose.hipRoll = (leftOnGround ? 1 : 0) - (rightOnGround ? 1 : 0) * 0.1;
+  const force = Math.max(0, Math.min(1, contact.force));
 
-  // Flexao das pernas
+  // Apoio bilateral mantém o quadril neutro; apoio unilateral desloca o peso
+  // discretamente para o pé plantado. A versão anterior gerava 0,9 rad quando
+  // os dois pés tocavam o chão e fazia o corpo tombar lateralmente.
+  const supportSide = leftOnGround === rightOnGround ? 0 : leftOnGround ? 1 : -1;
+  pose.hipRoll += supportSide * 0.065 * force;
+
+  // Mistura com a passada existente em vez de sobrescrevê-la. Isso mantém o
+  // pé de apoio estável sem congelar a corrida inteira.
+  const lock = 0.28 + force * 0.42;
   if (leftOnGround) {
-    pose.legLPitch = 0.05;
-    pose.kneeL = -0.1;
-    pose.ankleL = 0.05;
+    pose.legLPitch += (0.025 - pose.legLPitch) * lock;
+    pose.kneeL += (-0.08 - pose.kneeL) * lock;
+    pose.ankleL += (0.035 - pose.ankleL) * lock;
   }
   if (rightOnGround) {
-    pose.legRPitch = 0.05;
-    pose.kneeR = -0.1;
-    pose.ankleR = 0.05;
+    pose.legRPitch += (0.025 - pose.legRPitch) * lock;
+    pose.kneeR += (-0.08 - pose.kneeR) * lock;
+    pose.ankleR += (0.035 - pose.ankleR) * lock;
   }
 }
 
 function applyBallContact(pose: Pose, action: ActionContext, contact: ContactContext): void {
-  if (contact.type !== "ball" && contact.type !== "groundBall") return;
-
   if (!action.action) return;
 
   const actionName = action.action;
-  
+  const isBallAction = actionName.includes("shot") || actionName.includes("pass") || actionName.includes("cross") || actionName === "trap";
+
+  if (isBallAction) {
+    const foot = action.usedFoot;
+    const legPitchKey = foot === "left" ? "legLPitch" : "legRPitch";
+    const kneeKey = foot === "left" ? "kneeL" : "kneeR";
+    const ankleKey = foot === "left" ? "ankleL" : "ankleR";
+    const oppositeLegKey = foot === "left" ? "legRPitch" : "legLPitch";
+    const intensity = 0.65 + action.intensity * 0.35;
+    const phaseWeight = action.phase === "anticipation" ? -0.55
+      : action.phase === "action" ? -0.15
+      : action.phase === "contact" ? 0.95
+      : action.phase === "followThrough" ? 0.72
+      : 0.18;
+
+    pose[legPitchKey] += phaseWeight * intensity;
+    pose[kneeKey] += action.phase === "anticipation" ? -0.72 : -0.28 * intensity;
+    pose[ankleKey] += action.phase === "contact" ? 0.34 : 0.12;
+    pose[oppositeLegKey] += 0.12 * intensity;
+    pose.hipYaw += (foot === "left" ? -1 : 1) * 0.12 * intensity;
+    pose.chest -= phaseWeight * 0.12;
+
+    // No contato real, fecha os últimos centímetros em direção à bola. Fora da
+    // janela de contato preserva a preparação e o follow-through do clipe.
+    if (contact.type === "ball" || contact.type === "groundBall") {
+      pose[kneeKey] -= 0.18 * Math.max(0.25, contact.force);
+    }
+  }
+
   if (actionName.includes("shot") || actionName.includes("pass") || actionName === "trap") {
     const foot = action.usedFoot;
     const legPitchKey = foot === "left" ? "legLPitch" : "legRPitch";
     const kneeKey = foot === "left" ? "kneeL" : "kneeR";
     const ankleKey = foot === "left" ? "ankleL" : "ankleR";
 
-    pose[legPitchKey] = -0.1;
-    pose[kneeKey] = -0.6;
-    pose[ankleKey] = 0.2;
+    pose[legPitchKey] += -0.1;
+    pose[kneeKey] += -0.24;
+    pose[ankleKey] += 0.12;
 
     // Braco oposto para equilíbrio
     const armPitchKey = foot === "left" ? "armRPitch" : "armLPitch";
-    pose[armPitchKey] = 0.3;
+    pose[armPitchKey] += 0.3;
   }
 
   if (actionName === "header") {
@@ -204,8 +237,12 @@ export function solveFullIK(
     actionDur: number;
     isGK: boolean;
   },
+  out?: Pose,
 ): Pose {
-  const result: Pose = { ...pose };
+  const result = out ?? ({ ...pose } as Pose);
+  if (out) {
+    for (const joint of JOINTS) result[joint] = pose[joint];
+  }
   
   applyIKAdjustments(result, actionContext, contactContext, {
     x: player.x,

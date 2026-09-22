@@ -27,6 +27,7 @@ import {
 } from "@/game/animation";
 import { kitTexture, type Kit } from "@/game/kits";
 import { playerMaterials } from "@/game/player-materials";
+import { visualDataFor } from "@/game/visual-frame-cache";
 import { useVisual } from "@/game/visual-settings";
 import {
   lodForDistance,
@@ -96,20 +97,10 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     detail === "detalhado" ? "alta" : detail === "simples" ? "baixa" : baseQuality;
 
   /* ---------------------------------------------------------- contexto visual */
-  
-  // Obtém contexto visual do sim (se disponível)
-  const visualCtx = sim.generateVisualContext?.();
-  
-  // Obtém ActionContext e ContactContext para este jogador
-  const playerIndex = sim.players.findIndex((p) => p.id === player.id);
-  const actionContext: ActionContext = 
-    visualCtx && playerIndex >= 0 && playerIndex < visualCtx.actionContexts.length
-      ? visualCtx.actionContexts[playerIndex] ?? emptyActionContext()
-      : emptyActionContext();
-  const contactContext: ContactContext = 
-    visualCtx && playerIndex >= 0 && playerIndex < visualCtx.contactContexts.length
-      ? visualCtx.contactContexts[playerIndex] ?? emptyContactContext()
-      : emptyContactContext();
+  const playerIndex = useMemo(
+    () => sim.players.findIndex((candidate) => candidate.id === player.id),
+    [sim.players, player.id],
+  );
   
   // Determina pé dominante do jogador
   const dominantFoot: DominantFoot = getDominantFoot(player.pid);
@@ -192,6 +183,7 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
   const cur = useRef<Pose>(emptyPose());
   const target = useRef<Pose>(emptyPose());
   const blendBuf = useRef<Pose>(emptyPose());
+  const ikBuf = useRef<Pose>(emptyPose());
   const clipName = useRef<ClipName>("idle");
   const prevName = useRef<ClipName | null>(null);
   const clipTime = useRef(0);
@@ -363,8 +355,14 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
       p = mixPose(prev, p, ease(blend.current), blendBuf.current);
     }
 
-    // ---- Aplicar IK de contexto visual se disponível
-    if (visualCtx && actionContext && contactContext) {
+    // ---- IK contextual compartilhado: o contexto é gerado uma vez por
+    // snapshot e reutilizado por todos os atletas, sem ficar obsoleto.
+    const visualCtx = visualDataFor(sim);
+    const actionContext: ActionContext =
+      visualCtx?.actionContexts[playerIndex] ?? emptyActionContext();
+    const contactContext: ContactContext =
+      visualCtx?.contactContexts[playerIndex] ?? emptyContactContext();
+    if (visualCtx && lod === 0) {
       const playerInfo = {
         x: player.x,
         z: player.z,
@@ -377,7 +375,7 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
       };
       
       // Aplica IK completo
-      p = solveFullIK(p, actionContext, contactContext, playerInfo);
+      p = solveFullIK(p, actionContext, contactContext, playerInfo, ikBuf.current);
     }
 
     // ---- camada superior: tronco e cabeça acompanham a bola
