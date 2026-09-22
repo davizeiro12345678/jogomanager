@@ -1,6 +1,12 @@
-import { RuntimeBudget, QualityPressure, useQualityPressure } from "@/components/game/RuntimeBudget";
+import {
+  RuntimeBudget,
+  QualityPressure,
+  RuntimeSceneBudgetContext,
+  useQualityPressure,
+  useRuntimeSceneBudget,
+} from "@/components/game/RuntimeBudget";
 import { GRAPHICS_PROFILES } from "@/game/contracts/graphics-profile";
-import { resolutionForStage } from "@/game/quality-governor";
+import { resolveRuntimeSceneBudget } from "@/game/runtime-scene-budget";
 import { broadcastInterest, ShotHold } from "@/game/broadcast-interest";
 import { StaticBatch } from "@/components/game/stadium/StaticBatch";
 import { GrassChunks } from "@/components/game/stadium/GrassChunks";
@@ -16,7 +22,6 @@ import type React from "react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
-import { PlayerRig } from "@/components/game/players/PlayerRig";
 import { FrameProbe } from "@/components/game/FrameProbe";
 import { MatchPlayers } from "@/components/game/players/MatchPlayers";
 import { CrowdLod } from "@/components/game/stadium/CrowdLod";
@@ -46,7 +51,7 @@ import {
 import { StadiumProps } from "@/components/game/stadium/Props";
 
 import { dprFor, higherQuality, lowerQuality } from "@/game/device";
-import type { CameraMode } from "@/game/camera-modes";
+import { cameraOption, type CameraMode } from "@/game/camera-modes";
 import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
 import { matchLook, type TimeOfDay } from "@/game/matchday";
@@ -113,6 +118,7 @@ function useBladeMaterial(color: string) {
 function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
   const vis = useVisual();
   const pressure = useQualityPressure();
+  const budget = useRuntimeSceneBudget();
   const { mat, uniforms } = useBladeMaterial("#46824b");
   useEffect(() => () => mat.dispose(), [mat]);
   useFrame(({ clock }) => {
@@ -120,7 +126,14 @@ function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
     uniforms.uBall.value.set(sim.ball.x, 0, sim.ball.z);
     uniforms.uWind.value = 0.9;
   });
-  return <GrassChunks pressure={pressure} material={mat} density={vis.grassDensity * (quality === "alta" ? 1 : 0.3)} />;
+  return (
+    <GrassChunks
+      pressure={pressure}
+      material={mat}
+      density={vis.grassDensity * budget.grassDensity}
+      maxVisibleChunks={budget.grassChunks}
+    />
+  );
 }
 /**
  * Marcas de pisada e rastro de deslize: um pool de manchas escuras deixadas
@@ -315,17 +328,19 @@ function Weather({
   weather,
   wind,
   quality,
+  density = 1,
 }: {
   weather: "seco" | "molhado" | "chuva" | "neve";
   wind: number;
   quality: Quality;
+  density?: number;
 }) {
   const rain = weather === "chuva";
   const snow = weather === "neve";
   const partScale = useVisual().particles;
   const count = Math.max(
     0,
-    Math.round((quality === "alta" ? (rain ? 2600 : 1500) : rain ? 1100 : 700) * partScale),
+    Math.round((quality === "alta" ? (rain ? 2600 : 1500) : rain ? 1100 : 700) * partScale * density),
   );
   const ref = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -1250,15 +1265,42 @@ function crowdBackdropTexture(homeColor: string, awayColor: string) {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
+  // Cada lateral usa uma proporção diferente. Os UVs dos painéis repetem a
+  // mesma textura sem duplicá-la, então a silhueta permanece humana em vez de
+  // virar uma faixa horizontal quando ocupa uma arquibancada longa.
+  texture.wrapS = THREE.RepeatWrapping;
   texture.anisotropy = 8;
   return texture;
+}
+
+const CROWD_BACKDROP_TEXTURE_ASPECT = 1024 / 320;
+
+/**
+ * O painel longitudinal é muito mais largo que o canvas de torcedores.
+ * Repetir somente o U com base na proporção do painel corrige a leitura dos
+ * espectadores em planos abertos, sem criar outro material, textura ou draw.
+ */
+function crowdBackdropGeometry(width: number, height: number) {
+  const geometry = new THREE.PlaneGeometry(width, height);
+  const repeatX = Math.max(1, Math.round(width / height / CROWD_BACKDROP_TEXTURE_ASPECT));
+  const uv = geometry.getAttribute("uv") as THREE.BufferAttribute;
+  for (let index = 0; index < uv.count; index++) uv.setX(index, uv.getX(index) * repeatX);
+  uv.needsUpdate = true;
+  return geometry;
 }
 
 function CrowdBackdrop({ homeColor, awayColor, rings }: { homeColor: string; awayColor: string; rings: number }) {
   const texture = useMemo(() => crowdBackdropTexture(homeColor, awayColor), [homeColor, awayColor]);
   useEffect(() => () => texture?.dispose(), [texture]);
-  if (!texture) return null;
   const height = Math.max(9, rings * 1.45 + 0.6);
+  // Dois buffers compartilhados entre quatro painéis: a mesma cobertura de
+  // arquibancada, com o mesmo orçamento de quatro draws.
+  const longitudinalGeometry = useMemo(
+    () => crowdBackdropGeometry(FIELD_X * 2 + 24, height),
+    [height],
+  );
+  const endGeometry = useMemo(() => crowdBackdropGeometry(FIELD_Z * 2 + 18, height), [height]);
+  if (!texture) return null;
   const y = 1.9 + height * 0.5;
   // Os degraus finais são volumes opacos. A massa de silhuetas fica alguns
   // centímetros para dentro deles: assim ela fica visível acima das cadeiras
@@ -1268,14 +1310,22 @@ function CrowdBackdrop({ homeColor, awayColor, rings }: { homeColor: string; awa
   return (
     <group renderOrder={1}>
       {[-1, 1].map((z) => (
-        <mesh key={`crowd-z-${z}`} position={[0, y, z * zEdge]} rotation={[0, z > 0 ? Math.PI : 0, 0]}>
-          <planeGeometry args={[FIELD_X * 2 + 24, height]} />
+        <mesh
+          key={`crowd-z-${z}`}
+          geometry={longitudinalGeometry}
+          position={[0, y, z * zEdge]}
+          rotation={[0, z > 0 ? Math.PI : 0, 0]}
+        >
           <meshBasicMaterial map={texture} transparent opacity={0.9} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
         </mesh>
       ))}
       {[-1, 1].map((x) => (
-        <mesh key={`crowd-x-${x}`} position={[x * xEdge, y, 0]} rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}>
-          <planeGeometry args={[FIELD_Z * 2 + 18, height]} />
+        <mesh
+          key={`crowd-x-${x}`}
+          geometry={endGeometry}
+          position={[x * xEdge, y, 0]}
+          rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}
+        >
           <meshBasicMaterial map={texture} transparent opacity={0.84} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
         </mesh>
       ))}
@@ -1298,11 +1348,13 @@ function Stands({
 }) {
   const vis = useVisual();
   const pressure = useQualityPressure();
-  const density = Math.round(
-    (quality === "alta" ? 460 : quality === "media" ? 240 : 100) * Math.max(0.1, vis.crowdDensity),
-  );
-
-  const rings = quality === "alta" ? 14 : quality === "media" ? 9 : 5;
+  const budget = useRuntimeSceneBudget();
+  const maximumDensity = quality === "alta" ? 460 : quality === "media" ? 240 : 100;
+  const rings = Math.min(quality === "alta" ? 14 : quality === "media" ? 9 : 5, budget.propRings);
+  // Keep enough source people to fill visible tiles, without allocating the
+  // former 20k-person global crowd before the renderer can cull it.
+  const sourceDensity = Math.max(32, Math.ceil((budget.crowdInstances * 1.8) / Math.max(1, rings * 3.2)));
+  const density = Math.round(Math.min(maximumDensity, sourceDensity) * Math.max(0.1, vis.crowdDensity));
   const wallMat = useConcrete("#39424b", 14);
 
   const crowd = useMemo(() => {
@@ -1397,9 +1449,9 @@ function Stands({
       <Roof rings={rings} />
       <CrowdBackdrop homeColor={homeColor} awayColor={awayColor} rings={rings} />
       <Banners color={homeColor} alt={awayColor} rings={rings} />
-      <CrowdFlags color={homeColor} alt={awayColor} rings={rings} quality={quality} />
+      <CrowdFlags color={homeColor} alt={awayColor} rings={rings} count={budget.flagCount} />
 
-      <CrowdLod crowd={crowd} pulse={goalPulse} pressure={pressure} />
+      <CrowdLod crowd={crowd} pulse={goalPulse} budget={budget} />
     </group>
   );
 }
@@ -1412,15 +1464,16 @@ function CrowdFlags({
   color,
   alt,
   rings,
-  quality,
+  count,
 }: {
   color: string;
   alt: string;
   rings: number;
-  quality: Quality;
+  count: number;
 }) {
-  const count = quality === "alta" ? 46 : quality === "media" ? 24 : 10;
+  const ref = useRef<THREE.InstancedMesh>(null);
   const uTime = useRef({ value: 0 });
+  const dummy = useMemo(() => new THREE.Object3D(), []);
 
   const flags = useMemo(() => {
     const out: { pos: [number, number, number]; rot: number; c: string; s: number }[] = [];
@@ -1450,56 +1503,56 @@ function CrowdFlags({
     return out;
   }, [count, rings, color, alt]);
 
-  const materials = useMemo(
-    () =>
-      flags.map((f, i) => {
-        // bandeirões grandes ganham estampa (listras + escudo); os pequenos ficam
-        // só na cor, para não pesar em aparelho fraco
-        const printed = i % 3 === 0 ? bigFlagTexture(f.c, f.c === color ? alt : color) : null;
-        const m = new THREE.MeshStandardMaterial({
-          color: printed ? "#ffffff" : f.c,
-          ...(printed ? { map: printed } : {}),
-          side: THREE.DoubleSide,
-          roughness: 0.85,
-          metalness: 0,
-        });
-        m.onBeforeCompile = (shader) => {
-          shader.uniforms["uTime"] = uTime.current;
-          shader.vertexShader = shader.vertexShader
-            .replace("#include <common>", "#include <common>\nuniform float uTime;")
-            .replace(
-              "#include <begin_vertex>",
-              `#include <begin_vertex>
-           float wave = sin(uTime * 2.2 + position.x * 3.0) * 0.12
-                      + sin(uTime * 3.7 + position.y * 2.0) * 0.05;
+  const geometry = useMemo(() => new THREE.PlaneGeometry(2.4, 1.5, 12, 6), []);
+  const material = useMemo(() => {
+    const value = new THREE.MeshStandardMaterial({
+      side: THREE.DoubleSide,
+      roughness: 0.85,
+      metalness: 0,
+      vertexColors: true,
+    });
+    value.onBeforeCompile = (shader) => {
+      shader.uniforms["uTime"] = uTime.current;
+      shader.vertexShader = shader.vertexShader
+        .replace("#include <common>", "#include <common>\nuniform float uTime;")
+        .replace(
+          "#include <begin_vertex>",
+          `#include <begin_vertex>
+           float phase = instanceMatrix[3].x * 0.17 + instanceMatrix[3].z * 0.13;
+           float wave = sin(uTime * 2.2 + phase + position.x * 3.0) * 0.12
+                      + sin(uTime * 3.7 + phase + position.y * 2.0) * 0.05;
            transformed.z += wave * (0.4 + position.x + 0.5);`,
-            );
-        };
-        return m;
-      }),
-    [flags, color, alt],
-  );
+        );
+    };
+    return value;
+  }, []);
+  useEffect(() => () => {
+    geometry.dispose();
+    material.dispose();
+  }, [geometry, material]);
+  useEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    flags.forEach((flag, index) => {
+      dummy.position.set(...flag.pos);
+      dummy.rotation.set(0, flag.rot, 0);
+      dummy.scale.set(flag.s, flag.s, 1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(index, dummy.matrix);
+      mesh.setColorAt(index, new THREE.Color(flag.c));
+    });
+    mesh.count = flags.length;
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.frustumCulled = false;
+  }, [dummy, flags]);
 
   useFrame(({ clock }) => {
     uTime.current.value = clock.elapsedTime;
   });
 
   if (!count) return null;
-  return (
-    <group>
-      {flags.map((f, i) => (
-        <mesh
-          key={i}
-          position={f.pos}
-          rotation={[0, f.rot, 0]}
-          scale={[f.s, f.s, 1]}
-          material={materials[i]!}
-        >
-          <planeGeometry args={[2.4, 1.5, 12, 6]} />
-        </mesh>
-      ))}
-    </group>
-  );
+  return <instancedMesh ref={ref} args={[geometry, material, Math.max(1, count)]} frustumCulled={false} />;
 }
 
 /* --------------------------------------------------------------- jogadores */
@@ -2007,11 +2060,13 @@ function SkyDome({ time }: { time: TimeOfDay }) {
 function GoalFx({
   goalPulse,
   quality,
+  density = 1,
 }: {
   goalPulse: React.MutableRefObject<number>;
   quality: Quality;
+  density?: number;
 }) {
-  const COUNT = Math.max(0, Math.round((quality === "alta" ? 320 : 140) * useVisual().particles));
+  const COUNT = Math.max(0, Math.round((quality === "alta" ? 320 : 140) * useVisual().particles * density));
   const ref = useRef<THREE.InstancedMesh>(null);
   const smoke = useRef<THREE.InstancedMesh>(null);
   const parts = useMemo(
@@ -2046,6 +2101,7 @@ function GoalFx({
     const dt = Math.min(rawDt, 0.05);
     const mesh = ref.current;
     if (!mesh) return;
+    if (goalPulse.current <= 0.01 && !armed.current) return;
 
     if (goalPulse.current > 0.9 && !armed.current) {
       armed.current = true;
@@ -2422,6 +2478,7 @@ function Scene({
   });
   const time = look.time;
   const pressure = useQualityPressure();
+  const budget = useRuntimeSceneBudget();
   // O pós-processamento atual roda em WebGL2; no caminho WebGPU a imagem sai
   // direto do renderizador (tone mapping e exposição continuam ativos).
   const postOn = useVisual().postFx && backend === "webgl2";
@@ -2474,7 +2531,7 @@ function Scene({
       <FrameProbe />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
-      {quality !== "baixa" ? <Environment resolution={quality === "alta" ? 384 : 192} frames={1}>
+      {quality !== "baixa" ? <Environment resolution={Math.round((quality === "alta" ? 384 : 192) * budget.textureScale)} frames={1}>
         <color attach="background" args={[SKY[time]]} />
         <Lightformer
           intensity={time === "dia" ? (quality === "alta" ? 2.1 : 1.75) : 1.45}
@@ -2517,7 +2574,7 @@ function Scene({
         position={[50, 80, 40]}
         intensity={sun * 1.08}
         color={sunColor}
-        castShadow={shadows}
+        castShadow={shadows && budget.shadows}
         shadow-mapSize={quality === "alta" && pressure < 5 ? [2048, 2048] : quality === "media" ? [1024, 1024] : [512, 512]}
         shadow-bias={-0.00014}
         shadow-normalBias={quality === "alta" ? 0.014 : 0.03}
@@ -2549,7 +2606,7 @@ function Scene({
       <SkyDome time={time} />
       <Pitch quality={quality} sim={sim} wet={look.wet} mow={look.mow} />
       {quality !== "baixa" ? (
-        <Weather weather={look.weather} wind={look.wind} quality={quality} />
+        <Weather weather={look.weather} wind={look.wind} quality={quality} density={budget.weatherDensity} />
       ) : null}
       {quality !== "baixa" ? <Officials sim={sim} quality={quality} /> : null}
 
@@ -2563,7 +2620,7 @@ function Scene({
         night={time !== "dia"}
       />
       <StadiumProps
-        rings={quality === "alta" ? 14 : quality === "media" ? 9 : 5}
+        rings={budget.propRings}
         quality={quality}
         homeColor={sim.home.primary}
         awayColor={sim.away.primary}
@@ -2571,16 +2628,33 @@ function Scene({
       />
       <Scoreboard sim={sim} replay={replay} />
       <Ball sim={sim} quality={quality} hiVis={look.hiVisBall} wet={look.wet} />
-      <MatchPlayers sim={sim} homeKit={homeKit} awayKit={awayKit} goalPulse={goalPulse} quality={quality} />
-      <GoalFx goalPulse={goalPulse} quality={quality} />
+      <MatchPlayers
+        sim={sim}
+        homeKit={homeKit}
+        awayKit={awayKit}
+        goalPulse={goalPulse}
+        quality={quality}
+        mode={mode}
+        replay={replay}
+        budget={budget}
+      />
+      <GoalFx goalPulse={goalPulse} quality={quality} density={budget.goalFxDensity} />
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
       <PostFX
-        quality={postOn ? pressure >= 6 ? "media" : quality : "baixa"}
+        quality={
+          !postOn || budget.post === "off"
+            ? "baixa"
+            : budget.post === "cinema"
+              ? "alta"
+              : pressure >= 6
+                ? "media"
+                : quality
+        }
         replay={replay}
         moment={moment}
         time={time}
         intensity={postIntensity}
-        cinematic={mode === "cinematic" || mode === "director"}
+        cinematic={cameraOption(mode).cinematicTreatment}
       />
     </>
   );
@@ -2623,6 +2697,11 @@ function Stadium3DImpl({
   const eff = quality;
   const [pressure, setPressure] = useState(0);
   const [fps, setFps] = useState<FpsSample | null>(null);
+  const sceneTier = vis.quality === "cinema" ? "cinema" : quality;
+  const sceneBudget = useMemo(
+    () => resolveRuntimeSceneBudget(sceneTier, pressure),
+    [sceneTier, pressure],
+  );
 
   const declines = useRef(0);
   const inclines = useRef(0);
@@ -2632,12 +2711,12 @@ function Stadium3DImpl({
   // Escala de resolução escolhida em /visual, aplicada sobre o limite do aparelho.
   const dpr = useMemo(() => {
     const base = dprFor(eff);
-    const s = vis.resolutionScale * resolutionForStage(pressure);
-    const cap = GRAPHICS_PROFILES[vis.quality === "cinema" ? "cinema" : quality].maxPixelRatio;
+    const s = vis.resolutionScale * sceneBudget.resolutionScale;
+    const cap = GRAPHICS_PROFILES[sceneTier].maxPixelRatio;
     return Array.isArray(base)
       ? ([Math.min(cap, base[0] * s), Math.min(cap, base[1] * s)] as [number, number])
       : Math.min(cap, base * s);
-  }, [eff, vis.resolutionScale, vis.quality, pressure]);
+  }, [eff, vis.resolutionScale, sceneBudget.resolutionScale, sceneTier]);
 
   // Backend gráfico: WebGPU quando o aparelho suporta, senão WebGL2.
   // A detecção acontece uma vez, antes de montar o palco, para não recriar
@@ -2703,22 +2782,24 @@ function Stadium3DImpl({
           // faixas de corte) — o custo é baixo e o ganho de definição é grande.
           const maxAniso = r.capabilities?.getMaxAnisotropy?.() ?? 16;
           THREE.Texture.DEFAULT_ANISOTROPY = Math.min(
-            eff === "alta" ? 16 : eff === "media" ? 8 : 4,
+            Math.max(1, Math.round((eff === "alta" ? 16 : eff === "media" ? 8 : 4) * sceneBudget.textureScale)),
             maxAniso,
           );
         }}
       >
-        <RuntimeBudget tier={vis.quality === "cinema" ? "cinema" : quality} enabled={vis.adaptive} onChange={setPressure} />
+        <RuntimeBudget tier={sceneTier} enabled={vis.adaptive} onChange={setPressure} />
         <QualityPressure.Provider value={pressure}>
-        <Scene
-          sim={sim}
-          mode={mode}
-          quality={eff}
-          look={look}
-          shadows={shadowsOn}
-          backend={backend}
-          postIntensity={vis.postIntensity * (vis.quality === "cinema" ? 1.12 : 1)}
-        />
+          <RuntimeSceneBudgetContext.Provider value={sceneBudget}>
+            <Scene
+              sim={sim}
+              mode={mode}
+              quality={eff}
+              look={look}
+              shadows={shadowsOn}
+              backend={backend}
+              postIntensity={vis.postIntensity * (vis.quality === "cinema" ? 1.12 : 1)}
+            />
+          </RuntimeSceneBudgetContext.Provider>
         </QualityPressure.Provider>
         {vis.showFps ? <FpsMeter onSample={setFps} backend={backend} quality={eff} /> : null}
       </Canvas>
@@ -2737,7 +2818,7 @@ function Stadium3DImpl({
       ) : null}
       {vis.adaptive && pressure > 0 ? (
         <span className="pointer-events-none absolute right-2 top-2 rounded-full bg-black/45 px-2 py-0.5 text-[10px] uppercase tracking-widest text-white/80">
-          Resolução adaptativa · {Math.round(resolutionForStage(pressure) * 100)}%
+          Auto · etapa {sceneBudget.stage}/8 · {Math.round(sceneBudget.resolutionScale * 100)}%
         </span>
       ) : null}
       {quality === "baixa" ? (

@@ -6,7 +6,17 @@ import { FIELD_X, FIELD_Z } from "@/game/sim";
 const COLS = 6, ROWS = 4;
 const WIDTH = (FIELD_X * 2 + 10) / COLS, DEPTH = (FIELD_Z * 2 + 10) / ROWS;
 /** Bounded 24 chunks with real bounds. Far grass stays in the PBR surface. */
-export function GrassChunks({ material, density, pressure = 0 }: { material: THREE.Material; density: number; pressure?: number }) {
+export function GrassChunks({
+  material,
+  density,
+  pressure = 0,
+  maxVisibleChunks = COLS * ROWS,
+}: {
+  material: THREE.Material;
+  density: number;
+  pressure?: number;
+  maxVisibleChunks?: number;
+}) {
   const refs = useRef<(THREE.InstancedMesh | null)[]>([]);
   // Lâminas só existem quando a câmera pode lê-las. O tapete PBR já cobre
   // planos abertos; desenhar milhares de cones ali criava pontos pretos e não
@@ -40,13 +50,24 @@ export function GrassChunks({ material, density, pressure = 0 }: { material: THR
     elapsed.current += dt;
     if (elapsed.current < 0.2) return;
     elapsed.current = 0;
+    const candidates = chunks
+      .map((chunk, index) => ({
+        index,
+        distance: Math.hypot(
+          Math.max(0, Math.abs(camera.position.x - chunk.x) - WIDTH / 2),
+          camera.position.y,
+          Math.max(0, Math.abs(camera.position.z - chunk.z) - DEPTH / 2),
+        ),
+      }))
+      .sort((a, b) => a.distance - b.distance);
+    const active = new Set(candidates.slice(0, Math.max(0, maxVisibleChunks)).map(({ index }) => index));
     refs.current.forEach((mesh, index) => {
       if (!mesh) return;
       const chunk = chunks[index]!;
       const distance = Math.hypot(Math.max(0, Math.abs(camera.position.x - chunk.x) - WIDTH / 2), camera.position.y, Math.max(0, Math.abs(camera.position.z - chunk.z) - DEPTH / 2));
       const previous = mesh.visible;
       const lowCamera = camera.position.y < 19;
-      mesh.visible = density > 0 && lowCamera && distance < (previous ? 32 : 27);
+      mesh.visible = active.has(index) && density > 0 && lowCamera && distance < (previous ? 32 : 27);
       mesh.count = distance < 14 ? count : Math.round(count * (pressure >= 2 ? 0.18 : 0.34));
     });
   });

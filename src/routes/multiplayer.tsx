@@ -3,8 +3,9 @@ import { Copy, LogOut, Play, RefreshCw, Send, Swords, Users, WifiOff } from "luc
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
+import { BroadcastCockpit } from "@/components/game/BroadcastCockpit";
 import { Stadium3D, type Quality } from "@/components/game/Stadium3D";
-import { cameraOption, nextCameraMode, type CameraMode } from "@/game/camera-modes";
+import type { CameraMode } from "@/game/camera-modes";
 import { CLUBS, LEAGUES, getLeague } from "@/game/data/leagues";
 import { detectQuality } from "@/game/device";
 import { WorkerMatchView } from "@/game/live-match";
@@ -13,6 +14,11 @@ import { createLiveMatchController, type LiveMatchController } from "@/game/simW
 import { useOnline } from "@/hooks/useOnline";
 import { useSignedIn } from "@/hooks/useCareer";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  getBroadcastPreferences,
+  setBroadcastPreferences,
+  type QualityPref,
+} from "@/game/visual-settings";
 
 export const Route = createFileRoute("/multiplayer")({
   ssr: false,
@@ -545,11 +551,20 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
     [room.host_club, room.guest_club, room.seed],
   );
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
-  const [quality] = useState<Quality>(() => detectQuality() as Quality);
-  const [camera, setCamera] = useState<CameraMode>("broadcast");
+  const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
+  const [camera, setCamera] = useState<CameraMode>(() => getBroadcastPreferences().camera);
   const [snap, setSnap] = useState({ minute: 0, hg: 0, ag: 0, finished: false });
   const published = useRef(false);
   const controllerRef = useRef<LiveMatchController | null>(null);
+
+  const chooseCamera = useCallback((next: CameraMode) => {
+    setCamera(next);
+    setBroadcastPreferences({ camera: next, directorAuto: next === "director" });
+  }, []);
+
+  const chooseQuality = useCallback((preference: QualityPref) => {
+    setQuality((preference === "cinema" ? "alta" : preference === "auto" ? detectQuality() : preference) as Quality);
+  }, []);
 
   useEffect(() => {
     const controller = createLiveMatchController({
@@ -617,14 +632,12 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
         </div>
       </div>
       <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl">
-        <button
-          onClick={() => setCamera((current) => nextCameraMode(current))}
-          aria-label={`Alternar câmera; atual: ${cameraOption(camera).label}`}
-          title={cameraOption(camera).description}
-          className="rounded-full px-4 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
-        >
-          Câmera · {cameraOption(camera).shortLabel}
-        </button>
+        <BroadcastCockpit
+          camera={camera}
+          deviceQuality={quality}
+          onCameraChange={chooseCamera}
+          onQualityPreferenceChange={chooseQuality}
+        />
         <button
           onClick={onExit}
           className="rounded-full bg-white/15 px-4 py-1.5 font-display text-xs uppercase tracking-wide text-white"

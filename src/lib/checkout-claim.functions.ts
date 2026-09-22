@@ -45,10 +45,13 @@ export const claimCheckoutSession = createServerFn({ method: "POST" })
 
       const lineItem = session.line_items?.data?.[0];
       const price = lineItem?.price;
-      const productKey =
+      const stripeProductKey =
         price?.lookup_key ||
         (price?.metadata?.["lovable_external_id"] as string | undefined) ||
         price?.id;
+      const productKey =
+        session.metadata?.["productKey"] ||
+        (stripeProductKey === "season_pass_monthly" ? "season_pass" : stripeProductKey);
       if (!productKey) {
         return { status: "error", message: "Item da compra não identificado." };
       }

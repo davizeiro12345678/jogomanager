@@ -1,63 +1,43 @@
-import { createClient } from "@supabase/supabase-js";
 import type { StripeEnv } from "@/lib/stripe.server";
+import {
+  getServerStoreProduct,
+  getStoreServiceSupabase,
+  parseStoreProductContents,
+  type StoreProductContents,
+} from "@/lib/store-products.server";
 
-let _supabase: ReturnType<typeof createClient> | null = null;
-function getSupabase() {
-  if (!_supabase) {
-    _supabase = createClient(
-      process.env["SUPABASE_URL"]!,
-      process.env["SUPABASE_SERVICE_ROLE_KEY"]!,
-    );
-  }
-  return _supabase;
+export type ProductEffect = StoreProductContents;
+
+/**
+ * A guest intent freezes the commercial offer that Stripe accepted. The
+ * server still validates that snapshot before passing it to the atomic RPC,
+ * but it must not replace a paid offer with the catalog's newer contents.
+ */
+export interface FulfillmentSnapshot {
+  priceCents: number;
+  contents: ProductEffect;
 }
 
-export interface ProductEffect {
-  coins: number;
-  scoutReports: number;
-  trainingBoosts: number;
-  themes: string[];
+/**
+ * Loads benefits from the same `store_products.contents` value used by the
+ * server checkout validator. This deliberately avoids a second hard-coded
+ * catalog that could credit a different item from the one displayed.
+ */
+export async function getProductEffect(productKey: string): Promise<ProductEffect> {
+  const product = await getServerStoreProduct(getStoreServiceSupabase() as any, productKey, {
+    activeOnly: false,
+  });
+  return product.contents;
 }
 
-const EFFECTS: Record<string, ProductEffect> = {
-  coins_starter: { coins: 200, scoutReports: 0, trainingBoosts: 0, themes: [] },
-  coins_small: { coins: 500, scoutReports: 0, trainingBoosts: 0, themes: [] },
-  coins_medium: { coins: 1800, scoutReports: 0, trainingBoosts: 0, themes: [] },
-  coins_large: { coins: 4000, scoutReports: 0, trainingBoosts: 0, themes: [] },
-  scout_pack: { coins: 0, scoutReports: 10, trainingBoosts: 0, themes: [] },
-  training_pack: { coins: 0, scoutReports: 0, trainingBoosts: 1, themes: [] },
-  theme_pack: {
-    coins: 0,
-    scoutReports: 0,
-    trainingBoosts: 0,
-    themes: ["premium_gold", "premium_carbon", "neon_stadium"],
-  },
-  celebration_pack: {
-    coins: 0,
-    scoutReports: 0,
-    trainingBoosts: 0,
-    themes: ["celebration_extra"],
-  },
-  stadium_pack: {
-    coins: 0,
-    scoutReports: 0,
-    trainingBoosts: 0,
-    themes: ["stadium_mow", "stadium_tifo"],
-  },
-};
-
-export function getProductEffect(productKey: string): ProductEffect | null {
-  return EFFECTS[productKey] ?? null;
-}
-
-/** Marca a compra como pendente assim que o pagamento é iniciado/recebido. */
+/** Marks a payment as pending without ever replacing a completed credit. */
 export async function recordPendingPurchase(
   userId: string,
   productKey: string,
   reference: string,
   amountCents: number,
 ): Promise<void> {
-  const supabase = getSupabase();
+  const supabase = getStoreServiceSupabase();
   const { error } = await supabase.from("user_purchases").upsert(
     {
       user_id: userId,
@@ -71,90 +51,63 @@ export async function recordPendingPurchase(
   if (error) console.error("recordPendingPurchase falhou", error.message);
 }
 
-/** Registra falha de pagamento para aparecer no painel de compras. */
+/** Registers a payment failure while retaining a completed purchase as final. */
 export async function markPurchaseFailed(reference: string, message: string): Promise<void> {
-  const supabase = getSupabase();
-  await supabase
+  const supabase = getStoreServiceSupabase();
+  const { error } = await supabase
     .from("user_purchases")
     .update({ status: "failed", error: message.slice(0, 400) } as never)
     .eq("reference", reference)
     .neq("status", "completed");
+  if (error) console.error("markPurchaseFailed falhou", error.message);
 }
 
+/**
+ * Credits a one-time payment atomically. The SQL function moves a pending
+ * record to completed and changes the wallet in one transaction, so webhook
+ * and return-page retries cannot grant the package twice.
+ */
 export async function fulfillOneTimePurchase(
   userId: string,
   productKey: string,
   reference: string,
   amountCents: number,
-): Promise<void> {
-  const effect = getProductEffect(productKey);
-  if (!effect) {
-    await markPurchaseFailed(reference, `Produto desconhecido: ${productKey}`);
-    throw new Error(`Unknown product key: ${productKey}`);
+  snapshot?: FulfillmentSnapshot,
+): Promise<boolean> {
+  const supabase = getStoreServiceSupabase();
+  const product = snapshot
+    ? null
+    : await getServerStoreProduct(supabase as any, productKey, { activeOnly: false });
+  const priceCents = snapshot?.priceCents ?? product!.priceCents;
+  const contents = parseStoreProductContents(snapshot?.contents ?? product!.contents);
+  if (!Number.isInteger(priceCents) || priceCents < 0 || amountCents !== priceCents) {
+    await markPurchaseFailed(reference, "O valor pago não confere com o catálogo oficial.");
+    throw new Error(`Unexpected checkout amount for ${productKey}`);
+  }
+  if (!contents) {
+    await markPurchaseFailed(reference, "O conteúdo pago não confere com o catálogo oficial.");
+    throw new Error(`Unexpected checkout contents for ${productKey}`);
   }
 
-  const supabase = getSupabase();
-
-  // Idempotência: a mesma sessão da Stripe pode chegar mais de uma vez.
-  const { data: existing } = await supabase
-    .from("user_purchases")
-    .select("id, status")
-    .eq("reference", reference)
-    .maybeSingle();
-  if ((existing as { status?: string } | null)?.status === "completed") return;
-
-  const { error: purchaseError } = await supabase.from("user_purchases").upsert(
-    {
-      user_id: userId,
-      product_key: productKey,
-      amount_cents: amountCents,
-      status: "completed",
-      error: null,
-      reference,
-    } as any,
-    { onConflict: "reference" },
-  );
-  if (purchaseError) throw new Error(purchaseError.message);
-
-  const { data: rawWallet, error: walletFetchError } = await supabase
-    .from("user_wallet")
-    .select("coins, scout_reports, training_boosts, unlocked_themes")
-    .eq("user_id", userId)
-    .maybeSingle();
-  const existingWallet = rawWallet as {
-    coins: number;
-    scout_reports: number;
-    training_boosts: number;
-    unlocked_themes: string[];
-  } | null;
-  if (walletFetchError) throw new Error(walletFetchError.message);
-
-  const currentThemes = new Set<string>(existingWallet?.unlocked_themes ?? []);
-  for (const theme of effect.themes) currentThemes.add(theme);
-
-  const nextCoins = (existingWallet?.coins ?? 0) + effect.coins;
-  const nextScout = (existingWallet?.scout_reports ?? 0) + effect.scoutReports;
-  const nextTraining = (existingWallet?.training_boosts ?? 0) + effect.trainingBoosts;
-
-  const { error: walletError } = await supabase.from("user_wallet").upsert(
-    {
-      user_id: userId,
-      coins: nextCoins,
-      scout_reports: nextScout,
-      training_boosts: nextTraining,
-      unlocked_themes: Array.from(currentThemes),
-    } as any,
-    { onConflict: "user_id" },
-  );
-  if (walletError) throw new Error(walletError.message);
+  const { data, error } = await (supabase as any).rpc("fulfill_store_purchase", {
+    _user_id: userId,
+    _product_key: productKey,
+    _reference: reference,
+    _amount_cents: amountCents,
+    _coins: contents.coins,
+    _scout_reports: contents.scoutReports,
+    _training_boosts: contents.trainingBoosts,
+    _themes: contents.themes,
+  });
+  if (error) throw new Error(error.message);
+  return data === true;
 }
 
-export async function syncSubscription(subscription: any, env: StripeEnv): Promise<void> {
-  const userId = subscription.metadata?.userId;
-  if (!userId) {
-    throw new Error("No userId in subscription metadata");
-  }
-
+export async function syncSubscriptionForUser(
+  subscription: any,
+  userId: string,
+  env: StripeEnv,
+): Promise<void> {
   const item = subscription.items?.data?.[0];
   const priceId =
     item?.price?.lookup_key || item?.price?.metadata?.lovable_external_id || item?.price?.id;
@@ -162,9 +115,9 @@ export async function syncSubscription(subscription: any, env: StripeEnv): Promi
   const periodStart = item?.current_period_start ?? subscription.current_period_start;
   const periodEnd = item?.current_period_end ?? subscription.current_period_end;
 
-  const supabase = getSupabase();
+  const supabase = getStoreServiceSupabase();
 
-  await supabase.from("subscriptions").upsert(
+  const { error: subscriptionError } = await supabase.from("subscriptions").upsert(
     {
       user_id: userId,
       stripe_subscription_id: subscription.id,
@@ -180,19 +133,18 @@ export async function syncSubscription(subscription: any, env: StripeEnv): Promi
     } as any,
     { onConflict: "stripe_subscription_id" },
   );
+  if (subscriptionError) throw new Error(subscriptionError.message);
 
-  // Mirror active subscription into wallet.season_pass_until
   const active =
     ["active", "trialing"].includes(subscription.status) &&
     periodEnd &&
     new Date(periodEnd * 1000) > new Date();
   const canceledButValid =
     subscription.status === "canceled" && periodEnd && new Date(periodEnd * 1000) > new Date();
-
   const seasonPassUntil =
     active || canceledButValid ? new Date(periodEnd * 1000).toISOString() : null;
 
-  await supabase.from("user_wallet").upsert(
+  const { error: walletError } = await supabase.from("user_wallet").upsert(
     {
       user_id: userId,
       season_pass: !!seasonPassUntil,
@@ -200,4 +152,12 @@ export async function syncSubscription(subscription: any, env: StripeEnv): Promi
     } as any,
     { onConflict: "user_id" },
   );
+  if (walletError) throw new Error(walletError.message);
+}
+
+/** Authenticated subscriptions retain the existing Stripe metadata contract. */
+export async function syncSubscription(subscription: any, env: StripeEnv): Promise<void> {
+  const userId = subscription.metadata?.userId;
+  if (!userId) throw new Error("No userId in subscription metadata");
+  await syncSubscriptionForUser(subscription, userId, env);
 }

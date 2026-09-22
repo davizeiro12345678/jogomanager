@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { GameShell } from "@/components/game/GameShell";
+import { BroadcastCockpit } from "@/components/game/BroadcastCockpit";
 import { Stadium3D, type Quality } from "@/components/game/Stadium3D";
-import { CAMERA_OPTIONS, type CameraMode } from "@/game/camera-modes";
+import type { CameraMode } from "@/game/camera-modes";
 import { detectQuality } from "@/game/device";
 import {
   canExportVideo,
@@ -14,6 +15,7 @@ import {
   type Replay,
 } from "@/game/replay";
 import { useCareer } from "@/hooks/useCareer";
+import { getBroadcastPreferences, type QualityPref } from "@/game/visual-settings";
 
 export const Route = createFileRoute("/replays")({
   ssr: false,
@@ -118,14 +120,21 @@ function ReplaysPage() {
 
 function ReplayPlayer({ replay, onClose }: { replay: Replay; onClose: () => void }) {
   const sim = useMemo(() => new ReplaySim(replay), [replay]);
-  const [camera, setCamera] = useState<CameraMode>("broadcast");
-  const [quality] = useState<Quality>(() => detectQuality() as Quality);
+  const [camera, setCamera] = useState<CameraMode>(() => {
+    const preference = getBroadcastPreferences();
+    return preference.replayCamera === "inherit" ? preference.camera : preference.replayCamera;
+  });
+  const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState(1);
   const [t, setT] = useState(0);
   const [recording, setRecording] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const stopRef = useRef<null | (() => Promise<Blob>)>(null);
+
+  const chooseQuality = useCallback((preference: QualityPref) => {
+    setQuality((preference === "cinema" ? "alta" : preference === "auto" ? detectQuality() : preference) as Quality);
+  }, []);
 
   sim.speed = speed;
 
@@ -207,18 +216,13 @@ function ReplayPlayer({ replay, onClose }: { replay: Replay; onClose: () => void
             {s}x
           </button>
         ))}
-        <select
-          value={camera}
-          onChange={(e) => setCamera(e.target.value as CameraMode)}
-          className="rounded-lg border border-border/60 bg-background px-2 py-1.5 text-xs"
-          aria-label="Câmera"
-        >
-          {CAMERA_OPTIONS.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <BroadcastCockpit
+          camera={camera}
+          deviceQuality={quality}
+          onCameraChange={setCamera}
+          onQualityPreferenceChange={chooseQuality}
+          context="replay"
+        />
         {canExportVideo() ? (
           <button
             type="button"

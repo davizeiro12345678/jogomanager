@@ -2,9 +2,12 @@ import { useFrame } from "@react-three/fiber";
 import { createContext, useContext, useEffect, useMemo, useRef } from "react";
 import { GRAPHICS_PROFILES, type GraphicsTier } from "@/game/contracts/graphics-profile";
 import { QualityGovernor } from "@/game/quality-governor";
+import { resolveRuntimeSceneBudget, type RuntimeSceneBudget as RuntimeSceneBudgetValue } from "@/game/runtime-scene-budget";
 
 export const QualityPressure = createContext(0);
 export const useQualityPressure = () => useContext(QualityPressure);
+export const RuntimeSceneBudgetContext = createContext<RuntimeSceneBudgetValue>(resolveRuntimeSceneBudget("media"));
+export const useRuntimeSceneBudget = () => useContext(RuntimeSceneBudgetContext);
 export function RuntimeBudget({ tier, enabled, onChange }: { tier: GraphicsTier; enabled: boolean; onChange: (stage: number) => void }) {
   const governor = useMemo(() => new QualityGovernor(GRAPHICS_PROFILES[tier].targetP95FrameMs), [tier, enabled]);
   const previous = useRef(0);

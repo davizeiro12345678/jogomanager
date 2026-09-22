@@ -6,9 +6,14 @@ import { Coins, Sparkles, Crown, Package, Search, Dumbbell, Palette } from "luci
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSignedIn } from "@/hooks/useCareer";
+import { useStoreCatalog } from "@/hooks/useStoreCatalog";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useSubscription, isSubscriptionActive } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
+import {
+  GuestCheckoutDialog,
+  type GuestCheckoutProduct,
+} from "@/components/store/GuestCheckoutDialog";
 import {
   Card,
   CardContent,
@@ -20,18 +25,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { recordAdMetric } from "@/features/ads/ad-manager";
-import { STORE_PACKS } from "@/game/store-catalog";
-
-interface StoreProduct {
-  key: string;
-  name: string;
-  description: string;
-  price_cents: number;
-  currency: string;
-  coins: number;
-  kind: string;
-  active: boolean;
-}
 
 interface Wallet {
   coins: number;
@@ -42,27 +35,15 @@ interface Wallet {
   unlocked_themes: string[];
 }
 
-/**
- * A vitrine continua útil quando a leitura anônima falha (por exemplo, sem
- * rede ou durante uma indisponibilidade de política). O checkout continua
- * verificando preço e identidade no servidor autenticado.
- */
-const FALLBACK_PRODUCTS: StoreProduct[] = STORE_PACKS.map((pack) => ({
-  key: pack.key,
-  name: pack.name,
-  description: pack.description,
-  price_cents: pack.priceCents,
-  currency: pack.currency,
-  coins: pack.coins,
-  kind: pack.kind,
-  active: true,
-}));
-
 function formatBRL(cents: number, currency: string): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: currency || "BRL",
-  }).format(cents / 100);
+  try {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: currency || "BRL",
+    }).format(cents / 100);
+  } catch {
+    return `${(cents / 100).toLocaleString("pt-BR")} ${currency || "BRL"}`;
+  }
 }
 
 const KIND_LABELS: Record<string, string> = {
@@ -81,28 +62,9 @@ const KIND_ICONS: Record<string, ReactNode> = {
   pass: <Crown size={16} />,
 };
 
-const PRICE_IDS: Record<string, string> = {
-  coins_starter: "coins_starter",
-  coins_small: "coins_small",
-  coins_large: "coins_large",
-  celebration_pack: "celebration_pack",
-  stadium_pack: "stadium_pack",
-  coins_medium: "coins_medium",
-  scout_pack: "scout_pack",
-  training_pack: "training_pack",
-  theme_pack: "theme_pack",
-  season_pass: "season_pass_monthly",
-};
-
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString("pt-BR");
-}
-
-function loginDestination(next: string, productKey: string): string {
-  const [path = next, hash] = next.split("#", 2);
-  const separator = path.includes("?") ? "&" : "?";
-  return `${path}${separator}produto=${encodeURIComponent(productKey)}${hash ? `#${hash}` : ""}`;
 }
 
 /**
@@ -115,20 +77,11 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
   const selectedProduct = new URLSearchParams(search).get("produto");
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [openingKey, setOpeningKey] = useState<string | null>(null);
+  const [guestProduct, setGuestProduct] = useState<GuestCheckoutProduct | null>(null);
 
-  const productsQuery = useQuery({
-    queryKey: ["store_products"],
-    enabled: signedIn === true,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("store_products")
-        .select("key, name, description, price_cents, currency, coins, kind, active")
-        .eq("active", true)
-        .order("price_cents", { ascending: true });
-      if (error) throw new Error(error.message);
-      return (data ?? []) as StoreProduct[];
-    },
-  });
+  // A leitura é publicamente permitida por RLS; usar a mesma consulta para
+  // visitantes e contas evita que a oferta mude depois do login.
+  const productsQuery = useStoreCatalog();
 
   const walletQuery = useQuery({
     queryKey: ["user_wallet", signedIn],
@@ -160,11 +113,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
   const subscriptionActive = isSubscriptionActive(subscriptionQuery.data);
   const isGuest = signedIn === false;
   const isSessionLoading = signedIn === null;
-  const usingPublicCatalog = signedIn !== true;
-  // A vitrine pública precisa coincidir com /produtos e não depende do banco.
-  // A lista da base fica reservada à conta autenticada e ao checkout real.
-  const products = usingPublicCatalog ? FALLBACK_PRODUCTS : (productsQuery.data ?? FALLBACK_PRODUCTS);
-  const showingFallback = usingPublicCatalog || productsQuery.isError;
+  const products = productsQuery.data ?? [];
 
   // Destaca o pacote de moedas com mais moedas por real, para o jogador
   // comparar sem fazer conta de cabeça.
@@ -176,18 +125,15 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
     }, null)?.key;
 
   function buy(productKey: string) {
-    // Não criar checkout a partir de uma sessão desconhecida ou anônima. O
-    // middleware requireSupabaseAuth mantém essa mesma regra no servidor.
+    // The public catalog is available to everyone; payment requires a session.
     if (signedIn !== true) return;
     setOpeningKey(productKey);
     void import("@/lib/analytics").then((m) =>
       m.track("checkout_iniciado", { produto: productKey }),
     );
     try {
-      const priceId = PRICE_IDS[productKey];
-      if (!priceId) throw new Error("Produto não configurado para checkout.");
       openCheckout({
-        priceId,
+        productKey,
         returnUrl: `${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`,
       });
     } catch (err) {
@@ -228,9 +174,9 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           </p>
         ) : isGuest ? (
           <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-            <p>Veja todos os pacotes e preços antes de entrar. A compra é vinculada à sua conta no checkout.</p>
+            <p>Veja os pacotes e preços. Compre por e-mail ou entre para vincular o item direto à carreira.</p>
             <Link to="/auth" search={{ next }} className="font-medium text-primary underline underline-offset-4">
-              Entrar para salvar e comprar
+              Já tenho conta
             </Link>
           </div>
         ) : (
@@ -250,7 +196,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
         )}
       </div>
 
-      {productsQuery.isLoading && !usingPublicCatalog ? (
+      {productsQuery.isLoading ? (
         <div className={`grid gap-4 ${columns === 2 ? "sm:grid-cols-2" : ""}`}>
           {[0, 1, 2, 3].map((i) => (
             <div
@@ -261,27 +207,24 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           ))}
           <span className="sr-only">Carregando produtos…</span>
         </div>
+      ) : productsQuery.isError ? (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-secondary/40 p-4 text-sm text-muted-foreground"
+        >
+          <p>Não foi possível carregar o catálogo oficial. Nenhum preço foi exibido.</p>
+          <Button variant="outline" size="sm" onClick={() => void productsQuery.refetch()}>
+            Tentar novamente
+          </Button>
+        </div>
       ) : products.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum produto disponível no momento.</p>
       ) : (
         <>
-          {showingFallback ? (
-            <div
-              role="status"
-              className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-secondary/40 p-3 text-xs text-muted-foreground"
-            >
-              <p>
-                {usingPublicCatalog
-                  ? "Catálogo público: compare os pacotes antes de entrar. O checkout confirma preço e disponibilidade."
-                  : "Exibindo o catálogo disponível neste aparelho. O pagamento seguro confirma preço e disponibilidade."}
-              </p>
-              {productsQuery.isError && !usingPublicCatalog ? (
-                <Button variant="outline" size="sm" onClick={() => void productsQuery.refetch()}>
-                  Atualizar catálogo
-                </Button>
-              ) : null}
-            </div>
-          ) : null}
+          <p className="mb-4 text-xs text-muted-foreground">
+            Catálogo atual. O checkout seguro confirma o total e a disponibilidade antes do
+            pagamento.
+          </p>
           <div className={`grid gap-4 ${columns === 2 ? "sm:grid-cols-2" : ""}`}>
             {products.map((p) => (
               <Card
@@ -337,15 +280,27 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                         Verificando conta…
                       </Button>
                     ) : isGuest ? (
-                      <Button className="w-full" asChild>
-                        <Link to="/auth" search={{ next: loginDestination(next, p.key) }}>
-                          Entrar para comprar
-                        </Link>
+                      <Button
+                        className="w-full"
+                        data-testid="guest-checkout-start"
+                        onClick={() =>
+                          setGuestProduct({
+                            key: p.key,
+                            name: p.name,
+                            priceCents: p.price_cents,
+                            currency: p.currency,
+                          })
+                        }
+                      >
+                        Comprar como visitante
                       </Button>
                     ) : (
                       <Button
                         className="w-full"
-                        disabled={openingKey === p.key || (p.kind === "pass" && subscriptionActive)}
+                        disabled={
+                          openingKey === p.key ||
+                          (p.kind === "pass" && subscriptionActive)
+                        }
                         onClick={() => buy(p.key)}
                         onPointerDown={() => {
                           if (p.key === bestValueKey) recordAdMetric(`store-${p.key}`, "inventory", "click");
@@ -362,7 +317,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                       {isSessionLoading
                         ? "Aguarde a verificação da conta"
                         : isGuest
-                          ? "Você verá o checkout depois de entrar"
+                          ? "Compra segura por e-mail; entre se já tiver uma conta"
                           : "Entrega automática na sua conta"}
                     </p>
                   </div>
@@ -385,6 +340,14 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           )}
         </>
       )}
+
+      <GuestCheckoutDialog
+        product={guestProduct}
+        open={guestProduct !== null}
+        onOpenChange={(open) => {
+          if (!open) setGuestProduct(null);
+        }}
+      />
     </div>
   );
 }

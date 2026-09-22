@@ -2,10 +2,8 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   BarChart3,
-  Camera,
   ChevronDown,
   FastForward,
-  Gauge,
   MessageCircle,
   Pause,
   Play,
@@ -26,10 +24,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ChatPanel } from "@/components/game/ChatPanel";
+import { BroadcastCockpit } from "@/components/game/BroadcastCockpit";
 import { StorePanel } from "@/components/game/StorePanel";
 
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
-import { CAMERA_OPTIONS, nextCameraMode } from "@/game/camera-modes";
+import { nextCameraMode } from "@/game/camera-modes";
 import { FpsPanel } from "@/components/game/FpsPanel";
 import { fpsMeter } from "@/game/fps-meter";
 import { Cutscene } from "@/components/game/Cutscene";
@@ -49,6 +48,11 @@ import {
 } from "@/game/simWorkerClient";
 import { achievementById } from "@/game/achievements";
 import { detectQuality, detectQualityByGpu } from "@/game/device";
+import {
+  getBroadcastPreferences,
+  setBroadcastPreferences,
+  type QualityPref,
+} from "@/game/visual-settings";
 
 import { nextFixture } from "@/game/season";
 import { buildSquad } from "@/game/squad";
@@ -220,7 +224,12 @@ function snapshot(sim: MatchRuntime): Snap {
   };
 }
 
-const CAMERAS = CAMERA_OPTIONS.map(({ id, shortLabel }) => [id, shortLabel] as const);
+const MATCH_SPEEDS = [1, 2, 4, 8] as const;
+
+function nextMatchSpeed(current: number) {
+  const index = MATCH_SPEEDS.indexOf(current as (typeof MATCH_SPEEDS)[number]);
+  return MATCH_SPEEDS[(index + 1 + MATCH_SPEEDS.length) % MATCH_SPEEDS.length]!;
+}
 
 function StatRow({ label, h, a }: { label: string; h: number; a: number }) {
   const total = Math.max(1, h + a);
@@ -492,7 +501,7 @@ function LiveMatch({
   const { lang } = useT();
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
-  const [camera, setCamera] = useState<CameraMode>("broadcast");
+  const [camera, setCamera] = useState<CameraMode>(() => getBroadcastPreferences().camera);
   const [showStats, setShowStats] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   /** gaveta lateral: loja ou chat sem sair da partida (o jogo pausa) */
@@ -511,6 +520,23 @@ function LiveMatch({
   const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
   const controllerRef = useRef<LiveMatchController | null>(null);
   const qualityTouched = useRef(false);
+
+  const chooseCamera = useCallback((next: CameraMode) => {
+    setCamera(next);
+    setBroadcastPreferences({ camera: next, directorAuto: next === "director" });
+  }, []);
+
+  const chooseQuality = useCallback((preference: QualityPref) => {
+    qualityTouched.current = preference !== "auto";
+    if (preference === "auto") {
+      setQuality(detectQuality() as Quality);
+      void detectQualityByGpu().then((next) => {
+        if (!qualityTouched.current) setQuality(next as Quality);
+      });
+      return;
+    }
+    setQuality((preference === "cinema" ? "alta" : preference) as Quality);
+  }, []);
 
   // Ajuste fino pela placa de vídeo real, logo depois do primeiro quadro.
   // Se o jogador já mexeu no nível gráfico, a escolha dele manda.
@@ -684,13 +710,13 @@ function LiveMatch({
       else if (e.key === "3") setSpeed(4);
       else if (e.key === "4") setSpeed(8);
       else if (e.key.toLowerCase() === "c")
-        setCamera((c) => nextCameraMode(c));
+        chooseCamera(nextCameraMode(camera));
       else if (e.key.toLowerCase() === "e") setShowStats((s) => !s);
       else if (e.key.toLowerCase() === "s") skip();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [skip]);
+  }, [camera, chooseCamera, skip]);
 
   function finish() {
     const perf = sim
@@ -912,19 +938,13 @@ function LiveMatch({
         >
           {paused ? <Play size={16} /> : <Pause size={16} />}
         </button>
-        {[1, 2, 4, 8].map((s) => (
-          <button
-            key={s}
-            onClick={() => setSpeed(s)}
-            aria-label={`Velocidade ${s}x`}
-            aria-pressed={speed === s}
-            className={`h-11 w-11 shrink-0 rounded-full font-display text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              speed === s ? "bg-white/25 text-white" : "text-white/70 hover:bg-white/10"
-            }`}
-          >
-            {s}x
-          </button>
-        ))}
+        <button
+          onClick={() => setSpeed((current) => nextMatchSpeed(current))}
+          aria-label={`Velocidade ${speed}x; ativar para alternar`}
+          className="h-11 w-11 shrink-0 rounded-full font-display text-xs text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          {speed}x
+        </button>
         <button
           onClick={() => setShowStats((s) => !s)}
           aria-label="Ver estatísticas"
@@ -933,6 +953,12 @@ function LiveMatch({
         >
           <BarChart3 size={16} />
         </button>
+        <BroadcastCockpit
+          camera={camera}
+          deviceQuality={quality}
+          onCameraChange={chooseCamera}
+          onQualityPreferenceChange={chooseQuality}
+        />
         <button
           onClick={() => setNarrating((v) => !v)}
           aria-label={narrating ? "Desligar narração" : "Ligar narração"}
@@ -1018,7 +1044,7 @@ function LiveMatch({
             {paused ? <Play size={13} /> : <Pause size={13} />}
             {paused ? "Seguir" : "Pausar"}
           </button>
-          {[1, 2, 4, 8].map((s) => (
+          {MATCH_SPEEDS.map((s) => (
             <button
               key={s}
               onClick={() => setSpeed(s)}
@@ -1048,47 +1074,13 @@ function LiveMatch({
           </button>
         </div>
 
-        <div>
-          <h2 className="flex items-center gap-1 font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
-            <Camera size={11} /> Câmera
-          </h2>
-          <div className="mt-1 grid grid-cols-3 gap-1">
-            {CAMERAS.map(([m, label]) => (
-              <button
-                key={m}
-                onClick={() => setCamera(m)}
-                className={`rounded-lg px-2 py-1 text-xs transition-colors ${
-                  camera === m ? "bg-primary text-primary-foreground" : "bg-white/10 text-white"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h2 className="flex items-center gap-1 font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
-            <Gauge size={11} /> Gráficos
-          </h2>
-          <div className="mt-1 grid grid-cols-3 gap-1">
-            {(["alta", "media", "baixa"] as const).map((q) => (
-              <button
-                key={q}
-                onClick={() => {
-                  qualityTouched.current = true;
-                  setQuality(q);
-                }}
-                aria-pressed={quality === q}
-                className={`min-h-10 rounded-lg px-2 py-1 text-xs capitalize transition-colors ${
-                  quality === q ? "bg-primary text-primary-foreground" : "bg-white/10 text-white"
-                }`}
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-        </div>
+        <BroadcastCockpit
+          camera={camera}
+          deviceQuality={quality}
+          onCameraChange={chooseCamera}
+          onQualityPreferenceChange={chooseQuality}
+          className="hidden md:block"
+        />
 
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
