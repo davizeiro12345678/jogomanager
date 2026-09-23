@@ -134,16 +134,18 @@ const CLIP_METADATA_OVERRIDES: Record<string, Omit<Partial<ClipMetadata>, 'famil
   dribbleLight: { loop: true, priority: 0.3 },
   dribbleFast: { loop: true, priority: 0.35 },
   
-  // Actions - não fazem loop
-  shotLow: { loop: false, priority: 0.8, duration: 0.8 },
-  shotPower: { loop: false, priority: 0.8, duration: 0.8 },
-  shotPlaced: { loop: false, priority: 0.8, duration: 0.8 },
-  volley: { loop: false, priority: 0.75, duration: 0.6 },
-  header: { loop: false, priority: 0.75, duration: 0.5 },
-  
-  passShort: { loop: false, priority: 0.6, duration: 0.5 },
-  passLong: { loop: false, priority: 0.6, duration: 0.6 },
-  cross: { loop: false, priority: 0.6, duration: 0.6 },
+  // Actions - não fazem loop. Marcadores e pé dominante alimentam o contato com
+  // a bola e o posicionamento dos pés durante a jogada.
+  shotLow: { loop: false, priority: 0.8, duration: 0.8, markers: STANDARD_MARKERS["shot"], dominantFoot: "right" },
+  shotPower: { loop: false, priority: 0.8, duration: 0.8, markers: STANDARD_MARKERS["shot"], dominantFoot: "right" },
+  shotPlaced: { loop: false, priority: 0.8, duration: 0.8, markers: STANDARD_MARKERS["shot"], dominantFoot: "right" },
+  volley: { loop: false, priority: 0.75, duration: 0.6, markers: STANDARD_MARKERS["shot"], dominantFoot: "right" },
+  header: { loop: false, priority: 0.75, duration: 0.5, dominantFoot: "both" },
+  bicycle: { loop: false, priority: 0.85, duration: 0.9, markers: STANDARD_MARKERS["shot"], dominantFoot: "both" },
+
+  passShort: { loop: false, priority: 0.6, duration: 0.5, markers: STANDARD_MARKERS["pass"], dominantFoot: "right" },
+  passLong: { loop: false, priority: 0.6, duration: 0.6, markers: STANDARD_MARKERS["pass"], dominantFoot: "right" },
+  cross: { loop: false, priority: 0.6, duration: 0.6, markers: STANDARD_MARKERS["pass"], dominantFoot: "right" },
   
   tackle: { loop: false, priority: 0.7, duration: 0.7 },
   slide: { loop: false, priority: 0.7, duration: 0.8 },
