@@ -279,24 +279,39 @@ export function proportionsFor(look: PlayerLook): Proportions {
   const h = look.height;
   const g = look.girth;
   const strong = look.bodyType === "strong" ? 1.06 : look.bodyType === "slim" ? 0.95 : 1;
+  const build = ROLE_BUILD[look.role ?? "MF"];
 
-  const thigh = 0.44 * h;
-  const shin = 0.42 * h;
+  // Variação fina de crânio/maxilar por atleta: dois jogadores com a mesma
+  // altura deixam de ter exatamente o mesmo rosto.
+  const faceRng = makeLookRng(look.seed ^ 0x9e3779b9);
+  const faceWide = 0.94 + faceRng() * 0.14;
+  const faceLong = 0.94 + faceRng() * 0.14;
+
+  // Perna um pouco mais longa em atacantes, tronco mais curto: silhueta de
+  // velocista. O quadril continua apoiado no gramado (hipY soma a perna toda).
+  const legScale = build.leg;
+  const thigh = 0.44 * h * legScale;
+  const shin = 0.42 * h * legScale;
   const footH = 0.07 * h;
+  const headR = 0.108 * (0.98 + (h - 1) * 0.4);
 
   return {
     hipY: thigh + shin + footH,
     hipW: 0.17 * g * strong,
     hipH: 0.13 * h,
-    spineLen: 0.19 * h,
-    chestLen: 0.22 * h,
+    spineLen: 0.19 * h * (2 - legScale),
+    chestLen: 0.22 * h * (2 - legScale),
     chestW: 0.2 * g * strong,
-    chestD: 0.12 * g * strong,
-    shoulderW: 0.23 * g * strong,
+    chestD: 0.12 * g * strong * (look.bodyType === "strong" ? 1.05 : 1),
+    shoulderW: 0.23 * g * strong * build.shoulder,
     neckLen: 0.07 * h,
-    neckR: 0.052 * g,
-    headR: 0.108 * (0.98 + (h - 1) * 0.4),
+    neckR: 0.052 * g * (look.role === "DF" || look.role === "GK" ? 1.06 : 1),
+    headR,
     headH: 0.24 * h,
+    headW: headR * faceWide,
+    headD: headR * (1.02 + (1 - faceWide) * 0.4),
+    jawLen: headR * 0.52 * faceLong,
+    chinFwd: headR * (0.12 + (faceLong - 0.94) * 0.5),
     upperArm: 0.28 * h,
     foreArm: 0.25 * h,
     armR: 0.048 * g * strong,
