@@ -35,10 +35,7 @@ function hash(s: string) {
   return Math.abs(h);
 }
 
-// Os padrões com anéis ficam disponíveis em /visual, mas não entram no sorteio
-// automático de transmissão: vistos de câmera alta eles chamavam mais atenção
-// do que os próprios atletas e pareciam uma textura de teste.
-const MOWS: MowPattern[] = ["stripes", "checker", "diagonal", "wide", "diamond", "fine", "bands"];
+const MOWS: MowPattern[] = ["stripes", "checker", "rings", "diagonal", "wide", "diamond", "fine", "spiral", "bands"];
 const TIMES: TimeOfDay[] = ["dia", "entardecer", "noite"];
 
 export function matchLook(homeId: string, awayId: string): MatchLook {

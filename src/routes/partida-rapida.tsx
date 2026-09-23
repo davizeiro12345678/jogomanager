@@ -3,11 +3,9 @@ import { Pause, Play, Shuffle, SkipForward, Volume2, VolumeX } from "lucide-reac
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
-import { BroadcastCockpit } from "@/components/game/BroadcastCockpit";
 import { Flag } from "@/components/game/Flag";
 import { MatchReport } from "@/components/game/MatchReport";
-import { Stadium3D, type Quality } from "@/components/game/Stadium3D";
-import type { CameraMode } from "@/game/camera-modes";
+import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
 import { CLUBS, LEAGUES, getLeague } from "@/game/data/leagues";
 import { detectQuality } from "@/game/device";
 import { Narrator, type NarrationEvent } from "@/game/narrator";
@@ -15,11 +13,6 @@ import { aiTactics, buildTeamSetup, type Difficulty } from "@/game/quickMatch";
 import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
 import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
 import { useT } from "@/i18n";
-import {
-  getBroadcastPreferences,
-  setBroadcastPreferences,
-  type QualityPref,
-} from "@/game/visual-settings";
 
 export const Route = createFileRoute("/partida-rapida")({
   ssr: false,
@@ -271,7 +264,7 @@ function QuickLive({
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
 
   const { lang } = useT();
-  const [quality, setQuality] = useState<Quality>(() => {
+  const [quality] = useState<Quality>(() => {
     // `?q=baixa|media|alta` força o nível gráfico (testes, suporte e aparelhos fracos)
     if (typeof window !== "undefined") {
       const q = new URLSearchParams(window.location.search).get("q");
@@ -279,7 +272,7 @@ function QuickLive({
     }
     return detectQuality() as Quality;
   });
-  const [camera, setCamera] = useState<CameraMode>(() => getBroadcastPreferences().camera);
+  const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
   const [narrating, setNarrating] = useState(false);
@@ -294,15 +287,6 @@ function QuickLive({
   pausedRef.current = paused;
   const narratorRef = useRef<Narrator | null>(null);
   const cursorRef = useRef(0);
-
-  const chooseCamera = useCallback((next: CameraMode) => {
-    setCamera(next);
-    setBroadcastPreferences({ camera: next, directorAuto: next === "director" });
-  }, []);
-
-  const chooseQuality = useCallback((preference: QualityPref) => {
-    setQuality((preference === "cinema" ? "alta" : preference === "auto" ? detectQuality() : preference) as Quality);
-  }, []);
 
   useEffect(() => {
     const n = new Narrator({ lang, enabled: narrating, onCaption: setCaption });
@@ -464,12 +448,16 @@ function QuickLive({
         >
           <SkipForward size={16} />
         </button>
-        <BroadcastCockpit
-          camera={camera}
-          deviceQuality={quality}
-          onCameraChange={chooseCamera}
-          onQualityPreferenceChange={chooseQuality}
-        />
+        <button
+          onClick={() =>
+            setCamera((c) =>
+              c === "broadcast" ? "tactical" : c === "tactical" ? "fan" : "broadcast",
+            )
+          }
+          className="rounded-full px-3 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
+        >
+          Câmera
+        </button>
       </div>
 
       {done ? (

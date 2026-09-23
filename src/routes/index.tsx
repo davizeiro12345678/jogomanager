@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Gamepad2, Menu, ShieldCheck, ShoppingBag, Sparkles, X } from "lucide-react";
+import { ArrowRight, Gamepad2, Menu, ShieldCheck, Sparkles, X } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { CLUBS, LEAGUES } from "@/game/data/leagues";
@@ -12,8 +12,6 @@ import { canonical, gameLd, seoMeta, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/
 import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1600&quality=52&as=srcset";
 import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1600&quality=62&as=srcset";
 import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
-import { HomeCinematicShowcase } from "@/components/home/HomeCinematicShowcase";
-import { HomeStoreRail } from "@/components/home/HomeStoreRail";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -69,11 +67,6 @@ const HUB = [
     title: "Jogar offline",
     text: "Instale como aplicativo e continue jogando sem internet.",
   },
-  {
-    to: "/loja",
-    title: "Loja e visuais",
-    text: "Veja pacotes, cortes de gramado e itens de estádio antes mesmo de entrar.",
-  },
 ] as const;
 
 /**
@@ -112,12 +105,6 @@ function Landing() {
 
   return (
     <main className="pitch-bg min-h-screen">
-      <a
-        href="#conteudo"
-        className="sr-only fixed left-4 top-4 z-50 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-      >
-        Pular para o conteúdo
-      </a>
       {/* ---------- herói em tela cheia ---------- */}
       <header className="relative isolate overflow-hidden">
         <nav
@@ -134,8 +121,6 @@ function Landing() {
             <div className="hidden items-center gap-1 md:flex">
               <Button variant="ghost" asChild><Link to="/guias">Guias</Link></Button>
               <Button variant="ghost" asChild><Link to="/ligas-de-futebol">Ligas</Link></Button>
-              <Button variant="ghost" asChild><a href="#cinema">Cinema</a></Button>
-              <Button variant="ghost" asChild><Link to="/produtos">Loja</Link></Button>
               <Button variant="ghost" asChild><Link to="/auth">Entrar</Link></Button>
               <Button asChild><Link to={hasCareer ? "/dashboard" : "/new"}>{hasCareer ? "Continuar" : "Jogar agora"}</Link></Button>
             </div>
@@ -154,8 +139,6 @@ function Landing() {
             <div className="grid gap-1 border-t border-border/50 bg-background p-3 md:hidden">
               <Button variant="ghost" asChild><Link to="/guias" onClick={() => setMenuOpen(false)}>Guias</Link></Button>
               <Button variant="ghost" asChild><Link to="/ligas-de-futebol" onClick={() => setMenuOpen(false)}>Ligas</Link></Button>
-              <Button variant="ghost" asChild><a href="#cinema" onClick={() => setMenuOpen(false)}>Cinema</a></Button>
-              <Button variant="ghost" asChild><Link to="/produtos" onClick={() => setMenuOpen(false)}>Loja</Link></Button>
               <Button variant="outline" asChild><Link to="/auth" onClick={() => setMenuOpen(false)}>Entrar</Link></Button>
               <Button asChild><Link to={hasCareer ? "/dashboard" : "/new"} onClick={() => setMenuOpen(false)}>{hasCareer ? "Continuar carreira" : "Jogar agora"}</Link></Button>
             </div>
@@ -203,7 +186,7 @@ function Landing() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Button size="lg" className="glow-primary flex-1 sm:flex-none" asChild>
                 <Link to={hasCareer ? "/dashboard" : "/new"}>
-                  {hasCareer ? "Continuar carreira" : "Começar carreira"}
+                {hasCareer ? "Continuar carreira" : "Jogar agora"}
                   <ArrowRight aria-hidden="true" />
                 </Link>
               </Button>
@@ -218,14 +201,6 @@ function Landing() {
               </Link>{" "}
               leva um clique.
             </p>
-            <Link
-              to="/produtos"
-              className="mt-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-background/40 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10 hover:text-foreground"
-            >
-              <ShoppingBag size={14} aria-hidden="true" />
-              Veja produtos e preços, mesmo sem conta
-              <ArrowRight size={13} aria-hidden="true" />
-            </Link>
 
             <dl className="mt-9 grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:gap-x-10">
               {[
@@ -317,7 +292,7 @@ function Landing() {
         </div>
       </section>
 
-      <div id="conteudo" className="relative mx-auto max-w-6xl px-4 pb-16">
+      <div className="relative mx-auto max-w-6xl px-4 pb-16">
         {/* faixa de escudos: mostra de cara que os clubes são reais */}
         <div
           aria-hidden="true"
@@ -352,26 +327,15 @@ function Landing() {
           </Link>
         ) : null}
 
-        <HomeCinematicShowcase posterSrc={heroFallback} />
-
-        <HomeStoreRail />
-
-        <section aria-labelledby="start-title" className="mt-12">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="font-display text-[0.7rem] uppercase tracking-[0.32em] text-primary">Sua jornada</p>
-              <h2 id="start-title" className="mt-2 font-display text-3xl uppercase leading-none tracking-wide sm:text-4xl">Escolha seu próximo lance.</h2>
-            </div>
-            <p className="max-w-sm text-sm text-muted-foreground">Comece uma carreira completa, entre em uma partida agora ou personalize seu clube.</p>
-          </div>
+        <section className="mt-12">
+          <h2 className="sr-only">Por onde começar</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {HUB.map((c) => (
               <Link
                 key={c.to}
                 to={c.to}
-                className="group relative mt-5 min-h-36 overflow-hidden rounded-2xl border border-border/60 surface-card p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-card hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transform-none motion-reduce:transition-none"
+                className="group relative overflow-hidden rounded-xl border border-border/60 surface-card p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-card hover:shadow-lg"
               >
-                <span aria-hidden="true" className="absolute right-4 top-4 text-primary/55 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none">→</span>
                 <p className="font-display text-lg group-hover:text-primary">{c.title}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{c.text}</p>
               </Link>

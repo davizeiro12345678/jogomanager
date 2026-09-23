@@ -59,7 +59,7 @@ function ConquistasPage() {
     const key = unlockedIds.slice().sort().join(",");
     if (synced.current === key) return;
     synced.current = key;
-    void sync({ data: { keys: unlockedIds } });
+    void sync();
   }, [signedIn, unlockedIds, sync]);
 
   if (!career) return <Empty />;

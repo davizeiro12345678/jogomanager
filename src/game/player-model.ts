@@ -102,7 +102,31 @@ export interface PlayerLook {
   hairVolume: number;
   /** leve variação de tom entre jogadores do mesmo time (iluminação/suor) */
   sweat: number;
+  /** grupo de posição: muda o porte físico do atleta */
+  role: RoleGroup;
 }
+
+/** Grupos de posição que compartilham o mesmo tipo de porte físico. */
+export type RoleGroup = "GK" | "DF" | "MF" | "FW";
+
+export function roleGroupOf(pos: string): RoleGroup {
+  const p = pos.toUpperCase();
+  if (p === "GK") return "GK";
+  if (p.startsWith("D") || p === "CB" || p === "LB" || p === "RB" || p === "WB") return "DF";
+  if (p.startsWith("F") || p === "ST" || p === "CF" || p === "LW" || p === "RW") return "FW";
+  return "MF";
+}
+
+/**
+ * Porte físico típico por posição. Goleiro e zagueiro são mais altos e mais
+ * largos de ombro; meia e ponta são mais leves e com passada mais longa.
+ */
+const ROLE_BUILD: Record<RoleGroup, { height: number; girth: number; shoulder: number; leg: number }> = {
+  GK: { height: 1.045, girth: 1.03, shoulder: 1.05, leg: 1.01 },
+  DF: { height: 1.025, girth: 1.05, shoulder: 1.06, leg: 1.0 },
+  MF: { height: 0.99, girth: 0.97, shoulder: 0.98, leg: 1.0 },
+  FW: { height: 1.0, girth: 0.99, shoulder: 1.0, leg: 1.02 },
+};
 
 export interface Proportions {
   /** altura do quadril acima do gramado */
@@ -120,6 +144,14 @@ export interface Proportions {
   neckR: number;
   headR: number;
   headH: number;
+  /** largura do crânio (têmporas) */
+  headW: number;
+  /** profundidade do crânio (nuca ao rosto) */
+  headD: number;
+  /** comprimento do maxilar */
+  jawLen: number;
+  /** projeção do queixo à frente do crânio */
+  chinFwd: number;
   upperArm: number;
   foreArm: number;
   armR: number;
@@ -187,9 +219,13 @@ export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook 
   const seed = hashId(id);
   const rng = makeLookRng(seed);
 
+  const role = roleGroupOf(pos);
+  const build = ROLE_BUILD[role];
+
   const heightRoll = rng();
-  const height = 0.9 + heightRoll * 0.2; // 0.90 .. 1.10
-  const girth = 0.9 + rng() * 0.2;
+  // A variação individual continua, mas agora orbita o porte típico da posição.
+  const height = (0.92 + heightRoll * 0.16) * build.height; // ~0.92 .. 1.13
+  const girth = (0.92 + rng() * 0.16) * build.girth;
 
   const bodyType: BodyType =
     height > 1.055 ? "tall" : girth > 1.045 ? "strong" : girth < 0.945 ? "slim" : "normal";
@@ -227,6 +263,7 @@ export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook 
     collar: COLLAR_POOL[Math.floor(rng() * COLLAR_POOL.length)] ?? "crew",
     hairVolume: 0.85 + rng() * 0.35,
     sweat: rng(),
+    role,
   };
 }
 
@@ -242,24 +279,39 @@ export function proportionsFor(look: PlayerLook): Proportions {
   const h = look.height;
   const g = look.girth;
   const strong = look.bodyType === "strong" ? 1.06 : look.bodyType === "slim" ? 0.95 : 1;
+  const build = ROLE_BUILD[look.role ?? "MF"];
 
-  const thigh = 0.44 * h;
-  const shin = 0.42 * h;
+  // Variação fina de crânio/maxilar por atleta: dois jogadores com a mesma
+  // altura deixam de ter exatamente o mesmo rosto.
+  const faceRng = makeLookRng(look.seed ^ 0x9e3779b9);
+  const faceWide = 0.94 + faceRng() * 0.14;
+  const faceLong = 0.94 + faceRng() * 0.14;
+
+  // Perna um pouco mais longa em atacantes, tronco mais curto: silhueta de
+  // velocista. O quadril continua apoiado no gramado (hipY soma a perna toda).
+  const legScale = build.leg;
+  const thigh = 0.44 * h * legScale;
+  const shin = 0.42 * h * legScale;
   const footH = 0.07 * h;
+  const headR = 0.108 * (0.98 + (h - 1) * 0.4);
 
   return {
     hipY: thigh + shin + footH,
     hipW: 0.17 * g * strong,
     hipH: 0.13 * h,
-    spineLen: 0.19 * h,
-    chestLen: 0.22 * h,
+    spineLen: 0.19 * h * (2 - legScale),
+    chestLen: 0.22 * h * (2 - legScale),
     chestW: 0.2 * g * strong,
-    chestD: 0.12 * g * strong,
-    shoulderW: 0.23 * g * strong,
+    chestD: 0.12 * g * strong * (look.bodyType === "strong" ? 1.05 : 1),
+    shoulderW: 0.23 * g * strong * build.shoulder,
     neckLen: 0.07 * h,
-    neckR: 0.052 * g,
-    headR: 0.108 * (0.98 + (h - 1) * 0.4),
+    neckR: 0.052 * g * (look.role === "DF" || look.role === "GK" ? 1.06 : 1),
+    headR,
     headH: 0.24 * h,
+    headW: headR * faceWide,
+    headD: headR * (1.02 + (1 - faceWide) * 0.4),
+    jawLen: headR * 0.52 * faceLong,
+    chinFwd: headR * (0.12 + (faceLong - 0.94) * 0.5),
     upperArm: 0.28 * h,
     foreArm: 0.25 * h,
     armR: 0.048 * g * strong,
@@ -288,11 +340,21 @@ export function lodForDistance(dist: number, quality: "alta" | "media" | "baixa"
   return 2;
 }
 
-/** segmentos de geometria por LOD, para manter as draw calls baixas */
-export function segmentsFor(lod: LodLevel): { radial: number; cap: number } {
-  if (lod === 0) return { radial: 14, cap: 6 };
-  if (lod === 1) return { radial: 8, cap: 3 };
-  return { radial: 6, cap: 2 };
+/**
+ * Segmentos de geometria por LOD.
+ *
+ * Tronco e cabeça dominam a silhueta e recebem mais segmentos; braços e pernas
+ * são finos na tela e podem ser bem mais baratos sem diferença perceptível.
+ */
+export function segmentsFor(lod: LodLevel): {
+  radial: number;
+  cap: number;
+  torso: number;
+  head: number;
+} {
+  if (lod === 0) return { radial: 12, cap: 4, torso: 16, head: 18 };
+  if (lod === 1) return { radial: 8, cap: 3, torso: 10, head: 10 };
+  return { radial: 6, cap: 2, torso: 7, head: 7 };
 }
 
 /* -------------------------------------------------------------------------- */

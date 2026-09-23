@@ -8,16 +8,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-.npm-cache/
-*.tsbuildinfo
-.codex-ui-dev.*
-.codex-camera-benchmark.*
-# Local QA captures and standalone benchmark builds are reproducible outputs,
-# not game assets. Keep them out of the Lovable/Git history.
-.codex-*.out
-.codex-*.err
-artifacts/
-dist-benchmark/
 dist
 dist-ssr
 .output

@@ -284,7 +284,7 @@ function AssistenteContent({ career }: { career: CareerState }) {
     async (input: { pergunta: string }) =>
       coletivaFn({
         data: {
-          personalidade: career.manager?.personality ?? "profissional",
+          personalidade: career.manager?.personality ?? "calmo",
           pergunta: input.pergunta,
           contexto: {
             clube: club?.name ?? career.clubId,
