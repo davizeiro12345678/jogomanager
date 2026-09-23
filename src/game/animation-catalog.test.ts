@@ -323,8 +323,6 @@ describe("canTransition", () => {
       stamina: 100,
       defending: false,
       stopped: false,
-      actionT: undefined,
-      actionDur: undefined,
     };
     
     expect(canTransition(idleClip, walkClip, ctx)).toBe(true);
@@ -342,8 +340,6 @@ describe("canTransition", () => {
       stamina: 100,
       defending: false,
       stopped: false,
-      actionT: undefined,
-      actionDur: undefined,
     };
     
     expect(canTransition(walkClip, jogClip, ctx)).toBe(true);
