@@ -201,6 +201,29 @@ export const ANNOTATED_CATALOG: {
 };
 
 /**
+ * O catálogo cresceu mais rápido que o mapa manual de famílias, e clipes sem
+ * entrada caíam todos em "idle". Esta inferência por nome classifica os
+ * restantes na família certa, mantendo o mapa explícito com prioridade.
+ */
+const FAMILY_HINTS: Array<[RegExp, AnimationFamily]> = [
+  [/^gk/i, "goalkeeper"],
+  [/^celebrate|^kneeSlide$|^groupHug$|^dejected$|^protest|^applaudFans$|^encourageTeammate$|^huddleTalk$/i, "celebration"],
+  [/tackle|^block|^intercept|^clearance|^lastDitch$|^offsideTrap$|^mark|^jockey$|^press|headerDefensive|^shoulderDuel$|^shoulderNudge$|^armBarHold$|^shoulderToShoulder$|^foulTrip$/i, "defense"],
+  [/^shot|shoot|volley|^header$|^bicycle|^chip|^finesse|^knuckle|^toePoke$|^divingHeader$|^powerHeader$|^glancingHeader$|^curlFarPost$|^tapInEasy$|^penaltyStrike$|^freeKickStrike$|^scoopLift$/i, "shooting"],
+  [/pass$|^cross|^cutback$|^switchPlay|^layoff|^loftedThrough$|^drivenCross$|^oneTwoRun$/i, "passing"],
+  [/dribble|^feint|^cut$|^stepover|stepOver|^elastico|^nutmeg$|^dragBack$|^scissors|^cruyffTurn$|^heelFlick$|^sombrero$|control$|^trap$|^shieldBall$|^knockOn$|^rouletteSpin$|^rainbowFlick$|^receiveTurn$|^closeControl$|^flipFlap$|^crossover|^shieldTurnOut$|^ballRollSole$|^juggleKeepUp$|^firstTouch|^bodyFeint|^fakeShotStop$|^dragPush$|^firstTime$/i, "ballControl"],
+  [/^recover|^getUpFast$|^fall|^stumble$|^landing$|^injury|^catchBreath|^exhaustedWalk$|^handsOn/i, "recovery"],
+  [/^pivot|^hurdleStep$|^jump|^slowJogHandsUp$|^walkTalk$|^pushOff$/i, "locomotion"],
+];
+
+function inferFamily(name: string): AnimationFamily {
+  for (const [pattern, family] of FAMILY_HINTS) {
+    if (pattern.test(name)) return family;
+  }
+  return "idle";
+}
+
+/**
  * Inicializa o catálogo de animações com todos os clipes.
  * Chame esta função uma vez no início do aplicativo.
  */
