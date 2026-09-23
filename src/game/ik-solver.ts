@@ -56,10 +56,27 @@ export function applyIKAdjustments(
     applyWeightTransfer(pose, weightShift);
   }
 
+  // Contra-rotação tronco/quadril: na corrida o peito gira ao contrário do
+  // quadril, como no corpo real. Sem isso o atleta corre "em bloco".
+  applyCounterRotation(pose, Math.hypot(playerInfo.vx, playerInfo.vz));
+
   // IK especifico para goleiros
   if (playerInfo.isGK) {
     applyGoalkeeperIK(pose, actionCtx);
   }
+}
+
+/**
+ * O braço direito à frente acompanha a perna esquerda à frente: a diferença
+ * entre as pernas indica a fase da passada e gira quadril e peito em sentidos
+ * opostos, com amplitude proporcional à velocidade.
+ */
+function applyCounterRotation(pose: Pose, speed: number): void {
+  if (speed < 1.2) return;
+  const amount = Math.min(1, (speed - 1.2) / 5.5);
+  const phase = Math.max(-1, Math.min(1, pose.legRPitch - pose.legLPitch));
+  pose.hipYaw += phase * 0.13 * amount;
+  pose.headYaw -= phase * 0.05 * amount;
 }
 
 function applyFootSupport(pose: Pose, contact: ContactContext): void {
