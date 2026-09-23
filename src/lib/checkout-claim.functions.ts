@@ -28,11 +28,25 @@ export const claimCheckoutSession = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<ClaimResult> => {
     try {
       const stripe = createStripeClient(data.environment);
-      const session = await stripe.checkout.sessions.retrieve(data.sessionId, {
-        expand: ["line_items.data.price"],
-      });
 
-      if (session.metadata?.["userId"] !== context.userId) {
+      // A busca é limitada às sessões do cliente Stripe deste usuário: assim
+      // ninguém consegue inspecionar o pagamento de outra conta.
+      const customers = await stripe.customers.search({
+        query: `metadata['userId']:'${context.userId}'`,
+        limit: 1,
+      });
+      const customerId = customers.data[0]?.id;
+      if (!customerId) {
+        return { status: "error", message: "Esta compra não é desta conta." };
+      }
+
+      const owned = await stripe.checkout.sessions.list({
+        customer: customerId,
+        limit: 100,
+        expand: ["data.line_items.data.price"],
+      });
+      const session = owned.data.find((s) => s.id === data.sessionId);
+      if (!session || session.metadata?.["userId"] !== context.userId) {
         return { status: "error", message: "Esta compra não é desta conta." };
       }
       if (session.mode !== "payment") {
