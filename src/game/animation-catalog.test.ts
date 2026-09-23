@@ -67,7 +67,8 @@ describe("registerClips", () => {
 
   it("deve registrar clipes de locomoção", () => {
     const locomotionClips = ANIMATION_CATALOG.locomotion;
-    expect(locomotionClips['idle']).toBeDefined();
+    // "idle" pertence à família idle, não à locomoção.
+    expect(ANIMATION_CATALOG.idle['idle']).toBeDefined();
     expect(locomotionClips['walk']).toBeDefined();
     expect(locomotionClips['jog']).toBeDefined();
     expect(locomotionClips['run']).toBeDefined();

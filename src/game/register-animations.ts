@@ -15,7 +15,7 @@ import { EXTRA2_CLIPS } from "./animation-extra2";
 
 import type { Clip, ClipCtx, Pose } from "./animation-core";
 import type { AnimationFamily, AnnotatedClip, ClipMetadata } from "./animation-catalog";
-import { ANIMATION_CATALOG, FAMILY_METADATA } from "./animation-catalog";
+import { ANIMATION_CATALOG, FAMILY_METADATA, STANDARD_MARKERS } from "./animation-catalog";
 
 // ============================================================================
 // Mapeamento de clipes para famílias
