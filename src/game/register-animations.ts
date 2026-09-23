@@ -86,17 +86,12 @@ const CLIP_FAMILY_MAP: Record<string, AnimationFamily> = {
   shotPlaced: "shooting",
   volley: "shooting",
   header: "shooting",
-  bicycle: "shooting",
-  bicycleKick: "shooting",
   
   // ---- Defense ----
   tackle: "defense",
   slide: "defense",
   block: "defense",
   intercept: "defense",
-  slideTackle: "defense",
-  standTackle: "defense",
-  slideTackleLong: "defense",
   
   // ---- Goalkeeper ----
   save: "goalkeeper",
@@ -110,40 +105,11 @@ const CLIP_FAMILY_MAP: Record<string, AnimationFamily> = {
   // ---- Celebration ----
   goal: "celebration",
   celebrate: "celebration",
-  celebrateArms: "celebration",
-  celebrateRun: "celebration",
-  kneeSlide: "celebration",
-  groupHug: "celebration",
-  celebrateSlideStop: "celebration",
-  celebrateHeart: "celebration",
-  celebrateShush: "celebration",
-  celebrateSiuu: "celebration",
-  celebrateSpin: "celebration",
-  celebrateCornerFlag: "celebration",
-  celebrateShirtPull: "celebration",
-  celebratePoint: "celebration",
-  celebrateCalm: "celebration",
-  celebrateTeamLine: "celebration",
-  celebrateFistPump: "celebration",
-  celebrateJumpHug: "celebration",
-  celebrateKneeSlide: "celebration",
-  celebrateArmsWide: "celebration",
-  celebrateBadgeKiss: "celebration",
-  celebrateRockCradle: "celebration",
-  celebrateDanceStep: "celebration",
-  celebrateSlidingKnees: "celebration",
-  celebrateSalute: "celebration",
-  celebrateRunAway: "celebration",
-  celebrateCameraPose: "celebration",
   armsUp: "celebration",
   
   // ---- Recovery ----
   getUp: "recovery",
   injured: "recovery",
-  recover: "recovery",
-  getUpFast: "recovery",
-  fallForward: "recovery",
-  fallBack: "recovery",
   recoverySprint: "recovery",
   
   // ---- Fallback ----
@@ -153,6 +119,9 @@ const CLIP_FAMILY_MAP: Record<string, AnimationFamily> = {
 // ============================================================================
 // Metadados específicos por clipe (overrides)
 // ============================================================================
+
+const SHOT_MARKERS = STANDARD_MARKERS["shot"]!;
+const PASS_MARKERS = STANDARD_MARKERS["pass"]!;
 
 const CLIP_METADATA_OVERRIDES: Record<string, Omit<Partial<ClipMetadata>, 'family'>> = {
   // Locomotion - maioria faz loop
@@ -168,16 +137,18 @@ const CLIP_METADATA_OVERRIDES: Record<string, Omit<Partial<ClipMetadata>, 'famil
   dribbleLight: { loop: true, priority: 0.3 },
   dribbleFast: { loop: true, priority: 0.35 },
   
-  // Actions - não fazem loop
-  shotLow: { loop: false, priority: 0.8, duration: 0.8 },
-  shotPower: { loop: false, priority: 0.8, duration: 0.8 },
-  shotPlaced: { loop: false, priority: 0.8, duration: 0.8 },
-  volley: { loop: false, priority: 0.75, duration: 0.6 },
-  header: { loop: false, priority: 0.75, duration: 0.5 },
-  
-  passShort: { loop: false, priority: 0.6, duration: 0.5 },
-  passLong: { loop: false, priority: 0.6, duration: 0.6 },
-  cross: { loop: false, priority: 0.6, duration: 0.6 },
+  // Actions - não fazem loop. Marcadores e pé dominante alimentam o contato com
+  // a bola e o posicionamento dos pés durante a jogada.
+  shotLow: { loop: false, priority: 0.8, duration: 0.8, markers: SHOT_MARKERS, dominantFoot: "right" },
+  shotPower: { loop: false, priority: 0.8, duration: 0.8, markers: SHOT_MARKERS, dominantFoot: "right" },
+  shotPlaced: { loop: false, priority: 0.8, duration: 0.8, markers: SHOT_MARKERS, dominantFoot: "right" },
+  volley: { loop: false, priority: 0.75, duration: 0.6, markers: SHOT_MARKERS, dominantFoot: "right" },
+  header: { loop: false, priority: 0.75, duration: 0.5, dominantFoot: "both" },
+  bicycle: { loop: false, priority: 0.85, duration: 0.9, markers: SHOT_MARKERS, dominantFoot: "both" },
+
+  passShort: { loop: false, priority: 0.6, duration: 0.5, markers: PASS_MARKERS, dominantFoot: "right" },
+  passLong: { loop: false, priority: 0.6, duration: 0.6, markers: PASS_MARKERS, dominantFoot: "right" },
+  cross: { loop: false, priority: 0.6, duration: 0.6, markers: PASS_MARKERS, dominantFoot: "right" },
   
   tackle: { loop: false, priority: 0.7, duration: 0.7 },
   slide: { loop: false, priority: 0.7, duration: 0.8 },
@@ -235,6 +206,29 @@ export const ANNOTATED_CATALOG: {
 };
 
 /**
+ * O catálogo cresceu mais rápido que o mapa manual de famílias, e clipes sem
+ * entrada caíam todos em "idle". Esta inferência por nome classifica os
+ * restantes na família certa, mantendo o mapa explícito com prioridade.
+ */
+const FAMILY_HINTS: Array<[RegExp, AnimationFamily]> = [
+  [/^gk/i, "goalkeeper"],
+  [/^celebrate|^kneeSlide$|^groupHug$|^dejected$|^protest|^applaudFans$|^encourageTeammate$|^huddleTalk$/i, "celebration"],
+  [/tackle|^block|^intercept|^clearance|^lastDitch$|^offsideTrap$|^mark|^jockey$|^press|headerDefensive|^shoulderDuel$|^shoulderNudge$|^armBarHold$|^shoulderToShoulder$|^foulTrip$/i, "defense"],
+  [/^shot|shoot|volley|^header$|^bicycle|^chip|^finesse|^knuckle|^toePoke$|^divingHeader$|^powerHeader$|^glancingHeader$|^curlFarPost$|^tapInEasy$|^penaltyStrike$|^freeKickStrike$|^scoopLift$/i, "shooting"],
+  [/pass$|^cross|^cutback$|^switchPlay|^layoff|^loftedThrough$|^drivenCross$|^oneTwoRun$/i, "passing"],
+  [/dribble|^feint|^cut$|^stepover|stepOver|^elastico|^nutmeg$|^dragBack$|^scissors|^cruyffTurn$|^heelFlick$|^sombrero$|control$|^trap$|^shieldBall$|^knockOn$|^rouletteSpin$|^rainbowFlick$|^receiveTurn$|^closeControl$|^flipFlap$|^crossover|^shieldTurnOut$|^ballRollSole$|^juggleKeepUp$|^firstTouch|^bodyFeint|^fakeShotStop$|^dragPush$|^firstTime$/i, "ballControl"],
+  [/^recover|^getUpFast$|^fall|^stumble$|^landing$|^injury|^catchBreath|^exhaustedWalk$|^handsOn/i, "recovery"],
+  [/^pivot|^hurdleStep$|^jump|^slowJogHandsUp$|^walkTalk$|^pushOff$/i, "locomotion"],
+];
+
+function inferFamily(name: string): AnimationFamily {
+  for (const [pattern, family] of FAMILY_HINTS) {
+    if (pattern.test(name)) return family;
+  }
+  return "idle";
+}
+
+/**
  * Inicializa o catálogo de animações com todos os clipes.
  * Chame esta função uma vez no início do aplicativo.
  */
@@ -252,14 +246,9 @@ export function initializeAnimationCatalog(): void {
   
   // Registra todos os clipes
   for (const [name, clip] of Object.entries(ALL_CLIPS)) {
-    const family = CLIP_FAMILY_MAP[name] ?? (name.startsWith("gk") ? "goalkeeper" : "idle");
+    const family = CLIP_FAMILY_MAP[name] ?? inferFamily(name);
     const overrides = CLIP_METADATA_OVERRIDES[name] || {};
-    const metadata: ClipMetadata = { ...FAMILY_METADATA[family], ...overrides, family };
-    if (family === "shooting" || family === "passing") {
-      metadata.markers = STANDARD_MARKERS[family === "shooting" ? "shot" : "pass"]!.map(marker => ({ ...marker }));
-      metadata.dominantFoot = name.toLowerCase().includes("bicycle") ? "both" : "right";
-    }
-    if (name === "gkStance" || name === "gkShuffle") { metadata.loop = true; metadata.interruptible = true; }
+    const metadata = { ...FAMILY_METADATA[family], ...overrides, family };
     
     const annotatedClip: AnnotatedClip = { clip, metadata };
     

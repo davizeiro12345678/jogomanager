@@ -1,29 +1,20 @@
 /**
- * Vitrine pública dos itens atualmente ativos no catálogo oficial.
- * A vitrine e a compra por e-mail também funcionam antes da autenticação.
+ * Vitrine pública dos pacotes, com render 3D ao vivo de cada item e compra
+ * imediata pelo mesmo checkout usado na loja.
  */
-import { ClientOnly, createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ClientOnly } from "@tanstack/react-router";
 import { lazy, Suspense, useState } from "react";
-import { Coins, Crown, Dumbbell, Package, Palette, Search } from "lucide-react";
+import { Check, Coins, Crown, Dumbbell, Palette, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { PublicLinks } from "@/components/PublicLinks";
-import {
-  GuestCheckoutDialog,
-  type GuestCheckoutProduct,
-} from "@/components/store/GuestCheckoutDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useSignedIn } from "@/hooks/useCareer";
-import { useStoreCatalog } from "@/hooks/useStoreCatalog";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
-import {
-  PACK_BY_KEY,
-  formatPrice,
-  type PackKind,
-} from "@/game/store-catalog";
-import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
+import { STORE_PACKS, formatPrice, type PackKind } from "@/game/store-catalog";
+import { SITE_NAME, SITE_URL, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PackScene = lazy(() =>
   import("@/components/store/PackScene").then((m) => ({ default: m.PackScene })),
@@ -33,7 +24,36 @@ const PATH = "/produtos";
 const TITLE =
   "Pacotes e passe de temporada · Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Catálogo atual de itens para a carreira no Pro Football Manager 3D. Consulte os detalhes e compre com e-mail ou entre para sua carreira.";
+  "Produtos e pacotes do Pro Football Manager 3D: moedas, relatórios de olheiros e impulsos para acelerar sua carreira de técnico.";
+
+function productsLd() {
+  return {
+    type: "application/ld+json",
+    children: JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: "Pacotes do Pro Football Manager 3D",
+      itemListElement: STORE_PACKS.map((p, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        item: {
+          "@type": "Product",
+          name: p.name,
+          description: p.description,
+          brand: { "@type": "Brand", name: SITE_NAME },
+          url: `${SITE_URL}${PATH}#${p.key}`,
+          offers: {
+            "@type": "Offer",
+            price: (p.priceCents / 100).toFixed(2),
+            priceCurrency: p.currency.toUpperCase(),
+            availability: "https://schema.org/InStock",
+            url: `${SITE_URL}${PATH}#${p.key}`,
+          },
+        },
+      })),
+    }),
+  };
+}
 
 export const Route = createFileRoute("/produtos")({
   head: () => ({
@@ -44,6 +64,7 @@ export const Route = createFileRoute("/produtos")({
         { name: "Início", path: "/" },
         { name: "Pacotes", path: PATH },
       ]),
+      productsLd(),
     ],
   }),
   component: ProdutosPage,
@@ -65,28 +86,15 @@ const KIND_LABEL: Record<PackKind, string> = {
   pass: "Assinatura",
 };
 
-const PACK_KINDS: readonly PackKind[] = ["coins", "scout", "training", "cosmetic", "pass"];
-
-function asPackKind(kind: string): PackKind | null {
-  return PACK_KINDS.includes(kind as PackKind) ? (kind as PackKind) : null;
-}
-
 function ProdutosPage() {
-  const signedIn = useSignedIn();
-  const productsQuery = useStoreCatalog();
-  const products = productsQuery.data ?? [];
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [opening, setOpening] = useState<string | null>(null);
-  const [previewKey, setPreviewKey] = useState<string | null>(null);
-  const [guestProduct, setGuestProduct] = useState<GuestCheckoutProduct | null>(null);
 
-  function buy(productKey: string) {
-    // A sessão autenticada preserva o fluxo de conta já existente.
-    if (signedIn !== true) return;
-    setOpening(productKey);
+  function buy(priceId: string, key: string) {
+    setOpening(key);
     try {
       openCheckout({
-        productKey,
+        priceId,
         returnUrl: `${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`,
       });
       queueMicrotask(() =>
@@ -99,12 +107,6 @@ function ProdutosPage() {
     }
   }
 
-  const previewProduct = products.find((product) => product.key === previewKey) ?? null;
-  const previewPresentation = previewProduct ? PACK_BY_KEY[previewProduct.key] : undefined;
-  const previewKind = previewProduct
-    ? asPackKind(previewProduct.kind) ?? previewPresentation?.kind ?? "coins"
-    : "coins";
-
   return (
     <div className="pitch-bg min-h-screen">
       <PaymentTestModeBanner />
@@ -114,180 +116,62 @@ function ProdutosPage() {
           Pacotes e passe de temporada
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          Consulte o catálogo atual antes de entrar. O checkout seguro confirma o total e a
-          disponibilidade antes do pagamento.
+          Tudo aqui é opcional e não muda o resultado das partidas: são atalhos de tempo, informação
+          de olheiros e itens visuais para o seu clube.
         </p>
-        {signedIn === false ? (
-          <div
-            role="status"
-            className="mt-5 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/5 p-4 text-sm sm:flex-row sm:items-center sm:justify-between"
-          >
-          <p className="text-muted-foreground">
-              Compare os itens e preços à vontade. Você pode comprar com e-mail ou entrar para
-              vincular a compra diretamente à sua carreira.
-            </p>
-            <Button asChild variant="outline" className="shrink-0">
-              <Link to="/auth" search={{ next: PATH }}>
-                Entrar ou criar conta
-              </Link>
-            </Button>
-          </div>
-        ) : signedIn === null ? (
-          <p role="status" className="mt-5 text-sm text-muted-foreground">
-            Verificando sua conta para mostrar a ação de compra segura…
-          </p>
-        ) : null}
 
         <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {productsQuery.isLoading ? (
-            Array.from({ length: 6 }, (_, index) => (
-              <div
-                key={index}
-                className="h-[29rem] animate-pulse rounded-3xl border border-border/60 bg-card/60"
-                aria-hidden
-              />
-            ))
-          ) : productsQuery.isError ? (
-            <div
-              role="status"
-              className="rounded-3xl border border-border/60 bg-secondary/40 p-5 text-sm text-muted-foreground md:col-span-2 xl:col-span-3"
+          {STORE_PACKS.map((p) => (
+            <article
+              key={p.key}
+              id={p.key}
+              className="flex flex-col overflow-hidden rounded-3xl border border-border/60 surface-card transition-transform hover:-translate-y-1 hover:border-primary/50"
             >
-              <p>
-                Não foi possível carregar o catálogo oficial. Para evitar informações
-                desatualizadas, nenhum preço ou benefício foi exibido.
-              </p>
-              <Button className="mt-4" variant="outline" onClick={() => void productsQuery.refetch()}>
-                Tentar novamente
-              </Button>
-            </div>
-          ) : products.length === 0 ? (
-            <p className="text-sm text-muted-foreground md:col-span-2 xl:col-span-3">
-              Nenhum item está disponível no momento.
-            </p>
-          ) : (
-            products.map((product) => {
-              const kind = asPackKind(product.kind);
-              const presentation = PACK_BY_KEY[product.key];
+              <div
+                className="relative h-52 w-full"
+                style={{
+                  background: `radial-gradient(120% 100% at 50% 20%, ${p.accent}22, transparent 70%)`,
+                }}
+              >
+                <ClientOnly fallback={<div className="h-full w-full" />}>
+                  <Suspense fallback={<div className="h-full w-full" />}>
+                    <PackScene kind={p.kind} accent={p.accent} accent2={p.accent2} />
+                  </Suspense>
+                </ClientOnly>
+                <Badge variant="secondary" className="absolute left-3 top-3 gap-1">
+                  {ICONS[p.kind]} {KIND_LABEL[p.kind]}
+                </Badge>
+              </div>
 
-              return (
-                <article
-                  key={product.key}
-                  id={product.key}
-                  className="flex flex-col overflow-hidden rounded-3xl border border-border/60 surface-card transition-transform hover:-translate-y-1 hover:border-primary/50"
-                >
-                  <div
-                    className="relative h-52 w-full"
-                    style={{
-                      background: `radial-gradient(120% 100% at 50% 20%, ${presentation?.accent ?? "#60a5fa"}22, transparent 70%)`,
-                    }}
-                  >
-                    <div className="grid h-full place-items-center">
-                      <div className="grid h-24 w-24 place-items-center rounded-[2rem] border border-primary/30 bg-background/30 text-primary shadow-[0_0_50px_color-mix(in_srgb,var(--primary)_20%,transparent)]">
-                        {kind ? ICONS[kind] : <Package size={32} />}
-                      </div>
-                      <span className="-mt-9 text-[10px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                        Visual do pacote
-                      </span>
-                    </div>
-                    <Badge variant="secondary" className="absolute left-3 top-3 gap-1">
-                      {kind ? ICONS[kind] : <Package size={14} />}
-                      {kind ? KIND_LABEL[kind] : "Item da loja"}
-                    </Badge>
-                  </div>
+              <div className="flex flex-1 flex-col p-5">
+                <h2 className="font-display text-lg uppercase tracking-wide">{p.name}</h2>
+                <p className="mt-1 text-xs uppercase tracking-widest text-primary">{p.tagline}</p>
+                <p className="mt-3 text-sm text-muted-foreground">{p.description}</p>
 
-                  <div className="flex flex-1 flex-col p-5">
-                    <h2 className="font-display text-lg uppercase tracking-wide">{product.name}</h2>
-                    <p className="mt-3 text-sm text-muted-foreground">{product.description}</p>
+                <ul className="mt-4 space-y-1.5 text-sm">
+                  {p.contents.map((c) => (
+                    <li key={c} className="flex items-start gap-2">
+                      <Check size={15} className="mt-0.5 shrink-0 text-primary" />
+                      <span className="text-muted-foreground">{c}</span>
+                    </li>
+                  ))}
+                </ul>
 
-                    {product.coins > 0 ? (
-                      <span className="mt-4 inline-flex w-fit items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-                        <Coins size={12} /> +{product.coins} moedas
-                      </span>
+                <div className="mt-5 flex items-end justify-between gap-3">
+                  <span className="font-display text-2xl">
+                    {formatPrice(p.priceCents, p.currency)}
+                    {p.recurring ? (
+                      <span className="ml-1 text-xs text-muted-foreground">/mês</span>
                     ) : null}
-
-                    <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
-                      <div>
-                        <span className="font-display text-2xl">
-                          {formatPrice(product.price_cents, product.currency)}
-                        </span>
-                        <p className="mt-1 max-w-[14rem] text-[11px] text-muted-foreground">
-                          Preço de catálogo; o checkout confirma total e disponibilidade.
-                        </p>
-                      </div>
-                      {signedIn === true ? (
-                        <Button
-                          onClick={() => buy(product.key)}
-                          disabled={opening === product.key}
-                        >
-                          {opening === product.key
-                              ? "Abrindo…"
-                              : "Comprar agora"}
-                        </Button>
-                      ) : signedIn === false ? (
-                        <Button
-                          data-testid="guest-checkout-start"
-                          onClick={() =>
-                            setGuestProduct({
-                              key: product.key,
-                              name: product.name,
-                              priceCents: product.price_cents,
-                              currency: product.currency,
-                            })
-                          }
-                        >
-                          Comprar como visitante
-                        </Button>
-                      ) : (
-                        <Button disabled>Verificando conta…</Button>
-                      )}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="mt-4 w-full text-xs"
-                      onClick={() => setPreviewKey(product.key)}
-                    >
-                      Ver visual do pacote
-                    </Button>
-                  </div>
-                </article>
-              );
-            })
-          )}
+                  </span>
+                  <Button onClick={() => buy(p.priceId, p.key)} disabled={opening === p.key}>
+                    {opening === p.key ? "Abrindo…" : "Comprar agora"}
+                  </Button>
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
-
-        {previewProduct ? (
-          <section
-            aria-labelledby="product-preview-title"
-            className="mt-8 overflow-hidden rounded-3xl border border-primary/25 surface-card md:grid md:grid-cols-[minmax(0,1fr)_20rem]"
-          >
-            <div className="p-6">
-              <p className="font-display text-xs uppercase tracking-[0.28em] text-primary">Prévia opcional</p>
-              <h2 id="product-preview-title" className="mt-2 font-display text-2xl uppercase tracking-wide">
-                {previewProduct.name}
-              </h2>
-              <p className="mt-3 max-w-xl text-sm text-muted-foreground">{previewProduct.description}</p>
-              <p className="mt-5 text-sm text-muted-foreground">
-                Esta é a única cena 3D da vitrine. Os cards usam posters leves para que a loja
-                continue rápida mesmo em aparelhos sem WebGL.
-              </p>
-              <Button className="mt-5" variant="outline" onClick={() => setPreviewKey(null)}>
-                Fechar prévia
-              </Button>
-            </div>
-            <div className="h-64 border-t border-border/60 md:h-auto md:border-l md:border-t-0">
-              <ClientOnly fallback={<div className="h-full w-full" />}>
-                <Suspense fallback={<div className="h-full w-full" />}>
-                  <PackScene
-                    kind={previewKind}
-                    accent={previewPresentation?.accent ?? "#60a5fa"}
-                    accent2={previewPresentation?.accent2 ?? "#1d4ed8"}
-                  />
-                </Suspense>
-              </ClientOnly>
-            </div>
-          </section>
-        ) : null}
 
         <div id="checkout-area" className="mt-10">
           {isOpen ? (
@@ -302,14 +186,6 @@ function ProdutosPage() {
             </div>
           ) : null}
         </div>
-
-        <GuestCheckoutDialog
-          product={guestProduct}
-          open={guestProduct !== null}
-          onOpenChange={(open) => {
-            if (!open) setGuestProduct(null);
-          }}
-        />
 
         <p className="mt-8 text-sm text-muted-foreground">
           Já tem carreira em andamento? Os itens comprados aparecem direto na{" "}

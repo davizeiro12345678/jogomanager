@@ -1,4 +1,3 @@
-import { StaticBatch } from "./StaticBatch";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
@@ -98,6 +97,7 @@ function Dugout({ x, color }: { x: number; color: string }) {
     </group>
   );
 }
+
 /* ---------------------------------------------------------------- túnel */
 
 function Tunnel() {
@@ -147,7 +147,7 @@ function SectorGrilles({ rings }: { rings: number }) {
 
   const height = 2.0 + rings * 1.45;
   return (
-    <StaticBatch signature={`sector-grilles:${rings}`}>
+    <group>
       {/* grade baixa separando o campo da primeira fila */}
       {[-1, 1].map((z) => (
         <mesh key={`z${z}`} position={[0, 1.1, z * (FIELD_Z + 7.6)]} material={mat}>
@@ -177,7 +177,7 @@ function SectorGrilles({ rings }: { rings: number }) {
           </mesh>
         )),
       )}
-    </StaticBatch>
+    </group>
   );
 }
 
@@ -269,7 +269,7 @@ function PressBoxes({ rings }: { rings: number }) {
     [],
   );
   return (
-    <StaticBatch signature={`press-boxes:${rings}`}>
+    <group>
       {[-1, 1].map((z) => (
         <group key={z} position={[0, top - 1.2, z * (FIELD_Z + 7 + rings * 1.5 - 2)]}>
           <mesh>
@@ -281,7 +281,7 @@ function PressBoxes({ rings }: { rings: number }) {
           </mesh>
         </group>
       ))}
-    </StaticBatch>
+    </group>
   );
 }
 
@@ -311,7 +311,7 @@ function Gates({ rings, color }: { rings: number; color: string }) {
       );
     }
   }
-  return <StaticBatch signature={`gates:${rings}:${color}`}>{out}</StaticBatch>;
+  return <group>{out}</group>;
 }
 
 function RoofCanopy({ rings, color }: { rings: number; color: string }) {
@@ -321,7 +321,7 @@ function RoofCanopy({ rings, color }: { rings: number; color: string }) {
   const length = FIELD_X * 2 + 34;
 
   return (
-    <StaticBatch signature={`roof-canopy:${rings}:${color}`}>
+    <group>
       {[-1, 1].map((side) => (
         <group key={side} position={[0, top, side * edge]}>
           <mesh material={metal} castShadow>
@@ -343,7 +343,7 @@ function RoofCanopy({ rings, color }: { rings: number; color: string }) {
           ))}
         </group>
       ))}
-    </StaticBatch>
+    </group>
   );
 }
 

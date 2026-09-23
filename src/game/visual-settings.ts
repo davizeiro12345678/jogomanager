@@ -14,7 +14,6 @@
 import { useEffect, useState } from "react";
 
 import type { MowPattern } from "@/components/game/stadium/textures/grass";
-import { isCameraMode, type CameraMode } from "@/game/camera-modes";
 import type { TimeOfDay, Weather } from "@/game/matchday";
 
 export type Auto<T extends string> = "auto" | T;
@@ -23,25 +22,6 @@ export type QualityPref = "auto" | "baixa" | "media" | "alta" | "cinema";
 export type ShadowPref = "auto" | "ligadas" | "desligadas";
 export type TextureDetail = "baixa" | "media" | "alta";
 export type PlayerDetail = "simples" | "padrao" | "detalhado";
-
-/** Preferências que acompanham a transmissão sem afetar a simulação. */
-export interface BroadcastPreferences {
-  /** Última lente escolhida fora da galeria de replay. */
-  camera: CameraMode;
-  /** Quando ligado, o Diretor pode escolher planos editoriais durante o lance. */
-  directorAuto: boolean;
-  /** Atalhos do cockpit; o limite mantém a UI móvel legível. */
-  favorites: CameraMode[];
-  /** "inherit" reaproveita a lente da partida no player de replays. */
-  replayCamera: CameraMode | "inherit";
-}
-
-export const DEFAULT_BROADCAST: BroadcastPreferences = {
-  camera: "broadcast",
-  directorAuto: false,
-  favorites: ["broadcast", "director", "tactical", "goal"],
-  replayCamera: "inherit",
-};
 
 /** Ajustes que um clube pode sobrescrever nos jogos em casa. */
 export interface ClubVisual {
@@ -55,7 +35,7 @@ export interface ClubVisual {
 }
 
 export interface VisualSettings {
-  version: 3;
+  version: 2;
 
   /* qualidade */
   /** nível pedido pelo jogador ("auto" = detectado pelo aparelho) */
@@ -86,16 +66,13 @@ export interface VisualSettings {
   grassTint: number;
   grassWear: number;
 
-  /* transmissão */
-  broadcast: BroadcastPreferences;
-
   /* por clube + extras */
   byClub: Record<string, ClubVisual>;
   sponsors: string[];
 }
 
 export const DEFAULT_VISUAL: VisualSettings = {
-  version: 3,
+  version: 2,
   quality: "auto",
   adaptive: true,
   textureDetail: "alta",
@@ -114,7 +91,6 @@ export const DEFAULT_VISUAL: VisualSettings = {
   wind: "auto",
   grassTint: 0,
   grassWear: 0.5,
-  broadcast: { ...DEFAULT_BROADCAST },
   byClub: {},
   sponsors: [],
 };
@@ -136,65 +112,25 @@ export const VISUAL_SECTIONS = {
     "showFps",
   ],
   mundo: ["weather", "time", "mow", "wind", "grassTint", "grassWear"],
-  transmissao: ["broadcast"],
   clubes: ["byClub"],
   placas: ["sponsors"],
 } satisfies Record<string, readonly (keyof VisualSettings)[]>;
 
 export type VisualSection = keyof typeof VISUAL_SECTIONS;
 
-const KEY = "manager3d.visual.v3";
-const LEGACY_KEYS = ["manager3d.visual.v2", "manager3d.visual.v1"] as const;
+const KEY = "manager3d.visual.v2";
+const LEGACY_KEY = "manager3d.visual.v1";
 
 function clamp(n: unknown, min: number, max: number, fallback: number) {
   const v = typeof n === "number" && Number.isFinite(n) ? n : fallback;
   return Math.min(max, Math.max(min, v));
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object";
-}
-
-/** Normaliza dados locais sem permitir ID inválido de quebrar um replay antigo. */
-export function normalizeBroadcastPreferences(value: unknown): BroadcastPreferences {
-  const raw = isRecord(value) ? value : {};
-  const selectedCamera = isCameraMode(raw["camera"]) ? raw["camera"] : DEFAULT_BROADCAST.camera;
-  const favorites = Array.isArray(raw["favorites"])
-    ? raw["favorites"].filter(isCameraMode)
-    : [...DEFAULT_BROADCAST.favorites];
-  const replayCamera = raw["replayCamera"] === "inherit" || isCameraMode(raw["replayCamera"])
-    ? raw["replayCamera"]
-    : DEFAULT_BROADCAST.replayCamera;
-  // O modo Diretor é representado pelo mesmo ID usado pelo renderizador.
-  const directorAuto =
-    raw["directorAuto"] === true || (raw["directorAuto"] !== false && selectedCamera === "director");
-
-  return {
-    camera: directorAuto ? "director" : selectedCamera,
-    // Reproduz a escolha de Diretor feita nas versões que só guardavam a lente.
-    directorAuto,
-    favorites: Array.from(new Set(favorites)).slice(0, 4),
-    replayCamera,
-  };
-}
-
-/** Migra v1/v2 sem perder escolhas de cenário e acrescenta transmissão segura. */
-export function migrateVisualSettings(raw: unknown): Partial<VisualSettings> {
-  if (!isRecord(raw)) return {};
-  const o = raw;
-  const legacyBroadcast = isRecord(o["broadcast"])
-    ? o["broadcast"]
-    : {
-        camera: o["camera"],
-        directorAuto: o["directorAuto"],
-        favorites: o["cameraFavorites"],
-        replayCamera: o["replayCamera"],
-      };
-  const broadcast = normalizeBroadcastPreferences(legacyBroadcast);
-
-  if (o["version"] === 3 || o["version"] === 2) {
-    return { ...o, broadcast } as Partial<VisualSettings>;
-  }
+/** Migração da versão 1 (chaves antigas) sem perder nenhuma escolha. */
+function migrate(raw: unknown): Partial<VisualSettings> {
+  if (!raw || typeof raw !== "object") return {};
+  const o = raw as Record<string, unknown>;
+  if (o["version"] === 2) return o as Partial<VisualSettings>;
 
   const byClub: Record<string, ClubVisual> = {};
   const legacyMow = o["mowByClub"];
@@ -214,14 +150,13 @@ export function migrateVisualSettings(raw: unknown): Partial<VisualSettings> {
     postFx: o["postFx"] !== false,
     sponsors: Array.isArray(o["sponsors"]) ? (o["sponsors"] as string[]) : [],
     byClub,
-    broadcast,
   };
 }
 
 function sanitize(v: VisualSettings): VisualSettings {
   return {
     ...v,
-    version: 3,
+    version: 2,
     grassDensity: clamp(v.grassDensity, 0, 1.5, 1),
     crowdDensity: clamp(v.crowdDensity, 0.2, 1.5, 1),
     postIntensity: clamp(v.postIntensity, 0.2, 1.4, 1),
@@ -231,7 +166,6 @@ function sanitize(v: VisualSettings): VisualSettings {
     grassTint: clamp(v.grassTint, -1, 1, 0),
     grassWear: clamp(v.grassWear, 0, 1, 0.5),
     wind: v.wind === "auto" ? "auto" : clamp(v.wind, 0, 1, 0.5),
-    broadcast: normalizeBroadcastPreferences(v.broadcast),
     byClub: v.byClub ?? {},
     sponsors: Array.isArray(v.sponsors) ? v.sponsors.slice(0, 8) : [],
   };
@@ -244,9 +178,9 @@ export function getVisual(): VisualSettings {
   if (cache) return cache;
   if (typeof localStorage === "undefined") return DEFAULT_VISUAL;
   try {
-    const raw = localStorage.getItem(KEY) ?? LEGACY_KEYS.map((key) => localStorage.getItem(key)).find(Boolean) ?? null;
+    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY);
     cache = raw
-      ? sanitize({ ...DEFAULT_VISUAL, ...migrateVisualSettings(JSON.parse(raw) as unknown) })
+      ? sanitize({ ...DEFAULT_VISUAL, ...migrate(JSON.parse(raw) as unknown) })
       : DEFAULT_VISUAL;
     // grava já na chave nova, mantendo a antiga intacta como cópia de segurança
     if (raw && !localStorage.getItem(KEY)) {
@@ -268,27 +202,6 @@ export function setVisual(patch: Partial<VisualSettings>) {
   }
   for (const l of listeners) l(next);
   return next;
-}
-
-/** Atualiza somente o cockpit sem clobber dos outros ajustes de aparência. */
-export function setBroadcastPreferences(patch: Partial<BroadcastPreferences>) {
-  return setVisual({
-    broadcast: normalizeBroadcastPreferences({ ...getVisual().broadcast, ...patch }),
-  });
-}
-
-/** Lê somente a parte de transmissão sem expor a forma do armazenamento local. */
-export function getBroadcastPreferences(): BroadcastPreferences {
-  return getVisual().broadcast;
-}
-
-/** Atalho idempotente para os quatro favoritos da transmissão. */
-export function toggleBroadcastFavorite(camera: CameraMode) {
-  const current = getVisual().broadcast.favorites;
-  const favorites = current.includes(camera)
-    ? current.filter((entry) => entry !== camera)
-    : [...current, camera].slice(0, 4);
-  return setBroadcastPreferences({ favorites });
 }
 
 export function resetVisual() {
@@ -358,11 +271,6 @@ export function useVisual(): VisualSettings {
     };
   }, []);
   return v;
-}
-
-/** Preferências reativas usadas por controles compartilhados de partida e replay. */
-export function useBroadcastPreferences(): BroadcastPreferences {
-  return useVisual().broadcast;
 }
 
 /**

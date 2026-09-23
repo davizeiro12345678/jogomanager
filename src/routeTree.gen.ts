@@ -69,8 +69,6 @@ import { Route as TrainingRouteImport } from './routes/training'
 import { Route as TransfersRouteImport } from './routes/transfers'
 import { Route as VisualRouteImport } from './routes/visual'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
-import { Route as CheckoutClaimRouteImport } from './routes/checkout/claim'
-import { Route as CheckoutGuestRouteImport } from './routes/checkout/guest'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout/return'
 import { Route as ClubeNovoRouteImport } from './routes/clube.novo'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -381,16 +379,6 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
-const CheckoutClaimRoute = CheckoutClaimRouteImport.update({
-  id: '/checkout/claim',
-  path: '/checkout/claim',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CheckoutGuestRoute = CheckoutGuestRouteImport.update({
-  id: '/checkout/guest',
-  path: '/checkout/guest',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
   id: '/checkout/return',
   path: '/checkout/return',
@@ -495,8 +483,6 @@ export interface FileRoutesByFullPath {
   '/transfers': typeof TransfersRoute
   '/visual': typeof VisualRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
-  '/checkout/claim': typeof CheckoutClaimRoute
-  '/checkout/guest': typeof CheckoutGuestRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -567,8 +553,6 @@ export interface FileRoutesByTo {
   '/transfers': typeof TransfersRoute
   '/visual': typeof VisualRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
-  '/checkout/claim': typeof CheckoutClaimRoute
-  '/checkout/guest': typeof CheckoutGuestRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -640,8 +624,6 @@ export interface FileRoutesById {
   '/transfers': typeof TransfersRoute
   '/visual': typeof VisualRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
-  '/checkout/claim': typeof CheckoutClaimRoute
-  '/checkout/guest': typeof CheckoutGuestRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -714,8 +696,6 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/visual'
     | '/.well-known/oauth-protected-resource'
-    | '/checkout/claim'
-    | '/checkout/guest'
     | '/checkout/return'
     | '/clube/novo'
     | '/.lovable/oauth/consent'
@@ -786,8 +766,6 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/visual'
     | '/.well-known/oauth-protected-resource'
-    | '/checkout/claim'
-    | '/checkout/guest'
     | '/checkout/return'
     | '/clube/novo'
     | '/.lovable/oauth/consent'
@@ -858,8 +836,6 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/visual'
     | '/.well-known/oauth-protected-resource'
-    | '/checkout/claim'
-    | '/checkout/guest'
     | '/checkout/return'
     | '/clube/novo'
     | '/.lovable/oauth/consent'
@@ -931,8 +907,6 @@ export interface RootRouteChildren {
   TransfersRoute: typeof TransfersRoute
   VisualRoute: typeof VisualRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
-  CheckoutClaimRoute: typeof CheckoutClaimRoute
-  CheckoutGuestRoute: typeof CheckoutGuestRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   ClubeNovoRoute: typeof ClubeNovoRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -1365,20 +1339,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/checkout/claim': {
-      id: '/checkout/claim'
-      path: '/checkout/claim'
-      fullPath: '/checkout/claim'
-      preLoaderRoute: typeof CheckoutClaimRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/checkout/guest': {
-      id: '/checkout/guest'
-      path: '/checkout/guest'
-      fullPath: '/checkout/guest'
-      preLoaderRoute: typeof CheckoutGuestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/checkout/return': {
       id: '/checkout/return'
       path: '/checkout/return'
@@ -1500,8 +1460,6 @@ const rootRouteChildren: RootRouteChildren = {
   VisualRoute: VisualRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
-  CheckoutClaimRoute: CheckoutClaimRoute,
-  CheckoutGuestRoute: CheckoutGuestRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
   ClubeNovoRoute: ClubeNovoRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,

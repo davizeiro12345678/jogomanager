@@ -34,15 +34,12 @@ export function PostFX({
   moment,
   time = "dia",
   intensity = 1,
-  cinematic = false,
 }: {
   quality: PostQuality;
   replay?: boolean;
   moment?: PostMoment;
   time?: PostTime;
   intensity?: number;
-  /** Ativa o tratamento de lente do modo Cinema/Diretor mesmo fora de um gol. */
-  cinematic?: boolean;
 }) {
   const m: PostMoment = moment ?? (replay ? "replay" : "match");
   const p = useMemo(() => postPreset(quality, m, time, intensity), [quality, m, time, intensity]);
@@ -67,7 +64,7 @@ export function PostFX({
     );
   }
 
-  const cinema = cinematic || m !== "match";
+  const cinema = m !== "match";
 
   return (
       <EffectComposer key={`alta-${m}`} enableNormalPass={cinema} multisampling={0} resolutionScale={cinema ? 0.82 : 0.72}>

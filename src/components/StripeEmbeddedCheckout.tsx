@@ -3,18 +3,21 @@ import { getStripe, getStripeEnvironment } from "@/lib/stripe";
 import { createCheckoutSession } from "@/utils/payments.functions";
 
 interface StripeEmbeddedCheckoutProps {
-  productKey: string;
+  priceId: string;
+  quantity?: number;
   returnUrl?: string;
 }
 
 export function StripeEmbeddedCheckout({
-  productKey,
+  priceId,
+  quantity,
   returnUrl,
 }: StripeEmbeddedCheckoutProps) {
   const fetchClientSecret = async (): Promise<string> => {
     const result = await createCheckoutSession({
       data: {
-        productKey,
+        priceId,
+        ...(quantity != null ? { quantity } : {}),
         returnUrl: returnUrl || window.location.href,
         environment: getStripeEnvironment(),
       },

@@ -298,27 +298,16 @@ export function canTransition(
     return false;
   }
 
-  const remainingActionRatio =
-    !from.metadata.loop &&
-    ctx.actionT !== undefined &&
-    ctx.actionDur !== undefined &&
-    ctx.actionDur > 0
-      ? Math.max(0, ctx.actionT) / ctx.actionDur
-      : undefined;
-
-  // actionT é o tempo restante: uma ação concluída deve liberar a locomoção,
-  // inclusive para um clipe de menor prioridade.
-  if (remainingActionRatio !== undefined && remainingActionRatio <= 0.1) {
-    return true;
+  // Ação fixa (não loop) em andamento: só libera nos últimos 10%. Quando a ação
+  // chega ao fim, a saída é livre — senão o jogador ficaria preso no clipe de
+  // chute, que sempre tem prioridade maior que correr ou andar.
+  if (!from.metadata.loop && ctx.actionDur && ctx.actionT !== undefined) {
+    const progress = ctx.actionT / ctx.actionDur;
+    return progress >= 0.9;
   }
 
-  // Se o clipe de destino tem prioridade menor, não transiciona
+  // Caso geral: só troca por um clipe de prioridade maior.
   if (to.metadata.priority <= from.metadata.priority) {
-    return false;
-  }
-
-  // Se o clipe atual é uma ação fixa (não loop), deixa ele terminar
-  if (remainingActionRatio !== undefined) {
     return false;
   }
 

@@ -1,4 +1,4 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -6,14 +6,9 @@ import { Coins, Sparkles, Crown, Package, Search, Dumbbell, Palette } from "luci
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSignedIn } from "@/hooks/useCareer";
-import { useStoreCatalog } from "@/hooks/useStoreCatalog";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useSubscription, isSubscriptionActive } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
-import {
-  GuestCheckoutDialog,
-  type GuestCheckoutProduct,
-} from "@/components/store/GuestCheckoutDialog";
 import {
   Card,
   CardContent,
@@ -26,6 +21,17 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { recordAdMetric } from "@/features/ads/ad-manager";
 
+interface StoreProduct {
+  key: string;
+  name: string;
+  description: string;
+  price_cents: number;
+  currency: string;
+  coins: number;
+  kind: string;
+  active: boolean;
+}
+
 interface Wallet {
   coins: number;
   season_pass: boolean;
@@ -36,14 +42,10 @@ interface Wallet {
 }
 
 function formatBRL(cents: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: currency || "BRL",
-    }).format(cents / 100);
-  } catch {
-    return `${(cents / 100).toLocaleString("pt-BR")} ${currency || "BRL"}`;
-  }
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: currency || "BRL",
+  }).format(cents / 100);
 }
 
 const KIND_LABELS: Record<string, string> = {
@@ -62,6 +64,19 @@ const KIND_ICONS: Record<string, ReactNode> = {
   pass: <Crown size={16} />,
 };
 
+const PRICE_IDS: Record<string, string> = {
+  coins_starter: "coins_starter",
+  coins_small: "coins_small",
+  coins_large: "coins_large",
+  celebration_pack: "celebration_pack",
+  stadium_pack: "stadium_pack",
+  coins_medium: "coins_medium",
+  scout_pack: "scout_pack",
+  training_pack: "training_pack",
+  theme_pack: "theme_pack",
+  season_pass: "season_pass_monthly",
+};
+
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString("pt-BR");
@@ -73,15 +88,21 @@ function formatDate(iso: string | null | undefined): string {
  */
 export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; columns?: 1 | 2 }) {
   const signedIn = useSignedIn();
-  const search = useLocation({ select: (location) => location.searchStr });
-  const selectedProduct = new URLSearchParams(search).get("produto");
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [openingKey, setOpeningKey] = useState<string | null>(null);
-  const [guestProduct, setGuestProduct] = useState<GuestCheckoutProduct | null>(null);
 
-  // A leitura é publicamente permitida por RLS; usar a mesma consulta para
-  // visitantes e contas evita que a oferta mude depois do login.
-  const productsQuery = useStoreCatalog();
+  const productsQuery = useQuery({
+    queryKey: ["store_products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("store_products")
+        .select("key, name, description, price_cents, currency, coins, kind, active")
+        .eq("active", true)
+        .order("price_cents", { ascending: true });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as StoreProduct[];
+    },
+  });
 
   const walletQuery = useQuery({
     queryKey: ["user_wallet", signedIn],
@@ -111,13 +132,10 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
 
   const subscriptionQuery = useSubscription();
   const subscriptionActive = isSubscriptionActive(subscriptionQuery.data);
-  const isGuest = signedIn === false;
-  const isSessionLoading = signedIn === null;
-  const products = productsQuery.data ?? [];
 
   // Destaca o pacote de moedas com mais moedas por real, para o jogador
   // comparar sem fazer conta de cabeça.
-  const bestValueKey = products
+  const bestValueKey = (productsQuery.data ?? [])
     .filter((p) => p.coins > 0 && p.price_cents > 0)
     .reduce<{ key: string; ratio: number } | null>((best, p) => {
       const ratio = p.coins / p.price_cents;
@@ -125,15 +143,16 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
     }, null)?.key;
 
   function buy(productKey: string) {
-    // The public catalog is available to everyone; payment requires a session.
-    if (signedIn !== true) return;
+    if (!signedIn) return;
     setOpeningKey(productKey);
     void import("@/lib/analytics").then((m) =>
       m.track("checkout_iniciado", { produto: productKey }),
     );
     try {
+      const priceId = PRICE_IDS[productKey];
+      if (!priceId) throw new Error("Produto não configurado para checkout.");
       openCheckout({
-        productKey,
+        priceId,
         returnUrl: `${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`,
       });
     } catch (err) {
@@ -143,13 +162,30 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
     }
   }
 
+  if (!signedIn) {
+    return (
+      <div className="rounded-2xl border border-border/60 bg-card/85 p-6 text-center">
+        <p className="text-sm text-muted-foreground">
+          Entre na sua conta para comprar itens da loja.
+        </p>
+        <Link
+          to="/auth"
+          search={{ next }}
+          className="mt-4 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 font-display text-sm uppercase tracking-wider text-primary-foreground"
+        >
+          Entrar
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="mb-4 rounded-2xl border border-border/60 surface-card p-4">
         <div className="flex flex-wrap items-center gap-3">
           <Coins className="text-primary" size={20} />
           <span className="font-display text-sm uppercase tracking-wide">
-            {isGuest || isSessionLoading ? "Vitrine da loja" : `${walletQuery.data?.coins ?? 0} moedas`}
+            {walletQuery.data?.coins ?? 0} moedas
           </span>
           {walletQuery.data && walletQuery.data.scout_reports > 0 && (
             <Badge variant="secondary" className="gap-1">
@@ -168,31 +204,10 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
             </Badge>
           )}
         </div>
-        {isSessionLoading ? (
-          <p role="status" className="mt-2 text-xs text-muted-foreground">
-            Verificando sua conta para mostrar a ação de compra segura…
+        {walletQuery.data && walletQuery.data.unlocked_themes.length > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Temas desbloqueados: {walletQuery.data.unlocked_themes.join(", ")}
           </p>
-        ) : isGuest ? (
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-            <p>Veja os pacotes e preços. Compre por e-mail ou entre para vincular o item direto à carreira.</p>
-            <Link to="/auth" search={{ next }} className="font-medium text-primary underline underline-offset-4">
-              Já tenho conta
-            </Link>
-          </div>
-        ) : (
-          <>
-            {walletQuery.data && walletQuery.data.unlocked_themes.length > 0 ? (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Temas desbloqueados: {walletQuery.data.unlocked_themes.join(", ")}
-              </p>
-            ) : null}
-            {selectedProduct ? (
-              <p role="status" className="mt-2 text-xs text-primary">
-                Seu pacote escolhido está destacado abaixo. Revise os detalhes antes de abrir o
-                pagamento seguro.
-              </p>
-            ) : null}
-          </>
         )}
       </div>
 
@@ -208,37 +223,32 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           <span className="sr-only">Carregando produtos…</span>
         </div>
       ) : productsQuery.isError ? (
-        <div
-          role="status"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-secondary/40 p-4 text-sm text-muted-foreground"
-        >
-          <p>Não foi possível carregar o catálogo oficial. Nenhum preço foi exibido.</p>
-          <Button variant="outline" size="sm" onClick={() => void productsQuery.refetch()}>
-            Tentar novamente
+        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4">
+          <p className="text-sm text-destructive">
+            Não foi possível carregar os produtos. Verifique sua conexão e tente de novo.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => void productsQuery.refetch()}
+          >
+            Tentar de novo
           </Button>
         </div>
-      ) : products.length === 0 ? (
+      ) : productsQuery.data?.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum produto disponível no momento.</p>
       ) : (
         <>
-          <p className="mb-4 text-xs text-muted-foreground">
-            Catálogo atual. O checkout seguro confirma o total e a disponibilidade antes do
-            pagamento.
-          </p>
           <div className={`grid gap-4 ${columns === 2 ? "sm:grid-cols-2" : ""}`}>
-            {products.map((p) => (
+            {productsQuery.data?.map((p) => (
               <Card
                 key={p.key}
-                id={`store-product-${p.key}`}
                 onMouseEnter={() => {
                   if (p.key === bestValueKey) recordAdMetric(`store-${p.key}`, "inventory", "impression");
                 }}
                 className={`relative flex flex-col surface-card transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-glow)] motion-reduce:transform-none motion-reduce:transition-none ${
-                  selectedProduct === p.key
-                    ? "border-primary/80 bg-primary/5 ring-1 ring-primary/40"
-                    : p.key === bestValueKey
-                      ? "border-primary/70"
-                      : ""
+                  p.key === bestValueKey ? "border-primary/70" : ""
                 }`}
               >
                 {p.key === bestValueKey && (
@@ -275,51 +285,21 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                 </CardContent>
                 <CardFooter>
                   <div className="w-full space-y-2">
-                    {isSessionLoading ? (
-                      <Button className="w-full" disabled>
-                        Verificando conta…
-                      </Button>
-                    ) : isGuest ? (
-                      <Button
-                        className="w-full"
-                        data-testid="guest-checkout-start"
-                        onClick={() =>
-                          setGuestProduct({
-                            key: p.key,
-                            name: p.name,
-                            priceCents: p.price_cents,
-                            currency: p.currency,
-                          })
-                        }
-                      >
-                        Comprar como visitante
-                      </Button>
-                    ) : (
-                      <Button
-                        className="w-full"
-                        disabled={
-                          openingKey === p.key ||
-                          (p.kind === "pass" && subscriptionActive)
-                        }
-                        onClick={() => buy(p.key)}
-                        onPointerDown={() => {
-                          if (p.key === bestValueKey) recordAdMetric(`store-${p.key}`, "inventory", "click");
-                        }}
-                      >
-                        {openingKey === p.key
-                          ? "Abrindo checkout…"
-                          : p.kind === "pass" && subscriptionActive
-                            ? "Assinatura ativa"
-                            : "Comprar com segurança"}
-                      </Button>
-                    )}
-                    <p className="text-center text-[11px] text-muted-foreground">
-                      {isSessionLoading
-                        ? "Aguarde a verificação da conta"
-                        : isGuest
-                          ? "Compra segura por e-mail; entre se já tiver uma conta"
-                          : "Entrega automática na sua conta"}
-                    </p>
+                    <Button
+                      className="w-full"
+                      disabled={openingKey === p.key || (p.kind === "pass" && subscriptionActive)}
+                      onClick={() => buy(p.key)}
+                       onPointerDown={() => {
+                         if (p.key === bestValueKey) recordAdMetric(`store-${p.key}`, "inventory", "click");
+                       }}
+                    >
+                      {openingKey === p.key
+                        ? "Abrindo checkout…"
+                        : p.kind === "pass" && subscriptionActive
+                          ? "Assinatura ativa"
+                          : "Comprar com segurança"}
+                    </Button>
+                    <p className="text-center text-[11px] text-muted-foreground">Entrega automática na sua conta</p>
                   </div>
                 </CardFooter>
               </Card>
@@ -340,14 +320,6 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           )}
         </>
       )}
-
-      <GuestCheckoutDialog
-        product={guestProduct}
-        open={guestProduct !== null}
-        onOpenChange={(open) => {
-          if (!open) setGuestProduct(null);
-        }}
-      />
     </div>
   );
 }

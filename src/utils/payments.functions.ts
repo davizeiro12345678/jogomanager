@@ -1,19 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { type StripeEnv, createStripeClient, getStripeErrorMessage } from "@/lib/stripe.server";
-import {
-  assertStoreProductKey,
-  getServerStoreProduct,
-  getStoreServiceSupabase,
-  resolveValidatedStripePrice,
-} from "@/lib/store-products.server";
 
 export type CheckoutSessionResult = { clientSecret: string } | { error: string };
 
 export type PortalSessionResult = { url: string } | { error: string };
 
-export async function resolveOrCreateCustomer(
+async function resolveOrCreateCustomer(
   stripe: ReturnType<typeof createStripeClient>,
   options: { email?: string; userId?: string },
 ): Promise<string> {
@@ -27,8 +20,21 @@ export async function resolveOrCreateCustomer(
     });
     if (found.data.length) return found.data[0]!.id;
   }
-  // An email match is not proof of customer ownership. Reusing a Stripe
-  // customer by address could attach a different account's saved payment data.
+  if (options.email) {
+    const existing = await stripe.customers.list({
+      email: options.email,
+      limit: 1,
+    });
+    if (existing.data.length) {
+      const customer = existing.data[0]!;
+      if (options.userId && customer.metadata?.["userId"] !== options.userId) {
+        await stripe.customers.update(customer.id, {
+          metadata: { ...customer.metadata, userId: options.userId },
+        });
+      }
+      return customer.id;
+    }
+  }
   const created = await stripe.customers.create({
     ...(options.email ? { email: options.email } : {}),
     ...(options.userId ? { metadata: { userId: options.userId } } : {}),
@@ -39,30 +45,22 @@ export async function resolveOrCreateCustomer(
 export const createCheckoutSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (data: { productKey: string; quantity?: number; returnUrl: string; environment: StripeEnv }) => {
-      assertStoreProductKey(data.productKey);
-      if (data.quantity != null && data.quantity !== 1) throw new Error("Invalid quantity");
-      if (typeof data.returnUrl !== "string") throw new Error("Invalid returnUrl");
-      if (data.environment !== "sandbox" && data.environment !== "live") {
-        throw new Error("Invalid environment");
+    (data: { priceId: string; quantity?: number; returnUrl: string; environment: StripeEnv }) => {
+      if (!/^[a-zA-Z0-9_-]+$/.test(data.priceId)) {
+        throw new Error("Invalid priceId");
       }
       return data;
     },
   )
   .handler(async ({ data, context }): Promise<CheckoutSessionResult> => {
     try {
-      const request = getRequest();
-      const requestOrigin = request ? new URL(request.url).origin : null;
-      const returnUrl = new URL(data.returnUrl);
-      if (!requestOrigin || returnUrl.origin !== requestOrigin || returnUrl.pathname !== "/checkout/return") {
-        throw new Error("Invalid returnUrl");
-      }
-
-      // `store_products` selects the current active SKU first; Stripe only
-      // confirms that its server-side amount and currency still match it.
-      const product = await getServerStoreProduct(getStoreServiceSupabase() as any, data.productKey);
       const stripe = createStripeClient(data.environment);
-      const stripePrice = await resolveValidatedStripePrice(stripe, product);
+
+      const prices = await stripe.prices.list({
+        lookup_keys: [data.priceId],
+      });
+      if (!prices.data.length) throw new Error("Price not found");
+      const stripePrice = prices.data[0]!;
       const isRecurring = stripePrice.type === "recurring";
 
       const email = typeof context.claims?.email === "string" ? context.claims.email : undefined;
@@ -80,6 +78,8 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         productDescription = product.name;
       }
 
+      // A quantidade é definida pelo servidor: a loja vende uma unidade por
+      // compra, então o valor enviado pelo cliente não é usado.
       const session = await stripe.checkout.sessions.create({
         line_items: [{ price: stripePrice.id, quantity: 1 }],
         mode: isRecurring ? "subscription" : "payment",
@@ -89,7 +89,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         ...(!isRecurring && {
           payment_intent_data: { description: productDescription },
         }),
-        metadata: { userId: context.userId, productKey: product.key },
+        metadata: { userId: context.userId },
         ...(isRecurring && {
           subscription_data: { metadata: { userId: context.userId } },
         }),
