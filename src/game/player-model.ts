@@ -263,6 +263,7 @@ export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook 
     collar: COLLAR_POOL[Math.floor(rng() * COLLAR_POOL.length)] ?? "crew",
     hairVolume: 0.85 + rng() * 0.35,
     sweat: rng(),
+    role,
   };
 }
 
