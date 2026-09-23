@@ -120,6 +120,9 @@ const CLIP_FAMILY_MAP: Record<string, AnimationFamily> = {
 // Metadados específicos por clipe (overrides)
 // ============================================================================
 
+const SHOT_MARKERS = STANDARD_MARKERS["shot"]!;
+const PASS_MARKERS = STANDARD_MARKERS["pass"]!;
+
 const CLIP_METADATA_OVERRIDES: Record<string, Omit<Partial<ClipMetadata>, 'family'>> = {
   // Locomotion - maioria faz loop
   idle: { loop: true, priority: 0.0 },
@@ -136,16 +139,16 @@ const CLIP_METADATA_OVERRIDES: Record<string, Omit<Partial<ClipMetadata>, 'famil
   
   // Actions - não fazem loop. Marcadores e pé dominante alimentam o contato com
   // a bola e o posicionamento dos pés durante a jogada.
-  shotLow: { loop: false, priority: 0.8, duration: 0.8, markers: STANDARD_MARKERS["shot"], dominantFoot: "right" },
-  shotPower: { loop: false, priority: 0.8, duration: 0.8, markers: STANDARD_MARKERS["shot"], dominantFoot: "right" },
-  shotPlaced: { loop: false, priority: 0.8, duration: 0.8, markers: STANDARD_MARKERS["shot"], dominantFoot: "right" },
-  volley: { loop: false, priority: 0.75, duration: 0.6, markers: STANDARD_MARKERS["shot"], dominantFoot: "right" },
+  shotLow: { loop: false, priority: 0.8, duration: 0.8, markers: SHOT_MARKERS, dominantFoot: "right" },
+  shotPower: { loop: false, priority: 0.8, duration: 0.8, markers: SHOT_MARKERS, dominantFoot: "right" },
+  shotPlaced: { loop: false, priority: 0.8, duration: 0.8, markers: SHOT_MARKERS, dominantFoot: "right" },
+  volley: { loop: false, priority: 0.75, duration: 0.6, markers: SHOT_MARKERS, dominantFoot: "right" },
   header: { loop: false, priority: 0.75, duration: 0.5, dominantFoot: "both" },
-  bicycle: { loop: false, priority: 0.85, duration: 0.9, markers: STANDARD_MARKERS["shot"], dominantFoot: "both" },
+  bicycle: { loop: false, priority: 0.85, duration: 0.9, markers: SHOT_MARKERS, dominantFoot: "both" },
 
-  passShort: { loop: false, priority: 0.6, duration: 0.5, markers: STANDARD_MARKERS["pass"], dominantFoot: "right" },
-  passLong: { loop: false, priority: 0.6, duration: 0.6, markers: STANDARD_MARKERS["pass"], dominantFoot: "right" },
-  cross: { loop: false, priority: 0.6, duration: 0.6, markers: STANDARD_MARKERS["pass"], dominantFoot: "right" },
+  passShort: { loop: false, priority: 0.6, duration: 0.5, markers: PASS_MARKERS, dominantFoot: "right" },
+  passLong: { loop: false, priority: 0.6, duration: 0.6, markers: PASS_MARKERS, dominantFoot: "right" },
+  cross: { loop: false, priority: 0.6, duration: 0.6, markers: PASS_MARKERS, dominantFoot: "right" },
   
   tackle: { loop: false, priority: 0.7, duration: 0.7 },
   slide: { loop: false, priority: 0.7, duration: 0.8 },
