@@ -585,10 +585,20 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
     if (!isHost) return;
     if (snap.finished && !published.current) {
       published.current = true;
-      void supabase
-        .from("match_rooms")
-        .update({ status: "done", minute: snap.minute, state: { hg: snap.hg, ag: snap.ag } })
-        .eq("id", room.id);
+      // O resultado passa pelo servidor, que confere se quem envia é mesmo o
+      // anfitrião e se a partida chegou ao fim antes de gravar o placar.
+      void import("@/lib/multiplayer.functions").then(({ finishMatchRoom }) =>
+        finishMatchRoom({
+          data: {
+            roomId: room.id,
+            minute: snap.minute,
+            homeGoals: snap.hg,
+            awayGoals: snap.ag,
+          },
+        }).catch(() => {
+          published.current = false;
+        }),
+      );
     }
   }, [snap, isHost, room.id]);
 
