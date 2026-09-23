@@ -70,6 +70,7 @@ export class AuthoritativeMatchSession {
 
   private readonly tickets: Record<MatchSeat, MatchTicketV1>;
   private readonly connected = new Set<string>();
+  private readonly readySeats = new Set<MatchSeat>();
   private readonly lastSequence = new Map<string, number>();
   private readonly rateWindows = new Map<string, number[]>();
   private readonly reconnectDeadlines = new Map<MatchSeat, number>();
@@ -94,7 +95,7 @@ export class AuthoritativeMatchSession {
     this.assertBoundTicket(ticket, now);
     this.connected.add(ticket.userId);
     this.reconnectDeadlines.delete(ticket.seat);
-    if (this.phase !== "finalized") this.phase = this.connected.size === 2 ? "live" : "waiting";
+    this.refreshPhase();
     return ticket.seat;
   }
 
@@ -134,6 +135,9 @@ export class AuthoritativeMatchSession {
         await this.finalize("forfeit", now, seat);
         break;
       case "ready":
+        this.readySeats.add(seat);
+        this.refreshPhase();
+        break;
       case "ack_snapshot":
         break;
     }
@@ -145,7 +149,7 @@ export class AuthoritativeMatchSession {
   }
 
   advanceFixedTick(): void {
-    if (this.phase === "finalized") return;
+    if (this.phase !== "live" && this.phase !== "reconnecting") return;
     this.options.engine.advanceFixedStep();
     this.tick += 1;
     this.revision += 1;
@@ -216,6 +220,15 @@ export class AuthoritativeMatchSession {
     if (this.tickets.home.userId === userId) return "home";
     if (this.tickets.away.userId === userId) return "away";
     return null;
+  }
+
+  private refreshPhase(): void {
+    if (this.phase === "finalized") return;
+    if (this.connected.size === 2 && this.readySeats.size === 2) {
+      this.phase = "live";
+      return;
+    }
+    this.phase = this.reconnectDeadlines.size > 0 ? "reconnecting" : "waiting";
   }
 
   private reject(

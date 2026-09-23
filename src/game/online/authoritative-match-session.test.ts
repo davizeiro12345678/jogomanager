@@ -123,6 +123,27 @@ function createSession(options: { limits?: Partial<Record<"set_tactics", { limit
 }
 
 describe("AuthoritativeMatchSession", () => {
+  it("does not advance the server simulation until both authenticated seats explicitly confirm ready", async () => {
+    const { session, engine } = createSession();
+    const home = ticket("home");
+    const away = ticket("away");
+
+    session.connect(home, issuedAt);
+    session.connect(away, issuedAt);
+    expect(session.phase).toBe("waiting");
+    session.advanceFixedTick();
+    expect(session.snapshot().tick).toBe(0);
+
+    await session.receive(home, command(1, "ready"), issuedAt + 1);
+    expect(session.phase).toBe("waiting");
+    await session.receive(away, command(1, "ready"), issuedAt + 2);
+    expect(session.phase).toBe("live");
+
+    session.advanceFixedTick();
+    expect(session.snapshot().tick).toBe(1);
+    expect(engine.publicState().minute).toBe(1);
+  });
+
   it("binds each connection to the signed ticket room, user and seat", () => {
     const { session } = createSession();
 
@@ -200,13 +221,19 @@ describe("AuthoritativeMatchSession", () => {
     expect(signatureCount()).toBe(1);
   });
 
-  it("only publishes sanitized presentation state", () => {
+  it("only publishes sanitized presentation state", async () => {
     const { session } = createSession();
+    const home = ticket("home");
+    const away = ticket("away");
+    session.connect(home, issuedAt);
+    session.connect(away, issuedAt);
+    await session.receive(home, command(1, "ready"), issuedAt + 1);
+    await session.receive(away, command(1, "ready"), issuedAt + 2);
     session.advanceFixedTick();
 
     const snapshot = session.snapshot();
 
-    expect(snapshot).toMatchObject({ tick: 1, revision: 1, phase: "waiting" });
+    expect(snapshot).toMatchObject({ tick: 1, revision: 1, phase: "live" });
     expect(JSON.stringify(snapshot)).not.toMatch(/seed|internal|reward/i);
     expect(snapshot.publicState.score).toEqual({ home: 1, away: 0 });
   });
