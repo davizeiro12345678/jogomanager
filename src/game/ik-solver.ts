@@ -157,14 +157,26 @@ function applyBallContact(pose: Pose, action: ActionContext, contact: ContactCon
   }
 
   if (actionName === "header") {
-    pose.headPitch = -0.4;
-    pose.chest = 0.1;
-    pose.spine = -0.1;
-    pose.armLPitch = 0.4;
-    pose.armRPitch = 0.4;
-    pose.elbowL = -0.8;
-    pose.elbowR = -0.8;
+    // Peso pela fase: o pescoço só chicoteia no momento do contato.
+    const w =
+      action.phase === "anticipation" ? 0.45
+      : action.phase === "contact" ? 1
+      : action.phase === "followThrough" ? 0.8
+      : 0.6;
+    blendTo(pose, "headPitch", -0.4, w);
+    blendTo(pose, "chest", 0.1, w);
+    blendTo(pose, "spine", -0.1, w);
+    blendTo(pose, "armLPitch", 0.4, w);
+    blendTo(pose, "armRPitch", 0.4, w);
+    blendTo(pose, "elbowL", -0.8, w);
+    blendTo(pose, "elbowR", -0.8, w);
   }
+}
+
+/** aproxima uma junta de um valor alvo sem apagar o clipe por baixo */
+function blendTo(pose: Pose, joint: keyof Pose, value: number, weight: number): void {
+  const w = Math.max(0, Math.min(1, weight));
+  (pose[joint] as number) += (value - (pose[joint] as number)) * w;
 }
 
 /** normaliza um ângulo para o intervalo -PI..PI */
