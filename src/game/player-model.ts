@@ -219,9 +219,13 @@ export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook 
   const seed = hashId(id);
   const rng = makeLookRng(seed);
 
+  const role = roleGroupOf(pos);
+  const build = ROLE_BUILD[role];
+
   const heightRoll = rng();
-  const height = 0.9 + heightRoll * 0.2; // 0.90 .. 1.10
-  const girth = 0.9 + rng() * 0.2;
+  // A variação individual continua, mas agora orbita o porte típico da posição.
+  const height = (0.92 + heightRoll * 0.16) * build.height; // ~0.92 .. 1.13
+  const girth = (0.92 + rng() * 0.16) * build.girth;
 
   const bodyType: BodyType =
     height > 1.055 ? "tall" : girth > 1.045 ? "strong" : girth < 0.945 ? "slim" : "normal";
