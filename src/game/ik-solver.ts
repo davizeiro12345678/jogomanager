@@ -231,35 +231,47 @@ function applyWeightTransfer(pose: Pose, weightShift: number): void {
 }
 
 function applyGoalkeeperIK(pose: Pose, action: ActionContext): void {
+  // A defesa cresce ao longo do mergulho: arma, estende no contato e segura no
+  // acompanhamento. Trocar a pose de uma vez fazia o goleiro "teletransportar".
+  const w =
+    action.phase === "anticipation" ? 0.5
+    : action.phase === "action" ? 0.8
+    : action.phase === "contact" ? 1
+    : action.phase === "followThrough" ? 0.9
+    : 0.7;
+
   if (action.action === "diveLeft") {
-    pose.armLPitch = 0.8;
-    pose.armRPitch = -0.5;
-    pose.elbowL = -1.2;
-    pose.elbowR = -0.5;
-    pose.spine = -0.3;
-    pose.chest = -0.2;
-    pose.legLPitch = 0.5;
-    pose.legRPitch = -0.2;
-    pose.kneeL = -0.8;
+    blendTo(pose, "armLPitch", 0.8, w);
+    blendTo(pose, "armRPitch", -0.5, w);
+    blendTo(pose, "elbowL", -1.2, w);
+    blendTo(pose, "elbowR", -0.5, w);
+    blendTo(pose, "spine", -0.3, w);
+    blendTo(pose, "chest", -0.2, w);
+    blendTo(pose, "legLPitch", 0.5, w);
+    blendTo(pose, "legRPitch", -0.2, w);
+    blendTo(pose, "kneeL", -0.8, w);
+    pose.hipRoll += 0.25 * w;
   }
   else if (action.action === "diveRight") {
-    pose.armLPitch = -0.5;
-    pose.armRPitch = 0.8;
-    pose.elbowL = -0.5;
-    pose.elbowR = -1.2;
-    pose.spine = 0.3;
-    pose.chest = 0.2;
-    pose.legLPitch = -0.2;
-    pose.legRPitch = 0.5;
-    pose.kneeR = -0.8;
+    blendTo(pose, "armLPitch", -0.5, w);
+    blendTo(pose, "armRPitch", 0.8, w);
+    blendTo(pose, "elbowL", -0.5, w);
+    blendTo(pose, "elbowR", -1.2, w);
+    blendTo(pose, "spine", 0.3, w);
+    blendTo(pose, "chest", 0.2, w);
+    blendTo(pose, "legLPitch", -0.2, w);
+    blendTo(pose, "legRPitch", 0.5, w);
+    blendTo(pose, "kneeR", -0.8, w);
+    pose.hipRoll -= 0.25 * w;
   }
   else if (action.action === "saveHigh" || action.action === "catch") {
-    pose.armLPitch = 0.8;
-    pose.armRPitch = 0.8;
-    pose.elbowL = -1.2;
-    pose.elbowR = -1.2;
-    pose.spine = -0.2;
-    pose.chest = -0.1;
+    blendTo(pose, "armLPitch", 0.8, w);
+    blendTo(pose, "armRPitch", 0.8, w);
+    blendTo(pose, "elbowL", -1.2, w);
+    blendTo(pose, "elbowR", -1.2, w);
+    blendTo(pose, "spine", -0.2, w);
+    blendTo(pose, "chest", -0.1, w);
+    blendTo(pose, "headPitch", -0.25, w);
   }
 }
 
