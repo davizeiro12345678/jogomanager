@@ -56,10 +56,27 @@ export function applyIKAdjustments(
     applyWeightTransfer(pose, weightShift);
   }
 
+  // Contra-rotação tronco/quadril: na corrida o peito gira ao contrário do
+  // quadril, como no corpo real. Sem isso o atleta corre "em bloco".
+  applyCounterRotation(pose, Math.hypot(playerInfo.vx, playerInfo.vz));
+
   // IK especifico para goleiros
   if (playerInfo.isGK) {
     applyGoalkeeperIK(pose, actionCtx);
   }
+}
+
+/**
+ * O braço direito à frente acompanha a perna esquerda à frente: a diferença
+ * entre as pernas indica a fase da passada e gira quadril e peito em sentidos
+ * opostos, com amplitude proporcional à velocidade.
+ */
+function applyCounterRotation(pose: Pose, speed: number): void {
+  if (speed < 1.2) return;
+  const amount = Math.min(1, (speed - 1.2) / 5.5);
+  const phase = Math.max(-1, Math.min(1, pose.legRPitch - pose.legLPitch));
+  pose.hipYaw += phase * 0.13 * amount;
+  pose.headYaw -= phase * 0.05 * amount;
 }
 
 function applyFootSupport(pose: Pose, contact: ContactContext): void {
@@ -140,14 +157,34 @@ function applyBallContact(pose: Pose, action: ActionContext, contact: ContactCon
   }
 
   if (actionName === "header") {
-    pose.headPitch = -0.4;
-    pose.chest = 0.1;
-    pose.spine = -0.1;
-    pose.armLPitch = 0.4;
-    pose.armRPitch = 0.4;
-    pose.elbowL = -0.8;
-    pose.elbowR = -0.8;
+    // Peso pela fase: o pescoço só chicoteia no momento do contato.
+    const w =
+      action.phase === "anticipation" ? 0.45
+      : action.phase === "contact" ? 1
+      : action.phase === "followThrough" ? 0.8
+      : 0.6;
+    blendTo(pose, "headPitch", -0.4, w);
+    blendTo(pose, "chest", 0.1, w);
+    blendTo(pose, "spine", -0.1, w);
+    blendTo(pose, "armLPitch", 0.4, w);
+    blendTo(pose, "armRPitch", 0.4, w);
+    blendTo(pose, "elbowL", -0.8, w);
+    blendTo(pose, "elbowR", -0.8, w);
   }
+}
+
+/** aproxima uma junta de um valor alvo sem apagar o clipe por baixo */
+function blendTo(pose: Pose, joint: keyof Pose, value: number, weight: number): void {
+  const w = Math.max(0, Math.min(1, weight));
+  (pose[joint] as number) += (value - (pose[joint] as number)) * w;
+}
+
+/** normaliza um ângulo para o intervalo -PI..PI */
+function wrapAngle(a: number): number {
+  let v = a;
+  while (v > Math.PI) v -= Math.PI * 2;
+  while (v < -Math.PI) v += Math.PI * 2;
+  return v;
 }
 
 function applyFocus(pose: Pose, focusX: number, focusZ: number, playerX: number, playerZ: number, rotationY: number): void {
@@ -158,25 +195,32 @@ function applyFocus(pose: Pose, focusX: number, focusZ: number, playerX: number,
   if (distance < 0.1) return;
 
   const focusAngle = Math.atan2(dx, dz);
-  const relativeAngle = focusAngle - rotationY;
+  const relativeAngle = wrapAngle(focusAngle - rotationY);
 
-  pose.headYaw = Math.max(-0.8, Math.min(0.8, relativeAngle));
-  pose.headPitch = -0.05;
-  pose.chest = relativeAngle * 0.2;
+  // Mistura em vez de sobrescrever: a cabeça procura o alvo mas o clipe de
+  // corrida continua mandando no resto da pose (antes o olhar apagava tudo).
+  const yaw = Math.max(-0.8, Math.min(0.8, relativeAngle));
+  pose.headYaw += (yaw - pose.headYaw) * 0.6;
+  pose.headPitch += -0.05;
+  pose.chest += Math.max(-0.2, Math.min(0.2, relativeAngle * 0.18));
 }
 
 function applyBalance(pose: Pose, vx: number, vz: number, accelX: number, accelZ: number): void {
   const speed = Math.hypot(vx, vz);
   const forwardAccel = Math.hypot(accelX, accelZ);
 
-  pose.hipPitch = -forwardAccel * 0.015;
-  pose.chest = forwardAccel * 0.025;
+  // Aditivo e com teto: equilíbrio é uma correção sobre a passada, não uma pose.
+  pose.hipPitch += Math.max(-0.08, Math.min(0.08, -forwardAccel * 0.015));
+  pose.chest += Math.max(-0.1, Math.min(0.1, forwardAccel * 0.025));
 
   if (speed > 5) {
-    pose.armLPitch = -0.2;
-    pose.armRPitch = -0.2;
-    pose.armLRoll = 0.15;
-    pose.armRRoll = -0.15;
+    // Em velocidade alta os braços sobem e fecham um pouco, sem perder o
+    // balanço alternado que vem do clipe.
+    const w = Math.min(1, (speed - 5) / 4) * 0.45;
+    pose.armLPitch += (-0.2 - pose.armLPitch) * w;
+    pose.armRPitch += (-0.2 - pose.armRPitch) * w;
+    pose.armLRoll += (0.15 - pose.armLRoll) * w;
+    pose.armRRoll += (-0.15 - pose.armRRoll) * w;
   }
 }
 
@@ -187,35 +231,47 @@ function applyWeightTransfer(pose: Pose, weightShift: number): void {
 }
 
 function applyGoalkeeperIK(pose: Pose, action: ActionContext): void {
+  // A defesa cresce ao longo do mergulho: arma, estende no contato e segura no
+  // acompanhamento. Trocar a pose de uma vez fazia o goleiro "teletransportar".
+  const w =
+    action.phase === "anticipation" ? 0.5
+    : action.phase === "action" ? 0.8
+    : action.phase === "contact" ? 1
+    : action.phase === "followThrough" ? 0.9
+    : 0.7;
+
   if (action.action === "diveLeft") {
-    pose.armLPitch = 0.8;
-    pose.armRPitch = -0.5;
-    pose.elbowL = -1.2;
-    pose.elbowR = -0.5;
-    pose.spine = -0.3;
-    pose.chest = -0.2;
-    pose.legLPitch = 0.5;
-    pose.legRPitch = -0.2;
-    pose.kneeL = -0.8;
+    blendTo(pose, "armLPitch", 0.8, w);
+    blendTo(pose, "armRPitch", -0.5, w);
+    blendTo(pose, "elbowL", -1.2, w);
+    blendTo(pose, "elbowR", -0.5, w);
+    blendTo(pose, "spine", -0.3, w);
+    blendTo(pose, "chest", -0.2, w);
+    blendTo(pose, "legLPitch", 0.5, w);
+    blendTo(pose, "legRPitch", -0.2, w);
+    blendTo(pose, "kneeL", -0.8, w);
+    pose.hipRoll += 0.25 * w;
   }
   else if (action.action === "diveRight") {
-    pose.armLPitch = -0.5;
-    pose.armRPitch = 0.8;
-    pose.elbowL = -0.5;
-    pose.elbowR = -1.2;
-    pose.spine = 0.3;
-    pose.chest = 0.2;
-    pose.legLPitch = -0.2;
-    pose.legRPitch = 0.5;
-    pose.kneeR = -0.8;
+    blendTo(pose, "armLPitch", -0.5, w);
+    blendTo(pose, "armRPitch", 0.8, w);
+    blendTo(pose, "elbowL", -0.5, w);
+    blendTo(pose, "elbowR", -1.2, w);
+    blendTo(pose, "spine", 0.3, w);
+    blendTo(pose, "chest", 0.2, w);
+    blendTo(pose, "legLPitch", -0.2, w);
+    blendTo(pose, "legRPitch", 0.5, w);
+    blendTo(pose, "kneeR", -0.8, w);
+    pose.hipRoll -= 0.25 * w;
   }
   else if (action.action === "saveHigh" || action.action === "catch") {
-    pose.armLPitch = 0.8;
-    pose.armRPitch = 0.8;
-    pose.elbowL = -1.2;
-    pose.elbowR = -1.2;
-    pose.spine = -0.2;
-    pose.chest = -0.1;
+    blendTo(pose, "armLPitch", 0.8, w);
+    blendTo(pose, "armRPitch", 0.8, w);
+    blendTo(pose, "elbowL", -1.2, w);
+    blendTo(pose, "elbowR", -1.2, w);
+    blendTo(pose, "spine", -0.2, w);
+    blendTo(pose, "chest", -0.1, w);
+    blendTo(pose, "headPitch", -0.25, w);
   }
 }
 
