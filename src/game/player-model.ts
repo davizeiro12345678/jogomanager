@@ -102,7 +102,31 @@ export interface PlayerLook {
   hairVolume: number;
   /** leve variação de tom entre jogadores do mesmo time (iluminação/suor) */
   sweat: number;
+  /** grupo de posição: muda o porte físico do atleta */
+  role: RoleGroup;
 }
+
+/** Grupos de posição que compartilham o mesmo tipo de porte físico. */
+export type RoleGroup = "GK" | "DF" | "MF" | "FW";
+
+export function roleGroupOf(pos: string): RoleGroup {
+  const p = pos.toUpperCase();
+  if (p === "GK") return "GK";
+  if (p.startsWith("D") || p === "CB" || p === "LB" || p === "RB" || p === "WB") return "DF";
+  if (p.startsWith("F") || p === "ST" || p === "CF" || p === "LW" || p === "RW") return "FW";
+  return "MF";
+}
+
+/**
+ * Porte físico típico por posição. Goleiro e zagueiro são mais altos e mais
+ * largos de ombro; meia e ponta são mais leves e com passada mais longa.
+ */
+const ROLE_BUILD: Record<RoleGroup, { height: number; girth: number; shoulder: number; leg: number }> = {
+  GK: { height: 1.045, girth: 1.03, shoulder: 1.05, leg: 1.01 },
+  DF: { height: 1.025, girth: 1.05, shoulder: 1.06, leg: 1.0 },
+  MF: { height: 0.99, girth: 0.97, shoulder: 0.98, leg: 1.0 },
+  FW: { height: 1.0, girth: 0.99, shoulder: 1.0, leg: 1.02 },
+};
 
 export interface Proportions {
   /** altura do quadril acima do gramado */
@@ -120,6 +144,14 @@ export interface Proportions {
   neckR: number;
   headR: number;
   headH: number;
+  /** largura do crânio (têmporas) */
+  headW: number;
+  /** profundidade do crânio (nuca ao rosto) */
+  headD: number;
+  /** comprimento do maxilar */
+  jawLen: number;
+  /** projeção do queixo à frente do crânio */
+  chinFwd: number;
   upperArm: number;
   foreArm: number;
   armR: number;
