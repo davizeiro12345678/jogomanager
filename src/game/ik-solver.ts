@@ -150,6 +150,14 @@ function applyBallContact(pose: Pose, action: ActionContext, contact: ContactCon
   }
 }
 
+/** normaliza um ângulo para o intervalo -PI..PI */
+function wrapAngle(a: number): number {
+  let v = a;
+  while (v > Math.PI) v -= Math.PI * 2;
+  while (v < -Math.PI) v += Math.PI * 2;
+  return v;
+}
+
 function applyFocus(pose: Pose, focusX: number, focusZ: number, playerX: number, playerZ: number, rotationY: number): void {
   const dx = focusX - playerX;
   const dz = focusZ - playerZ;
@@ -158,25 +166,32 @@ function applyFocus(pose: Pose, focusX: number, focusZ: number, playerX: number,
   if (distance < 0.1) return;
 
   const focusAngle = Math.atan2(dx, dz);
-  const relativeAngle = focusAngle - rotationY;
+  const relativeAngle = wrapAngle(focusAngle - rotationY);
 
-  pose.headYaw = Math.max(-0.8, Math.min(0.8, relativeAngle));
-  pose.headPitch = -0.05;
-  pose.chest = relativeAngle * 0.2;
+  // Mistura em vez de sobrescrever: a cabeça procura o alvo mas o clipe de
+  // corrida continua mandando no resto da pose (antes o olhar apagava tudo).
+  const yaw = Math.max(-0.8, Math.min(0.8, relativeAngle));
+  pose.headYaw += (yaw - pose.headYaw) * 0.6;
+  pose.headPitch += -0.05;
+  pose.chest += Math.max(-0.2, Math.min(0.2, relativeAngle * 0.18));
 }
 
 function applyBalance(pose: Pose, vx: number, vz: number, accelX: number, accelZ: number): void {
   const speed = Math.hypot(vx, vz);
   const forwardAccel = Math.hypot(accelX, accelZ);
 
-  pose.hipPitch = -forwardAccel * 0.015;
-  pose.chest = forwardAccel * 0.025;
+  // Aditivo e com teto: equilíbrio é uma correção sobre a passada, não uma pose.
+  pose.hipPitch += Math.max(-0.08, Math.min(0.08, -forwardAccel * 0.015));
+  pose.chest += Math.max(-0.1, Math.min(0.1, forwardAccel * 0.025));
 
   if (speed > 5) {
-    pose.armLPitch = -0.2;
-    pose.armRPitch = -0.2;
-    pose.armLRoll = 0.15;
-    pose.armRRoll = -0.15;
+    // Em velocidade alta os braços sobem e fecham um pouco, sem perder o
+    // balanço alternado que vem do clipe.
+    const w = Math.min(1, (speed - 5) / 4) * 0.45;
+    pose.armLPitch += (-0.2 - pose.armLPitch) * w;
+    pose.armRPitch += (-0.2 - pose.armRPitch) * w;
+    pose.armLRoll += (0.15 - pose.armLRoll) * w;
+    pose.armRRoll += (-0.15 - pose.armRRoll) * w;
   }
 }
 
