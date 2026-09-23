@@ -218,7 +218,7 @@ export function initializeAnimationCatalog(): void {
   
   // Registra todos os clipes
   for (const [name, clip] of Object.entries(ALL_CLIPS)) {
-    const family = CLIP_FAMILY_MAP[name] || "idle";
+    const family = CLIP_FAMILY_MAP[name] ?? inferFamily(name);
     const overrides = CLIP_METADATA_OVERRIDES[name] || {};
     const metadata = { ...FAMILY_METADATA[family], ...overrides, family };
     
