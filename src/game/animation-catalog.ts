@@ -297,21 +297,20 @@ export function canTransition(
   if (!from.metadata.interruptible && from.metadata.loop) {
     return false;
   }
-  
-  // Se o clipe de destino tem prioridade menor, não transiciona
+
+  // Ação fixa (não loop) em andamento: só libera nos últimos 10%. Quando a ação
+  // chega ao fim, a saída é livre — senão o jogador ficaria preso no clipe de
+  // chute, que sempre tem prioridade maior que correr ou andar.
+  if (!from.metadata.loop && ctx.actionDur && ctx.actionT !== undefined) {
+    const progress = ctx.actionT / ctx.actionDur;
+    return progress >= 0.9;
+  }
+
+  // Caso geral: só troca por um clipe de prioridade maior.
   if (to.metadata.priority <= from.metadata.priority) {
     return false;
   }
-  
-  // Se o clipe atual é uma ação fixa (não loop), deixa ele terminar
-  if (!from.metadata.loop && ctx.actionDur && ctx.actionT !== undefined) {
-    const progress = ctx.actionT / ctx.actionDur;
-    // Permite transição apenas nos últimos 10% da ação
-    if (progress < 0.9) {
-      return false;
-    }
-  }
-  
+
   return true;
 }
 
