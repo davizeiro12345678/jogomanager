@@ -340,11 +340,21 @@ export function lodForDistance(dist: number, quality: "alta" | "media" | "baixa"
   return 2;
 }
 
-/** segmentos de geometria por LOD, para manter as draw calls baixas */
-export function segmentsFor(lod: LodLevel): { radial: number; cap: number } {
-  if (lod === 0) return { radial: 14, cap: 6 };
-  if (lod === 1) return { radial: 8, cap: 3 };
-  return { radial: 6, cap: 2 };
+/**
+ * Segmentos de geometria por LOD.
+ *
+ * Tronco e cabeça dominam a silhueta e recebem mais segmentos; braços e pernas
+ * são finos na tela e podem ser bem mais baratos sem diferença perceptível.
+ */
+export function segmentsFor(lod: LodLevel): {
+  radial: number;
+  cap: number;
+  torso: number;
+  head: number;
+} {
+  if (lod === 0) return { radial: 12, cap: 4, torso: 16, head: 18 };
+  if (lod === 1) return { radial: 8, cap: 3, torso: 10, head: 10 };
+  return { radial: 6, cap: 2, torso: 7, head: 7 };
 }
 
 /* -------------------------------------------------------------------------- */
