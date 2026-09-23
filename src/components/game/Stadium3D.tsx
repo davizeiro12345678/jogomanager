@@ -11,12 +11,7 @@ import { broadcastInterest, ShotHold } from "@/game/broadcast-interest";
 import { StaticBatch } from "@/components/game/stadium/StaticBatch";
 import { GrassChunks } from "@/components/game/stadium/GrassChunks";
 import { Canvas, useFrame } from "@react-three/fiber";
-import {
-  Environment,
-  Lightformer,
-  AdaptiveEvents,
-  Trail,
-} from "@react-three/drei";
+import { Environment, Lightformer, AdaptiveEvents, Trail } from "@react-three/drei";
 import { easing } from "maath";
 import type React from "react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
@@ -67,6 +62,15 @@ const SKY: Record<TimeOfDay, string> = {
   noite: "#060a10",
 };
 
+/**
+ * A física visual pode enriquecer o voo, o quique e o contato da bola sem
+ * participar da simulação canônica. Replays antigos e o caminho sem Rapier
+ * continuam apresentando a própria bola da partida.
+ */
+function presentationBall(sim: SimView) {
+  return sim.visualBall ?? sim.ball;
+}
+
 /* ---------------------------------------------------------------- gramado */
 
 /** Tufos de grama instanciados perto das linhas laterais (só na qualidade alta). */
@@ -82,7 +86,12 @@ function useBladeMaterial(color: string) {
     uWind: { value: 1 },
   });
   const mat = useMemo(() => {
-    const m = new THREE.MeshStandardMaterial({ color, roughness: 0.94, metalness: 0, vertexColors: true });
+    const m = new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.94,
+      metalness: 0,
+      vertexColors: true,
+    });
     m.onBeforeCompile = (shader) => {
       shader.uniforms["uTime"] = uniforms.current.uTime;
       shader.uniforms["uBall"] = uniforms.current.uBall;
@@ -122,8 +131,9 @@ function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
   const { mat, uniforms } = useBladeMaterial("#46824b");
   useEffect(() => () => mat.dispose(), [mat]);
   useFrame(({ clock }) => {
+    const visualBall = presentationBall(sim);
     uniforms.uTime.value = clock.elapsedTime;
-    uniforms.uBall.value.set(sim.ball.x, 0, sim.ball.z);
+    uniforms.uBall.value.set(visualBall.x, 0, visualBall.z);
     uniforms.uWind.value = 0.9;
   });
   return (
@@ -340,7 +350,9 @@ function Weather({
   const partScale = useVisual().particles;
   const count = Math.max(
     0,
-    Math.round((quality === "alta" ? (rain ? 2600 : 1500) : rain ? 1100 : 700) * partScale * density),
+    Math.round(
+      (quality === "alta" ? (rain ? 2600 : 1500) : rain ? 1100 : 700) * partScale * density,
+    ),
   );
   const ref = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -521,13 +533,14 @@ function NetCloth({
     const cx = cols + 1;
     const t = clock.elapsedTime;
 
-    // impulso da bola: dentro do gol, empurra a rede no ponto de impacto
-    const bx = sim.ball.x;
+    // impulso da bola visual: dentro do gol, empurra a rede no ponto de impacto
+    const visualBall = presentationBall(sim);
+    const bx = visualBall.x;
     const insideGoal = side > 0 ? bx > FIELD_X - 0.2 : bx < -FIELD_X + 0.2;
-    if (insideGoal && Math.abs(sim.ball.z) < W / 2 && sim.ball.height < H) {
-      const u = (sim.ball.z / W + 0.5) * cols;
-      const v = (1 - sim.ball.height / H) * rows;
-      const power = Math.min(1.4, 0.25 + Math.hypot(sim.ball.vx, sim.ball.vz) * 0.12);
+    if (insideGoal && Math.abs(visualBall.z) < W / 2 && visualBall.height < H) {
+      const u = (visualBall.z / W + 0.5) * cols;
+      const v = (1 - visualBall.height / H) * rows;
+      const power = Math.min(1.4, 0.25 + Math.hypot(visualBall.vx, visualBall.vz) * 0.12);
       for (let ry = -2; ry <= 2; ry++) {
         for (const rx of [-2, -1, 0, 1, 2]) {
           const ix = Math.round(u) + rx;
@@ -738,7 +751,10 @@ function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
   useFrame(() => {
     if (!board || ++tick.current % 12 !== 0) return;
     const possessionTotal = sim.stats.home.possessionTicks + sim.stats.away.possessionTicks;
-    const homePossession = possessionTotal > 0 ? Math.round((sim.stats.home.possessionTicks / possessionTotal) * 100) : 50;
+    const homePossession =
+      possessionTotal > 0
+        ? Math.round((sim.stats.home.possessionTicks / possessionTotal) * 100)
+        : 50;
     const key = `${sim.home.short}|${sim.stats.home.goals}|${sim.stats.away.goals}|${sim.away.short}|${sim.minute()}|${replay}|${homePossession}|${sim.stats.home.shots}|${sim.stats.away.shots}`;
     if (board.last === key) return;
     board.last = key;
@@ -762,10 +778,18 @@ function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
     ctx.textAlign = "center";
     ctx.font = "700 92px sans-serif";
     ctx.fillStyle = "#eafff2";
-    ctx.fillText(`${sim.home.short}  ${sim.stats.home.goals} — ${sim.stats.away.goals}  ${sim.away.short}`, 512, 132);
+    ctx.fillText(
+      `${sim.home.short}  ${sim.stats.home.goals} — ${sim.stats.away.goals}  ${sim.away.short}`,
+      512,
+      132,
+    );
     ctx.font = "700 30px sans-serif";
     ctx.fillStyle = replay ? "#ffd2d5" : "#ffd76a";
-    ctx.fillText(`${homePossession}% POSSE  ·  ${sim.stats.home.shots}–${sim.stats.away.shots} CHUTES`, 512, 232);
+    ctx.fillText(
+      `${homePossession}% POSSE  ·  ${sim.stats.home.shots}–${sim.stats.away.shots} CHUTES`,
+      512,
+      232,
+    );
     ctx.fillStyle = "#2de67e";
     ctx.fillRect(42, 272, 940 * (homePossession / 100), 12);
     ctx.fillStyle = "#4c6a79";
@@ -1245,7 +1269,12 @@ function crowdBackdropTexture(homeColor: string, awayColor: string) {
     for (let col = 0; col < columns; col++) {
       const x = 3 + col * 12 + random() * 2;
       const sector = col / columns;
-      const shirt = sector < 0.3 ? homeColor : sector > 0.82 ? awayColor : neutral[(row * 3 + col) % neutral.length]!;
+      const shirt =
+        sector < 0.3
+          ? homeColor
+          : sector > 0.82
+            ? awayColor
+            : neutral[(row * 3 + col) % neutral.length]!;
       const height = 7 + random() * 5;
       ctx.fillStyle = shirt;
       ctx.fillRect(x, y + 5, 8 + random() * 2, height);
@@ -1289,7 +1318,15 @@ function crowdBackdropGeometry(width: number, height: number) {
   return geometry;
 }
 
-function CrowdBackdrop({ homeColor, awayColor, rings }: { homeColor: string; awayColor: string; rings: number }) {
+function CrowdBackdrop({
+  homeColor,
+  awayColor,
+  rings,
+}: {
+  homeColor: string;
+  awayColor: string;
+  rings: number;
+}) {
   const texture = useMemo(() => crowdBackdropTexture(homeColor, awayColor), [homeColor, awayColor]);
   useEffect(() => () => texture?.dispose(), [texture]);
   const height = Math.max(9, rings * 1.45 + 0.6);
@@ -1316,7 +1353,14 @@ function CrowdBackdrop({ homeColor, awayColor, rings }: { homeColor: string; awa
           position={[0, y, z * zEdge]}
           rotation={[0, z > 0 ? Math.PI : 0, 0]}
         >
-          <meshBasicMaterial map={texture} transparent opacity={0.9} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+          <meshBasicMaterial
+            map={texture}
+            transparent
+            opacity={0.9}
+            depthWrite={false}
+            toneMapped={false}
+            side={THREE.DoubleSide}
+          />
         </mesh>
       ))}
       {[-1, 1].map((x) => (
@@ -1326,7 +1370,14 @@ function CrowdBackdrop({ homeColor, awayColor, rings }: { homeColor: string; awa
           position={[x * xEdge, y, 0]}
           rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}
         >
-          <meshBasicMaterial map={texture} transparent opacity={0.84} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+          <meshBasicMaterial
+            map={texture}
+            transparent
+            opacity={0.84}
+            depthWrite={false}
+            toneMapped={false}
+            side={THREE.DoubleSide}
+          />
         </mesh>
       ))}
     </group>
@@ -1353,8 +1404,13 @@ function Stands({
   const rings = Math.min(quality === "alta" ? 14 : quality === "media" ? 9 : 5, budget.propRings);
   // Keep enough source people to fill visible tiles, without allocating the
   // former 20k-person global crowd before the renderer can cull it.
-  const sourceDensity = Math.max(32, Math.ceil((budget.crowdInstances * 1.8) / Math.max(1, rings * 3.2)));
-  const density = Math.round(Math.min(maximumDensity, sourceDensity) * Math.max(0.1, vis.crowdDensity));
+  const sourceDensity = Math.max(
+    32,
+    Math.ceil((budget.crowdInstances * 1.8) / Math.max(1, rings * 3.2)),
+  );
+  const density = Math.round(
+    Math.min(maximumDensity, sourceDensity) * Math.max(0.1, vis.crowdDensity),
+  );
   const wallMat = useConcrete("#39424b", 14);
 
   const crowd = useMemo(() => {
@@ -1526,10 +1582,13 @@ function CrowdFlags({
     };
     return value;
   }, []);
-  useEffect(() => () => {
-    geometry.dispose();
-    material.dispose();
-  }, [geometry, material]);
+  useEffect(
+    () => () => {
+      geometry.dispose();
+      material.dispose();
+    },
+    [geometry, material],
+  );
   useEffect(() => {
     const mesh = ref.current;
     if (!mesh) return;
@@ -1552,7 +1611,13 @@ function CrowdFlags({
   });
 
   if (!count) return null;
-  return <instancedMesh ref={ref} args={[geometry, material, Math.max(1, count)]} frustumCulled={false} />;
+  return (
+    <instancedMesh
+      ref={ref}
+      args={[geometry, material, Math.max(1, count)]}
+      frustumCulled={false}
+    />
+  );
 }
 
 /* --------------------------------------------------------------- jogadores */
@@ -1626,16 +1691,17 @@ function Ball({
   useFrame((_, dt) => {
     const m = ref.current;
     if (!m) return;
-    m.position.x += (sim.ball.x - m.position.x) * 0.5;
-    m.position.z += (sim.ball.z - m.position.z) * 0.5;
-    m.position.y = 0.13 + sim.ball.height;
-    const sp = Math.hypot(sim.ball.vx, sim.ball.vz);
+    const visualBall = presentationBall(sim);
+    m.position.x += (visualBall.x - m.position.x) * 0.5;
+    m.position.z += (visualBall.z - m.position.z) * 0.5;
+    m.position.y = 0.13 + visualBall.height;
+    const sp = Math.hypot(visualBall.vx, visualBall.vz);
     m.rotation.x += dt * (2 + sp * 0.9);
     m.rotation.z += dt * (1.5 + sp * 0.6);
     const s = shadow.current;
     if (s) {
       s.position.set(m.position.x, 0.015, m.position.z);
-      const k = Math.max(0.35, 1 - sim.ball.height * 0.25);
+      const k = Math.max(0.35, 1 - visualBall.height * 0.25);
       s.scale.setScalar(k);
       (s.material as THREE.MeshBasicMaterial).opacity = 0.36 * k;
     }
@@ -1697,7 +1763,15 @@ type ShotId =
   | "celebration"
   | "orbit";
 
-type Framing = { px: number; py: number; pz: number; lx: number; ly: number; lz: number; fov: number };
+type Framing = {
+  px: number;
+  py: number;
+  pz: number;
+  lx: number;
+  ly: number;
+  lz: number;
+  fov: number;
+};
 
 /** Contexto simples do lance usado para escolher o plano. */
 type ShotContext = {
@@ -1797,7 +1871,15 @@ function framingFor(id: ShotId, c: ShotContext, t: number): Framing {
       };
     }
     case "tower":
-      return { px: bx * 0.25, py: 58, pz: FIELD_Z + 28, lx: bx * 0.5, ly: 0.8, lz: bz * 0.5, fov: 44 };
+      return {
+        px: bx * 0.25,
+        py: 58,
+        pz: FIELD_Z + 28,
+        lx: bx * 0.5,
+        ly: 0.8,
+        lz: bz * 0.5,
+        fov: 44,
+      };
     case "netcam":
       return {
         px: (FIELD_X + 6) * attackDir,
@@ -1909,11 +1991,12 @@ function Rig({
     s.since += dt;
     s.cut = Math.max(0, s.cut - dt);
 
-    const speed = Math.hypot(sim.ball.vx, sim.ball.vz);
+    const visualBall = presentationBall(sim);
+    const speed = Math.hypot(visualBall.vx, visualBall.vz);
     const interest = broadcastInterest(sim);
     const lead = interest.lead / 0.18;
-    const rawX = sim.ball.x + sim.ball.vx * 0.18 * lead;
-    const rawZ = sim.ball.z + sim.ball.vz * 0.18 * lead;
+    const rawX = visualBall.x + visualBall.vx * 0.18 * lead;
+    const rawZ = visualBall.z + visualBall.vz * 0.18 * lead;
     // zona morta: só move o alvo quando a bola sai de um raio pequeno
     const dead = 0.9;
     const dx = rawX - anchor.x;
@@ -1927,18 +2010,21 @@ function Rig({
 
     const pulse = goalPulse.current;
     const attackDir = sim.possession === "home" ? 1 : -1;
-    const nearGoal = Math.min(1, Math.max(0, (Math.abs(anchor.x) - FIELD_X * 0.45) / (FIELD_X * 0.55)));
+    const nearGoal = Math.min(
+      1,
+      Math.max(0, (Math.abs(anchor.x) - FIELD_X * 0.45) / (FIELD_X * 0.55)),
+    );
     const holder = sim.players.find((player) => player.id === sim.ball.holder) ?? null;
     const holderSpeed = holder ? Math.hypot(holder.vx, holder.vz) : 0;
     const heading =
       holder && holderSpeed > 0.3
         ? Math.atan2(holder.vx, holder.vz)
-        : Math.atan2(sim.ball.vx || attackDir, sim.ball.vz || 0);
+        : Math.atan2(visualBall.vx || attackDir, visualBall.vz || 0);
     const ctx: ShotContext = {
       bx: anchor.x,
       bz: anchor.y,
       speed,
-      height: sim.ball.height,
+      height: visualBall.height,
       attackDir,
       pulse,
       nearGoal,
@@ -1998,7 +2084,12 @@ function Rig({
       want = "wide";
     }
     const selected = hold.current.update(want, dt, SHOT_MIN_TIME[s.shot], Boolean(manual));
-    if (selected !== s.shot) { s.prev = s.shot; s.shot = selected; s.since = 0; s.cut = 0.45; }
+    if (selected !== s.shot) {
+      s.prev = s.shot;
+      s.shot = selected;
+      s.since = 0;
+      s.cut = 0.45;
+    }
     const f = framingFor(s.shot, ctx, clock.elapsedTime);
     pos.set(f.px, f.py, f.pz);
     // Nenhum modo manual coloca a lente abaixo do gramado, mesmo após o shake.
@@ -2022,7 +2113,16 @@ function Rig({
     const cam = camera as THREE.PerspectiveCamera;
     if (cam.isPerspectiveCamera) {
       const horizontalFov = f.fov - pulse * 2;
-      const wantFov = cam.aspect < 1.4 ? THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(horizontalFov / 2)) * 1.4 / Math.max(0.6, cam.aspect))) : horizontalFov;
+      const wantFov =
+        cam.aspect < 1.4
+          ? THREE.MathUtils.radToDeg(
+              2 *
+                Math.atan(
+                  (Math.tan(THREE.MathUtils.degToRad(horizontalFov / 2)) * 1.4) /
+                    Math.max(0.6, cam.aspect),
+                ),
+            )
+          : horizontalFov;
       if (Math.abs(cam.fov - wantFov) > 0.01) {
         cam.fov += (wantFov - cam.fov) * (1 - Math.exp(-dt * 3.2));
         cam.updateProjectionMatrix();
@@ -2031,7 +2131,6 @@ function Rig({
   });
   return null;
 }
-
 
 /* --------------------------------------------------------- pós-processamento */
 
@@ -2066,7 +2165,10 @@ function GoalFx({
   quality: Quality;
   density?: number;
 }) {
-  const COUNT = Math.max(0, Math.round((quality === "alta" ? 320 : 140) * useVisual().particles * density));
+  const COUNT = Math.max(
+    0,
+    Math.round((quality === "alta" ? 320 : 140) * useVisual().particles * density),
+  );
   const ref = useRef<THREE.InstancedMesh>(null);
   const smoke = useRef<THREE.InstancedMesh>(null);
   const parts = useMemo(
@@ -2203,6 +2305,7 @@ function Official({
     const grp = g.current;
     if (!grp) return;
     const dt = Math.min(rawDt, 0.05);
+    const visualBall = presentationBall(sim);
     const totalFouls = sim.stats.home.fouls + sim.stats.away.fouls;
     if (fouls.current < 0) fouls.current = totalFouls;
     else if (totalFouls > fouls.current) {
@@ -2215,12 +2318,12 @@ function Official({
     let tz: number;
     if (role === "ref") {
       // diagonal clássica: fica atrás e do lado oposto ao assistente próximo
-      const diag = sim.ball.x * 0.9;
+      const diag = visualBall.x * 0.9;
       tx = diag - 5;
-      tz = sim.ball.z * 0.55 + 7;
+      tz = visualBall.z * 0.55 + 7;
     } else {
       const side = role === "ar1" ? 1 : -1;
-      tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, sim.ball.x * 0.85));
+      tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, visualBall.x * 0.85));
       tz = side * (FIELD_Z + 1.6);
     }
     tx = Math.max(-FIELD_X - 2, Math.min(FIELD_X + 2, tx));
@@ -2232,7 +2335,7 @@ function Official({
     if (dist > 0.05) {
       grp.position.x += (dx / dist) * sp * dt;
       grp.position.z += (dz / dist) * sp * dt;
-      grp.rotation.y = Math.atan2(sim.ball.x - grp.position.x, sim.ball.z - grp.position.z);
+      grp.rotation.y = Math.atan2(visualBall.x - grp.position.x, visualBall.z - grp.position.z);
       phase.current += sp * dt * 3;
     }
     const swing = Math.sin(phase.current) * Math.min(0.72, sp * 0.1);
@@ -2351,7 +2454,6 @@ function Official({
   );
 }
 
-
 function Officials({ sim, quality }: { sim: SimView; quality: Quality }) {
   return (
     <group>
@@ -2408,8 +2510,10 @@ function FpsMeter({
     if (history.length > 180 * 60) history.splice(0, history.length - 180 * 60);
     const sorted = [...history].sort((a, b) => a - b);
     const meanMs = history.reduce((a, b) => a + b, 0) / Math.max(1, history.length);
-    const p95FrameMs = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] ?? meanMs;
-    const p99FrameMs = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.99))] ?? meanMs;
+    const p95FrameMs =
+      sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] ?? meanMs;
+    const p99FrameMs =
+      sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.99))] ?? meanMs;
     const info = state.gl.info;
     const canvas = state.gl.domElement;
     const memory = performance as Performance & { memory?: { usedJSHeapSize: number } };
@@ -2499,7 +2603,11 @@ function Scene({
     const r = goalPulse.current > 0.55;
 
     const m = goalPulse.current > 0.82 ? "drama" : r ? "replay" : "match";
-    if (momentRef.current !== m) { momentRef.current = m; setMoment(m); setReplay(r); }
+    if (momentRef.current !== m) {
+      momentRef.current = m;
+      setMoment(m);
+      setReplay(r);
+    }
   });
 
   const awayClash = colorClash(sim.home.primary, sim.away.primary);
@@ -2514,6 +2622,7 @@ function Scene({
 
   const sun = time === "dia" ? 1.72 : time === "entardecer" ? 1.5 : 1.18;
   const sunColor = time === "entardecer" ? "#ffc79a" : time === "dia" ? "#fff6e0" : "#bcd8ff";
+  const visualBall = presentationBall(sim);
 
   return (
     <>
@@ -2531,51 +2640,60 @@ function Scene({
       <FrameProbe />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
-      {quality !== "baixa" ? <Environment resolution={Math.round((quality === "alta" ? 384 : 192) * budget.textureScale)} frames={1}>
-        <color attach="background" args={[SKY[time]]} />
-        <Lightformer
-          intensity={time === "dia" ? (quality === "alta" ? 2.1 : 1.75) : 1.45}
-          color={sunColor}
-          position={[0, 24, 0]}
-          rotation={[Math.PI / 2, 0, 0]}
-          scale={[60, 60, 1]}
-        />
-        <Lightformer
-          intensity={time === "noite" ? 2.4 : 1.2}
-          color="#dceaff"
-          position={[-30, 14, 0]}
-          rotation-y={Math.PI / 2}
-          scale={[60, 8, 1]}
-        />
-        <Lightformer
-          intensity={time === "noite" ? 2.4 : 1.2}
-          color="#dceaff"
-          position={[30, 14, 0]}
-          rotation-y={-Math.PI / 2}
-          scale={[60, 8, 1]}
-        />
-        <Lightformer
-          intensity={0.8}
-          color={time === "entardecer" ? "#ff9b5c" : "#8fd8ff"}
-          position={[0, 6, -40]}
-          scale={[60, 8, 1]}
-        />
-      </Environment> : null}
+      {quality !== "baixa" ? (
+        <Environment
+          resolution={Math.round((quality === "alta" ? 384 : 192) * budget.textureScale)}
+          frames={1}
+        >
+          <color attach="background" args={[SKY[time]]} />
+          <Lightformer
+            intensity={time === "dia" ? (quality === "alta" ? 2.1 : 1.75) : 1.45}
+            color={sunColor}
+            position={[0, 24, 0]}
+            rotation={[Math.PI / 2, 0, 0]}
+            scale={[60, 60, 1]}
+          />
+          <Lightformer
+            intensity={time === "noite" ? 2.4 : 1.2}
+            color="#dceaff"
+            position={[-30, 14, 0]}
+            rotation-y={Math.PI / 2}
+            scale={[60, 8, 1]}
+          />
+          <Lightformer
+            intensity={time === "noite" ? 2.4 : 1.2}
+            color="#dceaff"
+            position={[30, 14, 0]}
+            rotation-y={-Math.PI / 2}
+            scale={[60, 8, 1]}
+          />
+          <Lightformer
+            intensity={0.8}
+            color={time === "entardecer" ? "#ff9b5c" : "#8fd8ff"}
+            position={[0, 6, -40]}
+            scale={[60, 8, 1]}
+          />
+        </Environment>
+      ) : null}
 
       <ambientLight intensity={time === "dia" ? 0.1 : 0.075} />
       <hemisphereLight
         intensity={time === "dia" ? 0.34 : time === "entardecer" ? 0.3 : 0.22}
         groundColor={time === "noite" ? "#08131a" : "#102c1d"}
-        color={
-          time === "entardecer" ? "#ffe0c6" : time === "noite" ? "#a9c9ef" : "#d9edff"
-        }
+        color={time === "entardecer" ? "#ffe0c6" : time === "noite" ? "#a9c9ef" : "#d9edff"}
       />
       <directionalLight
         position={[50, 80, 40]}
         intensity={sun * 1.08}
         color={sunColor}
         castShadow={shadows && budget.shadows}
-        shadow-mapSize={quality === "alta" && pressure < 5 ? [2048, 2048] : quality === "media" ? [1024, 1024] : [512, 512]}
+        shadow-mapSize={
+          quality === "alta" && pressure < 5
+            ? [2048, 2048]
+            : quality === "media"
+              ? [1024, 1024]
+              : [512, 512]
+        }
         shadow-bias={-0.00014}
         shadow-normalBias={quality === "alta" ? 0.014 : 0.03}
         shadow-radius={quality === "alta" ? 2.4 : 1.2}
@@ -2594,7 +2712,10 @@ function Scene({
       {/* Contraluz de transmissão: recorta a silhueta dos atletas contra o gramado. */}
       <directionalLight
         position={[0, 18, -55]}
-        intensity={(time === "entardecer" ? 0.58 : time === "noite" ? 0.34 : 0.3) * (quality === "alta" ? 1 : 0.82)}
+        intensity={
+          (time === "entardecer" ? 0.58 : time === "noite" ? 0.34 : 0.3) *
+          (quality === "alta" ? 1 : 0.82)
+        }
         color={time === "entardecer" ? "#ff9b62" : "#91c9ff"}
       />
       <directionalLight
@@ -2606,7 +2727,12 @@ function Scene({
       <SkyDome time={time} />
       <Pitch quality={quality} sim={sim} wet={look.wet} mow={look.mow} />
       {quality !== "baixa" ? (
-        <Weather weather={look.weather} wind={look.wind} quality={quality} density={budget.weatherDensity} />
+        <Weather
+          weather={look.weather}
+          wind={look.wind}
+          quality={quality}
+          density={budget.weatherDensity}
+        />
       ) : null}
       {quality !== "baixa" ? <Officials sim={sim} quality={quality} /> : null}
 
@@ -2624,7 +2750,7 @@ function Scene({
         quality={quality}
         homeColor={sim.home.primary}
         awayColor={sim.away.primary}
-        ball={sim.ball}
+        sim={sim}
       />
       <Scoreboard sim={sim} replay={replay} />
       <Ball sim={sim} quality={quality} hiVis={look.hiVisBall} wet={look.wet} />
@@ -2675,7 +2801,8 @@ function Stadium3DImpl({
   // Escolha do jogador em /visual manda; "auto" segue a detecção do aparelho.
   // Cinema usa a geometria alta e amplia seletivamente resolução/efeitos sem
   // duplicar toda a árvore 3D nem quebrar configurações antigas.
-  const quality: Quality = vis.quality === "auto" ? deviceQuality : vis.quality === "cinema" ? "alta" : vis.quality;
+  const quality: Quality =
+    vis.quality === "auto" ? deviceQuality : vis.quality === "cinema" ? "alta" : vis.quality;
   const look = useMemo(
     () => matchLook(sim.home.clubId, sim.away.clubId),
     [sim.home.clubId, sim.away.clubId],
@@ -2760,7 +2887,11 @@ function Stadium3DImpl({
         key={backend}
         shadows={shadowsOn ? SHADOW_SETTINGS : false}
         frameloop={visible ? "always" : "demand"}
-        dpr={pixelRatio === undefined ? dpr : Math.min(GRAPHICS_PROFILES[quality].maxPixelRatio, Math.max(0.6, pixelRatio))}
+        dpr={
+          pixelRatio === undefined
+            ? dpr
+            : Math.min(GRAPHICS_PROFILES[quality].maxPixelRatio, Math.max(0.6, pixelRatio))
+        }
         camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
         gl={glProp}
         performance={{ min: 0.5 }}
@@ -2773,7 +2904,8 @@ function Stadium3DImpl({
             capabilities?: { getMaxAnisotropy?: () => number };
           };
           r.toneMapping = THREE.ACESFilmicToneMapping;
-          r.toneMappingExposure = look.time === "dia" ? 0.78 : look.time === "entardecer" ? 0.9 : 0.98;
+          r.toneMappingExposure =
+            look.time === "dia" ? 0.78 : look.time === "entardecer" ? 0.9 : 0.98;
           r.outputColorSpace = THREE.SRGBColorSpace;
           // borda de sombra suave só na qualidade alta: o filtro extra custa
           // pouco lá e é o que mais aproxima a imagem de uma transmissão
@@ -2782,7 +2914,12 @@ function Stadium3DImpl({
           // faixas de corte) — o custo é baixo e o ganho de definição é grande.
           const maxAniso = r.capabilities?.getMaxAnisotropy?.() ?? 16;
           THREE.Texture.DEFAULT_ANISOTROPY = Math.min(
-            Math.max(1, Math.round((eff === "alta" ? 16 : eff === "media" ? 8 : 4) * sceneBudget.textureScale)),
+            Math.max(
+              1,
+              Math.round(
+                (eff === "alta" ? 16 : eff === "media" ? 8 : 4) * sceneBudget.textureScale,
+              ),
+            ),
             maxAniso,
           );
         }}

@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 /**
  * Dados comerciais que somente o servidor pode transformar em uma sessão de
@@ -37,7 +38,7 @@ type ProductRow = {
   contents: unknown;
 };
 
-let serviceSupabase: ReturnType<typeof createClient> | null = null;
+let serviceSupabase: SupabaseClient<Database> | null = null;
 
 /**
  * Private catalog fields are available only to the payment server. Public
@@ -51,7 +52,7 @@ export function getStoreServiceSupabase() {
     if (!url || !serviceRole) {
       throw new Error("SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórios para pagamentos.");
     }
-    serviceSupabase = createClient(url, serviceRole);
+    serviceSupabase = createClient<Database>(url, serviceRole);
   }
   return serviceSupabase;
 }
@@ -118,20 +119,17 @@ function parseProductRow(row: ProductRow): ServerStoreProduct {
   };
 }
 
-/**
- * The generated Supabase client type intentionally trails local migrations in
- * development. Keep the cast at this server boundary rather than teaching the
- * browser about privileged commercial fields.
- */
 export async function getServerStoreProduct(
-  supabase: { from: (table: string) => any },
+  supabase: SupabaseClient<Database>,
   productKey: string,
   options: { activeOnly?: boolean } = {},
 ): Promise<ServerStoreProduct> {
   assertStoreProductKey(productKey);
   let query = supabase
     .from("store_products")
-    .select("key, name, description, price_cents, currency, kind, active, stripe_lookup_key, contents")
+    .select(
+      "key, name, description, price_cents, currency, kind, active, stripe_lookup_key, contents",
+    )
     .eq("key", productKey);
   if (options.activeOnly !== false) query = query.eq("active", true);
 
@@ -157,7 +155,10 @@ export async function resolveValidatedStripePrice(
   });
   const price = prices.data.find((candidate) => candidate.lookup_key === product.stripeLookupKey);
   if (!price) throw new Error("Preço de pagamento não encontrado para este item.");
-  if (price.unit_amount !== product.priceCents || price.currency.toLowerCase() !== product.currency) {
+  if (
+    price.unit_amount !== product.priceCents ||
+    price.currency.toLowerCase() !== product.currency
+  ) {
     throw new Error("O preço do checkout não confere com o catálogo oficial.");
   }
   return price;

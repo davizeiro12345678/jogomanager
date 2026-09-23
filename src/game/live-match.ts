@@ -10,6 +10,7 @@ import {
   type SimView,
   type TeamSetup,
 } from "./sim";
+import type { VisualBallState } from "./visual-ball";
 
 export interface LiveSnapshot {
   seq: number;
@@ -17,6 +18,8 @@ export interface LiveSnapshot {
   time: number;
   players: SimPlayer[];
   ball: SimView["ball"];
+  /** Pose opcional de apresentação calculada pelo Rapier no Worker. */
+  visualBall?: VisualBallState;
   possession: Side;
   stats: Record<Side, MatchStats>;
   events: MatchSim["events"];
@@ -69,11 +72,16 @@ export interface MatchRuntime extends SimView {
   possessionPct(): [number, number];
 }
 
-export function snapshotMatch(sim: MatchSim, seq: number): LiveSnapshot {
+export function snapshotMatch(
+  sim: MatchSim,
+  seq: number,
+  visualBall?: VisualBallState,
+): LiveSnapshot {
   const cachedEvents = eventCache.get(sim);
-  const events = cachedEvents?.seq === sim.lastEventId
-    ? cachedEvents.events
-    : sim.events.map((event) => ({ ...event }));
+  const events =
+    cachedEvents?.seq === sim.lastEventId
+      ? cachedEvents.events
+      : sim.events.map((event) => ({ ...event }));
   if (cachedEvents?.seq !== sim.lastEventId) eventCache.set(sim, { seq: sim.lastEventId, events });
   return {
     seq,
@@ -81,6 +89,7 @@ export function snapshotMatch(sim: MatchSim, seq: number): LiveSnapshot {
     time: sim.time,
     players: sim.players.map((player) => ({ ...player })),
     ball: { ...sim.ball },
+    ...(visualBall ? { visualBall: { ...visualBall } } : {}),
     possession: sim.possession,
     stats: { home: { ...sim.stats.home }, away: { ...sim.stats.away } },
     events,
@@ -90,9 +99,9 @@ export function snapshotMatch(sim: MatchSim, seq: number): LiveSnapshot {
   };
 }
 
-export function resultMatch(sim: MatchSim, seq: number): LiveResult {
+export function resultMatch(sim: MatchSim, seq: number, visualBall?: VisualBallState): LiveResult {
   return {
-    ...snapshotMatch(sim, seq),
+    ...snapshotMatch(sim, seq, visualBall),
     ratings: sim.playerRatings(),
     scorers: sim.scorers.map((item) => ({ ...item })),
     shotMap: sim.shotMap.map((item) => ({ ...item })),
@@ -107,6 +116,7 @@ export class WorkerMatchView implements MatchRuntime {
   time = 0;
   players: SimPlayer[] = [];
   ball = { x: 0, z: 0, vx: 0, vz: 0, holder: null as string | null, height: 0.12 };
+  visualBall?: VisualBallState;
   possession: Side = "home";
   stats: Record<Side, MatchStats>;
   events: MatchSim["events"] = [];
@@ -120,13 +130,40 @@ export class WorkerMatchView implements MatchRuntime {
   private targets = new Map<string, SimPlayer>();
   private previousBall = { x: 0, z: 0, height: 0.12 };
   private targetBall = { x: 0, z: 0, height: 0.12 };
+  private previousVisualBall: VisualBallState | null = null;
+  private targetVisualBall: VisualBallState | null = null;
   private receivedAt = 0;
   private intervalMs = 100;
 
-  constructor(public home: TeamSetup, public away: TeamSetup) {
+  constructor(
+    public home: TeamSetup,
+    public away: TeamSetup,
+  ) {
     this.stats = {
-      home: { goals: 0, shots: 0, onTarget: 0, possessionTicks: 0, fouls: 0, passes: 0, passesOk: 0, corners: 0, yellow: 0, red: 0 },
-      away: { goals: 0, shots: 0, onTarget: 0, possessionTicks: 0, fouls: 0, passes: 0, passesOk: 0, corners: 0, yellow: 0, red: 0 },
+      home: {
+        goals: 0,
+        shots: 0,
+        onTarget: 0,
+        possessionTicks: 0,
+        fouls: 0,
+        passes: 0,
+        passesOk: 0,
+        corners: 0,
+        yellow: 0,
+        red: 0,
+      },
+      away: {
+        goals: 0,
+        shots: 0,
+        onTarget: 0,
+        possessionTicks: 0,
+        fouls: 0,
+        passes: 0,
+        passesOk: 0,
+        corners: 0,
+        yellow: 0,
+        red: 0,
+      },
     };
   }
 
@@ -137,6 +174,7 @@ export class WorkerMatchView implements MatchRuntime {
     this.previous.clear();
     for (const player of this.players) this.previous.set(player.id, { x: player.x, z: player.z });
     this.previousBall = { x: this.ball.x, z: this.ball.z, height: this.ball.height };
+    const previousVisualBall = this.visualBall ? { ...this.visualBall } : null;
     this.targets.clear();
     for (const player of next.players) this.targets.set(player.id, player);
     if (!this.players.length || this.players.length !== next.players.length) {
@@ -154,6 +192,25 @@ export class WorkerMatchView implements MatchRuntime {
     }
     this.targetBall = { x: next.ball.x, z: next.ball.z, height: next.ball.height };
     Object.assign(this.ball, next.ball, this.previousBall);
+    if (next.visualBall) {
+      this.previousVisualBall = previousVisualBall ?? { ...next.visualBall };
+      this.targetVisualBall = { ...next.visualBall };
+      const nextVisualBall: VisualBallState = {
+        ...next.visualBall,
+        x: this.previousVisualBall.x,
+        z: this.previousVisualBall.z,
+        height: this.previousVisualBall.height,
+      };
+      // Mantém referências que uma cena R3F já recebeu apontando para a pose
+      // atual. A cena também lê SimView por frame, mas esta estabilidade evita
+      // uma câmera ou prop ficar preso no snapshot anterior.
+      if (this.visualBall) Object.assign(this.visualBall, nextVisualBall);
+      else this.visualBall = nextVisualBall;
+    } else {
+      delete this.visualBall;
+      this.previousVisualBall = null;
+      this.targetVisualBall = null;
+    }
     this.time = next.time;
     this.possession = next.possession;
     this.stats = cloneStats(next.stats);
@@ -179,18 +236,46 @@ export class WorkerMatchView implements MatchRuntime {
     }
     this.ball.x = this.previousBall.x + (this.targetBall.x - this.previousBall.x) * alpha;
     this.ball.z = this.previousBall.z + (this.targetBall.z - this.previousBall.z) * alpha;
-    this.ball.height = this.previousBall.height + (this.targetBall.height - this.previousBall.height) * alpha;
+    this.ball.height =
+      this.previousBall.height + (this.targetBall.height - this.previousBall.height) * alpha;
+    if (this.visualBall && this.previousVisualBall && this.targetVisualBall) {
+      this.visualBall.x =
+        this.previousVisualBall.x + (this.targetVisualBall.x - this.previousVisualBall.x) * alpha;
+      this.visualBall.z =
+        this.previousVisualBall.z + (this.targetVisualBall.z - this.previousVisualBall.z) * alpha;
+      this.visualBall.height =
+        this.previousVisualBall.height +
+        (this.targetVisualBall.height - this.previousVisualBall.height) * alpha;
+      this.visualBall.vx =
+        this.previousVisualBall.vx +
+        (this.targetVisualBall.vx - this.previousVisualBall.vx) * alpha;
+      this.visualBall.vy =
+        this.previousVisualBall.vy +
+        (this.targetVisualBall.vy - this.previousVisualBall.vy) * alpha;
+      this.visualBall.vz =
+        this.previousVisualBall.vz +
+        (this.targetVisualBall.vz - this.previousVisualBall.vz) * alpha;
+      this.visualBall.spin =
+        this.previousVisualBall.spin +
+        (this.targetVisualBall.spin - this.previousVisualBall.spin) * alpha;
+    }
   }
 
-  minute() { return Math.min(90, Math.floor(this.time / 60)); }
+  minute() {
+    return Math.min(90, Math.floor(this.time / 60));
+  }
   possessionPct(): [number, number] {
     const home = this.stats.home.possessionTicks;
     const away = this.stats.away.possessionTicks;
     const total = home + away || 1;
     return [Math.round((home / total) * 100), Math.round((away / total) * 100)];
   }
-  playerRatings() { return this.ratings.map((rating) => ({ ...rating })); }
+  playerRatings() {
+    return this.ratings.map((rating) => ({ ...rating }));
+  }
   manOfTheMatch() {
-    return this.ratings.length ? this.ratings.reduce((best, rating) => rating.rating > best.rating ? rating : best) : null;
+    return this.ratings.length
+      ? this.ratings.reduce((best, rating) => (rating.rating > best.rating ? rating : best))
+      : null;
   }
 }

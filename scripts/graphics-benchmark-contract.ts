@@ -95,7 +95,7 @@ export interface GraphicsBenchmarkMetadata {
 }
 
 function scenarioIdFor(value: string | null): GraphicsBenchmarkScenarioId {
-  return value && value in GRAPHICS_BENCHMARK_SCENARIOS
+  return value && Object.hasOwn(GRAPHICS_BENCHMARK_SCENARIOS, value)
     ? (value as GraphicsBenchmarkScenarioId)
     : "baseline";
 }

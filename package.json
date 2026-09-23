@@ -8,7 +8,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1",
+    "test:stress": "vitest run src/game/sim.stress.test.ts --pool=forks --maxWorkers=1",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -16,6 +17,7 @@
     "rolldown": "1.2.1"
   },
   "dependencies": {
+    "@dimforge/rapier3d-compat": "0.19.2",
     "@hookform/resolvers": "^5.2.2",
     "@lovable.dev/cloud-auth-js": "^1.1.2",
     "@lovable.dev/email-js": "0.1.0",
@@ -135,7 +137,8 @@
     "typescript-eslint": "^8.56.1",
     "vite": "8.1.5",
     "vite-imagetools": "^12.0.1",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.1",
+    "wrangler": "4.136.3"
   },
   "pnpm": {
     "overrides": {

@@ -1,12 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { type StripeEnv, createStripeClient, verifyWebhook } from "@/lib/stripe.server";
+import {
+  type StripeEnv,
+  createStripeClient,
+  getConfiguredStripeEnvironment,
+  verifyWebhook,
+} from "@/lib/stripe.server";
 import {
   fulfillOneTimePurchase,
   markPurchaseFailed,
   recordPendingPurchase,
   syncSubscription,
 } from "@/lib/fulfillment.server";
-import { markGuestCheckoutPaid } from "@/lib/guest-checkout.functions";
+import { markGuestCheckoutFailed, markGuestCheckoutPaid } from "@/lib/guest-checkout.functions";
 
 type StripeSessionEvent = {
   id: string;
@@ -29,7 +34,10 @@ function guestCheckoutIntentId(session: StripeSessionEvent): string | null {
  * webhook path, while delayed payments remain pending until Stripe marks them
  * paid in a later event.
  */
-async function handleGuestCheckoutSession(session: StripeSessionEvent, env: StripeEnv): Promise<boolean> {
+async function handleGuestCheckoutSession(
+  session: StripeSessionEvent,
+  env: StripeEnv,
+): Promise<boolean> {
   const intentId = guestCheckoutIntentId(session);
   if (!intentId) return false;
   if (session.payment_status === "paid" || session.payment_status === "no_payment_required") {
@@ -40,7 +48,9 @@ async function handleGuestCheckoutSession(session: StripeSessionEvent, env: Stri
 
 /** A guest subscription is linked to a user only after the email claim. */
 function isUnclaimedGuestSubscription(subscription: StripeSubscriptionEvent): boolean {
-  return Boolean(subscription.metadata?.["guestCheckoutIntentId"]) && !subscription.metadata?.["userId"];
+  return (
+    Boolean(subscription.metadata?.["guestCheckoutIntentId"]) && !subscription.metadata?.["userId"]
+  );
 }
 
 /**
@@ -139,9 +149,11 @@ async function handleWebhook(req: Request, env: StripeEnv) {
     }
     case "checkout.session.async_payment_failed": {
       const session = event.data.object;
-      // A guest intent expires and is retried under a new idempotency key. It
-      // does not have a `user_purchases` row to mark failed at this point.
-      if (guestCheckoutIntentId(session)) break;
+      const intentId = guestCheckoutIntentId(session);
+      if (intentId) {
+        await markGuestCheckoutFailed(intentId, session.id, env);
+        break;
+      }
       await markPurchaseFailed(session.id, "Pagamento não foi concluído");
       break;
     }
@@ -161,12 +173,15 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
     handlers: {
       POST: async ({ request }) => {
         const rawEnv = new URL(request.url).searchParams.get("env");
-        if (rawEnv !== "sandbox" && rawEnv !== "live") {
-          console.error("Webhook received with invalid or missing env query parameter:", rawEnv);
-          return Response.json({ received: true, ignored: "invalid env" });
-        }
-        const env: StripeEnv = rawEnv;
         try {
+          const env = getConfiguredStripeEnvironment();
+          // Lovable configures Stripe endpoints with ?env=sandbox or ?env=live.
+          // Keep that URL contract, but bind it to the trusted deployment
+          // setting before choosing a Stripe key or webhook secret.
+          if (rawEnv !== env) {
+            console.error("Webhook environment does not match this deployment:", rawEnv);
+            return new Response("Webhook environment mismatch", { status: 400 });
+          }
           await handleWebhook(request, env);
           return Response.json({ received: true });
         } catch (e) {

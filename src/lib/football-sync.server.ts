@@ -7,14 +7,15 @@ import { LEAGUES } from "@/game/data/leagues";
 import { makeRng } from "@/game/rng";
 import {
   sdbSearchTeam,
-  sdbAllTeams, sdbSearchLeague,
+  sdbAllTeams,
+  sdbSearchLeague,
   sdbSquad,
   footballDataSquad,
   sdbTeamKits,
   sdbTeamHonours,
   type RemotePlayer,
-
 } from "./football-api.server";
+import { validateRemotePlayers } from "./football-ingestion-validation";
 
 type Admin = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 
@@ -59,7 +60,32 @@ export async function seedFromBundledData() {
 
 type ClubRow = { id: string; name: string; country: string | null; crest_url?: string | null };
 
-const FICTIONAL_POSITIONS = ["GK", "GK", "GK", "DF", "DF", "DF", "DF", "DF", "DF", "DF", "DF", "MF", "MF", "MF", "MF", "MF", "MF", "MF", "MF", "FW", "FW", "FW", "FW", "FW"] as const;
+const FICTIONAL_POSITIONS = [
+  "GK",
+  "GK",
+  "GK",
+  "DF",
+  "DF",
+  "DF",
+  "DF",
+  "DF",
+  "DF",
+  "DF",
+  "DF",
+  "MF",
+  "MF",
+  "MF",
+  "MF",
+  "MF",
+  "MF",
+  "MF",
+  "MF",
+  "FW",
+  "FW",
+  "FW",
+  "FW",
+  "FW",
+] as const;
 
 /**
  * Reserva legal para clubes sem elenco nas fontes gratuitas. Os atletas são
@@ -107,7 +133,12 @@ async function enrichOne(db: Admin, club: ClubRow): Promise<boolean> {
     .update({
       ...(remote.crestUrl ? { crest_url: remote.crestUrl } : {}),
       ...(remote.website
-        ? { website: remote.website.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0] }
+        ? {
+            website: remote.website
+              .replace(/^https?:\/\//, "")
+              .replace(/^www\./, "")
+              .split("/")[0],
+          }
         : {}),
       ...(remote.founded ? { founded: remote.founded } : {}),
       ...(remote.city ? { city: remote.city } : {}),
@@ -324,7 +355,7 @@ export async function importLeagues(budgetMs = 60_000, concurrency = 4) {
   await pool(LEAGUES, concurrency, deadline, async (league) => {
     const sdbName = SDB_LEAGUE[league.id];
     if (!sdbName) return;
-    
+
     try {
       const logo = await sdbSearchLeague(sdbName);
       if (logo) {
@@ -503,10 +534,9 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
 
   const deadline = Date.now() + budgetMs;
   let imported = 0;
+  let rejected = 0;
 
   await pool(rows, concurrency, deadline, async (club) => {
-
-
     const { data: ext } = await db
       .from("club_external_ids")
       .select("source, external_id")
@@ -522,6 +552,14 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
     }
 
     if (!players.length) players = generatedSquad(club.id, club.country);
+
+    const validation = validateRemotePlayers(players);
+    rejected += validation.rejected.length;
+    players = validation.accepted;
+    // Se uma fonte remota devolveu apenas dados inválidos, usa o elenco
+    // fictício determinístico em vez de inserir uma equipe incompleta.
+    if (!players.length)
+      players = validateRemotePlayers(generatedSquad(club.id, club.country)).accepted;
 
     const rowsToInsert = players.slice(0, 30).map((p) => {
       const base = club.strength ?? 70;
@@ -544,7 +582,7 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
     if (!res.error) imported += rowsToInsert.length;
   });
 
-  return { imported };
+  return { imported, rejected };
 }
 
 /** Importa biografia e honrarias mesmo para clubes que já possuem escudo. */
@@ -576,7 +614,9 @@ export async function importClubHeritage(
     if (!club) return;
 
     const [remote, honours] = await Promise.all([
-      club.description ? Promise.resolve(null) : sdbSearchTeam(club.name, club.country ?? undefined),
+      club.description
+        ? Promise.resolve(null)
+        : sdbSearchTeam(club.name, club.country ?? undefined),
       sdbTeamHonours(external.external_id),
     ]);
     if (remote?.description) {

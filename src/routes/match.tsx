@@ -354,7 +354,9 @@ const Scoreboard = memo(function Scoreboard({
         </div>
         <div className="flex items-center justify-between px-3 pt-1.5 font-display text-[9px] uppercase tracking-[0.22em] text-white/55">
           <span className="flex items-center gap-1.5">
-            <i className={`h-1.5 w-1.5 rounded-full ${paused ? "bg-amber-300" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,.9)]"}`} />
+            <i
+              className={`h-1.5 w-1.5 rounded-full ${paused ? "bg-amber-300" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,.9)]"}`}
+            />
             {paused ? "Pausado" : "Ao vivo"}
           </span>
           <span>{snap.minute <= 45 ? "1º tempo" : "2º tempo"}</span>
@@ -412,7 +414,9 @@ const Scoreboard = memo(function Scoreboard({
           </p>
         </div>
 
-        <div className="hidden sm:block"><Timeline minute={snap.minute} events={snap.events} /></div>
+        <div className="hidden sm:block">
+          <Timeline minute={snap.minute} events={snap.events} />
+        </div>
         <div className="hidden justify-between px-4 pb-1.5 text-[9px] uppercase tracking-widest text-white/35 sm:flex">
           <span>0&apos;</span>
           <span>45&apos;</span>
@@ -448,7 +452,11 @@ function eventIcon(type: string) {
 
 const Feed = memo(function Feed({ events }: { events: Snap["events"] }) {
   return (
-    <div aria-label="Eventos da partida" role="log" className="pointer-events-auto absolute bottom-24 left-3 z-10 hidden max-h-52 w-72 overflow-y-auto rounded-2xl border border-white/10 bg-black/60 p-3 text-xs text-white/85 backdrop-blur-xl md:bottom-4 md:block">
+    <div
+      aria-label="Eventos da partida"
+      role="log"
+      className="pointer-events-auto absolute bottom-24 left-3 z-10 hidden max-h-52 w-72 overflow-y-auto rounded-2xl border border-white/10 bg-black/60 p-3 text-xs text-white/85 backdrop-blur-xl md:bottom-4 md:block"
+    >
       {[...events].reverse().map((e, i) => (
         <p
           key={`${e.minute}-${i}-${e.text.slice(0, 8)}`}
@@ -581,8 +589,6 @@ function LiveMatch({
     return off;
   }, []);
 
-
-
   const speedRef = useRef(speed);
   speedRef.current = speed;
   const pausedRef = useRef(paused);
@@ -610,21 +616,21 @@ function LiveMatch({
           ? "redCard"
           : e.type === "yellow"
             ? "card"
-          : (
-                [
-                  "goal",
-                  "save",
-                  "shot",
-                  "foul",
-                  "corner",
-                  "sub",
-                  "kickoff",
-                  "halftime",
-                  "fulltime",
-                ] as const
-              ).includes(e.type as never)
-            ? (e.type as NarrationEvent)
-            : null;
+            : (
+                  [
+                    "goal",
+                    "save",
+                    "shot",
+                    "foul",
+                    "corner",
+                    "sub",
+                    "kickoff",
+                    "halftime",
+                    "fulltime",
+                  ] as const
+                ).includes(e.type as never)
+              ? (e.type as NarrationEvent)
+              : null;
       if (!ev) continue;
       const neutral = ev === "kickoff" || ev === "halftime" || ev === "fulltime";
       if (e.side === "neutral" && !neutral) continue;
@@ -700,8 +706,15 @@ function LiveMatch({
   // Atalhos de teclado
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.target instanceof HTMLElement && /input|select|textarea/i.test(e.target.tagName))
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (
+        e.target instanceof HTMLElement &&
+        e.target.closest(
+          "input, select, textarea, button, a, [role='dialog'], [contenteditable='true']",
+        )
+      ) {
         return;
+      }
       if (e.code === "Space") {
         e.preventDefault();
         setPaused((p) => !p);
@@ -709,8 +722,7 @@ function LiveMatch({
       else if (e.key === "2") setSpeed(2);
       else if (e.key === "3") setSpeed(4);
       else if (e.key === "4") setSpeed(8);
-      else if (e.key.toLowerCase() === "c")
-        chooseCamera(nextCameraMode(camera));
+      else if (e.key.toLowerCase() === "c") chooseCamera(nextCameraMode(camera));
       else if (e.key.toLowerCase() === "e") setShowStats((s) => !s);
       else if (e.key.toLowerCase() === "s") skip();
     }
@@ -809,7 +821,6 @@ function LiveMatch({
           <li>S: Pular partida</li>
         </ul>
       </div>
-
 
       {/* Vestiário → camisas → túnel → apito: só começa o jogo ao fim (ou ao pular) */}
       {introActive ? (
@@ -930,7 +941,11 @@ function LiveMatch({
       ) : null}
 
       {/* Barra de transporte sempre visível */}
-      <div role="toolbar" aria-label="Controles da partida" className="absolute bottom-[calc(.75rem+env(safe-area-inset-bottom))] left-1/2 z-20 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-0.5 overflow-x-auto rounded-full border border-white/12 bg-black/75 p-1.5 backdrop-blur-xl md:hidden">
+      <div
+        role="toolbar"
+        aria-label="Controles da partida"
+        className="absolute bottom-[calc(.75rem+env(safe-area-inset-bottom))] left-1/2 z-20 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-0.5 overflow-x-auto rounded-full border border-white/12 bg-black/75 p-1.5 backdrop-blur-xl md:hidden"
+      >
         <button
           onClick={() => setPaused((p) => !p)}
           aria-label={paused ? "Retomar partida" : "Pausar partida"}
@@ -1002,7 +1017,6 @@ function LiveMatch({
         >
           <ChevronDown size={16} className={panelOpen ? "" : "rotate-180"} />
         </button>
-
       </div>
 
       {/* Loja e chat sem sair da partida */}
@@ -1051,7 +1065,9 @@ function LiveMatch({
               aria-label={`Velocidade ${s}x`}
               aria-pressed={speed === s}
               className={`w-9 rounded-lg py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                speed === s ? "bg-white/25 text-white" : "bg-white/10 text-white/70 hover:bg-white/20"
+                speed === s
+                  ? "bg-white/25 text-white"
+                  : "bg-white/10 text-white/70 hover:bg-white/20"
               }`}
             >
               {s}x
@@ -1204,7 +1220,8 @@ function LiveMatch({
           homeId={fixture.home}
           awayId={fixture.away}
           mySide={mySide}
-          onFinish={finish} advancing={advancing}
+          onFinish={finish}
+          advancing={advancing}
         />
       ) : null}
     </div>

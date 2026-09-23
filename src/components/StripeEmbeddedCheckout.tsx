@@ -1,5 +1,5 @@
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
-import { getStripe, getStripeEnvironment } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { createCheckoutSession } from "@/utils/payments.functions";
 
 interface StripeEmbeddedCheckoutProps {
@@ -7,16 +7,12 @@ interface StripeEmbeddedCheckoutProps {
   returnUrl?: string;
 }
 
-export function StripeEmbeddedCheckout({
-  productKey,
-  returnUrl,
-}: StripeEmbeddedCheckoutProps) {
+export function StripeEmbeddedCheckout({ productKey, returnUrl }: StripeEmbeddedCheckoutProps) {
   const fetchClientSecret = async (): Promise<string> => {
     const result = await createCheckoutSession({
       data: {
         productKey,
         returnUrl: returnUrl || window.location.href,
-        environment: getStripeEnvironment(),
       },
     });
     if ("error" in result) throw new Error(result.error);

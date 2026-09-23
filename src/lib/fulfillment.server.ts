@@ -1,4 +1,5 @@
 import type { StripeEnv } from "@/lib/stripe.server";
+import type Stripe from "stripe";
 import {
   getServerStoreProduct,
   getStoreServiceSupabase,
@@ -24,7 +25,7 @@ export interface FulfillmentSnapshot {
  * catalog that could credit a different item from the one displayed.
  */
 export async function getProductEffect(productKey: string): Promise<ProductEffect> {
-  const product = await getServerStoreProduct(getStoreServiceSupabase() as any, productKey, {
+  const product = await getServerStoreProduct(getStoreServiceSupabase(), productKey, {
     activeOnly: false,
   });
   return product.contents;
@@ -45,7 +46,7 @@ export async function recordPendingPurchase(
       amount_cents: amountCents,
       status: "pending",
       reference,
-    } as any,
+    },
     { onConflict: "reference", ignoreDuplicates: true },
   );
   if (error) console.error("recordPendingPurchase falhou", error.message);
@@ -56,7 +57,7 @@ export async function markPurchaseFailed(reference: string, message: string): Pr
   const supabase = getStoreServiceSupabase();
   const { error } = await supabase
     .from("user_purchases")
-    .update({ status: "failed", error: message.slice(0, 400) } as never)
+    .update({ status: "failed", error: message.slice(0, 400) })
     .eq("reference", reference)
     .neq("status", "completed");
   if (error) console.error("markPurchaseFailed falhou", error.message);
@@ -77,7 +78,7 @@ export async function fulfillOneTimePurchase(
   const supabase = getStoreServiceSupabase();
   const product = snapshot
     ? null
-    : await getServerStoreProduct(supabase as any, productKey, { activeOnly: false });
+    : await getServerStoreProduct(supabase, productKey, { activeOnly: false });
   const priceCents = snapshot?.priceCents ?? product!.priceCents;
   const contents = parseStoreProductContents(snapshot?.contents ?? product!.contents);
   if (!Number.isInteger(priceCents) || priceCents < 0 || amountCents !== priceCents) {
@@ -89,7 +90,7 @@ export async function fulfillOneTimePurchase(
     throw new Error(`Unexpected checkout contents for ${productKey}`);
   }
 
-  const { data, error } = await (supabase as any).rpc("fulfill_store_purchase", {
+  const { data, error } = await supabase.rpc("fulfill_store_purchase", {
     _user_id: userId,
     _product_key: productKey,
     _reference: reference,
@@ -104,16 +105,18 @@ export async function fulfillOneTimePurchase(
 }
 
 export async function syncSubscriptionForUser(
-  subscription: any,
+  subscription: Stripe.Subscription,
   userId: string,
   env: StripeEnv,
 ): Promise<void> {
   const item = subscription.items?.data?.[0];
+  if (!item) throw new Error("Subscription has no price items");
   const priceId =
-    item?.price?.lookup_key || item?.price?.metadata?.lovable_external_id || item?.price?.id;
-  const productId = item?.price?.product;
-  const periodStart = item?.current_period_start ?? subscription.current_period_start;
-  const periodEnd = item?.current_period_end ?? subscription.current_period_end;
+    item.price.lookup_key || item.price.metadata["lovable_external_id"] || item.price.id;
+  const product = item.price.product;
+  const productId = typeof product === "string" ? product : product.id;
+  const periodStart = item.current_period_start;
+  const periodEnd = item.current_period_end;
 
   const supabase = getStoreServiceSupabase();
 
@@ -121,7 +124,10 @@ export async function syncSubscriptionForUser(
     {
       user_id: userId,
       stripe_subscription_id: subscription.id,
-      stripe_customer_id: subscription.customer,
+      stripe_customer_id:
+        typeof subscription.customer === "string"
+          ? subscription.customer
+          : subscription.customer.id,
       product_id: productId,
       price_id: priceId,
       status: subscription.status,
@@ -130,7 +136,7 @@ export async function syncSubscriptionForUser(
       cancel_at_period_end: subscription.cancel_at_period_end || false,
       environment: env,
       updated_at: new Date().toISOString(),
-    } as any,
+    },
     { onConflict: "stripe_subscription_id" },
   );
   if (subscriptionError) throw new Error(subscriptionError.message);
@@ -149,15 +155,18 @@ export async function syncSubscriptionForUser(
       user_id: userId,
       season_pass: !!seasonPassUntil,
       season_pass_until: seasonPassUntil,
-    } as any,
+    },
     { onConflict: "user_id" },
   );
   if (walletError) throw new Error(walletError.message);
 }
 
 /** Authenticated subscriptions retain the existing Stripe metadata contract. */
-export async function syncSubscription(subscription: any, env: StripeEnv): Promise<void> {
-  const userId = subscription.metadata?.userId;
+export async function syncSubscription(
+  subscription: Stripe.Subscription,
+  env: StripeEnv,
+): Promise<void> {
+  const userId = subscription.metadata["userId"];
   if (!userId) throw new Error("No userId in subscription metadata");
   await syncSubscriptionForUser(subscription, userId, env);
 }

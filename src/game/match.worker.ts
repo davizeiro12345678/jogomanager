@@ -2,6 +2,9 @@
 import { advanceRound } from "./career";
 import { resultMatch, snapshotMatch, type LiveWorkerRequest } from "./live-match";
 import { LIVE_MATCH_CLOCK_SCALE, MAX_LIVE_MOTION_SCALE, MatchSim } from "./sim";
+import type { BallPhysicsAuthority } from "./rapier-ball-authority";
+import type { RapierVisualPhysics } from "./rapier-ball-visual";
+import { visualBallFromCanonical, type VisualBallState } from "./visual-ball";
 
 let live: MatchSim | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -12,6 +15,13 @@ let lastTick = 0;
 let accumulator = 0;
 let commandId = 0;
 let skipToken = 0;
+let visualPhysics: RapierVisualPhysics | null = null;
+let visualPhysicsReady: Promise<RapierVisualPhysics | null> | null = null;
+let visualPhysicsGeneration = 0;
+let ballAuthority: BallPhysicsAuthority | null = null;
+let liveEpoch = 0;
+let latestVisualBall: VisualBallState | undefined;
+let commandQueue: Promise<void> = Promise.resolve();
 
 function post(message: unknown) {
   self.postMessage(message);
@@ -25,18 +35,135 @@ function stopTimer() {
   skipToken += 1;
 }
 
+function clearVisualPhysics() {
+  visualPhysicsGeneration += 1;
+  visualPhysics?.dispose();
+  visualPhysics = null;
+  visualPhysicsReady = null;
+  latestVisualBall = undefined;
+}
+
+function getVisualPhysics() {
+  const generation = visualPhysicsGeneration;
+  return (visualPhysicsReady ??= import("./rapier-ball-visual")
+    .then(({ createRapierVisualPhysics }) => createRapierVisualPhysics())
+    .then((physics) => {
+      if (generation !== visualPhysicsGeneration) {
+        physics.dispose();
+        return null;
+      }
+      visualPhysics = physics;
+      return physics;
+    })
+    // Rapier é um aprimoramento visual. A partida não pode cair se o WASM
+    // estiver indisponível em um navegador, dispositivo ou modo de economia.
+    .catch(() => null));
+}
+
+async function attachVisualFallback(target: MatchSim, epoch: number) {
+  const physics = await getVisualPhysics();
+  if (!physics || target !== live || epoch !== liveEpoch || ballAuthority) return;
+  resetVisualPhysicsToCanonical();
+}
+
+async function attachBallAuthority(target: MatchSim, epoch: number) {
+  let authority: BallPhysicsAuthority | null = null;
+  try {
+    // O import fica dentro do Worker: o WASM não entra no bundle da UI nem
+    // bloqueia o primeiro snapshot de uma partida.
+    const { createRapierBallAuthority } = await import("./rapier-ball-authority");
+    authority = await createRapierBallAuthority();
+  } catch {
+    authority = null;
+  }
+
+  if (!authority) {
+    void attachVisualFallback(target, epoch);
+    return;
+  }
+  if (target !== live || epoch !== liveEpoch) {
+    authority.dispose();
+    return;
+  }
+  target.setBallPhysicsAuthority(authority);
+  if (!target.hasBallPhysicsAuthority()) {
+    authority.dispose();
+    void attachVisualFallback(target, epoch);
+    return;
+  }
+  ballAuthority = authority;
+  latestVisualBall = visualBallFromCanonical(target.physicsBallState());
+}
+
+function resetVisualPhysicsToCanonical() {
+  if (!live) {
+    latestVisualBall = undefined;
+    return;
+  }
+  const canonical = live.physicsBallState();
+  if (ballAuthority && live.hasBallPhysicsAuthority()) {
+    latestVisualBall = visualBallFromCanonical(canonical);
+    return;
+  }
+  if (!visualPhysics) {
+    latestVisualBall = undefined;
+    return;
+  }
+  visualPhysics.reset(canonical);
+  latestVisualBall = visualPhysics.read(canonical);
+}
+
 function publishSnapshot() {
   if (!live) return;
   sequence += 1;
-  post({ id: commandId, ok: true, type: "snapshot", snapshot: snapshotMatch(live, sequence) });
+  post({
+    id: commandId,
+    ok: true,
+    type: "snapshot",
+    snapshot: snapshotMatch(live, sequence, latestVisualBall),
+  });
 }
 
 function publishFinished() {
   if (!live) return;
   sequence += 1;
-  post({ id: commandId, ok: true, type: "finished", result: resultMatch(live, sequence) });
+  post({
+    id: commandId,
+    ok: true,
+    type: "finished",
+    result: resultMatch(live, sequence, latestVisualBall),
+  });
   paused = true;
   stopTimer();
+}
+
+function advanceLive(spatialDt: number, clockDt: number) {
+  if (!live || live.finished) return;
+  const before = live.physicsBallState();
+  live.step(spatialDt, clockDt);
+  const after = live.physicsBallState();
+  if (ballAuthority && live.hasBallPhysicsAuthority()) {
+    latestVisualBall = visualBallFromCanonical(after);
+    return;
+  }
+  if (ballAuthority) {
+    ballAuthority = null;
+    void attachVisualFallback(live, liveEpoch);
+  }
+  if (!visualPhysics) {
+    latestVisualBall = undefined;
+    return;
+  }
+  try {
+    visualPhysics.synchronize(before, after);
+    visualPhysics.step(spatialDt);
+    latestVisualBall = visualPhysics.read(after);
+  } catch {
+    // Uma falha visual não pode alterar nem interromper MatchSim.
+    visualPhysics.dispose();
+    visualPhysics = null;
+    latestVisualBall = undefined;
+  }
 }
 
 function tick() {
@@ -49,7 +176,7 @@ function tick() {
   while (accumulator >= fixed && !live.finished) {
     accumulator -= fixed;
     const motionScale = Math.min(speed, MAX_LIVE_MOTION_SCALE);
-    live.step(fixed * motionScale, (LIVE_MATCH_CLOCK_SCALE * speed) / motionScale);
+    advanceLive(fixed * motionScale, (LIVE_MATCH_CLOCK_SCALE * speed) / motionScale);
   }
   if (live.finished) publishFinished();
   else publishSnapshot();
@@ -59,84 +186,115 @@ function ensureTimer() {
   if (!timer) timer = setInterval(tick, 100);
 }
 
+async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive" }>) {
+  stopTimer();
+  live?.dispose();
+  ballAuthority = null;
+  clearVisualPhysics();
+  live = new MatchSim(message.home, message.away, message.seed);
+  paused = false;
+  speed = 1;
+  sequence = 0;
+  const target = live;
+  const epoch = ++liveEpoch;
+  // A partida começa imediatamente; Rapier se conecta quando o WASM estiver
+  // pronto e o fallback visual só é criado se essa inicialização falhar.
+  void attachBallAuthority(target, epoch);
+  publishSnapshot();
+  ensureTimer();
+  post({ id: message.id, ok: true, type: "ready" });
+}
+
+async function handleMessage(message: LiveWorkerRequest) {
+  commandId = message.id;
+  if (message.type === "startLive") {
+    await startLive(message);
+    return;
+  }
+  if (message.type === "pauseLive") {
+    paused = message.paused;
+    lastTick = 0;
+    if (!paused) ensureTimer();
+    post({ id: message.id, ok: true, type: "command" });
+    return;
+  }
+  if (message.type === "speedLive") {
+    speed = Math.max(1, Math.min(8, message.speed));
+    post({ id: message.id, ok: true, type: "command" });
+    return;
+  }
+  if (message.type === "tacticsLive" && live) {
+    const setup = message.side === "home" ? live.home : live.away;
+    setup.tactics = { ...message.tactics };
+    publishSnapshot();
+    return;
+  }
+  if (message.type === "substituteLive" && live) {
+    const changed = live.substitute(message.side, message.outPid, message.incoming);
+    if (changed) resetVisualPhysicsToCanonical();
+    publishSnapshot();
+    post({ id: message.id, ok: true, type: "command", result: changed });
+    return;
+  }
+  if (message.type === "skipLive" && live) {
+    paused = true;
+    stopTimer();
+    const token = skipToken;
+    let guard = 0;
+    const finishInChunks = () => {
+      if (!live || token !== skipToken) return;
+      const end = Math.min(guard + 320, 14_000);
+      // Pulo de partida não anima WASM em passos de 0,4s: ele preserva a
+      // simulação determinística e apenas reposiciona a apresentação ao final.
+      while (!live.finished && guard++ < end) live.step(0.4, 1, false);
+      if (live.finished || guard >= 14_000) {
+        live.synchronizeBallPhysics();
+        resetVisualPhysicsToCanonical();
+        publishFinished();
+        return;
+      }
+      setTimeout(finishInChunks, 0);
+    };
+    finishInChunks();
+    return;
+  }
+  if (message.type === "stopLive") {
+    paused = true;
+    liveEpoch += 1;
+    live?.dispose();
+    live = null;
+    ballAuthority = null;
+    stopTimer();
+    clearVisualPhysics();
+    post({ id: message.id, ok: true, type: "command" });
+    return;
+  }
+  if (message.type === "simulate") {
+    const sim = new MatchSim(message.home, message.away, message.seed);
+    let guard = 0;
+    while (!sim.finished && guard++ < 14_000) sim.step(0.4);
+    post({ id: message.id, ok: true, result: resultMatch(sim, 1) });
+    return;
+  }
+  if (message.type === "advance") {
+    const career = advanceRound(message.career, message.result, message.performances);
+    post({ id: message.id, ok: true, result: career });
+    return;
+  }
+  throw new Error("Comando de simulação inválido");
+}
+
 self.onmessage = (event: MessageEvent<LiveWorkerRequest>) => {
   const message = event.data;
-  commandId = message.id;
-  try {
-    if (message.type === "startLive") {
-      stopTimer();
-      live = new MatchSim(message.home, message.away, message.seed);
-      paused = false;
-      speed = 1;
-      sequence = 0;
-      publishSnapshot();
-      ensureTimer();
-      post({ id: message.id, ok: true, type: "ready" });
-      return;
-    }
-    if (message.type === "pauseLive") {
-      paused = message.paused;
-      lastTick = 0;
-      if (!paused) ensureTimer();
-      post({ id: message.id, ok: true, type: "command" });
-      return;
-    }
-    if (message.type === "speedLive") {
-      speed = Math.max(1, Math.min(8, message.speed));
-      post({ id: message.id, ok: true, type: "command" });
-      return;
-    }
-    if (message.type === "tacticsLive" && live) {
-      const setup = message.side === "home" ? live.home : live.away;
-      setup.tactics = { ...message.tactics };
-      publishSnapshot();
-      return;
-    }
-    if (message.type === "substituteLive" && live) {
-      const changed = live.substitute(message.side, message.outPid, message.incoming);
-      publishSnapshot();
-      post({ id: message.id, ok: true, type: "command", result: changed });
-      return;
-    }
-    if (message.type === "skipLive" && live) {
-      paused = true;
-      stopTimer();
-      const token = skipToken;
-      let guard = 0;
-      const finishInChunks = () => {
-        if (!live || token !== skipToken) return;
-        const end = Math.min(guard + 320, 14_000);
-        while (!live.finished && guard++ < end) live.step(0.4);
-        if (live.finished || guard >= 14_000) {
-          publishFinished();
-          return;
-        }
-        setTimeout(finishInChunks, 0);
-      };
-      finishInChunks();
-      return;
-    }
-    if (message.type === "stopLive") {
-      paused = true;
-      live = null;
-      stopTimer();
-      post({ id: message.id, ok: true, type: "command" });
-      return;
-    }
-    if (message.type === "simulate") {
-      const sim = new MatchSim(message.home, message.away, message.seed);
-      let guard = 0;
-      while (!sim.finished && guard++ < 14_000) sim.step(0.4);
-      post({ id: message.id, ok: true, result: resultMatch(sim, 1) });
-      return;
-    }
-    if (message.type === "advance") {
-      const career = advanceRound(message.career, message.result, message.performances);
-      post({ id: message.id, ok: true, result: career });
-      return;
-    }
-    throw new Error("Comando de simulação inválido");
-  } catch (error) {
-    post({ id: message.id, ok: false, error: error instanceof Error ? error.message : String(error) });
-  }
+  // `startLive` aguarda o WASM. A fila evita que pause, velocidade ou troca
+  // de atleta ultrapassem essa inicialização e produzam snapshots fora de ordem.
+  commandQueue = commandQueue
+    .then(() => handleMessage(message))
+    .catch((error) => {
+      post({
+        id: message.id,
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
 };

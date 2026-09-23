@@ -6,7 +6,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { claimCheckoutSession } from "@/lib/checkout-claim.functions";
 import { getPurchases } from "@/lib/purchases.functions";
-import { getStripeEnvironment } from "@/lib/stripe";
 import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/checkout/return")({
@@ -80,7 +79,7 @@ function CheckoutReturn() {
     void (async () => {
       try {
         const res = await claimSession({
-          data: { sessionId, environment: getStripeEnvironment() },
+          data: { sessionId },
         });
         if (!alive) return;
         if (res.status === "delivered") await check();

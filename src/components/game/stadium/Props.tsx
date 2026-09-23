@@ -2,7 +2,7 @@ import { StaticBatch } from "./StaticBatch";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { FIELD_X, FIELD_Z } from "@/game/sim";
+import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
 import { metalAlbedo, metalRoughness, grilleTexture } from "./textures/metal";
 
 /**
@@ -183,7 +183,7 @@ function SectorGrilles({ rings }: { rings: number }) {
 
 /* --------------------------------------------------------- câmeras de TV */
 
-function TvCameras({ ball }: { ball: { x: number; z: number } }) {
+function TvCameras({ sim }: { sim: SimView }) {
   const refs = useRef<(THREE.Group | null)[]>([]);
   const spots = useMemo(
     () =>
@@ -197,6 +197,10 @@ function TvCameras({ ball }: { ball: { x: number; z: number } }) {
     [],
   );
   useFrame(() => {
+    // A cena recebe o mesmo SimView durante a partida; a pose visual é
+    // atualizada por snapshot. Consultá-la por frame evita que as câmeras
+    // estáticas fiquem presas em uma referência antiga ao trocar de fallback.
+    const ball = sim.visualBall ?? sim.ball;
     refs.current.forEach((g, i) => {
       if (!g) return;
       const s = spots[i]!;
@@ -354,13 +358,13 @@ export function StadiumProps({
   quality,
   homeColor,
   awayColor,
-  ball,
+  sim,
 }: {
   rings: number;
   quality: PropsQuality;
   homeColor: string;
   awayColor: string;
-  ball: { x: number; z: number };
+  sim: SimView;
 }) {
   return (
     <group>
@@ -368,7 +372,7 @@ export function StadiumProps({
       <Dugout x={14} color={awayColor} />
       <Tunnel />
       {quality !== "baixa" && <SectorGrilles rings={rings} />}
-      {quality !== "baixa" && <TvCameras ball={ball} />}
+      {quality !== "baixa" && <TvCameras sim={sim} />}
       {quality === "alta" && <PressBoxes rings={rings} />}
       {quality === "alta" && <RoofCanopy rings={rings} color={homeColor} />}
       {quality === "alta" && <Gates rings={rings} color={homeColor} />}

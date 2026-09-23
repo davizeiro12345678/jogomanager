@@ -7,7 +7,12 @@ import {
   recordPendingPurchase,
   syncSubscriptionForUser,
 } from "@/lib/fulfillment.server";
-import { type StripeEnv, createStripeClient, getStripeErrorMessage } from "@/lib/stripe.server";
+import {
+  type StripeEnv,
+  createStripeClient,
+  getConfiguredStripeEnvironment,
+  getStripeErrorMessage,
+} from "@/lib/stripe.server";
 import {
   assertStoreProductKey,
   getServerStoreProduct,
@@ -17,6 +22,7 @@ import {
   type ServerStoreProduct,
   type StoreProductContents,
 } from "@/lib/store-products.server";
+import { classifyGuestCheckoutSession } from "@/lib/guest-checkout-state";
 import { resolveOrCreateCustomer } from "@/utils/payments.functions";
 
 // Stripe requires at least 30 minutes from receipt. Keep a margin so request
@@ -25,13 +31,7 @@ const INTENT_TTL_MS = 31 * 60 * 1000;
 const CONSENT_VERSION = "guest-checkout-v1";
 
 type GuestIntentState =
-  | "created"
-  | "checkout_open"
-  | "paid"
-  | "claiming"
-  | "claimed"
-  | "expired"
-  | "failed";
+  "created" | "checkout_open" | "paid" | "claiming" | "claimed" | "expired" | "failed";
 
 interface GuestIntentRow {
   id: string;
@@ -51,8 +51,7 @@ interface GuestIntentRow {
 }
 
 export type StartGuestCheckoutResult =
-  | { clientSecret: string; intentId: string; environment: StripeEnv }
-  | { error: string };
+  { clientSecret: string; intentId: string; environment: StripeEnv } | { error: string };
 
 export type GuestCheckoutStatus =
   | { status: "pending" | "paid"; intentId: string }
@@ -64,7 +63,7 @@ export type ClaimGuestCheckoutResult =
   | { status: "error"; message: string };
 
 function getServiceSupabase() {
-  return getStoreServiceSupabase() as any;
+  return getStoreServiceSupabase();
 }
 
 function isStripeEnvironment(value: unknown): value is StripeEnv {
@@ -73,23 +72,29 @@ function isStripeEnvironment(value: unknown): value is StripeEnv {
 
 /**
  * The browser never selects the Stripe connection used by guest checkout.
- * Sandbox is the safe default, but it is off until its own flag is set. A live
- * launch needs both an explicit environment and a separate live flag.
+ * Guest checkout may have its own rollout flag, but it must use the same
+ * server-selected Stripe environment as the webhook, claims and account flow.
+ * A second environment here would make it possible to create a valid session
+ * that the deployment's webhook cannot verify or fulfill.
  */
 function configuredGuestCheckoutEnvironment(): StripeEnv {
-  const value = process.env["GUEST_CHECKOUT_ENVIRONMENT"]?.trim().toLowerCase() || "sandbox";
-  if (!isStripeEnvironment(value)) {
+  const requested = process.env["GUEST_CHECKOUT_ENVIRONMENT"]?.trim().toLowerCase();
+  if (requested && !isStripeEnvironment(requested)) {
     throw new Error("GUEST_CHECKOUT_ENVIRONMENT deve ser sandbox ou live.");
   }
-  return value;
+  const configured = getConfiguredStripeEnvironment();
+  if (requested && requested !== configured) {
+    throw new Error(
+      "GUEST_CHECKOUT_ENVIRONMENT deve corresponder a PAYMENTS_ENVIRONMENT neste deploy.",
+    );
+  }
+  return configured;
 }
 
 function assertGuestCheckoutEnabled(): StripeEnv {
   const environment = configuredGuestCheckoutEnvironment();
   const enabledFlag =
-    environment === "sandbox"
-      ? "GUEST_CHECKOUT_SANDBOX_ENABLED"
-      : "GUEST_CHECKOUT_LIVE_ENABLED";
+    environment === "sandbox" ? "GUEST_CHECKOUT_SANDBOX_ENABLED" : "GUEST_CHECKOUT_LIVE_ENABLED";
   if (process.env[enabledFlag] !== "true") {
     throw new Error("O checkout visitante ainda não está ativado neste ambiente.");
   }
@@ -166,19 +171,51 @@ async function readIntent(intentId: string): Promise<GuestIntentRow | null> {
 async function markIntentPaid(intentId: string, sessionId: string): Promise<void> {
   const { error } = await getServiceSupabase()
     .from("guest_checkout_intents")
-    .update({ state: "paid", stripe_session_id: sessionId, error: null } as any)
+    .update({ state: "paid", stripe_session_id: sessionId, error: null })
     .eq("id", intentId)
     .eq("stripe_session_id", sessionId)
-    .in("state", ["created", "checkout_open", "paid"]);
+    // Delayed payment methods can settle after the checkout window elapsed.
+    // Keep the original, verifiably paid intent claimable instead of dropping
+    // a legitimate payment merely because a newer attempt was opened.
+    .in("state", ["created", "checkout_open", "paid", "expired"]);
   if (error) throw new Error(`Não foi possível confirmar a compra visitante: ${error.message}`);
+}
+
+async function markIntentFailed(intentId: string, sessionId: string): Promise<void> {
+  const { error } = await getServiceSupabase()
+    .from("guest_checkout_intents")
+    .update({
+      state: "failed",
+      open_key: null,
+      error: "Pagamento não foi concluído",
+    })
+    .eq("id", intentId)
+    .eq("stripe_session_id", sessionId)
+    .in("state", ["created", "checkout_open", "expired"]);
+  if (error)
+    throw new Error(`Não foi possível registrar a falha do pagamento visitante: ${error.message}`);
 }
 
 async function expireIntent(intent: GuestIntentRow): Promise<void> {
   await getServiceSupabase()
     .from("guest_checkout_intents")
-    .update({ state: "expired", open_key: null, error: "Checkout expirado" } as any)
+    .update({ state: "expired", open_key: null, error: "Checkout expirado" })
     .eq("id", intent.id)
     .neq("state", "claimed");
+}
+
+async function inspectExistingGuestCheckoutSession(
+  intent: GuestIntentRow,
+): Promise<ReturnType<typeof classifyGuestCheckoutSession>> {
+  if (!intent.stripe_session_id) return "closed";
+  const stripe = createStripeClient(intent.environment);
+  const session = await stripe.checkout.sessions.retrieve(intent.stripe_session_id);
+  if (session.metadata?.["guestCheckoutIntentId"] !== intent.id) {
+    throw new Error("A sessão existente não corresponde à compra visitante.");
+  }
+  const disposition = classifyGuestCheckoutSession(session.status, session.payment_status);
+  if (disposition === "paid") await markIntentPaid(intent.id, session.id);
+  return disposition;
 }
 
 async function reserveGuestCheckoutAttempt(emailHash: string): Promise<void> {
@@ -205,7 +242,8 @@ async function createIntent(
     )
     .eq("open_key", openKey)
     .maybeSingle();
-  if (existingError) throw new Error(`Não foi possível preparar o checkout: ${existingError.message}`);
+  if (existingError)
+    throw new Error(`Não foi possível preparar o checkout: ${existingError.message}`);
 
   if (existing) {
     const intent = existing as GuestIntentRow;
@@ -213,11 +251,21 @@ async function createIntent(
       intent.amount_cents === product.priceCents &&
       intent.currency === product.currency.toUpperCase() &&
       hasMatchingContentsSnapshot(intent.contents_snapshot, product.contents);
-    if (!isExpired(intent) && ["created", "checkout_open"].includes(intent.state) && hasCurrentSnapshot) {
-      return intent;
-    }
-    if (!isExpired(intent) && ["paid", "claiming"].includes(intent.state)) {
+    if (["paid", "claiming"].includes(intent.state)) {
       throw new Error("Esta compra já foi paga. Use o link de e-mail para receber o item.");
+    }
+    if (["created", "checkout_open"].includes(intent.state) && hasCurrentSnapshot) {
+      if (!isExpired(intent)) return intent;
+      const disposition = await inspectExistingGuestCheckoutSession(intent);
+      if (disposition === "paid") {
+        throw new Error("Esta compra já foi paga. Use o link de e-mail para receber o item.");
+      }
+      if (disposition === "open") return intent;
+      if (disposition === "settling") {
+        throw new Error(
+          "O pagamento anterior ainda está em confirmação. Aguarde a Stripe antes de tentar outra compra.",
+        );
+      }
     }
     await expireIntent(intent);
   }
@@ -237,7 +285,7 @@ async function createIntent(
       open_key: openKey,
       consent_version: CONSENT_VERSION,
       expires_at: expiresAt,
-    } as any)
+    })
     .select(
       "id, product_key, email_hash, environment, state, amount_cents, currency, contents_snapshot, stripe_price_id, stripe_customer_id, stripe_session_id, open_key, claimed_by_user_id, expires_at",
     )
@@ -278,12 +326,21 @@ async function openStripeSession(
   const stripe = createStripeClient(environment);
   if (intent.stripe_session_id) {
     const current = await stripe.checkout.sessions.retrieve(intent.stripe_session_id);
-    if (current.payment_status === "paid" || current.payment_status === "no_payment_required") {
+    const disposition = classifyGuestCheckoutSession(current.status, current.payment_status);
+    if (disposition === "paid") {
       await markIntentPaid(intent.id, current.id);
       return { error: "Esta compra já foi paga. Use o link de e-mail para receber o item." };
     }
-    if (current.status === "open" && current.client_secret) {
+    if (disposition === "open" && current.client_secret) {
       return { clientSecret: current.client_secret, intentId: intent.id, environment };
+    }
+    if (disposition === "settling") {
+      // PIX/boleto and other asynchronous methods can complete the Checkout
+      // Session while payment_status remains unpaid. It must stay attached to
+      // this intent until Stripe emits its later success or failure event.
+      throw new Error(
+        "O pagamento está em confirmação. Use a página de retorno da Stripe para acompanhar o status.",
+      );
     }
     // Stripe idempotency deliberately binds one intent to one session. Once
     // that session is closed, release this intent instead of attempting to
@@ -316,7 +373,11 @@ async function openStripeSession(
       },
       ...(isRecurring && {
         subscription_data: {
-          metadata: { guestCheckoutIntentId: intent.id, productKey: product.key, purchaseMode: "guest" },
+          metadata: {
+            guestCheckoutIntentId: intent.id,
+            productKey: product.key,
+            purchaseMode: "guest",
+          },
         },
       }),
     } as Parameters<ReturnType<typeof createStripeClient>["checkout"]["sessions"]["create"]>[0],
@@ -332,7 +393,7 @@ async function openStripeSession(
       stripe_customer_id: customerId,
       stripe_session_id: session.id,
       error: null,
-    } as any)
+    })
     .eq("id", intent.id)
     .in("state", ["created", "checkout_open"]);
   if (error) throw new Error(`Não foi possível salvar a sessão de pagamento: ${error.message}`);
@@ -352,22 +413,24 @@ export const startGuestCheckout = createServerFn({ method: "POST" })
       hasPurchaseConsent: boolean;
       clientEnvironment: StripeEnv;
     }) => {
-    assertStoreProductKey(data.productKey);
-    normalizeGuestEmail(data.email);
-    if (data.hasPurchaseConsent !== true) {
-      throw new Error("Confirme que você tem autorização para realizar a compra.");
-    }
-    if (!isStripeEnvironment(data.clientEnvironment)) {
-      throw new Error("Ambiente de pagamento inválido.");
-    }
-    return data;
+      assertStoreProductKey(data.productKey);
+      normalizeGuestEmail(data.email);
+      if (data.hasPurchaseConsent !== true) {
+        throw new Error("Confirme que você tem autorização para realizar a compra.");
+      }
+      if (!isStripeEnvironment(data.clientEnvironment)) {
+        throw new Error("Ambiente de pagamento inválido.");
+      }
+      return data;
     },
   )
   .handler(async ({ data }): Promise<StartGuestCheckoutResult> => {
     try {
       const environment = assertGuestCheckoutEnabled();
       if (data.clientEnvironment !== environment) {
-        throw new Error("A chave pública de pagamentos não corresponde ao ambiente liberado no servidor.");
+        throw new Error(
+          "A chave pública de pagamentos não corresponde ao ambiente liberado no servidor.",
+        );
       }
       const email = normalizeGuestEmail(data.email);
       const emailHash = await hashGuestEmail(email);
@@ -395,6 +458,22 @@ export async function markGuestCheckoutPaid(
   await markIntentPaid(intentId, sessionId);
 }
 
+/** Called by Stripe after an asynchronous guest payment definitively fails. */
+export async function markGuestCheckoutFailed(
+  intentId: string,
+  sessionId: string,
+  environment: StripeEnv,
+): Promise<void> {
+  if (!isStripeEnvironment(environment)) throw new Error("Ambiente de pagamento inválido.");
+  assertIntentId(intentId);
+  assertStripeSessionId(sessionId);
+  const intent = await readIntent(intentId);
+  if (!intent || intent.environment !== environment || intent.stripe_session_id !== sessionId) {
+    throw new Error("A sessão não corresponde à compra visitante.");
+  }
+  await markIntentFailed(intentId, sessionId);
+}
+
 export const getGuestCheckoutStatus = createServerFn({ method: "POST" })
   .inputValidator((data: { intentId: string; sessionId: string }) => {
     assertIntentId(data.intentId);
@@ -403,26 +482,45 @@ export const getGuestCheckoutStatus = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }): Promise<GuestCheckoutStatus> => {
     try {
+      const environment = getConfiguredStripeEnvironment();
       const intent = await readIntent(data.intentId);
-      if (!intent || !isStripeEnvironment(intent.environment) || intent.stripe_session_id !== data.sessionId) {
+      if (
+        !intent ||
+        !isStripeEnvironment(intent.environment) ||
+        intent.environment !== environment ||
+        intent.stripe_session_id !== data.sessionId
+      ) {
         return { status: "invalid", message: "Não encontramos esta compra visitante." };
       }
-      if (isExpired(intent) && intent.state !== "paid" && intent.state !== "claimed") {
-        await expireIntent(intent);
-        return { status: "expired", message: "Este checkout expirou. Volte à loja para tentar de novo." };
+      if (intent.state === "failed") {
+        return {
+          status: "expired",
+          message: "O pagamento não foi concluído. Volte à loja para tentar de novo.",
+        };
       }
       if (intent.state === "paid" || intent.state === "claimed") {
         return { status: "paid", intentId: intent.id };
       }
 
-      const stripe = createStripeClient(intent.environment);
+      const stripe = createStripeClient(environment);
       const session = await stripe.checkout.sessions.retrieve(data.sessionId);
       if (session.metadata?.["guestCheckoutIntentId"] !== intent.id) {
         return { status: "invalid", message: "A sessão não corresponde à compra visitante." };
       }
-      if (session.payment_status === "paid" || session.payment_status === "no_payment_required") {
+      const disposition = classifyGuestCheckoutSession(session.status, session.payment_status);
+      if (disposition === "paid") {
         await markIntentPaid(intent.id, session.id);
         return { status: "paid", intentId: intent.id };
+      }
+      if (disposition === "settling") {
+        return { status: "pending", intentId: intent.id };
+      }
+      if (intent.state === "expired" || isExpired(intent)) {
+        await expireIntent(intent);
+        return {
+          status: "expired",
+          message: "Este checkout expirou. Volte à loja para tentar de novo.",
+        };
       }
       return { status: "pending", intentId: intent.id };
     } catch {
@@ -441,9 +539,21 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
     try {
       const email = normalizeGuestEmail(context.claims?.email);
       const emailHash = await hashGuestEmail(email);
+      const environment = getConfiguredStripeEnvironment();
       const intent = await readIntent(data.intentId);
-      if (!intent || !isStripeEnvironment(intent.environment) || intent.stripe_session_id !== data.sessionId) {
+      if (
+        !intent ||
+        !isStripeEnvironment(intent.environment) ||
+        intent.environment !== environment ||
+        intent.stripe_session_id !== data.sessionId
+      ) {
         return { status: "error", message: "Não encontramos esta compra visitante." };
+      }
+      if (intent.state === "failed") {
+        return {
+          status: "error",
+          message: "O pagamento não foi concluído. Volte à loja para tentar de novo.",
+        };
       }
       if (intent.email_hash !== emailHash) {
         return { status: "error", message: "Entre com o mesmo e-mail usado no pagamento." };
@@ -451,20 +561,27 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
       if (intent.claimed_by_user_id && intent.claimed_by_user_id !== context.userId) {
         return { status: "error", message: "Esta compra já está vinculada a outra conta." };
       }
-      if (intent.state === "claimed") return { status: "delivered", productKey: intent.product_key };
+      if (intent.state === "claimed")
+        return { status: "delivered", productKey: intent.product_key };
 
-      const stripe = createStripeClient(intent.environment);
+      const stripe = createStripeClient(environment);
       const session = await stripe.checkout.sessions.retrieve(data.sessionId, {
         expand: ["line_items.data.price", "subscription"],
       });
-      if (session.metadata?.["guestCheckoutIntentId"] !== intent.id || session.metadata?.["productKey"] !== intent.product_key) {
+      if (
+        session.metadata?.["guestCheckoutIntentId"] !== intent.id ||
+        session.metadata?.["productKey"] !== intent.product_key
+      ) {
         return { status: "error", message: "A sessão não corresponde à compra visitante." };
       }
       if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
         return { status: "pending", message: "O pagamento ainda está sendo confirmado." };
       }
       const customerEmail = session.customer_details?.email;
-      if (!customerEmail || (await hashGuestEmail(normalizeGuestEmail(customerEmail))) !== intent.email_hash) {
+      if (
+        !customerEmail ||
+        (await hashGuestEmail(normalizeGuestEmail(customerEmail))) !== intent.email_hash
+      ) {
         return { status: "error", message: "O e-mail do pagamento não confere com esta compra." };
       }
 
@@ -479,7 +596,10 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
         amount !== intent.amount_cents ||
         paymentCurrency?.toUpperCase() !== intent.currency
       ) {
-        return { status: "error", message: "O valor do pagamento não confere com a compra registrada." };
+        return {
+          status: "error",
+          message: "O valor do pagamento não confere com a compra registrada.",
+        };
       }
 
       const { data: claimReserved, error: reserveError } = await getServiceSupabase().rpc(
@@ -499,15 +619,21 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
         });
       } else {
         const subscriptionId =
-          typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
+          typeof session.subscription === "string"
+            ? session.subscription
+            : session.subscription?.id;
         if (!subscriptionId) {
           return { status: "pending", message: "A assinatura ainda está sendo criada." };
         }
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         await stripe.subscriptions.update(subscription.id, {
-          metadata: { ...subscription.metadata, userId: context.userId, guestCheckoutIntentId: intent.id },
+          metadata: {
+            ...subscription.metadata,
+            userId: context.userId,
+            guestCheckoutIntentId: intent.id,
+          },
         });
-        await syncSubscriptionForUser(subscription, context.userId, intent.environment);
+        await syncSubscriptionForUser(subscription, context.userId, environment);
       }
 
       const { error } = await getServiceSupabase()
@@ -518,7 +644,7 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
           claimed_at: new Date().toISOString(),
           open_key: null,
           error: null,
-        } as any)
+        })
         .eq("id", intent.id);
       if (error) throw new Error(error.message);
       return { status: "delivered", productKey: intent.product_key };

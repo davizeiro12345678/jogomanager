@@ -17,6 +17,12 @@ import {
   VISUAL_CONTEXT_VERSION,
   type VersionedVisualData,
 } from "./visual-context";
+import type { CanonicalBallPhysicsState, VisualBallState } from "./visual-ball";
+import type {
+  BallPhysicsAuthority,
+  RapierBallHolder,
+  RapierBallState,
+} from "./rapier-ball-authority";
 
 export const FIELD_X = 52.5;
 export const FIELD_Z = 34;
@@ -142,6 +148,8 @@ export interface SimView {
   time: number;
   players: SimPlayer[];
   ball: { x: number; z: number; vx: number; vz: number; holder: string | null; height: number };
+  /** Pose opcional produzida pelo adaptador Rapier, usada apenas pelo render. */
+  visualBall?: VisualBallState | undefined;
   possession: Side;
   stats: Record<Side, MatchStats>;
   home: TeamSetup;
@@ -192,6 +200,12 @@ export class MatchSim {
   private ballVy = 0;
   /** curva lateral (efeito Magnus) aplicada enquanto a bola voa */
   private ballSpin = 0;
+  /**
+   * Autoridade física opcional da bola, injetada apenas pela partida ao vivo.
+   * A simulação ainda decide posse, regras e eventos; o Rapier integra a
+   * trajetória entre essas decisões.
+   */
+  private ballPhysics: BallPhysicsAuthority | null = null;
   /** finalização em voo: só vira gol/defesa quando a bola chega lá */
   private pendingShot: {
     side: Side;
@@ -217,6 +231,110 @@ export class MatchSim {
       side: "neutral",
       text: `Bola rolando no duelo entre ${home.name} e ${away.name}.`,
     });
+  }
+
+  /** Entrega uma cópia serializável da bola para apresentação ou física ao vivo. */
+  physicsBallState(): CanonicalBallPhysicsState {
+    return {
+      x: this.ball.x,
+      z: this.ball.z,
+      height: this.ball.height,
+      vx: this.ball.vx,
+      vy: this.ballVy,
+      vz: this.ball.vz,
+      spin: this.ballSpin,
+      attached: this.ball.holder !== null,
+      holder: this.ball.holder,
+    };
+  }
+
+  /** Liga ou desliga a autoridade física sem acoplar MatchSim ao WASM. */
+  setBallPhysicsAuthority(authority: BallPhysicsAuthority | null) {
+    if (this.ballPhysics === authority) return;
+    this.ballPhysics?.dispose();
+    this.ballPhysics = authority;
+    this.synchronizeBallPhysics();
+  }
+
+  /** Permite ao Worker detectar uma falha WASM e cair para a rota compatível. */
+  hasBallPhysicsAuthority() {
+    return this.ballPhysics !== null;
+  }
+
+  /** Rebaseia Rapier depois de um reinício, chute, troca ou salto de partida. */
+  synchronizeBallPhysics() {
+    const physics = this.ballPhysics;
+    if (!physics) return;
+    try {
+      const state = this.mutableBallPhysicsState();
+      physics.reset(state, this.ballPhysicsHolder());
+      this.applyMutableBallPhysicsState(state);
+    } catch {
+      physics.dispose();
+      if (this.ballPhysics === physics) this.ballPhysics = null;
+    }
+  }
+
+  dispose() {
+    this.ballPhysics?.dispose();
+    this.ballPhysics = null;
+  }
+
+  private mutableBallPhysicsState(): RapierBallState {
+    return {
+      x: this.ball.x,
+      z: this.ball.z,
+      height: this.ball.height,
+      vx: this.ball.vx,
+      vy: this.ballVy,
+      vz: this.ball.vz,
+      spin: this.ballSpin,
+      holder: this.ball.holder,
+    };
+  }
+
+  private ballPhysicsHolder(): RapierBallHolder | null {
+    const holderId = this.ball.holder;
+    if (!holderId) return null;
+    const holder = this.players.find((player) => player.id === holderId);
+    if (!holder) return null;
+    return {
+      id: holder.id,
+      x: holder.x,
+      z: holder.z,
+      vx: holder.vx,
+      vz: holder.vz,
+    };
+  }
+
+  private applyMutableBallPhysicsState(state: RapierBallState) {
+    this.ball.x = state.x;
+    this.ball.z = state.z;
+    this.ball.height = state.height;
+    this.ball.vx = state.vx;
+    this.ball.vz = state.vz;
+    this.ballVy = state.vy;
+    this.ballSpin = state.spin;
+  }
+
+  private stepAuthoritativeBall(dt: number, holder: SimPlayer | null): boolean {
+    const physics = this.ballPhysics;
+    if (!physics) return false;
+    try {
+      const state = this.mutableBallPhysicsState();
+      const holderState = holder
+        ? { id: holder.id, x: holder.x, z: holder.z, vx: holder.vx, vz: holder.vz }
+        : null;
+      physics.step(dt, state, holderState);
+      this.applyMutableBallPhysicsState(state);
+      return true;
+    } catch {
+      // WASM é um aprimoramento da trajetória. Uma falha não pode interromper
+      // uma carreira, então este tick segue pela integração compatível abaixo.
+      physics.dispose();
+      if (this.ballPhysics === physics) this.ballPhysics = null;
+      return false;
+    }
   }
 
   private buildTeam(setup: TeamSetup, side: Side): SimPlayer[] {
@@ -297,6 +415,7 @@ export class MatchSim {
     };
     if (this.ball.holder === out.id) this.ball.holder = fresh.id;
     this.players[idx] = fresh;
+    this.synchronizeBallPhysics();
     this.subsUsed[side]++;
     this.pushEvent({
       minute: this.minute(),
@@ -368,6 +487,7 @@ export class MatchSim {
     this.possession = side;
     this.lastTouch = side;
     this.restartTimer = 1.2;
+    this.synchronizeBallPhysics();
   }
 
   private setup(side: Side) {
@@ -440,7 +560,7 @@ export class MatchSim {
     return { opp: best, dist: Math.sqrt(bestD2) };
   }
 
-  step(dt: number, clockScale = 1) {
+  step(dt: number, clockScale = 1, useBallPhysics = true) {
     if (this.finished) return;
     const clockDt = dt * Math.max(1, clockScale);
     this.time += clockDt;
@@ -466,7 +586,7 @@ export class MatchSim {
     this.moveOffBall(dt);
     this.separate();
     this.drainStamina(clockDt);
-    this.moveBall(dt);
+    this.moveBall(dt, useBallPhysics);
     this.sanitize();
 
     const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
@@ -576,13 +696,19 @@ export class MatchSim {
         const incoming = this.pendingShot?.side !== p.side ? this.pendingShot : null;
         if (incoming) {
           const reaction = 0.32 + p.defending / 220;
-          tz += (Math.max(-GOAL_Z + 0.35, Math.min(GOAL_Z - 0.35, incoming.targetZ)) - tz) * reaction;
+          tz +=
+            (Math.max(-GOAL_Z + 0.35, Math.min(GOAL_Z - 0.35, incoming.targetZ)) - tz) * reaction;
           tx += dir * Math.min(1.4, ballDist * 0.04);
           sprint = 1.18;
         }
         // goleiro sai da área para bola solta muito perto
         const sweepRange = 9 + setup.tactics.mentality * 1.35 + p.pace / 35;
-        if (!this.ball.holder && !incoming && ballDist < sweepRange && Math.abs(bx - dir * -FIELD_X) < 18) {
+        if (
+          !this.ball.holder &&
+          !incoming &&
+          ballDist < sweepRange &&
+          Math.abs(bx - dir * -FIELD_X) < 18
+        ) {
           tx = bx;
           tz = bz;
           sprint = 1.25;
@@ -598,8 +724,7 @@ export class MatchSim {
         // e permite a armadilha de impedimento.
         if (p.pos === "DF") {
           const line = lineX[p.side];
-          const trap =
-            setup.tactics.pressing >= 3 && Math.abs(bx - line) > 14 ? dir * 3.5 : 0;
+          const trap = setup.tactics.pressing >= 3 && Math.abs(bx - line) > 14 ? dir * 3.5 : 0;
           tx = tx * 0.35 + (line + trap) * 0.65;
           // marcação por zona: cobre o adversário mais perigoso da sua faixa
           let markZ: number | null = null;
@@ -764,7 +889,7 @@ export class MatchSim {
     this.ballSpin = Math.max(-12, Math.min(12, fix(this.ballSpin, 0)));
   }
 
-  private moveBall(dt: number) {
+  private moveBall(dt: number, useBallPhysics = true) {
     const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
     if (holder) {
       this.looseTime = 0;
@@ -772,6 +897,7 @@ export class MatchSim {
       this.ballSpin = 0;
       this.pendingShot = null;
       this.pass = null;
+      if (useBallPhysics && this.stepAuthoritativeBall(dt, holder)) return;
       const hs = Math.hypot(holder.vx, holder.vz) || 1;
       this.ball.x = holder.x + (holder.vx / hs) * 0.9;
       this.ball.z = holder.z + (holder.vz / hs) * 0.9;
@@ -782,36 +908,37 @@ export class MatchSim {
     this.looseTime += dt;
     const previousBall = { x: this.ball.x, z: this.ball.z, height: this.ball.height };
 
-    // --- integração física: gravidade, arrasto no ar, atrito no chão e efeito ---
-    const airborne = this.ball.height > 0.14;
-    if (this.ballSpin !== 0 && airborne) {
-      // Magnus: acelera perpendicular à direção do movimento
-      const vx = this.ball.vx;
-      const vz = this.ball.vz;
-      const sp = Math.hypot(vx, vz) || 1;
-      this.ball.vx += (-vz / sp) * this.ballSpin * dt;
-      this.ball.vz += (vx / sp) * this.ballSpin * dt;
-      this.ballSpin *= Math.exp(-0.8 * dt);
-    }
-    const drag = airborne ? 0.28 : 1.5; // grama freia muito mais que o ar
-    const kd = Math.exp(-drag * dt);
-    this.ball.vx *= kd;
-    this.ball.vz *= kd;
+    if (!(useBallPhysics && this.stepAuthoritativeBall(dt, null))) {
+      // Compatibilidade para replays legados, simulação rápida e navegadores
+      // em que a inicialização WASM não estiver disponível.
+      const airborne = this.ball.height > 0.14;
+      if (this.ballSpin !== 0 && airborne) {
+        const vx = this.ball.vx;
+        const vz = this.ball.vz;
+        const sp = Math.hypot(vx, vz) || 1;
+        this.ball.vx += (-vz / sp) * this.ballSpin * dt;
+        this.ball.vz += (vx / sp) * this.ballSpin * dt;
+        this.ballSpin *= Math.exp(-0.8 * dt);
+      }
+      const drag = airborne ? 0.28 : 1.5;
+      const kd = Math.exp(-drag * dt);
+      this.ball.vx *= kd;
+      this.ball.vz *= kd;
 
-    this.ball.x += this.ball.vx * dt;
-    this.ball.z += this.ball.vz * dt;
+      this.ball.x += this.ball.vx * dt;
+      this.ball.z += this.ball.vz * dt;
 
-    this.ballVy -= 9.81 * dt;
-    this.ball.height += this.ballVy * dt;
-    if (this.ball.height <= 0.12) {
-      this.ball.height = 0.12;
-      if (this.ballVy < -0.6) {
-        // quica e perde energia
-        this.ballVy = -this.ballVy * 0.52;
-        this.ball.vx *= 0.82;
-        this.ball.vz *= 0.82;
-      } else {
-        this.ballVy = 0;
+      this.ballVy -= 9.81 * dt;
+      this.ball.height += this.ballVy * dt;
+      if (this.ball.height <= 0.12) {
+        this.ball.height = 0.12;
+        if (this.ballVy < -0.6) {
+          this.ballVy = -this.ballVy * 0.52;
+          this.ball.vx *= 0.82;
+          this.ball.vz *= 0.82;
+        } else {
+          this.ballVy = 0;
+        }
       }
     }
 
@@ -882,6 +1009,7 @@ export class MatchSim {
       this.pass = null;
       this.looseTime = 0;
       this.decisionTimer = 0.5;
+      this.synchronizeBallPhysics();
     }
   }
 
@@ -911,6 +1039,7 @@ export class MatchSim {
       this.ball.height = 0.12;
       this.looseTime = 0;
       if (isReceiver) this.stats[p.side].passesOk++;
+      this.synchronizeBallPhysics();
       return;
     }
 
@@ -926,6 +1055,7 @@ export class MatchSim {
     this.looseTime = 0.4;
     const pressingSide: Side = p.side === "home" ? "away" : "home";
     this.pressSurge[pressingSide] = Math.max(this.pressSurge[pressingSide], 2.5);
+    this.synchronizeBallPhysics();
   }
 
   /**
@@ -958,6 +1088,7 @@ export class MatchSim {
       this.ball.vz = Math.sin(ang) * back;
       this.ballVy = 1.6 + this.rnd() * 2.4;
       this.ballSpin = 0;
+      this.synchronizeBallPhysics();
       if (wasShot) {
         this.pushEvent({
           minute: this.minute(),
@@ -975,24 +1106,28 @@ export class MatchSim {
    * Resolve a finalização quando a bola chega à meta: gol entre as traves,
    * defesa do goleiro no plano da linha, ou segue viva para fora.
    */
-  private resolveShot(previous = { x: this.ball.x, z: this.ball.z, height: this.ball.height }): boolean {
+  private resolveShot(
+    previous = { x: this.ball.x, z: this.ball.z, height: this.ball.height },
+  ): boolean {
     const s = this.pendingShot!;
     const dir = this.attackDir(s.side);
     const goalX = dir * FIELD_X;
     const gk = this.players.find((p) => p.side !== s.side && p.pos === "GK") ?? null;
     const shooter = this.players.find((p) => p.id === s.shooter) ?? null;
     const planeX = goalX - dir * 1.6;
-    const crossed = dir > 0
-      ? previous.x < planeX && this.ball.x >= planeX
-      : previous.x > planeX && this.ball.x <= planeX;
+    const crossed =
+      dir > 0
+        ? previous.x < planeX && this.ball.x >= planeX
+        : previous.x > planeX && this.ball.x <= planeX;
     const reached = crossed || (dir > 0 ? this.ball.x >= planeX : this.ball.x <= planeX);
     if (!reached) return false;
     // Resolve no ponto exato em que a trajetória cruza o plano da meta. Assim,
     // avanços rápidos não transformam um gol em tiro de meta por tunneling.
     const segment = this.ball.x - previous.x;
-    const ratio = crossed && Math.abs(segment) > 0.0001
-      ? Math.max(0, Math.min(1, (planeX - previous.x) / segment))
-      : 1;
+    const ratio =
+      crossed && Math.abs(segment) > 0.0001
+        ? Math.max(0, Math.min(1, (planeX - previous.x) / segment))
+        : 1;
     const crossingZ = previous.z + (this.ball.z - previous.z) * ratio;
     const crossingHeight = previous.height + (this.ball.height - previous.height) * ratio;
 
@@ -1141,6 +1276,7 @@ export class MatchSim {
         text: `${this.minute()}' Escanteio para ${this.setup(side).short}.`,
       });
     }
+    this.synchronizeBallPhysics();
   }
 
   private dribble(holder: SimPlayer, dt: number) {
@@ -1256,20 +1392,24 @@ export class MatchSim {
       if (dist < 4 || dist > 42) continue;
       const forward = (m.x - holder.x) * dir;
       const { dist: cover } = this.nearestOpponent(m);
-        // Evita passes atravessando um marcador alinhado ao corredor da bola.
-        let laneRisk = 0;
-        const mdx = m.x - holder.x;
-        const mdz = m.z - holder.z;
-        const len2 = mdx * mdx + mdz * mdz || 1;
-        for (const opponent of this.players) {
-          if (opponent.side === holder.side) continue;
-          const t = Math.max(0, Math.min(1, ((opponent.x - holder.x) * mdx + (opponent.z - holder.z) * mdz) / len2));
-          const laneX = holder.x + mdx * t;
-          const laneZ = holder.z + mdz * t;
-          const laneDistance = Math.hypot(opponent.x - laneX, opponent.z - laneZ);
-          if (laneDistance < 2.2) laneRisk += (2.2 - laneDistance) * 2.8;
-        }
-        const score = forward * (0.7 + mentality * 0.12) + cover * 1.7 - dist * 0.32 - laneRisk + this.rnd() * 8;
+      // Evita passes atravessando um marcador alinhado ao corredor da bola.
+      let laneRisk = 0;
+      const mdx = m.x - holder.x;
+      const mdz = m.z - holder.z;
+      const len2 = mdx * mdx + mdz * mdz || 1;
+      for (const opponent of this.players) {
+        if (opponent.side === holder.side) continue;
+        const t = Math.max(
+          0,
+          Math.min(1, ((opponent.x - holder.x) * mdx + (opponent.z - holder.z) * mdz) / len2),
+        );
+        const laneX = holder.x + mdx * t;
+        const laneZ = holder.z + mdz * t;
+        const laneDistance = Math.hypot(opponent.x - laneX, opponent.z - laneZ);
+        if (laneDistance < 2.2) laneRisk += (2.2 - laneDistance) * 2.8;
+      }
+      const score =
+        forward * (0.7 + mentality * 0.12) + cover * 1.7 - dist * 0.32 - laneRisk + this.rnd() * 8;
       if (score > bestScore) {
         bestScore = score;
         best = m;
@@ -1320,6 +1460,7 @@ export class MatchSim {
       this.ballVy = 0;
       this.ballSpin = 0;
     }
+    this.synchronizeBallPhysics();
   }
 
   private shoot(holder: SimPlayer, distGoal: number) {
@@ -1396,11 +1537,7 @@ export class MatchSim {
     };
     if (gk && outcome === "saved") {
       const dive = targetZ - gk.z;
-      this.trigger(
-        gk,
-        Math.abs(dive) < 1.15 ? "save" : dive > 0 ? "diveRight" : "diveLeft",
-        1.15,
-      );
+      this.trigger(gk, Math.abs(dive) < 1.15 ? "save" : dive > 0 ? "diveRight" : "diveLeft", 1.15);
     }
     this.restartTimer = 0.35;
 
@@ -1422,6 +1559,7 @@ export class MatchSim {
         text: `${this.minute()}' ${holder.name} finaliza para fora.`,
       });
     }
+    this.synchronizeBallPhysics();
   }
 
   private scheduleRestart(side: Side) {
@@ -1441,6 +1579,7 @@ export class MatchSim {
     this.restartTimer = 1.5;
     this.decisionTimer = 1.2;
     this.trigger(gk, this.rnd() < 0.5 ? "goalKick" : "distribute", 1.1);
+    this.synchronizeBallPhysics();
   }
 
   possessionPct(): [number, number] {
@@ -1452,10 +1591,10 @@ export class MatchSim {
 
   /**
    * Gera contexto visual deterministico para todos os jogadores.
-   * 
+   *
    * Esta funcao nao afeta o estado da simulacao (placar, estatisticas, etc.)
    * e e usada apenas para alimentar o sistema visual com dados realistas.
-   * 
+   *
    * @returns Dados visuais versionados para gravar em replays
    */
   generateVisualContext(): VersionedVisualData {
@@ -1549,7 +1688,10 @@ export class MatchSim {
     }
 
     // Para acoes de chute, usa o pe nao-dominante se estiver virando para esse lado
-    if (p.action && ["shot", "shotPower", "shotPlaced", "pass", "passLong", "cross"].includes(p.action)) {
+    if (
+      p.action &&
+      ["shot", "shotPower", "shotPlaced", "pass", "passLong", "cross"].includes(p.action)
+    ) {
       // Se o jogador estiver se movendo para a esquerda, usa pe direito, e vice-versa
       if (p.vx < -0.1) {
         return dominantFoot === "left" ? "right" : "left";
@@ -1577,7 +1719,7 @@ export class MatchSim {
       // Para passes, o alvo e um jogador do mesmo time
       if (p.action && ["pass", "passLong", "cross"].includes(p.action)) {
         const teammate = this.players.find(
-          (t) => t.side === p.side && t.id !== p.id && t.pos !== "GK"
+          (t) => t.side === p.side && t.id !== p.id && t.pos !== "GK",
         );
         if (teammate) {
           return { x: teammate.x, z: teammate.z };
@@ -1790,14 +1932,14 @@ export class MatchSim {
     const seed = this.hashString(p.pid);
     const timeFactor = Math.floor(this.time * 10) % 100;
     const combined = (seed + timeFactor) % 100;
-    
+
     // Se o valor for par, pe direito no chao, senao pe esquerdo
     // (simplificacao: nao estamos Fazendo IK completo aqui)
     if (p.vx !== 0 || p.vz !== 0) {
       // Em movimento: alternar
       return combined % 2 === 0 ? "right" : "left";
     }
-    
+
     // Parado: ambos os pes no chao
     return null;
   }
@@ -1845,7 +1987,9 @@ export class MatchSim {
       if (p.pos === "GK") {
         return Math.random() < 0.5 ? "handLeft" : "handRight";
       }
-      return this.determineUsedFoot(p, getDominantFoot(p.pid)) === "left" ? "footLeft" : "footRight";
+      return this.determineUsedFoot(p, getDominantFoot(p.pid)) === "left"
+        ? "footLeft"
+        : "footRight";
     }
 
     if (contactType === "player") {
@@ -1874,14 +2018,14 @@ export class MatchSim {
     if (p.pos === "GK" && this.ball.height < 1) {
       // Goleiro em contato com atacante
       const attacker = this.players.find(
-        (t) => t.side !== p.side && Math.hypot(t.x - p.x, t.z - p.z) < 2
+        (t) => t.side !== p.side && Math.hypot(t.x - p.x, t.z - p.z) < 2,
       );
       if (attacker) return attacker.id;
     }
 
     if (p.action && ["tackle", "slide"].includes(p.action)) {
       const opponent = this.players.find(
-        (t) => t.side !== p.side && Math.hypot(t.x - p.x, t.z - p.z) < 2
+        (t) => t.side !== p.side && Math.hypot(t.x - p.x, t.z - p.z) < 2,
       );
       if (opponent) return opponent.id;
     }
@@ -1892,7 +2036,10 @@ export class MatchSim {
   /**
    * Calcula velocidade relativa.
    */
-  private calculateRelativeVelocity(p: SimPlayer, contactPlayerId: string | null): { vx: number; vz: number } | null {
+  private calculateRelativeVelocity(
+    p: SimPlayer,
+    contactPlayerId: string | null,
+  ): { vx: number; vz: number } | null {
     if (!contactPlayerId) return null;
 
     const other = this.players.find((t) => t.id === contactPlayerId);

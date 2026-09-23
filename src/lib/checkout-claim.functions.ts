@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { type StripeEnv, createStripeClient } from "@/lib/stripe.server";
+import { createStripeClient, getConfiguredStripeEnvironment } from "@/lib/stripe.server";
 
 export type ClaimResult =
   { status: "delivered" } | { status: "pending" } | { status: "error"; message: string };
@@ -16,18 +16,15 @@ export type ClaimResult =
  */
 export const claimCheckoutSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { sessionId: string; environment: StripeEnv }) => {
+  .inputValidator((data: { sessionId: string }) => {
     if (!/^cs_[a-zA-Z0-9_]+$/.test(data.sessionId)) {
       throw new Error("Invalid sessionId");
-    }
-    if (data.environment !== "sandbox" && data.environment !== "live") {
-      throw new Error("Invalid environment");
     }
     return data;
   })
   .handler(async ({ data, context }): Promise<ClaimResult> => {
     try {
-      const stripe = createStripeClient(data.environment);
+      const stripe = createStripeClient(getConfiguredStripeEnvironment());
       const session = await stripe.checkout.sessions.retrieve(data.sessionId, {
         expand: ["line_items.data.price"],
       });

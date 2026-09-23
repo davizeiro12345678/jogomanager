@@ -10,6 +10,63 @@ export type StripeEnv = "sandbox" | "live";
 
 const GATEWAY_STRIPE_BASE = "https://connector-gateway.lovable.dev/stripe";
 
+function isStripeEnvironment(value: string): value is StripeEnv {
+  return value === "sandbox" || value === "live";
+}
+
+/**
+ * Resolves the payment environment from trusted deployment configuration.
+ *
+ * `VITE_PAYMENTS_CLIENT_TOKEN` is only a legacy fallback read from the server
+ * process at build/deploy time. It is never read from an HTTP request, so a
+ * browser cannot switch a production checkout to the sandbox (or the reverse).
+ */
+export function resolveConfiguredStripeEnvironment(
+  options: {
+    deploymentEnvironment?: string | undefined;
+    clientToken?: string | undefined;
+  } = {},
+): StripeEnv {
+  const deploymentEnvironment = options.deploymentEnvironment?.trim().toLowerCase();
+  if (deploymentEnvironment && !isStripeEnvironment(deploymentEnvironment)) {
+    throw new Error("PAYMENTS_ENVIRONMENT deve ser sandbox ou live.");
+  }
+
+  const clientToken = options.clientToken?.trim();
+  let tokenEnvironment: StripeEnv | undefined;
+  if (clientToken?.startsWith("pk_test_")) tokenEnvironment = "sandbox";
+  else if (clientToken?.startsWith("pk_live_")) tokenEnvironment = "live";
+  else if (clientToken) {
+    throw new Error("VITE_PAYMENTS_CLIENT_TOKEN deve ser uma chave pública Stripe válida.");
+  }
+
+  if (deploymentEnvironment && tokenEnvironment && deploymentEnvironment !== tokenEnvironment) {
+    throw new Error(
+      "PAYMENTS_ENVIRONMENT não corresponde à chave pública Stripe configurada para este deploy.",
+    );
+  }
+
+  if (deploymentEnvironment && isStripeEnvironment(deploymentEnvironment))
+    return deploymentEnvironment;
+  if (tokenEnvironment) return tokenEnvironment;
+
+  throw new Error(
+    "Pagamentos não configurados para este deploy. Defina PAYMENTS_ENVIRONMENT ou VITE_PAYMENTS_CLIENT_TOKEN.",
+  );
+}
+
+/**
+ * Server-only boundary for checkout, claim, portal, and webhook handlers.
+ * A caller must never be allowed to provide this value in a browser payload or
+ * make a webhook query string authoritative.
+ */
+export function getConfiguredStripeEnvironment(): StripeEnv {
+  return resolveConfiguredStripeEnvironment({
+    deploymentEnvironment: process.env["PAYMENTS_ENVIRONMENT"],
+    clientToken: process.env["VITE_PAYMENTS_CLIENT_TOKEN"],
+  });
+}
+
 export function getConnectionApiKey(env: StripeEnv): string {
   return env === "sandbox" ? getEnv("STRIPE_SANDBOX_API_KEY") : getEnv("STRIPE_LIVE_API_KEY");
 }
@@ -74,10 +131,7 @@ export function getStripeErrorMessage(error: unknown): string {
   return "Stripe request failed";
 }
 
-export async function verifyWebhook(
-  req: Request,
-  env: StripeEnv,
-): Promise<{ type: string; data: { object: any } }> {
+export async function verifyWebhook(req: Request, env: StripeEnv): Promise<Stripe.Event> {
   const signature = req.headers.get("stripe-signature");
   const body = await req.text();
   const secret =
@@ -124,5 +178,5 @@ export async function verifyWebhook(
     throw new Error("Invalid webhook signature");
   }
 
-  return JSON.parse(body);
+  return JSON.parse(body) as Stripe.Event;
 }

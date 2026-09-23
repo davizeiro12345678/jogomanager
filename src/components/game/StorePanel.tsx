@@ -149,7 +149,9 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
         <div className="flex flex-wrap items-center gap-3">
           <Coins className="text-primary" size={20} />
           <span className="font-display text-sm uppercase tracking-wide">
-            {isGuest || isSessionLoading ? "Vitrine da loja" : `${walletQuery.data?.coins ?? 0} moedas`}
+            {isGuest || isSessionLoading
+              ? "Vitrine da loja"
+              : `${walletQuery.data?.coins ?? 0} moedas`}
           </span>
           {walletQuery.data && walletQuery.data.scout_reports > 0 && (
             <Badge variant="secondary" className="gap-1">
@@ -174,8 +176,15 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           </p>
         ) : isGuest ? (
           <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-            <p>Veja os pacotes e preços. Compre por e-mail ou entre para vincular o item direto à carreira.</p>
-            <Link to="/auth" search={{ next }} className="font-medium text-primary underline underline-offset-4">
+            <p>
+              Veja os pacotes e preços. Compre por e-mail ou entre para vincular o item direto à
+              carreira.
+            </p>
+            <Link
+              to="/auth"
+              search={{ next }}
+              className="font-medium text-primary underline underline-offset-4"
+            >
               Já tenho conta
             </Link>
           </div>
@@ -231,7 +240,8 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                 key={p.key}
                 id={`store-product-${p.key}`}
                 onMouseEnter={() => {
-                  if (p.key === bestValueKey) recordAdMetric(`store-${p.key}`, "inventory", "impression");
+                  if (p.key === bestValueKey)
+                    recordAdMetric(`store-${p.key}`, "inventory", "impression");
                 }}
                 className={`relative flex flex-col surface-card transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-glow)] motion-reduce:transform-none motion-reduce:transition-none ${
                   selectedProduct === p.key
@@ -297,13 +307,11 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                     ) : (
                       <Button
                         className="w-full"
-                        disabled={
-                          openingKey === p.key ||
-                          (p.kind === "pass" && subscriptionActive)
-                        }
+                        disabled={openingKey === p.key || (p.kind === "pass" && subscriptionActive)}
                         onClick={() => buy(p.key)}
                         onPointerDown={() => {
-                          if (p.key === bestValueKey) recordAdMetric(`store-${p.key}`, "inventory", "click");
+                          if (p.key === bestValueKey)
+                            recordAdMetric(`store-${p.key}`, "inventory", "click");
                         }}
                       >
                         {openingKey === p.key

@@ -1,0 +1,94 @@
+name: Quality gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Build, types and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm exec -- tsc --noEmit --pretty false
+      # The stress suite has its own performance budget and runs in a separate
+      # scheduled job once a stable CI baseline is recorded.
+      - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1
+      - run: PFM_LOCAL_VERIFY=1 npm run build
+
+  game-assets:
+    name: 3D asset compression contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/verify-game-assets.mjs
+
+  graphics-contract:
+    name: Deterministic 3D benchmark contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm exec -- vitest run src/game/graphics-benchmark-contract.test.ts src/game/rapier-ball-authority.test.ts --pool=forks --maxWorkers=1
+      - run: npm exec -- vite build --config scripts/graphics-vite.config.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: graphics-benchmark-bundle
+          path: dist-benchmark
+          if-no-files-found: error
+
+  lighthouse:
+    name: Lighthouse shell audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: PFM_LOCAL_VERIFY=1 npm run build
+      - uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: .lighthouserc.cjs
+          uploadArtifacts: true
+          temporaryPublicStorage: false
+
+  dependency-audit:
+    name: Production dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm audit --omit=dev --audit-level=high

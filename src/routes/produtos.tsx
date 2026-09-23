@@ -18,11 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { useSignedIn } from "@/hooks/useCareer";
 import { useStoreCatalog } from "@/hooks/useStoreCatalog";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
-import {
-  PACK_BY_KEY,
-  formatPrice,
-  type PackKind,
-} from "@/game/store-catalog";
+import { PACK_BY_KEY, formatPrice, type PackKind } from "@/game/store-catalog";
 import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PackScene = lazy(() =>
@@ -102,7 +98,7 @@ function ProdutosPage() {
   const previewProduct = products.find((product) => product.key === previewKey) ?? null;
   const previewPresentation = previewProduct ? PACK_BY_KEY[previewProduct.key] : undefined;
   const previewKind = previewProduct
-    ? asPackKind(previewProduct.kind) ?? previewPresentation?.kind ?? "coins"
+    ? (asPackKind(previewProduct.kind) ?? previewPresentation?.kind ?? "coins")
     : "coins";
 
   return (
@@ -122,7 +118,7 @@ function ProdutosPage() {
             role="status"
             className="mt-5 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/5 p-4 text-sm sm:flex-row sm:items-center sm:justify-between"
           >
-          <p className="text-muted-foreground">
+            <p className="text-muted-foreground">
               Compare os itens e preços à vontade. Você pode comprar com e-mail ou entrar para
               vincular a compra diretamente à sua carreira.
             </p>
@@ -156,7 +152,11 @@ function ProdutosPage() {
                 Não foi possível carregar o catálogo oficial. Para evitar informações
                 desatualizadas, nenhum preço ou benefício foi exibido.
               </p>
-              <Button className="mt-4" variant="outline" onClick={() => void productsQuery.refetch()}>
+              <Button
+                className="mt-4"
+                variant="outline"
+                onClick={() => void productsQuery.refetch()}
+              >
                 Tentar novamente
               </Button>
             </div>
@@ -215,13 +215,8 @@ function ProdutosPage() {
                         </p>
                       </div>
                       {signedIn === true ? (
-                        <Button
-                          onClick={() => buy(product.key)}
-                          disabled={opening === product.key}
-                        >
-                          {opening === product.key
-                              ? "Abrindo…"
-                              : "Comprar agora"}
+                        <Button onClick={() => buy(product.key)} disabled={opening === product.key}>
+                          {opening === product.key ? "Abrindo…" : "Comprar agora"}
                         </Button>
                       ) : signedIn === false ? (
                         <Button
@@ -262,11 +257,18 @@ function ProdutosPage() {
             className="mt-8 overflow-hidden rounded-3xl border border-primary/25 surface-card md:grid md:grid-cols-[minmax(0,1fr)_20rem]"
           >
             <div className="p-6">
-              <p className="font-display text-xs uppercase tracking-[0.28em] text-primary">Prévia opcional</p>
-              <h2 id="product-preview-title" className="mt-2 font-display text-2xl uppercase tracking-wide">
+              <p className="font-display text-xs uppercase tracking-[0.28em] text-primary">
+                Prévia opcional
+              </p>
+              <h2
+                id="product-preview-title"
+                className="mt-2 font-display text-2xl uppercase tracking-wide"
+              >
                 {previewProduct.name}
               </h2>
-              <p className="mt-3 max-w-xl text-sm text-muted-foreground">{previewProduct.description}</p>
+              <p className="mt-3 max-w-xl text-sm text-muted-foreground">
+                {previewProduct.description}
+              </p>
               <p className="mt-5 text-sm text-muted-foreground">
                 Esta é a única cena 3D da vitrine. Os cards usam posters leves para que a loja
                 continue rápida mesmo em aparelhos sem WebGL.
