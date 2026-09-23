@@ -64,6 +64,13 @@
       "when": 1789923070683,
       "tag": "0008_restrict_activity_ranking_table_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790121962469,
+      "tag": "0009_server_owned_results_and_achievements",
+      "breakpoints": true
     }
   ]
 }
