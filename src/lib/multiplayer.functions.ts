@@ -36,7 +36,8 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
     if (room.status !== "live") return { ok: false, reason: "not_live" };
     if (data.minute < 90) return { ok: false, reason: "not_finished" };
 
-    const { error: updateError } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: updateError } = await supabaseAdmin
       .from("match_rooms")
       .update({
         status: "done",

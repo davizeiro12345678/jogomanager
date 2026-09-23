@@ -32,7 +32,8 @@ export const syncAchievements = createServerFn({ method: "POST" })
     if (!earned.length) return { ok: true, unlocked: [] as string[] };
 
     const rows = earned.map((key) => ({ user_id: context.userId, achievement_key: key }));
-    const { error } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
       .from("user_achievements")
       .upsert(rows as never, { onConflict: "user_id,achievement_key", ignoreDuplicates: true });
     if (error) throw new Error(error.message);
