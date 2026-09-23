@@ -3,8 +3,10 @@
 //  Testes para o catálogo de animações e sistema de seleção de clipes.
 // ============================================================================
 
+import { beforeAll, describe, expect, it } from "vitest";
+
+import { initializeAnimationCatalog as registerClips } from "./register-animations";
 import {
-  registerClips,
   ANIMATION_CATALOG,
   selectClipFromContext,
   canTransition,
