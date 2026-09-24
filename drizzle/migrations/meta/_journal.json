@@ -99,6 +99,13 @@
       "when": 1790208274976,
       "tag": "0013_guest_checkout_delayed_payment_claim",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790284653054,
+      "tag": "0014_game_coupons_and_sales",
+      "breakpoints": true
     }
   ]
 }
