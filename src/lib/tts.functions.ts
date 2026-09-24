@@ -191,6 +191,7 @@ const SCENE_VOICE: Record<string, string> = {
 };
 
 export const narrateScene = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => SceneNarrateInput.parse(input))
   .handler(async ({ data }): Promise<NarrateResult> => {
     const apiKey = process.env["ELEVENLABS_API_KEY"];
