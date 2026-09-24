@@ -14,7 +14,8 @@ import { realSquadFor, type RealPlayer } from "@/lib/realSquads";
 import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
 import { applyRegens } from "./regen";
-import { applyPyramid } from "./pyramid";
+import { checkSeasonIntegrity } from "./season-integrity";
+import { applyPyramid, leagueClubIds } from "./pyramid";
 import { evolveSeason, setAttrDeltas } from "./attributes";
 
 import { computeTable, generateFixtures } from "./season";
@@ -509,6 +510,25 @@ function endSeason(state: CareerState): CareerState {
 
   // acesso e rebaixamento entre as divisões do país
   const move = applyPyramid(state, table, state.pyramidSlots);
+
+  // Checagem de integridade da temporada que terminou. Não bloqueia a carreira:
+  // registra no noticiário para que qualquer inconsistência fique visível.
+  const issues = checkSeasonIntegrity({
+    clubIds: leagueClubIds(state),
+    fixtures: state.fixtures,
+    table,
+  });
+  if (issues.length) {
+    console.warn("[season-integrity]", state.season, issues);
+    news.push({
+      id: `integrity-${state.season}`,
+      season: state.season,
+      round: state.round,
+      kind: "sistema",
+      title: "Relatório de integridade da temporada",
+      body: `Foram encontradas ${issues.length} inconsistência(s) e a temporada foi fechada com a tabela oficial. Ex.: ${issues[0]}`,
+    });
+  }
   const nextLeagueId = move?.leagueId ?? state.leagueId;
   const nextLeagueClubs = move
     ? { ...(state.leagueClubs ?? {}), ...move.leagueClubs }

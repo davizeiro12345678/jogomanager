@@ -89,3 +89,59 @@ export function computeOverall(input: OverallInput): OverallBreakdown {
 
   return { league, club, position, age, stats, minutes, variation, overall, potential };
 }
+
+// ---------------------------------------------------------------------------
+// Overall por atributos e potencial (usado pela base, regens e evolução)
+// ---------------------------------------------------------------------------
+
+export interface CoreAttributes {
+  pace: number;
+  shooting: number;
+  passing: number;
+  defending: number;
+  physical: number;
+}
+
+/** Peso de cada atributo por posição (cada linha soma 1). */
+export const POSITION_WEIGHTS: Record<OverallPosition, CoreAttributes> = {
+  GK: { pace: 0.05, shooting: 0, passing: 0.15, defending: 0.6, physical: 0.2 },
+  DF: { pace: 0.15, shooting: 0.03, passing: 0.15, defending: 0.45, physical: 0.22 },
+  MF: { pace: 0.15, shooting: 0.17, passing: 0.38, defending: 0.15, physical: 0.15 },
+  FW: { pace: 0.25, shooting: 0.42, passing: 0.13, defending: 0.02, physical: 0.18 },
+};
+
+/** Overall a partir dos atributos, ponderado pela posição. */
+export function positionalOverall(pos: OverallPosition, a: CoreAttributes): number {
+  const w = POSITION_WEIGHTS[pos];
+  const v =
+    a.pace * w.pace +
+    a.shooting * w.shooting +
+    a.passing * w.passing +
+    a.defending * w.defending +
+    a.physical * w.physical;
+  return Math.round(clamp(v, 30, 99));
+}
+
+/** Ajuste de forma recente: forma 50 é neutra, ±2 no máximo. */
+export function formAdjustment(form: number): number {
+  return Math.round(clamp((form - 60) / 15, -2, 2) * 10) / 10;
+}
+
+/**
+ * Potencial: jovens com minutos crescem mais; a partir dos 29 o potencial é
+ * o próprio overall. `minutesShare` = fração dos minutos possíveis (0–1).
+ */
+export function potentialFor(
+  ovr: number,
+  age: number,
+  minutesShare: number,
+  seed: string,
+): number {
+  if (age >= 29) return ovr;
+  const rng = makeRng(`pot:${seed}`);
+  const years = 29 - age;
+  const perYear = age < 21 ? 2.4 : age < 24 ? 1.6 : 0.8;
+  const playBonus = clamp(minutesShare, 0, 1) * 4;
+  const talent = rng() * 8 - 3;
+  return Math.round(clamp(ovr + years * perYear * 0.6 + playBonus + talent, ovr, 96));
+}
