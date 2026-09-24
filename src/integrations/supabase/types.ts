@@ -831,6 +831,103 @@ export type Database = {
         }
         Relationships: []
       }
+      player_career_clubs: {
+        Row: {
+          appearances: number | null
+          badge_url: string | null
+          departed: string | null
+          goals: number | null
+          id: string
+          joined: string | null
+          last_synced_at: string
+          move_type: string | null
+          player_id: string
+          source: string
+          source_id: string
+          team_name: string
+        }
+        Insert: {
+          appearances?: number | null
+          badge_url?: string | null
+          departed?: string | null
+          goals?: number | null
+          id?: string
+          joined?: string | null
+          last_synced_at?: string
+          move_type?: string | null
+          player_id: string
+          source?: string
+          source_id: string
+          team_name: string
+        }
+        Update: {
+          appearances?: number | null
+          badge_url?: string | null
+          departed?: string | null
+          goals?: number | null
+          id?: string
+          joined?: string | null
+          last_synced_at?: string
+          move_type?: string | null
+          player_id?: string
+          source?: string
+          source_id?: string
+          team_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_career_clubs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_honours: {
+        Row: {
+          honour: string
+          id: string
+          last_synced_at: string
+          player_id: string
+          season: string | null
+          source: string
+          source_id: string
+          team_name: string | null
+          trophy_url: string | null
+        }
+        Insert: {
+          honour: string
+          id?: string
+          last_synced_at?: string
+          player_id: string
+          season?: string | null
+          source?: string
+          source_id: string
+          team_name?: string | null
+          trophy_url?: string | null
+        }
+        Update: {
+          honour?: string
+          id?: string
+          last_synced_at?: string
+          player_id?: string
+          season?: string | null
+          source?: string
+          source_id?: string
+          team_name?: string | null
+          trophy_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_honours_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_profiles: {
         Row: {
           birth_year: number | null
