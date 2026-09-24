@@ -316,7 +316,7 @@ export interface QuickSimEvent {
 
 /** Médias de referência (grandes ligas): ~2,6 gols, ~25% empates, ~45% mandante. */
 const SIM_BASE_GOALS = 1.2;
-const SIM_HOME_EDGE = 0.13;
+const SIM_HOME_EDGE = 0.15;
 const SIM_DRAW_RHO = -0.09;
 
 /**
@@ -342,7 +342,7 @@ export function quickSimulate(
   let hg = poisson(expH, rnd);
   let ag = poisson(expA, rnd);
   // Dixon-Coles: placares baixos empatados ficam um pouco mais prováveis.
-  if (hg + ag <= 2 && hg !== ag && rnd() < -SIM_DRAW_RHO * 1.2) {
+  if (hg + ag <= 2 && hg !== ag && rnd() < -SIM_DRAW_RHO * 0.2) {
     if (hg > ag) ag = hg;
     else hg = ag;
   }
