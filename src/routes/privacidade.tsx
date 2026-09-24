@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import { ConsentCenter, TrustBadges } from "@/components/privacy/ConsentCenter";
 import { PublicLinks } from "@/components/PublicLinks";
 import { CONTENT_UPDATED, SiteFooter } from "@/components/SiteFooter";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
@@ -74,6 +75,18 @@ function PrivacidadePage() {
           dados. Atualizada em{" "}
           <time dateTime={CONTENT_UPDATED}>14 de setembro de 2026</time>.
         </p>
+
+        <div className="mt-6">
+          <TrustBadges />
+          <p className="mt-3 text-xs text-muted-foreground">
+            Os dados completos do cartão são processados pela Stripe e não são armazenados pelo
+            JogoManager.
+          </p>
+        </div>
+
+        <div className="mt-8">
+          <ConsentCenter />
+        </div>
 
         <div className="mt-8 space-y-6">
           {BLOCKS.map((b) => (
