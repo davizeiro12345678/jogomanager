@@ -287,7 +287,6 @@ async function createIntent(
       open_key: openKey,
       consent_version: CONSENT_VERSION,
       expires_at: expiresAt,
-        ...(await checkoutDiscountParams(stripe, product)),
     })
     .select(
       "id, product_key, email_hash, environment, state, amount_cents, currency, contents_snapshot, stripe_price_id, stripe_customer_id, stripe_session_id, open_key, claimed_by_user_id, expires_at",
@@ -369,6 +368,7 @@ async function openStripeSession(
       return_url: returnUrl,
       customer: customerId,
       expires_at: expiresAt,
+      ...(await checkoutDiscountParams(stripe, product)),
       metadata: {
         guestCheckoutIntentId: intent.id,
         productKey: product.key,
