@@ -373,7 +373,7 @@ export interface CupGroup {
 }
 
 export interface CupState {
-  id: "national" | "continental";
+  id: "national" | "continental" | "intercontinental" | "club_world_cup";
   name: string;
   stage: number;
   ties: CupTie[];

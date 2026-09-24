@@ -146,7 +146,7 @@ export function createCups(state: CareerState): CupState[] {
     .map((c) => c.id);
   const contIds = shuffled([state.clubId, ...contPool], rnd);
 
-  return [
+  const cups: CupState[] = [
     {
       id: "national",
       name: CUP_NAMES[country] ?? `Copa ${country}`,
@@ -169,6 +169,104 @@ export function createCups(state: CareerState): CupState[] {
       groupRound: 0,
     },
   ];
+
+  const inter = createIntercontinental(state, contName, rnd);
+  if (inter) cups.push(inter);
+  const world = createClubWorldCup(state, contName, rnd);
+  if (world) cups.push(world);
+  return cups;
+}
+
+const CONTINENT_GROUPS = [
+  "Copa Libertadores",
+  "Champions League",
+  "CAF Champions League",
+  "CONCACAF Champions Cup",
+  "AFC Champions League",
+];
+
+/** Os clubes mais fortes de um continente (representantes simulados). */
+function strongestOf(contName: string, count: number, exclude: Set<string>) {
+  return LEAGUES.filter((l) => continentalName(l.country) === contName)
+    .flatMap((l) => l.clubs)
+    .filter((c) => !exclude.has(c.id))
+    .sort((a, b) => b.strength - a.strength)
+    .slice(0, count)
+    .map((c) => c.id);
+}
+
+function wonContinental(state: CareerState, contName: string, seasons: number[]): boolean {
+  return state.trophies.some((t) => t.name === contName && seasons.includes(t.season));
+}
+
+/** Copa Intercontinental: campeão continental da temporada anterior + outros três campeões. */
+function createIntercontinental(
+  state: CareerState,
+  contName: string,
+  rnd: () => number,
+): CupState | null {
+  if (!wonContinental(state, contName, [state.season - 1])) return null;
+  const used = new Set([state.clubId]);
+  const rivals = CONTINENT_GROUPS.filter((c) => c !== contName)
+    .flatMap((c) => strongestOf(c, 1, used))
+    .sort((a, b) => (CLUBS[b]?.strength ?? 0) - (CLUBS[a]?.strength ?? 0))
+    .slice(0, 3);
+  if (rivals.length < 3) return null;
+  return {
+    id: "intercontinental",
+    name: "Copa Intercontinental",
+    // Começa na semifinal (estágio 2) com quatro campeões.
+    stage: 2,
+    ties: makeTies(shuffled([state.clubId, ...rivals], rnd), 2),
+    out: false,
+    winner: null,
+    everyRounds: 12,
+  };
+}
+
+/** Supermundial da FIFA: a cada 4 temporadas, 32 clubes, 8 grupos de 4 e mata-mata. */
+export const CLUB_WORLD_CUP_QUOTA: Record<string, number> = {
+  "Champions League": 12,
+  "Copa Libertadores": 6,
+  "CONCACAF Champions Cup": 5,
+  "AFC Champions League": 5,
+  "CAF Champions League": 4,
+};
+
+function createClubWorldCup(
+  state: CareerState,
+  contName: string,
+  rnd: () => number,
+): CupState | null {
+  if (state.season % 4 !== 0) return null;
+  const recent = [1, 2, 3, 4].map((n) => state.season - n);
+  const used = new Set<string>([state.clubId]);
+  const field: string[] = [];
+  for (const [cont, quota] of Object.entries(CLUB_WORLD_CUP_QUOTA)) {
+    const ids = strongestOf(cont, quota, used);
+    ids.forEach((id) => used.add(id));
+    field.push(...ids);
+  }
+  const strongInContinent = strongestOf(contName, CLUB_WORLD_CUP_QUOTA[contName] ?? 0, new Set());
+  const qualifies =
+    wonContinental(state, contName, recent) || strongInContinent.includes(state.clubId);
+  if (!qualifies || field.length < 31) return null;
+  // Troca o último representante do continente do usuário pelo clube dele.
+  const replaceIdx = field.findLastIndex((id) => strongInContinent.includes(id));
+  const clubs = [...field.slice(0, 31)];
+  if (replaceIdx >= 0 && replaceIdx < 31) clubs.splice(replaceIdx, 1);
+  const ids = shuffled([state.clubId, ...clubs.slice(0, 31)], rnd);
+  return {
+    id: "club_world_cup",
+    name: "Supermundial de Clubes",
+    stage: 0,
+    ties: [],
+    out: false,
+    winner: null,
+    everyRounds: 5,
+    groups: makeGroups(ids),
+    groupRound: 0,
+  };
 }
 
 /** Rodadas de um grupo de quatro: todos contra todos, turno único. */
@@ -435,6 +533,7 @@ export function playCupStage(cup: CupState, state: CareerState): CupResult {
 
 /** Premiação por avançar de fase (M€). */
 export function cupPrize(cupId: string, stage: number): number {
-  const base = cupId === "continental" ? 4 : 1.6;
+  const base =
+    cupId === "club_world_cup" ? 8 : cupId === "intercontinental" ? 6 : cupId === "continental" ? 4 : 1.6;
   return Math.round(base * (stage + 1) * 10) / 10;
 }
