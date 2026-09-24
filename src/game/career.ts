@@ -350,6 +350,23 @@ export function quickSimulate(
 }
 
 /** Forma recente 0–100 pelos pontos nos últimos 5 jogos (60 = neutra). */
+/**
+ * Cansaço estimado (0–100) de um clube controlado pelo computador: o desgaste
+ * cresce ao longo da temporada e cada expulsão nas duas últimas rodadas pesa
+ * (elenco desfalcado roda menos). Determinístico, sem estado extra.
+ */
+export function squadFatigue(fixtures: Fixture[], clubId: string, beforeRound: number): number {
+  const lastRound = fixtures.reduce((m, f) => Math.max(m, f.round), 1);
+  let reds = 0;
+  for (const f of fixtures) {
+    if (f.round >= beforeRound || f.round < beforeRound - 2 || !f.events) continue;
+    const side = f.home === clubId ? "home" : f.away === clubId ? "away" : null;
+    if (!side) continue;
+    reds += f.events.filter((e) => e.kind === "vermelho" && e.side === side).length;
+  }
+  return Math.min(100, 12 + 20 * (beforeRound / lastRound) + 12 * reds);
+}
+
 export function recentForm(fixtures: Fixture[], clubId: string, beforeRound: number): number {
   const last = fixtures
     .filter((f) => f.round < beforeRound && f.homeGoals !== null && (f.home === clubId || f.away === clubId))
@@ -697,6 +714,8 @@ export function advanceRound(
     const { hg, ag, events } = quickSimulate(f.home, f.away, `${state.clubId}-${round}-${f.home}`, {
       homeForm: recentForm(state.fixtures, f.home, round),
       awayForm: recentForm(state.fixtures, f.away, round),
+      homeFatigue: squadFatigue(state.fixtures, f.home, round),
+      awayFatigue: squadFatigue(state.fixtures, f.away, round),
     });
     return { ...f, homeGoals: hg, awayGoals: ag, events };
   });
