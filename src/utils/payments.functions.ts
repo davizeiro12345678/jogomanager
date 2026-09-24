@@ -11,6 +11,7 @@ import {
   getServerStoreProduct,
   getStoreServiceSupabase,
   resolveValidatedStripePrice,
+  checkoutDiscountParams,
 } from "@/lib/store-products.server";
 
 export type CheckoutSessionResult = { clientSecret: string } | { error: string };
@@ -89,6 +90,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         ui_mode: "embedded_page",
         return_url: data.returnUrl,
         customer: customerId,
+        ...(await checkoutDiscountParams(stripe, product)),
         ...(!isRecurring && {
           payment_intent_data: { description: productDescription },
         }),

@@ -24,6 +24,8 @@ export interface ServerStoreProduct {
   active: boolean;
   stripeLookupKey: string;
   contents: StoreProductContents;
+  /** desconto promocional ativo agora (0 = sem promoção) */
+  salePercentOff: number;
 }
 
 type ProductRow = {
@@ -36,6 +38,9 @@ type ProductRow = {
   active: boolean;
   stripe_lookup_key: string | null;
   contents: unknown;
+  sale_percent_off?: number | null;
+  sale_starts_at?: string | null;
+  sale_ends_at?: string | null;
 };
 
 let serviceSupabase: SupabaseClient<Database> | null = null;
@@ -116,6 +121,7 @@ function parseProductRow(row: ProductRow): ServerStoreProduct {
     active: row.active,
     stripeLookupKey: row.stripe_lookup_key,
     contents,
+    salePercentOff: activeSalePercent(row, Date.now()),
   };
 }
 
@@ -128,7 +134,7 @@ export async function getServerStoreProduct(
   let query = supabase
     .from("store_products")
     .select(
-      "key, name, description, price_cents, currency, kind, active, stripe_lookup_key, contents",
+      "key, name, description, price_cents, currency, kind, active, stripe_lookup_key, contents, sale_percent_off, sale_starts_at, sale_ends_at",
     )
     .eq("key", productKey);
   if (options.activeOnly !== false) query = query.eq("active", true);
@@ -162,4 +168,40 @@ export async function resolveValidatedStripePrice(
     throw new Error("O preço do checkout não confere com o catálogo oficial.");
   }
   return price;
+}
+
+/** Promoção vale só entre início e fim; fora disso o preço cheio é cobrado. */
+export function activeSalePercent(
+  row: { sale_percent_off?: number | null; sale_starts_at?: string | null; sale_ends_at?: string | null },
+  now: number,
+): number {
+  const pct = row.sale_percent_off ?? 0;
+  if (!Number.isInteger(pct) || pct < 1 || pct > 90) return 0;
+  if (row.sale_starts_at && now < Date.parse(row.sale_starts_at)) return 0;
+  if (row.sale_ends_at && now > Date.parse(row.sale_ends_at)) return 0;
+  return pct;
+}
+
+/**
+ * Desconto aplicado pela própria Stripe via cupom com id fixo por porcentagem,
+ * então o valor final é sempre calculado no servidor. Sem promoção, os clientes
+ * podem digitar códigos promocionais criados na Stripe.
+ */
+export async function checkoutDiscountParams(
+  stripe: Stripe,
+  product: ServerStoreProduct,
+): Promise<{ discounts: { coupon: string }[] } | { allow_promotion_codes: true }> {
+  if (!product.salePercentOff) return { allow_promotion_codes: true };
+  const id = `jm_sale_${product.salePercentOff}`;
+  try {
+    await stripe.coupons.retrieve(id);
+  } catch {
+    await stripe.coupons.create({
+      id,
+      percent_off: product.salePercentOff,
+      duration: "once",
+      name: `Promoção ${product.salePercentOff}%`,
+    });
+  }
+  return { discounts: [{ coupon: id }] };
 }
