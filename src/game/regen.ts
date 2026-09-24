@@ -9,13 +9,28 @@ import { poolForLeague } from "./data/names";
 import { makeRng } from "./rng";
 import { PERSONALITIES } from "./attributes";
 import type { NewsItem, Player, Position } from "./types";
+import { positionalOverall, potentialFor } from "./overall";
 
 const SHAPE: Position[] = ["GK", "DF", "DF", "MF", "MF", "FW", "DF", "MF", "FW"];
 
+/**
+ * Aposentadoria: idade é o fator principal; físico baixo, lesão longa e nível
+ * baixo antecipam; goleiros duram mais. Ninguém passa dos 41.
+ */
+export function retireChance(p: Player): number {
+  const start = p.pos === "GK" ? 34 : 32;
+  if (p.age >= 41) return 1;
+  if (p.age < start - 2) return 0;
+  let c = Math.max(0, p.age - start) * 0.17;
+  c += Math.max(0, (70 - p.physical) / 120);
+  c += Math.max(0, (68 - p.ovr) / 90);
+  if (p.injuryWeeks > 8) c += 0.12;
+  if (p.age < start) c *= 0.3;
+  return Math.min(0.97, c);
+}
+
 function chanceToRetire(p: Player, rnd: () => number) {
-  if (p.age < 33) return false;
-  const base = (p.age - 32) * 0.18 + Math.max(0, (72 - p.ovr) / 100);
-  return rnd() < Math.min(0.95, base);
+  return rnd() < retireChance(p);
 }
 
 function attrs(pos: Position, ovr: number, rnd: () => number) {
@@ -65,17 +80,24 @@ export function makeYouth(
   const name = `${pool.first[Math.floor(rnd() * pool.first.length)]} ${pool.last[Math.floor(rnd() * pool.last.length)]}`;
   const pos = SHAPE[index % SHAPE.length]!;
   const strength = club?.strength ?? 70;
-  const ovr = Math.max(48, Math.round(strength - 16 + rnd() * 10));
-  const potential = Math.min(94, ovr + 6 + Math.floor(rnd() * 22));
+  // ~4% de chance de "joia rara": nível inicial e teto bem acima da base.
+  const gem = rnd() < 0.04;
+  const baseOvr = Math.max(46, Math.round(strength - 16 + rnd() * 10 + (gem ? 6 : 0)));
+  const a = attrs(pos, baseOvr, rnd);
+  const ovr = Math.max(44, positionalOverall(pos, a));
+  const age = 16 + Math.floor(rnd() * 3);
+  const potential = gem
+    ? Math.min(96, Math.max(88, potentialFor(ovr, age, 0.3, `${clubId}-${season}-${index}`) + 8))
+    : Math.min(92, potentialFor(ovr, age, 0.1, `${clubId}-${season}-${index}`));
   return {
     id: `${clubId}-y${season}-${index}-${Math.floor(rnd() * 9999)}`,
     clubId,
     name,
     pos,
-    age: 16 + Math.floor(rnd() * 3),
+    age,
     number: 30 + index,
     ovr,
-    ...attrs(pos, ovr, rnd),
+    ...a,
     condition: 92 + Math.floor(rnd() * 8),
     morale: 78 + Math.floor(rnd() * 18),
     goals: 0,
