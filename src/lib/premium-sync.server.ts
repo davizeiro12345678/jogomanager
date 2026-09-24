@@ -195,11 +195,11 @@ export async function premiumSyncStats(limit = 400, offset = 0, budgetMs = 45_00
         position: p.position as "GK" | "DF" | "MF" | "FW",
         age: p.age,
         stats: {
-          appearances: s["appearances"],
-          minutes: s["minutes"],
-          goals: s["goals"],
-          assists: s["assists"],
-          cleanSheets: s["clean_sheets"],
+          appearances: s["appearances"] ?? 0,
+          minutes: s["minutes"] ?? 0,
+          goals: s["goals"] ?? 0,
+          assists: s["assists"] ?? 0,
+          cleanSheets: s["clean_sheets"] ?? 0,
         },
       });
       await db

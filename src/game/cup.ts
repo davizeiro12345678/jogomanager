@@ -243,19 +243,17 @@ function createClubWorldCup(
   const used = new Set<string>([state.clubId]);
   const field: string[] = [];
   for (const [cont, quota] of Object.entries(CLUB_WORLD_CUP_QUOTA)) {
-    const ids = strongestOf(cont, quota, used);
+    // O continente do usuário cede uma vaga para o clube dele.
+    const ids = strongestOf(cont, cont === contName ? quota - 1 : quota, used);
     ids.forEach((id) => used.add(id));
     field.push(...ids);
   }
   const strongInContinent = strongestOf(contName, CLUB_WORLD_CUP_QUOTA[contName] ?? 0, new Set());
   const qualifies =
     wonContinental(state, contName, recent) || strongInContinent.includes(state.clubId);
-  if (!qualifies || field.length < 31) return null;
-  // Troca o último representante do continente do usuário pelo clube dele.
-  const replaceIdx = field.findLastIndex((id) => strongInContinent.includes(id));
-  const clubs = [...field.slice(0, 31)];
-  if (replaceIdx >= 0 && replaceIdx < 31) clubs.splice(replaceIdx, 1);
-  const ids = shuffled([state.clubId, ...clubs.slice(0, 31)], rnd);
+  if (!qualifies || field.length !== 31) return null;
+  const clubs = field;
+  const ids = shuffled([state.clubId, ...clubs], rnd);
   return {
     id: "club_world_cup",
     name: "Supermundial de Clubes",
