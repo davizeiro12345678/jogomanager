@@ -300,15 +300,76 @@ export function orderedPositions(): Position[] {
   return ["GK", "DF", "MF", "FW"];
 }
 
-/** Simulação rápida (sem 3D) para as outras partidas da rodada. */
-export function quickSimulate(homeId: string, awayId: string, seed: string) {
+/** Contexto opcional do jogo: forma/moral (0–100) e cansaço dos dois lados. */
+export interface QuickSimContext {
+  homeForm?: number;
+  awayForm?: number;
+  homeFatigue?: number;
+  awayFatigue?: number;
+}
+
+export interface QuickSimEvent {
+  minute: number;
+  side: "home" | "away";
+  kind: "gol" | "penalti" | "gol_contra" | "vermelho";
+}
+
+/** Médias de referência (grandes ligas): ~2,6 gols, ~25% empates, ~45% mandante. */
+const SIM_BASE_GOALS = 1.2;
+const SIM_HOME_EDGE = 0.15;
+const SIM_DRAW_RHO = -0.09;
+
+/**
+ * Simulação rápida (sem 3D) para as outras partidas da rodada.
+ * A diferença de força é comprimida (tanh) para evitar goleadas demais, e uma
+ * correção de Dixon-Coles aproxima a frequência real de empates.
+ */
+export function quickSimulate(
+  homeId: string,
+  awayId: string,
+  seed: string,
+  ctx: QuickSimContext = {},
+) {
   const rnd = makeRng(seed);
-  const h = (CLUBS[homeId]?.strength ?? 70) + 4;
+  const form = (f?: number) => ((f ?? 60) - 60) / 40;
+  const fatigue = (f?: number) => -Math.max(0, (f ?? 0) - 20) / 200;
+  const h = CLUBS[homeId]?.strength ?? 70;
   const a = CLUBS[awayId]?.strength ?? 70;
-  const diff = (h - a) / 10;
-  const expH = Math.max(0.25, 1.35 + diff * 0.42);
-  const expA = Math.max(0.2, 1.15 - diff * 0.42);
-  return { hg: poisson(expH, rnd), ag: poisson(expA, rnd) };
+  const edge = Math.tanh((h - a) / 16) * 0.42 + form(ctx.homeForm) * 0.08 - form(ctx.awayForm) * 0.08;
+  const expH = Math.max(0.3, SIM_BASE_GOALS * Math.exp(edge + SIM_HOME_EDGE + fatigue(ctx.homeFatigue)));
+  const expA = Math.max(0.25, SIM_BASE_GOALS * Math.exp(-edge - SIM_HOME_EDGE * 0.6 + fatigue(ctx.awayFatigue)));
+
+  let hg = poisson(expH, rnd);
+  let ag = poisson(expA, rnd);
+  // Dixon-Coles: placares baixos empatados ficam um pouco mais prováveis.
+  if (hg + ag <= 2 && hg !== ag && rnd() < -SIM_DRAW_RHO * 0.2) {
+    if (hg > ag) ag = hg;
+    else hg = ag;
+  }
+  hg = Math.min(hg, 7);
+  ag = Math.min(ag, 7);
+  return { hg, ag, events: quickEvents(hg, ag, rnd) };
+}
+
+/** Minutos dos gols, pênaltis, gols contra e expulsões, com viradas plausíveis. */
+function quickEvents(hg: number, ag: number, rnd: () => number): QuickSimEvent[] {
+  const ev: QuickSimEvent[] = [];
+  const minute = () => {
+    // mais gols no fim de cada tempo
+    const r = rnd();
+    const m = r < 0.47 ? 1 + Math.floor(Math.pow(rnd(), 0.8) * 45) : 46 + Math.floor(Math.pow(rnd(), 0.75) * 45);
+    return Math.min(90, m);
+  };
+  const push = (side: "home" | "away", n: number) => {
+    for (let i = 0; i < n; i++) {
+      const r = rnd();
+      ev.push({ minute: minute(), side, kind: r < 0.1 ? "penalti" : r < 0.13 ? "gol_contra" : "gol" });
+    }
+  };
+  push("home", hg);
+  push("away", ag);
+  if (rnd() < 0.12) ev.push({ minute: 30 + Math.floor(rnd() * 60), side: rnd() < 0.55 ? "away" : "home", kind: "vermelho" });
+  return ev.sort((x, y) => x.minute - y.minute);
 }
 
 function poisson(lambda: number, rnd: () => number) {
