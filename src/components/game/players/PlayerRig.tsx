@@ -419,6 +419,14 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
       p.armLRoll += tired * 0.06;
       p.armRRoll -= tired * 0.06;
       p.headPitch += tired * 0.07;
+      // muito cansado e parado: curva o tronco e deixa os braços pesados
+      if (tired > 0.6 && speed < 0.6 && !player.action) {
+        const k = (tired - 0.6) / 0.4;
+        p.spine += k * 0.22;
+        p.headPitch += k * 0.1;
+        p.armLPitch -= k * 0.35;
+        p.armRPitch -= k * 0.35;
+      }
     }
 
     target.current = p;
@@ -441,7 +449,15 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
       hips.current.rotation.set(c.hipPitch, c.hipYaw, c.hipRoll + shift * 1.2);
     }
     if (spine.current) spine.current.rotation.x = c.spine;
-    if (chest.current) chest.current.rotation.x = c.chest;
+    if (chest.current) {
+      chest.current.rotation.x = c.chest;
+      // respiração: caixa torácica expande no ritmo; cansado = mais rápido e fundo
+      const fatigue = 1 - Math.min(1, Math.max(0, player.stamina) / 100);
+      const rate = 1.4 + fatigue * 2.4 + Math.min(1, speed / 7) * 1.2;
+      const depth = lod === 0 ? 0.008 + fatigue * 0.022 : 0;
+      const b = 1 + Math.sin(state.clock.elapsedTime * rate + seed) * depth;
+      chest.current.scale.set(1 + (b - 1) * 0.6, 1 + (b - 1) * 0.3, b);
+    }
     if (neck.current) {
       neck.current.rotation.x = c.headPitch;
       neck.current.rotation.y = c.headYaw;

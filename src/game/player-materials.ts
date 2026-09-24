@@ -119,11 +119,13 @@ export function playerMaterials(
           envMapIntensity: 0.95,
           sheen: 0.35,
           sheenRoughness: 0.6,
-          sheenColor: new THREE.Color("#ffd9c0"),
+          // tom avermelhado do sangue sob a pele: imita o espalhamento sub-superficial
+          // sem o custo de transmissão — a borda do rosto/braço fica "viva".
+          sheenColor: new THREE.Color(look.skin).lerp(new THREE.Color("#ff8a6a"), 0.45),
           specularIntensity: 0.45,
           specularColor: new THREE.Color("#fff1e4"),
         })
-      : new THREE.MeshStandardMaterial({ color: look.skin, roughness: 0.7 }),
+      : new THREE.MeshStandardMaterial({ color: look.skin, roughness: 0.62, envMapIntensity: 0.85 }),
     skinDark: new THREE.MeshStandardMaterial({
       color: skinShadow(look.skin),
       roughness: 0.72,
