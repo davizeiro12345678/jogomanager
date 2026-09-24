@@ -714,6 +714,11 @@ export async function runSync(opts: {
     if (scope === "seed") {
       const r = await seedFromBundledData();
       items = r.clubs;
+    } else if (scope === "premium") {
+      const { premiumSyncSquads } = await import("./premium-sync.server");
+      const r = await premiumSyncSquads(opts.limit ?? 40, opts.offset ?? 0, opts.budgetMs ?? 45_000);
+      detail = r;
+      items = r.inserted + r.updated;
     } else if (scope === "squads") {
       items = (
         await importSquads(
