@@ -115,3 +115,99 @@ export async function premiumSyncSquads(limit = 40, offset = 0, budgetMs = 45_00
 
   return { clubs, inserted, updated, failed, nextOffset: offset + (links?.length ?? 0) };
 }
+
+const STAT_MAP: Record<string, "appearances" | "starts" | "minutes" | "goals" | "assists" | "yellow_cards" | "red_cards" | "clean_sheets"> = {
+  appearances: "appearances",
+  starts: "starts",
+  "minutes played": "minutes",
+  minutes: "minutes",
+  goals: "goals",
+  assists: "assists",
+  "yellow cards": "yellow_cards",
+  "red cards": "red_cards",
+  "clean sheets": "clean_sheets",
+};
+
+/** Estatísticas por temporada + recálculo do overall com a temporada mais recente. */
+export async function premiumSyncStats(limit = 400, offset = 0, budgetMs = 45_000, concurrency = 8) {
+  const { supabaseAdmin: db } = (await import("@/integrations/supabase/client.server")) as {
+    supabaseAdmin: Admin;
+  };
+  const deadline = Date.now() + budgetMs;
+  const now = new Date().toISOString();
+  const { data: players, error } = await db
+    .from("players")
+    .select("id, club_id, position, age, source_id, clubs(strength, competitions(tier))")
+    .eq("source", SOURCE)
+    .not("source_id", "is", null)
+    .order("id")
+    .range(offset, offset + limit - 1);
+  if (error) throw new Error(error.message);
+
+  let done = 0;
+  let seasons = 0;
+  const queue = [...(players ?? [])];
+  const worker = async () => {
+    while (queue.length && Date.now() < deadline) {
+      const p = queue.shift()!;
+      const raw = await sdbV2.playerStats(p.source_id as string);
+      done++;
+      if (!raw.length) continue;
+      const bySeason = new Map<string, Record<string, number>>();
+      for (const r of raw) {
+        const season = str(r["strSeason"]);
+        const key = STAT_MAP[(str(r["strStatistic"]) ?? "").toLowerCase()];
+        const value = num(r["strValue"]);
+        if (!season || !key || value == null) continue;
+        const acc = bySeason.get(season) ?? {};
+        acc[key] = (acc[key] ?? 0) + Math.max(0, Math.round(value));
+        bySeason.set(season, acc);
+      }
+      if (!bySeason.size) continue;
+      const rows = [...bySeason].map(([season, s]) => {
+        const appearances = s["appearances"] ?? 0;
+        return {
+          player_id: p.id,
+          club_id: null,
+          competition_id: null,
+          season: season.slice(0, 20),
+          ...s,
+          appearances,
+          starts: Math.min(s["starts"] ?? 0, appearances),
+          source: SOURCE,
+          source_id: `${p.source_id}:${season}`,
+          last_synced_at: now,
+          sync_status: "synced",
+        };
+      });
+      await db.from("player_season_stats").delete().eq("player_id", p.id).eq("source", SOURCE);
+      const ins = await db.from("player_season_stats").insert(rows);
+      if (ins.error) continue;
+      seasons += rows.length;
+
+      const latest = [...bySeason.keys()].sort().at(-1)!;
+      const s = bySeason.get(latest)!;
+      const rel = p.clubs as unknown as { strength: number | null; competitions: { tier: number | null } | null } | null;
+      const b = computeOverall({
+        seed: `${SOURCE}:${p.source_id}`,
+        leagueTier: rel?.competitions?.tier ?? 1,
+        clubStrength: rel?.strength ?? 65,
+        position: p.position as "GK" | "DF" | "MF" | "FW",
+        age: p.age,
+        stats: {
+          appearances: s["appearances"],
+          minutes: s["minutes"],
+          goals: s["goals"],
+          assists: s["assists"],
+          cleanSheets: s["clean_sheets"],
+        },
+      });
+      await db
+        .from("players")
+        .update({ overall: b.overall, potential: b.potential, overall_breakdown: { ...b } })
+        .eq("id", p.id);
+    }
+  };
+  await Promise.all(Array.from({ length: concurrency }, worker));
+  return { processed: done, seasons, nextOffset: offset + done, total: players?.length ?? 0 };
+}
