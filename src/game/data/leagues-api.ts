@@ -12,6 +12,42 @@ type Raw = [
 
 const RAW: { id: string; name: string; country: string; flag: string; clubs: Raw[] }[] = [
   {
+    id: "x4635",
+    name: "Faroe Islands Premier League",
+    country: "Ilhas Faroé",
+    flag: "🇫🇴",
+    clubs: [
+      ["x4635_133965", "B36 Tórshavn", "BTR", "#58a6cb", "#ffffff", 54],
+      ["x4635_134026", "Víkingur Gøta", "VKI", "#a488fd", "#ffffff", 52],
+      ["x4635_134065", "NSÍ Runavík", "NSR", "#1e0a6d", "#ffffff", 52],
+      ["x4635_134068", "EB/Streymur", "EBS", "#d8fc01", "#ffffff", 54],
+      ["x4635_134336", "HB Tórshavn", "HBT", "#0e767a", "#ffffff", 56],
+      ["x4635_138051", "KÍ Klaksvík", "KLA", "#7f7d47", "#ffffff", 54],
+      ["x4635_138053", "AB Argir", "ABA", "#c8ee4c", "#ffffff", 51],
+      ["x4635_138054", "Skála", "SKL", "#a0280e", "#ffffff", 53],
+      ["x4635_140518", "07 Vestur", "VES", "#5dfc2f", "#ffffff", 54],
+      ["x4635_140519", "B68 Toftir", "BTO", "#a1354a", "#ffffff", 52],
+    ],
+  },
+  {
+    id: "x4618",
+    name: "Andorran 1a Divisió",
+    country: "Andorra",
+    flag: "🇦🇩",
+    clubs: [
+      ["x4618_134346", "FC Santa Coloma", "FCS", "#a5c8c8", "#ffffff", 53],
+      ["x4618_137790", "Atlètic d'Escaldes", "ATL", "#9e9741", "#ffffff", 58],
+      ["x4618_137791", "Ordino", "ORD", "#a785a2", "#ffffff", 56],
+      ["x4618_137792", "Inter Club d'Escaldes", "INT", "#7e79fb", "#ffffff", 51],
+      ["x4618_137793", "Carroi", "CAR", "#663269", "#ffffff", 59],
+      ["x4618_140126", "Penya Encarnada d'Andorra", "PEN", "#df0209", "#000000", 53],
+      ["x4618_140684", "FC Rànger's", "FCR", "#e120c6", "#ffffff", 56],
+      ["x4618_146455", "Esperança d'Andorra", "ESP", "#a1b18f", "#ffffff", 59],
+      ["x4618_154390", "Sporting d'Escaldes", "SPO", "#320ba4", "#ffffff", 56],
+      ["x4618_154392", "Casa de Portugal", "CAS", "#fa7fe6", "#ffffff", 56],
+    ],
+  },
+  {
     id: "x4958",
     name: "Estonian Esiliiga",
     country: "Estônia",
