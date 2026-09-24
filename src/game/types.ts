@@ -79,6 +79,14 @@ export interface Fixture {
   away: string;
   homeGoals: number | null;
   awayGoals: number | null;
+  /** lances das partidas simuladas (gols, pênaltis, gols contra, expulsões) */
+  events?: FixtureEvent[];
+}
+
+export interface FixtureEvent {
+  minute: number;
+  side: "home" | "away";
+  kind: "gol" | "penalti" | "gol_contra" | "vermelho";
 }
 
 export interface TableRow {
