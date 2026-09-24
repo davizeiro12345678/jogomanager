@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConsentBanner } from "@/components/privacy/ConsentCenter";
 import {
   Outlet,
   Link,
@@ -142,6 +143,7 @@ function RootComponent() {
     // Estatísticas de uso não podem competir com a primeira pintura: só sobem
     // quando o navegador fica ocioso (fallback por timer onde não há idle).
     const start = () => void import("../lib/analytics").then((m) => m.initAnalytics());
+    window.addEventListener("consent-changed", start);
     const ric = (window as unknown as { requestIdleCallback?: typeof requestIdleCallback })
       .requestIdleCallback;
     if (typeof ric === "function") {
@@ -167,6 +169,7 @@ function RootComponent() {
         <div id="conteudo" tabIndex={-1}>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
+          <ConsentBanner />
         </div>
       </I18nProvider>
     </QueryClientProvider>
