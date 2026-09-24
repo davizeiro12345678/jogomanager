@@ -25,6 +25,8 @@ import { buildSquad } from "./squad";
 import type {
   CareerState,
   CupState,
+  Fixture,
+  FixtureEvent,
   FormationKey,
   JobOffer,
   ManagerProfile,
@@ -308,11 +310,7 @@ export interface QuickSimContext {
   awayFatigue?: number;
 }
 
-export interface QuickSimEvent {
-  minute: number;
-  side: "home" | "away";
-  kind: "gol" | "penalti" | "gol_contra" | "vermelho";
-}
+export type QuickSimEvent = FixtureEvent;
 
 /** Médias de referência (grandes ligas): ~2,6 gols, ~25% empates, ~45% mandante. */
 const SIM_BASE_GOALS = 1.2;
@@ -349,6 +347,22 @@ export function quickSimulate(
   hg = Math.min(hg, 7);
   ag = Math.min(ag, 7);
   return { hg, ag, events: quickEvents(hg, ag, rnd) };
+}
+
+/** Forma recente 0–100 pelos pontos nos últimos 5 jogos (60 = neutra). */
+export function recentForm(fixtures: Fixture[], clubId: string, beforeRound: number): number {
+  const last = fixtures
+    .filter((f) => f.round < beforeRound && f.homeGoals !== null && (f.home === clubId || f.away === clubId))
+    .sort((a, b) => b.round - a.round)
+    .slice(0, 5);
+  if (!last.length) return 60;
+  let pts = 0;
+  for (const f of last) {
+    const mine = f.home === clubId ? f.homeGoals! : f.awayGoals!;
+    const theirs = f.home === clubId ? f.awayGoals! : f.homeGoals!;
+    pts += mine > theirs ? 3 : mine === theirs ? 1 : 0;
+  }
+  return Math.round(20 + (pts / (last.length * 3)) * 80);
 }
 
 /** Minutos dos gols, pênaltis, gols contra e expulsões, com viradas plausíveis. */
@@ -680,8 +694,11 @@ export function advanceRound(
     if (f.home === state.clubId || f.away === state.clubId) {
       return { ...f, homeGoals: userResult.hg, awayGoals: userResult.ag };
     }
-    const { hg, ag } = quickSimulate(f.home, f.away, `${state.clubId}-${round}-${f.home}`);
-    return { ...f, homeGoals: hg, awayGoals: ag };
+    const { hg, ag, events } = quickSimulate(f.home, f.away, `${state.clubId}-${round}-${f.home}`, {
+      homeForm: recentForm(state.fixtures, f.home, round),
+      awayForm: recentForm(state.fixtures, f.away, round),
+    });
+    return { ...f, homeGoals: hg, awayGoals: ag, events };
   });
 
   const played = state.fixtures.find(
