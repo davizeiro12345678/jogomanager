@@ -719,6 +719,16 @@ export async function runSync(opts: {
       const r = await premiumSyncSquads(opts.limit ?? 40, opts.offset ?? 0, opts.budgetMs ?? 45_000);
       detail = r;
       items = r.inserted + r.updated;
+    } else if (scope === "stats") {
+      const { premiumSyncStats } = await import("./premium-sync.server");
+      const r = await premiumSyncStats(opts.limit ?? 400, opts.offset ?? 0, opts.budgetMs ?? 45_000, opts.concurrency ?? 8);
+      detail = r;
+      items = r.seasons;
+    } else if (scope === "career") {
+      const { premiumSyncPlayerCareer } = await import("./premium-sync.server");
+      const r = await premiumSyncPlayerCareer(opts.limit ?? 2000, opts.offset ?? 0, opts.budgetMs ?? 50_000, opts.concurrency ?? 8);
+      detail = r;
+      items = r.honours + r.clubs;
     } else if (scope === "squads") {
       items = (
         await importSquads(
