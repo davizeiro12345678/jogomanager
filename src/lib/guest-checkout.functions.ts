@@ -1,3 +1,4 @@
+import type { Json } from "@/integrations/supabase/types";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 
@@ -246,7 +247,7 @@ async function createIntent(
     throw new Error(`Não foi possível preparar o checkout: ${existingError.message}`);
 
   if (existing) {
-    const intent = existing as GuestIntentRow;
+    const intent = existing as unknown as GuestIntentRow;
     const hasCurrentSnapshot =
       intent.amount_cents === product.priceCents &&
       intent.currency === product.currency.toUpperCase() &&
@@ -281,7 +282,7 @@ async function createIntent(
       state: "created",
       amount_cents: product.priceCents,
       currency: product.currency.toUpperCase(),
-      contents_snapshot: product.contents,
+      contents_snapshot: product.contents as unknown as Json,
       open_key: openKey,
       consent_version: CONSENT_VERSION,
       expires_at: expiresAt,
@@ -299,7 +300,7 @@ async function createIntent(
     }
     throw new Error(`Não foi possível criar o checkout: ${error?.message ?? "sem resposta"}`);
   }
-  return data as GuestIntentRow;
+  return data as unknown as GuestIntentRow;
 }
 
 async function readOpenIntent(openKey: string): Promise<GuestIntentRow | null> {

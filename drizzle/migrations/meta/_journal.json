@@ -71,6 +71,34 @@
       "when": 1790121962469,
       "tag": "0009_server_owned_results_and_achievements",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790208176529,
+      "tag": "0010_etapa1_sync_metadata_seasons_stats_telemetry",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790208224971,
+      "tag": "0011_guest_checkout_intents",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790208257880,
+      "tag": "0012_store_catalog_checkout",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790208274976,
+      "tag": "0013_guest_checkout_delayed_payment_claim",
+      "breakpoints": true
     }
   ]
 }

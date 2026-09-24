@@ -6,13 +6,6 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type StoreProductContentsJson = {
-  coins: number
-  scoutReports: number
-  trainingBoosts: number
-  themes: string[]
-}
-
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -228,10 +221,15 @@ export type Database = {
           club_id: string
           competition: string
           created_at: string
+          data_version: number
           external_id: string | null
           id: string
+          last_synced_at: string | null
           seasons: string[]
           source: string
+          source_id: string | null
+          source_updated_at: string | null
+          sync_status: string
           title_count: number
           updated_at: string
         }
@@ -239,10 +237,15 @@ export type Database = {
           club_id: string
           competition: string
           created_at?: string
+          data_version?: number
           external_id?: string | null
           id?: string
+          last_synced_at?: string | null
           seasons?: string[]
           source: string
+          source_id?: string | null
+          source_updated_at?: string | null
+          sync_status?: string
           title_count?: number
           updated_at?: string
         }
@@ -250,10 +253,15 @@ export type Database = {
           club_id?: string
           competition?: string
           created_at?: string
+          data_version?: number
           external_id?: string | null
           id?: string
+          last_synced_at?: string | null
           seasons?: string[]
           source?: string
+          source_id?: string | null
+          source_updated_at?: string | null
+          sync_status?: string
           title_count?: number
           updated_at?: string
         }
@@ -276,16 +284,21 @@ export type Database = {
           crest_url: string | null
           data_source: string | null
           data_updated_at: string | null
+          data_version: number
           description: string | null
           founded: number | null
           full_name: string | null
           id: string
+          last_synced_at: string | null
           name: string
           primary_color: string
           secondary_color: string
           short_name: string
+          source_id: string | null
+          source_updated_at: string | null
           stadium_id: string | null
           strength: number
+          sync_status: string
           updated_at: string
           website: string | null
         }
@@ -297,16 +310,21 @@ export type Database = {
           crest_url?: string | null
           data_source?: string | null
           data_updated_at?: string | null
+          data_version?: number
           description?: string | null
           founded?: number | null
           full_name?: string | null
           id: string
+          last_synced_at?: string | null
           name: string
           primary_color?: string
           secondary_color?: string
           short_name: string
+          source_id?: string | null
+          source_updated_at?: string | null
           stadium_id?: string | null
           strength?: number
+          sync_status?: string
           updated_at?: string
           website?: string | null
         }
@@ -318,16 +336,21 @@ export type Database = {
           crest_url?: string | null
           data_source?: string | null
           data_updated_at?: string | null
+          data_version?: number
           description?: string | null
           founded?: number | null
           full_name?: string | null
           id?: string
+          last_synced_at?: string | null
           name?: string
           primary_color?: string
           secondary_color?: string
           short_name?: string
+          source_id?: string | null
+          source_updated_at?: string | null
           stadium_id?: string | null
           strength?: number
+          sync_status?: string
           updated_at?: string
           website?: string | null
         }
@@ -348,45 +371,240 @@ export type Database = {
           },
         ]
       }
+      competition_seasons: {
+        Row: {
+          champion_club_id: string | null
+          competition_id: string
+          created_at: string
+          data_version: number
+          ends_on: string | null
+          id: string
+          last_synced_at: string | null
+          runner_up_club_id: string | null
+          season: string
+          source_id: string | null
+          source_updated_at: string | null
+          starts_on: string | null
+          status: string
+          sync_status: string
+          updated_at: string
+        }
+        Insert: {
+          champion_club_id?: string | null
+          competition_id: string
+          created_at?: string
+          data_version?: number
+          ends_on?: string | null
+          id?: string
+          last_synced_at?: string | null
+          runner_up_club_id?: string | null
+          season: string
+          source_id?: string | null
+          source_updated_at?: string | null
+          starts_on?: string | null
+          status?: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Update: {
+          champion_club_id?: string | null
+          competition_id?: string
+          created_at?: string
+          data_version?: number
+          ends_on?: string | null
+          id?: string
+          last_synced_at?: string | null
+          runner_up_club_id?: string | null
+          season?: string
+          source_id?: string | null
+          source_updated_at?: string | null
+          starts_on?: string | null
+          status?: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_seasons_champion_club_id_fkey"
+            columns: ["champion_club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_seasons_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_seasons_runner_up_club_id_fkey"
+            columns: ["runner_up_club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competitions: {
         Row: {
           club_count: number
+          confederation: string | null
           country: string
           created_at: string
+          data_version: number
           external_id: string | null
           external_source: string | null
           flag: string | null
+          format: string | null
           id: string
+          kind: string
+          last_synced_at: string | null
           logo_url: string | null
           name: string
+          source_id: string | null
+          source_updated_at: string | null
+          sync_status: string
           tier: number
           updated_at: string
         }
         Insert: {
           club_count?: number
+          confederation?: string | null
           country: string
           created_at?: string
+          data_version?: number
           external_id?: string | null
           external_source?: string | null
           flag?: string | null
+          format?: string | null
           id: string
+          kind?: string
+          last_synced_at?: string | null
           logo_url?: string | null
           name: string
+          source_id?: string | null
+          source_updated_at?: string | null
+          sync_status?: string
           tier?: number
           updated_at?: string
         }
         Update: {
           club_count?: number
+          confederation?: string | null
           country?: string
           created_at?: string
+          data_version?: number
           external_id?: string | null
           external_source?: string | null
           flag?: string | null
+          format?: string | null
           id?: string
+          kind?: string
+          last_synced_at?: string | null
           logo_url?: string | null
           name?: string
+          source_id?: string | null
+          source_updated_at?: string | null
+          sync_status?: string
           tier?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      guest_checkout_intents: {
+        Row: {
+          amount_cents: number
+          claimed_at: string | null
+          claimed_by_user_id: string | null
+          consent_version: string
+          contents_snapshot: Json
+          created_at: string
+          currency: string
+          email_hash: string
+          environment: string
+          error: string | null
+          expires_at: string
+          id: string
+          open_key: string | null
+          product_key: string
+          state: string
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_session_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          consent_version: string
+          contents_snapshot: Json
+          created_at?: string
+          currency: string
+          email_hash: string
+          environment: string
+          error?: string | null
+          expires_at: string
+          id?: string
+          open_key?: string | null
+          product_key: string
+          state?: string
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          consent_version?: string
+          contents_snapshot?: Json
+          created_at?: string
+          currency?: string
+          email_hash?: string
+          environment?: string
+          error?: string | null
+          expires_at?: string
+          id?: string
+          open_key?: string | null
+          product_key?: string
+          state?: string
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_checkout_intents_product_key_fkey"
+            columns: ["product_key"]
+            isOneToOne: false
+            referencedRelation: "store_products"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      guest_checkout_rate_limits: {
+        Row: {
+          attempts: number
+          email_hash: string
+          updated_at: string
+          window_started_at: string
+        }
+        Insert: {
+          attempts?: number
+          email_hash: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Update: {
+          attempts?: number
+          email_hash?: string
+          updated_at?: string
+          window_started_at?: string
         }
         Relationships: []
       }
@@ -434,42 +652,57 @@ export type Database = {
           base_color: string
           club_id: string
           created_at: string
+          data_version: number
           detail_color: string
           id: string
           image_url: string | null
           kind: string
+          last_synced_at: string | null
           pattern: string
           season: string
           shorts_color: string
           socks_color: string
+          source_id: string | null
+          source_updated_at: string | null
+          sync_status: string
           updated_at: string
         }
         Insert: {
           base_color?: string
           club_id: string
           created_at?: string
+          data_version?: number
           detail_color?: string
           id?: string
           image_url?: string | null
           kind?: string
+          last_synced_at?: string | null
           pattern?: string
           season?: string
           shorts_color?: string
           socks_color?: string
+          source_id?: string | null
+          source_updated_at?: string | null
+          sync_status?: string
           updated_at?: string
         }
         Update: {
           base_color?: string
           club_id?: string
           created_at?: string
+          data_version?: number
           detail_color?: string
           id?: string
           image_url?: string | null
           kind?: string
+          last_synced_at?: string | null
           pattern?: string
           season?: string
           shorts_color?: string
           socks_color?: string
+          source_id?: string | null
+          source_updated_at?: string | null
+          sync_status?: string
           updated_at?: string
         }
         Relationships: [
@@ -560,50 +793,174 @@ export type Database = {
         }
         Relationships: []
       }
+      player_season_stats: {
+        Row: {
+          appearances: number
+          assists: number
+          clean_sheets: number
+          club_id: string | null
+          competition_id: string | null
+          created_at: string
+          data_version: number
+          goals: number
+          id: string
+          last_synced_at: string | null
+          minutes: number
+          player_id: string
+          rating: number | null
+          red_cards: number
+          season: string
+          source: string | null
+          source_id: string | null
+          source_updated_at: string | null
+          starts: number
+          sync_status: string
+          updated_at: string
+          yellow_cards: number
+        }
+        Insert: {
+          appearances?: number
+          assists?: number
+          clean_sheets?: number
+          club_id?: string | null
+          competition_id?: string | null
+          created_at?: string
+          data_version?: number
+          goals?: number
+          id?: string
+          last_synced_at?: string | null
+          minutes?: number
+          player_id: string
+          rating?: number | null
+          red_cards?: number
+          season: string
+          source?: string | null
+          source_id?: string | null
+          source_updated_at?: string | null
+          starts?: number
+          sync_status?: string
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Update: {
+          appearances?: number
+          assists?: number
+          clean_sheets?: number
+          club_id?: string | null
+          competition_id?: string | null
+          created_at?: string
+          data_version?: number
+          goals?: number
+          id?: string
+          last_synced_at?: string | null
+          minutes?: number
+          player_id?: string
+          rating?: number | null
+          red_cards?: number
+          season?: string
+          source?: string | null
+          source_id?: string | null
+          source_updated_at?: string | null
+          starts?: number
+          sync_status?: string
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_season_stats_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_season_stats_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_season_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           age: number
+          birth_date: string | null
           club_id: string
           created_at: string
+          data_version: number
+          height_cm: number | null
           id: string
+          last_synced_at: string | null
           name: string
           nationality: string | null
           overall: number
+          overall_breakdown: Json
           photo_url: string | null
           position: string
           potential: number | null
+          preferred_foot: string | null
           shirt_number: number | null
           source: string | null
+          source_id: string | null
+          source_updated_at: string | null
+          sync_status: string
           updated_at: string
         }
         Insert: {
           age?: number
+          birth_date?: string | null
           club_id: string
           created_at?: string
+          data_version?: number
+          height_cm?: number | null
           id?: string
+          last_synced_at?: string | null
           name: string
           nationality?: string | null
           overall?: number
+          overall_breakdown?: Json
           photo_url?: string | null
           position: string
           potential?: number | null
+          preferred_foot?: string | null
           shirt_number?: number | null
           source?: string | null
+          source_id?: string | null
+          source_updated_at?: string | null
+          sync_status?: string
           updated_at?: string
         }
         Update: {
           age?: number
+          birth_date?: string | null
           club_id?: string
           created_at?: string
+          data_version?: number
+          height_cm?: number | null
           id?: string
+          last_synced_at?: string | null
           name?: string
           nationality?: string | null
           overall?: number
+          overall_breakdown?: Json
           photo_url?: string | null
           position?: string
           potential?: number | null
+          preferred_foot?: string | null
           shirt_number?: number | null
           source?: string | null
+          source_id?: string | null
+          source_updated_at?: string | null
+          sync_status?: string
           updated_at?: string
         }
         Relationships: [
@@ -649,9 +1006,14 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
+          data_version: number
           id: string
+          last_synced_at: string | null
           name: string
           photo_url: string | null
+          source_id: string | null
+          source_updated_at: string | null
+          sync_status: string
           updated_at: string
         }
         Insert: {
@@ -659,9 +1021,14 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          data_version?: number
           id?: string
+          last_synced_at?: string | null
           name: string
           photo_url?: string | null
+          source_id?: string | null
+          source_updated_at?: string | null
+          sync_status?: string
           updated_at?: string
         }
         Update: {
@@ -669,9 +1036,14 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          data_version?: number
           id?: string
+          last_synced_at?: string | null
           name?: string
           photo_url?: string | null
+          source_id?: string | null
+          source_updated_at?: string | null
+          sync_status?: string
           updated_at?: string
         }
         Relationships: []
@@ -680,8 +1052,8 @@ export type Database = {
         Row: {
           active: boolean
           coins: number
+          contents: Json | null
           created_at: string
-          contents: StoreProductContentsJson | null
           currency: string
           description: string
           id: string
@@ -694,8 +1066,8 @@ export type Database = {
         Insert: {
           active?: boolean
           coins?: number
+          contents?: Json | null
           created_at?: string
-          contents?: StoreProductContentsJson | null
           currency?: string
           description?: string
           id?: string
@@ -708,8 +1080,8 @@ export type Database = {
         Update: {
           active?: boolean
           coins?: number
+          contents?: Json | null
           created_at?: string
-          contents?: StoreProductContentsJson | null
           currency?: string
           description?: string
           id?: string
@@ -718,93 +1090,6 @@ export type Database = {
           name?: string
           price_cents?: number
           stripe_lookup_key?: string
-        }
-        Relationships: []
-      }
-      guest_checkout_intents: {
-        Row: {
-          amount_cents: number
-          claimed_at: string | null
-          claimed_by_user_id: string | null
-          consent_version: string
-          contents_snapshot: StoreProductContentsJson
-          created_at: string
-          currency: string
-          email_hash: string
-          environment: "sandbox" | "live"
-          error: string | null
-          expires_at: string
-          id: string
-          open_key: string | null
-          product_key: string
-          state: "created" | "checkout_open" | "paid" | "claiming" | "claimed" | "expired" | "failed"
-          stripe_customer_id: string | null
-          stripe_price_id: string | null
-          stripe_session_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          amount_cents: number
-          claimed_at?: string | null
-          claimed_by_user_id?: string | null
-          consent_version: string
-          contents_snapshot: StoreProductContentsJson
-          created_at?: string
-          currency: string
-          email_hash: string
-          environment: "sandbox" | "live"
-          error?: string | null
-          expires_at: string
-          id?: string
-          open_key?: string | null
-          product_key: string
-          state?: "created" | "checkout_open" | "paid" | "claiming" | "claimed" | "expired" | "failed"
-          stripe_customer_id?: string | null
-          stripe_price_id?: string | null
-          stripe_session_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          amount_cents?: number
-          claimed_at?: string | null
-          claimed_by_user_id?: string | null
-          consent_version?: string
-          contents_snapshot?: StoreProductContentsJson
-          created_at?: string
-          currency?: string
-          email_hash?: string
-          environment?: "sandbox" | "live"
-          error?: string | null
-          expires_at?: string
-          id?: string
-          open_key?: string | null
-          product_key?: string
-          state?: "created" | "checkout_open" | "paid" | "claiming" | "claimed" | "expired" | "failed"
-          stripe_customer_id?: string | null
-          stripe_price_id?: string | null
-          stripe_session_id?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      guest_checkout_rate_limits: {
-        Row: {
-          attempts: number
-          email_hash: string
-          updated_at: string
-          window_started_at: string
-        }
-        Insert: {
-          attempts?: number
-          email_hash: string
-          updated_at?: string
-          window_started_at?: string
-        }
-        Update: {
-          attempts?: number
-          email_hash?: string
-          updated_at?: string
-          window_started_at?: string
         }
         Relationships: []
       }
@@ -853,6 +1138,45 @@ export type Database = {
           stripe_subscription_id?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      tech_telemetry: {
+        Row: {
+          app_version: string | null
+          browser: string | null
+          created_at: string
+          error_code: string | null
+          fps_avg: number | null
+          frame_time_p95_ms: number | null
+          gpu_tier: number | null
+          graphics_preset: string | null
+          id: string
+          load_time_ms: number | null
+        }
+        Insert: {
+          app_version?: string | null
+          browser?: string | null
+          created_at?: string
+          error_code?: string | null
+          fps_avg?: number | null
+          frame_time_p95_ms?: number | null
+          gpu_tier?: number | null
+          graphics_preset?: string | null
+          id?: string
+          load_time_ms?: number | null
+        }
+        Update: {
+          app_version?: string | null
+          browser?: string | null
+          created_at?: string
+          error_code?: string | null
+          fps_avg?: number | null
+          frame_time_p95_ms?: number | null
+          gpu_tier?: number | null
+          graphics_preset?: string | null
+          id?: string
+          load_time_ms?: number | null
         }
         Relationships: []
       }
@@ -1025,6 +1349,19 @@ export type Database = {
           training_boosts: number
         }[]
       }
+      fulfill_store_purchase: {
+        Args: {
+          _amount_cents: number
+          _coins: number
+          _product_key: string
+          _reference: string
+          _scout_reports: number
+          _themes: string[]
+          _training_boosts: number
+          _user_id: string
+        }
+        Returns: boolean
+      }
       get_own_activity_ranking: {
         Args: never
         Returns: {
@@ -1077,19 +1414,6 @@ export type Database = {
         Args: { _intent_id: string; _user_id: string }
         Returns: boolean
       }
-      fulfill_store_purchase: {
-        Args: {
-          _amount_cents: number
-          _coins: number
-          _product_key: string
-          _reference: string
-          _scout_reports: number
-          _themes: string[]
-          _training_boosts: number
-          _user_id: string
-        }
-        Returns: boolean
-      }
       send_chat_message_for: {
         Args: { _user_id: string; message_body: string }
         Returns: string
@@ -1104,6 +1428,10 @@ export type Database = {
           coins: number
           season_pass: boolean
         }[]
+      }
+      store_product_contents_valid: {
+        Args: { _contents: Json }
+        Returns: boolean
       }
     }
     Enums: {
