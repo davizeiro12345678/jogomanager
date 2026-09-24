@@ -12,6 +12,24 @@ type Raw = [
 
 const RAW: { id: string; name: string; country: string; flag: string; clubs: Raw[] }[] = [
   {
+    id: "x4958",
+    name: "Estonian Esiliiga",
+    country: "Estônia",
+    flag: "🇪🇪",
+    clubs: [
+      ["x4958_137978", "Tallinna Kalev", "TAL", "#df0caa", "#ffffff", 58],
+      ["x4958_139052", "Maardu Linnameeskond", "MAA", "#de38c4", "#ffffff", 56],
+      ["x4958_141132", "Elva", "ELV", "#463cf2", "#ffffff", 58],
+      ["x4958_141133", "Levadia U21 Tallinn", "LEV", "#e7a617", "#ffffff", 57],
+      ["x4958_141134", "Flora Tallinn U21", "FLO", "#949c64", "#ffffff", 61],
+      ["x4958_141139", "Tartu Welco", "TAR", "#6f183e", "#ffffff", 62],
+      ["x4958_145272", "Viimsi", "VII", "#23d59f", "#ffffff", 55],
+      ["x4958_147100", "FC Tallinn", "FCT", "#631376", "#ffffff", 59],
+      ["x4958_151524", "Nõmme Kalju U21", "NMM", "#1c2191", "#ffffff", 58],
+      ["x4958_154668", "Nõmme United U21", "NMM", "#df6bab", "#ffffff", 58],
+    ],
+  },
+  {
     id: "x5676",
     name: "Campeonato Acreano",
     country: "Brasil",
