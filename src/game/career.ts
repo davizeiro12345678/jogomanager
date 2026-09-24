@@ -315,7 +315,7 @@ export interface QuickSimEvent {
 }
 
 /** Médias de referência (grandes ligas): ~2,6 gols, ~25% empates, ~45% mandante. */
-const SIM_BASE_GOALS = 1.3;
+const SIM_BASE_GOALS = 1.2;
 const SIM_HOME_EDGE = 0.13;
 const SIM_DRAW_RHO = -0.09;
 
@@ -335,14 +335,14 @@ export function quickSimulate(
   const fatigue = (f?: number) => -Math.max(0, (f ?? 0) - 20) / 200;
   const h = CLUBS[homeId]?.strength ?? 70;
   const a = CLUBS[awayId]?.strength ?? 70;
-  const edge = Math.tanh((h - a) / 14) * 0.55 + form(ctx.homeForm) * 0.08 - form(ctx.awayForm) * 0.08;
+  const edge = Math.tanh((h - a) / 16) * 0.42 + form(ctx.homeForm) * 0.08 - form(ctx.awayForm) * 0.08;
   const expH = Math.max(0.3, SIM_BASE_GOALS * Math.exp(edge + SIM_HOME_EDGE + fatigue(ctx.homeFatigue)));
   const expA = Math.max(0.25, SIM_BASE_GOALS * Math.exp(-edge - SIM_HOME_EDGE * 0.6 + fatigue(ctx.awayFatigue)));
 
   let hg = poisson(expH, rnd);
   let ag = poisson(expA, rnd);
   // Dixon-Coles: placares baixos empatados ficam um pouco mais prováveis.
-  if (hg + ag <= 2 && hg !== ag && rnd() < -SIM_DRAW_RHO * 2.2) {
+  if (hg + ag <= 2 && hg !== ag && rnd() < -SIM_DRAW_RHO * 1.2) {
     if (hg > ag) ag = hg;
     else hg = ag;
   }
