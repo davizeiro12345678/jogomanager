@@ -1,4 +1,5 @@
 import type { Club, League } from "../types";
+import { API_LEAGUES } from "./leagues-api";
 import { EXTRA_LEAGUES } from "./leagues-extra";
 import { WORLD_LEAGUES } from "./leagues-world";
 import { applyLeagueFill } from "./leagues-fill";
@@ -1110,6 +1111,7 @@ const BASE_LEAGUES: League[] = [
   build("can", "Premier League", "Canadá", "🇨🇦", CAN),
   ...EXTRA_LEAGUES,
   ...WORLD_LEAGUES,
+  ...API_LEAGUES,
 ];
 
 /** Cada liga sai com o número real de clubes do campeonato correspondente. */
