@@ -51,7 +51,8 @@ import { solveFullIK } from "@/game/ik-solver";
 
 /** duração da transição cruzada entre dois movimentos, em segundos */
 const BLEND_TIME = 0.18;
-const ease = (u: number) => u * u * (3 - 2 * u);
+// quintic smootherstep: velocidade e aceleração zero nas pontas da transição
+const ease = (u: number) => u * u * u * (u * (u * 6 - 15) + 10);
 
 /**
  * Velocidade (m/s) para a qual cada ciclo de passada foi desenhado. A cadência
@@ -313,12 +314,19 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     });
 
     if (next !== clipName.current) {
-      // guarda o clipe anterior para fazer a transição cruzada
-      prevName.current = clipName.current;
-      prevTime.current = clipTime.current;
-      clipName.current = next;
-      clipTime.current = 0;
-      blend.current = 0;
+      if (blend.current < 0.5 && prevName.current && prevName.current !== next) {
+        // troca no meio de uma transição: o clipe anterior ainda domina a pose,
+        // então ele continua como origem e só o destino muda (sem "estalo").
+        clipName.current = next;
+        clipTime.current = 0;
+      } else {
+        // guarda o clipe anterior para fazer a transição cruzada
+        prevName.current = clipName.current;
+        prevTime.current = clipTime.current;
+        clipName.current = next;
+        clipTime.current = 0;
+        blend.current = 0;
+      }
     }
     // ---- cadência sincronizada com o deslocamento real (sem patinar)
     const nominal = GAIT_SPEED[clipName.current];
@@ -328,7 +336,15 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     clipTime.current += adt * cadence;
     prevTime.current += adt * prevCadence;
     // troca entre andar/correr pede mistura mais longa; ação com bola, mais curta
-    const blendTime = player.action ? BLEND_TIME * 0.6 : nominal ? BLEND_TIME * 1.4 : BLEND_TIME;
+    // correr→parar desacelera o corpo mais devagar; parado→correr arranca rápido
+    const stoppingFromGait = !nominal && prevNominal !== undefined && !player.action;
+    const blendTime = player.action
+      ? BLEND_TIME * 0.6
+      : stoppingFromGait
+        ? BLEND_TIME * 1.8
+        : nominal
+          ? BLEND_TIME * 1.4
+          : BLEND_TIME;
     blend.current = Math.min(1, blend.current + adt / blendTime);
 
     const u =

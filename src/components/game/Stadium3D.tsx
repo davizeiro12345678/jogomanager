@@ -906,7 +906,7 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
                 {quality === "alta" && (
                   <pointLight
                     position={[0, 28, 0]}
-                    intensity={time === "entardecer" ? 1050 : 1400}
+                    intensity={time === "entardecer" ? 1250 : 1700}
                     distance={230}
                     color={lampColor}
                   />
@@ -2905,7 +2905,7 @@ function Stadium3DImpl({
           };
           r.toneMapping = THREE.ACESFilmicToneMapping;
           r.toneMappingExposure =
-            look.time === "dia" ? 0.78 : look.time === "entardecer" ? 0.9 : 0.98;
+            look.time === "dia" ? 0.9 : look.time === "entardecer" ? 1.0 : 1.1;
           r.outputColorSpace = THREE.SRGBColorSpace;
           // borda de sombra suave só na qualidade alta: o filtro extra custa
           // pouco lá e é o que mais aproxima a imagem de uma transmissão
