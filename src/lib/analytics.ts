@@ -17,6 +17,9 @@ function apiHost() {
 
 export async function initAnalytics(): Promise<PostHog | null> {
   if (typeof window === "undefined") return null;
+  // Analytics é opcional: só carrega depois do consentimento explícito.
+  const { readConsent } = await import("./consent");
+  if (!readConsent().analytics) return null;
   initGoogleAnalytics();
   if (client) return client;
   const token = import.meta.env["VITE_LOVABLE_CONNECTOR_POSTHOG_API_KEY"];

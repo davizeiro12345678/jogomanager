@@ -98,6 +98,24 @@ function hardwareMetadata(renderer: ReturnType<typeof rendererMetadata>) {
 export function FrameProbe() {
   const gl = useThree(state => state.gl);
   const scene = useThree(state => state.scene);
+  // Telemetria opcional (com consentimento): 30 s de amostra após 10 s de partida.
+  useEffect(() => {
+    const metrics = new FrameMetrics();
+    const start = performance.now();
+    let last = start;
+    let sent = false;
+    const stop = addAfterEffect(() => {
+      const now = performance.now();
+      if (!document.hidden && now - start > 10_000) metrics.add(now - last);
+      last = now;
+      if (!sent && now - start > 40_000) {
+        sent = true;
+        const s = metrics.summary();
+        void import("@/lib/telemetry-client").then(m => m.reportTechSample({ fps: s.fps, p95: s.p95 }));
+      }
+    });
+    return stop;
+  }, []);
   useEffect(() => {
     if (!location.pathname.includes("graphics-benchmark")) return;
     const metrics = new FrameMetrics();
