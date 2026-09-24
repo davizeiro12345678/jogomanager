@@ -25,6 +25,8 @@ import { buildSquad } from "./squad";
 import type {
   CareerState,
   CupState,
+  Fixture,
+  FixtureEvent,
   FormationKey,
   JobOffer,
   ManagerProfile,

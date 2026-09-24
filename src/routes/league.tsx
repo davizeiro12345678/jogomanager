@@ -44,6 +44,7 @@ function LeaguePage() {
   const league = getLeague(career.leagueId);
   const table = computeTable(career);
   const fixtures = roundFixtures(career, career.round);
+  const lastRound = career.round > 1 ? roundFixtures(career, career.round - 1) : [];
 
   const linked = hasPyramid(career.leagueId);
   const topId = career.leagueId in PYRAMID ? career.leagueId : PYRAMID_UP[career.leagueId];
@@ -263,6 +264,46 @@ function LeaguePage() {
             ))}
           </ul>
           </HudCard>
+
+          {lastRound.length > 0 && (
+            <HudCard title={`Resultados da rodada ${career.round - 1}`}>
+              <ul className="space-y-2 text-sm">
+                {lastRound.map((f) => (
+                  <li
+                    key={`last-${f.home}-${f.away}`}
+                    className="rounded-lg border border-border/50 bg-foreground/[0.03] px-3 py-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex-1 truncate">{CLUBS[f.home]?.short}</span>
+                      <span className="hud-num rounded-md border border-border px-2 py-0.5 text-xs font-bold">
+                        {f.homeGoals ?? "-"} - {f.awayGoals ?? "-"}
+                      </span>
+                      <span className="flex-1 truncate text-right">{CLUBS[f.away]?.short}</span>
+                    </div>
+                    {f.events && f.events.length > 0 && (
+                      <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                        {f.events.map((e, i) => (
+                          <li key={i} className={e.side === "away" ? "ml-auto" : ""}>
+                            <span className="hud-num">{e.minute}&apos;</span>{" "}
+                            {e.kind === "vermelho" ? (
+                              <span className="inline-block h-2.5 w-2 rounded-[1px] bg-destructive align-middle" aria-label="Cartão vermelho" />
+                            ) : e.kind === "penalti" ? (
+                              "Gol (pên.)"
+                            ) : e.kind === "gol_contra" ? (
+                              "Gol contra"
+                            ) : (
+                              "Gol"
+                            )}{" "}
+                            <span className="opacity-70">{CLUBS[f[e.side]]?.short}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </HudCard>
+          )}
         </div>
       </div>
     </GameShell>
