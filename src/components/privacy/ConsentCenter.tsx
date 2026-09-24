@@ -140,7 +140,12 @@ export function ConsentCenter() {
 /** Aviso discreto na primeira visita; some depois da escolha. */
 export function ConsentBanner() {
   const [open, setOpen] = useState(false);
-  useEffect(() => setOpen(readConsent().decidedAt === null), []);
+  useEffect(() => {
+    setOpen(readConsent().decidedAt === null);
+    const close = () => setOpen(false);
+    window.addEventListener("consent-changed", close);
+    return () => window.removeEventListener("consent-changed", close);
+  }, []);
   if (!open) return null;
   const choose = (all: boolean) => {
     saveConsent({ analytics: all, telemetry: all });
