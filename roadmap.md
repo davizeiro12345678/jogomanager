@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Ciclo 1: +89 competições, pirâmide, estatísticas por temporada
+- [x] Ciclo 1: +89 competições, pirâmide em cadeia (estatísticas: TheSportsDB já esgotado, 285 jogadores)
 - [ ] Ciclo 2: overall completo, regens, checagem de temporada integrada
 - [ ] Ciclo 3: simulação realista + estresse 2.000 partidas
 - [ ] Ciclo 4: cupons, Pix/boleto/wallets, descontos
