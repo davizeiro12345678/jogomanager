@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createCups, playCupStage } from "./cup";
-import { newCareer } from "./career";
+import { initCareer } from "./career";
 import { CLUBS } from "./data/leagues";
 
 describe("copas mundiais", () => {
   const top = Object.values(CLUBS).sort((a, b) => b.strength - a.strength)[0]!;
   it("Supermundial: 32 clubes únicos em 8 grupos e termina com campeão", () => {
-    const base = newCareer(top.id, "Teste");
+    const base = initCareer(top.league, top.id, "Teste");
     const state = { ...base, season: 2028 };
     const cup = createCups(state).find((c) => c.id === "club_world_cup");
     expect(cup).toBeTruthy();
@@ -21,7 +21,7 @@ describe("copas mundiais", () => {
     expect(c.winner).toBeTruthy();
   });
   it("Intercontinental só aparece para o campeão continental", () => {
-    const base = newCareer(top.id, "Teste");
+    const base = initCareer(top.league, top.id, "Teste");
     const s = { ...base, season: 2027 };
     expect(createCups(s).some((c) => c.id === "intercontinental")).toBe(false);
     const cont = createCups(s).find((c) => c.id === "continental")!.name;
