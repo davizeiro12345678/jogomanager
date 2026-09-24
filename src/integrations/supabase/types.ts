@@ -513,6 +513,101 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_checkout_intents: {
+        Row: {
+          amount_cents: number
+          claimed_at: string | null
+          claimed_by_user_id: string | null
+          consent_version: string
+          contents_snapshot: Json
+          created_at: string
+          currency: string
+          email_hash: string
+          environment: string
+          error: string | null
+          expires_at: string
+          id: string
+          open_key: string | null
+          product_key: string
+          state: string
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_session_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          consent_version: string
+          contents_snapshot: Json
+          created_at?: string
+          currency: string
+          email_hash: string
+          environment: string
+          error?: string | null
+          expires_at: string
+          id?: string
+          open_key?: string | null
+          product_key: string
+          state?: string
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          consent_version?: string
+          contents_snapshot?: Json
+          created_at?: string
+          currency?: string
+          email_hash?: string
+          environment?: string
+          error?: string | null
+          expires_at?: string
+          id?: string
+          open_key?: string | null
+          product_key?: string
+          state?: string
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_checkout_intents_product_key_fkey"
+            columns: ["product_key"]
+            isOneToOne: false
+            referencedRelation: "store_products"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      guest_checkout_rate_limits: {
+        Row: {
+          attempts: number
+          email_hash: string
+          updated_at: string
+          window_started_at: string
+        }
+        Insert: {
+          attempts?: number
+          email_hash: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Update: {
+          attempts?: number
+          email_hash?: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       import_runs: {
         Row: {
           created_at: string
@@ -1290,6 +1385,14 @@ export type Database = {
       }
       reserve_ai_budget: {
         Args: { _cents: number; _kind: string }
+        Returns: boolean
+      }
+      reserve_guest_checkout_attempt: {
+        Args: { _email_hash: string }
+        Returns: boolean
+      }
+      reserve_guest_checkout_claim: {
+        Args: { _intent_id: string; _user_id: string }
         Returns: boolean
       }
       send_chat_message_for: {
