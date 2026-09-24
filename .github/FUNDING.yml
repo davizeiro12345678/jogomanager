@@ -5,11 +5,11 @@ patreon: # Criador do jogo manager
 open_collective: # Replace with a single Open Collective username
 ko_fi: # Replace with a single Ko-fi username
 tidelift: # Replace with a single Tidelift platform-name/package-name e.g., npm/babel
-community_bridge: # Replace with a single Community Bridge project-name e.g., cloud-foundry
-liberapay: # Replace with a single Liberapay username
-issuehunt: # Replace with a single IssueHunt username
-lfx_crowdfunding: # Replace with a single LFX Crowdfunding project-name e.g., cloud-foundry
-polar: # Replace with a single Polar username
+community_bridge: # 
+liberapay: # 
+issuehunt: # 
+lfx_crowdfunding: #  
+polar: # 
 buy_me_a_coffee: # Criador do jogo manager
 thanks_dev: # muito obrigado pela doação isso ajuda no desenvolvimento
-custom: # Replace with up to 4 custom sponsorship URLs e.g., ['https://www.patreon.com/16846944/join', 'https://www.patreon.com/cw/Davizeiro']
+custom: # , ['https://www.patreon.com/16846944/join', 'https://www.patreon.com/cw/Davizeiro']
