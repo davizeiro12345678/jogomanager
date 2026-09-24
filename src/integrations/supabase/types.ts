@@ -1052,6 +1052,7 @@ export type Database = {
         Row: {
           active: boolean
           coins: number
+          contents: Json | null
           created_at: string
           currency: string
           description: string
@@ -1060,10 +1061,12 @@ export type Database = {
           kind: string
           name: string
           price_cents: number
+          stripe_lookup_key: string
         }
         Insert: {
           active?: boolean
           coins?: number
+          contents?: Json | null
           created_at?: string
           currency?: string
           description?: string
@@ -1072,10 +1075,12 @@ export type Database = {
           kind?: string
           name: string
           price_cents?: number
+          stripe_lookup_key: string
         }
         Update: {
           active?: boolean
           coins?: number
+          contents?: Json | null
           created_at?: string
           currency?: string
           description?: string
@@ -1084,6 +1089,7 @@ export type Database = {
           kind?: string
           name?: string
           price_cents?: number
+          stripe_lookup_key?: string
         }
         Relationships: []
       }
@@ -1343,6 +1349,19 @@ export type Database = {
           training_boosts: number
         }[]
       }
+      fulfill_store_purchase: {
+        Args: {
+          _amount_cents: number
+          _coins: number
+          _product_key: string
+          _reference: string
+          _scout_reports: number
+          _themes: string[]
+          _training_boosts: number
+          _user_id: string
+        }
+        Returns: boolean
+      }
       get_own_activity_ranking: {
         Args: never
         Returns: {
@@ -1409,6 +1428,10 @@ export type Database = {
           coins: number
           season_pass: boolean
         }[]
+      }
+      store_product_contents_valid: {
+        Args: { _contents: Json }
+        Returns: boolean
       }
     }
     Enums: {
