@@ -1,5 +1,6 @@
 import type { Club, League } from "../types";
 import { API_LEAGUES } from "./leagues-api";
+import { ACCESS_LEAGUES } from "./leagues-access";
 import { EXTRA_LEAGUES } from "./leagues-extra";
 import { WORLD_LEAGUES } from "./leagues-world";
 import { applyLeagueFill } from "./leagues-fill";
@@ -1112,6 +1113,7 @@ const BASE_LEAGUES: League[] = [
   ...EXTRA_LEAGUES,
   ...WORLD_LEAGUES,
   ...API_LEAGUES,
+  ...ACCESS_LEAGUES,
 ];
 
 /** Cada liga sai com o número real de clubes do campeonato correspondente. */
