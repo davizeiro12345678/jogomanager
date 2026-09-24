@@ -3,6 +3,39 @@ import { ATTR_LABELS, attrTone, groupsFor, PERSONALITY_DESC, profileFor } from "
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, formatWage } from "@/game/economy";
 import type { Player } from "@/game/types";
+import { formAdjustment, POSITION_WEIGHTS, positionalOverall } from "@/game/overall";
+
+const CORE_LABELS = {
+  pace: "Velocidade",
+  shooting: "Finalização",
+  passing: "Passe",
+  defending: "Defesa",
+  physical: "Físico",
+} as const;
+
+/** Mostra como cada atributo pesa no overall desta posição. */
+function OverallBreakdown({ player }: { player: Player }) {
+  const weights = POSITION_WEIGHTS[player.pos];
+  const base = positionalOverall(player.pos, player);
+  const form = formAdjustment(player.form ?? 60);
+  const keys = (Object.keys(CORE_LABELS) as (keyof typeof CORE_LABELS)[]).filter((k) => weights[k] > 0);
+  return (
+    <section className="mt-4 rounded-xl border border-border/50 bg-background/40 p-3">
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">Como o overall é calculado · {player.pos}</p>
+      <ul className="mt-2 space-y-1 text-sm">
+        {keys.map((k) => (
+          <li key={k} className="flex items-center justify-between gap-2">
+            <span>{CORE_LABELS[k]} <span className="text-muted-foreground">({player[k]} × {Math.round(weights[k] * 100)}%)</span></span>
+            <span className="hud-num">+{(player[k] * weights[k]).toFixed(1)}</span>
+          </li>
+        ))}
+        <li className="flex justify-between border-t border-border/50 pt-1"><span>Base pela posição</span><span className="hud-num">{base}</span></li>
+        <li className="flex justify-between"><span>Forma recente</span><span className="hud-num">{form >= 0 ? "+" : ""}{form}</span></li>
+        <li className="flex justify-between text-muted-foreground"><span>Overall atual</span><span className="hud-num font-semibold text-primary">{player.ovr}</span></li>
+      </ul>
+    </section>
+  );
+}
 
 function Bar({ v }: { v: number }) {
   return (
@@ -78,6 +111,8 @@ export function PlayerSheet({ player, onClose }: { player: Player; onClose: () =
             </div>
           ))}
         </div>
+
+        <OverallBreakdown player={player} />
 
         <section className="mt-4 rounded-xl border border-border/50 bg-background/40 p-3">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
