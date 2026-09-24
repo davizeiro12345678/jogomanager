@@ -1,7 +1,6 @@
 import type { Club, League } from "../types";
 import { API_LEAGUES } from "./leagues-api";
 import { ACCESS_LEAGUES } from "./leagues-access";
-import { ACCESS_LEAGUES } from "./leagues-access";
 import { EXTRA_LEAGUES } from "./leagues-extra";
 import { WORLD_LEAGUES } from "./leagues-world";
 import { applyLeagueFill } from "./leagues-fill";
