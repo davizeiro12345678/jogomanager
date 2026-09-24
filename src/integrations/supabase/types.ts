@@ -513,6 +513,77 @@ export type Database = {
         }
         Relationships: []
       }
+      coupon_redemptions: {
+        Row: {
+          code: string
+          id: string
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          id?: string
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          id?: string
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_code_fkey"
+            columns: ["code"]
+            isOneToOne: false
+            referencedRelation: "game_coupons"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      game_coupons: {
+        Row: {
+          active: boolean
+          code: string
+          coins: number
+          created_at: string
+          description: string
+          ends_at: string | null
+          max_redemptions: number | null
+          redemption_count: number
+          scout_reports: number
+          starts_at: string | null
+          training_boosts: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          coins?: number
+          created_at?: string
+          description: string
+          ends_at?: string | null
+          max_redemptions?: number | null
+          redemption_count?: number
+          scout_reports?: number
+          starts_at?: string | null
+          training_boosts?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          coins?: number
+          created_at?: string
+          description?: string
+          ends_at?: string | null
+          max_redemptions?: number | null
+          redemption_count?: number
+          scout_reports?: number
+          starts_at?: string | null
+          training_boosts?: number
+        }
+        Relationships: []
+      }
       guest_checkout_intents: {
         Row: {
           amount_cents: number
@@ -1061,6 +1132,9 @@ export type Database = {
           kind: string
           name: string
           price_cents: number
+          sale_ends_at: string | null
+          sale_percent_off: number | null
+          sale_starts_at: string | null
           stripe_lookup_key: string
         }
         Insert: {
@@ -1075,6 +1149,9 @@ export type Database = {
           kind?: string
           name: string
           price_cents?: number
+          sale_ends_at?: string | null
+          sale_percent_off?: number | null
+          sale_starts_at?: string | null
           stripe_lookup_key: string
         }
         Update: {
@@ -1089,6 +1166,9 @@ export type Database = {
           kind?: string
           name?: string
           price_cents?: number
+          sale_ends_at?: string | null
+          sale_percent_off?: number | null
+          sale_starts_at?: string | null
           stripe_lookup_key?: string
         }
         Relationships: []
@@ -1402,6 +1482,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      redeem_game_coupon: { Args: { _code: string }; Returns: Json }
       reserve_ai_budget: {
         Args: { _cents: number; _kind: string }
         Returns: boolean

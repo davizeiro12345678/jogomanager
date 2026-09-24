@@ -6,7 +6,8 @@ import { Coins, Sparkles, Crown, Package, Search, Dumbbell, Palette } from "luci
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSignedIn } from "@/hooks/useCareer";
-import { useStoreCatalog } from "@/hooks/useStoreCatalog";
+import { salePrice, useStoreCatalog } from "@/hooks/useStoreCatalog";
+import { CouponRedeem } from "@/components/store/CouponRedeem";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useSubscription, isSubscriptionActive } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
@@ -145,6 +146,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
 
   return (
     <div>
+      {signedIn === true && <CouponRedeem onRedeemed={() => void walletQuery.refetch()} />}
       <div className="mb-4 rounded-2xl border border-border/60 surface-card p-4">
         <div className="flex flex-wrap items-center gap-3">
           <Coins className="text-primary" size={20} />
@@ -274,9 +276,19 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                   <CardDescription>{p.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="mt-auto flex flex-wrap items-baseline gap-2">
-                  <span className="font-display text-2xl leading-none">
-                    {formatBRL(p.price_cents, p.currency)}
-                  </span>
+                  {salePrice(p).percent > 0 ? (
+                    <>
+                      <span className="font-display text-2xl leading-none">
+                        {formatBRL(salePrice(p).cents, p.currency)}
+                      </span>
+                      <s className="text-sm text-muted-foreground">{formatBRL(p.price_cents, p.currency)}</s>
+                      <Badge variant="destructive">-{salePrice(p).percent}%</Badge>
+                    </>
+                  ) : (
+                    <span className="font-display text-2xl leading-none">
+                      {formatBRL(p.price_cents, p.currency)}
+                    </span>
+                  )}
                   {p.coins > 0 && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
                       <Coins size={12} /> +{p.coins} moedas

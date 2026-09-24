@@ -12,7 +12,7 @@ import type { Database } from "@/integrations/supabase/types";
  */
 export type StoreCatalogProduct = Pick<
   Database["public"]["Tables"]["store_products"]["Row"],
-  "key" | "name" | "description" | "price_cents" | "currency" | "coins" | "kind"
+  "key" | "name" | "description" | "price_cents" | "currency" | "coins" | "kind" | "sale_percent_off" | "sale_starts_at" | "sale_ends_at"
 >;
 
 export function useStoreCatalog() {
@@ -21,7 +21,7 @@ export function useStoreCatalog() {
     queryFn: async (): Promise<StoreCatalogProduct[]> => {
       const { data, error } = await supabase
         .from("store_products")
-        .select("key, name, description, price_cents, currency, coins, kind")
+        .select("key, name, description, price_cents, currency, coins, kind, sale_percent_off, sale_starts_at, sale_ends_at")
         .eq("active", true)
         .order("price_cents", { ascending: true });
 
@@ -31,4 +31,16 @@ export function useStoreCatalog() {
     staleTime: 60_000,
     retry: 1,
   });
+}
+
+/** Preço com a promoção vigente (mesma regra do servidor, só para exibição). */
+export function salePrice(p: StoreCatalogProduct, now = Date.now()): { cents: number; percent: number } {
+  const pct = p.sale_percent_off ?? 0;
+  const live =
+    pct > 0 &&
+    (!p.sale_starts_at || now >= Date.parse(p.sale_starts_at)) &&
+    (!p.sale_ends_at || now <= Date.parse(p.sale_ends_at));
+  return live
+    ? { cents: Math.round(p.price_cents * (1 - pct / 100)), percent: pct }
+    : { cents: p.price_cents, percent: 0 };
 }

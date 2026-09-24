@@ -20,6 +20,7 @@ import {
   getStoreServiceSupabase,
   parseStoreProductContents,
   resolveValidatedStripePrice,
+  checkoutDiscountParams,
   type ServerStoreProduct,
   type StoreProductContents,
 } from "@/lib/store-products.server";
@@ -367,6 +368,7 @@ async function openStripeSession(
       return_url: returnUrl,
       customer: customerId,
       expires_at: expiresAt,
+      ...(await checkoutDiscountParams(stripe, product)),
       metadata: {
         guestCheckoutIntentId: intent.id,
         productKey: product.key,
