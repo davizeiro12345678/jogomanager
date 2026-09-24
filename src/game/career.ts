@@ -15,7 +15,7 @@ import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
 import { applyRegens } from "./regen";
 import { checkSeasonIntegrity } from "./season-integrity";
-import { applyPyramid } from "./pyramid";
+import { applyPyramid, leagueClubIds } from "./pyramid";
 import { evolveSeason, setAttrDeltas } from "./attributes";
 
 import { computeTable, generateFixtures } from "./season";
