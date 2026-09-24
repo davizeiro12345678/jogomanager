@@ -92,6 +92,13 @@
       "when": 1790208257880,
       "tag": "0012_store_catalog_checkout",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790208274976,
+      "tag": "0013_guest_checkout_delayed_payment_claim",
+      "breakpoints": true
     }
   ]
 }
