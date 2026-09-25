@@ -36,6 +36,36 @@ import concreteAlbedoAsset from "@/assets/textures/concrete_albedo.ktx2.asset.js
 import concreteRoughAsset from "@/assets/textures/concrete_rough.ktx2.asset.json";
 import netMaskAsset from "@/assets/textures/net_mask.ktx2.asset.json";
 
+import asset0 from "@/assets/textures/jersey_solid_normal.ktx2.asset.json";
+import asset1 from "@/assets/textures/jersey_solid_rough.ktx2.asset.json";
+import asset2 from "@/assets/textures/jersey_stripes_normal.ktx2.asset.json";
+import asset3 from "@/assets/textures/jersey_stripes_rough.ktx2.asset.json";
+import asset4 from "@/assets/textures/jersey_pin_normal.ktx2.asset.json";
+import asset5 from "@/assets/textures/jersey_pin_rough.ktx2.asset.json";
+import asset6 from "@/assets/textures/jersey_hoops_normal.ktx2.asset.json";
+import asset7 from "@/assets/textures/jersey_hoops_rough.ktx2.asset.json";
+import asset8 from "@/assets/textures/jersey_sash_normal.ktx2.asset.json";
+import asset9 from "@/assets/textures/jersey_sash_rough.ktx2.asset.json";
+import asset10 from "@/assets/textures/jersey_halves_normal.ktx2.asset.json";
+import asset11 from "@/assets/textures/jersey_halves_rough.ktx2.asset.json";
+import asset12 from "@/assets/textures/jersey_checks_normal.ktx2.asset.json";
+import asset13 from "@/assets/textures/jersey_checks_rough.ktx2.asset.json";
+import asset14 from "@/assets/textures/shorts_plain_normal.ktx2.asset.json";
+import asset15 from "@/assets/textures/shorts_mesh_normal.ktx2.asset.json";
+import asset16 from "@/assets/textures/shorts_stitched_normal.ktx2.asset.json";
+import asset17 from "@/assets/textures/socks_rib_normal.ktx2.asset.json";
+import asset18 from "@/assets/textures/socks_fine_normal.ktx2.asset.json";
+import asset19 from "@/assets/textures/socks_heavy_normal.ktx2.asset.json";
+import asset20 from "@/assets/textures/boot_leather_normal.ktx2.asset.json";
+import asset21 from "@/assets/textures/boot_synthetic_normal.ktx2.asset.json";
+import asset22 from "@/assets/textures/boot_knit_normal.ktx2.asset.json";
+import asset23 from "@/assets/textures/skin_light_normal.ktx2.asset.json";
+import asset24 from "@/assets/textures/skin_medium_normal.ktx2.asset.json";
+import asset25 from "@/assets/textures/skin_dark_normal.ktx2.asset.json";
+import asset26 from "@/assets/textures/grass_stripes_albedo.ktx2.asset.json";
+import asset27 from "@/assets/textures/grass_diagonal_albedo.ktx2.asset.json";
+import asset28 from "@/assets/textures/grass_wide_albedo.ktx2.asset.json";
+
 export type Ktx2Name =
   | "fiberNormal"
   | "fiberRough"
@@ -50,7 +80,8 @@ export type Ktx2Name =
   | "shinRough"
   | "sockNormal";
 export type StadiumKtx2Name = "grassAlbedo" | "grassNormal" | "grassRough" | "concreteAlbedo" | "concreteRough" | "netMask";
-export type TextureName = Ktx2Name | StadiumKtx2Name;
+export type DetailKtx2Name = "jersey_solid_normal" | "jersey_solid_rough" | "jersey_stripes_normal" | "jersey_stripes_rough" | "jersey_pin_normal" | "jersey_pin_rough" | "jersey_hoops_normal" | "jersey_hoops_rough" | "jersey_sash_normal" | "jersey_sash_rough" | "jersey_halves_normal" | "jersey_halves_rough" | "jersey_checks_normal" | "jersey_checks_rough" | "shorts_plain_normal" | "shorts_mesh_normal" | "shorts_stitched_normal" | "socks_rib_normal" | "socks_fine_normal" | "socks_heavy_normal" | "boot_leather_normal" | "boot_synthetic_normal" | "boot_knit_normal" | "skin_light_normal" | "skin_medium_normal" | "skin_dark_normal" | "grass_stripes_albedo" | "grass_diagonal_albedo" | "grass_wide_albedo";
+export type TextureName = Ktx2Name | StadiumKtx2Name | DetailKtx2Name;
 
 /** repetição de cada mapa sobre a malha do jogador */
 const SOURCES: Record<TextureName, { url: string; repeat: number; color?: boolean }> = {
@@ -72,6 +103,36 @@ const SOURCES: Record<TextureName, { url: string; repeat: number; color?: boolea
   concreteAlbedo: { url: concreteAlbedoAsset.url, repeat: 1, color: true },
   concreteRough: { url: concreteRoughAsset.url, repeat: 1 },
   netMask: { url: netMaskAsset.url, repeat: 1 },
+  jersey_solid_normal: { url: asset0.url, repeat: 6 },
+  jersey_solid_rough: { url: asset1.url, repeat: 6 },
+  jersey_stripes_normal: { url: asset2.url, repeat: 6 },
+  jersey_stripes_rough: { url: asset3.url, repeat: 6 },
+  jersey_pin_normal: { url: asset4.url, repeat: 6 },
+  jersey_pin_rough: { url: asset5.url, repeat: 6 },
+  jersey_hoops_normal: { url: asset6.url, repeat: 6 },
+  jersey_hoops_rough: { url: asset7.url, repeat: 6 },
+  jersey_sash_normal: { url: asset8.url, repeat: 6 },
+  jersey_sash_rough: { url: asset9.url, repeat: 6 },
+  jersey_halves_normal: { url: asset10.url, repeat: 6 },
+  jersey_halves_rough: { url: asset11.url, repeat: 6 },
+  jersey_checks_normal: { url: asset12.url, repeat: 6 },
+  jersey_checks_rough: { url: asset13.url, repeat: 6 },
+  shorts_plain_normal: { url: asset14.url, repeat: 6 },
+  shorts_mesh_normal: { url: asset15.url, repeat: 6 },
+  shorts_stitched_normal: { url: asset16.url, repeat: 6 },
+  socks_rib_normal: { url: asset17.url, repeat: 6 },
+  socks_fine_normal: { url: asset18.url, repeat: 6 },
+  socks_heavy_normal: { url: asset19.url, repeat: 6 },
+  boot_leather_normal: { url: asset20.url, repeat: 3 },
+  boot_synthetic_normal: { url: asset21.url, repeat: 3 },
+  boot_knit_normal: { url: asset22.url, repeat: 3 },
+  skin_light_normal: { url: asset23.url, repeat: 3 },
+  skin_medium_normal: { url: asset24.url, repeat: 3 },
+  skin_dark_normal: { url: asset25.url, repeat: 3 },
+  grass_stripes_albedo: { url: asset26.url, repeat: 1, color: true },
+  grass_diagonal_albedo: { url: asset27.url, repeat: 1, color: true },
+  grass_wide_albedo: { url: asset28.url, repeat: 1, color: true },
+
 };
 
 const loaded = new Map<TextureName, THREE.Texture>();
@@ -99,7 +160,7 @@ export function ktx2(name: TextureName): THREE.Texture | null {
  * Inicia o download uma única vez. Precisa do renderer para saber quais
  * formatos comprimidos a GPU aceita (ASTC, BC7, ETC2, …).
  */
-export function initKtx2(renderer: THREE.WebGLRenderer): void {
+export function initKtx2(renderer: THREE.WebGLRenderer | import("three/webgpu").WebGPURenderer): void {
   if (started || typeof window === "undefined") return;
   started = true;
 
@@ -113,7 +174,7 @@ export function initKtx2(renderer: THREE.WebGLRenderer): void {
         tex.wrapS = THREE.RepeatWrapping;
         tex.wrapT = THREE.RepeatWrapping;
         tex.repeat.set(src.repeat, src.repeat);
-        tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        tex.anisotropy = Math.min(8, renderer.isWebGPURenderer ? 8 : renderer.capabilities.getMaxAnisotropy());
         tex.colorSpace = src.color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
         tex.needsUpdate = true;
         loaded.set(name, tex);
@@ -133,4 +194,6 @@ export function disposeKtx2(): void {
   loader?.dispose();
   loader = null;
   started = false;
+  revision += 1;
+  for (const fn of listeners) fn();
 }

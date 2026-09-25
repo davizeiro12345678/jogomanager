@@ -16,7 +16,7 @@ const PREF_KEY = "manager3d.webgpu";
 const FAIL_KEY = "manager3d.webgpu.failed";
 
 /**
- * WebGPU é experimental: fica desligado por padrão (o caminho WebGL2 é o
+ * WebGPU é experimental: tenta por padrão quando suportado (o caminho WebGL2 é o
  * estável) e só liga quando o jogador marca a opção nas Configurações.
  * Se o driver falhar uma vez, gravamos o fracasso e nunca mais tentamos
  * nesta máquina até o jogador religar manualmente.
@@ -24,7 +24,7 @@ const FAIL_KEY = "manager3d.webgpu.failed";
 export function webgpuEnabled(): boolean {
   if (typeof localStorage === "undefined") return false;
   if (localStorage.getItem(FAIL_KEY) === "1") return false;
-  return localStorage.getItem(PREF_KEY) === "on";
+  return localStorage.getItem(PREF_KEY) !== "off";
 }
 
 export function setWebgpuEnabled(on: boolean) {

@@ -28,6 +28,7 @@ import {
 } from "@/game/animation";
 import { kitTexture, type Kit } from "@/game/kits";
 import { playerMaterials } from "@/game/player-materials";
+import { useKtx2Revision } from "@/game/textures/ktx2";
 import { visualDataFor } from "@/game/visual-frame-cache";
 import { useVisual } from "@/game/visual-settings";
 import {
@@ -514,9 +515,10 @@ export const PlayerRig = memo(function PlayerRig({
   // Materiais compartilhados entre jogadores com a mesma combinação de
   // uniforme/aparência: derruba o número de programas de shader e de objetos
   // de material de ~200 para poucas dezenas numa partida.
+  const textureRevision = useKtx2Revision();
   const mats = useMemo(
     () => playerMaterials(look, kit, tex ?? null, quality),
-    [look, kit, tex, quality],
+    [look, kit, tex, quality, textureRevision],
   );
 
   // Corpo em SkinnedMesh: um desenho por grupo de material (~18) em vez de um

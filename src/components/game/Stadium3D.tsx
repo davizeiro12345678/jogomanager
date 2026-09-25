@@ -2799,7 +2799,7 @@ function Scene({
 function CompressedTextures({ enabled }: { enabled: boolean }) {
   const gl = useThree((state) => state.gl);
   useEffect(() => {
-    if (enabled) initKtx2(gl as THREE.WebGLRenderer);
+    if (enabled) initKtx2(gl as THREE.WebGLRenderer | import("three/webgpu").WebGPURenderer);
   }, [enabled, gl]);
   return null;
 }
@@ -2942,7 +2942,7 @@ function Stadium3DImpl({
           );
         }}
       >
-        <CompressedTextures enabled={backend === "webgl2" && quality === "alta"} />
+        <CompressedTextures enabled={quality === "alta"} />
         <RuntimeBudget tier={sceneTier} enabled={vis.adaptive} onChange={setPressure} />
         <QualityPressure.Provider value={pressure}>
           <RuntimeSceneBudgetContext.Provider value={sceneBudget}>
