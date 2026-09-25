@@ -53,6 +53,8 @@ export interface PlayerMaterials {
   bootAccent: THREE.Material;
   sole: THREE.Material;
   glove: THREE.Material;
+  /** caneleira em fibra: usada por baixo do meião */
+  shin: THREE.Material;
 }
 
 const NORMAL_SCALE = new THREE.Vector2(0.55, 0.55);
@@ -65,6 +67,16 @@ const sweatStep = (s: number) => Math.round(Math.max(0, Math.min(1, s)) * 4) / 4
 function dispose(set: PlayerMaterials) {
   Object.values(set).forEach((m) => m.dispose());
 }
+
+// Quando as texturas KTX2 terminam de baixar, os materiais já criados ficam
+// desatualizados: o cache é esvaziado para que os próximos usem o alta definição.
+let ktx2Ready = false;
+onKtx2Ready(() => {
+  ktx2Ready = true;
+  for (const set of cache.values()) dispose(set);
+  cache.clear();
+});
+
 
 /**
  * Devolve (e memoriza) o conjunto de materiais de um jogador.
