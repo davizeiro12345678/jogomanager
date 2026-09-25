@@ -26,7 +26,10 @@ export type RuntimeSceneBudget = Readonly<{
   post: "off" | "balanced" | "cinema";
 }>;
 
-type BudgetBase = Omit<RuntimeSceneBudget, "tier" | "stage" | "resolutionScale" | "textureScale" | "shadows" | "post"> & {
+type BudgetBase = Omit<
+  RuntimeSceneBudget,
+  "tier" | "stage" | "resolutionScale" | "textureScale" | "shadows" | "post"
+> & {
   post: "off" | "balanced" | "cinema";
 };
 
@@ -53,8 +56,8 @@ const BASE: Record<GraphicsTier, BudgetBase> = {
     crowdUpdateSeconds: 0.42,
     flagCount: 12,
     propRings: 7,
-    heroPlayers: 1,
-    replayHeroPlayers: 2,
+    heroPlayers: 3,
+    replayHeroPlayers: 4,
     weatherDensity: 0.54,
     goalFxDensity: 0.55,
     post: "balanced",
@@ -67,8 +70,8 @@ const BASE: Record<GraphicsTier, BudgetBase> = {
     crowdUpdateSeconds: 0.3,
     flagCount: 24,
     propRings: 11,
-    heroPlayers: 2,
-    replayHeroPlayers: 4,
+    heroPlayers: 6,
+    replayHeroPlayers: 10,
     weatherDensity: 1,
     goalFxDensity: 1,
     post: "balanced",
@@ -81,8 +84,8 @@ const BASE: Record<GraphicsTier, BudgetBase> = {
     crowdUpdateSeconds: 0.25,
     flagCount: 30,
     propRings: 13,
-    heroPlayers: 3,
-    replayHeroPlayers: 4,
+    heroPlayers: 8,
+    replayHeroPlayers: 12,
     weatherDensity: 1.15,
     goalFxDensity: 1.15,
     post: "cinema",
@@ -101,7 +104,10 @@ export function resolveRuntimeSceneBudget(tier: GraphicsTier, rawStage = 0): Run
   const crowdScale = stage >= 6 ? 0.42 : stage >= 5 ? 0.62 : stage >= 4 ? 0.78 : 1;
   const propScale = stage >= 6 ? 0.48 : stage >= 5 ? 0.7 : 1;
   const effectsScale = stage >= 7 ? 0.18 : stage >= 6 ? 0.46 : 1;
-  const heroScale = stage >= 8 ? 0.5 : 1;
+  // Heróis são a última alavanca: só caem quando o governador já espremeu o
+  // resto da cena (estágio 7+). A quantidade inicial é derivada do orçamento
+  // medido em `MatchPlayers` (`draw-budget.ts`).
+  const heroScale = stage >= 8 ? 0.5 : stage >= 7 ? 0.66 : 1;
 
   return {
     tier,
