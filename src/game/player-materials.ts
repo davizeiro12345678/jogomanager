@@ -138,9 +138,13 @@ export function playerMaterials(
           normalMap: pores,
           roughnessMap: skinRough,
           normalScale: NORMAL_SCALE,
-          clearcoat: 0.28 + sweat * 0.25,
-          clearcoatRoughness: 0.5,
+          clearcoat: 0.28 + sweat * 0.35,
+          clearcoatRoughness: 0.5 - sweat * 0.28,
+          // gotas de suor: só o verniz recebe o relevo, a pele continua macia
+          clearcoatNormalMap: sweatNormal,
+          clearcoatNormalScale: new THREE.Vector2(0.25 + sweat * 0.75, 0.25 + sweat * 0.75),
           envMapIntensity: 0.95,
+
           sheen: 0.35,
           sheenRoughness: 0.6,
           // tom avermelhado do sangue sob a pele: imita o espalhamento sub-superficial
