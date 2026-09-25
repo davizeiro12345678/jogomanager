@@ -948,11 +948,11 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
 }
 
 /** Concreto compartilhado por toda a estrutura (um material só, muitas peças). */
-function useConcrete(color = "#6d747b", repeat = 6) {
+function useConcrete(color = "#6d747b", repeat = 6, high = false) {
   const textureRevision = useKtx2Revision();
   return useMemo(() => {
-    const map = ktx2("concreteAlbedo") ?? concreteAlbedo();
-    const rough = ktx2("concreteRough") ?? concreteRoughness();
+    const map = (high ? ktx2("concreteAlbedo") : null) ?? concreteAlbedo();
+    const rough = (high ? ktx2("concreteRough") : null) ?? concreteRoughness();
     const m = new THREE.MeshStandardMaterial({
       color,
       roughness: 0.96,
@@ -971,22 +971,24 @@ function useConcrete(color = "#6d747b", repeat = 6) {
       m.roughnessMap = t;
     }
     return m;
-  }, [color, repeat, textureRevision]);
+  }, [color, repeat, high, textureRevision]);
 }
 
 function Tiers({
   rings,
   homeColor,
   awayColor,
+  high,
 }: {
   rings: number;
   homeColor: string;
   awayColor: string;
+  high: boolean;
 }) {
   const steps: React.ReactElement[] = [];
   const lenX = FIELD_X * 2 + 30;
   const lenZ = FIELD_Z * 2 + 34;
-  const concrete = useConcrete("#5f666d", 10);
+  const concrete = useConcrete("#5f666d", 10, high);
 
   const seatMat = useMemo(() => {
     const t = seatsTexture(homeColor, awayColor);
@@ -1419,7 +1421,7 @@ function Stands({
   const density = Math.round(
     Math.min(maximumDensity, sourceDensity) * Math.max(0.1, vis.crowdDensity),
   );
-  const wallMat = useConcrete("#39424b", 14);
+  const wallMat = useConcrete("#39424b", 14, quality === "alta");
 
   const crowd = useMemo(() => {
     const positions: THREE.Vector3[] = [];
@@ -1509,7 +1511,7 @@ function Stands({
         </mesh>
       ))}
 
-      <Tiers rings={rings} homeColor={homeColor} awayColor={awayColor} />
+      <Tiers rings={rings} homeColor={homeColor} awayColor={awayColor} high={quality === "alta"} />
       <Roof rings={rings} />
       <CrowdBackdrop homeColor={homeColor} awayColor={awayColor} rings={rings} />
       <Banners color={homeColor} alt={awayColor} rings={rings} />
