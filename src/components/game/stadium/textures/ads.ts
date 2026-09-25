@@ -74,10 +74,17 @@ function build(primary: string, secondary: string, sponsors: string[]) {
     ctx.fillRect(x, 0, panel, h);
 
     ctx.fillStyle = even ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.9)";
-    ctx.font = "bold 92px system-ui, sans-serif";
+    // Fit the label to its panel instead of letting fillText squash it.
+    const label = SPONSORS[i]!;
+    let size = Math.min(92, h * 0.62);
+    ctx.font = `bold ${size}px system-ui, sans-serif`;
+    const maxW = panel * 0.84;
+    const measured = ctx.measureText(label).width;
+    if (measured > maxW) size = Math.floor((size * maxW) / measured);
+    ctx.font = `bold ${size}px system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(SPONSORS[i]!, x + panel / 2, h / 2);
+    ctx.fillText(label, x + panel / 2, h / 2);
 
     // moldura do painel
     ctx.strokeStyle = "rgba(0,0,0,0.6)";

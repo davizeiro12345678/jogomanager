@@ -50,7 +50,6 @@ function drawCloud(
   ctx.save();
   ctx.globalAlpha = alpha * (0.6 + rand() * 0.4);
   // Soft edges: hard-edged circles read as giant lens bokeh instead of clouds.
-  ctx.filter = `blur(${Math.max(4, scale * 0.14)}px)`;
 
   // base sombreada
   ctx.fillStyle = dark;
@@ -58,9 +57,7 @@ function drawCloud(
     const px = x + (i - puffs / 2) * scale * 0.5 + rand() * scale * 0.3;
     const py = y + rand() * scale * 0.18;
     const r = scale * (0.32 + rand() * 0.4);
-    ctx.beginPath();
-    ctx.arc(px, py, r, 0, Math.PI * 2);
-    ctx.fill();
+    puff(ctx, px, py, r, ctx.fillStyle as string);
   }
   // topo iluminado
   ctx.fillStyle = light;
@@ -68,10 +65,21 @@ function drawCloud(
     const px = x + (i - puffs / 2) * scale * 0.48 + rand() * scale * 0.25;
     const py = y - scale * (0.12 + rand() * 0.22);
     const r = scale * (0.26 + rand() * 0.34);
-    ctx.beginPath();
-    ctx.arc(px, py, r, 0, Math.PI * 2);
-    ctx.fill();
+    puff(ctx, px, py, r, ctx.fillStyle as string);
   }
+  ctx.restore();
+}
+
+/** Radial-gradient puff: soft edges on every browser (ctx.filter is missing on Safari). */
+function puff(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, color);
+  g.addColorStop(0.55, color);
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.save();
+  ctx.globalAlpha *= 0.85;
+  ctx.fillStyle = g;
+  ctx.fillRect(x - r, y - r, r * 2, r * 2);
   ctx.restore();
 }
 

@@ -154,7 +154,7 @@ function buildAlbedo(pattern: MowPattern = "checker", size = 2048) {
     ctx.translate(size / 2, size / 2);
     for (let r = size * 0.04, band = 0; r < size * 0.46; r += size * 0.017, band++) {
       const light = band % 2 === 0;
-      ctx.strokeStyle = light ? "rgba(224,255,210,0.07)" : "rgba(0,26,10,0.08)";
+      ctx.strokeStyle = light ? "rgba(224,255,210,0.035)" : "rgba(0,26,10,0.04)";
       ctx.lineWidth = size * 0.017;
       ctx.beginPath();
       ctx.arc(0, 0, r, 0, Math.PI * 2);
