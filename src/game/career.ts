@@ -36,6 +36,7 @@ import type {
   Position,
   ScoutReport,
   TrainingFocus,
+  Tactics,
   TransferOffer,
 } from "./types";
 
