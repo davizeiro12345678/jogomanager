@@ -541,6 +541,8 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
   const bootAccentMat = matEl(mats.bootAccent);
   const soleMat = matEl(mats.sole);
   const gloveMat = matEl(mats.glove);
+  const shinMat = matEl(mats.shin);
+
 
   const handMat = look.gloves ? gloveMat : skinMat;
   const handR = look.gloves ? P.handR * 1.25 : P.handR;
