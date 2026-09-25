@@ -169,7 +169,10 @@ export function useCareer() {
   const mutate = mutation.mutate;
   const update = useCallback(
     (next: CareerState) => {
-      qc.setQueryData([...CAREER_KEY, signedIn], next);
+      qc.setQueryData([...CAREER_KEY, signedIn], (old: { sync: SyncState } | undefined) => ({
+        career: next,
+        sync: old?.sync ?? "local",
+      }));
       mutate(next);
     },
     [qc, mutate, signedIn],
@@ -184,11 +187,14 @@ export function useCareer() {
         /* offline: a carreira local já foi apagada */
       }
     }
-    qc.setQueryData([...CAREER_KEY, signedIn], null);
+    qc.setQueryData([...CAREER_KEY, signedIn], (old: { sync: SyncState } | undefined) => ({
+      career: null,
+      sync: old?.sync ?? "local",
+    }));
   }, [qc, wipe, signedIn]);
 
   return {
-    career: (query.data ?? null) as CareerState | null,
+    career: (query.data?.career ?? null) as CareerState | null,
     isLoading: signedIn === null || query.isLoading,
     saving: mutation.isPending,
     signedIn,
