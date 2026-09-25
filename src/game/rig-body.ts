@@ -24,7 +24,6 @@ import {
   eyeWhiteMaterial,
   headbandMaterial,
   irisMaterial,
-  jerseyInkMaterial,
   pupilMaterial,
   skinDetailMaterial,
   studMaterial,
@@ -89,7 +88,7 @@ const SIDES = [-1, 1] as const;
 
 /** Constrói o corpo completo. Devolve malhas já mescladas por junta. */
 export function buildRigBody(ctx: RigBodyContext): RigBody {
-  const { P, look, segs, hi, mats, jerseyInk, handR, handMat } = ctx;
+  const { P, look, segs, hi, mats, handR, handMat } = ctx;
   const skin = mats.skin;
   const jersey = mats.jersey;
   const shorts = mats.shorts;
@@ -169,15 +168,8 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
       }),
     );
   }
-  if (hi) {
-    // identificação nas costas: geometria simples, sem atlas por atleta
-    chest.push(
-      rigPart(new THREE.CircleGeometry(0.105, 12), jerseyInkMaterial(jerseyInk), {
-        position: [0, P.chestLen * 0.38, -(P.chestD + 0.018)],
-        rotation: [0, Math.PI, 0],
-      }),
-    );
-  }
+  // A numeração já faz parte da textura do uniforme; um disco opaco aqui
+  // cobria a camisa e aparecia como círculo branco em jogadores próximos.
 
   const neck: RigPart[] = [
     rigPart(
