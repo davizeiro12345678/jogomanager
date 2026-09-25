@@ -7,6 +7,7 @@ import { GameShell } from "@/components/game/GameShell";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
 import { autoSeason, autoWeek, type AutoWeek } from "@/game/autoplay";
+import { autoSeasonAsync } from "@/game/simWorkerClient";
 import { prefersReducedMotion } from "@/game/device";
 import { useCareer } from "@/hooks/useCareer";
 import { achievementById } from "@/game/achievements";
@@ -72,15 +73,20 @@ function AutoSeasonPage() {
     setBusy(false);
   };
 
-  const runSeason = () => {
+  const runSeason = async () => {
     setBusy(true);
-    const { weeks: ws, state } = autoSeason(career);
-    if (ws.length) {
-      setWeeks((cur) => [...[...ws].reverse(), ...cur].slice(0, 60));
-      notifyNewAchievements(career.achievements, state.achievements);
-      update(state);
+    try {
+      const { weeks: ws, state } = await autoSeasonAsync(career);
+      if (ws.length) {
+        setWeeks((cur) => [...[...ws].reverse(), ...cur].slice(0, 60));
+        notifyNewAchievements(career.achievements, state.achievements);
+        update(state);
+      }
+    } catch {
+      toast.error("Não foi possível simular a temporada. Tente novamente.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   const played = weeks.length;

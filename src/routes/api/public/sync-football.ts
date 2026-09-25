@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
  * Manual / scheduled importer trigger.
  * Protected by a shared secret so it can be called by cron but not by the public.
  *
- *   POST /api/public/sync-football?scope=seed|clubs|squads|history|all&limit=40&offset=0
+ *   POST /api/public/sync-football?scope=seed|clubs|squads|history|premium|stats|career|all&limit=40&offset=0
  *   Header: x-sync-secret: <LOVABLE_CRON_SECRET>
  */
 export const Route = createFileRoute("/api/public/sync-football")({
@@ -18,11 +18,21 @@ export const Route = createFileRoute("/api/public/sync-football")({
         }
         const url = new URL(request.url);
         const scope = url.searchParams.get("scope") ?? "clubs";
-        const num = (k: string, d: number) => Number(url.searchParams.get(k) ?? d) || d;
-        const limit = Math.min(600, Math.max(1, num("limit", scope === "all" ? 600 : 40)));
-        const offset = num("offset", 0);
-        const concurrency = Math.min(8, Math.max(1, num("concurrency", 8)));
-        const budgetMs = Math.min(120_000, Math.max(5_000, num("budgetMs", scope === "all" ? 90_000 : 45_000)));
+        if (!["seed", "clubs", "squads", "history", "all", "premium", "stats", "career"].includes(scope)) {
+          return new Response("Invalid scope", { status: 400 });
+        }
+        const num = (k: string, d: number, min: number, max: number) => {
+          const raw = url.searchParams.get(k);
+          const value = raw === null ? d : Number(raw);
+          return Number.isSafeInteger(value) && value >= min && value <= max ? value : null;
+        };
+        const limit = num("limit", scope === "career" ? 200 : 40, 1, 600);
+        const offset = num("offset", 0, 0, 1_000_000);
+        const concurrency = num("concurrency", 4, 1, 8);
+        const budgetMs = num("budgetMs", 45_000, 5_000, 90_000);
+        if (limit === null || offset === null || concurrency === null || budgetMs === null) {
+          return new Response("Invalid pagination or budget", { status: 400 });
+        }
 
         const { runSync } = await import("@/lib/football-sync.server");
         const result = await runSync({ scope, limit, offset, concurrency, budgetMs });
