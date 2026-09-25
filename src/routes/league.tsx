@@ -48,7 +48,7 @@ function LeaguePage() {
 
   const linked = hasPyramid(career.leagueId);
   const slots = linked ? slotsFor(career.leagueId, career.pyramidSlots) : 0;
-  const zones = pyramidZones(career.leagueId, table.length, career.pyramidSlots);
+  const zones = pyramidZones(career.leagueId, table.length, career.pyramidSlots, career.season);
   const accessCount = zones.filter((zone) => zone === "acesso").length;
   const relegationCount = zones.filter((zone) => zone === "rebaixamento").length;
   const maxSlots = Math.max(1, Math.min(8, Math.floor(table.length / 2) || 1));

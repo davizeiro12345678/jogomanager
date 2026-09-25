@@ -52,5 +52,8 @@ describe("pirâmides nacionais", () => {
     expect(zones.slice(0, 4)).toEqual(Array(4).fill("acesso"));
     expect(zones.slice(-4)).toEqual(Array(4).fill("rebaixamento"));
     expect(applyPyramid(state, tableFor(state))?.leagueClubs["bra3"]).toBeDefined();
+    const regionalTotal = ["y5079a", "y5079b", "y5079c"].reduce((sum, id) =>
+      sum + pyramidZones(id, leagueClubIds(state, id).length, undefined, 1).filter((zone) => zone === "acesso").length, 0);
+    expect(regionalTotal).toBe(4);
   });
 });

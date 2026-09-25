@@ -72,12 +72,22 @@ export function leagueClubIds(state: CareerState, leagueId?: string): string[] {
 }
 
 export type PyramidZone = "acesso" | "playoff" | "rebaixamento" | null;
-export function pyramidZones(leagueId: string, size: number, override?: number): PyramidZone[] {
+export function pyramidZones(leagueId: string, size: number, override?: number, season = 1): PyramidZone[] {
   const tiers = TIERS.find((chain) => chain.some((tier) => tier.includes(leagueId)));
   if (!tiers) return Array(size).fill(null);
   const index = tiers.findIndex((tier) => tier.includes(leagueId));
-  const up = index > 0 ? Math.min(size, slotsFor(tiers[index - 1]?.[0] ?? "", override)) : 0;
-  const down = index < tiers.length - 1 ? Math.min(size - up, slotsFor(leagueId, override)) : 0;
+  const quota = (level: number, side: "upper" | "lower") => {
+    const upper = tiers[level] ?? [];
+    const lower = tiers[level + 1] ?? [];
+    if (!upper.length || !lower.length) return 0;
+    const capacity = Math.min(8, ...upper.map((id) => Math.floor((getLeague(id).clubs.length) / 3)));
+    const vacancies = Math.min(slotsFor(upper[0]!, override), capacity);
+    const rotated = [...lower.slice(season % lower.length), ...lower.slice(0, season % lower.length)];
+    return Array.from({ length: vacancies }, (_, i) => side === "upper" ? upper[i % upper.length] : rotated[i % rotated.length])
+      .filter((id) => id === leagueId).length;
+  };
+  const up = index > 0 ? Math.min(size, quota(index - 1, "lower")) : 0;
+  const down = index < tiers.length - 1 ? Math.min(size - up, quota(index, "upper")) : 0;
   return Array.from({ length: size }, (_, i) => i < up ? "acesso" : i >= size - down ? "rebaixamento" : null);
 }
 
