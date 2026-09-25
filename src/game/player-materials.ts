@@ -209,19 +209,24 @@ export function playerMaterials(
       ? new THREE.MeshPhysicalMaterial({
           color: look.hairColor,
           roughness: 0.62,
+          // fios individuais: o mapa dá direção ao brilho em vez de um capacete liso
+          normalMap: hairNormal,
+          roughnessMap: hairRough,
+          normalScale: new THREE.Vector2(0.8, 0.8),
           metalness: 0.04,
           clearcoat: 0.35,
           clearcoatRoughness: 0.42,
           sheen: 0.85,
           sheenRoughness: 0.55,
           sheenColor: new THREE.Color(shade(look.hairColor, 0.55)),
-          anisotropy: 0.55,
+          anisotropy: 0.7,
           anisotropyRotation: Math.PI / 2,
           envMapIntensity: 0.75,
         })
       : new THREE.MeshStandardMaterial({
           color: look.hairColor,
           roughness: 0.85,
+          normalMap: hairNormal,
           metalness: 0.02,
         }),
     boot: hi
@@ -229,14 +234,18 @@ export function playerMaterials(
           color: look.bootColor,
           roughness: 0.22,
           normalMap: grain,
+          roughnessMap: bootRough,
           normalScale: NORMAL_SCALE,
           metalness: 0.1,
           clearcoat: 0.85,
           clearcoatRoughness: 0.18,
+          clearcoatNormalMap: grain,
+          clearcoatNormalScale: new THREE.Vector2(0.4, 0.4),
         })
       : new THREE.MeshStandardMaterial({
           color: look.bootColor,
           roughness: 0.34,
+          normalMap: grain,
           metalness: 0.22,
         }),
     bootAccent: hi
@@ -250,17 +259,38 @@ export function playerMaterials(
     sole: new THREE.MeshStandardMaterial({
       color: shade(look.bootColor, -0.55),
       roughness: 0.6,
+      normalMap: grain,
     }),
+    // caneleira: casca rígida com trama de fibra, sempre mais lisa que o meião
+    shin: hi
+      ? new THREE.MeshPhysicalMaterial({
+          color: shade(kit.socks, 0.18),
+          roughness: 0.35,
+          normalMap: shinNormal,
+          roughnessMap: shinRough,
+          normalScale: new THREE.Vector2(0.7, 0.7),
+          clearcoat: 0.6,
+          clearcoatRoughness: 0.25,
+          metalness: 0.06,
+        })
+      : new THREE.MeshStandardMaterial({
+          color: shade(kit.socks, 0.18),
+          roughness: 0.5,
+          normalMap: shinNormal,
+        }),
     glove: hi
       ? new THREE.MeshPhysicalMaterial({
           color: look.gloveColor,
           roughness: 0.46,
-          clearcoat: 0.24,
+          normalMap: weave,
+          normalScale: new THREE.Vector2(0.35, 0.35),
+          clearcoat: 0.24 + sweat * 0.3,
           clearcoatRoughness: 0.45,
           sheen: 0.2,
           sheenRoughness: 0.75,
         })
       : new THREE.MeshStandardMaterial({ color: look.gloveColor, roughness: 0.7 }),
+
   };
 
   cache.set(key, set);
