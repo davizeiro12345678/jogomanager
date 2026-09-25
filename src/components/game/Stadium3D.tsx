@@ -11,7 +11,7 @@ import { censusRef } from "@/game/scene-census";
 import { broadcastInterest, ShotHold } from "@/game/broadcast-interest";
 import { StaticBatch } from "@/components/game/stadium/StaticBatch";
 import { GrassChunks } from "@/components/game/stadium/GrassChunks";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, AdaptiveEvents, Trail } from "@react-three/drei";
 import { easing } from "maath";
 import type React from "react";
