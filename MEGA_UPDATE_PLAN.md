@@ -150,9 +150,9 @@ por atleta em vez de atlas por time.
 | M1  | Draw calls médios em Alta (broadcast)  | 715,6               | **≤ 260**                               |
 | M2  | p95 de frame em Alta                   | 63 ms               | **≤ 28 ms**                             |
 | M3  | FPS médio em Alta                      | 21,9                | **≥ 45**                                |
-| M4  | Draw calls por herói                   | ~60                 | **≤ 18** (merge por junta)              |
-| M5  | Heróis articulados em Alta (broadcast) | 2                   | **≥ 6**                                 |
-| M6  | Heróis em replay                       | 4                   | **≥ 10**                                |
+| M4  | Draw calls por herói                   | ~60                 | **≤ 18** — **atingido: 18** (SkinnedMesh) |
+| M5  | Heróis articulados em Alta (broadcast) | 2                   | **≥ 6** — teto elevado; quantidade derivada do orçamento medido |
+| M6  | Heróis em replay                       | 4                   | **≥ 10** — teto elevado; quantidade derivada do orçamento medido |
 | M7  | Triângulos em Alta                     | 787 K               | ≤ 850 K (manter)                        |
 | M8  | Cinema: p95 / FPS                      | —                   | ≤ 33,3 ms / ≥ 30                        |
 | M9  | First frame (benchmark)                | 1.480 ms            | ≤ 1.200 ms                              |
