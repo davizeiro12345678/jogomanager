@@ -642,11 +642,13 @@ function Stage({
       />
       {/* luz de recorte atrás dos personagens */}
       <spotLight position={[-5, 6, -5]} angle={0.7} penumbra={0.9} intensity={28} color={primary} />
-      <Environment resolution={quality === "alta" ? 96 : 64} frames={1}>
-        <Lightformer position={[0, 6, 2]} scale={[10, 3, 1]} intensity={2.2} color={warm} />
-        <Lightformer position={[-6, 3, -4]} scale={[6, 4, 1]} intensity={1.1} color={primary} />
-        <Lightformer position={[6, 3, -4]} scale={[6, 4, 1]} intensity={1.1} color={secondary} />
-      </Environment>
+      {quality !== "baixa" && (
+        <Environment resolution={quality === "alta" ? 96 : 64} frames={1}>
+          <Lightformer position={[0, 6, 2]} scale={[10, 3, 1]} intensity={2.2} color={warm} />
+          <Lightformer position={[-6, 3, -4]} scale={[6, 4, 1]} intensity={1.1} color={primary} />
+          <Lightformer position={[6, 3, -4]} scale={[6, 4, 1]} intensity={1.1} color={secondary} />
+        </Environment>
+      )}
       <Director kind={kind} beat={beat} />
       {kind === "locker" ? <LockerRoom primary={primary} secondary={secondary} /> : null}
       {kind === "tunnel" ? <Tunnel primary={primary} secondary={secondary} /> : null}
@@ -680,7 +682,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
         shadows={quality !== "baixa"}
         dpr={quality === "alta" ? [0.9, 1.4] : quality === "media" ? [0.75, 1.1] : 0.7}
         camera={{ position: [0, 2.2, 6.5], fov: 42 }}
-        gl={{ antialias: true, powerPreference: "high-performance", stencil: false }}
+        gl={{ antialias: quality !== "baixa", powerPreference: "high-performance", stencil: false }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.05;
