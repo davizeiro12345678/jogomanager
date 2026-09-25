@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { newCareer } from "./career";
+import { initCareer } from "./career";
 import { repairCareer } from "./career-repair";
 import { LEAGUES } from "./data/leagues";
 
-const fresh = () => newCareer(LEAGUES[0]!.clubs[0]!.id, "Teste");
+const fresh = () => initCareer(LEAGUES[0]!.id, LEAGUES[0]!.clubs[0]!.id, "Teste");
 
 describe("repairCareer", () => {
   it("não mexe em uma carreira nova", () => {
