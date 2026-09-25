@@ -27,6 +27,7 @@ import {
 } from "@/game/textures/fabric";
 import { ktx2, onKtx2Ready } from "@/game/textures/ktx2";
 import type { Kit } from "@/game/kits";
+import { SKIN_TONES } from "@/game/kits";
 import { shade, skinShadow } from "@/game/player-model";
 
 
@@ -116,11 +117,15 @@ export function playerMaterials(
   const hi = quality === "alta";
   // Preferimos sempre o mapa KTX2 (1024², comprimido na GPU); o canvas
   // procedural continua como rede de segurança até o download terminar.
-  const weave = ktx2("fiberNormal") ?? (hi ? jerseyWeaveNormal() : null);
-  const rib = ktx2("sockNormal") ?? (hi ? sockRibNormal() : null);
-  const pores = ktx2("skinNormal") ?? (hi ? skinPoreNormal() : null);
-  const grain = ktx2("bootNormal") ?? (hi ? bootGrainNormal() : null);
-  const jerseyRough = ktx2("fiberRough") ?? (hi ? jerseyRoughness() : null);
+  const pattern = (["solid", "stripes", "pin", "hoops", "sash", "halves", "checks"] as const).includes(kit.pattern as "solid") ? kit.pattern : "solid";
+  const skinTone = SKIN_TONES.indexOf(look.skin);
+  const skinVariant = skinTone < 0 ? "medium" : skinTone === 0 || skinTone === 4 ? "dark" : skinTone === 3 || skinTone === 2 ? "light" : "medium";
+  const bootVariant = look.bootColor.toLowerCase() === "#101418" ? "leather" : "synthetic";
+  const weave = hi ? (ktx2(`jersey_${pattern}_normal` as import("@/game/textures/ktx2").DetailKtx2Name) ?? ktx2("fiberNormal") ?? jerseyWeaveNormal()) : null;
+  const rib = hi ? (ktx2("socks_rib_normal") ?? ktx2("sockNormal") ?? sockRibNormal()) : null;
+  const pores = hi ? (ktx2(`skin_${skinVariant}_normal` as import("@/game/textures/ktx2").DetailKtx2Name) ?? ktx2("skinNormal") ?? skinPoreNormal()) : null;
+  const grain = hi ? (ktx2(`boot_${bootVariant}_normal` as import("@/game/textures/ktx2").DetailKtx2Name) ?? ktx2("bootNormal") ?? bootGrainNormal()) : null;
+  const jerseyRough = hi ? (ktx2(`jersey_${pattern}_rough` as import("@/game/textures/ktx2").DetailKtx2Name) ?? ktx2("fiberRough") ?? jerseyRoughness()) : null;
   const skinRough = ktx2("sweatMask") ?? (hi ? skinRoughness() : null);
   const hairNormal = ktx2("hairNormal");
   const hairRough = ktx2("hairRough");
@@ -160,7 +165,7 @@ export function playerMaterials(
     }),
     jersey: hi
       ? new THREE.MeshPhysicalMaterial({
-          color: kit.base,
+          color: tex ? 0xffffff : kit.base,
           map: tex,
           normalMap: weave,
           roughnessMap: jerseyRough,
@@ -173,12 +178,12 @@ export function playerMaterials(
           sheenRoughness: 0.7,
           sheenColor: new THREE.Color(shade(kit.base, 0.4)),
         })
-      : new THREE.MeshStandardMaterial({ color: kit.base, map: tex, roughness: 0.85 }),
+      : new THREE.MeshStandardMaterial({ color: tex ? 0xffffff : kit.base, map: tex, roughness: 0.85 }),
     shorts: hi
       ? new THREE.MeshPhysicalMaterial({
           color: kit.shorts,
           roughness: 0.84,
-          normalMap: weave,
+          normalMap: ktx2("shorts_plain_normal") ?? weave,
           roughnessMap: jerseyRough,
           normalScale: NORMAL_SCALE,
           sheen: 0.4,

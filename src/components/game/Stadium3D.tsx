@@ -216,8 +216,9 @@ function Pitch({
   const textureRevision = useKtx2Revision();
   // The precompiled albedo is the default checker cut; retain procedural maps
   // for custom mowing patterns and all low-end/offline devices.
-  const compressed = quality === "alta" && mow === "checker";
-  const tex = useMemo(() => (compressed ? ktx2("grassAlbedo") : null) ?? grassAlbedo(mow), [mow, compressed, textureRevision]);
+  const compressed = quality === "alta";
+  const grassVariant = mow === "stripes" || mow === "diagonal" || mow === "wide" ? `grass_${mow}_albedo` as const : "grassAlbedo";
+  const tex = useMemo(() => (compressed && (mow === "checker" || mow === "stripes" || mow === "diagonal" || mow === "wide") ? ktx2(grassVariant) : null) ?? grassAlbedo(mow), [mow, compressed, grassVariant, textureRevision]);
   const rough = useMemo(() => (compressed ? ktx2("grassRough") : null) ?? grassRoughness(mow), [mow, compressed, textureRevision]);
   const norm = useMemo(() => quality === "baixa" ? null : ((compressed ? ktx2("grassNormal") : null) ?? grassNormal(mow)), [quality, mow, compressed, textureRevision]);
   const normalScale = useMemo(

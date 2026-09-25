@@ -55,6 +55,11 @@ describe("rig body", () => {
     expect(countRigBody(body)).toBeGreaterThan(10);
   });
 
+  it("does not place an opaque disk over the jersey number", () => {
+    const body = buildRigBody(context());
+    expect(body.chest.every((mesh) => mesh.material.type !== "MeshBasicMaterial")).toBe(true);
+  });
+
   it("drops detail meshes when the rig is not high quality", () => {
     const detailed = buildRigBody(context({ hi: true }));
     const simple = buildRigBody(context({ hi: false }));
