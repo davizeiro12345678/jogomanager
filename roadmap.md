@@ -12,8 +12,8 @@
 - [x] 1.3 Erros da partida 3D (minuto duplicado, nuvens suaves em todo navegador, anéis do gramado atenuados, texto das placas ajustado, /perfil sem erro)
 - [x] 1.4 Inconsistências de dados + autocorreção (save conferido ao abrir, aviso no noticiário)
 - [x] 2 Pirâmides nacionais ligadas onde existe divisão parceira; competições estaduais, femininas e isoladas seguem independentes
-- [ ] 3 Texturas KTX2
-- [ ] 4 Gráficos 3D
-- [ ] 5 Cutscenes
-- [ ] 6 Simulação
-- [ ] 7 Design do jogo
+- [x] 3 Texturas KTX2 — gramado, concreto e rede via CDN; fallback procedural e ativação só em qualidade alta/WebGL2
+- [ ] 4 Gráficos 3D — chuva, refletores, placas LED, bancos, túnel, bola e rede já existem; faltam validação de FPS/draw calls e refinamentos do rig
+- [ ] 5 Cutscenes — cenários 3D, diretor, timeline de voz, pular e movimento reduzido existem; falta expandir abertura, replays e cerimônias conforme o plano
+- [ ] 6 Simulação — calibragem de 2.000 partidas e teste tático determinístico feitos; faltam unificação dos lances da partida 3D e sim rápida e estresse de 2.000 partidas 3D (atual: 200)
+- [ ] 7 Design do jogo — navegação móvel com aria-current/toques de 44px, skeleton de rota e erros recuperáveis; falta padronização das demais telas e revisão dos cinco grupos
