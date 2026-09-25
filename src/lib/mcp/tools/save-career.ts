@@ -20,11 +20,12 @@ export default defineTool({
         isError: true,
       };
     const supabase = supabaseForUser(ctx);
+    // MCP imports are personal saves only. They cannot write official progress.
     const { error } = await supabase
       .from("careers")
       .upsert({ user_id: ctx.getUserId(), state: state as never }, { onConflict: "user_id" });
     return error
-      ? { content: [{ type: "text", text: error.message }], isError: true }
+      ? { content: [{ type: "text", text: "Career imports are unavailable through this tool." }], isError: true }
       : {
           content: [{ type: "text", text: "Career saved." }],
           structuredContent: { ok: true },
