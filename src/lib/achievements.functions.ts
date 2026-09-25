@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { evaluateAchievements } from "@/game/achievements";
+import { initCareer } from "@/game/career";
 import type { CareerState } from "@/game/types";
+import { verifyCareerProgress } from "@/lib/career.functions";
 
 /**
  * Sincroniza conquistas do usuário logado.
@@ -15,17 +17,21 @@ export const syncAchievements = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { data: career, error: careerError } = await context.supabase
       .from("careers")
-      .select("state")
+      .select("state, verified_progress")
       .eq("user_id", context.userId)
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     if (careerError) throw new Error(careerError.message);
-    if (!career?.state) return { ok: true, unlocked: [] as string[] };
+    if (!career?.state || !career.verified_progress) return { ok: true, unlocked: [] as string[] };
 
     let earned: string[] = [];
     try {
-      earned = evaluateAchievements(career.state as unknown as CareerState);
+      const saved = career.state as unknown as CareerState;
+      if (!verifyCareerProgress(saved)) return { ok: true, unlocked: [] as string[] };
+      // Even a valid initial save may contain arbitrary ancillary fields.
+      // Award only from a canonical server-created career, never the payload.
+      earned = evaluateAchievements(initCareer(saved.leagueId, saved.clubId, saved.managerName));
     } catch {
       return { ok: true, unlocked: [] as string[] };
     }

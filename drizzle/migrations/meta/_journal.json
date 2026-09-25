@@ -113,6 +113,20 @@
       "when": 1790286261671,
       "tag": "0015_player_honours_and_career",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790378770665,
+      "tag": "0016_protect_official_career_progress",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790378949668,
+      "tag": "0017_protect_multiplayer_final_scores",
+      "breakpoints": true
     }
   ]
 }
