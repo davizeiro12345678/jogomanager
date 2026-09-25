@@ -88,7 +88,8 @@ export function repairCareer(input: CareerState): RepairResult {
     seen.add(key);
     if ((f.homeGoals == null) !== (f.awayGoals == null)) {
       halfScores++;
-      return [{ ...f, homeGoals: null, awayGoals: null, events: undefined }];
+      const { events: _events, ...rest } = f;
+      return [{ ...rest, homeGoals: null, awayGoals: null }];
     }
     return [f];
   });
