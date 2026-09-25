@@ -436,6 +436,13 @@
   animation: page-enter 260ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
+/* A navegação curta aparece como skeleton; sem animação para quem reduz movimento. */
+@media (prefers-reduced-motion: reduce) {
+  [role="status"] .animate-pulse {
+    animation: none;
+  }
+}
+
 /* resposta tátil consistente em tudo que é clicável */
 @layer base {
   button,

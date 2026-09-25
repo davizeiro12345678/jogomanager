@@ -33,4 +33,21 @@ describe("calibração dos resultados (2.000 partidas)", () => {
     }
     expect(good).toBeGreaterThan(bad);
   });
+  it("táticas agressivas criam mais chances para ambos os lados, de forma determinística", () => {
+    const [home, away] = LEAGUES[0]!.clubs;
+    const attacking = { mentality: 4, pressing: 2, tempo: 2 } as const;
+    let neutralHome = 0, neutralAway = 0, riskyHome = 0, riskyAway = 0;
+    for (let i = 0; i < 2000; i++) {
+      const seed = `tactics-${i}`;
+      const base = quickSimulate(home!.id, away!.id, seed);
+      const risk = quickSimulate(home!.id, away!.id, seed, { homeTactics: attacking });
+      expect(quickSimulate(home!.id, away!.id, seed, { homeTactics: attacking })).toEqual(risk);
+      neutralHome += base.hg;
+      neutralAway += base.ag;
+      riskyHome += risk.hg;
+      riskyAway += risk.ag;
+    }
+    expect(riskyHome).toBeGreaterThan(neutralHome);
+    expect(riskyAway).toBeGreaterThan(neutralAway);
+  });
 });

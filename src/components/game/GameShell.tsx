@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeftRight,
   BarChart3,
@@ -103,6 +103,7 @@ export function GameShell({
   children: ReactNode;
 }) {
   const navigate = useNavigate();
+  const pathname = useLocation({ select: (location) => location.pathname });
   const signedIn = useSignedIn();
   const { t, lang, setLang } = useT();
   const { sync } = useCareer();
@@ -116,7 +117,7 @@ export function GameShell({
   const groups = Array.from(new Set(rest.map((tab) => tab.group)));
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground">
+    <div className="min-h-screen min-h-[100dvh] bg-background text-foreground">
       <OfflineBar />
       <div
         aria-hidden
@@ -154,6 +155,7 @@ export function GameShell({
                 <Link
                   key={tab.to}
                   to={tab.to}
+                  aria-current={pathname === tab.to ? "page" : undefined}
                   className="flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-md px-2.5 font-display text-xs uppercase tracking-wider text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
                 >
                   <Icon size={13} />
@@ -265,6 +267,7 @@ export function GameShell({
             <Link
               key={tab.to}
               to={tab.to}
+              aria-current={pathname === tab.to ? "page" : undefined}
               className="shrink-0 rounded-lg bg-secondary/60 px-3 py-1.5 font-display text-[11px] uppercase tracking-wider text-muted-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
             >
               {t(tab.key)}
@@ -285,10 +288,10 @@ export function GameShell({
         </div>
       )}
 
-      <main className="page-enter mx-auto max-w-7xl px-4 py-5 pb-24 md:py-6 md:pb-6">{children}</main>
+      <main className="page-enter mx-auto max-w-7xl px-4 py-5 pb-24 lg:py-6 lg:pb-6">{children}</main>
 
       {/* Barra inferior do celular */}
-      <nav aria-label="Navegação principal no celular" className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
+      <nav aria-label="Navegação principal no celular" className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
         {TABS.filter((tab) => MOBILE.includes(tab.to)).map((tab) => {
           const Icon = tab.icon;
           return (
@@ -296,7 +299,8 @@ export function GameShell({
               key={tab.to}
               to={tab.to}
               aria-label={t(tab.key)}
-              className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] uppercase tracking-wider text-muted-foreground [&.active]:text-primary"
+              aria-current={pathname === tab.to ? "page" : undefined}
+              className="flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] uppercase tracking-wider text-muted-foreground [&.active]:text-primary"
             >
               <Icon size={17} />
               {t(tab.key)}

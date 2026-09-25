@@ -58,7 +58,7 @@ export const saveCareer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => CareerInput.parse(input))
   .handler(async ({ data, context }) => {
-    const incoming = data.state as CareerState;
+    const incoming = data.state as unknown as CareerState;
     // Malformed nested JSON is an unverified personal save, never an attested result.
     let verified = false;
     try { verified = verifyCareerProgress(incoming); } catch { verified = false; }

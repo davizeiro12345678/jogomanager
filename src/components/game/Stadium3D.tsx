@@ -11,7 +11,7 @@ import { censusRef } from "@/game/scene-census";
 import { broadcastInterest, ShotHold } from "@/game/broadcast-interest";
 import { StaticBatch } from "@/components/game/stadium/StaticBatch";
 import { GrassChunks } from "@/components/game/stadium/GrassChunks";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, AdaptiveEvents, Trail } from "@react-three/drei";
 import { easing } from "maath";
 import type React from "react";
@@ -52,6 +52,7 @@ import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } 
 import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
 import { matchLook, type TimeOfDay } from "@/game/matchday";
 import { useResolvedVisual, useVisual } from "@/game/visual-settings";
+import { initKtx2, ktx2, useKtx2Revision } from "@/game/textures/ktx2";
 
 export type { CameraMode } from "@/game/camera-modes";
 export type Quality = "alta" | "media" | "baixa";
@@ -212,9 +213,13 @@ function Pitch({
   wet: number;
   mow: MowPattern;
 }) {
-  const tex = useMemo(() => grassAlbedo(mow), [mow]);
-  const rough = useMemo(() => grassRoughness(mow), [mow]);
-  const norm = useMemo(() => (quality === "baixa" ? null : grassNormal(mow)), [quality, mow]);
+  const textureRevision = useKtx2Revision();
+  // The precompiled albedo is the default checker cut; retain procedural maps
+  // for custom mowing patterns and all low-end/offline devices.
+  const compressed = quality === "alta" && mow === "checker";
+  const tex = useMemo(() => (compressed ? ktx2("grassAlbedo") : null) ?? grassAlbedo(mow), [mow, compressed, textureRevision]);
+  const rough = useMemo(() => (compressed ? ktx2("grassRough") : null) ?? grassRoughness(mow), [mow, compressed, textureRevision]);
+  const norm = useMemo(() => quality === "baixa" ? null : ((compressed ? ktx2("grassNormal") : null) ?? grassNormal(mow)), [quality, mow, compressed, textureRevision]);
   const normalScale = useMemo(
     () => new THREE.Vector2(quality === "alta" ? 1.18 : 0.82, quality === "alta" ? 1.18 : 0.82),
     [quality],
@@ -472,9 +477,10 @@ function netTexture() {
   return tex;
 }
 
-function useNetMaterial(repeatX: number, repeatY: number) {
+function useNetMaterial(repeatX: number, repeatY: number, high = false) {
+  const textureRevision = useKtx2Revision();
   return useMemo(() => {
-    const alpha = netTexture();
+    const alpha = (high ? ktx2("netMask")?.clone() : null) ?? netTexture();
     const mat = new THREE.MeshStandardMaterial({
       color: "#f4f8ff",
       roughness: 0.65,
@@ -492,7 +498,7 @@ function useNetMaterial(repeatX: number, repeatY: number) {
       mat.opacity = 0.2;
     }
     return mat;
-  }, [repeatX, repeatY]);
+  }, [repeatX, repeatY, high, textureRevision]);
 }
 
 /**
@@ -593,9 +599,9 @@ function NetCloth({
 
 function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: SimView }) {
   const x = side * FIELD_X;
-  const backMat = useNetMaterial(14, 5);
-  const sideMat = useNetMaterial(4, 5);
-  const topMat = useNetMaterial(4, 14);
+  const backMat = useNetMaterial(14, 5, quality === "alta");
+  const sideMat = useNetMaterial(4, 5, quality === "alta");
+  const topMat = useNetMaterial(4, 14, quality === "alta");
   const post = <meshStandardMaterial color="#fdfdfd" roughness={0.22} metalness={0.08} />;
   return (
     <group position={[x, 0, 0]} ref={censusRef("goal")}>
@@ -942,10 +948,11 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
 }
 
 /** Concreto compartilhado por toda a estrutura (um material só, muitas peças). */
-function useConcrete(color = "#6d747b", repeat = 6) {
+function useConcrete(color = "#6d747b", repeat = 6, high = false) {
+  const textureRevision = useKtx2Revision();
   return useMemo(() => {
-    const map = concreteAlbedo();
-    const rough = concreteRoughness();
+    const map = (high ? ktx2("concreteAlbedo") : null) ?? concreteAlbedo();
+    const rough = (high ? ktx2("concreteRough") : null) ?? concreteRoughness();
     const m = new THREE.MeshStandardMaterial({
       color,
       roughness: 0.96,
@@ -964,22 +971,24 @@ function useConcrete(color = "#6d747b", repeat = 6) {
       m.roughnessMap = t;
     }
     return m;
-  }, [color, repeat]);
+  }, [color, repeat, high, textureRevision]);
 }
 
 function Tiers({
   rings,
   homeColor,
   awayColor,
+  high,
 }: {
   rings: number;
   homeColor: string;
   awayColor: string;
+  high: boolean;
 }) {
   const steps: React.ReactElement[] = [];
   const lenX = FIELD_X * 2 + 30;
   const lenZ = FIELD_Z * 2 + 34;
-  const concrete = useConcrete("#5f666d", 10);
+  const concrete = useConcrete("#5f666d", 10, high);
 
   const seatMat = useMemo(() => {
     const t = seatsTexture(homeColor, awayColor);
@@ -1412,7 +1421,7 @@ function Stands({
   const density = Math.round(
     Math.min(maximumDensity, sourceDensity) * Math.max(0.1, vis.crowdDensity),
   );
-  const wallMat = useConcrete("#39424b", 14);
+  const wallMat = useConcrete("#39424b", 14, quality === "alta");
 
   const crowd = useMemo(() => {
     const positions: THREE.Vector3[] = [];
@@ -1502,7 +1511,7 @@ function Stands({
         </mesh>
       ))}
 
-      <Tiers rings={rings} homeColor={homeColor} awayColor={awayColor} />
+      <Tiers rings={rings} homeColor={homeColor} awayColor={awayColor} high={quality === "alta"} />
       <Roof rings={rings} />
       <CrowdBackdrop homeColor={homeColor} awayColor={awayColor} rings={rings} />
       <Banners color={homeColor} alt={awayColor} rings={rings} />
@@ -2787,6 +2796,14 @@ function Scene({
   );
 }
 
+function CompressedTextures({ enabled }: { enabled: boolean }) {
+  const gl = useThree((state) => state.gl);
+  useEffect(() => {
+    if (enabled) initKtx2(gl as THREE.WebGLRenderer);
+  }, [enabled, gl]);
+  return null;
+}
+
 function Stadium3DImpl({
   sim,
   mode,
@@ -2925,6 +2942,7 @@ function Stadium3DImpl({
           );
         }}
       >
+        <CompressedTextures enabled={backend === "webgl2" && quality === "alta"} />
         <RuntimeBudget tier={sceneTier} enabled={vis.adaptive} onChange={setPressure} />
         <QualityPressure.Provider value={pressure}>
           <RuntimeSceneBudgetContext.Provider value={sceneBudget}>
