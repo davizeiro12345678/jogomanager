@@ -218,8 +218,8 @@ function Pitch({
   // for custom mowing patterns and all low-end/offline devices.
   const compressed = quality === "alta" && mow === "checker";
   const tex = useMemo(() => (compressed ? ktx2("grassAlbedo") : null) ?? grassAlbedo(mow), [mow, compressed, textureRevision]);
-  const rough = useMemo(() => (quality === "alta" ? ktx2("grassRough") : null) ?? grassRoughness(mow), [mow, quality, textureRevision]);
-  const norm = useMemo(() => quality === "baixa" ? null : ((quality === "alta" ? ktx2("grassNormal") : null) ?? grassNormal(mow)), [quality, mow, textureRevision]);
+  const rough = useMemo(() => (compressed ? ktx2("grassRough") : null) ?? grassRoughness(mow), [mow, compressed, textureRevision]);
+  const norm = useMemo(() => quality === "baixa" ? null : ((compressed ? ktx2("grassNormal") : null) ?? grassNormal(mow)), [quality, mow, compressed, textureRevision]);
   const normalScale = useMemo(
     () => new THREE.Vector2(quality === "alta" ? 1.18 : 0.82, quality === "alta" ? 1.18 : 0.82),
     [quality],
