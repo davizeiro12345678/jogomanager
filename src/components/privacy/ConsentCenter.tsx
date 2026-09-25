@@ -146,6 +146,17 @@ export function ConsentBanner() {
     window.addEventListener("consent-changed", close);
     return () => window.removeEventListener("consent-changed", close);
   }, []);
+  // Enquanto o aviso está aberto ele reserva espaço no fim da página: sem isso
+  // ele cobria os botões do rodapé (ex.: "Jogar" na partida rápida) no celular.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (!open) return;
+    const previous = document.body.style.paddingBottom;
+    document.body.style.paddingBottom = "11rem";
+    return () => {
+      document.body.style.paddingBottom = previous;
+    };
+  }, [open]);
   if (!open) return null;
   const choose = (all: boolean) => {
     saveConsent({ analytics: all, telemetry: all });
