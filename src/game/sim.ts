@@ -421,7 +421,7 @@ export class MatchSim {
       minute: this.minute(),
       type: "sub",
       side,
-      text: `${this.minute()}' Substituição no ${this.setup(side).short}: entra ${incoming.name}, sai ${out.name}.`,
+      text: `Substituição no ${this.setup(side).short}: entra ${incoming.name}, sai ${out.name}.`,
     });
     return true;
   }
@@ -1094,7 +1094,7 @@ export class MatchSim {
           minute: this.minute(),
           type: "shot",
           side: attacking,
-          text: `${this.minute()}' ${p.name} se joga e bloqueia a finalização!`,
+          text: `${p.name} se joga e bloqueia a finalização!`,
         });
       }
       return true;
@@ -1159,7 +1159,7 @@ export class MatchSim {
         minute: this.minute(),
         type: "save",
         side: s.side,
-        text: `${this.minute()}' ${gk.name} faz a defesa em chute de ${shooter?.name ?? "o atacante"}.`,
+        text: `${gk.name} faz a defesa em chute de ${shooter?.name ?? "o atacante"}.`,
       });
       this.pendingShot = null;
       // metade das defesas dá rebote; a outra o goleiro segura
@@ -1233,7 +1233,7 @@ export class MatchSim {
       minute: this.minute(),
       type: "goal",
       side,
-      text: `${this.minute()}' GOL! ${shooter?.name ?? "O atacante"} marca para o ${this.setup(side).short}!`,
+      text: `GOL! ${shooter?.name ?? "O atacante"} marca para o ${this.setup(side).short}!`,
     });
     this.kickoff(side === "home" ? "away" : "home");
   }
@@ -1273,7 +1273,7 @@ export class MatchSim {
         minute: this.minute(),
         type: "corner",
         side,
-        text: `${this.minute()}' Escanteio para ${this.setup(side).short}.`,
+        text: `Escanteio para ${this.setup(side).short}.`,
       });
     }
     this.synchronizeBallPhysics();
@@ -1334,7 +1334,7 @@ export class MatchSim {
           minute: this.minute(),
           type: "foul",
           side: opp.side,
-          text: `${this.minute()}' Falta de ${opp.name} sobre ${holder.name}.`,
+          text: `Falta de ${opp.name} sobre ${holder.name}.`,
         });
         // cartão: falta dura (carrinho) pune mais; vermelho é raro
         const cardRoll = this.rnd();
@@ -1345,7 +1345,7 @@ export class MatchSim {
             minute: this.minute(),
             type: "red",
             side: opp.side,
-            text: `${this.minute()}' Cartão vermelho para ${opp.name}!`,
+            text: `Cartão vermelho para ${opp.name}!`,
           });
         } else if (cardRoll < yellowChance) {
           this.stats[opp.side].yellow++;
@@ -1353,7 +1353,7 @@ export class MatchSim {
             minute: this.minute(),
             type: "yellow",
             side: opp.side,
-            text: `${this.minute()}' Cartão amarelo para ${opp.name}.`,
+            text: `Cartão amarelo para ${opp.name}.`,
           });
         }
         this.restartTimer = 1.4;
@@ -1556,7 +1556,7 @@ export class MatchSim {
         minute: this.minute(),
         type: "shot",
         side,
-        text: `${this.minute()}' ${holder.name} finaliza para fora.`,
+        text: `${holder.name} finaliza para fora.`,
       });
     }
     this.synchronizeBallPhysics();

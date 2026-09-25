@@ -100,20 +100,35 @@ function QuickMatchPage() {
           afetada.
         </p>
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          {LEAGUES.slice(0, 40).map((l) => (
-            <button
-              key={l.id}
-              onClick={() => chooseLeague(l.id)}
-              className={`rounded-lg border px-3 py-2 font-display text-xs uppercase tracking-wide transition ${
-                l.id === leagueId
-                  ? "border-primary bg-primary/15 text-foreground"
-                  : "border-border surface-card text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Flag league={l.id} size={16} /> {l.name}
-            </button>
-          ))}
+        {/* All leagues, grouped by country (was a 40-button wall that hid most leagues). */}
+        <div className="mt-6 flex max-w-md items-center gap-3">
+          <Flag league={league.id} country={league.country} size={24} />
+          <label htmlFor="quick-league" className="sr-only">
+            Liga
+          </label>
+          <select
+            id="quick-league"
+            value={leagueId}
+            onChange={(e) => chooseLeague(e.target.value)}
+            className="w-full rounded-lg border border-input bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary"
+          >
+            {Object.entries(
+              LEAGUES.reduce<Record<string, typeof LEAGUES>>((acc, l) => {
+                (acc[l.country] ??= []).push(l);
+                return acc;
+              }, {}),
+            )
+              .sort(([a], [b]) => (a === "Brasil" ? -1 : b === "Brasil" ? 1 : a.localeCompare(b, "pt-BR")))
+              .map(([country, ls]) => (
+                <optgroup key={country} label={country}>
+                  {ls.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+          </select>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">

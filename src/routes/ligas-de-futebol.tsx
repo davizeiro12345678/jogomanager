@@ -52,7 +52,7 @@ function LeaguesPage() {
               className="rounded-xl border border-border/60 surface-card p-5 backdrop-blur"
             >
               <div className="flex items-center gap-3">
-                <Flag league={l.id} size={28} />
+                <Flag league={l.id} country={l.country} size={28} />
                 <div>
                   <h2 className="font-display text-xl leading-tight">{l.name}</h2>
                   <p className="text-xs text-muted-foreground">

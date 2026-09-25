@@ -49,6 +49,8 @@ function drawCloud(
   const puffs = 7 + Math.floor(rand() * 7);
   ctx.save();
   ctx.globalAlpha = alpha * (0.6 + rand() * 0.4);
+  // Soft edges: hard-edged circles read as giant lens bokeh instead of clouds.
+  ctx.filter = `blur(${Math.max(4, scale * 0.14)}px)`;
 
   // base sombreada
   ctx.fillStyle = dark;
