@@ -331,6 +331,8 @@ export interface QuickSimContext {
   awayForm?: number;
   homeFatigue?: number;
   awayFatigue?: number;
+  homeTactics?: Pick<Tactics, "mentality" | "pressing" | "tempo">;
+  awayTactics?: Pick<Tactics, "mentality" | "pressing" | "tempo">;
 }
 
 export type QuickSimEvent = FixtureEvent;
@@ -357,8 +359,15 @@ export function quickSimulate(
   const h = CLUBS[homeId]?.strength ?? 70;
   const a = CLUBS[awayId]?.strength ?? 70;
   const edge = Math.tanh((h - a) / 16) * 0.42 + form(ctx.homeForm) * 0.08 - form(ctx.awayForm) * 0.08;
-  const expH = Math.max(0.3, SIM_BASE_GOALS * Math.exp(edge + SIM_HOME_EDGE + fatigue(ctx.homeFatigue)));
-  const expA = Math.max(0.25, SIM_BASE_GOALS * Math.exp(-edge - SIM_HOME_EDGE * 0.6 + fatigue(ctx.awayFatigue)));
+  // Tactical risk is symmetric: an attacking shape creates chances AND leaves
+  // space behind. Neutral values preserve the calibrated league distribution.
+  const risk = (t?: QuickSimContext["homeTactics"]) => t
+    ? ((t.mentality - 2) * 0.045 + (t.pressing - 1) * 0.018 + (t.tempo - 1) * 0.012)
+    : 0;
+  const homeRisk = risk(ctx.homeTactics);
+  const awayRisk = risk(ctx.awayTactics);
+  const expH = Math.max(0.3, SIM_BASE_GOALS * Math.exp(edge + SIM_HOME_EDGE + fatigue(ctx.homeFatigue) + homeRisk + awayRisk * 0.5));
+  const expA = Math.max(0.25, SIM_BASE_GOALS * Math.exp(-edge - SIM_HOME_EDGE * 0.6 + fatigue(ctx.awayFatigue) + awayRisk + homeRisk * 0.5));
 
   let hg = poisson(expH, rnd);
   let ag = poisson(expA, rnd);
