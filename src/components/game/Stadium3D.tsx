@@ -2794,6 +2794,14 @@ function Scene({
   );
 }
 
+function CompressedTextures({ enabled }: { enabled: boolean }) {
+  const gl = useThree((state) => state.gl);
+  useEffect(() => {
+    if (enabled) initKtx2(gl as THREE.WebGLRenderer);
+  }, [enabled, gl]);
+  return null;
+}
+
 function Stadium3DImpl({
   sim,
   mode,
