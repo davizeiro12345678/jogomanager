@@ -25,8 +25,10 @@ import {
   skinRoughness,
   sockRibNormal,
 } from "@/game/textures/fabric";
+import { ktx2, onKtx2Ready } from "@/game/textures/ktx2";
 import type { Kit } from "@/game/kits";
 import { shade, skinShadow } from "@/game/player-model";
+
 
 export type MaterialQuality = "alta" | "media" | "baixa";
 
@@ -51,6 +53,8 @@ export interface PlayerMaterials {
   bootAccent: THREE.Material;
   sole: THREE.Material;
   glove: THREE.Material;
+  /** caneleira em fibra: usada por baixo do meião */
+  shin: THREE.Material;
 }
 
 const NORMAL_SCALE = new THREE.Vector2(0.55, 0.55);
@@ -63,6 +67,16 @@ const sweatStep = (s: number) => Math.round(Math.max(0, Math.min(1, s)) * 4) / 4
 function dispose(set: PlayerMaterials) {
   Object.values(set).forEach((m) => m.dispose());
 }
+
+// Quando as texturas KTX2 terminam de baixar, os materiais já criados ficam
+// desatualizados: o cache é esvaziado para que os próximos usem o alta definição.
+let ktx2Ready = false;
+onKtx2Ready(() => {
+  ktx2Ready = true;
+  for (const set of cache.values()) dispose(set);
+  cache.clear();
+});
+
 
 /**
  * Devolve (e memoriza) o conjunto de materiais de um jogador.
@@ -77,6 +91,7 @@ export function playerMaterials(
   const sweat = sweatStep(look.sweat);
   const key = [
     quality,
+    ktx2Ready ? "hd" : "sd",
     look.skin,
     sweat,
     look.hairColor,
@@ -99,12 +114,21 @@ export function playerMaterials(
   }
 
   const hi = quality === "alta";
-  const weave = hi ? jerseyWeaveNormal() : null;
-  const rib = hi ? sockRibNormal() : null;
-  const pores = hi ? skinPoreNormal() : null;
-  const grain = hi ? bootGrainNormal() : null;
-  const jerseyRough = hi ? jerseyRoughness() : null;
-  const skinRough = hi ? skinRoughness() : null;
+  // Preferimos sempre o mapa KTX2 (1024², comprimido na GPU); o canvas
+  // procedural continua como rede de segurança até o download terminar.
+  const weave = ktx2("fiberNormal") ?? (hi ? jerseyWeaveNormal() : null);
+  const rib = ktx2("sockNormal") ?? (hi ? sockRibNormal() : null);
+  const pores = ktx2("skinNormal") ?? (hi ? skinPoreNormal() : null);
+  const grain = ktx2("bootNormal") ?? (hi ? bootGrainNormal() : null);
+  const jerseyRough = ktx2("fiberRough") ?? (hi ? jerseyRoughness() : null);
+  const skinRough = ktx2("sweatMask") ?? (hi ? skinRoughness() : null);
+  const hairNormal = ktx2("hairNormal");
+  const hairRough = ktx2("hairRough");
+  const bootRough = ktx2("bootRough");
+  const shinNormal = ktx2("shinNormal");
+  const shinRough = ktx2("shinRough");
+  const sweatNormal = ktx2("sweatNormal");
+
 
   const set: PlayerMaterials = {
     skin: hi
@@ -114,9 +138,13 @@ export function playerMaterials(
           normalMap: pores,
           roughnessMap: skinRough,
           normalScale: NORMAL_SCALE,
-          clearcoat: 0.28 + sweat * 0.25,
-          clearcoatRoughness: 0.5,
+          clearcoat: 0.28 + sweat * 0.35,
+          clearcoatRoughness: 0.5 - sweat * 0.28,
+          // gotas de suor: só o verniz recebe o relevo, a pele continua macia
+          clearcoatNormalMap: sweatNormal,
+          clearcoatNormalScale: new THREE.Vector2(0.25 + sweat * 0.75, 0.25 + sweat * 0.75),
           envMapIntensity: 0.95,
+
           sheen: 0.35,
           sheenRoughness: 0.6,
           // tom avermelhado do sangue sob a pele: imita o espalhamento sub-superficial
@@ -181,19 +209,24 @@ export function playerMaterials(
       ? new THREE.MeshPhysicalMaterial({
           color: look.hairColor,
           roughness: 0.62,
+          // fios individuais: o mapa dá direção ao brilho em vez de um capacete liso
+          normalMap: hairNormal,
+          roughnessMap: hairRough,
+          normalScale: new THREE.Vector2(0.8, 0.8),
           metalness: 0.04,
           clearcoat: 0.35,
           clearcoatRoughness: 0.42,
           sheen: 0.85,
           sheenRoughness: 0.55,
           sheenColor: new THREE.Color(shade(look.hairColor, 0.55)),
-          anisotropy: 0.55,
+          anisotropy: 0.7,
           anisotropyRotation: Math.PI / 2,
           envMapIntensity: 0.75,
         })
       : new THREE.MeshStandardMaterial({
           color: look.hairColor,
           roughness: 0.85,
+          normalMap: hairNormal,
           metalness: 0.02,
         }),
     boot: hi
@@ -201,14 +234,18 @@ export function playerMaterials(
           color: look.bootColor,
           roughness: 0.22,
           normalMap: grain,
+          roughnessMap: bootRough,
           normalScale: NORMAL_SCALE,
           metalness: 0.1,
           clearcoat: 0.85,
           clearcoatRoughness: 0.18,
+          clearcoatNormalMap: grain,
+          clearcoatNormalScale: new THREE.Vector2(0.4, 0.4),
         })
       : new THREE.MeshStandardMaterial({
           color: look.bootColor,
           roughness: 0.34,
+          normalMap: grain,
           metalness: 0.22,
         }),
     bootAccent: hi
@@ -222,17 +259,38 @@ export function playerMaterials(
     sole: new THREE.MeshStandardMaterial({
       color: shade(look.bootColor, -0.55),
       roughness: 0.6,
+      normalMap: grain,
     }),
+    // caneleira: casca rígida com trama de fibra, sempre mais lisa que o meião
+    shin: hi
+      ? new THREE.MeshPhysicalMaterial({
+          color: shade(kit.socks, 0.18),
+          roughness: 0.35,
+          normalMap: shinNormal,
+          roughnessMap: shinRough,
+          normalScale: new THREE.Vector2(0.7, 0.7),
+          clearcoat: 0.6,
+          clearcoatRoughness: 0.25,
+          metalness: 0.06,
+        })
+      : new THREE.MeshStandardMaterial({
+          color: shade(kit.socks, 0.18),
+          roughness: 0.5,
+          normalMap: shinNormal,
+        }),
     glove: hi
       ? new THREE.MeshPhysicalMaterial({
           color: look.gloveColor,
           roughness: 0.46,
-          clearcoat: 0.24,
+          normalMap: weave,
+          normalScale: new THREE.Vector2(0.35, 0.35),
+          clearcoat: 0.24 + sweat * 0.3,
           clearcoatRoughness: 0.45,
           sheen: 0.2,
           sheenRoughness: 0.75,
         })
       : new THREE.MeshStandardMaterial({ color: look.gloveColor, roughness: 0.7 }),
+
   };
 
   cache.set(key, set);
