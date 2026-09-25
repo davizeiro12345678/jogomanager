@@ -3,7 +3,7 @@
  * óbvia (valores fora da faixa, ids órfãos, partidas duplicadas); nunca inventa
  * resultados nem altera o que o jogador decidiu. Pura e determinística.
  */
-import type { CareerState, Player } from "./types";
+import type { CareerState, Fixture, Player } from "./types";
 
 const clamp = (v: unknown, min: number, max: number, fallback: number) => {
   const n = typeof v === "number" && Number.isFinite(v) ? v : fallback;
@@ -79,7 +79,7 @@ export function repairCareer(input: CareerState): RepairResult {
   const seen = new Set<string>();
   let dropped = 0;
   let halfScores = 0;
-  const fixtures = (input.fixtures ?? []).flatMap((f) => {
+  const fixtures = (input.fixtures ?? []).flatMap((f): Fixture[] => {
     const key = `${f.round}:${f.home}:${f.away}`;
     if (f.home === f.away || seen.has(key)) {
       dropped++;
