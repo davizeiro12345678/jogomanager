@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeftRight,
   BarChart3,
@@ -103,6 +103,7 @@ export function GameShell({
   children: ReactNode;
 }) {
   const navigate = useNavigate();
+  const pathname = useLocation({ select: (location) => location.pathname });
   const signedIn = useSignedIn();
   const { t, lang, setLang } = useT();
   const { sync } = useCareer();
@@ -154,7 +155,7 @@ export function GameShell({
                 <Link
                   key={tab.to}
                   to={tab.to}
-                  aria-current={location.pathname === tab.to ? "page" : undefined}
+                  aria-current={pathname === tab.to ? "page" : undefined}
                   className="flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-md px-2.5 font-display text-xs uppercase tracking-wider text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
                 >
                   <Icon size={13} />
@@ -266,7 +267,7 @@ export function GameShell({
             <Link
               key={tab.to}
               to={tab.to}
-              aria-current={location.pathname === tab.to ? "page" : undefined}
+              aria-current={pathname === tab.to ? "page" : undefined}
               className="shrink-0 rounded-lg bg-secondary/60 px-3 py-1.5 font-display text-[11px] uppercase tracking-wider text-muted-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
             >
               {t(tab.key)}
@@ -298,7 +299,7 @@ export function GameShell({
               key={tab.to}
               to={tab.to}
               aria-label={t(tab.key)}
-              aria-current={location.pathname === tab.to ? "page" : undefined}
+              aria-current={pathname === tab.to ? "page" : undefined}
               className="flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] uppercase tracking-wider text-muted-foreground [&.active]:text-primary"
             >
               <Icon size={17} />
