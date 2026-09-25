@@ -396,6 +396,35 @@ está abaixo dele; contagem de vértices idêntica à da malha mesclada; e o tes
 o vertex shader, **cada vértice cai exatamente onde caía na malha mesclada** (desvio < 0,0001).
 Mais: 180 testes / 32 arquivos, typecheck, build e ESLint verdes.
 
+### Lote G (início) — motor de timeline das cutscenes (entregue 2026-09-25)
+
+O motor de cutscenes era orientado a clique com três efeitos independentes
+(toque, máquina de escrever em `setInterval`, travelling em `requestAnimationFrame`).
+Agora a cena é uma **linha do tempo** em `src/game/cutscene-timeline.ts`:
+
+- `buildCutsceneTimeline(scene, durations)` — cada fala ganha instante de início,
+  duração de leitura (ritmo por locutor: comentarista é mais rápido, narrador mais
+  lento), pausa, enquadramento e efeito; quando a voz real existe, ela manda na
+  duração da fala.
+- `sampleCutsceneTimeline(timeline, t)` — estado completo num instante: fala atual,
+  progresso, caracteres digitados e travelling da câmera (smoothstep).
+- `advanceTarget(timeline, t, typed)` — o "pular" conserva a regra que as pessoas
+  esperam: o primeiro toque completa a digitação, o segundo vai para a próxima fala.
+
+`Cutscene.tsx` passou a ter **um único relógio** (`requestAnimationFrame`) alimentando
+as três coisas, e a timeline é remontada quando a duração do áudio chega — a cena
+avança sozinha no ritmo do roteiro, com o toque como atalho. Determinismo testado:
+a mesma cena produz sempre o mesmo filme.
+
+Verificação: `cutscene-timeline.test.ts` (11 testes — falas encaixadas sem falha nem
+sobreposição, janela de leitura sadia em todas as 20 cenas, determinismo, voz real
+versus estimativa, monotonicidade do tempo, digitação gradual, suavização da câmera,
+regra do pular, enquadramentos alternados, clamp de tempo). Suíte: 191 testes / 33
+arquivos, typecheck, build e ESLint verdes.
+
+**Pendente no Lote G**: unificação com a partida (a timeline como fonte dos momentos
+cinematográficos dentro do jogo) e beats de efeito/ator na linha do tempo.
+
 ## 9. Perguntas de decisão
 
 Respondidas em 2026-09-25 — ver tabela da seção 8. Nenhuma pergunta em aberto.
