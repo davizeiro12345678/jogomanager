@@ -61,12 +61,11 @@ export function useCareer() {
   const query = useQuery({
     queryKey: [...CAREER_KEY, signedIn],
     enabled: signedIn !== null,
-    queryFn: async () => {
+    queryFn: async (): Promise<{ career: CareerState | null; sync: SyncState }> => {
       const local = await loadLocalCareer();
-      if (!signedIn) return local ? migrateCareer(local) : null;
+      if (!signedIn) return { career: local ? migrateCareer(local) : null, sync: "local" };
       if (!isOnline()) {
-        setSync("offline");
-        return local ? migrateCareer(local) : null;
+        return { career: local ? migrateCareer(local) : null, sync: "offline" };
       }
 
       let cloud: CareerState | null = null;
@@ -78,8 +77,7 @@ export function useCareer() {
           cloudAt = raw.updatedAt ? Date.parse(raw.updatedAt) : 0;
         }
       } catch {
-        setSync("offline");
-        return local ? migrateCareer(local) : null;
+        return { career: local ? migrateCareer(local) : null, sync: "offline" };
       }
 
       const localAt = await localSavedAt();
@@ -88,23 +86,28 @@ export function useCareer() {
         const migrated = migrateCareer(local);
         try {
           await save({ data: { state: migrated } });
-          setSync("synced");
+          return { career: migrated, sync: "synced" };
         } catch {
           await queueSync(migrated);
-          setSync("pending");
+          return { career: migrated, sync: "pending" };
         }
-        return migrated;
       }
       if (cloud) {
         const migrated = migrateCareer(cloud);
         await saveLocalCareer(migrated, "nuvem");
-        setSync("synced");
-        return migrated;
+        return { career: migrated, sync: "synced" };
       }
-      return null;
+      return { career: null, sync: "local" };
     },
     staleTime: 30_000,
   });
+
+  // O estado de sincronização só é aplicado depois da montagem: alterá-lo
+  // dentro do queryFn atualizava um componente ainda não montado.
+  const querySync = query.data?.sync;
+  useEffect(() => {
+    if (querySync) setSync(querySync);
+  }, [querySync]);
 
   const mutation = useMutation({
     mutationFn: async (state: CareerState) => {
