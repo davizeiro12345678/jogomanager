@@ -155,15 +155,17 @@ export function ConsentBanner() {
     <div
       role="dialog"
       aria-label="Privacidade"
-      className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-lg rounded-xl border border-border bg-card p-4 shadow-lg"
+      className="pointer-events-none fixed inset-x-3 bottom-3 z-40 mx-auto max-w-lg"
     >
-      <p className="text-sm text-muted-foreground">
-        Usamos só o essencial para salvar seu jogo. Quer ajudar a melhorar o desempenho com dados
-        anônimos? <a href="/privacidade" className="text-primary underline">Saiba mais</a>
-      </p>
-      <div className="mt-3 flex gap-2">
-        <Button size="sm" onClick={() => choose(true)}>Aceitar</Button>
-        <Button size="sm" variant="outline" onClick={() => choose(false)}>Só o essencial</Button>
+      <div className="pointer-events-auto rounded-xl border border-border bg-card p-4 shadow-lg">
+        <p className="text-sm text-muted-foreground">
+          Usamos só o essencial para salvar seu jogo. Quer ajudar a melhorar o desempenho com dados
+          anônimos? <a href="/privacidade" className="text-primary underline">Saiba mais</a>
+        </p>
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" onClick={() => choose(true)}>Aceitar</Button>
+          <Button size="sm" variant="outline" onClick={() => choose(false)}>Só o essencial</Button>
+        </div>
       </div>
     </div>
   );
