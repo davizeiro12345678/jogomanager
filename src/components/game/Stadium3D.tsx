@@ -2904,7 +2904,6 @@ function Stadium3DImpl({
         gl={glProp}
         performance={{ min: 0.5 }}
         onCreated={({ gl }) => {
-          if (backend === "webgl2" && quality === "alta") initKtx2(gl as THREE.WebGLRenderer);
           const r = gl as unknown as {
             toneMapping: THREE.ToneMapping;
             toneMappingExposure: number;
@@ -2933,6 +2932,7 @@ function Stadium3DImpl({
           );
         }}
       >
+        <CompressedTextures enabled={backend === "webgl2" && quality === "alta"} />
         <RuntimeBudget tier={sceneTier} enabled={vis.adaptive} onChange={setPressure} />
         <QualityPressure.Provider value={pressure}>
           <RuntimeSceneBudgetContext.Provider value={sceneBudget}>
