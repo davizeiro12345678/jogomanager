@@ -20,7 +20,7 @@
 
 ## Importação e desempenho (pedido 2026-09-25)
 - [x] Endpoint protegido com validação de escopo e paginação; ligas e clubes locais importados (4.506 clubes).
-- [x] Lotes premium de jogadores, estatísticas e histórico executados; continuidade por offset sem pular itens com limite de tempo; estatísticas por fonte com upsert.
+- [x] Primeiros lotes premium de jogadores, estatísticas e histórico executados; continuidade por offset sem pular itens com limite de tempo; estatísticas por fonte com upsert.
 - [x] Temporada automática em Web Worker; partida ao vivo já isolada no Worker; cache versionado para texturas KTX2 e imagens oficiais.
 - [ ] Cobertura total da fonte externa: aguarda processamento paginado dos registros restantes; os endpoints não publicam dados que a fonte não oferece.
 - [ ] Compressão/reformatação das fotos externas: requer espelhamento autorizado em CDN de imagens; não modificar conteúdo de origem nem contornar licença.
