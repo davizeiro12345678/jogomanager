@@ -14,6 +14,7 @@
 // ============================================================================
 
 import * as THREE from "three";
+import { useSyncExternalStore } from "react";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 
 import bootNormalAsset from "@/assets/textures/boot_normal.ktx2.asset.json";
@@ -77,6 +78,11 @@ const loaded = new Map<TextureName, THREE.Texture>();
 let loader: KTX2Loader | null = null;
 let started = false;
 const listeners = new Set<() => void>();
+let revision = 0;
+/** Re-render only when a compressed asset arrives; no per-frame checks. */
+export function useKtx2Revision(): number {
+  return useSyncExternalStore(onKtx2Ready, () => revision, () => 0);
+}
 
 /** avisa quem depende das texturas (o cache de materiais) que elas chegaram */
 export function onKtx2Ready(fn: () => void): () => void {
@@ -111,6 +117,7 @@ export function initKtx2(renderer: THREE.WebGLRenderer): void {
         tex.colorSpace = src.color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
         tex.needsUpdate = true;
         loaded.set(name, tex);
+        revision += 1;
         for (const fn of listeners) fn();
       },
       undefined,

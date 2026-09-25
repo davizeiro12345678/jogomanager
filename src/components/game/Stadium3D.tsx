@@ -52,6 +52,7 @@ import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } 
 import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
 import { matchLook, type TimeOfDay } from "@/game/matchday";
 import { useResolvedVisual, useVisual } from "@/game/visual-settings";
+import { initKtx2, ktx2, useKtx2Revision } from "@/game/textures/ktx2";
 
 export type { CameraMode } from "@/game/camera-modes";
 export type Quality = "alta" | "media" | "baixa";
@@ -212,9 +213,13 @@ function Pitch({
   wet: number;
   mow: MowPattern;
 }) {
-  const tex = useMemo(() => grassAlbedo(mow), [mow]);
-  const rough = useMemo(() => grassRoughness(mow), [mow]);
-  const norm = useMemo(() => (quality === "baixa" ? null : grassNormal(mow)), [quality, mow]);
+  const textureRevision = useKtx2Revision();
+  // The precompiled albedo is the default checker cut; retain procedural maps
+  // for custom mowing patterns and all low-end/offline devices.
+  const compressed = quality === "alta" && mow === "checker";
+  const tex = useMemo(() => (compressed ? ktx2("grassAlbedo") : null) ?? grassAlbedo(mow), [mow, compressed, textureRevision]);
+  const rough = useMemo(() => (quality === "alta" ? ktx2("grassRough") : null) ?? grassRoughness(mow), [mow, quality, textureRevision]);
+  const norm = useMemo(() => quality === "baixa" ? null : ((quality === "alta" ? ktx2("grassNormal") : null) ?? grassNormal(mow)), [quality, mow, textureRevision]);
   const normalScale = useMemo(
     () => new THREE.Vector2(quality === "alta" ? 1.18 : 0.82, quality === "alta" ? 1.18 : 0.82),
     [quality],
@@ -473,8 +478,9 @@ function netTexture() {
 }
 
 function useNetMaterial(repeatX: number, repeatY: number) {
+  const textureRevision = useKtx2Revision();
   return useMemo(() => {
-    const alpha = netTexture();
+    const alpha = ktx2("netMask")?.clone() ?? netTexture();
     const mat = new THREE.MeshStandardMaterial({
       color: "#f4f8ff",
       roughness: 0.65,
@@ -492,7 +498,7 @@ function useNetMaterial(repeatX: number, repeatY: number) {
       mat.opacity = 0.2;
     }
     return mat;
-  }, [repeatX, repeatY]);
+  }, [repeatX, repeatY, textureRevision]);
 }
 
 /**
@@ -943,9 +949,10 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
 
 /** Concreto compartilhado por toda a estrutura (um material só, muitas peças). */
 function useConcrete(color = "#6d747b", repeat = 6) {
+  const textureRevision = useKtx2Revision();
   return useMemo(() => {
-    const map = concreteAlbedo();
-    const rough = concreteRoughness();
+    const map = ktx2("concreteAlbedo") ?? concreteAlbedo();
+    const rough = ktx2("concreteRough") ?? concreteRoughness();
     const m = new THREE.MeshStandardMaterial({
       color,
       roughness: 0.96,
@@ -964,7 +971,7 @@ function useConcrete(color = "#6d747b", repeat = 6) {
       m.roughnessMap = t;
     }
     return m;
-  }, [color, repeat]);
+  }, [color, repeat, textureRevision]);
 }
 
 function Tiers({
@@ -2897,6 +2904,7 @@ function Stadium3DImpl({
         gl={glProp}
         performance={{ min: 0.5 }}
         onCreated={({ gl }) => {
+          if (backend === "webgl2") initKtx2(gl as THREE.WebGLRenderer);
           const r = gl as unknown as {
             toneMapping: THREE.ToneMapping;
             toneMappingExposure: number;
