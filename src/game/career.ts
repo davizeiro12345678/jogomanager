@@ -15,6 +15,7 @@ import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
 import { applyRegens } from "./regen";
 import { checkSeasonIntegrity } from "./season-integrity";
+import { repairCareer } from "./career-repair";
 import { applyPyramid, leagueClubIds } from "./pyramid";
 import { evolveSeason, setAttrDeltas } from "./attributes";
 
@@ -245,6 +246,28 @@ export function initCareer(
 
 /** Migra estados antigos (v1/v2) para o formato atual. */
 export function migrateCareer(raw: unknown): CareerState {
+  const { state, fixes } = repairCareer(migrateCareerShape(raw));
+  if (!fixes.length) return state;
+  console.warn("[career-repair]", fixes);
+  const id = `repair-${state.season}-${state.round}`;
+  if (state.news.some((n) => n.id === id)) return state;
+  return {
+    ...state,
+    news: [
+      {
+        id,
+        season: state.season,
+        round: state.round,
+        kind: "sistema",
+        title: "Save conferido e corrigido",
+        body: `Corrigimos automaticamente: ${fixes.join("; ")}.`,
+      },
+      ...state.news,
+    ],
+  };
+}
+
+function migrateCareerShape(raw: unknown): CareerState {
   const s = raw as CareerState & { version?: number };
   if (s && s.version === 3) {
     const ready = {

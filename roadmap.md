@@ -10,7 +10,7 @@
 - [x] 1.1 País de origem sem repetição + busca
 - [x] 1.2 Varredura de telas (11 telas, 2 larguras; bandeiras vazias e liga da partida rápida corrigidas)
 - [x] 1.3 Erros da partida 3D (minuto duplicado, nuvens suaves em todo navegador, anéis do gramado atenuados, texto das placas ajustado, /perfil sem erro)
-- [ ] 1.4 Inconsistências de dados + autocorreção
+- [x] 1.4 Inconsistências de dados + autocorreção (save conferido ao abrir, aviso no noticiário)
 - [ ] 2 Pirâmides completas das 178 ligas novas
 - [ ] 3 Texturas KTX2
 - [ ] 4 Gráficos 3D
