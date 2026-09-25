@@ -606,6 +606,8 @@ export function Cutscene({
   // quanto do texto já foi digitado e onde a câmera está. Antes eram três
   // efeitos independentes (clique, máquina de escrever e travelling), que não
   // conversavam entre si.
+  /** duração real de cada fala (voz), quando o áudio chega */
+  const voiceDurations = useRef<(number | undefined)[]>([]);
   const [timelineStamp, setTimelineStamp] = useState(0);
   const timeline = useMemo<CutsceneTimeline | null>(() => {
     // `timelineStamp` não é lido aqui: ele existe só para remontar a linha do
@@ -624,8 +626,6 @@ export function Cutscene({
   /** travelling contínuo da câmera dentro de cada fala (0..1) */
   const [dolly, setDolly] = useState(0);
   const voiceRef = useRef<HTMLAudioElement | null>(null);
-  /** duração real de cada fala (voz), quando o áudio chega */
-  const voiceDurations = useRef<(number | undefined)[]>([]);
   const voiceUrlRef = useRef<string | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(narrate);
   const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing" | "fallback">("idle");
