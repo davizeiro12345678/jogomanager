@@ -17,3 +17,10 @@
 - [ ] 5 Cutscenes — cenários 3D, diretor, timeline de voz, pular e movimento reduzido existem; falta expandir abertura, replays e cerimônias conforme o plano
 - [ ] 6 Simulação — calibragem de 2.000 partidas e teste tático determinístico feitos; faltam unificação dos lances da partida 3D e sim rápida e estresse de 2.000 partidas 3D (atual: 200)
 - [ ] 7 Design do jogo — navegação móvel com aria-current/toques de 44px, skeleton de rota e erros recuperáveis; falta padronização das demais telas e revisão dos cinco grupos
+
+## Importação e desempenho (pedido 2026-09-25)
+- [x] Endpoint protegido com validação de escopo e paginação; ligas e clubes locais importados (4.506 clubes).
+- [x] Primeiros lotes premium de jogadores, estatísticas e histórico executados; continuidade por offset sem pular itens com limite de tempo; estatísticas por fonte com upsert.
+- [x] Temporada automática em Web Worker; partida ao vivo já isolada no Worker; cache versionado para texturas KTX2 e imagens oficiais.
+- [ ] Cobertura total da fonte externa: aguarda processamento paginado dos registros restantes; os endpoints não publicam dados que a fonte não oferece.
+- [ ] Compressão/reformatação das fotos externas: requer espelhamento autorizado em CDN de imagens; não modificar conteúdo de origem nem contornar licença.

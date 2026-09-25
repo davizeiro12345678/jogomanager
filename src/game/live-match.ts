@@ -45,6 +45,7 @@ export type LiveWorkerRequest =
   | { id: number; type: "skipLive" }
   | { id: number; type: "stopLive" }
   | { id: number; type: "simulate"; home: TeamSetup; away: TeamSetup; seed: string }
+  | { id: number; type: "autoSeason"; career: import("./types").CareerState; maxWeeks: number }
   | {
       id: number;
       type: "advance";

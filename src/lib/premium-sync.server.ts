@@ -29,9 +29,11 @@ export async function premiumSyncSquads(limit = 40, offset = 0, budgetMs = 45_00
   let inserted = 0;
   let updated = 0;
   let failed = 0;
+  let processed = 0;
 
   for (const link of links ?? []) {
     if (Date.now() > deadline) break;
+    processed++;
     const clubRel = link.clubs as unknown as {
       strength: number | null;
       competitions: { tier: number | null } | null;
@@ -113,7 +115,7 @@ export async function premiumSyncSquads(limit = 40, offset = 0, budgetMs = 45_00
     clubs++;
   }
 
-  return { clubs, inserted, updated, failed, nextOffset: offset + (links?.length ?? 0) };
+  return { clubs, processed, inserted, updated, failed, nextOffset: offset + processed, total: links?.length ?? 0 };
 }
 
 const STAT_MAP: Record<string, "appearances" | "starts" | "minutes" | "goals" | "assists" | "yellow_cards" | "red_cards" | "clean_sheets"> = {
@@ -153,9 +155,11 @@ export async function premiumSyncPlayerCareer(limit = 2000, offset = 0, budgetMs
   let honours = 0;
   let clubs = 0;
   const queue = [...(players ?? [])];
+  let claimed = 0;
   const worker = async () => {
     while (queue.length && Date.now() < deadline) {
       const p = queue.shift()!;
+      claimed++;
       const sid = p.source_id as string;
       const [h, t] = await Promise.all([sdbV2.playerHonours(sid), sdbV2.playerTeams(sid)]);
       done++;
@@ -197,7 +201,7 @@ export async function premiumSyncPlayerCareer(limit = 2000, offset = 0, budgetMs
     }
   };
   await Promise.all(Array.from({ length: concurrency }, worker));
-  return { processed: done, honours, clubs, nextOffset: offset + done, total: players?.length ?? 0 };
+  return { processed: done, honours, clubs, nextOffset: offset + claimed, total: players?.length ?? 0 };
 }
 
 /** Estatísticas por temporada + recálculo do overall com a temporada mais recente. */
@@ -219,9 +223,11 @@ export async function premiumSyncStats(limit = 400, offset = 0, budgetMs = 45_00
   let done = 0;
   let seasons = 0;
   const queue = [...(players ?? [])];
+  let claimed = 0;
   const worker = async () => {
     while (queue.length && Date.now() < deadline) {
       const p = queue.shift()!;
+      claimed++;
       const raw = await sdbV2.playerStats(p.source_id as string);
       done++;
       if (!raw.length) continue;
@@ -252,8 +258,8 @@ export async function premiumSyncStats(limit = 400, offset = 0, budgetMs = 45_00
           sync_status: "synced",
         };
       });
-      await db.from("player_season_stats").delete().eq("player_id", p.id).eq("source", SOURCE);
-      const ins = await db.from("player_season_stats").insert(rows);
+      // Upsert first: a temporary API failure must never erase known seasons.
+      const ins = await db.from("player_season_stats").upsert(rows, { onConflict: "source_id" });
       if (ins.error) continue;
       seasons += rows.length;
 
@@ -281,5 +287,5 @@ export async function premiumSyncStats(limit = 400, offset = 0, budgetMs = 45_00
     }
   };
   await Promise.all(Array.from({ length: concurrency }, worker));
-  return { processed: done, seasons, nextOffset: offset + done, total: players?.length ?? 0 };
+  return { processed: done, seasons, nextOffset: offset + claimed, total: players?.length ?? 0 };
 }

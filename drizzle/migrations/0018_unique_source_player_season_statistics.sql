@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS player_season_stats_source_id_unique ON public.player_season_stats (source_id) WHERE source_id IS NOT NULL;

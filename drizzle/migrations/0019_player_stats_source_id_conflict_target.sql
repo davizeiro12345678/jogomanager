@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS player_season_stats_source_id_conflict_target ON public.player_season_stats (source_id);

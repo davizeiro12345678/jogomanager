@@ -3,6 +3,7 @@
  * principal se o navegador não suportar workers (ou se o worker falhar).
  */
 import { advanceRound, type MatchPerformance } from "./career";
+import { autoSeason, type AutoWeek } from "./autoplay";
 import {
   WorkerMatchView,
   resultMatch,
@@ -49,17 +50,18 @@ function call<T>(
 ): Promise<T> {
   const w = getWorker();
   if (!w) return Promise.resolve(fallback());
+  const activeWorker = w;
   const id = ++seq;
   return new Promise<T>((resolve) => {
     const timer = setTimeout(() => {
-      w.removeEventListener("message", onMsg);
+      activeWorker.removeEventListener("message", onMsg);
       resolve(fallback());
     }, timeoutMs);
     function onMsg(ev: MessageEvent) {
       const data = ev.data as { id: number; ok: boolean; result?: T };
       if (!data || data.id !== id) return;
       clearTimeout(timer);
-      w!.removeEventListener("message", onMsg);
+      activeWorker.removeEventListener("message", onMsg);
       resolve(data.ok && data.result !== undefined ? data.result : fallback());
     }
     w.addEventListener("message", onMsg);
@@ -268,5 +270,17 @@ export function advanceRoundAsync(
 ): Promise<CareerState> {
   return call<CareerState>({ type: "advance", career, result, performances }, () =>
     advanceRound(career, result, performances),
+  );
+}
+
+/** Mantém toda a temporada sequencial e determinística em um Worker dedicado. */
+export function autoSeasonAsync(
+  career: CareerState,
+  maxWeeks = 60,
+): Promise<{ weeks: AutoWeek[]; state: CareerState }> {
+  return call(
+    { type: "autoSeason", career, maxWeeks },
+    () => autoSeason(career, maxWeeks),
+    90_000,
   );
 }
