@@ -50,17 +50,18 @@ function call<T>(
 ): Promise<T> {
   const w = getWorker();
   if (!w) return Promise.resolve(fallback());
+  const activeWorker = w;
   const id = ++seq;
   return new Promise<T>((resolve) => {
     const timer = setTimeout(() => {
-      w.removeEventListener("message", onMsg);
+      activeWorker.removeEventListener("message", onMsg);
       resolve(fallback());
     }, timeoutMs);
     function onMsg(ev: MessageEvent) {
       const data = ev.data as { id: number; ok: boolean; result?: T };
       if (!data || data.id !== id) return;
       clearTimeout(timer);
-      w.removeEventListener("message", onMsg);
+      activeWorker.removeEventListener("message", onMsg);
       resolve(data.ok && data.result !== undefined ? data.result : fallback());
     }
     w.addEventListener("message", onMsg);
