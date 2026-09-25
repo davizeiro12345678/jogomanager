@@ -6,7 +6,7 @@ import { HudCard, HudChip, HudStat, SparkBars, Sparkline, toneFor } from "@/comp
 
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { computeTable, roundFixtures } from "@/game/season";
-import { PYRAMID, PYRAMID_UP, hasPyramid, slotsFor } from "@/game/pyramid";
+import { hasPyramid, pyramidZones, slotsFor } from "@/game/pyramid";
 import { useCareer } from "@/hooks/useCareer";
 import { Flag } from "@/components/game/Flag";
 
@@ -47,15 +47,15 @@ function LeaguePage() {
   const lastRound = career.round > 1 ? roundFixtures(career, career.round - 1) : [];
 
   const linked = hasPyramid(career.leagueId);
-  const topId = career.leagueId in PYRAMID ? career.leagueId : PYRAMID_UP[career.leagueId];
-  const inTopDivision = career.leagueId in PYRAMID;
-  const slots = linked && topId ? slotsFor(topId, career.pyramidSlots) : 0;
+  const slots = linked ? slotsFor(career.leagueId, career.pyramidSlots) : 0;
+  const zones = pyramidZones(career.leagueId, table.length, career.pyramidSlots, career.season);
+  const accessCount = zones.filter((zone) => zone === "acesso").length;
+  const relegationCount = zones.filter((zone) => zone === "rebaixamento").length;
   const maxSlots = Math.max(1, Math.min(8, Math.floor(table.length / 2) || 1));
 
   const zoneOf = (index: number): "acesso" | "rebaixamento" | null => {
-    if (!linked || slots <= 0) return null;
-    if (inTopDivision) return index >= table.length - slots ? "rebaixamento" : null;
-    return index < slots ? "acesso" : null;
+    const zone = zones[index];
+    return zone === "acesso" || zone === "rebaixamento" ? zone : null;
   };
 
   const myIndex = table.findIndex((r) => r.clubId === career.clubId);
@@ -130,9 +130,9 @@ function LeaguePage() {
         <HudCard title="Acesso e rebaixamento" tone="neutral" className="mt-5">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
             <p className="flex-1 text-muted-foreground">
-              {inTopDivision
-                ? `Os ${slots} últimos caem para a divisão de baixo no fim da temporada.`
-                : `Os ${slots} primeiros sobem para a divisão de cima no fim da temporada.`}
+              {accessCount > 0 ? `${accessCount} vaga(s) de acesso. ` : ""}
+              {relegationCount > 0 ? `${relegationCount} vaga(s) de rebaixamento. ` : ""}
+              Com grupos paralelos, as vagas giram entre os grupos a cada temporada.
             </p>
             <label className="flex items-center gap-2">
               <span className="text-muted-foreground">Vagas</span>

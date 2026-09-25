@@ -648,6 +648,20 @@ function endSeason(state: CareerState): CareerState {
   const nextLeagueClubs = move
     ? { ...(state.leagueClubs ?? {}), ...move.leagueClubs }
     : state.leagueClubs;
+  if (move) {
+    for (const change of move.movements) {
+      const upper = getLeague(change.to).name;
+      const lower = getLeague(change.from).name;
+      news.push({
+        id: `pyramid-${state.season}-${change.from}-${change.to}`,
+        season: state.season,
+        round: state.round,
+        kind: "sistema",
+        title: `Subiram / Caíram · ${upper} ↔ ${lower}`,
+        body: `Subiram: ${change.promoted.map((id) => CLUBS[id]?.name ?? id).join(", ")}. Caíram: ${change.relegated.map((id) => CLUBS[id]?.name ?? id).join(", ")}.`,
+      });
+    }
+  }
   if (move?.moved) {
     const up = move.moved === "subiu";
     news.push({
