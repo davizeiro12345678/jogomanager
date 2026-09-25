@@ -477,10 +477,10 @@ function netTexture() {
   return tex;
 }
 
-function useNetMaterial(repeatX: number, repeatY: number) {
+function useNetMaterial(repeatX: number, repeatY: number, high = false) {
   const textureRevision = useKtx2Revision();
   return useMemo(() => {
-    const alpha = ktx2("netMask")?.clone() ?? netTexture();
+    const alpha = (high ? ktx2("netMask")?.clone() : null) ?? netTexture();
     const mat = new THREE.MeshStandardMaterial({
       color: "#f4f8ff",
       roughness: 0.65,
@@ -498,7 +498,7 @@ function useNetMaterial(repeatX: number, repeatY: number) {
       mat.opacity = 0.2;
     }
     return mat;
-  }, [repeatX, repeatY, textureRevision]);
+  }, [repeatX, repeatY, high, textureRevision]);
 }
 
 /**
@@ -599,9 +599,9 @@ function NetCloth({
 
 function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: SimView }) {
   const x = side * FIELD_X;
-  const backMat = useNetMaterial(14, 5);
-  const sideMat = useNetMaterial(4, 5);
-  const topMat = useNetMaterial(4, 14);
+  const backMat = useNetMaterial(14, 5, quality === "alta");
+  const sideMat = useNetMaterial(4, 5, quality === "alta");
+  const topMat = useNetMaterial(4, 14, quality === "alta");
   const post = <meshStandardMaterial color="#fdfdfd" roughness={0.22} metalness={0.08} />;
   return (
     <group position={[x, 0, 0]} ref={censusRef("goal")}>
@@ -2904,7 +2904,7 @@ function Stadium3DImpl({
         gl={glProp}
         performance={{ min: 0.5 }}
         onCreated={({ gl }) => {
-          if (backend === "webgl2") initKtx2(gl as THREE.WebGLRenderer);
+          if (backend === "webgl2" && quality === "alta") initKtx2(gl as THREE.WebGLRenderer);
           const r = gl as unknown as {
             toneMapping: THREE.ToneMapping;
             toneMappingExposure: number;
