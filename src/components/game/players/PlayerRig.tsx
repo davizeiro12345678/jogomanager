@@ -49,8 +49,7 @@ import {
   type DominantFoot,
 } from "@/game/visual-context";
 import { solveFullIK } from "@/game/ik-solver";
-import { buildRigBody, type RigBody } from "@/game/rig-body";
-import { disposeRigMeshes } from "@/game/rig-geometry";
+import { buildRigSkin, type RigJoint, type RigSkin, type RigSkinLod } from "@/game/rig-skin";
 import { censusRef } from "@/game/scene-census";
 
 /** duração da transição cruzada entre dois movimentos, em segundos */
@@ -145,36 +144,35 @@ export const PlayerRig = memo(function PlayerRig({
   /* -------------------------------------------------------------- juntas */
 
   const root = useRef<THREE.Group>(null);
-  const hips = useRef<THREE.Group>(null);
-  const spine = useRef<THREE.Group>(null);
-  const chest = useRef<THREE.Group>(null);
-  const neck = useRef<THREE.Group>(null);
-  const armLRef = useRef<THREE.Group>(null);
-  const armRRef = useRef<THREE.Group>(null);
-  const foreLRef = useRef<THREE.Group>(null);
-  const foreRRef = useRef<THREE.Group>(null);
-  const legLRef = useRef<THREE.Group>(null);
-  const legRRef = useRef<THREE.Group>(null);
-  const kneeLRef = useRef<THREE.Group>(null);
-  const kneeRRef = useRef<THREE.Group>(null);
-  const ankleLRef = useRef<THREE.Group>(null);
-  const ankleRRef = useRef<THREE.Group>(null);
+  // As juntas são ossos (`THREE.Bone`) do esqueleto do atleta: a animação
+  // escreve neles exatamente como escrevia nos grupos, e a malha é rendida
+  // como SkinnedMesh — um desenho por grupo de material em vez de um por peça.
+  const hips = useRef<THREE.Bone>(null);
+  const spine = useRef<THREE.Bone>(null);
+  const chest = useRef<THREE.Bone>(null);
+  const neck = useRef<THREE.Bone>(null);
+  const armLRef = useRef<THREE.Bone>(null);
+  const armRRef = useRef<THREE.Bone>(null);
+  const foreLRef = useRef<THREE.Bone>(null);
+  const foreRRef = useRef<THREE.Bone>(null);
+  const legLRef = useRef<THREE.Bone>(null);
+  const legRRef = useRef<THREE.Bone>(null);
+  const kneeLRef = useRef<THREE.Bone>(null);
+  const kneeRRef = useRef<THREE.Bone>(null);
+  const ankleLRef = useRef<THREE.Bone>(null);
+  const ankleRRef = useRef<THREE.Bone>(null);
   const shadowRef = useRef<THREE.Mesh>(null);
-  const blinkRef = useRef<THREE.Group>(null);
-  const clavLRef = useRef<THREE.Group>(null);
-  const clavRRef = useRef<THREE.Group>(null);
-  const jawRef = useRef<THREE.Group>(null);
+  const blinkRef = useRef<THREE.Bone>(null);
+  const clavLRef = useRef<THREE.Bone>(null);
+  const clavRRef = useRef<THREE.Bone>(null);
+  const jawRef = useRef<THREE.Bone>(null);
   const nextBlink = useRef(1 + Math.random() * 4);
 
-  // grupos de LOD: detalhes finos (rosto, dedos, cadarços) recolhidos por
-  // distância — cada um destes grupos some junto com suas malhas, derrubando
-  // as chamadas de desenho dos atletas longe da câmera (a maioria dos 22, na
-  // maior parte do tempo).
-  const faceDetailRef = useRef<THREE.Group>(null);
-  const handDetailLRef = useRef<THREE.Group>(null);
-  const handDetailRRef = useRef<THREE.Group>(null);
-  const bootDetailLRef = useRef<THREE.Group>(null);
-  const bootDetailRRef = useRef<THREE.Group>(null);
+  // LOD por grupo de desenho: os grupos "near" (rosto, dedos) somem a partir
+  // do LOD 1 e os "boot" (travas) a partir do LOD 2 — a maioria dos 22
+  // atletas fica longe da câmera na maior parte do tempo.
+  const nearMeshes = useRef<THREE.SkinnedMesh[]>([]);
+  const bootMeshes = useRef<THREE.SkinnedMesh[]>([]);
   const lodState = useRef<LodLevel | null>(null);
   const castState = useRef<boolean | null>(null);
 
@@ -225,14 +223,8 @@ export const PlayerRig = memo(function PlayerRig({
     if (lod !== lodState.current) {
       const first = lodState.current === null;
       lodState.current = lod;
-      const nearDetails = [faceDetailRef.current, handDetailLRef.current, handDetailRRef.current];
-      const mediumDetails = [bootDetailLRef.current, bootDetailRRef.current];
-      nearDetails.forEach((detailGroup) => {
-        if (detailGroup) detailGroup.visible = lod === 0;
-      });
-      mediumDetails.forEach((detailGroup) => {
-        if (detailGroup) detailGroup.visible = lod <= 1;
-      });
+      for (const mesh of nearMeshes.current) mesh.visible = lod === 0;
+      for (const mesh of bootMeshes.current) mesh.visible = lod <= 1;
 
       // Sombra projetada custa uma segunda passagem de desenho por malha.
       // Só o atleta perto da câmera entra no mapa de sombras; os demais ficam
@@ -242,7 +234,11 @@ export const PlayerRig = memo(function PlayerRig({
         castState.current = cast;
         g.traverse((o) => {
           const m = o as THREE.Mesh;
-          if (m.isMesh && m !== shadowRef.current) m.castShadow = cast;
+          // os grupos de detalhe nunca entram no mapa de sombras
+          if (m.isMesh && m !== shadowRef.current && m.castShadow !== undefined) {
+            if (m.name.startsWith("rig-") && m.name !== "rig-core") return;
+            m.castShadow = cast;
+          }
         });
       }
     }
@@ -523,38 +519,99 @@ export const PlayerRig = memo(function PlayerRig({
     [look, kit, tex, quality],
   );
 
-  // Corpo mesclado por junta: uma malha por (material, sombra) em cada grupo
-  // animado. Reconstruído só quando aparência ou qualidade mudam.
-  const body = useMemo<RigBody>(
+  // Corpo em SkinnedMesh: um desenho por grupo de material (~18) em vez de um
+  // por peça mesclada (~53). A matriz de bind é a posição do atleta, porque
+  // ossos e malhas são filhos do mesmo grupo raiz. Reconstruído só quando
+  // aparência ou qualidade mudam.
+  const skin = useMemo<RigSkin>(
     () =>
-      buildRigBody({
-        P,
-        look,
-        segs: { radial: segs.radial, cap: segs.cap },
-        hi,
-        mats,
-        jerseyInk,
-        handR: look.gloves ? P.handR * 1.25 : P.handR,
-        handMat: look.gloves ? mats.glove : mats.skin,
-      }),
+      buildRigSkin(
+        {
+          P,
+          look,
+          segs: { radial: segs.radial, cap: segs.cap },
+          hi,
+          mats,
+          jerseyInk,
+          handR: look.gloves ? P.handR * 1.25 : P.handR,
+          handMat: look.gloves ? mats.glove : mats.skin,
+        },
+        [player.x, 0, player.z],
+      ),
+    // `player.x/z` ficam de propósito: a matriz de bind defasada é compensada
+    // pelo three.js a cada quadro, e incluí-los aqui reconstruiria as 18 malhas
+    // do atleta a cada movimento.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [P, look, segs.radial, segs.cap, hi, mats, jerseyInk],
   );
-  useEffect(() => () => disposeRigMeshes(body.all), [body]);
+  useEffect(() => () => skin.dispose(), [skin]);
 
-  // createElement (e não JSX) de propósito: o plugin de desenvolvimento injeta
-  // atributos de origem no JSX e o R3F não aceita isso num <primitive>.
-  const renderMeshes = (meshes: RigBody["hips"]) =>
-    meshes.map((mesh, index) =>
-      createElement("mesh", {
-        key: `${mesh.material.uuid}-${index}`,
-        geometry: mesh.geometry,
-        castShadow: shadows && mesh.castShadow,
-        children: createElement("primitive", {
-          object: mesh.material,
-          attach: "material",
-        }),
-      }),
-    );
+  // As malhas são criadas fora do JSX para carregar esqueleto, esfera de
+  // culling generosa (a pose animada sai da pose de bind) e o estado de LOD.
+  const drawMeshes = useMemo(() => {
+    nearMeshes.current = [];
+    bootMeshes.current = [];
+    return skin.groups.map((group, index) => {
+      const mesh = new THREE.SkinnedMesh(group.geometry, group.material);
+      // Sem esqueleto e matriz de bind a malha não deforma (e apareceria
+      // deslocada). `bindMatrixInverse` é mantido pelo three.js a cada quadro.
+      mesh.skeleton = skin.skeleton;
+      mesh.bindMatrix.copy(skin.bindMatrix);
+      mesh.bindMatrixInverse.copy(skin.bindMatrix).invert();
+      // Só o corpo projetа sombra. Rosto, dedos e travas são pequenos demais
+      // para aparecer no mapa de sombras e custariam uma segunda passagem de
+      // desenho por atleta — 6 grupos a menos por herói.
+      mesh.castShadow = shadows && group.castShadow && group.lod === "core";
+      mesh.receiveShadow = false;
+      mesh.name = `rig-${group.lod}`;
+      // esfera local folgada: evita o recálculo caro (e animado) do three.js
+      const sphere = group.geometry.boundingSphere;
+      if (sphere) mesh.boundingSphere = sphere.clone();
+      if (group.lod === "near") nearMeshes.current.push(mesh);
+      if (group.lod === "boot") bootMeshes.current.push(mesh);
+      return createElement("primitive", { key: `${group.material.uuid}-${index}`, object: mesh });
+    });
+  }, [skin, shadows]);
+
+  // Junta -> osso. `createElement` (e não JSX) de propósito: o plugin de
+  // desenvolvimento injeta atributos de origem no JSX e o R3F não aceita isso
+  // num <primitive>.
+  // Só as juntas que a animação escreve precisam de ref; as demais existem na
+  // hierarquia para carregar a geometria dos grupos de LOD.
+  const boneRefs: Partial<Record<RigJoint, React.RefObject<THREE.Bone | null>>> = {
+    hips,
+    spine,
+    chest,
+    neck,
+    jaw: jawRef,
+    blink: blinkRef,
+    clavL: clavLRef,
+    armL: armLRef,
+    foreL: foreLRef,
+    clavR: clavRRef,
+    armR: armRRef,
+    foreR: foreRRef,
+    legL: legLRef,
+    kneeL: kneeLRef,
+    ankleL: ankleLRef,
+    legR: legRRef,
+    kneeR: kneeRRef,
+    ankleR: ankleRRef,
+  };
+  /*
+    A R3F só recebe o osso raiz: renderizar os 25 como irmãos achataria a
+    hierarquia (o `add()` do three.js moveria cada osso para o grupo raiz). Os
+    filhos já estão ligados em `skin`, então a cena fica correta com um único
+    elemento; os refs da animação são ligados aqui.
+  */
+  useEffect(() => {
+    const entries = Object.entries(boneRefs) as [RigJoint, React.RefObject<THREE.Bone | null>][];
+    for (const [joint, ref] of entries) ref.current = skin.boneOf[joint] ?? null;
+    return () => {
+      for (const [, ref] of entries) ref.current = null;
+    };
+  });
+  const renderBones = () => [createElement("primitive", { key: "skeleton", object: skin.root })];
 
   /* ------------------------------------------------------------- render */
 
@@ -572,84 +629,15 @@ export const PlayerRig = memo(function PlayerRig({
         <meshBasicMaterial color="#000000" transparent opacity={0.3} depthWrite={false} />
       </mesh>
 
-      {/* quadril = raiz do esqueleto */}
-      <group ref={hips} position={[0, P.hipY, 0]}>
-        {renderMeshes(body.hips)}
+      {/*
+        Esqueleto: um osso por junta, com o mesmo pivô e a mesma hierarquia dos
+        grupos de antes. A animação continua escrevendo rotação, posição e
+        escala nos mesmos lugares — só que agora isso deforma os vértices.
+      */}
+      {renderBones()}
 
-        {/* lombar */}
-        <group ref={spine} position={[0, P.hipH * 0.5, 0]}>
-          {renderMeshes(body.spine)}
-
-          {/* peito */}
-          <group ref={chest} position={[0, P.spineLen, 0]}>
-            {renderMeshes(body.chest)}
-
-            {/* pescoço + cabeça */}
-            <group ref={neck} position={[0, P.chestLen * 1.0, 0]}>
-              {renderMeshes(body.neck)}
-              <group position={[0, P.neckLen + P.headR * 0.82, 0]}>
-                {renderMeshes(body.head)}
-                <group ref={faceDetailRef}>
-                  {renderMeshes(body.face)}
-                  {/* mandíbula articulada: maxilar, queixo e lábio inferior num só osso */}
-                  <group ref={jawRef}>{renderMeshes(body.jaw)}</group>
-                  {/* pálpebras: piscam de vez em quando */}
-                  <group ref={blinkRef}>{renderMeshes(body.blink)}</group>
-                </group>
-                {renderMeshes(body.hair)}
-              </group>
-            </group>
-
-            {/* clavículas: o ombro acompanha o braço em vez de ficar cravado
-                no tronco, o que dá o balanço correto na corrida */}
-            <group ref={clavLRef}>
-              <group ref={armLRef} position={[P.shoulderW * 0.52, P.chestLen * 0.84, 0]}>
-                {renderMeshes(body.armL)}
-                <group ref={foreLRef} position={[0, -P.upperArm, 0]}>
-                  {renderMeshes(body.foreL)}
-                  <group position={[0, -P.foreArm, 0]}>
-                    {renderMeshes(body.handL)}
-                    <group ref={handDetailLRef}>{renderMeshes(body.handDetailL)}</group>
-                  </group>
-                </group>
-              </group>
-            </group>
-            <group ref={clavRRef}>
-              <group ref={armRRef} position={[-P.shoulderW * 0.52, P.chestLen * 0.84, 0]}>
-                {renderMeshes(body.armR)}
-                <group ref={foreRRef} position={[0, -P.upperArm, 0]}>
-                  {renderMeshes(body.foreR)}
-                  <group position={[0, -P.foreArm, 0]}>
-                    {renderMeshes(body.handR)}
-                    <group ref={handDetailRRef}>{renderMeshes(body.handDetailR)}</group>
-                  </group>
-                </group>
-              </group>
-            </group>
-          </group>
-        </group>
-
-        <group ref={legLRef} position={[P.hipW * 0.46, -P.hipH * 0.4, 0]}>
-          {renderMeshes(body.legL)}
-          <group ref={kneeLRef} position={[0, -P.thigh, 0]}>
-            {renderMeshes(body.kneeL)}
-            <group ref={ankleLRef} position={[0, -P.shin, 0]}>
-              {renderMeshes(body.ankleL)}
-              <group ref={bootDetailLRef}>{renderMeshes(body.bootDetailL)}</group>
-            </group>
-          </group>
-        </group>
-        <group ref={legRRef} position={[-P.hipW * 0.46, -P.hipH * 0.4, 0]}>
-          {renderMeshes(body.legR)}
-          <group ref={kneeRRef} position={[0, -P.thigh, 0]}>
-            {renderMeshes(body.kneeR)}
-            <group ref={ankleRRef} position={[0, -P.shin, 0]}>
-              {renderMeshes(body.ankleR)}
-              <group ref={bootDetailRRef}>{renderMeshes(body.bootDetailR)}</group>
-            </group>
-          </group>
-        </group>
-      </group>
+      {/* malhas: um desenho por grupo de material, todas skinned */}
+      {drawMeshes}
     </group>
   );
 });

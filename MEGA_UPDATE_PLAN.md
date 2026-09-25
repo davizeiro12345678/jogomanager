@@ -326,8 +326,12 @@ cada um com tipo/teste/build/benchmark:
    cobertura).
 2. **Lote B — Mais heróis, medidos**: subir `heroPlayers`/`replayHeroPlayers` com o custo novo,
    governor com contagem de heróis como alavanca. (Metas M5, M6.)
-3. **Lote C — Rig esquelético híbrido**: `SkinnedMesh` + `AnimationMixer` nos heróis, clipes
-   assados da biblioteca procedural (deterministas) + loader GLB pelo intake. (Animação.)
+3. **Lote C — Rig esquelético híbrido** ✅ **SkinnedMesh entregue** (2026-09-25): o corpo do
+   atleta passou a ser rendido como `SkinnedMesh` (`rig-skin.ts`) — 18 grupos de desenho por
+   herói contra 53 malhas da versão mesclada por junta e ~117 do rig original. A animação
+   procedural continua dona da pose (os ossos são escritos pelo mesmo código de antes) e a pose
+   de bind é idêntica, verificada vértice a vértice em teste. **Pendente**: `AnimationMixer` com
+   clipes assados da biblioteca procedural + loader GLB pelo intake de assets.
 4. **Lote D — IK e catálogo**: dois gomos com _stance lock_, marcadores de contato, catálogo
    completo com transições condicionais. (Movimento.)
 5. **Lote E — Estádio e torcida**: gramado, redes, publicidade LED, refletores, reações.
@@ -371,6 +375,26 @@ rig precisa virar `SkinnedMesh` (1 desenho por grupo de material, ~6 por atleta)
 **Lote C**, já previsto na decisão de animação híbrida do usuário. As metas M5/M6 portanto
 dependem do Lote C; o alocador entrega o máximo possível agora e passa a render 6 heróis
 automaticamente quando o custo cair.
+
+### Lote C — SkinnedMesh (entregue 2026-09-25)
+
+| medição | rig original | malha mesclada por junta | SkinnedMesh |
+| --- | --- | --- | --- |
+| desenhos por herói (LOD 0) | ~117 | 53 | **18** |
+| desenhos por herói com sombra | ~117 | 106 | **30** (só os 12 grupos "core" projetam) |
+| heróis cabem no Alto (260) | 2 | 3–4 | **6** |
+| triângulos / vértices | — | — | idêntico (mesma geometria, mesma pose) |
+
+Como: cada junta vira um `THREE.Bone` com o mesmo pivô e a mesma hierarquia dos grupos que a
+animação já escrevia, e as peças são agrupadas por (material, nível de LOD). A matriz de bind é
+a translação do atleta; o three.js mantém `bindMatrixInverse` em sincronia, então o atleta pode
+continuar se movendo sem reconstruir a malha.
+
+Verificação (`rig-skin.test.ts`, 8 testes): pose de bind = identidade; hierarquia de ossos com os
+pivôs espelhados; todo vértice dependente de exatamente um osso; girar o joelho deforma só o que
+está abaixo dele; contagem de vértices idêntica à da malha mesclada; e o teste forte — simulando
+o vertex shader, **cada vértice cai exatamente onde caía na malha mesclada** (desvio < 0,0001).
+Mais: 180 testes / 32 arquivos, typecheck, build e ESLint verdes.
 
 ## 9. Perguntas de decisão
 

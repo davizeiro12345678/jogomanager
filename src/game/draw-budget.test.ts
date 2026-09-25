@@ -17,16 +17,30 @@ describe("draw budget", () => {
 
   it("derives the hero count from what is left of the tier budget", () => {
     const maxDraws = GRAPHICS_PROFILES.alta.maxDrawCalls;
-    // cada herói custa HERO_MESH_COST desenhos; o teto de Alta não comporta
-    // seis heróis — o alocador devolve o que cabe de verdade.
-    expect(allocateHeroes(maxDraws, 0, 6, 1).count).toBe(4);
-    expect(allocateHeroes(maxDraws, 120, 6, 1).count).toBe(2);
-    expect(allocateHeroes(maxDraws, 180, 6, 1).count).toBe(1);
+    // cena enxuta: seis heróis cabem no perfil Alto (era o que faltava para a
+    // meta de 6 heróis em campo)
+    const roomy = allocateHeroes(maxDraws, 60, 6, 1);
+    expect(roomy.count).toBe(6);
+    expect(roomy.reason).toBe("teto");
 
-    // cena enxuta no cinema: cabe mais, sempre limitado pelo teto
+    // cena média: quatro heróis
+    expect(allocateHeroes(maxDraws, 120, 6, 1).count).toBe(4);
+    // cena pesada: só dois heróis
+    expect(allocateHeroes(maxDraws, 180, 6, 1).count).toBe(2);
+
+    // cinema: cabe mais, sempre limitado pelo teto de 8
     const cinema = allocateHeroes(GRAPHICS_PROFILES.cinema.maxDrawCalls, 60, 8, 1);
-    expect(cinema.count).toBe(4);
-    expect(cinema.reason).toBe("orçamento");
+    expect(cinema.count).toBe(8);
+    expect(cinema.reason).toBe("teto");
+  });
+
+  it("respects the floor and the cap", () => {
+    const starved = allocateHeroes(GRAPHICS_PROFILES.alta.maxDrawCalls, 1000, 6, 1);
+    expect(starved.count).toBe(1);
+    expect(starved.reason).toBe("mínimo");
+    expect(allocateHeroes(90, 0, 0, 0).count).toBe(0);
+    // teto nunca é ultrapassado, mesmo com cena vazia
+    expect(allocateHeroes(1000, 0, 6, 1).count).toBe(6);
   });
 
   it("respects the floor and the cap", () => {

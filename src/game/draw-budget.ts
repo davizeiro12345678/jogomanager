@@ -3,11 +3,10 @@
 //  Alocação de desenhos (draw calls) por subsistema.
 //
 //  O contrato de cada tier define um teto de desenhos (`maxDrawCalls`). O
-//  jogador em rig completo é o item mais caro da cena: com a malha mesclada por
-//  junta, um atleta em LOD 0 custa `HERO_MESH_COST` desenhos (medido em
-//  `rig-body.test.ts`). Em vez de fixar "2 heróis" e torcer para caber, a
-//  quantidade de heróis é derivada do quanto sobrou no orçamento depois dos
-//  subsistemas medidos.
+//  jogador em rig completo é o item mais caro da cena: um atleta em LOD 0 custa
+//  `HERO_MESH_COST` desenhos (medido em `rig-skin.test.ts`). Em vez de fixar
+//  "2 heróis" e torcer para caber, a quantidade de heróis é derivada do quanto
+//  sobrou no orçamento depois dos subsistemas medidos.
 //
 //  Função pura: recebe o total medido e devolve quantos heróis cabem.
 // ============================================================================
@@ -15,13 +14,15 @@
 import { GRAPHICS_PROFILES, type GraphicsTier } from "./contracts/graphics-profile";
 
 /**
- * Custo medido de um atleta em rig completo, LOD 0, qualidade alta
- * (`buildRigBody` com `hi: true` → ~53 malhas mescladas por material/junta;
- * mediana sobre 36 combinações de pele/penteado/manga, 54 no pior caso).
+ * Custo medido de um atleta em rig completo, LOD 0, qualidade alta: o corpo é
+ * rendido como SkinnedMesh (`buildRigSkin`), um desenho por grupo de material
+ * — 18 grupos medidos, contra 53 malhas da versão mesclada por junta e ~117
+ * do rig original. Só os grupos "core" entram no mapa de sombras (12 grupos),
+ * então o custo efetivo por herói é 18 + 12 = 30 desenhos.
  * Nas LODs distantes os grupos de detalhe ficam ocultos, e o custo real é
  * menor — usamos o pior caso para o allocador nunca prometer demais.
  */
-export const HERO_MESH_COST = 54;
+export const HERO_MESH_COST = 30;
 
 /** Margem de segurança: não encosta no teto do tier. */
 export const BUDGET_HEADROOM = 0.95;
