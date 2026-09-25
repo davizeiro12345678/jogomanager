@@ -33,7 +33,7 @@ describe("repairCareer", () => {
     expect(r.state.lineup).toHaveLength(11);
     expect(new Set(r.state.lineup).size).toBe(11);
     expect(r.state.lineup).not.toContain("fantasma");
-    expect(r.state.fixtures.length).toBe(s.fixtures.length + 1);
+    expect(r.state.fixtures.length).toBe(s.fixtures.length);
     expect(r.state.approval).toBe(100);
     expect(repairCareer(r.state).fixes).toEqual([]);
   });
