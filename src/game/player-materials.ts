@@ -25,8 +25,10 @@ import {
   skinRoughness,
   sockRibNormal,
 } from "@/game/textures/fabric";
+import { ktx2, onKtx2Ready } from "@/game/textures/ktx2";
 import type { Kit } from "@/game/kits";
 import { shade, skinShadow } from "@/game/player-model";
+
 
 export type MaterialQuality = "alta" | "media" | "baixa";
 
