@@ -481,7 +481,7 @@ function NewCareer() {
                               ? "Carregando elenco real…"
                               : locked
                                 ? "Precisa de mais reputação"
-                                : `Força ${c.strength}`}
+                                : `${league.name} · Força ${c.strength}`}
                           </p>
                         </div>
                       </button>
