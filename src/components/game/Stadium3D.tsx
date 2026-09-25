@@ -7,6 +7,7 @@ import {
 } from "@/components/game/RuntimeBudget";
 import { GRAPHICS_PROFILES } from "@/game/contracts/graphics-profile";
 import { resolveRuntimeSceneBudget } from "@/game/runtime-scene-budget";
+import { censusRef } from "@/game/scene-census";
 import { broadcastInterest, ShotHold } from "@/game/broadcast-interest";
 import { StaticBatch } from "@/components/game/stadium/StaticBatch";
 import { GrassChunks } from "@/components/game/stadium/GrassChunks";
@@ -597,7 +598,7 @@ function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: Sim
   const topMat = useNetMaterial(4, 14);
   const post = <meshStandardMaterial color="#fdfdfd" roughness={0.22} metalness={0.08} />;
   return (
-    <group position={[x, 0, 0]}>
+    <group position={[x, 0, 0]} ref={censusRef("goal")}>
       {[-3.66, 3.66].map((z) => (
         <group key={z}>
           <mesh position={[0, 1.22, z]} castShadow={quality === "alta"}>
@@ -1720,7 +1721,7 @@ function Ball({
     </mesh>
   );
   return (
-    <group>
+    <group ref={censusRef("ball")}>
       {/* rastro de velocidade (meshline) em chutes fortes — só média/alta */}
       {quality === "baixa" ? (
         ball
@@ -2143,7 +2144,7 @@ function SkyDome({ time }: { time: TimeOfDay }) {
   });
   if (!tex) return null;
   return (
-    <mesh ref={ref} scale={[-1, 1, 1]}>
+    <mesh ref={ref} scale={[-1, 1, 1]} userData={{ census: "sky" }}>
       <sphereGeometry args={[420, 48, 28]} />
       <meshBasicMaterial map={tex} side={THREE.BackSide} depthWrite={false} fog={false} />
     </mesh>

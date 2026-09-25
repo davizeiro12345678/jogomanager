@@ -12,21 +12,19 @@ const GRAIN =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.6'/></svg>\")";
 
 /** enquadramentos alternados: cada fala reposiciona levemente a câmera */
-/** enquadramentos: posição inicial + direção do travelling contínuo */
-const SHOTS = [
-  { x: 0, y: 0, z: 0, dx: 10, dy: -3, dz: 0.05 },
-  { x: -10, y: -4, z: 0.06, dx: 12, dy: 4, dz: 0.04 },
-  { x: 9, y: 3, z: 0.03, dx: -14, dy: -5, dz: 0.06 },
-  { x: -4, y: 6, z: 0.09, dx: 6, dy: -8, dz: 0.03 },
-] as const;
-
-
 import {
   CUTSCENES,
   SPEAKER_LABEL,
   type Cutscene as SceneData,
   type SceneArt,
 } from "@/content/cutscenes";
+import {
+  advanceTarget,
+  buildCutsceneTimeline,
+  sampleCutsceneTimeline,
+  SHOTS,
+  type CutsceneTimeline,
+} from "@/game/cutscene-timeline";
 import { ManagerPortrait } from "@/components/game/ManagerPortrait";
 import { prefersReducedMotion } from "@/game/device";
 import { Crest } from "@/components/game/Crest";
@@ -262,7 +260,10 @@ function Backdrop({
             <g key={i} transform={`translate(${44 + i * 52} 63)`}>
               <rect x="-1.5" y="0" width="3" height="10" fill="#6b7684" />
               {/* camisa pendurada com número nas costas */}
-              <path d="M-17 10 h34 l7 9 -9 7 -3 -3 v39 h-24 v-39 l-3 3 -9 -7 z" fill={i % 2 ? b : a} />
+              <path
+                d="M-17 10 h34 l7 9 -9 7 -3 -3 v39 h-24 v-39 l-3 3 -9 -7 z"
+                fill={i % 2 ? b : a}
+              />
               <text
                 x="0"
                 y="46"
@@ -333,11 +334,26 @@ function Backdrop({
           {Array.from({ length: 10 }).map((_, i) => (
             <rect key={i} x={i * 40} y={112} width="20" height="88" fill="#ffffff" opacity="0.04" />
           ))}
-          <ellipse cx="200" cy="156" rx="52" ry="20" fill="none" stroke="#ffffff" strokeOpacity="0.5" />
+          <ellipse
+            cx="200"
+            cy="156"
+            rx="52"
+            ry="20"
+            fill="none"
+            stroke="#ffffff"
+            strokeOpacity="0.5"
+          />
           <circle cx="200" cy="156" r="5" fill="#f7f7f5" className={anim("cs-anim-bob")} />
           <Person x={140} y={132} s={0.95} shirt={a} anim={anim("cs-anim-enter")} />
           <Person x={262} y={132} s={0.95} shirt={b} anim={anim("cs-anim-enter")} delay={180} />
-          <Person x={200} y={124} s={0.85} shirt="#1b2430" anim={anim("cs-anim-enter")} delay={360} />
+          <Person
+            x={200}
+            y={124}
+            s={0.85}
+            shirt="#1b2430"
+            anim={anim("cs-anim-enter")}
+            delay={360}
+          />
         </>
       )}
 
@@ -586,6 +602,18 @@ export function Cutscene({
   const accent2 = accent2Prop ?? club?.secondary ?? "#0b1220";
   const data: SceneData | undefined = CUTSCENES[scene];
 
+  // A cena é uma linha do tempo: um relógio único manda em qual fala estamos,
+  // quanto do texto já foi digitado e onde a câmera está. Antes eram três
+  // efeitos independentes (clique, máquina de escrever e travelling), que não
+  // conversavam entre si.
+  const [timelineStamp, setTimelineStamp] = useState(0);
+  const timeline = useMemo<CutsceneTimeline | null>(() => {
+    // `timelineStamp` não é lido aqui: ele existe só para remontar a linha do
+    // tempo quando a duração real da voz chega.
+    void timelineStamp;
+    return data ? buildCutsceneTimeline(data, voiceDurations.current) : null;
+  }, [data, timelineStamp]);
+  const [clock, setClock] = useState(0);
   const [i, setI] = useState(0);
   const [typed, setTyped] = useState(0);
   const reduced = useMemo(() => prefersReducedMotion(), []);
@@ -596,6 +624,8 @@ export function Cutscene({
   /** travelling contínuo da câmera dentro de cada fala (0..1) */
   const [dolly, setDolly] = useState(0);
   const voiceRef = useRef<HTMLAudioElement | null>(null);
+  /** duração real de cada fala (voz), quando o áudio chega */
+  const voiceDurations = useRef<(number | undefined)[]>([]);
   const voiceUrlRef = useRef<string | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(narrate);
   const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing" | "fallback">("idle");
@@ -625,8 +655,6 @@ export function Cutscene({
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [i, reduced]);
-
-
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -661,7 +689,16 @@ export function Cutscene({
       const lang = document.documentElement.lang || navigator.language || "pt-BR";
       utterance.lang = lang;
       utterance.rate = line.who === "referee" ? 0.9 : line.who === "commentator" ? 1.08 : 0.96;
-      utterance.pitch = line.who === "referee" ? 0.88 : line.who === "commentator" ? 1.08 : data.mood === "good" ? 1.04 : data.mood === "bad" ? 0.94 : 1;
+      utterance.pitch =
+        line.who === "referee"
+          ? 0.88
+          : line.who === "commentator"
+            ? 1.08
+            : data.mood === "good"
+              ? 1.04
+              : data.mood === "bad"
+                ? 0.94
+                : 1;
       window.speechSynthesis.speak(utterance);
     };
     void sceneVoice(data.id, i)
@@ -676,6 +713,13 @@ export function Cutscene({
         audio.preload = "auto";
         audio.onplaying = () => alive && setVoiceState("playing");
         audio.onended = () => alive && setVoiceState("idle");
+        // A voz real manda no ritmo: a linha do tempo é remontada com a duração
+        // do áudio, e a fala passa a durar o que a locução realmente leva.
+        audio.addEventListener("loadedmetadata", () => {
+          if (!alive || !Number.isFinite(audio.duration)) return;
+          voiceDurations.current[i] = audio.duration;
+          setTimelineStamp((n) => n + 1);
+        });
         voiceRef.current = audio;
         void audio.play().catch(fallback);
       })
@@ -743,7 +787,9 @@ export function Cutscene({
   const shot = SHOTS[i % SHOTS.length]!;
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${cinematic ? "bg-background/65 backdrop-blur-[2px]" : "bg-background/95"}`}>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${cinematic ? "bg-background/65 backdrop-blur-[2px]" : "bg-background/95"}`}
+    >
       <div
         role="dialog"
         aria-modal="true"
@@ -785,7 +831,7 @@ export function Cutscene({
               transition: reduced ? undefined : "transform 220ms linear",
             }}
           >
-              <Backdrop art={data.art} a={accent2} b={accent} reduced={reduced} trophies={trophies} />
+            <Backdrop art={data.art} a={accent2} b={accent} reduced={reduced} trophies={trophies} />
           </div>
           {/* camada principal */}
           <div
@@ -816,7 +862,6 @@ export function Cutscene({
             />
           )}
 
-
           {/* luzes desfocadas ao fundo (bokeh de refletores) */}
           {!reduced && (
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -840,7 +885,10 @@ export function Cutscene({
             </div>
           )}
           {!reduced && (data.art === "pitchentry" || data.art === "tunnel") ? (
-            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            <div
+              className="pointer-events-none absolute inset-0 overflow-hidden"
+              aria-hidden="true"
+            >
               <span className="cs-anim-fog absolute -bottom-12 left-[-10%] h-28 w-[75%] rounded-full bg-foreground/10 blur-3xl" />
               <span className="cs-anim-fog absolute -bottom-16 right-[-18%] h-32 w-[82%] rounded-full bg-primary/10 blur-3xl [animation-delay:1.2s]" />
               <span className="cs-anim-beam absolute -top-16 left-[18%] h-[150%] w-16 origin-top rotate-[-18deg] bg-gradient-to-b from-foreground/20 to-transparent blur-xl" />
@@ -936,7 +984,10 @@ export function Cutscene({
           <div className="absolute bottom-3 left-4 flex items-end gap-3">
             <ManagerPortrait look={look} size={72} accent={accent} />
             <div>
-              <p id="cutscene-title" className="font-display text-xl uppercase tracking-wide drop-shadow">
+              <p
+                id="cutscene-title"
+                className="font-display text-xl uppercase tracking-wide drop-shadow"
+              >
                 {data.title}
               </p>
               {data.mood && data.mood !== "neutral" && (
@@ -954,7 +1005,7 @@ export function Cutscene({
           </div>
         </div>
 
-          <button type="button" onClick={next} className="block w-full p-5 text-left">
+        <button type="button" onClick={next} className="block w-full p-5 text-left">
           {speaker && (
             <p className="text-xs uppercase tracking-widest text-muted-foreground">{speaker}</p>
           )}
@@ -991,9 +1042,15 @@ export function Cutscene({
               {voiceEnabled ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
               {voiceEnabled ? "Voz ligada" : "Voz desligada"}
             </Button>
-          ) : <span />}
+          ) : (
+            <span />
+          )}
           <span className="sr-only" aria-live="polite">
-            {voiceState === "loading" ? "Carregando narração" : voiceState === "playing" ? "Narração em reprodução" : ""}
+            {voiceState === "loading"
+              ? "Carregando narração"
+              : voiceState === "playing"
+                ? "Narração em reprodução"
+                : ""}
           </span>
           <Button type="button" variant="outline" size="sm" onClick={() => doneRef.current()}>
             Pular cena

@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import type { RuntimeSceneBudget } from "@/game/runtime-scene-budget";
+import { censusRef } from "@/game/scene-census";
 
 type CrowdData = { positions: THREE.Vector3[]; colors: THREE.Color[]; skins: THREE.Color[] };
 type CrowdTile = { indices: number[]; sphere: THREE.Sphere; distance: number };
@@ -22,7 +23,11 @@ function humanGeometry(detailed: boolean) {
     parts.push(geometry);
   };
   part(new THREE.CylinderGeometry(0.25, 0.19, 0.64, detailed ? 7 : 4), 0, new THREE.Color("white"));
-  part(new THREE.SphereGeometry(0.16, detailed ? 7 : 4, detailed ? 5 : 3), 0.49, new THREE.Color("#e8c19d"));
+  part(
+    new THREE.SphereGeometry(0.16, detailed ? 7 : 4, detailed ? 5 : 3),
+    0.49,
+    new THREE.Color("#e8c19d"),
+  );
   part(new THREE.BoxGeometry(0.33, 0.32, 0.22), -0.46, new THREE.Color("#28303a"));
   const merged = mergeGeometries(parts)!;
   parts.forEach((geometry) => geometry.dispose());
@@ -99,7 +104,10 @@ export function CrowdLod({
 }: {
   crowd: CrowdData;
   pulse: React.MutableRefObject<number>;
-  budget: Pick<RuntimeSceneBudget, "crowdInstances" | "crowdVisibleTiles" | "crowdUpdateSeconds" | "stage">;
+  budget: Pick<
+    RuntimeSceneBudget,
+    "crowdInstances" | "crowdVisibleTiles" | "crowdUpdateSeconds" | "stage"
+  >;
 }) {
   const refs = useRef<(THREE.InstancedMesh | null)[]>([]);
   const tiles = useMemo(() => buildTiles(crowd.positions), [crowd.positions]);
@@ -117,7 +125,10 @@ export function CrowdLod({
         shader.uniforms["crowdTime"] = uniforms.time;
         shader.uniforms["crowdPulse"] = uniforms.pulse;
         shader.vertexShader = shader.vertexShader
-          .replace("#include <common>", "#include <common>\nuniform float crowdTime; uniform float crowdPulse;")
+          .replace(
+            "#include <common>",
+            "#include <common>\nuniform float crowdTime; uniform float crowdPulse;",
+          )
           .replace(
             "#include <begin_vertex>",
             `#include <begin_vertex>
@@ -173,8 +184,13 @@ export function CrowdLod({
         })
         .sort((a, b) => a.distance - b.distance)
         .slice(0, budget.crowdVisibleTiles);
-      const selectedTiles = visibleTiles.length ? visibleTiles : tiles.slice(0, budget.crowdVisibleTiles);
-      const perTile = Math.max(1, Math.ceil(budget.crowdInstances / Math.max(1, selectedTiles.length)));
+      const selectedTiles = visibleTiles.length
+        ? visibleTiles
+        : tiles.slice(0, budget.crowdVisibleTiles);
+      const perTile = Math.max(
+        1,
+        Math.ceil(budget.crowdInstances / Math.max(1, selectedTiles.length)),
+      );
       const near = budget.stage >= 5 ? 18 : 28;
       const mid = budget.stage >= 5 ? 44 : 62;
 
@@ -212,7 +228,7 @@ export function CrowdLod({
   });
 
   return (
-    <group dispose={null}>
+    <group dispose={null} ref={censusRef("crowd")}>
       {data.geometries.map((geometry, tier) => (
         <instancedMesh
           key={tier}

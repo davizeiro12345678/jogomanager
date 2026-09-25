@@ -1,6 +1,8 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { StaticBatch } from "./StaticBatch";
 import * as THREE from "three";
+import { censusRef } from "@/game/scene-census";
 import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
 import { metalAlbedo, metalRoughness, grilleTexture } from "./textures/metal";
 
@@ -367,15 +369,22 @@ export function StadiumProps({
   sim: SimView;
 }) {
   return (
-    <group>
+    <group ref={censusRef("props")}>
       <Dugout x={-14} color={homeColor} />
       <Dugout x={14} color={awayColor} />
       <Tunnel />
-      {quality !== "baixa" && <SectorGrilles rings={rings} />}
+      {/*
+        Props imutáveis em lote único: cada mesh de grade, camarote, portão e
+        cobertura era um desenho separado. Com anéis em 11, eram mais de cem
+        chamadas só de cenário. O `TvCameras` fica fora porque gira com a bola.
+      */}
+      <StaticBatch signature={`props:${rings}:${homeColor}:${awayColor}:${quality}`}>
+        {quality !== "baixa" && <SectorGrilles rings={rings} />}
+        {quality === "alta" && <PressBoxes rings={rings} />}
+        {quality === "alta" && <Gates rings={rings} color={homeColor} />}
+        {quality === "alta" && <RoofCanopy rings={rings} color={homeColor} />}
+      </StaticBatch>
       {quality !== "baixa" && <TvCameras sim={sim} />}
-      {quality === "alta" && <PressBoxes rings={rings} />}
-      {quality === "alta" && <RoofCanopy rings={rings} color={homeColor} />}
-      {quality === "alta" && <Gates rings={rings} color={homeColor} />}
     </group>
   );
 }

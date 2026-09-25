@@ -7,8 +7,8 @@ describe("RuntimeSceneBudget", () => {
     const high = resolveRuntimeSceneBudget("alta");
     expect(high.crowdInstances).toBe(4_096);
     expect(high.crowdVisibleTiles).toBe(18);
-    expect(high.heroPlayers).toBe(2);
-    expect(high.replayHeroPlayers).toBe(4);
+    expect(high.heroPlayers).toBe(6);
+    expect(high.replayHeroPlayers).toBe(10);
     expect(high.post).toBe("balanced");
   });
 

@@ -7,14 +7,15 @@
 //  <group> com pivô no lugar certo: quadril, lombar, peito, pescoço, ombro,
 //  cotovelo, punho, joelho e tornozelo. Nada gira mais pelo centro da peça.
 //
-//  Custo: três níveis de LOD trocados por distância de câmera, avaliação de
-//  animação em taxa reduzida longe da câmera e materiais simplificados fora
-//  do modo "alta".
+//  Custo: as malhas de cada junta são mescladas por material em
+//  `@/game/rig-body` (um atleta sai de ~117 para ~45 malhas em LOD 0), três
+//  níveis de LOD trocados por distância de câmera, avaliação de animação em
+//  taxa reduzida longe da câmera e materiais simplificados fora do modo "alta".
 // ============================================================================
 
 import { useFrame } from "@react-three/fiber";
 import type React from "react";
-import { createElement, memo, useMemo, useRef } from "react";
+import { createElement, memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import {
@@ -48,6 +49,8 @@ import {
   type DominantFoot,
 } from "@/game/visual-context";
 import { solveFullIK } from "@/game/ik-solver";
+import { buildRigSkin, type RigJoint, type RigSkin, type RigSkinLod } from "@/game/rig-skin";
+import { censusRef } from "@/game/scene-census";
 
 /** duração da transição cruzada entre dois movimentos, em segundos */
 const BLEND_TIME = 0.18;
@@ -91,7 +94,13 @@ interface RigProps {
   quality: Quality;
 }
 
-export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, quality: baseQuality }: RigProps) {
+export const PlayerRig = memo(function PlayerRig({
+  player,
+  sim,
+  kit,
+  goalPulse,
+  quality: baseQuality,
+}: RigProps) {
   // O usuário pode forçar mais ou menos detalhe na página /visual.
   const detail = useVisual().playerDetail;
   const quality: Quality =
@@ -102,7 +111,7 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     () => sim.players.findIndex((candidate) => candidate.id === player.id),
     [sim.players, player.id],
   );
-  
+
   // Determina pé dominante do jogador
   const dominantFoot: DominantFoot = getDominantFoot(player.pid);
 
@@ -135,49 +144,37 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
   /* -------------------------------------------------------------- juntas */
 
   const root = useRef<THREE.Group>(null);
-  const hips = useRef<THREE.Group>(null);
-  const spine = useRef<THREE.Group>(null);
-  const chest = useRef<THREE.Group>(null);
-  const neck = useRef<THREE.Group>(null);
-  const armLRef = useRef<THREE.Group>(null);
-  const armRRef = useRef<THREE.Group>(null);
-  const foreLRef = useRef<THREE.Group>(null);
-  const foreRRef = useRef<THREE.Group>(null);
-  const legLRef = useRef<THREE.Group>(null);
-  const legRRef = useRef<THREE.Group>(null);
-  const kneeLRef = useRef<THREE.Group>(null);
-  const kneeRRef = useRef<THREE.Group>(null);
-  const ankleLRef = useRef<THREE.Group>(null);
-  const ankleRRef = useRef<THREE.Group>(null);
+  // As juntas são ossos (`THREE.Bone`) do esqueleto do atleta: a animação
+  // escreve neles exatamente como escrevia nos grupos, e a malha é rendida
+  // como SkinnedMesh — um desenho por grupo de material em vez de um por peça.
+  const hips = useRef<THREE.Bone>(null);
+  const spine = useRef<THREE.Bone>(null);
+  const chest = useRef<THREE.Bone>(null);
+  const neck = useRef<THREE.Bone>(null);
+  const armLRef = useRef<THREE.Bone>(null);
+  const armRRef = useRef<THREE.Bone>(null);
+  const foreLRef = useRef<THREE.Bone>(null);
+  const foreRRef = useRef<THREE.Bone>(null);
+  const legLRef = useRef<THREE.Bone>(null);
+  const legRRef = useRef<THREE.Bone>(null);
+  const kneeLRef = useRef<THREE.Bone>(null);
+  const kneeRRef = useRef<THREE.Bone>(null);
+  const ankleLRef = useRef<THREE.Bone>(null);
+  const ankleRRef = useRef<THREE.Bone>(null);
   const shadowRef = useRef<THREE.Mesh>(null);
-  const blinkRef = useRef<THREE.Group>(null);
-  const clavLRef = useRef<THREE.Group>(null);
-  const clavRRef = useRef<THREE.Group>(null);
-  const jawRef = useRef<THREE.Group>(null);
+  const blinkRef = useRef<THREE.Bone>(null);
+  const clavLRef = useRef<THREE.Bone>(null);
+  const clavRRef = useRef<THREE.Bone>(null);
+  const jawRef = useRef<THREE.Bone>(null);
   const nextBlink = useRef(1 + Math.random() * 4);
 
-
-  // grupos de LOD: detalhes finos (rosto, dedos, costuras) e corpo médio
-  const faceDetailRef = useRef<THREE.Group>(null);
-  const handDetailLRef = useRef<THREE.Group>(null);
-  const handDetailRRef = useRef<THREE.Group>(null);
-  const bootDetailLRef = useRef<THREE.Group>(null);
-  const bootDetailRRef = useRef<THREE.Group>(null);
-  // volumes musculares e acabamentos recolhidos por distância: cada um destes
-  // grupos some junto com suas malhas, derrubando as chamadas de desenho dos
-  // atletas longe da câmera (a maioria dos 22, na maior parte do tempo).
-  const nearGroups = useRef<THREE.Group[]>([]);
-  const midGroups = useRef<THREE.Group[]>([]);
-  const collectNear = (el: THREE.Group | null) => {
-    if (el && !nearGroups.current.includes(el)) nearGroups.current.push(el);
-  };
-  const collectMid = (el: THREE.Group | null) => {
-    if (el && !midGroups.current.includes(el)) midGroups.current.push(el);
-  };
+  // LOD por grupo de desenho: os grupos "near" (rosto, dedos) somem a partir
+  // do LOD 1 e os "boot" (travas) a partir do LOD 2 — a maioria dos 22
+  // atletas fica longe da câmera na maior parte do tempo.
+  const nearMeshes = useRef<THREE.SkinnedMesh[]>([]);
+  const bootMeshes = useRef<THREE.SkinnedMesh[]>([]);
   const lodState = useRef<LodLevel | null>(null);
   const castState = useRef<boolean | null>(null);
-
-
 
   /* ---------------------------------------------------------- animação */
 
@@ -226,18 +223,10 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     if (lod !== lodState.current) {
       const first = lodState.current === null;
       lodState.current = lod;
-      const nearDetails = [faceDetailRef.current, handDetailLRef.current, handDetailRRef.current];
-      const mediumDetails = [bootDetailLRef.current, bootDetailRRef.current];
-      nearDetails.forEach((detailGroup) => {
-        if (detailGroup) detailGroup.visible = lod === 0;
-      });
-      mediumDetails.forEach((detailGroup) => {
-        if (detailGroup) detailGroup.visible = lod <= 1;
-      });
-      for (const grp of nearGroups.current) grp.visible = lod === 0;
-      for (const grp of midGroups.current) grp.visible = lod <= 1;
+      for (const mesh of nearMeshes.current) mesh.visible = lod === 0;
+      for (const mesh of bootMeshes.current) mesh.visible = lod <= 1;
 
-      // Sombra projetada custa uma segunda passada de desenho por malha.
+      // Sombra projetada custa uma segunda passagem de desenho por malha.
       // Só o atleta perto da câmera entra no mapa de sombras; os demais ficam
       // com a sombra de contato no gramado, que é uma malha só.
       const cast = shadows && lod === 0;
@@ -245,11 +234,14 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
         castState.current = cast;
         g.traverse((o) => {
           const m = o as THREE.Mesh;
-          if (m.isMesh && m !== shadowRef.current) m.castShadow = cast;
+          // os grupos de detalhe nunca entram no mapa de sombras
+          if (m.isMesh && m !== shadowRef.current && m.castShadow !== undefined) {
+            if (m.name.startsWith("rig-") && m.name !== "rig-core") return;
+            m.castShadow = cast;
+          }
         });
       }
     }
-
 
     // ---- orientação: olha para onde corre; sem bola, olha para a bola
     const dirLen = Math.hypot(player.vx, player.vz);
@@ -389,7 +381,7 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
         actionDur: player.actionDur,
         isGK: player.pos === "GK",
       };
-      
+
       // Aplica IK completo
       p = solveFullIK(p, actionContext, contactContext, playerInfo, ikBuf.current);
     }
@@ -478,7 +470,8 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     // mandíbula: abre conforme o esforço, fechando quando o jogador descansa
     if (jawRef.current && lod === 0) {
       const effort = Math.min(1, speed / 7);
-      jawRef.current.rotation.x = 0.06 + effort * 0.16 + Math.sin(state.clock.elapsedTime * 4 + seed) * 0.03 * effort;
+      jawRef.current.rotation.x =
+        0.06 + effort * 0.16 + Math.sin(state.clock.elapsedTime * 4 + seed) * 0.03 * effort;
     }
 
     if (legLRef.current) legLRef.current.rotation.set(c.legLPitch, 0, c.legLRoll);
@@ -526,636 +519,125 @@ export const PlayerRig = memo(function PlayerRig({ player, sim, kit, goalPulse, 
     [look, kit, tex, quality],
   );
 
-  // createElement (e não JSX) de propósito: o plugin de desenvolvimento injeta
-  // atributos de origem no JSX e o R3F não aceita isso num <primitive>.
-  const matEl = (m: THREE.Material) =>
-    createElement("primitive", { object: m, attach: "material" });
-  const skinMat = matEl(mats.skin);
-  const skinDark = matEl(mats.skinDark);
-  const jerseyMat = matEl(mats.jersey);
-  const shortsMat = matEl(mats.shorts);
-  const socksMat = matEl(mats.socks);
-  const trimMat = matEl(mats.trim);
-  const hairMat = matEl(mats.hair);
-  const bootMat = matEl(mats.boot);
-  const bootAccentMat = matEl(mats.bootAccent);
-  const soleMat = matEl(mats.sole);
-  const gloveMat = matEl(mats.glove);
-  const shinMat = matEl(mats.shin);
-
-
-  const handMat = look.gloves ? gloveMat : skinMat;
-  const handR = look.gloves ? P.handR * 1.25 : P.handR;
-
-  /* -------------------------------------------------------------- braço */
-
-  function Arm({
-    side,
-    armRef,
-    foreRef,
-  }: {
-    side: 1 | -1;
-    armRef: React.RefObject<THREE.Group | null>;
-    foreRef: React.RefObject<THREE.Group | null>;
-  }) {
-    return (
-      <group ref={armRef} position={[side * P.shoulderW * 0.52, P.chestLen * 0.84, 0]}>
-        {/* ombro */}
-        <mesh position={[0, 0, 0]} castShadow={shadows}>
-          <sphereGeometry args={[P.armR * 1.35, segs.radial, segs.radial]} />
-          {jerseyMat}
-        </mesh>
-        {/* deltoide: leve volume muscular por cima do ombro */}
-        {hi && (
-          <mesh
-            position={[side * P.armR * 0.28, -P.upperArm * 0.1, 0]}
-            scale={[1, 1.18, 0.92]}
-            castShadow={shadows}
-          >
-            <sphereGeometry args={[P.armR * 1.12, segs.radial, segs.radial]} />
-            {jerseyMat}
-          </mesh>
-        )}
-        {/* braço */}
-        <mesh position={[0, -P.upperArm * 0.5, 0]} castShadow={shadows}>
-          <capsuleGeometry args={[P.armR, P.upperArm * 0.78, segs.cap, segs.radial]} />
-          {look.sleeves === "long" ? jerseyMat : skinMat}
-        </mesh>
-        {/* bíceps */}
-        {hi && look.sleeves !== "long" && (
-          <mesh
-            position={[0, -P.upperArm * 0.58, P.armR * 0.12]}
-            scale={[0.9, 1.35, 0.9]}
-            castShadow={shadows}
-          >
-            <sphereGeometry args={[P.armR * 0.78, segs.radial, segs.radial]} />
-            {skinMat}
-          </mesh>
-        )}
-
-        {/* manga */}
-        {look.sleeves === "short" && (
-          <mesh position={[0, -P.upperArm * 0.24, 0]} castShadow={shadows}>
-            <capsuleGeometry args={[P.armR * 1.22, P.upperArm * 0.3, 2, segs.radial]} />
-            {jerseyMat}
-          </mesh>
-        )}
-        {/* braçadeira de capitão */}
-        {look.captain && side === 1 && (
-          <mesh position={[0, -P.upperArm * 0.42, 0]}>
-            <cylinderGeometry args={[P.armR * 1.28, P.armR * 1.28, 0.05, segs.radial]} />
-            <meshStandardMaterial color="#ffd54a" roughness={0.6} />
-          </mesh>
-        )}
-        {/* cotovelo → antebraço */}
-        <group ref={foreRef} position={[0, -P.upperArm, 0]}>
-          <mesh position={[0, -P.foreArm * 0.5, 0]} castShadow={shadows}>
-            <capsuleGeometry args={[P.armR * 0.88, P.foreArm * 0.76, segs.cap, segs.radial]} />
-            {look.sleeves === "long" ? jerseyMat : skinMat}
-          </mesh>
-          {/* punho / mão */}
-          <group position={[0, -P.foreArm, 0]}>
-            <mesh castShadow={shadows}>
-              <sphereGeometry args={[handR, segs.radial, segs.radial]} />
-              {handMat}
-            </mesh>
-            <group ref={side === 1 ? handDetailLRef : handDetailRRef}>
-              {/* dedos, só no LOD mais próximo */}
-              {[0, 1, 2, 3].map((i) => (
-                <mesh
-                  key={i}
-                  position={[(i - 1.5) * handR * 0.45, -handR * 0.85, 0]}
-                  rotation={[0.15, 0, 0]}
-                >
-                  <capsuleGeometry args={[handR * 0.2, handR * 0.7, 2, 5]} />
-                  {handMat}
-                </mesh>
-              ))}
-            </group>
-          </group>
-        </group>
-      </group>
-    );
-  }
-
-  /* --------------------------------------------------------------- perna */
-
-  function Leg({
-    side,
-    legRef,
-    kneeRef,
-    ankleRef,
-  }: {
-    side: 1 | -1;
-    legRef: React.RefObject<THREE.Group | null>;
-    kneeRef: React.RefObject<THREE.Group | null>;
-    ankleRef: React.RefObject<THREE.Group | null>;
-  }) {
-    return (
-      <group ref={legRef} position={[side * P.hipW * 0.46, -P.hipH * 0.4, 0]}>
-        {/* coxa */}
-        <mesh position={[0, -P.thigh * 0.5, 0]} castShadow={shadows}>
-          <capsuleGeometry args={[P.legR, P.thigh * 0.72, segs.cap, segs.radial]} />
-          {skinMat}
-        </mesh>
-        {/* quadríceps */}
-        <mesh
-          position={[0, -P.thigh * 0.62, P.legR * 0.24]}
-          scale={[0.9, 1, 0.7]}
-          castShadow={shadows}
-        >
-          <capsuleGeometry args={[P.legR * 0.72, P.thigh * 0.3, segs.cap, segs.radial]} />
-          {skinMat}
-        </mesh>
-        {/* barra do calção */}
-        <mesh position={[0, -P.thigh * 0.32, 0]} castShadow={shadows}>
-          <capsuleGeometry args={[P.legR * 1.3, P.thigh * 0.24, 2, segs.radial]} />
-          {shortsMat}
-        </mesh>
-        <mesh position={[0, -P.thigh * 0.44, 0]}>
-          <cylinderGeometry args={[P.legR * 1.31, P.legR * 1.28, 0.02, segs.radial]} />
-          {trimMat}
-        </mesh>
-        {/* joelho */}
-        <group ref={kneeRef} position={[0, -P.thigh, 0]}>
-          <mesh>
-            <sphereGeometry args={[P.legR * 0.94, segs.radial, segs.radial]} />
-            {skinMat}
-          </mesh>
-          {/* panturrilha */}
-          <mesh position={[0, -P.shin * 0.5, 0]} castShadow={shadows}>
-            <capsuleGeometry args={[P.legR * 0.86, P.shin * 0.66, segs.cap, segs.radial]} />
-            {skinMat}
-          </mesh>
-          <mesh
-            position={[0, -P.shin * 0.34, -P.legR * 0.22]}
-            scale={[0.85, 1, 0.75]}
-            castShadow={shadows}
-          >
-            <capsuleGeometry args={[P.legR * 0.68, P.shin * 0.26, segs.cap, segs.radial]} />
-            {skinMat}
-          </mesh>
-          {/* meião */}
-          <mesh position={[0, -P.shin * 0.62, 0]} castShadow={shadows}>
-            <capsuleGeometry args={[P.legR * 0.94, P.shin * 0.44, segs.cap, segs.radial]} />
-            {socksMat}
-          </mesh>
-          {/* caneleira por baixo do meião */}
-          <mesh
-            position={[0, -P.shin * 0.55, P.legR * 0.5]}
-            scale={[0.8, 1, 0.35]}
-            castShadow={shadows}
-          >
-            <capsuleGeometry args={[P.legR * 0.7, P.shin * 0.3, 2, segs.radial]} />
-            {socksMat}
-          </mesh>
-          {/* punho do meião */}
-          <mesh position={[0, -P.shin * 0.36, 0]}>
-            <cylinderGeometry args={[P.legR * 1.02, P.legR * 0.98, 0.045, segs.radial]} />
-            {trimMat}
-          </mesh>
-          {look.sockTape && (
-            <mesh position={[0, -P.shin * 0.46, 0]}>
-              <cylinderGeometry args={[P.legR * 1.03, P.legR * 1.03, 0.035, segs.radial]} />
-              {trimMat}
-            </mesh>
-          )}
-          {/* tornozelo → chuteira */}
-          <group ref={ankleRef} position={[0, -P.shin, 0]}>
-            {/* cano do meião sobre o tornozelo */}
-            <mesh position={[0, P.footH * 0.12, 0]}>
-              <capsuleGeometry args={[P.legR * 0.72, P.footH * 0.2, 2, segs.radial]} />
-              {socksMat}
-            </mesh>
-            {/* cabedal */}
-            <mesh position={[0, -P.footH * 0.32, P.footLen * 0.16]} castShadow={shadows}>
-              <capsuleGeometry args={[P.footH * 0.5, P.footLen * 0.45, 3, segs.radial]} />
-              {bootMat}
-            </mesh>
-            {/* bico */}
-            <mesh
-              position={[0, -P.footH * 0.45, P.footLen * 0.42]}
-              scale={[0.85, 0.7, 1]}
-              castShadow={shadows}
-            >
-              <sphereGeometry args={[P.footH * 0.46, segs.radial, segs.radial]} />
-              {bootMat}
-            </mesh>
-            {/* calcanhar */}
-            <mesh position={[0, -P.footH * 0.24, -P.footLen * 0.16]} scale={[0.85, 1, 0.7]}>
-              <sphereGeometry args={[P.footH * 0.44, segs.radial, segs.radial]} />
-              {bootMat}
-            </mesh>
-            {/* faixa lateral / listra da marca */}
-            <mesh position={[0, -P.footH * 0.34, P.footLen * 0.18]} rotation={[0, 0, 0.1]}>
-              <boxGeometry args={[P.footH * 1.04, P.footH * 0.12, P.footLen * 0.4]} />
-              {bootAccentMat}
-            </mesh>
-            {/* sola */}
-            <mesh position={[0, -P.footH * 0.62, P.footLen * 0.1]}>
-              <boxGeometry args={[P.footH * 1.0, P.footH * 0.16, P.footLen * 0.86]} />
-              {soleMat}
-            </mesh>
-            <group ref={side === 1 ? bootDetailLRef : bootDetailRRef}>
-              {/* cadarços */}
-              {[0, 1, 2].map((i) => (
-                <mesh
-                  key={`l${i}`}
-                  position={[0, -P.footH * 0.12, P.footLen * (0.1 + i * 0.09)]}
-                  rotation={[0.12, 0, 0]}
-                >
-                  <boxGeometry args={[P.footH * 0.5, P.footH * 0.06, P.footLen * 0.04]} />
-                  {bootAccentMat}
-                </mesh>
-              ))}
-              {/* travas */}
-              {(
-                [
-                  [-0.3, 0.36],
-                  [0.3, 0.36],
-                  [-0.32, 0.02],
-                  [0.32, 0.02],
-                  [0, -0.28],
-                ] as const
-              ).map(([sx, sz], i) => (
-                <mesh
-                  key={i}
-                  position={[sx * P.footH, -P.footH * 0.78, sz * P.footLen]}
-                  rotation={[Math.PI, 0, 0]}
-                >
-                  <coneGeometry args={[0.011, 0.022, 5]} />
-                  <meshStandardMaterial color="#e6e6e6" roughness={0.45} metalness={0.3} />
-                </mesh>
-              ))}
-            </group>
-          </group>
-        </group>
-      </group>
-    );
-  }
-
-  /* ---------------------------------------------------------------- rosto */
-
-  const face = (
-    <group>
-      {/* olhos */}
-      {[-1, 1].map((s) => (
-        <group key={s}>
-          <mesh position={[s * P.headR * 0.36, P.headR * 0.1, P.headR * 0.82]}>
-            <sphereGeometry args={[P.headR * 0.15, hi ? 12 : 8, hi ? 12 : 8]} />
-            <meshStandardMaterial color="#f7f7f7" roughness={0.28} />
-          </mesh>
-          {/* íris */}
-          <mesh position={[s * P.headR * 0.36, P.headR * 0.1, P.headR * 0.9]}>
-            <sphereGeometry args={[P.headR * 0.085, 10, 10]} />
-            <meshStandardMaterial color={look.eyeColor} roughness={0.22} metalness={0.05} />
-          </mesh>
-          {/* pupila */}
-          <mesh position={[s * P.headR * 0.36, P.headR * 0.1, P.headR * 0.94]}>
-            <sphereGeometry args={[P.headR * 0.045, 8, 8]} />
-            <meshStandardMaterial color="#0b0b0b" roughness={0.15} />
-          </mesh>
-          {/* sobrancelha */}
-          <mesh
-            position={[s * P.headR * 0.36, P.headR * 0.32, P.headR * 0.84]}
-            rotation={[0, 0, s * 0.12]}
-          >
-            <boxGeometry args={[P.headR * 0.36, P.headR * 0.08, P.headR * 0.1]} />
-            {hairMat}
-          </mesh>
-          {/* orelha */}
-          <mesh position={[s * P.headR * 0.94, 0, -P.headR * 0.05]} scale={[0.4, 1, 0.7]}>
-            <sphereGeometry args={[P.headR * 0.3, 8, 8]} />
-            {skinMat}
-          </mesh>
-          {/* narina */}
-          {hi ? (
-            <mesh position={[s * P.headR * 0.09, -P.headR * 0.17, P.headR * 0.98]}>
-              <sphereGeometry args={[P.headR * 0.045, 6, 6]} />
-              <meshStandardMaterial color={shade(look.skin, -0.55)} roughness={0.7} />
-            </mesh>
-          ) : null}
-        </group>
-      ))}
-      {/* pálpebras: piscam de vez em quando */}
-      <group ref={blinkRef}>
-        {[-1, 1].map((s) => (
-          <mesh
-            key={s}
-            position={[s * P.headR * 0.36, P.headR * 0.16, P.headR * 0.84]}
-            scale={[1, 0.001, 1]}
-          >
-            <boxGeometry args={[P.headR * 0.34, P.headR * 0.3, P.headR * 0.08]} />
-            {skinMat}
-          </mesh>
-        ))}
-      </group>
-      {/* arco superciliar */}
-      {hi ? (
-        <mesh position={[0, P.headR * 0.26, P.headR * 0.7]} scale={[1, 0.35, 0.5]}>
-          <sphereGeometry args={[P.headR * 0.6, 10, 10]} />
-          {skinMat}
-        </mesh>
-      ) : null}
-      {/* nariz */}
-      <mesh position={[0, -P.headR * 0.05, P.headR * 0.95]} rotation={[0.3, 0, 0]}>
-        <coneGeometry args={[P.headR * 0.16, P.headR * 0.34, hi ? 10 : 6]} />
-        {skinMat}
-      </mesh>
-      {/* maçãs do rosto */}
-      {[-1, 1].map((s) => (
-        <mesh
-          key={`c${s}`}
-          position={[s * P.headR * 0.5, -P.headR * 0.16, P.headR * 0.66]}
-          scale={[1, 0.8, 0.6]}
-        >
-          <sphereGeometry args={[P.headR * 0.26, 8, 8]} />
-          {skinMat}
-        </mesh>
-      ))}
-      {/* mandíbula articulada: maxilar, queixo e lábio inferior num só osso */}
-      <group ref={jawRef}>
-        {hi ? (
-          <mesh position={[0, -P.headR * 0.48, P.headR * 0.2]} scale={[0.94, 0.5, 0.94]}>
-            <sphereGeometry args={[P.headR * 0.9, 12, 12]} />
-            {skinMat}
-          </mesh>
-        ) : null}
-        {/* lábio inferior + queixo */}
-        <mesh position={[0, -P.headR * 0.55, P.headR * 0.78]} scale={[0.9, 0.6, 0.7]}>
-          <sphereGeometry args={[P.headR * 0.24, 8, 8]} />
-          {skinMat}
-        </mesh>
-      </group>
-
-      {/* lábio superior */}
-      {hi ? (
-        <mesh position={[0, -P.headR * 0.36, P.headR * 0.84]} scale={[1, 0.45, 0.6]}>
-          <sphereGeometry args={[P.headR * 0.2, 8, 8]} />
-          <meshStandardMaterial color={shade(look.skin, -0.18)} roughness={0.55} />
-        </mesh>
-      ) : null}
-      {/* boca */}
-      <mesh position={[0, -P.headR * 0.45, P.headR * 0.84]}>
-        <boxGeometry args={[P.headR * 0.34, P.headR * 0.07, P.headR * 0.06]} />
-        <meshStandardMaterial color={shade(look.skin, -0.45)} roughness={0.6} />
-      </mesh>
-    </group>
+  // Corpo em SkinnedMesh: um desenho por grupo de material (~18) em vez de um
+  // por peça mesclada (~53). A matriz de bind é a posição do atleta, porque
+  // ossos e malhas são filhos do mesmo grupo raiz. Reconstruído só quando
+  // aparência ou qualidade mudam.
+  const skin = useMemo<RigSkin>(
+    () =>
+      buildRigSkin(
+        {
+          P,
+          look,
+          segs: { radial: segs.radial, cap: segs.cap },
+          hi,
+          mats,
+          jerseyInk,
+          handR: look.gloves ? P.handR * 1.25 : P.handR,
+          handMat: look.gloves ? mats.glove : mats.skin,
+        },
+        [player.x, 0, player.z],
+      ),
+    // `player.x/z` ficam de propósito: a matriz de bind defasada é compensada
+    // pelo three.js a cada quadro, e incluí-los aqui reconstruiria as 18 malhas
+    // do atleta a cada movimento.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [P, look, segs.radial, segs.cap, hi, mats, jerseyInk],
   );
+  useEffect(() => () => skin.dispose(), [skin]);
 
-  /* ---------------------------------------------------------------- barba */
+  // As malhas são criadas fora do JSX para carregar esqueleto, esfera de
+  // culling generosa (a pose animada sai da pose de bind) e o estado de LOD.
+  const drawMeshes = useMemo(() => {
+    nearMeshes.current = [];
+    bootMeshes.current = [];
+    return skin.groups.map((group, index) => {
+      const mesh = new THREE.SkinnedMesh(group.geometry, group.material);
+      // Sem esqueleto e matriz de bind a malha não deforma (e apareceria
+      // deslocada). `bindMatrixInverse` é mantido pelo three.js a cada quadro.
+      mesh.skeleton = skin.skeleton;
+      mesh.bindMatrix.copy(skin.bindMatrix);
+      mesh.bindMatrixInverse.copy(skin.bindMatrix).invert();
+      // Só o corpo projetа sombra. Rosto, dedos e travas são pequenos demais
+      // para aparecer no mapa de sombras e custariam uma segunda passagem de
+      // desenho por atleta — 6 grupos a menos por herói.
+      mesh.castShadow = shadows && group.castShadow && group.lod === "core";
+      mesh.receiveShadow = false;
+      mesh.name = `rig-${group.lod}`;
+      // esfera local folgada: evita o recálculo caro (e animado) do three.js
+      const sphere = group.geometry.boundingSphere;
+      if (sphere) mesh.boundingSphere = sphere.clone();
+      if (group.lod === "near") nearMeshes.current.push(mesh);
+      if (group.lod === "boot") bootMeshes.current.push(mesh);
+      return createElement("primitive", { key: `${group.material.uuid}-${index}`, object: mesh });
+    });
+  }, [skin, shadows]);
 
-  const beard = (() => {
-    if (look.beard === "none") return null;
-    if (look.beard === "moustache")
-      return (
-        <mesh position={[0, -P.headR * 0.3, P.headR * 0.86]}>
-          <boxGeometry args={[P.headR * 0.44, P.headR * 0.1, P.headR * 0.12]} />
-          {hairMat}
-        </mesh>
-      );
-    if (look.beard === "goatee")
-      return (
-        <mesh position={[0, -P.headR * 0.62, P.headR * 0.66]} scale={[0.7, 1, 0.7]}>
-          <sphereGeometry args={[P.headR * 0.3, 8, 8]} />
-          {hairMat}
-        </mesh>
-      );
-    // stubble / full
-    return (
-      <mesh
-        position={[0, -P.headR * 0.35, P.headR * 0.12]}
-        scale={[1.01, look.beard === "full" ? 0.85 : 0.6, 1.01]}
-      >
-        <sphereGeometry
-          args={[P.headR * 0.98, 12, 12, 0, Math.PI * 2, Math.PI * 0.42, Math.PI * 0.4]}
-        />
-        {hairMat}
-      </mesh>
-    );
-  })();
-
-  /* --------------------------------------------------------------- cabelo */
-
-  const hair = (() => {
-    const s = look.hairStyle;
-    if (s === "bald") return null;
-    const capHeight = (s === "buzz" ? 0.96 : s === "short" ? 1.02 : 1.06) * look.hairVolume;
-    const capWide = 1.02 + (look.hairVolume - 1) * 0.5;
-    const base = (
-      <mesh
-        position={[0, P.headR * 0.16, -P.headR * 0.04]}
-        scale={[capWide, capHeight, capWide + 0.02]}
-      >
-        <sphereGeometry args={[P.headR * 0.99, 14, 14, 0, Math.PI * 2, 0, Math.PI * 0.62]} />
-        {hairMat}
-      </mesh>
-    );
-    return (
-      <group>
-        {base}
-        {/* mechas soltas: franja, nuca e costeletas — só na qualidade alta */}
-        {hi && s !== "buzz" && (
-          <>
-            {Array.from({ length: 5 }).map((_, i) => {
-              const t = (i - 2) / 2;
-              return (
-                <mesh
-                  key={`fringe-${i}`}
-                  position={[t * P.headR * 0.62, P.headR * 0.5, P.headR * 0.78]}
-                  rotation={[0.85 + Math.abs(t) * 0.12, t * 0.35, t * 0.2]}
-                >
-                  <capsuleGeometry args={[P.headR * 0.1, P.headR * 0.42 * look.hairVolume, 2, 6]} />
-                  {hairMat}
-                </mesh>
-              );
-            })}
-            <mesh position={[0, P.headR * 0.12, -P.headR * 0.82]} rotation={[-0.35, 0, 0]}>
-              <capsuleGeometry args={[P.headR * 0.42, P.headR * 0.3 * look.hairVolume, 3, 10]} />
-              {hairMat}
-            </mesh>
-            {[-1, 1].map((sx) => (
-              <mesh
-                key={`side-${sx}`}
-                position={[sx * P.headR * 0.86, P.headR * 0.08, P.headR * 0.1]}
-                scale={[0.5, 1, 1]}
-              >
-                <capsuleGeometry args={[P.headR * 0.22, P.headR * 0.28, 2, 8]} />
-                {hairMat}
-              </mesh>
-            ))}
-          </>
-        )}
-        {s === "mohawk" && (
-          <mesh position={[0, P.headR * 0.95, 0]} scale={[0.24, 1, 1.05]}>
-            <sphereGeometry args={[P.headR * 0.62, 10, 10, 0, Math.PI * 2, 0, Math.PI * 0.7]} />
-            {hairMat}
-          </mesh>
-        )}
-        {(s === "afro" || s === "curly") && (
-          <mesh position={[0, P.headR * 0.42, -P.headR * 0.02]}>
-            <sphereGeometry args={[P.headR * (s === "afro" ? 1.24 : 1.1), 12, 12]} />
-            {hairMat}
-          </mesh>
-        )}
-        {s === "bun" && (
-          <mesh position={[0, P.headR * 0.62, -P.headR * 0.95]}>
-            <sphereGeometry args={[P.headR * 0.34, 10, 10]} />
-            {hairMat}
-          </mesh>
-        )}
-        {s === "ponytail" && (
-          <mesh position={[0, P.headR * 0.2, -P.headR * 1.05]} rotation={[0.6, 0, 0]}>
-            <capsuleGeometry args={[P.headR * 0.16, P.headR * 0.8, 3, 8]} />
-            {hairMat}
-          </mesh>
-        )}
-        {(s === "dreads" || s === "braids") &&
-          Array.from({ length: 8 }).map((_, i) => {
-            const a = (i / 8) * Math.PI * 2;
-            return (
-              <mesh
-                key={i}
-                position={[Math.cos(a) * P.headR * 0.7, P.headR * 0.1, Math.sin(a) * P.headR * 0.7]}
-                rotation={[0.25, 0, 0]}
-              >
-                <capsuleGeometry args={[P.headR * 0.09, P.headR * 0.9, 2, 6]} />
-                {hairMat}
-              </mesh>
-            );
-          })}
-        {look.headband && (
-          <mesh position={[0, P.headR * 0.42, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[P.headR * 0.94, P.headR * 0.11, 6, 16]} />
-            <meshStandardMaterial color={look.headbandColor} roughness={0.8} />
-          </mesh>
-        )}
-      </group>
-    );
-  })();
+  // Junta -> osso. `createElement` (e não JSX) de propósito: o plugin de
+  // desenvolvimento injeta atributos de origem no JSX e o R3F não aceita isso
+  // num <primitive>.
+  // Só as juntas que a animação escreve precisam de ref; as demais existem na
+  // hierarquia para carregar a geometria dos grupos de LOD.
+  const boneRefs: Partial<Record<RigJoint, React.RefObject<THREE.Bone | null>>> = {
+    hips,
+    spine,
+    chest,
+    neck,
+    jaw: jawRef,
+    blink: blinkRef,
+    clavL: clavLRef,
+    armL: armLRef,
+    foreL: foreLRef,
+    clavR: clavRRef,
+    armR: armRRef,
+    foreR: foreRRef,
+    legL: legLRef,
+    kneeL: kneeLRef,
+    ankleL: ankleLRef,
+    legR: legRRef,
+    kneeR: kneeRRef,
+    ankleR: ankleRRef,
+  };
+  /*
+    A R3F só recebe o osso raiz: renderizar os 25 como irmãos achataria a
+    hierarquia (o `add()` do three.js moveria cada osso para o grupo raiz). Os
+    filhos já estão ligados em `skin`, então a cena fica correta com um único
+    elemento; os refs da animação são ligados aqui.
+  */
+  useEffect(() => {
+    const entries = Object.entries(boneRefs) as [RigJoint, React.RefObject<THREE.Bone | null>][];
+    for (const [joint, ref] of entries) ref.current = skin.boneOf[joint] ?? null;
+    return () => {
+      for (const [, ref] of entries) ref.current = null;
+    };
+  });
+  const renderBones = () => [createElement("primitive", { key: "skeleton", object: skin.root })];
 
   /* ------------------------------------------------------------- render */
 
   return (
-    <group ref={root} position={[player.x, 0, player.z]}>
+    <group
+      ref={(el) => {
+        root.current = el;
+        censusRef("player")(el);
+      }}
+      position={[player.x, 0, player.z]}
+    >
       {/* sombra de contato */}
       <mesh ref={shadowRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
         <circleGeometry args={[0.36, 16]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.3} depthWrite={false} />
       </mesh>
 
-      {/* quadril = raiz do esqueleto */}
-      <group ref={hips} position={[0, P.hipY, 0]}>
-        <mesh castShadow={shadows}>
-          <capsuleGeometry args={[P.hipW * 0.62, P.hipH * 0.6, segs.cap, segs.radial]} />
-          {shortsMat}
-        </mesh>
-        {/* cós */}
-        <mesh position={[0, P.hipH * 0.5, 0]}>
-          <cylinderGeometry args={[P.hipW * 0.66, P.hipW * 0.64, 0.045, segs.radial]} />
-          {trimMat}
-        </mesh>
+      {/*
+        Esqueleto: um osso por junta, com o mesmo pivô e a mesma hierarquia dos
+        grupos de antes. A animação continua escrevendo rotação, posição e
+        escala nos mesmos lugares — só que agora isso deforma os vértices.
+      */}
+      {renderBones()}
 
-        {/* lombar */}
-        <group ref={spine} position={[0, P.hipH * 0.5, 0]}>
-          <mesh position={[0, P.spineLen * 0.5, 0]} scale={[1, 1, 0.82]} castShadow={shadows}>
-            <capsuleGeometry args={[P.chestW * 0.5, P.spineLen * 0.7, segs.cap, segs.radial]} />
-            {jerseyMat}
-          </mesh>
-
-          {/* peito */}
-          <group ref={chest} position={[0, P.spineLen, 0]}>
-            <mesh
-              position={[0, P.chestLen * 0.46, 0]}
-              scale={[1, 1, P.chestD / (P.chestW * 0.58)]}
-              castShadow={shadows}
-            >
-              <capsuleGeometry args={[P.chestW * 0.58, P.chestLen * 0.62, segs.cap, segs.radial]} />
-              {jerseyMat}
-            </mesh>
-            {/* linha dos ombros */}
-            <mesh position={[0, P.chestLen * 0.84, 0]} rotation={[0, 0, Math.PI / 2]}>
-              <capsuleGeometry args={[P.armR * 1.3, P.shoulderW * 0.8, 3, segs.radial]} />
-              {jerseyMat}
-            </mesh>
-            {/* gola: careca, V ou polo */}
-            <mesh position={[0, P.chestLen * 0.98, 0]} rotation={[Math.PI / 2, 0, 0]}>
-              <torusGeometry
-                args={[
-                  P.neckR * (look.collar === "polo" ? 1.62 : 1.5),
-                  P.neckR * (look.collar === "polo" ? 0.36 : 0.28),
-                  6,
-                  14,
-                ]}
-              />
-              {trimMat}
-            </mesh>
-            {look.collar === "v" ? (
-              <mesh
-                position={[0, P.chestLen * 0.78, P.chestD * 0.5]}
-                rotation={[0, 0, Math.PI / 4]}
-              >
-                <boxGeometry args={[P.neckR * 1.1, P.neckR * 1.1, P.neckR * 0.16]} />
-                {trimMat}
-              </mesh>
-            ) : null}
-            {look.collar === "polo" ? (
-              <mesh position={[0, P.chestLen * 0.9, P.chestD * 0.46]} rotation={[-0.5, 0, 0]}>
-                <boxGeometry args={[P.neckR * 2.1, P.neckR * 0.9, P.neckR * 0.14]} />
-                {trimMat}
-              </mesh>
-            ) : null}
-
-            {/* Identificação em geometria simples: evita atlas/worker de fonte por atleta. */}
-            {hi ? (
-              <mesh position={[0, P.chestLen * 0.38, -(P.chestD + 0.018)]} rotation={[0, Math.PI, 0]}>
-                <circleGeometry args={[0.105, 12]} />
-                <meshBasicMaterial color={jerseyInk} toneMapped={false} />
-              </mesh>
-            ) : null}
-
-            {/* pescoço + cabeça */}
-            <group ref={neck} position={[0, P.chestLen * 1.0, 0]}>
-              <mesh position={[0, P.neckLen * 0.5, 0]} castShadow={shadows}>
-                <capsuleGeometry args={[P.neckR, P.neckLen * 0.8, 3, segs.radial]} />
-                {look.undershirt ? (
-                  <meshStandardMaterial color={look.undershirtColor} roughness={0.85} />
-                ) : (
-                  skinDark
-                )}
-              </mesh>
-              <group position={[0, P.neckLen + P.headR * 0.82, 0]}>
-                {/* crânio */}
-                <mesh scale={[1, 1.14, 1.02]} castShadow={shadows}>
-                  <sphereGeometry args={[P.headR, 16, 16]} />
-                  {skinMat}
-                </mesh>
-                {/* mandíbula */}
-                <mesh position={[0, -P.headR * 0.5, P.headR * 0.12]} scale={[0.82, 0.6, 0.9]}>
-                  <sphereGeometry args={[P.headR, 12, 12]} />
-                  {skinMat}
-                </mesh>
-                <group ref={faceDetailRef}>{face}</group>
-                {beard}
-                {hair}
-              </group>
-            </group>
-
-            {/* clavículas: o ombro acompanha o braço em vez de ficar cravado
-                no tronco, o que dá o balanço correto na corrida */}
-            <group ref={clavLRef}>
-              <Arm side={1} armRef={armLRef} foreRef={foreLRef} />
-            </group>
-            <group ref={clavRRef}>
-              <Arm side={-1} armRef={armRRef} foreRef={foreRRef} />
-            </group>
-
-          </group>
-        </group>
-
-        <Leg side={1} legRef={legLRef} kneeRef={kneeLRef} ankleRef={ankleLRef} />
-        <Leg side={-1} legRef={legRRef} kneeRef={kneeRRef} ankleRef={ankleRRef} />
-      </group>
+      {/* malhas: um desenho por grupo de material, todas skinned */}
+      {drawMeshes}
     </group>
   );
 });
