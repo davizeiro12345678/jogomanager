@@ -91,6 +91,7 @@ export function playerMaterials(
   const sweat = sweatStep(look.sweat);
   const key = [
     quality,
+    ktx2Ready ? "hd" : "sd",
     look.skin,
     sweat,
     look.hairColor,
@@ -113,12 +114,21 @@ export function playerMaterials(
   }
 
   const hi = quality === "alta";
-  const weave = hi ? jerseyWeaveNormal() : null;
-  const rib = hi ? sockRibNormal() : null;
-  const pores = hi ? skinPoreNormal() : null;
-  const grain = hi ? bootGrainNormal() : null;
-  const jerseyRough = hi ? jerseyRoughness() : null;
-  const skinRough = hi ? skinRoughness() : null;
+  // Preferimos sempre o mapa KTX2 (1024², comprimido na GPU); o canvas
+  // procedural continua como rede de segurança até o download terminar.
+  const weave = ktx2("fiberNormal") ?? (hi ? jerseyWeaveNormal() : null);
+  const rib = ktx2("sockNormal") ?? (hi ? sockRibNormal() : null);
+  const pores = ktx2("skinNormal") ?? (hi ? skinPoreNormal() : null);
+  const grain = ktx2("bootNormal") ?? (hi ? bootGrainNormal() : null);
+  const jerseyRough = ktx2("fiberRough") ?? (hi ? jerseyRoughness() : null);
+  const skinRough = ktx2("sweatMask") ?? (hi ? skinRoughness() : null);
+  const hairNormal = ktx2("hairNormal");
+  const hairRough = ktx2("hairRough");
+  const bootRough = ktx2("bootRough");
+  const shinNormal = ktx2("shinNormal");
+  const shinRough = ktx2("shinRough");
+  const sweatNormal = ktx2("sweatNormal");
+
 
   const set: PlayerMaterials = {
     skin: hi
