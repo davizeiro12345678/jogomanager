@@ -16,6 +16,7 @@ describe("pirâmides nacionais", () => {
     const move = applyPyramid(state, tableFor(state));
     expect(move?.leagueId).toBe("bra");
     expect(move?.movements.some((m) => m.from === "y5079a" || m.from === "y5079b" || m.from === "y5079c")).toBe(true);
+    expect(move?.movements.filter((m) => m.to === "bra3").flatMap((m) => m.promoted)).toHaveLength(4);
     const ids = ["bra", "bra2", "bra3", "y5079a", "y5079b", "y5079c"];
     const all = ids.flatMap((id) => move?.leagueClubs[id] ?? []);
     expect(new Set(all).size).toBe(all.length);

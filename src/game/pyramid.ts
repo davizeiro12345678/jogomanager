@@ -117,11 +117,9 @@ export function applyPyramid(state: CareerState, table: TableRow[], override?: n
     // Percorre os grupos em rotação por temporada; um campeão não concorre
     // com todos os outros quando há mais grupos que vagas disponíveis.
     const groupOrder = [...lower.slice(state.season % lower.length), ...lower.slice(0, state.season % lower.length)];
-    const selected = groupOrder.slice(0, Math.min(vacancies, lower.length));
-    const assignments = selected.map((from, i) => ({ from, to: upper[i % upper.length]! }));
-    if (lower.length === 1 && upper.length === 1) {
-      assignments.splice(0, assignments.length, ...Array.from({ length: vacancies }, () => ({ from: lower[0]!, to: upper[0]! })));
-    }
+    const assignments = Array.from({ length: vacancies }, (_, i) => ({
+      from: groupOrder[i % groupOrder.length]!, to: upper[i % upper.length]!,
+    }));
     const usedUp: Record<string, number> = {};
     const usedDown: Record<string, number> = {};
     for (const { from, to } of assignments) {
