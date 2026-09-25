@@ -3,11 +3,11 @@
    - Documentos: rede primeiro, com a última versão em cache como reserva.
    - Assets (js/css/imagens/escudos): cache primeiro, atualizando em segundo plano.
    - Chamadas de API e do backend nunca são cacheadas. */
-const VERSION = "pfm3d-v7";
+const VERSION = "pfm3d-v8";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 const OFFLINE_URL = "/";
-const MAX_ASSETS = 180;
+const MAX_ASSETS = 240;
 const MAX_ASSET_BYTES = 3 * 1024 * 1024;
 
 async function trimCache(name, maxEntries) {
@@ -20,6 +20,13 @@ async function trimCache(name, maxEntries) {
 function canCache(requestUrl) {
   const url = new URL(requestUrl, self.location.origin);
   return url.origin === self.location.origin && isAsset(url);
+}
+
+function isPublicSportsImage(url) {
+  return url.protocol === "https:" &&
+    (url.hostname === "www.thesportsdb.com" || url.hostname === "thesportsdb.com") &&
+    url.pathname.startsWith("/images/") &&
+    /\.(?:png|jpe?g|webp|avif)$/i.test(url.pathname);
 }
 
 async function cacheProgressively(urls) {
@@ -76,9 +83,10 @@ self.addEventListener("message", (event) => {
 
 function isAsset(url) {
   return (
-    /\.(?:js|mjs|css|woff2?|png|jpe?g|webp|svg|gif|avif|ico|json)$/i.test(url.pathname) ||
+    /\.(?:js|mjs|css|woff2?|png|jpe?g|webp|svg|gif|avif|ico|json|ktx2)$/i.test(url.pathname) ||
     url.pathname.startsWith("/_build/") ||
-    url.pathname.startsWith("/assets/")
+    url.pathname.startsWith("/assets/") ||
+    url.pathname.startsWith("/__l5e/assets-v1/")
   );
 }
 
@@ -114,9 +122,13 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (isAsset(url)) {
+  if ((sameOrigin && isAsset(url)) || isPublicSportsImage(url)) {
     event.respondWith(
-      caches.match(req).then((hit) => {
+      caches.open(ASSETS).then(async (cache) => {
+        const hit = await cache.match(req);
+        // Fotos oficiais e arquivos versionados não mudam de conteúdo: evita
+        // uma requisição por imagem a cada visita. Demais assets revalidam.
+        if (hit && (isPublicSportsImage(url) || url.pathname.startsWith("/__l5e/assets-v1/") || url.pathname.startsWith("/_build/"))) return hit;
         const network = fetch(req)
           .then((res) => {
             const size = Number(res.headers.get("content-length") || 0);
@@ -124,12 +136,10 @@ self.addEventListener("fetch", (event) => {
               res &&
               res.status === 200 &&
               (sameOrigin || res.type === "cors") &&
-              (size === 0 || size <= MAX_ASSET_BYTES)
+              (size > 0 && size <= MAX_ASSET_BYTES)
             ) {
               const copy = res.clone();
-              caches
-                .open(ASSETS)
-                .then((c) => c.put(req, copy))
+              cache.put(req, copy)
                 .then(() => trimCache(ASSETS, MAX_ASSETS))
                 .catch(() => undefined);
             }

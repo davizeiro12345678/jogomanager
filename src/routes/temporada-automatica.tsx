@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { GameShell } from "@/components/game/GameShell";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
-import { autoSeason, autoWeek, type AutoWeek } from "@/game/autoplay";
+import { autoWeek, type AutoWeek } from "@/game/autoplay";
 import { autoSeasonAsync } from "@/game/simWorkerClient";
 import { prefersReducedMotion } from "@/game/device";
 import { useCareer } from "@/hooks/useCareer";
