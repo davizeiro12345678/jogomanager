@@ -106,6 +106,18 @@ function NewCareer() {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("Técnico");
   const [country, setCountry] = useState(LEAGUES[0]!.id);
+  const [countrySearch, setCountrySearch] = useState("");
+  // One button per country (LEAGUES has several leagues per country), Brazil pinned first.
+  const countryOptions = useMemo(() => {
+    const seen = new Map<string, (typeof LEAGUES)[number]>();
+    for (const l of LEAGUES) if (!seen.has(l.country)) seen.set(l.country, l);
+    const q = countrySearch.trim().toLowerCase();
+    return [...seen.values()]
+      .filter((l) => !q || l.country.toLowerCase().includes(q))
+      .sort((a, b) =>
+        a.country === "Brasil" ? -1 : b.country === "Brasil" ? 1 : a.country.localeCompare(b.country, "pt-BR"),
+      );
+  }, [countrySearch]);
   const [age, setAge] = useState(38);
   const [look, setLook] = useState<ManagerLook>({
     skin: 1,
@@ -246,14 +258,25 @@ function NewCareer() {
                   />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">País de origem</p>
+                  <label htmlFor="country-search" className="text-sm text-muted-foreground">
+                    País de origem
+                  </label>
+                  <input
+                    id="country-search"
+                    value={countrySearch}
+                    onChange={(e) => setCountrySearch(e.target.value)}
+                    placeholder="Buscar país..."
+                    className="mt-1 w-full rounded-lg border border-input bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary"
+                  />
                   <div className="mt-2 flex max-h-48 flex-wrap gap-2 overflow-y-auto pr-1">
-                    {LEAGUES.map((l) => (
+                    {countryOptions.map((l) => (
                       <button
                         key={l.id}
+                        type="button"
+                        aria-pressed={getLeague(country).country === l.country}
                         onClick={() => setCountry(l.id)}
                         className={`rounded-lg border px-2.5 py-1.5 text-xs transition ${
-                          l.id === country
+                          getLeague(country).country === l.country
                             ? "border-primary bg-primary/15"
                             : "border-border text-muted-foreground hover:text-foreground"
                         }`}
@@ -261,6 +284,9 @@ function NewCareer() {
                         <Flag league={l.id} size={14} /> {l.country}
                       </button>
                     ))}
+                    {countryOptions.length === 0 && (
+                      <p className="text-xs text-muted-foreground">Nenhum país encontrado.</p>
+                    )}
                   </div>
                 </div>
               </div>
