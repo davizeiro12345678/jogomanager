@@ -81,7 +81,7 @@ function LeaguePage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 font-display text-3xl uppercase tracking-wide sm:text-4xl">
-            <Flag league={league.id} size={28} /> {league.name}
+            <Flag league={league.id} country={league.country} size={28} /> {league.name}
           </h1>
           <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
             Temporada {career.season} · Rodada {career.round}

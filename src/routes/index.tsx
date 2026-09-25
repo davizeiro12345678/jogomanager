@@ -431,7 +431,7 @@ function Landing() {
                 className="rounded-xl border border-border/60 surface-card p-4 backdrop-blur"
               >
                 <p className="font-display text-lg">
-                  <Flag league={l.id} size={20} /> {l.name}
+                  <Flag league={l.id} country={l.country} size={20} /> {l.name}
                 </p>
                 <p className="text-xs text-muted-foreground">{l.clubs.length} clubes</p>
                 <div className="mt-3 flex -space-x-2">

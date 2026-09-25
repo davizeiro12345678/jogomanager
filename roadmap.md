@@ -8,8 +8,8 @@
 
 ## Grande ciclo (plano aprovado 2026-09-25)
 - [x] 1.1 País de origem sem repetição + busca
-- [ ] 1.2 Varredura de telas (celular/tablet/desktop)
-- [ ] 1.3 Erros da partida 3D
+- [x] 1.2 Varredura de telas (11 telas, 2 larguras; bandeiras vazias e liga da partida rápida corrigidas)
+- [ ] 1.3 Erros da partida 3D (feito: minuto duplicado, nuvens; aberto: anéis no gramado, emblema do estádio na lateral, erro de state no /perfil)
 - [ ] 1.4 Inconsistências de dados + autocorreção
 - [ ] 2 Pirâmides completas das 178 ligas novas
 - [ ] 3 Texturas KTX2

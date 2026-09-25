@@ -281,7 +281,7 @@ function NewCareer() {
                             : "border-border text-muted-foreground hover:text-foreground"
                         }`}
                       >
-                        <Flag league={l.id} size={14} /> {l.country}
+                        <Flag league={l.id} country={l.country} size={14} /> {l.country}
                       </button>
                     ))}
                     {countryOptions.length === 0 && (
@@ -448,7 +448,7 @@ function NewCareer() {
                           : "border-border text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      <Flag league={l.id} size={14} /> {l.name}
+                      <Flag league={l.id} country={l.country} size={14} /> {l.name}
                     </button>
                   ))}
                 </div>

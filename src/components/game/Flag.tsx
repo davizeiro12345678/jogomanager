@@ -305,11 +305,55 @@ function Custom({ k }: { k: string }) {
   }
 }
 
-export function Flag({ league, size = 22 }: { league: string; size?: number }) {
+// ISO 3166 codes for countries without a hand-drawn SVG flag; rendered as emoji.
+const COUNTRY_ISO: Record<string, string> = {
+  Rússia: "RU", Israel: "IL", Hungria: "HU", Bulgária: "BG", Eslováquia: "SK", Eslovênia: "SI",
+  Chipre: "CY", Irlanda: "IE", Finlândia: "FI", Islândia: "IS", Venezuela: "VE", "Costa Rica": "CR",
+  Índia: "IN", China: "CN", Malásia: "MY", Vietnã: "VN", Argélia: "DZ", Tunísia: "TN", Gana: "GH",
+  Quênia: "KE", Angola: "AO", Malta: "MT", Letônia: "LV", Lituânia: "LT", Estônia: "EE",
+  Geórgia: "GE", Armênia: "AM", Azerbaijão: "AZ", Cazaquistão: "KZ", Uzbequistão: "UZ", Irã: "IR",
+  Iraque: "IQ", Jordânia: "JO", Kuwait: "KW", Omã: "OM", Singapura: "SG", "Hong Kong": "HK",
+  Filipinas: "PH", "Nova Zelândia": "NZ", Panamá: "PA", Guatemala: "GT", Honduras: "HN",
+  Jamaica: "JM", "Costa do Marfim": "CI", Senegal: "SN", Camarões: "CM", "RD Congo": "CD",
+  Zâmbia: "ZM", Belarus: "BY", Albânia: "AL", "Macedônia do Norte": "MK",
+  "Bósnia e Herzegovina": "BA", Montenegro: "ME", "Ilhas Faroé": "FO", Andorra: "AD",
+  "País de Gales": "GB-WLS",
+};
+
+function emojiFor(country?: string): string | null {
+  const iso = country ? COUNTRY_ISO[country] : undefined;
+  if (!iso) return null;
+  if (iso === "GB-WLS") return "\u{1F3F4}\u{E0067}\u{E0062}\u{E0077}\u{E006C}\u{E0073}\u{E007F}";
+  return String.fromCodePoint(...[...iso].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+}
+
+export function Flag({
+  league,
+  size = 22,
+  country,
+}: {
+  league: string;
+  size?: number;
+  /** Country name, used as emoji fallback when no SVG flag exists. */
+  country?: string;
+}) {
   const uid = useId().replace(/:/g, "");
   const key = LEAGUE_COUNTRY[league] ?? league;
   const spec = FLAGS[key];
   const clip = `f${uid}`;
+  const emoji = spec ? null : emojiFor(country);
+  if (emoji) {
+    return (
+      <span
+        aria-hidden="true"
+        className="inline-block shrink-0 leading-none align-[-0.1em]"
+        style={{ fontSize: size * 0.8 }}
+      >
+        {emoji}
+      </span>
+    );
+  }
+
 
   return (
     <svg

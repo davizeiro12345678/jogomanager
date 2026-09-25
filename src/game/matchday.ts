@@ -35,7 +35,8 @@ function hash(s: string) {
   return Math.abs(h);
 }
 
-const MOWS: MowPattern[] = ["stripes", "checker", "rings", "diagonal", "wide", "diamond", "fine", "spiral", "bands"];
+// "rings"/"spiral" stay selectable manually but are excluded from auto: they read as moiré at broadcast distance.
+const MOWS: MowPattern[] = ["stripes", "checker", "diagonal", "wide", "diamond", "fine", "bands"];
 const TIMES: TimeOfDay[] = ["dia", "entardecer", "noite"];
 
 export function matchLook(homeId: string, awayId: string): MatchLook {
