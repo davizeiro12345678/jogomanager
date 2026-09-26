@@ -12,6 +12,7 @@ import { Narrator, type NarrationEvent } from "@/game/narrator";
 import { aiTactics, buildTeamSetup, type Difficulty } from "@/game/quickMatch";
 import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
 import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
+import { safeClub } from "@/game/squad";
 import { useT } from "@/i18n";
 
 export const Route = createFileRoute("/partida-rapida")({
@@ -205,8 +206,8 @@ function TeamPicker({
         {title}
       </h2>
       <div className="mt-3 flex items-center gap-3">
-        <Crest club={CLUBS[value]!} size={44} detail="full" />
-        <span className="font-display text-lg">{CLUBS[value]!.name}</span>
+        <Crest club={safeClub(value)} size={44} detail="full" />
+        <span className="font-display text-lg">{safeClub(value).name}</span>
       </div>
       <div className="mt-3 grid max-h-56 gap-1 overflow-y-auto pr-1">
         {clubs.map((id) => (
@@ -220,8 +221,8 @@ function TeamPicker({
                 : "text-muted-foreground hover:bg-muted/40"
             } disabled:opacity-30`}
           >
-            <Crest club={CLUBS[id]!} size={20} detail="simple" />
-            {CLUBS[id]!.name}
+            <Crest club={safeClub(id)} size={20} detail="simple" />
+            {safeClub(id).name}
           </button>
         ))}
       </div>
@@ -370,8 +371,8 @@ function QuickLive({
     controllerRef.current?.skip();
   }, []);
 
-  const home = CLUBS[myId]!;
-  const away = CLUBS[oppId]!;
+  const home = safeClub(myId);
+  const away = safeClub(oppId);
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">

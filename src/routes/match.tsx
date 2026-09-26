@@ -35,7 +35,6 @@ import { Cutscene } from "@/components/game/Cutscene";
 import { POSTMATCH_SCENE_IDS, PREMATCH_SCENE_IDS } from "@/content/cutscenes";
 import { Crest } from "@/components/game/Crest";
 import { MatchReport } from "@/components/game/MatchReport";
-import { CLUBS } from "@/game/data/leagues";
 import { MENTALITIES, PRESSING } from "@/game/formations";
 import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
 import type { TeamSetup } from "@/game/sim";
@@ -55,11 +54,11 @@ import {
 } from "@/game/visual-settings";
 
 import { nextFixture } from "@/game/season";
-import { buildSquad } from "@/game/squad";
-import { pickLineup } from "@/game/career";
+import { safeClub } from "@/game/squad";
+import { buildTeamSetup } from "@/game/quickMatch";
 import { useCareer } from "@/hooks/useCareer";
 import { useT } from "@/i18n";
-import type { CareerState, ManagerLook, Player } from "@/game/types";
+import type { CareerState, ManagerLook } from "@/game/types";
 
 /** Aparência padrão do treinador nas cenas, quando a carreira não tem uma. */
 const FALLBACK_LOOK: ManagerLook = {
@@ -116,19 +115,9 @@ export const Route = createFileRoute("/match")({
 });
 
 function buildOpponent(clubId: string): TeamSetup {
-  const club = CLUBS[clubId]!;
-  const squad = buildSquad(clubId);
-  const { lineup } = pickLineup(squad, "4-3-3");
-  const byId = Object.fromEntries(squad.map((p) => [p.id, p]));
-  return {
-    clubId,
-    name: club.name,
-    short: club.short,
-    primary: club.primary,
-    secondary: club.secondary,
-    players: lineup.map((id) => byId[id]!).filter(Boolean) as Player[],
-    tactics: { formation: "4-3-3", mentality: 2, pressing: 1, width: 1, tempo: 1 },
-  };
+  // `buildTeamSetup` já usa clube seguro (nunca estoura com id fora do
+  // catálogo) e entrega o elenco enriquecido com salário/valor/potencial.
+  return buildTeamSetup(clubId, "4-3-3", 2, 1);
 }
 
 function MatchPage() {
@@ -322,8 +311,8 @@ const Scoreboard = memo(function Scoreboard({
   snap: Snap;
   paused: boolean;
 }) {
-  const home = CLUBS[homeId]!;
-  const away = CLUBS[awayId]!;
+  const home = safeClub(homeId);
+  const away = safeClub(awayId);
   const [ph, pa] = snap.poss;
   const momentum = useMomentum(snap);
   // pequeno destaque quando o placar muda
@@ -482,7 +471,7 @@ function LiveMatch({
 }) {
   const fixture = nextFixture(career)!;
   const isHome = fixture.home === career.clubId;
-  const myClub = CLUBS[career.clubId]!;
+  const myClub = safeClub(career.clubId);
   const oppId = isHome ? fixture.away : fixture.home;
 
   const setups = useMemo(() => {
@@ -867,7 +856,7 @@ function LiveMatch({
       ) : null}
 
       <h1 className="sr-only">
-        {CLUBS[fixture.home]!.name} x {CLUBS[fixture.away]!.name} — partida ao vivo em 3D
+        {safeClub(fixture.home).name} x {safeClub(fixture.away).name} — partida ao vivo em 3D
       </h1>
 
       <Scoreboard homeId={fixture.home} awayId={fixture.away} snap={snap} paused={paused} />
