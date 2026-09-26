@@ -52,7 +52,7 @@ import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } 
 import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
 import { matchLook, type TimeOfDay } from "@/game/matchday";
 import { useResolvedVisual, useVisual } from "@/game/visual-settings";
-import { initKtx2, ktx2, useKtx2Revision } from "@/game/textures/ktx2";
+import { initKtx2, ktx2, requestKtx2, useKtx2Revision } from "@/game/textures/ktx2";
 
 export type { CameraMode } from "@/game/camera-modes";
 export type Quality = "alta" | "media" | "baixa";
