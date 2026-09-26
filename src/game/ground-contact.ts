@@ -222,7 +222,11 @@ export function solveLegChain(
   const hipYWorld = P.hipY + pose.hipY;
 
   // --- raiz da perna, ainda no espaço do quadril
-  const legRootLocal = vec(side === "L" ? P.hipW * 0.46 : -P.hipW * 0.46, -P.hipH * LEG_ROOT_DROP, 0);
+  const legRootLocal = vec(
+    side === "L" ? P.hipW * 0.46 : -P.hipW * 0.46,
+    -P.hipH * LEG_ROOT_DROP,
+    0,
+  );
   rotateEulerXYZ(legRootLocal, pose.hipPitch, pose.hipYaw, pose.hipRoll, tmpA);
   const legRootX = hipX + tmpA.x;
   const legRootY = hipYWorld + tmpA.y;
@@ -411,7 +415,8 @@ export function solveGroundContact(input: GroundContactInput): GroundContactResu
  */
 export function airborneFactor(clipName: string, poseHipY: number): number {
   const lifted = Math.max(0, poseHipY) / 0.35;
-  const aerial =
-    /jump|header|dive|leap|bicycle|volley|acrobat|salto|voo|cabec/i.test(clipName) ? 1 : 0;
+  const aerial = /jump|header|dive|leap|bicycle|volley|acrobat|salto|voo|cabec/i.test(clipName)
+    ? 1
+    : 0;
   return Math.min(1, Math.max(aerial * 0.85, lifted));
 }

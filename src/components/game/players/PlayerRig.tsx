@@ -52,11 +52,7 @@ import {
 import { solveFullIK } from "@/game/ik-solver";
 import { buildRigSkin, type RigJoint, type RigSkin, type RigSkinLod } from "@/game/rig-skin";
 import { censusRef } from "@/game/scene-census";
-import {
-  airborneFactor,
-  clampPoseAnatomy,
-  solveGroundContact,
-} from "@/game/ground-contact";
+import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
 
 /** duração da transição cruzada entre dois movimentos, em segundos */
 const BLEND_TIME = 0.18;
