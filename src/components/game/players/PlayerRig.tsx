@@ -27,8 +27,8 @@ import {
   type Pose,
 } from "@/game/animation";
 import { kitTexture, type Kit } from "@/game/kits";
-import { playerMaterials } from "@/game/player-materials";
-import { requestKtx2, useKtx2Revision, type DetailKtx2Name } from "@/game/textures/ktx2";
+import { detailTextureNames, playerMaterials } from "@/game/player-materials";
+import { requestKtx2, useKtx2Revision } from "@/game/textures/ktx2";
 import { visualDataFor } from "@/game/visual-frame-cache";
 import { useVisual } from "@/game/visual-settings";
 import {
@@ -518,16 +518,8 @@ export const PlayerRig = memo(function PlayerRig({
   const textureRevision = useKtx2Revision();
   useEffect(() => {
     if (quality !== "alta") return;
-    const pattern = ["solid", "stripes", "pin", "hoops", "sash", "halves", "checks"].includes(kit.pattern) ? kit.pattern : "solid";
-    const skinTone = ["#8d5524", "#6b4226"].includes(look.skin) ? "dark" :
-      ["#e0ac69", "#f1c27d"].includes(look.skin) ? "light" : "medium";
-    const boot = look.bootColor.toLowerCase() === "#101418" ? "leather" : "synthetic";
-    requestKtx2([
-      `jersey_${pattern}_normal`, `jersey_${pattern}_rough`,
-      "shorts_plain_normal", "socks_rib_normal",
-      `skin_${skinTone}_normal`, `boot_${boot}_normal`,
-    ] as DetailKtx2Name[]);
-  }, [quality, kit.pattern, look.skin, look.bootColor]);
+    requestKtx2(detailTextureNames(look, kit));
+  }, [quality, kit, look]);
   const mats = useMemo(
     () => playerMaterials(look, kit, tex ?? null, quality),
     [look, kit, tex, quality, textureRevision],
