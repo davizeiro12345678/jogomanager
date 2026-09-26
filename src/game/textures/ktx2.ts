@@ -136,8 +136,10 @@ const SOURCES: Record<TextureName, { url: string; repeat: number; color?: boolea
 };
 
 const loaded = new Map<TextureName, THREE.Texture>();
+const requested = new Set<TextureName>();
 let loader: KTX2Loader | null = null;
 let started = false;
+let anisotropy = 8;
 const listeners = new Set<() => void>();
 let revision = 0;
 /** Re-render only when a compressed asset arrives; no per-frame checks. */
@@ -156,6 +158,31 @@ export function ktx2(name: TextureName): THREE.Texture | null {
   return loaded.get(name) ?? null;
 }
 
+/** Only fetch new high-quality variants that are actually visible in this match. */
+export function requestKtx2(names: readonly TextureName[]): void {
+  if (!loader) return;
+  for (const name of names) {
+    if (requested.has(name)) continue;
+    requested.add(name);
+    const src = SOURCES[name];
+    loader.load(
+      src.url,
+      (tex) => {
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(src.repeat, src.repeat);
+        tex.anisotropy = anisotropy;
+        tex.colorSpace = src.color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+        tex.needsUpdate = true;
+        loaded.set(name, tex);
+        revision += 1;
+        for (const fn of listeners) fn();
+      },
+      undefined,
+      () => { requested.delete(name); },
+    );
+  }
+}
+
 /**
  * Inicia o download uma única vez. Precisa do renderer para saber quais
  * formatos comprimidos a GPU aceita (ASTC, BC7, ETC2, …).
@@ -165,32 +192,15 @@ export function initKtx2(renderer: THREE.WebGLRenderer | import("three/webgpu").
   started = true;
 
   loader = new KTX2Loader().setTranscoderPath("/basis/").detectSupport(renderer);
-
-  // Notify on each arrival so no texture has to wait for an unrelated failed/slow download.
-  for (const [name, src] of Object.entries(SOURCES) as [TextureName, (typeof SOURCES)[TextureName]][]) {
-    loader.load(
-      src.url,
-      (tex) => {
-        tex.wrapS = THREE.RepeatWrapping;
-        tex.wrapT = THREE.RepeatWrapping;
-        tex.repeat.set(src.repeat, src.repeat);
-        tex.anisotropy = Math.min(8, renderer.isWebGPURenderer ? 8 : renderer.capabilities.getMaxAnisotropy());
-        tex.colorSpace = src.color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-        tex.needsUpdate = true;
-        loaded.set(name, tex);
-        revision += 1;
-        for (const fn of listeners) fn();
-      },
-      undefined,
-      () => {}, // Procedural fallback remains available if the CDN is offline.
-    );
-  }
+  anisotropy = renderer instanceof THREE.WebGLRenderer ? Math.min(8, renderer.capabilities.getMaxAnisotropy()) : 8;
+  requestKtx2(Object.keys(SOURCES).filter((name) => !name.startsWith("jersey_") && !name.startsWith("shorts_") && !name.startsWith("socks_") && !name.startsWith("boot_") && !name.startsWith("skin_") && !name.startsWith("grass_")) as TextureName[]);
 }
 
 /** libera tudo (troca de cena / descarte do renderer) */
 export function disposeKtx2(): void {
   for (const tex of loaded.values()) tex.dispose();
   loaded.clear();
+  requested.clear();
   loader?.dispose();
   loader = null;
   started = false;
