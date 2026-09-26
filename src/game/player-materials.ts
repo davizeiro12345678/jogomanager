@@ -66,7 +66,7 @@ const cache = new Map<string, PlayerMaterials>();
 /** arredonda o suor para poucos degraus: evita um material por jogador */
 const sweatStep = (s: number) => Math.round(Math.max(0, Math.min(1, s)) * 4) / 4;
 
-export function detailTextureNames(look: PlayerLookLike, kit: Kit): DetailKtx2Name[] {
+export function detailTextureNames(look: PlayerLookLike, kit: Kit): [DetailKtx2Name, DetailKtx2Name, DetailKtx2Name, DetailKtx2Name, DetailKtx2Name, DetailKtx2Name] {
   const patterns = ["solid", "stripes", "pin", "hoops", "sash", "halves", "checks"];
   const pattern = patterns.includes(kit.pattern) ? kit.pattern : "solid";
   const skinTone = SKIN_TONES.indexOf(look.skin);
