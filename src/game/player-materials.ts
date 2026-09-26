@@ -79,7 +79,7 @@ export function detailTextureNames(look: PlayerLookLike, kit: Kit): [DetailKtx2N
     `jersey_${pattern}_normal`, `jersey_${pattern}_rough`,
     `shorts_${shortsVariant}_normal`, `socks_${socksVariant}_normal`,
     `boot_${bootVariant}_normal`, `skin_${skinVariant}_normal`,
-  ] as DetailKtx2Name[];
+  ] as [DetailKtx2Name, DetailKtx2Name, DetailKtx2Name, DetailKtx2Name, DetailKtx2Name, DetailKtx2Name];
 }
 
 function dispose(set: PlayerMaterials) {
