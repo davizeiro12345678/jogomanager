@@ -218,6 +218,9 @@ function Pitch({
   // for custom mowing patterns and all low-end/offline devices.
   const compressed = quality === "alta";
   const grassVariant = mow === "stripes" || mow === "diagonal" || mow === "wide" ? `grass_${mow}_albedo` as const : "grassAlbedo";
+  useEffect(() => {
+    if (compressed && grassVariant !== "grassAlbedo") requestKtx2([grassVariant]);
+  }, [compressed, grassVariant]);
   const tex = useMemo(() => (compressed && (mow === "checker" || mow === "stripes" || mow === "diagonal" || mow === "wide") ? ktx2(grassVariant) : null) ?? grassAlbedo(mow), [mow, compressed, grassVariant, textureRevision]);
   const rough = useMemo(() => (compressed ? ktx2("grassRough") : null) ?? grassRoughness(mow), [mow, compressed, textureRevision]);
   const norm = useMemo(() => quality === "baixa" ? null : ((compressed ? ktx2("grassNormal") : null) ?? grassNormal(mow)), [quality, mow, compressed, textureRevision]);

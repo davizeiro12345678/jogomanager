@@ -193,7 +193,12 @@ export function initKtx2(renderer: THREE.WebGLRenderer | import("three/webgpu").
 
   loader = new KTX2Loader().setTranscoderPath("/basis/").detectSupport(renderer);
   anisotropy = renderer instanceof THREE.WebGLRenderer ? Math.min(8, renderer.capabilities.getMaxAnisotropy()) : 8;
-  requestKtx2(Object.keys(SOURCES).filter((name) => !name.startsWith("jersey_") && !name.startsWith("shorts_") && !name.startsWith("socks_") && !name.startsWith("boot_") && !name.startsWith("skin_") && !name.startsWith("grass_")) as TextureName[]);
+  requestKtx2([
+    "fiberNormal", "fiberRough", "skinNormal", "sweatNormal", "sweatMask",
+    "hairNormal", "hairRough", "bootNormal", "bootRough", "shinNormal",
+    "shinRough", "sockNormal", "grassAlbedo", "grassNormal", "grassRough",
+    "concreteAlbedo", "concreteRough", "netMask",
+  ]);
 }
 
 /** libera tudo (troca de cena / descarte do renderer) */
