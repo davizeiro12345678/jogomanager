@@ -74,7 +74,8 @@ function dispose(set: PlayerMaterials) {
 let ktx2Ready = false;
 onKtx2Ready(() => {
   ktx2Ready = true;
-  for (const set of cache.values()) dispose(set);
+  // Existing rigs may still reference these materials until their next render.
+  // Disposing them mid-frame makes players flicker or lose their uniforms.
   cache.clear();
 });
 

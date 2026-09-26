@@ -137,6 +137,7 @@ const SOURCES: Record<TextureName, { url: string; repeat: number; color?: boolea
 
 const loaded = new Map<TextureName, THREE.Texture>();
 const requested = new Set<TextureName>();
+const pending = new Set<TextureName>();
 let loader: KTX2Loader | null = null;
 let started = false;
 let anisotropy = 8;
@@ -160,7 +161,10 @@ export function ktx2(name: TextureName): THREE.Texture | null {
 
 /** Only fetch new high-quality variants that are actually visible in this match. */
 export function requestKtx2(names: readonly TextureName[]): void {
-  if (!loader) return;
+  if (!loader) {
+    for (const name of names) pending.add(name);
+    return;
+  }
   for (const name of names) {
     if (requested.has(name)) continue;
     requested.add(name);
@@ -199,6 +203,8 @@ export function initKtx2(renderer: THREE.WebGLRenderer | import("three/webgpu").
     "shinRough", "sockNormal", "grassAlbedo", "grassNormal", "grassRough",
     "concreteAlbedo", "concreteRough", "netMask",
   ]);
+  requestKtx2([...pending]);
+  pending.clear();
 }
 
 /** libera tudo (troca de cena / descarte do renderer) */
@@ -206,6 +212,7 @@ export function disposeKtx2(): void {
   for (const tex of loaded.values()) tex.dispose();
   loaded.clear();
   requested.clear();
+  pending.clear();
   loader?.dispose();
   loader = null;
   started = false;
