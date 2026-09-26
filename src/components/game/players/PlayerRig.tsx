@@ -27,8 +27,8 @@ import {
   type Pose,
 } from "@/game/animation";
 import { kitTexture, type Kit } from "@/game/kits";
-import { playerMaterials } from "@/game/player-materials";
-import { useKtx2Revision } from "@/game/textures/ktx2";
+import { detailTextureNames, playerMaterials } from "@/game/player-materials";
+import { requestKtx2, useKtx2Revision } from "@/game/textures/ktx2";
 import { visualDataFor } from "@/game/visual-frame-cache";
 import { useVisual } from "@/game/visual-settings";
 import {
@@ -516,6 +516,10 @@ export const PlayerRig = memo(function PlayerRig({
   // uniforme/aparência: derruba o número de programas de shader e de objetos
   // de material de ~200 para poucas dezenas numa partida.
   const textureRevision = useKtx2Revision();
+  useEffect(() => {
+    if (quality !== "alta") return;
+    requestKtx2(detailTextureNames(look, kit));
+  }, [quality, kit, look]);
   const mats = useMemo(
     () => playerMaterials(look, kit, tex ?? null, quality),
     [look, kit, tex, quality, textureRevision],

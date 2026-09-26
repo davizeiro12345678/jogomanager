@@ -52,7 +52,7 @@ import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } 
 import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
 import { matchLook, type TimeOfDay } from "@/game/matchday";
 import { useResolvedVisual, useVisual } from "@/game/visual-settings";
-import { initKtx2, ktx2, useKtx2Revision } from "@/game/textures/ktx2";
+import { initKtx2, ktx2, requestKtx2, useKtx2Revision } from "@/game/textures/ktx2";
 
 export type { CameraMode } from "@/game/camera-modes";
 export type Quality = "alta" | "media" | "baixa";
@@ -218,6 +218,9 @@ function Pitch({
   // for custom mowing patterns and all low-end/offline devices.
   const compressed = quality === "alta";
   const grassVariant = mow === "stripes" || mow === "diagonal" || mow === "wide" ? `grass_${mow}_albedo` as const : "grassAlbedo";
+  useEffect(() => {
+    if (compressed && grassVariant !== "grassAlbedo") requestKtx2([grassVariant]);
+  }, [compressed, grassVariant]);
   const tex = useMemo(() => (compressed && (mow === "checker" || mow === "stripes" || mow === "diagonal" || mow === "wide") ? ktx2(grassVariant) : null) ?? grassAlbedo(mow), [mow, compressed, grassVariant, textureRevision]);
   const rough = useMemo(() => (compressed ? ktx2("grassRough") : null) ?? grassRoughness(mow), [mow, compressed, textureRevision]);
   const norm = useMemo(() => quality === "baixa" ? null : ((compressed ? ktx2("grassNormal") : null) ?? grassNormal(mow)), [quality, mow, compressed, textureRevision]);

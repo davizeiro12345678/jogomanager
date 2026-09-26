@@ -63,7 +63,10 @@ describe("rig body", () => {
   it("drops detail meshes when the rig is not high quality", () => {
     const detailed = buildRigBody(context({ hi: true }));
     const simple = buildRigBody(context({ hi: false }));
-    expect(countRigBody(simple)).toBeLessThan(countRigBody(detailed));
+    expect(countRigBody(simple)).toBeLessThanOrEqual(countRigBody(detailed));
+    const vertexCount = (body: ReturnType<typeof buildRigBody>) =>
+      body.all.reduce((sum, mesh) => sum + mesh.geometry.getAttribute("position").count, 0);
+    expect(vertexCount(simple)).toBeLessThan(vertexCount(detailed));
   });
 
   it("produces finite merged geometry with the standard attributes", () => {

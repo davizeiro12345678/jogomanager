@@ -24,3 +24,7 @@
 - [x] Temporada automática em Web Worker; partida ao vivo já isolada no Worker; cache versionado para texturas KTX2 e imagens oficiais.
 - [ ] Cobertura total da fonte externa: aguarda processamento paginado dos registros restantes; os endpoints não publicam dados que a fonte não oferece.
 - [ ] Compressão/reformatação das fotos externas: requer espelhamento autorizado em CDN de imagens; não modificar conteúdo de origem nem contornar licença.
+
+## Importação completa e CDN de fotos oficiais (pedido 2026-09-26)
+- [ ] Percorrer lotes restantes de equipes, jogadores, estatísticas e históricos até a fonte esgotar, preservando offsets e limites.
+- [ ] Configurar entrega/cache das fotos oficiais pela CDN quando permitido pela fonte; verificar carregamento e não espelhar sem autorização.
