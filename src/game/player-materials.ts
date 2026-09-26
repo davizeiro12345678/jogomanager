@@ -108,6 +108,7 @@ export function playerMaterials(
   quality: MaterialQuality,
 ): PlayerMaterials {
   const sweat = sweatStep(look.sweat);
+  const [jerseyNormalName, jerseyRoughName, shortsNormalName, socksNormalName, bootNormalName, skinNormalName] = detailTextureNames(look, kit);
   const key = [
     quality,
     ktx2Ready ? "hd" : "sd",
@@ -122,6 +123,7 @@ export function playerMaterials(
     kit.socks,
     kit.detail,
     tex?.uuid ?? "-",
+    ...(quality === "alta" ? [jerseyNormalName, jerseyRoughName, shortsNormalName, socksNormalName, bootNormalName, skinNormalName] : []),
   ].join("|");
 
   const hit = cache.get(key);
@@ -135,7 +137,6 @@ export function playerMaterials(
   const hi = quality === "alta";
   // Preferimos sempre o mapa KTX2 (1024², comprimido na GPU); o canvas
   // procedural continua como rede de segurança até o download terminar.
-  const [jerseyNormalName, jerseyRoughName, shortsNormalName, socksNormalName, bootNormalName, skinNormalName] = detailTextureNames(look, kit);
   const weave = hi ? (ktx2(jerseyNormalName) ?? ktx2("fiberNormal") ?? jerseyWeaveNormal()) : null;
   const rib = hi ? (ktx2(socksNormalName) ?? ktx2("sockNormal") ?? sockRibNormal()) : null;
   const pores = hi ? (ktx2(skinNormalName) ?? ktx2("skinNormal") ?? skinPoreNormal()) : null;
