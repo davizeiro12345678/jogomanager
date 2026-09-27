@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { GameShell } from "@/components/game/GameShell";
+import { NoCareer } from "@/components/game/screen-kit";
 import { HudCard, HudChip, HudStat, SparkBars, Sparkline } from "@/components/ui/hud";
 
 import { FORMATIONS, MENTALITIES, PRESSING, TEMPOS, WIDTHS } from "@/game/formations";
@@ -77,7 +78,7 @@ function TacticsPage() {
   const { career, update } = useCareer();
   const [picked, setPicked] = useState<number | null>(null);
 
-  if (!career) return <div className="p-10 text-muted-foreground">Nenhuma carreira ativa.</div>;
+  if (!career) return <NoCareer />;
 
   const t = career.tactics;
   const slots = FORMATIONS[t.formation];

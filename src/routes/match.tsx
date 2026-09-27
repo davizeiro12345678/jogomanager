@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { NoCareer } from "@/components/game/screen-kit";
 import { toast } from "sonner";
 import {
   BarChart3,
@@ -124,24 +125,7 @@ function MatchPage() {
   const { career, update } = useCareer();
   const navigate = useNavigate();
 
-  if (!career) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-6">
-        <div className="surface-card w-full max-w-md p-8 text-center">
-          <h1 className="font-display text-2xl uppercase tracking-wide">Nenhuma carreira ativa</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Comece uma carreira para disputar os 90 minutos em 3D.
-          </p>
-          <Link
-            to="/new"
-            className="mt-6 inline-grid min-h-[44px] place-items-center rounded-xl bg-primary px-6 font-display text-sm uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.02] motion-reduce:transform-none"
-          >
-            Começar carreira
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  if (!career) return <NoCareer hint="Comece uma carreira para disputar os 90 minutos em 3D." />;
 
   const fixture = nextFixture(career);
   if (!fixture) {

@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import { GameShell } from "@/components/game/GameShell";
+import { NoCareer } from "@/components/game/screen-kit";
 import { CLUBS } from "@/game/data/leagues";
 import { computeTable, nextFixture } from "@/game/season";
 import { useCareer } from "@/hooks/useCareer";
@@ -176,13 +177,7 @@ function useCachedTool<TInput>(fn: (data: TInput) => Promise<string>, cacheKey: 
 
 function AssistentePage() {
   const { career } = useCareer();
-  if (!career) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Nenhuma carreira ativa.
-      </div>
-    );
-  }
+  if (!career) return <NoCareer />;
   return (
     <GameShell career={career}>
       <AssistenteContent career={career} />

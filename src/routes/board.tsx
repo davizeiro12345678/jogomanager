@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
+import { NoCareer } from "@/components/game/screen-kit";
 import { resign, takeJob, upgradeStaff } from "@/game/career";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { formatMoney } from "@/game/economy";
@@ -45,12 +46,7 @@ const STAFF_LABEL: Record<keyof Staff, string> = {
 
 function BoardPage() {
   const { career, update } = useCareer();
-  if (!career)
-    return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Nenhuma carreira ativa.
-      </div>
-    );
+  if (!career) return <NoCareer />;
 
   const club = CLUBS[career.clubId]!;
   const risk = career.pressure >= 80 ? "alto" : career.pressure >= 50 ? "médio" : "baixo";

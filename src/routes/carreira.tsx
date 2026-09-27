@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { Clapperboard, Sparkles } from "lucide-react";
 
 import { GameShell } from "@/components/game/GameShell";
+import { NoCareer } from "@/components/game/screen-kit";
 import { Crest } from "@/components/game/Crest";
 import { Cutscene } from "@/components/game/Cutscene";
 import { CLUBS } from "@/game/data/leagues";
@@ -100,12 +101,7 @@ function CoachCareerPage() {
     return mine.reduce((best, p) => (p.ovr > best.ovr ? p : best), mine[0]!).name;
   }, [career]);
 
-  if (!career)
-    return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Nenhuma carreira ativa.
-      </div>
-    );
+  if (!career) return <NoCareer />;
 
   function run(action: WeekActionId) {
     if (!career) return;

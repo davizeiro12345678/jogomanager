@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
 import { GameShell } from "@/components/game/GameShell";
+import { NoCareer } from "@/components/game/screen-kit";
 import { ACHIEVEMENTS, careerMilestones, type AchievementTier } from "@/game/achievements";
 import { syncAchievements } from "@/lib/achievements.functions";
 import { useCareer, useSignedIn } from "@/hooks/useCareer";
@@ -62,7 +63,7 @@ function ConquistasPage() {
     void sync();
   }, [signedIn, unlockedIds, sync]);
 
-  if (!career) return <Empty />;
+  if (!career) return <NoCareer />;
 
   const total = ACHIEVEMENTS.length;
   const unlockedCount = unlockedIds.length;
@@ -190,14 +191,6 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="rounded-xl border border-border/40 bg-muted/20 px-4 py-3 text-center">
       <p className="font-display text-xl">{value}</p>
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
-function Empty() {
-  return (
-    <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-      Nenhuma carreira ativa.
     </div>
   );
 }
