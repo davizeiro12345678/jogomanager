@@ -15,6 +15,8 @@ import { BlendFunction } from "postprocessing";
 import * as THREE from "three";
 import { postPreset } from "./presets";
 import type { PostMoment, PostQuality, PostTime } from "./presets";
+import { GradeLut } from "./GradeLut";
+import type { GradeMoment, GradeTime, GradeWeather } from "@/game/graphics/grade";
 
 export type { PostMoment, PostQuality, PostTime };
 
@@ -35,6 +37,7 @@ export function PostFX({
   time = "dia",
   intensity = 1,
   cinematic = false,
+  grading,
 }: {
   quality: PostQuality;
   replay?: boolean;
@@ -43,6 +46,11 @@ export function PostFX({
   intensity?: number;
   /** Ativa o tratamento de lente do modo Cinema/Diretor mesmo fora de um gol. */
   cinematic?: boolean;
+  /**
+   * Correção de cor por LUT 3D. Quando ausente, nenhum passe extra é montado —
+   * é assim que o caminho WebGPU e a qualidade baixa ficam sem custo nenhum.
+   */
+  grading?: { time: GradeTime; weather: GradeWeather; moment: GradeMoment } | undefined;
 }) {
   const m: PostMoment = moment ?? (replay ? "replay" : "match");
   const p = useMemo(() => postPreset(quality, m, time, intensity), [quality, m, time, intensity]);
@@ -70,7 +78,12 @@ export function PostFX({
   const cinema = cinematic || m !== "match";
 
   return (
-      <EffectComposer key={`alta-${m}`} enableNormalPass={cinema} multisampling={0} resolutionScale={cinema ? 0.82 : 0.72}>
+    <EffectComposer
+      key={`alta-${m}`}
+      enableNormalPass={cinema}
+      multisampling={0}
+      resolutionScale={cinema ? 0.82 : 0.72}
+    >
       {cinema ? (
         <N8AO
           color="#0b1016"
@@ -80,7 +93,9 @@ export function PostFX({
           halfRes
           screenSpaceRadius={false}
         />
-      ) : <></>}
+      ) : (
+        <></>
+      )}
       {p.dof > 0 ? (
         <DepthOfField
           focusDistance={m === "drama" ? 0.012 : 0.02}
@@ -96,10 +111,20 @@ export function PostFX({
         luminanceSmoothing={0.35}
         mipmapBlur
       />
-      {cinema ? <ChromaticAberration offset={ab} radialModulation modulationOffset={0.35} /> : <></>}
+      {cinema ? (
+        <ChromaticAberration offset={ab} radialModulation modulationOffset={0.35} />
+      ) : (
+        <></>
+      )}
       <HueSaturation saturation={p.saturation} hue={p.hue} />
       <BrightnessContrast brightness={p.brightness} contrast={p.contrast} />
       {cinema ? <Noise opacity={p.grain} blendFunction={BlendFunction.OVERLAY} /> : <></>}
+      {/* Uma LUT 3D substitui brilho/contraste/saturação/temperatura de uma vez */}
+      {grading ? (
+        <GradeLut time={grading.time} weather={grading.weather} moment={grading.moment} />
+      ) : (
+        <></>
+      )}
       <Vignette offset={cinema ? 0.15 : 0.26} darkness={p.vignette} />
       {/* O renderer já aplica ACES; uma segunda curva aqui esmagava médios e realces. */}
       <SMAA />
