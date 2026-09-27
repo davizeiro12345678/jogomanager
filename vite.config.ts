@@ -25,6 +25,12 @@ const enableMcpRouteGenerator =
 
 export default defineConfig({
   vite: {
+    // O preview do sandbox é servido num host *.e2b.app gerado por sessão; sem
+    // liberar a lista de hosts o Vite responde 403 e o jogo não carrega.
+    server: {
+      host: "0.0.0.0",
+      allowedHosts: true,
+    },
     plugins: [...(enableMcpRouteGenerator ? [mcpPlugin()] : []), imagetools()],
     resolve: {
       alias: {

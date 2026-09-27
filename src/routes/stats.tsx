@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { GameShell } from "@/components/game/GameShell";
+import { NoCareer } from "@/components/game/screen-kit";
 import { formOf, potentialOf } from "@/game/events";
 import { useCareer } from "@/hooks/useCareer";
 import type { CareerState, Player } from "@/game/types";
@@ -52,12 +53,7 @@ function StatsPage() {
   const [sort, setSort] = useState<SortKey>("goals");
   const [compare, setCompare] = useState<string[]>([]);
 
-  if (!career)
-    return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Nenhuma carreira ativa.
-      </div>
-    );
+  if (!career) return <NoCareer />;
 
   const col = COLUMNS.find((c) => c.key === sort)!;
   const players = Object.values(career.players).sort((a, b) => col.get(b) - col.get(a));

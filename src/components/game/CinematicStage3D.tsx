@@ -39,7 +39,11 @@ const SET_BY_ART: Record<SceneArt, SetKind> = {
   farewell: "tunnel",
 };
 
-/** Enquadramentos por cena: a câmera corta para o próximo a cada fala. */
+/**
+ * Enquadramentos por cenário: a câmera corta para o próximo a cada fala.
+ * Os dois últimos de cada lista são o contra-plano (o "outro lado" da cena,
+ * para imprensa/torcida) e o close baixo (clímax: tensão e revelação).
+ */
 const SHOTS: Record<SetKind, Array<[number, number, number, number, number, number]>> = {
   //          posX   posY  posZ   alvoX alvoY alvoZ
   locker: [
@@ -47,36 +51,48 @@ const SHOTS: Record<SetKind, Array<[number, number, number, number, number, numb
     [-3.2, 1.35, 2.4, -0.6, 1.1, -2.4],
     [2.6, 2.4, 3.2, 0.4, 1.0, -2.0],
     [0.4, 1.05, 1.9, -0.4, 1.25, -2.8],
+    [0, 1.5, -3.4, 0, 1.3, 4.5],
+    [-0.9, 1.35, 0.4, -0.3, 1.2, -2.6],
   ],
   tunnel: [
     [0, 1.7, 7.4, 0, 1.6, -8],
     [1.5, 1.2, 3.2, -0.6, 1.5, -6],
     [-1.6, 2.5, 1.2, 0.2, 1.3, -7],
     [0, 1.45, -1.5, 0, 1.7, -9.5],
+    [0, 1.9, -6.5, 0, 1.5, 5],
+    [0.7, 1.1, 0.8, -0.3, 1.6, -8],
   ],
   press: [
     [0, 1.75, 5.4, 0, 1.25, -2.2],
     [-2.8, 1.3, 2.6, 0.1, 1.3, -2.6],
     [2.4, 2.1, 2.2, -0.2, 1.2, -2.8],
     [0.2, 1.1, 1.6, 0, 1.3, -3],
+    [0, 1.6, -3.2, 0, 1.2, 4],
+    [-0.7, 1.5, 0.3, 0.1, 1.25, -2.8],
   ],
   pitch: [
     [0, 2.4, 9.5, 0, 1.2, -1],
     [-6.5, 1.1, 4.5, 0, 1.3, -2],
     [5.5, 3.4, 5.5, -0.5, 1.0, -3],
     [0, 0.85, 3.2, 0, 1.5, -4],
+    [0, 3.8, -8.5, 0, 1.4, 4],
+    [-1.4, 1.0, 1.1, 0.4, 1.4, -3.5],
   ],
   stands: [
     [0, 3.2, 11, 0, 3.4, -6],
     [-7, 2.1, 6, 1, 3.2, -7],
     [6.5, 4.6, 7, -1, 3.0, -7],
     [0, 1.6, 4.5, 0, 3.8, -8],
+    [0, 4.2, -9, 0, 3.2, 6],
+    [2.1, 1.9, 2.6, -0.5, 3.6, -7.5],
   ],
   office: [
     [0, 1.8, 5.2, 0, 1.15, -1.6],
     [-2.7, 1.45, 2.8, 0.3, 1.1, -2.2],
     [2.5, 2.0, 2.6, -0.3, 1.1, -2.2],
     [0.3, 1.2, 1.9, 0, 1.2, -2.6],
+    [0, 1.6, -2.8, 0, 1.15, 3.6],
+    [-0.8, 1.4, 0.5, 0.2, 1.15, -2.4],
   ],
 };
 
@@ -129,7 +145,8 @@ function Figure({
     const swing = pose === "walk" ? Math.sin(t * 3.2) * 0.5 : Math.sin(t * 0.9) * 0.07;
     if (armL.current) armL.current.rotation.x = swing;
     if (armR.current) armR.current.rotation.x = -swing;
-    if (rig.current && pose === "walk") rig.current.position.y = Math.abs(Math.sin(t * 3.2)) * 0.035;
+    if (rig.current && pose === "walk")
+      rig.current.position.y = Math.abs(Math.sin(t * 3.2)) * 0.035;
   });
 
   const sit = pose === "sit";
@@ -249,7 +266,12 @@ function LockerRoom({ primary, secondary }: { primary: string; secondary: string
       </mesh>
       <mesh position={[4.6, 1.8, -4.25]}>
         <boxGeometry args={[2.6, 1.6, 0.08]} />
-        <meshStandardMaterial color="#0d1712" emissive="#0d3a22" emissiveIntensity={0.4} roughness={0.5} />
+        <meshStandardMaterial
+          color="#0d1712"
+          emissive="#0d3a22"
+          emissiveIntensity={0.4}
+          roughness={0.5}
+        />
       </mesh>
       {/* lâmpadas práticas */}
       {[-3.5, 0, 3.5].map((x) => (
@@ -258,7 +280,14 @@ function LockerRoom({ primary, secondary }: { primary: string; secondary: string
           <meshBasicMaterial color="#e9fff1" toneMapped={false} />
         </mesh>
       ))}
-      <pointLight ref={lamp} position={[0, 3.3, -1]} intensity={9} distance={14} color="#dcffe9" castShadow />
+      <pointLight
+        ref={lamp}
+        position={[0, 3.3, -1]}
+        intensity={9}
+        distance={14}
+        color="#dcffe9"
+        castShadow
+      />
       <Figure x={-1.9} z={0.6} rot={0.2} pose="sit" color={primary} seed={2} />
       <Figure x={-0.4} z={0.6} rot={-0.1} pose="sit" color={primary} seed={5} />
       <Figure x={1.4} z={0.6} rot={0.12} pose="sit" color={secondary} seed={9} />
@@ -380,7 +409,14 @@ function PressRoom({ primary, secondary }: { primary: string; secondary: string 
       <Figure x={0} z={-1.95} color={secondary} shorts="#1a1f21" seed={31} />
       {/* fotógrafos e flashes */}
       {Array.from({ length: 5 }).map((_, i) => (
-        <Figure key={i} x={-3.4 + i * 1.7} z={2.4} rot={Math.PI} color="#20262b" seed={i * 17 + 2} />
+        <Figure
+          key={i}
+          x={-3.4 + i * 1.7}
+          z={2.4}
+          rot={Math.PI}
+          color="#20262b"
+          seed={i * 17 + 2}
+        />
       ))}
       <group ref={flashes}>
         {Array.from({ length: 5 }).map((_, i) => (
@@ -394,7 +430,19 @@ function PressRoom({ primary, secondary }: { primary: string; secondary: string 
   );
 }
 
-function Crowd({ rows = 8, cols = 40, y = 3, z = -14, tint }: { rows?: number; cols?: number; y?: number; z?: number; tint: string }) {
+function Crowd({
+  rows = 8,
+  cols = 40,
+  y = 3,
+  z = -14,
+  tint,
+}: {
+  rows?: number;
+  cols?: number;
+  y?: number;
+  z?: number;
+  tint: string;
+}) {
   const mesh = useRef<THREE.InstancedMesh>(null);
   const matrix = useMemo(() => new THREE.Matrix4(), []);
   const count = rows * cols;
@@ -437,7 +485,12 @@ function PitchEntry({ primary, secondary }: { primary: string; secondary: string
   return (
     <group>
       {Array.from({ length: 14 }).map((_, i) => (
-        <mesh key={i} receiveShadow rotation-x={-Math.PI / 2} position={[0, i % 2 ? 0.001 : 0, 8 - i * 2.2]}>
+        <mesh
+          key={i}
+          receiveShadow
+          rotation-x={-Math.PI / 2}
+          position={[0, i % 2 ? 0.001 : 0, 8 - i * 2.2]}
+        >
           <planeGeometry args={[40, 2.2]} />
           <meshStandardMaterial color={i % 2 ? "#157a3f" : "#126b37"} roughness={0.94} />
         </mesh>
@@ -449,21 +502,43 @@ function PitchEntry({ primary, secondary }: { primary: string; secondary: string
       </mesh>
       {/* gol ao fundo */}
       <group position={[0, 0, -16]}>
-        <mesh position={[-3.66, 1.22, 0]}><cylinderGeometry args={[0.06, 0.06, 2.44, 8]} /><meshStandardMaterial color="#f3fff7" /></mesh>
-        <mesh position={[3.66, 1.22, 0]}><cylinderGeometry args={[0.06, 0.06, 2.44, 8]} /><meshStandardMaterial color="#f3fff7" /></mesh>
-        <mesh position={[0, 2.44, 0]} rotation-z={Math.PI / 2}><cylinderGeometry args={[0.06, 0.06, 7.32, 8]} /><meshStandardMaterial color="#f3fff7" /></mesh>
+        <mesh position={[-3.66, 1.22, 0]}>
+          <cylinderGeometry args={[0.06, 0.06, 2.44, 8]} />
+          <meshStandardMaterial color="#f3fff7" />
+        </mesh>
+        <mesh position={[3.66, 1.22, 0]}>
+          <cylinderGeometry args={[0.06, 0.06, 2.44, 8]} />
+          <meshStandardMaterial color="#f3fff7" />
+        </mesh>
+        <mesh position={[0, 2.44, 0]} rotation-z={Math.PI / 2}>
+          <cylinderGeometry args={[0.06, 0.06, 7.32, 8]} />
+          <meshStandardMaterial color="#f3fff7" />
+        </mesh>
       </group>
       <Crowd tint={primary} y={2.6} z={-22} rows={7} cols={44} />
       {/* refletores */}
       {[-14, 14].map((x) => (
         <group key={x} position={[x, 0, -18]}>
-          <mesh position={[0, 5, 0]}><cylinderGeometry args={[0.12, 0.16, 10, 8]} /><meshStandardMaterial color="#2a3330" roughness={0.6} metalness={0.4} /></mesh>
-          <mesh position={[0, 10, 0.4]}><boxGeometry args={[2.4, 0.9, 0.2]} /><meshBasicMaterial color="#f6fff9" toneMapped={false} /></mesh>
+          <mesh position={[0, 5, 0]}>
+            <cylinderGeometry args={[0.12, 0.16, 10, 8]} />
+            <meshStandardMaterial color="#2a3330" roughness={0.6} metalness={0.4} />
+          </mesh>
+          <mesh position={[0, 10, 0.4]}>
+            <boxGeometry args={[2.4, 0.9, 0.2]} />
+            <meshBasicMaterial color="#f6fff9" toneMapped={false} />
+          </mesh>
         </group>
       ))}
       {/* fila de entrada + bola */}
       {Array.from({ length: 11 }).map((_, i) => (
-        <Figure key={i} x={-5.2 + i * 1.06} z={0.4 + (i % 2) * 0.5} pose="walk" color={i < 6 ? primary : secondary} seed={i * 9 + 1} />
+        <Figure
+          key={i}
+          x={-5.2 + i * 1.06}
+          z={0.4 + (i % 2) * 0.5}
+          pose="walk"
+          color={i < 6 ? primary : secondary}
+          seed={i * 9 + 1}
+        />
       ))}
       <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.12}>
         <mesh position={[0, 0.18, 2.4]} castShadow>
@@ -488,7 +563,11 @@ function Stands({ primary, secondary }: { primary: string; secondary: string }) 
       {[-9, -3, 3, 9].map((x, i) => (
         <mesh key={x} position={[x, 3.4 + (i % 2) * 0.5, -9]} rotation-z={(hash(i) - 0.5) * 0.12}>
           <planeGeometry args={[3.4, 2]} />
-          <meshStandardMaterial color={i % 2 ? primary : secondary} roughness={0.8} side={THREE.DoubleSide} />
+          <meshStandardMaterial
+            color={i % 2 ? primary : secondary}
+            roughness={0.8}
+            side={THREE.DoubleSide}
+          />
         </mesh>
       ))}
       {[-18, 18].map((x) => (
@@ -547,7 +626,20 @@ function Office({ primary, secondary }: { primary: string; secondary: string }) 
 
 /* ----------------------------------------------------------- direção 3D */
 
-function Director({ kind, beat }: { kind: SetKind; beat: number }) {
+function Director({
+  kind,
+  beat,
+  intensity = 0,
+}: {
+  kind: SetKind;
+  beat: number;
+  /**
+   * Tensão da fala atual (0..1, vinda da direção). Tensão alta deixa o tremor
+   * de mão mais presente e a aproximação de lente mais agressiva; tensão zero
+   * mantém o comportamento clássico e calmo.
+   */
+  intensity?: number;
+}) {
   const shots = SHOTS[kind];
   const target = useMemo(() => new THREE.Vector3(), []);
   const look = useMemo(() => new THREE.Vector3(), []);
@@ -575,10 +667,12 @@ function Director({ kind, beat }: { kind: SetKind; beat: number }) {
     since.current += delta;
 
     const drift = reduced ? 0 : 1;
-    // travelling lento + micro tremor de câmera na mão
+    // travelling lento + micro tremor de câmera na mão; a tensão multiplica o
+    // tremor (até 3×) para a imagem "respirar" junto com a cena
+    const nerves = 1 + intensity * 2;
     target.set(
-      shot[0] + (Math.sin(t * 0.16) * 0.5 + Math.sin(t * 2.7) * 0.012) * drift,
-      shot[1] + (Math.sin(t * 0.21) * 0.11 + Math.sin(t * 3.1) * 0.008) * drift,
+      shot[0] + (Math.sin(t * 0.16) * 0.5 + Math.sin(t * 2.7) * 0.012 * nerves) * drift,
+      shot[1] + (Math.sin(t * 0.21) * 0.11 + Math.sin(t * 3.1) * 0.008 * nerves) * drift,
       shot[2] + Math.cos(t * 0.13) * 0.32 * drift,
     );
     look.set(shot[3], shot[4], shot[5]);
@@ -597,10 +691,11 @@ function Director({ kind, beat }: { kind: SetKind; beat: number }) {
     camera.position.copy(current.current);
     camera.lookAt(currentLook.current);
 
-    // leve aproximação de lente ao longo do plano: dá respiro cinematográfico
+    // leve aproximação de lente ao longo do plano: dá respiro cinematográfico.
+    // Com tensão, a lente fecha mais (efeito de "aperto" no clímax).
     const cam = camera as THREE.PerspectiveCamera;
     if (cam.isPerspectiveCamera) {
-      const wanted = reduced ? 42 : 44 - eased * 3.4;
+      const wanted = reduced ? 42 : 44 - eased * (3.4 + intensity * 3.2);
       if (Math.abs(cam.fov - wanted) > 0.01) {
         cam.fov += (wanted - cam.fov) * Math.min(1, delta * 2.4);
         cam.updateProjectionMatrix();
@@ -617,6 +712,7 @@ function Stage({
   secondary,
   mood,
   quality,
+  intensity = 0,
 }: {
   kind: SetKind;
   beat: number;
@@ -624,12 +720,16 @@ function Stage({
   secondary: string;
   mood: "good" | "bad" | "neutral";
   quality: QualityLevel;
+  intensity?: number;
 }) {
   const warm = mood === "good" ? "#fff3d6" : mood === "bad" ? "#cfe0ff" : "#effff4";
   const indoor = kind === "locker" || kind === "press" || kind === "office" || kind === "tunnel";
   return (
     <>
-      <fog attach="fog" args={[indoor ? "#070c0a" : "#0a1310", indoor ? 8 : 22, indoor ? 34 : 70]} />
+      <fog
+        attach="fog"
+        args={[indoor ? "#070c0a" : "#0a1310", indoor ? 8 : 22, indoor ? 34 : 70]}
+      />
       <ambientLight intensity={indoor ? 0.34 : 0.55} color={warm} />
       <hemisphereLight intensity={0.35} color={warm} groundColor="#0a140f" />
       <directionalLight
@@ -649,7 +749,7 @@ function Stage({
           <Lightformer position={[6, 3, -4]} scale={[6, 4, 1]} intensity={1.1} color={secondary} />
         </Environment>
       )}
-      <Director kind={kind} beat={beat} />
+      <Director kind={kind} beat={beat} intensity={intensity} />
       {kind === "locker" ? <LockerRoom primary={primary} secondary={secondary} /> : null}
       {kind === "tunnel" ? <Tunnel primary={primary} secondary={secondary} /> : null}
       {kind === "press" ? <PressRoom primary={primary} secondary={secondary} /> : null}
@@ -666,12 +766,15 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   secondary,
   beat = 0,
   mood = "neutral",
+  intensity = 0,
 }: {
   art: SceneArt;
   primary: string;
   secondary: string;
   beat?: number;
   mood?: "good" | "bad" | "neutral";
+  /** tensão da fala atual (0..1): tremor de mão e aperto de lente */
+  intensity?: number;
 }) {
   const kind = SET_BY_ART[art] ?? "locker";
   const initialQuality = useMemo(() => detectQuality(), []);
@@ -701,6 +804,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
           secondary={secondary}
           mood={mood}
           quality={quality}
+          intensity={intensity}
         />
         <PostFX
           quality={quality === "alta" ? "alta" : quality === "media" ? "media" : "baixa"}

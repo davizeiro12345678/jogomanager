@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
+import { EmptyState, NoCareer, PrimaryButton, SkeletonRows } from "@/components/game/screen-kit";
 import { acceptOffer, rejectOffer } from "@/game/career";
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, formatWage, wageBill } from "@/game/economy";
@@ -76,7 +77,7 @@ function TransfersPage() {
 
   const signed = useMemo(() => new Set(career?.transferredIn ?? []), [career]);
 
-  if (!career) return <Empty />;
+  if (!career) return <NoCareer />;
 
   const players = Object.values(career.players);
   const bill = wageBill(players);
@@ -217,11 +218,26 @@ function TransfersPage() {
 
           <div className="mt-4 space-y-2">
             {isFetching && rows.length === 0 ? (
-              <SkeletonRows />
+              <SkeletonRows rows={6} label="Buscando jogadores" />
             ) : rows.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-border/60 p-6 text-center text-sm text-muted-foreground">
-                Nenhum jogador encontrado com esses filtros.
-              </p>
+              <EmptyState
+                icon="🔍"
+                title="Nenhum jogador encontrado"
+                hint="Tente abrir a idade máxima, baixar o nível mínimo ou mudar a posição."
+                action={
+                  <PrimaryButton
+                    onClick={() => {
+                      setQ("");
+                      setPos("ALL");
+                      setMaxAge(40);
+                      setMinOvr(60);
+                      setPage(0);
+                    }}
+                  >
+                    Limpar filtros
+                  </PrimaryButton>
+                }
+              />
             ) : (
               rows.map((t) => {
                 const club = CLUBS[t.clubId];
@@ -284,16 +300,6 @@ function TransfersPage() {
         />
       ) : null}
     </GameShell>
-  );
-}
-
-function SkeletonRows() {
-  return (
-    <div className="space-y-2">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-14 animate-pulse rounded-xl bg-secondary/50" />
-      ))}
-    </div>
   );
 }
 
@@ -473,14 +479,6 @@ function NegotiationDialog({
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Empty() {
-  return (
-    <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-      Nenhuma carreira ativa.
     </div>
   );
 }

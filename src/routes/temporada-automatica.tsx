@@ -4,6 +4,7 @@ import { FastForward, Play, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { GameShell } from "@/components/game/GameShell";
+import { NoCareer } from "@/components/game/screen-kit";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
 import { autoWeek, type AutoWeek } from "@/game/autoplay";
@@ -55,12 +56,7 @@ function AutoSeasonPage() {
   const [busy, setBusy] = useState(false);
   const calm = prefersReducedMotion();
 
-  if (!career)
-    return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Nenhuma carreira ativa.
-      </div>
-    );
+  if (!career) return <NoCareer />;
 
   const runWeek = () => {
     setBusy(true);

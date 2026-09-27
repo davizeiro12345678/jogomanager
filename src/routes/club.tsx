@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
+import { NoCareer as NoCareerScreen } from "@/components/game/screen-kit";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, formatWage, wageBill } from "@/game/economy";
@@ -48,7 +49,7 @@ function ClubHub() {
   const { career, isLoading, update } = useCareer();
 
   if (isLoading) return <Loading />;
-  if (!career) return <NoCareer />;
+  if (!career) return <NoCareerScreen hint="Escolha um clube para ver identidade, elenco e história." />;
 
   const club = CLUBS[career.clubId]!;
   const fixture = nextFixture(career);
@@ -243,20 +244,6 @@ function Loading() {
   return (
     <div className="flex min-h-screen items-center justify-center text-muted-foreground">
       Carregando carreira...
-    </div>
-  );
-}
-
-function NoCareer() {
-  return (
-    <div className="pitch-bg flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
-      <h1 className="font-display text-3xl uppercase">Nenhuma carreira ativa</h1>
-      <Link
-        to="/new"
-        className="rounded-lg bg-primary px-6 py-3 font-display text-sm uppercase tracking-widest text-primary-foreground"
-      >
-        Escolher clube
-      </Link>
     </div>
   );
 }

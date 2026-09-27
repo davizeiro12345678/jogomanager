@@ -6,7 +6,8 @@
  * momento da carreira.
  */
 import { autoWeek, clubName, type AutoWeek } from "@/game/autoplay";
-import { TRAINING_SCENE_IDS } from "@/content/cutscenes";
+import { CUTSCENES, TRAINING_SCENE_IDS } from "@/content/cutscenes";
+import { memoryFrom, selectStoryScene } from "@/game/cutscene-selector";
 import type { CareerState, TrainingFocus } from "@/game/types";
 
 export type WeekActionId =
@@ -172,23 +173,36 @@ export interface CoachWeek extends AutoWeek {
   headline: string;
 }
 
-/** Escolhe uma cena de história de acordo com o momento da carreira. */
+/**
+ * Escolhe uma cena de história de acordo com o momento da carreira.
+ *
+ * Primeiro o sorteio contextual (`cutscene-selector.ts`: demissão, ultimato,
+ * crise, reconstrução...); se ele não casar nada, caem as regras clássicas de
+ * humor (goleada, sequência, troféu). Toda cena devolvida existe no catálogo —
+ * id inválido aqui virava tela quebrada na exibição.
+ */
 export function pickStoryScene(
   before: CareerState,
   after: CareerState,
   week: AutoWeek,
 ): string | undefined {
+  const valid = (id: string | undefined) => (id && CUTSCENES[id] ? id : undefined);
+
+  const story = selectStoryScene({ before, after, week }, memoryFrom(after, after.lastStoryScene));
+  if (story) return valid(story);
+
   const seen = new Set(after.seenScenes ?? []);
   const once = (id: string) => (seen.has(id) ? undefined : id);
 
-  if (after.sacked) return once("farewell");
-  if (after.pressure >= 78) return once("sackrisk");
-  if (week.gf - week.ga >= 3) return once("celebration");
-  if (after.streak >= 4) return once("winstreak");
-  if (week.ga - week.gf >= 3) return once("badloss");
-  if (after.trophies.length > before.trophies.length) return once("trophyroom");
-  if (after.round <= 4 || (after.round >= 19 && after.round <= 22)) return once("transferwindow");
-  if (after.round % 7 === 0) return once("board");
+  if (after.sacked) return valid(once("farewell"));
+  if (after.pressure >= 78) return valid(once("sackrisk"));
+  if (week.gf - week.ga >= 3) return valid(once("winstreak"));
+  if (after.streak >= 4) return valid(once("winstreak"));
+  if (week.ga - week.gf >= 3) return valid(once("badloss"));
+  if (after.trophies.length > before.trophies.length) return valid(once("trophyroom"));
+  if (after.round <= 4 || (after.round >= 19 && after.round <= 22))
+    return valid(once("transferwindow"));
+  if (after.round % 7 === 0) return valid(once("board"));
   return undefined;
 }
 
@@ -215,7 +229,12 @@ export function coachWeek(state: CareerState, action: WeekActionId): CoachWeek |
 
   return {
     ...week,
-    state: { ...week.state, seenScenes: [...seen] },
+    state: {
+      ...week.state,
+      seenScenes: [...seen],
+      // guarda a última cena para o sorteio não repetir na semana seguinte
+      ...(scene ? { lastStoryScene: scene } : {}),
+    },
     action,
     ...(scene ? { scene } : {}),
     headline,

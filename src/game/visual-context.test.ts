@@ -208,19 +208,18 @@ describe("Visual Context Determinism", () => {
       second.step(0.5);
     }
 
-    const firstContext = first.generateVisualContext();
-    const secondContext = second.generateVisualContext();
-
-    // Pelo menos um jogador deve ter contexto diferente
+    // Compara o contexto inteiro ao longo de uma janela de jogo. A checagem
+    // antiga olhava um único instante e um único campo (`dominantFoot`, que é
+    // derivado do pid e portanto igual nas duas sementes): o resultado dependia
+    // de quantos jogadores por acaso estavam em ação naquele passo, e qualquer
+    // mudança de elenco derrubava o teste sem que houvesse bug algum.
     let different = false;
-    for (let i = 0; i < firstContext.actionContexts.length; i++) {
-      if (
-        firstContext.actionContexts[i]?.dominantFoot !== 
-        secondContext.actionContexts[i]?.dominantFoot
-      ) {
-        different = true;
-        break;
-      }
+    for (let step = 0; step < 400 && !different; step++) {
+      first.step(0.5);
+      second.step(0.5);
+      const a = first.generateVisualContext();
+      const b = second.generateVisualContext();
+      different = JSON.stringify(a) !== JSON.stringify(b);
     }
 
     expect(different).toBe(true);

@@ -257,6 +257,8 @@ export interface CareerState {
   transferredIn?: string[];
   /** cutscenes já exibidas */
   seenScenes?: string[];
+  /** cena de história da semana passada (o sorteio nunca repete em sequência) */
+  lastStoryScene?: string;
 
   /* ---------------------------------------------------------- v6 */
   /** ids das conquistas já desbloqueadas */

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
+import { NoCareer } from "@/components/game/screen-kit";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
 import { useCareer } from "@/hooks/useCareer";
@@ -35,7 +36,7 @@ export const Route = createFileRoute("/history")({
 
 function HistoryPage() {
   const { career } = useCareer();
-  if (!career) return <Empty />;
+  if (!career) return <NoCareer />;
 
   return (
     <GameShell career={career}>
@@ -115,13 +116,5 @@ function HistoryPage() {
         </section>
       </div>
     </GameShell>
-  );
-}
-
-function Empty() {
-  return (
-    <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-      Nenhuma carreira ativa.
-    </div>
   );
 }

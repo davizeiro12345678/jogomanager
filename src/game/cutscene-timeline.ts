@@ -17,6 +17,7 @@
 // ============================================================================
 
 import type { Cutscene, CutsceneLine, SceneMood, Speaker } from "@/content/cutscenes";
+import { directScene, shotIndexFor } from "@/game/cutscene-director";
 
 /** Ritmo de leitura da narração, em caracteres por segundo. */
 const CHARS_PER_SECOND = 15;
@@ -107,16 +108,6 @@ export interface TimelineSample {
   finished: boolean;
 }
 
-/** Hash determinístico e estável (evita Math.random na linha do tempo). */
-function hash(text: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < text.length; i += 1) {
-    h ^= text.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0) / 4294967295;
-}
-
 /** Suavização quadrática (smoothstep): velocidade zero nas pontas. */
 export function smoothstep(u: number): number {
   const t = Math.min(1, Math.max(0, u));
@@ -141,14 +132,20 @@ export function buildCutsceneTimeline(
   scene: Cutscene,
   durations?: readonly (number | undefined)[],
 ): CutsceneTimeline {
+  // A direção decide o enquadramento de cada fala (quem fala define onde a
+  // câmera fica) e a pausa dramática depois dela. Continua determinístico.
+  const direction = directScene(scene);
   let at = 0;
   const lines: TimelineLine[] = scene.lines.map((line, index) => {
     const voiced = durations?.[index];
     const reading = estimateLineDuration(line);
+    const beat = direction.lines[index]!.pause;
     // a voz manda quando existe: a fala dura o áudio (com folga para a pausa)
     const duration =
-      voiced && voiced > 0.2 ? Math.min(MAX_LINE + 4, voiced + PAUSE[line.who]) : reading;
-    const shot = SHOTS[(index + Math.floor(hash(scene.id) * SHOTS.length)) % SHOTS.length]!;
+      voiced && voiced > 0.2
+        ? Math.min(MAX_LINE + 4, voiced + PAUSE[line.who] + beat)
+        : Math.min(MAX_LINE + 4, reading + beat);
+    const shot = SHOTS[shotIndexFor(direction.lines[index]!, scene.id, SHOTS)]!;
     const timelineLine: TimelineLine = {
       index,
       who: line.who,

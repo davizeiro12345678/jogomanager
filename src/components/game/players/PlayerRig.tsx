@@ -26,7 +26,9 @@ import {
   type ClipName,
   type Pose,
 } from "@/game/animation";
-import { kitTexture, type Kit } from "@/game/kits";
+import { kitTextureFor } from "@/game/graphics/kit-atlas";
+import { useMatchSurface } from "@/game/graphics/surface-context";
+import type { Kit } from "@/game/kits";
 import { detailTextureNames, playerMaterials } from "@/game/player-materials";
 import { requestKtx2, useKtx2Revision } from "@/game/textures/ktx2";
 import { visualDataFor } from "@/game/visual-frame-cache";
@@ -123,9 +125,12 @@ export const PlayerRig = memo(function PlayerRig({
     [player.id, player.pos, player.number],
   );
   const P = useMemo(() => proportionsFor(look), [look]);
+  // Só os atletas com rig completo (perto da câmera) recebem a camisa em 512²
+  // com nome; o resto do campo usa a versão de 128².
+  const surface = useMatchSurface();
   const tex = useMemo(
-    () => kitTexture(kit, player.number, player.name),
-    [kit, player.number, player.name],
+    () => kitTextureFor(kit, player.number, player.name, { lod: 0, quality }),
+    [kit, player.number, player.name, quality],
   );
 
   // Cor de identificação que contrasta com a camisa.
@@ -521,8 +526,8 @@ export const PlayerRig = memo(function PlayerRig({
     requestKtx2(detailTextureNames(look, kit));
   }, [quality, kit, look]);
   const mats = useMemo(
-    () => playerMaterials(look, kit, tex ?? null, quality),
-    [look, kit, tex, quality, textureRevision],
+    () => playerMaterials(look, kit, tex ?? null, quality, surface),
+    [look, kit, tex, quality, textureRevision, surface],
   );
 
   // Corpo em SkinnedMesh: um desenho por grupo de material (~18) em vez de um
