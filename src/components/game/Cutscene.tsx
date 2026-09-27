@@ -25,6 +25,7 @@ import {
   SHOTS,
   type CutsceneTimeline,
 } from "@/game/cutscene-timeline";
+import { directScene } from "@/game/cutscene-director";
 import { ManagerPortrait } from "@/components/game/ManagerPortrait";
 import { prefersReducedMotion } from "@/game/device";
 import { Crest } from "@/components/game/Crest";
@@ -617,6 +618,17 @@ export function Cutscene({
   }, [data, timelineStamp]);
   const [clock, setClock] = useState(0);
   const [i, setI] = useState(0);
+  // Direção da cena: cada fala ganha tamanho de plano, luz e tensão. O palco
+  // 3D lê a fala atual para ajustar tremor de mão, aperto de lente e cor.
+  const direction = useMemo(() => (data ? directScene(data) : null), [data]);
+  const lineMood = useMemo(() => {
+    const fallback = data?.mood ?? "neutral";
+    const light = direction?.lines[i]?.light;
+    if (light === "festa" || light === "quente") return "good" as const;
+    if (light === "dramatica" || light === "fria") return "bad" as const;
+    return fallback;
+  }, [direction, data, i]);
+  const lineTension = direction?.lines[i]?.emotion.tension ?? 0;
   const [typed, setTyped] = useState(0);
   const reduced = useMemo(() => prefersReducedMotion(), []);
   const doneRef = useRef(onDone);
@@ -814,7 +826,8 @@ export function Cutscene({
               primary={accent}
               secondary={accent2}
               beat={i}
-              mood={data.mood ?? "neutral"}
+              mood={lineMood}
+              intensity={lineTension}
             />
           ) : null}
           {/* corte de câmera a cada fala + travelling contínuo dentro da fala */}

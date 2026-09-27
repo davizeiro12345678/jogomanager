@@ -124,6 +124,7 @@ function CoachCareerPage() {
         <Cutscene
           scene={scene}
           look={look}
+          cinematic
           accent={club?.primary ?? "#0a8f3c"}
           accent2={club?.secondary ?? "#0b1220"}
           trophies={career.trophies.length}
