@@ -25,6 +25,7 @@ export function resolveConfiguredStripeEnvironment(
   options: {
     deploymentEnvironment?: string | undefined;
     clientToken?: string | undefined;
+    liveApiKeyConfigured?: boolean | undefined;
   } = {},
 ): StripeEnv {
   const deploymentEnvironment = options.deploymentEnvironment?.trim().toLowerCase();
@@ -40,15 +41,19 @@ export function resolveConfiguredStripeEnvironment(
     throw new Error("VITE_PAYMENTS_CLIENT_TOKEN deve ser uma chave pública Stripe válida.");
   }
 
-  if (deploymentEnvironment && tokenEnvironment && deploymentEnvironment !== tokenEnvironment) {
-    throw new Error(
-      "PAYMENTS_ENVIRONMENT não corresponde à chave pública Stripe configurada para este deploy.",
-    );
+  const resolvedEnvironment = deploymentEnvironment
+    ? isStripeEnvironment(deploymentEnvironment)
+      ? deploymentEnvironment
+      : undefined
+    : options.liveApiKeyConfigured
+      ? "live"
+      : tokenEnvironment;
+
+  if (resolvedEnvironment && tokenEnvironment && resolvedEnvironment !== tokenEnvironment) {
+    throw new Error("PAYMENTS_ENVIRONMENT não corresponde à chave pública Stripe configurada para este deploy.");
   }
 
-  if (deploymentEnvironment && isStripeEnvironment(deploymentEnvironment))
-    return deploymentEnvironment;
-  if (tokenEnvironment) return tokenEnvironment;
+  if (resolvedEnvironment) return resolvedEnvironment;
 
   throw new Error(
     "Pagamentos não configurados para este deploy. Defina PAYMENTS_ENVIRONMENT ou VITE_PAYMENTS_CLIENT_TOKEN.",
@@ -64,6 +69,7 @@ export function getConfiguredStripeEnvironment(): StripeEnv {
   return resolveConfiguredStripeEnvironment({
     deploymentEnvironment: process.env["PAYMENTS_ENVIRONMENT"],
     clientToken: process.env["VITE_PAYMENTS_CLIENT_TOKEN"],
+    liveApiKeyConfigured: Boolean(process.env["STRIPE_LIVE_API_KEY"]?.trim()),
   });
 }
 
@@ -84,9 +90,7 @@ export function createStripeClient(env: StripeEnv): Stripe {
         ...init,
         headers: {
           ...Object.fromEntries(
-            new Headers(
-              init?.headers ?? (input instanceof Request ? input.headers : undefined),
-            ).entries(),
+            new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined)).entries(),
           ),
           "X-Connection-Api-Key": connectionApiKey,
           "Lovable-API-Key": lovableApiKey,
@@ -134,10 +138,7 @@ export function getStripeErrorMessage(error: unknown): string {
 export async function verifyWebhook(req: Request, env: StripeEnv): Promise<Stripe.Event> {
   const signature = req.headers.get("stripe-signature");
   const body = await req.text();
-  const secret =
-    env === "sandbox"
-      ? getEnv("PAYMENTS_SANDBOX_WEBHOOK_SECRET")
-      : getEnv("PAYMENTS_LIVE_WEBHOOK_SECRET");
+  const secret = env === "sandbox" ? getEnv("PAYMENTS_SANDBOX_WEBHOOK_SECRET") : getEnv("PAYMENTS_LIVE_WEBHOOK_SECRET");
 
   if (!signature || !body) {
     throw new Error("Missing signature or body");
@@ -167,11 +168,7 @@ export async function verifyWebhook(req: Request, env: StripeEnv): Promise<Strip
     false,
     ["sign"],
   );
-  const signed = await crypto.subtle.sign(
-    "HMAC",
-    cryptoKey,
-    new TextEncoder().encode(`${timestamp}.${body}`),
-  );
+  const signed = await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(`${timestamp}.${body}`));
   const expected = Buffer.from(new Uint8Array(signed)).toString("hex");
 
   if (!v1Signatures.includes(expected)) {
