@@ -26,7 +26,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: npm exec -- tsc --noEmit --pretty false
+      - run: npm exec -- tsc --noEmit --pretty false 2>&1 | tee tsc.log; exit "${PIPESTATUS[0]}"
+      - name: Upload typecheck log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tsc-log
+          path: tsc.log
+          if-no-files-found: ignore
       # The stress suite has its own performance budget and runs in a separate
       # scheduled job once a stable CI baseline is recorded.
       - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1
