@@ -60,6 +60,8 @@ export function LowPlayers({
   const phase = useRef(new Float32Array(BODY_PARTS));
   const yaw = useRef(new Float32Array(BODY_PARTS));
   const previousSpeed = useRef(new Float32Array(BODY_PARTS));
+  // deslocamento vertical de plantio de pé por atleta, suavizado entre quadros
+  const groundLift = useRef(new Float32Array(BODY_PARTS));
   const tmp = useMemo(
     () => ({
       root: new THREE.Matrix4(),
@@ -278,7 +280,36 @@ export function LowPlayers({
       const lean = THREE.MathUtils.clamp(speed * 0.018 + acceleration * 0.006, -0.1, 0.2);
       const turnLean = THREE.MathUtils.clamp(-yawDelta * 0.7, -0.22, 0.22);
 
-      position.set(player.x, 0, player.z);
+      // ---- plantio de pé (versão barata do solver de `@/game/ground-contact`)
+      // Os atletas distantes usavam y = 0 fixo: com a passada aberta as duas
+      // solas subiam e os 20 jogadores de fundo flutuavam alguns centímetros
+      // acima do gramado — bem visível nas câmeras baixas. Aqui medimos a sola
+      // mais baixa das duas pernas e descemos a raiz até ela encostar.
+      const groundFootEarly = contactContext.groundFoot;
+      const factorL = groundFootEarly === "left" || groundFootEarly === null ? 0.3 : 1;
+      const factorR = groundFootEarly === "right" || groundFootEarly === null ? 0.3 : 1;
+      const legPitchL = stride + kick * 0.95 * factorL;
+      const legPitchR = -stride * factorR;
+      const kneeL = liftL * factorL;
+      const kneeR = liftR * factorR;
+      const hipLift = Math.abs(cycle) * gait * 0.025;
+      const soleOf = (legPitch: number, knee: number) => {
+        const shinPitch = -knee * (0.55 + gait * 0.75) - kick * 0.35;
+        return (
+          p.hipY +
+          hipLift -
+          p.thigh * Math.cos(legPitch) -
+          p.shin * Math.cos(legPitch + shinPitch) -
+          p.footH
+        );
+      };
+      const lowestSole = Math.min(soleOf(legPitchL, kneeL), soleOf(legPitchR, kneeR));
+      const wantLift = THREE.MathUtils.clamp(-lowestSole, -0.25, 0.35);
+      const previousLift = groundLift.current[index] ?? wantLift;
+      const smoothLift = previousLift + (wantLift - previousLift) * (1 - Math.exp(-22 * dt));
+      groundLift.current[index] = smoothLift;
+
+      position.set(player.x, smoothLift, player.z);
       quaternion.setFromEuler(euler.set(lean, yaw.current[index] ?? 0, turnLean, "YXZ"));
       root.compose(position, quaternion, unit);
 
