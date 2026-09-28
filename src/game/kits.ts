@@ -183,13 +183,24 @@ function drawCrest(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: num
   ctx.restore();
 }
 
-export function kitTexture(kit: Kit, number: number, name?: string): THREE.CanvasTexture | null {
+/**
+ * Nível de detalhe da camisa. `hero` (512², com nome e patrocínio) é para o
+ * atleta perto da câmera; `squad` (128², só número e padrão) é para quem está
+ * longe, onde nome e brasão não são legíveis de qualquer forma — e 22 camisas
+ * em 512² custam ~23 MB de VRAM contra ~1,4 MB em 128².
+ */
+export type KitDetail = "hero" | "squad";
+
+/** bytes aproximados por textura, para o relatório de orçamento de textura. */
+const kitBytes = new Map<string, number>();
+
+export function kitTexture(kit: Kit, number: number, name?: string, detail: KitDetail = "hero"): THREE.CanvasTexture | null {
   if (typeof document === "undefined") return null;
-  const key = `${kit.base}|${kit.detail}|${kit.pattern}|${number}|${name ?? ""}`;
+  const key = `${detail}|${kit.base}|${kit.detail}|${kit.pattern}|${number}|${detail === "hero" ? name ?? "" : ""}`;
   const hit = cache.get(key);
   if (hit) return hit;
 
-  const size = 512;
+  const size = detail === "hero" ? 512 : 128;
   const s = size / 256; // fator sobre o desenho original
   const canvas = document.createElement("canvas");
   canvas.width = size;
@@ -360,8 +371,8 @@ export function kitTexture(kit: Kit, number: number, name?: string): THREE.Canva
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  // sobrenome nas costas
-  if (name) {
+  // sobrenome nas costas (ilegível na versão reduzida: fora)
+  if (name && detail === "hero") {
     const short = name.split(" ").pop()!.toUpperCase().slice(0, 12);
     ctx.font = `bold ${34 * s}px 'Barlow Condensed', system-ui, sans-serif`;
     ctx.lineWidth = 5 * s;
@@ -381,9 +392,22 @@ export function kitTexture(kit: Kit, number: number, name?: string): THREE.Canva
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
+  tex.anisotropy = detail === "hero" ? 8 : 2;
+  tex.generateMipmaps = true;
   cache.set(key, tex);
+  kitBytes.set(key, size * size * 4);
   return tex;
+}
+
+/** Relatório de memória gasta com camisa (soma das texturas vivas no cache). */
+export function kitTextureStats(): { entries: number; bytes: number; heroBytes: number } {
+  let bytes = 0;
+  let heroBytes = 0;
+  for (const [key, value] of kitBytes) {
+    bytes += value;
+    if (key.startsWith("hero|")) heroBytes += value;
+  }
+  return { entries: kitBytes.size, bytes, heroBytes };
 }
 
 export const SKIN_TONES = ["#8d5524", "#c68642", "#e0ac69", "#f1c27d", "#6b4226", "#a9714b"];

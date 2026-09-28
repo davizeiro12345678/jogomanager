@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import { GameShell } from "@/components/game/GameShell";
+import { NoCareer } from "@/components/game/screen-kit";
 import { useCareer } from "@/hooks/useCareer";
 import { CLUBS, LEAGUES, getLeague } from "@/game/data/leagues";
 import {
@@ -65,7 +66,7 @@ function TrainingPage() {
     return league.clubs.filter((c) => c.id !== career?.clubId);
   }, [friendlyLeague, career?.clubId]);
 
-  if (!career) return <div className="p-10 text-muted-foreground">Nenhuma carreira ativa.</div>;
+  if (!career) return <NoCareer />;
 
   const doneDrill = drillDoneThisRound(career);
   const doneFriendly = friendlyDoneThisRound(career);

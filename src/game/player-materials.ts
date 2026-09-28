@@ -27,9 +27,17 @@ import {
 } from "@/game/textures/fabric";
 import { ktx2, onKtx2Ready, type DetailKtx2Name } from "@/game/textures/ktx2";
 import type { Kit } from "@/game/kits";
+import {
+  applySurface,
+  surfaceFromSteps,
+  surfaceKey,
+  type SurfaceSteps,
+} from "@/game/graphics/player-surface";
+
+/** Degrau neutro: sem suor, sem grama, sem chuva. */
+const NEUTRAL_STEPS: SurfaceSteps = { sweat: 0, dirt: 0, wet: 0 };
 import { SKIN_TONES } from "@/game/kits";
 import { shade, skinShadow } from "@/game/player-model";
-
 
 export type MaterialQuality = "alta" | "media" | "baixa";
 
@@ -66,20 +74,47 @@ const cache = new Map<string, PlayerMaterials>();
 /** arredonda o suor para poucos degraus: evita um material por jogador */
 const sweatStep = (s: number) => Math.round(Math.max(0, Math.min(1, s)) * 4) / 4;
 
-export function detailTextureNames(look: PlayerLookLike, kit: Kit): [DetailKtx2Name, DetailKtx2Name, DetailKtx2Name, DetailKtx2Name, DetailKtx2Name, DetailKtx2Name] {
+export function detailTextureNames(
+  look: PlayerLookLike,
+  kit: Kit,
+): [
+  DetailKtx2Name,
+  DetailKtx2Name,
+  DetailKtx2Name,
+  DetailKtx2Name,
+  DetailKtx2Name,
+  DetailKtx2Name,
+] {
   const patterns = ["solid", "stripes", "pin", "hoops", "sash", "halves", "checks"];
   const pattern = patterns.includes(kit.pattern) ? kit.pattern : "solid";
   const skinTone = SKIN_TONES.indexOf(look.skin);
-  const skinVariant = skinTone < 0 ? "medium" : skinTone === 0 || skinTone === 4 ? "dark" : skinTone === 2 || skinTone === 3 ? "light" : "medium";
+  const skinVariant =
+    skinTone < 0
+      ? "medium"
+      : skinTone === 0 || skinTone === 4
+        ? "dark"
+        : skinTone === 2 || skinTone === 3
+          ? "light"
+          : "medium";
   const seed = look.seed ?? 0;
   const shortsVariant = ["plain", "mesh", "stitched"][seed % 3] ?? "plain";
   const socksVariant = ["rib", "fine", "heavy"][Math.floor(seed / 3) % 3] ?? "rib";
   const bootVariant = ["leather", "synthetic", "knit"][Math.floor(seed / 9) % 3] ?? "leather";
   return [
-    `jersey_${pattern}_normal`, `jersey_${pattern}_rough`,
-    `shorts_${shortsVariant}_normal`, `socks_${socksVariant}_normal`,
-    `boot_${bootVariant}_normal`, `skin_${skinVariant}_normal`,
-  ] as [DetailKtx2Name, DetailKtx2Name, DetailKtx2Name, DetailKtx2Name, DetailKtx2Name, DetailKtx2Name];
+    `jersey_${pattern}_normal`,
+    `jersey_${pattern}_rough`,
+    `shorts_${shortsVariant}_normal`,
+    `socks_${socksVariant}_normal`,
+    `boot_${bootVariant}_normal`,
+    `skin_${skinVariant}_normal`,
+  ] as [
+    DetailKtx2Name,
+    DetailKtx2Name,
+    DetailKtx2Name,
+    DetailKtx2Name,
+    DetailKtx2Name,
+    DetailKtx2Name,
+  ];
 }
 
 function dispose(set: PlayerMaterials) {
@@ -96,7 +131,6 @@ onKtx2Ready(() => {
   cache.clear();
 });
 
-
 /**
  * Devolve (e memoriza) o conjunto de materiais de um jogador.
  * `tex` é a textura do uniforme, que já vem de um cache próprio em kits.ts.
@@ -106,9 +140,17 @@ export function playerMaterials(
   kit: Kit,
   tex: THREE.Texture | null,
   quality: MaterialQuality,
+  surface?: SurfaceSteps,
 ): PlayerMaterials {
   const sweat = sweatStep(look.sweat);
-  const [jerseyNormalName, jerseyRoughName, shortsNormalName, socksNormalName, bootNormalName, skinNormalName] = detailTextureNames(look, kit);
+  const [
+    jerseyNormalName,
+    jerseyRoughName,
+    shortsNormalName,
+    socksNormalName,
+    bootNormalName,
+    skinNormalName,
+  ] = detailTextureNames(look, kit);
   const key = [
     quality,
     ktx2Ready ? "hd" : "sd",
@@ -123,7 +165,19 @@ export function playerMaterials(
     kit.socks,
     kit.detail,
     tex?.uuid ?? "-",
-    ...(quality === "alta" ? [jerseyNormalName, jerseyRoughName, shortsNormalName, socksNormalName, bootNormalName, skinNormalName] : []),
+    // suor/grama/chuva entram na chave: é o que faz a camisa sujar durante a
+    // partida sem que nenhum atleta ganhe material próprio (3 × 3 × 2 no máximo)
+    surfaceKey(surface ?? NEUTRAL_STEPS),
+    ...(quality === "alta"
+      ? [
+          jerseyNormalName,
+          jerseyRoughName,
+          shortsNormalName,
+          socksNormalName,
+          bootNormalName,
+          skinNormalName,
+        ]
+      : []),
   ].join("|");
 
   const hit = cache.get(key);
@@ -141,7 +195,9 @@ export function playerMaterials(
   const rib = hi ? (ktx2(socksNormalName) ?? ktx2("sockNormal") ?? sockRibNormal()) : null;
   const pores = hi ? (ktx2(skinNormalName) ?? ktx2("skinNormal") ?? skinPoreNormal()) : null;
   const grain = hi ? (ktx2(bootNormalName) ?? ktx2("bootNormal") ?? bootGrainNormal()) : null;
-  const jerseyRough = hi ? (ktx2(jerseyRoughName) ?? ktx2("fiberRough") ?? jerseyRoughness()) : null;
+  const jerseyRough = hi
+    ? (ktx2(jerseyRoughName) ?? ktx2("fiberRough") ?? jerseyRoughness())
+    : null;
   const skinRough = ktx2("sweatMask") ?? (hi ? skinRoughness() : null);
   const hairNormal = ktx2("hairNormal");
   const hairRough = ktx2("hairRough");
@@ -149,7 +205,6 @@ export function playerMaterials(
   const shinNormal = ktx2("shinNormal");
   const shinRough = ktx2("shinRough");
   const sweatNormal = ktx2("sweatNormal");
-
 
   const set: PlayerMaterials = {
     skin: hi
@@ -174,7 +229,11 @@ export function playerMaterials(
           specularIntensity: 0.45,
           specularColor: new THREE.Color("#fff1e4"),
         })
-      : new THREE.MeshStandardMaterial({ color: look.skin, roughness: 0.62, envMapIntensity: 0.85 }),
+      : new THREE.MeshStandardMaterial({
+          color: look.skin,
+          roughness: 0.62,
+          envMapIntensity: 0.85,
+        }),
     skinDark: new THREE.MeshStandardMaterial({
       color: skinShadow(look.skin),
       roughness: 0.72,
@@ -194,7 +253,11 @@ export function playerMaterials(
           sheenRoughness: 0.7,
           sheenColor: new THREE.Color(shade(kit.base, 0.4)),
         })
-      : new THREE.MeshStandardMaterial({ color: tex ? 0xffffff : kit.base, map: tex, roughness: 0.85 }),
+      : new THREE.MeshStandardMaterial({
+          color: tex ? 0xffffff : kit.base,
+          map: tex,
+          roughness: 0.85,
+        }),
     shorts: hi
       ? new THREE.MeshPhysicalMaterial({
           color: kit.shorts,
@@ -311,8 +374,19 @@ export function playerMaterials(
           sheenRoughness: 0.75,
         })
       : new THREE.MeshStandardMaterial({ color: look.gloveColor, roughness: 0.7 }),
-
   };
+
+  // Superfície da partida: suor, grama e chuva em cima dos materiais já
+  // criados. Só escalares — nenhuma recompilação de shader, nenhum upload.
+  if (surface && quality !== "baixa") {
+    const state = surfaceFromSteps(surface);
+    applySurface(set.skin, { ...state, sweat: Math.min(1, state.sweat * 1.25) });
+    applySurface(set.jersey, state);
+    applySurface(set.shorts, state);
+    applySurface(set.socks, { ...state, dirt: state.dirt * 1.4 });
+    applySurface(set.trim, state);
+    applySurface(set.shin, state);
+  }
 
   cache.set(key, set);
   if (cache.size > MAX_ENTRIES) {

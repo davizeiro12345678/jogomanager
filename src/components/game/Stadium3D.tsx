@@ -48,9 +48,15 @@ import { StadiumProps } from "@/components/game/stadium/Props";
 
 import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { cameraOption, type CameraMode } from "@/game/camera-modes";
-import { kitFor, gkKitFor, kitTexture, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
+import { kitFor, gkKitFor, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
+import { Atmosphere } from "@/components/game/stadium/Atmosphere";
+import { CrowdReaction } from "@/components/game/stadium/CrowdReaction";
+import { PitchResponse } from "@/components/game/stadium/PitchResponse";
+import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { GradeLut } from "@/components/game/post/GradeLut";
+import type { GradeWeather } from "@/game/graphics/grade";
 import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
-import { matchLook, type TimeOfDay } from "@/game/matchday";
+import { matchLook, type TimeOfDay, type Weather } from "@/game/matchday";
 import { useResolvedVisual, useVisual } from "@/game/visual-settings";
 import { initKtx2, ktx2, requestKtx2, useKtx2Revision } from "@/game/textures/ktx2";
 
@@ -2740,6 +2746,8 @@ function Scene({
 
       <SkyDome time={time} />
       <Pitch quality={quality} sim={sim} wet={look.wet} mow={look.mow} />
+      {/* Arranhões de chute, escorregões e rastro da bola: 1 desenho no total */}
+      <PitchResponse sim={sim} quality={quality} />
       {quality !== "baixa" ? (
         <Weather
           weather={look.weather}
@@ -2752,12 +2760,21 @@ function Scene({
 
       <AdBoards homeColor={sim.home.primary} awayColor={sim.away.primary} />
       <Floodlights time={time} quality={quality} />
+      {/* Feixes volumétricos, poeira e brilho das lâmpadas (custo fixo e baixo) */}
+      <Atmosphere time={time} quality={quality} weather={look.weather} webgl2={backend === "webgl2"} />
       <Stands
         homeColor={sim.home.primary}
         awayColor={sim.away.primary}
         quality={quality}
         goalPulse={goalPulse}
         night={time !== "dia"}
+      />
+      {/* O que a arquibancada faz em cada lance: gol, chance, falta, protesto */}
+      <CrowdReaction
+        sim={sim}
+        quality={quality}
+        night={time === "noite"}
+        color={sim.home.primary}
       />
       <StadiumProps
         rings={budget.propRings}
@@ -2768,19 +2785,29 @@ function Scene({
       />
       <Scoreboard sim={sim} replay={replay} />
       <Ball sim={sim} quality={quality} hiVis={look.hiVisBall} wet={look.wet} />
-      <MatchPlayers
+      <MatchSurfaceProvider
         sim={sim}
-        homeKit={homeKit}
-        awayKit={awayKit}
-        goalPulse={goalPulse}
+        weather={surfaceWeather(look.weather)}
         quality={quality}
-        mode={mode}
-        replay={replay}
-        budget={budget}
-      />
+        intensity={time === "noite" ? 1.1 : 1}
+      >
+        <MatchPlayers
+          sim={sim}
+          homeKit={homeKit}
+          awayKit={awayKit}
+          goalPulse={goalPulse}
+          quality={quality}
+          mode={mode}
+          replay={replay}
+          budget={budget}
+        />
+      </MatchSurfaceProvider>
       <GoalFx goalPulse={goalPulse} quality={quality} density={budget.goalFxDensity} />
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
       <PostFX
+        grading={
+          postOn ? { time, weather: GRADE_WEATHER[surfaceWeather(look.weather)], moment } : undefined
+        }
         quality={
           !postOn || budget.post === "off"
             ? "baixa"
@@ -2798,6 +2825,30 @@ function Scene({
       />
     </>
   );
+}
+
+/**
+ * Clima do jogo (`matchday.ts`: seco, molhado, chuva, neve) convertido para o
+ * vocabulário da correção de cor e da superfície dos atletas.
+ */
+type SurfaceWeatherName = "limpo" | "nublado" | "chuva" | "neve";
+
+const WEATHER_ALIAS: Record<Weather, SurfaceWeatherName> = {
+  seco: "limpo",
+  molhado: "nublado",
+  chuva: "chuva",
+  neve: "neve",
+};
+
+const GRADE_WEATHER: Record<SurfaceWeatherName, GradeWeather> = {
+  limpo: "limpo",
+  nublado: "nublado",
+  chuva: "chuva",
+  neve: "neve",
+};
+
+function surfaceWeather(weather: Weather): SurfaceWeatherName {
+  return WEATHER_ALIAS[weather] ?? "limpo";
 }
 
 function CompressedTextures({ enabled }: { enabled: boolean }) {

@@ -333,43 +333,79 @@ export const CUTSCENES: Record<string, Cutscene> = {
   /* ------------------------------------------------ antes do apito */
   "prematch-locker": scene("prematch-locker", "Vestiário", "dressing", [
     { who: "narrator", text: "Cheiro de cânfora, rádio baixinho e o quadro tático ainda molhado." },
-    { who: "assistant", text: "Escalação no quadro, professor. Todos liberados pelo departamento." },
+    {
+      who: "assistant",
+      text: "Escalação no quadro, professor. Todos liberados pelo departamento.",
+    },
     { who: "manager", text: "Primeiros quinze minutos intensos. Depois a gente controla o jogo." },
     { who: "captain", text: "O grupo entendeu. Ninguém sai de campo com dúvida hoje." },
   ]),
   "prematch-kit": scene("prematch-kit", "Vestindo a camisa", "kitroom", [
     { who: "narrator", text: "Camisas numeradas penduradas em fila, cada uma no seu gancho." },
     { who: "captain", text: "Essa camisa pesa. Hoje ela pesa a nosso favor." },
-    { who: "manager", text: "Veste com respeito. Tem gente na arquibancada que juntou a semana pra estar aqui." },
-    { who: "narrator", text: "Chuteiras amarradas, caneleiras no lugar, o último abraço no roupeiro." },
+    {
+      who: "manager",
+      text: "Veste com respeito. Tem gente na arquibancada que juntou a semana pra estar aqui.",
+    },
+    {
+      who: "narrator",
+      text: "Chuteiras amarradas, caneleiras no lugar, o último abraço no roupeiro.",
+    },
   ]),
   "prematch-tunnel": scene("prematch-tunnel", "Túnel de acesso", "tunnel", [
-    { who: "narrator", text: "Fila formada no escuro. Lá na frente, a boca do túnel em luz branca." },
+    {
+      who: "narrator",
+      text: "Fila formada no escuro. Lá na frente, a boca do túnel em luz branca.",
+    },
     { who: "captain", text: "Mão na mão. Ninguém anda sozinho aqui." },
     { who: "manager", text: "Cabeça erguida. O jogo começa no primeiro passo." },
     { who: "fan", text: "Vamos, vamos, o time não pode parar!" },
   ]),
   "prematch-whistle": scene("prematch-whistle", "O apito inicial", "pitchentry", [
     { who: "narrator", text: "O gramado abre em verde sob os refletores. Setenta mil de pé." },
-    { who: "commentator", text: "Moeda no ar, aperto de mãos, bola no círculo central. Está tudo pronto para uma grande partida." },
+    {
+      who: "commentator",
+      text: "Moeda no ar, aperto de mãos, bola no círculo central. Está tudo pronto para uma grande partida.",
+    },
     { who: "manager", text: "Agora é com vocês." },
     { who: "referee", text: "Capitães avisados. Ao meu apito... valendo!" },
   ]),
   "postmatch-tunnel": scene("postmatch-tunnel", "De volta ao túnel", "tunnel", [
-    { who: "narrator", text: "As luzes do campo ficam para trás. No túnel, cada chuteira devolve o eco dos noventa minutos." },
+    {
+      who: "narrator",
+      text: "As luzes do campo ficam para trás. No túnel, cada chuteira devolve o eco dos noventa minutos.",
+    },
     { who: "captain", text: "Respira, professor. O grupo vai junto até o fim." },
-    { who: "manager", text: "Cabeça erguida. O resultado termina aqui; o trabalho continua agora." },
+    {
+      who: "manager",
+      text: "Cabeça erguida. O resultado termina aqui; o trabalho continua agora.",
+    },
   ]),
   "postmatch-locker": scene("postmatch-locker", "A porta do vestiário", "dressing", [
-    { who: "narrator", text: "A porta fecha, o barulho da arquibancada vira um rumor distante e o placar ainda pesa no silêncio." },
+    {
+      who: "narrator",
+      text: "A porta fecha, o barulho da arquibancada vira um rumor distante e o placar ainda pesa no silêncio.",
+    },
     { who: "assistant", text: "Os dados já chegaram. Há respostas no vídeo e no próximo treino." },
-    { who: "manager", text: "Guardem a emoção. Amanhã transformamos cada lance em decisão melhor." },
+    {
+      who: "manager",
+      text: "Guardem a emoção. Amanhã transformamos cada lance em decisão melhor.",
+    },
   ]),
   "postmatch-press": scene("postmatch-press", "Coletiva pós-jogo", "press", [
-    { who: "narrator", text: "Luzes acesas, gravadores na mesa e dezenas de perguntas esperando uma frase." },
+    {
+      who: "narrator",
+      text: "Luzes acesas, gravadores na mesa e dezenas de perguntas esperando uma frase.",
+    },
     { who: "press", text: "Qual é a leitura do resultado e o que muda para a próxima partida?" },
-    { who: "manager", text: "Assumo as decisões. Vamos analisar sem desculpas e voltar mais fortes." },
-    { who: "narrator", text: "O último flash dispara. A noite termina, mas a temporada segue aberta." },
+    {
+      who: "manager",
+      text: "Assumo as decisões. Vamos analisar sem desculpas e voltar mais fortes.",
+    },
+    {
+      who: "narrator",
+      text: "O último flash dispara. A noite termina, mas a temporada segue aberta.",
+    },
   ]),
 
   "injury-blow": scene(
@@ -386,7 +422,10 @@ export const CUTSCENES: Record<string, Cutscene> = {
 
   /* ------------------------------------------------ novas cenas de jornada */
   "bus-arrival": scene("bus-arrival", "Chegada do ônibus", "arrival", [
-    { who: "narrator", text: "Sinalizadores vermelhos cercam o ônibus a dois quarteirões do estádio." },
+    {
+      who: "narrator",
+      text: "Sinalizadores vermelhos cercam o ônibus a dois quarteirões do estádio.",
+    },
     { who: "captain", text: "Olha o tamanho disso, professor." },
     { who: "manager", text: "É por isso que a gente treina. Aproveita cada metro desse corredor." },
   ]),
@@ -395,7 +434,10 @@ export const CUTSCENES: Record<string, Cutscene> = {
     { who: "manager", text: "Avisa a linha de trás: bola rápida exige linha mais compacta." },
   ]),
   "team-talk": scene("team-talk", "Preleção final", "dressing", [
-    { who: "manager", text: "Três coisas: pressão alta, bola pro lado forte, ninguém reclama do árbitro." },
+    {
+      who: "manager",
+      text: "Três coisas: pressão alta, bola pro lado forte, ninguém reclama do árbitro.",
+    },
     { who: "captain", text: "Entendido. A gente resolve dentro de campo." },
   ]),
   "coin-toss": scene("coin-toss", "Sorteio no círculo", "pitchentry", [
@@ -416,7 +458,10 @@ export const CUTSCENES: Record<string, Cutscene> = {
     "O gol que explodiu o estádio",
     "celebration",
     [
-      { who: "commentator", text: "A bola entra no ângulo! Que finalização espetacular — o estádio inteiro sai do chão!" },
+      {
+        who: "commentator",
+        text: "A bola entra no ângulo! Que finalização espetacular — o estádio inteiro sai do chão!",
+      },
       { who: "fan", text: "Gooool! Gooool!" },
       { who: "manager", text: "Comemora rápido e volta pra posição. O jogo não acabou." },
     ],
@@ -477,7 +522,10 @@ export const CUTSCENES: Record<string, Cutscene> = {
     "A taça erguida",
     "trophy",
     [
-      { who: "narrator", text: "Papel picado, palco montado e a taça pesando nas mãos do capitão." },
+      {
+        who: "narrator",
+        text: "Papel picado, palco montado e a taça pesando nas mãos do capitão.",
+      },
       { who: "captain", text: "Isso aqui é de quem acordou cedo o ano inteiro." },
     ],
     "good",
@@ -556,6 +604,297 @@ export const CUTSCENES: Record<string, Cutscene> = {
     { who: "narrator", text: "Volta olímpica lenta, crianças no gramado, câmeras ao fundo." },
     { who: "manager", text: "Guarda essa imagem. Ela é o combustível da pré-temporada." },
   ]),
+
+  /* --------------------------------- arco de história (sorteio contextual) */
+  "season-kickoff": scene("season-kickoff", "Abertura da temporada", "arrival", [
+    {
+      who: "narrator",
+      text: "Primeira segunda de temporada. Tabela nova colada na parede do vestiário.",
+    },
+    {
+      who: "president",
+      text: "O orçamento está aprovado, o elenco é esse. A meta é uma só: brigar lá em cima.",
+    },
+    { who: "manager", text: "Meu grupo vai correr por cada ponto. Começa hoje, sem desculpa." },
+    { who: "captain", text: "Professor, o elenco está com você. A gente entra junto e sai junto." },
+    { who: "narrator", text: "O apito da primeira rodada ainda nem soou — e a cidade já sonha." },
+  ]),
+  "crisis-meeting": scene(
+    "crisis-meeting",
+    "Sequência sem vencer",
+    "board",
+    [
+      {
+        who: "narrator",
+        text: "Quatro jogos sem vitória. O corredor da diretoria anda mais silencioso que o normal.",
+      },
+      {
+        who: "president",
+        text: "A torcida está inquieta e eu também. O que está acontecendo lá dentro?",
+      },
+      {
+        who: "manager",
+        text: "O modelo está certo, a execução oscila. Peço paciência e um ajuste no elenco.",
+      },
+      {
+        who: "president",
+        text: "Paciência custa pontos. Me mostra reação nos próximos dois jogos.",
+      },
+      {
+        who: "narrator",
+        text: "O telefone do presidente não para. A próxima rodada decide o clima.",
+      },
+    ],
+    "bad",
+  ),
+  ultimatum: scene(
+    "ultimatum",
+    "O ultimato",
+    "board",
+    [
+      {
+        who: "narrator",
+        text: "Reunião marcada às pressas. Na mesa, só água e uma planilha de resultados.",
+      },
+      {
+        who: "president",
+        text: "Não vou fingir: seu cargo está em risco. Três jogos. É o que consigo segurar.",
+      },
+      {
+        who: "manager",
+        text: "Três jogos bastam. Vou te devolver um time que convence, não só que vence.",
+      },
+      { who: "president", text: "Quero vencer. O resto a gente discute depois." },
+      { who: "narrator", text: "Saindo da sala, uma certeza: derrota agora custa o emprego." },
+    ],
+    "bad",
+  ),
+  "captain-split": scene(
+    "captain-split",
+    "Racha no vestiário",
+    "dressing",
+    [
+      {
+        who: "narrator",
+        text: "O treino termina cedo. O capitão pede a palavra — e não é para falar de tática.",
+      },
+      {
+        who: "captain",
+        text: "Com todo respeito, professor: o grupo não aguenta mais treinar uma coisa e jogar outra.",
+      },
+      { who: "manager", text: "Fala na minha cara, então. O que você quer que mude?" },
+      {
+        who: "captain",
+        text: "Menos rodízio, mais cobrança de quem erra. Hierarquia se conquista, mas se mantém.",
+      },
+      {
+        who: "assistant",
+        text: "Ele fala por metade. A outra metade acha que ele exagera. Você decide.",
+      },
+    ],
+    "bad",
+  ),
+  "dressing-unity": scene(
+    "dressing-unity",
+    "O grupo se fecha",
+    "dressing",
+    [
+      {
+        who: "narrator",
+        text: "Porta trancada, celulares fora. Só o grupo, uma bola e a verdade.",
+      },
+      { who: "captain", text: "Daqui pra frente, erro meu é erro nosso. Ninguém joga sozinho." },
+      { who: "manager", text: "Se é pra cair, cai junto. Se é pra subir, sobe junto. Fechado?" },
+      { who: "fan", text: "De fora dá pra ouvir: um grito só, quarenta vozes ao mesmo tempo." },
+      { who: "narrator", text: "Times assim não precisam de discurso. Precisam de resultado." },
+    ],
+    "good",
+  ),
+  "mind-games": scene("mind-games", "Guerra de palavras", "press", [
+    {
+      who: "press",
+      text: "O técnico rival disse que seu time só sabe se defender. Como responde?",
+    },
+    {
+      who: "manager",
+      text: "Eu respondo sábado, em campo, com a bola rolando. Provocação não marca gol.",
+    },
+    { who: "press", text: "Mas a torcida quer uma resposta agora..." },
+    { who: "manager", text: "A torcida quer vitória. E é isso que vou dar." },
+    { who: "narrator", text: "A manchete sai mesmo assim. O clássico ganha mais um capítulo." },
+  ]),
+  "captain-injury": scene(
+    "captain-injury",
+    "O capitão cai",
+    "gym",
+    [
+      {
+        who: "narrator",
+        text: "Ele torce o joelho sozinho, sem contato. O estádio inteiro percebe na hora.",
+      },
+      { who: "doctor", text: "Não é o pior cenário, mas são oito semanas fora. No mínimo." },
+      { who: "manager", text: "A braçadeira passa pro vice. E o grupo joga por ele até voltar." },
+      {
+        who: "captain",
+        text: "Promete uma coisa, professor: quando eu voltar, esse time está melhor.",
+      },
+    ],
+    "bad",
+  ),
+  "academy-gem": scene(
+    "academy-gem",
+    "Joia da base",
+    "staff",
+    [
+      {
+        who: "scout",
+        text: "Dezesseis anos, dois pés bons e cabeça de veterano. Nunca vi nada igual.",
+      },
+      { who: "assistant", text: "Tem corpo pra profissional? Ou vamos queimar o garoto?" },
+      {
+        who: "manager",
+        text: "Minutos controlados, proteção da comissão e paciência. Joia não se apressa.",
+      },
+      {
+        who: "narrator",
+        text: "Na saída, o garoto olha o gramado principal como quem vê o futuro.",
+      },
+    ],
+    "good",
+  ),
+  "transfer-saga": scene(
+    "transfer-saga",
+    "A novela da janela",
+    "transfer",
+    [
+      {
+        who: "agent",
+        text: "O clube grande voltou com oferta maior. Meu jogador quer ouvir. Hoje.",
+      },
+      {
+        who: "manager",
+        text: "Ofertas chegam na diretoria. Quem decide se o time precisa dele sou eu.",
+      },
+      {
+        who: "president",
+        text: "O valor é tentador, mas cair de rendimento custa mais que qualquer venda.",
+      },
+      {
+        who: "manager",
+        text: "Segurem ele até dezembro. Depois, se for bom pros dois lados, a gente conversa.",
+      },
+      { who: "narrator", text: "A janela fecha em dias. O telefone não para de tocar." },
+    ],
+    "neutral",
+  ),
+  "deadline-day": scene("deadline-day", "Último dia da janela", "transfer", [
+    {
+      who: "narrator",
+      text: "Relógio na parede, contratos espalhados e três telefones tocando juntos.",
+    },
+    { who: "agent", text: "Faltam duas horas. Assina agora ou ele vai pro rival." },
+    {
+      who: "manager",
+      text: "Anda, presidente. Quem contrata em pânico contrata errado — mas não contratar é pior.",
+    },
+    { who: "president", text: "Fechado. O fax já saiu. Agora é com ele." },
+    {
+      who: "narrator",
+      text: "Janela fechada. O elenco que você tem é o elenco que te leva até o fim.",
+    },
+  ]),
+  "cup-final-eve": scene("cup-final-eve", "Véspera de decisão", "dressing", [
+    { who: "narrator", text: "Hotel silencioso, luzes apagadas cedo. Amanhã é o jogo do ano." },
+    { who: "captain", text: "Ninguém aqui chegou até aqui por acaso, professor." },
+    { who: "manager", text: "Durmam. Decisão se ganha descansado, não nervoso." },
+    {
+      who: "narrator",
+      text: "O capitão fica mais dez minutos olhando a taça na propaganda da TV.",
+    },
+  ]),
+  "relegation-fight": scene(
+    "relegation-fight",
+    "Luta contra a queda",
+    "tactics",
+    [
+      { who: "narrator", text: "A tabela mostra o time na zona. O quadro tático, a saída." },
+      {
+        who: "assistant",
+        text: "Seis pontos em disputa. Precisamos de quatro. Os dois próximos são em casa.",
+      },
+      {
+        who: "manager",
+        text: "Em casa a gente ataca, fora a gente morde. Cada ponto é uma final.",
+      },
+      { who: "captain", text: "Pode contar. Esse grupo não cai." },
+    ],
+    "bad",
+  ),
+  "sacking-night": scene(
+    "sacking-night",
+    "A demissão",
+    "farewell",
+    [
+      {
+        who: "narrator",
+        text: "Nota oficial no site, à meia-noite. Duas linhas e um agradecimento frio.",
+      },
+      { who: "president", text: "A decisão está tomada. Nada pessoal — é futebol, é resultado." },
+      { who: "manager", text: "Saio de cabeça erguida. Dei tudo que tinha, todos os dias." },
+      { who: "fan", text: "Na porta do CT, um grupo pequeno aplaude. Poucos, mas sinceros." },
+      { who: "narrator", text: "O ciclo termina. A carreira, não." },
+    ],
+    "bad",
+  ),
+  "job-interview": scene("job-interview", "Entrevista de emprego", "board", [
+    { who: "president", text: "Por que você, e por que agora?" },
+    {
+      who: "manager",
+      text: "Porque eu monto time que compete todo jogo. Me dê o elenco e a janela.",
+    },
+    { who: "president", text: "A torcida aqui é exigente. E a paciência, curta." },
+    {
+      who: "manager",
+      text: "Paciência se conquista com vitória. Vitória se conquista com trabalho.",
+    },
+  ]),
+  "rebuild-day-one": scene(
+    "rebuild-day-one",
+    "Primeiro dia da reconstrução",
+    "arrival",
+    [
+      { who: "narrator", text: "Outros portões, outro escudo, a mesma vontade." },
+      {
+        who: "captain",
+        text: "Bem-vindo, professor. O grupo precisava de alguém com a sua história.",
+      },
+      { who: "manager", text: "História eu deixo na porta. Aqui começa tudo do zero, com vocês." },
+      { who: "narrator", text: "O primeiro treino começa em uma hora. A nova era, agora." },
+    ],
+    "good",
+  ),
+  "legend-retirement": scene(
+    "legend-retirement",
+    "Aposentadoria do ídolo",
+    "farewell",
+    [
+      {
+        who: "narrator",
+        text: "Última volta no gramado, chuteiras na mão, camisa suada pela última vez.",
+      },
+      {
+        who: "captain",
+        text: "Vinte anos atrás eu entrei aqui garoto. Saio homem feito por este clube.",
+      },
+      { who: "fan", text: "O nome dele ecoa por dez minutos sem parar." },
+      {
+        who: "manager",
+        text: "Camisa aposentada? Não. Ela espera o próximo que merecê-la tanto quanto ele.",
+      },
+      { who: "narrator", text: "Lendas não se despedem. Viram estátua." },
+    ],
+    "good",
+  ),
 };
 
 /** Sequência imersiva antes do apito inicial. */
@@ -615,8 +954,34 @@ export const MOMENT_SCENE_IDS = [
 /** Todas as cenas que a galeria pode listar. */
 export const SCENE_LIST = Object.values(CUTSCENES);
 
+/** Cenas do arco de história: crise, ultimato, demissão, reconstrução e lendas. */
+export const STORY_SCENE_IDS = [
+  "season-kickoff",
+  "crisis-meeting",
+  "ultimatum",
+  "captain-split",
+  "dressing-unity",
+  "mind-games",
+  "captain-injury",
+  "academy-gem",
+  "transfer-saga",
+  "deadline-day",
+  "cup-final-eve",
+  "relegation-fight",
+  "sacking-night",
+  "job-interview",
+  "rebuild-day-one",
+  "legend-retirement",
+] as const;
+
 /** As 25 cenas híbridas: câmera 3D real (perspectiva, plano de chão, paralaxe). */
 for (const id of MOMENT_SCENE_IDS) {
+  const s = CUTSCENES[id];
+  if (s) s.hybrid = true;
+}
+
+/** O arco de história também ganha perspectiva 3D (os cenários já existem). */
+for (const id of STORY_SCENE_IDS) {
   const s = CUTSCENES[id];
   if (s) s.hybrid = true;
 }

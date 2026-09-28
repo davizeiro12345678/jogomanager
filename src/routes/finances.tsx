@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
+import { NoCareer } from "@/components/game/screen-kit";
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, wageBill } from "@/game/economy";
 import { gateIncome, staffBill } from "@/game/events";
@@ -35,12 +36,7 @@ export const Route = createFileRoute("/finances")({
 
 function FinancesPage() {
   const { career, update } = useCareer();
-  if (!career)
-    return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Nenhuma carreira ativa.
-      </div>
-    );
+  if (!career) return <NoCareer />;
 
   const club = CLUBS[career.clubId]!;
   const players = Object.values(career.players);

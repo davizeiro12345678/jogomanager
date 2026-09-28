@@ -39,6 +39,7 @@ export function PlayerPortrait({
     }
     let alive = true;
     const img = new window.Image();
+    img.crossOrigin = "anonymous";
     img.referrerPolicy = "no-referrer";
     img.decoding = "async";
     img.onload = () => {
@@ -98,6 +99,7 @@ export function PlayerPortrait({
           <img
             src={photo}
             alt=""
+            crossOrigin="anonymous"
             referrerPolicy="no-referrer"
             loading="lazy"
             decoding="async"

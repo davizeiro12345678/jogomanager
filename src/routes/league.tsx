@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
+import { NoCareer } from "@/components/game/screen-kit";
 import { Crest } from "@/components/game/Crest";
 import { HudCard, HudChip, HudStat, SparkBars, Sparkline, toneFor } from "@/components/ui/hud";
 
@@ -39,7 +40,7 @@ export const Route = createFileRoute("/league")({
 
 function LeaguePage() {
   const { career, update } = useCareer();
-  if (!career) return <div className="p-10 text-muted-foreground">Nenhuma carreira ativa.</div>;
+  if (!career) return <NoCareer />;
 
   const league = getLeague(career.leagueId);
   const table = computeTable(career);

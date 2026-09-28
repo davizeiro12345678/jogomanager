@@ -3,12 +3,14 @@
    - Documentos: rede primeiro, com a última versão em cache como reserva.
    - Assets (js/css/imagens/escudos): cache primeiro, atualizando em segundo plano.
    - Chamadas de API e do backend nunca são cacheadas. */
-const VERSION = "pfm3d-v8";
+const VERSION = "pfm3d-v9";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
+const SPORTS_IMAGES = `${VERSION}-sports-images`;
 const OFFLINE_URL = "/";
 const MAX_ASSETS = 240;
 const MAX_ASSET_BYTES = 3 * 1024 * 1024;
+const MAX_SPORTS_IMAGES = 400;
 
 async function trimCache(name, maxEntries) {
   const cache = await caches.open(name);
@@ -123,12 +125,13 @@ self.addEventListener("fetch", (event) => {
   }
 
   if ((sameOrigin && isAsset(url)) || isPublicSportsImage(url)) {
+    const sportsImage = isPublicSportsImage(url);
     event.respondWith(
-      caches.open(ASSETS).then(async (cache) => {
+      caches.open(sportsImage ? SPORTS_IMAGES : ASSETS).then(async (cache) => {
         const hit = await cache.match(req);
         // Fotos oficiais e arquivos versionados não mudam de conteúdo: evita
         // uma requisição por imagem a cada visita. Demais assets revalidam.
-        if (hit && (isPublicSportsImage(url) || url.pathname.startsWith("/__l5e/assets-v1/") || url.pathname.startsWith("/_build/"))) return hit;
+        if (hit && (sportsImage || url.pathname.startsWith("/__l5e/assets-v1/") || url.pathname.startsWith("/_build/"))) return hit;
         const network = fetch(req)
           .then((res) => {
             const size = Number(res.headers.get("content-length") || 0);
@@ -140,7 +143,7 @@ self.addEventListener("fetch", (event) => {
             ) {
               const copy = res.clone();
               cache.put(req, copy)
-                .then(() => trimCache(ASSETS, MAX_ASSETS))
+                .then(() => trimCache(sportsImage ? SPORTS_IMAGES : ASSETS, sportsImage ? MAX_SPORTS_IMAGES : MAX_ASSETS))
                 .catch(() => undefined);
             }
             return res;
