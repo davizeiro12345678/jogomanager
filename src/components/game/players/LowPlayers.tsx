@@ -2,18 +2,18 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
+import { emptyPose } from "@/game/animation-core";
 import type { Kit } from "@/game/kits";
-import { lookFor, proportionsFor } from "@/game/player-model";
+import { gaitCadence, gaitPoseAt } from "@/game/gait-kinematics";
+import { airborneFactor, solveGroundContact } from "@/game/ground-contact";
+import { lowDetailBodyFor, lookFor, proportionsFor } from "@/game/player-model";
 import type { SimView } from "@/game/sim";
 import {
   emptyActionContext,
   emptyContactContext,
-  getDominantFoot,
   type ActionContext,
   type ContactContext,
-  type DominantFoot,
 } from "@/game/visual-context";
-import { solveFullIK } from "@/game/ik-solver";
 import { visualDataFor } from "@/game/visual-frame-cache";
 import { censusRef } from "@/game/scene-census";
 
@@ -29,7 +29,56 @@ type LowPlayersProps = {
 
 const BODY_PARTS = 22;
 const LIMB_PARTS = BODY_PARTS * 2;
-const UP = new THREE.Vector3(0, 1, 0);
+const PELVIS_CAPSULE_HEIGHT = 1.48;
+
+function createTaperedTorsoGeometry(): THREE.BufferGeometry {
+  const rings = [
+    { y: -0.5, x: 0.34, z: 0.42 },
+    { y: -0.32, x: 0.38, z: 0.48 },
+    { y: -0.08, x: 0.43, z: 0.5 },
+    { y: 0.18, x: 0.49, z: 0.47 },
+    { y: 0.36, x: 0.5, z: 0.42 },
+    { y: 0.5, x: 0.25, z: 0.32 },
+  ];
+  const radialSegments = 12;
+  const positions: number[] = [];
+  const indices: number[] = [];
+
+  rings.forEach((ring) => {
+    for (let segment = 0; segment < radialSegments; segment += 1) {
+      const angle = (segment / radialSegments) * Math.PI * 2;
+      positions.push(Math.cos(angle) * ring.x, ring.y, Math.sin(angle) * ring.z);
+    }
+  });
+  positions.push(0, rings[0]!.y, 0, 0, rings[rings.length - 1]!.y, 0);
+
+  for (let ring = 0; ring < rings.length - 1; ring += 1) {
+    for (let segment = 0; segment < radialSegments; segment += 1) {
+      const next = (segment + 1) % radialSegments;
+      const lower = ring * radialSegments + segment;
+      const lowerNext = ring * radialSegments + next;
+      const upper = (ring + 1) * radialSegments + segment;
+      const upperNext = (ring + 1) * radialSegments + next;
+      indices.push(lower, upper, lowerNext, lowerNext, upper, upperNext);
+    }
+  }
+
+  const bottomCenter = rings.length * radialSegments;
+  const topCenter = bottomCenter + 1;
+  for (let segment = 0; segment < radialSegments; segment += 1) {
+    const next = (segment + 1) % radialSegments;
+    indices.push(bottomCenter, segment, next);
+    const top = (rings.length - 1) * radialSegments;
+    indices.push(topCenter, top + next, top + segment);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
 
 /**
  * Corpo articulado de transmissão para aparelhos fracos.
@@ -58,10 +107,11 @@ export function LowPlayers({
   const shadowRef = useRef<THREE.InstancedMesh>(null);
 
   const phase = useRef(new Float32Array(BODY_PARTS));
+  const phaseSeeded = useRef(new Uint8Array(BODY_PARTS));
   const yaw = useRef(new Float32Array(BODY_PARTS));
   const previousSpeed = useRef(new Float32Array(BODY_PARTS));
-  // deslocamento vertical de plantio de pé por atleta, suavizado entre quadros
   const groundLift = useRef(new Float32Array(BODY_PARTS));
+  const groundingPose = useMemo(() => emptyPose(), []);
   const tmp = useMemo(
     () => ({
       root: new THREE.Matrix4(),
@@ -86,6 +136,10 @@ export function LowPlayers({
     [sim.players],
   );
   const proportions = useMemo(() => looks.map(proportionsFor), [looks]);
+  const lowBodies = useMemo(() => proportions.map(lowDetailBodyFor), [proportions]);
+  const torsoGeometry = useMemo(() => createTaperedTorsoGeometry(), []);
+
+  useEffect(() => () => torsoGeometry.dispose(), [torsoGeometry]);
 
   useEffect(() => {
     sim.players.forEach((player, index) => {
@@ -200,10 +254,35 @@ export function LowPlayers({
         end.multiply(translate);
       }
     };
+    const setCenteredPart = (
+      mesh: THREE.InstancedMesh,
+      index: number,
+      parent: THREE.Matrix4,
+      offsetX: number,
+      offsetY: number,
+      offsetZ: number,
+      pitch: number,
+      yaw: number,
+      roll: number,
+      sizeX: number,
+      sizeY: number,
+      sizeZ: number,
+    ) => {
+      translate.makeTranslation(offsetX, offsetY, offsetZ);
+      joint.multiplyMatrices(parent, translate);
+      quaternion.setFromEuler(euler.set(pitch, yaw, roll));
+      rotate.makeRotationFromQuaternion(quaternion);
+      part.multiplyMatrices(joint, rotate);
+      scale.makeScale(sizeX, sizeY, sizeZ);
+      part.multiply(scale);
+      mesh.setMatrixAt(index, part);
+    };
 
     sim.players.forEach((player, index) => {
       const p = proportions[index];
-      if (!p) return;
+      const body = lowBodies[index];
+      const look = looks[index];
+      if (!p || !body) return;
       if (excluded?.has(player.id)) {
         tmp.part.makeScale(0, 0, 0);
         for (const mesh of [
@@ -238,27 +317,15 @@ export function LowPlayers({
           ? (visualCtx.contactContexts[index] ?? emptyContactContext())
           : emptyContactContext();
 
-      // Determina pé dominante do jogador
-      const dominantFoot: DominantFoot = getDominantFoot(player.pid);
-
-      // Aplica correções baseadas no contexto visual
-      let kick = 0;
       const action = String(player.action ?? "");
-
-      // Se tiver contexto de ação, usa ele para melhorar a animação
+      const hasKick = /shot|shoot|pass|cross|clear/i.test(action);
+      let kick = 0;
       if (actionContext.action && player.action) {
-        // Calcula kick com base no progresso da acao
-        const actionProgress =
+        const progress =
           actionContext.actionDur > 0
-            ? Math.max(0, 1 - actionContext.actionT / actionContext.actionDur)
+            ? Math.max(0, Math.min(1, 1 - actionContext.actionT / actionContext.actionDur))
             : 0;
-        kick = Math.sin(Math.PI * actionProgress);
-
-        // Se for uma acao de chute/passe, usa o pe determinado
-        if (actionContext.usedFoot && /shoot|pass|cross|clear/i.test(action)) {
-          // Ajusta a perna com base no pe usado
-          // (em LowPlayers, simplificamos: so usamos o kick generico)
-        }
+        kick = hasKick ? Math.sin(Math.PI * progress) : 0;
       }
 
       const speed = Math.hypot(player.vx, player.vz);
@@ -266,55 +333,69 @@ export function LowPlayers({
       let yawDelta = movingYaw - (yaw.current[index] ?? 0);
       while (yawDelta > Math.PI) yawDelta -= Math.PI * 2;
       while (yawDelta < -Math.PI) yawDelta += Math.PI * 2;
-      yaw.current[index] = (yaw.current[index] ?? 0) + yawDelta * (1 - Math.exp(-10 * dt));
-      phase.current[index] = (phase.current[index] ?? 0) + dt * (2.4 + speed * 1.28);
+      const previousYaw = yaw.current[index] ?? 0;
+      const nextYaw = previousYaw + yawDelta * (1 - Math.exp(-10 * dt));
+      yaw.current[index] = nextYaw;
+      const yawRate = (nextYaw - previousYaw) / Math.max(dt, 1 / 120);
 
-      const cycle = Math.sin(phase.current[index] ?? 0);
-      const gait = Math.min(1, speed / 6.5);
-      const stride = cycle * gait * (0.28 + gait * 0.52);
-      const liftL = Math.max(0, -cycle) * gait;
-      const liftR = Math.max(0, cycle) * gait;
+      if (!phaseSeeded.current[index]) {
+        const seed = look?.seed ?? index * 193;
+        phase.current[index] = ((Math.abs(seed) % 997) / 997) * Math.PI * 2;
+        phaseSeeded.current[index] = 1;
+      }
+      phase.current[index] = (phase.current[index] ?? 0) + gaitCadence(speed) * Math.PI * 2 * dt;
+      const gaitPose = gaitPoseAt(phase.current[index] ?? 0, speed);
       const acceleration =
         (speed - (previousSpeed.current[index] ?? speed)) / Math.max(dt, 1 / 120);
       previousSpeed.current[index] = speed;
-      const lean = THREE.MathUtils.clamp(speed * 0.018 + acceleration * 0.006, -0.1, 0.2);
-      const turnLean = THREE.MathUtils.clamp(-yawDelta * 0.7, -0.22, 0.22);
+      const lean = THREE.MathUtils.clamp(speed * 0.028 + acceleration * 0.006, -0.1, 0.22);
+      const turnLean = THREE.MathUtils.clamp(-yawRate * 0.09 * Math.min(1, speed / 5), -0.22, 0.22);
 
-      // ---- plantio de pé (versão barata do solver de `@/game/ground-contact`)
-      // Os atletas distantes usavam y = 0 fixo: com a passada aberta as duas
-      // solas subiam e os 20 jogadores de fundo flutuavam alguns centímetros
-      // acima do gramado — bem visível nas câmeras baixas. Aqui medimos a sola
-      // mais baixa das duas pernas e descemos a raiz até ela encostar.
-      const groundFootEarly = contactContext.groundFoot;
-      const factorL = groundFootEarly === "left" || groundFootEarly === null ? 0.3 : 1;
-      const factorR = groundFootEarly === "right" || groundFootEarly === null ? 0.3 : 1;
-      const legPitchL = stride + kick * 0.95 * factorL;
-      const legPitchR = -stride * factorR;
-      const kneeL = liftL * factorL;
-      const kneeR = liftR * factorR;
-      const hipLift = Math.abs(cycle) * gait * 0.025;
-      const soleOf = (legPitch: number, knee: number) => {
-        const shinPitch = -knee * (0.55 + gait * 0.75) - kick * 0.35;
-        return (
-          p.hipY +
-          hipLift -
-          p.thigh * Math.cos(legPitch) -
-          p.shin * Math.cos(legPitch + shinPitch) -
-          p.footH
-        );
-      };
-      const lowestSole = Math.min(soleOf(legPitchL, kneeL), soleOf(legPitchR, kneeR));
-      const wantLift = THREE.MathUtils.clamp(-lowestSole, -0.25, 0.35);
-      const previousLift = groundLift.current[index] ?? wantLift;
-      const smoothLift = previousLift + (wantLift - previousLift) * (1 - Math.exp(-22 * dt));
-      groundLift.current[index] = smoothLift;
+      const groundFoot = contactContext.groundFoot;
+      const hasGroundContact =
+        contactContext.type === "ground" || contactContext.type === "groundBall";
+      const contactForce = hasGroundContact ? THREE.MathUtils.clamp(contactContext.force, 0, 1) : 0;
+      const leftGrounded = hasGroundContact && (groundFoot === null || groundFoot === "left");
+      const rightGrounded = hasGroundContact && (groundFoot === null || groundFoot === "right");
+      const leftSupport = leftGrounded ? 1 - contactForce * 0.35 : 1;
+      const rightSupport = rightGrounded ? 1 - contactForce * 0.35 : 1;
+      const leftKick = hasKick && actionContext.usedFoot === "left" ? kick : 0;
+      const rightKick = hasKick && actionContext.usedFoot === "right" ? kick : 0;
+      const legPitchL = gaitPose.left.stride * leftSupport + leftKick * 0.95;
+      const legPitchR = gaitPose.right.stride * rightSupport + rightKick * 0.95;
+      const kneeFlexL = gaitPose.left.kneeFlex * leftSupport;
+      const kneeFlexR = gaitPose.right.kneeFlex * rightSupport;
+      const anklePitchL =
+        gaitPose.left.anklePitch + kneeFlexL * 0.12 + (leftGrounded ? contactForce * 0.05 : 0);
+      const anklePitchR =
+        gaitPose.right.anklePitch + kneeFlexR * 0.12 + (rightGrounded ? contactForce * 0.05 : 0);
 
-      position.set(player.x, smoothLift, player.z);
-      quaternion.setFromEuler(euler.set(lean, yaw.current[index] ?? 0, turnLean, "YXZ"));
+      // O solver compartilhado mede as solas com a mesma hierarquia do rig
+      // principal e mantém os atletas de fundo apoiados durante a passada.
+      groundingPose.hipY = gaitPose.hipBob;
+      groundingPose.legLPitch = legPitchL;
+      groundingPose.legRPitch = legPitchR;
+      groundingPose.kneeL = -kneeFlexL * (0.55 + gaitPose.intensity * 0.75) - leftKick * 0.35;
+      groundingPose.kneeR = -kneeFlexR * (0.55 + gaitPose.intensity * 0.75) - rightKick * 0.35;
+      groundingPose.ankleL = anklePitchL;
+      groundingPose.ankleR = anklePitchR;
+      const ground = solveGroundContact({
+        P: p,
+        pose: groundingPose,
+        leanX: -lean,
+        leanZ: turnLean,
+        airborne: airborneFactor(action, gaitPose.hipBob),
+        previousRootY: groundLift.current[index],
+        dt,
+      });
+      groundLift.current[index] = ground.rootY;
+
+      position.set(player.x, ground.rootY, player.z);
+      quaternion.setFromEuler(euler.set(-lean, nextYaw, turnLean, "YXZ"));
       root.compose(position, quaternion, unit);
 
-      const hipY = p.hipY + Math.abs(cycle) * gait * 0.025;
-      setPart(
+      const hipY = p.hipY + gaitPose.hipBob;
+      setCenteredPart(
         hipsRef.current as THREE.InstancedMesh,
         index,
         root,
@@ -322,58 +403,91 @@ export function LowPlayers({
         hipY,
         0,
         0,
+        gaitPose.torsoCounterRotation * 0.45,
         0,
-        p.hipW * 3.4,
-        p.hipH * 1.8,
-        p.chestD * 1.6,
+        body.pelvisWidth,
+        body.pelvisHeight / PELVIS_CAPSULE_HEIGHT,
+        body.pelvisDepth,
       );
-      setPart(
+      setCenteredPart(
         torsoRef.current as THREE.InstancedMesh,
         index,
         root,
         0,
-        hipY + p.spineLen + p.chestLen * 0.48,
+        body.torsoCenterY + gaitPose.hipBob,
         0,
-        lean * 0.35,
-        -turnLean * 0.35,
-        p.chestW * 4.9,
-        p.chestLen * 2.1,
-        p.chestD * 4.5,
+        lean * 0.28,
+        gaitPose.torsoCounterRotation,
+        -turnLean * 0.2,
+        body.torsoWidth,
+        body.torsoHeight,
+        body.torsoDepth,
       );
-      setPart(
+      let headYaw = Math.atan2(sim.ball.x - player.x, sim.ball.z - player.z) - nextYaw;
+      while (headYaw > Math.PI) headYaw -= Math.PI * 2;
+      while (headYaw < -Math.PI) headYaw += Math.PI * 2;
+      headYaw = THREE.MathUtils.clamp(headYaw * 0.65, -0.72, 0.72);
+      setCenteredPart(
         headRef.current as THREE.InstancedMesh,
         index,
         root,
         0,
-        hipY + p.spineLen + p.chestLen + p.neckLen + p.headR * 1.8,
+        body.headCenterY + gaitPose.hipBob,
         0,
-        -lean * 0.35,
+        -lean * 0.12,
+        headYaw,
         0,
-        p.headR * 2,
-        p.headR * 2.25,
-        p.headR * 2.05,
+        p.headW * 2,
+        p.headR * 2.28,
+        p.headD * 2,
       );
-      setPart(
+      const hairStyle = look?.hairStyle ?? "short";
+      const hairVolume = look?.hairVolume ?? 1;
+      const isCoily = hairStyle === "afro" || hairStyle === "curly";
+      const hairHeight =
+        hairStyle === "afro"
+          ? 1.24
+          : hairStyle === "curly"
+            ? 1.1
+            : hairStyle === "mohawk"
+              ? 0.62
+              : 1.04;
+      const hairCenterY =
+        body.headCenterY +
+        gaitPose.hipBob +
+        p.headR * (hairStyle === "mohawk" ? 0.95 : isCoily ? 0.42 : 0.16);
+      const hairWidth =
+        hairStyle === "afro"
+          ? 1.16
+          : hairStyle === "curly"
+            ? 1.08
+            : hairStyle === "mohawk"
+              ? 0.48
+              : 1.02;
+      const noHair = hairStyle === "bald";
+      setCenteredPart(
         hairRef.current as THREE.InstancedMesh,
         index,
         root,
         0,
-        hipY + p.spineLen + p.chestLen + p.neckLen + p.headR * 2.25,
+        hairCenterY,
         -p.headR * 0.03,
-        -lean * 0.35,
-        0,
-        p.headR * 2.04,
-        p.headR * 0.72,
-        p.headR * 2.08,
+        -lean * 0.1,
+        headYaw * 0.82,
+        gaitPose.torsoCounterRotation * 0.2,
+        noHair ? 0 : p.headR * 2 * hairWidth * (0.9 + hairVolume * 0.1),
+        noHair ? 0 : p.headR * 2 * hairHeight * hairVolume,
+        noHair ? 0 : p.headR * 2 * hairWidth * (0.9 + hairVolume * 0.1),
       );
-      setPart(
+      setCenteredPart(
         neckRef.current as THREE.InstancedMesh,
         index,
         root,
         0,
-        hipY + p.spineLen + p.chestLen + p.neckLen * 0.5,
+        body.neckCenterY + gaitPose.hipBob,
         0,
-        -lean * 0.2,
+        -lean * 0.1,
+        0,
         0,
         p.neckR * 2,
         p.neckLen,
@@ -382,28 +496,25 @@ export function LowPlayers({
 
       position.set(player.x, 0.014, player.z);
       quaternion.setFromEuler(euler.set(-Math.PI / 2, 0, -(yaw.current[index] ?? 0)));
-      shadowScale.set(0.38 + gait * 0.08, 0.68 + gait * 0.12, 1);
+      shadowScale.set(0.38 + gaitPose.intensity * 0.08, 0.68 + gaitPose.intensity * 0.12, 1);
       part.compose(position, quaternion, shadowScale);
       (shadowRef.current as THREE.InstancedMesh).setMatrixAt(index, part);
 
-      // Aplica correções baseadas no contexto de contato
-      // Se um pe esta no chao, ajusta o movimento da perna correspondente
-      const groundFoot = contactContext.groundFoot;
-      const leftOnGround = groundFoot === "left" || groundFoot === null;
-      const rightOnGround = groundFoot === "right" || groundFoot === null;
-
-      // Intensidade do contato para ajustar a pose
-      const contactForce = contactContext.force;
-
+      // Contato de apoio refina a passada sem travar as pernas quando a engine
+      // não tem um contato físico específico para este jogador.
       for (const side of [-1, 1] as const) {
         const limbIndex = index * 2 + (side === -1 ? 0 : 1);
-        const armPitch = -stride * 0.82 * side;
-        const shoulderY = hipY + p.spineLen + p.chestLen * 0.85;
+        // O pivô esquerdo do rig principal fica em +X; manter o mesmo lado
+        // garante que contatos e ações acertem o pé correto após a troca de LOD.
+        const isLeft = side === 1;
+        const armPitch = gaitPose.armCounterSwing * (isLeft ? 1 : -1);
+        const shoulderY = hipY + p.hipH * 0.5 + p.spineLen + p.chestLen * 0.84;
+        const shoulderX = side * p.shoulderW * 0.52;
         setPart(
           armsRef.current as THREE.InstancedMesh,
           limbIndex,
           root,
-          side * p.shoulderW,
+          shoulderX,
           shoulderY,
           0,
           armPitch,
@@ -417,7 +528,7 @@ export function LowPlayers({
           sleevesRef.current as THREE.InstancedMesh,
           limbIndex,
           root,
-          side * p.shoulderW,
+          shoulderX,
           shoulderY + 0.012,
           0,
           armPitch,
@@ -427,25 +538,15 @@ export function LowPlayers({
           p.armR * 2.42,
         );
 
-        // Ajusta o movimento das pernas com base no contexto de contato
-        const isLeft = side === -1;
-        const isRight = side === 1;
-
-        // Se o pe esquerdo esta no chao, reduz o movimento da perna esquerda
-        const leftGroundFactor = leftOnGround ? 0.3 : 1;
-        const rightGroundFactor = rightOnGround ? 0.3 : 1;
-
-        const legPitch = isLeft
-          ? stride + kick * 0.95 * leftGroundFactor
-          : -stride * rightGroundFactor;
-        const knee = isLeft ? liftL * leftGroundFactor : liftR * rightGroundFactor;
+        const legPitch = isLeft ? legPitchL : legPitchR;
+        const knee = isLeft ? kneeFlexL : kneeFlexR;
 
         setPart(
           thighsRef.current as THREE.InstancedMesh,
           limbIndex,
           root,
-          side * p.hipW * 0.5,
-          hipY,
+          side * p.hipW * 0.46,
+          hipY - p.hipH * 0.4,
           0,
           legPitch,
           side * 0.025,
@@ -454,7 +555,7 @@ export function LowPlayers({
           p.legR * 2.15,
           thighEnd,
         );
-        const shinPitch = -knee * (0.55 + gait * 0.75) - kick * 0.35;
+        const shinPitch = isLeft ? groundingPose.kneeL : groundingPose.kneeR;
         setPart(
           shinsRef.current as THREE.InstancedMesh,
           limbIndex,
@@ -470,9 +571,7 @@ export function LowPlayers({
           shinEnd,
         );
 
-        // Ajusta o pe com base no contato com o chao
-        const footContactOffset =
-          (isLeft && leftOnGround) || (isRight && rightOnGround) ? contactForce * 0.05 : 0;
+        const ankleFix = isLeft ? ground.ankleLFix : ground.ankleRFix;
         setPart(
           bootsRef.current as THREE.InstancedMesh,
           limbIndex,
@@ -480,7 +579,7 @@ export function LowPlayers({
           0,
           0,
           p.footLen * 0.2,
-          0.18 + knee * 0.2 + footContactOffset,
+          (isLeft ? anklePitchL : anklePitchR) + ankleFix,
           0,
           p.footH * 1.8,
           p.footH * 0.82,
@@ -507,13 +606,12 @@ export function LowPlayers({
   );
   return (
     <group ref={censusRef("playerLow")}>
-      <instancedMesh ref={torsoRef} args={[undefined, undefined, BODY_PARTS]} castShadow>
+      <instancedMesh ref={torsoRef} args={[torsoGeometry, undefined, BODY_PARTS]} castShadow>
         {cloth}
-        <capsuleGeometry args={[0.5, 0.48, 4, 8]} />
       </instancedMesh>
       <instancedMesh ref={hipsRef} args={[undefined, undefined, BODY_PARTS]} castShadow>
         {cloth}
-        <boxGeometry args={[1, 1, 1]} />
+        <capsuleGeometry args={[0.5, 0.48, 4, 8]} />
       </instancedMesh>
       <instancedMesh ref={headRef} args={[undefined, undefined, BODY_PARTS]}>
         {skin}
