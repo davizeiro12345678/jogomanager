@@ -2,8 +2,10 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
+import { emptyPose } from "@/game/animation-core";
 import type { Kit } from "@/game/kits";
 import { gaitCadence, gaitPoseAt } from "@/game/gait-kinematics";
+import { airborneFactor, solveGroundContact } from "@/game/ground-contact";
 import { lowDetailBodyFor, lookFor, proportionsFor } from "@/game/player-model";
 import type { SimView } from "@/game/sim";
 import {
@@ -108,6 +110,8 @@ export function LowPlayers({
   const phaseSeeded = useRef(new Uint8Array(BODY_PARTS));
   const yaw = useRef(new Float32Array(BODY_PARTS));
   const previousSpeed = useRef(new Float32Array(BODY_PARTS));
+  const groundLift = useRef(new Float32Array(BODY_PARTS));
+  const groundingPose = useMemo(() => emptyPose(), []);
   const tmp = useMemo(
     () => ({
       root: new THREE.Matrix4(),
@@ -314,7 +318,7 @@ export function LowPlayers({
           : emptyContactContext();
 
       const action = String(player.action ?? "");
-      const hasKick = /shoot|pass|cross|clear/i.test(action);
+      const hasKick = /shot|shoot|pass|cross|clear/i.test(action);
       let kick = 0;
       if (actionContext.action && player.action) {
         const progress =
@@ -347,7 +351,46 @@ export function LowPlayers({
       const lean = THREE.MathUtils.clamp(speed * 0.028 + acceleration * 0.006, -0.1, 0.22);
       const turnLean = THREE.MathUtils.clamp(-yawRate * 0.09 * Math.min(1, speed / 5), -0.22, 0.22);
 
-      position.set(player.x, 0, player.z);
+      const groundFoot = contactContext.groundFoot;
+      const hasGroundContact =
+        contactContext.type === "ground" || contactContext.type === "groundBall";
+      const contactForce = hasGroundContact ? THREE.MathUtils.clamp(contactContext.force, 0, 1) : 0;
+      const leftGrounded = hasGroundContact && (groundFoot === null || groundFoot === "left");
+      const rightGrounded = hasGroundContact && (groundFoot === null || groundFoot === "right");
+      const leftSupport = leftGrounded ? 1 - contactForce * 0.35 : 1;
+      const rightSupport = rightGrounded ? 1 - contactForce * 0.35 : 1;
+      const leftKick = hasKick && actionContext.usedFoot === "left" ? kick : 0;
+      const rightKick = hasKick && actionContext.usedFoot === "right" ? kick : 0;
+      const legPitchL = gaitPose.left.stride * leftSupport + leftKick * 0.95;
+      const legPitchR = gaitPose.right.stride * rightSupport + rightKick * 0.95;
+      const kneeFlexL = gaitPose.left.kneeFlex * leftSupport;
+      const kneeFlexR = gaitPose.right.kneeFlex * rightSupport;
+      const anklePitchL =
+        gaitPose.left.anklePitch + kneeFlexL * 0.12 + (leftGrounded ? contactForce * 0.05 : 0);
+      const anklePitchR =
+        gaitPose.right.anklePitch + kneeFlexR * 0.12 + (rightGrounded ? contactForce * 0.05 : 0);
+
+      // O solver compartilhado mede as solas com a mesma hierarquia do rig
+      // principal e mantém os atletas de fundo apoiados durante a passada.
+      groundingPose.hipY = gaitPose.hipBob;
+      groundingPose.legLPitch = legPitchL;
+      groundingPose.legRPitch = legPitchR;
+      groundingPose.kneeL = -kneeFlexL * (0.55 + gaitPose.intensity * 0.75) - leftKick * 0.35;
+      groundingPose.kneeR = -kneeFlexR * (0.55 + gaitPose.intensity * 0.75) - rightKick * 0.35;
+      groundingPose.ankleL = anklePitchL;
+      groundingPose.ankleR = anklePitchR;
+      const ground = solveGroundContact({
+        P: p,
+        pose: groundingPose,
+        leanX: -lean,
+        leanZ: turnLean,
+        airborne: airborneFactor(action, gaitPose.hipBob),
+        previousRootY: groundLift.current[index],
+        dt,
+      });
+      groundLift.current[index] = ground.rootY;
+
+      position.set(player.x, ground.rootY, player.z);
       quaternion.setFromEuler(euler.set(-lean, nextYaw, turnLean, "YXZ"));
       root.compose(position, quaternion, unit);
 
@@ -459,22 +502,11 @@ export function LowPlayers({
 
       // Contato de apoio refina a passada sem travar as pernas quando a engine
       // não tem um contato físico específico para este jogador.
-      const groundFoot = contactContext.groundFoot;
-      const hasGroundContact =
-        contactContext.type === "ground" || contactContext.type === "groundBall";
-      const contactForce = hasGroundContact ? THREE.MathUtils.clamp(contactContext.force, 0, 1) : 0;
-      const usedFoot = actionContext.usedFoot;
-
       for (const side of [-1, 1] as const) {
         const limbIndex = index * 2 + (side === -1 ? 0 : 1);
         // O pivô esquerdo do rig principal fica em +X; manter o mesmo lado
         // garante que contatos e ações acertem o pé correto após a troca de LOD.
         const isLeft = side === 1;
-        const footPose = isLeft ? gaitPose.left : gaitPose.right;
-        const sideFoot = isLeft ? "left" : "right";
-        const grounded = hasGroundContact && (groundFoot === null || groundFoot === sideFoot);
-        const supportFactor = grounded ? 1 - contactForce * 0.35 : 1;
-        const isKickingFoot = hasKick && usedFoot === sideFoot;
         const armPitch = gaitPose.armCounterSwing * (isLeft ? 1 : -1);
         const shoulderY = hipY + p.hipH * 0.5 + p.spineLen + p.chestLen * 0.84;
         const shoulderX = side * p.shoulderW * 0.52;
@@ -506,8 +538,8 @@ export function LowPlayers({
           p.armR * 2.42,
         );
 
-        const legPitch = footPose.stride * supportFactor + (isKickingFoot ? kick * 0.95 : 0);
-        const knee = footPose.kneeFlex * supportFactor;
+        const legPitch = isLeft ? legPitchL : legPitchR;
+        const knee = isLeft ? kneeFlexL : kneeFlexR;
 
         setPart(
           thighsRef.current as THREE.InstancedMesh,
@@ -523,8 +555,7 @@ export function LowPlayers({
           p.legR * 2.15,
           thighEnd,
         );
-        const shinPitch =
-          -knee * (0.55 + gaitPose.intensity * 0.75) - (isKickingFoot ? kick * 0.35 : 0);
+        const shinPitch = isLeft ? groundingPose.kneeL : groundingPose.kneeR;
         setPart(
           shinsRef.current as THREE.InstancedMesh,
           limbIndex,
@@ -540,7 +571,7 @@ export function LowPlayers({
           shinEnd,
         );
 
-        const footContactOffset = grounded ? contactForce * 0.05 : 0;
+        const ankleFix = isLeft ? ground.ankleLFix : ground.ankleRFix;
         setPart(
           bootsRef.current as THREE.InstancedMesh,
           limbIndex,
@@ -548,7 +579,7 @@ export function LowPlayers({
           0,
           0,
           p.footLen * 0.2,
-          footPose.anklePitch + knee * 0.12 + footContactOffset,
+          (isLeft ? anklePitchL : anklePitchR) + ankleFix,
           0,
           p.footH * 1.8,
           p.footH * 0.82,
