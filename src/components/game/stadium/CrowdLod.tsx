@@ -113,7 +113,7 @@ export function CrowdLod({
   const tiles = useMemo(() => buildTiles(crowd.positions), [crowd.positions]);
   const data = useMemo(() => {
     const card = crowdCard();
-    const uniforms = { time: { value: 0 }, pulse: { value: 0 } };
+    const uniforms = { time: { value: 0 }, pulse: { value: 0 }, wave: { value: 0 } };
     const materials = [0, 1, 2].map((tier) => {
       const material = new THREE.MeshStandardMaterial({
         roughness: 0.93,
@@ -124,17 +124,23 @@ export function CrowdLod({
       material.onBeforeCompile = (shader) => {
         shader.uniforms["crowdTime"] = uniforms.time;
         shader.uniforms["crowdPulse"] = uniforms.pulse;
+        shader.uniforms["crowdWave"] = uniforms.wave;
         shader.vertexShader = shader.vertexShader
           .replace(
             "#include <common>",
-            "#include <common>\nuniform float crowdTime; uniform float crowdPulse;",
+            "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave;",
           )
           .replace(
             "#include <begin_vertex>",
             `#include <begin_vertex>
               float phase = instanceMatrix[3].x * 0.71 + instanceMatrix[3].z * 0.37;
               transformed.x += sin(crowdTime * 1.7 + phase) * 0.035 * max(0.0, position.y + 0.6);
-              transformed.y += abs(sin(crowdTime * 7.0 + phase)) * crowdPulse * 0.48;`,
+              transformed.y += abs(sin(crowdTime * 7.0 + phase)) * crowdPulse * 0.48;
+              // ola mexicana: corcova que viaja ao redor do anel (uma volta a
+              // cada ~28 s); sutil no jogo corrido, erupção quando sai o gol
+              float ang = atan(instanceMatrix[3].z, instanceMatrix[3].x);
+              float dw = abs(mod(ang - crowdWave + 3.14159265, 6.2831853) - 3.14159265);
+              transformed.y += exp(-dw * dw * 5.0) * (0.1 + crowdPulse * 0.6);`,
           );
       };
       return material;
@@ -167,6 +173,7 @@ export function CrowdLod({
   useFrame(({ camera, clock }, dt) => {
     data.uniforms.time.value = clock.elapsedTime;
     data.uniforms.pulse.value = pulse.current;
+    data.uniforms.wave.value = (clock.elapsedTime * 0.22) % (Math.PI * 2);
     elapsed.current += dt;
     if (elapsed.current < budget.crowdUpdateSeconds) return;
     elapsed.current = 0;

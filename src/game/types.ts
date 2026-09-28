@@ -102,7 +102,15 @@ export interface TableRow {
 
 export type TrainingFocus = "ataque" | "defesa" | "fisico" | "tecnica" | "equilibrado";
 
-export type NewsKind = "resultado" | "mercado" | "lesao" | "cartao" | "sistema" | "premio";
+export type NewsKind =
+  | "resultado"
+  | "mercado"
+  | "lesao"
+  | "cartao"
+  | "sistema"
+  | "premio"
+  | "vestiario"
+  | "coletiva";
 
 export interface NewsItem {
   id: string;
@@ -289,6 +297,24 @@ export interface CareerState {
     hg: number;
     ag: number;
   }[];
+
+  /* ---------------------------------------------------------- v9 (vestiário) */
+  /** promessas de minutos feitas a jogadores (cobradas no advanceRound) */
+  promises?: ManagerPromise[];
+  /** jogadores com promessa quebrada (magoados) */
+  brokenPromises?: string[];
+  /** jogadores que tiveram oferta recusada (queriam sair) */
+  rejectedOffers?: string[];
+  /** última rodada em que deu coletiva (1 por rodada) */
+  pressRound?: number;
+}
+
+/** Promessa de titularidade: X jogos como titular até a rodada-limite. */
+export interface ManagerPromise {
+  pid: string;
+  starts: number;
+  target: number;
+  untilRound: number;
 }
 
 export interface CareerRecords {
@@ -364,6 +390,8 @@ export interface CupTie {
   away: string;
   hg: number | null;
   ag: number | null;
+  /** placar da disputa de pênaltis, quando houve (ex.: "4x3") */
+  pens?: string;
 }
 
 export interface CupGroupMatch {
@@ -412,7 +440,15 @@ export interface MatchEventLog {
     | "chance"
     | "yellow"
     | "red"
-    | "corner";
+    | "corner"
+    | "offside"
+    | "penalty"
+    | "freekick"
+    | "injury"
+    | "post"
+    | "talk"
+    | "crowd"
+    | "shootout";
   side: "home" | "away" | "neutral";
   text: string;
 }

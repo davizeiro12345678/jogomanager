@@ -26,6 +26,7 @@ import {
   type ClipName,
   type Pose,
 } from "@/game/animation";
+import { expressionFor } from "@/game/animation-extra3";
 import { kitTextureFor } from "@/game/graphics/kit-atlas";
 import { useMatchSurface } from "@/game/graphics/surface-context";
 import type { Kit } from "@/game/kits";
@@ -72,6 +73,7 @@ const GAIT_SPEED: Record<string, number> = {
   walkTalk: 1.5,
   tired: 1.5,
   exhaustedWalk: 1.2,
+  limp: 1.1,
   skipStep: 2.2,
   jog: 3.4,
   joggingBack: 3.0,
@@ -173,7 +175,11 @@ export const PlayerRig = memo(function PlayerRig({
   const clavLRef = useRef<THREE.Bone>(null);
   const clavRRef = useRef<THREE.Bone>(null);
   const jawRef = useRef<THREE.Bone>(null);
+  const eyesRef = useRef<THREE.Bone>(null);
   const nextBlink = useRef(1 + Math.random() * 4);
+  // alvo atual das sacadas (olhar): [lateral, vertical] em −1..1
+  const saccTarget = useRef<[number, number]>([0, 0]);
+  const saccTimer = useRef(0);
 
   // LOD por grupo de desenho: os grupos "near" (rosto, dedos) somem a partir
   // do LOD 1 e os "boot" (travas) a partir do LOD 2 — a maioria dos 22
@@ -484,7 +490,8 @@ export const PlayerRig = memo(function PlayerRig({
     }
     if (spine.current) spine.current.rotation.x = c.spine;
     if (chest.current) {
-      chest.current.rotation.x = c.chest;
+      // postura individual: cada atleta tem um "jeito de carregar o tronco"
+      chest.current.rotation.x = c.chest + P.posture;
       // respiração: caixa torácica expande no ritmo; cansado = mais rápido e fundo
       const fatigue = 1 - Math.min(1, Math.max(0, player.stamina) / 100);
       const rate = 1.4 + fatigue * 2.4 + Math.min(1, speed / 7) * 1.2;
@@ -509,11 +516,51 @@ export const PlayerRig = memo(function PlayerRig({
     if (armRRef.current) armRRef.current.rotation.set(c.armRPitch * 0.84, 0, c.armRRoll * 0.88);
     if (foreLRef.current) foreLRef.current.rotation.x = c.elbowL;
     if (foreRRef.current) foreRRef.current.rotation.x = c.elbowR;
-    // mandíbula: abre conforme o esforço, fechando quando o jogador descansa
-    if (jawRef.current && lod === 0) {
+    // ---- rosto: expressão do clipe + esforço (só no LOD 0, onde há rosto)
+    if (lod === 0) {
       const effort = Math.min(1, speed / 7);
-      jawRef.current.rotation.x =
-        0.06 + effort * 0.16 + Math.sin(state.clock.elapsedTime * 4 + seed) * 0.03 * effort;
+      const expr = expressionFor(clipName.current, effort, tired);
+      // mandíbula: o clipe sugere (grito, reclamação, ofego) e a fala treme
+      if (jawRef.current) {
+        const talking =
+          expr.jaw > 0.3 && expr.jaw < 0.7
+            ? Math.sin(state.clock.elapsedTime * 9 + seed) * 0.05
+            : 0;
+        const jawTarget = 0.05 + expr.jaw * 0.5 + talking;
+        jawRef.current.rotation.x +=
+          (jawTarget - jawRef.current.rotation.x) * Math.min(1, adt * 10);
+      }
+      // olhar: persegue a bola com sacadas rápidas; atenção baixa = vagueia
+      if (eyesRef.current) {
+        saccTimer.current -= adt;
+        if (saccTimer.current <= 0) {
+          saccTimer.current = 0.18 + Math.random() * 0.3;
+          const wander = 1 - expr.gaze;
+          saccTarget.current = [
+            gaze * 0.5 * expr.gaze + (Math.random() - 0.5) * 0.9 * wander,
+            (ballH < 6 ? 0.35 : -0.1) * expr.gaze + (Math.random() - 0.5) * 0.6 * wander,
+          ];
+        }
+        const k = Math.min(1, adt * 18);
+        const ex = Math.max(-1, Math.min(1, saccTarget.current[0])) * P.headR * 0.055;
+        const ey = Math.max(-1, Math.min(1, saccTarget.current[1])) * P.headR * 0.045;
+        eyesRef.current.position.x += (ex - eyesRef.current.position.x) * k;
+        eyesRef.current.position.y += (ey - eyesRef.current.position.y) * k;
+      }
+      // piscada: intervalo sugerido pelo clipe (encarar x pestanejar), com as
+      // pálpebras pesadas quando cansado
+      if (blinkRef.current) {
+        nextBlink.current -= adt;
+        const b = blinkRef.current;
+        const rest = expr.lids >= 1 ? 0.001 : (1 - expr.lids) * 0.45;
+        if (nextBlink.current <= 0) {
+          b.scale.y = Math.min(1, b.scale.y + adt * 22);
+          if (b.scale.y >= 1)
+            nextBlink.current = (2 + ((seed % 7) + Math.random() * 3)) * expr.blinkRate;
+        } else {
+          b.scale.y = Math.max(rest, b.scale.y - adt * 16);
+        }
+      }
     }
 
     if (legLRef.current) legLRef.current.rotation.set(c.legLPitch, 0, c.legLRoll);
@@ -522,18 +569,6 @@ export const PlayerRig = memo(function PlayerRig({
     if (kneeRRef.current) kneeRRef.current.rotation.x = c.kneeR;
     if (ankleLRef.current) ankleLRef.current.rotation.x = c.ankleL;
     if (ankleRRef.current) ankleRRef.current.rotation.x = c.ankleR;
-
-    // ---- piscada ocasional (só perto da câmera, onde o rosto aparece)
-    if (blinkRef.current && lod === 0) {
-      nextBlink.current -= adt;
-      const b = blinkRef.current;
-      if (nextBlink.current <= 0) {
-        b.scale.y = Math.min(1, b.scale.y + adt * 22);
-        if (b.scale.y >= 1) nextBlink.current = 2 + ((seed % 7) + Math.random() * 3);
-      } else {
-        b.scale.y = Math.max(0.001, b.scale.y - adt * 16);
-      }
-    }
 
     // ---- sombra de contato acompanha a altura do quadril
     if (shadowRef.current) {
@@ -636,6 +671,7 @@ export const PlayerRig = memo(function PlayerRig({
     chest,
     neck,
     jaw: jawRef,
+    eyes: eyesRef,
     blink: blinkRef,
     clavL: clavLRef,
     armL: armLRef,

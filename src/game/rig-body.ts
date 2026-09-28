@@ -22,11 +22,14 @@ import type { PlayerMaterials } from "./player-materials";
 import {
   armbandMaterial,
   eyeWhiteMaterial,
+  goldMaterial,
   headbandMaterial,
   irisMaterial,
   pupilMaterial,
   skinDetailMaterial,
   studMaterial,
+  tapeMaterial,
+  tattooMaterial,
   undershirtMaterial,
 } from "./rig-materials";
 import { mergeRigParts, rigPart, type RigMesh, type RigPart } from "./rig-geometry";
@@ -62,6 +65,7 @@ export interface RigBody {
   head: RigMesh[];
   hair: RigMesh[];
   face: RigMesh[];
+  eyes: RigMesh[];
   jaw: RigMesh[];
   blink: RigMesh[];
   armL: RigMesh[];
@@ -191,19 +195,33 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
       cast,
     ),
   ];
+  // brinco na orelha esquerda: esfera dourada mínima, só no detalhe alto
+  if (hi && look.earring) {
+    head.push(
+      rigPart(new THREE.SphereGeometry(P.headR * 0.09, 8, 8), goldMaterial(), {
+        position: [P.headR * 0.98, -P.headR * 0.12, 0],
+      }),
+    );
+  }
 
   const face: RigPart[] = [];
+  const eyes: RigPart[] = [];
   const blink: RigPart[] = [];
   const jaw: RigPart[] = [];
 
   for (const s of [-1, 1] as const) {
     face.push(
-      // esclera
+      // esclera (fixa no rosto)
       rigPart(
         new THREE.SphereGeometry(P.headR * 0.15, hi ? 12 : 8, hi ? 12 : 8),
         eyeWhiteMaterial(),
         { position: [s * P.headR * 0.36, P.headR * 0.1, P.headR * 0.82] },
       ),
+    );
+    // íris + pupila vão para o osso `eyes`: a animação translada o conjunto
+    // para perseguir a bola (sacadas conjugadas). Mesmas coordenadas porque o
+    // osso tem o mesmo pivô do rosto — e os mesmos 2 desenhos de antes.
+    eyes.push(
       // íris
       rigPart(new THREE.SphereGeometry(P.headR * 0.085, 10, 10), irisMaterial(look.eyeColor), {
         position: [s * P.headR * 0.36, P.headR * 0.1, P.headR * 0.9],
@@ -212,6 +230,8 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
       rigPart(new THREE.SphereGeometry(P.headR * 0.045, 8, 8), pupilMaterial(), {
         position: [s * P.headR * 0.36, P.headR * 0.1, P.headR * 0.94],
       }),
+    );
+    face.push(
       // sobrancelha
       rigPart(new THREE.BoxGeometry(P.headR * 0.36, P.headR * 0.08, P.headR * 0.1), hair, {
         position: [s * P.headR * 0.36, P.headR * 0.32, P.headR * 0.84],
@@ -532,6 +552,37 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
         cast,
       ),
     );
+    // fita branca no pulso
+    const taped = (isLeft && look.wristTape === "left") || (!isLeft && look.wristTape === "right");
+    if (taped) {
+      fore.push(
+        rigPart(
+          new THREE.CylinderGeometry(P.armR * 0.92, P.armR * 0.92, 0.035, segs.radial),
+          tapeMaterial(),
+          { position: [0, -P.foreArm * 0.9, 0] },
+        ),
+      );
+    }
+    // tatuagem: cilindro vazado com a estampa por cima da pele (manga longa cobre)
+    const inked =
+      look.sleeves !== "long" &&
+      ((isLeft && look.tattoo === "foreL") || (!isLeft && look.tattoo === "foreR"));
+    if (inked) {
+      fore.push(
+        rigPart(
+          new THREE.CylinderGeometry(
+            P.armR * 0.905,
+            P.armR * 0.905,
+            P.foreArm * 0.52,
+            segs.radial,
+            1,
+            true,
+          ),
+          tattooMaterial(look.seed + (isLeft ? 7 : 29)),
+          { position: [0, -P.foreArm * 0.52, 0] },
+        ),
+      );
+    }
     hand.push(
       rigPart(new THREE.SphereGeometry(handR, segs.radial, segs.radial), handMat, undefined, cast),
     );
@@ -573,6 +624,9 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     );
 
     /* joelho e canela */
+    // meião baixo, médio ou alto: muda comprimento e posição de tudo junto
+    const sockLen = look.sockHeight === "low" ? 0.3 : look.sockHeight === "high" ? 0.56 : 0.44;
+    const sockY = look.sockHeight === "low" ? 0.72 : look.sockHeight === "high" ? 0.55 : 0.62;
     knee.push(
       rigPart(new THREE.SphereGeometry(P.legR * 0.94, segs.radial, segs.radial), skin),
       rigPart(
@@ -591,9 +645,9 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
         cast,
       ),
       rigPart(
-        new THREE.CapsuleGeometry(P.legR * 0.94, P.shin * 0.44, segs.cap, segs.radial),
+        new THREE.CapsuleGeometry(P.legR * 0.94, P.shin * sockLen, segs.cap, segs.radial),
         socks,
-        { position: [0, -P.shin * 0.62, 0] },
+        { position: [0, -P.shin * sockY, 0] },
         cast,
       ),
       rigPart(
@@ -606,7 +660,7 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
         cast,
       ),
       rigPart(new THREE.CylinderGeometry(P.legR * 1.02, P.legR * 0.98, 0.045, segs.radial), trim, {
-        position: [0, -P.shin * 0.36, 0],
+        position: [0, -P.shin * (sockY - sockLen / 2), 0],
       }),
     );
     if (look.sockTape) {
@@ -614,7 +668,7 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
         rigPart(
           new THREE.CylinderGeometry(P.legR * 1.03, P.legR * 1.03, 0.035, segs.radial),
           trim,
-          { position: [0, -P.shin * 0.46, 0] },
+          { position: [0, -P.shin * (sockY - sockLen / 2 + 0.1), 0] },
         ),
       );
     }
@@ -697,6 +751,7 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     // uma malha só para os dois.
     hair: mergeRigParts([...hairParts, ...beard]),
     face: mergeRigParts(face),
+    eyes: mergeRigParts(eyes),
     jaw: mergeRigParts(jaw),
     blink: mergeRigParts(blink),
     armL: mergeRigParts(armL),

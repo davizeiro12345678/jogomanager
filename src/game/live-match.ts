@@ -1,6 +1,7 @@
 import type { Player, Tactics } from "./types";
 import {
   MatchSim,
+  emptyStats,
   type MatchStats,
   type PlayerRating,
   type Scorer,
@@ -9,13 +10,23 @@ import {
   type SimPlayer,
   type SimView,
   type TeamSetup,
+  type TeamTalkKind,
 } from "./sim";
+import type { WindVector } from "./ball-climate";
 import type { VisualBallState } from "./visual-ball";
+import type { MatchPhase, ShootoutKick, WeatherKind } from "./sim-rules";
 
 export interface LiveSnapshot {
   seq: number;
   sentAt: number;
   time: number;
+  /** relógio formatado: 45+2', 90+3', 105', PEN */
+  clock: string;
+  phase: MatchPhase;
+  shootout: ShootoutKick[];
+  weather: WeatherKind;
+  wind: WindVector;
+  refName: string;
   players: SimPlayer[];
   ball: SimView["ball"];
   /** Pose opcional de apresentação calculada pelo Rapier no Worker. */
@@ -37,14 +48,31 @@ export interface LiveResult extends LiveSnapshot {
 }
 
 export type LiveWorkerRequest =
-  | { id: number; type: "startLive"; home: TeamSetup; away: TeamSetup; seed: string }
+  | {
+      id: number;
+      type: "startLive";
+      home: TeamSetup;
+      away: TeamSetup;
+      seed: string;
+      knockout?: boolean | undefined;
+      weather?: WeatherKind | undefined;
+    }
   | { id: number; type: "pauseLive"; paused: boolean }
   | { id: number; type: "speedLive"; speed: number }
   | { id: number; type: "tacticsLive"; side: Side; tactics: Tactics }
+  | { id: number; type: "talkLive"; side: Side; kind: TeamTalkKind }
   | { id: number; type: "substituteLive"; side: Side; outPid: string; incoming: Player }
   | { id: number; type: "skipLive" }
   | { id: number; type: "stopLive" }
-  | { id: number; type: "simulate"; home: TeamSetup; away: TeamSetup; seed: string }
+  | {
+      id: number;
+      type: "simulate";
+      home: TeamSetup;
+      away: TeamSetup;
+      seed: string;
+      knockout?: boolean | undefined;
+      weather?: WeatherKind | undefined;
+    }
   | { id: number; type: "autoSeason"; career: import("./types").CareerState; maxWeeks: number }
   | {
       id: number;
@@ -68,6 +96,9 @@ export interface MatchRuntime extends SimView {
   subsUsed: Record<Side, number>;
   finished: boolean;
   eventSeq?: number;
+  /** relógio formatado e fase (presentes na view ao vivo) */
+  clock?: string;
+  phase?: MatchPhase;
   playerRatings(): PlayerRating[];
   manOfTheMatch(): PlayerRating | null;
   possessionPct(): [number, number];
@@ -88,6 +119,12 @@ export function snapshotMatch(
     seq,
     sentAt: performance.now(),
     time: sim.time,
+    clock: sim.clock(),
+    phase: sim.phase,
+    shootout: sim.shootout.map((kick) => ({ ...kick })),
+    weather: sim.weather,
+    wind: { ...sim.wind },
+    refName: sim.ref.name,
     players: sim.players.map((player) => ({ ...player })),
     ball: { ...sim.ball },
     ...(visualBall ? { visualBall: { ...visualBall } } : {}),
@@ -115,6 +152,12 @@ function cloneStats(stats: Record<Side, MatchStats>): Record<Side, MatchStats> {
 
 export class WorkerMatchView implements MatchRuntime {
   time = 0;
+  clock = "0'";
+  phase: MatchPhase = "first";
+  shootout: ShootoutKick[] = [];
+  weather: WeatherKind = "clear";
+  wind: WindVector = { x: 0, z: 0, strength01: 0 };
+  refName = "";
   players: SimPlayer[] = [];
   ball = { x: 0, z: 0, vx: 0, vz: 0, holder: null as string | null, height: 0.12 };
   visualBall?: VisualBallState;
@@ -140,32 +183,7 @@ export class WorkerMatchView implements MatchRuntime {
     public home: TeamSetup,
     public away: TeamSetup,
   ) {
-    this.stats = {
-      home: {
-        goals: 0,
-        shots: 0,
-        onTarget: 0,
-        possessionTicks: 0,
-        fouls: 0,
-        passes: 0,
-        passesOk: 0,
-        corners: 0,
-        yellow: 0,
-        red: 0,
-      },
-      away: {
-        goals: 0,
-        shots: 0,
-        onTarget: 0,
-        possessionTicks: 0,
-        fouls: 0,
-        passes: 0,
-        passesOk: 0,
-        corners: 0,
-        yellow: 0,
-        red: 0,
-      },
-    };
+    this.stats = { home: emptyStats(), away: emptyStats() };
   }
 
   apply(next: LiveSnapshot | LiveResult) {
@@ -213,6 +231,12 @@ export class WorkerMatchView implements MatchRuntime {
       this.targetVisualBall = null;
     }
     this.time = next.time;
+    this.clock = next.clock;
+    this.phase = next.phase;
+    this.shootout = next.shootout.map((kick) => ({ ...kick }));
+    this.weather = next.weather;
+    this.wind = { ...next.wind };
+    this.refName = next.refName;
     this.possession = next.possession;
     this.stats = cloneStats(next.stats);
     if (next.eventSeq !== this.eventSeq) this.events = next.events.map((event) => ({ ...event }));
@@ -263,7 +287,7 @@ export class WorkerMatchView implements MatchRuntime {
   }
 
   minute() {
-    return Math.min(90, Math.floor(this.time / 60));
+    return Math.min(120, Math.floor(this.time / 60));
   }
   possessionPct(): [number, number] {
     const home = this.stats.home.possessionTicks;
