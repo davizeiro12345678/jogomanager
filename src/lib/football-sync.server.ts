@@ -701,6 +701,7 @@ export async function runSync(opts: {
   budgetMs?: number;
   leagueId?: string;
   season?: string;
+  phase?: import("./premium-chain.server").PremiumPhase;
 }) {
   const db = await admin();
   const scope = opts.scope ?? "clubs";
