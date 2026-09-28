@@ -194,9 +194,14 @@ export type KitDetail = "hero" | "squad";
 /** bytes aproximados por textura, para o relatório de orçamento de textura. */
 const kitBytes = new Map<string, number>();
 
-export function kitTexture(kit: Kit, number: number, name?: string, detail: KitDetail = "hero"): THREE.CanvasTexture | null {
+export function kitTexture(
+  kit: Kit,
+  number: number,
+  name?: string,
+  detail: KitDetail = "hero",
+): THREE.CanvasTexture | null {
   if (typeof document === "undefined") return null;
-  const key = `${detail}|${kit.base}|${kit.detail}|${kit.pattern}|${number}|${detail === "hero" ? name ?? "" : ""}`;
+  const key = `${detail}|${kit.base}|${kit.detail}|${kit.pattern}|${number}|${detail === "hero" ? (name ?? "") : ""}`;
   const hit = cache.get(key);
   if (hit) return hit;
 

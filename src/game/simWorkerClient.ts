@@ -159,7 +159,9 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         localSim.step(fixed * motionScale, (LIVE_MATCH_CLOCK_SCALE * localSpeed) / motionScale);
       }
       sequence += 1;
-      apply(localSim.finished ? resultMatch(localSim, sequence) : snapshotMatch(localSim, sequence));
+      apply(
+        localSim.finished ? resultMatch(localSim, sequence) : snapshotMatch(localSim, sequence),
+      );
       if (localSim.finished) stopLocal();
     }, 100);
   };
@@ -182,7 +184,8 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         if (message.type === "snapshot") apply(message.snapshot);
         else if (message.type === "finished") apply(message.result);
       };
-      liveWorker.onerror = () => startFallback("O Worker falhou; a partida continuou no modo compatível.");
+      liveWorker.onerror = () =>
+        startFallback("O Worker falhou; a partida continuou no modo compatível.");
       send({ type: "startLive", home: options.home, away: options.away, seed: options.seed });
     } catch {
       startFallback();
@@ -278,9 +281,5 @@ export function autoSeasonAsync(
   career: CareerState,
   maxWeeks = 60,
 ): Promise<{ weeks: AutoWeek[]; state: CareerState }> {
-  return call(
-    { type: "autoSeason", career, maxWeeks },
-    () => autoSeason(career, maxWeeks),
-    90_000,
-  );
+  return call({ type: "autoSeason", career, maxWeeks }, () => autoSeason(career, maxWeeks), 90_000);
 }

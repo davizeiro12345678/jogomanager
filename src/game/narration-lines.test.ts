@@ -9,18 +9,30 @@ import {
 } from "./narration-lines";
 
 const events: NarrationEvent[] = [
-  "goal", "save", "shot", "post", "foul", "card", "redCard",
-  "chance", "corner", "sub", "kickoff", "halftime", "fulltime",
+  "goal",
+  "save",
+  "shot",
+  "post",
+  "foul",
+  "card",
+  "redCard",
+  "chance",
+  "corner",
+  "sub",
+  "kickoff",
+  "halftime",
+  "fulltime",
 ];
 
 describe("narration catalogue", () => {
-  it.each<[NarrationLang, number]>([["pt", 300], ["en", 200], ["es", 200]])(
-    "keeps the expanded %s catalogue above its minimum",
-    (lang, minimum) => {
-      const total = events.reduce((sum, event) => sum + lineCount(lang, event), 0);
-      expect(total).toBeGreaterThanOrEqual(minimum);
-    },
-  );
+  it.each<[NarrationLang, number]>([
+    ["pt", 300],
+    ["en", 200],
+    ["es", 200],
+  ])("keeps the expanded %s catalogue above its minimum", (lang, minimum) => {
+    const total = events.reduce((sum, event) => sum + lineCount(lang, event), 0);
+    expect(total).toBeGreaterThanOrEqual(minimum);
+  });
 
   it("replaces team placeholders without exposing raw templates", () => {
     for (const lang of ["pt", "en", "es"] as const) {

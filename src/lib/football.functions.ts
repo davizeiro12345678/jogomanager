@@ -41,7 +41,6 @@ export const getOfficialAssets = createServerFn({ method: "GET" }).handler(
       }
     }
 
-
     const { data: kitRows } = await db
       .from("kits")
       .select("club_id, image_url")

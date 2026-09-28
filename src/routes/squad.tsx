@@ -5,7 +5,15 @@ import { PlayerSheet } from "@/components/game/PlayerSheet";
 
 import { GameShell } from "@/components/game/GameShell";
 import { NoCareer } from "@/components/game/screen-kit";
-import { HudBar, HudCard, HudChip, HudRing, HudStat, SparkBars, toneFor } from "@/components/ui/hud";
+import {
+  HudBar,
+  HudCard,
+  HudChip,
+  HudRing,
+  HudStat,
+  SparkBars,
+  toneFor,
+} from "@/components/ui/hud";
 import { FORMATIONS } from "@/game/formations";
 import { formatMoney, formatWage, wageBill } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";

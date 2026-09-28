@@ -109,20 +109,35 @@ function Landing() {
       <header className="relative isolate overflow-hidden">
         <nav
           aria-label="Navegação principal"
-            className="absolute inset-x-0 top-0 z-20 border-b border-primary/15 bg-background/55 backdrop-blur-xl"
+          className="absolute inset-x-0 top-0 z-20 border-b border-primary/15 bg-background/55 backdrop-blur-xl"
         >
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-            <Link to="/" className="flex items-center gap-2 font-display text-sm uppercase text-foreground">
+            <Link
+              to="/"
+              className="flex items-center gap-2 font-display text-sm uppercase text-foreground"
+            >
               <span className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">
                 <Gamepad2 className="h-4 w-4" aria-hidden="true" />
               </span>
-              <span>Pro Football Manager <span className="text-primary">3D</span></span>
+              <span>
+                Pro Football Manager <span className="text-primary">3D</span>
+              </span>
             </Link>
             <div className="hidden items-center gap-1 md:flex">
-              <Button variant="ghost" asChild><Link to="/guias">Guias</Link></Button>
-              <Button variant="ghost" asChild><Link to="/ligas-de-futebol">Ligas</Link></Button>
-              <Button variant="ghost" asChild><Link to="/auth">Entrar</Link></Button>
-              <Button asChild><Link to={hasCareer ? "/dashboard" : "/new"}>{hasCareer ? "Continuar" : "Jogar agora"}</Link></Button>
+              <Button variant="ghost" asChild>
+                <Link to="/guias">Guias</Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link to="/ligas-de-futebol">Ligas</Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link to="/auth">Entrar</Link>
+              </Button>
+              <Button asChild>
+                <Link to={hasCareer ? "/dashboard" : "/new"}>
+                  {hasCareer ? "Continuar" : "Jogar agora"}
+                </Link>
+              </Button>
             </div>
             <Button
               variant="ghost"
@@ -137,10 +152,26 @@ function Landing() {
           </div>
           {menuOpen ? (
             <div className="grid gap-1 border-t border-border/50 bg-background p-3 md:hidden">
-              <Button variant="ghost" asChild><Link to="/guias" onClick={() => setMenuOpen(false)}>Guias</Link></Button>
-              <Button variant="ghost" asChild><Link to="/ligas-de-futebol" onClick={() => setMenuOpen(false)}>Ligas</Link></Button>
-              <Button variant="outline" asChild><Link to="/auth" onClick={() => setMenuOpen(false)}>Entrar</Link></Button>
-              <Button asChild><Link to={hasCareer ? "/dashboard" : "/new"} onClick={() => setMenuOpen(false)}>{hasCareer ? "Continuar carreira" : "Jogar agora"}</Link></Button>
+              <Button variant="ghost" asChild>
+                <Link to="/guias" onClick={() => setMenuOpen(false)}>
+                  Guias
+                </Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link to="/ligas-de-futebol" onClick={() => setMenuOpen(false)}>
+                  Ligas
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/auth" onClick={() => setMenuOpen(false)}>
+                  Entrar
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link to={hasCareer ? "/dashboard" : "/new"} onClick={() => setMenuOpen(false)}>
+                  {hasCareer ? "Continuar carreira" : "Jogar agora"}
+                </Link>
+              </Button>
             </div>
           ) : null}
         </nav>
@@ -186,17 +217,25 @@ function Landing() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Button size="lg" className="glow-primary flex-1 sm:flex-none" asChild>
                 <Link to={hasCareer ? "/dashboard" : "/new"}>
-                {hasCareer ? "Continuar carreira" : "Jogar agora"}
+                  {hasCareer ? "Continuar carreira" : "Jogar agora"}
                   <ArrowRight aria-hidden="true" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="flex-1 bg-background/45 backdrop-blur sm:flex-none" asChild>
+              <Button
+                size="lg"
+                variant="outline"
+                className="flex-1 bg-background/45 backdrop-blur sm:flex-none"
+                asChild
+              >
                 <Link to="/partida-rapida">Partida rápida</Link>
               </Button>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
               Seu progresso fica neste aparelho até você salvar na nuvem.{" "}
-              <Link to="/auth" className="font-medium text-primary underline underline-offset-4 hover:text-foreground">
+              <Link
+                to="/auth"
+                className="font-medium text-primary underline underline-offset-4 hover:text-foreground"
+              >
                 Salvar com Google
               </Link>{" "}
               leva um clique.
@@ -285,7 +324,10 @@ function Landing() {
             return (
               <div key={title as string} className="flex gap-3 bg-background/90 px-5 py-4">
                 <FeatureIcon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                <div><p className="font-display text-sm">{title as string}</p><p className="text-xs text-muted-foreground">{detail as string}</p></div>
+                <div>
+                  <p className="font-display text-sm">{title as string}</p>
+                  <p className="text-xs text-muted-foreground">{detail as string}</p>
+                </div>
               </div>
             );
           })}
@@ -375,7 +417,10 @@ function Landing() {
           </ol>
         </section>
 
-        <nav aria-label="Links úteis" className="mt-10 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground sm:text-sm">
+        <nav
+          aria-label="Links úteis"
+          className="mt-10 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground sm:text-sm"
+        >
           <Link to="/guias" className="underline-offset-4 hover:text-foreground hover:underline">
             Guias para iniciantes
           </Link>

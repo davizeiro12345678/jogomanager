@@ -79,8 +79,38 @@ export type Ktx2Name =
   | "shinNormal"
   | "shinRough"
   | "sockNormal";
-export type StadiumKtx2Name = "grassAlbedo" | "grassNormal" | "grassRough" | "concreteAlbedo" | "concreteRough" | "netMask";
-export type DetailKtx2Name = "jersey_solid_normal" | "jersey_solid_rough" | "jersey_stripes_normal" | "jersey_stripes_rough" | "jersey_pin_normal" | "jersey_pin_rough" | "jersey_hoops_normal" | "jersey_hoops_rough" | "jersey_sash_normal" | "jersey_sash_rough" | "jersey_halves_normal" | "jersey_halves_rough" | "jersey_checks_normal" | "jersey_checks_rough" | "shorts_plain_normal" | "shorts_mesh_normal" | "shorts_stitched_normal" | "socks_rib_normal" | "socks_fine_normal" | "socks_heavy_normal" | "boot_leather_normal" | "boot_synthetic_normal" | "boot_knit_normal" | "skin_light_normal" | "skin_medium_normal" | "skin_dark_normal" | "grass_stripes_albedo" | "grass_diagonal_albedo" | "grass_wide_albedo";
+export type StadiumKtx2Name =
+  "grassAlbedo" | "grassNormal" | "grassRough" | "concreteAlbedo" | "concreteRough" | "netMask";
+export type DetailKtx2Name =
+  | "jersey_solid_normal"
+  | "jersey_solid_rough"
+  | "jersey_stripes_normal"
+  | "jersey_stripes_rough"
+  | "jersey_pin_normal"
+  | "jersey_pin_rough"
+  | "jersey_hoops_normal"
+  | "jersey_hoops_rough"
+  | "jersey_sash_normal"
+  | "jersey_sash_rough"
+  | "jersey_halves_normal"
+  | "jersey_halves_rough"
+  | "jersey_checks_normal"
+  | "jersey_checks_rough"
+  | "shorts_plain_normal"
+  | "shorts_mesh_normal"
+  | "shorts_stitched_normal"
+  | "socks_rib_normal"
+  | "socks_fine_normal"
+  | "socks_heavy_normal"
+  | "boot_leather_normal"
+  | "boot_synthetic_normal"
+  | "boot_knit_normal"
+  | "skin_light_normal"
+  | "skin_medium_normal"
+  | "skin_dark_normal"
+  | "grass_stripes_albedo"
+  | "grass_diagonal_albedo"
+  | "grass_wide_albedo";
 export type TextureName = Ktx2Name | StadiumKtx2Name | DetailKtx2Name;
 
 /** repetição de cada mapa sobre a malha do jogador */
@@ -132,7 +162,6 @@ const SOURCES: Record<TextureName, { url: string; repeat: number; color?: boolea
   grass_stripes_albedo: { url: asset26.url, repeat: 1, color: true },
   grass_diagonal_albedo: { url: asset27.url, repeat: 1, color: true },
   grass_wide_albedo: { url: asset28.url, repeat: 1, color: true },
-
 };
 
 const loaded = new Map<TextureName, THREE.Texture>();
@@ -145,7 +174,11 @@ const listeners = new Set<() => void>();
 let revision = 0;
 /** Re-render only when a compressed asset arrives; no per-frame checks. */
 export function useKtx2Revision(): number {
-  return useSyncExternalStore(onKtx2Ready, () => revision, () => 0);
+  return useSyncExternalStore(
+    onKtx2Ready,
+    () => revision,
+    () => 0,
+  );
 }
 
 /** avisa quem depende das texturas (o cache de materiais) que elas chegaram */
@@ -182,7 +215,9 @@ export function requestKtx2(names: readonly TextureName[]): void {
         for (const fn of listeners) fn();
       },
       undefined,
-      () => { requested.delete(name); },
+      () => {
+        requested.delete(name);
+      },
     );
   }
 }
@@ -191,17 +226,36 @@ export function requestKtx2(names: readonly TextureName[]): void {
  * Inicia o download uma única vez. Precisa do renderer para saber quais
  * formatos comprimidos a GPU aceita (ASTC, BC7, ETC2, …).
  */
-export function initKtx2(renderer: THREE.WebGLRenderer | import("three/webgpu").WebGPURenderer): void {
+export function initKtx2(
+  renderer: THREE.WebGLRenderer | import("three/webgpu").WebGPURenderer,
+): void {
   if (started || typeof window === "undefined") return;
   started = true;
 
   loader = new KTX2Loader().setTranscoderPath("/basis/").detectSupport(renderer);
-  anisotropy = renderer instanceof THREE.WebGLRenderer ? Math.min(8, renderer.capabilities.getMaxAnisotropy()) : 8;
+  anisotropy =
+    renderer instanceof THREE.WebGLRenderer
+      ? Math.min(8, renderer.capabilities.getMaxAnisotropy())
+      : 8;
   requestKtx2([
-    "fiberNormal", "fiberRough", "skinNormal", "sweatNormal", "sweatMask",
-    "hairNormal", "hairRough", "bootNormal", "bootRough", "shinNormal",
-    "shinRough", "sockNormal", "grassAlbedo", "grassNormal", "grassRough",
-    "concreteAlbedo", "concreteRough", "netMask",
+    "fiberNormal",
+    "fiberRough",
+    "skinNormal",
+    "sweatNormal",
+    "sweatMask",
+    "hairNormal",
+    "hairRough",
+    "bootNormal",
+    "bootRough",
+    "shinNormal",
+    "shinRough",
+    "sockNormal",
+    "grassAlbedo",
+    "grassNormal",
+    "grassRough",
+    "concreteAlbedo",
+    "concreteRough",
+    "netMask",
   ]);
   requestKtx2([...pending]);
   pending.clear();

@@ -281,7 +281,9 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                       <span className="font-display text-2xl leading-none">
                         {formatBRL(salePrice(p).cents, p.currency)}
                       </span>
-                      <s className="text-sm text-muted-foreground">{formatBRL(p.price_cents, p.currency)}</s>
+                      <s className="text-sm text-muted-foreground">
+                        {formatBRL(p.price_cents, p.currency)}
+                      </s>
                       <Badge variant="destructive">-{salePrice(p).percent}%</Badge>
                     </>
                   ) : (

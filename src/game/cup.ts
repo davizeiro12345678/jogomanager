@@ -532,6 +532,12 @@ export function playCupStage(cup: CupState, state: CareerState): CupResult {
 /** Premiação por avançar de fase (M€). */
 export function cupPrize(cupId: string, stage: number): number {
   const base =
-    cupId === "club_world_cup" ? 8 : cupId === "intercontinental" ? 6 : cupId === "continental" ? 4 : 1.6;
+    cupId === "club_world_cup"
+      ? 8
+      : cupId === "intercontinental"
+        ? 6
+        : cupId === "continental"
+          ? 4
+          : 1.6;
   return Math.round(base * (stage + 1) * 10) / 10;
 }

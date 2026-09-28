@@ -118,9 +118,7 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
         .setAngularDamping(0.28),
     );
     this.ballCollider = this.world.createCollider(
-      RAPIER.ColliderDesc.ball(BALL_PHYSICS_RADIUS)
-        .setFriction(0.72)
-        .setRestitution(0.54),
+      RAPIER.ColliderDesc.ball(BALL_PHYSICS_RADIUS).setFriction(0.72).setRestitution(0.54),
       this.ballBody,
     );
   }

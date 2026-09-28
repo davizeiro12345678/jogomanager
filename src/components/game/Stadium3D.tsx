@@ -223,13 +223,30 @@ function Pitch({
   // The precompiled albedo is the default checker cut; retain procedural maps
   // for custom mowing patterns and all low-end/offline devices.
   const compressed = quality === "alta";
-  const grassVariant = mow === "stripes" || mow === "diagonal" || mow === "wide" ? `grass_${mow}_albedo` as const : "grassAlbedo";
+  const grassVariant =
+    mow === "stripes" || mow === "diagonal" || mow === "wide"
+      ? (`grass_${mow}_albedo` as const)
+      : "grassAlbedo";
   useEffect(() => {
     if (compressed && grassVariant !== "grassAlbedo") requestKtx2([grassVariant]);
   }, [compressed, grassVariant]);
-  const tex = useMemo(() => (compressed && (mow === "checker" || mow === "stripes" || mow === "diagonal" || mow === "wide") ? ktx2(grassVariant) : null) ?? grassAlbedo(mow), [mow, compressed, grassVariant, textureRevision]);
-  const rough = useMemo(() => (compressed ? ktx2("grassRough") : null) ?? grassRoughness(mow), [mow, compressed, textureRevision]);
-  const norm = useMemo(() => quality === "baixa" ? null : ((compressed ? ktx2("grassNormal") : null) ?? grassNormal(mow)), [quality, mow, compressed, textureRevision]);
+  const tex = useMemo(
+    () =>
+      (compressed &&
+      (mow === "checker" || mow === "stripes" || mow === "diagonal" || mow === "wide")
+        ? ktx2(grassVariant)
+        : null) ?? grassAlbedo(mow),
+    [mow, compressed, grassVariant, textureRevision],
+  );
+  const rough = useMemo(
+    () => (compressed ? ktx2("grassRough") : null) ?? grassRoughness(mow),
+    [mow, compressed, textureRevision],
+  );
+  const norm = useMemo(
+    () =>
+      quality === "baixa" ? null : ((compressed ? ktx2("grassNormal") : null) ?? grassNormal(mow)),
+    [quality, mow, compressed, textureRevision],
+  );
   const normalScale = useMemo(
     () => new THREE.Vector2(quality === "alta" ? 1.18 : 0.82, quality === "alta" ? 1.18 : 0.82),
     [quality],
@@ -2761,7 +2778,12 @@ function Scene({
       <AdBoards homeColor={sim.home.primary} awayColor={sim.away.primary} />
       <Floodlights time={time} quality={quality} />
       {/* Feixes volumétricos, poeira e brilho das lâmpadas (custo fixo e baixo) */}
-      <Atmosphere time={time} quality={quality} weather={look.weather} webgl2={backend === "webgl2"} />
+      <Atmosphere
+        time={time}
+        quality={quality}
+        weather={look.weather}
+        webgl2={backend === "webgl2"}
+      />
       <Stands
         homeColor={sim.home.primary}
         awayColor={sim.away.primary}
@@ -2806,7 +2828,9 @@ function Scene({
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
       <PostFX
         grading={
-          postOn ? { time, weather: GRADE_WEATHER[surfaceWeather(look.weather)], moment } : undefined
+          postOn
+            ? { time, weather: GRADE_WEATHER[surfaceWeather(look.weather)], moment }
+            : undefined
         }
         quality={
           !postOn || budget.post === "off"

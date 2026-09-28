@@ -12,7 +12,7 @@ import { imagetools } from "vite-imagetools";
 
 // Load non-VITE_ env vars into process.env for server routes (email, webhooks).
 // These are NOT injected into the client bundle.
-const serverEnv = loadEnv(process.env['NODE_ENV'] ?? "development", process.cwd(), "");
+const serverEnv = loadEnv(process.env["NODE_ENV"] ?? "development", process.cwd(), "");
 Object.assign(process.env, serverEnv);
 
 // @lovable.dev/mcp-js currently compares Vite's slash-normalized `config.root`
@@ -34,8 +34,14 @@ export default defineConfig({
     plugins: [...(enableMcpRouteGenerator ? [mcpPlugin()] : []), imagetools()],
     resolve: {
       alias: {
-        "entities/lib/decode.js": path.resolve(import.meta.dirname, "node_modules/entities/lib/decode.js"),
-        "entities/lib/encode.js": path.resolve(import.meta.dirname, "node_modules/entities/lib/encode.js"),
+        "entities/lib/decode.js": path.resolve(
+          import.meta.dirname,
+          "node_modules/entities/lib/decode.js",
+        ),
+        "entities/lib/encode.js": path.resolve(
+          import.meta.dirname,
+          "node_modules/entities/lib/encode.js",
+        ),
         entities: path.resolve(import.meta.dirname, "node_modules/entities"),
       },
     },

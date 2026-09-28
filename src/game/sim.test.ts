@@ -28,7 +28,9 @@ describe("MatchSim", () => {
     expect(sim.minute()).toBe(90);
     expect(sim.events.length).toBeLessThanOrEqual(80);
     expect(sim.shotMap.length).toBeLessThanOrEqual(120);
-    expect(sim.players.every((player) => Number.isFinite(player.x) && Number.isFinite(player.z))).toBe(true);
+    expect(
+      sim.players.every((player) => Number.isFinite(player.x) && Number.isFinite(player.z)),
+    ).toBe(true);
     expect(Number.isFinite(sim.ball.x) && Number.isFinite(sim.ball.z)).toBe(true);
   });
 

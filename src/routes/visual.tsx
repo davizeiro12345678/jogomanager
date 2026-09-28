@@ -166,11 +166,7 @@ function VisualPage() {
               todas as partidas.
             </p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => resetVisual()}
-          >
+          <Button type="button" variant="outline" onClick={() => resetVisual()}>
             <RotateCcw size={16} /> Restaurar
           </Button>
         </div>

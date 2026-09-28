@@ -1,10 +1,10 @@
 // ============================================================================
 //  animation-catalog.ts
 //  Catálogo organizado de clipes de animação por famílias.
-// 
+//
 //  Este arquivo centraliza todos os clipes do jogo e os organiza por famílias,
 //  com metadados para transições inteligentes e seleção baseada em contexto.
-// 
+//
 //  Famílias:
 //  - locomotion: movimento básico (idle, walk, run, sprint, etc.)
 //  - ballControl: controle de bola (dribble, trap, feint, etc.)
@@ -37,7 +37,7 @@ export const STANDARD_MARKERS: Record<string, ClipMarker[]> = {
     { name: "followThrough", time: 0.6, phase: "followThrough" },
     { name: "recovery", time: 0.85, phase: "recovery" },
   ],
-  
+
   // Marcadores para passes
   pass: [
     { name: "anticipation", time: 0, phase: "anticipation" },
@@ -46,13 +46,13 @@ export const STANDARD_MARKERS: Record<string, ClipMarker[]> = {
     { name: "followThrough", time: 0.65, phase: "followThrough" },
     { name: "recovery", time: 0.85, phase: "recovery" },
   ],
-  
+
   // Marcadores para dribles
   dribble: [
     { name: "contact", time: 0.3, phase: "contact", contactType: "groundBall" },
     { name: "contact", time: 0.7, phase: "contact", contactType: "groundBall" },
   ],
-  
+
   // Marcadores para defesas
   tackle: [
     { name: "anticipation", time: 0, phase: "anticipation" },
@@ -60,7 +60,7 @@ export const STANDARD_MARKERS: Record<string, ClipMarker[]> = {
     { name: "followThrough", time: 0.6, phase: "followThrough" },
     { name: "recovery", time: 0.85, phase: "recovery", reaction: "balance" },
   ],
-  
+
   // Marcadores para goleiro
   save: [
     { name: "anticipation", time: 0, phase: "anticipation" },
@@ -68,7 +68,7 @@ export const STANDARD_MARKERS: Record<string, ClipMarker[]> = {
     { name: "contact", time: 0.5, phase: "contact", contactType: "ball" },
     { name: "recovery", time: 0.75, phase: "recovery" },
   ],
-  
+
   // Marcadores para locomoção (loop contínuo)
   locomotion: [
     { name: "footContact", time: 0, phase: "contact", contactType: "ground" },
@@ -77,7 +77,10 @@ export const STANDARD_MARKERS: Record<string, ClipMarker[]> = {
 };
 
 /** Metadados padrão por família */
-export const FAMILY_METADATA: { [K in AnimationFamily]: Pick<ClipMetadata, 'loop' | 'priority' | 'interruptible'> & Partial<Omit<ClipMetadata, 'loop' | 'priority' | 'interruptible'>> } = {
+export const FAMILY_METADATA: {
+  [K in AnimationFamily]: Pick<ClipMetadata, "loop" | "priority" | "interruptible"> &
+    Partial<Omit<ClipMetadata, "loop" | "priority" | "interruptible">>;
+} = {
   locomotion: {
     family: "locomotion" as const,
     loop: true,
@@ -143,7 +146,7 @@ export const FAMILY_METADATA: { [K in AnimationFamily]: Pick<ClipMetadata, 'loop
 /** Cria metadados completos para um clipe */
 export function createClipMetadata(
   family: AnimationFamily,
-  overrides: Partial<ClipMetadata> = {}
+  overrides: Partial<ClipMetadata> = {},
 ): ClipMetadata {
   return {
     ...FAMILY_METADATA[family],
@@ -157,7 +160,7 @@ export function createAnnotatedClip(
   name: string,
   clip: Clip,
   family: AnimationFamily,
-  overrides: Partial<ClipMetadata> = {}
+  overrides: Partial<ClipMetadata> = {},
 ): AnnotatedClip {
   return {
     clip,
@@ -223,63 +226,83 @@ export interface ClipSelectionContext {
 }
 
 /** Seleciona o melhor clipe com base no contexto */
-export function selectClipFromContext(
-  ctx: ClipSelectionContext
-): { name: string; family: AnimationFamily } {
+export function selectClipFromContext(ctx: ClipSelectionContext): {
+  name: string;
+  family: AnimationFamily;
+} {
   // Se tem uma ação específica, tenta encontrar o clipe correspondente
   if (ctx.action) {
     const actionName = ctx.action.toLowerCase();
-    
+
     // Verifica em qual família a ação se encaixa
     if (ctx.isGK) {
       // Ações do goleiro
-      if (actionName.includes("dive") || actionName.includes("save") || actionName.includes("catch")) {
+      if (
+        actionName.includes("dive") ||
+        actionName.includes("save") ||
+        actionName.includes("catch")
+      ) {
         return { name: ctx.action, family: "goalkeeper" };
       }
     }
-    
+
     if (actionName.includes("shot") || actionName.includes("shoot")) {
       return { name: ctx.action, family: "shooting" };
     }
-    
-    if (actionName.includes("pass") || actionName.includes("cross") || actionName.includes("clear")) {
+
+    if (
+      actionName.includes("pass") ||
+      actionName.includes("cross") ||
+      actionName.includes("clear")
+    ) {
       return { name: ctx.action, family: "passing" };
     }
-    
-    if (actionName.includes("tackle") || actionName.includes("slide") || actionName.includes("block") || actionName.includes("intercept")) {
+
+    if (
+      actionName.includes("tackle") ||
+      actionName.includes("slide") ||
+      actionName.includes("block") ||
+      actionName.includes("intercept")
+    ) {
       return { name: ctx.action, family: "defense" };
     }
-    
-    if (actionName.includes("dribble") || actionName.includes("feint") || actionName.includes("stepover") || actionName.includes("cut") || actionName.includes("elastico")) {
+
+    if (
+      actionName.includes("dribble") ||
+      actionName.includes("feint") ||
+      actionName.includes("stepover") ||
+      actionName.includes("cut") ||
+      actionName.includes("elastico")
+    ) {
       return { name: ctx.action, family: "ballControl" };
     }
-    
+
     if (actionName.includes("trap")) {
       return { name: ctx.action, family: "ballControl" };
     }
   }
-  
+
   // Se não tem ação, seleciona com base no movimento
   if (ctx.stopped) {
     return { name: "idle", family: "idle" };
   }
-  
+
   if (ctx.speed > 7) {
     return { name: "sprint", family: "locomotion" };
   }
-  
+
   if (ctx.speed > 5) {
     return { name: "run", family: "locomotion" };
   }
-  
+
   if (ctx.speed > 2) {
     return { name: "jog", family: "locomotion" };
   }
-  
+
   if (ctx.speed > 0.5) {
     return { name: "walk", family: "locomotion" };
   }
-  
+
   return { name: "idle", family: "idle" };
 }
 
@@ -291,7 +314,7 @@ export function selectClipFromContext(
 export function canTransition(
   from: AnnotatedClip,
   to: AnnotatedClip,
-  ctx: ClipSelectionContext
+  ctx: ClipSelectionContext,
 ): boolean {
   // Se o clipe atual não pode ser interrompido, não transiciona
   if (!from.metadata.interruptible && from.metadata.loop) {
@@ -319,7 +342,7 @@ export function calculateBlendWeight(
   from: AnnotatedClip,
   to: AnnotatedClip,
   ctx: ClipSelectionContext,
-  transitionProgress: number
+  transitionProgress: number,
 ): number {
   // Transição linear simples
   return transitionProgress;

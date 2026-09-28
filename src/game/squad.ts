@@ -178,7 +178,9 @@ function dedupeNames(draft: DraftPlayer[]): DraftPlayer[] {
     for (let k = 0; k < 26 && seen.has(candidate); k++) {
       const initial = String.fromCharCode(65 + (k % 26));
       candidate =
-        parts.length > 1 ? `${parts[0]} ${initial}. ${parts.slice(1).join(" ")}` : `${d.name} ${initial}`;
+        parts.length > 1
+          ? `${parts[0]} ${initial}. ${parts.slice(1).join(" ")}`
+          : `${d.name} ${initial}`;
     }
     d.name = candidate;
     seen.add(candidate);
@@ -186,7 +188,13 @@ function dedupeNames(draft: DraftPlayer[]): DraftPlayer[] {
   return draft;
 }
 
-function makePlayer(club: Club, draft: DraftPlayer[], index: number, number: number, rnd: () => number): Player {
+function makePlayer(
+  club: Club,
+  draft: DraftPlayer[],
+  index: number,
+  number: number,
+  rnd: () => number,
+): Player {
   const d = draft[index]!;
   return {
     id: `${club.id}-${index}`,
