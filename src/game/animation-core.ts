@@ -8,22 +8,9 @@
 // Tipos duplicados do visual-context para evitar dependencia circular
 // Quando o sistema estabilizar, podemos mover esses tipos para um arquivo compartilhado
 export type ActionPhase = "anticipation" | "action" | "contact" | "followThrough" | "recovery";
-export type ContactType = 
-  | "none"
-  | "ground"
-  | "ball"
-  | "player"
-  | "groundBall"
-  | "airBall";
-export type ReactionType = 
-  | "none"
-  | "balance"
-  | "push"
-  | "pull"
-  | "dodge"
-  | "fall"
-  | "recovery"
-  | "celebrate";
+export type ContactType = "none" | "ground" | "ball" | "player" | "groundBall" | "airBall";
+export type ReactionType =
+  "none" | "balance" | "push" | "pull" | "dodge" | "fall" | "recovery" | "celebrate";
 export type DominantFoot = "left" | "right" | "both";
 
 export type JointName =
@@ -230,7 +217,7 @@ export function clampPose(pose: Pose): Pose {
 /** Filtro de clipes por familiares */
 export function filterClipsByFamily(
   clips: Record<string, Clip>,
-  family: AnimationFamily
+  family: AnimationFamily,
 ): Record<string, Clip> {
   // Por enquanto retorna todos, mas quando os metadados estiverem completos,
   // poderao ser filtrados por familia

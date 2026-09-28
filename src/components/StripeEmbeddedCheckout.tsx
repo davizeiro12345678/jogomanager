@@ -35,7 +35,9 @@ export function StripeEmbeddedCheckout({ productKey, returnUrl }: StripeEmbedded
         const result = await createCheckoutSession({
           data: {
             productKey,
-            returnUrl: returnUrl ?? `${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`,
+            returnUrl:
+              returnUrl ??
+              `${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`,
           },
         });
         if ("error" in result) throw new Error(result.error);
@@ -109,7 +111,11 @@ export function StripeEmbeddedCheckout({ productKey, returnUrl }: StripeEmbedded
             aria-hidden="true"
             className="size-6 animate-spin rounded-full border-2 border-current border-t-transparent"
           />
-          <span>{status === "loading" ? "Preparando o pagamento seguro…" : "Carregando o checkout da Stripe…"}</span>
+          <span>
+            {status === "loading"
+              ? "Preparando o pagamento seguro…"
+              : "Carregando o checkout da Stripe…"}
+          </span>
         </div>
       ) : null}
 

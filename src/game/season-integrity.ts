@@ -30,7 +30,8 @@ export function checkSeasonIntegrity(input: SeasonCheckInput): string[] {
     if (f.home === f.away) issues.push(`Clube contra si mesmo: ${f.home}`);
     const round = perRound.get(String(f.round)) ?? new Set<string>();
     for (const c of [f.home, f.away]) {
-      if (round.has(c)) issues.push(`Calendário impossível: ${c} joga duas vezes na rodada ${f.round}`);
+      if (round.has(c))
+        issues.push(`Calendário impossível: ${c} joga duas vezes na rodada ${f.round}`);
       round.add(c);
     }
     perRound.set(String(f.round), round);

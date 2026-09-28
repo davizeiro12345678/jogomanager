@@ -24,7 +24,8 @@ export const NAMED_SQUADS: Record<string, string> = {
   bet: "GK|Valles|27|78;DF|Bellerín|30|78;DF|Natan|24|79;DF|Bartra|34|78;DF|Ricardo Rodríguez|33|76;MF|Marc Roca|29|79;MF|Fornals|29|80;MF|Lo Celso|29|82;FW|Antony|25|84;FW|Cucho Hernández|26|80;FW|Abde|23|80;MF|Isco|33|84;DF|Firpo|29|77;GK|Adrián|38|72",
   // A chave precisa ser o id real do clube em `leagues.ts` (`vil_e`). Com `vil`
   // o elenco ficava órfão e o Villarreal jogava com nomes gerados.
-  vil_e: "GK|Luiz Júnior|24|80;DF|Kiko Femenía|34|76;DF|Marín|22|79;DF|Foyth|27|81;DF|Cardona|24|77;MF|Comesaña|26|80;MF|Parejo|36|82;MF|Buchanan|26|79;FW|Pépé|30|81;FW|Mikautadze|25|81;FW|Ayoze Pérez|32|82;FW|Gerard Moreno|33|82;DF|Mouriño|22|77;GK|Tenas|26|72",
+  vil_e:
+    "GK|Luiz Júnior|24|80;DF|Kiko Femenía|34|76;DF|Marín|22|79;DF|Foyth|27|81;DF|Cardona|24|77;MF|Comesaña|26|80;MF|Parejo|36|82;MF|Buchanan|26|79;FW|Pépé|30|81;FW|Mikautadze|25|81;FW|Ayoze Pérez|32|82;FW|Gerard Moreno|33|82;DF|Mouriño|22|77;GK|Tenas|26|72",
 
   int_i:
     "GK|Sommer|37|84;DF|Pavard|29|82;DF|Acerbi|37|82;DF|Bastoni|26|86;MF|Dumfries|29|83;MF|Barella|28|86;MF|Çalhanoğlu|31|85;MF|Mkhitaryan|36|82;MF|Dimarco|28|85;FW|Lautaro Martínez|28|88;FW|Thuram|28|86;FW|Bonny|22|79;DF|de Vrij|33|80;GK|Martínez|33|76",

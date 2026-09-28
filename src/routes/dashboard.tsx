@@ -54,7 +54,9 @@ export const Route = createFileRoute("/dashboard")({
 function Dashboard() {
   const { career } = useCareer();
   if (!career)
-    return <NoCareer hint="Escolha um clube, monte o elenco e comande a temporada inteira em 3D." />;
+    return (
+      <NoCareer hint="Escolha um clube, monte o elenco e comande a temporada inteira em 3D." />
+    );
 
   const club = CLUBS[career.clubId]!;
   const fixture = nextFixture(career);
@@ -111,9 +113,7 @@ function Dashboard() {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl uppercase sm:text-3xl">
-            Painel do treinador
-          </h1>
+          <h1 className="font-display text-2xl uppercase sm:text-3xl">Painel do treinador</h1>
           <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
             {club.name} · Temporada {career.season} · Rodada {career.round}
           </p>
@@ -140,7 +140,11 @@ function Dashboard() {
           tone={fixture ? "good" : "neutral"}
           className="md:col-span-2"
           badge={
-            fixture ? <HudChip>{atHome ? "Em casa" : "Fora"} · Rodada {fixture.round}</HudChip> : null
+            fixture ? (
+              <HudChip>
+                {atHome ? "Em casa" : "Fora"} · Rodada {fixture.round}
+              </HudChip>
+            ) : null
           }
         >
           {opponent && fixture ? (
@@ -200,7 +204,11 @@ function Dashboard() {
             <HudStat
               label="Sequência"
               value={
-                career.streak > 0 ? `${career.streak}V` : career.streak < 0 ? `${-career.streak}D` : "—"
+                career.streak > 0
+                  ? `${career.streak}V`
+                  : career.streak < 0
+                    ? `${-career.streak}D`
+                    : "—"
               }
             />
           </div>
@@ -224,8 +232,8 @@ function Dashboard() {
             <HudBar label="Peso da folha" value={payrollShare} />
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Patrocínio {formatMoney(career.sponsor)} · Folha €
-            {wageWeek.toLocaleString("pt-BR")}k/sem
+            Patrocínio {formatMoney(career.sponsor)} · Folha €{wageWeek.toLocaleString("pt-BR")}
+            k/sem
           </p>
         </HudCard>
 
@@ -323,12 +331,18 @@ function Dashboard() {
         >
           <div className="relative aspect-[5/3] w-full overflow-hidden rounded-lg border border-border/60 bg-[color-mix(in_oklab,var(--primary)_14%,transparent)]">
             <span className="absolute inset-y-2 left-1/2 w-px bg-foreground/15" aria-hidden />
-            <span className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-foreground/15" aria-hidden />
+            <span
+              className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-foreground/15"
+              aria-hidden
+            />
             {FORMATIONS[career.tactics.formation].map((slot, i) => (
               <span
                 key={`${slot.label}-${i}`}
                 className="hud-num absolute grid h-6 w-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground"
-                style={{ left: `${((slot.x + 1) / 2) * 90 + 5}%`, top: `${((slot.z + 1) / 2) * 80 + 10}%` }}
+                style={{
+                  left: `${((slot.x + 1) / 2) * 90 + 5}%`,
+                  top: `${((slot.z + 1) / 2) * 80 + 10}%`,
+                }}
               >
                 {slot.label}
               </span>
@@ -396,8 +410,6 @@ function Dashboard() {
 
         <ClubHeritagePanel clubId={career.clubId} compact className="md:col-span-2" />
         <ClubHonoursPanel clubId={career.clubId} />
-
-
 
         {/* Notícias */}
         <HudCard

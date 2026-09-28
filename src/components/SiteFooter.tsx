@@ -49,9 +49,8 @@ export function SiteFooter({ path = "/" }: { path?: string }) {
             Quem escreve
           </h2>
           <p className="mt-3">
-            Jogo e conteúdo criados por{" "}
-            <strong className="text-foreground">{CREATOR.name}</strong>, que acompanha futebol e
-            jogos de gestão esportiva há mais de dez anos.
+            Jogo e conteúdo criados por <strong className="text-foreground">{CREATOR.name}</strong>,
+            que acompanha futebol e jogos de gestão esportiva há mais de dez anos.
           </p>
           <p className="mt-2">
             <Link to="/criador" className="underline underline-offset-4 hover:text-foreground">

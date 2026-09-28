@@ -97,8 +97,9 @@ function SobrePage() {
           <h2 className="font-display text-2xl">Quem faz o jogo</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             O Pro Football Manager 3D é criado e mantido por{" "}
-            <strong className="text-foreground">{CREATOR.name}</strong> — {CREATOR.role.toLowerCase()}
-            . Bastidores, novidades e vídeos das partidas saem no canal do YouTube.
+            <strong className="text-foreground">{CREATOR.name}</strong> —{" "}
+            {CREATOR.role.toLowerCase()}. Bastidores, novidades e vídeos das partidas saem no canal
+            do YouTube.
           </p>
           <p className="mt-3 flex flex-wrap gap-3 text-sm">
             <a

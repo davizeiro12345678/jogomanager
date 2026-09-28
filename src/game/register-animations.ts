@@ -1,10 +1,10 @@
 // ============================================================================
 //  register-animations.ts
 //  Registro central de todos os clipes de animação do jogo.
-// 
+//
 //  Este arquivo importa todos os clipes dos arquivos de animação e os registra
 //  no ANIMATION_CATALOG com metadados apropriados.
-// 
+//
 //  Uso: import { ALL_CLIPS, getClip } from './register-animations'
 // ============================================================================
 
@@ -27,7 +27,7 @@ const CLIP_FAMILY_MAP: Record<string, AnimationFamily> = {
   idle: "idle",
   breathe: "idle",
   weightShift: "idle",
-  
+
   // ---- Locomotion ----
   walk: "locomotion",
   jog: "locomotion",
@@ -61,7 +61,7 @@ const CLIP_FAMILY_MAP: Record<string, AnimationFamily> = {
   checkShoulder: "locomotion",
   skipStep: "locomotion",
   dummyRun: "locomotion",
-  
+
   // ---- Ball Control ----
   dribbleLight: "ballControl",
   dribbleFast: "ballControl",
@@ -74,25 +74,25 @@ const CLIP_FAMILY_MAP: Record<string, AnimationFamily> = {
   sprintDribble: "ballControl",
   shuffleDribbleL: "ballControl",
   shuffleDribbleR: "ballControl",
-  
+
   // ---- Passing ----
   passShort: "passing",
   passLong: "passing",
   cross: "passing",
-  
+
   // ---- Shooting ----
   shotLow: "shooting",
   shotPower: "shooting",
   shotPlaced: "shooting",
   volley: "shooting",
   header: "shooting",
-  
+
   // ---- Defense ----
   tackle: "defense",
   slide: "defense",
   block: "defense",
   intercept: "defense",
-  
+
   // ---- Goalkeeper ----
   save: "goalkeeper",
   saveHigh: "goalkeeper",
@@ -101,17 +101,17 @@ const CLIP_FAMILY_MAP: Record<string, AnimationFamily> = {
   diveRight: "goalkeeper",
   catch: "goalkeeper",
   punch: "goalkeeper",
-  
+
   // ---- Celebration ----
   goal: "celebration",
   celebrate: "celebration",
   armsUp: "celebration",
-  
+
   // ---- Recovery ----
   getUp: "recovery",
   injured: "recovery",
   recoverySprint: "recovery",
-  
+
   // ---- Fallback ----
   idleStand: "idle",
 };
@@ -123,7 +123,7 @@ const CLIP_FAMILY_MAP: Record<string, AnimationFamily> = {
 const SHOT_MARKERS = STANDARD_MARKERS["shot"]!;
 const PASS_MARKERS = STANDARD_MARKERS["pass"]!;
 
-const CLIP_METADATA_OVERRIDES: Record<string, Omit<Partial<ClipMetadata>, 'family'>> = {
+const CLIP_METADATA_OVERRIDES: Record<string, Omit<Partial<ClipMetadata>, "family">> = {
   // Locomotion - maioria faz loop
   idle: { loop: true, priority: 0.0 },
   breathe: { loop: true, priority: 0.0 },
@@ -132,29 +132,77 @@ const CLIP_METADATA_OVERRIDES: Record<string, Omit<Partial<ClipMetadata>, 'famil
   jog: { loop: true, priority: 0.2, duration: 0.8 },
   run: { loop: true, priority: 0.3, duration: 0.6 },
   sprint: { loop: true, priority: 0.4, duration: 0.5 },
-  
+
   // Ball control
   dribbleLight: { loop: true, priority: 0.3 },
   dribbleFast: { loop: true, priority: 0.35 },
-  
+
   // Actions - não fazem loop. Marcadores e pé dominante alimentam o contato com
   // a bola e o posicionamento dos pés durante a jogada.
-  shotLow: { loop: false, priority: 0.8, duration: 0.8, markers: SHOT_MARKERS, dominantFoot: "right" },
-  shotPower: { loop: false, priority: 0.8, duration: 0.8, markers: SHOT_MARKERS, dominantFoot: "right" },
-  shotPlaced: { loop: false, priority: 0.8, duration: 0.8, markers: SHOT_MARKERS, dominantFoot: "right" },
-  volley: { loop: false, priority: 0.75, duration: 0.6, markers: SHOT_MARKERS, dominantFoot: "right" },
+  shotLow: {
+    loop: false,
+    priority: 0.8,
+    duration: 0.8,
+    markers: SHOT_MARKERS,
+    dominantFoot: "right",
+  },
+  shotPower: {
+    loop: false,
+    priority: 0.8,
+    duration: 0.8,
+    markers: SHOT_MARKERS,
+    dominantFoot: "right",
+  },
+  shotPlaced: {
+    loop: false,
+    priority: 0.8,
+    duration: 0.8,
+    markers: SHOT_MARKERS,
+    dominantFoot: "right",
+  },
+  volley: {
+    loop: false,
+    priority: 0.75,
+    duration: 0.6,
+    markers: SHOT_MARKERS,
+    dominantFoot: "right",
+  },
   header: { loop: false, priority: 0.75, duration: 0.5, dominantFoot: "both" },
-  bicycle: { loop: false, priority: 0.85, duration: 0.9, markers: SHOT_MARKERS, dominantFoot: "both" },
+  bicycle: {
+    loop: false,
+    priority: 0.85,
+    duration: 0.9,
+    markers: SHOT_MARKERS,
+    dominantFoot: "both",
+  },
 
-  passShort: { loop: false, priority: 0.6, duration: 0.5, markers: PASS_MARKERS, dominantFoot: "right" },
-  passLong: { loop: false, priority: 0.6, duration: 0.6, markers: PASS_MARKERS, dominantFoot: "right" },
-  cross: { loop: false, priority: 0.6, duration: 0.6, markers: PASS_MARKERS, dominantFoot: "right" },
-  
+  passShort: {
+    loop: false,
+    priority: 0.6,
+    duration: 0.5,
+    markers: PASS_MARKERS,
+    dominantFoot: "right",
+  },
+  passLong: {
+    loop: false,
+    priority: 0.6,
+    duration: 0.6,
+    markers: PASS_MARKERS,
+    dominantFoot: "right",
+  },
+  cross: {
+    loop: false,
+    priority: 0.6,
+    duration: 0.6,
+    markers: PASS_MARKERS,
+    dominantFoot: "right",
+  },
+
   tackle: { loop: false, priority: 0.7, duration: 0.7 },
   slide: { loop: false, priority: 0.7, duration: 0.8 },
   block: { loop: false, priority: 0.7, duration: 0.5 },
   intercept: { loop: false, priority: 0.65, duration: 0.4 },
-  
+
   // Goalkeeper
   save: { loop: false, priority: 0.9, duration: 0.9 },
   saveHigh: { loop: false, priority: 0.9, duration: 1.0 },
@@ -162,7 +210,7 @@ const CLIP_METADATA_OVERRIDES: Record<string, Omit<Partial<ClipMetadata>, 'famil
   diveLeft: { loop: false, priority: 0.9, duration: 1.0 },
   diveRight: { loop: false, priority: 0.9, duration: 1.0 },
   catch: { loop: false, priority: 0.85, duration: 0.7 },
-  
+
   // Celebration
   goal: { loop: false, priority: 0.2, duration: 2.0, interruptible: true },
   celebrate: { loop: true, priority: 0.1, interruptible: true },
@@ -212,12 +260,30 @@ export const ANNOTATED_CATALOG: {
  */
 const FAMILY_HINTS: Array<[RegExp, AnimationFamily]> = [
   [/^gk/i, "goalkeeper"],
-  [/^celebrate|^kneeSlide$|^groupHug$|^dejected$|^protest|^applaudFans$|^encourageTeammate$|^huddleTalk$/i, "celebration"],
-  [/tackle|^block|^intercept|^clearance|^lastDitch$|^offsideTrap$|^mark|^jockey$|^press|headerDefensive|^shoulderDuel$|^shoulderNudge$|^armBarHold$|^shoulderToShoulder$|^foulTrip$/i, "defense"],
-  [/^shot|shoot|volley|^header$|^bicycle|^chip|^finesse|^knuckle|^toePoke$|^divingHeader$|^powerHeader$|^glancingHeader$|^curlFarPost$|^tapInEasy$|^penaltyStrike$|^freeKickStrike$|^scoopLift$/i, "shooting"],
-  [/pass$|^cross|^cutback$|^switchPlay|^layoff|^loftedThrough$|^drivenCross$|^oneTwoRun$/i, "passing"],
-  [/dribble|^feint|^cut$|^stepover|stepOver|^elastico|^nutmeg$|^dragBack$|^scissors|^cruyffTurn$|^heelFlick$|^sombrero$|control$|^trap$|^shieldBall$|^knockOn$|^rouletteSpin$|^rainbowFlick$|^receiveTurn$|^closeControl$|^flipFlap$|^crossover|^shieldTurnOut$|^ballRollSole$|^juggleKeepUp$|^firstTouch|^bodyFeint|^fakeShotStop$|^dragPush$|^firstTime$/i, "ballControl"],
-  [/^recover|^getUpFast$|^fall|^stumble$|^landing$|^injury|^catchBreath|^exhaustedWalk$|^handsOn/i, "recovery"],
+  [
+    /^celebrate|^kneeSlide$|^groupHug$|^dejected$|^protest|^applaudFans$|^encourageTeammate$|^huddleTalk$/i,
+    "celebration",
+  ],
+  [
+    /tackle|^block|^intercept|^clearance|^lastDitch$|^offsideTrap$|^mark|^jockey$|^press|headerDefensive|^shoulderDuel$|^shoulderNudge$|^armBarHold$|^shoulderToShoulder$|^foulTrip$/i,
+    "defense",
+  ],
+  [
+    /^shot|shoot|volley|^header$|^bicycle|^chip|^finesse|^knuckle|^toePoke$|^divingHeader$|^powerHeader$|^glancingHeader$|^curlFarPost$|^tapInEasy$|^penaltyStrike$|^freeKickStrike$|^scoopLift$/i,
+    "shooting",
+  ],
+  [
+    /pass$|^cross|^cutback$|^switchPlay|^layoff|^loftedThrough$|^drivenCross$|^oneTwoRun$/i,
+    "passing",
+  ],
+  [
+    /dribble|^feint|^cut$|^stepover|stepOver|^elastico|^nutmeg$|^dragBack$|^scissors|^cruyffTurn$|^heelFlick$|^sombrero$|control$|^trap$|^shieldBall$|^knockOn$|^rouletteSpin$|^rainbowFlick$|^receiveTurn$|^closeControl$|^flipFlap$|^crossover|^shieldTurnOut$|^ballRollSole$|^juggleKeepUp$|^firstTouch|^bodyFeint|^fakeShotStop$|^dragPush$|^firstTime$/i,
+    "ballControl",
+  ],
+  [
+    /^recover|^getUpFast$|^fall|^stumble$|^landing$|^injury|^catchBreath|^exhaustedWalk$|^handsOn/i,
+    "recovery",
+  ],
   [/^pivot|^hurdleStep$|^jump|^slowJogHandsUp$|^walkTalk$|^pushOff$/i, "locomotion"],
 ];
 
@@ -234,24 +300,31 @@ function inferFamily(name: string): AnimationFamily {
  */
 export function initializeAnimationCatalog(): void {
   const families: AnimationFamily[] = [
-    "locomotion", "ballControl", "passing", "shooting",
-    "defense", "goalkeeper", "celebration", "recovery", "idle"
+    "locomotion",
+    "ballControl",
+    "passing",
+    "shooting",
+    "defense",
+    "goalkeeper",
+    "celebration",
+    "recovery",
+    "idle",
   ];
-  
+
   // Limpa catálogos existentes
   for (const family of families) {
     ANNOTATED_CATALOG[family] = {};
     ANIMATION_CATALOG[family] = {};
   }
-  
+
   // Registra todos os clipes
   for (const [name, clip] of Object.entries(ALL_CLIPS)) {
     const family = CLIP_FAMILY_MAP[name] ?? inferFamily(name);
     const overrides = CLIP_METADATA_OVERRIDES[name] || {};
     const metadata = { ...FAMILY_METADATA[family], ...overrides, family };
-    
+
     const annotatedClip: AnnotatedClip = { clip, metadata };
-    
+
     ANNOTATED_CATALOG[family][name] = annotatedClip;
     ANIMATION_CATALOG[family][name] = annotatedClip;
   }

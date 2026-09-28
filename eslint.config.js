@@ -6,7 +6,17 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".vinxi", "src/integrations/supabase/types.ts"] },
+  {
+    ignores: [
+      "dist",
+      "dist-benchmark",
+      ".output",
+      ".vinxi",
+      "src/integrations/supabase/types.ts",
+      // Vendored Emscripten bundle (Basis KTX2 transcoder) — keep as upstream.
+      "public/basis/**",
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

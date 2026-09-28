@@ -435,16 +435,24 @@ export function quickSimulate(
   const fatigue = (f?: number) => -Math.max(0, (f ?? 0) - 20) / 200;
   const h = CLUBS[homeId]?.strength ?? 70;
   const a = CLUBS[awayId]?.strength ?? 70;
-  const edge = Math.tanh((h - a) / 16) * 0.42 + form(ctx.homeForm) * 0.08 - form(ctx.awayForm) * 0.08;
+  const edge =
+    Math.tanh((h - a) / 16) * 0.42 + form(ctx.homeForm) * 0.08 - form(ctx.awayForm) * 0.08;
   // Tactical risk is symmetric: an attacking shape creates chances AND leaves
   // space behind. Neutral values preserve the calibrated league distribution.
-  const risk = (t?: QuickSimContext["homeTactics"]) => t
-    ? ((t.mentality - 2) * 0.045 + (t.pressing - 1) * 0.018 + (t.tempo - 1) * 0.012)
-    : 0;
+  const risk = (t?: QuickSimContext["homeTactics"]) =>
+    t ? (t.mentality - 2) * 0.045 + (t.pressing - 1) * 0.018 + (t.tempo - 1) * 0.012 : 0;
   const homeRisk = risk(ctx.homeTactics);
   const awayRisk = risk(ctx.awayTactics);
-  const expH = Math.max(0.3, SIM_BASE_GOALS * Math.exp(edge + SIM_HOME_EDGE + fatigue(ctx.homeFatigue) + homeRisk + awayRisk * 0.5));
-  const expA = Math.max(0.25, SIM_BASE_GOALS * Math.exp(-edge - SIM_HOME_EDGE * 0.6 + fatigue(ctx.awayFatigue) + awayRisk + homeRisk * 0.5));
+  const expH = Math.max(
+    0.3,
+    SIM_BASE_GOALS *
+      Math.exp(edge + SIM_HOME_EDGE + fatigue(ctx.homeFatigue) + homeRisk + awayRisk * 0.5),
+  );
+  const expA = Math.max(
+    0.25,
+    SIM_BASE_GOALS *
+      Math.exp(-edge - SIM_HOME_EDGE * 0.6 + fatigue(ctx.awayFatigue) + awayRisk + homeRisk * 0.5),
+  );
 
   let hg = poisson(expH, rnd);
   let ag = poisson(expA, rnd);
@@ -478,7 +486,10 @@ export function squadFatigue(fixtures: Fixture[], clubId: string, beforeRound: n
 
 export function recentForm(fixtures: Fixture[], clubId: string, beforeRound: number): number {
   const last = fixtures
-    .filter((f) => f.round < beforeRound && f.homeGoals !== null && (f.home === clubId || f.away === clubId))
+    .filter(
+      (f) =>
+        f.round < beforeRound && f.homeGoals !== null && (f.home === clubId || f.away === clubId),
+    )
     .sort((a, b) => b.round - a.round)
     .slice(0, 5);
   if (!last.length) return 60;
@@ -497,18 +508,30 @@ function quickEvents(hg: number, ag: number, rnd: () => number): QuickSimEvent[]
   const minute = () => {
     // mais gols no fim de cada tempo
     const r = rnd();
-    const m = r < 0.47 ? 1 + Math.floor(Math.pow(rnd(), 0.8) * 45) : 46 + Math.floor(Math.pow(rnd(), 0.75) * 45);
+    const m =
+      r < 0.47
+        ? 1 + Math.floor(Math.pow(rnd(), 0.8) * 45)
+        : 46 + Math.floor(Math.pow(rnd(), 0.75) * 45);
     return Math.min(90, m);
   };
   const push = (side: "home" | "away", n: number) => {
     for (let i = 0; i < n; i++) {
       const r = rnd();
-      ev.push({ minute: minute(), side, kind: r < 0.1 ? "penalti" : r < 0.13 ? "gol_contra" : "gol" });
+      ev.push({
+        minute: minute(),
+        side,
+        kind: r < 0.1 ? "penalti" : r < 0.13 ? "gol_contra" : "gol",
+      });
     }
   };
   push("home", hg);
   push("away", ag);
-  if (rnd() < 0.12) ev.push({ minute: 30 + Math.floor(rnd() * 60), side: rnd() < 0.55 ? "away" : "home", kind: "vermelho" });
+  if (rnd() < 0.12)
+    ev.push({
+      minute: 30 + Math.floor(rnd() * 60),
+      side: rnd() < 0.55 ? "away" : "home",
+      kind: "vermelho",
+    });
   return ev.sort((x, y) => x.minute - y.minute);
 }
 

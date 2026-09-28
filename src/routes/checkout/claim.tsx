@@ -85,7 +85,9 @@ function ClaimGuestCheckout() {
           <>
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
             <h1 className="mt-4 font-display text-2xl uppercase">Vinculando sua compra</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Estamos conferindo o pagamento e sua conta.</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Estamos conferindo o pagamento e sua conta.
+            </p>
           </>
         ) : null}
         {status === "delivered" ? (
@@ -112,8 +114,12 @@ function ClaimGuestCheckout() {
           </>
         ) : null}
         <div className="mt-7 flex flex-col gap-2">
-          <Button asChild><Link to="/loja">Abrir minha loja</Link></Button>
-          <Button asChild variant="ghost"><Link to="/compras">Ver minhas compras</Link></Button>
+          <Button asChild>
+            <Link to="/loja">Abrir minha loja</Link>
+          </Button>
+          <Button asChild variant="ghost">
+            <Link to="/compras">Ver minhas compras</Link>
+          </Button>
         </div>
       </section>
     </main>

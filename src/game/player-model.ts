@@ -121,7 +121,10 @@ export function roleGroupOf(pos: string): RoleGroup {
  * Porte físico típico por posição. Goleiro e zagueiro são mais altos e mais
  * largos de ombro; meia e ponta são mais leves e com passada mais longa.
  */
-const ROLE_BUILD: Record<RoleGroup, { height: number; girth: number; shoulder: number; leg: number }> = {
+const ROLE_BUILD: Record<
+  RoleGroup,
+  { height: number; girth: number; shoulder: number; leg: number }
+> = {
   GK: { height: 1.045, girth: 1.03, shoulder: 1.05, leg: 1.01 },
   DF: { height: 1.025, girth: 1.05, shoulder: 1.06, leg: 1.0 },
   MF: { height: 0.99, girth: 0.97, shoulder: 0.98, leg: 1.0 },

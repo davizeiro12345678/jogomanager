@@ -93,10 +93,26 @@ function StepDots({ step, onGo }: { step: number; onGo: (i: number) => void }) {
 
 /** Perfis prontos de habilidade, para quem não quer distribuir ponto a ponto. */
 const ATTR_PRESETS: { id: string; label: string; attrs: ManagerAttributes }[] = [
-  { id: "tecnico", label: "Treinador de campo", attrs: { attack: 8, defense: 8, market: 4, squad: 6, media: 4 } },
-  { id: "negociador", label: "Negociador", attrs: { attack: 5, defense: 5, market: 9, squad: 6, media: 5 } },
-  { id: "lider", label: "Líder de vestiário", attrs: { attack: 5, defense: 6, market: 4, squad: 9, media: 6 } },
-  { id: "equilibrado", label: "Equilibrado", attrs: { attack: 6, defense: 6, market: 6, squad: 6, media: 6 } },
+  {
+    id: "tecnico",
+    label: "Treinador de campo",
+    attrs: { attack: 8, defense: 8, market: 4, squad: 6, media: 4 },
+  },
+  {
+    id: "negociador",
+    label: "Negociador",
+    attrs: { attack: 5, defense: 5, market: 9, squad: 6, media: 5 },
+  },
+  {
+    id: "lider",
+    label: "Líder de vestiário",
+    attrs: { attack: 5, defense: 6, market: 4, squad: 9, media: 6 },
+  },
+  {
+    id: "equilibrado",
+    label: "Equilibrado",
+    attrs: { attack: 6, defense: 6, market: 6, squad: 6, media: 6 },
+  },
 ];
 
 function NewCareer() {
@@ -115,7 +131,11 @@ function NewCareer() {
     return [...seen.values()]
       .filter((l) => !q || l.country.toLowerCase().includes(q))
       .sort((a, b) =>
-        a.country === "Brasil" ? -1 : b.country === "Brasil" ? 1 : a.country.localeCompare(b.country, "pt-BR"),
+        a.country === "Brasil"
+          ? -1
+          : b.country === "Brasil"
+            ? 1
+            : a.country.localeCompare(b.country, "pt-BR"),
       );
   }, [countrySearch]);
   const [age, setAge] = useState(38);
