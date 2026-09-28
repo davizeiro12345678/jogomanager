@@ -699,6 +699,8 @@ export async function runSync(opts: {
   offset?: number;
   concurrency?: number;
   budgetMs?: number;
+  leagueId?: string;
+  season?: string;
 }) {
   const db = await admin();
   const scope = opts.scope ?? "clubs";
@@ -711,7 +713,14 @@ export async function runSync(opts: {
   try {
     let items = 0;
     let detail: unknown = null;
-    if (scope === "seed") {
+    if (scope === "premium-chain") {
+      const { syncPremiumChain } = await import("./premium-chain.server");
+      const phase = opts.phase;
+      if (!phase) throw new Error("Premium phase required");
+      const r = await syncPremiumChain({ phase, limit: opts.limit ?? 20, offset: opts.offset ?? 0, budgetMs: opts.budgetMs ?? 45_000, leagueId: opts.leagueId, season: opts.season });
+      detail = r;
+      items = r.imported;
+    } else if (scope === "seed") {
       const r = await seedFromBundledData();
       items = r.clubs;
     } else if (scope === "premium") {
