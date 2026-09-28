@@ -141,6 +141,27 @@
       "when": 1790380141388,
       "tag": "0019_player_stats_source_id_conflict_target",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1790589527514,
+      "tag": "0020_premium_football_media_and_match_records",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790589566899,
+      "tag": "0021_premium_official_league_catalog",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790589599194,
+      "tag": "0022_premium_official_team_catalog",
+      "breakpoints": true
     }
   ]
 }

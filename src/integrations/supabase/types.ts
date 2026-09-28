@@ -834,6 +834,201 @@ export type Database = {
         }
         Relationships: []
       }
+      official_event_details: {
+        Row: {
+          detail_type: string
+          event_source_id: string
+          label: string | null
+          minute: number | null
+          payload: Json
+          player_source_id: string | null
+          source_id: string
+          team_source_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          detail_type: string
+          event_source_id: string
+          label?: string | null
+          minute?: number | null
+          payload?: Json
+          player_source_id?: string | null
+          source_id: string
+          team_source_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          detail_type?: string
+          event_source_id?: string
+          label?: string | null
+          minute?: number | null
+          payload?: Json
+          player_source_id?: string | null
+          source_id?: string
+          team_source_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "official_event_details_event_source_id_fkey"
+            columns: ["event_source_id"]
+            isOneToOne: false
+            referencedRelation: "official_events"
+            referencedColumns: ["source_id"]
+          },
+        ]
+      }
+      official_events: {
+        Row: {
+          away_score: number | null
+          away_team_name: string | null
+          away_team_source_id: string | null
+          home_score: number | null
+          home_team_name: string | null
+          home_team_source_id: string | null
+          league_source_id: string
+          season: string
+          source_id: string
+          starts_at: string | null
+          status: string | null
+          updated_at: string
+          venue_name: string | null
+          venue_source_id: string | null
+        }
+        Insert: {
+          away_score?: number | null
+          away_team_name?: string | null
+          away_team_source_id?: string | null
+          home_score?: number | null
+          home_team_name?: string | null
+          home_team_source_id?: string | null
+          league_source_id: string
+          season: string
+          source_id: string
+          starts_at?: string | null
+          status?: string | null
+          updated_at?: string
+          venue_name?: string | null
+          venue_source_id?: string | null
+        }
+        Update: {
+          away_score?: number | null
+          away_team_name?: string | null
+          away_team_source_id?: string | null
+          home_score?: number | null
+          home_team_name?: string | null
+          home_team_source_id?: string | null
+          league_source_id?: string
+          season?: string
+          source_id?: string
+          starts_at?: string | null
+          status?: string | null
+          updated_at?: string
+          venue_name?: string | null
+          venue_source_id?: string | null
+        }
+        Relationships: []
+      }
+      official_leagues: {
+        Row: {
+          country: string | null
+          current_season: string | null
+          local_competition_id: string | null
+          name: string
+          source_id: string
+          sport: string
+          updated_at: string
+        }
+        Insert: {
+          country?: string | null
+          current_season?: string | null
+          local_competition_id?: string | null
+          name: string
+          source_id: string
+          sport: string
+          updated_at?: string
+        }
+        Update: {
+          country?: string | null
+          current_season?: string | null
+          local_competition_id?: string | null
+          name?: string
+          source_id?: string
+          sport?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "official_leagues_local_competition_id_fkey"
+            columns: ["local_competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      official_media: {
+        Row: {
+          entity_type: string
+          kind: string
+          source: string
+          source_id: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          entity_type: string
+          kind: string
+          source?: string
+          source_id: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          entity_type?: string
+          kind?: string
+          source?: string
+          source_id?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      official_teams: {
+        Row: {
+          league_source_id: string | null
+          local_club_id: string | null
+          name: string
+          source_id: string
+          updated_at: string
+          venue_source_id: string | null
+        }
+        Insert: {
+          league_source_id?: string | null
+          local_club_id?: string | null
+          name: string
+          source_id: string
+          updated_at?: string
+          venue_source_id?: string | null
+        }
+        Update: {
+          league_source_id?: string | null
+          local_club_id?: string | null
+          name?: string
+          source_id?: string
+          updated_at?: string
+          venue_source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "official_teams_local_club_id_fkey"
+            columns: ["local_club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_career_clubs: {
         Row: {
           appearances: number | null
