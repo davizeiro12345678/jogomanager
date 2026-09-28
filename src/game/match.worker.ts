@@ -192,7 +192,10 @@ async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive"
   live?.dispose();
   ballAuthority = null;
   clearVisualPhysics();
-  live = new MatchSim(message.home, message.away, message.seed);
+  live = new MatchSim(message.home, message.away, message.seed, {
+    knockout: message.knockout,
+    weather: message.weather,
+  });
   paused = false;
   speed = 1;
   sequence = 0;
@@ -230,6 +233,12 @@ async function handleMessage(message: LiveWorkerRequest) {
     publishSnapshot();
     return;
   }
+  if (message.type === "talkLive" && live) {
+    const applied = live.applyTeamTalk(message.side, message.kind);
+    publishSnapshot();
+    post({ id: message.id, ok: true, type: "command", result: applied });
+    return;
+  }
   if (message.type === "substituteLive" && live) {
     const changed = live.substitute(message.side, message.outPid, message.incoming);
     if (changed) resetVisualPhysicsToCanonical();
@@ -244,11 +253,11 @@ async function handleMessage(message: LiveWorkerRequest) {
     let guard = 0;
     const finishInChunks = () => {
       if (!live || token !== skipToken) return;
-      const end = Math.min(guard + 320, 14_000);
+      const end = Math.min(guard + 320, 16_000);
       // Pulo de partida não anima WASM em passos de 0,4s: ele preserva a
       // simulação determinística e apenas reposiciona a apresentação ao final.
       while (!live.finished && guard++ < end) live.step(0.4, 1, false);
-      if (live.finished || guard >= 14_000) {
+      if (live.finished || guard >= 16_000) {
         live.synchronizeBallPhysics();
         resetVisualPhysicsToCanonical();
         publishFinished();
@@ -271,9 +280,12 @@ async function handleMessage(message: LiveWorkerRequest) {
     return;
   }
   if (message.type === "simulate") {
-    const sim = new MatchSim(message.home, message.away, message.seed);
+    const sim = new MatchSim(message.home, message.away, message.seed, {
+      knockout: message.knockout,
+      weather: message.weather,
+    });
     let guard = 0;
-    while (!sim.finished && guard++ < 14_000) sim.step(0.4);
+    while (!sim.finished && guard++ < 16_000) sim.step(0.4);
     post({ id: message.id, ok: true, result: resultMatch(sim, 1) });
     return;
   }

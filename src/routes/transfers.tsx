@@ -6,6 +6,15 @@ import { useMemo, useState } from "react";
 import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
 import { EmptyState, NoCareer, PrimaryButton, SkeletonRows } from "@/components/game/screen-kit";
+import {
+  AGENT_DESC,
+  AGENT_LABEL,
+  agentConversation,
+  agentOpener,
+  agentReact,
+  moodFor,
+  MOOD_EMOJI,
+} from "@/game/agent";
 import { acceptOffer, rejectOffer } from "@/game/career";
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, formatWage, wageBill } from "@/game/economy";
@@ -374,21 +383,41 @@ function NegotiationDialog({
   const [attempt, setAttempt] = useState(0);
   const [log, setLog] = useState<string[]>([]);
   const [agreed, setAgreed] = useState(false);
+  const [conv, setConv] = useState(() => agentConversation(target.id));
+  const [opener] = useState(() => agentOpener(conv.agent, target.name, clubName(target.clubId)));
+  const mood = moodFor(conv.heat);
+  const agentFee = Math.round(fee * (conv.agent.feePct / 100) * 10) / 10;
 
-  const cost = loan ? Math.round(fee * 0.25 * 10) / 10 : fee;
+  const cost = Math.round(((loan ? fee * 0.25 : fee) + agentFee) * 10) / 10;
   const affordable = career.finances.budget >= cost;
   const wageOk = wage >= wageAsk(target);
 
   function propose() {
-    const res = negotiate(career, target, fee, attempt);
+    // o empresário reage primeiro: pode animar, endurecer ou sair da mesa
+    const reply = agentReact(
+      conv,
+      target.name,
+      ask > 0 ? fee / ask : 1,
+      ask,
+      `${target.id}-${career.season}-${career.round}-${attempt}`,
+    );
+    setConv({ ...conv });
     setAttempt((a) => a + 1);
-    setLog((l) => [res.message, ...l]);
+    if (reply.walkedAway) {
+      setLog((l) => [`${conv.agent.name}: ${reply.line}`, ...l]);
+      return;
+    }
+    const res = negotiate(career, target, fee, attempt);
+    setLog((l) => [`${conv.agent.name}: ${reply.line}`, res.message, ...l]);
     if (res.status === "accepted") setAgreed(true);
     if (res.status === "counter" && res.counter) setFee(res.counter);
+    else if (reply.counter) setFee(reply.counter);
   }
 
   function close() {
-    update(signRealPlayer(career, target, { fee, wage, loan }));
+    update(
+      signRealPlayer(career, target, { fee, wage, loan, agentFee, agentName: conv.agent.name }),
+    );
     onClose();
   }
 
@@ -409,6 +438,48 @@ function NegotiationDialog({
           >
             Fechar
           </button>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-border/40 bg-background/40 p-3">
+          <div className="flex items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 font-display text-sm"
+            >
+              {conv.agent.name
+                .split(" ")
+                .map((w) => w[0])
+                .slice(0, 2)
+                .join("")}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">
+                {conv.agent.name}{" "}
+                <span className="text-muted-foreground">· {AGENT_LABEL[conv.agent.persona]}</span>
+              </p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {AGENT_DESC[conv.agent.persona]}
+              </p>
+            </div>
+            <span title={`Humor: ${mood}`} className="text-2xl" aria-label={`Humor: ${mood}`}>
+              {MOOD_EMOJI[mood]}
+            </span>
+          </div>
+          <p className="mt-2 text-xs italic text-foreground/90">“{opener}”</p>
+          <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+            <span>
+              Comissão: <span className="font-display text-foreground">{conv.agent.feePct}%</span>{" "}
+              (€
+              {agentFee}M)
+            </span>
+            <span className="ml-auto">Paciência:</span>
+            <span aria-hidden="true" className="tracking-tighter">
+              {"●".repeat(Math.max(0, conv.patienceLeft))}
+              <span className="opacity-25">
+                {"●".repeat(Math.max(0, conv.agent.patience - conv.patienceLeft))}
+              </span>
+            </span>
+          </div>
         </div>
 
         <div className="mt-4 space-y-3">
@@ -457,10 +528,17 @@ function NegotiationDialog({
           </ul>
         ) : null}
 
+        {conv.walkedAway ? (
+          <p className="mt-3 rounded-lg bg-destructive/15 p-3 text-center text-xs text-destructive">
+            O empresário saiu da mesa. Tente outro alvo — ou volte com números sérios.
+          </p>
+        ) : null}
+
         <div className="mt-4 flex gap-2">
           <button
             onClick={propose}
-            className="flex-1 rounded-lg bg-secondary px-4 py-2 font-display text-sm uppercase tracking-wider transition hover:brightness-125"
+            disabled={conv.walkedAway}
+            className="flex-1 rounded-lg bg-secondary px-4 py-2 font-display text-sm uppercase tracking-wider transition hover:brightness-125 disabled:opacity-40"
           >
             Enviar proposta
           </button>

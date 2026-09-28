@@ -7,6 +7,9 @@
  */
 import RAPIER from "@dimforge/rapier3d-compat";
 
+import { pitchCondition } from "./ball-climate";
+import type { WeatherKind } from "./sim-rules";
+
 export const BALL_PHYSICS_RADIUS = 0.12;
 
 const DEFAULT_FIELD_X = 52.5;
@@ -48,6 +51,11 @@ export interface BallPhysicsAuthority {
   readonly engine: "rapier-wasm";
   reset(state: RapierBallState, holder?: RapierBallHolder | null): void;
   step(dt: number, state: RapierBallState, holder: RapierBallHolder | null): void;
+  /**
+   * Clima físico: atrito/restituição do gramado e vento (aceleração u/s²
+   * aplicada só com a bola no ar). Opcional para implementações de teste.
+   */
+  setCondition?: ((weather: WeatherKind, wind: { x: number; z: number }) => void) | undefined;
   dispose(): void;
 }
 
@@ -102,6 +110,8 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
   private readonly world: RapierWorld;
   private readonly ballBody: RapierBody;
   private readonly ballCollider: RapierCollider;
+  private pitchCollider: RapierCollider | null = null;
+  private wind = { x: 0, z: 0 };
   private attached = false;
   private disposed = false;
   private lastWritten: RapierBallState | null = null;
@@ -130,6 +140,15 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     this.lastWritten = copyState(state);
   }
 
+  setCondition(weather: WeatherKind, wind: { x: number; z: number }) {
+    if (this.disposed) return;
+    this.wind = { x: finite(wind.x), z: finite(wind.z) };
+    const cond = pitchCondition(weather);
+    this.pitchCollider?.setFriction(cond.rapierFriction);
+    this.pitchCollider?.setRestitution(cond.rapierRestitution);
+    this.ballCollider.setRestitution(cond.rapierBallRestitution);
+  }
+
   step(dt: number, state: RapierBallState, holder: RapierBallHolder | null) {
     if (this.disposed) return;
 
@@ -147,6 +166,7 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     if (this.attached || changed(this.lastWritten, state)) this.setDynamicState(state);
 
     this.applyMagnusImpulse(dt, state.spin);
+    this.applyWindImpulse(dt);
     this.stepWorld(dt);
     this.writeDynamicState(state);
     this.lastWritten = copyState(state);
@@ -179,6 +199,18 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     const strength = Math.max(-0.16, Math.min(0.16, finite(spin) * finite(dt, 1 / 30) * 0.045));
     this.ballBody.applyImpulse(
       { x: -(velocity.z / speed) * strength, y: 0, z: (velocity.x / speed) * strength },
+      true,
+    );
+  }
+
+  private applyWindImpulse(dt: number) {
+    if (this.wind.x === 0 && this.wind.z === 0) return;
+    const translation = this.ballBody.translation();
+    if (translation.y < BALL_PHYSICS_RADIUS * 2.5) return; // no chão o vento não pega
+    const step = finite(dt, 1 / 30);
+    const clamp = (v: number) => Math.max(-0.16, Math.min(0.16, v));
+    this.ballBody.applyImpulse(
+      { x: clamp(this.wind.x * step * 0.045), y: 0, z: clamp(this.wind.z * step * 0.045) },
       true,
     );
   }
@@ -250,7 +282,7 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
 
   private createPitchAndGoalColliders() {
     const { fieldX, fieldZ } = this.options;
-    this.world.createCollider(
+    this.pitchCollider = this.world.createCollider(
       RAPIER.ColliderDesc.cuboid(fieldX + 2, BALL_PHYSICS_RADIUS, fieldZ + 2)
         .setTranslation(0, -BALL_PHYSICS_RADIUS, 0)
         .setFriction(0.84)
