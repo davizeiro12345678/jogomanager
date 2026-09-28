@@ -994,6 +994,41 @@ export type Database = {
         }
         Relationships: []
       }
+      official_teams: {
+        Row: {
+          league_source_id: string | null
+          local_club_id: string | null
+          name: string
+          source_id: string
+          updated_at: string
+          venue_source_id: string | null
+        }
+        Insert: {
+          league_source_id?: string | null
+          local_club_id?: string | null
+          name: string
+          source_id: string
+          updated_at?: string
+          venue_source_id?: string | null
+        }
+        Update: {
+          league_source_id?: string | null
+          local_club_id?: string | null
+          name?: string
+          source_id?: string
+          updated_at?: string
+          venue_source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "official_teams_local_club_id_fkey"
+            columns: ["local_club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_career_clubs: {
         Row: {
           appearances: number | null
