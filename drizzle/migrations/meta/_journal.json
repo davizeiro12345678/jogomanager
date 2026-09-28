@@ -148,6 +148,13 @@
       "when": 1790589527514,
       "tag": "0020_premium_football_media_and_match_records",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790589566899,
+      "tag": "0021_premium_official_league_catalog",
+      "breakpoints": true
     }
   ]
 }

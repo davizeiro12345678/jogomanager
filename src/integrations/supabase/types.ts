@@ -929,6 +929,44 @@ export type Database = {
         }
         Relationships: []
       }
+      official_leagues: {
+        Row: {
+          country: string | null
+          current_season: string | null
+          local_competition_id: string | null
+          name: string
+          source_id: string
+          sport: string
+          updated_at: string
+        }
+        Insert: {
+          country?: string | null
+          current_season?: string | null
+          local_competition_id?: string | null
+          name: string
+          source_id: string
+          sport: string
+          updated_at?: string
+        }
+        Update: {
+          country?: string | null
+          current_season?: string | null
+          local_competition_id?: string | null
+          name?: string
+          source_id?: string
+          sport?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "official_leagues_local_competition_id_fkey"
+            columns: ["local_competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       official_media: {
         Row: {
           entity_type: string
