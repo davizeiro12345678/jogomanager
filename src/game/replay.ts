@@ -282,6 +282,15 @@ function makePlayer(m: ReplayPlayerMeta): SimPlayer {
     saves: 0,
     onSince: 0,
     minutes: 0,
+    yellows: 0,
+    sentOff: false,
+    injuryWeeks: 0,
+    interceptions: 0,
+    offsides: 0,
+    foulsWon: 0,
+    pensScored: 0,
+    pensMissed: 0,
+    xg: 0,
   };
 }
 

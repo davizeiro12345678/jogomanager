@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
@@ -104,11 +105,69 @@ function Dashboard() {
     .sort((a, b) => (b.goals ?? 0) - (a.goals ?? 0) || b.ovr - a.ovr)
     .slice(0, 4);
 
+  // checklist de boas-vindas: só nas primeiras rodadas e até dispensar
+  const onboardKey = `onboard-done:${career.clubId}:${career.season}`;
+  const [onboardDone, setOnboardDone] = useState(
+    () => typeof localStorage !== "undefined" && localStorage.getItem(onboardKey) === "1",
+  );
+  const showOnboard = !onboardDone && career.round <= 4 && career.season <= 1;
+  const playedFirst = mine.length > 0;
+  const onboardSteps = [
+    { label: "Conheça seu elenco e ajuste a escalação", to: "/squad", done: false },
+    { label: "Escolha a formação e o estilo de jogo", to: "/tactics", done: false },
+    { label: "Jogue a primeira partida", to: "/match", done: playedFirst },
+  ];
+
   return (
     <GameShell career={career}>
       <div className="mb-4">
         <GuestCloudPrompt next="/dashboard" compact />
       </div>
+      {showOnboard ? (
+        <section
+          aria-label="Primeiros passos"
+          className="mb-4 rounded-2xl border border-primary/30 bg-primary/[0.05] p-4"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-display text-sm uppercase tracking-wider">
+              Primeiros passos no {club.name}
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem(onboardKey, "1");
+                setOnboardDone(true);
+              }}
+              className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              Dispensar
+            </button>
+          </div>
+          <ol className="mt-3 grid gap-2 sm:grid-cols-3">
+            {onboardSteps.map((s, idx) => (
+              <li key={s.to}>
+                <Link
+                  to={s.to}
+                  className={`flex min-h-[44px] items-center gap-2.5 rounded-xl border px-3 py-2 text-sm transition-colors ${
+                    s.done
+                      ? "border-primary/30 bg-primary/10 text-muted-foreground line-through"
+                      : "border-border/60 bg-background/60 hover:border-primary/50 hover:text-primary"
+                  }`}
+                >
+                  <span
+                    className={`hud-num flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                      s.done ? "bg-primary text-primary-foreground" : "bg-foreground/10"
+                    }`}
+                  >
+                    {s.done ? "✓" : idx + 1}
+                  </span>
+                  {s.label}
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl uppercase sm:text-3xl">

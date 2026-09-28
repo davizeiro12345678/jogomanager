@@ -25,7 +25,9 @@ describe("MatchSim", () => {
     while (!sim.finished && guard++ < 20_000) sim.step(0.5);
 
     expect(sim.finished).toBe(true);
-    expect(sim.minute()).toBe(90);
+    // com acréscimos, o apito final sai entre 90' e ~100'
+    expect(sim.minute()).toBeGreaterThanOrEqual(90);
+    expect(sim.minute()).toBeLessThanOrEqual(105);
     expect(sim.events.length).toBeLessThanOrEqual(80);
     expect(sim.shotMap.length).toBeLessThanOrEqual(120);
     expect(sim.players.every((player) => Number.isFinite(player.x) && Number.isFinite(player.z))).toBe(true);
@@ -36,9 +38,9 @@ describe("MatchSim", () => {
     for (let index = 0; index < 8; index += 1) {
       const sim = create(`stability-${index}`);
       let guard = 0;
-      while (!sim.finished && guard++ < 14_000) sim.step(0.4);
+      while (!sim.finished && guard++ < 16_000) sim.step(0.4);
       expect(sim.finished, `seed stability-${index}`).toBe(true);
-      expect(guard, `seed stability-${index}`).toBeLessThanOrEqual(14_000);
+      expect(guard, `seed stability-${index}`).toBeLessThanOrEqual(16_000);
     }
   });
 

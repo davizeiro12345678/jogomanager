@@ -94,6 +94,14 @@ export interface PlayerLook {
   bootColor: string;
   bootAccent: string;
   sockTape: boolean;
+  /** altura do meião */
+  sockHeight: "low" | "mid" | "high";
+  /** fita branca no pulso (um lado só: cabe no teto de malhas do herói) */
+  wristTape: "none" | "left" | "right";
+  /** tatuagem no antebraço (um lado só: cabe no teto de malhas do herói) */
+  tattoo: "none" | "foreL" | "foreR";
+  /** brinco na orelha esquerda */
+  earring: boolean;
   /** cor da íris */
   eyeColor: string;
   /** formato da gola da camisa */
@@ -123,12 +131,13 @@ export function roleGroupOf(pos: string): RoleGroup {
  */
 const ROLE_BUILD: Record<
   RoleGroup,
-  { height: number; girth: number; shoulder: number; leg: number }
+  { height: number; girth: number; shoulder: number; leg: number; arm: number }
 > = {
-  GK: { height: 1.045, girth: 1.03, shoulder: 1.05, leg: 1.01 },
-  DF: { height: 1.025, girth: 1.05, shoulder: 1.06, leg: 1.0 },
-  MF: { height: 0.99, girth: 0.97, shoulder: 0.98, leg: 1.0 },
-  FW: { height: 1.0, girth: 0.99, shoulder: 1.0, leg: 1.02 },
+  GK: { height: 1.045, girth: 1.03, shoulder: 1.05, leg: 1.01, arm: 1.05 },
+  DF: { height: 1.025, girth: 1.05, shoulder: 1.06, leg: 1.0, arm: 1.02 },
+  MF: { height: 0.99, girth: 0.97, shoulder: 0.98, leg: 1.0, arm: 0.99 },
+  FW: { height: 1.0, girth: 0.99, shoulder: 1.0, leg: 1.02, arm: 1.0 },
+};
 };
 
 export interface Proportions {
@@ -158,6 +167,10 @@ export interface Proportions {
   upperArm: number;
   foreArm: number;
   armR: number;
+  /** envergadura relativa (1 = média): goleiro tem braço mais longo */
+  armSpan: number;
+  /** postura base do tronco em radianos (+ = curvado, − = ereto) */
+  posture: number;
   handR: number;
   thigh: number;
   shin: number;
@@ -267,6 +280,17 @@ export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook 
     hairVolume: 0.85 + rng() * 0.35,
     sweat: rng(),
     role,
+    // novos sorteios sempre no fim: a aparência existente não muda
+    sockHeight: rng() < 0.2 ? "low" : rng() < 0.75 ? "mid" : "high",
+    wristTape: (() => {
+      const r = rng();
+      return r < 0.62 ? "none" : r < 0.81 ? "left" : "right";
+    })(),
+    tattoo: (() => {
+      const r = rng();
+      return r < 0.68 ? "none" : r < 0.84 ? "foreL" : "foreR";
+    })(),
+    earring: rng() < 0.12,
   };
 }
 
@@ -289,6 +313,10 @@ export function proportionsFor(look: PlayerLook): Proportions {
   const faceRng = makeLookRng(look.seed ^ 0x9e3779b9);
   const faceWide = 0.94 + faceRng() * 0.14;
   const faceLong = 0.94 + faceRng() * 0.14;
+  // Postura e envergadura individuais: uns jogam eretos, outros curvados; o
+  // braço orbita o porte da posição (goleiro com mais envergadura).
+  const posture = (faceRng() - 0.5) * 0.12;
+  const armSpan = build.arm * (0.97 + faceRng() * 0.06);
 
   // Perna um pouco mais longa em atacantes, tronco mais curto: silhueta de
   // velocista. O quadril continua apoiado no gramado (hipY soma a perna toda).
@@ -346,9 +374,11 @@ export function proportionsFor(look: PlayerLook): Proportions {
     headD: headR * (1.02 + (1 - faceWide) * 0.4),
     jawLen: headR * 0.52 * faceLong,
     chinFwd: headR * (0.12 + (faceLong - 0.94) * 0.5),
-    upperArm: 0.28 * h * metricScale,
-    foreArm: 0.24 * h * metricScale,
+    upperArm: 0.28 * h * metricScale * armSpan,
+    foreArm: 0.24 * h * metricScale * armSpan,
     armR: 0.048 * g * strong * metricScale,
+    armSpan,
+    posture,
     handR: 0.045 * g * metricScale,
     thigh,
     shin,

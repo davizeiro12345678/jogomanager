@@ -1,5 +1,6 @@
 import { CLUBS, LEAGUES } from "./data/leagues";
 import { makeRng } from "./rng";
+import { shootoutWinner, solvePenalty, type ShootoutKick } from "./sim-rules";
 import type { CareerState, CupGroup, CupGroupMatch, CupState, CupTie } from "./types";
 
 /** Nomes de copa por país (fallback genérico). */
@@ -394,12 +395,37 @@ function playTie(tie: CupTie, seed: string): CupTie {
   };
   let hg = goals(1.3 + diff * 0.4);
   let ag = goals(1.15 - diff * 0.4);
+  let pens: string | undefined;
   if (hg === ag) {
-    // decisão nos pênaltis: um gol extra para o vencedor
-    if (rnd() < 0.5 + diff * 0.05) hg += 1;
+    // prorrogação: 30' com chance de gol para cada lado, ponderada pela força
+    if (rnd() < 0.26 + diff * 0.02) hg += 1;
+    if (rnd() < 0.23 - diff * 0.02) ag += 1;
+  }
+  if (hg === ag) {
+    // disputa de pênaltis de verdade; o gol extra marca o vencedor no placar
+    const rndS = makeRng(`${seed}-pens`);
+    const kicks: ShootoutKick[] = [];
+    let turn: "home" | "away" = "home";
+    let guard = 0;
+    while (!shootoutWinner(kicks) && guard++ < 30) {
+      const homeKick: boolean = turn === "home";
+      const out = solvePenalty({
+        taker: 72 + (homeKick ? diff : -diff),
+        gk: 74,
+        pressure: 0.5,
+        rnd: rndS,
+      });
+      kicks.push({ side: turn, name: "", scored: out.scored });
+      turn = homeKick ? "away" : "home";
+    }
+    const winner = shootoutWinner(kicks) ?? (rndS() < 0.5 ? "home" : "away");
+    const hs = kicks.filter((k) => k.side === "home" && k.scored).length;
+    const as = kicks.filter((k) => k.side === "away" && k.scored).length;
+    pens = `${hs}x${as}`;
+    if (winner === "home") hg += 1;
     else ag += 1;
   }
-  return { ...tie, hg, ag };
+  return { ...tie, hg, ag, ...(pens ? { pens } : {}) };
 }
 
 /** Placar de um jogo de grupo: pode terminar empatado. */
@@ -409,6 +435,11 @@ function playGroupMatch(match: CupGroupMatch, seed: string): CupGroupMatch {
     seed,
   );
   const rnd = makeRng(`${seed}-draw`);
+  // na fase de grupos não há disputa: empate após 90' (e ET) é empate
+  if (tie.pens) {
+    const level = Math.min(tie.hg ?? 0, tie.ag ?? 0);
+    return { ...match, hg: level, ag: level };
+  }
   // playTie desempata sempre; no grupo devolvemos o empate em parte dos jogos.
   if (Math.abs((tie.hg ?? 0) - (tie.ag ?? 0)) === 1 && rnd() < 0.3) {
     const level = Math.min(tie.hg ?? 0, tie.ag ?? 0);

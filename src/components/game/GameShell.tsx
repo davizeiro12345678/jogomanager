@@ -15,6 +15,7 @@ import {
   Medal,
   Menu,
   MessagesSquare,
+  Mic,
   Newspaper,
   Play,
   Receipt,
@@ -51,6 +52,7 @@ import { useClubTheme } from "@/game/theme";
 import { useCareer, useSignedIn } from "@/hooks/useCareer";
 import { LANGS, LANG_NAMES, useT, type Lang } from "@/i18n";
 import { CommandPalette } from "./CommandPalette";
+import { ShortcutsDialog } from "./ShortcutsDialog";
 import { Crest } from "./Crest";
 import type { CareerState } from "@/game/types";
 import { useActiveTimeTracking } from "@/features/activity/ActivityRanking";
@@ -252,6 +254,7 @@ export function GameShell({
                 items={TABS.map((tab) => ({ to: tab.to, label: t(tab.key), group: tab.group }))}
               />
             </div>
+            <ShortcutsDialog />
             <Link
               to="/match"
               className="flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 font-display text-xs uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.03]"

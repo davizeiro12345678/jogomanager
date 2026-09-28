@@ -699,9 +699,9 @@ export async function runSync(opts: {
   offset?: number;
   concurrency?: number;
   budgetMs?: number;
-  leagueId?: string;
-  season?: string;
-  phase?: import("./premium-chain.server").PremiumPhase;
+  leagueId?: string | undefined;
+  season?: string | undefined;
+  phase?: import("./premium-chain.server").PremiumPhase | undefined;
 }) {
   const db = await admin();
   const scope = opts.scope ?? "clubs";

@@ -18,9 +18,11 @@ import {
   MatchSim,
   type Side,
   type TeamSetup,
+  type TeamTalkKind,
 } from "./sim";
 import type { CareerState } from "./types";
 import type { Player, Tactics } from "./types";
+import type { WeatherKind } from "./sim-rules";
 
 let worker: Worker | null = null;
 let seq = 0;
@@ -75,6 +77,7 @@ export interface LiveMatchController {
   pause(paused: boolean): void;
   setSpeed(speed: number): void;
   setTactics(side: Side, tactics: Tactics): void;
+  talk(side: Side, kind: TeamTalkKind): Promise<boolean>;
   substitute(side: Side, outPid: string, incoming: Player): Promise<boolean>;
   skip(): void;
   dispose(): void;
@@ -84,6 +87,8 @@ interface LiveMatchOptions {
   home: TeamSetup;
   away: TeamSetup;
   seed: string;
+  knockout?: boolean;
+  weather?: WeatherKind;
   view?: WorkerMatchView;
   onSnapshot: (view: WorkerMatchView) => void;
   onFinished: (view: WorkerMatchView) => void;
@@ -102,7 +107,10 @@ type LiveWorkerCommand = LiveWorkerRequest extends infer Request
  */
 export function createLiveMatchController(options: LiveMatchOptions): LiveMatchController {
   const view = options.view ?? new WorkerMatchView(options.home, options.away);
-  const bootstrap = new MatchSim(options.home, options.away, options.seed);
+  const bootstrap = new MatchSim(options.home, options.away, options.seed, {
+    knockout: options.knockout,
+    weather: options.weather,
+  });
   view.apply(snapshotMatch(bootstrap, 0));
   let liveWorker: Worker | null = null;
   let localSim: MatchSim | null = null;
@@ -135,7 +143,10 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     liveWorker = null;
     if (disposed || localSim) return;
     options.onError?.(reason ?? "Worker indisponível; simulação local ativada.");
-    localSim = new MatchSim(options.home, options.away, options.seed);
+    localSim = new MatchSim(options.home, options.away, options.seed, {
+      knockout: options.knockout,
+      weather: options.weather,
+    });
     // Em caso de falha tardia, avança rapidamente até o último instante
     // confirmado antes de voltar à thread principal. Evita reiniciar o placar.
     if (latestState?.time) {
@@ -183,7 +194,14 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         else if (message.type === "finished") apply(message.result);
       };
       liveWorker.onerror = () => startFallback("O Worker falhou; a partida continuou no modo compatível.");
-      send({ type: "startLive", home: options.home, away: options.away, seed: options.seed });
+      send({
+        type: "startLive",
+        home: options.home,
+        away: options.away,
+        seed: options.seed,
+        knockout: options.knockout,
+        weather: options.weather,
+      });
     } catch {
       startFallback();
     }
@@ -209,6 +227,29 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
       setup.tactics = { ...tactics };
       if (localSim) (side === "home" ? localSim.home : localSim.away).tactics = { ...tactics };
       send({ type: "tacticsLive", side, tactics });
+    },
+    talk(side, kind) {
+      if (localSim) return Promise.resolve(localSim.applyTeamTalk(side, kind));
+      return new Promise<boolean>((resolve) => {
+        const targetId = command + 1;
+        const current = liveWorker;
+        if (!current) {
+          resolve(false);
+          return;
+        }
+        const onMessage = (event: MessageEvent<LiveWorkerResponse>) => {
+          const message = event.data;
+          if (!message.ok || message.id !== targetId || message.type !== "command") return;
+          current.removeEventListener("message", onMessage);
+          resolve(message.result === true);
+        };
+        current.addEventListener("message", onMessage);
+        send({ type: "talkLive", side, kind });
+        setTimeout(() => {
+          current.removeEventListener("message", onMessage);
+          resolve(false);
+        }, 3000);
+      });
     },
     substitute(side, outPid, incoming) {
       if (localSim) return Promise.resolve(localSim.substitute(side, outPid, incoming));
@@ -239,9 +280,9 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         let guard = 0;
         const finishInChunks = () => {
           if (!localSim || disposed) return;
-          const end = Math.min(guard + 240, 14_000);
+          const end = Math.min(guard + 240, 16_000);
           while (!localSim.finished && guard++ < end) localSim.step(0.4);
-          if (localSim.finished || guard >= 14_000) {
+          if (localSim.finished || guard >= 16_000) {
             sequence += 1;
             apply(resultMatch(localSim, sequence));
             localSkipTimer = null;

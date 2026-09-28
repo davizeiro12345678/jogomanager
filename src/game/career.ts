@@ -20,6 +20,7 @@ import { applyPyramid, leagueClubIds } from "./pyramid";
 import { evolveSeason, setAttrDeltas } from "./attributes";
 
 import { computeTable, generateFixtures } from "./season";
+import { settlePromises } from "./unhappy";
 import { evaluateAchievements } from "./achievements";
 import { createCups, cupPrize, inGroupStage, nextPhaseName, playCupStage, stageName } from "./cup";
 import { buildSquad } from "./squad";
@@ -549,6 +550,7 @@ function applyWeeklyDevelopment(
   state: CareerState,
   won: boolean,
   seed: string,
+  livePids: Set<string> = new Set(),
 ): { players: Record<string, Player>; news: NewsItem[] } {
   const rnd = makeRng(seed);
   const news: NewsItem[] = [];
@@ -605,9 +607,10 @@ function applyWeeklyDevelopment(
       q.ovr = Math.max(50, q.ovr - 1);
     }
 
-    // cartões e lesões da rodada (somente quem jogou)
+    // cartões e lesões da rodada (somente quem jogou; ao vivo já trouxe os dados)
     const played = state.lineup.includes(id) || state.bench.slice(0, 3).includes(id);
-    if (played) {
+    const fromLive = livePids.has(id);
+    if (played && !fromLive) {
       if (rnd() < 0.11) {
         q.yellows += 1;
         if (q.yellows >= 3) {
@@ -634,6 +637,9 @@ function applyWeeklyDevelopment(
           body: `${q.name} será desfalque por aproximadamente ${q.injuryWeeks} rodada(s).`,
         });
       }
+    }
+    // desgaste físico vale para todo mundo que jogou, inclusive ao vivo
+    if (played) {
       q.condition = Math.max(40, q.condition - 8 - Math.floor(rnd() * 8));
     }
 
@@ -820,6 +826,12 @@ export interface MatchPerformance {
   minutes?: number;
   /** nota da partida 0-10 */
   rating?: number;
+  /** amarelos na partida ao vivo (acumulam para suspensão) */
+  yellow?: number;
+  /** expulso na partida ao vivo (suspenso na próxima) */
+  red?: boolean;
+  /** semanas de lesão diagnosticadas no lance */
+  injuryWeeks?: number;
 }
 
 export function advanceRound(
@@ -853,29 +865,70 @@ export function advanceRound(
   const won = gf > ga;
   const draw = gf === ga;
 
-  // estatísticas individuais da partida (jogos, gols, assistências)
+  // estatísticas individuais da partida (jogos, gols, assistências, cartões, lesões)
   let squadAfterMatch = state.players;
+  const liveNews: NewsItem[] = [];
   if (performances.length) {
     squadAfterMatch = { ...state.players };
     for (const perf of performances) {
       const p = squadAfterMatch[perf.pid];
       if (!p) continue;
-      squadAfterMatch[perf.pid] = {
+      const q = {
         ...p,
         apps: (p.apps ?? 0) + (perf.played ? 1 : 0),
         goals: (p.goals ?? 0) + perf.goals,
         assists: (p.assists ?? 0) + perf.assists,
+        yellows: (p.yellows ?? 0) + (perf.yellow ?? 0),
+        suspended: p.suspended,
+        injuryWeeks: Math.max(p.injuryWeeks ?? 0, perf.injuryWeeks ?? 0),
       };
+      // vermelho direto suspende; 3 amarelos acumulados também
+      if (perf.red) {
+        q.suspended = true;
+        liveNews.push({
+          id: `sentoff-${perf.pid}-${round}`,
+          season: state.season,
+          round,
+          kind: "cartao",
+          title: `${q.name} expulso`,
+          body: `${q.name} foi expulso e desfalca o time na próxima rodada.`,
+        });
+      } else if (q.yellows >= 3) {
+        q.yellows = 0;
+        q.suspended = true;
+        liveNews.push({
+          id: `susp-${perf.pid}-${round}`,
+          season: state.season,
+          round,
+          kind: "cartao",
+          title: `${q.name} suspenso`,
+          body: `Terceiro cartão amarelo: ${q.name} desfalca o time na próxima rodada.`,
+        });
+      }
+      if ((perf.injuryWeeks ?? 0) > 0 && (p.injuryWeeks ?? 0) === 0) {
+        liveNews.push({
+          id: `inj-${perf.pid}-${round}`,
+          season: state.season,
+          round,
+          kind: "lesao",
+          title: `${q.name} se lesiona`,
+          body: `${q.name} será desfalque por aproximadamente ${perf.injuryWeeks} rodada(s).`,
+        });
+      }
+      squadAfterMatch[perf.pid] = q;
     }
   }
 
-  // mecânicas semanais sobre o elenco
+  // mecânicas semanais sobre o elenco (quem tem dado ao vivo não entra no sorteio)
+  const livePids = new Set(performances.map((p) => p.pid));
   const { players, news } = applyWeeklyDevelopment(
     squadAfterMatch,
     state,
     won,
     `${state.clubId}-${round}-dev`,
+    livePids,
   );
+  news.unshift(...liveNews);
 
   // finanças semanais
   const table = computeTable({ ...state, fixtures });
@@ -1125,6 +1178,24 @@ export function acceptOffer(state: CareerState, offerId: string): CareerState {
 }
 
 export function rejectOffer(state: CareerState, offerId: string): CareerState {
+  const offer = (state.offers ?? []).find((o) => o.id === offerId);
+  const rejected = new Set(state.rejectedOffers ?? []);
+  // recusar a saída magoa: o jogador entra na lista de insatisfeitos
+  if (offer && !rejected.has(offer.playerId)) {
+    const p = state.players[offer.playerId];
+    if (p && p.ovr >= 74) {
+      rejected.add(offer.playerId);
+      return {
+        ...state,
+        offers: (state.offers ?? []).filter((o) => o.id !== offerId),
+        rejectedOffers: [...rejected],
+        players: {
+          ...state.players,
+          [offer.playerId]: { ...p, morale: Math.max(10, p.morale - 6) },
+        },
+      };
+    }
+  }
   return { ...state, offers: (state.offers ?? []).filter((o) => o.id !== offerId) };
 }
 

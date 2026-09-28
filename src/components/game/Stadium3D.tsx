@@ -50,7 +50,10 @@ import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { cameraOption, type CameraMode } from "@/game/camera-modes";
 import { kitFor, gkKitFor, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { Atmosphere } from "@/components/game/stadium/Atmosphere";
+import { AmbientLife } from "@/components/game/stadium/AmbientLife";
 import { CrowdReaction } from "@/components/game/stadium/CrowdReaction";
+import { BenchLife } from "@/components/game/stadium/BenchLife";
+import { SidelineLife } from "@/components/game/stadium/SidelineLife";
 import { PitchResponse } from "@/components/game/stadium/PitchResponse";
 import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
 import { GradeLut } from "@/components/game/post/GradeLut";
@@ -142,7 +145,7 @@ function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
     const visualBall = presentationBall(sim);
     uniforms.uTime.value = clock.elapsedTime;
     uniforms.uBall.value.set(visualBall.x, 0, visualBall.z);
-    uniforms.uWind.value = 0.9;
+    uniforms.uWind.value = 0.4 + (sim.wind?.strength01 ?? 0.5) * 1.2;
   });
   return (
     <GrassChunks
@@ -223,13 +226,30 @@ function Pitch({
   // The precompiled albedo is the default checker cut; retain procedural maps
   // for custom mowing patterns and all low-end/offline devices.
   const compressed = quality === "alta";
-  const grassVariant = mow === "stripes" || mow === "diagonal" || mow === "wide" ? `grass_${mow}_albedo` as const : "grassAlbedo";
+  const grassVariant =
+    mow === "stripes" || mow === "diagonal" || mow === "wide"
+      ? (`grass_${mow}_albedo` as const)
+      : "grassAlbedo";
   useEffect(() => {
     if (compressed && grassVariant !== "grassAlbedo") requestKtx2([grassVariant]);
   }, [compressed, grassVariant]);
-  const tex = useMemo(() => (compressed && (mow === "checker" || mow === "stripes" || mow === "diagonal" || mow === "wide") ? ktx2(grassVariant) : null) ?? grassAlbedo(mow), [mow, compressed, grassVariant, textureRevision]);
-  const rough = useMemo(() => (compressed ? ktx2("grassRough") : null) ?? grassRoughness(mow), [mow, compressed, textureRevision]);
-  const norm = useMemo(() => quality === "baixa" ? null : ((compressed ? ktx2("grassNormal") : null) ?? grassNormal(mow)), [quality, mow, compressed, textureRevision]);
+  const tex = useMemo(
+    () =>
+      (compressed &&
+      (mow === "checker" || mow === "stripes" || mow === "diagonal" || mow === "wide")
+        ? ktx2(grassVariant)
+        : null) ?? grassAlbedo(mow),
+    [mow, compressed, grassVariant, textureRevision],
+  );
+  const rough = useMemo(
+    () => (compressed ? ktx2("grassRough") : null) ?? grassRoughness(mow),
+    [mow, compressed, textureRevision],
+  );
+  const norm = useMemo(
+    () =>
+      quality === "baixa" ? null : ((compressed ? ktx2("grassNormal") : null) ?? grassNormal(mow)),
+    [quality, mow, compressed, textureRevision],
+  );
   const normalScale = useMemo(
     () => new THREE.Vector2(quality === "alta" ? 1.18 : 0.82, quality === "alta" ? 1.18 : 0.82),
     [quality],
@@ -293,7 +313,7 @@ function Pitch({
       <PaintedLines />
       <Goal side={1} quality={quality} sim={sim} />
       <Goal side={-1} quality={quality} sim={sim} />
-      <CornerFlags />
+      <CornerFlags wind={sim.wind?.strength01 ?? 0.5} />
     </group>
   );
 }
@@ -613,8 +633,56 @@ function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: Sim
   const sideMat = useNetMaterial(4, 5, quality === "alta");
   const topMat = useNetMaterial(4, 14, quality === "alta");
   const post = <meshStandardMaterial color="#fdfdfd" roughness={0.22} metalness={0.08} />;
+  // trave viva: bola raspando poste/travessão treme a estrutura e pisca
+  const frame = useRef<THREE.Group>(null);
+  const flash = useRef<THREE.Mesh>(null);
+  const pulse = useRef(0);
+  const cool = useRef(0);
+  useFrame((_, rawDt) => {
+    const g = frame.current;
+    const f = flash.current;
+    if (!g || !f) return;
+    const dt = Math.min(rawDt, 0.05);
+    cool.current = Math.max(0, cool.current - dt);
+    const b = presentationBall(sim);
+    const dx = Math.abs(b.x - x);
+    const nearPost = Math.abs(Math.abs(b.z) - 3.66);
+    const nearBar = Math.hypot(Math.abs(b.z) > 3.66 ? Math.abs(b.z) - 3.66 : 0, b.height - 2.44);
+    const speed = Math.hypot(b.vx, b.vz);
+    if (cool.current <= 0 && dx < 1.4 && b.height < 3.1 && speed > 4) {
+      if (nearPost < 0.5 || nearBar < 0.45) {
+        pulse.current = 1;
+        cool.current = 1.2;
+      }
+    }
+    if (pulse.current > 0) {
+      pulse.current = Math.max(0, pulse.current - dt * 2.4);
+      const s = pulse.current;
+      g.position.x = Math.sin(s * 42) * 0.07 * s;
+      g.position.z = Math.sin(s * 35) * 0.06 * s;
+      f.visible = true;
+      f.position.set(b.x - x, 1.2 + b.height * 0.5, b.z);
+      f.scale.setScalar(1 + (1 - s) * 1.6);
+      (f.material as THREE.MeshBasicMaterial).opacity = 0.5 * s;
+    } else if (g.position.x !== 0 || g.position.z !== 0) {
+      g.position.x = 0;
+      g.position.z = 0;
+      f.visible = false;
+    }
+  });
   return (
     <group position={[x, 0, 0]} ref={censusRef("goal")}>
+      <mesh ref={flash} visible={false}>
+        <sphereGeometry args={[0.7, 12, 12]} />
+        <meshBasicMaterial
+          color="#ffffff"
+          transparent
+          opacity={0}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+      <group ref={frame}>
       {[-3.66, 3.66].map((z) => (
         <group key={z}>
           <mesh position={[0, 1.22, z]} castShadow={quality === "alta"}>
@@ -647,17 +715,46 @@ function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: Sim
       <mesh position={[side * 0.95, 2.4, 0]} rotation={[-Math.PI / 2, 0, 0]} material={topMat}>
         <planeGeometry args={[1.9, 7.32]} />
       </mesh>
+      </group>
     </group>
   );
 }
 
-function CornerFlags() {
+function CornerFlags({ wind = 0.5 }: { wind?: number }) {
   const ref = useRef<THREE.Group>(null);
+  const uTime = useRef({ value: 0 });
+  const uAmp = useRef({ value: 0.16 });
+  // tecido compartilhado: ondula no vértice, com fase pela posição no mundo
+  // (cada escanteio tremula diferente) e amplitude crescendo para a ponta
+  const cloth = useMemo(() => {
+    const m = new THREE.MeshStandardMaterial({
+      color: "#f5c400",
+      side: THREE.DoubleSide,
+      roughness: 0.8,
+    });
+    m.onBeforeCompile = (shader) => {
+      shader.uniforms["uTime"] = uTime.current;
+      shader.uniforms["uAmp"] = uAmp.current;
+      shader.vertexShader = shader.vertexShader
+        .replace("#include <common>", "#include <common>\nuniform float uTime;\nuniform float uAmp;")
+        .replace(
+          "#include <begin_vertex>",
+          `#include <begin_vertex>
+           float cphase = modelMatrix[3].x * 0.5 + modelMatrix[3].z * 0.5;
+           transformed.z += sin(uTime * 6.0 + cphase + position.x * 8.0) * uAmp * (position.x + 0.275);`,
+        );
+    };
+    return m;
+  }, []);
+  useEffect(() => () => cloth.dispose(), [cloth]);
   useFrame(({ clock }) => {
+    uTime.current.value = clock.elapsedTime;
+    const gust = 0.75 + 0.25 * Math.sin(clock.elapsedTime * 0.9) + 0.12 * Math.sin(clock.elapsedTime * 2.7);
+    uAmp.current.value = (0.05 + wind * 0.22) * gust;
     const g = ref.current;
     if (!g) return;
     g.children.forEach((c, i) => {
-      c.rotation.z = Math.sin(clock.elapsedTime * 2.4 + i) * 0.14;
+      c.rotation.z = Math.sin(clock.elapsedTime * 2.4 + i) * (0.05 + wind * 0.16);
     });
   });
   return (
@@ -673,9 +770,8 @@ function CornerFlags() {
             <cylinderGeometry args={[0.05, 0.05, 1.5, 6]} />
             <meshStandardMaterial color="#f5f5f5" />
           </mesh>
-          <mesh position={[0.28, 1.32, 0]}>
-            <planeGeometry args={[0.55, 0.35]} />
-            <meshStandardMaterial color="#f5c400" side={THREE.DoubleSide} />
+          <mesh position={[0.28, 1.32, 0]} material={cloth}>
+            <planeGeometry args={[0.55, 0.35, 8, 3]} />
           </mesh>
         </group>
       ))}
@@ -752,7 +848,15 @@ function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: stri
 }
 
 /** Telão atualizado no máximo cinco vezes por segundo, sem worker de fontes. */
-function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
+function Scoreboard({
+  sim,
+  replay,
+  goalPulse,
+}: {
+  sim: SimView;
+  replay: boolean;
+  goalPulse: React.MutableRefObject<number>;
+}) {
   const board = useMemo(() => {
     if (typeof document === "undefined") return null;
     const canvas = document.createElement("canvas");
@@ -765,20 +869,23 @@ function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
     return { canvas, texture, last: "" };
   }, []);
   const tick = useRef(0);
-  useFrame(() => {
+  useFrame(({ clock }) => {
     if (!board || ++tick.current % 12 !== 0) return;
     const possessionTotal = sim.stats.home.possessionTicks + sim.stats.away.possessionTicks;
     const homePossession =
       possessionTotal > 0
         ? Math.round((sim.stats.home.possessionTicks / possessionTotal) * 100)
         : 50;
-    const key = `${sim.home.short}|${sim.stats.home.goals}|${sim.stats.away.goals}|${sim.away.short}|${sim.minute()}|${replay}|${homePossession}|${sim.stats.home.shots}|${sim.stats.away.shots}`;
+    // flash de gol: alterna o fundo 4x por segundo enquanto o pulso está alto
+    const celebrating = goalPulse.current > 0.45;
+    const flash = celebrating ? Math.floor(clock.elapsedTime * 4) % 2 : 0;
+    const key = `${sim.home.short}|${sim.stats.home.goals}|${sim.stats.away.goals}|${sim.away.short}|${sim.minute()}|${replay}|${homePossession}|${sim.stats.home.shots}|${sim.stats.away.shots}|${flash}`;
     if (board.last === key) return;
     board.last = key;
     const ctx = board.canvas.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, board.canvas.width, board.canvas.height);
-    ctx.fillStyle = replay ? "#5f151b" : "#07140d";
+    ctx.fillStyle = celebrating ? (flash ? "#7a1016" : "#3d080d") : replay ? "#5f151b" : "#07140d";
     ctx.fillRect(0, 0, board.canvas.width, board.canvas.height);
     ctx.fillStyle = "#25e77f";
     ctx.fillRect(0, 0, board.canvas.width, 12);
@@ -801,12 +908,19 @@ function Scoreboard({ sim, replay }: { sim: SimView; replay: boolean }) {
       132,
     );
     ctx.font = "700 30px sans-serif";
-    ctx.fillStyle = replay ? "#ffd2d5" : "#ffd76a";
-    ctx.fillText(
-      `${homePossession}% POSSE  ·  ${sim.stats.home.shots}–${sim.stats.away.shots} CHUTES`,
-      512,
-      232,
-    );
+    if (celebrating) {
+      ctx.fillStyle = flash ? "#ffffff" : "#ffd76a";
+      ctx.font = "800 44px sans-serif";
+      ctx.fillText("★ GOOOL! ★", 512, 232);
+      ctx.font = "700 30px sans-serif";
+    } else {
+      ctx.fillStyle = replay ? "#ffd2d5" : "#ffd76a";
+      ctx.fillText(
+        `${homePossession}% POSSE  ·  ${sim.stats.home.shots}–${sim.stats.away.shots} CHUTES`,
+        512,
+        232,
+      );
+    }
     ctx.fillStyle = "#2de67e";
     ctx.fillRect(42, 272, 940 * (homePossession / 100), 12);
     ctx.fillStyle = "#4c6a79";
@@ -1707,6 +1821,9 @@ function Ball({
 }) {
   const ref = useRef<THREE.Mesh>(null);
   const shadow = useRef<THREE.Mesh>(null);
+  const puff = useRef<THREE.Mesh>(null);
+  const prevH = useRef(0.12);
+  const spray = useRef(0);
   const tex = useMemo(ballTexture, []);
   useFrame((_, dt) => {
     const m = ref.current;
@@ -1724,6 +1841,21 @@ function Ball({
       const k = Math.max(0.35, 1 - visualBall.height * 0.25);
       s.scale.setScalar(k);
       (s.material as THREE.MeshBasicMaterial).opacity = 0.36 * k;
+    }
+    // respingo: quicada no gramado molhado levanta água
+    const p = puff.current;
+    if (p) {
+      if (wet > 0.5 && prevH.current > 0.35 && visualBall.height <= 0.16) spray.current = 1;
+      prevH.current = visualBall.height;
+      if (spray.current > 0) {
+        spray.current = Math.max(0, spray.current - dt * 3);
+        p.visible = true;
+        p.position.set(m.position.x, 0.06, m.position.z);
+        p.scale.setScalar(0.3 + (1 - spray.current) * 1.4);
+        (p.material as THREE.MeshBasicMaterial).opacity = 0.4 * spray.current;
+      } else if (p.visible) {
+        p.visible = false;
+      }
     }
   });
   const ball = (
@@ -1752,6 +1884,10 @@ function Ball({
       <mesh ref={shadow} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.18, 16]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.36} />
+      </mesh>
+      <mesh ref={puff} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
+        <ringGeometry args={[0.12, 0.3, 20]} />
+        <meshBasicMaterial color="#cfe6ff" transparent opacity={0} depthWrite={false} />
       </mesh>
     </group>
   );
@@ -2315,22 +2451,67 @@ function Official({
   const armL = useRef<THREE.Group>(null);
   const armR = useRef<THREE.Group>(null);
   const cardRef = useRef<THREE.Mesh>(null);
+  const redCardRef = useRef<THREE.Mesh>(null);
+  const sprayRef = useRef<THREE.Mesh>(null);
   const flagRef = useRef<THREE.Group>(null);
   const phase = useRef(0);
   const gesture = useRef(0); // tempo restante do gesto (cartão / bandeira)
+  const gestureKind = useRef<"none" | "yellow" | "red" | "goal" | "offside">("none");
   const fouls = useRef(-1);
+  const cards = useRef(-1);
+  const offsides = useRef(-1);
+  const goals = useRef(-1);
+  const sprayUntil = useRef(0);
+  const lastReds = useRef(0);
   const detail = quality === "alta";
 
-  useFrame((_, rawDt) => {
+  useFrame(({ clock }, rawDt) => {
     const grp = g.current;
     if (!grp) return;
     const dt = Math.min(rawDt, 0.05);
+    const t = clock.elapsedTime;
     const visualBall = presentationBall(sim);
     const totalFouls = sim.stats.home.fouls + sim.stats.away.fouls;
-    if (fouls.current < 0) fouls.current = totalFouls;
-    else if (totalFouls > fouls.current) {
+    const totalCards =
+      sim.stats.home.yellow + sim.stats.away.yellow + sim.stats.home.red + sim.stats.away.red;
+    const totalReds = sim.stats.home.red + sim.stats.away.red;
+    const totalOffs = sim.stats.home.offsides + sim.stats.away.offsides;
+    const totalGoals = sim.stats.home.goals + sim.stats.away.goals;
+    if (fouls.current < 0) {
       fouls.current = totalFouls;
-      gesture.current = 2.2;
+      cards.current = totalCards;
+      offsides.current = totalOffs;
+      goals.current = totalGoals;
+      lastReds.current = totalReds;
+    } else {
+      // cartão: amarelo mostra e baixa; vermelho mostra e aponta a rua
+      if (totalCards > cards.current) {
+        cards.current = totalCards;
+        const red = totalReds > lastReds.current;
+        lastReds.current = totalReds;
+        gesture.current = red ? 3.4 : 2.2;
+        gestureKind.current = red ? "red" : "yellow";
+      } else if (totalGoals > goals.current) {
+        // gol: árbitro aponta o centro; assistentes correm para o meio
+        goals.current = totalGoals;
+        gesture.current = 2.4;
+        gestureKind.current = "goal";
+      } else if (totalOffs > offsides.current) {
+        // impedimento: assistente do lado ergue a bandeira
+        offsides.current = totalOffs;
+        gesture.current = 2.6;
+        gestureKind.current = "offside";
+      } else if (totalFouls > fouls.current) {
+        fouls.current = totalFouls;
+        gesture.current = 2.2;
+        gestureKind.current = "none";
+        // spray de barreira: linha branca onde a falta aconteceu
+        if (role === "ref" && sprayRef.current) {
+          sprayRef.current.position.set(visualBall.x, 0.02, visualBall.z);
+          sprayRef.current.rotation.y = Math.atan2(visualBall.x, visualBall.z);
+          sprayUntil.current = t + 9;
+        }
+      }
     }
     gesture.current = Math.max(0, gesture.current - dt);
 
@@ -2362,115 +2543,154 @@ function Official({
     if (legL.current) legL.current.rotation.x = swing;
     if (legR.current) legR.current.rotation.x = -swing;
     const showing = gesture.current > 0;
-    if (armL.current) armL.current.rotation.x = -swing * 0.8;
+    const kind = gestureKind.current;
+    // árbitro: amarelo levanta, vermelho levanta e aponta a rua, gol aponta o centro
+    if (armL.current) {
+      const want = showing && role === "ref" && kind === "red" ? -1.6 : -swing * 0.8;
+      armL.current.rotation.x += (want - armL.current.rotation.x) * Math.min(1, dt * 9);
+      const wantZ = showing && role === "ref" && kind === "red" ? 1.35 : 0;
+      armL.current.rotation.z += (wantZ - armL.current.rotation.z) * Math.min(1, dt * 9);
+    }
     if (armR.current) {
-      // braço direito sobe ao mostrar cartão / apontar o centro
-      const want = showing && role === "ref" ? -2.5 : swing * 0.8;
+      const want =
+        showing && role === "ref" && (kind === "yellow" || kind === "red")
+          ? -2.5
+          : showing && role === "ref" && kind === "goal"
+            ? -1.15
+            : swing * 0.8;
       armR.current.rotation.x += (want - armR.current.rotation.x) * Math.min(1, dt * 9);
     }
-    if (cardRef.current) cardRef.current.visible = showing && role === "ref";
+    if (cardRef.current) cardRef.current.visible = showing && role === "ref" && kind === "yellow";
+    if (redCardRef.current)
+      redCardRef.current.visible = showing && role === "ref" && kind === "red";
     if (flagRef.current) {
-      const up = showing && role !== "ref" ? -1.9 : -0.45;
+      // impedimento: bandeira reta para cima, tremendo; gol: corre para o meio
+      const up =
+        showing && role !== "ref" && kind === "offside"
+          ? Math.PI - 0.06 + Math.sin(t * 22) * 0.05
+          : showing && role !== "ref"
+            ? -1.9
+            : -0.45;
       flagRef.current.rotation.z += (up - flagRef.current.rotation.z) * Math.min(1, dt * 7);
+    }
+    // spray da barreira some em ~9s
+    if (sprayRef.current) {
+      const left = sprayUntil.current - t;
+      const mat = sprayRef.current.material as THREE.MeshBasicMaterial;
+      sprayRef.current.visible = left > 0;
+      if (left > 0) mat.opacity = Math.min(0.85, left / 3);
     }
   });
 
   const kit = role === "ref" ? "#101318" : "#f6ff5c";
   const skin = "#c98d63";
   return (
-    <group ref={g} position={[0, 0, role === "ref" ? 8 : FIELD_Z + 1.6]}>
-      {/* tronco */}
-      <mesh position={[0, 1.3, 0]} castShadow={detail}>
-        <capsuleGeometry args={[0.2, 0.52, 4, detail ? 12 : 8]} />
-        <meshStandardMaterial color={kit} roughness={0.7} />
-      </mesh>
-      {/* gola */}
-      {detail ? (
-        <mesh position={[0, 1.58, 0]}>
-          <torusGeometry args={[0.13, 0.025, 6, 12]} />
-          <meshStandardMaterial color="#e7ecf3" roughness={0.6} />
+    <>
+      <group ref={g} position={[0, 0, role === "ref" ? 8 : FIELD_Z + 1.6]}>
+        {/* tronco */}
+        <mesh position={[0, 1.3, 0]} castShadow={detail}>
+          <capsuleGeometry args={[0.2, 0.52, 4, detail ? 12 : 8]} />
+          <meshStandardMaterial color={kit} roughness={0.7} />
         </mesh>
-      ) : null}
-      {/* pescoço + cabeça */}
-      <mesh position={[0, 1.63, 0]}>
-        <capsuleGeometry args={[0.055, 0.08, 3, 8]} />
-        <meshStandardMaterial color={skin} roughness={0.85} />
-      </mesh>
-      <mesh position={[0, 1.78, 0]} castShadow={detail}>
-        <sphereGeometry args={[0.135, detail ? 16 : 10, detail ? 16 : 10]} />
-        <meshStandardMaterial color={skin} roughness={0.85} />
-      </mesh>
-      {/* calção */}
-      <mesh position={[0, 0.92, 0]}>
-        <capsuleGeometry args={[0.185, 0.14, 3, detail ? 12 : 8]} />
-        <meshStandardMaterial color={role === "ref" ? "#0b0e12" : "#141820"} roughness={0.78} />
-      </mesh>
-      {/* pernas com meião claro */}
-      <group ref={legL} position={[-0.11, 0.86, 0]}>
-        <mesh position={[0, -0.32, 0]}>
-          <capsuleGeometry args={[0.075, 0.42, 3, 6]} />
+        {/* gola */}
+        {detail ? (
+          <mesh position={[0, 1.58, 0]}>
+            <torusGeometry args={[0.13, 0.025, 6, 12]} />
+            <meshStandardMaterial color="#e7ecf3" roughness={0.6} />
+          </mesh>
+        ) : null}
+        {/* pescoço + cabeça */}
+        <mesh position={[0, 1.63, 0]}>
+          <capsuleGeometry args={[0.055, 0.08, 3, 8]} />
           <meshStandardMaterial color={skin} roughness={0.85} />
         </mesh>
-        <mesh position={[0, -0.66, 0]}>
-          <capsuleGeometry args={[0.072, 0.2, 3, 6]} />
-          <meshStandardMaterial color={role === "ref" ? "#1d2229" : "#20262f"} roughness={0.8} />
-        </mesh>
-      </group>
-      <group ref={legR} position={[0.11, 0.86, 0]}>
-        <mesh position={[0, -0.32, 0]}>
-          <capsuleGeometry args={[0.075, 0.42, 3, 6]} />
+        <mesh position={[0, 1.78, 0]} castShadow={detail}>
+          <sphereGeometry args={[0.135, detail ? 16 : 10, detail ? 16 : 10]} />
           <meshStandardMaterial color={skin} roughness={0.85} />
         </mesh>
-        <mesh position={[0, -0.66, 0]}>
-          <capsuleGeometry args={[0.072, 0.2, 3, 6]} />
-          <meshStandardMaterial color={role === "ref" ? "#1d2229" : "#20262f"} roughness={0.8} />
+        {/* calção */}
+        <mesh position={[0, 0.92, 0]}>
+          <capsuleGeometry args={[0.185, 0.14, 3, detail ? 12 : 8]} />
+          <meshStandardMaterial color={role === "ref" ? "#0b0e12" : "#141820"} roughness={0.78} />
         </mesh>
-      </group>
-      {/* braços */}
-      <group ref={armL} position={[-0.21, 1.48, 0]}>
-        <mesh position={[0, -0.22, 0]}>
-          <capsuleGeometry args={[0.055, 0.34, 3, 6]} />
-          <meshStandardMaterial color={kit} roughness={0.72} />
-        </mesh>
-      </group>
-      <group ref={armR} position={[0.21, 1.48, 0]}>
-        <mesh position={[0, -0.22, 0]}>
-          <capsuleGeometry args={[0.055, 0.34, 3, 6]} />
-          <meshStandardMaterial color={kit} roughness={0.72} />
-        </mesh>
-        {/* cartão na mão, visível só no gesto */}
-        <mesh ref={cardRef} position={[0, -0.46, 0.03]} visible={false}>
-          <planeGeometry args={[0.1, 0.15]} />
-          <meshBasicMaterial color="#ffd93b" side={THREE.DoubleSide} />
-        </mesh>
-      </group>
-      {/* apito e relógio */}
-      {detail && role === "ref" ? (
-        <>
-          <mesh position={[0, 1.44, 0.14]}>
-            <capsuleGeometry args={[0.022, 0.05, 3, 6]} />
-            <meshStandardMaterial color="#d8dde5" metalness={0.5} roughness={0.35} />
+        {/* pernas com meião claro */}
+        <group ref={legL} position={[-0.11, 0.86, 0]}>
+          <mesh position={[0, -0.32, 0]}>
+            <capsuleGeometry args={[0.075, 0.42, 3, 6]} />
+            <meshStandardMaterial color={skin} roughness={0.85} />
           </mesh>
-          <mesh position={[-0.2, 1.22, 0.05]}>
-            <boxGeometry args={[0.05, 0.05, 0.02]} />
-            <meshStandardMaterial color="#20252c" roughness={0.4} metalness={0.3} />
-          </mesh>
-        </>
-      ) : null}
-      {/* bandeira do assistente */}
-      {role !== "ref" ? (
-        <group ref={flagRef} position={[0.24, 1.44, 0]} rotation={[0, 0, -0.45]}>
-          <mesh position={[0, 0.2, 0]}>
-            <cylinderGeometry args={[0.012, 0.012, 0.42, 6]} />
-            <meshStandardMaterial color="#2a2f36" roughness={0.6} />
-          </mesh>
-          <mesh position={[0.13, 0.34, 0]}>
-            <planeGeometry args={[0.26, 0.2]} />
-            <meshBasicMaterial color="#ffe14d" side={THREE.DoubleSide} />
+          <mesh position={[0, -0.66, 0]}>
+            <capsuleGeometry args={[0.072, 0.2, 3, 6]} />
+            <meshStandardMaterial color={role === "ref" ? "#1d2229" : "#20262f"} roughness={0.8} />
           </mesh>
         </group>
+        <group ref={legR} position={[0.11, 0.86, 0]}>
+          <mesh position={[0, -0.32, 0]}>
+            <capsuleGeometry args={[0.075, 0.42, 3, 6]} />
+            <meshStandardMaterial color={skin} roughness={0.85} />
+          </mesh>
+          <mesh position={[0, -0.66, 0]}>
+            <capsuleGeometry args={[0.072, 0.2, 3, 6]} />
+            <meshStandardMaterial color={role === "ref" ? "#1d2229" : "#20262f"} roughness={0.8} />
+          </mesh>
+        </group>
+        {/* braços */}
+        <group ref={armL} position={[-0.21, 1.48, 0]}>
+          <mesh position={[0, -0.22, 0]}>
+            <capsuleGeometry args={[0.055, 0.34, 3, 6]} />
+            <meshStandardMaterial color={kit} roughness={0.72} />
+          </mesh>
+        </group>
+        <group ref={armR} position={[0.21, 1.48, 0]}>
+          <mesh position={[0, -0.22, 0]}>
+            <capsuleGeometry args={[0.055, 0.34, 3, 6]} />
+            <meshStandardMaterial color={kit} roughness={0.72} />
+          </mesh>
+          {/* cartões na mão, visíveis só no gesto */}
+          <mesh ref={cardRef} position={[0, -0.46, 0.03]} visible={false}>
+            <planeGeometry args={[0.1, 0.15]} />
+            <meshBasicMaterial color="#ffd93b" side={THREE.DoubleSide} />
+          </mesh>
+          <mesh ref={redCardRef} position={[0, -0.46, 0.03]} visible={false}>
+            <planeGeometry args={[0.1, 0.15]} />
+            <meshBasicMaterial color="#e02424" side={THREE.DoubleSide} />
+          </mesh>
+        </group>
+        {/* apito e relógio */}
+        {detail && role === "ref" ? (
+          <>
+            <mesh position={[0, 1.44, 0.14]}>
+              <capsuleGeometry args={[0.022, 0.05, 3, 6]} />
+              <meshStandardMaterial color="#d8dde5" metalness={0.5} roughness={0.35} />
+            </mesh>
+            <mesh position={[-0.2, 1.22, 0.05]}>
+              <boxGeometry args={[0.05, 0.05, 0.02]} />
+              <meshStandardMaterial color="#20252c" roughness={0.4} metalness={0.3} />
+            </mesh>
+          </>
+        ) : null}
+        {/* bandeira do assistente */}
+        {role !== "ref" ? (
+          <group ref={flagRef} position={[0.24, 1.44, 0]} rotation={[0, 0, -0.45]}>
+            <mesh position={[0, 0.2, 0]}>
+              <cylinderGeometry args={[0.012, 0.012, 0.42, 6]} />
+              <meshStandardMaterial color="#2a2f36" roughness={0.6} />
+            </mesh>
+            <mesh position={[0.13, 0.34, 0]}>
+              <planeGeometry args={[0.26, 0.2]} />
+              <meshBasicMaterial color="#ffe14d" side={THREE.DoubleSide} />
+            </mesh>
+          </group>
+        ) : null}
+      </group>
+      {/* spray da barreira: linha branca no gramado, fora do grupo móvel */}
+      {role === "ref" ? (
+        <mesh ref={sprayRef} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
+          <planeGeometry args={[3.2, 0.14]} />
+          <meshBasicMaterial color="#f4f7fa" transparent opacity={0.85} depthWrite={false} />
+        </mesh>
       ) : null}
-    </group>
+    </>
   );
 }
 
@@ -2757,6 +2977,7 @@ function Scene({
         />
       ) : null}
       {quality !== "baixa" ? <Officials sim={sim} quality={quality} /> : null}
+      <BenchLife sim={sim} quality={quality} goalPulse={goalPulse} />
 
       <AdBoards homeColor={sim.home.primary} awayColor={sim.away.primary} />
       <Floodlights time={time} quality={quality} />
@@ -2783,7 +3004,9 @@ function Scene({
         awayColor={sim.away.primary}
         sim={sim}
       />
-      <Scoreboard sim={sim} replay={replay} />
+      <Scoreboard sim={sim} replay={replay} goalPulse={goalPulse} />
+      <SidelineLife goalPulse={goalPulse} />
+      <AmbientLife time={time} />
       <Ball sim={sim} quality={quality} hiVis={look.hiVisBall} wet={look.wet} />
       <MatchSurfaceProvider
         sim={sim}
@@ -2876,10 +3099,23 @@ function Stadium3DImpl({
   // duplicar toda a árvore 3D nem quebrar configurações antigas.
   const quality: Quality =
     vis.quality === "auto" ? deviceQuality : vis.quality === "cinema" ? "alta" : vis.quality;
-  const look = useMemo(
+  const baseLook = useMemo(
     () => matchLook(sim.home.clubId, sim.away.clubId),
     [sim.home.clubId, sim.away.clubId],
   );
+  // o clima físico manda no visual: chuva do sim molha a cena, calor seca.
+  // Com céu limpo, vale o visual do clube/jogador. O vento é sempre o da
+  // partida (bandeiras, grama e chuva inclinada acompanham a física).
+  const simWeather = sim.weather;
+  const simWind = sim.wind?.strength01;
+  const look = useMemo(() => {
+    const live = { ...baseLook, wind: simWind ?? baseLook.wind };
+    if (simWeather === "rain")
+      return { ...live, weather: "chuva" as const, wet: Math.max(live.wet, 0.75) };
+    if (simWeather === "heat")
+      return { ...live, weather: "seco" as const, wet: Math.min(live.wet, 0.15) };
+    return live;
+  }, [baseLook, simWeather, simWind]);
 
   // Em segundo plano o desenho 3D é suspenso para poupar bateria no celular.
   const [visible, setVisible] = useState(true);
