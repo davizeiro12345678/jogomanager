@@ -45,6 +45,7 @@ export const sdbV2 = {
   lookupPlayer: async (p: string) => firstArray(await v2(`lookup/player/${id(p)}`))[0] ?? null,
   lookupTeam: async (t: string) => firstArray(await v2(`lookup/team/${id(t)}`))[0] ?? null,
   lookupLeague: async (l: string) => firstArray(await v2(`lookup/league/${id(l)}`))[0] ?? null,
+  lookupEvent: async (e: string) => firstArray(await v2(`lookup/event/${id(e)}`))[0] ?? null,
   lookupVenue: async (v: string) => firstArray(await v2(`lookup/venue/${id(v)}`))[0] ?? null,
   schedule: async (l: string, season: string) =>
     firstArray(await v2(`schedule/league/${id(l)}/${id(season)}`)),
