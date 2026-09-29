@@ -40,25 +40,15 @@ export const claimCheckoutSession = createServerFn({ method: "POST" })
         return { status: "pending" };
       }
 
-      const lineItem = session.line_items?.data?.[0];
-      const price = lineItem?.price;
-      const stripeProductKey =
-        price?.lookup_key ||
-        (price?.metadata?.["lovable_external_id"] as string | undefined) ||
-        price?.id;
-      const productKey =
-        session.metadata?.["productKey"] ||
-        (stripeProductKey === "season_pass_monthly" ? "season_pass" : stripeProductKey);
-      if (!productKey) {
-        return { status: "error", message: "Item da compra não identificado." };
-      }
-
-      const amount = lineItem?.amount_total ?? session.amount_total ?? 0;
-      const { fulfillOneTimePurchase, recordPendingPurchase } =
-        await import("@/lib/fulfillment.server");
-      await recordPendingPurchase(context.userId, productKey, session.id, amount);
-      await fulfillOneTimePurchase(context.userId, productKey, session.id, amount);
-      return { status: "delivered" };
+      // Delivery happens only in the signed Stripe webhook. This page just
+      // reports whether that verified fulfillment has completed.
+      const { data: purchase } = await context.supabase
+        .from("user_purchases")
+        .select("status")
+        .eq("user_id", context.userId)
+        .eq("reference", session.id)
+        .maybeSingle();
+      return purchase?.status === "completed" ? { status: "delivered" } : { status: "pending" };
     } catch (err) {
       console.error("claimCheckoutSession falhou", err);
       return {
