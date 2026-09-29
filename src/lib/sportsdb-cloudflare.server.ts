@@ -77,8 +77,8 @@ function db(): D1Database {
 
 export async function ensureSportsDbSchema(): Promise<void> {
   if (!schemaReady) {
-    schemaReady = db().exec(`
-    CREATE TABLE IF NOT EXISTS sportsdb_records (
+    const statements = [
+      `CREATE TABLE IF NOT EXISTS sportsdb_records (
       record_key TEXT PRIMARY KEY,
       endpoint TEXT NOT NULL,
       entity_type TEXT NOT NULL,
@@ -87,21 +87,18 @@ export async function ensureSportsDbSchema(): Promise<void> {
       season TEXT NOT NULL DEFAULT '',
       payload_json TEXT NOT NULL,
       updated_at TEXT NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS sportsdb_records_entity_source
-      ON sportsdb_records(entity_type, source_id);
-    CREATE INDEX IF NOT EXISTS sportsdb_records_entity_parent
-      ON sportsdb_records(entity_type, parent_id, source_id);
-    CREATE INDEX IF NOT EXISTS sportsdb_records_endpoint_scope
-      ON sportsdb_records(endpoint, parent_id, season, source_id);
-    CREATE TABLE IF NOT EXISTS sportsdb_import_state (
+    )`,
+      "CREATE INDEX IF NOT EXISTS sportsdb_records_entity_source ON sportsdb_records(entity_type, source_id)",
+      "CREATE INDEX IF NOT EXISTS sportsdb_records_entity_parent ON sportsdb_records(entity_type, parent_id, source_id)",
+      "CREATE INDEX IF NOT EXISTS sportsdb_records_endpoint_scope ON sportsdb_records(endpoint, parent_id, season, source_id)",
+      `CREATE TABLE IF NOT EXISTS sportsdb_import_state (
       phase TEXT PRIMARY KEY,
       next_offset INTEGER NOT NULL DEFAULT 0,
       complete INTEGER NOT NULL DEFAULT 0,
       last_error TEXT,
       updated_at TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS sportsdb_archives (
+    )`,
+      `CREATE TABLE IF NOT EXISTS sportsdb_archives (
       archive_key TEXT PRIMARY KEY,
       endpoint TEXT NOT NULL,
       entity_type TEXT NOT NULL,
@@ -110,34 +107,35 @@ export async function ensureSportsDbSchema(): Promise<void> {
       season TEXT NOT NULL DEFAULT '',
       content_bytes INTEGER NOT NULL,
       updated_at TEXT NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS sportsdb_archives_endpoint
-      ON sportsdb_archives(endpoint, source_id, parent_id, season);
-    CREATE TABLE IF NOT EXISTS sportsdb_archive_usage (
+    )`,
+      "CREATE INDEX IF NOT EXISTS sportsdb_archives_endpoint ON sportsdb_archives(endpoint, source_id, parent_id, season)",
+      `CREATE TABLE IF NOT EXISTS sportsdb_archive_usage (
       singleton INTEGER PRIMARY KEY CHECK(singleton = 1),
       used_bytes INTEGER NOT NULL DEFAULT 0,
       max_bytes INTEGER NOT NULL DEFAULT ${ARCHIVE_BUDGET_BYTES}
-    );
-    INSERT OR IGNORE INTO sportsdb_archive_usage(singleton, used_bytes, max_bytes)
-      VALUES(1, 0, ${ARCHIVE_BUDGET_BYTES});
-    CREATE TRIGGER IF NOT EXISTS sportsdb_archive_budget_insert
+    )`,
+      `INSERT OR IGNORE INTO sportsdb_archive_usage(singleton, used_bytes, max_bytes)
+      VALUES(1, 0, ${ARCHIVE_BUDGET_BYTES})`,
+      `CREATE TRIGGER IF NOT EXISTS sportsdb_archive_budget_insert
       BEFORE INSERT ON sportsdb_archives
       WHEN (SELECT used_bytes + NEW.content_bytes > max_bytes FROM sportsdb_archive_usage WHERE singleton = 1)
-      BEGIN SELECT RAISE(ABORT, 'SPORTSDB_ARCHIVE_LIMIT'); END;
-    CREATE TRIGGER IF NOT EXISTS sportsdb_archive_budget_update
+      BEGIN SELECT RAISE(ABORT, 'SPORTSDB_ARCHIVE_LIMIT'); END`,
+      `CREATE TRIGGER IF NOT EXISTS sportsdb_archive_budget_update
       BEFORE UPDATE OF content_bytes ON sportsdb_archives
       WHEN (SELECT used_bytes - OLD.content_bytes + NEW.content_bytes > max_bytes FROM sportsdb_archive_usage WHERE singleton = 1)
-      BEGIN SELECT RAISE(ABORT, 'SPORTSDB_ARCHIVE_LIMIT'); END;
-    CREATE TRIGGER IF NOT EXISTS sportsdb_archive_usage_insert
+      BEGIN SELECT RAISE(ABORT, 'SPORTSDB_ARCHIVE_LIMIT'); END`,
+      `CREATE TRIGGER IF NOT EXISTS sportsdb_archive_usage_insert
       AFTER INSERT ON sportsdb_archives
-      BEGIN UPDATE sportsdb_archive_usage SET used_bytes = used_bytes + NEW.content_bytes WHERE singleton = 1; END;
-    CREATE TRIGGER IF NOT EXISTS sportsdb_archive_usage_update
+      BEGIN UPDATE sportsdb_archive_usage SET used_bytes = used_bytes + NEW.content_bytes WHERE singleton = 1; END`,
+      `CREATE TRIGGER IF NOT EXISTS sportsdb_archive_usage_update
       AFTER UPDATE OF content_bytes ON sportsdb_archives
-      BEGIN UPDATE sportsdb_archive_usage SET used_bytes = used_bytes - OLD.content_bytes + NEW.content_bytes WHERE singleton = 1; END;
-    CREATE TRIGGER IF NOT EXISTS sportsdb_archive_usage_delete
+      BEGIN UPDATE sportsdb_archive_usage SET used_bytes = used_bytes - OLD.content_bytes + NEW.content_bytes WHERE singleton = 1; END`,
+      `CREATE TRIGGER IF NOT EXISTS sportsdb_archive_usage_delete
       AFTER DELETE ON sportsdb_archives
-      BEGIN UPDATE sportsdb_archive_usage SET used_bytes = MAX(0, used_bytes - OLD.content_bytes) WHERE singleton = 1; END;
-    `).then(() => undefined).catch((error: unknown) => {
+      BEGIN UPDATE sportsdb_archive_usage SET used_bytes = MAX(0, used_bytes - OLD.content_bytes) WHERE singleton = 1; END`,
+    ];
+    schemaReady = db().batch(statements.map((statement) => db().prepare(statement)))
+      .then(() => undefined).catch((error: unknown) => {
       schemaReady = undefined;
       throw error;
     });
@@ -831,3 +829,4 @@ export async function getSportsDbRecords(entityType: string, limit = 8_000) {
     data: JSON.parse(row.payload_json) as Json,
   }));
 }
+
