@@ -4,6 +4,12 @@
   "main": ".output/server/index.mjs",
   "compatibility_date": "2026-09-29",
   "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    {
+      "pattern": "jogomanager.com/api/public/sportsdb*",
+      "zone_name": "jogomanager.com"
+    }
+  ],
   "assets": {
     "binding": "ASSETS",
     "directory": ".output/public"
@@ -35,3 +41,4 @@
     "enabled": true
   }
 }
+
