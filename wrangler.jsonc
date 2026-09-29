@@ -2,6 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "stadium-stewards",
   "main": ".output/server/index.mjs",
+  "workers_dev": true,
   "compatibility_date": "2026-09-29",
   "compatibility_flags": ["nodejs_compat"],
   "routes": [
