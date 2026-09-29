@@ -1,22 +1,22 @@
 // ============================================================================
 //  player-model.ts
-//  Sistema próprio de definição anatômica e visual dos jogadores.
+//  Sistema pr�prio de defini��o anat�mica e visual dos jogadores.
 //
-//  Este módulo NÃO conhece React nem Three.js: ele apenas descreve, de forma
-//  totalmente determinística (a partir do id do jogador), como cada atleta é:
-//  altura, porte físico, proporções de cada osso, tom de pele, cabelo, barba,
-//  acessórios, uniforme e chuteira. O componente 3D (PlayerRig) consome esta
-//  descrição e monta a hierarquia de juntas.
+//  Este m�dulo N�O conhece React nem Three.js: ele apenas descreve, de forma
+//  totalmente determin�stica (a partir do id do jogador), como cada atleta �:
+//  altura, porte f�sico, propor��es de cada osso, tom de pele, cabelo, barba,
+//  acess�rios, uniforme e chuteira. O componente 3D (PlayerRig) consome esta
+//  descri��o e monta a hierarquia de juntas.
 //
-//  Determinismo: o mesmo id sempre gera o mesmo atleta, em qualquer máquina e
-//  em qualquer sessão — importante porque a partida também é determinística.
+//  Determinismo: o mesmo id sempre gera o mesmo atleta, em qualquer m�quina e
+//  em qualquer sess�o - importante porque a partida tamb�m � determin�stica.
 // ============================================================================
 
 import { HAIR_COLORS, SKIN_TONES } from "./kits";
 import { getVisual } from "./visual-settings";
 
 /* -------------------------------------------------------------------------- */
-/*  RNG determinístico                                                        */
+/*  RNG determin�stico                                                        */
 /* -------------------------------------------------------------------------- */
 
 export function hashId(s: string): number {
@@ -28,7 +28,7 @@ export function hashId(s: string): number {
   return Math.abs(h);
 }
 
-/** gerador linear simples, suficiente para variação visual */
+/** gerador linear simples, suficiente para varia��o visual */
 export function makeLookRng(seed: number): () => number {
   let s = (seed || 1) >>> 0;
   return () => {
@@ -83,38 +83,38 @@ export interface PlayerLook {
   /** goleiro usa luvas */
   gloves: boolean;
   gloveColor: string;
-  /** faixa de cabelo visível */
+  /** faixa de cabelo vis�vel */
   headband: boolean;
   headbandColor: string;
-  /** braçadeira de capitão */
+  /** bra�adeira de capit�o */
   captain: boolean;
-  /** camisa térmica por baixo */
+  /** camisa t�rmica por baixo */
   undershirt: boolean;
   undershirtColor: string;
   bootColor: string;
   bootAccent: string;
   sockTape: boolean;
-  /** altura do meião */
+  /** altura do mei�o */
   sockHeight: "low" | "mid" | "high";
-  /** fita branca no pulso (um lado só: cabe no teto de malhas do herói) */
+  /** fita branca no pulso (um lado s�: cabe no teto de malhas do her�i) */
   wristTape: "none" | "left" | "right";
-  /** tatuagem no antebraço (um lado só: cabe no teto de malhas do herói) */
+  /** tatuagem no antebra�o (um lado s�: cabe no teto de malhas do her�i) */
   tattoo: "none" | "foreL" | "foreR";
   /** brinco na orelha esquerda */
   earring: boolean;
-  /** cor da íris */
+  /** cor da �ris */
   eyeColor: string;
   /** formato da gola da camisa */
   collar: CollarStyle;
   /** volume do cabelo (0.85 .. 1.2) */
   hairVolume: number;
-  /** leve variação de tom entre jogadores do mesmo time (iluminação/suor) */
+  /** leve varia��o de tom entre jogadores do mesmo time (ilumina��o/suor) */
   sweat: number;
-  /** grupo de posição: muda o porte físico do atleta */
+  /** grupo de posi��o: muda o porte f�sico do atleta */
   role: RoleGroup;
 }
 
-/** Grupos de posição que compartilham o mesmo tipo de porte físico. */
+/** Grupos de posi��o que compartilham o mesmo tipo de porte f�sico. */
 export type RoleGroup = "GK" | "DF" | "MF" | "FW";
 
 export function roleGroupOf(pos: string): RoleGroup {
@@ -126,8 +126,8 @@ export function roleGroupOf(pos: string): RoleGroup {
 }
 
 /**
- * Porte físico típico por posição. Goleiro e zagueiro são mais altos e mais
- * largos de ombro; meia e ponta são mais leves e com passada mais longa.
+ * Porte f�sico t�pico por posi��o. Goleiro e zagueiro s�o mais altos e mais
+ * largos de ombro; meia e ponta s�o mais leves e com passada mais longa.
  */
 const ROLE_BUILD: Record<
   RoleGroup,
@@ -137,7 +137,6 @@ const ROLE_BUILD: Record<
   DF: { height: 1.025, girth: 1.05, shoulder: 1.06, leg: 1.0, arm: 1.02 },
   MF: { height: 0.99, girth: 0.97, shoulder: 0.98, leg: 1.0, arm: 0.99 },
   FW: { height: 1.0, girth: 0.99, shoulder: 1.0, leg: 1.02, arm: 1.0 },
-};
 };
 
 export interface Proportions {
@@ -156,20 +155,20 @@ export interface Proportions {
   neckR: number;
   headR: number;
   headH: number;
-  /** largura do crânio (têmporas) */
+  /** largura do cr�nio (t�mporas) */
   headW: number;
-  /** profundidade do crânio (nuca ao rosto) */
+  /** profundidade do cr�nio (nuca ao rosto) */
   headD: number;
   /** comprimento do maxilar */
   jawLen: number;
-  /** projeção do queixo à frente do crânio */
+  /** proje��o do queixo � frente do cr�nio */
   chinFwd: number;
   upperArm: number;
   foreArm: number;
   armR: number;
-  /** envergadura relativa (1 = média): goleiro tem braço mais longo */
+  /** envergadura relativa (1 = m�dia): goleiro tem bra�o mais longo */
   armSpan: number;
-  /** postura base do tronco em radianos (+ = curvado, − = ereto) */
+  /** postura base do tronco em radianos (+ = curvado, - = ereto) */
   posture: number;
   handR: number;
   thigh: number;
@@ -180,7 +179,7 @@ export interface Proportions {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Aparência                                                                 */
+/*  Apar�ncia                                                                 */
 /* -------------------------------------------------------------------------- */
 
 const HAIR_POOL: HairStyle[] = [
@@ -225,12 +224,12 @@ const BOOT_ACCENTS = ["#ffffff", "#101014", "#ffd34d", "#00d0ff", "#ff4d6d"];
 
 const GLOVE_COLORS = ["#f5f5f5", "#12e0a0", "#ff8a3d", "#2f6bff", "#151515"];
 
-/** tons de íris comuns entre atletas */
+/** tons de �ris comuns entre atletas */
 const EYE_COLORS = ["#3a2a1c", "#2b1b12", "#4a3722", "#5a7a4a", "#3f6f8f", "#6b6b6b"];
 
 const COLLAR_POOL: CollarStyle[] = ["crew", "crew", "v", "polo"];
 
-/** monta a aparência completa e determinística de um jogador */
+/** monta a apar�ncia completa e determin�stica de um jogador */
 export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook {
   const seed = hashId(id);
   const rng = makeLookRng(seed);
@@ -239,7 +238,7 @@ export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook 
   const build = ROLE_BUILD[role];
 
   const heightRoll = rng();
-  // A variação individual continua, mas agora orbita o porte típico da posição.
+  // A varia��o individual continua, mas agora orbita o porte t�pico da posi��o.
   const height = (0.92 + heightRoll * 0.16) * build.height; // ~0.92 .. 1.13
   const girth = (0.92 + rng() * 0.16) * build.girth;
 
@@ -280,7 +279,7 @@ export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook 
     hairVolume: 0.85 + rng() * 0.35,
     sweat: rng(),
     role,
-    // novos sorteios sempre no fim: a aparência existente não muda
+    // novos sorteios sempre no fim: a apar�ncia existente n�o muda
     sockHeight: rng() < 0.2 ? "low" : rng() < 0.75 ? "mid" : "high",
     wristTape: (() => {
       const r = rng();
@@ -295,12 +294,12 @@ export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook 
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Proporções ósseas                                                         */
+/*  Propor��es �sseas                                                         */
 /* -------------------------------------------------------------------------- */
 
 /**
- * Proporções em unidades de mundo (1 unidade = 1 metro).
- * Base: atleta de 1,80 m, cerca de 7,5 cabeças de altura, pernas ~48% do total.
+ * Propor��es em unidades de mundo (1 unidade = 1 metro).
+ * Base: atleta de 1,80 m, cerca de 7,5 cabe�as de altura, pernas ~48% do total.
  */
 export function proportionsFor(look: PlayerLook): Proportions {
   const h = look.height;
@@ -308,13 +307,13 @@ export function proportionsFor(look: PlayerLook): Proportions {
   const strong = look.bodyType === "strong" ? 1.06 : look.bodyType === "slim" ? 0.95 : 1;
   const build = ROLE_BUILD[look.role ?? "MF"];
 
-  // Variação fina de crânio/maxilar por atleta: dois jogadores com a mesma
+  // Varia��o fina de cr�nio/maxilar por atleta: dois jogadores com a mesma
   // altura deixam de ter exatamente o mesmo rosto.
   const faceRng = makeLookRng(look.seed ^ 0x9e3779b9);
   const faceWide = 0.94 + faceRng() * 0.14;
   const faceLong = 0.94 + faceRng() * 0.14;
   // Postura e envergadura individuais: uns jogam eretos, outros curvados; o
-  // braço orbita o porte da posição (goleiro com mais envergadura).
+  // bra�o orbita o porte da posi��o (goleiro com mais envergadura).
   const posture = (faceRng() - 0.5) * 0.12;
   const armSpan = build.arm * (0.97 + faceRng() * 0.06);
 
@@ -433,10 +432,10 @@ export function lowDetailBodyFor(p: Proportions): LowDetailBodyShape {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Nível de detalhe                                                          */
+/*  N�vel de detalhe                                                          */
 /* -------------------------------------------------------------------------- */
 
-export type LodLevel = 0 | 1 | 2; // 0 = perto (tudo), 1 = médio, 2 = longe
+export type LodLevel = 0 | 1 | 2; // 0 = perto (tudo), 1 = m�dio, 2 = longe
 
 export function lodForDistance(dist: number, quality: "alta" | "media" | "baixa"): LodLevel {
   const detail = getVisual().playerDetail;
@@ -451,8 +450,8 @@ export function lodForDistance(dist: number, quality: "alta" | "media" | "baixa"
 /**
  * Segmentos de geometria por LOD.
  *
- * Tronco e cabeça dominam a silhueta e recebem mais segmentos; braços e pernas
- * são finos na tela e podem ser bem mais baratos sem diferença perceptível.
+ * Tronco e cabe�a dominam a silhueta e recebem mais segmentos; bra�os e pernas
+ * s�o finos na tela e podem ser bem mais baratos sem diferen�a percept�vel.
  */
 export function segmentsFor(lod: LodLevel): {
   radial: number;
@@ -496,7 +495,8 @@ export function shade(hex: string, amount: number): string {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
 }
 
-/** cor de sombra suave da pele, usada em áreas internas (pescoço, axilas) */
+/** cor de sombra suave da pele, usada em �reas internas (pesco�o, axilas) */
 export function skinShadow(skin: string): string {
   return shade(skin, -0.22);
 }
+
