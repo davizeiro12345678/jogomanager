@@ -230,7 +230,7 @@ export async function syncPremiumChain(options: {
           return [{ event_source_id: item.source_id, detail_type: kind, source_id: detailId,
             team_source_id: str(record['idTeam']), player_source_id: str(record['idPlayer']),
             minute: score(record['intTime']), label: str(record['strTimeline']) ?? str(record['strStatistic']) ?? str(record['strPlayer']),
-            payload: record as Database['public']['Tables']['official_event_details']['Insert']['payload'] }];
+            payload: record as unknown as Json }];
         });
         if (rows.length) {
           const saved = await db.from('official_event_details').upsert(rows, { onConflict: 'event_source_id,detail_type,source_id' });
