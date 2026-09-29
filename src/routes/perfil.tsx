@@ -222,10 +222,7 @@ function Perfil() {
               const a = achievementById(id);
               if (!a) return null;
               return (
-                <li
-                  key={id}
-                  className="rounded-lg border border-border/60 bg-foreground/[0.03] p-2"
-                >
+                <li key={id} className="rounded-lg border border-border/60 bg-foreground/[0.03] p-2">
                   <p className="text-xs font-semibold">{a.title}</p>
                   <p className="text-[11px] text-muted-foreground">{a.description}</p>
                 </li>
@@ -306,12 +303,7 @@ function Perfil() {
             >
               <Download size={14} /> Exportar carreira
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => importRef.current?.click()}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={() => importRef.current?.click()}>
               <Upload size={14} /> Importar carreira
             </Button>
             <input
@@ -328,22 +320,14 @@ function Perfil() {
                   update(imported);
                   setTransferStatus("Carreira importada e salva neste aparelho.");
                 } catch (error) {
-                  setTransferStatus(
-                    error instanceof Error
-                      ? error.message
-                      : "Não foi possível importar a carreira.",
-                  );
+                  setTransferStatus(error instanceof Error ? error.message : "Não foi possível importar a carreira.");
                 } finally {
                   event.target.value = "";
                 }
               }}
             />
           </div>
-          {transferStatus ? (
-            <p role="status" className="mt-3 text-xs text-primary">
-              {transferStatus}
-            </p>
-          ) : null}
+          {transferStatus ? <p role="status" className="mt-3 text-xs text-primary">{transferStatus}</p> : null}
         </HudCard>
       </div>
     </GameShell>

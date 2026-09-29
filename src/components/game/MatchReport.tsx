@@ -35,16 +35,8 @@ export function MatchReport({
 
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/85 p-3 backdrop-blur">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="match-report-title"
-        className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border/60 bg-card p-5"
-      >
-        <p
-          id="match-report-title"
-          className="text-center font-display text-xs uppercase tracking-[0.3em] text-primary"
-        >
+      <div role="dialog" aria-modal="true" aria-labelledby="match-report-title" className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border/60 bg-card p-5">
+        <p id="match-report-title" className="text-center font-display text-xs uppercase tracking-[0.3em] text-primary">
           Fim de jogo
         </p>
         <div className="mt-3 flex items-center justify-center gap-4">

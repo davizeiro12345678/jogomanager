@@ -4,7 +4,8 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guia-de-scouting";
-const TITLE = "Scouting no futebol: como achar jovens craques baratos | Pro Football Manager 3D";
+const TITLE =
+  "Scouting no futebol: como achar jovens craques baratos | Pro Football Manager 3D";
 const DESC =
   "Como funciona o trabalho de olheiro: ler potencial e nota atual, escolher a faixa de idade certa, contratar por carência do elenco e reconhecer os quatro sinais de jogador barato.";
 

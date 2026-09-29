@@ -29,7 +29,10 @@ function priceLabel(priceCents: number, currency: string): string {
 
 function GuestEmbeddedCheckout({ clientSecret }: { clientSecret: string }) {
   const stripe = useMemo(() => getStripe(), []);
-  const options = useMemo(() => ({ fetchClientSecret: async () => clientSecret }), [clientSecret]);
+  const options = useMemo(
+    () => ({ fetchClientSecret: async () => clientSecret }),
+    [clientSecret],
+  );
 
   return (
     <EmbeddedCheckoutProvider stripe={stripe} options={options}>
@@ -65,8 +68,7 @@ export function GuestCheckoutDialog({
       return null;
     }
   }, []);
-  const environmentLabel =
-    clientEnvironment === "live" ? "pagamentos configurados" : "modo de teste";
+  const environmentLabel = clientEnvironment === "live" ? "pagamentos configurados" : "modo de teste";
 
   useEffect(() => {
     if (!open) {
@@ -114,9 +116,7 @@ export function GuestCheckoutDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={clientSecret ? "max-h-[92vh] max-w-3xl overflow-y-auto p-3 sm:p-5" : "max-w-lg"}
-      >
+      <DialogContent className={clientSecret ? "max-h-[92vh] max-w-3xl overflow-y-auto p-3 sm:p-5" : "max-w-lg"}>
         {clientSecret ? (
           <>
             <DialogHeader className="px-2 pt-2">
@@ -141,8 +141,8 @@ export function GuestCheckoutDialog({
             </DialogHeader>
             <form onSubmit={submit} className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Use um e-mail que você consiga abrir agora. Depois do pagamento, ele recebe um link
-                seguro para criar ou vincular sua conta e entregar o item uma única vez.
+                Use um e-mail que você consiga abrir agora. Depois do pagamento, ele recebe um
+                link seguro para criar ou vincular sua conta e entregar o item uma única vez.
               </p>
               <label className="block text-sm font-medium" htmlFor="guest-checkout-email">
                 E-mail para receber a compra
@@ -165,8 +165,8 @@ export function GuestCheckoutDialog({
                   className="mt-0.5 h-4 w-4 accent-primary"
                 />
                 <span>
-                  Confirmo que tenho autorização para esta compra e aceito que ela seja vinculada ao
-                  e-mail informado.
+                  Confirmo que tenho autorização para esta compra e aceito que ela seja vinculada
+                  ao e-mail informado.
                 </span>
               </label>
               {error ? (
@@ -187,8 +187,8 @@ export function GuestCheckoutDialog({
                 </p>
               ) : null}
               <p className="text-center text-[11px] text-muted-foreground">
-                A disponibilidade e o ambiente do checkout são confirmados pelo servidor antes de
-                qualquer pagamento.
+                A disponibilidade e o ambiente do checkout são confirmados pelo servidor antes
+                de qualquer pagamento.
               </p>
             </form>
           </>

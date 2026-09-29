@@ -18,8 +18,7 @@ export function reportTechSample(sample: { fps: number; p95: number; errorCode?:
   if (typeof window === "undefined" || !readConsent().telemetry) return;
   if (sessionStorage.getItem(SENT)) return;
   sessionStorage.setItem(SENT, "1");
-  const nav = performance.getEntriesByType("navigation")[0] as
-    PerformanceNavigationTiming | undefined;
+  const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
   void sendTechTelemetry({
     data: {
       fpsAvg: Math.round(sample.fps * 10) / 10,

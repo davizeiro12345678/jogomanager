@@ -119,9 +119,7 @@ function QuickMatchPage() {
                 return acc;
               }, {}),
             )
-              .sort(([a], [b]) =>
-                a === "Brasil" ? -1 : b === "Brasil" ? 1 : a.localeCompare(b, "pt-BR"),
-              )
+              .sort(([a], [b]) => (a === "Brasil" ? -1 : b === "Brasil" ? 1 : a.localeCompare(b, "pt-BR")))
               .map(([country, ls]) => (
                 <optgroup key={country} label={country}>
                   {ls.map((l) => (
@@ -327,21 +325,16 @@ function QuickLive({
           ? "redCard"
           : e.type === "yellow"
             ? "card"
-            : (
-                  ["goal", "save", "shot", "foul", "kickoff", "halftime", "fulltime"] as const
-                ).includes(e.type as never)
-              ? (e.type as NarrationEvent)
-              : null;
+          : (["goal", "save", "shot", "foul", "kickoff", "halftime", "fulltime"] as const).includes(
+                e.type as never,
+              )
+            ? (e.type as NarrationEvent)
+            : null;
       if (!ev) continue;
       const neutral = ev === "kickoff" || ev === "halftime" || ev === "fulltime";
       if (e.side === "neutral" && !neutral) continue;
       const goalDifference = Math.abs(snap.hg - snap.ag);
-      const importance =
-        snap.minute >= 80 && goalDifference <= 1
-          ? "decisive"
-          : snap.minute >= 65
-            ? "pressure"
-            : "routine";
+      const importance = snap.minute >= 80 && goalDifference <= 1 ? "decisive" : snap.minute >= 65 ? "pressure" : "routine";
       n.speak(ev, e.side === "away" ? sim.away.short : sim.home.short, {
         minute: e.minute,
         homeGoals: snap.hg,
@@ -385,11 +378,7 @@ function QuickLive({
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
       <Stadium3D sim={sim} mode={camera} quality={quality} />
       {narrating && caption ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="pointer-events-none absolute inset-x-3 bottom-24 z-20 mx-auto max-w-2xl rounded-md bg-background/90 px-4 py-2 text-center text-sm font-medium text-foreground shadow-lg backdrop-blur md:bottom-20"
-        >
+        <div role="status" aria-live="polite" className="pointer-events-none absolute inset-x-3 bottom-24 z-20 mx-auto max-w-2xl rounded-md bg-background/90 px-4 py-2 text-center text-sm font-medium text-foreground shadow-lg backdrop-blur md:bottom-20">
           {caption}
         </div>
       ) : null}

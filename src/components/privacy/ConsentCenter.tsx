@@ -99,10 +99,7 @@ export function ConsentCenter() {
   ];
 
   return (
-    <section
-      className="surface-card rounded-xl border border-border/60 p-5"
-      aria-labelledby="consent-title"
-    >
+    <section className="surface-card rounded-xl border border-border/60 p-5" aria-labelledby="consent-title">
       <h2 id="consent-title" className="font-display text-lg uppercase tracking-wide">
         Central de consentimento
       </h2>
@@ -174,18 +171,11 @@ export function ConsentBanner() {
       <div className="pointer-events-auto rounded-xl border border-border bg-card p-4 shadow-lg">
         <p className="text-sm text-muted-foreground">
           Usamos só o essencial para salvar seu jogo. Quer ajudar a melhorar o desempenho com dados
-          anônimos?{" "}
-          <a href="/privacidade" className="text-primary underline">
-            Saiba mais
-          </a>
+          anônimos? <a href="/privacidade" className="text-primary underline">Saiba mais</a>
         </p>
         <div className="mt-3 flex gap-2">
-          <Button size="sm" onClick={() => choose(true)}>
-            Aceitar
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => choose(false)}>
-            Só o essencial
-          </Button>
+          <Button size="sm" onClick={() => choose(true)}>Aceitar</Button>
+          <Button size="sm" variant="outline" onClick={() => choose(false)}>Só o essencial</Button>
         </div>
       </div>
     </div>

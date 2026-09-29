@@ -163,15 +163,11 @@ export interface SignOptions {
   fee: number;
   wage: number;
   loan?: boolean;
-  /** comissão do empresário (M€), somada ao custo */
-  agentFee?: number;
-  agentName?: string;
 }
 
 /** Fecha a contratação: elenco, caixa, folha e notícia. */
 export function signRealPlayer(state: CareerState, t: RealTarget, opts: SignOptions): CareerState {
-  const base = opts.loan ? Math.round(opts.fee * 0.25 * 10) / 10 : opts.fee;
-  const cost = Math.round((base + (opts.agentFee ?? 0)) * 10) / 10;
+  const cost = opts.loan ? Math.round(opts.fee * 0.25 * 10) / 10 : opts.fee;
   if (state.finances.budget < cost) return state;
   const id = `real-${t.id}`;
   if (state.players[id]) return state;

@@ -164,8 +164,7 @@ export const CAMERA_OPTIONS = [
 export type CameraMode = (typeof CAMERA_OPTIONS)[number]["id"];
 
 export type ShotSubject = "estadio" | "jogada" | "duelo" | "finalizacao" | "gol" | "torcida";
-export type ShotIntent =
-  "abertura" | "transicao" | "tensao" | "finalizacao" | "celebracao" | "retorno";
+export type ShotIntent = "abertura" | "transicao" | "tensao" | "finalizacao" | "celebracao" | "retorno";
 export type ShotLens = "aberta" | "normal" | "tele" | "aerea";
 export type ShotSafeZone = "campo" | "terco-final" | "area" | "gol" | "estadio";
 export type ShotPostProcess = "nenhum" | "broadcast" | "cinematico";

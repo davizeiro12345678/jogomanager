@@ -172,11 +172,7 @@ export async function resolveValidatedStripePrice(
 
 /** Promoção vale só entre início e fim; fora disso o preço cheio é cobrado. */
 export function activeSalePercent(
-  row: {
-    sale_percent_off?: number | null;
-    sale_starts_at?: string | null;
-    sale_ends_at?: string | null;
-  },
+  row: { sale_percent_off?: number | null; sale_starts_at?: string | null; sale_ends_at?: string | null },
   now: number,
 ): number {
   const pct = row.sale_percent_off ?? 0;

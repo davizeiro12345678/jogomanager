@@ -1,10 +1,5 @@
 import type { ComponentType } from "react";
 
-// Each template declares its own prop shape (e.g. SignupEmailProps), so the
-// registry cannot be narrowed to a single shared props type without rejecting
-// valid registrations. The props stay intentionally open here and are validated
-// at the registration/render call sites.
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface TemplateEntry {
   component: ComponentType<any>;
   subject: string | ((data: Record<string, any>) => string);
@@ -13,7 +8,6 @@ export interface TemplateEntry {
   /** Fixed recipient — overrides caller-provided recipientEmail when set. */
   to?: string;
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 /**
  * Template registry — maps template names to their React Email components.

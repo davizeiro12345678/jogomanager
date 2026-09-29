@@ -72,7 +72,8 @@ function PrivacidadePage() {
         </h1>
         <p className="mt-3 text-muted-foreground">
           Esta página explica, em linguagem simples, o que o Pro Football Manager 3D faz com os seus
-          dados. Atualizada em <time dateTime={CONTENT_UPDATED}>14 de setembro de 2026</time>.
+          dados. Atualizada em{" "}
+          <time dateTime={CONTENT_UPDATED}>14 de setembro de 2026</time>.
         </p>
 
         <div className="mt-6">

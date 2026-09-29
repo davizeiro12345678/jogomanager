@@ -20,7 +20,7 @@ export type FinishRoomResult = { ok: true } | { ok: false; reason: string };
  *
  * O resultado só é gravado depois que o servidor confirma que quem está
  * enviando é o anfitrião daquela sala, que a partida estava realmente em
- * andamento e recalcula o placar da semente salva. A sala também
+  * andamento e recalcula o placar da semente salva. A sala também
  * não pode ser reescrita depois de encerrada.
  */
 export const finishMatchRoom = createServerFn({ method: "POST" })
@@ -29,7 +29,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<FinishRoomResult> => {
     const { data: room, error } = await context.supabase
       .from("match_rooms")
-      .select("id, host_id, status, host_club, guest_club, seed")
+       .select("id, host_id, status, host_club, guest_club, seed")
       .eq("id", data.roomId)
       .maybeSingle();
     if (error) return { ok: false, reason: "not_found" };
@@ -43,11 +43,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
     }
 
     // The client can request publication, but cannot decide the official score.
-    const sim = new MatchSim(
-      buildTeamSetup(room.host_club),
-      buildTeamSetup(room.guest_club),
-      room.seed,
-    );
+    const sim = new MatchSim(buildTeamSetup(room.host_club), buildTeamSetup(room.guest_club), room.seed);
     let steps = 0;
     while (!sim.finished && steps++ < 14_000) sim.step(0.4);
     if (!sim.finished) return { ok: false, reason: "simulation_failed" };
@@ -57,8 +53,8 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
       .from("match_rooms")
       .update({
         status: "done",
-        minute: sim.minute(),
-        state: { hg: sim.stats.home.goals, ag: sim.stats.away.goals },
+         minute: sim.minute(),
+         state: { hg: sim.stats.home.goals, ag: sim.stats.away.goals },
         updated_at: new Date().toISOString(),
       })
       .eq("id", room.id)

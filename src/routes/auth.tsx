@@ -71,7 +71,8 @@ function AuthPage() {
         void supabase.from("profiles").upsert(
           {
             user_id: data.session.user.id,
-            display_name: typeof metadata["full_name"] === "string" ? metadata["full_name"] : null,
+            display_name:
+              typeof metadata["full_name"] === "string" ? metadata["full_name"] : null,
             avatar_url: typeof metadata["avatar_url"] === "string" ? metadata["avatar_url"] : null,
             updated_at: new Date().toISOString(),
           },
@@ -129,10 +130,7 @@ function AuthPage() {
       <div className="grid w-full max-w-5xl overflow-hidden rounded-xl border border-border/60 bg-card/90 shadow-2xl backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr]">
         <section className="hidden border-r border-border/60 bg-secondary/40 p-10 lg:flex lg:flex-col lg:justify-between">
           <div>
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 font-display text-sm uppercase text-primary"
-            >
+            <Link to="/" className="inline-flex items-center gap-2 font-display text-sm uppercase text-primary">
               <Gamepad2 size={18} /> Pro Football Manager 3D
             </Link>
             <h1 className="mt-14 max-w-md font-display text-5xl uppercase leading-none">
@@ -143,22 +141,14 @@ function AuthPage() {
             </p>
           </div>
           <ul className="space-y-3 text-sm">
-            <li className="flex items-center gap-3">
-              <Cloud className="text-primary" /> Carreira sincronizada automaticamente
-            </li>
-            <li className="flex items-center gap-3">
-              <ShieldCheck className="text-primary" /> Compras e progresso ligados à sua conta
-            </li>
-            <li className="flex items-center gap-3">
-              <CheckCircle2 className="text-primary" /> Jogue offline e sincronize ao voltar
-            </li>
+            <li className="flex items-center gap-3"><Cloud className="text-primary" /> Carreira sincronizada automaticamente</li>
+            <li className="flex items-center gap-3"><ShieldCheck className="text-primary" /> Compras e progresso ligados à sua conta</li>
+            <li className="flex items-center gap-3"><CheckCircle2 className="text-primary" /> Jogue offline e sincronize ao voltar</li>
           </ul>
         </section>
 
         <section className="p-6 sm:p-9">
-          <Link to="/" className="font-display text-xs uppercase text-primary lg:hidden">
-            ← Manager 3D
-          </Link>
+          <Link to="/" className="font-display text-xs uppercase text-primary lg:hidden">← Manager 3D</Link>
           <p className="font-display text-xs uppercase text-primary">Nuvem do treinador</p>
           <h2 className="mt-2 font-display text-3xl uppercase">
             {mode === "in" ? "Entrar e continuar" : "Criar sua conta"}
@@ -194,84 +184,68 @@ function AuthPage() {
           </div>
 
           <div className="mt-6 flex items-center gap-2 text-[11px] uppercase text-muted-foreground">
-            <span className="h-px flex-1 bg-border" /> ou use e-mail{" "}
-            <span className="h-px flex-1 bg-border" />
+            <span className="h-px flex-1 bg-border" /> ou use e-mail <span className="h-px flex-1 bg-border" />
           </div>
 
           {confirmationSent ? (
             <div className="mt-5 rounded-lg border border-primary/35 bg-primary/10 p-4 text-sm">
               <p className="font-medium text-foreground">Confira sua caixa de entrada</p>
-              <p className="mt-1 text-muted-foreground">
-                Enviamos um link para confirmar seu e-mail e concluir o cadastro.
-              </p>
+              <p className="mt-1 text-muted-foreground">Enviamos um link para confirmar seu e-mail e concluir o cadastro.</p>
             </div>
           ) : (
-            <form onSubmit={submit} className="mt-5 space-y-3">
-              <label htmlFor="auth-email" className="sr-only">
-                E-mail
-              </label>
-              <input
-                id="auth-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="voce@email.com"
-                aria-describedby={error ? "auth-error" : undefined}
-                aria-invalid={error ? true : undefined}
-                className="w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-              <label htmlFor="auth-password" className="sr-only">
-                Senha
-              </label>
-              <input
-                id="auth-password"
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Senha"
-                aria-describedby={error ? "auth-error" : undefined}
-                aria-invalid={error ? true : undefined}
-                className="w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-              {error ? (
-                <p
-                  id="auth-error"
-                  role="alert"
-                  aria-live="assertive"
-                  className="text-sm text-destructive"
-                >
-                  {error}
-                </p>
-              ) : null}
-              <Button type="submit" disabled={busy} className="w-full">
-                <Mail />{" "}
-                {busy ? "Aguarde…" : mode === "in" ? "Entrar com e-mail" : "Criar conta com e-mail"}
-              </Button>
-            </form>
+
+        <form onSubmit={submit} className="mt-5 space-y-3">
+          <label htmlFor="auth-email" className="sr-only">
+            E-mail
+          </label>
+          <input
+            id="auth-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="voce@email.com"
+             aria-describedby={error ? "auth-error" : undefined}
+             aria-invalid={error ? true : undefined}
+            className="w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <label htmlFor="auth-password" className="sr-only">
+            Senha
+          </label>
+          <input
+            id="auth-password"
+            type="password"
+            required
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Senha"
+             aria-describedby={error ? "auth-error" : undefined}
+             aria-invalid={error ? true : undefined}
+            className="w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          {error ? <p id="auth-error" role="alert" aria-live="assertive" className="text-sm text-destructive">{error}</p> : null}
+          <Button
+            type="submit"
+            disabled={busy}
+            className="w-full"
+          >
+            <Mail /> {busy ? "Aguarde…" : mode === "in" ? "Entrar com e-mail" : "Criar conta com e-mail"}
+          </Button>
+        </form>
           )}
 
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setMode(mode === "in" ? "up" : "in")}
-            className="mt-4 w-full text-xs text-muted-foreground"
-          >
-            {mode === "in" ? "Não tem conta? Cadastre-se" : "Já tem conta? Entrar"}
-          </Button>
-          <p className="mt-4 text-center text-[11px] text-muted-foreground">
-            Ao continuar, você concorda com os{" "}
-            <Link to="/termos" className="underline">
-              Termos
-            </Link>{" "}
-            e a{" "}
-            <Link to="/privacidade" className="underline">
-              Privacidade
-            </Link>
-            .
-          </p>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => setMode(mode === "in" ? "up" : "in")}
+          className="mt-4 w-full text-xs text-muted-foreground"
+        >
+          {mode === "in" ? "Não tem conta? Cadastre-se" : "Já tem conta? Entrar"}
+        </Button>
+        <p className="mt-4 text-center text-[11px] text-muted-foreground">
+          Ao continuar, você concorda com os <Link to="/termos" className="underline">Termos</Link> e a <Link to="/privacidade" className="underline">Privacidade</Link>.
+        </p>
         </section>
       </div>
     </main>

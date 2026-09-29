@@ -27,12 +27,8 @@ describe("base de jogadores", () => {
       const names = new Set<string>();
       for (const p of squad) {
         expect(POSITIONS.has(p.pos), `${id}/${p.name} pos=${p.pos}`).toBe(true);
-        expect(Number.isFinite(p.age) && p.age >= 16 && p.age <= 45, `${id}/${p.name} age`).toBe(
-          true,
-        );
-        expect(Number.isFinite(p.ovr) && p.ovr >= 40 && p.ovr <= 99, `${id}/${p.name} ovr`).toBe(
-          true,
-        );
+        expect(Number.isFinite(p.age) && p.age >= 16 && p.age <= 45, `${id}/${p.name} age`).toBe(true);
+        expect(Number.isFinite(p.ovr) && p.ovr >= 40 && p.ovr <= 99, `${id}/${p.name} ovr`).toBe(true);
         for (const a of ["pace", "shooting", "passing", "defending", "physical"] as const) {
           expect(p[a] >= 35 && p[a] <= 99, `${id}/${p.name} ${a}`).toBe(true);
         }
@@ -71,10 +67,7 @@ describe("base de jogadores", () => {
     for (const formation of FORMATIONS) {
       const { bench } = pickLineup(squad, formation);
       expect(bench.length).toBeGreaterThan(0);
-      expect(
-        bench.some((id) => byId.get(id)!.pos === "GK"),
-        formation,
-      ).toBe(true);
+      expect(bench.some((id) => byId.get(id)!.pos === "GK"), formation).toBe(true);
     }
   });
 

@@ -49,14 +49,6 @@ export interface ReplayFrame {
   v?: VersionedVisualData;
 }
 
-/**
- * Optional capability: sims that can also emit the versioned visual context.
- * `SimView` does not require it, so the recorder feature-detects the method.
- */
-interface VisualContextSource {
-  generateVisualContext: () => VersionedVisualData;
-}
-
 export interface Replay {
   id: string;
   createdAt: number;
@@ -99,14 +91,13 @@ export class ReplayRecorder {
       p.push(round(pl.x), round(pl.z), round(pl.vx), round(pl.vz));
       a.push(pl.action);
     }
-
+    
     // Gera dados visuais se o sim tiver o metodo
     let visualData: VersionedVisualData | undefined;
-    const visualSource = sim as Partial<VisualContextSource>;
-    if (typeof visualSource.generateVisualContext === "function") {
-      visualData = visualSource.generateVisualContext();
+    if (typeof (sim as any).generateVisualContext === "function") {
+      visualData = (sim as any).generateVisualContext();
     }
-
+    
     this.frames.push({
       t: sim.time,
       b: [round(sim.ball.x), round(sim.ball.z), round(sim.ball.height)],
@@ -232,7 +223,7 @@ export class ReplaySim implements SimView {
     this.possession = a.poss;
     this.stats.home.goals = a.hg;
     this.stats.away.goals = a.ag;
-
+    
     // Extrair dados visuais do frame (se existirem)
     if (a.v) {
       // Se o frame tem dados visuais, migra para a versao atual e cache
@@ -241,7 +232,7 @@ export class ReplaySim implements SimView {
       // Frame sem dados visuais (replay antigo), cria dados vazios
       this.currentVisualData = emptyVersionedVisualData(this.players.length);
     }
-
+    
     for (let n = 0; n < this.players.length; n++) {
       const p = this.players[n]!;
       const o = n * 4;
@@ -291,15 +282,6 @@ function makePlayer(m: ReplayPlayerMeta): SimPlayer {
     saves: 0,
     onSince: 0,
     minutes: 0,
-    yellows: 0,
-    sentOff: false,
-    injuryWeeks: 0,
-    interceptions: 0,
-    offsides: 0,
-    foulsWon: 0,
-    pensScored: 0,
-    pensMissed: 0,
-    xg: 0,
   };
 }
 

@@ -9,15 +9,9 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   head: () => ({
     meta: [
       { title: "Autorizar acesso · Pro Football Manager 3D" },
-      {
-        name: "description",
-        content: "Revise e autorize com segurança o acesso de um aplicativo à sua carreira.",
-      },
+      { name: "description", content: "Revise e autorize com segurança o acesso de um aplicativo à sua carreira." },
       { property: "og:title", content: "Autorizar acesso · Pro Football Manager 3D" },
-      {
-        property: "og:description",
-        content: "Revise e autorize com segurança o acesso de um aplicativo à sua carreira.",
-      },
+      { property: "og:description", content: "Revise e autorize com segurança o acesso de um aplicativo à sua carreira." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex, nofollow" },

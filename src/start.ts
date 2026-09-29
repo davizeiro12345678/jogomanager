@@ -60,7 +60,7 @@ const PERMISSIONS_POLICY = [
   "gyroscope=()",
   "magnetometer=()",
   "microphone=()",
-  'payment=(self "https://js.stripe.com")',
+  "payment=(self \"https://js.stripe.com\")",
   "usb=()",
   "interest-cohort=()",
 ].join(", ");

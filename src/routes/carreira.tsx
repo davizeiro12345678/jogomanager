@@ -14,8 +14,6 @@ import { Cutscene } from "@/components/game/Cutscene";
 import { CLUBS } from "@/game/data/leagues";
 import { coachWeek, WEEK_ACTIONS, type CoachWeek, type WeekActionId } from "@/game/season-mode";
 import { CUTSCENES, SCENE_LIST } from "@/content/cutscenes";
-import { castFor } from "@/game/cast";
-import { applyChoiceEffect } from "@/game/choice-effects";
 import { prefersReducedMotion } from "@/game/device";
 import { useCareer } from "@/hooks/useCareer";
 import type { ManagerLook } from "@/game/types";
@@ -103,11 +101,6 @@ function CoachCareerPage() {
     return mine.reduce((best, p) => (p.ovr > best.ovr ? p : best), mine[0]!).name;
   }, [career]);
 
-  const cast = useMemo(
-    () => (career ? castFor(career.clubId, career.season, career.managerName) : null),
-    [career],
-  );
-
   if (!career) return <NoCareer />;
 
   function run(action: WeekActionId) {
@@ -134,8 +127,6 @@ function CoachCareerPage() {
           club={club}
           managerName={career.managerName}
           captainName={captainName}
-          cast={cast ?? undefined}
-          onEffect={(effect) => update(applyChoiceEffect(career, effect))}
           onDone={() => setScene(null)}
         />
       ) : null}

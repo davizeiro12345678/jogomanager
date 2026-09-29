@@ -40,8 +40,6 @@ const KIND_STYLE: Record<NewsKind, { label: string; cls: string }> = {
   cartao: { label: "Disciplina", cls: "bg-amber-400/20 text-amber-400" },
   sistema: { label: "Clube", cls: "bg-secondary text-foreground" },
   premio: { label: "Prêmio", cls: "bg-yellow-500/20 text-yellow-400" },
-  vestiario: { label: "Vestiário", cls: "bg-emerald-400/20 text-emerald-400" },
-  coletiva: { label: "Coletiva", cls: "bg-sky-400/20 text-sky-300" },
 };
 
 function NewsPage() {

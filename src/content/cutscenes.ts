@@ -18,11 +18,7 @@ export type SceneArt =
   | "pitchentry"
   | "celebration"
   | "defeat"
-  | "farewell"
-  | "bus"
-  | "office"
-  | "medical"
-  | "gala";
+  | "farewell";
 
 export type Speaker =
   | "manager"
@@ -53,28 +49,9 @@ export const SPEAKER_LABEL: Record<Speaker, string> = {
   fan: "Torcida",
 };
 
-/** Consequência numérica de uma escolha: soma nos medidores (trava 0..100). */
-export interface ChoiceEffect {
-  morale?: number;
-  condition?: number;
-  approval?: number;
-  fanApproval?: number;
-  pressure?: number;
-  headline?: string;
-}
-
-export interface CutsceneChoice {
-  label: string;
-  hint?: string;
-  response: CutsceneLine[];
-  effect?: ChoiceEffect;
-}
-
 export interface CutsceneLine {
   who: Speaker;
   text: string;
-  /** escolha jogável: pausa o avanço e mostra as opções */
-  choices?: CutsceneChoice[];
 }
 
 export type SceneMood = "good" | "bad" | "neutral";
@@ -918,305 +895,6 @@ export const CUTSCENES: Record<string, Cutscene> = {
     ],
     "good",
   ),
-  /* ---------------------------------- segundo arco: rotina de um time grande */
-  "unbeatable-run": scene(
-    "unbeatable-run",
-    "Sequência imparável",
-    "dressing",
-    [
-      {
-        who: "narrator",
-        text: "Seis vitórias seguidas. O vestiário cheira a confiança — e a superstição.",
-      },
-      { who: "captain", text: "Ninguém muda nada. Mesma música, mesma cadeira, mesma resenha." },
-      {
-        who: "manager",
-        text: "Sequência não ganha título. Ganha quem trata a sétima como se fosse a primeira.",
-      },
-      { who: "fan", text: "O mosaico de sábado já está pronto: SEIS E CONTANDO." },
-    ],
-    "good",
-  ),
-  "captain-100": scene(
-    "captain-100",
-    "Cem jogos de capitão",
-    "pitchentry",
-    [
-      {
-        who: "narrator",
-        text: "Cem vezes a braçadeira no braço. Cem vezes o primeiro a sair do túnel.",
-      },
-      { who: "captain", text: "Não conto jogos. Conto as vezes que este escudo me salvou." },
-      { who: "fan", text: "Cem! Cem! Cem! A placa prateada espera no centro do campo." },
-      {
-        who: "manager",
-        text: "Capitão não é quem grita mais alto. É quem os outros seguem no escuro.",
-      },
-    ],
-    "good",
-  ),
-  "injury-crisis": scene(
-    "injury-crisis",
-    "Enfermaria lotada",
-    "dressing",
-    [
-      {
-        who: "doctor",
-        text: "Três no estaleiro, dois no limite. O GPS está gritando há duas semanas.",
-      },
-      { who: "manager", text: "Então a gente roda. Prefiro poupar hoje a chorar em maio." },
-      { who: "assistant", text: "A base tem dois prontos. Hora de ver do que são feitos." },
-      {
-        who: "narrator",
-        text: "Crise para uns, porta aberta para outros. O futebol adora esse roteiro.",
-      },
-    ],
-    "bad",
-  ),
-  "fan-fury": scene(
-    "fan-fury",
-    "Fúria da arquibancada",
-    "celebration",
-    [
-      {
-        who: "narrator",
-        text: "Lençóis brancos na curva. O jogo termina sob um coro que ninguém queria ouvir.",
-      },
-      { who: "fan", text: "Vergonha! Vergonha! Esse time não sua a camisa!" },
-      { who: "president", text: "Eu ouço a torcida. E a torcida, desta vez, tem razão." },
-      {
-        who: "manager",
-        text: "Vão me cobrar no treino, no jogo, na rua. Eu aceito a pressão. Quarta é decisão: ou a gente responde, ou o apito final vem para mim.",
-      },
-    ],
-    "bad",
-  ),
-  "board-pleased": scene(
-    "board-pleased",
-    "Diretoria satisfeita",
-    "board",
-    [
-      {
-        who: "president",
-        text: "Os números mudaram de cor. O conselho voltou a sorrir nas reuniões.",
-      },
-      { who: "manager", text: "Bom. Agora me deixe transformar sorriso em planejamento." },
-      {
-        who: "narrator",
-        text: "Crédito no banco: a palavra mais valiosa do futebol depois de gol.",
-      },
-      {
-        who: "president",
-        text: "Traga a lista de reforços. Desta vez, o cofre abre primeiro.",
-      },
-    ],
-    "good",
-  ),
-  "empty-seats": scene(
-    "empty-seats",
-    "Cadeiras vazias",
-    "celebration",
-    [
-      {
-        who: "narrator",
-        text: "Quarenta por cento de ocupação. O ingresso caro calou a festa.",
-      },
-      { who: "fan", text: "Amor ao clube eu tenho. O que eu não tenho é dinheiro sobrando." },
-      { who: "president", text: "Receita é importante. Casa cheia é mais importante ainda." },
-      {
-        who: "manager",
-        text: "Me dê arquibancada cheia que eu devolvo em ponto. Futebol é troca.",
-      },
-    ],
-    "bad",
-  ),
-
-  /* ------------------------------------------------ escolhas (jogáveis) */
-  "agent-demands": scene("agent-demands", "O empresário liga", "office", [
-    {
-      who: "narrator",
-      text: "Terça-feira, 8h. O empresário do seu craque quer renovação — e quer hoje.",
-    },
-    {
-      who: "agent",
-      text: "Meu cliente tem proposta de fora. Ou melhora o salário, ou ele sai em janeiro.",
-    },
-    {
-      who: "manager",
-      text: "Você segura o telefone e pensa. O que responde?",
-      choices: [
-        {
-          label: "Prometer renovação",
-          hint: "Moral do craque sobe, diretoria cobra a conta",
-          response: [
-            {
-              who: "manager",
-              text: "Diz a ele que renovamos. Salário de estrela para quem decide jogo.",
-            },
-            {
-              who: "agent",
-              text: "Palavra de treinador vale ouro. Vou segurar as outras propostas.",
-            },
-          ],
-          effect: { morale: 6, approval: -4, headline: "Treinador promete renovação do craque" },
-        },
-        {
-          label: "Peitar o empresário",
-          hint: "Mostra autoridade, mas o jogador pode azedar",
-          response: [
-            {
-              who: "manager",
-              text: "Contrato se cumpre jogando. Diz a ele que o campo resolve tudo.",
-            },
-            { who: "agent", text: "Veremos no campo, então. E na janela também." },
-          ],
-          effect: { morale: -5, approval: 4, headline: "Treinador peita empresário do craque" },
-        },
-      ],
-    },
-  ]),
-  "unhappy-knock": scene("unhappy-knock", "Batida na porta", "dressing", [
-    {
-      who: "narrator",
-      text: "Depois do treino, o reserva mais caro do elenco bate na sua porta.",
-    },
-    { who: "captain", text: "Professor, preciso jogar. Do jeito que está, peço para sair." },
-    {
-      who: "manager",
-      text: "O olhar dele é sério. Como você conduz?",
-      choices: [
-        {
-          label: "Garantir minutos",
-          hint: "Ele rende mais — mas vai cobrar",
-          response: [
-            {
-              who: "manager",
-              text: "Você vai jogar. Trabalha que a vaga aparece já no próximo jogo.",
-            },
-            { who: "captain", text: "É tudo que eu precisava ouvir. Não vou desperdiçar." },
-          ],
-          effect: { morale: 8, pressure: 3, headline: "Reserva ganha promessa de minutos" },
-        },
-        {
-          label: "Bancar a hierarquia",
-          hint: "Grupo entende, ele nem tanto",
-          response: [
-            {
-              who: "manager",
-              text: "Aqui ninguém tem vaga cativa. Nem você, nem eu. Mostra no treino.",
-            },
-            { who: "captain", text: "...Entendido, professor." },
-          ],
-          effect: { morale: -4, approval: 3, headline: "Treinador banca hierarquia no elenco" },
-        },
-      ],
-    },
-  ]),
-  "derby-eve-talk": scene("derby-eve-talk", "Véspera de clássico", "dressing", [
-    { who: "narrator", text: "Véspera de clássico. O vestiário ferve antes mesmo da preleção." },
-    {
-      who: "captain",
-      text: "A cidade parou por esse jogo. O que a gente fala pra eles, professor?",
-    },
-    {
-      who: "manager",
-      text: "Câmeras da TV do clube gravando. Escolha o tom:",
-      choices: [
-        {
-          label: "Provocar o rival",
-          hint: "Torcida vai à loucura, pressão dobra",
-          response: [
-            {
-              who: "manager",
-              text: "Diz pra eles virem buscar. Na nossa casa, clássico tem dono.",
-            },
-            { who: "fan", text: "É ISSO! PRA CIMA DELES!" },
-          ],
-          effect: {
-            fanApproval: 8,
-            pressure: 6,
-            morale: 3,
-            headline: "Treinador provoca rival em clássico",
-          },
-        },
-        {
-          label: "Pregar respeito",
-          hint: "Seguro e profissional",
-          response: [
-            { who: "manager", text: "Respeito máximo, medo zero. Clássico se ganha no detalhe." },
-            { who: "captain", text: "No detalhe. Todo mundo ligado do primeiro ao último minuto." },
-          ],
-          effect: {
-            morale: 4,
-            approval: 3,
-            headline: "Treinador prega respeito antes do clássico",
-          },
-        },
-      ],
-    },
-  ]),
-  "doctor-gamble": scene("doctor-gamble", "O médico avisa", "medical", [
-    { who: "narrator", text: "O departamento médico chama você no corredor, cara fechada." },
-    { who: "doctor", text: "O craque está a 70%. Se jogar, pode estourar. A decisão é sua." },
-    {
-      who: "manager",
-      text: "Jogo grande amanhã. Você arrisca?",
-      choices: [
-        {
-          label: "Poupar o craque",
-          hint: "Seguro: ele volta 100%, time sente falta",
-          response: [
-            { who: "manager", text: "Saúde primeiro. Ninguém ganha temporada em um jogo." },
-            { who: "doctor", text: "Decisão correta. Em dez dias ele está voando." },
-          ],
-          effect: { morale: 2, fanApproval: -3, headline: "Craque é poupado por precaução" },
-        },
-        {
-          label: "Arriscar tudo",
-          hint: "Ou herói, ou vilão",
-          response: [
-            {
-              who: "manager",
-              text: "Infiltra, enfaixa e manda pra campo. Decisão se ganha com os melhores.",
-            },
-            { who: "doctor", text: "Registrado: contra indicação médica. Boa sorte pra nós dois." },
-          ],
-          effect: { morale: 5, pressure: 5, condition: -4, headline: "Craque joga no sacrifício" },
-        },
-      ],
-    },
-  ]),
-  "president-call": scene("president-call", "Ligação do presidente", "board", [
-    {
-      who: "narrator",
-      text: "O telefone toca depois do jantar. É o presidente. Nunca é papo bom.",
-    },
-    { who: "president", text: "O conselho quer resposta. Me diz: o título ainda é possível?" },
-    {
-      who: "manager",
-      text: "Respire fundo. O que você promete?",
-      choices: [
-        {
-          label: "Prometer o título",
-          hint: "Compra tempo — e uma corda",
-          response: [
-            { who: "manager", text: "É possível. E eu vou entregar. Pode cobrar." },
-            { who: "president", text: "Anotado. O conselho vai cobrar cada palavra." },
-          ],
-          effect: { approval: 8, pressure: 8, headline: "Treinador promete título ao conselho" },
-        },
-        {
-          label: "Pedir paciência",
-          hint: "Honesto, mas o crédito cai",
-          response: [
-            { who: "manager", text: "Título se constrói. Me dê a temporada e eu devolvo um time." },
-            { who: "president", text: "Paciência tem prazo. Não me faça arrepender." },
-          ],
-          effect: { approval: -5, pressure: -4, headline: "Treinador pede paciência à diretoria" },
-        },
-      ],
-    },
-  ]),
 };
 
 /** Sequência imersiva antes do apito inicial. */
@@ -1294,12 +972,6 @@ export const STORY_SCENE_IDS = [
   "job-interview",
   "rebuild-day-one",
   "legend-retirement",
-  "unbeatable-run",
-  "captain-100",
-  "injury-crisis",
-  "fan-fury",
-  "board-pleased",
-  "empty-seats",
 ] as const;
 
 /** As 25 cenas híbridas: câmera 3D real (perspectiva, plano de chão, paralaxe). */
@@ -1310,20 +982,6 @@ for (const id of MOMENT_SCENE_IDS) {
 
 /** O arco de história também ganha perspectiva 3D (os cenários já existem). */
 for (const id of STORY_SCENE_IDS) {
-  const s = CUTSCENES[id];
-  if (s) s.hybrid = true;
-}
-
-/** Cenas jogáveis: têm escolha com consequência na carreira. */
-export const CHOICE_SCENE_IDS = [
-  "agent-demands",
-  "unhappy-knock",
-  "derby-eve-talk",
-  "doctor-gamble",
-  "president-call",
-] as const;
-
-for (const id of CHOICE_SCENE_IDS) {
   const s = CUTSCENES[id];
   if (s) s.hybrid = true;
 }

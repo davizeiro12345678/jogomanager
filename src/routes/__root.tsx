@@ -149,9 +149,9 @@ function RootComponent() {
     if (typeof ric === "function") {
       const id = ric(start, { timeout: 5000 });
       return () =>
-        (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback?.(
-          id,
-        );
+        (
+          window as unknown as { cancelIdleCallback?: (h: number) => void }
+        ).cancelIdleCallback?.(id);
     }
     const timer = window.setTimeout(start, 3000);
     return () => window.clearTimeout(timer);

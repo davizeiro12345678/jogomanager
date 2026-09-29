@@ -221,25 +221,9 @@ export const narrateScene = createServerFn({ method: "POST" })
         ...(nextText ? { next_text: nextText } : {}),
       },
       voiceSettings: {
-        stability: authoritative
-          ? 0.78
-          : reflective
-            ? 0.58
-            : scene.mood === "bad"
-              ? 0.56
-              : emphatic
-                ? 0.28
-                : 0.46,
+        stability: authoritative ? 0.78 : reflective ? 0.58 : scene.mood === "bad" ? 0.56 : emphatic ? 0.28 : 0.46,
         similarity_boost: authoritative ? 0.9 : 0.85,
-        style: authoritative
-          ? 0.18
-          : reflective
-            ? 0.42
-            : scene.mood === "good"
-              ? emphatic
-                ? 0.88
-                : 0.62
-              : 0.5,
+        style: authoritative ? 0.18 : reflective ? 0.42 : scene.mood === "good" ? (emphatic ? 0.88 : 0.62) : 0.5,
         use_speaker_boost: true,
         speed: authoritative ? 0.92 : emphatic ? 1.08 : scene.mood === "bad" ? 0.94 : 0.99,
       },

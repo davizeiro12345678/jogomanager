@@ -246,11 +246,7 @@ const MatchResultSchema = z
   .strict()
   .superRefine((result, context) => {
     const expectedWinner =
-      result.homeGoals === result.awayGoals
-        ? "draw"
-        : result.homeGoals > result.awayGoals
-          ? "home"
-          : "away";
+      result.homeGoals === result.awayGoals ? "draw" : result.homeGoals > result.awayGoals ? "home" : "away";
     if (result.winner !== expectedWinner) {
       context.addIssue({
         code: "custom",

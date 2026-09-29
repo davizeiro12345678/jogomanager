@@ -49,8 +49,7 @@ function ClubHub() {
   const { career, isLoading, update } = useCareer();
 
   if (isLoading) return <Loading />;
-  if (!career)
-    return <NoCareerScreen hint="Escolha um clube para ver identidade, elenco e história." />;
+  if (!career) return <NoCareerScreen hint="Escolha um clube para ver identidade, elenco e história." />;
 
   const club = CLUBS[career.clubId]!;
   const fixture = nextFixture(career);

@@ -19,16 +19,7 @@ const REASONS: Record<string, string> = {
 export const redeemCoupon = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { code: string }) =>
-    z
-      .object({
-        code: z
-          .string()
-          .trim()
-          .min(3)
-          .max(24)
-          .regex(/^[A-Za-z0-9 ]+$/),
-      })
-      .parse(data),
+    z.object({ code: z.string().trim().min(3).max(24).regex(/^[A-Za-z0-9 ]+$/) }).parse(data),
   )
   .handler(async ({ data, context }): Promise<RedeemCouponResult> => {
     const { data: res, error } = await context.supabase.rpc("redeem_game_coupon", {
@@ -39,8 +30,7 @@ export const redeemCoupon = createServerFn({ method: "POST" })
       return { ok: false, message: "Não foi possível resgatar agora. Tente de novo." };
     }
     const r = (res ?? {}) as Record<string, unknown>;
-    if (r["ok"] !== true)
-      return { ok: false, message: REASONS[String(r["reason"])] ?? REASONS["invalid"]! };
+    if (r["ok"] !== true) return { ok: false, message: REASONS[String(r["reason"])] ?? REASONS["invalid"]! };
     return {
       ok: true,
       description: String(r["description"] ?? "Cupom resgatado"),

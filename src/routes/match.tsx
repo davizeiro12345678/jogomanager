@@ -29,19 +29,16 @@ import { BroadcastCockpit } from "@/components/game/BroadcastCockpit";
 import { StorePanel } from "@/components/game/StorePanel";
 
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
-import { MatchMinimap } from "@/components/game/MatchMinimap";
 import { nextCameraMode } from "@/game/camera-modes";
 import { FpsPanel } from "@/components/game/FpsPanel";
 import { fpsMeter } from "@/game/fps-meter";
 import { Cutscene } from "@/components/game/Cutscene";
-import { PrematchCeremony } from "@/components/game/PrematchCeremony";
-import { ceremonyEnabled } from "@/game/ceremony-prefs";
 import { POSTMATCH_SCENE_IDS, PREMATCH_SCENE_IDS } from "@/content/cutscenes";
 import { Crest } from "@/components/game/Crest";
 import { MatchReport } from "@/components/game/MatchReport";
 import { MENTALITIES, PRESSING } from "@/game/formations";
 import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
-import type { TeamSetup, TeamTalkKind } from "@/game/sim";
+import type { TeamSetup } from "@/game/sim";
 import { ReplayRecorder, saveReplay } from "@/game/replay";
 import { Narrator, type NarrationEvent } from "@/game/narrator";
 import {
@@ -148,14 +145,10 @@ function MatchPage() {
 /** Instantâneo do estado do jogo enviado ao HUD (~10x por segundo). */
 interface Snap {
   minute: number;
-  clock: string;
-  phase: string;
   hg: number;
   ag: number;
   hShots: number;
   aShots: number;
-  hXg: number;
-  aXg: number;
   hOn: number;
   aOn: number;
   hFouls: number;
@@ -180,14 +173,10 @@ function snapshot(sim: MatchRuntime): Snap {
   const [ph, pa] = started ? sim.possessionPct() : ([50, 50] as [number, number]);
   return {
     minute: sim.minute(),
-    clock: sim.clock ?? `${sim.minute()}'`,
-    phase: sim.phase ?? (sim.minute() <= 45 ? "first" : "second"),
     hg: sim.stats.home.goals,
     ag: sim.stats.away.goals,
     hShots: sim.stats.home.shots,
     aShots: sim.stats.away.shots,
-    hXg: Math.round(sim.stats.home.xg * 100) / 100,
-    aXg: Math.round(sim.stats.away.xg * 100) / 100,
     hOn: sim.stats.home.onTarget,
     aOn: sim.stats.away.onTarget,
     hFouls: sim.stats.home.fouls,
@@ -343,19 +332,7 @@ const Scoreboard = memo(function Scoreboard({
             />
             {paused ? "Pausado" : "Ao vivo"}
           </span>
-          <span>
-            {snap.phase === "first"
-              ? "1º tempo"
-              : snap.phase === "half"
-                ? "Intervalo"
-                : snap.phase === "second"
-                  ? "2º tempo"
-                  : snap.phase === "shootout"
-                    ? "Pênaltis"
-                    : snap.phase === "done"
-                      ? "Fim"
-                      : "Prorrogação"}
-          </span>
+          <span>{snap.minute <= 45 ? "1º tempo" : "2º tempo"}</span>
         </div>
         <div className="flex min-h-11 items-center gap-1.5 px-2 py-1.5 sm:gap-2 sm:px-3">
           <Crest club={home} size={24} detail="simple" />
@@ -374,7 +351,7 @@ const Scoreboard = memo(function Scoreboard({
           </span>
           <Crest club={away} size={24} detail="simple" />
           <span className="ml-1 rounded-md bg-primary px-2 py-0.5 font-display text-xs tabular-nums text-primary-foreground sm:text-sm">
-            {paused ? "||" : snap.clock}
+            {paused ? "||" : `${snap.minute}'`}
           </span>
         </div>
         <div className="flex h-1.5 w-full">
@@ -443,16 +420,6 @@ function eventIcon(type: string) {
   if (type === "shot") return "🎯";
   if (type === "kickoff") return "🔔";
   if (type === "sub") return "🔁";
-  if (type === "offside") return "⛔";
-  if (type === "penalty") return "🥅";
-  if (type === "freekick") return "🌀";
-  if (type === "injury") return "🚑";
-  if (type === "shootout") return "⚖️";
-  if (type === "halftime") return "⏸️";
-  if (type === "fulltime") return "🏁";
-  if (type === "post") return "🥍";
-  if (type === "talk") return "📢";
-  if (type === "crowd") return "🔥";
   return "•";
 }
 
@@ -492,7 +459,6 @@ function LiveMatch({
   const oppId = isHome ? fixture.away : fixture.home;
 
   const setups = useMemo(() => {
-    const mySquad = Object.values(career.players);
     const mySetup: TeamSetup = {
       clubId: myClub.id,
       name: myClub.name,
@@ -501,11 +467,6 @@ function LiveMatch({
       secondary: myClub.secondary,
       players: career.lineup.map((id) => career.players[id]!).filter(Boolean),
       tactics: career.tactics,
-      bench: career.bench.map((id) => career.players[id]!).filter(Boolean),
-      morale: Math.round(
-        mySquad.reduce((s, p) => s + (p.morale ?? 70), 0) / Math.max(1, mySquad.length),
-      ),
-      cpu: false,
     };
     const oppSetup = buildOpponent(oppId);
     return {
@@ -532,9 +493,6 @@ function LiveMatch({
   /** sequência imersiva (vestiário → camisas → túnel → apito) antes do pontapé */
   const [introStep, setIntroStep] = useState(() => (prematchIntroEnabled() ? 0 : -1));
   const introActive = introStep >= 0 && introStep < PREMATCH_SCENE_IDS.length;
-  /** cerimônia 3D (entorno → túnel → hino → mosaico → sorteio) após as cutscenes */
-  const [ceremony, setCeremony] = useState(() => ceremonyEnabled());
-  const ceremonyActive = ceremony && !introActive;
   const [narrating, setNarrating] = useState(false);
   const [caption, setCaption] = useState<string | null>(null);
   const narratorRef = useRef<Narrator | null>(null);
@@ -607,9 +565,7 @@ function LiveMatch({
   const speedRef = useRef(speed);
   speedRef.current = speed;
   const pausedRef = useRef(paused);
-  const [halfTalk, setHalfTalk] = useState<TeamTalkKind | null>(null);
-  const [halfHeld, setHalfHeld] = useState(false);
-  pausedRef.current = paused || introActive || ceremonyActive || halfHeld;
+  pausedRef.current = paused || introActive;
 
   // Narração: consome eventos novos do simulador e fala via Web Speech API.
   useEffect(() => {
@@ -710,30 +666,7 @@ function LiveMatch({
     };
   }, [setups, sim]);
 
-  useEffect(
-    () => controllerRef.current?.pause(paused || introActive || ceremonyActive || halfHeld),
-    [paused, introActive, ceremonyActive, halfHeld],
-  );
-
-  // Intervalo: segura o jogo e abre o papo de vestiário (uma escolha por jogo).
-  useEffect(() => {
-    if (snap.phase === "half") {
-      if (halfTalk === null) setHalfHeld(true);
-    } else {
-      setHalfHeld(false);
-      setHalfTalk(null);
-    }
-  }, [snap.phase, halfTalk]);
-
-  const chooseTalk = useCallback(
-    async (kind: TeamTalkKind) => {
-      setHalfTalk(kind);
-      setHalfHeld(false);
-      await controllerRef.current?.talk(mySide, kind);
-      setSnap(snapshot(sim));
-    },
-    [mySide, sim],
-  );
+  useEffect(() => controllerRef.current?.pause(paused || introActive), [paused, introActive]);
   useEffect(() => controllerRef.current?.setSpeed(speed), [speed]);
   useEffect(() => {
     if (done) storeReplay();
@@ -774,17 +707,7 @@ function LiveMatch({
     const perf = sim
       .playerRatings()
       .filter((r) => r.side === mySide)
-      .map((r) => ({
-        pid: r.pid,
-        goals: r.goals,
-        assists: r.assists,
-        played: true,
-        minutes: r.minutes,
-        rating: r.rating,
-        yellow: r.yellows,
-        red: r.red,
-        injuryWeeks: r.injuryWeeks,
-      }));
+      .map((r) => ({ pid: r.pid, goals: r.goals, assists: r.assists, played: true }));
     setAdvancing(true);
     void advanceRoundAsync(career, { hg: snap.hg, ag: snap.ag }, perf).then((next) => {
       const before = new Set(career.achievements ?? []);
@@ -868,7 +791,6 @@ function LiveMatch({
           <li>1, 2, 3, 4: Alterar velocidade</li>
           <li>C: Alternar câmeras</li>
           <li>E: Ver estatísticas</li>
-          <li>M: Mostrar/ocultar radar</li>
           <li>S: Pular partida</li>
         </ul>
       </div>
@@ -898,10 +820,7 @@ function LiveMatch({
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => {
-                  setIntroStep(PREMATCH_SCENE_IDS.length);
-                  setCeremony(false);
-                }}
+                onClick={() => setIntroStep(PREMATCH_SCENE_IDS.length)}
                 className="rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs uppercase tracking-widest text-white/85 backdrop-blur"
               >
                 Pular para o jogo
@@ -910,7 +829,6 @@ function LiveMatch({
                 onClick={() => {
                   storePrematchIntro(false);
                   setIntroStep(PREMATCH_SCENE_IDS.length);
-                  setCeremony(false);
                 }}
                 className="rounded-full border border-white/10 bg-black/60 px-4 py-2 text-xs uppercase tracking-widest text-white/60 backdrop-blur"
               >
@@ -921,18 +839,12 @@ function LiveMatch({
         </>
       ) : null}
 
-      {/* cerimônia 3D: o jogo só rola depois dela (ou do pulo) */}
-      {ceremonyActive ? (
-        <PrematchCeremony home={setups.home} away={setups.away} onDone={() => setCeremony(false)} />
-      ) : null}
-
       <h1 className="sr-only">
         {safeClub(fixture.home).name} x {safeClub(fixture.away).name} — partida ao vivo em 3D
       </h1>
 
       <Scoreboard homeId={fixture.home} awayId={fixture.away} snap={snap} paused={paused} />
       <Feed events={snap.events} />
-      <MatchMinimap view={sim} />
 
       {/* Estatísticas ao vivo — gaveta no celular, painel lateral no desktop */}
       {showStats ? (
@@ -952,7 +864,6 @@ function LiveMatch({
           <StatRow label="Posse" h={snap.poss[0]} a={snap.poss[1]} />
           <StatRow label="Chutes" h={snap.hShots} a={snap.aShots} />
           <StatRow label="No gol" h={snap.hOn} a={snap.aOn} />
-          <StatRow label="xG" h={snap.hXg} a={snap.aXg} />
           <StatRow label="Passes" h={snap.hPass} a={snap.aPass} />
           <StatRow label="Passes certos" h={snap.hPassOk} a={snap.aPassOk} />
           <div className="flex items-center justify-between text-[11px] text-white/60">
@@ -1274,50 +1185,6 @@ function LiveMatch({
             } else setPostMatchStep(next);
           }}
         />
-      ) : null}
-
-      {snap.phase === "half" && halfTalk === null && !done ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Papo de intervalo"
-          className="absolute inset-0 z-30 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-        >
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0c1322] p-5 shadow-2xl">
-            <p className="font-display text-[10px] uppercase tracking-[0.25em] text-amber-300/80">
-              Intervalo · vestiário
-            </p>
-            <h2 className="mt-1 font-display text-xl text-white">
-              O que você diz ao {(mySide === "home" ? sim.home : sim.away).short}?
-            </h2>
-            <p className="mt-1 text-xs text-white/55">
-              {snap.hg}–{snap.ag} no placar. Uma escolha por jogo — o time volta diferente.
-            </p>
-            <div className="mt-4 grid gap-2">
-              {(
-                [
-                  { kind: "motivar", icon: "🔥", label: "Motivar", desc: "+6 moral · +2 fôlego", quote: '"É AGORA! Vamos virar isso juntos!"' },
-                  { kind: "cobrar", icon: "😠", label: "Cobrar", desc: "−2 moral · +6 fôlego", quote: '"Quero mais entrega! Ninguém sai vaiado!"' },
-                  { kind: "poupar", icon: "🧊", label: "Poupar", desc: "+1 moral · +8 fôlego", quote: '"Cabeça fria, pernas frescas. O jogo é longo."' },
-                ] as { kind: TeamTalkKind; icon: string; label: string; desc: string; quote: string }[]
-              ).map((opt) => (
-                <button
-                  key={opt.kind}
-                  onClick={() => void chooseTalk(opt.kind)}
-                  className="group rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-amber-300/50 hover:bg-white/10"
-                >
-                  <span className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-white">
-                      {opt.icon} {opt.label}
-                    </span>
-                    <span className="text-[11px] text-amber-200/80">{opt.desc}</span>
-                  </span>
-                  <span className="mt-0.5 block text-xs italic text-white/50">{opt.quote}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
       ) : null}
 
       {done ? (

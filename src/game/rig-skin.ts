@@ -31,7 +31,6 @@ export type RigJoint =
   | "chest"
   | "neck"
   | "face"
-  | "eyes"
   | "jaw"
   | "blink"
   | "clavL"
@@ -116,11 +115,8 @@ function jointSpecs(P: {
     { joint: "spine", parent: "hips", offset: [0, P.hipH * 0.5, 0] },
     { joint: "chest", parent: "spine", offset: [0, P.spineLen, 0] },
     { joint: "neck", parent: "chest", offset: [0, P.chestLen, 0] },
-    // O pivô facial coloca o centro do crânio no alto do pescoço.
+    // cabeça e cabelo não têm junta própria: ficam rígidos no pescoço
     { joint: "face", parent: "neck", offset: [0, P.neckLen + P.headR * 0.82, 0] },
-    // olhos: mesmo pivô do rosto; a animação só translada (movimento
-    // conjugado — os dois olhos sempre juntos, como no olho real)
-    { joint: "eyes", parent: "face", offset: [0, 0, 0] },
     { joint: "jaw", parent: "face", offset: [0, 0, 0] },
     { joint: "blink", parent: "face", offset: [0, 0, 0] },
     { joint: "clavL", parent: "chest", offset: [0, 0, 0] },
@@ -144,16 +140,15 @@ function jointSpecs(P: {
   ];
 }
 
-/** Junta dona de cada grupo de malha. Crânio e cabelo ficam no pivô facial. */
+/** Junta dona de cada grupo de malha (cabeça/cabelo ficam no pescoço). */
 export const MESH_OWNER: Record<Exclude<keyof RigBody, "all">, RigJoint> = {
   hips: "hips",
   spine: "spine",
   chest: "chest",
   neck: "neck",
-  head: "face",
-  hair: "face",
+  head: "neck",
+  hair: "neck",
   face: "face",
-  eyes: "eyes",
   jaw: "jaw",
   blink: "blink",
   armL: "armL",
@@ -183,7 +178,6 @@ const MESH_LOD: Record<Exclude<keyof RigBody, "all">, RigSkinLod> = {
   head: "core",
   hair: "core",
   face: "near",
-  eyes: "near",
   jaw: "near",
   blink: "near",
   armL: "core",

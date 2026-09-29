@@ -7,5 +7,3 @@ package-lock.json
 bun.lock
 routeTree.gen.ts
 src/integrations/supabase/types.ts
-# Vendored Emscripten bundle (Basis KTX2 transcoder): keep upstream formatting.
-public/basis/

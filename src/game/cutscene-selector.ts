@@ -157,40 +157,6 @@ const RULES: Rule[] = [
     matches: ({ after }) =>
       !after.sacked && (after.cups ?? []).some((cup) => !cup.out && cup.stage >= 2),
   },
-  // ---- segundo arco: rotina de um time grande ----
-  {
-    id: "unbeatable-run",
-    once: false,
-    // acima do gatilho clássico (4): a cena nova é a "versão deluxe" da fase boa
-    matches: ({ after }) => !after.sacked && (after.streak ?? 0) >= 6,
-  },
-  {
-    id: "captain-100",
-    once: true,
-    matches: ({ after }) => Object.values(after.players).some((p) => p.apps >= 100),
-  },
-  {
-    id: "injury-crisis",
-    once: false,
-    matches: ({ after }) =>
-      Object.values(after.players).filter((p) => p.injuryWeeks > 0).length >= 3,
-  },
-  {
-    id: "fan-fury",
-    once: false,
-    matches: ({ after }) =>
-      !after.sacked && after.pressure >= 78 && (after.streak ?? 0) <= -3,
-  },
-  {
-    id: "board-pleased",
-    once: false,
-    matches: ({ before, after }) => !after.sacked && before.pressure - after.pressure >= 25,
-  },
-  {
-    id: "empty-seats",
-    once: false,
-    matches: ({ after }) => after.ticketPrice >= 60 && (after.fanApproval ?? 50) < 40,
-  },
 ];
 
 export interface SelectorMemory {

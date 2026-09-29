@@ -52,7 +52,7 @@
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.10",
     "@react-three/drei": "^10.7.8",
-    "@react-three/fiber": "^9.8.1",
+    "@react-three/fiber": "^9.7.0",
     "@react-three/postprocessing": "^3.1.1",
     "@react-three/rapier": "^2.2.0",
     "@stripe/react-stripe-js": "6.2.0",

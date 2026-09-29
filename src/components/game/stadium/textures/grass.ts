@@ -30,7 +30,15 @@ function rng(seed: number) {
 
 /** Padrões de corte usados pelos clubes. */
 export type MowPattern =
-  "stripes" | "checker" | "rings" | "diagonal" | "wide" | "diamond" | "fine" | "spiral" | "bands";
+  | "stripes"
+  | "checker"
+  | "rings"
+  | "diagonal"
+  | "wide"
+  | "diamond"
+  | "fine"
+  | "spiral"
+  | "bands";
 
 export const MOW_PATTERNS: MowPattern[] = [
   "stripes",

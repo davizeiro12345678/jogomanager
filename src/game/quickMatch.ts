@@ -11,18 +11,12 @@ export function buildTeamSetup(
   formation: FormationKey = "4-3-3",
   mentality = 2,
   pressing = 1,
-  opts?: { cpu?: boolean; morale?: number },
 ): TeamSetup {
   const club = safeClub(clubId);
   const squad = buildReadySquad(clubId);
   const { lineup } = pickLineup(squad, formation);
   const byId = Object.fromEntries(squad.map((p) => [p.id, p]));
   const chosen = lineup.map((id) => byId[id]!).filter(Boolean) as Player[];
-  const lineupIds = new Set(lineup);
-  const bench = squad.filter((p) => !lineupIds.has(p.id));
-  const morale =
-    opts?.morale ??
-    Math.round(squad.reduce((s, p) => s + (p.morale ?? 70), 0) / Math.max(1, squad.length));
   return {
     clubId,
     name: club.name,
@@ -31,9 +25,6 @@ export function buildTeamSetup(
     secondary: club.secondary,
     players: chosen,
     tactics: { formation, mentality, pressing, width: 1, tempo: 1 },
-    bench,
-    morale,
-    cpu: opts?.cpu ?? true,
   };
 }
 

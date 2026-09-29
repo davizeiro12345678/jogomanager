@@ -60,17 +60,11 @@ export function repairCareer(input: CareerState): RepairResult {
   // 2. escalação e banco: sem ids órfãos, sem repetição, banco sem titulares
   const own = (id: string) => players[id]?.clubId === input.clubId;
   const uniq = (ids: string[]) => [...new Set(ids)].filter(own);
-  const lineup = uniq(input.lineup ?? []).slice(0, 11);
+  let lineup = uniq(input.lineup ?? []).slice(0, 11);
   let bench = uniq(input.bench ?? []).filter((id) => !lineup.includes(id));
   if (lineup.length < 11) {
     const pool = Object.values(players)
-      .filter(
-        (p) =>
-          p.clubId === input.clubId &&
-          !lineup.includes(p.id) &&
-          !p.suspended &&
-          p.injuryWeeks === 0,
-      )
+      .filter((p) => p.clubId === input.clubId && !lineup.includes(p.id) && !p.suspended && p.injuryWeeks === 0)
       .sort((a, b) => b.ovr - a.ovr || a.id.localeCompare(b.id));
     for (const p of pool) {
       if (lineup.length >= 11) break;
@@ -110,8 +104,7 @@ export function repairCareer(input: CareerState): RepairResult {
     seenRes.add(k);
     return true;
   });
-  if (results.length !== (input.results ?? []).length)
-    fixes.push("Resultados repetidos no histórico");
+  if (results.length !== (input.results ?? []).length) fixes.push("Resultados repetidos no histórico");
 
   // 5. medidores e finanças
   const meters = {
@@ -132,10 +125,7 @@ export function repairCareer(input: CareerState): RepairResult {
     meters.approval !== input.approval ||
     meters.fanApproval !== input.fanApproval ||
     meters.pressure !== input.pressure ||
-    (f &&
-      (finances!.budget !== f.budget ||
-        finances!.spent !== f.spent ||
-        finances!.income !== f.income))
+    (f && (finances!.budget !== f.budget || finances!.spent !== f.spent || finances!.income !== f.income))
   )
     fixes.push("Medidores ou finanças com valores inválidos");
 

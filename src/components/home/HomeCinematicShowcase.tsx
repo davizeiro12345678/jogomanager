@@ -20,9 +20,7 @@ interface ShotPreview {
 }
 
 const CinematicStage3D = lazy(() =>
-  import("@/components/game/CinematicStage3D").then((module) => ({
-    default: module.CinematicStage3D,
-  })),
+  import("@/components/game/CinematicStage3D").then((module) => ({ default: module.CinematicStage3D })),
 );
 
 const SHOT_PREVIEWS: readonly ShotPreview[] = [
@@ -41,8 +39,7 @@ const SHOT_PREVIEWS: readonly ShotPreview[] = [
     id: "duel",
     label: "Duelo",
     title: "Travelling de transição",
-    description:
-      "A câmera aproxima a disputa sem perder a bola e retorna ao enquadramento de transmissão.",
+    description: "A câmera aproxima a disputa sem perder a bola e retorna ao enquadramento de transmissão.",
     lens: "40 mm · lateral baixa",
     duration: "2–3 s",
     focus: "Portador da bola",
@@ -53,8 +50,7 @@ const SHOT_PREVIEWS: readonly ShotPreview[] = [
     id: "goal",
     label: "Finalização",
     title: "Linha do gol e rede",
-    description:
-      "O Diretor privilegia a área no momento do chute e preserva a leitura do lance para o replay.",
+    description: "O Diretor privilegia a área no momento do chute e preserva a leitura do lance para o replay.",
     lens: "55 mm · goal-line",
     duration: "1,5–2,5 s",
     focus: "Bola e goleiro",
@@ -65,8 +61,7 @@ const SHOT_PREVIEWS: readonly ShotPreview[] = [
     id: "reaction",
     label: "Reação",
     title: "Torcida e comemoração",
-    description:
-      "O corte editorial entra depois da confirmação do gol e volta à TV antes do reinício.",
+    description: "O corte editorial entra depois da confirmação do gol e volta à TV antes do reinício.",
     lens: "50 mm · retrato",
     duration: "3–5 s",
     focus: "Heróis e arquibancada",
@@ -167,10 +162,7 @@ export function HomeCinematicShowcase({ posterSrc }: { posterSrc: string }) {
           <p className="inline-flex items-center gap-2 font-display text-[0.7rem] uppercase tracking-[0.32em] text-primary">
             <Clapperboard size={15} aria-hidden="true" /> cinema de partida
           </p>
-          <h2
-            id="cinema-title"
-            className="mt-3 max-w-xl font-display text-3xl uppercase leading-[0.95] tracking-wide sm:text-4xl"
-          >
+          <h2 id="cinema-title" className="mt-3 max-w-xl font-display text-3xl uppercase leading-[0.95] tracking-wide sm:text-4xl">
             O jogo sabe quando abrir o plano.
           </h2>
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
@@ -178,11 +170,7 @@ export function HomeCinematicShowcase({ posterSrc }: { posterSrc: string }) {
             somente quando o momento pede. Você continua livre para fixar sua câmera favorita.
           </p>
 
-          <div
-            className="mt-7 grid gap-2 sm:grid-cols-2"
-            role="list"
-            aria-label="Roteiro de câmera"
-          >
+          <div className="mt-7 grid gap-2 sm:grid-cols-2" role="list" aria-label="Roteiro de câmera">
             {SHOT_PREVIEWS.map((shot) => {
               const isActive = activeShot.id === shot.id;
               return (
@@ -198,9 +186,7 @@ export function HomeCinematicShowcase({ posterSrc }: { posterSrc: string }) {
                   }`}
                 >
                   <span>
-                    <span className="block font-display text-sm uppercase tracking-wide">
-                      {shot.label}
-                    </span>
+                    <span className="block font-display text-sm uppercase tracking-wide">{shot.label}</span>
                     <span className="mt-0.5 block text-xs opacity-75">{shot.lens}</span>
                   </span>
                   <ChevronRight
@@ -230,28 +216,16 @@ export function HomeCinematicShowcase({ posterSrc }: { posterSrc: string }) {
               className="mt-4 grid gap-3 rounded-2xl border border-border/60 bg-background/45 p-4 text-sm sm:grid-cols-3"
             >
               <div>
-                <span className="text-[0.65rem] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  Duração
-                </span>
-                <p className="mt-1 font-display uppercase tracking-wide text-foreground">
-                  {activeShot.duration}
-                </p>
+                <span className="text-[0.65rem] font-medium uppercase tracking-[0.2em] text-muted-foreground">Duração</span>
+                <p className="mt-1 font-display uppercase tracking-wide text-foreground">{activeShot.duration}</p>
               </div>
               <div>
-                <span className="text-[0.65rem] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  Prioridade
-                </span>
-                <p className="mt-1 font-display uppercase tracking-wide text-foreground">
-                  {activeShot.focus}
-                </p>
+                <span className="text-[0.65rem] font-medium uppercase tracking-[0.2em] text-muted-foreground">Prioridade</span>
+                <p className="mt-1 font-display uppercase tracking-wide text-foreground">{activeShot.focus}</p>
               </div>
               <div>
-                <span className="text-[0.65rem] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  Retorno
-                </span>
-                <p className="mt-1 font-display uppercase tracking-wide text-foreground">
-                  TV estável
-                </p>
+                <span className="text-[0.65rem] font-medium uppercase tracking-[0.2em] text-muted-foreground">Retorno</span>
+                <p className="mt-1 font-display uppercase tracking-wide text-foreground">TV estável</p>
               </div>
             </div>
           ) : null}

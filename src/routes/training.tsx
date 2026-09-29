@@ -223,9 +223,7 @@ function TrainingPage() {
         </div>
         <p role="status" aria-live="polite" className="mt-3 text-sm text-muted-foreground">
           {friendlyMsg ||
-            (doneFriendly
-              ? "Amistoso desta rodada já disputado."
-              : "Nenhum amistoso nesta rodada.")}
+            (doneFriendly ? "Amistoso desta rodada já disputado." : "Nenhum amistoso nesta rodada.")}
         </p>
         {lastFriendlies.length > 0 && (
           <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
@@ -237,6 +235,7 @@ function TrainingPage() {
           </ul>
         )}
       </section>
+
 
       <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
         <h2 className="font-display text-lg uppercase tracking-wide">Promessas em evolução</h2>

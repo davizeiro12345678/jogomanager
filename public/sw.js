@@ -25,12 +25,10 @@ function canCache(requestUrl) {
 }
 
 function isPublicSportsImage(url) {
-  return (
-    url.protocol === "https:" &&
+  return url.protocol === "https:" &&
     (url.hostname === "www.thesportsdb.com" || url.hostname === "thesportsdb.com") &&
     url.pathname.startsWith("/images/") &&
-    /\.(?:png|jpe?g|webp|avif)$/i.test(url.pathname)
-  );
+    /\.(?:png|jpe?g|webp|avif)$/i.test(url.pathname);
 }
 
 async function cacheProgressively(urls) {
@@ -133,13 +131,7 @@ self.addEventListener("fetch", (event) => {
         const hit = await cache.match(req);
         // Fotos oficiais e arquivos versionados não mudam de conteúdo: evita
         // uma requisição por imagem a cada visita. Demais assets revalidam.
-        if (
-          hit &&
-          (sportsImage ||
-            url.pathname.startsWith("/__l5e/assets-v1/") ||
-            url.pathname.startsWith("/_build/"))
-        )
-          return hit;
+        if (hit && (sportsImage || url.pathname.startsWith("/__l5e/assets-v1/") || url.pathname.startsWith("/_build/"))) return hit;
         const network = fetch(req)
           .then((res) => {
             const size = Number(res.headers.get("content-length") || 0);
@@ -147,18 +139,11 @@ self.addEventListener("fetch", (event) => {
               res &&
               res.status === 200 &&
               (sameOrigin || res.type === "cors") &&
-              size > 0 &&
-              size <= MAX_ASSET_BYTES
+              (size > 0 && size <= MAX_ASSET_BYTES)
             ) {
               const copy = res.clone();
-              cache
-                .put(req, copy)
-                .then(() =>
-                  trimCache(
-                    sportsImage ? SPORTS_IMAGES : ASSETS,
-                    sportsImage ? MAX_SPORTS_IMAGES : MAX_ASSETS,
-                  ),
-                )
+              cache.put(req, copy)
+                .then(() => trimCache(sportsImage ? SPORTS_IMAGES : ASSETS, sportsImage ? MAX_SPORTS_IMAGES : MAX_ASSETS))
                 .catch(() => undefined);
             }
             return res;

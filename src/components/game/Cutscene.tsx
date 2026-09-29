@@ -15,12 +15,9 @@ const GRAIN =
 import {
   CUTSCENES,
   SPEAKER_LABEL,
-  type ChoiceEffect,
   type Cutscene as SceneData,
-  type CutsceneLine,
   type SceneArt,
 } from "@/content/cutscenes";
-import { speakerName, type Cast } from "@/game/cast";
 import {
   advanceTarget,
   buildCutsceneTimeline,
@@ -77,10 +74,6 @@ interface Props {
   narrate?: boolean;
   /** Mantém o estádio 3D visível atrás da encenação. */
   cinematic?: boolean;
-  /** elenco da carreira: quem fala aparece com nome e rosto */
-  cast?: Cast | undefined;
-  /** consequência de uma escolha (o chamador aplica na carreira) */
-  onEffect?: ((effect: ChoiceEffect) => void) | undefined;
   onDone: () => void;
 }
 
@@ -167,7 +160,7 @@ function Backdrop({
   reduced: boolean;
   trophies: number;
 }) {
-  const anim = (c: string | undefined) => (reduced ? undefined : c);
+  const anim = (c: string) => (reduced ? undefined : c);
   return (
     <svg viewBox="0 0 400 200" className="absolute inset-0 h-full w-full" aria-hidden="true">
       <defs>
@@ -586,132 +579,6 @@ function Backdrop({
           <rect x="0" y="176" width="400" height="24" fill="#080c11" />
         </>
       )}
-
-      {art === "bus" && (
-        <>
-          <rect x="0" y="0" width="400" height="200" fill="#070b12" />
-          {Array.from({ length: 5 }).map((_, i) => (
-            <g key={i}>
-              <rect x={20 + i * 76} y={30} width="10" height="70" fill="#1b2430" />
-              <ellipse cx={25 + i * 76} cy={28} rx="16" ry="8" fill="#ffe9a8" opacity="0.8" />
-              <ellipse cx={25 + i * 76} cy={60} rx="30" ry="26" fill="#ffe9a8" opacity="0.08" />
-            </g>
-          ))}
-          <rect x="30" y="86" width="340" height="64" rx="10" fill={a} opacity="0.9" />
-          <rect x="30" y="128" width="340" height="22" rx="8" fill={b} opacity="0.85" />
-          {Array.from({ length: 8 }).map((_, i) => (
-            <rect
-              key={i}
-              x={44 + i * 40}
-              y={94}
-              width="30"
-              height="24"
-              rx="3"
-              fill="#ffe9a8"
-              opacity="0.75"
-              className={anim(i % 2 ? "cs-anim-shine" : undefined)}
-              style={reduced ? undefined : { animationDelay: `${i * 300}ms` }}
-            />
-          ))}
-          <circle cx="100" cy="152" r="14" fill="#0b0e12" />
-          <circle cx="300" cy="152" r="14" fill="#0b0e12" />
-          <rect x="0" y="164" width="400" height="36" fill="#0d1117" />
-          <rect x="0" y="164" width="400" height="4" fill="#f5d36b" opacity="0.5" />
-        </>
-      )}
-
-      {art === "office" && (
-        <>
-          <rect x="0" y="0" width="400" height="200" fill="#10141b" />
-          <rect x="0" y="0" width="400" height="120" fill="#1a2230" opacity="0.7" />
-          <rect x="40" y="30" width="120" height="70" rx="4" fill="#0b0f15" />
-          {Array.from({ length: 4 }).map((_, i) => (
-            <rect
-              key={i}
-              x={50}
-              y={40 + i * 16}
-              width={90 - i * 12}
-              height="7"
-              rx="3"
-              fill={a}
-              opacity="0.5"
-            />
-          ))}
-          <rect x="250" y="24" width="90" height="76" rx="4" fill={b} opacity="0.6" />
-          <circle cx="295" cy="52" r="16" fill={a} opacity="0.8" />
-          <rect x="270" y="74" width="50" height="7" rx="3" fill="#ffffff" opacity="0.25" />
-          <rect x="90" y="128" width="220" height="14" rx="4" fill="#2c3646" />
-          <rect x="100" y="142" width="14" height="40" fill="#232c3a" />
-          <rect x="286" y="142" width="14" height="40" fill="#232c3a" />
-          <rect x="176" y="108" width="48" height="22" rx="3" fill="#0b0f15" />
-          <rect x="182" y="112" width="36" height="5" rx="2" fill="#f5d36b" opacity="0.7" />
-          <rect x="182" y="120" width="24" height="4" rx="2" fill="#ffffff" opacity="0.3" />
-          <Person x={120} y={120} s={1.05} shirt="#2b3440" />
-          <Person x={280} y={122} s={1.05} shirt={a} />
-        </>
-      )}
-
-      {art === "medical" && (
-        <>
-          <rect x="0" y="0" width="400" height="200" fill="#e8eef2" />
-          <rect x="0" y="0" width="400" height="90" fill="#d5e2ea" />
-          <rect x="0" y="150" width="400" height="50" fill="#c4d3dd" />
-          <rect x="60" y="110" width="150" height="16" rx="6" fill={a} opacity="0.85" />
-          <rect x="70" y="126" width="12" height="34" fill="#8fa3b3" />
-          <rect x="188" y="126" width="12" height="34" fill="#8fa3b3" />
-          <ellipse cx="120" cy="104" rx="26" ry="10" fill="#ffffff" opacity="0.7" />
-          <rect x="255" y="60" width="70" height="90" rx="6" fill="#ffffff" opacity="0.85" />
-          <rect x="282" y="78" width="16" height="44" rx="3" fill="#e05252" />
-          <rect x="268" y="92" width="44" height="16" rx="3" fill="#e05252" />
-          <g className={anim("cs-anim-shine")}>
-            <polyline
-              points="20,60 70,60 85,40 100,78 115,52 140,52 155,30 170,70 185,60 240,60"
-              fill="none"
-              stroke="#1d9d55"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </g>
-          <Person x={250} y={130} s={1.05} shirt="#ffffff" />
-        </>
-      )}
-
-      {art === "gala" && (
-        <>
-          <rect x="0" y="0" width="400" height="200" fill="#0d0a16" />
-          <ellipse cx="200" cy="30" rx="170" ry="70" fill="url(#cs-spot)" opacity="0.7" />
-          {Array.from({ length: 3 }).map((_, i) => (
-            <polygon
-              key={i}
-              points={`${120 + i * 80},0 ${150 + i * 80},0 ${170 + i * 80},200 ${110 + i * 80},200`}
-              fill="#f5d36b"
-              opacity="0.07"
-            />
-          ))}
-          <rect x="0" y="150" width="400" height="50" fill="#7a1420" />
-          <rect x="0" y="150" width="400" height="6" fill="#f5d36b" opacity="0.8" />
-          {Array.from({ length: 20 }).map((_, i) => (
-            <circle
-              key={i}
-              cx={(i * 53) % 400}
-              cy={10 + ((i * 29) % 60)}
-              r={i % 3 === 0 ? 2.4 : 1.4}
-              fill="#ffe9a8"
-              opacity="0.85"
-              className={anim("cs-anim-flash")}
-              style={reduced ? undefined : { animationDelay: `${i * 330}ms` }}
-            />
-          ))}
-          <g transform="translate(200 108)" className={anim("cs-anim-shine")}>
-            <path d="M-16 -26 h32 v16 a16 16 0 0 1 -32 0 z" fill="#f0d585" />
-            <rect x="-5" y="-10" width="10" height="16" fill="#d9b45b" />
-            <rect x="-14" y="6" width="28" height="6" rx="2" fill="#8a6a2a" />
-          </g>
-          <Person x={140} y={140} shirt="#1c2330" />
-          <Person x={260} y={140} shirt="#1c2330" />
-        </>
-      )}
     </svg>
   );
 }
@@ -729,8 +596,6 @@ export function Cutscene({
   captainName,
   narrate = false,
   cinematic = false,
-  cast,
-  onEffect,
   onDone,
 }: Props) {
   // uniforme real do clube tinge o cenário quando nenhuma cor é forçada
@@ -753,14 +618,6 @@ export function Cutscene({
   }, [data, timelineStamp]);
   const [clock, setClock] = useState(0);
   const [i, setI] = useState(0);
-  // roteiro vivo: a resposta da escolha é enxertada aqui e a cena continua
-  const [lines, setLines] = useState<CutsceneLine[]>(data?.lines ?? []);
-  const [chosen, setChosen] = useState<number | null>(null);
-  useEffect(() => {
-    setLines(data?.lines ?? []);
-    setI(0);
-    setChosen(null);
-  }, [data]);
   // Direção da cena: cada fala ganha tamanho de plano, luz e tensão. O palco
   // 3D lê a fala atual para ajustar tremor de mão, aperto de lente e cor.
   const direction = useMemo(() => (data ? directScene(data) : null), [data]);
@@ -880,7 +737,7 @@ export function Cutscene({
       })
       .catch(fallback);
     const nextLine = i + 1;
-    if (nextLine < lines.length) void sceneVoice(data.id, nextLine).catch(() => undefined);
+    if (nextLine < data.lines.length) void sceneVoice(data.id, nextLine).catch(() => undefined);
     return () => {
       alive = false;
       stopVoice();
@@ -913,29 +770,9 @@ export function Cutscene({
       setTyped(full.length);
       return;
     }
-    // escolha pendente: a cena só anda quando o jogador decide
-    if (line?.choices && chosen === null) return;
-    if (i + 1 >= lines.length) doneRef.current();
-    else {
-      setChosen(null);
-      setI(i + 1);
-    }
-  }, [data, full.length, i, lines.length, typed, line, chosen]);
-
-  /** Escolhe uma opção: enxerta a resposta no roteiro e dispara o efeito. */
-  const choose = useCallback(
-    (index: number) => {
-      const options = lines[i]?.choices;
-      const option = options?.[index];
-      if (!option || chosen !== null) return;
-      setChosen(index);
-      setLines((prev) => [...prev.slice(0, i + 1), ...option.response, ...prev.slice(i + 1)]);
-      if (option.effect) onEffectRef.current?.(option.effect);
-    },
-    [lines, i, chosen],
-  );
-  const onEffectRef = useRef(onEffect);
-  onEffectRef.current = onEffect;
+    if (i + 1 >= data.lines.length) doneRef.current();
+    else setI(i + 1);
+  }, [data, full.length, i, typed]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -951,15 +788,13 @@ export function Cutscene({
   }, [next]);
 
   if (!data || !line) return null;
-  // elenco que fala: nome e rosto do locutor atual vêm do elenco da carreira
-  const speaker = speakerName(cast, SPEAKER_LABEL, line.who, {
-    ...(managerName ? { manager: managerName } : {}),
-    ...(captainName ? { captain: captainName } : {}),
-  });
-  const speakerLook =
-    line.who === "manager" || line.who === "narrator" ? look : (cast?.[line.who]?.look ?? look);
-  const speakerRole =
-    line.who === "manager" || line.who === "narrator" ? undefined : cast?.[line.who]?.role;
+  const base = SPEAKER_LABEL[line.who];
+  const speaker =
+    line.who === "manager" && managerName
+      ? managerName
+      : line.who === "captain" && captainName
+        ? captainName
+        : base;
   /** enquadramento determinístico por fala: leve travelling + zoom */
   const shot = SHOTS[i % SHOTS.length]!;
 
@@ -993,12 +828,6 @@ export function Cutscene({
               beat={i}
               mood={lineMood}
               intensity={lineTension}
-              speaker={line?.who ?? null}
-              size={direction?.lines[i]?.size ?? "medio"}
-              dollyFrom={direction?.lines[i]?.dollyFrom ?? 0}
-              dollyTo={direction?.lines[i]?.dollyTo ?? 0}
-              climax={direction?.lines[i]?.beat ?? false}
-              light={direction?.lines[i]?.light ?? "neutra"}
             />
           ) : null}
           {/* corte de câmera a cada fala + travelling contínuo dentro da fala */}
@@ -1200,7 +1029,7 @@ export function Cutscene({
             {typed < full.length && <span className="opacity-50">▍</span>}
           </p>
           <div className="mt-4 flex items-center gap-1.5">
-            {lines.map((_, n) => (
+            {data.lines.map((_, n) => (
               <span
                 key={n}
                 className={`h-1.5 rounded-full transition-all ${
@@ -1208,8 +1037,8 @@ export function Cutscene({
                 }`}
               />
             ))}
-            <span className="ml-auto text-xs tabular-nums text-muted-foreground">
-              {i + 1}/{data.lines.length} · Toque, espaço ou Enter para continuar
+            <span className="ml-auto text-xs text-muted-foreground">
+              Toque, espaço ou Enter para continuar
             </span>
           </div>
         </button>

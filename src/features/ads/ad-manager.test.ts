@@ -9,9 +9,7 @@ function storage() {
     removeItem: (key: string) => void data.delete(key),
     clear: () => data.clear(),
     key: () => null,
-    get length() {
-      return data.size;
-    },
+    get length() { return data.size; },
   } satisfies Storage;
 }
 

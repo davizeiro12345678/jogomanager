@@ -248,22 +248,22 @@ function LeaguePage() {
             title={`Rodada ${career.round}`}
             badge={<HudChip>{fixtures.length} jogos</HudChip>}
           >
-            <ul className="space-y-2 text-sm">
-              {fixtures.map((f) => (
-                <li
-                  key={`${f.home}-${f.away}`}
-                  className={`flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-foreground/[0.03] px-3 py-2 ${
-                    f.home === career.clubId || f.away === career.clubId ? "border-primary/50" : ""
-                  }`}
-                >
-                  <span className="flex-1 truncate">{CLUBS[f.home]?.short}</span>
-                  <span className="hud-num rounded-md border border-border px-2 py-0.5 text-xs font-bold">
-                    {f.homeGoals === null ? "x" : `${f.homeGoals} - ${f.awayGoals}`}
-                  </span>
-                  <span className="flex-1 truncate text-right">{CLUBS[f.away]?.short}</span>
-                </li>
-              ))}
-            </ul>
+          <ul className="space-y-2 text-sm">
+            {fixtures.map((f) => (
+              <li
+                key={`${f.home}-${f.away}`}
+                className={`flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-foreground/[0.03] px-3 py-2 ${
+                  f.home === career.clubId || f.away === career.clubId ? "border-primary/50" : ""
+                }`}
+              >
+                <span className="flex-1 truncate">{CLUBS[f.home]?.short}</span>
+                <span className="hud-num rounded-md border border-border px-2 py-0.5 text-xs font-bold">
+                  {f.homeGoals === null ? "x" : `${f.homeGoals} - ${f.awayGoals}`}
+                </span>
+                <span className="flex-1 truncate text-right">{CLUBS[f.away]?.short}</span>
+              </li>
+            ))}
+          </ul>
           </HudCard>
 
           {lastRound.length > 0 && (
@@ -287,10 +287,7 @@ function LeaguePage() {
                           <li key={i} className={e.side === "away" ? "ml-auto" : ""}>
                             <span className="hud-num">{e.minute}&apos;</span>{" "}
                             {e.kind === "vermelho" ? (
-                              <span
-                                className="inline-block h-2.5 w-2 rounded-[1px] bg-destructive align-middle"
-                                aria-label="Cartão vermelho"
-                              />
+                              <span className="inline-block h-2.5 w-2 rounded-[1px] bg-destructive align-middle" aria-label="Cartão vermelho" />
                             ) : e.kind === "penalti" ? (
                               "Gol (pên.)"
                             ) : e.kind === "gol_contra" ? (

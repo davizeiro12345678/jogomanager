@@ -4,8 +4,7 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/regras";
-const TITLE =
-  "Regras do futebol explicadas: cartões, impedimento e faltas | Pro Football Manager 3D";
+const TITLE = "Regras do futebol explicadas: cartões, impedimento e faltas | Pro Football Manager 3D";
 const DESC =
   "As regras do futebol em linguagem simples — tempo de jogo, impedimento, faltas, cartões, pênaltis, substituições e VAR — e como cada uma delas é aplicada dentro das partidas em 3D do jogo.";
 
@@ -66,9 +65,9 @@ function RulesPage() {
       <Section id="tempo" title="1. Tempo de jogo e acréscimos">
         <p>
           A partida tem dois tempos de 45 minutos e intervalo. O árbitro acrescenta o tempo perdido
-          com gols, substituições, lesões e atendimentos. No jogo, o relógio corre de forma contínua
-          e o acréscimo aparece no placar, então uma decisão tomada aos 88 ainda dá tempo de mudar o
-          resultado.
+          com gols, substituições, lesões e atendimentos. No jogo, o relógio corre de forma
+          contínua e o acréscimo aparece no placar, então uma decisão tomada aos 88 ainda dá tempo
+          de mudar o resultado.
         </p>
       </Section>
       <Section id="impedimento" title="2. Impedimento">

@@ -70,31 +70,22 @@ function validateModel(filename, json) {
   }
 
   const images = Array.isArray(json.images) ? json.images : [];
-  const usesImages =
-    images.length > 0 || (Array.isArray(json.textures) && json.textures.length > 0);
-  const hasKtx2 =
-    extensions.has(textureExtension) ||
-    images.some(
-      (image) =>
-        image.mimeType === "image/ktx2" ||
-        (typeof image.uri === "string" && image.uri.toLowerCase().endsWith(".ktx2")),
-    );
+  const usesImages = images.length > 0 || (Array.isArray(json.textures) && json.textures.length > 0);
+  const hasKtx2 = extensions.has(textureExtension) || images.some(
+    (image) => image.mimeType === "image/ktx2" || (typeof image.uri === "string" && image.uri.toLowerCase().endsWith(".ktx2")),
+  );
   if (usesImages && !hasKtx2) errors.push("texturas exigem KTX2/Basis (KHR_texture_basisu)");
 
   return errors.map((message) => `${reportPath(filename)}: ${message}.`);
 }
 
 if (!(await exists(assetRoot))) {
-  console.log(
-    "[assets] Nenhum diretório public/game-assets ainda; contrato de intake aguardando assets 3D.",
-  );
+  console.log("[assets] Nenhum diretório public/game-assets ainda; contrato de intake aguardando assets 3D.");
   process.exit(0);
 }
 
 const files = await walk(assetRoot);
-const models = files.filter((filename) =>
-  modelExtensions.has(path.extname(filename).toLowerCase()),
-);
+const models = files.filter((filename) => modelExtensions.has(path.extname(filename).toLowerCase()));
 if (!models.length) {
   console.log("[assets] Nenhum glTF/GLB de produção encontrado; nada para validar.");
   process.exit(0);
@@ -105,9 +96,7 @@ for (const filename of models) {
   try {
     violations.push(...validateModel(filename, await readModelJson(filename)));
   } catch (error) {
-    violations.push(
-      error instanceof Error ? error.message : `${reportPath(filename)}: erro desconhecido.`,
-    );
+    violations.push(error instanceof Error ? error.message : `${reportPath(filename)}: erro desconhecido.`);
   }
 }
 
@@ -117,6 +106,4 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log(
-  `[assets] ${models.length} modelo(s) validado(s): glTF + Meshopt/Draco e KTX2 quando texturizado.`,
-);
+console.log(`[assets] ${models.length} modelo(s) validado(s): glTF + Meshopt/Draco e KTX2 quando texturizado.`);
