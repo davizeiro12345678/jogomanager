@@ -41,9 +41,10 @@ type StoredRow = {
 };
 
 const API_BASE = "https://www.thesportsdb.com/api/v2/json";
+const API_V1_BASE = "https://www.thesportsdb.com/api/v1/json";
 const MAX_PAGE = 8;
 const ARCHIVE_BUDGET_BYTES = 2_500_000_000;
-const IMPORT_PHASES = ["catalog", "leagues", "teams-index", "teams", "players", "schedules", "events"] as const;
+const IMPORT_PHASES = ["catalog", "leagues", "teams-index", "teams", "players", "schedules", "rounds", "tables", "events"] as const;
 const PAUSE_PHASE = "__paused__";
 export type SportsDbImportPhase = (typeof IMPORT_PHASES)[number];
 let schemaReady: Promise<void> | undefined;
@@ -212,6 +213,7 @@ const INDEX_FIELDS: Record<string, readonly string[]> = {
   player_index: ["idPlayer", "strPlayer", "strPlayerAlternate", "strTeam", "strTeam2", "strPosition", "strNumber", "strNationality", "dateBorn", "intAge", "strHeight", "strWeight", "strThumb", "strCutout", "strRender", "strSigning", "strWage"],
   player: ["idPlayer", "strPlayer", "strPlayerAlternate", "strTeam", "strPosition", "strNumber", "strNationality", "dateBorn", "intAge", "strHeight", "strWeight", "strThumb", "strCutout", "strRender", "strSigning", "strWage"],
   season: ["strSeason", "idLeague", "strLeague"],
+  table_row: ["idLeague", "strLeague", "idTeam", "strTeam", "intRank", "intPlayed", "intWin", "intDraw", "intLoss", "intGoalsFor", "intGoalsAgainst", "intGoalDifference", "intPoints", "strDescription"],
   event_index: ["idEvent", "idLeague", "idHomeTeam", "idAwayTeam", "strLeague", "strSeason", "strEvent", "strHomeTeam", "strAwayTeam", "dateEvent", "strTime", "intHomeScore", "intAwayScore", "strVenue", "strStatus"],
   event: ["idEvent", "idLeague", "idHomeTeam", "idAwayTeam", "strLeague", "strSeason", "strEvent", "strHomeTeam", "strAwayTeam", "dateEvent", "strTime", "intHomeScore", "intAwayScore", "strVenue", "strStatus"],
 };
@@ -341,6 +343,31 @@ async function fetchV2(path: string): Promise<Json | null> {
   return payload as Json;
 }
 
+/** V1 is still needed for premium endpoints without a V2 replacement, such as rounds and tables. */
+async function fetchV1(path: string): Promise<Json | null> {
+  const key = bindings().THESPORTSDB_API_KEY;
+  if (!key) throw new Error("TheSportsDB API secret is not configured on this Worker");
+  const response = await fetch(`${API_V1_BASE}/${encodeURIComponent(key)}/${path}`, {
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(9_000),
+  });
+  if (response.status === 429) {
+    const error = new Error("TheSportsDB rate limit reached; resume this phase after the quota window");
+    error.name = "SportsDbRateLimitError";
+    throw error;
+  }
+  if (response.status === 404) return null;
+  if (response.status === 401 || response.status === 403) {
+    throw new Error(`TheSportsDB rejected the configured API credential (HTTP ${response.status})`);
+  }
+  if (!response.ok) throw new Error(`TheSportsDB returned HTTP ${response.status}`);
+  const payload: unknown = await response.json();
+  if (!payload || Array.isArray(payload) || typeof payload !== "object") {
+    throw new Error("TheSportsDB returned an unexpected response format");
+  }
+  return payload as Json;
+}
+
 function listOf(body: Json | null): Json[] {
   if (!body) return [];
   return Object.values(body).find(Array.isArray) as Json[] | undefined ?? [];
@@ -418,8 +445,14 @@ async function importLeagues(offset: number, limit: number, deadline: number) {
   for (const row of rows) {
     if (Date.now() > deadline) break;
     const leagueId = row.source_id;
-    const league = await fetchV2(`lookup/league/${encodeURIComponent(leagueId)}`);
+    const [league, next, previous] = await Promise.all([
+      fetchV2(`lookup/league/${encodeURIComponent(leagueId)}`),
+      fetchV2(`schedule/next/league/${encodeURIComponent(leagueId)}`),
+      fetchV2(`schedule/previous/league/${encodeURIComponent(leagueId)}`),
+    ]);
     await saveResponse("lookup/league", "league", leagueId, "", "", league);
+    await saveResponse("schedule/next/league", "event_list", leagueId, leagueId, "", next, "event_index", "idEvent");
+    await saveResponse("schedule/previous/league", "event_list", leagueId, leagueId, "", previous, "event_index", "idEvent");
     processed++;
   }
   const complete = processed === rows.length && rows.length < limit;
@@ -433,14 +466,18 @@ async function importTeams(offset: number, limit: number, deadline: number) {
   for (const row of rows) {
     if (Date.now() > deadline) break;
     const teamId = row.source_id;
-    const [team, equipment, players] = await Promise.all([
+    const [team, equipment, players, next, previous] = await Promise.all([
       fetchV2(`lookup/team/${encodeURIComponent(teamId)}`),
       fetchV2(`lookup/team_equipment/${encodeURIComponent(teamId)}`),
       fetchV2(`list/players/${encodeURIComponent(teamId)}`),
+      fetchV2(`schedule/next/team/${encodeURIComponent(teamId)}`),
+      fetchV2(`schedule/previous/team/${encodeURIComponent(teamId)}`),
     ]);
     await saveResponse("lookup/team", "team", teamId, row.parent_id, "", team);
     await saveResponse("lookup/team_equipment", "team_equipment", teamId, teamId, "", equipment, "equipment", "idEquipment");
     await saveResponse("list/players", "player_list", teamId, teamId, "", players, "player_index", "idPlayer");
+    await saveResponse("schedule/next/team", "event_list", teamId, teamId, "", next, "event_index", "idEvent");
+    await saveResponse("schedule/previous/team", "event_list", teamId, teamId, "", previous, "event_index", "idEvent");
     const teamDetails = listOf(team)[0] ?? team;
     const venueId = asString(teamDetails?.["idVenue"]);
     if (venueId) {
@@ -504,6 +541,62 @@ async function importSchedules(offset: number, limit: number, deadline: number) 
   return { processed, imported: processed, complete };
 }
 
+async function importRounds(offset: number, limit: number, deadline: number) {
+  const result = await db().prepare(`SELECT parent_id, season,
+      CAST(COALESCE(json_extract(payload_json, '$.intRound'), json_extract(payload_json, '$.intRoundNumber')) AS TEXT) AS round_key
+    FROM sportsdb_records
+    WHERE entity_type = 'event_index'
+      AND COALESCE(json_extract(payload_json, '$.intRound'), json_extract(payload_json, '$.intRoundNumber')) IS NOT NULL
+    GROUP BY parent_id, season, round_key
+    ORDER BY parent_id, season, CAST(round_key AS INTEGER), round_key
+    LIMIT ? OFFSET ?`)
+    .bind(limit, offset)
+    .all<{ parent_id: string; season: string; round_key: string }>();
+  const rows = result.results ?? [];
+  let processed = 0;
+  for (const row of rows) {
+    if (Date.now() > deadline) break;
+    const query = new URLSearchParams({ id: row.parent_id, r: row.round_key, s: row.season });
+    const body = await fetchV1(`eventsround.php?${query.toString()}`);
+    await saveResponse("eventsround", "event_list", row.round_key, row.parent_id, row.season, body, "event_index", "idEvent");
+    processed++;
+  }
+  const complete = processed === rows.length && rows.length < limit;
+  await setCursor("rounds", offset + processed, complete);
+  return { processed, imported: processed, complete };
+}
+
+async function importTables(offset: number, limit: number, deadline: number) {
+  const rows = await sourcePage("season", offset, limit);
+  let processed = 0;
+  for (const row of rows) {
+    if (Date.now() > deadline) break;
+    const season = asString(fromStored(row)["strSeason"]) || row.source_id;
+    if (!row.parent_id || !season) { processed++; continue; }
+    const query = new URLSearchParams({ l: row.parent_id, s: season });
+    const body = await fetchV1(`lookuptable.php?${query.toString()}`);
+    await saveResponse("lookuptable", "table_snapshot", row.parent_id, row.parent_id, season, body, "table_row", "idTeam");
+    processed++;
+  }
+  const complete = processed === rows.length && rows.length < limit;
+  await setCursor("tables", offset + processed, complete);
+  return { processed, imported: processed, complete };
+}
+
+export async function refreshSportsDbLiveScores() {
+  await ensureSportsDbSchema();
+  const endpoints = [
+    ["livescore/soccer", "livescore", "soccer"],
+    ["livescore/all", "livescore_all", "all"],
+  ] as const;
+  let imported = 0;
+  for (const [path, type, scope] of endpoints) {
+    const body = await fetchV2(path);
+    imported += await saveResponse(path, `snapshot:${type}`, scope, "", "", body, type, "idEvent");
+  }
+  return { endpoints: endpoints.length, imported };
+}
+
 async function importEvents(offset: number, limit: number, deadline: number) {
   const rows = await sourcePageUnique("event_index", offset, limit);
   const endpoints = ["event", "event_lineup", "event_results", "event_stats", "event_timeline", "event_tv", "event_highlights"] as const;
@@ -560,6 +653,10 @@ export async function runSportsDbImportBatch(phase: SportsDbImportPhase, request
     result = await importPlayers(cursor.offset, Math.min(limit, 2), start + 23_000);
   } else if (phase === "schedules") {
     result = await importSchedules(cursor.offset, limit, start + 23_000);
+  } else if (phase === "rounds") {
+    result = await importRounds(cursor.offset, limit, start + 23_000);
+  } else if (phase === "tables") {
+    result = await importTables(cursor.offset, limit, start + 23_000);
   } else {
     result = await importEvents(cursor.offset, Math.min(limit, 2), start + 23_000);
   }
@@ -734,4 +831,3 @@ export async function getSportsDbRecords(entityType: string, limit = 8_000) {
     data: JSON.parse(row.payload_json) as Json,
   }));
 }
-

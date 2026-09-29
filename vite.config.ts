@@ -24,6 +24,11 @@ const enableMcpRouteGenerator =
   process.platform !== "win32" || process.env["PFM_ENABLE_MCP_GENERATOR"] === "1";
 
 export default defineConfig({
+  // Nitro's runtime plugin scanner is not invoked by this TanStack Vite wrapper,
+  // so register the Cloudflare Cron hook explicitly in the generated Worker.
+  nitro: {
+    plugins: [path.resolve(import.meta.dirname, "src/server/plugins/sportsdb-import.ts")],
+  } as any,
   vite: {
     // O preview do sandbox é servido num host *.e2b.app gerado por sessão; sem
     // liberar a lista de hosts o Vite responde 403 e o jogo não carrega.
