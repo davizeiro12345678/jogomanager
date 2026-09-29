@@ -1,6 +1,6 @@
 /** Idempotent, budgeted TheSportsDB premium graph import. All keys stay server-side. */
 import { sdbV2, str, num } from './thesportsdb-v2.server';
-import type { Database } from '@/integrations/supabase/types';
+import type { Database, Json } from '@/integrations/supabase/types';
 
 type Admin = Awaited<typeof import('@/integrations/supabase/client.server')>['supabaseAdmin'];
 type MediaRow = Database['public']['Tables']['official_media']['Insert'];
