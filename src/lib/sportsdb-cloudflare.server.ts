@@ -674,7 +674,12 @@ export async function runNextSportsDbImportBatch(requestedLimit = 2) {
   const paused = await db().prepare("SELECT last_error FROM sportsdb_import_state WHERE phase = ? AND complete = 1")
     .bind(PAUSE_PHASE).first<{ last_error: string | null }>();
   if (paused) {
-    return { ok: false, phase: "paused", complete: false, paused: true, reason: paused.last_error, processed: 0, imported: 0 };
+    const transientD1Failure = /D1_ERROR: Network connection lost|SQLITE_BUSY/i.test(paused.last_error ?? "");
+    if (transientD1Failure) {
+      await resumeSportsDbImport();
+    } else {
+      return { ok: false, phase: "paused", complete: false, paused: true, reason: paused.last_error, processed: 0, imported: 0 };
+    }
   }
   for (const phase of IMPORT_PHASES) {
     const cursor = await getCursor(phase);
@@ -829,4 +834,3 @@ export async function getSportsDbRecords(entityType: string, limit = 8_000) {
     data: JSON.parse(row.payload_json) as Json,
   }));
 }
-

@@ -18,10 +18,11 @@ export default definePlugin((nitroApp) => {
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown import failure";
         const rateLimited = error instanceof Error && error.name === "SportsDbRateLimitError";
-        if (!rateLimited) await sportsDb.pauseSportsDbImport(message).catch(() => undefined);
-        console.error("TheSportsDB scheduled import failed", {
+        const transientD1Failure = /D1_ERROR: Network connection lost|SQLITE_BUSY/i.test(message);
+        if (!rateLimited && !transientD1Failure) await sportsDb.pauseSportsDbImport(message).catch(() => undefined);
+        console.error(transientD1Failure ? "TheSportsDB scheduled batch will retry after a transient D1 error" : "TheSportsDB scheduled import failed", {
           message,
-          retryAfterSeconds: rateLimited ? 60 : null,
+          retryAfterSeconds: rateLimited || transientD1Failure ? 60 : null,
         });
       }
     });
