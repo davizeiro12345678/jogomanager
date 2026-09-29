@@ -45,7 +45,7 @@ export const Route = createFileRoute("/api/public/sync-football")({
         }
 
         const { runSync } = await import("@/lib/football-sync.server");
-        const result = await runSync({ scope, limit, offset, concurrency, budgetMs, leagueId, season, phase: phases.find((item) => item === phase) });
+        const result = await runSync({ scope, limit, offset, concurrency, budgetMs, ...(leagueId ? { leagueId } : {}), ...(season ? { season } : {}), ...(scope === "premium-chain" ? { phase: phases.find((item) => item === phase) } : {}) });
 
         return new Response(JSON.stringify(result), {
           status: result.ok ? 200 : 500,

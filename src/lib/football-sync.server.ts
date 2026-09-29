@@ -718,7 +718,7 @@ export async function runSync(opts: {
       const { syncPremiumChain } = await import("./premium-chain.server");
       const phase = opts.phase;
       if (!phase) throw new Error("Premium phase required");
-      const r = await syncPremiumChain({ phase, limit: opts.limit ?? 20, offset: opts.offset ?? 0, budgetMs: opts.budgetMs ?? 45_000, leagueId: opts.leagueId, season: opts.season });
+      const r = await syncPremiumChain({ phase, limit: opts.limit ?? 20, offset: opts.offset ?? 0, budgetMs: opts.budgetMs ?? 45_000, ...(opts.leagueId ? { leagueId: opts.leagueId } : {}), ...(opts.season ? { season: opts.season } : {}) });
       detail = r;
       items = r.imported;
     } else if (scope === "seed") {
