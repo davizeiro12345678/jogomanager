@@ -566,6 +566,11 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
       }
       if (intent.state === "claimed")
         return { status: "delivered", productKey: intent.product_key };
+      // Only an intent already confirmed paid by the signed Stripe webhook can
+      // be delivered; a client request alone never triggers fulfillment.
+      if (intent.state !== "paid" && intent.state !== "claiming") {
+        return { status: "pending", message: "O pagamento ainda está sendo confirmado." };
+      }
 
       const stripe = createStripeClient(environment);
       const session = await stripe.checkout.sessions.retrieve(data.sessionId, {

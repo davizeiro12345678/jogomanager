@@ -15,7 +15,7 @@ export interface RealPlayer {
   photo_url: string | null;
 }
 
-const KEY = "manager3d.realsquads.v1";
+const KEY = "manager3d.realsquads.v2";
 const memory = new Map<string, RealPlayer[]>();
 
 function readStore(): Record<string, RealPlayer[]> {
@@ -65,3 +65,4 @@ export async function loadRealSquad(clubId: string): Promise<RealPlayer[]> {
   }
   return [];
 }
+

@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "stadium-stewards",
+  "compatibility_date": "2026-09-29",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "SPORTS_DB",
+      "database_name": "grwtww",
+      "database_id": "96daeaf6-3bb2-4b6a-9488-a5265de4fdd7"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "SPORTS_ARCHIVE",
+      "bucket_name": "jogomanager"
+    }
+  ],
+  "triggers": {
+    "crons": ["* * * * *"]
+  }
+}
+

@@ -39,7 +39,10 @@ export const getPurchases = createServerFn({ method: "GET" })
         .maybeSingle(),
     ]);
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("getPurchases failed", error);
+      throw new Error("Não foi possível carregar suas compras agora.");
+    }
 
     const purchases: PurchaseRow[] = (rows ?? []).map((r) => ({
       id: r.id,

@@ -75,6 +75,8 @@ import { Route as CheckoutGuestRouteImport } from './routes/checkout/guest'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout/return'
 import { Route as ClubeNovoRouteImport } from './routes/clube.novo'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as ApiPublicSportsdbRouteImport } from './routes/api/public/sportsdb'
+import { Route as ApiPublicSportsdbImportRouteImport } from './routes/api/public/sportsdb-import'
 import { Route as ApiPublicSyncFootballRouteImport } from './routes/api/public/sync-football'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -412,6 +414,16 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicSportsdbRoute = ApiPublicSportsdbRouteImport.update({
+  id: '/api/public/sportsdb',
+  path: '/api/public/sportsdb',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicSportsdbImportRoute = ApiPublicSportsdbImportRouteImport.update({
+  id: '/api/public/sportsdb-import',
+  path: '/api/public/sportsdb-import',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSyncFootballRoute = ApiPublicSyncFootballRouteImport.update({
   id: '/api/public/sync-football',
   path: '/api/public/sync-football',
@@ -507,6 +519,8 @@ export interface FileRoutesByFullPath {
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/public/sportsdb': typeof ApiPublicSportsdbRoute
+  '/api/public/sportsdb-import': typeof ApiPublicSportsdbImportRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -580,6 +594,8 @@ export interface FileRoutesByTo {
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/public/sportsdb': typeof ApiPublicSportsdbRoute
+  '/api/public/sportsdb-import': typeof ApiPublicSportsdbImportRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -654,6 +670,8 @@ export interface FileRoutesById {
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/public/sportsdb': typeof ApiPublicSportsdbRoute
+  '/api/public/sportsdb-import': typeof ApiPublicSportsdbImportRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -729,6 +747,8 @@ export interface FileRouteTypes {
     | '/checkout/return'
     | '/clube/novo'
     | '/.lovable/oauth/consent'
+    | '/api/public/sportsdb'
+    | '/api/public/sportsdb-import'
     | '/api/public/sync-football'
     | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
@@ -802,6 +822,8 @@ export interface FileRouteTypes {
     | '/checkout/return'
     | '/clube/novo'
     | '/.lovable/oauth/consent'
+    | '/api/public/sportsdb'
+    | '/api/public/sportsdb-import'
     | '/api/public/sync-football'
     | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
@@ -875,6 +897,8 @@ export interface FileRouteTypes {
     | '/checkout/return'
     | '/clube/novo'
     | '/.lovable/oauth/consent'
+    | '/api/public/sportsdb'
+    | '/api/public/sportsdb-import'
     | '/api/public/sync-football'
     | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
@@ -949,6 +973,8 @@ export interface RootRouteChildren {
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   ClubeNovoRoute: typeof ClubeNovoRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
+  ApiPublicSportsdbRoute: typeof ApiPublicSportsdbRoute
+  ApiPublicSportsdbImportRoute: typeof ApiPublicSportsdbImportRoute
   ApiPublicSyncFootballRoute: typeof ApiPublicSyncFootballRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -1420,6 +1446,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/sportsdb': {
+      id: '/api/public/sportsdb'
+      path: '/api/public/sportsdb'
+      fullPath: '/api/public/sportsdb'
+      preLoaderRoute: typeof ApiPublicSportsdbRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/sportsdb-import': {
+      id: '/api/public/sportsdb-import'
+      path: '/api/public/sportsdb-import'
+      fullPath: '/api/public/sportsdb-import'
+      preLoaderRoute: typeof ApiPublicSportsdbImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/sync-football': {
       id: '/api/public/sync-football'
       path: '/api/public/sync-football'
@@ -1526,6 +1566,8 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutReturnRoute: CheckoutReturnRoute,
   ClubeNovoRoute: ClubeNovoRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
+  ApiPublicSportsdbRoute: ApiPublicSportsdbRoute,
+  ApiPublicSportsdbImportRoute: ApiPublicSportsdbImportRoute,
   ApiPublicSyncFootballRoute: ApiPublicSyncFootballRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
@@ -1545,3 +1587,4 @@ declare module '@tanstack/react-start' {
     config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }
+
