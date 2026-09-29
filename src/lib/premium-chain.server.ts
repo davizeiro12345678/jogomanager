@@ -111,13 +111,12 @@ export async function syncPremiumChain(options: {
     for (const linked of leagues ?? []) {
       if (!withinBudget()) break;
       const teams = await sdbV2.listTeams(linked.source_id);
-      processed++;
-      if (!teams.length) { unavailable++; continue; }
+      if (!teams.length) { unavailable++; processed++; continue; }
       const { data: locals } = linked.local_competition_id
         ? await db.from('clubs').select('id,name').eq('competition_id', linked.local_competition_id)
         : { data: null };
       for (const listed of teams) {
-        if (!withinBudget()) break;
+        // Finish the entire league before advancing its offset; retries upsert by source ID.
         const id = str(listed['idTeam']);
         if (!id) continue;
         const team = (await sdbV2.lookupTeam(id)) ?? listed;
@@ -155,6 +154,7 @@ export async function syncPremiumChain(options: {
         }
         imported++;
       }
+      processed++;
     }
     return { phase, processed, imported, media, unavailable, nextOffset: offset + processed, total: leagues?.length ?? 0 };
   }
@@ -226,7 +226,7 @@ export async function syncPremiumChain(options: {
       ] as const) {
         const rows = records.slice(0, 300).flatMap(record => {
           const detailId = str(record[key]);
-          if (!detailId) return [];
+          if (!detailId || str(record['idEvent']) !== item.source_id) return [];
           return [{ event_source_id: item.source_id, detail_type: kind, source_id: detailId,
             team_source_id: str(record['idTeam']), player_source_id: str(record['idPlayer']),
             minute: score(record['intTime']), label: str(record['strTimeline']) ?? str(record['strStatistic']) ?? str(record['strPlayer']),
