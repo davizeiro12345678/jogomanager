@@ -68,7 +68,7 @@ function loss(clubId: string, round: number, home: boolean) {
 
 describe("roteiros do arco de história", () => {
   it("declara 16 cenas e todas existem no catálogo", () => {
-    expect(STORY_SCENE_IDS.length).toBe(16);
+    expect(STORY_SCENE_IDS.length).toBe(22);
     for (const id of STORY_SCENE_IDS) {
       expect(CUTSCENES[id], `cena ${id}`).toBeDefined();
     }

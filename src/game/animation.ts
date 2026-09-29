@@ -6,6 +6,7 @@
 
 import { EXTRA_CLIPS } from "./animation-extra";
 import { EXTRA2_CLIPS } from "./animation-extra2";
+import { EXTRA3_CLIPS } from "./animation-extra3";
 import {
   JOINTS,
   emptyPose,
@@ -850,8 +851,8 @@ export const BASE_CLIPS = {
     }),
 } satisfies Record<string, Clip>;
 
-/** catálogo completo: clipes base + dois pacotes de 89 clipes extras */
-const CLIPS = { ...BASE_CLIPS, ...EXTRA_CLIPS, ...EXTRA2_CLIPS };
+/** catálogo completo: clipes base + pacotes extras */
+const CLIPS = { ...BASE_CLIPS, ...EXTRA_CLIPS, ...EXTRA2_CLIPS, ...EXTRA3_CLIPS };
 
 export type ClipName = keyof typeof CLIPS;
 
@@ -974,6 +975,10 @@ function pick<T>(list: T[], c: SelectCtx, every = 4): T {
 }
 
 export function selectClip(c: SelectCtx): ClipName {
+  // defesas variam entre a saída clássica e o mergulho do novo pacote: o
+  // sorteio é lento, então cada defesa usa um clipe só do início ao fim
+  if (c.action === "save") return pick<ClipName>(["gkSaveLow", "gkDiveLow"], c, 1);
+  if (c.action === "saveHigh") return pick<ClipName>(["gkSaveHigh", "gkDiveHigh"], c, 1);
   if (c.action) return ACTION_CLIP[c.action];
 
   if (c.isGK) {
@@ -1000,6 +1005,8 @@ export function selectClip(c: SelectCtx): ClipName {
         "huddleTalk",
         "drinkWater",
         "adjustSocks",
+        "handshake",
+        "warmup",
       ],
       c,
       3,
@@ -1021,7 +1028,11 @@ export function selectClip(c: SelectCtx): ClipName {
         2,
       );
     if (sp > 1.2)
-      return pick<ClipName>(["closeControl", "shieldBall", "ballRollSole", "shieldTurnOut"], c, 2);
+      return pick<ClipName>(
+        ["closeControl", "shieldBall", "ballRollSole", "shieldTurnOut", "firstTouch"],
+        c,
+        2,
+      );
     return pick<ClipName>(
       [
         "feint",
@@ -1041,6 +1052,9 @@ export function selectClip(c: SelectCtx): ClipName {
         "scoopLift",
         "firstTouchAway",
         "juggleKeepUp",
+        "cushion",
+        "rabona",
+        "trivela",
       ],
       c,
       2,
@@ -1050,7 +1064,7 @@ export function selectClip(c: SelectCtx): ClipName {
   if (sp < 0.35) {
     if (c.defending && c.ballDist < 18)
       return pick<ClipName>(
-        ["mark", "markTight", "jockey", "shoulderToShoulder", "armBarHold"],
+        ["mark", "markTight", "jockey", "shoulderToShoulder", "armBarHold", "shoulderBarge", "headerJump"],
         c,
         3,
       );
@@ -1066,6 +1080,7 @@ export function selectClip(c: SelectCtx): ClipName {
         "handsOnHead",
         "encourageTeammate",
         "protestHandsOut",
+        "dissent",
         "warmUpStretch",
       ],
       c,
@@ -1074,11 +1089,11 @@ export function selectClip(c: SelectCtx): ClipName {
   if (sp < 1.2) {
     if (c.defending && c.ballDist < 12)
       return pick<ClipName>(
-        ["sideStep", "shuffleLeft", "shuffleRight", "jockey", "sideGallopL", "sideGallopR"],
+        ["sideStep", "shuffleLeft", "shuffleRight", "jockey", "sideGallopL", "sideGallopR", "slideRecover"],
         c,
         2,
       );
-    if (c.stamina < 28) return "exhaustedWalk";
+    if (c.stamina < 28) return pick<ClipName>(["exhaustedWalk", "limp"], c, 5);
     return pick<ClipName>(["walk", "stroll", "walkTalk"], c, 5);
   }
   if (sp < 2.6)
@@ -1103,10 +1118,24 @@ export function selectClip(c: SelectCtx): ClipName {
             c,
             3,
           );
+  // escorregão raro no sprint: os clipes normais se repetem para afundar a
+  // probabilidade (~1/6) sem precisar de sorteio com peso
   return c.defending
-    ? pick<ClipName>(["recoverySprint", "sprintFlatOut"], c, 3)
+    ? pick<ClipName>(
+        ["recoverySprint", "sprintFlatOut", "recoverySprint", "sprintFlatOut", "slip"],
+        c,
+        3,
+      )
     : pick<ClipName>(
-        ["sprint", "curveRunLeft", "curveRunRight", "sprintFlatOut", "sprintEasing"],
+        [
+          "sprint",
+          "curveRunLeft",
+          "curveRunRight",
+          "sprintFlatOut",
+          "sprintEasing",
+          "sprint",
+          "slip",
+        ],
         c,
         3,
       );

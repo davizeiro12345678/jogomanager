@@ -5,10 +5,27 @@ import { PlayerSheet } from "@/components/game/PlayerSheet";
 
 import { GameShell } from "@/components/game/GameShell";
 import { NoCareer } from "@/components/game/screen-kit";
-import { HudBar, HudCard, HudChip, HudRing, HudStat, SparkBars, toneFor } from "@/components/ui/hud";
+import {
+  HudBar,
+  HudCard,
+  HudChip,
+  HudRing,
+  HudStat,
+  SparkBars,
+  toneFor,
+} from "@/components/ui/hud";
+import { roleGroupOf } from "@/game/player-model";
 import { FORMATIONS } from "@/game/formations";
 import { formatMoney, formatWage, wageBill } from "@/game/economy";
 import { useCareer } from "@/hooks/useCareer";
+import {
+  applyTalk,
+  detectUnhappy,
+  REASON_LABEL,
+  TALK_LABEL,
+  talkTo,
+  type TalkAction,
+} from "@/game/unhappy";
 import type { Player } from "@/game/types";
 
 export const Route = createFileRoute("/squad")({
@@ -54,15 +71,40 @@ function statusBadge(p: Player) {
   return null;
 }
 
+type SortKey = "ovr" | "age" | "value" | "goals" | "condition";
+
+const SORT_LABEL: Record<SortKey, string> = {
+  ovr: "OVR",
+  age: "Idade",
+  value: "Valor",
+  goals: "Gols",
+  condition: "Condição",
+};
+
 function SquadPage() {
   const { career, update } = useCareer();
   const [sheet, setSheet] = useState<Player | null>(null);
+  const [query, setQuery] = useState("");
+  const [sector, setSector] = useState<"ALL" | "GK" | "DF" | "MF" | "FW">("ALL");
+  const [sortKey, setSortKey] = useState<SortKey>("ovr");
+  const [sortDir, setSortDir] = useState<1 | -1>(-1);
   if (!career) return <NoCareer />;
 
   const players = Object.values(career.players);
   const slots = FORMATIONS[career.tactics.formation];
   const lineup = career.lineup.map((id) => career.players[id]).filter(Boolean) as Player[];
   const reserves = players.filter((p) => !career.lineup.includes(p.id));
+  // plantel filtrado e ordenado (titulares primeiro, depois o critério)
+  const norm = query.trim().toLowerCase();
+  const table = [...lineup, ...reserves]
+    .filter((p) => (sector === "ALL" ? true : roleGroupOf(p.pos) === sector))
+    .filter((p) => (!norm ? true : p.name.toLowerCase().includes(norm)))
+    .sort((a, b) => {
+      const sa = career.lineup.includes(a.id) ? 0 : 1;
+      const sb = career.lineup.includes(b.id) ? 0 : 1;
+      if (sa !== sb) return sa - sb;
+      return (a[sortKey] - b[sortKey]) * sortDir;
+    });
 
   function swap(outId: string, inId: string) {
     if (!career) return;
@@ -133,6 +175,8 @@ function SquadPage() {
         </HudCard>
       </div>
 
+      <DressingRoom career={career} update={update} />
+
       <div className="mt-4 grid items-start gap-4 hud-stagger lg:grid-cols-[1.1fr_1fr]">
         <HudCard
           title={`Escalação · ${career.tactics.formation}`}
@@ -168,8 +212,54 @@ function SquadPage() {
         <HudCard
           title="Plantel"
           tone={injured + suspended >= 4 ? "bad" : injured + suspended >= 2 ? "warn" : "good"}
-          badge={<HudChip>{reserves.length} reservas</HudChip>}
+          badge={
+            <HudChip>
+              {table.length}/{players.length}
+            </HudChip>
+          }
         >
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar jogador…"
+              aria-label="Buscar jogador"
+              className="min-h-[36px] min-w-0 flex-1 rounded-lg border border-input bg-background/60 px-3 text-sm"
+            />
+            <select
+              value={sector}
+              onChange={(e) => setSector(e.target.value as typeof sector)}
+              aria-label="Filtrar por setor"
+              className="min-h-[36px] rounded-lg border border-input bg-background/60 px-2 text-xs"
+            >
+              <option value="ALL">Todos</option>
+              <option value="GK">Goleiros</option>
+              <option value="DF">Defesa</option>
+              <option value="MF">Meio</option>
+              <option value="FW">Ataque</option>
+            </select>
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as SortKey)}
+              aria-label="Ordenar por"
+              className="min-h-[36px] rounded-lg border border-input bg-background/60 px-2 text-xs"
+            >
+              {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
+                <option key={k} value={k}>
+                  {SORT_LABEL[k]}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setSortDir((d) => (d === 1 ? -1 : 1))}
+              aria-label={sortDir === 1 ? "Ordem crescente" : "Ordem decrescente"}
+              className="min-h-[36px] rounded-lg border border-input bg-background/60 px-2.5 text-sm"
+            >
+              {sortDir === 1 ? "↑" : "↓"}
+            </button>
+          </div>
           <div className="max-h-[70vh] overflow-auto" tabIndex={0} aria-label="Tabela do elenco">
             <table className="w-full text-sm">
               <caption className="sr-only">Jogadores titulares e reservas do clube</caption>
@@ -185,7 +275,24 @@ function SquadPage() {
               </thead>
 
               <tbody>
-                {[...lineup, ...reserves].map((p) => {
+                {table.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">
+                      Nenhum jogador combina com a busca.
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuery("");
+                          setSector("ALL");
+                        }}
+                        className="ml-2 underline underline-offset-2 hover:text-primary"
+                      >
+                        Limpar filtros
+                      </button>
+                    </td>
+                  </tr>
+                ) : null}
+                {table.map((p) => {
                   const starting = career!.lineup.includes(p.id);
                   const unavailable = p.injuryWeeks > 0 || p.suspended;
                   const condTone = toneFor(p.condition, { good: 80, warn: 60 });
@@ -286,5 +393,119 @@ function SquadPage() {
       </div>
       {sheet ? <PlayerSheet player={sheet} onClose={() => setSheet(null)} /> : null}
     </GameShell>
+  );
+}
+
+type Career = NonNullable<ReturnType<typeof useCareer>["career"]>;
+
+/**
+ * Vestiário: os insatisfeitos, o motivo e a conversa. Cada ação tem resultado
+ * único por rodada (sem clicar até dar sorte) e promessa quebrada volta para
+ * cobrar — com juros.
+ */
+function DressingRoom({ career, update }: { career: Career; update: (s: Career) => void }) {
+  const [result, setResult] = useState<{ pid: string; message: string; ok: boolean } | null>(null);
+  const grievances = detectUnhappy(career);
+  const promises = career.promises ?? [];
+
+  function talk(pid: string, action: TalkAction) {
+    const p = career.players[pid];
+    const g = grievances.find((x) => x.pid === pid);
+    if (!p || !g) return;
+    const res = talkTo(career, p, g, action);
+    setResult({ pid, message: res.message, ok: res.ok });
+    update(applyTalk(career, pid, action, res));
+  }
+
+  return (
+    <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 className="font-display text-xl uppercase tracking-wide">Vestiário</h2>
+        <span
+          className={`rounded-full px-2.5 py-1 text-[10px] uppercase tracking-wider ${
+            grievances.length === 0
+              ? "bg-primary/20 text-primary"
+              : "bg-destructive/20 text-destructive"
+          }`}
+        >
+          {grievances.length === 0
+            ? "Clima bom"
+            : `${grievances.length} insatisfeito${grievances.length > 1 ? "s" : ""}`}
+        </span>
+        {promises.length > 0 ? (
+          <span className="text-xs text-muted-foreground">
+            {promises.length} promessa{promises.length > 1 ? "s" : ""} em aberto
+          </span>
+        ) : null}
+      </div>
+
+      {grievances.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Ninguém reclamando. Todo mundo quer jogar, todo mundo treina — aproveita a paz, que no
+          futebol ela dura pouco.
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {grievances.map((g) => {
+            const p = career.players[g.pid];
+            if (!p) return null;
+            return (
+              <li key={g.pid} className="rounded-xl border border-border/40 bg-background/40 p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary font-display text-sm">
+                    {p.number}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">
+                      {p.name}{" "}
+                      <span className="text-muted-foreground">
+                        · {p.pos} {p.ovr}
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {REASON_LABEL[g.reason]}: {g.detail}{" "}
+                      <span aria-hidden="true">{"🔥".repeat(g.level)}</span>
+                    </p>
+                  </div>
+                  <span className="ml-auto text-xs text-muted-foreground">Moral {p.morale}</span>
+                </div>
+                {result?.pid === g.pid ? (
+                  <p
+                    className={`mt-2 rounded-lg p-2 text-xs ${result.ok ? "bg-primary/10 text-foreground" : "bg-destructive/10 text-foreground"}`}
+                  >
+                    {result.message}
+                  </p>
+                ) : null}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(Object.keys(TALK_LABEL) as TalkAction[]).map((a) => (
+                    <button
+                      key={a}
+                      onClick={() => talk(g.pid, a)}
+                      className="rounded-md bg-secondary px-2.5 py-1.5 text-[11px] uppercase tracking-wider transition hover:brightness-125"
+                    >
+                      {TALK_LABEL[a]}
+                    </button>
+                  ))}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {promises.length > 0 ? (
+        <div className="mt-3 rounded-xl border border-amber-400/30 bg-amber-400/5 p-3 text-xs">
+          <p className="font-display uppercase tracking-wide text-amber-300">Promessas em aberto</p>
+          <ul className="mt-1 space-y-1 text-muted-foreground">
+            {promises.map((pr) => (
+              <li key={pr.pid}>
+                {career.players[pr.pid]?.name ?? "?"}: {pr.starts}/{pr.target} jogos até a rodada{" "}
+                {pr.untilRound}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </section>
   );
 }

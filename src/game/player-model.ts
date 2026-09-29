@@ -94,6 +94,14 @@ export interface PlayerLook {
   bootColor: string;
   bootAccent: string;
   sockTape: boolean;
+  /** altura do meião */
+  sockHeight: "low" | "mid" | "high";
+  /** fita branca no pulso (um lado só: cabe no teto de malhas do herói) */
+  wristTape: "none" | "left" | "right";
+  /** tatuagem no antebraço (um lado só: cabe no teto de malhas do herói) */
+  tattoo: "none" | "foreL" | "foreR";
+  /** brinco na orelha esquerda */
+  earring: boolean;
   /** cor da íris */
   eyeColor: string;
   /** formato da gola da camisa */
@@ -121,11 +129,15 @@ export function roleGroupOf(pos: string): RoleGroup {
  * Porte físico típico por posição. Goleiro e zagueiro são mais altos e mais
  * largos de ombro; meia e ponta são mais leves e com passada mais longa.
  */
-const ROLE_BUILD: Record<RoleGroup, { height: number; girth: number; shoulder: number; leg: number }> = {
-  GK: { height: 1.045, girth: 1.03, shoulder: 1.05, leg: 1.01 },
-  DF: { height: 1.025, girth: 1.05, shoulder: 1.06, leg: 1.0 },
-  MF: { height: 0.99, girth: 0.97, shoulder: 0.98, leg: 1.0 },
-  FW: { height: 1.0, girth: 0.99, shoulder: 1.0, leg: 1.02 },
+const ROLE_BUILD: Record<
+  RoleGroup,
+  { height: number; girth: number; shoulder: number; leg: number; arm: number }
+> = {
+  GK: { height: 1.045, girth: 1.03, shoulder: 1.05, leg: 1.01, arm: 1.05 },
+  DF: { height: 1.025, girth: 1.05, shoulder: 1.06, leg: 1.0, arm: 1.02 },
+  MF: { height: 0.99, girth: 0.97, shoulder: 0.98, leg: 1.0, arm: 0.99 },
+  FW: { height: 1.0, girth: 0.99, shoulder: 1.0, leg: 1.02, arm: 1.0 },
+};
 };
 
 export interface Proportions {
@@ -155,6 +167,10 @@ export interface Proportions {
   upperArm: number;
   foreArm: number;
   armR: number;
+  /** envergadura relativa (1 = média): goleiro tem braço mais longo */
+  armSpan: number;
+  /** postura base do tronco em radianos (+ = curvado, − = ereto) */
+  posture: number;
   handR: number;
   thigh: number;
   shin: number;
@@ -264,6 +280,17 @@ export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook 
     hairVolume: 0.85 + rng() * 0.35,
     sweat: rng(),
     role,
+    // novos sorteios sempre no fim: a aparência existente não muda
+    sockHeight: rng() < 0.2 ? "low" : rng() < 0.75 ? "mid" : "high",
+    wristTape: (() => {
+      const r = rng();
+      return r < 0.62 ? "none" : r < 0.81 ? "left" : "right";
+    })(),
+    tattoo: (() => {
+      const r = rng();
+      return r < 0.68 ? "none" : r < 0.84 ? "foreL" : "foreR";
+    })(),
+    earring: rng() < 0.12,
   };
 }
 
@@ -286,41 +313,122 @@ export function proportionsFor(look: PlayerLook): Proportions {
   const faceRng = makeLookRng(look.seed ^ 0x9e3779b9);
   const faceWide = 0.94 + faceRng() * 0.14;
   const faceLong = 0.94 + faceRng() * 0.14;
+  // Postura e envergadura individuais: uns jogam eretos, outros curvados; o
+  // braço orbita o porte da posição (goleiro com mais envergadura).
+  const posture = (faceRng() - 0.5) * 0.12;
+  const armSpan = build.arm * (0.97 + faceRng() * 0.06);
 
   // Perna um pouco mais longa em atacantes, tronco mais curto: silhueta de
   // velocista. O quadril continua apoiado no gramado (hipY soma a perna toda).
   const legScale = build.leg;
-  const thigh = 0.44 * h * legScale;
-  const shin = 0.42 * h * legScale;
-  const footH = 0.07 * h;
-  const headR = 0.108 * (0.98 + (h - 1) * 0.4);
+  const rawThigh = 0.44 * h * legScale;
+  const rawShin = 0.42 * h * legScale;
+  const rawFootH = 0.07 * h;
+  const rawHipH = 0.13 * h;
+  const rawSpineLen = 0.19 * h * (2 - legScale);
+  const rawChestLen = 0.22 * h * (2 - legScale);
+  const rawNeckLen = 0.07 * h;
+  const rawHeadR = 0.108 * (0.98 + (h - 1) * 0.4);
+
+  // look.height is measured against 1.80 m. Scale the whole skeleton together
+  // so its actual assembled crown height matches that measurement. The old
+  // independent segment lengths left the rendered athlete about 11 cm short.
+  const capHeight =
+    (look.hairStyle === "buzz" ? 0.96 : look.hairStyle === "short" ? 1.02 : 1.06) * look.hairVolume;
+  const hairCrown = Math.max(
+    1.14,
+    0.16 + 0.99 * capHeight,
+    look.hairStyle === "mohawk" ? 0.95 + 0.62 : 0,
+    look.hairStyle === "curly" ? 0.42 + 1.1 : 0,
+    look.hairStyle === "afro" ? 0.42 + 1.24 : 0,
+  );
+  const rawRigHeight =
+    rawThigh +
+    rawShin +
+    rawFootH +
+    rawHipH * 0.5 +
+    rawSpineLen +
+    rawChestLen +
+    rawNeckLen +
+    rawHeadR * (0.82 + hairCrown);
+  const metricScale = (1.8 * h) / rawRigHeight;
+  const thigh = rawThigh * metricScale;
+  const shin = rawShin * metricScale;
+  const footH = rawFootH * metricScale;
+  const headR = rawHeadR * metricScale;
 
   return {
     hipY: thigh + shin + footH,
-    hipW: 0.16 * g * strong,
-    hipH: 0.13 * h,
-    spineLen: 0.19 * h * (2 - legScale),
-    chestLen: 0.22 * h * (2 - legScale),
-    chestW: 0.2 * g * strong,
-    chestD: 0.12 * g * strong * (look.bodyType === "strong" ? 1.05 : 1),
-    shoulderW: 0.25 * g * strong * build.shoulder,
-    neckLen: 0.07 * h,
-    neckR: 0.052 * g * (look.role === "DF" || look.role === "GK" ? 1.06 : 1),
+    hipW: 0.16 * g * strong * metricScale,
+    hipH: rawHipH * metricScale,
+    spineLen: rawSpineLen * metricScale,
+    chestLen: rawChestLen * metricScale,
+    chestW: 0.2 * g * strong * metricScale,
+    chestD: 0.12 * g * strong * (look.bodyType === "strong" ? 1.05 : 1) * metricScale,
+    shoulderW: 0.25 * g * strong * build.shoulder * metricScale,
+    neckLen: rawNeckLen * metricScale,
+    neckR: 0.052 * g * (look.role === "DF" || look.role === "GK" ? 1.06 : 1) * metricScale,
     headR,
-    headH: 0.24 * h,
+    headH: 0.24 * h * metricScale,
     headW: headR * faceWide,
     headD: headR * (1.02 + (1 - faceWide) * 0.4),
     jawLen: headR * 0.52 * faceLong,
     chinFwd: headR * (0.12 + (faceLong - 0.94) * 0.5),
-    upperArm: 0.28 * h,
-    foreArm: 0.24 * h,
-    armR: 0.048 * g * strong,
-    handR: 0.045 * g,
+    upperArm: 0.28 * h * metricScale * armSpan,
+    foreArm: 0.24 * h * metricScale * armSpan,
+    armR: 0.048 * g * strong * metricScale,
+    armSpan,
+    posture,
+    handR: 0.045 * g * metricScale,
     thigh,
     shin,
-    legR: 0.066 * g * strong,
-    footLen: 0.26 * h,
+    legR: 0.066 * g * strong * metricScale,
+    footLen: 0.26 * h * metricScale,
     footH,
+  };
+}
+
+export interface LowDetailBodyShape {
+  pelvisWidth: number;
+  pelvisHeight: number;
+  pelvisDepth: number;
+  torsoWidth: number;
+  torsoHeight: number;
+  torsoDepth: number;
+  torsoCenterY: number;
+  neckCenterY: number;
+  headCenterY: number;
+  hairCenterY: number;
+}
+
+/**
+ * Dimensions for the instanced distant-player body, derived from the same
+ * joints as the hero rig so the LOD switch preserves scale and alignment.
+ */
+export function lowDetailBodyFor(p: Proportions): LowDetailBodyShape {
+  const pelvisRadius = p.hipW * 0.62;
+  const pelvisHeight = p.hipH * 0.6 + pelvisRadius * 2;
+  const spineRadius = p.chestW * 0.5;
+  const spineHeight = spineRadius * 2 + p.spineLen * 0.7;
+  const spineCenter = p.hipH * 0.5 + p.spineLen * 0.5;
+  const chestRadius = p.chestW * 0.58;
+  const chestHeight = chestRadius * 2 + p.chestLen * 0.62;
+  const chestCenter = p.hipH * 0.5 + p.spineLen + p.chestLen * 0.46;
+  const torsoBottom = Math.min(spineCenter - spineHeight * 0.5, chestCenter - chestHeight * 0.5);
+  const torsoTop = Math.max(spineCenter + spineHeight * 0.5, chestCenter + chestHeight * 0.5);
+  const neckBase = p.hipY + p.hipH * 0.5 + p.spineLen + p.chestLen;
+
+  return {
+    pelvisWidth: pelvisRadius * 2,
+    pelvisHeight,
+    pelvisDepth: pelvisRadius * 2,
+    torsoWidth: p.shoulderW * 0.8 + p.armR * 2.6,
+    torsoHeight: torsoTop - torsoBottom,
+    torsoDepth: Math.max(p.chestD * 2, p.chestW * 0.82),
+    torsoCenterY: p.hipY + (torsoTop + torsoBottom) * 0.5,
+    neckCenterY: neckBase + p.neckLen * 0.5,
+    headCenterY: neckBase + p.neckLen + p.headR * 0.82,
+    hairCenterY: neckBase + p.neckLen + p.headR * 0.98,
   };
 }
 

@@ -15,6 +15,7 @@ import {
   Medal,
   Menu,
   MessagesSquare,
+  Mic,
   Newspaper,
   Play,
   Receipt,
@@ -51,6 +52,7 @@ import { useClubTheme } from "@/game/theme";
 import { useCareer, useSignedIn } from "@/hooks/useCareer";
 import { LANGS, LANG_NAMES, useT, type Lang } from "@/i18n";
 import { CommandPalette } from "./CommandPalette";
+import { ShortcutsDialog } from "./ShortcutsDialog";
 import { Crest } from "./Crest";
 import type { CareerState } from "@/game/types";
 import { useActiveTimeTracking } from "@/features/activity/ActivityRanking";
@@ -148,7 +150,10 @@ export function GameShell({
           </div>
 
           {/* Navegação principal */}
-          <nav aria-label="Navegação principal da carreira" className="ml-auto hidden items-center gap-0.5 lg:flex">
+          <nav
+            aria-label="Navegação principal da carreira"
+            className="ml-auto hidden items-center gap-0.5 lg:flex"
+          >
             {primary.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -169,7 +174,10 @@ export function GameShell({
                 <Menu size={13} />
                 {t("shell.more")}
               </DropdownMenuTrigger>
-               <DropdownMenuContent align="end" className="max-h-[75vh] w-[min(30rem,calc(100vw-2rem))] overflow-y-auto p-3">
+              <DropdownMenuContent
+                align="end"
+                className="max-h-[75vh] w-[min(30rem,calc(100vw-2rem))] overflow-y-auto p-3"
+              >
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   {groups.map((g) => (
                     <div key={g}>
@@ -198,16 +206,18 @@ export function GameShell({
                 <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/60 pt-3">
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <Globe size={14} />
-                    <Select
-                      value={lang}
-                      onValueChange={(value) => setLang(value as Lang)}
-                    >
-                      <SelectTrigger aria-label={t("shell.language")} className="h-8 w-32 border-border/60 bg-background/60 text-xs">
+                    <Select value={lang} onValueChange={(value) => setLang(value as Lang)}>
+                      <SelectTrigger
+                        aria-label={t("shell.language")}
+                        className="h-8 w-32 border-border/60 bg-background/60 text-xs"
+                      >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {LANGS.map((l) => (
-                          <SelectItem key={l} value={l}>{LANG_NAMES[l]}</SelectItem>
+                          <SelectItem key={l} value={l}>
+                            {LANG_NAMES[l]}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -252,6 +262,7 @@ export function GameShell({
                 items={TABS.map((tab) => ({ to: tab.to, label: t(tab.key), group: tab.group }))}
               />
             </div>
+            <ShortcutsDialog />
             <Link
               to="/match"
               className="flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 font-display text-xs uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.03]"
@@ -262,7 +273,10 @@ export function GameShell({
         </div>
 
         {/* Navegação secundária rolável no celular */}
-        <nav aria-label="Mais áreas da carreira" className="game-scroll-nav flex gap-1 overflow-x-auto px-4 pb-2 lg:hidden">
+        <nav
+          aria-label="Mais áreas da carreira"
+          className="game-scroll-nav flex gap-1 overflow-x-auto px-4 pb-2 lg:hidden"
+        >
           {TABS.filter((tab) => !MOBILE.includes(tab.to)).map((tab) => (
             <Link
               key={tab.to}
@@ -280,7 +294,11 @@ export function GameShell({
         <div className="border-b border-border/50 bg-secondary/40">
           <p className="mx-auto max-w-6xl px-4 py-2 text-xs text-muted-foreground">
             {t("guest.line1")}{" "}
-            <Link to="/auth" search={{ next: "/dashboard" }} className="text-primary underline underline-offset-2">
+            <Link
+              to="/auth"
+              search={{ next: "/dashboard" }}
+              className="text-primary underline underline-offset-2"
+            >
               {t("guest.cta")}
             </Link>{" "}
             {t("guest.line2")}
@@ -288,10 +306,15 @@ export function GameShell({
         </div>
       )}
 
-      <main className="page-enter mx-auto max-w-7xl px-4 py-5 pb-24 lg:py-6 lg:pb-6">{children}</main>
+      <main className="page-enter mx-auto max-w-7xl px-4 py-5 pb-24 lg:py-6 lg:pb-6">
+        {children}
+      </main>
 
       {/* Barra inferior do celular */}
-      <nav aria-label="Navegação principal no celular" className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+      <nav
+        aria-label="Navegação principal no celular"
+        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+      >
         {TABS.filter((tab) => MOBILE.includes(tab.to)).map((tab) => {
           const Icon = tab.icon;
           return (
