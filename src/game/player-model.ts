@@ -138,7 +138,6 @@ const ROLE_BUILD: Record<
   MF: { height: 0.99, girth: 0.97, shoulder: 0.98, leg: 1.0, arm: 0.99 },
   FW: { height: 1.0, girth: 0.99, shoulder: 1.0, leg: 1.02, arm: 1.0 },
 };
-};
 
 export interface Proportions {
   /** altura do quadril acima do gramado */
