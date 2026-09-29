@@ -18,6 +18,7 @@ import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as CarreiraRouteImport } from './routes/carreira'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ClubRouteImport } from './routes/club'
+import { Route as ColetivaRouteImport } from './routes/coletiva'
 import { Route as ComoSerTecnicoDeFutebolRouteImport } from './routes/como-ser-tecnico-de-futebol'
 import { Route as ComparativoJogosManagerRouteImport } from './routes/comparativo-jogos-manager'
 import { Route as CompartilharRouteImport } from './routes/compartilhar'
@@ -123,6 +124,11 @@ const ChatRoute = ChatRouteImport.update({
 const ClubRoute = ClubRouteImport.update({
   id: '/club',
   path: '/club',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ColetivaRoute = ColetivaRouteImport.update({
+  id: '/coletiva',
+  path: '/coletiva',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComoSerTecnicoDeFutebolRoute = ComoSerTecnicoDeFutebolRouteImport.update({
@@ -444,6 +450,7 @@ export interface FileRoutesByFullPath {
   '/carreira': typeof CarreiraRoute
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
+  '/coletiva': typeof ColetivaRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
   '/compartilhar': typeof CompartilharRoute
@@ -516,6 +523,7 @@ export interface FileRoutesByTo {
   '/carreira': typeof CarreiraRoute
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
+  '/coletiva': typeof ColetivaRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
   '/compartilhar': typeof CompartilharRoute
@@ -589,6 +597,7 @@ export interface FileRoutesById {
   '/carreira': typeof CarreiraRoute
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
+  '/coletiva': typeof ColetivaRoute
   '/como-ser-tecnico-de-futebol': typeof ComoSerTecnicoDeFutebolRoute
   '/comparativo-jogos-manager': typeof ComparativoJogosManagerRoute
   '/compartilhar': typeof CompartilharRoute
@@ -663,6 +672,7 @@ export interface FileRouteTypes {
     | '/carreira'
     | '/chat'
     | '/club'
+    | '/coletiva'
     | '/como-ser-tecnico-de-futebol'
     | '/comparativo-jogos-manager'
     | '/compartilhar'
@@ -735,6 +745,7 @@ export interface FileRouteTypes {
     | '/carreira'
     | '/chat'
     | '/club'
+    | '/coletiva'
     | '/como-ser-tecnico-de-futebol'
     | '/comparativo-jogos-manager'
     | '/compartilhar'
@@ -807,6 +818,7 @@ export interface FileRouteTypes {
     | '/carreira'
     | '/chat'
     | '/club'
+    | '/coletiva'
     | '/como-ser-tecnico-de-futebol'
     | '/comparativo-jogos-manager'
     | '/compartilhar'
@@ -880,6 +892,7 @@ export interface RootRouteChildren {
   CarreiraRoute: typeof CarreiraRoute
   ChatRoute: typeof ChatRoute
   ClubRoute: typeof ClubRoute
+  ColetivaRoute: typeof ColetivaRoute
   ComoSerTecnicoDeFutebolRoute: typeof ComoSerTecnicoDeFutebolRoute
   ComparativoJogosManagerRoute: typeof ComparativoJogosManagerRoute
   CompartilharRoute: typeof CompartilharRoute
@@ -1006,6 +1019,13 @@ declare module '@tanstack/react-router' {
       path: '/club'
       fullPath: '/club'
       preLoaderRoute: typeof ClubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/coletiva': {
+      id: '/coletiva'
+      path: '/coletiva'
+      fullPath: '/coletiva'
+      preLoaderRoute: typeof ColetivaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/como-ser-tecnico-de-futebol': {
@@ -1448,6 +1468,7 @@ const rootRouteChildren: RootRouteChildren = {
   CarreiraRoute: CarreiraRoute,
   ChatRoute: ChatRoute,
   ClubRoute: ClubRoute,
+  ColetivaRoute: ColetivaRoute,
   ComoSerTecnicoDeFutebolRoute: ComoSerTecnicoDeFutebolRoute,
   ComparativoJogosManagerRoute: ComparativoJogosManagerRoute,
   CompartilharRoute: CompartilharRoute,

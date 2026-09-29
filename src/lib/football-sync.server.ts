@@ -699,9 +699,9 @@ export async function runSync(opts: {
   offset?: number;
   concurrency?: number;
   budgetMs?: number;
-  leagueId?: string;
-  season?: string;
-  phase?: import("./premium-chain.server").PremiumPhase;
+  leagueId?: string | undefined;
+  season?: string | undefined;
+  phase?: import("./premium-chain.server").PremiumPhase | undefined;
 }) {
   const db = await admin();
   const scope = opts.scope ?? "clubs";
@@ -718,7 +718,16 @@ export async function runSync(opts: {
       const { syncPremiumChain } = await import("./premium-chain.server");
       const phase = opts.phase;
       if (!phase) throw new Error("Premium phase required");
-      const r = await syncPremiumChain({ phase, limit: opts.limit ?? 20, offset: opts.offset ?? 0, budgetMs: opts.budgetMs ?? 45_000, ...(opts.leagueId ? { leagueId: opts.leagueId } : {}), ...(opts.season ? { season: opts.season } : {}) });
+      // `exactOptionalPropertyTypes` forbids passing `undefined` explicitly, so
+      // the optional filters are only spread when the caller actually sent them.
+      const r = await syncPremiumChain({
+        phase,
+        limit: opts.limit ?? 20,
+        offset: opts.offset ?? 0,
+        budgetMs: opts.budgetMs ?? 45_000,
+        ...(opts.leagueId === undefined ? {} : { leagueId: opts.leagueId }),
+        ...(opts.season === undefined ? {} : { season: opts.season }),
+      });
       detail = r;
       items = r.imported;
     } else if (scope === "seed") {
@@ -726,17 +735,31 @@ export async function runSync(opts: {
       items = r.clubs;
     } else if (scope === "premium") {
       const { premiumSyncSquads } = await import("./premium-sync.server");
-      const r = await premiumSyncSquads(opts.limit ?? 40, opts.offset ?? 0, opts.budgetMs ?? 45_000);
+      const r = await premiumSyncSquads(
+        opts.limit ?? 40,
+        opts.offset ?? 0,
+        opts.budgetMs ?? 45_000,
+      );
       detail = r;
       items = r.inserted + r.updated;
     } else if (scope === "stats") {
       const { premiumSyncStats } = await import("./premium-sync.server");
-      const r = await premiumSyncStats(opts.limit ?? 400, opts.offset ?? 0, opts.budgetMs ?? 45_000, opts.concurrency ?? 8);
+      const r = await premiumSyncStats(
+        opts.limit ?? 400,
+        opts.offset ?? 0,
+        opts.budgetMs ?? 45_000,
+        opts.concurrency ?? 8,
+      );
       detail = r;
       items = r.seasons;
     } else if (scope === "career") {
       const { premiumSyncPlayerCareer } = await import("./premium-sync.server");
-      const r = await premiumSyncPlayerCareer(opts.limit ?? 2000, opts.offset ?? 0, opts.budgetMs ?? 50_000, opts.concurrency ?? 8);
+      const r = await premiumSyncPlayerCareer(
+        opts.limit ?? 2000,
+        opts.offset ?? 0,
+        opts.budgetMs ?? 50_000,
+        opts.concurrency ?? 8,
+      );
       detail = r;
       items = r.honours + r.clubs;
     } else if (scope === "squads") {

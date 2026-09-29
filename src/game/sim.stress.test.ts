@@ -19,7 +19,10 @@ describe("MatchSim stress", () => {
           const before = { x: sim.ball.x, z: sim.ball.z, holder: sim.ball.holder };
           sim.step(0.4);
           const motion = Math.hypot(sim.ball.x - before.x, sim.ball.z - before.z);
-          if (!sim.ball.holder && !before.holder && motion < 0.0001) frozenLooseTicks += 1;
+          // intervalo, pausa da prorrogação e disputa param a bola de propósito
+          if (sim.phase === "half" || sim.phase === "etBreak" || sim.phase === "shootout")
+            frozenLooseTicks = 0;
+          else if (!sim.ball.holder && !before.holder && motion < 0.0001) frozenLooseTicks += 1;
           else frozenLooseTicks = 0;
           expect(frozenLooseTicks, `seed stress-${index}`).toBeLessThan(13);
         }

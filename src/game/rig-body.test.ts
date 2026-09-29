@@ -49,9 +49,10 @@ function hasFiniteGeometry(mesh: { geometry: THREE.BufferGeometry }): boolean {
 describe("rig body", () => {
   it("keeps a full articulated rig well under the per-hero draw budget", () => {
     const body = buildRigBody(context());
-    // ~117 malhas antes do merge por junta; o alocador de desenhos
-    // (`draw-budget.ts`) usa este custo para decidir quantos heróis cabem.
-    expect(countRigBody(body)).toBeLessThanOrEqual(54);
+    // ~117 malhas antes do merge por junta. Teto 56: 53 da base + 3 de
+    // detalhe corporal (brinco, fita de pulso e tatuagem, um de cada lado).
+    // O custo que o alocador usa é o de `rig-skin.test.ts` (HERO_MESH_COST).
+    expect(countRigBody(body)).toBeLessThanOrEqual(56);
     expect(countRigBody(body)).toBeGreaterThan(10);
   });
 
@@ -140,13 +141,13 @@ describe("rig body", () => {
     const full = buildRigBody(
       context({ look: { ...lookFor("rig-body-test", "MF", true) }, hi: true }),
     );
-    // teto duro usado pelo alocador de desenhos (`draw-budget.ts`)
-    expect(countRigBody(full)).toBeLessThanOrEqual(54);
+    // teto articulado (o alocador usa HERO_MESH_COST, medido no skinning)
+    expect(countRigBody(full)).toBeLessThanOrEqual(56);
     // e nenhuma variante de aparência passa do teto
     for (const sleeves of ["short", "long"] as const) {
       for (const hairStyle of ["short", "long", "dreads", "bald", "ponytail", "bun"] as const) {
         const look = { ...lookFor("rig-body-test", "MF", false), sleeves, hairStyle } as never;
-        expect(countRigBody(buildRigBody(context({ look })))).toBeLessThanOrEqual(54);
+        expect(countRigBody(buildRigBody(context({ look })))).toBeLessThanOrEqual(56);
       }
     }
   });
