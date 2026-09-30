@@ -1,4 +1,6 @@
 # Roadmap
+- [x] SEO: H3 descritivos na página inicial e no guia de jogo, metadados da página inicial mais concisos, pré-carregamento da foto principal
+- [x] Desempenho: arquivo de orçamento de decodificação KTX2 por aparelho; manter simulação determinística sequencial e GPU via renderizador existente
 - [x] Ciclo 1: +89 competições, pirâmide em cadeia (estatísticas: TheSportsDB já esgotado, 285 jogadores)
 - [x] Ciclo 2: overall por atributos/potencial, regens (aposentadoria realista, joias), checagem integrada
 - [x] Ciclo 3: calibração dos placares + eventos (exibição na tela pendente)

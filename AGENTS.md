@@ -16,3 +16,4 @@
 
 - Keep season simulation sequential inside a dedicated Web Worker, not split across threads: each week depends on the preceding save; this preserves deterministic results without blocking rendering.
 - Import premium sports records in bounded, resumable batches using stable source identifiers; cache immutable KTX2 and public sports images separately from private API responses.
+- Limit KTX2 decoding workers from device capacity while reserving cores for rendering and the sequential match worker; saturating every core increases frame stalls.

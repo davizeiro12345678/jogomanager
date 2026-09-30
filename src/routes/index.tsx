@@ -30,7 +30,10 @@ export const Route = createFileRoute("/")({
         content: "jQnHkMGkHJbJedGaIYWIRl14nynSHLVLLvHfzLfpTXg",
       },
     ],
-    links: canonical("/"),
+    links: [
+      ...canonical("/"),
+      { rel: "preload", as: "image", href: heroFallback, fetchPriority: "high" },
+    ],
     scripts: [gameLd()],
   }),
   component: Landing,
@@ -336,7 +339,7 @@ function Landing() {
                 to={c.to}
                 className="group relative overflow-hidden rounded-xl border border-border/60 surface-card p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-card hover:shadow-lg"
               >
-                <p className="font-display text-lg group-hover:text-primary">{c.title}</p>
+                <h3 className="font-display text-lg group-hover:text-primary">{c.title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{c.text}</p>
               </Link>
             ))}
@@ -368,7 +371,7 @@ function Landing() {
                 className="surface-card hover-lift rounded-2xl border border-border/60 p-5"
               >
                 <span className="font-display text-3xl text-primary/50">{n}</span>
-                <p className="mt-2 font-display text-lg">{t}</p>
+                <h3 className="mt-2 font-display text-lg">{t}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{d}</p>
               </li>
             ))}
@@ -430,9 +433,9 @@ function Landing() {
                 key={l.id}
                 className="rounded-xl border border-border/60 surface-card p-4 backdrop-blur"
               >
-                <p className="font-display text-lg">
+                <h3 className="font-display text-lg">
                   <Flag league={l.id} country={l.country} size={20} /> {l.name}
-                </p>
+                </h3>
                 <p className="text-xs text-muted-foreground">{l.clubs.length} clubes</p>
                 <div className="mt-3 flex -space-x-2">
                   {l.clubs.slice(0, 6).map((c) => (
@@ -450,6 +453,7 @@ function Landing() {
             O que é o Pro Football Manager 3D
           </h2>
           <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+            <h3 className="font-display text-lg text-foreground">Carreira, táticas e partidas em 3D</h3>
             <p>
               O <strong className="text-foreground">Pro Football Manager 3D</strong> é um jogo de
               manager de futebol online e gratuito que roda direto no navegador, sem instalar nada.
@@ -457,6 +461,7 @@ function Landing() {
               tática, cuida do orçamento e assiste a cada partida em 3D, com narração, torcida e
               placar ao vivo.
             </p>
+            <h3 className="pt-3 font-display text-lg text-foreground">Competições e evolução do clube</h3>
             <p>
               Cada temporada tem liga por pontos corridos, copa em mata-mata, janela de
               transferências, folha salarial, pressão da diretoria e humor da torcida. Ganhar
@@ -464,6 +469,7 @@ function Landing() {
               calendário avança rodada a rodada, com treinos, lesões, suspensões, renovações de
               contrato e a evolução dos jovens da base.
             </p>
+            <h3 className="pt-3 font-display text-lg text-foreground">Partidas ao vivo e ajustes durante o jogo</h3>
             <p>
               Durante os 90 minutos você continua no comando: troca o esquema, muda a marcação,
               manda subir a linha, faz substituições e vê o efeito na posse, nas finalizações e na
