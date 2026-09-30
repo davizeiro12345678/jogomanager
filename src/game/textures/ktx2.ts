@@ -16,6 +16,7 @@
 import * as THREE from "three";
 import { useSyncExternalStore } from "react";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
+import { deviceTextureDecodeWorkers } from "@/game/device-workload";
 
 import bootNormalAsset from "@/assets/textures/boot_normal.ktx2.asset.json";
 import bootRoughAsset from "@/assets/textures/boot_rough.ktx2.asset.json";
@@ -195,7 +196,10 @@ export function initKtx2(renderer: THREE.WebGLRenderer | import("three/webgpu").
   if (started || typeof window === "undefined") return;
   started = true;
 
-  loader = new KTX2Loader().setTranscoderPath("/basis/").detectSupport(renderer);
+  loader = new KTX2Loader()
+    .setTranscoderPath("/basis/")
+    .setWorkerLimit(deviceTextureDecodeWorkers())
+    .detectSupport(renderer);
   anisotropy = renderer instanceof THREE.WebGLRenderer ? Math.min(8, renderer.capabilities.getMaxAnisotropy()) : 8;
   requestKtx2([
     "fiberNormal", "fiberRough", "skinNormal", "sweatNormal", "sweatMask",
