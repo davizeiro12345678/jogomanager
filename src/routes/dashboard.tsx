@@ -58,7 +58,10 @@ function Dashboard() {
     return (
       <NoCareer hint="Escolha um clube, monte o elenco e comande a temporada inteira em 3D." />
     );
+  return <DashboardContent key={`${career.clubId}:${career.season}`} career={career} />;
+}
 
+function DashboardContent({ career }: { career: NonNullable<ReturnType<typeof useCareer>["career"]> }) {
   const club = CLUBS[career.clubId]!;
   const fixture = nextFixture(career);
   const atHome = fixture ? fixture.home === career.clubId : false;
