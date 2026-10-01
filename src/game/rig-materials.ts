@@ -12,6 +12,7 @@
 // ============================================================================
 
 import * as THREE from "three";
+import { beardFiberMask, hairStrandNormal } from "./textures/fabric";
 
 const MAX_ENTRIES = 64;
 const cache = new Map<string, THREE.Material>();
@@ -58,7 +59,25 @@ export function sharedDetailMaterialCount(): number {
 export function eyeWhiteMaterial(): THREE.Material {
   return sharedDetailMaterial(
     "eye-white",
-    () => new THREE.MeshStandardMaterial({ color: "#f7f7f7", roughness: 0.28 }),
+    () => new THREE.MeshStandardMaterial({ color: "#c9c3b8", roughness: 0.38 }),
+  );
+}
+
+/** Stubble stays close to the skin; full beards have a softer hair tone. */
+export function beardMaterial(skin: string, hair: string, style: string): THREE.Material {
+  return sharedDetailMaterial(
+    `beard:${skin}:${hair}:${style}`,
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: new THREE.Color(skin).lerp(new THREE.Color(hair), style === "stubble" ? 0.47 : 0.86),
+        roughness: 0.91,
+        alphaMap: beardFiberMask(),
+        alphaTest: style === "stubble" ? 0.64 : 0.4,
+        alphaToCoverage: true,
+        normalMap: hairStrandNormal(),
+        normalScale: new THREE.Vector2(0.2, 0.3),
+        envMapIntensity: 0.35,
+      }),
   );
 }
 

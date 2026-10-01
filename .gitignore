@@ -10,6 +10,10 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dist-benchmark
+.npm-cache/
+.bun-cache/
+verification/
 .output
 .vinxi
 .tanstack/**

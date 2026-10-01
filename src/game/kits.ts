@@ -194,9 +194,14 @@ export type KitDetail = "hero" | "squad";
 /** bytes aproximados por textura, para o relatório de orçamento de textura. */
 const kitBytes = new Map<string, number>();
 
-export function kitTexture(kit: Kit, number: number, name?: string, detail: KitDetail = "hero"): THREE.CanvasTexture | null {
+export function kitTexture(
+  kit: Kit,
+  number: number,
+  name?: string,
+  detail: KitDetail = "hero",
+): THREE.CanvasTexture | null {
   if (typeof document === "undefined") return null;
-  const key = `${detail}|${kit.base}|${kit.detail}|${kit.pattern}|${number}|${detail === "hero" ? name ?? "" : ""}`;
+  const key = `${detail}|${kit.base}|${kit.detail}|${kit.pattern}|${number}|${detail === "hero" ? (name ?? "") : ""}`;
   const hit = cache.get(key);
   if (hit) return hit;
 
@@ -354,17 +359,24 @@ export function kitTexture(kit: Kit, number: number, name?: string, detail: KitD
   ctx.fillStyle = shadeGrad;
   ctx.fillRect(0, 0, size, size);
 
-  // escudo do clube (brasão em escudo com faixa e estrela)
-  drawCrest(ctx, size * 0.17, size * 0.24, size * 0.11, kit);
+  // Front and back occupy separate halves of one atlas. A single drawing
+  // previously put both the sponsor and the back number on every surface.
+  const fabric = document.createElement("canvas");
+  fabric.width = size;
+  fabric.height = size;
+  fabric.getContext("2d")?.drawImage(canvas, 0, 0);
+  ctx.drawImage(fabric, 0, 0, size, size, 0, 0, size * 0.5, size);
+  ctx.drawImage(fabric, 0, 0, size, size, size * 0.5, 0, size * 0.5, size);
+  drawCrest(ctx, size * 0.16, size * 0.23, size * 0.046, kit);
 
   // patrocínio no peito
   const chestInk = luminance(kit.base) > 0.5 ? "rgba(16,20,24,0.85)" : "rgba(255,255,255,0.9)";
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `bold ${22 * s}px 'Barlow Condensed', system-ui, sans-serif`;
+  ctx.font = `bold ${14 * s}px system-ui, sans-serif`;
   ctx.fillStyle = chestInk;
-  ctx.fillText("MANAGER 3D", size * 0.5, size * 0.44);
+  ctx.fillText("MANAGER 3D", size * 0.25, size * 0.43, size * 0.4);
   ctx.restore();
 
   const ink = luminance(kit.base) > 0.5 ? "#101418" : "#ffffff";
@@ -374,24 +386,25 @@ export function kitTexture(kit: Kit, number: number, name?: string, detail: KitD
   // sobrenome nas costas (ilegível na versão reduzida: fora)
   if (name && detail === "hero") {
     const short = name.split(" ").pop()!.toUpperCase().slice(0, 12);
-    ctx.font = `bold ${34 * s}px 'Barlow Condensed', system-ui, sans-serif`;
-    ctx.lineWidth = 5 * s;
+    ctx.font = `bold ${22 * s}px system-ui, sans-serif`;
+    ctx.lineWidth = 2 * s;
     ctx.strokeStyle = "rgba(0,0,0,0.5)";
     ctx.fillStyle = ink;
-    ctx.strokeText(short, size * 0.5, size * 0.3);
-    ctx.fillText(short, size * 0.5, size * 0.3);
+    ctx.strokeText(short, size * 0.75, size * 0.23, size * 0.4);
+    ctx.fillText(short, size * 0.75, size * 0.23, size * 0.4);
   }
 
   // número nas costas
-  ctx.font = `bold ${96 * s}px 'Barlow Condensed', system-ui, sans-serif`;
-  ctx.lineWidth = 8 * s;
+  ctx.font = `bold ${82 * s}px system-ui, sans-serif`;
+  ctx.lineWidth = 3 * s;
   ctx.strokeStyle = "rgba(0,0,0,0.55)";
   ctx.fillStyle = ink;
-  ctx.strokeText(String(number), size * 0.5, size * 0.6);
-  ctx.fillText(String(number), size * 0.5, size * 0.6);
+  ctx.strokeText(String(number), size * 0.75, size * 0.54, size * 0.4);
+  ctx.fillText(String(number), size * 0.75, size * 0.54, size * 0.4);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
   tex.anisotropy = detail === "hero" ? 8 : 2;
   tex.generateMipmaps = true;
   cache.set(key, tex);

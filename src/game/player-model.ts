@@ -252,7 +252,7 @@ export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook 
   const headband = hairStyle === "headband";
   if (headband) hairStyle = "medium";
 
-  const gloves = pos === "GK";
+  const gloves = role === "GK";
 
   return {
     seed,
@@ -327,61 +327,57 @@ export function proportionsFor(look: PlayerLook): Proportions {
   const rawSpineLen = 0.19 * h * (2 - legScale);
   const rawChestLen = 0.22 * h * (2 - legScale);
   const rawNeckLen = 0.07 * h;
-  const rawHeadR = 0.108 * (0.98 + (h - 1) * 0.4);
+  // Adult athletes average about 7.5 heads from sole to crown. Keep cranial
+  // growth slower than stature, so tall keepers do not get oversized heads.
+  const rawHeadR = 0.1 * (0.98 + (h - 1) * 0.4);
 
-  // look.height is measured against 1.80 m. Scale the whole skeleton together
-  // so its actual assembled crown height matches that measurement. The old
-  // independent segment lengths left the rendered athlete about 11 cm short.
-  const capHeight =
-    (look.hairStyle === "buzz" ? 0.96 : look.hairStyle === "short" ? 1.02 : 1.06) * look.hairVolume;
-  const hairCrown = Math.max(
-    1.14,
-    0.16 + 0.99 * capHeight,
-    look.hairStyle === "mohawk" ? 0.95 + 0.62 : 0,
-    look.hairStyle === "curly" ? 0.42 + 1.1 : 0,
-    look.hairStyle === "afro" ? 0.42 + 1.24 : 0,
-  );
+  // Measure sole to skull, independently of the haircut. The leg pivots sit
+  // below the pelvis; include that offset before normalizing the skeleton.
+  const rawHipY = rawThigh + rawShin + rawFootH * 0.84 + rawHipH * 0.4;
   const rawRigHeight =
-    rawThigh +
-    rawShin +
-    rawFootH +
-    rawHipH * 0.5 +
-    rawSpineLen +
-    rawChestLen +
-    rawNeckLen +
-    rawHeadR * (0.82 + hairCrown);
+    rawHipY + rawHipH * 0.5 + rawSpineLen + rawChestLen + rawNeckLen + rawHeadR * (0.82 + 1.14);
   const metricScale = (1.8 * h) / rawRigHeight;
   const thigh = rawThigh * metricScale;
   const shin = rawShin * metricScale;
   const footH = rawFootH * metricScale;
   const headR = rawHeadR * metricScale;
+  // Breadth varies independently from stature, but short, strong athletes
+  // still need a human shoulder span. Bound the whole frame together so
+  // deltoids, torso and pelvis keep their relative widths.
+  const frameScale = Math.min(
+    Math.max(
+      g * strong * metricScale,
+      (1.8 * h * 0.235) / (0.33 * build.shoulder * 1.04 + 0.052 * 2.36),
+    ),
+    (1.8 * h * 0.33) / (0.33 * build.shoulder * 1.04 + 0.052 * 2.36),
+  );
 
   return {
-    hipY: thigh + shin + footH,
-    hipW: 0.16 * g * strong * metricScale,
+    hipY: thigh + shin + footH * 0.84 + rawHipH * metricScale * 0.4,
+    hipW: 0.255 * frameScale,
     hipH: rawHipH * metricScale,
     spineLen: rawSpineLen * metricScale,
     chestLen: rawChestLen * metricScale,
-    chestW: 0.2 * g * strong * metricScale,
-    chestD: 0.12 * g * strong * (look.bodyType === "strong" ? 1.05 : 1) * metricScale,
-    shoulderW: 0.25 * g * strong * build.shoulder * metricScale,
+    chestW: 0.2 * frameScale,
+    chestD: 0.12 * frameScale * (look.bodyType === "strong" ? 1.05 : 1),
+    shoulderW: 0.33 * build.shoulder * frameScale,
     neckLen: rawNeckLen * metricScale,
     neckR: 0.052 * g * (look.role === "DF" || look.role === "GK" ? 1.06 : 1) * metricScale,
     headR,
-    headH: 0.24 * h * metricScale,
+    headH: headR * 2.28,
     headW: headR * faceWide,
     headD: headR * (1.02 + (1 - faceWide) * 0.4),
     jawLen: headR * 0.52 * faceLong,
     chinFwd: headR * (0.12 + (faceLong - 0.94) * 0.5),
-    upperArm: 0.28 * h * metricScale * armSpan,
-    foreArm: 0.24 * h * metricScale * armSpan,
-    armR: 0.048 * g * strong * metricScale,
+    upperArm: 0.3 * h * metricScale * armSpan,
+    foreArm: 0.255 * h * metricScale * armSpan,
+    armR: 0.052 * frameScale,
     armSpan,
     posture,
     handR: 0.045 * g * metricScale,
     thigh,
     shin,
-    legR: 0.066 * g * strong * metricScale,
+    legR: 0.072 * frameScale,
     footLen: 0.26 * h * metricScale,
     footH,
   };
@@ -400,30 +396,39 @@ export interface LowDetailBodyShape {
   hairCenterY: number;
 }
 
+/** Measurements from the assembled skeleton, in metres, without hair. */
+export function anatomyMeasurements(p: Proportions) {
+  const height = p.hipY + p.hipH * 0.5 + p.spineLen + p.chestLen + p.neckLen + p.headR * 1.96;
+  const shoulderHeight = p.hipY + p.hipH * 0.5 + p.spineLen + p.chestLen * 0.84;
+  return {
+    height,
+    heads: height / p.headH,
+    shoulderHeight,
+    inseam: p.thigh + p.shin,
+    shoulderWidth: p.shoulderW * 1.04 + p.armR * 2.36,
+    wristHeight: shoulderHeight - p.upperArm - p.foreArm,
+    footLength: p.footLen,
+  };
+}
+
 /**
  * Dimensions for the instanced distant-player body, derived from the same
  * joints as the hero rig so the LOD switch preserves scale and alignment.
  */
 export function lowDetailBodyFor(p: Proportions): LowDetailBodyShape {
   const pelvisRadius = p.hipW * 0.62;
-  const pelvisHeight = p.hipH * 0.6 + pelvisRadius * 2;
-  const spineRadius = p.chestW * 0.5;
-  const spineHeight = spineRadius * 2 + p.spineLen * 0.7;
-  const spineCenter = p.hipH * 0.5 + p.spineLen * 0.5;
-  const chestRadius = p.chestW * 0.58;
-  const chestHeight = chestRadius * 2 + p.chestLen * 0.62;
-  const chestCenter = p.hipH * 0.5 + p.spineLen + p.chestLen * 0.46;
-  const torsoBottom = Math.min(spineCenter - spineHeight * 0.5, chestCenter - chestHeight * 0.5);
-  const torsoTop = Math.max(spineCenter + spineHeight * 0.5, chestCenter + chestHeight * 0.5);
+  const pelvisHeight = p.hipH * 1.5;
+  const torsoBottom = p.hipH * 0.38;
+  const torsoTop = p.hipH * 0.5 + p.spineLen + p.chestLen;
   const neckBase = p.hipY + p.hipH * 0.5 + p.spineLen + p.chestLen;
 
   return {
     pelvisWidth: pelvisRadius * 2,
     pelvisHeight,
-    pelvisDepth: pelvisRadius * 2,
-    torsoWidth: p.shoulderW * 0.8 + p.armR * 2.6,
+    pelvisDepth: p.chestD * 1.7,
+    torsoWidth: p.chestW * 2.04,
     torsoHeight: torsoTop - torsoBottom,
-    torsoDepth: Math.max(p.chestD * 2, p.chestW * 0.82),
+    torsoDepth: p.chestD * 2,
     torsoCenterY: p.hipY + (torsoTop + torsoBottom) * 0.5,
     neckCenterY: neckBase + p.neckLen * 0.5,
     headCenterY: neckBase + p.neckLen + p.headR * 0.82,
@@ -459,7 +464,7 @@ export function segmentsFor(lod: LodLevel): {
   torso: number;
   head: number;
 } {
-  if (lod === 0) return { radial: 12, cap: 4, torso: 16, head: 18 };
+  if (lod === 0) return { radial: 16, cap: 4, torso: 20, head: 24 };
   if (lod === 1) return { radial: 8, cap: 3, torso: 10, head: 10 };
   return { radial: 6, cap: 2, torso: 7, head: 7 };
 }

@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import {
   EffectComposer,
   Bloom,
@@ -11,7 +12,7 @@ import {
   HueSaturation,
   Noise,
 } from "@react-three/postprocessing";
-import { BlendFunction } from "postprocessing";
+import { BlendFunction, type DepthOfFieldEffect } from "postprocessing";
 import * as THREE from "three";
 import { postPreset } from "./presets";
 import type { PostMoment, PostQuality, PostTime } from "./presets";
@@ -38,6 +39,7 @@ export function PostFX({
   intensity = 1,
   cinematic = false,
   grading,
+  focusTarget,
 }: {
   quality: PostQuality;
   replay?: boolean;
@@ -51,10 +53,16 @@ export function PostFX({
    * é assim que o caminho WebGPU e a qualidade baixa ficam sem custo nenhum.
    */
   grading?: { time: GradeTime; weather: GradeWeather; moment: GradeMoment } | undefined;
+  /** A live world-space target keeps cinematic dialogue faces in focus. */
+  focusTarget?: THREE.Vector3 | undefined;
 }) {
   const m: PostMoment = moment ?? (replay ? "replay" : "match");
   const p = useMemo(() => postPreset(quality, m, time, intensity), [quality, m, time, intensity]);
   const ab = useMemo(() => new THREE.Vector2(p.aberration, p.aberration * 1.4), [p.aberration]);
+  const depth = useRef<DepthOfFieldEffect>(null);
+  useFrame(() => {
+    if (focusTarget && depth.current?.target) depth.current.target.copy(focusTarget);
+  });
 
   if (quality === "baixa") return null;
 
@@ -82,7 +90,7 @@ export function PostFX({
       key={`alta-${m}`}
       enableNormalPass={cinema}
       multisampling={0}
-      resolutionScale={cinema ? 0.82 : 0.72}
+      resolutionScale={cinema ? 0.9 : 0.8}
     >
       {cinema ? (
         <N8AO
@@ -98,9 +106,14 @@ export function PostFX({
       )}
       {p.dof > 0 ? (
         <DepthOfField
-          focusDistance={m === "drama" ? 0.012 : 0.02}
-          focalLength={m === "drama" ? 0.05 : 0.08}
-          bokehScale={p.dof}
+          ref={depth}
+          {...(focusTarget
+            ? { target: focusTarget, worldFocusRange: 2.4 }
+            : {
+                focusDistance: m === "drama" ? 0.012 : 0.02,
+                focalLength: m === "drama" ? 0.05 : 0.08,
+              })}
+          bokehScale={focusTarget ? Math.min(1.2, p.dof) : p.dof}
         />
       ) : (
         <></>
@@ -116,8 +129,8 @@ export function PostFX({
       ) : (
         <></>
       )}
-      <HueSaturation saturation={p.saturation} hue={p.hue} />
-      <BrightnessContrast brightness={p.brightness} contrast={p.contrast} />
+      {grading ? <></> : <HueSaturation saturation={p.saturation} hue={p.hue} />}
+      {grading ? <></> : <BrightnessContrast brightness={p.brightness} contrast={p.contrast} />}
       {cinema ? <Noise opacity={p.grain} blendFunction={BlendFunction.OVERLAY} /> : <></>}
       {/* Uma LUT 3D substitui brilho/contraste/saturação/temperatura de uma vez */}
       {grading ? (

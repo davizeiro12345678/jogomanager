@@ -5,14 +5,15 @@
 //     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import path from "node:path";
-import { loadEnv } from "vite";
+import { loadEnv, type ConfigEnv } from "vite";
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 import { imagetools } from "vite-imagetools";
+import { protectThreeSourceTags } from "./scripts/r3f-source-compat";
 
 // Load non-VITE_ env vars into process.env for server routes (email, webhooks).
 // These are NOT injected into the client bundle.
-const serverEnv = loadEnv(process.env['NODE_ENV'] ?? "development", process.cwd(), "");
+const serverEnv = loadEnv(process.env["NODE_ENV"] ?? "development", process.cwd(), "");
 Object.assign(process.env, serverEnv);
 
 // @lovable.dev/mcp-js currently compares Vite's slash-normalized `config.root`
@@ -23,7 +24,18 @@ Object.assign(process.env, serverEnv);
 const enableMcpRouteGenerator =
   process.platform !== "win32" || process.env["PFM_ENABLE_MCP_GENERATOR"] === "1";
 
-export default defineConfig({
+const projectConfig = defineConfig({
+  // An isolated local build can coexist with a preview that holds .output
+  // open on Windows. Deployment keeps the usual Lovable output directory.
+  ...(process.env["PFM_GRAPHICS_VERIFY"] === "1"
+    ? {
+        nitro: {
+          output: {
+            dir: path.resolve(import.meta.dirname, "verification/graphics-2026-09-30/production"),
+          },
+        },
+      }
+    : {}),
   vite: {
     // O preview do sandbox é servido num host *.e2b.app gerado por sessão; sem
     // liberar a lista de hosts o Vite responde 403 e o jogo não carrega.
@@ -34,8 +46,14 @@ export default defineConfig({
     plugins: [...(enableMcpRouteGenerator ? [mcpPlugin()] : []), imagetools()],
     resolve: {
       alias: {
-        "entities/lib/decode.js": path.resolve(import.meta.dirname, "node_modules/entities/lib/decode.js"),
-        "entities/lib/encode.js": path.resolve(import.meta.dirname, "node_modules/entities/lib/encode.js"),
+        "entities/lib/decode.js": path.resolve(
+          import.meta.dirname,
+          "node_modules/entities/lib/decode.js",
+        ),
+        "entities/lib/encode.js": path.resolve(
+          import.meta.dirname,
+          "node_modules/entities/lib/encode.js",
+        ),
         entities: path.resolve(import.meta.dirname, "node_modules/entities"),
       },
     },
@@ -46,3 +64,5 @@ export default defineConfig({
     server: { entry: "server" },
   },
 });
+
+export default async (env: ConfigEnv) => protectThreeSourceTags(await projectConfig(env));

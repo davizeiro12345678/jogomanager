@@ -6,7 +6,7 @@
  * Montamos o efeito uma vez por combinação (horário × clima × momento) e
  * entregamos o objeto pronto ao `EffectComposer`.
  */
-import { useEffect, useMemo } from "react";
+import { createElement, useEffect, useMemo } from "react";
 import { BlendFunction, LUT3DEffect } from "postprocessing";
 
 import {
@@ -39,7 +39,7 @@ export function GradeLut({
 
   useEffect(() => () => effect.dispose(), [effect]);
 
-  return <primitive object={effect} dispose={null} />;
+  return createElement("primitive", { object: effect, dispose: null });
 }
 
 export default GradeLut;

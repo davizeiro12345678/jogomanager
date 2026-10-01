@@ -1,0 +1,112 @@
+import type { PlayerAction } from "./animation";
+import { footballContactAt } from "./motion-metadata";
+
+export type HandSide = "L" | "R";
+export type FingerIndex = 0 | 1 | 2 | 3;
+export type HandJoint =
+  `finger${HandSide}${FingerIndex}` | `fingerTip${HandSide}${FingerIndex}` | `thumb${HandSide}`;
+
+export const FINGER_LENGTHS = [0.57, 0.74, 0.69, 0.5] as const;
+export const FINGER_CENTERS_Y = [1.66, 1.74, 1.71, 1.6] as const;
+export const fingerX = (index: number, radius: number) => (index - 1.5) * radius * 0.36;
+
+interface HandBoneSpec {
+  joint: HandJoint;
+  parent: HandJoint | `hand${HandSide}`;
+  offset: readonly [number, number, number];
+}
+
+/** The same knuckle positions author the mesh and its two joint fingers. */
+export function handBoneSpecs(radius: number): HandBoneSpec[] {
+  const specs: HandBoneSpec[] = [];
+  for (const side of ["L", "R"] as const) {
+    const sign = side === "L" ? 1 : -1;
+    specs.push({
+      joint: `thumb${side}`,
+      parent: `hand${side}`,
+      offset: [-sign * radius * 0.64, -radius * 0.6, 0],
+    });
+    for (const index of [0, 1, 2, 3] as const) {
+      specs.push({
+        joint: `finger${side}${index}`,
+        parent: `hand${side}`,
+        offset: [fingerX(index, radius), -radius * 1.29, radius * 0.05],
+      });
+      specs.push({
+        joint: `fingerTip${side}${index}`,
+        parent: `finger${side}${index}`,
+        offset: [0, -radius * (0.25 + FINGER_LENGTHS[index] * 0.32), radius * 0.07],
+      });
+    }
+  }
+  return specs;
+}
+
+const clamp = (n: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, Number.isFinite(n) ? n : min));
+const smooth = (u: number) => {
+  const t = clamp(u, 0, 1);
+  return t * t * (3 - 2 * t);
+};
+
+export interface HandPose {
+  grip: number;
+  spread: number;
+  wrist: number;
+}
+
+/** Cosmetic gestures stay independent of possession, ball physics and saves. */
+export function handPoseAt(action: PlayerAction | null, progress: number, speed: number): HandPose {
+  const u = clamp(progress, 0, 1);
+  const effort = clamp(speed / 8, 0, 1);
+  let grip = 0.16 + effort * 0.28;
+  let spread = 0.018;
+  let wrist = effort * 0.075;
+  if (action === "throwIn") {
+    const release = smooth((u - footballContactAt(action)) / 0.17);
+    grip = 0.55 * (1 - release) + 0.06 * release;
+    spread = 0.1 * (1 - release) + 0.04;
+    wrist = -0.2 * Math.sin(Math.PI * u) + release * 0.12;
+  } else if (action === "catch") {
+    grip = 0.06 + 0.59 * smooth((u - 0.42) / 0.2);
+    spread = 0.13 * (1 - smooth((u - 0.42) / 0.2)) + 0.015;
+    wrist = -Math.sin(Math.PI * u) * 0.18;
+  } else if (/^(save|saveHigh|diveLeft|diveRight)$/.test(action ?? "")) {
+    grip = 0.07 + (1 - Math.sin(Math.PI * u)) * 0.14;
+    spread = 0.11 * Math.sin(Math.PI * u) + 0.035;
+    wrist = -Math.sin(Math.PI * u) * 0.12;
+  } else if (/celebrate|hug|protest/.test(action ?? "")) {
+    grip = 0.8;
+    wrist = 0.1;
+  }
+  return { grip, spread, wrist };
+}
+
+interface PoseableBone {
+  rotation: { x: number; y: number; z: number };
+}
+
+/** Drive existing bones in place; this adds no meshes, materials or draws. */
+export function applyHandPose(
+  bones: Record<HandJoint, PoseableBone>,
+  pose: HandPose,
+  dt: number,
+): void {
+  const k = 1 - Math.exp(-18 * clamp(dt, 0, 0.25));
+  for (const side of ["L", "R"] as const) {
+    const sign = side === "L" ? 1 : -1;
+    for (const index of [0, 1, 2, 3] as const) {
+      const base = bones[`finger${side}${index}`];
+      const tip = bones[`fingerTip${side}${index}`];
+      // The last two fingers remain slightly more curled in a relaxed hand.
+      const curl = clamp(pose.grip + index * 0.025, 0, 0.94);
+      base.rotation.x += (-curl * 1.08 - base.rotation.x) * k;
+      tip.rotation.x += (-curl * 1.25 - tip.rotation.x) * k;
+      base.rotation.z += ((index - 1.5) * pose.spread - base.rotation.z) * k;
+    }
+    const thumb = bones[`thumb${side}`];
+    thumb.rotation.x += (-pose.grip * 0.55 - thumb.rotation.x) * k;
+    thumb.rotation.y += (sign * pose.grip * 0.35 - thumb.rotation.y) * k;
+    thumb.rotation.z += (sign * pose.grip * 0.45 - thumb.rotation.z) * k;
+  }
+}

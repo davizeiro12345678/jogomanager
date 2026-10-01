@@ -19,6 +19,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { FrameProbe } from "@/components/game/FrameProbe";
+import { GraphicsBoundary } from "@/components/game/GraphicsBoundary";
 import { MatchPlayers } from "@/components/game/players/MatchPlayers";
 import { CrowdLod } from "@/components/game/stadium/CrowdLod";
 import { PostFX } from "@/components/game/post/PostFX";
@@ -233,23 +234,26 @@ function Pitch({
   useEffect(() => {
     if (compressed && grassVariant !== "grassAlbedo") requestKtx2([grassVariant]);
   }, [compressed, grassVariant]);
-  const tex = useMemo(
-    () =>
+  const tex = useMemo(() => {
+    // A newly decoded map invalidates the procedural fallback.
+    void textureRevision;
+    return (
       (compressed &&
       (mow === "checker" || mow === "stripes" || mow === "diagonal" || mow === "wide")
         ? ktx2(grassVariant)
-        : null) ?? grassAlbedo(mow),
-    [mow, compressed, grassVariant, textureRevision],
-  );
-  const rough = useMemo(
-    () => (compressed ? ktx2("grassRough") : null) ?? grassRoughness(mow),
-    [mow, compressed, textureRevision],
-  );
-  const norm = useMemo(
-    () =>
-      quality === "baixa" ? null : ((compressed ? ktx2("grassNormal") : null) ?? grassNormal(mow)),
-    [quality, mow, compressed, textureRevision],
-  );
+        : null) ?? grassAlbedo(mow)
+    );
+  }, [mow, compressed, grassVariant, textureRevision]);
+  const rough = useMemo(() => {
+    void textureRevision;
+    return (compressed ? ktx2("grassRough") : null) ?? grassRoughness(mow);
+  }, [mow, compressed, textureRevision]);
+  const norm = useMemo(() => {
+    void textureRevision;
+    return quality === "baixa"
+      ? null
+      : ((compressed ? ktx2("grassNormal") : null) ?? grassNormal(mow));
+  }, [quality, mow, compressed, textureRevision]);
   const normalScale = useMemo(
     () => new THREE.Vector2(quality === "alta" ? 1.18 : 0.82, quality === "alta" ? 1.18 : 0.82),
     [quality],
@@ -509,7 +513,8 @@ function netTexture() {
 
 function useNetMaterial(repeatX: number, repeatY: number, high = false) {
   const textureRevision = useKtx2Revision();
-  return useMemo(() => {
+  const material = useMemo(() => {
+    void textureRevision;
     const alpha = (high ? ktx2("netMask")?.clone() : null) ?? netTexture();
     const mat = new THREE.MeshStandardMaterial({
       color: "#f4f8ff",
@@ -529,6 +534,15 @@ function useNetMaterial(repeatX: number, repeatY: number, high = false) {
     }
     return mat;
   }, [repeatX, repeatY, high, textureRevision]);
+  useEffect(
+    () => () => {
+      // Each net owns its cloned mask; the KTX2 cache retains the source map.
+      material.alphaMap?.dispose();
+      material.dispose();
+    },
+    [material],
+  );
+  return material;
 }
 
 /**
@@ -683,38 +697,42 @@ function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: Sim
         />
       </mesh>
       <group ref={frame}>
-      {[-3.66, 3.66].map((z) => (
-        <group key={z}>
-          <mesh position={[0, 1.22, z]} castShadow={quality === "alta"}>
-            <cylinderGeometry args={[0.06, 0.06, 2.44, 16]} />
-            {post}
-          </mesh>
-          {/* suporte traseiro da rede */}
-          <mesh position={[side * 1.05, 0.62, z]} rotation={[0, 0, side * 0.9]}>
-            <cylinderGeometry args={[0.035, 0.035, 2.2, 8]} />
-            {post}
-          </mesh>
-        </group>
-      ))}
-      <mesh position={[0, 2.44, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow={quality === "alta"}>
-        <cylinderGeometry args={[0.06, 0.06, 7.32, 16]} />
-        {post}
-      </mesh>
-      {/* barras traseiras horizontais */}
-      <mesh position={[side * 1.9, 0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.04, 0.04, 7.32, 10]} />
-        {post}
-      </mesh>
-      {/* rede: fundo (com barriga), laterais e teto */}
-      <NetCloth side={side} sim={sim} material={backMat} quality={quality} />
-      {[-3.66, 3.66].map((z) => (
-        <mesh key={`s${z}`} position={[side * 0.95, 1.22, z]} material={sideMat}>
-          <planeGeometry args={[1.9, 2.44]} />
+        {[-3.66, 3.66].map((z) => (
+          <group key={z}>
+            <mesh position={[0, 1.22, z]} castShadow={quality === "alta"}>
+              <cylinderGeometry args={[0.06, 0.06, 2.44, 16]} />
+              {post}
+            </mesh>
+            {/* suporte traseiro da rede */}
+            <mesh position={[side * 1.05, 0.62, z]} rotation={[0, 0, side * 0.9]}>
+              <cylinderGeometry args={[0.035, 0.035, 2.2, 8]} />
+              {post}
+            </mesh>
+          </group>
+        ))}
+        <mesh
+          position={[0, 2.44, 0]}
+          rotation={[Math.PI / 2, 0, 0]}
+          castShadow={quality === "alta"}
+        >
+          <cylinderGeometry args={[0.06, 0.06, 7.32, 16]} />
+          {post}
         </mesh>
-      ))}
-      <mesh position={[side * 0.95, 2.4, 0]} rotation={[-Math.PI / 2, 0, 0]} material={topMat}>
-        <planeGeometry args={[1.9, 7.32]} />
-      </mesh>
+        {/* barras traseiras horizontais */}
+        <mesh position={[side * 1.9, 0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.04, 0.04, 7.32, 10]} />
+          {post}
+        </mesh>
+        {/* rede: fundo (com barriga), laterais e teto */}
+        <NetCloth side={side} sim={sim} material={backMat} quality={quality} />
+        {[-3.66, 3.66].map((z) => (
+          <mesh key={`s${z}`} position={[side * 0.95, 1.22, z]} material={sideMat}>
+            <planeGeometry args={[1.9, 2.44]} />
+          </mesh>
+        ))}
+        <mesh position={[side * 0.95, 2.4, 0]} rotation={[-Math.PI / 2, 0, 0]} material={topMat}>
+          <planeGeometry args={[1.9, 7.32]} />
+        </mesh>
       </group>
     </group>
   );
@@ -736,7 +754,10 @@ function CornerFlags({ wind = 0.5 }: { wind?: number }) {
       shader.uniforms["uTime"] = uTime.current;
       shader.uniforms["uAmp"] = uAmp.current;
       shader.vertexShader = shader.vertexShader
-        .replace("#include <common>", "#include <common>\nuniform float uTime;\nuniform float uAmp;")
+        .replace(
+          "#include <common>",
+          "#include <common>\nuniform float uTime;\nuniform float uAmp;",
+        )
         .replace(
           "#include <begin_vertex>",
           `#include <begin_vertex>
@@ -749,7 +770,8 @@ function CornerFlags({ wind = 0.5 }: { wind?: number }) {
   useEffect(() => () => cloth.dispose(), [cloth]);
   useFrame(({ clock }) => {
     uTime.current.value = clock.elapsedTime;
-    const gust = 0.75 + 0.25 * Math.sin(clock.elapsedTime * 0.9) + 0.12 * Math.sin(clock.elapsedTime * 2.7);
+    const gust =
+      0.75 + 0.25 * Math.sin(clock.elapsedTime * 0.9) + 0.12 * Math.sin(clock.elapsedTime * 2.7);
     uAmp.current.value = (0.05 + wind * 0.22) * gust;
     const g = ref.current;
     if (!g) return;
@@ -1074,7 +1096,8 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
 /** Concreto compartilhado por toda a estrutura (um material só, muitas peças). */
 function useConcrete(color = "#6d747b", repeat = 6, high = false) {
   const textureRevision = useKtx2Revision();
-  return useMemo(() => {
+  const material = useMemo(() => {
+    void textureRevision;
     const map = (high ? ktx2("concreteAlbedo") : null) ?? concreteAlbedo();
     const rough = (high ? ktx2("concreteRough") : null) ?? concreteRoughness();
     const m = new THREE.MeshStandardMaterial({
@@ -1096,6 +1119,15 @@ function useConcrete(color = "#6d747b", repeat = 6, high = false) {
     }
     return m;
   }, [color, repeat, high, textureRevision]);
+  useEffect(
+    () => () => {
+      material.map?.dispose();
+      material.roughnessMap?.dispose();
+      material.dispose();
+    },
+    [material],
+  );
+  return material;
 }
 
 function Tiers({
@@ -3195,68 +3227,91 @@ function Stadium3DImpl({
     };
   }, [backend, eff]);
 
-  if (!backend) return <div className="h-full w-full bg-background" aria-hidden />;
+  if (!backend)
+    return (
+      <div
+        role="status"
+        className="flex h-full min-h-64 w-full items-center justify-center gap-3 bg-background text-sm text-muted-foreground"
+      >
+        <span
+          className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent"
+          aria-hidden
+        />
+        Preparando o estádio 3D…
+      </div>
+    );
 
   return (
     <div className="relative h-full w-full">
-      <Canvas
-        key={backend}
-        shadows={shadowsOn ? SHADOW_SETTINGS : false}
-        frameloop={visible ? "always" : "demand"}
-        dpr={
-          pixelRatio === undefined
-            ? dpr
-            : Math.min(GRAPHICS_PROFILES[quality].maxPixelRatio, Math.max(0.6, pixelRatio))
-        }
-        camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
-        gl={glProp}
-        performance={{ min: 0.5 }}
-        onCreated={({ gl }) => {
-          const r = gl as unknown as {
-            toneMapping: THREE.ToneMapping;
-            toneMappingExposure: number;
-            outputColorSpace: string;
-            shadowMap?: { type?: THREE.ShadowMapType };
-            capabilities?: { getMaxAnisotropy?: () => number };
-          };
-          r.toneMapping = THREE.ACESFilmicToneMapping;
-          r.toneMappingExposure =
-            look.time === "dia" ? 0.9 : look.time === "entardecer" ? 1.0 : 1.1;
-          r.outputColorSpace = THREE.SRGBColorSpace;
-          // borda de sombra suave só na qualidade alta: o filtro extra custa
-          // pouco lá e é o que mais aproxima a imagem de uma transmissão
-          if (r.shadowMap) r.shadowMap.type = THREE.PCFShadowMap;
-          // Texturas nítidas em ângulos rasantes (linhas do campo, publicidade,
-          // faixas de corte) — o custo é baixo e o ganho de definição é grande.
-          const maxAniso = r.capabilities?.getMaxAnisotropy?.() ?? 16;
-          THREE.Texture.DEFAULT_ANISOTROPY = Math.min(
-            Math.max(
-              1,
-              Math.round(
-                (eff === "alta" ? 16 : eff === "media" ? 8 : 4) * sceneBudget.textureScale,
+      <GraphicsBoundary>
+        <Canvas
+          key={backend}
+          shadows={shadowsOn ? SHADOW_SETTINGS : false}
+          frameloop={visible ? "always" : "demand"}
+          dpr={
+            pixelRatio === undefined
+              ? dpr
+              : Math.min(GRAPHICS_PROFILES[quality].maxPixelRatio, Math.max(0.6, pixelRatio))
+          }
+          camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
+          gl={glProp}
+          performance={{ min: 0.5 }}
+          fallback={
+            <div
+              role="status"
+              className="flex h-full min-h-64 items-center justify-center px-6 text-center text-sm text-muted-foreground"
+            >
+              O estádio 3D precisa de WebGL. Abra o jogo em um navegador atualizado para acompanhar
+              a partida.
+            </div>
+          }
+          onCreated={({ gl }) => {
+            const r = gl as unknown as {
+              toneMapping: THREE.ToneMapping;
+              toneMappingExposure: number;
+              outputColorSpace: string;
+              shadowMap?: { type?: THREE.ShadowMapType };
+              capabilities?: { getMaxAnisotropy?: () => number };
+            };
+            r.toneMapping = THREE.ACESFilmicToneMapping;
+            r.toneMappingExposure =
+              look.time === "dia" ? 0.9 : look.time === "entardecer" ? 1.0 : 1.1;
+            r.outputColorSpace = THREE.SRGBColorSpace;
+            // borda de sombra suave só na qualidade alta: o filtro extra custa
+            // pouco lá e é o que mais aproxima a imagem de uma transmissão
+            if (r.shadowMap) r.shadowMap.type = THREE.PCFShadowMap;
+            // Texturas nítidas em ângulos rasantes (linhas do campo, publicidade,
+            // faixas de corte) — o custo é baixo e o ganho de definição é grande.
+            const maxAniso = r.capabilities?.getMaxAnisotropy?.() ?? 16;
+            THREE.Texture.DEFAULT_ANISOTROPY = Math.min(
+              Math.max(
+                1,
+                Math.round(
+                  (eff === "alta" ? 16 : eff === "media" ? 8 : 4) * sceneBudget.textureScale,
+                ),
               ),
-            ),
-            maxAniso,
-          );
-        }}
-      >
-        <CompressedTextures enabled={quality === "alta"} />
-        <RuntimeBudget tier={sceneTier} enabled={vis.adaptive} onChange={setPressure} />
-        <QualityPressure.Provider value={pressure}>
-          <RuntimeSceneBudgetContext.Provider value={sceneBudget}>
-            <Scene
-              sim={sim}
-              mode={mode}
-              quality={eff}
-              look={look}
-              shadows={shadowsOn}
-              backend={backend}
-              postIntensity={vis.postIntensity * (vis.quality === "cinema" ? 1.12 : 1)}
-            />
-          </RuntimeSceneBudgetContext.Provider>
-        </QualityPressure.Provider>
-        {vis.showFps ? <FpsMeter onSample={setFps} backend={backend} quality={eff} /> : null}
-      </Canvas>
+              maxAniso,
+            );
+          }}
+        >
+          <CompressedTextures enabled={quality === "alta"} />
+          <RuntimeBudget tier={sceneTier} enabled={vis.adaptive} onChange={setPressure} />
+          <QualityPressure.Provider value={pressure}>
+            <RuntimeSceneBudgetContext.Provider value={sceneBudget}>
+              <Scene
+                sim={sim}
+                mode={mode}
+                quality={eff}
+                look={look}
+                shadows={shadowsOn}
+                backend={backend}
+                postIntensity={vis.postIntensity * (vis.quality === "cinema" ? 1.12 : 1)}
+              />
+            </RuntimeSceneBudgetContext.Provider>
+          </QualityPressure.Provider>
+          {vis.showFps ? <FpsMeter onSample={setFps} backend={backend} quality={eff} /> : null}
+        </Canvas>
+      </GraphicsBoundary>
       {vis.showFps && fps ? (
         <div className="pointer-events-none absolute left-2 top-2 rounded-lg bg-black/55 px-2 py-1 font-mono text-[10px] leading-tight text-white/85">
           <span className="text-white">{Math.round(fps.fps)} fps</span>

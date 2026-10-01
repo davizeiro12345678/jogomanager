@@ -16,13 +16,14 @@ import { GRAPHICS_PROFILES, type GraphicsTier } from "./contracts/graphics-profi
 /**
  * Custo medido de um atleta em rig completo, LOD 0, qualidade alta: o corpo é
  * rendido como SkinnedMesh (`buildRigSkin`), um desenho por grupo de material
- * — 18 grupos medidos, contra 53 malhas da versão mesclada por junta e ~117
- * do rig original. Só os grupos "core" entram no mapa de sombras (12 grupos),
- * então o custo efetivo por herói é 18 + 12 = 30 desenhos.
+ * — materiais compartilhados, contra ~53 malhas da versão mesclada por junta
+ * e ~117 do rig original. Só os grupos "core" entram no mapa de sombras.
+ * O pior caso medido em 128 variantes de porte, cabelo, manga e acessórios
+ * custa 34 desenhos, incluindo a passagem de sombras (player-sculpt.test.ts).
  * Nas LODs distantes os grupos de detalhe ficam ocultos, e o custo real é
  * menor — usamos o pior caso para o allocador nunca prometer demais.
  */
-export const HERO_MESH_COST = 30;
+export const HERO_MESH_COST = 34;
 
 /** Margem de segurança: não encosta no teto do tier. */
 export const BUDGET_HEADROOM = 0.95;

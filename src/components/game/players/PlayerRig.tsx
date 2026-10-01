@@ -15,7 +15,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import type React from "react";
-import { createElement, memo, useEffect, useMemo, useRef } from "react";
+import { createElement, memo, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import {
@@ -30,7 +30,11 @@ import { expressionFor } from "@/game/animation-extra3";
 import { kitTextureFor } from "@/game/graphics/kit-atlas";
 import { useMatchSurface } from "@/game/graphics/surface-context";
 import type { Kit } from "@/game/kits";
-import { detailTextureNames, playerMaterials } from "@/game/player-materials";
+import {
+  detailTextureNames,
+  playerMaterials,
+  retainPlayerMaterials,
+} from "@/game/player-materials";
 import { requestKtx2, useKtx2Revision } from "@/game/textures/ktx2";
 import { visualDataFor } from "@/game/visual-frame-cache";
 import { useVisual } from "@/game/visual-settings";
@@ -56,6 +60,11 @@ import { solveFullIK } from "@/game/ik-solver";
 import { buildRigSkin, type RigJoint, type RigSkin, type RigSkinLod } from "@/game/rig-skin";
 import { censusRef } from "@/game/scene-census";
 import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
+import { gaitPoseAt, locomotionWeight } from "@/game/gait-kinematics";
+import { visualMotionFor } from "@/game/visual-motion";
+import { refineFootballAction } from "@/game/football-action";
+import { refineAthletePosture, shoulderPose } from "@/game/athlete-posture";
+import { applyHandPose, handPoseAt } from "@/game/player-hands";
 
 /** duração da transição cruzada entre dois movimentos, em segundos */
 const BLEND_TIME = 0.18;
@@ -98,6 +107,10 @@ interface RigProps {
   kit: Kit;
   goalPulse: React.MutableRefObject<number>;
   quality: Quality;
+  paused?: boolean;
+  respectVisualSettings?: boolean;
+  /** Optional studio sampling; ordinary match playback always uses its clock. */
+  previewAt?: number | undefined;
 }
 
 export const PlayerRig = memo(function PlayerRig({
@@ -106,11 +119,19 @@ export const PlayerRig = memo(function PlayerRig({
   kit,
   goalPulse,
   quality: baseQuality,
+  paused = false,
+  respectVisualSettings = true,
+  previewAt,
 }: RigProps) {
   // O usuário pode forçar mais ou menos detalhe na página /visual.
   const detail = useVisual().playerDetail;
-  const quality: Quality =
-    detail === "detalhado" ? "alta" : detail === "simples" ? "baixa" : baseQuality;
+  const quality: Quality = !respectVisualSettings
+    ? baseQuality
+    : detail === "detalhado"
+      ? "alta"
+      : detail === "simples"
+        ? "baixa"
+        : baseQuality;
 
   /* ---------------------------------------------------------- contexto visual */
   const playerIndex = useMemo(
@@ -164,6 +185,8 @@ export const PlayerRig = memo(function PlayerRig({
   const armRRef = useRef<THREE.Bone>(null);
   const foreLRef = useRef<THREE.Bone>(null);
   const foreRRef = useRef<THREE.Bone>(null);
+  const handLRef = useRef<THREE.Bone>(null);
+  const handRRef = useRef<THREE.Bone>(null);
   const legLRef = useRef<THREE.Bone>(null);
   const legRRef = useRef<THREE.Bone>(null);
   const kneeLRef = useRef<THREE.Bone>(null);
@@ -203,16 +226,20 @@ export const PlayerRig = memo(function PlayerRig({
   const acc = useRef(0);
   // tempo acumulado abaixo do limiar de caminhada, para decidir clipes de parada
   const idleFor = useRef(0);
-  const previousVx = useRef(player.vx);
-  const previousVz = useRef(player.vz);
   const accelerationLean = useRef(0);
   const seed = look.seed % 97;
   // estado do plantio de pé entre quadros (ver `@/game/ground-contact`)
   const rootY = useRef(0);
   const contactL = useRef(1);
   const contactR = useRef(1);
+  const gaitBuffer = useRef(emptyPose());
+  const painted = useRef(false);
+  const sampled = useRef<number | undefined>(undefined);
 
   useFrame((state, rawDt) => {
+    if (paused && painted.current && sampled.current === previewAt) return;
+    sampled.current = previewAt;
+    painted.current = true;
     const g = root.current;
     if (!g) return;
     const dt = Math.min(rawDt, 0.05);
@@ -261,39 +288,19 @@ export const PlayerRig = memo(function PlayerRig({
     }
 
     // ---- orientação: olha para onde corre; sem bola, olha para a bola
-    const dirLen = Math.hypot(player.vx, player.vz);
-    let want = g.rotation.y;
-    if (dirLen > 0.5) {
-      want = Math.atan2(player.vx, player.vz);
-    } else {
-      want = Math.atan2(sim.ball.x - player.x, sim.ball.z - player.z);
-    }
-    let d = want - g.rotation.y;
-    while (d > Math.PI) d -= Math.PI * 2;
-    while (d < -Math.PI) d += Math.PI * 2;
-    const turnBlend = 1 - Math.exp(-(dirLen > 0.5 ? 13 : 5) * dt);
-    const turnRate = d * turnBlend;
-    g.rotation.y += turnRate;
-
-    // ---- inclinação do corpo: para a frente na aceleração, para dentro na curva
-    // usa velocidade angular (rad/s), não o passo do quadro: assim a inclinação
-    // é a mesma a 30, 60 ou 120 quadros por segundo (antes variava e tremia)
-    const yawRate = dt > 0 ? turnRate / dt : 0;
-    const forwardX = Math.sin(g.rotation.y);
-    const forwardZ = Math.cos(g.rotation.y);
-    const accelerationX = (player.vx - previousVx.current) / Math.max(dt, 1 / 120);
-    const accelerationZ = (player.vz - previousVz.current) / Math.max(dt, 1 / 120);
-    previousVx.current = player.vx;
-    previousVz.current = player.vz;
-    const forwardAcceleration = accelerationX * forwardX + accelerationZ * forwardZ;
-    const accelerationTarget = Math.max(-0.09, Math.min(0.12, forwardAcceleration * 0.012));
-    accelerationLean.current +=
-      (accelerationTarget - accelerationLean.current) * (1 - Math.exp(-9 * dt));
-    const leanF = Math.min(0.22, dirLen * 0.026) + accelerationLean.current;
-    const leanS = Math.max(-0.3, Math.min(0.3, -yawRate * 0.09 * Math.min(1, dirLen / 5)));
-    const leanBlend = 1 - Math.exp(-7 * dt);
-    g.rotation.x += (leanF - g.rotation.x) * leanBlend;
-    g.rotation.z += (leanS - g.rotation.z) * leanBlend;
+    const ballDistance = Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z);
+    const motion = visualMotionFor(
+      sim,
+      player,
+      sim.ball,
+      look.seed,
+      P.thigh + P.shin,
+      state.clock.elapsedTime,
+      sim.possession !== player.side && ballDistance < 12,
+    );
+    const dirLen = motion.speed;
+    g.rotation.set(motion.leanX, motion.yaw, motion.leanZ, "YXZ");
+    accelerationLean.current = motion.accelerationLean;
 
     // ---- passo de animação em taxa reduzida longe da câmera
     const step = lod === 0 ? 0 : lod === 1 ? 1 / 36 : 1 / 16;
@@ -357,9 +364,10 @@ export const PlayerRig = memo(function PlayerRig({
     blend.current = Math.min(1, blend.current + adt / blendTime);
 
     const u =
-      player.action && player.actionDur > 0
+      previewAt ??
+      (player.action && player.actionDur > 0
         ? 1 - Math.max(0, player.actionT) / player.actionDur
-        : (clipTime.current % 1.4) / 1.4;
+        : (clipTime.current % 1.4) / 1.4);
 
     const ctx = {
       t: clipTime.current,
@@ -371,13 +379,24 @@ export const PlayerRig = memo(function PlayerRig({
     let p = getClip(clipName.current)(ctx);
 
     // ---- transição cruzada com o clipe anterior (nada de troca seca)
-    if (blend.current < 1 && prevName.current) {
+    if (previewAt === undefined && blend.current < 1 && prevName.current) {
       const prev = getClip(prevName.current)({
         ...ctx,
         t: prevTime.current,
         u: (prevTime.current % 1.4) / 1.4,
       });
       p = mixPose(prev, p, ease(blend.current), blendBuf.current);
+    }
+    const gaitWeight = locomotionWeight(speed, player.action, clipName.current);
+    if (gaitWeight > 0) {
+      const gait = gaitPoseAt(motion.phase, speed, P, gaitBuffer.current, {
+        forward: motion.forward,
+        lateral: motion.lateral,
+        turnRate: motion.turnRate,
+        stamina: player.stamina,
+        hasBall: sim.ball.holder === player.id,
+      }).pose;
+      p = mixPose(p, gait, gaitWeight, blendBuf.current);
     }
 
     // ---- IK contextual compartilhado: o contexto é gerado uma vez por
@@ -387,7 +406,7 @@ export const PlayerRig = memo(function PlayerRig({
       visualCtx?.actionContexts[playerIndex] ?? emptyActionContext();
     const contactContext: ContactContext =
       visualCtx?.contactContexts[playerIndex] ?? emptyContactContext();
-    if (visualCtx && lod === 0) {
+    if (visualCtx && lod === 0 && player.action) {
       const playerInfo = {
         x: player.x,
         z: player.z,
@@ -402,6 +421,13 @@ export const PlayerRig = memo(function PlayerRig({
       // Aplica IK completo
       p = solveFullIK(p, actionContext, contactContext, playerInfo, ikBuf.current);
     }
+    refineFootballAction(
+      p,
+      player.action,
+      u,
+      P,
+      actionContext.action ? actionContext.usedFoot : dominantFoot,
+    );
 
     // ---- camada superior: tronco e cabeça acompanham a bola
     const toBall = Math.atan2(sim.ball.x - player.x, sim.ball.z - player.z);
@@ -414,29 +440,19 @@ export const PlayerRig = memo(function PlayerRig({
     p.chest += Math.min(0.12, gaze * gaze * 0.1);
     p.headPitch += ballH < 6 ? 0.12 : -0.03;
 
-    // Arranque e frenagem deslocam a massa do tronco sem mover os pés do chão.
-    // A raiz fica mais estável e a mudança de ritmo deixa de parecer deslizamento.
-    p.spine += accelerationLean.current * 0.85;
-    p.chest -= accelerationLean.current * 0.32;
-
-    // ---- cansaço: respiração pesada, ombros caídos, tronco mais curvado
+    // Balance, acceleration and fatigue use the same layer as distant players.
     const tired = 1 - Math.min(1, Math.max(0, player.stamina) / 100);
-    if (tired > 0.25) {
-      const br = Math.sin(state.clock.elapsedTime * 2.6 + seed) * tired * 0.05;
-      p.spine += tired * 0.1 + br;
-      p.chest += br * 0.6;
-      p.armLRoll += tired * 0.06;
-      p.armRRoll -= tired * 0.06;
-      p.headPitch += tired * 0.07;
-      // muito cansado e parado: curva o tronco e deixa os braços pesados
-      if (tired > 0.6 && speed < 0.6 && !player.action) {
-        const k = (tired - 0.6) / 0.4;
-        p.spine += k * 0.22;
-        p.headPitch += k * 0.1;
-        p.armLPitch -= k * 0.35;
-        p.armRPitch -= k * 0.35;
-      }
-    }
+    refineAthletePosture(p, {
+      time: state.clock.elapsedTime,
+      phase: motion.phase,
+      speed,
+      seed,
+      stamina: player.stamina,
+      accelerationLean: motion.accelerationLean,
+      turnRate: motion.turnRate,
+      hasAction: Boolean(player.action),
+      defending: sim.possession !== player.side,
+    });
 
     // ---- limites anatômicos
     // Clipe + transição cruzada + IK + olhar + cansaço + inclinação são camadas
@@ -446,25 +462,28 @@ export const PlayerRig = memo(function PlayerRig({
     clampPoseAnatomy(p);
 
     target.current = p;
-    mixPose(cur.current, target.current, Math.min(1, adt * 16), cur.current);
+    mixPose(
+      cur.current,
+      target.current,
+      previewAt !== undefined ? 1 : 1 - Math.exp(-(player.action ? 27 : 18) * adt),
+      cur.current,
+    );
     const c = clampPoseAnatomy(cur.current);
-
-    // ---- balanço secundário dos braços (atrasa em relação ao tronco)
-    const sway =
-      Math.sin(state.clock.elapsedTime * 3.1 + seed) * 0.03 * (0.4 + Math.min(1, speed / 6));
-    c.armLPitch += sway;
-    c.armRPitch -= sway;
 
     // ---- contato com o gramado (cinemática direta das duas pernas)
     // Antes a raiz ficava fixa em y = 0 e a sola era "presa" no chão só por
     // construção de `P.hipY`. Bastava agachar, dobrar o joelho ou inclinar o
     // corpo para o pé afundar ou flutuar. Agora medimos onde a sola realmente
     // está e movemos a raiz para plantá-la.
-    const hipShiftX = hips.current ? hips.current.position.x : 0;
+    const support = c.legRPitch - c.legLPitch;
+    const shift = Math.max(-1, Math.min(1, support)) * 0.045 * Math.min(1, speed / 4);
+    const previousShift = hips.current?.position.x ?? 0;
+    const hipShiftX = previousShift + (shift - previousShift) * Math.min(1, adt * 14);
     const ground = solveGroundContact({
       P,
       pose: c,
       hipShiftX,
+      hipRollOffset: shift * 1.2,
       leanX: g.rotation.x,
       leanZ: g.rotation.z,
       airborne: airborneFactor(clipName.current, c.hipY),
@@ -478,20 +497,20 @@ export const PlayerRig = memo(function PlayerRig({
     // a sola do pé apoiado fica paralela ao gramado; o pé no ar mantém o clipe
     c.ankleL += ground.ankleLFix;
     c.ankleR += ground.ankleRFix;
+    clampPoseAnatomy(c);
 
     // ---- aplica nas juntas
     if (hips.current) {
       // transferência de peso: o quadril desliza para o lado da perna de apoio
-      const support = c.legRPitch - c.legLPitch; // >0 = apoio na esquerda
-      const shift = Math.max(-1, Math.min(1, support)) * 0.045 * Math.min(1, speed / 4);
-      hips.current.position.x += (shift - hips.current.position.x) * Math.min(1, adt * 14);
+      hips.current.position.x = hipShiftX;
       hips.current.position.y = P.hipY + c.hipY;
       hips.current.rotation.set(c.hipPitch, c.hipYaw, c.hipRoll + shift * 1.2);
     }
-    if (spine.current) spine.current.rotation.x = c.spine;
+    if (spine.current) spine.current.rotation.set(c.spine, -c.hipYaw * 0.45, -c.hipRoll * 0.35);
     if (chest.current) {
       // postura individual: cada atleta tem um "jeito de carregar o tronco"
       chest.current.rotation.x = c.chest + P.posture;
+      chest.current.rotation.y = -c.hipYaw * 0.6;
       // respiração: caixa torácica expande no ritmo; cansado = mais rápido e fundo
       const fatigue = 1 - Math.min(1, Math.max(0, player.stamina) / 100);
       const rate = 1.4 + fatigue * 2.4 + Math.min(1, speed / 7) * 1.2;
@@ -503,30 +522,59 @@ export const PlayerRig = memo(function PlayerRig({
       neck.current.rotation.x = c.headPitch;
       neck.current.rotation.y = c.headYaw;
     }
-    // clavícula: acompanha parte do movimento do braço, como no corpo real
+    const leftShoulder = shoulderPose(c.armLPitch, c.armLRoll);
+    const rightShoulder = shoulderPose(c.armRPitch, c.armRRoll);
     if (clavLRef.current) {
-      clavLRef.current.rotation.x = c.armLPitch * 0.16;
-      clavLRef.current.rotation.z = -c.armLRoll * 0.12;
+      clavLRef.current.rotation.x = leftShoulder.clavPitch;
+      clavLRef.current.rotation.z = leftShoulder.clavRoll;
     }
     if (clavRRef.current) {
-      clavRRef.current.rotation.x = c.armRPitch * 0.16;
-      clavRRef.current.rotation.z = -c.armRRoll * 0.12;
+      clavRRef.current.rotation.x = rightShoulder.clavPitch;
+      clavRRef.current.rotation.z = rightShoulder.clavRoll;
     }
-    if (armLRef.current) armLRef.current.rotation.set(c.armLPitch * 0.84, 0, c.armLRoll * 0.88);
-    if (armRRef.current) armRRef.current.rotation.set(c.armRPitch * 0.84, 0, c.armRRoll * 0.88);
+    if (armLRef.current)
+      armLRef.current.rotation.set(
+        leftShoulder.armPitch,
+        leftShoulder.armYaw,
+        leftShoulder.armRoll,
+      );
+    if (armRRef.current)
+      armRRef.current.rotation.set(
+        rightShoulder.armPitch,
+        rightShoulder.armYaw,
+        rightShoulder.armRoll,
+      );
     if (foreLRef.current) foreLRef.current.rotation.x = c.elbowL;
     if (foreRRef.current) foreRRef.current.rotation.x = c.elbowR;
+    const handPose = handPoseAt(player.action, u, speed);
+    const wrist = handPose.wrist;
+    if (lod === 0) applyHandPose(skin.boneOf, handPose, previewAt !== undefined ? 0.25 : adt);
+    if (handLRef.current)
+      handLRef.current.rotation.set(wrist, 0.06 * Math.sin(motion.phase), 0.025);
+    if (handRRef.current)
+      handRRef.current.rotation.set(wrist, -0.06 * Math.sin(motion.phase), -0.025);
     // ---- rosto: expressão do clipe + esforço (só no LOD 0, onde há rosto)
     if (lod === 0) {
       const effort = Math.min(1, speed / 7);
       const expr = expressionFor(clipName.current, effort, tired);
+      const celebrating = /celebrat|fist|victory|applaud|hug/i.test(clipName.current);
+      const protesting = /protest|argue|complain/i.test(clipName.current);
+      const browLift =
+        P.headR * (celebrating ? 0.035 : protesting ? -0.012 : -effort * 0.01 - tired * 0.006);
+      const browTilt = celebrating ? -0.035 : protesting ? 0.12 : effort * 0.06;
+      for (const side of ["L", "R"] as const) {
+        const brow = side === "L" ? skin.boneOf.browL : skin.boneOf.browR;
+        const response = 1 - Math.exp(-12 * adt);
+        brow.position.y += (P.headR * 0.31 + browLift - brow.position.y) * response;
+        brow.rotation.z += ((side === "L" ? 1 : -1) * browTilt - brow.rotation.z) * response;
+      }
       // mandíbula: o clipe sugere (grito, reclamação, ofego) e a fala treme
       if (jawRef.current) {
         const talking =
           expr.jaw > 0.3 && expr.jaw < 0.7
             ? Math.sin(state.clock.elapsedTime * 9 + seed) * 0.05
             : 0;
-        const jawTarget = 0.05 + expr.jaw * 0.5 + talking;
+        const jawTarget = 0.015 + expr.jaw * 0.24 + talking * 0.4;
         jawRef.current.rotation.x +=
           (jawTarget - jawRef.current.rotation.x) * Math.min(1, adt * 10);
       }
@@ -565,8 +613,8 @@ export const PlayerRig = memo(function PlayerRig({
 
     if (legLRef.current) legLRef.current.rotation.set(c.legLPitch, 0, c.legLRoll);
     if (legRRef.current) legRRef.current.rotation.set(c.legRPitch, 0, c.legRRoll);
-    if (kneeLRef.current) kneeLRef.current.rotation.x = c.kneeL;
-    if (kneeRRef.current) kneeRRef.current.rotation.x = c.kneeR;
+    if (kneeLRef.current) kneeLRef.current.rotation.x = -c.kneeL;
+    if (kneeRRef.current) kneeRRef.current.rotation.x = -c.kneeR;
     if (ankleLRef.current) ankleLRef.current.rotation.x = c.ankleL;
     if (ankleRRef.current) ankleRRef.current.rotation.x = c.ankleR;
 
@@ -601,10 +649,12 @@ export const PlayerRig = memo(function PlayerRig({
     if (quality !== "alta") return;
     requestKtx2(detailTextureNames(look, kit));
   }, [quality, kit, look]);
-  const mats = useMemo(
-    () => playerMaterials(look, kit, tex ?? null, quality, surface),
-    [look, kit, tex, quality, textureRevision, surface],
-  );
+  const mats = useMemo(() => {
+    // Decoding a new HD texture invalidates the shared material cache.
+    void textureRevision;
+    return playerMaterials(look, kit, tex ?? null, quality, surface);
+  }, [look, kit, tex, quality, textureRevision, surface]);
+  useLayoutEffect(() => retainPlayerMaterials(mats), [mats]);
 
   // Corpo em SkinnedMesh: um desenho por grupo de material (~18) em vez de um
   // por peça mesclada (~53). A matriz de bind é a posição do atleta, porque
@@ -632,6 +682,9 @@ export const PlayerRig = memo(function PlayerRig({
     [P, look, segs.radial, segs.cap, hi, mats, jerseyInk],
   );
   useEffect(() => () => skin.dispose(), [skin]);
+  useLayoutEffect(() => {
+    painted.current = false;
+  }, [skin]);
 
   // As malhas são criadas fora do JSX para carregar esqueleto, esfera de
   // culling generosa (a pose animada sai da pose de bind) e o estado de LOD.
@@ -676,9 +729,11 @@ export const PlayerRig = memo(function PlayerRig({
     clavL: clavLRef,
     armL: armLRef,
     foreL: foreLRef,
+    handL: handLRef,
     clavR: clavRRef,
     armR: armRRef,
     foreR: foreRRef,
+    handR: handRRef,
     legL: legLRef,
     kneeL: kneeLRef,
     ankleL: ankleLRef,

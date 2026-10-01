@@ -17,22 +17,26 @@
 import * as THREE from "three";
 
 import type { Proportions, PlayerLook } from "./player-model";
-import { shade } from "./player-model";
 import type { PlayerMaterials } from "./player-materials";
+import { buildSculptedFace } from "./player-sculpt";
+import { FINGER_CENTERS_Y, FINGER_LENGTHS, fingerX } from "./player-hands";
 import {
   armbandMaterial,
-  eyeWhiteMaterial,
-  goldMaterial,
-  headbandMaterial,
-  irisMaterial,
-  pupilMaterial,
-  skinDetailMaterial,
   studMaterial,
   tapeMaterial,
   tattooMaterial,
   undershirtMaterial,
 } from "./rig-materials";
-import { mergeRigParts, rigPart, type RigMesh, type RigPart } from "./rig-geometry";
+import {
+  anatomicalLimb,
+  anatomicalSection,
+  clothSurface,
+  footballBoot,
+  mergeRigParts,
+  rigPart,
+  type RigMesh,
+  type RigPart,
+} from "./rig-geometry";
 
 /** Segmentação por qualidade, como no rig original. */
 export interface RigSegments {
@@ -46,6 +50,8 @@ export interface RigBodyContext {
   segs: RigSegments;
   /** qualidade alta: detalhes finos de rosto, músculos e mechas de cabelo */
   hi: boolean;
+  /** Staff actors reuse the athlete skeleton with full-length cloth trousers. */
+  trousers?: boolean;
   /** materiais compartilhados do atleta (pele, camisa, calção, meião…) */
   mats: PlayerMaterials;
   /** cor de alto contraste para o número nas costas */
@@ -76,6 +82,8 @@ export interface RigBody {
   handR: RigMesh[];
   handDetailL: RigMesh[];
   handDetailR: RigMesh[];
+  thumbL: RigMesh[];
+  thumbR: RigMesh[];
   legL: RigMesh[];
   legR: RigMesh[];
   kneeL: RigMesh[];
@@ -95,60 +103,84 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
   const { P, look, segs, hi, mats, handR, handMat } = ctx;
   const skin = mats.skin;
   const jersey = mats.jersey;
+  const jerseyPlain = mats.jerseyPlain;
   const shorts = mats.shorts;
   const socks = mats.socks;
   const trim = mats.trim;
-  const hair = mats.hair;
   const boot = mats.boot;
   const bootAccent = mats.bootAccent;
   const sole = mats.sole;
   const cast = true;
+  const torsoBottom = -P.hipH * 0.12;
+  const torsoHeight = P.spineLen + P.chestLen - torsoBottom;
+  const shirtUv = (geometry: THREE.BufferGeometry, offset = 0) => {
+    const positions = geometry.getAttribute("position");
+    const uv = geometry.getAttribute("uv");
+    for (let i = 0; i < uv.count; i++) {
+      uv.setXY(
+        i,
+        uv.getX(i) + 0.25,
+        Math.max(0, Math.min(1, (positions.getY(i) + offset - torsoBottom) / torsoHeight)),
+      );
+    }
+    return geometry;
+  };
 
   /* ------------------------------------------------------------- tronco */
 
   const hips: RigPart[] = [
     rigPart(
-      new THREE.CapsuleGeometry(P.hipW * 0.62, P.hipH * 0.6, segs.cap, segs.radial),
+      anatomicalSection(
+        [
+          { y: -P.hipH * 0.75, width: P.hipW * 0.54, depth: P.chestD * 0.82 },
+          { y: 0, width: P.hipW * 0.62, depth: P.chestD * 0.9 },
+          { y: P.hipH * 0.5, width: P.hipW * 0.59, depth: P.chestD * 0.85 },
+        ],
+        segs.radial,
+      ),
       shorts,
       undefined,
       cast,
     ),
-    rigPart(new THREE.CylinderGeometry(P.hipW * 0.66, P.hipW * 0.64, 0.045, segs.radial), trim, {
+    rigPart(new THREE.CylinderGeometry(P.hipW * 0.62, P.hipW * 0.62, 0.014, segs.radial), shorts, {
       position: [0, P.hipH * 0.5, 0],
     }),
   ];
 
   const spine: RigPart[] = [
     rigPart(
-      new THREE.CapsuleGeometry(P.chestW * 0.5, P.spineLen * 0.7, segs.cap, segs.radial),
+      shirtUv(
+        clothSurface(
+          anatomicalSection(
+            [
+              { y: -P.hipH * 0.12, width: P.hipW * 0.59, depth: P.chestD * 0.85 },
+              { y: P.spineLen * 0.4, width: P.chestW * 0.82, depth: P.chestD * 0.89 },
+              { y: P.spineLen * 1.06, width: P.chestW * 0.94, depth: P.chestD },
+              { y: P.spineLen + P.chestLen * 0.4, width: P.chestW * 1.01, depth: P.chestD * 1.01 },
+              {
+                y: P.spineLen + P.chestLen * 0.8,
+                width: P.shoulderW * 0.53,
+                depth: P.chestD * 0.88,
+              },
+              { y: P.spineLen + P.chestLen, width: P.neckR * 1.55, depth: P.neckR * 1.35 },
+            ],
+            Math.max(12, segs.radial + 4),
+            0.88,
+          ),
+        ),
+      ),
       jersey,
-      { position: [0, P.spineLen * 0.5, 0], scale: [1, 1, 0.82] },
+      undefined,
       cast,
     ),
   ];
 
   const chest: RigPart[] = [
-    rigPart(
-      new THREE.CapsuleGeometry(P.chestW * 0.58, P.chestLen * 0.62, segs.cap, segs.radial),
-      jersey,
-      {
-        position: [0, P.chestLen * 0.46, 0],
-        scale: [1, 1, P.chestD / (P.chestW * 0.58)],
-      },
-      cast,
-    ),
-    // linha dos ombros
-    rigPart(
-      new THREE.CapsuleGeometry(P.armR * 1.3, P.shoulderW * 0.8, 3, segs.radial),
-      jersey,
-      { position: [0, P.chestLen * 0.84, 0], rotation: [0, 0, Math.PI / 2] },
-      cast,
-    ),
     // gola
     rigPart(
       new THREE.TorusGeometry(
         P.neckR * (look.collar === "polo" ? 1.62 : 1.5),
-        P.neckR * (look.collar === "polo" ? 0.36 : 0.28),
+        P.neckR * (look.collar === "polo" ? 0.14 : 0.085),
         6,
         14,
       ),
@@ -177,277 +209,25 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
 
   const neck: RigPart[] = [
     rigPart(
-      new THREE.CapsuleGeometry(P.neckR, P.neckLen * 0.8, 3, segs.radial),
-      look.undershirt ? undershirtMaterial(look.undershirtColor) : mats.skinDark,
-      { position: [0, P.neckLen * 0.5, 0] },
+      anatomicalSection(
+        [
+          { y: 0, width: P.neckR, depth: P.neckR * 0.92 },
+          { y: P.neckLen * 0.65, width: P.neckR * 0.83, depth: P.neckR * 0.8 },
+          { y: P.neckLen * 1.25, width: P.neckR * 0.93, depth: P.neckR * 0.86 },
+        ],
+        segs.radial,
+      ),
+      skin,
+      undefined,
       cast,
     ),
   ];
 
   /* --------------------------------------------------------------- rosto */
 
-  const head: RigPart[] = [
-    rigPart(new THREE.SphereGeometry(P.headR, 16, 16), skin, { scale: [1, 1.14, 1.02] }, cast),
-    rigPart(
-      new THREE.SphereGeometry(P.headR, 12, 12),
-      skin,
-      { position: [0, -P.headR * 0.5, P.headR * 0.12], scale: [0.82, 0.6, 0.9] },
-      cast,
-    ),
-  ];
-  // brinco na orelha esquerda: esfera dourada mínima, só no detalhe alto
-  if (hi && look.earring) {
-    head.push(
-      rigPart(new THREE.SphereGeometry(P.headR * 0.09, 8, 8), goldMaterial(), {
-        position: [P.headR * 0.98, -P.headR * 0.12, 0],
-      }),
-    );
-  }
-
-  const face: RigPart[] = [];
-  const eyes: RigPart[] = [];
-  const blink: RigPart[] = [];
-  const jaw: RigPart[] = [];
-
-  for (const s of [-1, 1] as const) {
-    face.push(
-      // esclera (fixa no rosto)
-      rigPart(
-        new THREE.SphereGeometry(P.headR * 0.15, hi ? 12 : 8, hi ? 12 : 8),
-        eyeWhiteMaterial(),
-        { position: [s * P.headR * 0.36, P.headR * 0.1, P.headR * 0.82] },
-      ),
-    );
-    // íris + pupila vão para o osso `eyes`: a animação translada o conjunto
-    // para perseguir a bola (sacadas conjugadas). Mesmas coordenadas porque o
-    // osso tem o mesmo pivô do rosto — e os mesmos 2 desenhos de antes.
-    eyes.push(
-      // íris
-      rigPart(new THREE.SphereGeometry(P.headR * 0.085, 10, 10), irisMaterial(look.eyeColor), {
-        position: [s * P.headR * 0.36, P.headR * 0.1, P.headR * 0.9],
-      }),
-      // pupila
-      rigPart(new THREE.SphereGeometry(P.headR * 0.045, 8, 8), pupilMaterial(), {
-        position: [s * P.headR * 0.36, P.headR * 0.1, P.headR * 0.94],
-      }),
-    );
-    face.push(
-      // sobrancelha
-      rigPart(new THREE.BoxGeometry(P.headR * 0.36, P.headR * 0.08, P.headR * 0.1), hair, {
-        position: [s * P.headR * 0.36, P.headR * 0.32, P.headR * 0.84],
-        rotation: [0, 0, s * 0.12],
-      }),
-      // orelha
-      rigPart(new THREE.SphereGeometry(P.headR * 0.3, 8, 8), skin, {
-        position: [s * P.headR * 0.94, 0, -P.headR * 0.05],
-        scale: [0.4, 1, 0.7],
-      }),
-    );
-    if (hi) {
-      face.push(
-        rigPart(new THREE.SphereGeometry(P.headR * 0.045, 6, 6), skinDetailMaterial(look.skin), {
-          position: [s * P.headR * 0.09, -P.headR * 0.17, P.headR * 0.98],
-        }),
-      );
-    }
-    // pálpebra (grupo que pisca)
-    blink.push(
-      rigPart(new THREE.BoxGeometry(P.headR * 0.34, P.headR * 0.3, P.headR * 0.08), skin, {
-        position: [s * P.headR * 0.36, P.headR * 0.16, P.headR * 0.84],
-        scale: [1, 0.001, 1],
-      }),
-    );
-    // maçãs do rosto
-    face.push(
-      rigPart(new THREE.SphereGeometry(P.headR * 0.26, 8, 8), skin, {
-        position: [s * P.headR * 0.5, -P.headR * 0.16, P.headR * 0.66],
-        scale: [1, 0.8, 0.6],
-      }),
-    );
-  }
-
-  if (hi) {
-    face.push(
-      rigPart(new THREE.SphereGeometry(P.headR * 0.6, 10, 10), skin, {
-        position: [0, P.headR * 0.26, P.headR * 0.7],
-        scale: [1, 0.35, 0.5],
-      }),
-    );
-  }
-  // nariz
-  face.push(
-    rigPart(new THREE.ConeGeometry(P.headR * 0.16, P.headR * 0.34, hi ? 10 : 6), skin, {
-      position: [0, -P.headR * 0.05, P.headR * 0.95],
-      rotation: [0.3, 0, 0],
-    }),
-  );
-  // mandíbula articulada
-  if (hi) {
-    jaw.push(
-      rigPart(new THREE.SphereGeometry(P.headR * 0.9, 12, 12), skin, {
-        position: [0, -P.headR * 0.48, P.headR * 0.2],
-        scale: [0.94, 0.5, 0.94],
-      }),
-    );
-  }
-  jaw.push(
-    rigPart(new THREE.SphereGeometry(P.headR * 0.24, 8, 8), skin, {
-      position: [0, -P.headR * 0.55, P.headR * 0.78],
-      scale: [0.9, 0.6, 0.7],
-    }),
-  );
-  if (hi) {
-    face.push(
-      rigPart(new THREE.SphereGeometry(P.headR * 0.2, 8, 8), skinDetailMaterial(look.skin), {
-        position: [0, -P.headR * 0.36, P.headR * 0.84],
-        scale: [1, 0.45, 0.6],
-      }),
-    );
-  }
-  face.push(
-    rigPart(
-      new THREE.BoxGeometry(P.headR * 0.34, P.headR * 0.07, P.headR * 0.06),
-      skinDetailMaterial(look.skin),
-      { position: [0, -P.headR * 0.45, P.headR * 0.84] },
-    ),
-  );
-
-  /* -------------------------------------------------------------- barba */
-
-  const beard: RigPart[] = [];
-  if (look.beard === "moustache") {
-    beard.push(
-      rigPart(new THREE.BoxGeometry(P.headR * 0.44, P.headR * 0.1, P.headR * 0.12), hair, {
-        position: [0, -P.headR * 0.3, P.headR * 0.86],
-      }),
-    );
-  } else if (look.beard === "goatee") {
-    beard.push(
-      rigPart(new THREE.SphereGeometry(P.headR * 0.3, 8, 8), hair, {
-        position: [0, -P.headR * 0.62, P.headR * 0.66],
-        scale: [0.7, 1, 0.7],
-      }),
-    );
-  } else if (look.beard === "stubble" || look.beard === "full") {
-    beard.push(
-      rigPart(
-        new THREE.SphereGeometry(
-          P.headR * 0.98,
-          12,
-          12,
-          0,
-          Math.PI * 2,
-          Math.PI * 0.42,
-          Math.PI * 0.4,
-        ),
-        hair,
-        {
-          position: [0, -P.headR * 0.35, P.headR * 0.12],
-          scale: [1.01, look.beard === "full" ? 0.85 : 0.6, 1.01],
-        },
-      ),
-    );
-  }
-
-  /* ------------------------------------------------------------- cabelo */
-
-  const hairParts: RigPart[] = [];
-  const style = look.hairStyle;
-  if (style !== "bald") {
-    const capHeight = (style === "buzz" ? 0.96 : style === "short" ? 1.02 : 1.06) * look.hairVolume;
-    const capWide = 1.02 + (look.hairVolume - 1) * 0.5;
-    hairParts.push(
-      rigPart(
-        new THREE.SphereGeometry(P.headR * 0.99, 14, 14, 0, Math.PI * 2, 0, Math.PI * 0.62),
-        hair,
-        {
-          position: [0, P.headR * 0.16, -P.headR * 0.04],
-          scale: [capWide, capHeight, capWide + 0.02],
-        },
-      ),
-    );
-    if (hi && style !== "buzz") {
-      for (let i = 0; i < 5; i += 1) {
-        const t = (i - 2) / 2;
-        hairParts.push(
-          rigPart(
-            new THREE.CapsuleGeometry(P.headR * 0.1, P.headR * 0.42 * look.hairVolume, 2, 6),
-            hair,
-            {
-              position: [t * P.headR * 0.62, P.headR * 0.5, P.headR * 0.78],
-              rotation: [0.85 + Math.abs(t) * 0.12, t * 0.35, t * 0.2],
-            },
-          ),
-        );
-      }
-      hairParts.push(
-        rigPart(
-          new THREE.CapsuleGeometry(P.headR * 0.42, P.headR * 0.3 * look.hairVolume, 3, 10),
-          hair,
-          { position: [0, P.headR * 0.12, -P.headR * 0.82], rotation: [-0.35, 0, 0] },
-        ),
-      );
-      for (const sx of [-1, 1] as const) {
-        hairParts.push(
-          rigPart(new THREE.CapsuleGeometry(P.headR * 0.22, P.headR * 0.28, 2, 8), hair, {
-            position: [sx * P.headR * 0.86, P.headR * 0.08, P.headR * 0.1],
-            scale: [0.5, 1, 1],
-          }),
-        );
-      }
-    }
-    if (style === "mohawk") {
-      hairParts.push(
-        rigPart(
-          new THREE.SphereGeometry(P.headR * 0.62, 10, 10, 0, Math.PI * 2, 0, Math.PI * 0.7),
-          hair,
-          { position: [0, P.headR * 0.95, 0], scale: [0.24, 1, 1.05] },
-        ),
-      );
-    }
-    if (style === "afro" || style === "curly") {
-      hairParts.push(
-        rigPart(new THREE.SphereGeometry(P.headR * (style === "afro" ? 1.24 : 1.1), 12, 12), hair, {
-          position: [0, P.headR * 0.42, -P.headR * 0.02],
-        }),
-      );
-    }
-    if (style === "bun") {
-      hairParts.push(
-        rigPart(new THREE.SphereGeometry(P.headR * 0.34, 10, 10), hair, {
-          position: [0, P.headR * 0.62, -P.headR * 0.95],
-        }),
-      );
-    }
-    if (style === "ponytail") {
-      hairParts.push(
-        rigPart(new THREE.CapsuleGeometry(P.headR * 0.16, P.headR * 0.8, 3, 8), hair, {
-          position: [0, P.headR * 0.2, -P.headR * 1.05],
-          rotation: [0.6, 0, 0],
-        }),
-      );
-    }
-    if (style === "dreads" || style === "braids") {
-      for (let i = 0; i < 8; i += 1) {
-        const a = (i / 8) * Math.PI * 2;
-        hairParts.push(
-          rigPart(new THREE.CapsuleGeometry(P.headR * 0.09, P.headR * 0.9, 2, 6), hair, {
-            position: [Math.cos(a) * P.headR * 0.7, P.headR * 0.1, Math.sin(a) * P.headR * 0.7],
-            rotation: [0.25, 0, 0],
-          }),
-        );
-      }
-    }
-    if (look.headband) {
-      hairParts.push(
-        rigPart(
-          new THREE.TorusGeometry(P.headR * 0.94, P.headR * 0.11, 6, 16),
-          headbandMaterial(look.headbandColor),
-          { position: [0, P.headR * 0.42, 0], rotation: [Math.PI / 2, 0, 0] },
-        ),
-      );
-    }
-  }
+  const sculpt = buildSculptedFace(P, look, mats, hi);
+  const { head, face, eyes, jaw, blink } = sculpt;
+  const hairParts = sculpt.hair;
 
   /* --------------------------------------------------------- braços/pernas */
 
@@ -459,6 +239,8 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
   const handRig: RigPart[] = [];
   const handDetailL: RigPart[] = [];
   const handDetailR: RigPart[] = [];
+  const thumbL: RigPart[] = [];
+  const thumbR: RigPart[] = [];
   const legL: RigPart[] = [];
   const legR: RigPart[] = [];
   const kneeL: RigPart[] = [];
@@ -474,237 +256,247 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     const fore = isLeft ? foreL : foreR;
     const hand = isLeft ? handL : handRig;
     const handDetail = isLeft ? handDetailL : handDetailR;
+    const thumb = isLeft ? thumbL : thumbR;
     const leg = isLeft ? legL : legR;
     const knee = isLeft ? kneeL : kneeR;
     const ankle = isLeft ? ankleL : ankleR;
     const bootDetail = isLeft ? bootDetailL : bootDetailR;
-    const sleeveMat = look.sleeves === "long" ? jersey : skin;
+    const sleeveMat = look.sleeves === "long" ? jerseyPlain : skin;
 
-    /* braço */
+    /* Muscle volumes taper into elbows and wrists rather than overlapping
+       separate spheres. Cloth, tape and tattoos follow that same surface. */
     arm.push(
       rigPart(
-        new THREE.SphereGeometry(P.armR * 1.35, segs.radial, segs.radial),
-        jersey,
+        anatomicalLimb("upperArm", P.upperArm, P.armR, segs.radial),
+        sleeveMat,
         undefined,
         cast,
       ),
     );
-    if (hi) {
+    if (look.sleeves === "short")
       arm.push(
         rigPart(
-          new THREE.SphereGeometry(P.armR * 1.12, segs.radial, segs.radial),
-          jersey,
-          {
-            position: [side * P.armR * 0.28, -P.upperArm * 0.1, 0],
-            scale: [1, 1.18, 0.92],
-          },
+          clothSurface(
+            anatomicalSection(
+              [
+                { y: -P.upperArm * 0.48, width: P.armR * 1.11, depth: P.armR * 1.12 },
+                { y: -P.upperArm * 0.24, width: P.armR * 1.15, depth: P.armR * 1.14 },
+                { y: P.upperArm * 0.03, width: P.armR * 1.045, depth: P.armR * 1.01 },
+              ],
+              segs.radial,
+            ),
+            0.001,
+          ),
+          jerseyPlain,
+          undefined,
           cast,
         ),
       );
-    }
-    arm.push(
-      rigPart(
-        new THREE.CapsuleGeometry(P.armR, P.upperArm * 0.78, segs.cap, segs.radial),
-        sleeveMat,
-        { position: [0, -P.upperArm * 0.5, 0] },
-        cast,
-      ),
-    );
-    if (hi && look.sleeves !== "long") {
+    if (look.captain && isLeft)
       arm.push(
         rigPart(
-          new THREE.SphereGeometry(P.armR * 0.78, segs.radial, segs.radial),
-          skin,
-          {
-            position: [0, -P.upperArm * 0.58, P.armR * 0.12],
-            scale: [0.9, 1.35, 0.9],
-          },
-          cast,
-        ),
-      );
-    }
-    if (look.sleeves === "short") {
-      arm.push(
-        rigPart(
-          new THREE.CapsuleGeometry(P.armR * 1.22, P.upperArm * 0.3, 2, segs.radial),
-          jersey,
-          { position: [0, -P.upperArm * 0.24, 0] },
-          cast,
-        ),
-      );
-    }
-    if (look.captain && side === 1) {
-      arm.push(
-        rigPart(
-          new THREE.CylinderGeometry(P.armR * 1.28, P.armR * 1.28, 0.05, segs.radial),
+          new THREE.CylinderGeometry(P.armR * 1.16, P.armR * 1.15, 0.04, segs.radial),
           armbandMaterial(),
-          { position: [0, -P.upperArm * 0.42, 0] },
+          { position: [0, -P.upperArm * 0.39, 0] },
         ),
       );
-    }
-
-    /* antebraço e mão */
     fore.push(
       rigPart(
-        new THREE.CapsuleGeometry(P.armR * 0.88, P.foreArm * 0.76, segs.cap, segs.radial),
+        anatomicalLimb("forearm", P.foreArm, P.armR, segs.radial),
         sleeveMat,
-        { position: [0, -P.foreArm * 0.5, 0] },
+        undefined,
         cast,
       ),
     );
-    // fita branca no pulso
     const taped = (isLeft && look.wristTape === "left") || (!isLeft && look.wristTape === "right");
-    if (taped) {
+    if (taped)
       fore.push(
         rigPart(
-          new THREE.CylinderGeometry(P.armR * 0.92, P.armR * 0.92, 0.035, segs.radial),
+          new THREE.CylinderGeometry(P.armR * 0.64, P.armR * 0.58, 0.032, segs.radial),
           tapeMaterial(),
-          { position: [0, -P.foreArm * 0.9, 0] },
+          { position: [0, -P.foreArm * 0.89, 0] },
         ),
       );
-    }
-    // tatuagem: cilindro vazado com a estampa por cima da pele (manga longa cobre)
     const inked =
       look.sleeves !== "long" &&
       ((isLeft && look.tattoo === "foreL") || (!isLeft && look.tattoo === "foreR"));
-    if (inked) {
+    if (inked)
       fore.push(
         rigPart(
-          new THREE.CylinderGeometry(
-            P.armR * 0.905,
-            P.armR * 0.905,
-            P.foreArm * 0.52,
+          anatomicalSection(
+            [
+              { y: -P.foreArm * 0.81, width: P.armR * 0.617, depth: P.armR * 0.658 },
+              { y: -P.foreArm * 0.46, width: P.armR * 0.852, depth: P.armR * 0.812 },
+              { y: -P.foreArm * 0.25, width: P.armR * 0.912, depth: P.armR * 0.87 },
+            ],
             segs.radial,
-            1,
-            true,
           ),
           tattooMaterial(look.seed + (isLeft ? 7 : 29)),
-          { position: [0, -P.foreArm * 0.52, 0] },
         ),
       );
-    }
-    hand.push(
-      rigPart(new THREE.SphereGeometry(handR, segs.radial, segs.radial), handMat, undefined, cast),
-    );
-    for (let i = 0; i < 4; i += 1) {
-      handDetail.push(
-        rigPart(new THREE.CapsuleGeometry(handR * 0.2, handR * 0.7, 2, 5), handMat, {
-          position: [(i - 1.5) * handR * 0.45, -handR * 0.85, 0],
-          rotation: [0.15, 0, 0],
-        }),
-      );
-    }
 
-    /* perna */
+    /* A flattened palm, four separate fingers and an opposed thumb. */
+    hand.push(
+      rigPart(
+        anatomicalSection(
+          [
+            { y: -handR * 1.5, width: handR * 0.67, depth: handR * 0.27 },
+            { y: -handR * 0.85, width: handR * 0.77, depth: handR * 0.34 },
+            { y: -handR * 0.25, width: handR * 0.59, depth: handR * 0.32 },
+            { y: handR * 0.08, width: handR * 0.54, depth: handR * 0.31 },
+          ],
+          segs.radial,
+          0.8,
+        ),
+        handMat,
+        undefined,
+        cast,
+      ),
+    );
+    thumb.push(
+      rigPart(
+        new THREE.CapsuleGeometry(handR * 0.19, handR * 0.5, 3, 6),
+        handMat,
+        {
+          position: [-side * handR * 0.08, -handR * 0.27, handR * 0.08],
+          rotation: [0.18, 0, -side * 0.55],
+        },
+        cast,
+      ),
+    );
+    for (let i = 0; i < 4; i++)
+      handDetail.push(
+        rigPart(
+          new THREE.CapsuleGeometry(handR * 0.15, handR * FINGER_LENGTHS[i]!, 3, 6),
+          handMat,
+          {
+            position: [fingerX(i, handR), -handR * FINGER_CENTERS_Y[i]!, handR * 0.05],
+            rotation: [0.28, 0, (i - 1.5) * 0.035],
+          },
+        ),
+      );
+
+    /* Athletic quadriceps and tailored short legs with thin sewn hems. */
     leg.push(
       rigPart(
-        new THREE.CapsuleGeometry(P.legR, P.thigh * 0.72, segs.cap, segs.radial),
-        skin,
-        { position: [0, -P.thigh * 0.5, 0] },
+        anatomicalLimb("thigh", P.thigh, P.legR, segs.radial),
+        ctx.trousers ? shorts : skin,
+        undefined,
         cast,
       ),
       rigPart(
-        new THREE.CapsuleGeometry(P.legR * 0.72, P.thigh * 0.3, segs.cap, segs.radial),
-        skin,
-        {
-          position: [0, -P.thigh * 0.62, P.legR * 0.24],
-          scale: [0.9, 1, 0.7],
-        },
-        cast,
-      ),
-      rigPart(
-        new THREE.CapsuleGeometry(P.legR * 1.3, P.thigh * 0.24, 2, segs.radial),
+        clothSurface(
+          anatomicalSection(
+            [
+              { y: -P.thigh * 0.51, width: P.legR * 1.21, depth: P.legR * 1.16 },
+              { y: -P.thigh * 0.25, width: P.legR * 1.32, depth: P.legR * 1.24 },
+              { y: P.hipH * 0.18, width: P.legR * 1.25, depth: P.legR * 1.18 },
+            ],
+            segs.radial,
+            0.91,
+          ),
+          0.0014,
+        ),
         shorts,
-        { position: [0, -P.thigh * 0.32, 0] },
+        undefined,
         cast,
       ),
-      rigPart(new THREE.CylinderGeometry(P.legR * 1.31, P.legR * 1.28, 0.02, segs.radial), trim, {
-        position: [0, -P.thigh * 0.44, 0],
+      rigPart(new THREE.CylinderGeometry(P.legR * 1.22, P.legR * 1.22, 0.009, segs.radial), trim, {
+        position: [0, -P.thigh * 0.5, 0],
+        scale: [1, 1, 0.96],
       }),
     );
 
-    /* joelho e canela */
-    // meião baixo, médio ou alto: muda comprimento e posição de tudo junto
-    const sockLen = look.sockHeight === "low" ? 0.3 : look.sockHeight === "high" ? 0.56 : 0.44;
-    const sockY = look.sockHeight === "low" ? 0.72 : look.sockHeight === "high" ? 0.55 : 0.62;
+    /* Socks follow the real calf and taper into the ankle, including the
+       low/mid/high options. They do not add another capsule around the leg. */
+    const sockTop = ctx.trousers
+      ? 0
+      : look.sockHeight === "low"
+        ? 0.62
+        : look.sockHeight === "high"
+          ? 0.15
+          : 0.38;
+    const calfProfile = [
+      [0, 0.76, 0.78],
+      [0.22, 0.84, 0.94],
+      [0.4, 0.86, 1.02],
+      [0.74, 0.56, 0.63],
+      [1, 0.41, 0.5],
+    ];
+    const calfAt = (u: number) => {
+      const i = Math.max(0, calfProfile.findIndex((r) => r[0]! >= u) - 1);
+      const a = calfProfile[i]!,
+        b = calfProfile[Math.min(i + 1, calfProfile.length - 1)]!;
+      const t = THREE.MathUtils.clamp((u - a[0]!) / (b[0]! - a[0]!), 0, 1);
+      return [a[1]! + (b[1]! - a[1]!) * t, a[2]! + (b[2]! - a[2]!) * t];
+    };
+    const sockRings = [sockTop, ...[0.22, 0.4, 0.74, 1].filter((u) => u > sockTop), 1.035]
+      .map((u) => {
+        const [w, d] = calfAt(Math.min(1, u));
+        return { y: -P.shin * u, width: P.legR * w! + 0.002, depth: P.legR * d! + 0.002 };
+      })
+      .reverse();
     knee.push(
-      rigPart(new THREE.SphereGeometry(P.legR * 0.94, segs.radial, segs.radial), skin),
       rigPart(
-        new THREE.CapsuleGeometry(P.legR * 0.86, P.shin * 0.66, segs.cap, segs.radial),
-        skin,
-        { position: [0, -P.shin * 0.5, 0] },
+        anatomicalLimb("calf", P.shin, P.legR, segs.radial),
+        ctx.trousers ? shorts : skin,
+        undefined,
         cast,
       ),
       rigPart(
-        new THREE.CapsuleGeometry(P.legR * 0.68, P.shin * 0.26, segs.cap, segs.radial),
-        skin,
-        {
-          position: [0, -P.shin * 0.34, -P.legR * 0.22],
-          scale: [0.85, 1, 0.75],
-        },
+        anatomicalSection(sockRings, segs.radial),
+        ctx.trousers ? shorts : socks,
+        undefined,
         cast,
       ),
+    );
+    const [cuffW, cuffD] = calfAt(sockTop);
+    knee.push(
       rigPart(
-        new THREE.CapsuleGeometry(P.legR * 0.94, P.shin * sockLen, segs.cap, segs.radial),
-        socks,
-        { position: [0, -P.shin * sockY, 0] },
-        cast,
+        new THREE.CylinderGeometry(
+          P.legR * cuffW! + 0.003,
+          P.legR * cuffW! + 0.003,
+          0.012,
+          segs.radial,
+        ),
+        ctx.trousers ? shorts : socks,
+        { position: [0, -P.shin * sockTop, 0], scale: [1, 1, cuffD! / cuffW!] },
       ),
-      rigPart(
-        new THREE.CapsuleGeometry(P.legR * 0.7, P.shin * 0.3, 2, segs.radial),
-        socks,
-        {
-          position: [0, -P.shin * 0.55, P.legR * 0.5],
-          scale: [0.8, 1, 0.35],
-        },
-        cast,
-      ),
-      rigPart(new THREE.CylinderGeometry(P.legR * 1.02, P.legR * 0.98, 0.045, segs.radial), trim, {
-        position: [0, -P.shin * (sockY - sockLen / 2), 0],
-      }),
     );
     if (look.sockTape) {
+      const [w, d] = calfAt(sockTop + 0.06);
       knee.push(
         rigPart(
-          new THREE.CylinderGeometry(P.legR * 1.03, P.legR * 1.03, 0.035, segs.radial),
-          trim,
-          { position: [0, -P.shin * (sockY - sockLen / 2 + 0.1), 0] },
+          new THREE.CylinderGeometry(
+            P.legR * w! + 0.0035,
+            P.legR * w! + 0.0035,
+            0.014,
+            segs.radial,
+          ),
+          tapeMaterial(),
+          { position: [0, -P.shin * (sockTop + 0.06), 0], scale: [1, 1, d! / w!] },
         ),
       );
     }
 
-    /* tornozelo e chuteira */
+    /* The boot is one sculpted last rather than three spheres and a box. */
     ankle.push(
-      rigPart(new THREE.CapsuleGeometry(P.legR * 0.72, P.footH * 0.2, 2, segs.radial), socks, {
-        position: [0, P.footH * 0.12, 0],
-      }),
       rigPart(
-        new THREE.CapsuleGeometry(P.footH * 0.5, P.footLen * 0.45, 3, segs.radial),
-        boot,
-        { position: [0, -P.footH * 0.32, P.footLen * 0.16] },
+        new THREE.SphereGeometry(P.legR * 0.45, segs.radial, 10),
+        socks,
+        { position: [0, P.footH * 0.06, 0], scale: [1, 0.62, 1.05] },
         cast,
       ),
-      rigPart(
-        new THREE.SphereGeometry(P.footH * 0.46, segs.radial, segs.radial),
-        boot,
-        {
-          position: [0, -P.footH * 0.45, P.footLen * 0.42],
-          scale: [0.85, 0.7, 1],
-        },
-        cast,
-      ),
-      rigPart(new THREE.SphereGeometry(P.footH * 0.44, segs.radial, segs.radial), boot, {
-        position: [0, -P.footH * 0.24, -P.footLen * 0.16],
-        scale: [0.85, 1, 0.7],
-      }),
-      rigPart(new THREE.BoxGeometry(P.footH * 1.04, P.footH * 0.12, P.footLen * 0.4), bootAccent, {
-        position: [0, -P.footH * 0.34, P.footLen * 0.18],
-        rotation: [0, 0, 0.1],
-      }),
-      rigPart(new THREE.BoxGeometry(P.footH * 1.0, P.footH * 0.16, P.footLen * 0.86), sole, {
-        position: [0, -P.footH * 0.62, P.footLen * 0.1],
-      }),
+      rigPart(footballBoot(P.footLen, P.footH, segs.radial), boot, undefined, cast),
+      rigPart(footballBoot(P.footLen, P.footH, segs.radial, true), sole, undefined, cast),
     );
+    for (const bootSide of [-1, 1])
+      ankle.push(
+        rigPart(new THREE.CapsuleGeometry(P.footH * 0.032, P.footLen * 0.28, 2, 5), bootAccent, {
+          position: [bootSide * P.footH * 0.58, -P.footH * 0.43, P.footLen * 0.15],
+          rotation: [Math.PI / 2, 0, bootSide * 0.3],
+        }),
+      );
 
     /*
       Cadarços entram na malha de acabamento da chuteira (mesmo material, mesma
@@ -749,7 +541,7 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     head: mergeRigParts(head),
     // barba e cabelo estão na mesma junta rígida e usam o mesmo material:
     // uma malha só para os dois.
-    hair: mergeRigParts([...hairParts, ...beard]),
+    hair: mergeRigParts(hairParts),
     face: mergeRigParts(face),
     eyes: mergeRigParts(eyes),
     jaw: mergeRigParts(jaw),
@@ -762,6 +554,8 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     handR: mergeRigParts(handRig),
     handDetailL: mergeRigParts(handDetailL),
     handDetailR: mergeRigParts(handDetailR),
+    thumbL: mergeRigParts(thumbL),
+    thumbR: mergeRigParts(thumbR),
     legL: mergeRigParts(legL),
     legR: mergeRigParts(legR),
     kneeL: mergeRigParts(kneeL),

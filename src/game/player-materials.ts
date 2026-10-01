@@ -19,6 +19,9 @@ import * as THREE from "three";
 
 import {
   bootGrainNormal,
+  hairStrandNormal,
+  hairFiberColor,
+  hairlineMask,
   jerseyWeaveNormal,
   jerseyRoughness,
   skinPoreNormal,
@@ -55,6 +58,8 @@ export interface PlayerMaterials {
   skin: THREE.Material;
   skinDark: THREE.Material;
   jersey: THREE.Material;
+  /** Sleeves and shoulder seams use fabric without the torso's number atlas. */
+  jerseyPlain: THREE.Material;
   shorts: THREE.Material;
   socks: THREE.Material;
   trim: THREE.Material;
@@ -121,13 +126,38 @@ function dispose(set: PlayerMaterials) {
   Object.values(set).forEach((m) => m.dispose());
 }
 
+const users = new WeakMap<PlayerMaterials, number>();
+const retired = new WeakSet<PlayerMaterials>();
+
+function retire(set: PlayerMaterials) {
+  if ((users.get(set) ?? 0) > 0) retired.add(set);
+  else dispose(set);
+}
+
+/** Keep shared materials alive while any mounted rig still draws them.
+ * Eviction and HD texture replacement release GPU resources only after the
+ * last owner leaves, so a cache refresh cannot strip a live uniform. */
+export function retainPlayerMaterials(set: PlayerMaterials): () => void {
+  users.set(set, (users.get(set) ?? 0) + 1);
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    const count = Math.max(0, (users.get(set) ?? 1) - 1);
+    users.set(set, count);
+    if (count === 0 && retired.has(set)) {
+      retired.delete(set);
+      dispose(set);
+    }
+  };
+}
+
 // Quando as texturas KTX2 terminam de baixar, os materiais já criados ficam
 // desatualizados: o cache é esvaziado para que os próximos usem o alta definição.
 let ktx2Ready = false;
 onKtx2Ready(() => {
   ktx2Ready = true;
-  // Existing rigs may still reference these materials until their next render.
-  // Disposing them mid-frame makes players flicker or lose their uniforms.
+  for (const set of cache.values()) retire(set);
   cache.clear();
 });
 
@@ -199,7 +229,7 @@ export function playerMaterials(
     ? (ktx2(jerseyRoughName) ?? ktx2("fiberRough") ?? jerseyRoughness())
     : null;
   const skinRough = ktx2("sweatMask") ?? (hi ? skinRoughness() : null);
-  const hairNormal = ktx2("hairNormal");
+  const hairNormal = ktx2("hairNormal") ?? (hi ? hairStrandNormal() : null);
   const hairRough = ktx2("hairRough");
   const bootRough = ktx2("bootRough");
   const shinNormal = ktx2("shinNormal");
@@ -210,28 +240,30 @@ export function playerMaterials(
     skin: hi
       ? new THREE.MeshPhysicalMaterial({
           color: look.skin,
-          roughness: 0.6 - sweat * 0.16,
+          vertexColors: true,
+          roughness: 0.77 - sweat * 0.1,
           normalMap: pores,
           roughnessMap: skinRough,
-          normalScale: NORMAL_SCALE,
-          clearcoat: 0.28 + sweat * 0.35,
-          clearcoatRoughness: 0.5 - sweat * 0.28,
+          normalScale: new THREE.Vector2(0.23, 0.23),
+          clearcoat: 0.035 + sweat * 0.13,
+          clearcoatRoughness: 0.64 - sweat * 0.15,
           // gotas de suor: só o verniz recebe o relevo, a pele continua macia
           clearcoatNormalMap: sweatNormal,
           clearcoatNormalScale: new THREE.Vector2(0.25 + sweat * 0.75, 0.25 + sweat * 0.75),
-          envMapIntensity: 0.95,
+          envMapIntensity: 0.7,
 
-          sheen: 0.35,
-          sheenRoughness: 0.6,
+          sheen: 0.12,
+          sheenRoughness: 0.78,
           // tom avermelhado do sangue sob a pele: imita o espalhamento sub-superficial
           // sem o custo de transmissão — a borda do rosto/braço fica "viva".
           sheenColor: new THREE.Color(look.skin).lerp(new THREE.Color("#ff8a6a"), 0.45),
-          specularIntensity: 0.45,
+          specularIntensity: 0.28,
           specularColor: new THREE.Color("#fff1e4"),
         })
       : new THREE.MeshStandardMaterial({
           color: look.skin,
-          roughness: 0.62,
+          vertexColors: true,
+          roughness: 0.85,
           envMapIntensity: 0.85,
         }),
     skinDark: new THREE.MeshStandardMaterial({
@@ -258,6 +290,14 @@ export function playerMaterials(
           map: tex,
           roughness: 0.85,
         }),
+    jerseyPlain: new THREE.MeshStandardMaterial({
+      color: kit.pattern === "sleeves" ? kit.detail : kit.base,
+      roughness: 0.82 - sweat * 0.1,
+      normalMap: weave,
+      roughnessMap: jerseyRough,
+      normalScale: NORMAL_SCALE,
+      envMapIntensity: 0.7,
+    }),
     shorts: hi
       ? new THREE.MeshPhysicalMaterial({
           color: kit.shorts,
@@ -291,21 +331,26 @@ export function playerMaterials(
       : new THREE.MeshStandardMaterial({ color: kit.detail, roughness: 0.8 }),
     hair: hi
       ? new THREE.MeshPhysicalMaterial({
-          color: look.hairColor,
-          roughness: 0.62,
+          color: "white",
+          map: hairFiberColor(look.hairColor),
+          alphaMap: hairlineMask(),
+          alphaTest: 0.3,
+          alphaToCoverage: true,
+          roughness: 0.85,
           // fios individuais: o mapa dá direção ao brilho em vez de um capacete liso
           normalMap: hairNormal,
           roughnessMap: hairRough,
-          normalScale: new THREE.Vector2(0.8, 0.8),
-          metalness: 0.04,
-          clearcoat: 0.35,
-          clearcoatRoughness: 0.42,
-          sheen: 0.85,
-          sheenRoughness: 0.55,
+          normalScale: new THREE.Vector2(0.3, 0.5),
+          metalness: 0,
+          clearcoat: 0,
+          clearcoatRoughness: 0.85,
+          sheen: 0.14,
+          sheenRoughness: 0.82,
           sheenColor: new THREE.Color(shade(look.hairColor, 0.55)),
-          anisotropy: 0.7,
+          anisotropy: 0.35,
           anisotropyRotation: Math.PI / 2,
-          envMapIntensity: 0.75,
+          specularIntensity: 0.22,
+          envMapIntensity: 0.32,
         })
       : new THREE.MeshStandardMaterial({
           color: look.hairColor,
@@ -382,6 +427,7 @@ export function playerMaterials(
     const state = surfaceFromSteps(surface);
     applySurface(set.skin, { ...state, sweat: Math.min(1, state.sweat * 1.25) });
     applySurface(set.jersey, state);
+    applySurface(set.jerseyPlain, state);
     applySurface(set.shorts, state);
     applySurface(set.socks, { ...state, dirt: state.dirt * 1.4 });
     applySurface(set.trim, state);
@@ -394,7 +440,7 @@ export function playerMaterials(
     if (oldest) {
       const victim = cache.get(oldest);
       cache.delete(oldest);
-      if (victim) dispose(victim);
+      if (victim) retire(victim);
     }
   }
   return set;

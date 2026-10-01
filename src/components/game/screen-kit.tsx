@@ -74,14 +74,14 @@ export function ScreenHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-3">
+    <header className="screen-heading flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
         {eyebrow ? (
           <p className="font-display text-xs uppercase tracking-[0.25em] text-muted-foreground">
             {eyebrow}
           </p>
         ) : null}
-        <h1 className="mt-1 font-display text-2xl uppercase tracking-wide">{title}</h1>
+        <h1 className="mt-1 font-display text-2xl uppercase tracking-tight sm:text-3xl">{title}</h1>
         {description ? (
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">{description}</p>
         ) : null}
@@ -102,7 +102,9 @@ export function SectionCard({
   className?: string;
 }) {
   return (
-    <section className={`surface-card rounded-2xl border border-border/60 p-4 sm:p-5 ${className}`}>
+    <section
+      className={`game-section surface-card rounded-2xl border border-border/70 p-4 sm:p-6 ${className}`}
+    >
       {title ? (
         <h2 className="mb-3 font-display text-xs uppercase tracking-[0.25em] text-muted-foreground">
           {title}
@@ -116,11 +118,11 @@ export function SectionCard({
 /** Faixa de estatísticas: até 4 cartões lado a lado, empilhando no celular. */
 export function StatStrip({ stats }: { stats: { label: string; value: string; hint?: string }[] }) {
   return (
-    <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <dl className="stat-strip grid grid-cols-2 gap-2 sm:grid-cols-4">
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="surface-card rounded-xl border border-border/60 px-3 py-2.5"
+          className="stat-cell surface-card rounded-xl border border-border/70 px-4 py-3"
         >
           <dt className="font-display text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             {stat.label}

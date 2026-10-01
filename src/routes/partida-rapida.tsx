@@ -13,34 +13,23 @@ import { aiTactics, buildTeamSetup, type Difficulty } from "@/game/quickMatch";
 import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
 import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
 import { safeClub } from "@/game/squad";
+import { CAMERA_OPTIONS } from "@/game/camera-modes";
+import { canonical, noindexMeta, seoMeta } from "@/lib/seo";
 import { useT } from "@/i18n";
 
 export const Route = createFileRoute("/partida-rapida")({
   ssr: false,
   head: () => ({
     meta: [
-      { name: "robots", content: "noindex, follow" },
-      {
-        title:
-          "Partida rápida contra o computador · Pro Football Manager 3D: Jogo de Futebol Manager Online",
-      },
-      {
-        name: "description",
-        content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
-      },
-      {
-        property: "og:title",
-        content: "Partida rápida · Pro Football Manager 3D: Jogo de Futebol Manager Online",
-      },
-      {
-        property: "og:description",
-        content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      ...seoMeta({
+        title: "Partida rápida em 3D · Pro Football Manager 3D",
+        path: "/partida-rapida",
+        description:
+          "Escolha seu clube e o adversário, ajuste a dificuldade e acompanhe a partida em 3D com diferentes câmeras. Jogue contra o computador sem alterar sua carreira.",
+      }),
+      ...noindexMeta,
     ],
+    links: canonical("/partida-rapida"),
   }),
   component: QuickMatchPage,
 });
@@ -119,7 +108,9 @@ function QuickMatchPage() {
                 return acc;
               }, {}),
             )
-              .sort(([a], [b]) => (a === "Brasil" ? -1 : b === "Brasil" ? 1 : a.localeCompare(b, "pt-BR")))
+              .sort(([a], [b]) =>
+                a === "Brasil" ? -1 : b === "Brasil" ? 1 : a.localeCompare(b, "pt-BR"),
+              )
               .map(([country, ls]) => (
                 <optgroup key={country} label={country}>
                   {ls.map((l) => (
@@ -325,16 +316,21 @@ function QuickLive({
           ? "redCard"
           : e.type === "yellow"
             ? "card"
-          : (["goal", "save", "shot", "foul", "kickoff", "halftime", "fulltime"] as const).includes(
-                e.type as never,
-              )
-            ? (e.type as NarrationEvent)
-            : null;
+            : (
+                  ["goal", "save", "shot", "foul", "kickoff", "halftime", "fulltime"] as const
+                ).includes(e.type as never)
+              ? (e.type as NarrationEvent)
+              : null;
       if (!ev) continue;
       const neutral = ev === "kickoff" || ev === "halftime" || ev === "fulltime";
       if (e.side === "neutral" && !neutral) continue;
       const goalDifference = Math.abs(snap.hg - snap.ag);
-      const importance = snap.minute >= 80 && goalDifference <= 1 ? "decisive" : snap.minute >= 65 ? "pressure" : "routine";
+      const importance =
+        snap.minute >= 80 && goalDifference <= 1
+          ? "decisive"
+          : snap.minute >= 65
+            ? "pressure"
+            : "routine";
       n.speak(ev, e.side === "away" ? sim.away.short : sim.home.short, {
         minute: e.minute,
         homeGoals: snap.hg,
@@ -378,7 +374,11 @@ function QuickLive({
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
       <Stadium3D sim={sim} mode={camera} quality={quality} />
       {narrating && caption ? (
-        <div role="status" aria-live="polite" className="pointer-events-none absolute inset-x-3 bottom-24 z-20 mx-auto max-w-2xl rounded-md bg-background/90 px-4 py-2 text-center text-sm font-medium text-foreground shadow-lg backdrop-blur md:bottom-20">
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none absolute inset-x-3 bottom-32 z-20 mx-auto max-w-2xl rounded-md bg-background/90 px-4 py-2 text-center text-sm font-medium text-foreground shadow-lg backdrop-blur md:bottom-20"
+        >
           {caption}
         </div>
       ) : null}
@@ -429,11 +429,16 @@ function QuickLive({
         ))}
       </div>
 
-      <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 flex-wrap items-center justify-center gap-1 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl">
+      <div
+        aria-label="Controles da partida"
+        role="group"
+        className="absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 z-20 flex w-[calc(100%-1.5rem)] max-w-lg -translate-x-1/2 flex-wrap items-center justify-center gap-1 rounded-2xl border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl"
+      >
         <button
           onClick={() => setPaused((p) => !p)}
           aria-label={paused ? "Retomar partida" : "Pausar partida"}
-          className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground"
+          aria-pressed={paused}
+          className="grid h-11 w-11 place-items-center rounded-full bg-primary text-primary-foreground"
         >
           {paused ? <Play size={16} /> : <Pause size={16} />}
         </button>
@@ -441,7 +446,9 @@ function QuickLive({
           <button
             key={s}
             onClick={() => setSpeed(s)}
-            className={`h-9 w-9 rounded-full font-display text-xs ${
+            aria-label={`Velocidade ${s} vezes`}
+            aria-pressed={speed === s}
+            className={`h-11 w-11 rounded-full font-display text-xs ${
               speed === s ? "bg-white/25 text-white" : "text-white/70"
             }`}
           >
@@ -451,7 +458,8 @@ function QuickLive({
         <button
           onClick={() => setNarrating((v) => !v)}
           aria-label={narrating ? "Desligar narração" : "Ligar narração"}
-          className={`grid h-9 w-9 place-items-center rounded-full ${
+          aria-pressed={narrating}
+          className={`grid h-11 w-11 place-items-center rounded-full ${
             narrating ? "text-primary" : "text-white/60"
           }`}
         >
@@ -460,20 +468,23 @@ function QuickLive({
         <button
           onClick={skip}
           aria-label="Pular para o fim"
-          className="grid h-9 w-9 place-items-center rounded-full text-white/80"
+          className="grid h-11 w-11 place-items-center rounded-full text-white/80"
         >
           <SkipForward size={16} />
         </button>
-        <button
-          onClick={() =>
-            setCamera((c) =>
-              c === "broadcast" ? "tactical" : c === "tactical" ? "fan" : "broadcast",
-            )
-          }
-          className="rounded-full px-3 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
+        <select
+          aria-label="Câmera da partida"
+          title={CAMERA_OPTIONS.find((option) => option.id === camera)?.description}
+          value={camera}
+          onChange={(event) => setCamera(event.target.value as CameraMode)}
+          className="h-11 max-w-40 rounded-lg border border-white/20 bg-[#101c19] px-3 text-sm text-white"
         >
-          Câmera
-        </button>
+          {CAMERA_OPTIONS.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {done ? (

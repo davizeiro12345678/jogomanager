@@ -5,13 +5,14 @@
  * "cara" da partida: texturas, densidade da grama, detalhe dos jogadores,
  * torcida, clima, horário, corte do gramado (geral e por clube) e efeitos.
  */
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { createFileRoute } from "@tanstack/react-router";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { GameShell } from "@/components/game/GameShell";
+import { GraphicsPresets } from "@/components/game/GraphicsPresets";
 import { Chips } from "@/components/game/CrestBuilder";
 import { Crest } from "@/components/game/Crest";
 import { MOW_PATTERNS, type MowPattern } from "@/components/game/stadium/textures/grass";
@@ -28,30 +29,23 @@ import {
 } from "@/game/visual-settings";
 import { setWebgpuEnabled, webgpuEnabled } from "@/components/game/renderer";
 import { useCareer } from "@/hooks/useCareer";
+import { canonical, noindexMeta, seoMeta } from "@/lib/seo";
+const PlayerStudio = lazy(() => import("@/components/game/players/PlayerStudio"));
+const CinematicStudio = lazy(() => import("@/components/game/cinematic/CinematicStudio"));
 
 export const Route = createFileRoute("/visual")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Ajustes visuais · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      {
-        name: "description",
-        content:
-          "Ajuste qualidade 3D, resolução, sombras, gramado, clima, torcida e efeitos visuais para o seu aparelho.",
-      },
-      {
-        property: "og:title",
-        content: "Ajustes visuais · Pro Football Manager 3D: Jogo de Futebol Manager Online",
-      },
-      {
-        property: "og:description",
-        content:
-          "Ajuste qualidade 3D, resolução, sombras, gramado, clima, torcida e efeitos visuais para o seu aparelho.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "robots", content: "noindex, nofollow" },
+      ...seoMeta({
+        title: "Ajustes visuais e atletas 3D · Pro Football Manager 3D",
+        path: "/visual",
+        description:
+          "Confira proporções e movimentos dos atletas em uma prévia 3D. Ajuste resolução, sombras, gramado, clima, torcida e efeitos para o seu aparelho.",
+      }),
+      ...noindexMeta,
     ],
+    links: canonical("/visual"),
   }),
   component: VisualPage,
 });
@@ -122,21 +116,26 @@ function Slider({
   onChange: (v: number) => void;
   hint?: string;
 }) {
+  const displayValue = value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 2,
+  });
   return (
     <div>
       <div className="flex justify-between text-xs uppercase tracking-wide text-muted-foreground">
         <span>{label}</span>
-        <span className="tabular-nums">{value.toFixed(1)}×</span>
+        <span className="tabular-nums">{displayValue}×</span>
       </div>
       <input
         type="range"
         min={min}
         max={max}
-        step={step}
+        step={Math.min(step, 0.05)}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         className="mt-2 w-full accent-primary"
         aria-label={label}
+        aria-valuetext={`${displayValue} vezes`}
       />
       {hint ? <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p> : null}
     </div>
@@ -158,7 +157,7 @@ function VisualPage() {
   return (
     <GameShell career={career}>
       <header className="rounded-2xl border border-border/60 surface-card p-5">
-        <div className="flex items-start gap-3">
+        <div className="flex flex-wrap items-start gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-2xl uppercase tracking-wide">Ajustes visuais</h1>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -166,16 +165,34 @@ function VisualPage() {
               todas as partidas.
             </p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => resetVisual()}
-          >
+          <Button type="button" variant="outline" onClick={() => resetVisual()}>
             <RotateCcw size={16} /> Restaurar
           </Button>
         </div>
       </header>
+      <Suspense
+        fallback={
+          <div
+            role="status"
+            className="mt-4 flex h-64 items-center justify-center rounded-2xl border border-border text-sm text-muted-foreground"
+          >
+            Preparando a prévia dos atletas…
+          </div>
+        }
+      >
+        <PlayerStudio clubId={career?.clubId ?? "fla"} />
+      </Suspense>
+      <Suspense
+        fallback={
+          <p role="status" className="mt-5 text-sm text-muted-foreground">
+            Preparando o cinema da carreira…
+          </p>
+        }
+      >
+        <CinematicStudio clubId={career?.clubId ?? "fla"} />
+      </Suspense>
 
+      <GraphicsPresets />
       <section className="mt-4 grid gap-4 lg:grid-cols-2">
         <article className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Qualidade</h2>

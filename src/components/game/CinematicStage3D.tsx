@@ -8,14 +8,23 @@
 //  e faz um travelling contínuo dentro da fala.
 // ============================================================================
 
-import { Environment, Lightformer, Float } from "@react-three/drei";
+import { Environment, Lightformer } from "@react-three/drei";
 import { PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { memo, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import type { SceneArt, Speaker } from "@/content/cutscenes";
 import type { LineLight, ShotSize } from "@/game/cutscene-director";
+import type { Cast } from "@/game/cast";
+import type { ManagerLook } from "@/game/types";
+import { cinematicFocus } from "@/game/cinematic-blocking";
+import { CinematicActor as Figure } from "./cinematic/CinematicActor";
+import { CinematicRuntime } from "./cinematic/CinematicRuntime";
+import { useCinematicFrame, useCinematicRuntime } from "./cinematic/cinematic-runtime";
+import { CinematicSetBatch, type CinematicBatchSnapshot } from "./cinematic/CinematicSetBatch";
+import { GraphicsBoundary } from "./GraphicsBoundary";
+import { HangingShirt, TacticsBoard, ClubTrophy } from "./cinematic/CinematicSetDetails";
 
 /** true quando o locutor da fala atual é um dos donos deste figurante-herói */
 function actsFor(speaker: Speaker | null, roles: Speaker[]): boolean {
@@ -116,140 +125,11 @@ const SHOTS: Record<SetKind, Array<[number, number, number, number, number, numb
 
 /* ------------------------------------------------------------- figurantes */
 
-const SKIN = ["#f0c39a", "#d9a173", "#b57a4c", "#8a5733", "#5f3a22"];
-const HAIR = ["#1b1410", "#2f1d12", "#5b3a1c", "#9a6b35", "#151515"];
-
 function hash(seed: number) {
   const s = Math.sin(seed * 127.1) * 43758.5453;
   return s - Math.floor(s);
 }
 
-/** Figurante articulado: pescoço, tronco, braços e pernas com respiração. */
-function Figure({
-  x,
-  z,
-  rot = 0,
-  color,
-  shorts = "#12181c",
-  seed = 1,
-  pose = "stand",
-  scale = 1,
-  acting = false,
-}: {
-  x: number;
-  z: number;
-  rot?: number;
-  color: string;
-  shorts?: string;
-  seed?: number;
-  pose?: "stand" | "sit" | "walk";
-  scale?: number;
-  /** true quando este figurante é quem está falando: gesticula e balança a cabeça */
-  acting?: boolean;
-}) {
-  const rig = useRef<THREE.Group>(null);
-  const armL = useRef<THREE.Group>(null);
-  const armR = useRef<THREE.Group>(null);
-  const chest = useRef<THREE.Group>(null);
-  const head = useRef<THREE.Group>(null);
-  const skin = SKIN[Math.floor(hash(seed) * SKIN.length)]!;
-  const hair = HAIR[Math.floor(hash(seed + 7) * HAIR.length)]!;
-  const off = hash(seed + 3) * 6.28;
-
-  const actingRef = useRef(acting);
-  actingRef.current = acting;
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime + off;
-    const talk = actingRef.current ? 1 : 0;
-    if (chest.current)
-      chest.current.scale.y = 1 + Math.sin(t * 1.6) * 0.016 + (talk ? Math.sin(t * 7) * 0.008 : 0);
-    if (head.current) {
-      // falando: acenos curtos e rítmicos; calado: vagueia devagar
-      head.current.rotation.y =
-        Math.sin(t * 0.5) * 0.2 * (1 - talk) + Math.sin(t * 2.4) * 0.08 * talk;
-      head.current.rotation.x =
-        Math.sin(t * 0.37) * 0.06 + (talk ? Math.abs(Math.sin(t * 3.6)) * 0.14 : 0);
-    }
-    const swing = pose === "walk" ? Math.sin(t * 3.2) * 0.5 : Math.sin(t * 0.9) * 0.07;
-    if (armL.current) armL.current.rotation.x = swing * (1 - talk * 0.5);
-    if (armR.current) {
-      // falando: mão direita erguida marcando o ritmo da fala
-      armR.current.rotation.x = talk
-        ? -1.15 + Math.sin(t * 5.2) * 0.28
-        : pose === "walk"
-          ? -swing
-          : -swing;
-    }
-    if (rig.current && pose === "walk")
-      rig.current.position.y = Math.abs(Math.sin(t * 3.2)) * 0.035;
-  });
-
-  const sit = pose === "sit";
-  const hipY = sit ? 0.52 : 0.92;
-
-  return (
-    <group ref={rig} position={[x, 0, z]} rotation-y={rot} scale={scale}>
-      {/* pernas */}
-      <group position={[0, hipY, 0]} rotation-x={sit ? -1.2 : 0}>
-        <mesh position={[-0.11, -0.28, 0]} castShadow>
-          <capsuleGeometry args={[0.078, 0.44, 4, 8]} />
-          <meshStandardMaterial color={shorts} roughness={0.78} />
-        </mesh>
-        <mesh position={[0.11, -0.28, 0]} castShadow>
-          <capsuleGeometry args={[0.078, 0.44, 4, 8]} />
-          <meshStandardMaterial color={shorts} roughness={0.78} />
-        </mesh>
-      </group>
-      <mesh position={[-0.11, sit ? 0.14 : 0.22, sit ? 0.4 : 0]} castShadow>
-        <capsuleGeometry args={[0.07, 0.36, 4, 8]} />
-        <meshStandardMaterial color={skin} roughness={0.66} />
-      </mesh>
-      <mesh position={[0.11, sit ? 0.14 : 0.22, sit ? 0.4 : 0]} castShadow>
-        <capsuleGeometry args={[0.07, 0.36, 4, 8]} />
-        <meshStandardMaterial color={skin} roughness={0.66} />
-      </mesh>
-      {/* tronco */}
-      <group ref={chest} position={[0, hipY + 0.02, 0]}>
-        <mesh position={[0, 0.3, 0]} castShadow>
-          <capsuleGeometry args={[0.2, 0.44, 6, 14]} />
-          <meshStandardMaterial color={color} roughness={0.56} />
-        </mesh>
-        {/* ombros e braços */}
-        <group ref={armL} position={[-0.24, 0.48, 0]}>
-          <mesh position={[0, -0.26, 0]} castShadow>
-            <capsuleGeometry args={[0.058, 0.44, 4, 8]} />
-            <meshStandardMaterial color={skin} roughness={0.64} />
-          </mesh>
-        </group>
-        <group ref={armR} position={[0.24, 0.48, 0]}>
-          <mesh position={[0, -0.26, 0]} castShadow>
-            <capsuleGeometry args={[0.058, 0.44, 4, 8]} />
-            <meshStandardMaterial color={skin} roughness={0.64} />
-          </mesh>
-        </group>
-        {/* pescoço + cabeça */}
-        <group ref={head} position={[0, 0.66, 0]}>
-          <mesh position={[0, -0.05, 0]}>
-            <cylinderGeometry args={[0.055, 0.065, 0.1, 8]} />
-            <meshStandardMaterial color={skin} roughness={0.68} />
-          </mesh>
-          <mesh position={[0, 0.1, 0]} castShadow>
-            <sphereGeometry args={[0.125, 18, 14]} />
-            <meshStandardMaterial color={skin} roughness={0.62} />
-          </mesh>
-          <mesh position={[0, 0.15, -0.012]} scale={[1.03, 0.82, 1.03]}>
-            <sphereGeometry args={[0.126, 16, 12]} />
-            <meshStandardMaterial color={hair} roughness={0.9} />
-          </mesh>
-        </group>
-      </group>
-    </group>
-  );
-}
-
-/* ------------------------------------------------------- efeitos de set */
-
-/** Chuva de papel picado sobre a entrada em campo (taça, festa, acesso). */
 function CelebrationRain() {
   const COUNT = 130;
   const ref = useRef<THREE.InstancedMesh>(null);
@@ -267,11 +147,11 @@ function CelebrationRain() {
   );
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const col = useMemo(() => new THREE.Color(), []);
-  useFrame(({ clock }, rawDt) => {
+  useCinematicFrame((time, rawDt) => {
     const mesh = ref.current;
     if (!mesh) return;
     const dt = Math.min(rawDt, 0.05);
-    const t = clock.elapsedTime;
+    const t = time;
     for (let i = 0; i < COUNT; i++) {
       const p = parts[i]!;
       p.y -= p.fall * dt;
@@ -310,7 +190,7 @@ function PressFlashes() {
     () => Array.from({ length: 5 }, (_, i) => ({ x: -3.4 + i * 1.7, next: i * 0.7, heat: 0 })),
     [],
   );
-  useFrame((_, rawDt) => {
+  useCinematicFrame((_, rawDt) => {
     const mesh = ref.current;
     if (!mesh) return;
     const dt = Math.min(rawDt, 0.05);
@@ -363,9 +243,9 @@ function TunnelDust() {
       })),
     [],
   );
-  useFrame(({ clock }) => {
+  useCinematicFrame((time) => {
     if (!ref.current) return;
-    const t = clock.elapsedTime;
+    const t = time;
     const pos = geo.getAttribute("position") as THREE.BufferAttribute;
     for (let i = 0; i < COUNT; i++) {
       const s = seeds[i]!;
@@ -404,8 +284,8 @@ function LockerRoom({
   speaker: Speaker | null;
 }) {
   const lamp = useRef<THREE.PointLight>(null);
-  useFrame(({ clock }) => {
-    if (lamp.current) lamp.current.intensity = 9 + Math.sin(clock.elapsedTime * 9.3) * 0.4;
+  useCinematicFrame((time) => {
+    if (lamp.current) lamp.current.intensity = 9 + Math.sin(time * 9.3) * 0.4;
   });
   return (
     <group>
@@ -437,13 +317,10 @@ function LockerRoom({
             <boxGeometry args={[1.42, 0.12, 0.62]} />
             <meshStandardMaterial color="#5a4128" roughness={0.85} />
           </mesh>
-          <mesh position={[0, 1.7, 0.3]} castShadow>
-            <boxGeometry args={[0.78, 1.06, 0.06]} />
-            <meshStandardMaterial color={i % 2 ? secondary : primary} roughness={0.52} />
-          </mesh>
-          <mesh position={[0, 1.72, 0.34]}>
-            <planeGeometry args={[0.3, 0.3]} />
-            <meshStandardMaterial color={i % 2 ? primary : secondary} roughness={0.4} />
+          <HangingShirt color={i % 2 ? secondary : primary} number={i + 5} />
+          <mesh position={[0.53, 2.1, 0.35]}>
+            <boxGeometry args={[0.035, 0.3, 0.04]} />
+            <meshStandardMaterial color="#8b9299" metalness={0.7} roughness={0.35} />
           </mesh>
         </group>
       ))}
@@ -452,15 +329,7 @@ function LockerRoom({
         <boxGeometry args={[6.4, 0.16, 0.72]} />
         <meshStandardMaterial color="#6b4d2c" roughness={0.8} />
       </mesh>
-      <mesh position={[4.6, 1.8, -4.25]}>
-        <boxGeometry args={[2.6, 1.6, 0.08]} />
-        <meshStandardMaterial
-          color="#0d1712"
-          emissive="#0d3a22"
-          emissiveIntensity={0.4}
-          roughness={0.5}
-        />
-      </mesh>
+      <TacticsBoard />
       {/* lâmpadas práticas */}
       {[-3.5, 0, 3.5].map((x) => (
         <mesh key={x} position={[x, 3.5, -1]}>
@@ -468,25 +337,28 @@ function LockerRoom({
           <meshBasicMaterial color="#e9fff1" toneMapped={false} />
         </mesh>
       ))}
-      <pointLight
-        ref={lamp}
-        position={[0, 3.3, -1]}
-        intensity={9}
-        distance={14}
-        color="#dcffe9"
-        castShadow
-      />
+      <pointLight ref={lamp} position={[0, 3.3, -1]} intensity={9} distance={14} color="#dcffe9" />
       <Figure x={-1.9} z={0.6} rot={0.2} pose="sit" color={primary} seed={2} />
-      <Figure x={-0.4} z={0.6} rot={-0.1} pose="sit" color={primary} seed={5} />
+      <Figure
+        x={-0.4}
+        z={0.6}
+        rot={-0.1}
+        pose="sit"
+        color={primary}
+        seed={5}
+        role="captain"
+        acting={speaker === "captain"}
+      />
       <Figure x={1.4} z={0.6} rot={0.12} pose="sit" color={secondary} seed={9} />
       <Figure x={2.9} z={0.6} rot={-0.25} pose="sit" color={primary} seed={13} />
       <Figure
         x={0.2}
         z={-2.1}
-        rot={3.1}
+        rot={0.08}
         color="#1d2b24"
         seed={21}
-        acting={actsFor(speaker, ["manager", "captain", "assistant"])}
+        role="manager"
+        acting={actsFor(speaker, ["manager", "assistant"])}
       />
     </group>
   );
@@ -502,10 +374,10 @@ function Tunnel({
   speaker: Speaker | null;
 }) {
   const glow = useRef<THREE.Mesh>(null);
-  useFrame(({ clock }) => {
+  useCinematicFrame((time) => {
     if (glow.current) {
       const m = glow.current.material as THREE.MeshBasicMaterial;
-      m.opacity = 0.82 + Math.sin(clock.elapsedTime * 1.4) * 0.12;
+      m.opacity = 0.82 + Math.sin(time * 1.4) * 0.12;
     }
   });
   return (
@@ -550,7 +422,8 @@ function Tunnel({
           key={i}
           x={i % 2 ? 0.95 : -0.95}
           z={1 - Math.floor(i / 2) * 1.7}
-          pose="walk"
+          role={i === 0 ? "captain" : undefined}
+          pose="stand"
           color={i % 2 ? primary : secondary}
           seed={i * 11 + 4}
           acting={i === 0 && actsFor(speaker, ["captain", "manager"])}
@@ -577,11 +450,11 @@ function PressRoom({
   speaker: Speaker | null;
 }) {
   const flashes = useRef<THREE.Group>(null);
-  useFrame(({ clock }) => {
+  useCinematicFrame((time) => {
     if (!flashes.current) return;
     flashes.current.children.forEach((child, i) => {
       const m = (child as THREE.Mesh).material as THREE.MeshBasicMaterial;
-      const t = clock.elapsedTime * 3 + i * 1.9;
+      const t = time * 3 + i * 1.9;
       m.opacity = Math.max(0, Math.sin(t) ** 24);
     });
   });
@@ -625,6 +498,7 @@ function PressRoom({
         color={secondary}
         shorts="#1a1f21"
         seed={31}
+        role="manager"
         acting={actsFor(speaker, ["manager", "president"])}
       />
       {/* fotógrafos e flashes */}
@@ -636,6 +510,8 @@ function PressRoom({
           rot={Math.PI}
           color="#20262b"
           seed={i * 17 + 2}
+          role={i === 0 ? "press" : undefined}
+          acting={i === 0 && speaker === "press"}
         />
       ))}
       <PressFlashes />
@@ -679,9 +555,9 @@ function Crowd({
     return arr;
   }, [count, tint]);
 
-  useFrame(({ clock }) => {
+  useCinematicFrame((time) => {
     if (!mesh.current) return;
-    const t = clock.elapsedTime;
+    const t = time;
     for (let i = 0; i < count; i += 1) {
       const row = Math.floor(i / cols);
       const col = i % cols;
@@ -766,19 +642,19 @@ function PitchEntry({
           key={i}
           x={-5.2 + i * 1.06}
           z={0.4 + (i % 2) * 0.5}
-          pose="walk"
+          role={i === 0 ? "captain" : undefined}
+          pose="stand"
           color={i < 6 ? primary : secondary}
           seed={i * 9 + 1}
           acting={i === 0 && actsFor(speaker, ["captain", "manager"])}
         />
       ))}
       {festive ? <CelebrationRain /> : null}
-      <Float speed={1.2} rotationIntensity={0.1} floatIntensity={0.12}>
-        <mesh position={[0, 0.18, 2.4]} castShadow>
-          <sphereGeometry args={[0.16, 20, 16]} />
-          <meshStandardMaterial color="#f7f9f2" roughness={0.42} />
-        </mesh>
-      </Float>
+      {festive ? <ClubTrophy x={0} y={0.6} z={1.6} scale={1.5} /> : null}
+      <mesh position={[0, 0.11, 2.4]} castShadow>
+        <sphereGeometry args={[0.11, 20, 16]} />
+        <meshStandardMaterial color="#f7f9f2" roughness={0.42} />
+      </mesh>
     </group>
   );
 }
@@ -854,10 +730,7 @@ function Office({
         <meshStandardMaterial color="#241a12" roughness={0.85} />
       </mesh>
       {Array.from({ length: 5 }).map((_, i) => (
-        <mesh key={i} position={[-6.2 + i * 0.78, 2.35, -3.6]} castShadow>
-          <cylinderGeometry args={[0.1, 0.14, 0.42, 10]} />
-          <meshStandardMaterial color="#d8b64a" metalness={0.85} roughness={0.24} />
-        </mesh>
+        <ClubTrophy key={i} x={-6.2 + i * 0.78} y={2.05} z={-3.6} scale={0.8} />
       ))}
       <Figure
         x={-0.9}
@@ -866,6 +739,7 @@ function Office({
         color={primary}
         shorts="#1b1f22"
         seed={41}
+        role="president"
         acting={actsFor(speaker, ["president", "agent"])}
       />
       <Figure
@@ -875,6 +749,7 @@ function Office({
         color={secondary}
         shorts="#1b1f22"
         seed={57}
+        role="manager"
         acting={actsFor(speaker, ["manager", "scout"])}
       />
     </group>
@@ -892,9 +767,9 @@ function BusArrival({
   speaker: Speaker | null;
 }) {
   const beacon = useRef<THREE.PointLight>(null);
-  useFrame(({ clock }) => {
+  useCinematicFrame((time) => {
     // giroflex do batedor: pulso azul alternado
-    if (beacon.current) beacon.current.intensity = Math.sin(clock.elapsedTime * 6) > 0 ? 14 : 2;
+    if (beacon.current) beacon.current.intensity = Math.sin(time * 6) > 0 ? 14 : 2;
   });
   return (
     <group>
@@ -959,6 +834,7 @@ function BusArrival({
         rot={1.2}
         color={primary}
         seed={71}
+        role="fan"
         acting={actsFor(speaker, ["fan"])}
       />
       <Figure x={-6.3} z={-1.1} rot={1.4} color={secondary} seed={72} />
@@ -967,9 +843,10 @@ function BusArrival({
       <Figure
         x={1.9}
         z={1.8}
-        rot={-2.6}
+        rot={0.1}
         color={primary}
         seed={77}
+        role="captain"
         acting={actsFor(speaker, ["captain", "manager"])}
       />
       <pointLight ref={beacon} position={[-7.5, 2.2, 5]} color="#3a7bff" distance={18} />
@@ -999,6 +876,7 @@ function Director({
   dollyFrom = 0,
   dollyTo = 0,
   climax = false,
+  speaker = null,
 }: {
   kind: SetKind;
   beat: number;
@@ -1015,7 +893,9 @@ function Director({
   dollyTo?: number;
   /** fala de clímax: tremor e aperto de lente no máximo */
   climax?: boolean;
+  speaker?: Speaker | null;
 }) {
+  const runtime = useCinematicRuntime();
   const shots = SHOTS[kind];
   // o plano respeita a direção; linhas seguidas do mesmo tamanho alternam
   // entre as duas opções médias para não repetir o enquadramento
@@ -1052,12 +932,15 @@ function Director({
   const climaxRef = useRef(climax);
   climaxRef.current = climax;
 
-  useFrame(({ camera, clock }, delta) => {
+  useFrame(({ camera }) => {
+    const delta = runtime.clock.dt;
+    const time = runtime.clock.time;
     const shot = shots[roleIndex % shots.length]!;
-    const t = clock.elapsedTime;
+    const t = time;
     if (lastBeat.current !== beat) {
       lastBeat.current = beat;
       since.current = 0;
+      if (delta === 0) started.current = false;
     }
     since.current += delta;
 
@@ -1072,6 +955,32 @@ function Director({
       shot[2] + Math.cos(t * 0.13) * 0.32 * drift,
     );
     look.set(shot[3], shot[4], shot[5]);
+    const focus = cinematicFocus(kind, speaker);
+    if (focus && size !== "geral") {
+      const lens = size === "close" ? 2.15 : size === "proximo" ? 3.1 : 4.7;
+      const narrow =
+        camera instanceof THREE.PerspectiveCamera ? Math.max(1, 0.85 / camera.aspect) : 1;
+      const offset = (beat % 2 ? -1 : 1) * (size === "close" ? 0.65 : 1.15);
+      const seated = kind === "locker" && speaker === "captain";
+      const subjectY =
+        size === "close"
+          ? seated
+            ? 1.09
+            : 1.58
+          : size === "proximo"
+            ? seated
+              ? 0.98
+              : 1.35
+            : seated
+              ? 0.8
+              : 1.1;
+      target.set(
+        focus[0] + offset,
+        subjectY + 0.12,
+        focus[1] + lens * narrow * (kind === "press" && speaker === "press" ? -1 : 1),
+      );
+      look.set(focus[0], subjectY, focus[1]);
+    }
     // push-in da direção: a câmera desliza em direção ao alvo durante a fala
     if (!reduced) {
       const travel = dolly.current.to - dolly.current.from;
@@ -1093,6 +1002,7 @@ function Director({
     const k = 1 - Math.pow(speed, delta);
     current.current.lerp(target, k);
     currentLook.current.lerp(look, k);
+    runtime.focus.copy(currentLook.current);
     camera.position.copy(current.current);
     camera.lookAt(currentLook.current);
 
@@ -1136,6 +1046,7 @@ function Stage({
   climax = false,
   light = "neutra",
   festive = false,
+  onBatch,
 }: {
   kind: SetKind;
   beat: number;
@@ -1151,17 +1062,18 @@ function Stage({
   climax?: boolean;
   light?: LineLight;
   festive?: boolean;
+  onBatch?: ((snapshot: CinematicBatchSnapshot) => void) | undefined;
 }) {
-  const base = mood === "good" ? "#fff3d6" : mood === "bad" ? "#cfe0ff" : "#effff4";
+  const base = mood === "good" ? "#fff3e1" : mood === "bad" ? "#d8e3fa" : "#eef2f7";
   const tint = LINE_TINT[light];
   const warm = light === "neutra" ? base : tint.sky;
   const indoor = kind === "locker" || kind === "press" || kind === "office" || kind === "tunnel";
-  const amb = (indoor ? 0.34 : 0.55) * tint.amb;
+  const amb = (indoor ? 0.46 : 0.55) * tint.amb;
   return (
     <>
       <fog
         attach="fog"
-        args={[indoor ? "#070c0a" : "#0a1310", indoor ? 8 : 22, indoor ? 34 : 70]}
+        args={[indoor ? "#0b1017" : "#0a1310", indoor ? 8 : 22, indoor ? 34 : 70]}
       />
       <ambientLight intensity={amb} color={warm} />
       <hemisphereLight intensity={0.35} color={warm} groundColor="#0a140f" />
@@ -1196,26 +1108,29 @@ function Stage({
         dollyFrom={dollyFrom}
         dollyTo={dollyTo}
         climax={climax}
+        speaker={speaker}
       />
-      {kind === "locker" ? (
-        <LockerRoom primary={primary} secondary={secondary} speaker={speaker} />
-      ) : null}
-      {kind === "tunnel" ? (
-        <Tunnel primary={primary} secondary={secondary} speaker={speaker} />
-      ) : null}
-      {kind === "press" ? (
-        <PressRoom primary={primary} secondary={secondary} speaker={speaker} />
-      ) : null}
-      {kind === "pitch" ? (
-        <PitchEntry primary={primary} secondary={secondary} speaker={speaker} festive={festive} />
-      ) : null}
-      {kind === "stands" ? <Stands primary={primary} secondary={secondary} /> : null}
-      {kind === "office" ? (
-        <Office primary={primary} secondary={secondary} speaker={speaker} />
-      ) : null}
-      {kind === "arrival" ? (
-        <BusArrival primary={primary} secondary={secondary} speaker={speaker} />
-      ) : null}
+      <CinematicSetBatch key={`${kind}-${primary}-${secondary}`} onReady={onBatch}>
+        {kind === "locker" ? (
+          <LockerRoom primary={primary} secondary={secondary} speaker={speaker} />
+        ) : null}
+        {kind === "tunnel" ? (
+          <Tunnel primary={primary} secondary={secondary} speaker={speaker} />
+        ) : null}
+        {kind === "press" ? (
+          <PressRoom primary={primary} secondary={secondary} speaker={speaker} />
+        ) : null}
+        {kind === "pitch" ? (
+          <PitchEntry primary={primary} secondary={secondary} speaker={speaker} festive={festive} />
+        ) : null}
+        {kind === "stands" ? <Stands primary={primary} secondary={secondary} /> : null}
+        {kind === "office" ? (
+          <Office primary={primary} secondary={secondary} speaker={speaker} />
+        ) : null}
+        {kind === "arrival" ? (
+          <BusArrival primary={primary} secondary={secondary} speaker={speaker} />
+        ) : null}
+      </CinematicSetBatch>
     </>
   );
 }
@@ -1233,6 +1148,12 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   dollyTo = 0,
   climax = false,
   light = "neutra",
+  paused = false,
+  reduced = false,
+  look,
+  cast,
+  onUnavailable,
+  qualityMode = "auto",
 }: {
   art: SceneArt;
   primary: string;
@@ -1249,51 +1170,129 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   dollyTo?: number;
   climax?: boolean;
   light?: LineLight;
+  paused?: boolean;
+  reduced?: boolean;
+  look?: ManagerLook | undefined;
+  cast?: Cast | undefined;
+  onUnavailable?: (() => void) | undefined;
+  qualityMode?: QualityLevel | "auto";
 }) {
   const kind = SET_BY_ART[art] ?? "locker";
   const initialQuality = useMemo(() => detectQuality(), []);
-  const [quality, setQuality] = useState<QualityLevel>(initialQuality);
+  const [quality, setQuality] = useState<QualityLevel>(
+    qualityMode === "auto" ? initialQuality : qualityMode,
+  );
+  useEffect(() => {
+    setQuality(qualityMode === "auto" ? initialQuality : qualityMode);
+  }, [qualityMode, initialQuality]);
+  const [hidden, setHidden] = useState(false);
+  const host = useRef<HTMLDivElement>(null);
+  const onBatch = useCallback(({ sources, batches, visibleSources }: CinematicBatchSnapshot) => {
+    if (!host.current) return;
+    host.current.dataset["staticSources"] = String(sources);
+    host.current.dataset["staticBatches"] = String(batches);
+    host.current.dataset["staticVisibleSources"] = String(visibleSources);
+  }, []);
+  useEffect(() => {
+    const changed = () => setHidden(document.hidden);
+    changed();
+    document.addEventListener("visibilitychange", changed);
+    return () => document.removeEventListener("visibilitychange", changed);
+  }, []);
   return (
-    <div className="absolute inset-0" aria-hidden="true">
-      <Canvas
-        shadows={quality !== "baixa"}
-        dpr={quality === "alta" ? [0.9, 1.4] : quality === "media" ? [0.75, 1.1] : 0.7}
-        camera={{ position: [0, 2.2, 6.5], fov: 42 }}
-        gl={{ antialias: quality !== "baixa", powerPreference: "high-performance", stencil: false }}
-        onCreated={({ gl }) => {
-          gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.05;
-          gl.outputColorSpace = THREE.SRGBColorSpace;
-          gl.shadowMap.type = THREE.PCFShadowMap;
-        }}
+    <div
+      ref={host}
+      className="absolute inset-0"
+      data-cinematic-set={kind}
+      data-cinematic-quality={quality}
+    >
+      <GraphicsBoundary
+        fallback={
+          <button
+            type="button"
+            onClick={onUnavailable}
+            className="absolute inset-0 bg-background p-8 text-white"
+          >
+            A cena 3D não carregou. Abrir cena ilustrada.
+          </button>
+        }
       >
-        <PerformanceMonitor
-          flipflops={2}
-          onDecline={() => setQuality((current) => lowerQuality(current))}
-        />
-        <Stage
-          kind={kind}
-          beat={beat}
-          primary={primary}
-          secondary={secondary}
-          mood={mood}
-          quality={quality}
-          intensity={intensity}
-          speaker={speaker}
-          size={size}
-          dollyFrom={dollyFrom}
-          dollyTo={dollyTo}
-          climax={climax}
-          light={light}
-          festive={(art === "trophy" || art === "celebration") && mood === "good"}
-        />
-        <PostFX
-          quality={quality === "alta" ? "alta" : quality === "media" ? "media" : "baixa"}
-          moment="drama"
-          time="entardecer"
-          intensity={quality === "alta" ? 0.72 : 0.5}
-        />
-      </Canvas>
+        <Canvas
+          frameloop={paused || reduced || hidden ? "demand" : "always"}
+          shadows={quality !== "baixa"}
+          dpr={quality === "alta" ? [0.9, 1.4] : quality === "media" ? [0.75, 1.1] : 0.7}
+          camera={{ position: [0, 2.2, 6.5], fov: 42, near: 0.05, far: 90 }}
+          gl={{
+            antialias: quality !== "baixa",
+            powerPreference: "high-performance",
+            stencil: false,
+          }}
+          onCreated={({ gl }) => {
+            gl.toneMapping = THREE.ACESFilmicToneMapping;
+            gl.toneMappingExposure = 1.05;
+            gl.outputColorSpace = THREE.SRGBColorSpace;
+            gl.shadowMap.type = THREE.PCFShadowMap;
+          }}
+          fallback={
+            <button
+              type="button"
+              onClick={onUnavailable}
+              className="absolute inset-0 bg-background p-8 text-white"
+            >
+              O 3D está indisponível neste navegador. Abrir cena ilustrada.
+            </button>
+          }
+        >
+          {qualityMode === "auto" && !paused && !reduced && !hidden ? (
+            <PerformanceMonitor
+              flipflops={2}
+              bounds={() => [24, 45]}
+              iterations={6}
+              threshold={0.8}
+              onDecline={() => setQuality((current) => lowerQuality(current))}
+            />
+          ) : null}
+          <CinematicRuntime
+            quality={quality}
+            look={look}
+            cast={cast}
+            stopped={paused || hidden}
+            reduced={reduced}
+          >
+            <Stage
+              kind={kind}
+              beat={beat}
+              primary={primary}
+              secondary={secondary}
+              mood={mood}
+              quality={quality}
+              intensity={intensity}
+              speaker={speaker}
+              size={size}
+              dollyFrom={dollyFrom}
+              dollyTo={dollyTo}
+              climax={climax}
+              light={light}
+              festive={(art === "trophy" || art === "celebration") && mood === "good"}
+              onBatch={onBatch}
+            />
+            <CinematicLens quality={quality} />
+          </CinematicRuntime>
+        </Canvas>
+      </GraphicsBoundary>
     </div>
   );
 });
+
+function CinematicLens({ quality }: { quality: QualityLevel }) {
+  const runtime = useCinematicRuntime();
+  return (
+    <PostFX
+      quality={quality}
+      moment="drama"
+      time="entardecer"
+      intensity={quality === "alta" ? 0.72 : 0.5}
+      focusTarget={runtime.focus}
+    />
+  );
+}

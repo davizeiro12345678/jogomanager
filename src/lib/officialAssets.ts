@@ -5,7 +5,7 @@
  * and works offline) and switchable off from the settings toggle, in which
  * case the game falls back to its own hand-drawn crests.
  */
-import { getOfficialAssets, type OfficialAssets } from "./football.functions";
+import type { OfficialAssets } from "./football.functions";
 
 const CACHE_KEY = "manager3d.official.v1";
 const PREF_KEY = "manager3d.officialLook";
@@ -67,7 +67,10 @@ export function loadOfficialAssets(): Promise<void> {
     listeners.forEach((l) => l());
   }
 
-  inflight = getOfficialAssets()
+  // The local crest renderer and isolated graphics previews do not need to
+  // initialize the server-function runtime just to import this cache.
+  inflight = import("./football.functions")
+    .then(({ getOfficialAssets }) => getOfficialAssets())
     .then((data) => {
       if (data && (Object.keys(data.crests).length || Object.keys(data.kits).length)) {
         cache = data;

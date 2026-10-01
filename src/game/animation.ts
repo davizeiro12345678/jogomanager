@@ -1003,10 +1003,10 @@ export function selectClip(c: SelectCtx): ClipName {
         "freeKickWall",
         "handsOnHips",
         "huddleTalk",
-        "drinkWater",
-        "adjustSocks",
-        "handshake",
-        "warmup",
+        "idle",
+        "breathe",
+        "weightShift",
+        "checkShoulder",
       ],
       c,
       3,
@@ -1063,33 +1063,18 @@ export function selectClip(c: SelectCtx): ClipName {
 
   if (sp < 0.35) {
     if (c.defending && c.ballDist < 18)
-      return pick<ClipName>(
-        ["mark", "markTight", "jockey", "shoulderToShoulder", "armBarHold", "shoulderBarge", "headerJump"],
-        c,
-        3,
-      );
+      return pick<ClipName>(["mark", "markTight", "jockey", "checkShoulder"], c, 3);
     if (c.stamina < 30)
       return pick<ClipName>(["catchBreathKnees", "handsOnHips", "tired", "missSighs"], c, 3);
     return pick<ClipName>(
-      [
-        "idle",
-        "breathe",
-        "weightShift",
-        "handsOnHips",
-        "applaudFans",
-        "handsOnHead",
-        "encourageTeammate",
-        "protestHandsOut",
-        "dissent",
-        "warmUpStretch",
-      ],
+      ["idle", "breathe", "weightShift", "handsOnHips", "encourageTeammate", "checkShoulder"],
       c,
     );
   }
   if (sp < 1.2) {
     if (c.defending && c.ballDist < 12)
       return pick<ClipName>(
-        ["sideStep", "shuffleLeft", "shuffleRight", "jockey", "sideGallopL", "sideGallopR", "slideRecover"],
+        ["sideStep", "shuffleLeft", "shuffleRight", "jockey", "sideGallopL", "sideGallopR"],
         c,
         2,
       );
@@ -1121,21 +1106,9 @@ export function selectClip(c: SelectCtx): ClipName {
   // escorregão raro no sprint: os clipes normais se repetem para afundar a
   // probabilidade (~1/6) sem precisar de sorteio com peso
   return c.defending
-    ? pick<ClipName>(
-        ["recoverySprint", "sprintFlatOut", "recoverySprint", "sprintFlatOut", "slip"],
-        c,
-        3,
-      )
+    ? pick<ClipName>(["recoverySprint", "sprintFlatOut", "sprintEasing"], c, 3)
     : pick<ClipName>(
-        [
-          "sprint",
-          "curveRunLeft",
-          "curveRunRight",
-          "sprintFlatOut",
-          "sprintEasing",
-          "sprint",
-          "slip",
-        ],
+        ["sprint", "curveRunLeft", "curveRunRight", "sprintFlatOut", "sprintEasing", "sprint"],
         c,
         3,
       );
