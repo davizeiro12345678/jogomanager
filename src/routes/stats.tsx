@@ -18,7 +18,7 @@ export const Route = createFileRoute("/stats")({
       {
         name: "description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Estatísticas do seu elenco: gols, assistências, notas, forma e potencial de cada jogador no Pro Football Manager 3D.",
       },
       {
         property: "og:title",
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/stats")({
       {
         property: "og:description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Estatísticas do seu elenco: gols, assistências, notas, forma e potencial de cada jogador no Pro Football Manager 3D.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

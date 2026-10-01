@@ -15,7 +15,7 @@ export const Route = createFileRoute("/news")({
       {
         name: "description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Notícias da sua carreira: resultados, lesões, transferências, acesso e rebaixamento no Pro Football Manager 3D.",
       },
       {
         property: "og:title",
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/news")({
       {
         property: "og:description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Notícias da sua carreira: resultados, lesões, transferências, acesso e rebaixamento no Pro Football Manager 3D.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

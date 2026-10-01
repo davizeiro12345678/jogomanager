@@ -20,7 +20,7 @@ export const Route = createFileRoute("/league")({
       {
         name: "description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Tabela de classificação, calendário de jogos e zonas de acesso e rebaixamento da sua liga no Pro Football Manager 3D.",
       },
       {
         property: "og:title",
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/league")({
       {
         property: "og:description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Tabela de classificação, calendário de jogos e zonas de acesso e rebaixamento da sua liga no Pro Football Manager 3D.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
