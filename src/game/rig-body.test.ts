@@ -106,7 +106,7 @@ describe("rig body", () => {
     );
     expect(countRigBody(plain)).toBeGreaterThanOrEqual(countRigBody(captain));
   });
-  it("adds geometry for style variants without adding meshes", () => {
+  it("keeps style variants inside the articulated mesh budget", () => {
     const base = lookFor("rig-body-test", "MF", false);
     const triangles = (body: ReturnType<typeof buildRigBody>) =>
       body.all.reduce(
@@ -130,10 +130,9 @@ describe("rig body", () => {
         },
       }),
     );
-    // O merge absorve as peças extras nas malhas existentes (e às vezes une
-    // peças que antes ficavam separadas, como a mão dentro da manga longa):
-    // variantes de estilo nunca acrescentam malhas, só geometria.
-    expect(countRigBody(fancy)).toBeLessThanOrEqual(countRigBody(plain));
+    // A fitted beard/tape can introduce a material; all style variants
+    // still respect the existing budget instead of masking those details.
+    expect(countRigBody(fancy)).toBeLessThanOrEqual(56);
     expect(triangles(fancy)).toBeGreaterThan(triangles(plain));
   });
 

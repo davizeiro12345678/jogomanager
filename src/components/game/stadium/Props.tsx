@@ -82,13 +82,12 @@ function Dugout({ x, color }: { x: number; color: string }) {
       </mesh>
       <mesh position={[0, 1.7, 1.75]}>
         <planeGeometry args={[11.4, 1.9]} />
-        <meshPhysicalMaterial
+        <meshStandardMaterial
           color="#8fb6cf"
           transparent
           opacity={0.22}
           roughness={0.08}
           metalness={0}
-          transmission={0.6}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -264,11 +263,10 @@ function PressBoxes({ rings }: { rings: number }) {
   const top = 2.0 + rings * 1.45;
   const glass = useMemo(
     () =>
-      new THREE.MeshPhysicalMaterial({
+      new THREE.MeshStandardMaterial({
         color: "#9dc6e0",
         roughness: 0.06,
         metalness: 0.1,
-        transmission: 0.55,
         transparent: true,
         opacity: 0.5,
       }),
@@ -370,15 +368,15 @@ export function StadiumProps({
 }) {
   return (
     <group ref={censusRef("props")}>
-      <Dugout x={-14} color={homeColor} />
-      <Dugout x={14} color={awayColor} />
-      <Tunnel />
       {/*
         Props imutáveis em lote único: cada mesh de grade, camarote, portão e
         cobertura era um desenho separado. Com anéis em 11, eram mais de cem
         chamadas só de cenário. O `TvCameras` fica fora porque gira com a bola.
       */}
       <StaticBatch signature={`props:${rings}:${homeColor}:${awayColor}:${quality}`}>
+        <Dugout x={-14} color={homeColor} />
+        <Dugout x={14} color={awayColor} />
+        <Tunnel />
         {quality !== "baixa" && <SectorGrilles rings={rings} />}
         {quality === "alta" && <PressBoxes rings={rings} />}
         {quality === "alta" && <Gates rings={rings} color={homeColor} />}

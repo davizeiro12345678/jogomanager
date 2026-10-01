@@ -8,22 +8,9 @@
 // Tipos duplicados do visual-context para evitar dependencia circular
 // Quando o sistema estabilizar, podemos mover esses tipos para um arquivo compartilhado
 export type ActionPhase = "anticipation" | "action" | "contact" | "followThrough" | "recovery";
-export type ContactType = 
-  | "none"
-  | "ground"
-  | "ball"
-  | "player"
-  | "groundBall"
-  | "airBall";
-export type ReactionType = 
-  | "none"
-  | "balance"
-  | "push"
-  | "pull"
-  | "dodge"
-  | "fall"
-  | "recovery"
-  | "celebrate";
+export type ContactType = "none" | "ground" | "ball" | "player" | "groundBall" | "airBall";
+export type ReactionType =
+  "none" | "balance" | "push" | "pull" | "dodge" | "fall" | "recovery" | "celebrate";
 export type DominantFoot = "left" | "right" | "both";
 
 export type JointName =
@@ -137,6 +124,10 @@ export interface ClipMarker {
 
 /** Metadados de um clipe de animacao */
 export interface ClipMetadata {
+  /** Searchable motion properties shared with the player preview. */
+  tags?: string[];
+  support?: "alternating" | "planted" | "airborne" | "ground";
+  contactAt?: number;
   /** Familia a qual o clipe pertence */
   family: AnimationFamily;
   /** Se o clipe faz loop */
@@ -209,7 +200,7 @@ export function isPoseValid(pose: Pose): boolean {
   for (const joint of JOINTS) {
     const value = pose[joint];
     const limits = JOINT_LIMITS[joint];
-    if (value < limits.min || value > limits.max) {
+    if (!Number.isFinite(value) || value < limits.min || value > limits.max) {
       return false;
     }
   }
@@ -230,7 +221,7 @@ export function clampPose(pose: Pose): Pose {
 /** Filtro de clipes por familiares */
 export function filterClipsByFamily(
   clips: Record<string, Clip>,
-  family: AnimationFamily
+  family: AnimationFamily,
 ): Record<string, Clip> {
   // Por enquanto retorna todos, mas quando os metadados estiverem completos,
   // poderao ser filtrados por familia

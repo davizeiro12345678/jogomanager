@@ -1,6 +1,9 @@
 {
   "name": "Pro Football Manager 3D",
   "short_name": "PFM 3D",
+  "id": "/",
+  "lang": "pt-BR",
+  "dir": "ltr",
   "description": "Jogo de manager de futebol em 3D: carreira, táticas, mercado e partidas ao vivo — funciona offline.",
   "start_url": "/",
   "scope": "/",
@@ -9,6 +12,26 @@
   "background_color": "#0b1220",
   "theme_color": "#0b1220",
   "categories": ["games", "sports"],
+  "shortcuts": [
+    {
+      "name": "Partida rápida",
+      "short_name": "Jogar",
+      "description": "Escolha os clubes e acompanhe uma partida 3D.",
+      "url": "/partida-rapida"
+    },
+    {
+      "name": "Nova carreira",
+      "short_name": "Carreira",
+      "description": "Crie seu treinador e escolha um clube.",
+      "url": "/new"
+    },
+    {
+      "name": "Ajustes visuais",
+      "short_name": "Gráficos",
+      "description": "Confira os atletas e configure os gráficos 3D.",
+      "url": "/visual"
+    }
+  ],
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }

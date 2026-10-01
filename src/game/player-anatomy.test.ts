@@ -1,0 +1,111 @@
+import { describe, expect, it } from "vitest";
+
+import { emptyPose } from "./animation-core";
+import { gaitPoseAt } from "./gait-kinematics";
+import { soleHeightFor, solveGroundContact } from "./ground-contact";
+import { anatomyMeasurements, lookFor, proportionsFor } from "./player-model";
+import { anatomicalLimb, type LimbProfile } from "./rig-geometry";
+
+describe("adult player anatomy", () => {
+  it("keeps stature, limb proportions and head scale consistent across roles and seeds", () => {
+    for (const role of ["GK", "DF", "MF", "FW"]) {
+      for (let seed = 0; seed < 80; seed++) {
+        const id = `anatomy-${role}-${seed}`;
+        const look = lookFor(id, role);
+        const p = proportionsFor(look);
+        const m = anatomyMeasurements(p);
+        expect(lookFor(id, role)).toEqual(look);
+        expect(m.height).toBeCloseTo(1.8 * look.height, 6);
+        expect(m.heads).toBeGreaterThan(7.1);
+        expect(m.heads).toBeLessThan(8.7);
+        expect(m.inseam / m.height).toBeGreaterThan(0.46);
+        expect(m.inseam / m.height).toBeLessThan(0.54);
+        expect(m.shoulderWidth / m.height).toBeGreaterThan(0.23);
+        expect(m.shoulderWidth / m.height).toBeLessThan(0.34);
+        expect(m.wristHeight).toBeLessThan(p.hipY);
+        expect(m.wristHeight).toBeGreaterThan(p.hipY - p.thigh * 0.6);
+        // LOD head and the detailed skull use the same neck and crown.
+        const headCenter =
+          p.hipY + p.hipH * 0.5 + p.spineLen + p.chestLen + p.neckLen + p.headR * 0.82;
+        expect(headCenter + p.headH * 0.5).toBeCloseTo(m.height, 6);
+      }
+    }
+  });
+
+  it("builds closed tapered limbs with finite, smooth seam normals", () => {
+    for (const kind of ["upperArm", "forearm", "thigh", "calf"] satisfies LimbProfile[]) {
+      const geometry = anatomicalLimb(kind, 0.4, 0.05, 12);
+      const positions = geometry.getAttribute("position");
+      const normals = geometry.getAttribute("normal");
+      expect(geometry.index).toBeTruthy();
+      for (let i = 0; i < positions.count; i++) {
+        expect(Number.isFinite(positions.getX(i) + positions.getY(i) + positions.getZ(i))).toBe(
+          true,
+        );
+        expect(Math.hypot(normals.getX(i), normals.getY(i), normals.getZ(i))).toBeCloseTo(1, 4);
+      }
+      for (let row = 0; row < 13; row++) {
+        const first = row * 13;
+        const last = first + 12;
+        expect(normals.getX(first)).toBeCloseTo(normals.getX(last), 6);
+        expect(normals.getY(first)).toBeCloseTo(normals.getY(last), 6);
+        expect(normals.getZ(first)).toBeCloseTo(normals.getZ(last), 6);
+      }
+      geometry.dispose();
+    }
+  });
+});
+
+describe("three dimensional sole contact", () => {
+  const p = proportionsFor(lookFor("ground-anatomy", "DF"));
+
+  it("keeps heel and toe above turf during root lean, pelvis roll and lateral steps", () => {
+    for (const leanZ of [-0.16, 0, 0.16]) {
+      for (let frame = 0; frame < 32; frame++) {
+        const pose = gaitPoseAt((frame / 32) * Math.PI * 2, 4, p).pose;
+        pose.hipRoll += 0.08;
+        pose.legLRoll += 0.07;
+        const input = {
+          P: p,
+          pose,
+          hipShiftX: 0.025,
+          hipRollOffset: 0.06,
+          leanX: 0.09,
+          leanZ,
+          airborne: 0,
+          previousRootY: 0,
+          dt: 1 / 60,
+        };
+        const contact = solveGroundContact(input);
+        const lowest = Math.min(soleHeightFor(input, true).y, soleHeightFor(input, false).y);
+        expect(lowest + contact.rootY).toBeGreaterThanOrEqual(0.0079);
+        const finalSole = Math.min(
+          soleHeightFor(input, true, contact.ankleLFix).y,
+          soleHeightFor(input, false, contact.ankleRFix).y,
+        );
+        expect(finalSole + contact.rootY).toBeGreaterThanOrEqual(0.0079);
+        expect(Number.isFinite(contact.ankleLFix + contact.ankleRFix)).toBe(true);
+      }
+    }
+  });
+
+  it("does not accumulate suspension height over repeated airborne frames", () => {
+    const pose = emptyPose();
+    pose.hipY = 0.28;
+    let previousRootY = 0.2;
+    for (let frame = 0; frame < 180; frame++) {
+      previousRootY = solveGroundContact({
+        P: p,
+        pose,
+        hipShiftX: 0,
+        leanX: 0,
+        leanZ: 0,
+        airborne: 1,
+        previousRootY,
+        dt: 1 / 60,
+      }).rootY;
+    }
+    expect(Math.abs(previousRootY)).toBeLessThan(0.001);
+    expect(pose.hipY).toBe(0.28);
+  });
+});

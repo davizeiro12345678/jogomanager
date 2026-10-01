@@ -12,6 +12,89 @@ import * as THREE from "three";
 
 const cache = new Map<string, THREE.CanvasTexture | null>();
 
+export function hairFiberColor(color: string): THREE.CanvasTexture | null {
+  const texture = make(`hair-color:${color}`, 256, 1, (ctx, size) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, size, size);
+    for (let strand = 0; strand < size * 2; strand++) {
+      const x = strand * 0.5;
+      ctx.strokeStyle = strand % 5 === 0 ? "rgba(255,245,224,0.14)" : "rgba(0,0,0,0.14)";
+      ctx.lineWidth = 0.55;
+      ctx.beginPath();
+      for (let y = 0; y <= size; y += 4) {
+        const px = x + Math.sin((y / size) * Math.PI * 2 + strand * 0.37) * 1.4;
+        if (y === 0) ctx.moveTo(px, y);
+        else ctx.lineTo(px, y);
+      }
+      ctx.stroke();
+    }
+  });
+  if (texture) texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+export function hairlineMask(): THREE.CanvasTexture | null {
+  const texture = make("hairline-mask", 128, 1, (ctx, size) => {
+    const data = ctx.createImageData(size, size);
+    for (let y = 0; y < size; y++)
+      for (let x = 0; x < size; x++) {
+        const v = 1 - y / (size - 1),
+          edge = 0.012 + 0.025 * (0.5 + 0.5 * Math.sin(x * 2.1));
+        const a = THREE.MathUtils.smoothstep(v, edge, edge + 0.055) * 255;
+        const i = (y * size + x) * 4;
+        data.data[i] = data.data[i + 1] = data.data[i + 2] = a;
+        data.data[i + 3] = 255;
+      }
+    ctx.putImageData(data, 0, 0);
+  });
+  if (texture) texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
+export function beardFiberMask(): THREE.CanvasTexture | null {
+  return make("beard-fiber-mask", 256, 2, (ctx, size) => {
+    ctx.fillStyle = "#474747";
+    ctx.fillRect(0, 0, size, size);
+    let state = 173;
+    const random = () => {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      return state / 4294967296;
+    };
+    // Short, irregular whiskers avoid the regular hatch of the old mask.
+    for (let strand = 0; strand < 7800; strand++) {
+      const x = random() * size,
+        y = random() * size;
+      const length = 1.4 + random() * 4.6;
+      const grey = Math.round(158 + random() * 97);
+      ctx.strokeStyle = `rgb(${grey},${grey},${grey})`;
+      ctx.lineWidth = 0.65 + random() * 0.6;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + (random() - 0.5) * 1.7, y + length);
+      ctx.stroke();
+    }
+  });
+}
+
+/** Fine directional fibre grooves, available even before HD assets load. */
+export function hairStrandNormal(): THREE.CanvasTexture | null {
+  return make("hair-strands", 128, 2, (ctx, size) => {
+    const data = ctx.createImageData(size, size);
+    for (let y = 0; y < size; y++)
+      for (let x = 0; x < size; x++) {
+        const i = (y * size + x) * 4;
+        const groove =
+          Math.sin(x * Math.PI * 0.68 + Math.sin((y * Math.PI) / 64) * 0.45) * 0.42 +
+          Math.sin(x * Math.PI * 1.25 + (y * Math.PI) / 64) * 0.12;
+        const value = 128 + groove * 32;
+        data.data[i] = data.data[i + 1] = data.data[i + 2] = value;
+        data.data[i + 3] = 255;
+      }
+    ctx.putImageData(data, 0, 0);
+    heightToNormal(ctx, size, 0.85);
+  });
+}
+
 function make(
   key: string,
   size: number,

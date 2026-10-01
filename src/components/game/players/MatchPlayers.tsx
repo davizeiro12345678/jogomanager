@@ -69,6 +69,9 @@ export function MatchPlayers({
         } else {
           headroom.current = 0;
         }
+      } else if (heroLimit !== 0) {
+        headroom.current = 0;
+        setHeroLimit(0);
       }
     }
 
@@ -77,7 +80,10 @@ export function MatchPlayers({
     timer.current = 0;
     const next = new Set<string>();
     const wideMode = mode === "tactical" || mode === "skycam" || mode === "fan";
-    const maxDetailed = quality === "baixa" || wideMode ? 0 : heroLimit;
+    const maxDetailed =
+      quality === "baixa" || wideMode
+        ? 0
+        : Math.min(heroLimit, replay ? budget.replayHeroPlayers : budget.heroPlayers);
 
     if (maxDetailed > 0) {
       camera.getWorldDirection(direction.current);
@@ -85,15 +91,18 @@ export function MatchPlayers({
       const lens = perspective.isPerspectiveCamera
         ? 1 / Math.tan(THREE.MathUtils.degToRad(perspective.fov * 0.5))
         : 1;
-      const candidates = sim.players.map((player) => {
-        point.current.set(player.x, 1.05, player.z);
-        const distance = point.current.distanceTo(camera.position);
-        const inFront = direction.current.dot(point.current.sub(camera.position).normalize()) > 0.1;
-        // Approximate vertical screen coverage. This follows the current lens
-        // and retains a small hysteresis for an athlete already promoted.
-        const coverage = inFront ? (1.78 * lens) / Math.max(1, distance) : 0;
-        return { player, coverage };
-      });
+      const candidates = sim.players
+        .filter((player) => !player.sentOff)
+        .map((player) => {
+          point.current.set(player.x, 1.05, player.z);
+          const distance = point.current.distanceTo(camera.position);
+          const inFront =
+            direction.current.dot(point.current.sub(camera.position).normalize()) > 0.1;
+          // Approximate vertical screen coverage. This follows the current lens
+          // and retains a small hysteresis for an athlete already promoted.
+          const coverage = inFront ? (1.78 * lens) / Math.max(1, distance) : 0;
+          return { player, coverage };
+        });
       candidates.sort((a, b) => b.coverage - a.coverage);
       for (const { player, coverage } of candidates) {
         const threshold = near.has(player.id) ? 0.035 : 0.052;
@@ -114,7 +123,7 @@ export function MatchPlayers({
         simplified
       />
       {sim.players
-        .filter((player) => near.has(player.id))
+        .filter((player) => !player.sentOff && quality !== "baixa" && near.has(player.id))
         .map((player) => (
           <PlayerRig
             key={player.id}

@@ -35,6 +35,9 @@ type BenchmarkRenderer = {
   getContext?: () => {
     VERSION?: number;
     getParameter?: (parameter: number) => unknown;
+    getExtension?: (
+      name: string,
+    ) => { UNMASKED_RENDERER_WEBGL?: number; UNMASKED_VENDOR_WEBGL?: number } | null;
   } | null;
 };
 
@@ -59,11 +62,18 @@ function rendererMetadata(gl: unknown) {
   const isWebGpu = renderer.isWebGPURenderer === true || /webgpu/i.test(name);
   const isWebGl2 = !isWebGpu && (renderer.capabilities?.isWebGL2 === true || /webgl2/i.test(name));
   let contextVersion: string | null = null;
+  let gpuRenderer: string | null = null;
+  let gpuVendor: string | null = null;
   try {
     const context = renderer.getContext?.();
     if (context?.getParameter && typeof context.VERSION === "number") {
       const value = context.getParameter(context.VERSION);
       contextVersion = typeof value === "string" ? value : null;
+      const debug = context.getExtension?.("WEBGL_debug_renderer_info");
+      if (debug?.UNMASKED_RENDERER_WEBGL)
+        gpuRenderer = String(context.getParameter(debug.UNMASKED_RENDERER_WEBGL));
+      if (debug?.UNMASKED_VENDOR_WEBGL)
+        gpuVendor = String(context.getParameter(debug.UNMASKED_VENDOR_WEBGL));
     }
   } catch {
     // WebGPU renderers and privacy-hardened browsers may not expose a WebGL context.
@@ -78,6 +88,8 @@ function rendererMetadata(gl: unknown) {
           : "unknown",
     renderer: name,
     contextVersion,
+    gpuRenderer,
+    gpuVendor,
     maxTextureSize: renderer.capabilities?.maxTextureSize ?? null,
     maxAnisotropy: renderer.capabilities?.getMaxAnisotropy?.() ?? null,
   };
@@ -115,6 +127,7 @@ export function FrameProbe() {
   const scene = useThree((state) => state.scene);
   // Telemetria opcional (com consentimento): 30 s de amostra após 10 s de partida.
   useEffect(() => {
+    if (location.pathname.includes("graphics-benchmark")) return;
     const metrics = new FrameMetrics();
     const start = performance.now();
     let last = start;
@@ -126,9 +139,11 @@ export function FrameProbe() {
       if (!sent && now - start > 40_000) {
         sent = true;
         const s = metrics.summary();
-        void import("@/lib/telemetry-client").then((m) =>
-          m.reportTechSample({ fps: s.fps, p95: s.p95 }),
-        );
+        void import("@/lib/telemetry-client")
+          .then((m) => m.reportTechSample({ fps: s.fps, p95: s.p95 }))
+          .catch(() => {
+            /* Optional telemetry must never break the renderer. */
+          });
       }
     });
     return stop;
@@ -174,6 +189,30 @@ export function FrameProbe() {
         // torcida, grama, props, estrutura, gol, bola e céu. Sem isso, um
         // total de 700 desenhos não diz o que consertar.
         const census = censusScene(scene);
+        const staticBatches: {
+          eligible: number;
+          merged: number;
+          draws: number;
+          visibleSources: number;
+          detachedSources: number;
+        }[] = [];
+        scene.traverse((object) => {
+          const batch = object.userData["staticBatch"] as
+            | {
+                eligible: number;
+                batches: number;
+                sources: { visible: boolean; parent: unknown }[];
+              }
+            | undefined;
+          if (batch)
+            staticBatches.push({
+              eligible: batch.eligible,
+              merged: batch.sources.length,
+              draws: batch.batches,
+              visibleSources: batch.sources.filter((source) => source.visible).length,
+              detachedSources: batch.sources.filter((source) => !source.parent).length,
+            });
+        });
         const renderer = rendererMetadata(gl);
         window.dispatchEvent(
           new CustomEvent("graphics-sample", {
@@ -188,11 +227,30 @@ export function FrameProbe() {
               textures: gl.info.memory.textures,
               programs: gl.info.programs?.length ?? null,
               materials: census.materials,
+              staticBatches,
               census: {
                 buckets: census.buckets,
                 total: census.total,
-                budgetUse: censusBudgetUse(census, "alta"),
-                fitsBudget: censusFitsBudget(census, "alta"),
+                budgetUse: censusBudgetUse(
+                  census,
+                  benchmarkMetadata()?.quality === "cinema"
+                    ? "cinema"
+                    : benchmarkMetadata()?.quality === "media"
+                      ? "media"
+                      : benchmarkMetadata()?.quality === "baixa"
+                        ? "baixa"
+                        : "alta",
+                ),
+                fitsBudget: censusFitsBudget(
+                  census,
+                  benchmarkMetadata()?.quality === "cinema"
+                    ? "cinema"
+                    : benchmarkMetadata()?.quality === "media"
+                      ? "media"
+                      : benchmarkMetadata()?.quality === "baixa"
+                        ? "baixa"
+                        : "alta",
+                ),
               },
               firstFrameMs: firstFrame,
               longTasks: observer ? longTasks : null,
@@ -207,6 +265,8 @@ export function FrameProbe() {
                 kind: renderer.kind,
                 renderer: renderer.renderer,
                 contextVersion: renderer.contextVersion,
+                gpuRenderer: renderer.gpuRenderer,
+                gpuVendor: renderer.gpuVendor,
               },
             },
           }),

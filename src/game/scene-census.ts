@@ -113,6 +113,7 @@ export function censusScene(scene: THREE.Object3D): SceneCensus {
   const materials = new Set<string>();
 
   const visit = (object: THREE.Object3D, inherited: CensusBucket) => {
+    if (!object.visible) return;
     const own = object.userData?.["census"];
     const bucket = isCensusBucket(own) ? own : inherited;
     const mesh = object as THREE.Mesh;

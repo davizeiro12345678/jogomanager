@@ -98,18 +98,18 @@
 }
 
 .dark {
-  --background: oklch(0.145 0.024 166);
+  --background: oklch(0.16 0.012 210);
   --foreground: oklch(0.97 0.014 150);
-  --card: oklch(0.198 0.029 167);
+  --card: oklch(0.218 0.014 205);
   --card-foreground: oklch(0.97 0.014 150);
-  --popover: oklch(0.19 0.028 167);
+  --popover: oklch(0.235 0.016 205);
   --popover-foreground: oklch(0.97 0.014 150);
   --primary: oklch(0.79 0.19 148);
   --primary-foreground: oklch(0.17 0.05 160);
-  --secondary: oklch(0.255 0.032 167);
+  --secondary: oklch(0.277 0.018 205);
   --secondary-foreground: oklch(0.96 0.012 150);
-  --muted: oklch(0.245 0.03 167);
-  --muted-foreground: oklch(0.75 0.03 158);
+  --muted: oklch(0.257 0.016 205);
+  --muted-foreground: oklch(0.76 0.016 205);
   --accent: oklch(0.255 0.032 167);
   --accent-foreground: oklch(0.96 0.012 150);
   --destructive: oklch(0.63 0.22 25);
@@ -322,11 +322,56 @@
 
 @utility game-scroll-nav {
   scrollbar-width: none;
-  mask-image: linear-gradient(to right, transparent 0, black 1rem, black calc(100% - 2rem), transparent 100%);
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 1rem,
+    black calc(100% - 2rem),
+    transparent 100%
+  );
 }
 
 .game-scroll-nav::-webkit-scrollbar {
   display: none;
+}
+
+@layer components {
+  .game-shell-header {
+    box-shadow: 0 8px 26px -18px rgb(0 0 0 / 0.65);
+  }
+  .game-shell-brand {
+    border-inline-start: 3px solid var(--color-primary);
+    padding-inline-start: 0.7rem;
+  }
+  .game-nav-link[aria-current="page"] {
+    color: var(--color-foreground);
+    background: color-mix(in oklab, var(--color-primary) 13%, var(--color-card));
+    box-shadow: inset 0 -2px var(--color-primary);
+  }
+  .game-shell :is(button, select, a):focus-visible,
+  .cutscene-screen button:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+  }
+  .screen-heading {
+    padding-block-end: 1.2rem;
+    border-block-end: 1px solid var(--color-border);
+    margin-block-end: 1.2rem;
+  }
+  .game-section {
+    box-shadow:
+      inset 0 1px rgb(255 255 255 / 0.045),
+      0 16px 32px -26px rgb(0 0 0 / 0.6);
+  }
+  .stat-cell {
+    border-block-start: 2px solid color-mix(in oklab, var(--color-primary) 45%, var(--color-border));
+  }
+  .stat-cell dd:first-of-type {
+    font-family: var(--font-mono);
+    font-size: clamp(1.2rem, 1rem + 0.6vw, 1.7rem);
+    line-height: 1.4;
+    letter-spacing: -0.03em;
+  }
 }
 
 @utility tabular {
@@ -353,7 +398,11 @@
 @utility surface-frame {
   border: 1px solid color-mix(in oklab, var(--color-primary) 18%, var(--color-border));
   background:
-    linear-gradient(135deg, color-mix(in oklab, var(--color-primary) 8%, transparent), transparent 42%),
+    linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--color-primary) 8%, transparent),
+      transparent 42%
+    ),
     color-mix(in oklab, var(--color-card) 94%, black);
   box-shadow:
     inset 0 1px 0 color-mix(in oklab, white 7%, transparent),
@@ -372,8 +421,14 @@
 }
 
 @keyframes ad-corner-in {
-  from { opacity: 0; transform: translate3d(0, 12px, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 @media (min-width: 64rem) and (hover: hover) {
@@ -617,15 +672,33 @@
 }
 
 @keyframes cs-fog {
-  0%, 100% { transform: translate3d(-8%, 0, 0) scale(1); opacity: 0.32; }
-  50% { transform: translate3d(18%, -8px, 0) scale(1.12); opacity: 0.55; }
+  0%,
+  100% {
+    transform: translate3d(-8%, 0, 0) scale(1);
+    opacity: 0.32;
+  }
+  50% {
+    transform: translate3d(18%, -8px, 0) scale(1.12);
+    opacity: 0.55;
+  }
 }
 @keyframes cs-beam {
-  0%, 100% { opacity: 0.16; transform: rotate(-18deg) translateX(-8px); }
-  50% { opacity: 0.42; transform: rotate(-12deg) translateX(18px); }
+  0%,
+  100% {
+    opacity: 0.16;
+    transform: rotate(-18deg) translateX(-8px);
+  }
+  50% {
+    opacity: 0.42;
+    transform: rotate(-12deg) translateX(18px);
+  }
 }
-@utility cs-anim-fog { animation: cs-fog 8s ease-in-out infinite; }
-@utility cs-anim-beam { animation: cs-beam 6s ease-in-out infinite; }
+@utility cs-anim-fog {
+  animation: cs-fog 8s ease-in-out infinite;
+}
+@utility cs-anim-beam {
+  animation: cs-beam 6s ease-in-out infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .cs-anim-fog,
@@ -820,7 +893,8 @@
   height: 100%;
   border-radius: 999px;
   background-color: var(--hud-tone, var(--color-primary));
-  box-shadow: 0 0 10px -1px color-mix(in oklab, var(--hud-tone, var(--color-primary)) 70%, transparent);
+  box-shadow: 0 0 10px -1px
+    color-mix(in oklab, var(--hud-tone, var(--color-primary)) 70%, transparent);
   transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 

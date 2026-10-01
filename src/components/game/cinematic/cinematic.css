@@ -1,0 +1,125 @@
+/* DOM UI reserves the middle of the viewport for the actual scene. */
+.cutscene-screen {
+  --cine-panel: oklch(0.15 0.012 210 / 0.88);
+  --cine-line: oklch(0.96 0.008 210 / 0.16);
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  isolation: isolate;
+  color: oklch(0.98 0.006 210);
+  background: oklch(0.09 0.012 210);
+  outline: none;
+}
+.cutscene-world {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.cutscene-screen[data-scene-paused="true"] * {
+  animation-play-state: paused;
+}
+.cutscene-top {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: max(1rem, env(safe-area-inset-top)) clamp(1rem, 3vw, 2.5rem) 1.6rem;
+  background: linear-gradient(to bottom, oklch(0.08 0.012 210 / 0.85), transparent);
+  pointer-events: none;
+}
+.cutscene-top button {
+  pointer-events: auto;
+}
+.cutscene-bottom {
+  position: absolute;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(52rem, calc(100% - 2rem));
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 44dvh;
+}
+.cutscene-dialogue {
+  padding: 1rem 1.3rem;
+  border: 1px solid var(--cine-line);
+  border-radius: 0.9rem;
+  background: var(--cine-panel);
+  box-shadow: 0 12px 32px oklch(0.04 0 0 / 0.3);
+  backdrop-filter: blur(8px);
+  overflow-y: auto;
+}
+.cutscene-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border: 1px solid var(--cine-line);
+  border-radius: 0.9rem;
+  background: var(--cine-panel);
+}
+.cutscene-control {
+  display: inline-flex;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.6rem;
+}
+.cutscene-control:hover {
+  background-color: oklch(0.98 0.01 210 / 0.12);
+}
+.cutscene-control[aria-pressed="true"] {
+  color: var(--color-primary);
+  background-color: color-mix(in oklab, var(--color-primary) 12%, transparent);
+}
+.cutscene-control:disabled {
+  opacity: 0.45;
+}
+.cutscene-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+}
+.cutscene-choice {
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border: 1px solid var(--cine-line);
+  border-radius: 0.65rem;
+  background: oklch(0.98 0.01 210 / 0.04);
+  font-size: 0.9rem;
+}
+.cutscene-choice:hover,
+.cutscene-choice[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  background-color: color-mix(in oklab, var(--color-primary) 12%, transparent);
+}
+.cutscene-choice:disabled:not([aria-pressed="true"]) {
+  opacity: 0.4;
+}
+@media (max-width: 35rem) {
+  .cutscene-bottom {
+    width: calc(100% - 1rem);
+    bottom: max(0.5rem, env(safe-area-inset-bottom));
+    max-height: 48dvh;
+  }
+  .cutscene-dialogue {
+    padding: 0.8rem 1rem;
+  }
+  .cutscene-controls {
+    gap: 0.15rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cutscene-screen * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -8,7 +8,7 @@ import { Crest } from "@/components/game/Crest";
 import { readLocalCareer } from "@/lib/careerStorage";
 import { Flag } from "@/components/game/Flag";
 import { SiteFooter } from "@/components/SiteFooter";
-import { canonical, gameLd, seoMeta, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
+import { canonical, gameLd, websiteLd, seoMeta, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
 import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1600&quality=52&as=srcset";
 import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1600&quality=62&as=srcset";
 import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
       ...canonical("/"),
       { rel: "preload", as: "image", href: heroFallback, fetchPriority: "high" },
     ],
-    scripts: [gameLd()],
+    scripts: [websiteLd(), gameLd()],
   }),
   component: Landing,
 });
@@ -112,20 +112,35 @@ function Landing() {
       <header className="relative isolate overflow-hidden">
         <nav
           aria-label="Navegação principal"
-            className="absolute inset-x-0 top-0 z-20 border-b border-primary/15 bg-background/55 backdrop-blur-xl"
+          className="absolute inset-x-0 top-0 z-20 border-b border-primary/15 bg-background/55 backdrop-blur-xl"
         >
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-            <Link to="/" className="flex items-center gap-2 font-display text-sm uppercase text-foreground">
+            <Link
+              to="/"
+              className="flex items-center gap-2 font-display text-sm uppercase text-foreground"
+            >
               <span className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">
                 <Gamepad2 className="h-4 w-4" aria-hidden="true" />
               </span>
-              <span>Pro Football Manager <span className="text-primary">3D</span></span>
+              <span>
+                Pro Football Manager <span className="text-primary">3D</span>
+              </span>
             </Link>
             <div className="hidden items-center gap-1 md:flex">
-              <Button variant="ghost" asChild><Link to="/guias">Guias</Link></Button>
-              <Button variant="ghost" asChild><Link to="/ligas-de-futebol">Ligas</Link></Button>
-              <Button variant="ghost" asChild><Link to="/auth">Entrar</Link></Button>
-              <Button asChild><Link to={hasCareer ? "/dashboard" : "/new"}>{hasCareer ? "Continuar" : "Jogar agora"}</Link></Button>
+              <Button variant="ghost" asChild>
+                <Link to="/guias">Guias</Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link to="/ligas-de-futebol">Ligas</Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link to="/auth">Entrar</Link>
+              </Button>
+              <Button asChild>
+                <Link to={hasCareer ? "/dashboard" : "/new"}>
+                  {hasCareer ? "Continuar" : "Jogar agora"}
+                </Link>
+              </Button>
             </div>
             <Button
               variant="ghost"
@@ -140,10 +155,26 @@ function Landing() {
           </div>
           {menuOpen ? (
             <div className="grid gap-1 border-t border-border/50 bg-background p-3 md:hidden">
-              <Button variant="ghost" asChild><Link to="/guias" onClick={() => setMenuOpen(false)}>Guias</Link></Button>
-              <Button variant="ghost" asChild><Link to="/ligas-de-futebol" onClick={() => setMenuOpen(false)}>Ligas</Link></Button>
-              <Button variant="outline" asChild><Link to="/auth" onClick={() => setMenuOpen(false)}>Entrar</Link></Button>
-              <Button asChild><Link to={hasCareer ? "/dashboard" : "/new"} onClick={() => setMenuOpen(false)}>{hasCareer ? "Continuar carreira" : "Jogar agora"}</Link></Button>
+              <Button variant="ghost" asChild>
+                <Link to="/guias" onClick={() => setMenuOpen(false)}>
+                  Guias
+                </Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link to="/ligas-de-futebol" onClick={() => setMenuOpen(false)}>
+                  Ligas
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/auth" onClick={() => setMenuOpen(false)}>
+                  Entrar
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link to={hasCareer ? "/dashboard" : "/new"} onClick={() => setMenuOpen(false)}>
+                  {hasCareer ? "Continuar carreira" : "Jogar agora"}
+                </Link>
+              </Button>
             </div>
           ) : null}
         </nav>
@@ -189,17 +220,25 @@ function Landing() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Button size="lg" className="glow-primary flex-1 sm:flex-none" asChild>
                 <Link to={hasCareer ? "/dashboard" : "/new"}>
-                {hasCareer ? "Continuar carreira" : "Jogar agora"}
+                  {hasCareer ? "Continuar carreira" : "Jogar agora"}
                   <ArrowRight aria-hidden="true" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="flex-1 bg-background/45 backdrop-blur sm:flex-none" asChild>
+              <Button
+                size="lg"
+                variant="outline"
+                className="flex-1 bg-background/45 backdrop-blur sm:flex-none"
+                asChild
+              >
                 <Link to="/partida-rapida">Partida rápida</Link>
               </Button>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
               Seu progresso fica neste aparelho até você salvar na nuvem.{" "}
-              <Link to="/auth" className="font-medium text-primary underline underline-offset-4 hover:text-foreground">
+              <Link
+                to="/auth"
+                className="font-medium text-primary underline underline-offset-4 hover:text-foreground"
+              >
                 Salvar com Google
               </Link>{" "}
               leva um clique.
@@ -288,7 +327,10 @@ function Landing() {
             return (
               <div key={title as string} className="flex gap-3 bg-background/90 px-5 py-4">
                 <FeatureIcon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                <div><p className="font-display text-sm">{title as string}</p><p className="text-xs text-muted-foreground">{detail as string}</p></div>
+                <div>
+                  <p className="font-display text-sm">{title as string}</p>
+                  <p className="text-xs text-muted-foreground">{detail as string}</p>
+                </div>
               </div>
             );
           })}
@@ -378,7 +420,10 @@ function Landing() {
           </ol>
         </section>
 
-        <nav aria-label="Links úteis" className="mt-10 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground sm:text-sm">
+        <nav
+          aria-label="Links úteis"
+          className="mt-10 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground sm:text-sm"
+        >
           <Link to="/guias" className="underline-offset-4 hover:text-foreground hover:underline">
             Guias para iniciantes
           </Link>
@@ -453,7 +498,9 @@ function Landing() {
             O que é o Pro Football Manager 3D
           </h2>
           <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-            <h3 className="font-display text-lg text-foreground">Carreira, táticas e partidas em 3D</h3>
+            <h3 className="font-display text-lg text-foreground">
+              Carreira, táticas e partidas em 3D
+            </h3>
             <p>
               O <strong className="text-foreground">Pro Football Manager 3D</strong> é um jogo de
               manager de futebol online e gratuito que roda direto no navegador, sem instalar nada.
@@ -461,7 +508,9 @@ function Landing() {
               tática, cuida do orçamento e assiste a cada partida em 3D, com narração, torcida e
               placar ao vivo.
             </p>
-            <h3 className="pt-3 font-display text-lg text-foreground">Competições e evolução do clube</h3>
+            <h3 className="pt-3 font-display text-lg text-foreground">
+              Competições e evolução do clube
+            </h3>
             <p>
               Cada temporada tem liga por pontos corridos, copa em mata-mata, janela de
               transferências, folha salarial, pressão da diretoria e humor da torcida. Ganhar
@@ -469,7 +518,9 @@ function Landing() {
               calendário avança rodada a rodada, com treinos, lesões, suspensões, renovações de
               contrato e a evolução dos jovens da base.
             </p>
-            <h3 className="pt-3 font-display text-lg text-foreground">Partidas ao vivo e ajustes durante o jogo</h3>
+            <h3 className="pt-3 font-display text-lg text-foreground">
+              Partidas ao vivo e ajustes durante o jogo
+            </h3>
             <p>
               Durante os 90 minutos você continua no comando: troca o esquema, muda a marcação,
               manda subir a linha, faz substituições e vê o efeito na posse, nas finalizações e na

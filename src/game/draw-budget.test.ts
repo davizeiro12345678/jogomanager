@@ -17,21 +17,20 @@ describe("draw budget", () => {
 
   it("derives the hero count from what is left of the tier budget", () => {
     const maxDraws = GRAPHICS_PROFILES.alta.maxDrawCalls;
-    // cena enxuta: seis heróis cabem no perfil Alto (era o que faltava para a
-    // meta de 6 heróis em campo)
+    // The detailed anatomy includes accessories and shadows; reserve enough
+    // room for the complete 34-draw variant instead of pricing only the base.
     const roomy = allocateHeroes(maxDraws, 60, 6, 1);
-    expect(roomy.count).toBe(6);
-    expect(roomy.reason).toBe("teto");
+    expect(roomy.count).toBe(5);
+    expect(roomy.reason).toBe("orçamento");
 
-    // cena média: quatro heróis
-    expect(allocateHeroes(maxDraws, 120, 6, 1).count).toBe(4);
-    // cena pesada: só dois heróis
-    expect(allocateHeroes(maxDraws, 180, 6, 1).count).toBe(2);
+    // Medium and crowded scenes also retain the profile's headroom.
+    expect(allocateHeroes(maxDraws, 120, 6, 1).count).toBe(3);
+    expect(allocateHeroes(maxDraws, 180, 6, 1).count).toBe(1);
 
-    // cinema: cabe mais, sempre limitado pelo teto de 8
+    // Cinema allows more detailed players while preserving the same margin.
     const cinema = allocateHeroes(GRAPHICS_PROFILES.cinema.maxDrawCalls, 60, 8, 1);
-    expect(cinema.count).toBe(8);
-    expect(cinema.reason).toBe("teto");
+    expect(cinema.count).toBe(7);
+    expect(cinema.reason).toBe("orçamento");
   });
 
   it("respects the floor and the cap", () => {

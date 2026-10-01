@@ -119,7 +119,7 @@ export function GameShell({
   const groups = Array.from(new Set(rest.map((tab) => tab.group)));
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-background text-foreground">
+    <div className="game-shell min-h-screen min-h-[100dvh] bg-background text-foreground">
       <OfflineBar />
       <div
         aria-hidden
@@ -129,10 +129,10 @@ export function GameShell({
             "radial-gradient(70% 100% at 50% 0%, var(--club-glow, transparent), transparent 70%)",
         }}
       />
-      <header className="sticky top-0 z-30 border-b border-primary/15 bg-background/90 backdrop-blur-xl">
+      <header className="game-shell-header sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
           {/* Identidade do clube */}
-          <div className="flex min-w-0 items-center gap-2.5">
+          <div className="game-shell-brand flex min-w-0 items-center gap-2.5">
             {club ? <Crest club={club} size={34} /> : null}
             <div className="min-w-0 leading-tight">
               <p className="truncate font-display text-base tracking-wide">
@@ -161,7 +161,7 @@ export function GameShell({
                   key={tab.to}
                   to={tab.to}
                   aria-current={pathname === tab.to ? "page" : undefined}
-                  className="flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-md px-2.5 font-display text-xs uppercase tracking-wider text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
+                  className="game-nav-link flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
                 >
                   <Icon size={13} />
                   {t(tab.key)}
@@ -170,7 +170,7 @@ export function GameShell({
             })}
 
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex min-h-[38px] items-center gap-1.5 rounded-lg px-2.5 font-display text-xs uppercase tracking-wider text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
+              <DropdownMenuTrigger className="flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
                 <Menu size={13} />
                 {t("shell.more")}
               </DropdownMenuTrigger>
@@ -192,7 +192,7 @@ export function GameShell({
                             <DropdownMenuItem key={tab.to} asChild>
                               <Link
                                 to={tab.to}
-                                className="flex min-h-[36px] cursor-pointer items-center gap-2 text-xs"
+                                className="flex min-h-11 cursor-pointer items-center gap-2 text-sm"
                               >
                                 <Icon size={14} />
                                 {t(tab.key)}
@@ -265,7 +265,7 @@ export function GameShell({
             <ShortcutsDialog />
             <Link
               to="/match"
-              className="flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 font-display text-xs uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.03]"
+              className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
             >
               <Play size={13} /> {t("action.play")}
             </Link>
@@ -275,18 +275,33 @@ export function GameShell({
         {/* Navegação secundária rolável no celular */}
         <nav
           aria-label="Mais áreas da carreira"
-          className="game-scroll-nav flex gap-1 overflow-x-auto px-4 pb-2 lg:hidden"
+          className="flex items-center gap-3 px-4 pb-3 lg:hidden"
         >
-          {TABS.filter((tab) => !MOBILE.includes(tab.to)).map((tab) => (
-            <Link
-              key={tab.to}
-              to={tab.to}
-              aria-current={pathname === tab.to ? "page" : undefined}
-              className="shrink-0 rounded-lg bg-secondary/60 px-3 py-1.5 font-display text-[11px] uppercase tracking-wider text-muted-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
-            >
-              {t(tab.key)}
-            </Link>
-          ))}
+          <label
+            htmlFor="career-area"
+            className="shrink-0 text-xs font-semibold text-muted-foreground"
+          >
+            Área da carreira
+          </label>
+          <select
+            id="career-area"
+            value={TABS.some((tab) => tab.to === pathname) ? pathname : ""}
+            onChange={(event) => navigate({ to: event.target.value })}
+            className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-secondary/60 px-3 text-sm"
+          >
+            <option value="" disabled>
+              Escolha uma tela
+            </option>
+            {Array.from(new Set(TABS.map((tab) => tab.group))).map((group) => (
+              <optgroup key={group} label={group}>
+                {TABS.filter((tab) => tab.group === group).map((tab) => (
+                  <option key={tab.to} value={tab.to}>
+                    {t(tab.key)}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
         </nav>
       </header>
 
