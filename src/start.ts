@@ -86,6 +86,7 @@ function cacheControlFor(pathname: string, contentType: string): string | null {
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_serverFn/") ||
     pathname.startsWith("/lovable/") ||
+    pathname === "/auth" ||
     pathname === "/mcp"
   )
     return "no-store";

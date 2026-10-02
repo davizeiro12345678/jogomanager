@@ -1,15 +1,27 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { CheckCircle2, Cloud, Eye, EyeOff, Gamepad2, Mail, ShieldCheck } from "lucide-react";
+import {
+  CheckCircle2,
+  Cloud,
+  Eye,
+  EyeOff,
+  Fingerprint,
+  Gamepad2,
+  Mail,
+  ShieldCheck,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DiscordLink } from "@/components/CommunityInvite";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  availableSocialProviders,
-  SOCIAL_LABELS,
+  lovableOAuthProvider,
+  socialOAuthOptions,
+  socialProviderLabel,
   type SocialProvider,
 } from "@/integrations/supabase/social-auth";
 import { authErrorMessage, safeAuthNext, type AuthMode } from "@/lib/auth-policy";
+import { useAuthMethods } from "@/hooks/useAuthMethods";
+import { passkeyErrorMessage, supportsPasskeys } from "@/integrations/supabase/passkey-auth";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -51,9 +63,18 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmationSent, setConfirmationSent] = useState(false);
-  const [socials, setSocials] = useState<SocialProvider[]>([]);
+  const {
+    methods,
+    loading: methodsLoading,
+    error: methodsError,
+    retry: retryMethods,
+  } = useAuthMethods();
+  const [emailOtp, setEmailOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [magicEmail, setMagicEmail] = useState("");
   const [recoveryReady, setRecoveryReady] = useState(false);
   const brokeredOAuth = import.meta.env["VITE_AUTH_MODE"] === "lovable";
+  const passkeysSupported = supportsPasskeys();
 
   useEffect(() => {
     let alive = true;
@@ -114,18 +135,11 @@ function AuthPage() {
         if (alive)
           setError("Não foi possível verificar sua sessão. Confira a conexão e tente novamente.");
       });
-    void availableSocialProviders()
-      .then((providers) => {
-        if (alive) setSocials(brokeredOAuth ? ["google", "azure", "apple"] : providers);
-      })
-      .catch(() => {
-        if (alive && brokeredOAuth) setSocials(["google", "azure", "apple"]);
-      });
     return () => {
       alive = false;
       listener.subscription.unsubscribe();
     };
-  }, [destination, navigate, search.recovery, brokeredOAuth]);
+  }, [destination, navigate, search.recovery]);
 
   const callback = (recovery = false) =>
     `${window.location.origin}/auth?next=${encodeURIComponent(destination)}${recovery ? "&recovery=1" : ""}`;
@@ -136,6 +150,9 @@ function AuthPage() {
     setConfirmationSent(false);
     setPassword("");
     setConfirmPassword("");
+    setOtpSent(false);
+    setEmailOtp("");
+    setMagicEmail("");
   }
 
   async function submit(event: React.FormEvent) {
@@ -149,7 +166,33 @@ function AuthPage() {
     }
     setBusy(true);
     try {
-      if (mode === "reset") {
+      if (mode === "magic") {
+        if (otpSent) {
+          const result = await supabase.auth.verifyOtp({
+            email: magicEmail,
+            token: emailOtp.trim(),
+            type: "email",
+          });
+          if (result.error) throw result.error;
+          if (!result.data.session) throw new Error("No verified session");
+          await navigate({ href: destination });
+        } else {
+          const submittedEmail = email.trim();
+          const result = await supabase.auth.signInWithOtp({
+            email: submittedEmail,
+            options: {
+              emailRedirectTo: callback(),
+              shouldCreateUser: false,
+            },
+          });
+          if (result.error) throw result.error;
+          setMagicEmail(submittedEmail);
+          setOtpSent(true);
+          setNotice(
+            "Confira seu e-mail e abra o link de acesso. Se a mensagem trouxer um código, você também pode informá-lo abaixo.",
+          );
+        }
+      } else if (mode === "reset") {
         const result = await supabase.auth.resetPasswordForEmail(email.trim(), {
           redirectTo: callback(true),
         });
@@ -167,11 +210,17 @@ function AuthPage() {
       } else {
         const result =
           mode === "in"
-            ? await supabase.auth.signInWithPassword({ email: email.trim(), password })
+            ? await supabase.auth.signInWithPassword({
+                email: email.trim(),
+                password,
+              })
             : await supabase.auth.signUp({
                 email: email.trim(),
                 password,
-                options: { emailRedirectTo: callback(), data: { display_name: name.trim() } },
+                options: {
+                  emailRedirectTo: callback(),
+                  data: { display_name: name.trim() },
+                },
               });
         if (result.error) throw result.error;
         if (result.data.session) await navigate({ href: destination });
@@ -190,21 +239,23 @@ function AuthPage() {
   }
 
   async function signInWith(provider: SocialProvider) {
+    if (busy || !methods?.socialProviders.includes(provider)) return;
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
-      if (brokeredOAuth) {
+      const brokerProvider = brokeredOAuth ? lovableOAuthProvider(provider) : undefined;
+      if (brokerProvider) {
         const { lovable } = await import("@/integrations/lovable/index");
-        const result = await lovable.auth.signInWithOAuth(
-          provider === "azure" ? "microsoft" : provider,
-          { redirect_uri: callback() },
-        );
+        const result = await lovable.auth.signInWithOAuth(brokerProvider, {
+          redirect_uri: callback(),
+        });
         if (result.error) throw result.error;
         if (!result.redirected) await navigate({ href: destination });
       } else {
         const result = await supabase.auth.signInWithOAuth({
           provider,
-          options: { redirectTo: callback(), ...(provider === "azure" ? { scopes: "email" } : {}) },
+          options: socialOAuthOptions(provider, callback()),
         });
         if (result.error) throw result.error;
       }
@@ -215,14 +266,34 @@ function AuthPage() {
     }
   }
 
+  async function signInWithPasskey() {
+    if (busy || !methods?.passkeys || !passkeysSupported) return;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const result = await supabase.auth.signInWithPasskey();
+      if (result.error) throw result.error;
+      if (!result.data?.session) throw new Error("No passkey session");
+      await navigate({ href: destination });
+    } catch (cause) {
+      setError(passkeyErrorMessage(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function resend() {
+    if (busy) return;
     setBusy(true);
     setError(null);
     try {
       const result = await supabase.auth.resend({
         type: "signup",
         email: email.trim(),
-        options: { emailRedirectTo: callback() },
+        options: {
+          emailRedirectTo: callback(),
+        },
       });
       if (result.error) throw result.error;
       setNotice(
@@ -240,6 +311,7 @@ function AuthPage() {
     up: "Criar sua conta",
     reset: "Recuperar sua senha",
     update: "Definir nova senha",
+    magic: "Entrar sem senha",
   }[mode];
   const inputClass =
     "min-h-11 w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary";
@@ -294,24 +366,69 @@ function AuthPage() {
               ? "Enviaremos um link para o e-mail da sua conta."
               : mode === "update"
                 ? "Escolha uma senha com pelo menos 8 caracteres."
-                : "Use seu e-mail para entrar ou criar uma conta gratuita."}
+                : mode === "magic"
+                  ? "Receba um link ou código no e-mail da sua conta."
+                  : "Escolha como entrar para continuar sua carreira."}
           </p>
-          {(mode === "in" || mode === "up") && socials.length > 0 && (
+          {methodsLoading && (
+            <p role="status" className="mt-5 text-sm text-muted-foreground">
+              Carregando formas de entrada…
+            </p>
+          )}
+          {methodsError && (
+            <div className="mt-5 rounded-lg border border-border p-3">
+              <p role="alert" className="text-sm text-destructive">
+                {methodsError}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy || methodsLoading}
+                onClick={retryMethods}
+                className="mt-2 min-h-11"
+              >
+                Tentar novamente
+              </Button>
+            </div>
+          )}
+          {(mode === "in" || mode === "up") && Boolean(methods?.socialProviders.length) && (
             <div className="mt-5 space-y-2">
-              {socials.map((provider) => (
-                <Button
-                  key={provider}
-                  type="button"
-                  variant={provider === "google" ? "default" : "outline"}
-                  disabled={busy}
-                  className="min-h-11 w-full"
-                  onClick={() => signInWith(provider)}
-                >
-                  Continuar com {SOCIAL_LABELS[provider]}
-                </Button>
-              ))}
-              <p className="pt-2 text-center text-xs text-muted-foreground">
-                ou continue com e-mail
+              <div className="grid gap-2 sm:grid-cols-2">
+                {methods?.socialProviders.map((provider) => (
+                  <Button
+                    key={provider}
+                    type="button"
+                    variant={provider === "google" ? "default" : "outline"}
+                    disabled={busy}
+                    className="min-h-11 w-full"
+                    onClick={() => signInWith(provider)}
+                  >
+                    Continuar com {socialProviderLabel(provider)}
+                  </Button>
+                ))}
+              </div>
+              {methods?.email && (
+                <p className="pt-2 text-center text-xs text-muted-foreground">
+                  ou continue com e-mail
+                </p>
+              )}
+            </div>
+          )}
+          {(mode === "in" || mode === "up") && methods?.passkeys && (
+            <div className="mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 w-full"
+                disabled={busy || !passkeysSupported}
+                onClick={signInWithPasskey}
+              >
+                <Fingerprint size={18} /> Entrar com chave de acesso
+              </Button>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {passkeysSupported
+                  ? "Use uma chave já cadastrada. Para cadastrar a primeira, entre na conta e abra seu perfil."
+                  : "Abra o jogo por HTTPS em um navegador com suporte a chaves de acesso."}
               </p>
             </div>
           )}
@@ -329,6 +446,11 @@ function AuthPage() {
               {error}
             </p>
           )}
+          {mode === "up" && methods && !methods.signup && (
+            <p role="status" className="mt-4 text-sm">
+              O cadastro está indisponível no momento. Se você já tem conta, volte para entrar.
+            </p>
+          )}
           {confirmationSent ? (
             <Button
               type="button"
@@ -340,113 +462,156 @@ function AuthPage() {
               {busy ? "Aguarde…" : "Reenviar confirmação"}
             </Button>
           ) : (
-            <form onSubmit={submit} className="mt-5 space-y-4" aria-busy={busy}>
-              {mode === "up" && (
-                <div>
-                  <label htmlFor="auth-name" className="text-sm">
-                    Nome do treinador
-                  </label>
-                  <input
-                    id="auth-name"
-                    required
-                    minLength={2}
-                    maxLength={60}
-                    autoComplete="nickname"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    className={`${inputClass} mt-1`}
-                  />
-                </div>
-              )}
-              {mode !== "update" && (
-                <div>
-                  <label htmlFor="auth-email" className="text-sm">
-                    E-mail
-                  </label>
-                  <input
-                    id="auth-email"
-                    type="email"
-                    required
-                    autoComplete="email"
-                    maxLength={254}
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    aria-describedby={error ? "auth-error" : undefined}
-                    className={`${inputClass} mt-1`}
-                  />
-                </div>
-              )}
-              {mode !== "reset" && (
-                <div>
-                  <label htmlFor="auth-password" className="text-sm">
-                    {mode === "update" ? "Nova senha" : "Senha"}
-                  </label>
-                  <div className="relative mt-1">
+            (mode === "update" || (methods?.email && (mode !== "up" || methods.signup))) && (
+              <form onSubmit={submit} className="mt-5 space-y-4" aria-busy={busy}>
+                {mode === "up" && (
+                  <div>
+                    <label htmlFor="auth-name" className="text-sm">
+                      Nome do treinador
+                    </label>
                     <input
-                      id="auth-password"
+                      id="auth-name"
+                      required
+                      minLength={2}
+                      maxLength={60}
+                      autoComplete="nickname"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      className={`${inputClass} mt-1`}
+                    />
+                  </div>
+                )}
+                {mode !== "update" && (
+                  <div>
+                    <label htmlFor="auth-email" className="text-sm">
+                      E-mail
+                    </label>
+                    <input
+                      id="auth-email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      maxLength={254}
+                      value={email}
+                      disabled={busy || (mode === "magic" && otpSent)}
+                      onChange={(event) => setEmail(event.target.value)}
+                      aria-describedby={error ? "auth-error" : undefined}
+                      className={`${inputClass} mt-1`}
+                    />
+                  </div>
+                )}
+                {mode === "magic" && otpSent && (
+                  <div>
+                    <label htmlFor="auth-otp" className="text-sm">
+                      Código recebido por e-mail
+                    </label>
+                    <input
+                      id="auth-otp"
+                      type="text"
+                      required
+                      minLength={6}
+                      maxLength={64}
+                      autoComplete="one-time-code"
+                      value={emailOtp}
+                      onChange={(event) => setEmailOtp(event.target.value)}
+                      aria-describedby={error ? "auth-error" : undefined}
+                      className={`${inputClass} mt-1`}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={busy}
+                      className="mt-2"
+                      onClick={() => switchMode("magic")}
+                    >
+                      Solicitar outro link ou código
+                    </Button>
+                  </div>
+                )}
+                {mode !== "reset" && mode !== "magic" && (
+                  <div>
+                    <label htmlFor="auth-password" className="text-sm">
+                      {mode === "update" ? "Nova senha" : "Senha"}
+                    </label>
+                    <div className="relative mt-1">
+                      <input
+                        id="auth-password"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        minLength={mode === "in" ? 1 : 8}
+                        maxLength={128}
+                        autoComplete={mode === "in" ? "current-password" : "new-password"}
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        aria-describedby={error ? "auth-error" : "password-hint"}
+                        className={`${inputClass} pr-12`}
+                      />
+                      <button
+                        type="button"
+                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                        aria-pressed={showPassword}
+                        onClick={() => setShowPassword((value) => !value)}
+                        className="absolute inset-y-0 right-0 grid w-11 place-items-center text-muted-foreground"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                    <p id="password-hint" className="mt-1 text-xs text-muted-foreground">
+                      {mode === "in"
+                        ? "Use a senha da sua conta."
+                        : "Use pelo menos 8 caracteres e evite senhas usadas em outros sites."}
+                    </p>
+                  </div>
+                )}
+                {(mode === "up" || mode === "update") && (
+                  <div>
+                    <label htmlFor="auth-confirm-password" className="text-sm">
+                      Confirmar senha
+                    </label>
+                    <input
+                      id="auth-confirm-password"
                       type={showPassword ? "text" : "password"}
                       required
-                      minLength={mode === "in" ? 1 : 8}
+                      minLength={8}
                       maxLength={128}
-                      autoComplete={mode === "in" ? "current-password" : "new-password"}
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      aria-describedby={error ? "auth-error" : "password-hint"}
-                      className={`${inputClass} pr-12`}
+                      autoComplete="new-password"
+                      value={confirmPassword}
+                      onChange={(event) => setConfirmPassword(event.target.value)}
+                      className={`${inputClass} mt-1`}
                     />
-                    <button
-                      type="button"
-                      aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                      aria-pressed={showPassword}
-                      onClick={() => setShowPassword((value) => !value)}
-                      className="absolute inset-y-0 right-0 grid w-11 place-items-center text-muted-foreground"
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
                   </div>
-                  <p id="password-hint" className="mt-1 text-xs text-muted-foreground">
-                    {mode === "in"
-                      ? "Use a senha da sua conta."
-                      : "Use pelo menos 8 caracteres e evite senhas usadas em outros sites."}
-                  </p>
-                </div>
-              )}
-              {(mode === "up" || mode === "update") && (
-                <div>
-                  <label htmlFor="auth-confirm-password" className="text-sm">
-                    Confirmar senha
-                  </label>
-                  <input
-                    id="auth-confirm-password"
-                    type={showPassword ? "text" : "password"}
-                    required
-                    minLength={8}
-                    maxLength={128}
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    className={`${inputClass} mt-1`}
-                  />
-                </div>
-              )}
-              <Button
-                type="submit"
-                disabled={busy || (mode === "update" && !recoveryReady)}
-                className="min-h-11 w-full"
-              >
-                <Mail size={18} />
-                {busy
-                  ? "Aguarde…"
-                  : {
-                      in: "Entrar com e-mail",
-                      up: "Criar conta com e-mail",
-                      reset: "Enviar link de recuperação",
-                      update: "Salvar nova senha",
-                    }[mode]}
-              </Button>
-            </form>
+                )}
+                <Button
+                  type="submit"
+                  disabled={busy || (mode === "update" && !recoveryReady)}
+                  className="min-h-11 w-full"
+                >
+                  <Mail size={18} />
+                  {busy
+                    ? "Aguarde…"
+                    : {
+                        in: "Entrar com e-mail",
+                        up: "Criar conta com e-mail",
+                        reset: "Enviar link de recuperação",
+                        update: "Salvar nova senha",
+                        magic: otpSent ? "Validar código e entrar" : "Enviar link de acesso",
+                      }[mode]}
+                </Button>
+              </form>
+            )
           )}
-          {mode === "in" && (
+          {mode === "in" && methods?.email && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy}
+              className="mt-3 min-h-11 w-full text-sm"
+              onClick={() => switchMode("magic")}
+            >
+              Entrar por link ou código de e-mail
+            </Button>
+          )}
+          {mode === "in" && methods?.email && (
             <Button
               type="button"
               variant="ghost"
@@ -462,15 +627,17 @@ function AuthPage() {
               <Link to={destination}>Continuar minha carreira</Link>
             </Button>
           ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={busy}
-              className="mt-3 min-h-11 w-full text-sm"
-              onClick={() => switchMode(mode === "in" ? "up" : "in")}
-            >
-              {mode === "in" ? "Não tem conta? Cadastre-se" : "Voltar para entrar"}
-            </Button>
+            (mode !== "in" || (methods?.email && methods.signup)) && (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={busy}
+                className="mt-3 min-h-11 w-full text-sm"
+                onClick={() => switchMode(mode === "in" ? "up" : "in")}
+              >
+                {mode === "in" ? "Não tem conta? Cadastre-se" : "Voltar para entrar"}
+              </Button>
+            )
           )}
           <p className="mt-4 text-center text-xs text-muted-foreground">
             Ao criar uma conta, você concorda com os{" "}

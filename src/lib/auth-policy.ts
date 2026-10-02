@@ -17,7 +17,7 @@ export function safeAuthNext(value: unknown): string | undefined {
   }
 }
 
-export type AuthMode = "in" | "up" | "reset" | "update";
+export type AuthMode = "in" | "up" | "reset" | "update" | "magic";
 
 export function authErrorMessage(error: unknown, mode: AuthMode): string {
   const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
@@ -32,7 +32,11 @@ export function authErrorMessage(error: unknown, mode: AuthMode): string {
     signup_disabled: "O cadastro está indisponível no momento. Tente novamente mais tarde.",
     over_email_send_rate_limit: "Aguarde alguns minutos antes de solicitar outro e-mail.",
     over_request_rate_limit: "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
-    provider_disabled: "Esta forma de entrada está indisponível. Use seu e-mail.",
+    provider_disabled: "Esta forma de entrada está indisponível. Escolha outro método de acesso.",
+    otp_expired: "O código ou link expirou. Solicite um novo e-mail de acesso.",
+    otp_disabled: "O acesso por código ou link está indisponível. Escolha outro método de acesso.",
+    captcha_failed:
+      "O serviço de acesso ainda exige verificação de segurança. Use uma conta vinculada enquanto essa configuração é ajustada.",
   };
   return (
     messages[code] ??

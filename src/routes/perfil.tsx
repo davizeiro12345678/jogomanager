@@ -18,6 +18,7 @@ import { exportCareerFile, importCareerFile } from "@/game/contracts/career-tran
 import { saveLocalCareer } from "@/lib/offline/store";
 import { Button } from "@/components/ui/button";
 import { ActivityRanking } from "@/features/activity/ActivityRanking";
+import { PasskeySettings } from "@/components/PasskeySettings";
 
 const FALLBACK_LOOK = {
   skin: 0,
@@ -121,6 +122,8 @@ function Perfil() {
         {club ? <Crest club={club} size={64} /> : null}
       </header>
 
+      {signedIn && <PasskeySettings />}
+
       <div className="mt-5 grid items-start gap-4 hud-stagger md:grid-cols-2 lg:grid-cols-3">
         <HudCard title="Números da carreira" tone={winRate >= 50 ? "good" : "neutral"}>
           <div className="grid grid-cols-3 gap-3">
@@ -222,7 +225,10 @@ function Perfil() {
               const a = achievementById(id);
               if (!a) return null;
               return (
-                <li key={id} className="rounded-lg border border-border/60 bg-foreground/[0.03] p-2">
+                <li
+                  key={id}
+                  className="rounded-lg border border-border/60 bg-foreground/[0.03] p-2"
+                >
                   <p className="text-xs font-semibold">{a.title}</p>
                   <p className="text-[11px] text-muted-foreground">{a.description}</p>
                 </li>
@@ -303,7 +309,12 @@ function Perfil() {
             >
               <Download size={14} /> Exportar carreira
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => importRef.current?.click()}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => importRef.current?.click()}
+            >
               <Upload size={14} /> Importar carreira
             </Button>
             <input
@@ -320,14 +331,22 @@ function Perfil() {
                   update(imported);
                   setTransferStatus("Carreira importada e salva neste aparelho.");
                 } catch (error) {
-                  setTransferStatus(error instanceof Error ? error.message : "Não foi possível importar a carreira.");
+                  setTransferStatus(
+                    error instanceof Error
+                      ? error.message
+                      : "Não foi possível importar a carreira.",
+                  );
                 } finally {
                   event.target.value = "";
                 }
               }}
             />
           </div>
-          {transferStatus ? <p role="status" className="mt-3 text-xs text-primary">{transferStatus}</p> : null}
+          {transferStatus ? (
+            <p role="status" className="mt-3 text-xs text-primary">
+              {transferStatus}
+            </p>
+          ) : null}
         </HudCard>
       </div>
     </GameShell>
