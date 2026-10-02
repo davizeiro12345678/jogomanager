@@ -1,21 +1,19 @@
 import { CLUBS } from "./data/leagues";
 import { makeRng } from "./rng";
+import { expectedGoals, regulationScore, type MatchConditions } from "./match-probability";
 
 /** Simulação curta determinística usada pelo worker para ligas e eliminatórias de IA. */
-export function competitionScore(home: string, away: string, seed: string) {
+export function competitionScore(
+  home: string,
+  away: string,
+  seed: string,
+  ctx: MatchConditions = {},
+) {
   const rnd = makeRng(seed);
-  const edge = Math.tanh(((CLUBS[home]?.strength ?? 60) - (CLUBS[away]?.strength ?? 60)) / 18);
-  const goals = (expected: number) => {
-    let product = 1,
-      count = 0;
-    const threshold = Math.exp(expected);
-    do {
-      product *= rnd();
-      count++;
-    } while (product * threshold > 1 && count < 9);
-    return count - 1;
-  };
-  return { hg: goals(1.45 * Math.exp(edge * 0.5)), ag: goals(1.15 * Math.exp(-edge * 0.5)) };
+  return regulationScore(
+    expectedGoals(CLUBS[home]?.strength ?? 70, CLUBS[away]?.strength ?? 70, seed, ctx),
+    rnd,
+  );
 }
 
 export interface CompetitionPlayoff {

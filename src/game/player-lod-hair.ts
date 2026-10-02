@@ -27,7 +27,7 @@ export function lowHairGeometry(family: LowHairFamily) {
           : "short";
   const look = { ...lookFor("lod-hair", "MF"), hairStyle: style as HairStyle, hairVolume: 1 };
   const material = new THREE.MeshBasicMaterial();
-  const parts = [rigPart(sculptedHair(P, look, false), material)];
+  const parts = [rigPart(sculptedHair(P, look, false, { columns: 12, rows: 6 }), material)];
   if (family === "tied")
     parts.push(
       rigPart(new THREE.SphereGeometry(0.15, 8, 6), material, {

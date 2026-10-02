@@ -1,6 +1,7 @@
 import { CLUBS, LEAGUES, getLeague } from "./data/leagues";
 import { makeRng } from "./rng";
 import { competitionScore } from "./competition-match";
+import { expectedGoals, poissonGoals, strengthEdge } from "./match-probability";
 import { shootoutWinner, solvePenalty, type ShootoutKick } from "./sim-rules";
 import {
   calendarYear,
@@ -358,27 +359,17 @@ export interface CupResult {
 }
 
 function playTie(tie: CupTie, seed: string): CupTie {
-  const rnd = makeRng(seed);
-  const h = (CLUBS[tie.home]?.strength ?? 70) + 3;
+  const rnd = makeRng(`${seed}-extra`);
+  const h = CLUBS[tie.home]?.strength ?? 70;
   const a = CLUBS[tie.away]?.strength ?? 70;
-  const diff = (h - a) / 10;
-  const goals = (exp: number) => {
-    let k = 0;
-    let p = 1;
-    const l = Math.exp(-Math.max(0.2, exp));
-    do {
-      k++;
-      p *= rnd();
-    } while (p > l && k < 10);
-    return k - 1;
-  };
-  let hg = goals(1.3 + diff * 0.4);
-  let ag = goals(1.15 - diff * 0.4);
+  const diff = strengthEdge(h, a) * 5;
+  let { hg, ag } = competitionScore(tie.home, tie.away, seed);
   let pens: string | undefined;
   if (hg === ag) {
-    // prorrogação: 30' com chance de gol para cada lado, ponderada pela força
-    if (rnd() < 0.26 + diff * 0.02) hg += 1;
-    if (rnd() < 0.23 - diff * 0.02) ag += 1;
+    // Thirty extra minutes use the same quality model as regulation time.
+    const rates = expectedGoals(h, a, `${seed}-extra`);
+    hg += poissonGoals(rates.home / 3, rnd);
+    ag += poissonGoals(rates.away / 3, rnd);
   }
   if (hg === ag) {
     // disputa de pênaltis de verdade; o gol extra marca o vencedor no placar
@@ -545,5 +536,5 @@ export function cupPrize(cupId: string, stage: number): number {
         : cupId === "continental"
           ? 4
           : 1.6;
-  return Math.round(base * (stage + 1) * 10) / 10;
+  return Math.round(base * (stage < 0 ? 1 / 2 ** -stage : stage + 1) * 10) / 10;
 }

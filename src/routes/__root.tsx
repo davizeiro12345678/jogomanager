@@ -5,14 +5,17 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useLocation,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { I18nProvider } from "../i18n";
+import { I18nProvider, useT } from "../i18n";
+import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
+import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
 
 function NotFoundComponent() {
   return (
@@ -140,10 +143,22 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const worldReady = useRef(false);
 
   useEffect(() => {
-    void import("../lib/world").then((m) => m.applyWorld());
+    // The public home needs no catalogue. Restore the campaign on entry to the
+    // rest of the app, rather than downloading every club after first paint.
+    if (pathname === "/" || worldReady.current) return;
+    worldReady.current = true;
+    void import("../lib/world")
+      .then((m) => m.applyWorld())
+      .catch(() => {
+        worldReady.current = false;
+      });
+  }, [pathname]);
 
+  useEffect(() => {
     // Estatísticas de uso não podem competir com a primeira pintura: só sobem
     // quando o navegador fica ocioso (fallback por timer onde não há idle).
     const start = () => void import("../lib/analytics").then((m) => m.initAnalytics());
@@ -169,18 +184,44 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
-        <a
-          href="#conteudo"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-3 focus:font-display focus:text-sm focus:uppercase focus:tracking-widest focus:text-primary-foreground"
-        >
-          Pular para o conteúdo
-        </a>
-        <div id="conteudo" tabIndex={-1}>
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
-          <ConsentBanner />
-        </div>
+        <AccessibilityProvider>
+          <RootReadingControls pathname={pathname} />
+          <a
+            href="#conteudo"
+            className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-3 focus:font-display focus:text-sm focus:uppercase focus:tracking-widest focus:text-primary-foreground"
+          >
+            <SkipContentLabel />
+          </a>
+          <div id="conteudo" tabIndex={-1}>
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <Outlet />
+            <ConsentBanner />
+          </div>
+        </AccessibilityProvider>
       </I18nProvider>
     </QueryClientProvider>
   );
+}
+
+function SkipContentLabel() {
+  return <>{useT().t("common.skip")}</>;
+}
+function RootReadingControls({ pathname }: { pathname: string }) {
+  const previous = useRef(pathname);
+  useEffect(() => {
+    if (previous.current === pathname) return;
+    previous.current = pathname;
+    const heading = document.querySelector<HTMLElement>(
+      "main h1, #career-content h1, #conteudo h1",
+    );
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
+  }, [pathname]);
+  return pathname === "/" ? (
+    <div className="public-reading-controls">
+      <AccessibilitySettings />
+    </div>
+  ) : null;
 }

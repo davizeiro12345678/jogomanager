@@ -41,7 +41,6 @@ export const getOfficialAssets = createServerFn({ method: "GET" }).handler(
       }
     }
 
-
     const { data: kitRows } = await db
       .from("kits")
       .select("club_id, image_url")
@@ -58,12 +57,27 @@ export const getRealSquad = createServerFn({ method: "GET" })
   .inputValidator((input: { clubId: string }) => input)
   .handler(async ({ data }) => {
     const db = publicClient();
-    const { data: rows } = await db
-      .from("players")
-      .select("name, position, age, shirt_number, nationality, overall, photo_url")
-      .eq("club_id", data.clubId)
-      .limit(30);
-    return rows ?? [];
+    // Keyset pagination avoids the API row ceiling and preserves source identity.
+    const rows = [];
+    let cursor: string | undefined;
+    for (let page = 0; page < 20; page++) {
+      let query = db
+        .from("players")
+        .select(
+          "id, data_source:source, source_id, birth_date, name, position, age, shirt_number, nationality, overall, photo_url",
+        )
+        .eq("club_id", data.clubId)
+        .order("id")
+        .limit(50);
+      if (cursor) query = query.gt("id", cursor);
+      const result = await query;
+      if (result.error) throw new Error("Não foi possível carregar o elenco completo.");
+      rows.push(...(result.data ?? []));
+      if (!result.data || result.data.length < 50) return rows;
+      cursor = result.data.at(-1)!.id;
+    }
+    // Do not cache a partial response as a complete squad.
+    throw new Error("O elenco excedeu o limite seguro de leitura.");
   });
 
 export interface MarketSearchInput {
@@ -87,6 +101,9 @@ export interface MarketRow {
   overall: number;
   photo_url: string | null;
   club_id: string;
+  source?: string | null;
+  source_id?: string | null;
+  birth_date?: string | null;
 }
 
 const PAGE = 24;
@@ -99,8 +116,11 @@ export const searchRealPlayers = createServerFn({ method: "GET" })
     const page = Math.max(0, data.page ?? 0);
     let query = db
       .from("players")
-      .select("id, name, position, age, shirt_number, nationality, overall, photo_url, club_id")
+      .select(
+        "id, source, source_id, birth_date, name, position, age, shirt_number, nationality, overall, photo_url, club_id",
+      )
       .order("overall", { ascending: false })
+      .order("id")
       .range(page * PAGE, page * PAGE + PAGE);
 
     if (data.q?.trim()) query = query.ilike("name", `%${data.q.trim()}%`);
@@ -111,7 +131,8 @@ export const searchRealPlayers = createServerFn({ method: "GET" })
     if (data.minOvr) query = query.gte("overall", data.minOvr);
     if (data.maxOvr) query = query.lte("overall", data.maxOvr);
 
-    const { data: rows } = await query;
+    const { data: rows, error } = await query;
+    if (error) throw new Error("Não foi possível consultar o mercado de jogadores.");
     const list = (rows ?? []) as MarketRow[];
     return { rows: list.slice(0, PAGE), page, hasMore: list.length > PAGE };
   });

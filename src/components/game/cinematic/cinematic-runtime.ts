@@ -5,9 +5,10 @@ import type { Cast } from "@/game/cast";
 import type { ManagerLook } from "@/game/types";
 import type { QualityLevel } from "@/game/device";
 import type { CinematicManner } from "@/game/cinematic-actor";
+import type { CinematicCue } from "@/game/cinematic-cue";
 
 export interface CinematicRuntimeState {
-  clock: { time: number; dt: number };
+  clock: { time: number; dt: number; lineTime: number };
   focus: Vector3;
   quality: QualityLevel;
   look?: ManagerLook | undefined;
@@ -15,9 +16,10 @@ export interface CinematicRuntimeState {
   stopped: boolean;
   reduced: boolean;
   manner?: CinematicManner | undefined;
+  cue?: CinematicCue | undefined;
 }
 export const CinematicContext = createContext<CinematicRuntimeState>({
-  clock: { time: 0, dt: 0 },
+  clock: { time: 0, dt: 0, lineTime: 0 },
   focus: new Vector3(0, 1.2, 0),
   quality: "media",
   stopped: false,

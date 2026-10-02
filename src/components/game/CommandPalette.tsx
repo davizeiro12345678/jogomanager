@@ -2,6 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useT } from "@/i18n";
 
 import {
   CommandDialog,
@@ -23,6 +24,7 @@ export interface PaletteItem {
  * Também abre por clique no botão de lupa do cabeçalho.
  */
 export function CommandPalette({ items }: { items: PaletteItem[] }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -44,21 +46,19 @@ export function CommandPalette({ items }: { items: PaletteItem[] }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Buscar tela"
+        aria-label={t("nav.search")}
         className="career-search-button"
       >
-        <Search size={13} />
-        <span>Buscar área</span>
+        <Search size={17} aria-hidden="true" />
+        <span>{t("nav.search")}</span>
         <kbd>Ctrl K</kbd>
       </button>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <DialogTitle className="sr-only">Buscar uma área da carreira</DialogTitle>
-        <DialogDescription className="sr-only">
-          Digite o nome de uma tela e selecione para navegar.
-        </DialogDescription>
-        <CommandInput placeholder="Ir para… (elenco, táticas, mercado)" />
+        <DialogTitle className="sr-only">{t("nav.searchTitle")}</DialogTitle>
+        <DialogDescription className="sr-only">{t("nav.searchHint")}</DialogDescription>
+        <CommandInput placeholder={t("common.search")} aria-label={t("nav.search")} />
         <CommandList>
-          <CommandEmpty>Nada encontrado.</CommandEmpty>
+          <CommandEmpty>{t("common.empty")}</CommandEmpty>
           {groups.map((g) => (
             <CommandGroup key={g} heading={g}>
               {items

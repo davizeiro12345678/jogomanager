@@ -10,9 +10,14 @@ import {
   staffBill,
 } from "./events";
 import { customPlayersFor, toGamePlayer } from "@/lib/customData";
-import { realSquadFor, type RealPlayer } from "@/lib/realSquads";
+import { realSquadFor } from "@/lib/realSquads";
+import { applyImportedSquad } from "./squad-import";
+import { updatedSeasonComposition } from "./catalog-season";
 import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
+import { expectedGoals, regulationScore, type MatchConditions } from "./match-probability";
+import { selectionRating } from "./match-readiness";
+import { migrateSquadRatings } from "./squad-rating-migration";
 import { applyRegens } from "./regen";
 import { checkSeasonIntegrity } from "./season-integrity";
 import { repairCareer } from "./career-repair";
@@ -33,7 +38,7 @@ import { computeTable, generateFixtures } from "./season";
 import { settlePromises } from "./unhappy";
 import { evaluateAchievements } from "./achievements";
 import { createCups, cupPrize, inGroupStage, nextPhaseName, playCupStage, stageName } from "./cup";
-import { buildSquad } from "./squad";
+import { buildSquad, completeSquad } from "./squad";
 import type {
   CareerState,
   CupState,
@@ -68,7 +73,7 @@ export function pickLineup(players: Player[], formation: FormationKey) {
   const slots = FORMATIONS[formation] ?? FORMATIONS["4-3-3"];
   const available = [...players]
     .filter((p) => !p.suspended && p.injuryWeeks === 0)
-    .sort((a, b) => b.ovr - a.ovr);
+    .sort((a, b) => selectionRating(b) - selectionRating(a) || a.id.localeCompare(b.id));
   const taken = new Set<string>();
   const picks: Player[] = new Array(slots.length).fill(undefined);
 
@@ -241,32 +246,7 @@ function withCustomPlayers(clubId: string, squad: Player[]): Player[] {
  * é quem veste a camisa: nome, idade, número, nacionalidade e foto.
  */
 function withRealPlayers(clubId: string, squad: Player[]): Player[] {
-  const real = realSquadFor(clubId);
-  if (real.length === 0) return squad;
-
-  const byPos = new Map<string, RealPlayer[]>();
-  real.forEach((r) => {
-    const list = byPos.get(r.position) ?? [];
-    list.push(r);
-    byPos.set(r.position, list);
-  });
-  const spare = [...real];
-
-  return squad.map((p) => {
-    const pool = byPos.get(p.pos);
-    const pick = pool && pool.length ? pool.shift()! : spare.shift();
-    if (!pick) return p;
-    const idx = spare.indexOf(pick);
-    if (idx >= 0) spare.splice(idx, 1);
-    return {
-      ...p,
-      name: pick.name,
-      age: pick.age > 15 && pick.age < 45 ? pick.age : p.age,
-      number: pick.shirt_number && pick.shirt_number > 0 ? pick.shirt_number : p.number,
-      ...(pick.nationality ? { nationality: pick.nationality } : {}),
-      ...(pick.photo_url ? { photo: pick.photo_url } : {}),
-    };
-  });
+  return applyImportedSquad(clubId, squad, realSquadFor(clubId)).map(enrichPlayer);
 }
 
 export function initCareer(
@@ -291,6 +271,8 @@ export function initCareer(
 
   return withCareerWorld({
     version: 3,
+    catalogRevision: 1,
+    simulationRatingRevision: 1,
     leagueId,
     clubId,
     managerName,
@@ -334,8 +316,10 @@ export function initCareer(
 
 /** Migra estados antigos (v1/v2) para o formato atual. */
 export function migrateCareer(raw: unknown): CareerState {
-  const { state: repaired, fixes } = repairCareer(migrateCareerShape(raw));
-  const state = withCareerWorld(repaired);
+  const { state: restored, fixes } = repairCareer(migrateCareerShape(raw));
+  const repaired = migrateSquadRatings(restored);
+  setAttrDeltas(repaired.attrDeltas ?? {});
+  const state = withCareerWorld(upgradeCatalog(repaired));
   if (!fixes.length) return state;
   console.warn("[career-repair]", fixes);
   const id = `repair-${state.season}-${state.round}`;
@@ -353,6 +337,49 @@ export function migrateCareer(raw: unknown): CareerState {
       },
       ...state.news,
     ],
+  };
+}
+
+function upgradeCatalog(state: CareerState): CareerState {
+  if (state.catalogRevision === 1) return state;
+  const owned = Object.values(state.players).filter((p) => p.clubId === state.clubId);
+  const completed = completeSquad(state.clubId, owned).map(
+    (p) => state.players[p.id] ?? enrichPlayer(p),
+  );
+  const players = { ...state.players, ...Object.fromEntries(completed.map((p) => [p.id, p])) };
+  // A season already in progress keeps its participants and all recorded scores.
+  const participants = [...new Set(state.fixtures.flatMap((f) => [f.home, f.away]))];
+  const leagueClubs = { ...state.leagueClubs };
+  const pristine =
+    state.season === 1 &&
+    state.round === 1 &&
+    !state.results.length &&
+    !state.history.length &&
+    state.fixtures.every((f) => f.homeGoals === null && f.awayGoals === null);
+  if (pristine) {
+    const clubs = getLeague(state.leagueId).clubs.map((c) => c.id);
+    if (clubs.includes(state.clubId)) {
+      leagueClubs[state.leagueId] = clubs;
+      return {
+        ...state,
+        players,
+        leagueClubs,
+        catalogRevision: 1,
+        fixtures: generateFixtures(state.leagueId, `${state.clubId}-${state.managerName}`, clubs),
+      };
+    }
+  }
+  if (participants.length) leagueClubs[state.leagueId] = participants;
+  return {
+    ...state,
+    players,
+    leagueClubs,
+    catalogRevision: 1,
+    ...(participants.length &&
+    (participants.length !== getLeague(state.leagueId).clubs.length ||
+      participants.some((id) => !getLeague(state.leagueId).clubs.some((c) => c.id === id)))
+      ? { catalogCalendarPending: true }
+      : {}),
   };
 }
 
@@ -415,21 +442,9 @@ export function orderedPositions(): Position[] {
 }
 
 /** Contexto opcional do jogo: forma/moral (0–100) e cansaço dos dois lados. */
-export interface QuickSimContext {
-  homeForm?: number;
-  awayForm?: number;
-  homeFatigue?: number;
-  awayFatigue?: number;
-  homeTactics?: Pick<Tactics, "mentality" | "pressing" | "tempo">;
-  awayTactics?: Pick<Tactics, "mentality" | "pressing" | "tempo">;
-}
+export type QuickSimContext = MatchConditions;
 
 export type QuickSimEvent = FixtureEvent;
-
-/** Médias de referência (grandes ligas): ~2,6 gols, ~25% empates, ~45% mandante. */
-const SIM_BASE_GOALS = 1.2;
-const SIM_HOME_EDGE = 0.15;
-const SIM_DRAW_RHO = -0.09;
 
 /**
  * Simulação rápida (sem 3D) para as outras partidas da rodada.
@@ -443,39 +458,47 @@ export function quickSimulate(
   ctx: QuickSimContext = {},
 ) {
   const rnd = makeRng(seed);
-  const form = (f?: number) => ((f ?? 60) - 60) / 40;
-  const fatigue = (f?: number) => -Math.max(0, (f ?? 0) - 20) / 200;
   const h = CLUBS[homeId]?.strength ?? 70;
   const a = CLUBS[awayId]?.strength ?? 70;
-  const edge =
-    Math.tanh((h - a) / 16) * 0.42 + form(ctx.homeForm) * 0.08 - form(ctx.awayForm) * 0.08;
-  // Tactical risk is symmetric: an attacking shape creates chances AND leaves
-  // space behind. Neutral values preserve the calibrated league distribution.
-  const risk = (t?: QuickSimContext["homeTactics"]) =>
-    t ? (t.mentality - 2) * 0.045 + (t.pressing - 1) * 0.018 + (t.tempo - 1) * 0.012 : 0;
-  const homeRisk = risk(ctx.homeTactics);
-  const awayRisk = risk(ctx.awayTactics);
-  const expH = Math.max(
-    0.3,
-    SIM_BASE_GOALS *
-      Math.exp(edge + SIM_HOME_EDGE + fatigue(ctx.homeFatigue) + homeRisk + awayRisk * 0.5),
-  );
-  const expA = Math.max(
-    0.25,
-    SIM_BASE_GOALS *
-      Math.exp(-edge - SIM_HOME_EDGE * 0.6 + fatigue(ctx.awayFatigue) + awayRisk + homeRisk * 0.5),
-  );
-
-  let hg = poisson(expH, rnd);
-  let ag = poisson(expA, rnd);
-  // Dixon-Coles: placares baixos empatados ficam um pouco mais prováveis.
-  if (hg + ag <= 2 && hg !== ag && rnd() < -SIM_DRAW_RHO * 0.2) {
-    if (hg > ag) ag = hg;
-    else hg = ag;
-  }
-  hg = Math.min(hg, 7);
-  ag = Math.min(ag, 7);
+  const { hg, ag } = regulationScore(expectedGoals(h, a, seed, ctx), rnd);
   return { hg, ag, events: quickEvents(hg, ag, rnd) };
+}
+
+/** Use the saved squad for the managed club, including transfers and availability. */
+export function careerMatchContext(
+  state: CareerState,
+  home: string,
+  away: string,
+): QuickSimContext {
+  const ctx: QuickSimContext = {
+    homeForm: recentForm(state.fixtures, home, state.round),
+    awayForm: recentForm(state.fixtures, away, state.round),
+    homeFatigue: squadFatigue(state.fixtures, home, state.round),
+    awayFatigue: squadFatigue(state.fixtures, away, state.round),
+  };
+  if (home !== state.clubId && away !== state.clubId) return ctx;
+  const squad = Object.values(state.players).filter((p) => p.clubId === state.clubId);
+  let players = state.lineup
+    .map((id) => state.players[id])
+    .filter(
+      (p): p is Player =>
+        Boolean(p) && p!.clubId === state.clubId && !p!.suspended && p!.injuryWeeks === 0,
+    );
+  if (players.length < 11) {
+    const { lineup } = pickLineup(squad, state.tactics.formation);
+    players = lineup.map((id) => state.players[id]!).filter(Boolean);
+  }
+  const side = home === state.clubId ? "home" : "away";
+  if (players.length) {
+    const average = (read: (p: Player) => number) =>
+      players.reduce((sum, p) => sum + read(p), 0) / players.length;
+    // Club strength represents a normal XI at overall strength-2.
+    ctx[`${side}Strength`] = average((p) => p.ovr) + 2 - Math.max(0, 11 - players.length) * 2;
+    ctx[`${side}Form`] = ctx[`${side}Form`]! * 0.7 + average((p) => p.form ?? 60) * 0.3;
+    ctx[`${side}Fatigue`] = average((p) => 100 - p.condition);
+  }
+  ctx[`${side}Tactics`] = state.tactics;
+  return ctx;
 }
 
 /** Forma recente 0–100 pelos pontos nos últimos 5 jogos (60 = neutra). */
@@ -545,17 +568,6 @@ function quickEvents(hg: number, ag: number, rnd: () => number): QuickSimEvent[]
       kind: "vermelho",
     });
   return ev.sort((x, y) => x.minute - y.minute);
-}
-
-function poisson(lambda: number, rnd: () => number) {
-  const l = Math.exp(-lambda);
-  let k = 0;
-  let p = 1;
-  do {
-    k++;
-    p *= rnd();
-  } while (p > l && k < 12);
-  return k - 1;
 }
 
 function totalRounds(state: CareerState): number {
@@ -796,6 +808,10 @@ function endSeason(state: CareerState): CareerState {
     clubIds: leagueClubIds(state),
     fixtures: state.fixtures,
     table,
+    ...(state.leagueId === "x5686" &&
+    state.fixtures.length === (table.length * (table.length - 1)) / 2
+      ? { expectedGamesPerClub: table.length - 1 }
+      : {}),
   });
   if (issues.length) {
     console.warn("[season-integrity]", state.season, issues);
@@ -809,8 +825,12 @@ function endSeason(state: CareerState): CareerState {
     });
   }
   const nextLeagueId = admission?.leagueId ?? move?.leagueId ?? state.leagueId;
-  const nextLeagueClubs =
-    admission?.leagueClubs ?? (move ? nationalComposition : state.leagueClubs);
+  const nextLeagueClubs = updatedSeasonComposition(
+    state,
+    admission?.leagueClubs ?? (move ? nationalComposition : state.leagueClubs),
+    nextLeagueId,
+    [...(move?.promoted ?? []), ...(move?.relegated ?? [])],
+  );
   for (const entry of qualifications.filter((e) => e.clubId === state.clubId))
     news.push({
       id: `qualification-${state.season}-${entry.competitionId}`,
@@ -864,6 +884,7 @@ function endSeason(state: CareerState): CareerState {
       relegations: (state.records?.relegations ?? 0) + (move?.moved === "desceu" ? 1 : 0),
     },
     leagueId: nextLeagueId,
+    catalogCalendarPending: false,
     ...(nextLeagueClubs ? { leagueClubs: nextLeagueClubs } : {}),
     fixtures: generateFixtures(
       nextLeagueId,
@@ -932,12 +953,12 @@ export function advanceRound(
     if (f.home === state.clubId || f.away === state.clubId) {
       return { ...f, homeGoals: userResult.hg, awayGoals: userResult.ag };
     }
-    const { hg, ag, events } = quickSimulate(f.home, f.away, `${state.clubId}-${round}-${f.home}`, {
-      homeForm: recentForm(state.fixtures, f.home, round),
-      awayForm: recentForm(state.fixtures, f.away, round),
-      homeFatigue: squadFatigue(state.fixtures, f.home, round),
-      awayFatigue: squadFatigue(state.fixtures, f.away, round),
-    });
+    const { hg, ag, events } = quickSimulate(
+      f.home,
+      f.away,
+      `${state.clubId}-${state.season}-${round}-${f.home}`,
+      careerMatchContext(state, f.home, f.away),
+    );
     return { ...f, homeGoals: hg, awayGoals: ag, events };
   });
 
@@ -1305,7 +1326,7 @@ export function takeJob(state: CareerState, jobId: string): CareerState {
   const job = (state.jobOffers ?? []).find((j) => j.id === jobId);
   if (!job) return state;
   const club = CLUBS[job.clubId]!;
-  const squad = buildSquad(job.clubId).map(enrichPlayer);
+  const squad = withCustomPlayers(job.clubId, withRealPlayers(job.clubId, buildSquad(job.clubId)));
   const { lineup, bench } = pickLineup(squad, state.tactics.formation);
   const history = state.sacked ? (state.managerHistory ?? []) : closeSpell(state, "Saiu do clube");
 

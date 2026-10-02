@@ -239,7 +239,7 @@ export function LeagueStandings({ career, table }: { career: CareerState; table:
                     </td>
                     <td>
                       <span className="league-zone-label" data-zone={zone ?? undefined}>
-                        {zone ? LABELS[zone] : "Permanência"}
+                        {zone ? LABELS[zone] : regional ? "Fora do mata-mata" : "Permanência"}
                       </span>
                     </td>
                   </tr>
@@ -275,7 +275,9 @@ export function LeagueStandings({ career, table }: { career: CareerState; table:
                                 ? `${qualification.name} · ${qualification.phase}`
                                 : zone
                                   ? LABELS[zone]
-                                  : "Permanência na divisão"}
+                                  : regional
+                                    ? "Fora do mata-mata estadual"
+                                    : "Permanência na divisão"}
                             </strong>
                             <span>
                               {qualification?.reason ??

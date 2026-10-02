@@ -7,7 +7,7 @@ import type { Proportions } from "./player-model";
 export function footballShorts(
   p: Pick<Proportions, "hipW" | "hipH" | "chestD" | "thigh" | "legR">,
   radial = 16,
-  options?: { waistOnly?: boolean },
+  options?: { waistOnly?: boolean; waistRows?: number; legRows?: number },
 ): THREE.BufferGeometry {
   const positions: number[] = [];
   const uvs: number[] = [];
@@ -28,7 +28,7 @@ export function footballShorts(
     for (let i = 0; i < count; i++)
       indices.push(a + i, b + i, a + i + 1, a + i + 1, b + i, b + i + 1);
   };
-  const rows = 6;
+  const rows = options?.waistRows ?? 6;
   for (let row = 0; row <= rows; row++) {
     const t = row / rows;
     const split = t * t * (3 - 2 * t);
@@ -52,8 +52,9 @@ export function footballShorts(
   const branch = rows * (radial * 2 + 1);
   for (const sign of options?.waistOnly ? [] : [1, -1]) {
     let previous = branch + (sign === 1 ? 0 : radial);
-    for (let row = 1; row <= 5; row++) {
-      const t = row / 5;
+    const legRows = options?.legRows ?? 5;
+    for (let row = 1; row <= legRows; row++) {
+      const t = row / legRows;
       const y = crotch + (hem - crotch) * t;
       const center = crotchRadius + (centers - crotchRadius) * t;
       const width = crotchRadius * (1 - t) + (p.legR * 1.2 + 0.007) * t;

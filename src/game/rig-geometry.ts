@@ -130,11 +130,11 @@ export function anatomicalSection(
   rings: readonly { y: number; width: number; depth: number; centerDepth?: number }[],
   radial = 12,
   roundness = 1,
-  caps = true,
+  caps: boolean | "bottom" | "top" = true,
+  subdivisions = radial >= 12 ? 3 : 2,
 ): THREE.BufferGeometry {
   // Shape-preserving Hermite tangents avoid a bulge/ledge at every landmark.
   const sampled: { y: number; width: number; depth: number; centerDepth?: number }[] = [];
-  const subdivisions = radial >= 12 ? 3 : 2;
   for (let row = 0; row < rings.length - 1; row++) {
     const a = rings[row]!;
     const b = rings[row + 1]!;
@@ -194,12 +194,18 @@ export function anatomicalSection(
       indices.push(a, a + 1, b, a + 1, b + 1, b);
     }
   }
-  for (const [row, reverse] of caps
-    ? ([
-        [0, true],
-        [rings.length - 1, false],
-      ] as const)
-    : []) {
+  const capRows: readonly (readonly [number, boolean])[] =
+    caps === true
+      ? [
+          [0, true],
+          [rings.length - 1, false],
+        ]
+      : caps === "bottom"
+        ? [[0, true]]
+        : caps === "top"
+          ? [[rings.length - 1, false]]
+          : [];
+  for (const [row, reverse] of capRows) {
     const ring = rings[row]!;
     const center = positions.length / 3;
     positions.push(0, ring.y, ring.centerDepth ?? 0);
@@ -313,9 +319,24 @@ export function athleticTorsoSurface(
     const pectoral = Math.exp(-(((Math.abs(x) - 0.46) / 0.31) ** 2) - ((y - 0.69) / 0.17) ** 2);
     const sternum = Math.exp(-((x / 0.12) ** 2) - ((y - 0.7) / 0.22) ** 2);
     const scapula = Math.exp(-(((Math.abs(x) - 0.48) / 0.3) ** 2) - ((y - 0.72) / 0.2) ** 2);
+    const clavicle = Math.exp(-(((Math.abs(x) - 0.4) / 0.38) ** 2) - ((y - 0.88) / 0.065) ** 2);
+    const oblique = Math.exp(-(((Math.abs(x) - 0.7) / 0.21) ** 2) - ((y - 0.37) / 0.23) ** 2);
+    const lat = Math.exp(-(((Math.abs(x) - 0.72) / 0.24) ** 2) - ((y - 0.56) / 0.23) ** 2);
+    const deltoid = Math.exp(-(((Math.abs(x) - 0.93) / 0.2) ** 2) - ((y - 0.8) / 0.12) ** 2);
+    // Shoulder cap and latissimus meet the ribcage as continuous surfaces.
+    // The player's deterministic proportions and all bind pivots are retained.
+    positions.setX(
+      i,
+      positions.getX(i) + Math.sign(x) * width * envelope * (deltoid * 0.027 + lat * 0.016),
+    );
     positions.setZ(
       i,
-      z + width * envelope * (z > 0 ? pectoral * 0.032 - sternum * 0.009 : -scapula * 0.022),
+      z +
+        width *
+          envelope *
+          (z > 0
+            ? pectoral * 0.045 + clavicle * 0.018 - sternum * 0.012 - oblique * 0.012
+            : -scapula * 0.035 - lat * 0.012),
     );
   }
   geometry.computeVertexNormals();
@@ -338,7 +359,13 @@ export function anatomicalFinger(radius: number, length: number) {
 }
 
 /** A continuous last with a fitted heel, instep and flattened toe box. */
-export function footballBoot(length: number, height: number, radial = 12, sole = false) {
+export function footballBoot(
+  length: number,
+  height: number,
+  radial = 12,
+  sole = false,
+  subdivisions?: number,
+) {
   const geometry = anatomicalSection(
     [
       { y: -length * 0.3, width: height * 0.25, depth: height * 0.19, centerDepth: height * 0.31 },
@@ -350,6 +377,9 @@ export function footballBoot(length: number, height: number, radial = 12, sole =
       { y: length * 0.61, width: height * 0.015, depth: height * 0.02, centerDepth: height * 0.49 },
     ].map((r) => (sole ? { ...r, depth: height * 0.045, centerDepth: height * 0.64 } : r)),
     radial,
+    1,
+    true,
+    subdivisions,
   );
   geometry.rotateX(Math.PI / 2);
   return geometry;
@@ -404,6 +434,7 @@ export function anatomicalLimb(
   radius: number,
   radial = 12,
   rigidEnds = false,
+  subdivisions?: number,
 ) {
   const profiles: Record<LimbProfile, readonly [number, number, number][]> = {
     upperArm: [
@@ -416,9 +447,9 @@ export function anatomicalLimb(
     forearm: [
       [0, 0.75, 0.78],
       [0.2, 0.91, 0.87],
-      [0.46, 0.84, 0.8],
-      [0.8, 0.61, 0.65],
-      [1, 0.53, 0.61],
+      [0.46, 0.84, 0.75],
+      [0.8, 0.61, 0.52],
+      [1, 0.55, 0.43],
     ],
     thigh: [
       [0, 1.18, 1.12],
@@ -460,6 +491,7 @@ export function anatomicalLimb(
     radial,
     1,
     rigidEnds,
+    subdivisions,
   );
   const position = geometry.getAttribute("position");
   for (let i = 0; i < position.count; i++) {
@@ -478,9 +510,32 @@ export function anatomicalLimb(
             : 0.065 * Math.exp(-(((u - 0.32) / 0.3) ** 2));
     const angular = Math.abs(z) / Math.max(radius * 0.1, Math.hypot(x, z));
     position.setZ(i, z + front * radius * bulge * envelope * angular);
+    // Tibial ridge, two gastrocnemius heads and the lateral forearm muscle
+    // remove the round tube silhouette without separate overlapping meshes.
+    const lateral = Math.abs(x) / Math.max(radius * 0.1, Math.hypot(x, z));
+    if (kind === "calf") {
+      const shin = Math.exp(-(((u - 0.62) / 0.3) ** 2)) * (1 - lateral) ** 3;
+      const heads = Math.exp(-(((u - 0.33) / 0.19) ** 2)) * lateral * (1 - lateral) * 4;
+      position.setZ(
+        i,
+        position.getZ(i) + radius * envelope * (front > 0 ? shin * 0.027 : -heads * 0.034),
+      );
+    } else if (kind === "forearm") {
+      position.setX(i, x * (1 + envelope * lateral * 0.055 * Math.exp(-(((u - 0.3) / 0.23) ** 2))));
+    } else if (kind === "thigh" && front > 0) {
+      const teardrop = Math.exp(-(((u - 0.79) / 0.12) ** 2)) * lateral;
+      const rectus = Math.exp(-(((u - 0.48) / 0.26) ** 2)) * (1 - lateral) ** 2;
+      position.setZ(i, position.getZ(i) + radius * envelope * (teardrop * 0.065 + rectus * 0.025));
+    } else if (kind === "upperArm") {
+      const deltoid = Math.exp(-(((u - 0.2) / 0.17) ** 2));
+      position.setX(i, x * (1 + envelope * lateral * deltoid * 0.065));
+    }
     // Two heads of the calf/quadriceps avoid a uniformly circular cylinder.
     if (kind === "thigh" || kind === "calf")
-      position.setX(i, x * (1 + envelope * 0.035 * Math.exp(-(((u - 0.43) / 0.25) ** 2))));
+      position.setX(
+        i,
+        position.getX(i) * (1 + envelope * 0.035 * Math.exp(-(((u - 0.43) / 0.25) ** 2))),
+      );
   }
   geometry.computeVertexNormals();
   smoothRingSeams(geometry, radial);
@@ -507,8 +562,9 @@ export function fittedLimbCover(
   from: number,
   offset = 0.002,
   to = 1.035,
+  subdivisions?: number,
 ) {
-  const limb = anatomicalLimb(kind, length, radius, radial);
+  const limb = anatomicalLimb(kind, length, radius, radial, false, subdivisions);
   const source = limb.getAttribute("position");
   const rows = source.count / (radial + 1);
   const opening = -length * from;

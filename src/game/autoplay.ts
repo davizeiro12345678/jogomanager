@@ -5,7 +5,12 @@
  * histórico por partida que uma partida jogada em 3D.
  */
 import { CLUBS } from "@/game/data/leagues";
-import { advanceRound, quickSimulate, type MatchPerformance } from "@/game/career";
+import {
+  advanceRound,
+  careerMatchContext,
+  quickSimulate,
+  type MatchPerformance,
+} from "@/game/career";
 import { makeRng } from "@/game/rng";
 import type { CareerState, Player } from "@/game/types";
 
@@ -91,7 +96,12 @@ export function autoWeek(state: CareerState): AutoWeek | null {
   if (!fixture) return null;
 
   const seed = `${state.clubId}-auto-${state.season}-${state.round}`;
-  const { hg, ag } = quickSimulate(fixture.home, fixture.away, seed);
+  const { hg, ag } = quickSimulate(
+    fixture.home,
+    fixture.away,
+    seed,
+    careerMatchContext(state, fixture.home, fixture.away),
+  );
   const home = fixture.home === state.clubId;
   const gf = home ? hg : ag;
   const ga = home ? ag : hg;

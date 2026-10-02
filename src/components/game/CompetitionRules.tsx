@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import "./competition-interface.css";
 import { ArrowRight, BookOpen, Trophy } from "lucide-react";
-import { CLUBS, getLeague } from "@/game/data/leagues";
+import { CLUBS, LEAGUES, getLeague } from "@/game/data/leagues";
 import {
   calendarYear,
   CONTINENTAL_NAMES,
@@ -14,8 +15,14 @@ import { pyramidTiers, REGIONAL_LINKS } from "@/game/pyramid";
 import type { CareerState } from "@/game/types";
 
 export function CompetitionRules({ career }: { career: CareerState }) {
-  const league = getLeague(career.leagueId),
+  const [selectedLeague, setSelectedLeague] = useState<string | null>(null);
+  const league = getLeague(selectedLeague ?? career.leagueId),
     rules = countryRegulation(league.country, calendarYear(career));
+  const ownLeague = league.id === career.leagueId;
+  const countries = [...new Set(LEAGUES.map((l) => l.country))].sort((a, b) =>
+    a.localeCompare(b, "pt-BR"),
+  );
+  const divisions = LEAGUES.filter((l) => l.country === league.country);
   const tiers = pyramidTiers(league.id),
     index = tiers?.findIndex((tier) => tier.includes(league.id)) ?? -1;
   const regional = REGIONAL_LINKS[league.id];
@@ -25,13 +32,15 @@ export function CompetitionRules({ career }: { career: CareerState }) {
       ? promotionRule(tiers[index]![0]!, calendarYear(career))
       : null;
   const personal =
-    career.qualifications?.filter(
+    (ownLeague ? career.qualifications : [])?.filter(
       (e) => e.clubId === career.clubId && e.season === career.season,
     ) ?? [];
   const source = regional?.source ?? upward?.source ?? downward?.source ?? rules.source;
   const record = career.competitionHistory?.at(-1);
   const playoffs =
-    record?.playoffs?.filter((p) => p.home === career.clubId || p.away === career.clubId) ?? [];
+    (ownLeague ? record?.playoffs : [])?.filter(
+      (p) => p.home === career.clubId || p.away === career.clubId,
+    ) ?? [];
   const path =
     league.country === "Brasil"
       ? ["Estadual", "Série D", "Série C", "Série B", "Série A", "Libertadores", "Mundial"]
@@ -53,6 +62,51 @@ export function CompetitionRules({ career }: { career: CareerState }) {
           <Trophy aria-hidden size={16} /> Ver copas
         </Link>
       </div>
+      <div className="competition-rule-selectors">
+        <label>
+          País
+          <select
+            value={league.country}
+            onChange={(event) =>
+              setSelectedLeague(LEAGUES.find((l) => l.country === event.target.value)!.id)
+            }
+          >
+            {countries.map((country) => (
+              <option value={country} key={country}>
+                {country}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Campeonato
+          <select value={league.id} onChange={(event) => setSelectedLeague(event.target.value)}>
+            {divisions.map((division) => (
+              <option value={division.id} key={division.id}>
+                {division.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {league.clubs.length} clubes no catálogo
+        {league.membershipSeason ? ` · Base ${league.membershipSeason}` : " · Base anterior"}
+        {league.membershipSource && (
+          <>
+            {" "}
+            ·{" "}
+            <a
+              href={league.membershipSource}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              Composição dos participantes ↗
+            </a>
+          </>
+        )}
+      </p>
       <ol className="competition-path" aria-label="Caminho entre competições">
         {path.map((name, i) => (
           <li key={`${name}-${i}`}>
@@ -70,7 +124,9 @@ export function CompetitionRules({ career }: { career: CareerState }) {
               <p>
                 {league.id === "x5686"
                   ? "Os oito primeiros disputam o mata-mata em ida e volta. O campeão ganha uma vaga na Série D seguinte; campeão e vice entram na Copa do Brasil. A vaga na D passa ao próximo elegível quando o vencedor já estiver na A, B ou C."
-                  : "Os melhores disputam o título estadual. O campeão elegível entra na Série D seguinte; finalistas classificam para a Copa do Brasil. Cotas e fases adaptadas para os estaduais disponíveis."}
+                  : "Os melhores disputam o título estadual. O campeão elegível entra na Série D seguinte; finalistas classificam para a Copa do Brasil. Cotas e fases adaptadas para os estaduais disponíveis."}{" "}
+                Divisões estaduais inferiores não disponíveis no catálogo ainda não têm rebaixamento
+                simulado.
               </p>
             ) : tiers ? (
               <p>
@@ -82,7 +138,9 @@ export function CompetitionRules({ career }: { career: CareerState }) {
                     ? "Dois clubes caem; seis vêm da D, ampliando a Série C para 24 em 2027 e 28 em 2028."
                     : `${downward.direct + (downward.againstUpper ? 0 : downward.playoff)} rebaixamento(s)${downward.againstUpper ? " e um confronto de permanência" : ""}.`
                   : "Não há divisão inferior conectada no catálogo."}{" "}
-                {career.pyramidSlots ? "Seu save usa uma quantidade personalizada de vagas." : ""}
+                {ownLeague && career.pyramidSlots
+                  ? "Seu save usa uma quantidade personalizada de vagas."
+                  : ""}
               </p>
             ) : (
               <p>
@@ -164,6 +222,7 @@ export function CompetitionRules({ career }: { career: CareerState }) {
           Grupos nacionais, estaduais e copas usam o catálogo existente. Calendários, licenciamento,
           sorteios oficiais, Apertura/Clausura e fases continentais ainda têm adaptações. As regras
           são versionadas; anos futuros usam esta edição e o desempenho simulado da carreira. Cotas
+          da Série D usam 96 clubes em 16 grupos de seis, com quatro classificados por grupo. Cotas
           do Mundial seguem 2025, com sede EUA adaptada; não representam uma confirmação da sede de
           2029.
         </p>

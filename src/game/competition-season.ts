@@ -1,4 +1,5 @@
 import { CLUBS, LEAGUES, getLeague } from "./data/leagues";
+import { SERIE_D_IDS } from "./data/serie-d";
 import {
   calendarYear,
   CONTINENTAL_NAMES,
@@ -22,25 +23,40 @@ export const primaryCompetitionId = (confederation: Confederation) =>
 export const secondaryCompetitionId = (confederation: Confederation) =>
   `secondary:${confederation}`;
 export const nationalCompetitionId = (country: string) => `national:${country}`;
-const CLUB_COUNTRIES = new Map(
-  LEAGUES.flatMap((l) => l.clubs.map((c) => [c.id, l.country] as const)),
-);
-const TOP_LEAGUES = new Map<string, (typeof LEAGUES)[number]>();
-for (const league of LEAGUES)
-  if (!TOP_LEAGUES.has(league.country)) TOP_LEAGUES.set(league.country, league);
+let catalogIndex:
+  | {
+      countries: Map<string, string>;
+      topLeagues: Map<string, (typeof LEAGUES)[number]>;
+    }
+  | undefined;
+function competitionCatalog() {
+  if (!catalogIndex) {
+    const countries = new Map<string, string>();
+    const topLeagues = new Map<string, (typeof LEAGUES)[number]>();
+    for (const league of LEAGUES) {
+      if (!topLeagues.has(league.country)) topLeagues.set(league.country, league);
+      for (const club of league.clubs) countries.set(club.id, league.country);
+    }
+    catalogIndex = { countries, topLeagues };
+  }
+  return catalogIndex;
+}
 const NORMAL_NAMES = new Map<string, string>();
 export function countryOfClub(id: string): string | undefined {
-  return CLUB_COUNTRIES.get(id);
+  return (
+    competitionCatalog().countries.get(id) ??
+    (CLUBS[id] ? getLeague(CLUBS[id]!.league).country : undefined)
+  );
 }
 export function topLeague(country: string) {
-  return TOP_LEAGUES.get(country);
+  return competitionCatalog().topLeagues.get(country);
 }
 
 /** Identidade física de clubes importados em mais de um campeonato; IDs dos saves são preservados. */
 export function sameClub(a: string, b: string): boolean {
   if (a === b) return true;
   if (countryOfClub(a) !== countryOfClub(b)) return false;
-  const source = (id: string) => id.match(/_(\d{5,})$/)?.[1];
+  const source = (id: string) => CLUBS[id]?.sourceTeamId ?? id.match(/_(\d{5,})$/)?.[1];
   if (source(a) && source(a) === source(b)) return true;
   const normalize = (id: string) => {
     const cached = NORMAL_NAMES.get(id);
@@ -179,7 +195,7 @@ export function resolveQualifications(
             id,
             primary,
             name,
-            index === 0 ? "principal" : "preliminar",
+            index === 0 || !cupWinners[0] || !eligible(cupWinners[0]) ? "principal" : "preliminar",
             `${index === 0 ? "Campeão" : "Vice"} da ${rules.domesticCup}`,
           );
       for (const id of [champion(primary), champion(secondaryCompetitionId(confed))])
@@ -188,15 +204,24 @@ export function resolveQualifications(
     }
     if (confed === "UEFA")
       for (const id of [champion(primary), champion(secondaryCompetitionId(confed))])
-        if (id && countryOfClub(id) === league.country && eligible(id))
+        if (id && countryOfClub(id) === league.country)
           add(id, primary, name, "principal", "Campeão continental da temporada anterior");
     // Reservar a vaga da copa não exige que a copa já tenha terminado: a zona da liga continua legível.
-    const extraChampions = entries.filter(
-      (e) =>
-        e.competitionId === primary &&
-        e.reason.startsWith("Campeão continental") &&
-        countryOfClub(e.clubId) === league.country,
-    ).length;
+    const titleHolders = [
+      ...new Set(
+        [champion(primary), champion(secondaryCompetitionId(confed))].filter(
+          (id): id is string => Boolean(id) && countryOfClub(id!) === league.country,
+        ),
+      ),
+    ];
+    const extraChampions =
+      confed === "CONMEBOL"
+        ? titleHolders.filter(eligible).length
+        : confed === "UEFA"
+          ? titleHolders.filter(
+              (id) => !ranks.slice(0, rules.primary).some((club) => sameClub(club, id)),
+            ).length
+          : 0;
     const cupAvailable = rules.cupBerths && confed === "CONMEBOL";
     const primaryLeagueQuota = Math.max(0, rules.primary - (cupAvailable ? rules.cupBerths : 0));
     const desired =
@@ -406,7 +431,7 @@ export function applyRegionalEntries(
   const leagueClubs = Object.fromEntries(
     Object.entries(composition).map(([id, clubs]) => [id, [...clubs]]),
   );
-  const nationals = ["bra", "bra2", "bra3", "y5079a", "y5079b", "y5079c"];
+  const nationals = ["bra", "bra2", "bra3", ...SERIE_D_IDS];
   const active = () => nationals.flatMap((id) => leagueClubs[id] ?? leagueClubIds(state, id));
   const admitted: string[] = [];
   let leagueId = state.leagueId;

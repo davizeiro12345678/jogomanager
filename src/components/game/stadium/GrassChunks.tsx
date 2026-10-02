@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { FIELD_X, FIELD_Z } from "@/game/sim";
 import { censusRef } from "@/game/scene-census";
+import { grassBladeGeometry } from "@/game/grass-blade";
 
 const COLS = 6,
   ROWS = 4;
@@ -25,10 +26,7 @@ export function GrassChunks({
   // planos abertos; desenhar milhares de cones ali criava pontos pretos e não
   // aumentava detalhe percebido.
   const count = Math.max(1, Math.round(210 * Math.max(0, density)));
-  const geometry = useMemo(
-    () => new THREE.ConeGeometry(0.018, 0.085, 3).translate(0, 0.0425, 0),
-    [],
-  );
+  const geometry = useMemo(() => grassBladeGeometry(), []);
   const chunks = useMemo(
     () =>
       Array.from({ length: COLS * ROWS }, (_, i) => ({
@@ -58,7 +56,7 @@ export function GrassChunks({
         d.scale.setScalar(0.72 + random() * 0.48);
         d.updateMatrix();
         mesh.setMatrixAt(i, d.matrix);
-        color.setHSL(0.33, 0.38, 0.32 + random() * 0.07);
+        color.setHSL(0.27 + random() * 0.035, 0.36, 0.5 + random() * 0.13);
         mesh.setColorAt(i, color);
       }
       mesh.instanceMatrix.needsUpdate = true;
@@ -109,6 +107,7 @@ export function GrassChunks({
             refs.current[index] = mesh;
           }}
           args={[geometry, material, count]}
+          visible={false}
         />
       ))}
     </group>

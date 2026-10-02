@@ -4,6 +4,11 @@
  * resultados nem altera o que o jogador decidiu. Pura e determinística.
  */
 import type { CareerState, Fixture, Player } from "./types";
+import {
+  repairPlayerIdentities,
+  repairShirtNumbers,
+  remapPlayerReferences,
+} from "./player-roster-repair";
 
 const clamp = (v: unknown, min: number, max: number, fallback: number) => {
   const n = typeof v === "number" && Number.isFinite(v) ? v : fallback;
@@ -39,9 +44,13 @@ export function repairCareer(input: CareerState): RepairResult {
 
   // 1. atributos de jogadores dentro da faixa válida
   let badPlayers = 0;
-  const players: Record<string, Player> = {};
+  let badIds = 0;
+  const declaredIds = new Map<string, string>();
+  let players: Record<string, Player> = {};
   for (const [id, p] of Object.entries(input.players ?? {})) {
-    if (!p) continue;
+    if (!p || typeof p !== "object") continue;
+    if (typeof p.id === "string" && p.id.trim()) declaredIds.set(id, p.id.trim());
+    if (p.id !== id) badIds++;
     const next = { ...p, id };
     let changed = false;
     for (const [key, min, max, fb] of PLAYER_RANGES) {
@@ -56,15 +65,39 @@ export function repairCareer(input: CareerState): RepairResult {
     players[id] = next;
   }
   if (badPlayers) fixes.push(`${badPlayers} jogador(es) com atributos fora da faixa`);
+  if (badIds) fixes.push(`${badIds} ID(s) de jogadores inconsistentes corrigido(s)`);
+
+  const identity = repairPlayerIdentities(players, input.lineup ?? [], declaredIds);
+  const removedPlayers = Object.keys(players).length - Object.keys(identity.players).length;
+  for (const [key, declared] of declaredIds) {
+    if (key !== declared && !players[declared])
+      identity.aliases.set(declared, identity.aliases.get(key) ?? key);
+  }
+  players = identity.players;
+  if (identity.aliases.size) {
+    if (removedPlayers)
+      fixes.push(`${removedPlayers} cópia(s) de jogadores com a mesma identidade removida(s)`);
+    input = remapPlayerReferences(input, identity.aliases);
+  }
+  const shirts = repairShirtNumbers(players);
+  players = shirts.players;
+  if (shirts.changed)
+    fixes.push(`${shirts.changed} número(s) de camisa repetido(s) ou inválido(s) corrigido(s)`);
 
   // 2. escalação e banco: sem ids órfãos, sem repetição, banco sem titulares
   const own = (id: string) => players[id]?.clubId === input.clubId;
   const uniq = (ids: string[]) => [...new Set(ids)].filter(own);
-  let lineup = uniq(input.lineup ?? []).slice(0, 11);
+  const lineup = uniq(input.lineup ?? []).slice(0, 11);
   let bench = uniq(input.bench ?? []).filter((id) => !lineup.includes(id));
   if (lineup.length < 11) {
     const pool = Object.values(players)
-      .filter((p) => p.clubId === input.clubId && !lineup.includes(p.id) && !p.suspended && p.injuryWeeks === 0)
+      .filter(
+        (p) =>
+          p.clubId === input.clubId &&
+          !lineup.includes(p.id) &&
+          !p.suspended &&
+          p.injuryWeeks === 0,
+      )
       .sort((a, b) => b.ovr - a.ovr || a.id.localeCompare(b.id));
     for (const p of pool) {
       if (lineup.length >= 11) break;
@@ -104,7 +137,8 @@ export function repairCareer(input: CareerState): RepairResult {
     seenRes.add(k);
     return true;
   });
-  if (results.length !== (input.results ?? []).length) fixes.push("Resultados repetidos no histórico");
+  if (results.length !== (input.results ?? []).length)
+    fixes.push("Resultados repetidos no histórico");
 
   // 5. medidores e finanças
   const meters = {
@@ -125,7 +159,10 @@ export function repairCareer(input: CareerState): RepairResult {
     meters.approval !== input.approval ||
     meters.fanApproval !== input.fanApproval ||
     meters.pressure !== input.pressure ||
-    (f && (finances!.budget !== f.budget || finances!.spent !== f.spent || finances!.income !== f.income))
+    (f &&
+      (finances!.budget !== f.budget ||
+        finances!.spent !== f.spent ||
+        finances!.income !== f.income))
   )
     fixes.push("Medidores ou finanças com valores inválidos");
 

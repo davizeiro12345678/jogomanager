@@ -12,17 +12,9 @@ import {
   proportionsFor,
   type PlayerLook,
 } from "@/game/player-model";
-import {
-  anatomicalLimb,
-  anatomicalSection,
-  athleticTorsoSurface,
-  footballBoot,
-  fittedLimbCover,
-  type LimbProfile,
-} from "@/game/rig-geometry";
-import { sculptedHead } from "@/game/player-sculpt";
-import { footballShorts } from "@/game/player-shorts";
-import { LOW_HAIR_FAMILIES, lowHairFamily, lowHairGeometry } from "@/game/player-lod-hair";
+import { LOW_HAIR_FAMILIES, lowHairFamily } from "@/game/player-lod-hair";
+import { createLowPlayerGeometries } from "@/game/player-lod-geometry";
+import { LowShortsAnimator } from "@/game/player-lod-shorts";
 import { skinAlbedo } from "@/game/player-morphology";
 import {
   appendPlayerInstance,
@@ -34,6 +26,7 @@ import type { SimView } from "@/game/sim";
 import { visualMotionFor } from "@/game/visual-motion";
 import { footballSupportFor, refineFootballAction } from "@/game/football-action";
 import { refineAthletePosture, shoulderPose } from "@/game/athlete-posture";
+import { spineRollForAction } from "@/game/rig-correctives";
 import { visualDataFor } from "@/game/visual-frame-cache";
 import { getDominantFoot } from "@/game/visual-context";
 import { AthletePoseBlender } from "@/game/athlete-pose-blender";
@@ -61,7 +54,6 @@ const LIMB_BATCHES = [
   "hands",
   "sleeves",
   "thighs",
-  "shorts",
   "shins",
   ...SOCK_BATCHES,
   "boots",
@@ -106,57 +98,9 @@ export function LowPlayers({
     () => sim.players.map(() => new AthletePoseBlender()),
     [sim.players],
   );
-  const headGeometry = useMemo(
-    () => sculptedHead({ headR: 0.5, headW: 0.5, headD: 0.5 }, 0, false),
-    [],
-  );
-  const hairGeometries = useMemo(
-    () => Object.fromEntries(LOW_HAIR_FAMILIES.map((family) => [family, lowHairGeometry(family)])),
-    [],
-  );
-  const bootGeometry = useMemo(() => footballBoot(1, 0.5, 8), []);
-  const shortsGeometry = useMemo(
-    () =>
-      anatomicalSection(
-        [
-          { y: -0.5, width: 0.64, depth: 0.65 },
-          { y: -0.15, width: 0.65, depth: 0.665 },
-          { y: 0.5, width: 0.67, depth: 0.69 },
-        ],
-        8,
-        1,
-        false,
-      ),
-    [],
-  );
-  const sockGeometries = useMemo(
-    () =>
-      Object.fromEntries(
-        SOCK_BATCHES.map((name) => [
-          name,
-          fittedLimbCover("calf", 1, 0.5, 8, SOCK_TOP[name], 0.014),
-        ]),
-      ),
-    [],
-  );
+  const geometries = useMemo(createLowPlayerGeometries, []);
+  const shortsAnimator = useMemo(() => new LowShortsAnimator(geometries["hips"]!), [geometries]);
   const gaitBuffer = useRef(emptyPose());
-  const limbGeometries = useMemo(() => {
-    const profiles: Record<string, LimbProfile> = {
-      arms: "upperArm",
-      forearms: "forearm",
-      thighs: "thigh",
-      shins: "calf",
-    };
-    return Object.fromEntries(
-      Object.entries(profiles).map(([batch, profile]) => [
-        batch,
-        (batch === "thighs"
-          ? fittedLimbCover("thigh", 1, 0.5, 8, 0.43, 0)
-          : anatomicalLimb(profile, 1, 0.5, 8, true)
-        ).translate(0, 0.5, 0),
-      ]),
-    );
-  }, []);
   const rootY = useRef(new Float32Array(MAX_PLAYERS));
   const tmp = useMemo(
     () => ({
@@ -181,52 +125,12 @@ export function LowPlayers({
     }),
     [],
   );
-  const torsoGeometry = useMemo(
-    () =>
-      athleticTorsoSurface(
-        anatomicalSection(
-          [
-            { y: -0.5, width: 0.38, depth: 0.42 },
-            { y: -0.15, width: 0.44, depth: 0.47 },
-            { y: 0.22, width: 0.5, depth: 0.5 },
-            { y: 0.38, width: 0.46, depth: 0.45 },
-            { y: 0.5, width: 0.22, depth: 0.25 },
-          ],
-          10,
-        ).translate(0, 0.5, 0),
-        0.5,
-        1,
-      ).translate(0, -0.5, 0),
-    [],
-  );
-  const pelvisGeometry = useMemo(
-    () =>
-      footballShorts({ hipW: 1, hipH: 1, chestD: 0.47, legR: 0.306, thigh: 3.4 }, 8, {
-        waistOnly: true,
-      }),
-    [],
-  );
   useEffect(
     () => () => {
-      torsoGeometry.dispose();
-      pelvisGeometry.dispose();
-      Object.values(hairGeometries).forEach((geometry) => geometry.dispose());
-      headGeometry.dispose();
-      bootGeometry.dispose();
-      shortsGeometry.dispose();
-      Object.values(sockGeometries).forEach((geometry) => geometry.dispose());
-      Object.values(limbGeometries).forEach((geometry) => geometry.dispose());
+      shortsAnimator.dispose();
+      Object.values(geometries).forEach((geometry) => geometry.dispose());
     },
-    [
-      torsoGeometry,
-      pelvisGeometry,
-      limbGeometries,
-      hairGeometries,
-      headGeometry,
-      bootGeometry,
-      shortsGeometry,
-      sockGeometries,
-    ],
+    [geometries, shortsAnimator],
   );
   useEffect(() => {
     const color = new THREE.Color();
@@ -255,7 +159,6 @@ export function LowPlayers({
         set("hands", i, look.gloves ? look.gloveColor : skinColor);
         set("sleeves", i, kit.pattern === "sleeves" ? kit.detail : kit.base);
         set("thighs", i, skinColor);
-        set("shorts", i, kit.shorts);
         set("shins", i, skinColor);
         for (const sockBatch of SOCK_BATCHES) set(sockBatch, i, kit.socks);
         set("boots", i, look.bootColor);
@@ -466,7 +369,26 @@ export function LowPlayers({
         pose.hipRoll + shift * 1.2,
       );
       draw("hips", index, hips, 0, 0, 0, p.hipW, p.hipH, p.chestD / 0.47);
-      joint(spine, hips, 0, p.hipH * 0.5, 0, pose.spine, -pose.hipYaw * 0.45, -pose.hipRoll * 0.35);
+      const shortsMesh = meshes.hips;
+      if (shortsMesh && shortsMesh.count > 0)
+        shortsAnimator.update(
+          shortsMesh,
+          shortsMesh.count - 1,
+          pose,
+          p.hipW,
+          p.hipH,
+          p.chestD / 0.47,
+        );
+      joint(
+        spine,
+        hips,
+        0,
+        p.hipH * 0.5,
+        0,
+        pose.spine,
+        -pose.hipYaw * 0.45,
+        spineRollForAction(pose.hipRoll, player.action),
+      );
       draw(
         "torso",
         index,
@@ -563,7 +485,6 @@ export function LowPlayers({
           left ? pose.legLRoll : pose.legRRoll,
         );
         draw("thighs", i, thigh, 0, -p.thigh * 0.5, 0, p.legR * 2, p.thigh, p.legR * 2);
-        draw("shorts", i, thigh, 0, -p.thigh * 0.245, 0, p.legR * 2, p.thigh * 0.49, p.legR * 2);
         joint(shin, thigh, 0, -p.thigh, 0, -(left ? pose.kneeL : pose.kneeR));
         draw("shins", i, shin, 0, -p.shin * 0.5, 0, p.legR * 2, p.shin, p.legR * 2);
         const selectedSock =
@@ -605,6 +526,8 @@ export function LowPlayers({
       {[...BODY_BATCHES, ...LIMB_BATCHES].map((name) => (
         <instancedMesh
           key={name}
+          visible={false}
+          count={0}
           ref={(mesh) => {
             if (mesh) refs.current[name] = mesh;
             else delete refs.current[name];
@@ -634,31 +557,7 @@ export function LowPlayers({
               envMapIntensity={0.7}
             />
           )}
-          {name === "torso" ? (
-            createElement("primitive", { object: torsoGeometry, attach: "geometry" })
-          ) : name === "hips" ? (
-            createElement("primitive", { object: pelvisGeometry, attach: "geometry" })
-          ) : name === "head" ? (
-            createElement("primitive", { object: headGeometry, attach: "geometry" })
-          ) : name === "boots" ? (
-            createElement("primitive", { object: bootGeometry, attach: "geometry" })
-          ) : name === "shorts" ? (
-            createElement("primitive", { object: shortsGeometry, attach: "geometry" })
-          ) : sockGeometries[name] ? (
-            createElement("primitive", { object: sockGeometries[name], attach: "geometry" })
-          ) : name === "hands" ? (
-            <sphereGeometry args={[0.5, 10, 8]} />
-          ) : hairGeometries[name] ? (
-            createElement("primitive", { object: hairGeometries[name], attach: "geometry" })
-          ) : name === "neck" ? (
-            <cylinderGeometry args={[0.4, 0.5, 1, 8]} />
-          ) : name === "shadow" ? (
-            <circleGeometry args={[1, 16]} />
-          ) : limbGeometries[name] ? (
-            createElement("primitive", { object: limbGeometries[name], attach: "geometry" })
-          ) : (
-            <cylinderGeometry args={[0.46, 0.5, 1, 8, 2]} />
-          )}
+          {createElement("primitive", { object: geometries[name], attach: "geometry" })}
         </instancedMesh>
       ))}
     </group>

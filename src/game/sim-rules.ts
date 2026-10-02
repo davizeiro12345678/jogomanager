@@ -53,6 +53,31 @@ export function xgForShot(c: ShotChance): number {
   return Math.max(0.01, Math.min(0.9, base * angle * press * body * run));
 }
 
+/** xG is unconditional; keeper quality adjusts it rather than subtracting a flat chance. */
+export function shotProbabilities(o: {
+  xg: number;
+  shooting: number;
+  goalkeeper: number;
+  distance: number;
+}) {
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+  const shooting = clamp(o.shooting, 35, 99),
+    keeper = clamp(o.goalkeeper, 35, 99);
+  const onTarget = clamp(
+    0.28 + shooting * 0.004 + Math.max(0, 1 - o.distance / 40) * 0.2,
+    0.25,
+    0.78,
+  );
+  const conversion = clamp(
+    o.xg *
+      clamp(0.95 + (shooting - 70) * 0.008, 0.65, 1.18) *
+      clamp(1 - (keeper - 70) * 0.006, 0.82, 1.2),
+    0.001,
+    onTarget * 0.92,
+  );
+  return { onTarget, goalGivenTarget: conversion / onTarget, conversion };
+}
+
 /** xG de uma falta direta (barreira no caminho derruba muito o valor). */
 export function xgForDirectFK(dist: number, central: boolean): number {
   const base = 0.16 * Math.exp(-Math.max(0, dist - 16) / 14);
@@ -168,7 +193,13 @@ export function solveDirectFK(o: {
   const saveP = (0.3 + (o.gk / 100) * 0.35) * (1 - wallBlock - goalP);
   const roll = o.rnd();
   const result: DirectFKOutcome["result"] =
-    roll < goalP ? "goal" : roll < goalP + wallBlock ? "wall" : roll < goalP + wallBlock + saveP ? "saved" : "off";
+    roll < goalP
+      ? "goal"
+      : roll < goalP + wallBlock
+        ? "wall"
+        : roll < goalP + wallBlock + saveP
+          ? "saved"
+          : "off";
   const inside = (o.rnd() - 0.5) * GOAL_Z * 1.5;
   const outside = Math.sign(o.rnd() - 0.5 || 1) * (GOAL_Z + 1 + o.rnd() * GOAL_Z * 1.5);
   return {
@@ -298,7 +329,8 @@ function posGroup(pos: string): string {
   const p = pos.toUpperCase();
   if (p === "GK") return "GK";
   if (p.startsWith("D") || p === "CB" || p === "LB" || p === "RB" || p === "WB") return "DF";
-  if (p.startsWith("F") || p === "ST" || p === "CF" || p === "WG" || p === "LW" || p === "RW") return "FW";
+  if (p.startsWith("F") || p === "ST" || p === "CF" || p === "WG" || p === "LW" || p === "RW")
+    return "FW";
   return "MF";
 }
 
@@ -406,7 +438,8 @@ export function foulMult(weather: WeatherKind): number {
 /*  Relógio da partida                                                         */
 /* --------------------------------------------------------------------------- */
 
-export type MatchPhase = "first" | "half" | "second" | "et1" | "etBreak" | "et2" | "shootout" | "done";
+export type MatchPhase =
+  "first" | "half" | "second" | "et1" | "etBreak" | "et2" | "shootout" | "done";
 
 /** texto do relógio: 45+2', 90+3', 105', 120', PEN */
 export function clockText(

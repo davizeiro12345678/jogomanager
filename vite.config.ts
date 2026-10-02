@@ -25,13 +25,23 @@ Object.assign(process.env, serverEnv);
 const enableMcpRouteGenerator =
   process.platform !== "win32" || process.env["PFM_ENABLE_MCP_GENERATOR"] === "1";
 const verificationOutput =
-  process.env["PFM_CLOUDFLARE_BUILD"] === "1"
-    ? ".cloudflare/production"
-    : process.env["PFM_VISUAL_VERIFY"] === "1"
-      ? "verification/visual-2026-10-02/production"
-      : process.env["PFM_GRAPHICS_VERIFY"] === "1"
-        ? "verification/graphics-2026-09-30/production"
-        : null;
+  process.env["PFM_ATHLETE_PREMIUM_VERIFY"] === "1"
+    ? "verification/athlete-premium-2026-10-02/production"
+    : process.env["PFM_PLAYER_IDENTITY_VERIFY"] === "1"
+      ? "verification/player-identity-2026-10-02/production"
+      : process.env["PFM_SIMULATION_VERIFY"] === "1"
+        ? "verification/simulation-2026-10-02/production"
+        : process.env["PFM_CINEMATIC_VERIFY"] === "1"
+          ? "verification/cutscenes-2026-10-02/production"
+          : process.env["PFM_MATCHDAY_VERIFY"] === "1"
+            ? "verification/matchday-upgrade-2026-10-02/production"
+            : process.env["PFM_CLOUDFLARE_BUILD"] === "1"
+              ? ".cloudflare/production"
+              : process.env["PFM_VISUAL_VERIFY"] === "1"
+                ? "verification/visual-2026-10-02/production"
+                : process.env["PFM_GRAPHICS_VERIFY"] === "1"
+                  ? "verification/graphics-2026-09-30/production"
+                  : null;
 
 const projectConfig = defineConfig({
   nitro: {
@@ -64,6 +74,7 @@ const projectConfig = defineConfig({
     server: {
       host: "0.0.0.0",
       allowedHosts: true,
+      watch: { ignored: ["**/verification/**", "**/dist-benchmark/**", "**/.cloudflare/**"] },
     },
     plugins: [...(enableMcpRouteGenerator ? [mcpPlugin()] : []), imagetools()],
     resolve: {

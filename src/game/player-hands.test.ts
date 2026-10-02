@@ -76,7 +76,8 @@ describe("articulated athlete hands and shoulders", () => {
             });
         }
       }
-      expect(skin.bones.length).toBe(46);
+      // Finger articulation and volume helpers stay within the 64-bone texture budget.
+      expect(skin.bones.length).toBeLessThanOrEqual(64);
       expect(skin.boneOf.fingerTipL1.parent).toBe(skin.boneOf.fingerL1);
       const restingPalm = skin.boneOf.handL.getWorldPosition(new THREE.Vector3());
       for (let frame = 0; frame < 30; frame++)

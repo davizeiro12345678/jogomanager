@@ -58,6 +58,8 @@ describe("football choreography", () => {
     "headClear",
     "diveLeft",
     "diveRight",
+    "saveHigh",
+    "save",
     "slide",
     "stepover",
     "feint",
@@ -88,6 +90,40 @@ describe("football choreography", () => {
     expect(left.hipRoll).toBeCloseTo(-right.hipRoll, 6);
     expect(left.armLPitch).toBeCloseTo(right.armRPitch, 6);
     expect(left.kneeL).toBeCloseTo(right.kneeR, 6);
+  });
+
+  it.each<PlayerAction>(["diveLeft", "diveRight", "saveHigh"])(
+    "loads, extends at contact and absorbs the landing of %s before resetting",
+    (action) => {
+      const preparation = sample(action, 0.12);
+      const contact = sample(action, footballContactAt(action));
+      const continuation = sample(action, 0.7);
+      const landing = sample(action, 0.86);
+      const reset = sample(action, 1);
+      expect(preparation.hipY).toBeLessThan(-0.05);
+      expect(preparation.kneeL).toBeLessThan(-0.45);
+      expect(contact.hipY).toBeGreaterThan(0.25);
+      expect(Math.min(contact.armLPitch, contact.armRPitch)).toBeLessThan(-2.6);
+      expect(continuation.elbowL).toBeLessThan(contact.elbowL - 0.15);
+      expect(landing.hipY).toBeLessThan(-0.04);
+      expect(landing.kneeL).toBeLessThan(-0.45);
+      expect(Math.abs(reset.hipY)).toBeLessThan(1e-6);
+      expect(Math.abs(reset.hipRoll)).toBeLessThan(1e-6);
+    },
+  );
+
+  it("applies the same frontal parry used by the match, with a planted load and elbow absorption", () => {
+    const load = sample("save", 0.12);
+    const contact = sample("save", footballContactAt("save"));
+    const continuation = sample("save", 0.7);
+    expect(load.hipY).toBeLessThan(-0.03);
+    expect(load.kneeL).toBeLessThan(-0.5);
+    expect(contact.armLPitch).toBeLessThan(-1.3);
+    expect(contact.armLPitch).toBe(contact.armRPitch);
+    expect(contact.hipY).toBeCloseTo(0, 6);
+    expect(continuation.elbowL).toBeLessThan(contact.elbowL - 0.5);
+    expect(continuation.spine).toBeGreaterThan(contact.spine + 0.08);
+    expect(sample("save", 1).hipY).toBeCloseTo(0, 6);
   });
 
   it("distinguishes placed shots, lifted chips and elevated volleys at contact", () => {
