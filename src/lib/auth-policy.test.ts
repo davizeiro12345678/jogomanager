@@ -19,6 +19,9 @@ describe("auth callback destinations", () => {
 });
 
 describe("auth errors", () => {
+  it("offers a new email after an expired passwordless code", () => {
+    expect(authErrorMessage({ code: "otp_expired" }, "magic")).toMatch(/Solicite um novo/);
+  });
   it("gives an actionable error for an unconfirmed account", () => {
     expect(authErrorMessage({ code: "email_not_confirmed" }, "in")).toMatch(/Confirme/);
   });
