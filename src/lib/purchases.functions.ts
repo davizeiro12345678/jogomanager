@@ -25,7 +25,7 @@ export interface PurchasesSummary {
 export const getPurchases = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<PurchasesSummary> => {
-    const [{ data: rows, error }, { data: wallet }] = await Promise.all([
+    const [{ data: rows, error }, { data: wallet, error: walletError }] = await Promise.all([
       context.supabase
         .from("user_purchases")
         .select("id, product_key, amount_cents, status, error, reference, created_at")
@@ -39,8 +39,8 @@ export const getPurchases = createServerFn({ method: "GET" })
         .maybeSingle(),
     ]);
 
-    if (error) {
-      console.error("getPurchases failed", error);
+    if (error || walletError) {
+      console.error("getPurchases failed", error ?? walletError);
       throw new Error("Não foi possível carregar suas compras agora.");
     }
 

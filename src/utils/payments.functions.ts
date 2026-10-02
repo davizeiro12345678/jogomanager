@@ -13,6 +13,8 @@ import {
   resolveValidatedStripePrice,
   checkoutDiscountParams,
 } from "@/lib/store-products.server";
+import { assertPaymentsConfigured, PAYMENTS_UNAVAILABLE } from "@/lib/payments-config.server";
+import type { StripeEnv } from "@/lib/stripe.server";
 
 export type CheckoutSessionResult = { clientSecret: string } | { error: string };
 
@@ -43,14 +45,26 @@ export async function resolveOrCreateCustomer(
 
 export const createCheckoutSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { productKey: string; quantity?: number; returnUrl: string }) => {
-    assertStoreProductKey(data.productKey);
-    if (data.quantity != null && data.quantity !== 1) throw new Error("Invalid quantity");
-    if (typeof data.returnUrl !== "string") throw new Error("Invalid returnUrl");
-    return data;
-  })
+  .inputValidator(
+    (data: {
+      productKey: string;
+      quantity?: number;
+      returnUrl: string;
+      clientEnvironment: StripeEnv;
+    }) => {
+      assertStoreProductKey(data.productKey);
+      if (data.quantity != null && data.quantity !== 1) throw new Error("Invalid quantity");
+      if (typeof data.returnUrl !== "string") throw new Error("Invalid returnUrl");
+      if (data.clientEnvironment !== "live" && data.clientEnvironment !== "sandbox") {
+        throw new Error("Ambiente de pagamento inválido.");
+      }
+      return data;
+    },
+  )
   .handler(async ({ data, context }): Promise<CheckoutSessionResult> => {
     try {
+      const environment = assertPaymentsConfigured();
+      if (data.clientEnvironment !== environment) throw new Error(PAYMENTS_UNAVAILABLE);
       const request = getRequest();
       const requestOrigin = request ? new URL(request.url).origin : null;
       const returnUrl = new URL(data.returnUrl);
@@ -65,7 +79,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       // `store_products` selects the current active SKU first; Stripe only
       // confirms that its server-side amount and currency still match it.
       const product = await getServerStoreProduct(getStoreServiceSupabase(), data.productKey);
-      const stripe = createStripeClient(getConfiguredStripeEnvironment());
+      const stripe = createStripeClient(environment);
       const stripePrice = await resolveValidatedStripePrice(stripe, product);
       const isRecurring = stripePrice.type === "recurring";
 

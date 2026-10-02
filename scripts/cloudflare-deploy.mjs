@@ -67,7 +67,7 @@ async function prepare() {
     "VITE_PAYMENTS_CLIENT_TOKEN",
     "PAYMENTS_ENVIRONMENT",
     "GUEST_CHECKOUT_ENVIRONMENT",
-    "GUEST_CHECKOUT_ENABLED",
+    "GUEST_CHECKOUT_SANDBOX_ENABLED",
     "GUEST_CHECKOUT_LIVE_ENABLED",
     "AI_API_URL",
     "AI_MODEL",
@@ -107,6 +107,21 @@ try {
     if (!names.has("SUPABASE_SERVICE_ROLE_KEY"))
       throw new Error(
         "Deployment blocked: add SUPABASE_SERVICE_ROLE_KEY to the jogomanager-web Worker using wrangler secret put. Career saves and purchases require it.",
+      );
+    const environment =
+      settings["PAYMENTS_ENVIRONMENT"] ||
+      (settings["VITE_PAYMENTS_CLIENT_TOKEN"]?.startsWith("pk_live_") ? "live" : "sandbox");
+    const paymentSecrets =
+      environment === "live"
+        ? ["STRIPE_LIVE_API_KEY", "PAYMENTS_LIVE_WEBHOOK_SECRET"]
+        : ["STRIPE_SANDBOX_API_KEY", "PAYMENTS_SANDBOX_WEBHOOK_SECRET"];
+    const guestFlag =
+      environment === "live" ? "GUEST_CHECKOUT_LIVE_ENABLED" : "GUEST_CHECKOUT_SANDBOX_ENABLED";
+    if (settings[guestFlag] === "true") paymentSecrets.push("GUEST_CHECKOUT_EMAIL_HASH_SECRET");
+    const missing = paymentSecrets.filter((name) => !names.has(name));
+    if (missing.length)
+      throw new Error(
+        `Deployment blocked: add payment secrets to jogomanager-web using wrangler secret put: ${missing.join(", ")}.`,
       );
     await wrangler(["deploy", "--config", configPath]);
   } else if (action !== "build" && action !== "prepare")

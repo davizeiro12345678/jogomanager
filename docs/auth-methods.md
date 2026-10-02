@@ -12,7 +12,13 @@ Passkey login uses Supabase's experimental WebAuthn API. Signed-in players can r
 
 ## Server protection
 
-The frontend does not require CAPTCHA, as requested. The last live passkey challenge on 2026-10-02 returned `captcha_failed` because Supabase still required a CAPTCHA token. Email and passkey sign-in can only complete without a widget if the project's Auth protection settings accept those requests without a CAPTCHA token. The public settings endpoint does not expose that configuration, and no server protection setting was changed by this frontend update. The UI reports this server error and offers linked-account access.
+The frontend does not require CAPTCHA, as requested. After the project owner disabled server CAPTCHA protection on 2026-10-02, an invalid email/password probe returned `invalid_credentials` and a passkey challenge succeeded. No email, account or credential was created by those probes. The challenge still advertised `localhost` as its relying party ID; production passkeys need an RP ID and allowed origins compatible with `https://jogomanager.com`.
+
+## Google redirect configuration
+
+Google's authorized redirect URI is the Supabase callback, separate from the application's `redirectTo`/`next` destination. The live request from `jogomanager.com` uses `https://lguqnwvsfeefxamzeyos.supabase.co/auth/v1/callback`. On 2026-10-02 the Google Web client `177929318232-d5fte7bi8e52p0k18co4g38si4cvuiqe.apps.googleusercontent.com` had no authorized redirect URIs. That exact callback was added and saved while preserving the existing JavaScript origin. A fresh login attempt then reached Google's account chooser without `redirect_uri_mismatch`.
+
+Reference: [Supabase Google login setup](https://supabase.com/docs/guides/auth/social-login/auth-google), [Google OAuth redirect matching](https://developers.google.com/identity/protocols/oauth2/web-server#authorization-errors-redirect-uri-mismatch).
 
 ## Validation boundaries
 

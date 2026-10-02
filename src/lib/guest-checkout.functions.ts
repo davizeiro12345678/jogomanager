@@ -26,6 +26,7 @@ import {
 } from "@/lib/store-products.server";
 import { classifyGuestCheckoutSession } from "@/lib/guest-checkout-state";
 import { resolveOrCreateCustomer } from "@/utils/payments.functions";
+import { assertGuestCheckoutEnabled } from "@/lib/payments-config.server";
 
 // Stripe requires at least 30 minutes from receipt. Keep a margin so request
 // transit cannot make an otherwise valid embedded session intermittently fail.
@@ -70,40 +71,6 @@ function getServiceSupabase() {
 
 function isStripeEnvironment(value: unknown): value is StripeEnv {
   return value === "sandbox" || value === "live";
-}
-
-/**
- * The browser never selects the Stripe connection used by guest checkout.
- * Guest checkout may have its own rollout flag, but it must use the same
- * server-selected Stripe environment as the webhook, claims and account flow.
- * A second environment here would make it possible to create a valid session
- * that the deployment's webhook cannot verify or fulfill.
- */
-function configuredGuestCheckoutEnvironment(): StripeEnv {
-  const requested = process.env["GUEST_CHECKOUT_ENVIRONMENT"]?.trim().toLowerCase();
-  if (requested && !isStripeEnvironment(requested)) {
-    throw new Error("GUEST_CHECKOUT_ENVIRONMENT deve ser sandbox ou live.");
-  }
-  const configured = getConfiguredStripeEnvironment();
-  if (requested && requested !== configured) {
-    throw new Error(
-      "GUEST_CHECKOUT_ENVIRONMENT deve corresponder a PAYMENTS_ENVIRONMENT neste deploy.",
-    );
-  }
-  return configured;
-}
-
-function assertGuestCheckoutEnabled(): StripeEnv {
-  const environment = configuredGuestCheckoutEnvironment();
-  const enabledFlag =
-    environment === "sandbox" ? "GUEST_CHECKOUT_SANDBOX_ENABLED" : "GUEST_CHECKOUT_LIVE_ENABLED";
-  if (process.env[enabledFlag] !== "true") {
-    throw new Error("O checkout visitante ainda não está ativado neste ambiente.");
-  }
-  if (!process.env["GUEST_CHECKOUT_EMAIL_HASH_SECRET"]) {
-    throw new Error("O checkout visitante precisa de uma chave de segurança do servidor.");
-  }
-  return environment;
 }
 
 function normalizeGuestEmail(value: unknown): string {

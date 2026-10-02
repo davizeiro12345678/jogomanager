@@ -1,11 +1,15 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Coins, Sparkles, Crown, Package, Search, Dumbbell, Palette } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { useSignedIn } from "@/hooks/useCareer";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
+import { getCheckoutAvailability } from "@/lib/payments-status.functions";
+import { getStripeEnvironment } from "@/lib/stripe";
+import { withPaymentTimeout } from "@/lib/embedded-checkout";
 import { salePrice, useStoreCatalog } from "@/hooks/useStoreCatalog";
 import { CouponRedeem } from "@/components/store/CouponRedeem";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
@@ -73,7 +77,28 @@ function formatDate(iso: string | null | undefined): string {
  * `columns` deixa o layout de uma coluna quando aparece numa gaveta estreita.
  */
 export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; columns?: 1 | 2 }) {
-  const signedIn = useSignedIn();
+  const userId = useAuthUserId();
+  const signedIn = userId === undefined ? null : userId !== null;
+  const fetchAvailability = useServerFn(getCheckoutAvailability);
+  const availability = useQuery({
+    queryKey: ["checkout-availability"],
+    queryFn: () => withPaymentTimeout(fetchAvailability()),
+    staleTime: 30_000,
+    retry: 1,
+  });
+  let matchingEnvironment = false;
+  try {
+    matchingEnvironment = availability.data?.environment === getStripeEnvironment();
+  } catch {
+    /* unavailable */
+  }
+  const checkoutEnabled =
+    matchingEnvironment &&
+    (signedIn ? availability.data?.account.enabled : availability.data?.guest.enabled);
+  const checkoutMessage = availability.isLoading
+    ? "Verificando a disponibilidade dos pagamentos…"
+    : ((signedIn ? availability.data?.account.message : availability.data?.guest.message) ??
+      "Não foi possível confirmar os pagamentos agora. Tente novamente.");
   const search = useLocation({ select: (location) => location.searchStr });
   const selectedProduct = new URLSearchParams(search).get("produto");
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
@@ -85,11 +110,9 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
   const productsQuery = useStoreCatalog();
 
   const walletQuery = useQuery({
-    queryKey: ["user_wallet", signedIn],
+    queryKey: ["user_wallet", userId],
     enabled: signedIn === true,
     queryFn: async () => {
-      const { data: session } = await supabase.auth.getSession();
-      const userId = session.session?.user.id;
       if (!userId) return null;
       const { data, error } = await supabase
         .from("user_wallet")
@@ -127,7 +150,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
 
   function buy(productKey: string) {
     // The public catalog is available to everyone; payment requires a session.
-    if (signedIn !== true) return;
+    if (signedIn !== true || !checkoutEnabled) return;
     setOpeningKey(productKey);
     void import("@/lib/analytics").then((m) =>
       m.track("checkout_iniciado", { produto: productKey }),
@@ -207,6 +230,25 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
         )}
       </div>
 
+      {!checkoutEnabled ? (
+        <div
+          role="status"
+          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-secondary/40 p-4 text-sm text-muted-foreground"
+        >
+          <p>{checkoutMessage}</p>
+          {!availability.isLoading ? (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={availability.isFetching}
+              onClick={() => void availability.refetch()}
+            >
+              Verificar pagamentos
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
       {productsQuery.isLoading ? (
         <div className={`grid gap-4 ${columns === 2 ? "sm:grid-cols-2" : ""}`}>
           {[0, 1, 2, 3].map((i) => (
@@ -281,7 +323,9 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                       <span className="font-display text-2xl leading-none">
                         {formatBRL(salePrice(p).cents, p.currency)}
                       </span>
-                      <s className="text-sm text-muted-foreground">{formatBRL(p.price_cents, p.currency)}</s>
+                      <s className="text-sm text-muted-foreground">
+                        {formatBRL(p.price_cents, p.currency)}
+                      </s>
                       <Badge variant="destructive">-{salePrice(p).percent}%</Badge>
                     </>
                   ) : (
@@ -305,11 +349,12 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                       <Button
                         className="w-full"
                         data-testid="guest-checkout-start"
+                        disabled={!checkoutEnabled}
                         onClick={() =>
                           setGuestProduct({
                             key: p.key,
                             name: p.name,
-                            priceCents: p.price_cents,
+                            priceCents: salePrice(p).cents,
                             currency: p.currency,
                           })
                         }
@@ -319,7 +364,11 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                     ) : (
                       <Button
                         className="w-full"
-                        disabled={openingKey === p.key || (p.kind === "pass" && subscriptionActive)}
+                        disabled={
+                          !checkoutEnabled ||
+                          openingKey === p.key ||
+                          (p.kind === "pass" && subscriptionActive)
+                        }
                         onClick={() => buy(p.key)}
                         onPointerDown={() => {
                           if (p.key === bestValueKey)

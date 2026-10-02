@@ -1,7 +1,7 @@
-import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { StripeCheckoutFrame } from "@/components/StripeCheckoutFrame";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,7 +11,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { startGuestCheckout } from "@/lib/guest-checkout.functions";
-import { getStripe, getStripeEnvironment, type StripeEnv } from "@/lib/stripe";
+import { withPaymentTimeout } from "@/lib/embedded-checkout";
+import { getStripeEnvironment, type StripeEnv } from "@/lib/stripe";
 
 export interface GuestCheckoutProduct {
   key: string;
@@ -28,17 +29,8 @@ function priceLabel(priceCents: number, currency: string): string {
 }
 
 function GuestEmbeddedCheckout({ clientSecret }: { clientSecret: string }) {
-  const stripe = useMemo(() => getStripe(), []);
-  const options = useMemo(
-    () => ({ fetchClientSecret: async () => clientSecret }),
-    [clientSecret],
-  );
-
-  return (
-    <EmbeddedCheckoutProvider stripe={stripe} options={options}>
-      <EmbeddedCheckout />
-    </EmbeddedCheckoutProvider>
-  );
+  const fetchClientSecret = useCallback(async () => clientSecret, [clientSecret]);
+  return <StripeCheckoutFrame fetchClientSecret={fetchClientSecret} />;
 }
 
 /**
@@ -61,6 +53,8 @@ export function GuestCheckoutDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const requestVersion = useRef(0);
+  const inFlight = useRef(false);
   const clientEnvironment = useMemo<StripeEnv | null>(() => {
     try {
       return getStripeEnvironment();
@@ -68,35 +62,44 @@ export function GuestCheckoutDialog({
       return null;
     }
   }, []);
-  const environmentLabel = clientEnvironment === "live" ? "pagamentos configurados" : "modo de teste";
+  const environmentLabel =
+    clientEnvironment === "live" ? "pagamentos configurados" : "modo de teste";
 
   useEffect(() => {
-    if (!open) {
-      setBusy(false);
-      setError(null);
-      setClientSecret(null);
-      setHasPurchaseConsent(false);
-    }
-  }, [open]);
+    requestVersion.current += 1;
+    inFlight.current = false;
+    setBusy(false);
+    setError(null);
+    setClientSecret(null);
+    setHasPurchaseConsent(false);
+    return () => {
+      requestVersion.current += 1;
+    };
+  }, [open, product?.key]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!product) return;
+    if (!open || !product || inFlight.current) return;
     if (!clientEnvironment) {
       setError("Esta versão não tem uma chave pública de pagamentos configurada.");
       return;
     }
+    const version = ++requestVersion.current;
+    inFlight.current = true;
     setBusy(true);
     setError(null);
     try {
-      const result = await start({
-        data: {
-          productKey: product.key,
-          email,
-          hasPurchaseConsent,
-          clientEnvironment,
-        },
-      });
+      const result = await withPaymentTimeout(
+        start({
+          data: {
+            productKey: product.key,
+            email,
+            hasPurchaseConsent,
+            clientEnvironment,
+          },
+        }),
+      );
+      if (version !== requestVersion.current) return;
       if ("error" in result) {
         setError(result.error);
         return;
@@ -105,18 +108,38 @@ export function GuestCheckoutDialog({
         setError("O ambiente da chave pública não corresponde ao checkout liberado pelo servidor.");
         return;
       }
-      window.sessionStorage.setItem(`pfm3d.guest-checkout.${result.intentId}.email`, email.trim());
+      if (!result.clientSecret) throw new Error("A Stripe não retornou uma sessão de pagamento.");
+      try {
+        window.sessionStorage.setItem(
+          `pfm3d.guest-checkout.${result.intentId}.email`,
+          email.trim(),
+        );
+      } catch {
+        // Storage may be unavailable in private browsing; payment can still open.
+      }
       setClientSecret(result.clientSecret);
     } catch (cause) {
+      if (version !== requestVersion.current) return;
       setError(cause instanceof Error ? cause.message : "Não foi possível abrir o checkout.");
     } finally {
-      setBusy(false);
+      if (version === requestVersion.current) {
+        inFlight.current = false;
+        setBusy(false);
+      }
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={clientSecret ? "max-h-[92vh] max-w-3xl overflow-y-auto p-3 sm:p-5" : "max-w-lg"}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) requestVersion.current += 1;
+        onOpenChange(nextOpen);
+      }}
+    >
+      <DialogContent
+        className={clientSecret ? "max-h-[92vh] max-w-3xl overflow-y-auto p-3 sm:p-5" : "max-w-lg"}
+      >
         {clientSecret ? (
           <>
             <DialogHeader className="px-2 pt-2">
@@ -141,8 +164,8 @@ export function GuestCheckoutDialog({
             </DialogHeader>
             <form onSubmit={submit} className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Use um e-mail que você consiga abrir agora. Depois do pagamento, ele recebe um
-                link seguro para criar ou vincular sua conta e entregar o item uma única vez.
+                Use um e-mail que você consiga abrir agora. Depois do pagamento, ele recebe um link
+                seguro para criar ou vincular sua conta e entregar o item uma única vez.
               </p>
               <label className="block text-sm font-medium" htmlFor="guest-checkout-email">
                 E-mail para receber a compra
@@ -165,8 +188,8 @@ export function GuestCheckoutDialog({
                   className="mt-0.5 h-4 w-4 accent-primary"
                 />
                 <span>
-                  Confirmo que tenho autorização para esta compra e aceito que ela seja vinculada
-                  ao e-mail informado.
+                  Confirmo que tenho autorização para esta compra e aceito que ela seja vinculada ao
+                  e-mail informado.
                 </span>
               </label>
               {error ? (
@@ -187,8 +210,8 @@ export function GuestCheckoutDialog({
                 </p>
               ) : null}
               <p className="text-center text-[11px] text-muted-foreground">
-                A disponibilidade e o ambiente do checkout são confirmados pelo servidor antes
-                de qualquer pagamento.
+                A disponibilidade e o ambiente do checkout são confirmados pelo servidor antes de
+                qualquer pagamento.
               </p>
             </form>
           </>

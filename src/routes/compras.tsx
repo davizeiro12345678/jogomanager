@@ -5,11 +5,13 @@ import { useEffect } from "react";
 import { Coins, Clock, CheckCircle2, AlertTriangle, ShoppingBag } from "lucide-react";
 
 import { GameShell } from "@/components/game/GameShell";
-import { useCareer, useSignedIn } from "@/hooks/useCareer";
+import { useCareer } from "@/hooks/useCareer";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { getPurchases, type PurchaseRow } from "@/lib/purchases.functions";
 import { track } from "@/lib/analytics";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { withPaymentTimeout } from "@/lib/embedded-checkout";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/compras")({
@@ -108,14 +110,15 @@ function PurchaseLine({ purchase }: { purchase: PurchaseRow }) {
 }
 
 function ComprasPage() {
-  const signedIn = useSignedIn();
+  const userId = useAuthUserId();
+  const signedIn = userId === undefined ? null : userId !== null;
   const { career } = useCareer();
   const fetchPurchases = useServerFn(getPurchases);
 
   const query = useQuery({
-    queryKey: ["purchases"],
+    queryKey: ["purchases", userId],
     enabled: signedIn === true,
-    queryFn: () => fetchPurchases(),
+    queryFn: () => withPaymentTimeout(fetchPurchases()),
     refetchInterval: (q) => ((q.state.data?.pendingCount ?? 0) > 0 ? 5000 : false),
   });
 
@@ -189,6 +192,12 @@ function ComprasPage() {
               </div>
             </div>
 
+            {data?.seasonPass ? (
+              <p className="mt-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm">
+                Passe de temporada ativo na sua conta.
+              </p>
+            ) : null}
+
             {(data?.pendingCount ?? 0) > 0 && (
               <p className="mt-4 rounded-xl border border-border/60 surface-card px-4 py-3 text-xs text-muted-foreground">
                 Uma compra está sendo confirmada pelo banco. A entrega costuma levar poucos segundos
@@ -207,8 +216,8 @@ function ComprasPage() {
               <div className="mt-3 rounded-2xl border border-border/60 surface-card p-6 text-center">
                 <ShoppingBag className="mx-auto mb-2 text-muted-foreground" size={24} />
                 <p className="text-sm text-muted-foreground">
-                  Você ainda não comprou nada. Os pacotes ajudam o clube sem mudar o resultado das
-                  partidas.
+                  Nenhuma compra avulsa neste histórico. Os pacotes ajudam o clube sem mudar o
+                  resultado das partidas.
                 </p>
                 <Button asChild className="mt-4">
                   <Link to="/loja">Ver a loja</Link>
