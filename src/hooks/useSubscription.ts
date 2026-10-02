@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 
 export interface SubscriptionRow {
   id: string;
@@ -11,18 +12,24 @@ export interface SubscriptionRow {
 }
 
 export function useSubscription() {
+  const userId = useAuthUserId();
+  let environment: ReturnType<typeof getStripeEnvironment> | null = null;
+  try {
+    environment = getStripeEnvironment();
+  } catch {
+    /* availability is shown by the store */
+  }
   return useQuery({
-    queryKey: ["subscription", getStripeEnvironment()],
+    queryKey: ["subscription", userId, environment],
+    enabled: typeof userId === "string" && environment !== null,
     queryFn: async () => {
-      const { data: session } = await supabase.auth.getSession();
-      const userId = session.session?.user.id;
-      if (!userId) return null;
+      if (!userId || !environment) return null;
 
       const { data, error } = await supabase
         .from("subscriptions")
         .select("id, status, current_period_end, cancel_at_period_end, price_id")
         .eq("user_id", userId)
-        .eq("environment", getStripeEnvironment())
+        .eq("environment", environment)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();

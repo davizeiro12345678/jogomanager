@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle, XCircle, Loader2, Coins } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { claimCheckoutSession } from "@/lib/checkout-claim.functions";
+import { checkoutErrorMessage, withPaymentTimeout } from "@/lib/embedded-checkout";
 import { getPurchases } from "@/lib/purchases.functions";
 import { track } from "@/lib/analytics";
 
@@ -34,131 +36,156 @@ export const Route = createFileRoute("/checkout/return")({
   }),
   validateSearch: (search: Record<string, unknown>): { session_id?: string } => {
     const id = typeof search["session_id"] === "string" ? search["session_id"] : undefined;
-    return id ? { session_id: id } : {};
+    return id && /^cs_[a-zA-Z0-9_]+$/.test(id) ? { session_id: id } : {};
   },
   component: CheckoutReturn,
 });
 
-const MAX_TRIES = 15; // ~30 segundos
+const MAX_TRIES = 15;
 
 function CheckoutReturn() {
   const { session_id: sessionId } = Route.useSearch();
+  const userId = useAuthUserId();
   const fetchPurchases = useServerFn(getPurchases);
   const claimSession = useServerFn(claimCheckoutSession);
-  const [status, setStatus] = useState<"loading" | "delivered" | "slow" | "error">(
-    sessionId ? "loading" : "error",
-  );
+  const [attempt, setAttempt] = useState(0);
+  const [status, setStatus] = useState<"loading" | "delivered" | "slow" | "error">("loading");
+  const [message, setMessage] = useState("");
   const [coins, setCoins] = useState<number | null>(null);
-  const tries = useRef(0);
-
-  const check = useCallback(async (): Promise<boolean> => {
-    try {
-      const data = await fetchPurchases();
-      setCoins(data.coins);
-      const mine = data.purchases.find((p) => p.reference === sessionId);
-      if (mine?.status === "completed") {
-        setStatus("delivered");
-        track("compra_concluida", { produto: mine.productKey });
-        return true;
-      }
-      if (mine?.status === "failed") {
-        setStatus("error");
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
-    }
-  }, [fetchPurchases, sessionId]);
+  const [subscriptionDelivered, setSubscriptionDelivered] = useState(false);
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (userId === undefined || userId === null) return;
+    if (!sessionId) {
+      setStatus("error");
+      setMessage("Não encontramos uma sessão de pagamento válida neste endereço.");
+      return;
+    }
     let alive = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let tries = 0;
+    setStatus("loading");
+    setMessage("");
+    setCoins(null);
+    setSubscriptionDelivered(false);
 
-    // Confirma a compra direto na Stripe (o webhook pode atrasar ou não chegar).
-    void (async () => {
+    async function check() {
       try {
-        const res = await claimSession({
-          data: { sessionId },
-        });
+        // Subscription fulfillment has no one-time purchase row; consult its attested state again while pending.
+        const result = await withPaymentTimeout(claimSession({ data: { sessionId: sessionId! } }));
         if (!alive) return;
-        if (res.status === "delivered") await check();
-      } catch {
-        /* o polling abaixo ainda cobre o caminho do webhook */
-      }
-    })();
-
-    const timer = setInterval(() => {
-      void (async () => {
-        if (!alive) return;
-        tries.current += 1;
-        const done = await check();
-        if (done || tries.current >= MAX_TRIES) {
-          clearInterval(timer);
-          if (!done && alive) setStatus("slow");
+        if (result.status === "error") {
+          setMessage(result.message);
+          setStatus("error");
+          return;
         }
-      })();
-    }, 2000);
+        if (result.status === "delivered" && result.kind === "subscription") {
+          setSubscriptionDelivered(true);
+          setStatus("delivered");
+          return;
+        }
+        const data = await withPaymentTimeout(fetchPurchases());
+        if (!alive) return;
+        setCoins(data.coins);
+        const purchase = data.purchases.find((item) => item.reference === sessionId);
+        if (purchase?.status === "completed") {
+          setStatus("delivered");
+          track("compra_concluida", { produto: purchase.productKey });
+          return;
+        }
+        if (purchase?.status === "failed") {
+          setMessage(purchase.error || "Não foi possível concluir esta compra.");
+          setStatus("error");
+          return;
+        }
+        tries += 1;
+        if (tries >= MAX_TRIES) {
+          setStatus("slow");
+          return;
+        }
+        // Wait for the preceding request; never overlap confirmation polls.
+        timer = setTimeout(() => void check(), 2000);
+      } catch (cause) {
+        if (!alive) return;
+        setMessage(checkoutErrorMessage(cause));
+        setStatus("error");
+      }
+    }
     void check();
     return () => {
       alive = false;
-      clearInterval(timer);
+      clearTimeout(timer);
     };
-  }, [sessionId, check, claimSession]);
+  }, [attempt, userId, sessionId, fetchPurchases, claimSession]);
 
+  const next = sessionId
+    ? `/checkout/return?session_id=${encodeURIComponent(sessionId)}`
+    : "/compras";
   return (
     <div className="pitch-bg flex min-h-screen items-center justify-center px-4 py-6">
       <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card/90 p-6 text-center">
-        {status === "loading" && (
+        {userId === null ? (
+          <>
+            <h1 className="font-display text-xl uppercase tracking-wide">
+              Entre para acompanhar sua compra
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Use a conta que abriu o pagamento para consultar a confirmação e a entrega dos itens.
+            </p>
+            <Button asChild className="mt-4 w-full">
+              <Link to="/auth" search={{ next }}>
+                Entrar na minha conta
+              </Link>
+            </Button>
+          </>
+        ) : userId === undefined || status === "loading" ? (
           <>
             <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-primary" />
             <h1 className="font-display text-xl uppercase tracking-wide">Confirmando…</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Estamos creditando seus itens. Isso leva alguns segundos.
+            <p role="status" className="mt-2 text-sm text-muted-foreground">
+              Verificando a confirmação do pagamento e a entrega na sua conta.
             </p>
           </>
-        )}
-        {status === "delivered" && (
+        ) : status === "delivered" ? (
           <>
             <CheckCircle className="mx-auto mb-4 h-10 w-10 text-green-500" />
             <h1 className="font-display text-xl uppercase tracking-wide">Tudo certo!</h1>
-            <p className="mt-2 flex items-center justify-center gap-1 text-sm text-muted-foreground">
-              <Coins size={16} className="text-primary" />
-              Saldo agora: <strong className="text-foreground">{coins ?? 0}</strong> moedas
-            </p>
+            {subscriptionDelivered ? (
+              <p className="mt-2 text-sm text-muted-foreground">
+                Passe de temporada ativo na sua conta.
+              </p>
+            ) : (
+              <p className="mt-2 flex items-center justify-center gap-1 text-sm text-muted-foreground">
+                <Coins size={16} className="text-primary" />
+                Saldo agora: <strong className="text-foreground">{coins ?? 0}</strong> moedas
+              </p>
+            )}
           </>
-        )}
-        {status === "slow" && (
+        ) : (
           <>
-            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-primary" />
-            <h1 className="font-display text-xl uppercase tracking-wide">Quase lá</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              O banco ainda está confirmando o pagamento. Assim que confirmar, os itens entram
-              automaticamente na sua conta.
+            {status === "error" ? (
+              <XCircle className="mx-auto mb-4 h-10 w-10 text-red-500" />
+            ) : (
+              <Loader2 className="mx-auto mb-4 h-10 w-10 text-primary" />
+            )}
+            <h1 className="font-display text-xl uppercase tracking-wide">
+              {status === "error" ? "Não foi possível confirmar agora" : "Confirmação pendente"}
+            </h1>
+            <p
+              role={status === "error" ? "alert" : "status"}
+              className="mt-2 text-sm text-muted-foreground"
+            >
+              {status === "error"
+                ? message
+                : "A confirmação do pagamento ou a entrega ainda está pendente. Você pode acompanhar em Minhas compras ou verificar novamente."}
             </p>
             <Button
               variant="secondary"
               className="mt-4 w-full"
-              onClick={() => {
-                tries.current = 0;
-                setStatus("loading");
-                void check();
-              }}
+              onClick={() => setAttempt((value) => value + 1)}
             >
               Verificar de novo
             </Button>
-          </>
-        )}
-        {status === "error" && (
-          <>
-            <XCircle className="mx-auto mb-4 h-10 w-10 text-red-500" />
-            <h1 className="font-display text-xl uppercase tracking-wide">
-              Pagamento não concluído
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Não recebemos a confirmação da transação. Se o valor foi cobrado, ele aparece em
-              minhas compras assim que o banco confirmar.
-            </p>
           </>
         )}
         <div className="mt-6 flex flex-col gap-2">
