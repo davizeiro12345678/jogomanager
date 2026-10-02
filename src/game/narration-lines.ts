@@ -4,6 +4,8 @@
  * O servidor gera o áudio a partir DESTAS frases (nunca de texto livre vindo do
  * navegador), então o endpoint de voz não pode ser usado como TTS genérico.
  */
+import { LANGS, resolveLang, type Lang } from "@/i18n/locale-catalog";
+import { MATCH_EVENT_MESSAGES } from "@/i18n/match-event-messages";
 
 export type NarrationEvent =
   | "goal"
@@ -20,7 +22,8 @@ export type NarrationEvent =
   | "halftime"
   | "fulltime";
 
-export type NarrationLang = "pt" | "en" | "es";
+export type RemoteNarrationLang = "pt" | "en" | "es";
+export type NarrationLang = Exclude<Lang, "pt-BR" | "pt-PT"> | "pt";
 
 export interface NarrationContext {
   minute?: number;
@@ -30,23 +33,28 @@ export interface NarrationContext {
   importance?: "routine" | "pressure" | "decisive";
 }
 
-/** Idiomas suportados pela narração; qualquer outro cai para inglês. */
+/** All UI languages have captions; remote studio voices retain their whitelist. */
 export function narrationLang(tag: string | undefined): NarrationLang {
-  const base = (tag ?? "en").toLowerCase().split("-")[0];
-  if (base === "pt") return "pt";
-  if (base === "es") return "es";
-  return "en";
+  const lang = resolveLang(tag) ?? "en";
+  return lang === "pt-BR" || lang === "pt-PT" ? "pt" : lang;
+}
+export function supportsRemoteNarration(lang: NarrationLang): lang is RemoteNarrationLang {
+  return lang === "pt" || lang === "en" || lang === "es";
 }
 
 /** Tag BCP-47 usada pela voz do navegador quando o áudio realista falha. */
 export const SPEECH_TAG: Record<NarrationLang, string> = {
+  ...(Object.fromEntries(LANGS.map((lang) => [lang, lang])) as Record<
+    Exclude<NarrationLang, "pt">,
+    string
+  >),
   pt: "pt-BR",
   en: "en-GB",
   es: "es-ES",
 };
 
 /** Vozes ElevenLabs por idioma — narração empolgada, estilo transmissão. */
-export const VOICE_BY_LANG: Record<NarrationLang, string> = {
+export const VOICE_BY_LANG: Record<RemoteNarrationLang, string> = {
   pt: "TX3LPaxmHKxFdv7VOQHJ", // Liam — jovem, energético (estilo Cazé TV)
   en: "JBFqnCBsd6RMkjVDRZzb", // George — locutor clássico
   es: "iP95p4xoKVk53GoZ742B", // Chris — animado
@@ -55,15 +63,35 @@ export const VOICE_BY_LANG: Record<NarrationLang, string> = {
 export type BroadcastRole = "narrator" | "commentator" | "referee";
 
 /** Papéis de transmissão: ritmo de jogo, análise e decisões têm timbres próprios. */
-export const BROADCAST_VOICE: Record<NarrationLang, Record<BroadcastRole, string>> = {
-  pt: { narrator: "JBFqnCBsd6RMkjVDRZzb", commentator: "TX3LPaxmHKxFdv7VOQHJ", referee: "nPczCjzI2devNBz1zQrb" },
-  en: { narrator: "JBFqnCBsd6RMkjVDRZzb", commentator: "TX3LPaxmHKxFdv7VOQHJ", referee: "nPczCjzI2devNBz1zQrb" },
-  es: { narrator: "iP95p4xoKVk53GoZ742B", commentator: "TX3LPaxmHKxFdv7VOQHJ", referee: "nPczCjzI2devNBz1zQrb" },
+export const BROADCAST_VOICE: Record<RemoteNarrationLang, Record<BroadcastRole, string>> = {
+  pt: {
+    narrator: "JBFqnCBsd6RMkjVDRZzb",
+    commentator: "TX3LPaxmHKxFdv7VOQHJ",
+    referee: "nPczCjzI2devNBz1zQrb",
+  },
+  en: {
+    narrator: "JBFqnCBsd6RMkjVDRZzb",
+    commentator: "TX3LPaxmHKxFdv7VOQHJ",
+    referee: "nPczCjzI2devNBz1zQrb",
+  },
+  es: {
+    narrator: "iP95p4xoKVk53GoZ742B",
+    commentator: "TX3LPaxmHKxFdv7VOQHJ",
+    referee: "nPczCjzI2devNBz1zQrb",
+  },
 };
 
 export function broadcastRole(event: NarrationEvent): BroadcastRole {
   if (event === "foul" || event === "card" || event === "redCard") return "referee";
-  if (event === "goal" || event === "save" || event === "shot" || event === "post" || event === "chance" || event === "corner") return "commentator";
+  if (
+    event === "goal" ||
+    event === "save" ||
+    event === "shot" ||
+    event === "post" ||
+    event === "chance" ||
+    event === "corner"
+  )
+    return "commentator";
   return "narrator";
 }
 
@@ -311,7 +339,7 @@ const ES: Pack = {
  * Segunda leva de falas — amplia o repertório sem tocar nas frases originais.
  * Aqui entram variações de emoção: rotina, tensão, euforia, decepção e ironia.
  */
-const EXTRA: Record<NarrationLang, Partial<Pack>> = {
+const EXTRA: Record<RemoteNarrationLang, Partial<Pack>> = {
   pt: {
     goal: [
       "É DELE! É DO {team}! O estádio treme!",
@@ -375,7 +403,10 @@ const EXTRA: Record<NarrationLang, Partial<Pack>> = {
       "Bola no centro, apito na boca: vai começar!",
     ],
     halftime: ["Quinze minutos para arrumar a casa.", "Vai terminando a primeira etapa."],
-    fulltime: ["Está encerrado. O placar conta a história.", "Fim de jogo e muita coisa para analisar."],
+    fulltime: [
+      "Está encerrado. O placar conta a história.",
+      "Fim de jogo e muita coisa para analisar.",
+    ],
   },
   en: {
     goal: [
@@ -395,7 +426,10 @@ const EXTRA: Record<NarrationLang, Partial<Pack>> = {
       "An audacious effort from {team}!",
       "Curled just past the post by {team}.",
     ],
-    post: ["Post, then safety! Cruel on {team}.", "Twice off the frame — {team} cannot believe it."],
+    post: [
+      "Post, then safety! Cruel on {team}.",
+      "Twice off the frame — {team} cannot believe it.",
+    ],
     chance: [
       "{team} have the scent of blood now.",
       "Space in behind and {team} have spotted it.",
@@ -403,7 +437,10 @@ const EXTRA: Record<NarrationLang, Partial<Pack>> = {
     ],
     corner: ["Short corner from {team}.", "Whipped in by {team} — chaos in the six-yard box."],
     sub: ["Pace introduced by {team}.", "{team} reinforce the midfield."],
-    foul: ["Cynical foul from {team} to stop the break.", "Shirt pull — the referee saw it. {team}."],
+    foul: [
+      "Cynical foul from {team} to stop the break.",
+      "Shirt pull — the referee saw it. {team}.",
+    ],
     card: ["Dissent, and he's booked. {team}.", "Third foul by the same man — yellow for {team}."],
     kickoff: ["Anthems done, here we go!", "Ball on the spot — we're away."],
     halftime: ["Fifteen minutes to fix it.", "The first half winds down."],
@@ -421,8 +458,15 @@ const EXTRA: Record<NarrationLang, Partial<Pack>> = {
       "¡Se agrandó el portero del {team}!",
       "Rechazó y nadie llegó al rebote. ¡Uf, {team}!",
     ],
-    shot: ["¡Por encima del travesaño, {team}!", "¡Qué atrevimiento del {team}!", "¡Rozó el palo del {team}!"],
-    post: ["¡Al palo y afuera! Cruel para el {team}.", "¡Dos veces la madera! El {team} no lo cree."],
+    shot: [
+      "¡Por encima del travesaño, {team}!",
+      "¡Qué atrevimiento del {team}!",
+      "¡Rozó el palo del {team}!",
+    ],
+    post: [
+      "¡Al palo y afuera! Cruel para el {team}.",
+      "¡Dos veces la madera! El {team} no lo cree.",
+    ],
     chance: [
       "¡El {team} huele sangre!",
       "¡Espacio a la espalda de la defensa y el {team} lo vio!",
@@ -431,7 +475,10 @@ const EXTRA: Record<NarrationLang, Partial<Pack>> = {
     corner: ["Córner en corto del {team}.", "Centro del {team} y lío en el área chica."],
     sub: ["Entra velocidad en el {team}.", "El {team} refuerza el mediocampo."],
     foul: ["Falta táctica del {team}.", "Agarrón y el árbitro lo vio. {team}."],
-    card: ["Protestó y ahí está la amarilla. {team}.", "Tercera falta del mismo: amarilla al {team}."],
+    card: [
+      "Protestó y ahí está la amarilla. {team}.",
+      "Tercera falta del mismo: amarilla al {team}.",
+    ],
     kickoff: ["¡Himnos cantados, comienza!", "Balón al centro: ¡arrancamos!"],
     halftime: ["Quince minutos para corregir.", "Se acaba la primera parte."],
     fulltime: ["Terminó. El marcador cuenta la historia.", "Final, y mucho para analizar."],
@@ -442,7 +489,7 @@ const EXTRA: Record<NarrationLang, Partial<Pack>> = {
  * Entradas do narrador. Cada uma dá um tom diferente à mesma frase-base:
  * rotina, tensão, euforia, decepção e ironia.
  */
-const LEAD_INS: Record<NarrationLang, string[]> = {
+const LEAD_INS: Record<RemoteNarrationLang, string[]> = {
   pt: [
     "",
     "Olha o lance! ",
@@ -486,7 +533,7 @@ const LEAD_INS: Record<NarrationLang, string[]> = {
  * repertório ampliado, cada idioma passa de 600 combinações sem entregar texto
  * livre ao endpoint de voz, preservando cache estável e segurança.
  */
-function expandPack(lang: NarrationLang, pack: Pack): Pack {
+function expandPack(lang: RemoteNarrationLang, pack: Pack): Pack {
   const leads = LEAD_INS[lang];
   const extra = EXTRA[lang];
   return Object.fromEntries(
@@ -502,15 +549,14 @@ function expandPack(lang: NarrationLang, pack: Pack): Pack {
   ) as Pack;
 }
 
-const PACKS: Record<NarrationLang, Pack> = {
+const PACKS: Record<RemoteNarrationLang, Pack> = {
   pt: expandPack("pt", PT),
   en: expandPack("en", EN),
   es: expandPack("es", ES),
 };
 
-
 export function lineCount(lang: NarrationLang, event: NarrationEvent): number {
-  return PACKS[lang][event].length;
+  return supportsRemoteNarration(lang) ? PACKS[lang][event].length : 2;
 }
 
 /** Monta a frase final. `variant` é o índice do modelo (permite cache estável). */
@@ -521,6 +567,28 @@ export function narrationLine(
   variant: number,
   context?: NarrationContext,
 ): string {
+  if (!supportsRemoteNarration(lang)) {
+    const label = MATCH_EVENT_MESSAGES[lang][event];
+    const neutral = event === "kickoff" || event === "halftime" || event === "fulltime";
+    const club = neutral ? "" : team.trim().slice(0, 60);
+    const decisive = event === "goal" || event === "redCard";
+    const base = club
+      ? variant % 2
+        ? `${club}: ${label}${decisive ? "!" : "."}`
+        : `${label}${decisive ? "!" : ":"} ${club}.`
+      : `${label}.`;
+    if (!context) return base;
+    const format = new Intl.NumberFormat(lang, { useGrouping: false });
+    const number = (value: number | undefined, max: number) =>
+      format.format(Math.max(0, Math.min(max, Number.isFinite(value) ? Math.round(value!) : 0)));
+    const score = `${number(context.homeGoals, 99)}–${number(context.awayGoals, 99)}`;
+    const minute = `${number(context.minute, 120)}′`;
+    const player =
+      event === "save" || event === "shot" || event === "goal"
+        ? context.player?.trim().slice(0, 60)
+        : "";
+    return `${base}${player ? ` ${player}.` : ""} ${minute} · ${score}.`;
+  }
   const pool = PACKS[lang][event];
   const tpl = pool[Math.abs(variant) % pool.length] ?? pool[0]!;
   const base = tpl.replaceAll("{team}", team.trim() || "o time");

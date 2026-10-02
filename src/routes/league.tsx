@@ -89,6 +89,16 @@ function LeaguePage() {
           <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
             {calendarYear(career)} · Temporada {career.season} · Rodada {career.round}
           </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {table.length} clubes nesta temporada ·{" "}
+            {Math.max(0, ...career.fixtures.map((f) => f.round))} rodadas
+          </p>
+          {career.catalogCalendarPending && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              A composição atualizada será aplicada na próxima temporada para preservar os
+              resultados deste save.
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <HudStat

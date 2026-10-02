@@ -1,6 +1,12 @@
 /// <reference lib="webworker" />
 import { resultMatch, snapshotMatch, type LiveWorkerRequest } from "./live-match";
-import { LIVE_MATCH_CLOCK_SCALE, MAX_LIVE_MOTION_SCALE, MatchSim } from "./sim";
+import {
+  LIVE_MATCH_CLOCK_SCALE,
+  MATCH_SIMULATION_STEP,
+  MATCH_SIMULATION_TICK_LIMIT,
+  MAX_LIVE_MOTION_SCALE,
+  MatchSim,
+} from "./sim";
 import type { BallPhysicsAuthority } from "./rapier-ball-authority";
 import type { RapierVisualPhysics } from "./rapier-ball-visual";
 import { visualBallFromCanonical, type VisualBallState } from "./visual-ball";
@@ -251,11 +257,12 @@ async function handleMessage(message: LiveWorkerRequest) {
     let guard = 0;
     const finishInChunks = () => {
       if (!live || token !== skipToken) return;
-      const end = Math.min(guard + 320, 16_000);
-      // Pulo de partida não anima WASM em passos de 0,4s: ele preserva a
-      // simulação determinística e apenas reposiciona a apresentação ao final.
-      while (!live.finished && guard++ < end) live.step(0.4, 1, false);
-      if (live.finished || guard >= 16_000) {
+      const end = Math.min(guard + 320, MATCH_SIMULATION_TICK_LIMIT);
+      // Keep live time/chance creation when skipping; large spatial steps
+      // previously changed duels and played six times as much physical action.
+      while (!live.finished && guard++ < end)
+        live.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE, false);
+      if (live.finished || guard >= MATCH_SIMULATION_TICK_LIMIT) {
         live.synchronizeBallPhysics();
         resetVisualPhysicsToCanonical();
         publishFinished();
@@ -283,7 +290,8 @@ async function handleMessage(message: LiveWorkerRequest) {
       weather: message.weather,
     });
     let guard = 0;
-    while (!sim.finished && guard++ < 16_000) sim.step(0.4);
+    while (!sim.finished && guard++ < MATCH_SIMULATION_TICK_LIMIT)
+      sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
     post({ id: message.id, ok: true, result: resultMatch(sim, 1) });
     return;
   }

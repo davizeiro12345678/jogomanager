@@ -60,6 +60,7 @@ import {
 } from "@/game/visual-context";
 import { solveFullIK } from "@/game/ik-solver";
 import { buildRigSkin, type RigJoint, type RigSkin, type RigSkinLod } from "@/game/rig-skin";
+import { spineRollForAction, updateRigCorrectives } from "@/game/rig-correctives";
 import { censusRef } from "@/game/scene-census";
 import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
 import { gaitPoseAt, locomotionWeight } from "@/game/gait-kinematics";
@@ -114,6 +115,8 @@ interface RigProps {
   previewClip?: ClipName | undefined;
   /** Dense face topology is reserved for the isolated portrait preview. */
   portrait?: boolean;
+  /** Inspection cameras follow actual posed bones, never simulation positions. */
+  onPoseReady?: ((skin: RigSkin) => void) | undefined;
 }
 
 export const PlayerRig = memo(function PlayerRig({
@@ -128,6 +131,7 @@ export const PlayerRig = memo(function PlayerRig({
   paused = false,
   respectVisualSettings = true,
   previewAt,
+  onPoseReady,
 }: RigProps) {
   // O usuário pode forçar mais ou menos detalhe na página /visual.
   const detail = useVisual().playerDetail;
@@ -252,7 +256,12 @@ export const PlayerRig = memo(function PlayerRig({
   const sampled = useRef<number | undefined>(undefined);
 
   useFrame((state, rawDt) => {
-    if (paused && painted.current && sampled.current === previewAt) return;
+    if (paused && painted.current && sampled.current === previewAt) {
+      // A paused pose still serves a changed inspection camera. Do not
+      // re-run animation or smoothing just to switch from body to gloves.
+      onPoseReady?.(skin);
+      return;
+    }
     sampled.current = previewAt;
     painted.current = true;
     const g = root.current;
@@ -501,7 +510,12 @@ export const PlayerRig = memo(function PlayerRig({
       hips.current.position.y = P.hipY + c.hipY;
       hips.current.rotation.set(c.hipPitch, c.hipYaw, c.hipRoll + shift * 1.2);
     }
-    if (spine.current) spine.current.rotation.set(c.spine, -c.hipYaw * 0.45, -c.hipRoll * 0.35);
+    if (spine.current)
+      spine.current.rotation.set(
+        c.spine,
+        -c.hipYaw * 0.45,
+        spineRollForAction(c.hipRoll, player.action),
+      );
     if (chest.current) {
       // postura individual: cada atleta tem um "jeito de carregar o tronco"
       chest.current.rotation.x = c.chest + P.posture;
@@ -541,13 +555,24 @@ export const PlayerRig = memo(function PlayerRig({
       );
     if (foreLRef.current) foreLRef.current.rotation.x = c.elbowL;
     if (foreRRef.current) foreRRef.current.rotation.x = c.elbowR;
-    const handPose = handPoseAt(player.action, u, speed);
-    const wrist = handPose.wrist;
-    if (lod === 0) applyHandPose(skin.boneOf, handPose, previewAt !== undefined ? 0.25 : adt);
+    const leftHandPose = handPoseAt(player.action, u, speed, "L");
+    const rightHandPose = handPoseAt(player.action, u, speed, "R");
+    if (lod === 0) {
+      applyHandPose(skin.boneOf, leftHandPose, previewAt !== undefined ? 0.25 : adt, "L");
+      applyHandPose(skin.boneOf, rightHandPose, previewAt !== undefined ? 0.25 : adt, "R");
+    }
     if (handLRef.current)
-      handLRef.current.rotation.set(wrist, 0.06 * Math.sin(motion.phase), 0.025);
+      handLRef.current.rotation.set(
+        leftHandPose.wrist,
+        leftHandPose.pronation + (player.action ? 0 : 0.06 * Math.sin(motion.phase)),
+        leftHandPose.deviation + 0.025,
+      );
     if (handRRef.current)
-      handRRef.current.rotation.set(wrist, -0.06 * Math.sin(motion.phase), -0.025);
+      handRRef.current.rotation.set(
+        rightHandPose.wrist,
+        -rightHandPose.pronation - (player.action ? 0 : 0.06 * Math.sin(motion.phase)),
+        -rightHandPose.deviation - 0.025,
+      );
     // ---- rosto: expressão do clipe + esforço (só no LOD 0, onde há rosto)
     if (lod === 0) {
       const effort = Math.min(1, speed / 7);
@@ -612,6 +637,8 @@ export const PlayerRig = memo(function PlayerRig({
     if (kneeRRef.current) kneeRRef.current.rotation.x = -c.kneeR;
     if (ankleLRef.current) ankleLRef.current.rotation.x = c.ankleL;
     if (ankleRRef.current) ankleRRef.current.rotation.x = c.ankleR;
+    updateRigCorrectives(skin.boneOf);
+    onPoseReady?.(skin);
 
     // ---- sombra de contato acompanha a altura do quadril
     if (shadowRef.current) {

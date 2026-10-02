@@ -561,7 +561,7 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
     if (!players.length)
       players = validateRemotePlayers(generatedSquad(club.id, club.country)).accepted;
 
-    const rowsToInsert = players.slice(0, 30).map((p) => {
+    const rowsToInsert = players.map((p) => {
       const base = club.strength ?? 70;
       const random = makeRng(`${club.id}:${p.externalId}`);
       const variation = Math.floor(random() * 12) - 6; // -6 to +5
@@ -576,10 +576,22 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
         photo_url: p.photoUrl ?? null,
         overall: ovr,
         source: p.source,
+        source_id: p.externalId,
+        birth_date: p.birthDate ?? null,
       };
     });
-    const res = await db.from("players").insert(rowsToInsert);
-    if (!res.error) imported += rowsToInsert.length;
+    for (let from = 0; from < rowsToInsert.length && Date.now() < deadline; from += 100) {
+      // Stable provider IDs make concurrent/repeated imports idempotent. Existing custom fields stay intact.
+      const res = await db
+        .from("players")
+        .upsert(rowsToInsert.slice(from, from + 100), {
+          onConflict: "source,source_id",
+          ignoreDuplicates: true,
+        })
+        .select("id");
+      if (res.error) throw new Error("Falha ao gravar o lote de jogadores.");
+      imported += res.data?.length ?? 0;
+    }
   });
 
   return { imported, rejected };

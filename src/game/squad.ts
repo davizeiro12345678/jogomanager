@@ -39,10 +39,38 @@ const SHAPE: Position[] = [
 
 const POSITIONS = new Set<Position>(["GK", "DF", "MF", "FW"]);
 
-/** Tamanho padrão do elenco entregue ao jogo. */
-export const SQUAD_SIZE = 18;
-/** Goleiros mínimos por elenco (titular + reserva). */
-export const MIN_GOALKEEPERS = 2;
+/** Profundidade mínima para calendário, lesões e suspensões; não é uma lista oficial. */
+export const SQUAD_SIZE = 26;
+export const MIN_GOALKEEPERS = 3;
+const LEGACY_SQUAD_SIZE = 18;
+
+// Previous built-in priors, only for recognizing untouched players in old saves.
+const LEGACY_STRENGTH: Record<string, number> = {
+  fla: 88,
+  pal: 87,
+  bot: 84,
+  cru: 83,
+  mgo: 82,
+  sao: 81,
+  flu: 80,
+  int: 79,
+  gre: 79,
+  cor: 79,
+  bah: 78,
+  vas: 77,
+  for: 76,
+  san: 76,
+  rbb: 75,
+  mir: 73,
+  cea: 72,
+  spt: 71,
+  vit: 71,
+  juv: 69,
+  cor_pr: 71,
+  ath: 73,
+  cha: 67,
+  rem: 65,
+};
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
@@ -118,8 +146,13 @@ interface DraftPlayer {
   named: boolean;
 }
 
-function draftFromCatalog(clubId: string): DraftPlayer[] {
-  const raw = NAMED_SQUADS[clubId];
+function draftFromCatalog(clubId: string, legacy = false): DraftPlayer[] {
+  const raw =
+    legacy && clubId === "ath"
+      ? NAMED_SQUADS["ath_b"]
+      : legacy && clubId === "ath_b"
+        ? undefined
+        : NAMED_SQUADS[clubId];
   if (!raw) return [];
   const out: DraftPlayer[] = [];
   for (const entry of raw.split(";")) {
@@ -142,6 +175,20 @@ function draftFromCatalog(clubId: string): DraftPlayer[] {
   return out;
 }
 
+/** Same starting-XI scale for named and generated clubs; names do not grant a bonus. */
+function calibrateDraft(draft: DraftPlayer[], strength: number) {
+  const best = (pos: Position, count: number) =>
+    draft
+      .filter((p) => p.pos === pos)
+      .sort((a, b) => b.ovr - a.ovr)
+      .slice(0, count);
+  const starters = [...best("GK", 1), ...best("DF", 4), ...best("MF", 3), ...best("FW", 3)];
+  if (!starters.length) return;
+  const mean = starters.reduce((sum, p) => sum + p.ovr, 0) / starters.length;
+  const delta = Math.round(clamp(strength - 2, 40, 94) - mean);
+  for (const p of draft) p.ovr = clamp(p.ovr + delta, 40, 94);
+}
+
 /**
  * Garante pelo menos `MIN_GOALKEEPERS` goleiros. Só converte jogadores gerados
  * (nunca do catálogo real) e escolhe os de menor overall, que naturalmente
@@ -149,13 +196,13 @@ function draftFromCatalog(clubId: string): DraftPlayer[] {
  */
 function ensureGoalkeepers(draft: DraftPlayer[], rnd: () => number): DraftPlayer[] {
   let gks = draft.filter((d) => d.pos === "GK").length;
-  if (gks >= MIN_GOALKEEPERS) return draft;
+  if (gks >= 2) return draft;
   const candidates = draft
     .map((d, i) => ({ d, i }))
     .filter(({ d }) => !d.named && d.pos !== "GK")
     .sort((a, b) => a.d.ovr - b.d.ovr || a.i - b.i);
   for (const { d } of candidates) {
-    if (gks >= MIN_GOALKEEPERS) break;
+    if (gks >= 2) break;
     d.pos = "GK";
     d.ovr = clamp(d.ovr - 2, 40, 99); // goleiro improvisado rende menos
     d.age = clamp(d.age, 17, 40);
@@ -178,7 +225,9 @@ function dedupeNames(draft: DraftPlayer[]): DraftPlayer[] {
     for (let k = 0; k < 26 && seen.has(candidate); k++) {
       const initial = String.fromCharCode(65 + (k % 26));
       candidate =
-        parts.length > 1 ? `${parts[0]} ${initial}. ${parts.slice(1).join(" ")}` : `${d.name} ${initial}`;
+        parts.length > 1
+          ? `${parts[0]} ${initial}. ${parts.slice(1).join(" ")}`
+          : `${d.name} ${initial}`;
     }
     d.name = candidate;
     seen.add(candidate);
@@ -186,7 +235,13 @@ function dedupeNames(draft: DraftPlayer[]): DraftPlayer[] {
   return draft;
 }
 
-function makePlayer(club: Club, draft: DraftPlayer[], index: number, number: number, rnd: () => number): Player {
+function makePlayer(
+  club: Club,
+  draft: DraftPlayer[],
+  index: number,
+  number: number,
+  rnd: () => number,
+): Player {
   const d = draft[index]!;
   return {
     id: `${club.id}-${index}`,
@@ -207,6 +262,7 @@ function makePlayer(club: Club, draft: DraftPlayer[], index: number, number: num
     yellows: 0,
     suspended: false,
     injuryWeeks: 0,
+    rosterSource: d.named ? "catalog" : "generated",
   };
 }
 
@@ -226,13 +282,24 @@ export function safeClub(clubId: string): Club {
 }
 
 export function buildSquad(clubId: string): Player[] {
-  const club = safeClub(clubId);
+  return createSquad(clubId, false);
+}
+
+/** Migration fingerprint only; never used to populate a new save or play a match. */
+export function buildLegacySquad(clubId: string): Player[] {
+  return createSquad(clubId, true);
+}
+
+function createSquad(clubId: string, legacy: boolean): Player[] {
+  const club = { ...safeClub(clubId) };
+  if (legacy) club.strength = LEGACY_STRENGTH[clubId] ?? club.strength;
   const rnd = makeRng(`squad-${clubId}`);
-  const draft: DraftPlayer[] = draftFromCatalog(clubId);
+  const draft: DraftPlayer[] = draftFromCatalog(clubId, legacy);
 
   const pool = poolForLeague(club.league);
   const used = new Set(draft.map((d) => d.name));
-  while (draft.length < SQUAD_SIZE) {
+  // Keep the original RNG sequence and identifiers of the first 18 players.
+  while (draft.length < LEGACY_SQUAD_SIZE) {
     const pos = SHAPE[draft.length % SHAPE.length]!;
     let name = "";
     let guard = 0;
@@ -241,17 +308,18 @@ export function buildSquad(clubId: string): Player[] {
       guard++;
     } while (used.has(name) && guard < 60);
     used.add(name);
-    const base = club.strength - 6 - Math.floor(rnd() * 9);
+    const base = club.strength - (legacy ? 6 : 2) - Math.floor(rnd() * 9);
     draft.push({
       name,
       pos,
       age: clamp(19 + Math.floor(rnd() * 15), 17, 40),
-      ovr: clamp(Math.max(58, base), 40, 99),
+      ovr: legacy ? clamp(Math.max(58, base), 40, 99) : clamp(base, 40, 94),
       named: false,
     });
   }
 
   ensureGoalkeepers(draft, rnd);
+  if (!legacy) calibrateDraft(draft, club.strength);
   dedupeNames(draft);
 
   const gkIndexes = new Set<number>();
@@ -260,5 +328,52 @@ export function buildSquad(clubId: string): Player[] {
   });
   const numbers = shirtNumbers(draft.length, gkIndexes);
 
-  return draft.map((_, i) => makePlayer(club, draft, i, numbers[i]!, rnd));
+  return appendReserves(
+    club,
+    draft.map((_, i) => makePlayer(club, draft, i, numbers[i]!, rnd)),
+    SQUAD_SIZE,
+  );
+}
+
+/** Append deterministic reserves without rewriting existing players or their numbers. */
+export function completeSquad(clubId: string, existing: Player[], minimum = SQUAD_SIZE): Player[] {
+  return appendReserves(safeClub(clubId), existing, minimum);
+}
+
+function appendReserves(club: Club, existing: Player[], minimum: number): Player[] {
+  const clubId = club.id;
+  const squad = [...existing];
+  const rnd = makeRng(`squad-reserves-${clubId}`);
+  const pool = poolForLeague(club.league);
+  const ids = new Set(squad.map((p) => p.id));
+  const names = new Set(squad.map((p) => p.name));
+  const numbers = new Set(squad.map((p) => p.number));
+  const targets: Record<Position, number> = { GK: 3, DF: 8, MF: 8, FW: 7 };
+  let index = 0;
+  while (squad.length < minimum || squad.filter((p) => p.pos === "GK").length < MIN_GOALKEEPERS) {
+    const id = `${clubId}-reserve-${index++}`;
+    if (ids.has(id)) continue;
+    const counts = { GK: 0, DF: 0, MF: 0, FW: 0 };
+    squad.forEach((p) => counts[p.pos]++);
+    const pos = (Object.keys(targets) as Position[]).sort(
+      (a, b) => targets[b] - counts[b] - (targets[a] - counts[a]),
+    )[0]!;
+    let name = `${pool.first[Math.floor(rnd() * pool.first.length)]} ${pool.last[Math.floor(rnd() * pool.last.length)]}`;
+    if (names.has(name)) name = `${name} ${index}`;
+    const d: DraftPlayer = {
+      name,
+      pos,
+      age: 18 + Math.floor(rnd() * 13),
+      ovr: clamp(club.strength - 10 - Math.floor(rnd() * 9), 40, 85),
+      named: false,
+    };
+    const number = Array.from({ length: 99 }, (_, i) => i + 1).find((n) => !numbers.has(n));
+    if (!number) break;
+    const player = { ...makePlayer(club, [d], 0, number, rnd), id };
+    squad.push(player);
+    ids.add(id);
+    names.add(name);
+    numbers.add(number);
+  }
+  return squad;
 }

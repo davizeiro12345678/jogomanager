@@ -7,6 +7,7 @@ import { CLUBS } from "./data/leagues";
 import { valueFor, wageFor } from "./economy";
 import { makeRng } from "./rng";
 import type { CareerState, Player, Position } from "./types";
+import { ownsRealPlayer } from "./player-identity";
 
 export interface RealTarget {
   id: string;
@@ -18,6 +19,10 @@ export interface RealTarget {
   nationality: string | null;
   photo: string | null;
   clubId: string;
+  source?: string | null;
+  source_id?: string | null;
+  birth_date?: string | null;
+  identity_aliases?: string[];
 }
 
 export function toTarget(row: {
@@ -30,6 +35,10 @@ export function toTarget(row: {
   nationality: string | null;
   photo_url: string | null;
   club_id: string;
+  source?: string | null;
+  source_id?: string | null;
+  birth_date?: string | null;
+  identity_aliases?: string[];
 }): RealTarget {
   const pos = (["GK", "DF", "MF", "FW"] as Position[]).includes(row.position as Position)
     ? (row.position as Position)
@@ -44,6 +53,10 @@ export function toTarget(row: {
     nationality: row.nationality,
     photo: row.photo_url,
     clubId: row.club_id,
+    ...(row.source ? { source: row.source } : {}),
+    ...(row.source_id ? { source_id: row.source_id } : {}),
+    ...(row.birth_date ? { birth_date: row.birth_date } : {}),
+    ...(row.identity_aliases ? { identity_aliases: row.identity_aliases } : {}),
   };
 }
 
@@ -170,6 +183,9 @@ export interface SignOptions {
 
 /** Fecha a contratação: elenco, caixa, folha e notícia. */
 export function signRealPlayer(state: CareerState, t: RealTarget, opts: SignOptions): CareerState {
+  if (ownsRealPlayer(state, t) || t.clubId === state.clubId) return state;
+  if (![opts.fee, opts.wage, opts.agentFee ?? 0].every((v) => Number.isFinite(v) && v >= 0))
+    return state;
   const base = opts.loan ? Math.round(opts.fee * 0.25 * 10) / 10 : opts.fee;
   const cost = Math.round((base + (opts.agentFee ?? 0)) * 10) / 10;
   if (state.finances.budget < cost) return state;
@@ -196,6 +212,12 @@ export function signRealPlayer(state: CareerState, t: RealTarget, opts: SignOpti
     yellows: 0,
     suspended: false,
     injuryWeeks: 0,
+    rosterSource: "imported",
+    sourcePlayerId: t.id,
+    ...(t.source ? { sourceProvider: t.source } : {}),
+    ...(t.source_id ? { sourceExternalId: t.source_id } : {}),
+    ...(t.identity_aliases ? { sourceIdentityAliases: t.identity_aliases } : {}),
+    ...(t.birth_date ? { birthDate: t.birth_date } : {}),
     contractYears: opts.loan ? 1 : 2 + Math.floor(rnd() * 4),
     ...(t.nationality ? { nationality: t.nationality } : {}),
     ...(t.photo ? { photo: t.photo } : {}),
@@ -205,7 +227,7 @@ export function signRealPlayer(state: CareerState, t: RealTarget, opts: SignOpti
     ...state,
     players: { ...state.players, [id]: player },
     bench: [...state.bench, id],
-    transferredIn: [...(state.transferredIn ?? []), t.id],
+    transferredIn: [...new Set([...(state.transferredIn ?? []), t.id])],
     records: {
       ...(state.records ?? {}),
       biggestSigning: Math.max(state.records?.biggestSigning ?? 0, cost),

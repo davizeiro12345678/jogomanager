@@ -97,11 +97,13 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
         <span
           role="status"
           className={`rounded-full px-2.5 py-1 text-[11px] uppercase tracking-wider ${
-            cup.winner === clubId
-              ? "bg-yellow-500/15 text-yellow-500"
-              : cup.out
-                ? "bg-destructive/15 text-destructive"
-                : "bg-primary/15 text-primary"
+            cup.entered === false
+              ? "bg-secondary text-muted-foreground"
+              : cup.winner === clubId
+                ? "bg-yellow-500/15 text-yellow-500"
+                : cup.out
+                  ? "bg-destructive/15 text-destructive"
+                  : "bg-primary/15 text-primary"
           }`}
         >
           {cup.winner === clubId ? <Trophy aria-hidden className="mr-1 inline size-3" /> : null}

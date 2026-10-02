@@ -4,8 +4,14 @@
  * localStorage so a career keeps the real names even offline.
  */
 import { getRealSquad } from "./football.functions";
+import { normalizeRealPlayers } from "./real-player-records";
 
 export interface RealPlayer {
+  id?: string;
+  data_source?: string | null;
+  source_id?: string | null;
+  birth_date?: string | null;
+  identity_aliases?: string[];
   name: string;
   position: string;
   age: number;
@@ -15,13 +21,17 @@ export interface RealPlayer {
   photo_url: string | null;
 }
 
-const KEY = "manager3d.realsquads.v1";
+// The old cache can contain a silently truncated 30-player response.
+const KEY = "manager3d.realsquads.v2";
 const memory = new Map<string, RealPlayer[]>();
 
 function readStore(): Record<string, RealPlayer[]> {
   if (typeof localStorage === "undefined") return {};
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "{}") as Record<string, RealPlayer[]>;
+    const parsed: unknown = JSON.parse(localStorage.getItem(KEY) ?? "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, RealPlayer[]>)
+      : {};
   } catch {
     return {};
   }
@@ -41,8 +51,9 @@ export function realSquadFor(clubId: string): RealPlayer[] {
   if (mem) return mem;
   const stored = readStore()[clubId];
   if (stored) {
-    memory.set(clubId, stored);
-    return stored;
+    const rows = normalizeRealPlayers(stored, clubId);
+    memory.set(clubId, rows);
+    return rows;
   }
   return [];
 }
@@ -52,7 +63,7 @@ export async function loadRealSquad(clubId: string): Promise<RealPlayer[]> {
   const cached = realSquadFor(clubId);
   if (cached.length) return cached;
   try {
-    const rows = (await getRealSquad({ data: { clubId } })) as RealPlayer[];
+    const rows = normalizeRealPlayers(await getRealSquad({ data: { clubId } }), clubId);
     if (rows?.length) {
       memory.set(clubId, rows);
       const store = readStore();

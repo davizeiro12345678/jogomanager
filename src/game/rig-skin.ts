@@ -24,10 +24,13 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 
 import { buildRigBody, type RigBody, type RigBodyContext } from "./rig-body";
 import { handBoneSpecs, FINGER_LENGTHS, type HandJoint } from "./player-hands";
+import { CORRECTIVE_DRIVERS, type CorrectiveJoint, type TwistJoint } from "./rig-correctives";
 
 /** Junta animada → osso. Os nomes batem com os refs de `PlayerRig`. */
 export type RigJoint =
   | HandJoint
+  | CorrectiveJoint
+  | TwistJoint
   | "hips"
   | "spine"
   | "chest"
@@ -120,7 +123,7 @@ function jointSpecs(
   },
   handRadius: number,
 ): JointSpec[] {
-  return [
+  const specs: JointSpec[] = [
     { joint: "hips", parent: null, offset: [0, P.hipY, 0] },
     { joint: "spine", parent: "hips", offset: [0, P.hipH * 0.5, 0] },
     { joint: "chest", parent: "spine", offset: [0, P.spineLen, 0] },
@@ -137,11 +140,13 @@ function jointSpecs(
     { joint: "clavL", parent: "chest", offset: [P.shoulderW * 0.12, P.chestLen * 0.84, 0] },
     { joint: "armL", parent: "clavL", offset: [P.shoulderW * 0.4, 0, 0] },
     { joint: "foreL", parent: "armL", offset: [0, -P.upperArm, 0] },
+    { joint: "forearmTwistL", parent: "foreL", offset: [0, 0, 0] },
     { joint: "handL", parent: "foreL", offset: [0, -P.foreArm, 0] },
     { joint: "handDetailL", parent: "handL", offset: [0, 0, 0] },
     { joint: "clavR", parent: "chest", offset: [-P.shoulderW * 0.12, P.chestLen * 0.84, 0] },
     { joint: "armR", parent: "clavR", offset: [-P.shoulderW * 0.4, 0, 0] },
     { joint: "foreR", parent: "armR", offset: [0, -P.upperArm, 0] },
+    { joint: "forearmTwistR", parent: "foreR", offset: [0, 0, 0] },
     { joint: "handR", parent: "foreR", offset: [0, -P.foreArm, 0] },
     { joint: "handDetailR", parent: "handR", offset: [0, 0, 0] },
     ...handBoneSpecs(handRadius),
@@ -154,6 +159,11 @@ function jointSpecs(
     { joint: "ankleR", parent: "kneeR", offset: [0, -P.shin, 0] },
     { joint: "bootDetailR", parent: "ankleR", offset: [0, 0, 0] },
   ];
+  for (const { joint, driver } of CORRECTIVE_DRIVERS) {
+    const source = specs.find((spec) => spec.joint === driver)!;
+    specs.push({ joint, parent: source.parent, offset: source.offset });
+  }
+  return specs;
 }
 
 /** Junta dona de cada grupo de malha. Crânio e cabelo ficam no pivô facial. */
@@ -336,6 +346,27 @@ export function buildRigSkin(
           }
         geometry.setAttribute("color", new THREE.Float32BufferAttribute(color, 3));
       }
+      if (mesh.material === ctx.mats.glove) {
+        // Latex palm, coloured backhand and a dark wrist closure share one
+        // material. Bake their albedo once, including articulated fingers.
+        const positions = geometry.getAttribute("position");
+        const color = new Float32Array(positions.count * 3);
+        const base = (ctx.mats.glove as THREE.MeshStandardMaterial).color;
+        const latex = new THREE.Color("#e0dfd7");
+        for (let i = 0; i < positions.count; i++) {
+          const palm = THREE.MathUtils.smoothstep(positions.getZ(i), 0, ctx.handR * 0.2);
+          const cuff = /hand[LR]/.test(key)
+            ? THREE.MathUtils.smoothstep(positions.getY(i), 0, ctx.handR * 0.18)
+            : 0;
+          color[i * 3] =
+            THREE.MathUtils.lerp(1, latex.r / Math.max(0.002, base.r), palm) * (1 - cuff * 0.68);
+          color[i * 3 + 1] =
+            THREE.MathUtils.lerp(1, latex.g / Math.max(0.002, base.g), palm) * (1 - cuff * 0.62);
+          color[i * 3 + 2] =
+            THREE.MathUtils.lerp(1, latex.b / Math.max(0.002, base.b), palm) * (1 - cuff * 0.55);
+        }
+        geometry.setAttribute("color", new THREE.Float32BufferAttribute(color, 3));
+      }
       addSkinning(geometry, owner, bones, ctx, key);
       geometry.applyMatrix4(rest);
       const bucketKey = `${mesh.material.uuid}|${lod}`;
@@ -439,6 +470,77 @@ function addSkinning(
     skinIndex[i * 4 + 1] = otherIndex;
     skinWeight[i * 4] = 1 - weight;
     skinWeight[i * 4 + 1] = weight;
+    const blendJoint = (
+      proximal: RigJoint,
+      distal: RigJoint,
+      helper: CorrectiveJoint,
+      t: number,
+    ) => {
+      const w = THREE.MathUtils.clamp(t, 0, 1);
+      const corrective = 4 * w * (1 - w) * 0.7;
+      skinIndex[i * 4] = indexOf[proximal];
+      skinIndex[i * 4 + 1] = indexOf[distal];
+      skinIndex[i * 4 + 2] = indexOf[helper];
+      skinWeight[i * 4] = (1 - w) * (1 - corrective);
+      skinWeight[i * 4 + 1] = w * (1 - corrective);
+      skinWeight[i * 4 + 2] = corrective;
+      skinWeight[i * 4 + 3] = 0;
+    };
+    if (owner === "armL" || owner === "armR") {
+      const side = owner === "armL" ? "L" : "R";
+      blendJoint(owner, `fore${side}`, `elbowVolume${side}`, weight);
+    } else if (owner === "foreL" || owner === "foreR") {
+      const side = owner === "foreL" ? "L" : "R";
+      blendJoint(`arm${side}`, owner, `elbowVolume${side}`, 1 - weight);
+      const wristWeight =
+        1 -
+        THREE.MathUtils.smoothstep(
+          positions.getY(i),
+          -p.foreArm - p.armR * 0.45,
+          -p.foreArm + p.armR * 0.8,
+        );
+      if (wristWeight > 0) blendJoint(owner, `hand${side}`, `wristVolume${side}`, wristWeight);
+      // Keep the elbow stationary and spread wrist rotation progressively
+      // through the distal forearm. The fourth slot already exists on GPU.
+      const twist = THREE.MathUtils.smoothstep(-positions.getY(i) / p.foreArm, 0.16, 0.82);
+      for (let c = 0; c < 3; c++) {
+        if (skinIndex[i * 4 + c] !== indexOf[owner]) continue;
+        const share = skinWeight[i * 4 + c]! * twist;
+        skinWeight[i * 4 + c] = skinWeight[i * 4 + c]! - share;
+        skinIndex[i * 4 + 3] = indexOf[`forearmTwist${side}`];
+        skinWeight[i * 4 + 3] = share;
+        break;
+      }
+    } else if (owner === "legL" || owner === "legR") {
+      const side = owner === "legL" ? "L" : "R";
+      blendJoint(owner, `knee${side}`, `kneeVolume${side}`, weight);
+    } else if (owner === "kneeL" || owner === "kneeR") {
+      const side = owner === "kneeL" ? "L" : "R";
+      blendJoint(`leg${side}`, owner, `kneeVolume${side}`, 1 - weight);
+      const ankleWeight =
+        1 -
+        THREE.MathUtils.smoothstep(
+          positions.getY(i),
+          -p.shin - p.legR * 0.22,
+          -p.shin + p.legR * 0.4,
+        );
+      if (ankleWeight > 0) blendJoint(owner, `ankle${side}`, `ankleVolume${side}`, ankleWeight);
+    } else if (owner === "handL" || owner === "handR") {
+      const side = owner === "handL" ? "L" : "R";
+      const wristWeight =
+        1 - THREE.MathUtils.smoothstep(positions.getY(i), -ctx.handR * 0.4, ctx.handR * 0.3);
+      blendJoint(`forearmTwist${side}`, owner, `wristVolume${side}`, wristWeight);
+    } else if (owner === "ankleL" || owner === "ankleR") {
+      const side = owner === "ankleL" ? "L" : "R";
+      // Only the sock/socket follows ankle flexion; the boot last stays rigid.
+      if (positions.getY(i) > -p.footH * 0.15)
+        blendJoint(
+          `knee${side}`,
+          owner,
+          `ankleVolume${side}`,
+          1 - THREE.MathUtils.smoothstep(positions.getY(i), -p.footH * 0.1, p.footH * 0.24),
+        );
+    }
     if (part === "hips" && !ctx.trousers) {
       const x = positions.getX(i);
       const y = positions.getY(i);
@@ -451,6 +553,13 @@ function addSkinning(
       skinWeight[i * 4] = 1 - legWeight;
       skinWeight[i * 4 + 1] = legWeight * left;
       skinWeight[i * 4 + 2] = legWeight * (1 - left);
+      // Local cloth follows a single thigh except at the shared crotch.
+      // Correct only the socket band; the hem retains its femur attachment.
+      const socket = Math.sin(Math.PI * legWeight) ** 2 * Math.abs(left * 2 - 1) * 0.38;
+      skinIndex[i * 4 + 3] = left > 0.5 ? indexOf.hipVolumeL : indexOf.hipVolumeR;
+      for (let channel = 0; channel < 3; channel++)
+        skinWeight[i * 4 + channel] = skinWeight[i * 4 + channel]! * (1 - socket);
+      skinWeight[i * 4 + 3] = socket;
     }
     if (part === "spine") {
       // One continuous shirt spans the lumbar and chest bones. Its upper
@@ -467,15 +576,26 @@ function addSkinning(
       const shoulderBlend =
         THREE.MathUtils.smoothstep(
           positions.getY(i),
-          p.spineLen + p.chestLen * 0.45,
+          p.spineLen + p.chestLen * 0.3,
           p.spineLen + p.chestLen * 0.8,
         ) *
-        THREE.MathUtils.smoothstep(Math.abs(positions.getX(i)), p.neckR * 1.4, p.shoulderW * 0.5) *
-        0.55;
-      for (let channel = 0; channel < 3; channel++)
-        skinWeight[i * 4 + channel] = skinWeight[i * 4 + channel]! * (1 - shoulderBlend);
-      skinIndex[i * 4 + 3] = positions.getX(i) > 0 ? indexOf.clavL : indexOf.clavR;
-      skinWeight[i * 4 + 3] = shoulderBlend;
+        THREE.MathUtils.smoothstep(
+          Math.abs(positions.getX(i)),
+          p.chestW * 0.56,
+          p.shoulderW * 0.49,
+        ) *
+        0.68;
+      if (shoulderBlend > 0) {
+        const side = positions.getX(i) > 0 ? "L" : "R";
+        skinIndex[i * 4] = indexOf.spine;
+        skinIndex[i * 4 + 1] = indexOf.chest;
+        skinIndex[i * 4 + 2] = indexOf[`clav${side}`];
+        skinIndex[i * 4 + 3] = indexOf[`shoulderVolume${side}`];
+        skinWeight[i * 4] = (1 - chestBlend) * (1 - shoulderBlend);
+        skinWeight[i * 4 + 1] = chestBlend * (1 - shoulderBlend);
+        skinWeight[i * 4 + 2] = shoulderBlend * 0.22;
+        skinWeight[i * 4 + 3] = shoulderBlend * 0.78;
+      }
     }
     if (part === "head" || part === "hair") {
       // The sculpted chin and fitted beard share the animated jaw. No
@@ -494,12 +614,23 @@ function addSkinning(
       skinWeight[i * 4 + 1] = 0;
     }
     if (part === "armL" || part === "armR") {
-      const shoulderBlend =
-        THREE.MathUtils.smoothstep(positions.getY(i), -p.armR * 1.3, p.armR * 0.6) * 0.45;
-      skinWeight[i * 4] = skinWeight[i * 4]! * (1 - shoulderBlend);
-      skinWeight[i * 4 + 1] = skinWeight[i * 4 + 1]! * (1 - shoulderBlend);
-      skinIndex[i * 4 + 2] = part === "armL" ? indexOf.clavL : indexOf.clavR;
-      skinWeight[i * 4 + 2] = shoulderBlend;
+      const shoulderBlend = THREE.MathUtils.smoothstep(
+        positions.getY(i),
+        -p.armR * 1.5,
+        p.armR * 0.9,
+      );
+      if (shoulderBlend > 0) {
+        const side = part === "armL" ? "L" : "R";
+        blendJoint(`clav${side}`, `arm${side}`, `shoulderVolume${side}`, 1 - shoulderBlend * 0.65);
+      }
+    }
+    if (part === "neck") {
+      const neckWeight = THREE.MathUtils.smoothstep(positions.getY(i), 0, p.neckLen * 0.7);
+      skinIndex[i * 4] = indexOf.chest;
+      skinIndex[i * 4 + 1] = indexOf.neck;
+      skinWeight[i * 4] = 1 - neckWeight;
+      skinWeight[i * 4 + 1] = neckWeight;
+      skinWeight[i * 4 + 2] = skinWeight[i * 4 + 3] = 0;
     }
     if (part === "handDetailL" || part === "handDetailR") {
       const side = part === "handDetailL" ? "L" : "R";

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-type Surface = "tile" | "wood" | "wall";
+type Surface = "tile" | "wood" | "wall" | "grass";
 const surfaces = new Map<Surface, THREE.CanvasTexture>();
 const backdrops = new Map<string, THREE.CanvasTexture>();
 
@@ -13,14 +13,19 @@ export function cinematicSurface(kind: Surface): THREE.CanvasTexture | null {
   canvas.width = canvas.height = 256;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
-  ctx.fillStyle = kind === "wood" ? "#bfa17b" : "#d4d7d8";
+  ctx.fillStyle = kind === "wood" ? "#bfa17b" : kind === "grass" ? "#bdc7b1" : "#d4d7d8";
   ctx.fillRect(0, 0, 256, 256);
   let seed = 139;
   const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
   for (let i = 0; i < 4500; i++) {
     const tone = Math.round(120 + random() * 100);
     ctx.fillStyle = `rgba(${tone},${tone},${tone},0.09)`;
-    ctx.fillRect(random() * 256, random() * 256, kind === "wood" ? 35 + random() * 100 : 1, 1);
+    ctx.fillRect(
+      random() * 256,
+      random() * 256,
+      kind === "wood" ? 35 + random() * 100 : 1,
+      kind === "grass" ? 2 + random() * 5 : 1,
+    );
   }
   if (kind === "tile") {
     ctx.fillStyle = "#929da3";

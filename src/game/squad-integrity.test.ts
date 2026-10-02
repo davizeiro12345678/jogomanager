@@ -9,7 +9,7 @@
 import { describe, expect, it } from "vitest";
 import { CLUBS } from "./data/leagues";
 import { NAMED_SQUADS } from "./data/squads";
-import { buildSquad, MIN_GOALKEEPERS, safeClub } from "./squad";
+import { buildSquad, MIN_GOALKEEPERS, SQUAD_SIZE, safeClub } from "./squad";
 import { pickLineup } from "./career";
 import type { FormationKey, Player } from "./types";
 
@@ -22,13 +22,17 @@ describe("base de jogadores", () => {
     expect(ids.length).toBeGreaterThan(1000);
     for (const id of ids) {
       const squad = buildSquad(id);
-      expect(squad.length, `elenco de ${id}`).toBe(18);
+      expect(squad.length, `elenco de ${id}`).toBe(SQUAD_SIZE);
       const numbers = new Set<number>();
       const names = new Set<string>();
       for (const p of squad) {
         expect(POSITIONS.has(p.pos), `${id}/${p.name} pos=${p.pos}`).toBe(true);
-        expect(Number.isFinite(p.age) && p.age >= 16 && p.age <= 45, `${id}/${p.name} age`).toBe(true);
-        expect(Number.isFinite(p.ovr) && p.ovr >= 40 && p.ovr <= 99, `${id}/${p.name} ovr`).toBe(true);
+        expect(Number.isFinite(p.age) && p.age >= 16 && p.age <= 45, `${id}/${p.name} age`).toBe(
+          true,
+        );
+        expect(Number.isFinite(p.ovr) && p.ovr >= 40 && p.ovr <= 99, `${id}/${p.name} ovr`).toBe(
+          true,
+        );
         for (const a of ["pace", "shooting", "passing", "defending", "physical"] as const) {
           expect(p[a] >= 35 && p[a] <= 99, `${id}/${p.name} ${a}`).toBe(true);
         }
@@ -67,7 +71,10 @@ describe("base de jogadores", () => {
     for (const formation of FORMATIONS) {
       const { bench } = pickLineup(squad, formation);
       expect(bench.length).toBeGreaterThan(0);
-      expect(bench.some((id) => byId.get(id)!.pos === "GK"), formation).toBe(true);
+      expect(
+        bench.some((id) => byId.get(id)!.pos === "GK"),
+        formation,
+      ).toBe(true);
     }
   });
 
@@ -82,7 +89,7 @@ describe("base de jogadores", () => {
 
   it("não quebra com clube fora do catálogo", () => {
     const squad = buildSquad("nao-existe-123");
-    expect(squad.length).toBe(18);
+    expect(squad.length).toBe(SQUAD_SIZE);
     expect(squad.every((p) => POSITIONS.has(p.pos))).toBe(true);
     expect(squad.filter((p) => p.pos === "GK").length).toBeGreaterThanOrEqual(MIN_GOALKEEPERS);
     expect(safeClub("nao-existe-123").name.length).toBeGreaterThan(0);
@@ -99,7 +106,7 @@ describe("base de jogadores", () => {
     // `buildSquad` descarta entradas corrompidas; aqui garantimos o contrato
     // de que o resultado continua íntegro mesmo quando o dado vem torto.
     const squad = buildSquad("sao");
-    expect(squad.length).toBe(18);
+    expect(squad.length).toBe(SQUAD_SIZE);
     expect(squad.every((p) => p.name.trim().length > 0)).toBe(true);
   });
 

@@ -43,7 +43,9 @@ import { MENTALITIES, PRESSING } from "@/game/formations";
 import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
 import type { TeamSetup, TeamTalkKind } from "@/game/sim";
 import { ReplayRecorder, saveReplay } from "@/game/replay";
-import { Narrator, type NarrationEvent } from "@/game/narrator";
+import type { NarrationEvent } from "@/game/narrator";
+import { useMatchNarration } from "@/hooks/useMatchNarration";
+import { NarrationSettings } from "@/components/accessibility/NarrationSettings";
 import {
   advanceRoundAsync,
   createLiveMatchController,
@@ -533,7 +535,7 @@ function LiveMatch({
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
 
   const mySide = isHome ? "home" : "away";
-  const { lang } = useT();
+  const { t } = useT();
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
   const [camera, setCamera] = useState<CameraMode>(() => getBroadcastPreferences().camera);
@@ -567,9 +569,6 @@ function LiveMatch({
   /** cerimônia 3D (entorno → túnel → hino → mosaico → sorteio) após as cutscenes */
   const [ceremony, setCeremony] = useState(() => ceremonyEnabled());
   const ceremonyActive = ceremony && !introActive;
-  const [narrating, setNarrating] = useState(false);
-  const [caption, setCaption] = useState<string | null>(null);
-  const narratorRef = useRef<Narrator | null>(null);
   const narrCursorRef = useRef(0);
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
   const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
@@ -642,17 +641,15 @@ function LiveMatch({
   const [halfTalk, setHalfTalk] = useState<TeamTalkKind | null>(null);
   const [halfHeld, setHalfHeld] = useState(false);
   pausedRef.current = paused || introActive || ceremonyActive || halfHeld;
+  const { narrating, setNarrating, caption, narratorRef } = useMatchNarration(
+    sim,
+    pausedRef.current,
+  );
 
   // Narração: consome eventos novos do simulador e fala via Web Speech API.
   useEffect(() => {
-    const n = new Narrator({ lang, enabled: narrating, onCaption: setCaption });
-    narratorRef.current = n;
     narrCursorRef.current = sim.events.length;
-    return () => {
-      n.dispose();
-      narratorRef.current = null;
-    };
-  }, [sim, lang, narrating]);
+  }, [sim]);
 
   useEffect(() => {
     const n = narratorRef.current;
@@ -871,7 +868,13 @@ function LiveMatch({
 
   return (
     <div className="match-interface relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
-      <Stadium3D sim={sim} mode={camera} quality={quality} supporters={supporters} />
+      <Stadium3D
+        sim={sim}
+        mode={camera}
+        quality={quality}
+        supporters={supporters}
+        paused={paused || introActive || ceremonyActive || halfHeld}
+      />
       <div className="match-fps pointer-events-none absolute right-3 top-3 z-20">
         <FpsPanel quality={quality} detail={{ Câmera: camera, Velocidade: speed }} />
       </div>
@@ -880,7 +883,8 @@ function LiveMatch({
         <div
           role="status"
           aria-live="polite"
-          className="pointer-events-none absolute inset-x-3 bottom-24 z-20 mx-auto max-w-2xl rounded-md bg-background/90 px-4 py-2 text-center text-sm font-medium text-foreground shadow-lg backdrop-blur md:bottom-20"
+          aria-atomic="true"
+          className="match-caption pointer-events-none absolute inset-x-3 bottom-36 z-20 mx-auto text-center md:bottom-24"
         >
           {caption}
         </div>
@@ -1071,12 +1075,18 @@ function LiveMatch({
         <div className="match-transport-secondary">
           <button
             onClick={() => setNarrating((v) => !v)}
-            aria-label={narrating ? "Desligar narração" : "Ligar narração"}
+            aria-label={t(narrating ? "narration.off" : "narration.on")}
             aria-pressed={narrating}
             className={`grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${narrating ? "text-primary" : "text-white/60 hover:bg-white/10"}`}
           >
             {narrating ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
+          <NarrationSettings
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/90"
+            onOpenChange={(open) => {
+              if (open) setPaused(true);
+            }}
+          />
           <button
             onClick={() => {
               setPaused(true);
@@ -1203,7 +1213,7 @@ function LiveMatch({
 
           <button
             onClick={() => setNarrating((v) => !v)}
-            aria-label={narrating ? "Desligar narração" : "Ligar narração"}
+            aria-label={t(narrating ? "narration.off" : "narration.on")}
             className={`grid w-9 place-items-center rounded-lg py-1.5 ${narrating ? "bg-primary/30 text-primary" : "bg-white/10 text-white/60"}`}
           >
             {narrating ? <Volume2 size={13} /> : <VolumeX size={13} />}

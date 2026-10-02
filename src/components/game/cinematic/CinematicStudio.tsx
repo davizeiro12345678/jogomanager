@@ -9,6 +9,9 @@ import {
   DoorOpen,
   Trophy,
   Search,
+  Activity,
+  Dumbbell,
+  HeartPulse,
 } from "lucide-react";
 import { CUTSCENES } from "@/content/cutscenes";
 import { safeClub } from "@/game/squad";
@@ -26,6 +29,9 @@ const examples = [
   { art: "board", label: "Diretoria", hint: "Decisões nos bastidores", icon: Building2 },
   { art: "tunnel", label: "Túnel", hint: "Antes de entrar em campo", icon: DoorOpen },
   { art: "trophy", label: "Taça", hint: "A noite da conquista", icon: Trophy },
+  { art: "training", label: "Treino", hint: "Trabalho com bola", icon: Activity },
+  { art: "gym", label: "Academia", hint: "Preparação e força", icon: Dumbbell },
+  { art: "medical", label: "Departamento médico", hint: "Cuidar de quem joga", icon: HeartPulse },
 ] as const;
 const searchable = (text: string) =>
   text
@@ -41,6 +47,9 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
   const [outcome, setOutcome] = useState("");
   const [quality, setQuality] = useState<QualityLevel | "auto">("auto");
   const [previewTime, setPreviewTime] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
+  const [narration, setNarration] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
   const club = safeClub(clubId);
   const scenes = useMemo(() => Object.values(CUTSCENES), []);
   const filtered = useMemo(
@@ -66,7 +75,7 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
             fora das quatro linhas.
           </h2>
           <p className="studio-hint">
-            Explore os ambientes, acompanhe os gestos e experimente os diálogos em uma cena 3D. Suas
+            Explore os ambientes, os exercícios, os olhares e os diálogos em uma cena 3D. Suas
             escolhas aqui ficam apenas na prévia.
           </p>
         </div>
@@ -158,6 +167,30 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
       <details className="cinema-config">
         <summary>Ajustes de exibição e encenação</summary>
         <div className="studio-fields">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={autoPlay}
+              onChange={(e) => setAutoPlay(e.target.checked)}
+            />
+            Reprodução automática
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={narration}
+              onChange={(e) => setNarration(e.target.checked)}
+            />
+            Ouvir diálogos
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={reduceMotion}
+              onChange={(e) => setReduceMotion(e.target.checked)}
+            />
+            Reduzir movimento
+          </label>
           <label>
             Qualidade
             <select
@@ -204,6 +237,9 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
           managerName="Treinador"
           renderQuality={quality}
           previewTime={previewTime}
+          autoPlay={autoPlay}
+          narrate={narration}
+          reduceMotion={reduceMotion}
           onEffect={() => setOutcome("Resposta experimentada. A prévia não altera sua carreira.")}
           onDone={() => setScene(null)}
         />

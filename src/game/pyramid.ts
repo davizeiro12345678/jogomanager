@@ -4,11 +4,12 @@ import type { CareerState, TableRow } from "./types";
 import { calendarYear, promotionRule, REGULATION_SOURCES } from "./competition-regulations";
 import { competitionPlayoff, type CompetitionPlayoff } from "./competition-match";
 import { simulateDivisionTable } from "./standings";
+import { SERIE_D_IDS } from "./data/serie-d";
 
 // Somente campeonatos masculinos de liga. Estaduais, competições históricas,
 // femininas e ligas sem uma divisão parceira permanecem independentes.
 const TIERS: string[][][] = [
-  [["bra"], ["bra2"], ["bra3"], ["y5079a", "y5079b", "y5079c"]],
+  [["bra"], ["bra2"], ["bra3"], SERIE_D_IDS],
   [
     ["eng"],
     ["eng2"],
@@ -61,7 +62,8 @@ const TIERS: string[][][] = [
   [
     ["fra"],
     ["fra2"],
-    ["x4637", "x5320", "y5321", "y5322"],
+    ["x4637"],
+    ["x5320", "y5321", "y5322"],
     ["y5777", "y5778", "y5779", "y5780", "y5781", "y5782", "y5783", "y5784"],
   ],
   [["por"], ["por2"], ["x5216"], ["x5745", "y5747"]],
@@ -83,7 +85,7 @@ const TIERS: string[][][] = [
   [["bel"], ["x4623"]],
   [["gre"], ["x4640"]],
   [["aut"], ["x4796"]],
-  [["den"], ["x4632"]],
+  [["den"], ["x4683"], ["x4632"]],
   [["nor"], ["x4457"]],
   [["swe"], ["x4403"]],
   [["ukr"], ["x4677"]],
@@ -123,7 +125,7 @@ export const REGIONAL_LINKS: Record<
 > = {
   x5676: {
     state: "AC",
-    national: "y5079a",
+    national: "y5079b",
     slots: 1,
     cupSlots: 2,
     source: REGULATION_SOURCES.serieD,
@@ -131,7 +133,7 @@ export const REGIONAL_LINKS: Record<
   },
   x5678: {
     state: "AP",
-    national: "y5079a",
+    national: "y5079e",
     slots: 1,
     cupSlots: 2,
     source: REGULATION_SOURCES.serieD,
@@ -139,7 +141,7 @@ export const REGIONAL_LINKS: Record<
   },
   x5685: {
     state: "DF",
-    national: "y5079b",
+    national: "y5079c",
     slots: 1,
     cupSlots: 2,
     source: REGULATION_SOURCES.serieD,
@@ -147,7 +149,7 @@ export const REGIONAL_LINKS: Record<
   },
   x5684: {
     state: "BA",
-    national: "y5079b",
+    national: "y5079j",
     slots: 1,
     cupSlots: 2,
     source: REGULATION_SOURCES.serieD,
@@ -155,7 +157,7 @@ export const REGIONAL_LINKS: Record<
   },
   x5686: {
     state: "ES",
-    national: "y5079b",
+    national: "y5079l",
     slots: 1,
     cupSlots: 2,
     source: REGULATION_SOURCES.capixaba,
@@ -163,7 +165,7 @@ export const REGIONAL_LINKS: Record<
   },
   x5762: {
     state: "MT",
-    national: "y5079b",
+    national: "y5079c",
     slots: 1,
     cupSlots: 2,
     source: REGULATION_SOURCES.serieD,
@@ -171,7 +173,7 @@ export const REGIONAL_LINKS: Record<
   },
   x5765: {
     state: "PB",
-    national: "y5079a",
+    national: "y5079i",
     slots: 1,
     cupSlots: 2,
     source: REGULATION_SOURCES.serieD,
@@ -179,7 +181,7 @@ export const REGIONAL_LINKS: Record<
   },
   x5764: {
     state: "PA",
-    national: "y5079a",
+    national: "y5079e",
     slots: 1,
     cupSlots: 2,
     source: REGULATION_SOURCES.serieD,
@@ -187,7 +189,7 @@ export const REGIONAL_LINKS: Record<
   },
   x5766: {
     state: "PR",
-    national: "y5079c",
+    national: "y5079o",
     slots: 1,
     cupSlots: 2,
     source: REGULATION_SOURCES.serieD,
@@ -195,7 +197,7 @@ export const REGIONAL_LINKS: Record<
   },
   x5769: {
     state: "PI",
-    national: "y5079a",
+    national: "y5079g",
     slots: 1,
     cupSlots: 2,
     source: REGULATION_SOURCES.serieD,
@@ -203,7 +205,7 @@ export const REGIONAL_LINKS: Record<
   },
   x5773: {
     state: "SE",
-    national: "y5079b",
+    national: "y5079i",
     slots: 1,
     cupSlots: 2,
     source: REGULATION_SOURCES.serieD,
@@ -219,7 +221,7 @@ export const REGIONAL_LINKS: Record<
   },
   x5774: {
     state: "MS",
-    national: "y5079c",
+    national: "y5079k",
     slots: 1,
     cupSlots: 2,
     source: REGULATION_SOURCES.serieD,
@@ -227,7 +229,7 @@ export const REGIONAL_LINKS: Record<
   },
   x5775: {
     state: "TO",
-    national: "y5079a",
+    national: "y5079e",
     slots: 1,
     cupSlots: 2,
     source: REGULATION_SOURCES.serieD,
@@ -431,7 +433,21 @@ export function applyPyramid(
             .map((r) => r.clubId),
         );
     } else if (!override && upper[0] === "bra3") {
-      // Mata-mata regional adaptado: quatro semifinalistas + duas vagas entre perdedores das quartas.
+      // 2026: four qualifiers per group, crossed against the adjacent group.
+      if (lower.length === 16 && contenders.length === 64) {
+        const crossed: string[] = [];
+        for (let group = 0; group < lower.length; group += 2)
+          for (let rank = 0; rank < 4; rank++)
+            crossed.push(
+              decide(
+                rankings[lower[group]!]![rank]!,
+                rankings[lower[group + 1]!]![3 - rank]!,
+                playoffs.length,
+              ),
+            );
+        contenders = crossed;
+      }
+      // Four semifinalists and two winners in the quarter-final losers' repechage.
       while (contenders.length > 8) {
         const next: string[] = [];
         for (let i = 0; i < Math.floor(contenders.length / 2); i++)

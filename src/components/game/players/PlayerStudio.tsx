@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { CLIP_NAMES, type ClipName, type PlayerAction } from "@/game/animation";
@@ -16,7 +16,9 @@ import {
 } from "@/game/player-model";
 import { getAnnotatedClip } from "@/game/register-animations";
 import { footballContactAt } from "@/game/motion-metadata";
+import type { RigSkin } from "@/game/rig-skin";
 import { safeClub } from "@/game/squad";
+import { cinematicOverlayActive, subscribeCinematicOverlay } from "@/game/cinematic-overlay";
 import type { SimPlayer, TeamSetup } from "@/game/sim";
 import { GraphicsBoundary } from "../GraphicsBoundary";
 import { PlayerRig } from "./PlayerRig";
@@ -80,6 +82,7 @@ const MOVEMENTS: StudioMovement[] = [
   { id: "diveLeft", label: "Defesa à esquerda", speed: 0, action: "diveLeft" },
   { id: "diveRight", label: "Defesa à direita", speed: 0, action: "diveRight" },
   { id: "saveHigh", label: "Defesa alta", speed: 0, action: "saveHigh" },
+  { id: "save", label: "Defesa frontal", speed: 0, action: "save" },
   { id: "catch", label: "Encaixe do goleiro", speed: 0, action: "catch" },
   { id: "celebrate", label: "Comemoração", speed: 0, action: "celebrate" },
 ];
@@ -158,6 +161,7 @@ function StudioScene({
   previewAt,
   appearance,
   viewReset,
+  viewAngle,
 }: {
   preview: ReturnType<typeof fixture>;
   movement: (typeof MOVEMENTS)[number];
@@ -169,12 +173,49 @@ function StudioScene({
   previewAt?: number | undefined;
   appearance: PlayerLook;
   viewReset: number;
+  viewAngle: string;
 }) {
   const pulse = useRef(0);
   const actionClock = useRef(0);
   const controls = useRef<OrbitControlsImpl>(null);
   const { camera, invalidate, size } = useThree();
   const height = appearance.height * 1.8;
+  const inspection = useMemo(
+    () => ({
+      target: new THREE.Vector3(),
+      second: new THREE.Vector3(),
+      delta: new THREE.Vector3(),
+    }),
+    [],
+  );
+  const inspectPose = useMemo(
+    () => (skin: RigSkin) => {
+      if (framing === "body" || !controls.current) return;
+      const bones = skin.boneOf;
+      if (framing === "hands") {
+        bones.handL.getWorldPosition(inspection.target);
+        bones.handR.getWorldPosition(inspection.second);
+        inspection.target.add(inspection.second).multiplyScalar(0.5);
+      } else if (framing === "face") {
+        bones.face.getWorldPosition(inspection.target);
+        inspection.target.y -= height * 0.012;
+      } else if (framing === "kit") {
+        bones.chest.getWorldPosition(inspection.target);
+        inspection.target.y += height * 0.04;
+      } else {
+        const left = framing === "boots" ? bones.ankleL : bones.kneeL;
+        const right = framing === "boots" ? bones.ankleR : bones.kneeR;
+        left.getWorldPosition(inspection.target);
+        right.getWorldPosition(inspection.second);
+        inspection.target.add(inspection.second).multiplyScalar(0.5);
+      }
+      inspection.delta.copy(inspection.target).sub(controls.current.target);
+      camera.position.add(inspection.delta);
+      controls.current.target.copy(inspection.target);
+      controls.current.update();
+    },
+    [camera, framing, height, inspection],
+  );
   const overrides = useMemo(
     () => new Map([[preview.player.id, appearance]]),
     [preview, appearance],
@@ -188,6 +229,7 @@ function StudioScene({
   const overhead = /^(throwIn|saveHigh|diveLeft|diveRight|header|celebrate)$/.test(
     movement.action ?? "",
   );
+  const groundAction = movement.action === "slide";
   const targetY =
     framing === "face"
       ? height - 0.12
@@ -199,7 +241,7 @@ function StudioScene({
             ? height * 0.41
             : framing === "boots"
               ? 0.15
-              : height * (overhead ? 0.66 : 0.5);
+              : height * (overhead ? 0.66 : groundAction ? 0.32 : 0.5);
   useEffect(() => {
     const close = framing === "face",
       shirt = framing === "kit",
@@ -220,7 +262,9 @@ function StudioScene({
                 ? 0.55
                 : overhead
                   ? 3.2
-                  : 1.8) * fit,
+                  : groundAction
+                    ? 2.2
+                    : 1.8) * fit,
       close
         ? height - 0.08
         : shirt
@@ -233,7 +277,9 @@ function StudioScene({
                 ? 0.48
                 : overhead
                   ? 1.9
-                  : 1.55,
+                  : groundAction
+                    ? 1.35
+                    : 1.55,
       (close
         ? 0.68
         : shirt
@@ -246,14 +292,33 @@ function StudioScene({
                 ? 0.85
                 : overhead
                   ? 4.8
-                  : 3.2) * fit,
+                  : groundAction
+                    ? 3.8
+                    : 3.2) * fit,
     );
+    if (viewAngle !== "threeQuarter") {
+      const radius = Math.hypot(camera.position.x, camera.position.z);
+      camera.position.x = viewAngle === "profile" ? radius : 0;
+      camera.position.z = viewAngle === "profile" ? 0 : viewAngle === "back" ? -radius : radius;
+    }
     camera.lookAt(0, targetY, 0);
     camera.updateMatrixWorld();
     controls.current?.target.set(0, targetY, 0);
     controls.current?.update();
     invalidate();
-  }, [framing, height, targetY, overhead, camera, invalidate, size.width, size.height, viewReset]);
+  }, [
+    framing,
+    height,
+    targetY,
+    overhead,
+    groundAction,
+    camera,
+    invalidate,
+    size.width,
+    size.height,
+    viewReset,
+    viewAngle,
+  ]);
   const kit = useMemo(
     () => kitFor(preview.view.home.clubId, preview.view.home.primary, preview.view.home.secondary),
     [preview],
@@ -300,11 +365,11 @@ function StudioScene({
     <>
       <color attach="background" args={[light === "noite" ? "#101922" : "#253441"]} />
       <fog attach="fog" args={[light === "noite" ? "#101922" : "#253441", 6, 15]} />
-      <hemisphereLight args={["#dce7f2", "#353b43", 0.95]} />
+      <hemisphereLight args={["#e5edf2", "#29323a", light === "noite" ? 0.24 : 0.38]} />
       <directionalLight
-        position={[-3, 4.5, 4]}
-        color={warm ? "#ffe0bd" : "#ffffff"}
-        intensity={2.7}
+        position={[-3.5, 4.6, 4]}
+        color={warm ? "#ffd5aa" : "#fff4e9"}
+        intensity={3.05}
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-3}
@@ -315,16 +380,25 @@ function StudioScene({
         shadow-normalBias={0.02}
         shadow-radius={3}
       />
-      <directionalLight position={[3, 3, -2]} color="#b1cee8" intensity={2.4} />
-      <directionalLight position={[2, 2, 4]} color="#e4edf6" intensity={0.45} />
-      <Environment frames={1} resolution={128}>
-        <Lightformer position={[0, 3, 4]} scale={[5, 3, 1]} intensity={1.5} color="#e4f0ff" />
+      <directionalLight
+        position={[2, 3.4, -3]}
+        color={light === "noite" ? "#8cbce8" : "#c5dded"}
+        intensity={2.2}
+      />
+      <directionalLight position={[3.5, 2.3, 4]} color="#e4edf4" intensity={1.05} />
+      <Environment key={light} frames={1} resolution={128}>
+        <Lightformer
+          position={[-2, 3, 4]}
+          scale={[5, 4, 1]}
+          intensity={1.4}
+          color={warm ? "#ffe5cc" : "#eef4ff"}
+        />
         <Lightformer
           position={[-3, 2, 0]}
           rotation-y={Math.PI / 2}
           scale={[3, 3, 1]}
-          intensity={1}
-          color="#c2ddff"
+          intensity={0.65}
+          color="#d6e4f0"
         />
       </Environment>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.006, 0]} receiveShadow>
@@ -359,6 +433,7 @@ function StudioScene({
           previewAt={previewAt}
           lookOverride={appearance}
           previewClip={previewClip}
+          onPoseReady={framing === "body" ? undefined : inspectPose}
         />
       ) : (
         <LowPlayers
@@ -380,7 +455,7 @@ function StudioScene({
         enablePan={false}
         enableZoom
         minDistance={framing === "body" ? 2.1 : 0.38}
-        maxDistance={5.5}
+        maxDistance={overhead || groundAction ? 7 : 5.5}
         minPolarAngle={0.35}
         maxPolarAngle={Math.PI / 2 - 0.04}
       />
@@ -393,8 +468,15 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
   const [movementId, setMovementId] = useState("idle");
   const [variation, setVariation] = useState(1);
   const [light, setLight] = useState("dia");
+  const [viewAngle, setViewAngle] = useState("threeQuarter");
   const [detail, setDetail] = useState(true);
   const [paused, setPaused] = useState(false);
+  const cinematicCovered = useSyncExternalStore(
+    subscribeCinematicOverlay,
+    cinematicOverlayActive,
+    () => false,
+  );
+  const scenePaused = paused || cinematicCovered;
   const [framing, setFraming] = useState("body");
   const [stamina, setStamina] = useState(100);
   const [previewAt, setPreviewAt] = useState<number | undefined>(undefined);
@@ -435,7 +517,11 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
   const height = (appearance.height * 1.8).toFixed(2);
   const selectClass = "studio-select";
   return (
-    <section aria-label="Prévia 3D dos jogadores" className="studio-card">
+    <section
+      aria-label="Prévia 3D dos jogadores"
+      className="studio-card"
+      data-cinematic-covered={cinematicCovered}
+    >
       <div className="studio-toolbar">
         <div className="studio-title">
           <p className="studio-kicker">Laboratório de atletas</p>
@@ -467,7 +553,7 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
               camera={{ position: [1.8, 1.55, 3.2], fov: 32 }}
               dpr={[1, 1.5]}
               shadows={{ type: THREE.PCFShadowMap }}
-              frameloop={paused ? "demand" : "always"}
+              frameloop={scenePaused ? "demand" : "always"}
               gl={{ antialias: true, powerPreference: "high-performance" }}
               onCreated={({ gl }) => {
                 gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -485,12 +571,13 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                 movement={movement}
                 light={light}
                 detail={detail}
-                paused={paused}
+                paused={scenePaused}
                 framing={framing}
                 stamina={stamina}
                 previewAt={previewAt}
                 appearance={appearance}
                 viewReset={viewReset}
+                viewAngle={viewAngle}
               />
             </Canvas>
           </GraphicsBoundary>
@@ -568,7 +655,7 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                     setMovementId(e.target.value);
                     setPaused(false);
                     setPreviewAt(undefined);
-                    if (/^(diveLeft|diveRight|saveHigh|catch)$/.test(e.target.value))
+                    if (/^(save|diveLeft|diveRight|saveHigh|catch)$/.test(e.target.value))
                       setPosition("GK");
                   }}
                   className={selectClass}
@@ -651,7 +738,10 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                 <select
                   aria-label="Constituição física"
                   value={physique}
-                  onChange={(e) => setPhysique(e.target.value as BodyType | "original")}
+                  onChange={(e) => {
+                    setPhysique(e.target.value as BodyType | "original");
+                    setWeightKg(undefined);
+                  }}
                   className={selectClass}
                 >
                   <option value="original">Original do atleta</option>
@@ -705,6 +795,20 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
           {panel === "scene" && (
             <div className="studio-fields">
               <label className="studio-wide">
+                Ângulo da câmera
+                <select
+                  aria-label="Ângulo da câmera"
+                  value={viewAngle}
+                  onChange={(e) => setViewAngle(e.target.value)}
+                  className={selectClass}
+                >
+                  <option value="threeQuarter">Três quartos</option>
+                  <option value="front">Frente</option>
+                  <option value="profile">Perfil</option>
+                  <option value="back">Costas</option>
+                </select>
+              </label>
+              <label className="studio-wide">
                 Iluminação
                 <select
                   aria-label="Iluminação da prévia"
@@ -729,6 +833,9 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
               <div role="group" aria-label="Etapa do movimento" className="studio-phase-buttons">
                 {[
                   { label: "Preparação", at: 0.12 },
+                  ...(/^(diveLeft|diveRight|saveHigh)$/.test(movement.action)
+                    ? [{ label: "Impulsão", at: 0.28 }]
+                    : []),
                   { label: "Contato", at: footballContactAt(movement.action) },
                   {
                     label: "Continuação",

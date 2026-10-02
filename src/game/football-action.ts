@@ -4,6 +4,7 @@ import { solveLegTarget } from "./gait-kinematics";
 import type { Proportions } from "./player-model";
 import type { DominantFoot } from "./visual-context";
 import { footballContactAt } from "./motion-metadata";
+import { refineGoalkeeperAction } from "./goalkeeper-motion";
 
 const smooth = (u: number) => {
   const t = Math.max(0, Math.min(1, u));
@@ -126,27 +127,8 @@ export function refineFootballAction(
     pose.kneeR = -0.08 - load * 0.42 - flight * 0.28 - landing * 0.55;
     pose.armLRoll = 0.16 + flight * 0.66 + landing * 0.22;
     pose.armRRoll = -pose.armLRoll;
-  } else if (action === "diveLeft" || action === "diveRight") {
-    const side = action === "diveLeft" ? 1 : -1;
-    const launch = smooth((u - 0.12) / 0.28);
-    const recovery = 1 - smooth((u - 0.76) / 0.24);
-    const reach = launch * recovery;
-    const flight = Math.sin(Math.PI * smooth((u - 0.16) / 0.58));
-    const landing = Math.sin(Math.PI * smooth((u - 0.67) / 0.33));
-    pose.hipY = flight * 0.36 - landing * 0.43;
-    pose.hipRoll = side * reach * 1.3;
-    pose.spine = landing * 0.23;
-    // Both hands lead the dive, above the head in the athlete's frame.
-    // Wide arm abduction made the trailing hand point away from the save
-    // after the pelvis rolled sideways.
-    pose.armLPitch = -reach * (side === 1 ? 2.8 : 2.52);
-    pose.armRPitch = -reach * (side === -1 ? 2.8 : 2.52);
-    pose.armLRoll = 0.12 + 0.07 * reach;
-    pose.armRRoll = -pose.armLRoll;
-    pose.elbowL = -0.15 - (1 - reach) * 0.5 - landing * 0.35;
-    pose.elbowR = pose.elbowL;
-    pose.kneeL = -0.12 - (side === 1 ? 0.45 : 0.15) * reach - landing * 0.5;
-    pose.kneeR = -0.12 - (side === -1 ? 0.45 : 0.15) * reach - landing * 0.5;
+  } else if (action === "save" || action === "diveLeft" || action === "diveRight") {
+    refineGoalkeeperAction(pose, action, u);
   } else if (
     action === "feint" ||
     action === "cut" ||
@@ -244,18 +226,19 @@ export function refineFootballAction(
     pose.hipY = -0.07 - absorb * 0.04;
     pose.spine = 0.1 + absorb * 0.08;
     pose.headPitch = 0.04;
-  } else if (action === "throwIn" || action === "saveHigh") {
+  } else if (action === "saveHigh") {
+    refineGoalkeeperAction(pose, action, u);
+  } else if (action === "throwIn") {
     const release = smooth((u - contact) / (1 - contact));
     const extension = envelope ** 0.75;
-    pose.armLPitch = action === "throwIn" ? -2.65 + release * 1.55 : -extension * 2.45;
+    pose.armLPitch = -2.65 + release * 1.55;
     pose.armRPitch = pose.armLPitch;
-    pose.elbowL = action === "throwIn" ? -0.8 * (1 - release) : -0.85 + extension * 0.65;
+    pose.elbowL = -0.8 * (1 - release);
     pose.elbowR = pose.elbowL;
     pose.armLRoll = 0.23 + extension * 0.13;
     pose.armRRoll = -pose.armLRoll;
-    pose.spine = action === "throwIn" ? -envelope * 0.18 + release * 0.16 : -extension * 0.08;
+    pose.spine = -envelope * 0.18 + release * 0.16;
     pose.headPitch = -extension * 0.18;
-    if (action === "saveHigh") pose.hipY = extension * 0.26;
   }
   return pose;
 }

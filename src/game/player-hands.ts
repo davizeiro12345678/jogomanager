@@ -6,8 +6,8 @@ export type FingerIndex = 0 | 1 | 2 | 3;
 export type HandJoint =
   `finger${HandSide}${FingerIndex}` | `fingerTip${HandSide}${FingerIndex}` | `thumb${HandSide}`;
 
-export const FINGER_LENGTHS = [0.57, 0.74, 0.69, 0.5] as const;
-export const FINGER_CENTERS_Y = [1.66, 1.74, 1.71, 1.6] as const;
+export const FINGER_LENGTHS = [0.64, 0.84, 0.78, 0.56] as const;
+export const FINGER_CENTERS_Y = [1.695, 1.79, 1.755, 1.63] as const;
 export const fingerX = (index: number, radius: number) => (index - 1.5) * radius * 0.36;
 
 interface HandBoneSpec {
@@ -53,15 +53,24 @@ export interface HandPose {
   grip: number;
   spread: number;
   wrist: number;
+  pronation?: number;
+  deviation?: number;
 }
 
 /** Cosmetic gestures stay independent of possession, ball physics and saves. */
-export function handPoseAt(action: PlayerAction | null, progress: number, speed: number): HandPose {
+export function handPoseAt(
+  action: PlayerAction | null,
+  progress: number,
+  speed: number,
+  side?: HandSide,
+): HandPose & { pronation: number; deviation: number } {
   const u = clamp(progress, 0, 1);
   const effort = clamp(speed / 8, 0, 1);
   let grip = 0.16 + effort * 0.28;
   let spread = 0.018;
   let wrist = effort * 0.075;
+  let pronation = 0;
+  let deviation = 0;
   if (action === "throwIn") {
     const release = smooth((u - footballContactAt(action)) / 0.17);
     grip = 0.55 * (1 - release) + 0.06 * release;
@@ -72,14 +81,28 @@ export function handPoseAt(action: PlayerAction | null, progress: number, speed:
     spread = 0.13 * (1 - smooth((u - 0.42) / 0.2)) + 0.015;
     wrist = -Math.sin(Math.PI * u) * 0.18;
   } else if (/^(save|saveHigh|diveLeft|diveRight)$/.test(action ?? "")) {
-    grip = 0.07 + (1 - Math.sin(Math.PI * u)) * 0.14;
-    spread = 0.11 * Math.sin(Math.PI * u) + 0.035;
-    wrist = -Math.sin(Math.PI * u) * 0.12;
+    const reach = smooth((u - 0.14) / 0.25) * (1 - smooth((u - 0.7) / 0.3));
+    const absorb = smooth((u - footballContactAt(action!)) / 0.18) * (1 - smooth((u - 0.8) / 0.2));
+    grip = 0.16 - reach * 0.11 + absorb * 0.23;
+    spread = 0.025 + reach * 0.12 - absorb * 0.035;
+    wrist = -reach * 0.18 + absorb * 0.12;
+    pronation = reach * 0.2;
+    deviation = reach * 0.06;
+    if (side && (action === "diveLeft" || action === "diveRight")) {
+      const leading = side === (action === "diveLeft" ? "L" : "R");
+      // Broad leading palm, cupped supporting hand; the wrist yields after
+      // contact instead of leaving both gloves in the same rigid gesture.
+      grip += leading ? absorb * 0.05 : reach * 0.07 + absorb * 0.12;
+      spread *= leading ? 1.08 : 0.76;
+      wrist += leading ? -reach * 0.025 : absorb * 0.08;
+      pronation += leading ? reach * 0.08 : -reach * 0.06;
+      deviation *= leading ? 1 : 0.55;
+    }
   } else if (/celebrate|hug|protest/.test(action ?? "")) {
     grip = 0.8;
     wrist = 0.1;
   }
-  return { grip, spread, wrist };
+  return { grip, spread, wrist, pronation, deviation };
 }
 
 interface PoseableBone {
@@ -91,9 +114,11 @@ export function applyHandPose(
   bones: Record<HandJoint, PoseableBone>,
   pose: HandPose,
   dt: number,
+  onlySide?: HandSide,
 ): void {
   const k = 1 - Math.exp(-18 * clamp(dt, 0, 0.25));
   for (const side of ["L", "R"] as const) {
+    if (onlySide && side !== onlySide) continue;
     const sign = side === "L" ? 1 : -1;
     for (const index of [0, 1, 2, 3] as const) {
       const base = bones[`finger${side}${index}`];

@@ -9,6 +9,7 @@ import { LEAGUES, getLeague } from "@/game/data/leagues";
 import type { Difficulty } from "@/game/quickMatch";
 import { safeClub } from "@/game/squad";
 import { canonical, noindexMeta, seoMeta } from "@/lib/seo";
+import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
 
 const loadQuickLive = () => import("@/components/game/QuickLive");
 const QuickLive = lazy(loadQuickLive);
@@ -85,7 +86,10 @@ function QuickMatchPage() {
   return (
     <div className="pitch-bg min-h-screen px-4 py-10">
       <div className="mx-auto max-w-5xl">
-        <h1 className="font-display text-4xl uppercase tracking-wide">Partida rápida</h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="font-display text-4xl uppercase tracking-wide">Partida rápida</h1>
+          <AccessibilitySettings />
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">
           Escolha seu time e o adversário. O computador comanda o outro lado — sua carreira não é
           afetada.
@@ -141,6 +145,9 @@ function QuickMatchPage() {
           />
         </div>
 
+        <p className="mt-3 text-xs text-muted-foreground">
+          Forma, condição física e escolhas táticas também pesam no resultado.
+        </p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <div className="flex gap-2">
             {DIFFS.map((d) => (
@@ -202,6 +209,12 @@ function TeamPicker({
       <div className="mt-3 flex items-center gap-3">
         <Crest club={safeClub(value)} size={44} detail="full" />
         <span className="font-display text-lg">{safeClub(value).name}</span>
+        <span
+          className="ml-auto rounded-md border border-primary/25 bg-primary/10 px-2 py-1 text-xs tabular-nums text-primary"
+          aria-label={`Força de referência ${safeClub(value).strength}`}
+        >
+          Força {safeClub(value).strength}
+        </span>
       </div>
       <div className="mt-3 grid max-h-56 gap-1 overflow-y-auto pr-1">
         {clubs.map((id) => (

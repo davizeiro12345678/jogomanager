@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { buildTeamSetup } from "./quickMatch";
 import { makeRng } from "./rng";
-import { MatchSim } from "./sim";
+import {
+  LIVE_MATCH_CLOCK_SCALE,
+  MATCH_SIMULATION_STEP,
+  MATCH_SIMULATION_TICK_LIMIT,
+  MatchSim,
+} from "./sim";
 import {
   aiMentalityTweak,
   aiSubPick,
@@ -51,11 +56,35 @@ describe("árbitro", () => {
     const rnd = makeRng("ref");
     let reds = 0;
     for (let i = 0; i < 100; i++) {
-      if (cardForFoul({ slide: true, tactical: false, goalDenied: true, rapSheet: 0, ref: REFEREES[1]!, rnd }) === "red") reds++;
+      if (
+        cardForFoul({
+          slide: true,
+          tactical: false,
+          goalDenied: true,
+          rapSheet: 0,
+          ref: REFEREES[1]!,
+          rnd,
+        }) === "red"
+      )
+        reds++;
     }
     expect(reds).toBeGreaterThan(40);
-    const soft = cardForFoul({ slide: false, tactical: false, goalDenied: false, rapSheet: 0, ref: REFEREES[0]!, rnd: () => 0.5 });
-    const hard = cardForFoul({ slide: true, tactical: true, goalDenied: false, rapSheet: 2, ref: REFEREES[3]!, rnd: () => 0.4 });
+    const soft = cardForFoul({
+      slide: false,
+      tactical: false,
+      goalDenied: false,
+      rapSheet: 0,
+      ref: REFEREES[0]!,
+      rnd: () => 0.5,
+    });
+    const hard = cardForFoul({
+      slide: true,
+      tactical: true,
+      goalDenied: false,
+      rapSheet: 2,
+      ref: REFEREES[3]!,
+      rnd: () => 0.4,
+    });
     expect(soft).toBe("none");
     expect(hard).toBe("yellow");
   });
@@ -105,7 +134,11 @@ describe("shootoutWinner", () => {
     const tied5 = [...k("home", true, 4), ...k("away", true, 4)];
     expect(shootoutWinner(tied5)).toBe(null);
     expect(
-      shootoutWinner([...tied5, { side: "home", name: "h5", scored: true } as const, { side: "away", name: "a5", scored: false } as const]),
+      shootoutWinner([
+        ...tied5,
+        { side: "home", name: "h5", scored: true } as const,
+        { side: "away", name: "a5", scored: false } as const,
+      ]),
     ).toBe("home");
   });
 });
@@ -151,8 +184,12 @@ describe("IA do treinador", () => {
 
 describe("contexto e relógio", () => {
   it("mando e moral ajudam no duelo", () => {
-    expect(duelMult({ home: true, morale: 80 })).toBeGreaterThan(duelMult({ home: false, morale: 80 }));
-    expect(duelMult({ home: true, morale: 90 })).toBeGreaterThan(duelMult({ home: true, morale: 40 }));
+    expect(duelMult({ home: true, morale: 80 })).toBeGreaterThan(
+      duelMult({ home: false, morale: 80 }),
+    );
+    expect(duelMult({ home: true, morale: 90 })).toBeGreaterThan(
+      duelMult({ home: true, morale: 40 }),
+    );
   });
 
   it("formata 45+2', 90+3' e PEN", () => {
@@ -167,7 +204,8 @@ describe("integração do motor (Ciclo 2)", () => {
   function play(seed: string, knockout = false) {
     const sim = new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), seed, { knockout });
     let guard = 0;
-    while (!sim.finished && guard++ < 20_000) sim.step(0.5);
+    while (!sim.finished && guard++ < MATCH_SIMULATION_TICK_LIMIT)
+      sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
     return sim;
   }
 
@@ -189,7 +227,8 @@ describe("integração do motor (Ciclo 2)", () => {
     for (let i = 0; i < 6; i++) {
       const sim = play(`ko-${i}`, true);
       expect(sim.finished).toBe(true);
-      if (sim.shootout.length > 0 || sim.events.some((e) => e.text.includes("prorrogação"))) sawET = true;
+      if (sim.shootout.length > 0 || sim.events.some((e) => e.text.includes("prorrogação")))
+        sawET = true;
     }
     expect(sawET).toBe(true);
   });

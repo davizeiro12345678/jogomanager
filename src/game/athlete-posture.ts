@@ -8,9 +8,10 @@ const clamp = (n: number, lo: number, hi: number) =>
 export function shoulderPose(pitch: number, roll: number) {
   const safePitch = clamp(pitch, -3.1, 3.1);
   const safeRoll = clamp(roll, -2.7, 2.7);
-  const raised = clamp((Math.abs(safePitch) - 0.7) / 1.7, 0, 1);
-  const clavPitch = safePitch * (0.08 + raised * 0.08);
-  const clavRoll = Math.sign(safeRoll) * (Math.abs(safeRoll) * 0.12 + raised * 0.075);
+  const raised = clamp((Math.max(Math.abs(safePitch), Math.abs(safeRoll)) - 0.7) / 1.7, 0, 1);
+  const clavPitch = safePitch * (0.07 + raised * 0.17);
+  const clavRoll =
+    Math.sign(safeRoll) * (Math.abs(safeRoll) * (0.12 + raised * 0.14) + raised * 0.14);
   return {
     clavPitch,
     clavRoll,

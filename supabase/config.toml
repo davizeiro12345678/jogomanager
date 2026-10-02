@@ -1,1 +1,5 @@
 project_id = "lguqnwvsfeefxamzeyos"
+
+[functions.sportsdb-bridge]
+# Custom private scheduler-token authentication is verified in the function body.
+verify_jwt = false

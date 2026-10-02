@@ -294,8 +294,8 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
       neckSurface(
         anatomicalSection(
           [
-            { y: 0, width: P.neckR, depth: P.neckR * 0.92 },
-            { y: P.neckLen * 0.65, width: P.neckR * 0.83, depth: P.neckR * 0.8 },
+            { y: 0, width: P.neckR * 1.19, depth: P.neckR * 0.98 },
+            { y: P.neckLen * 0.65, width: P.neckR * 0.87, depth: P.neckR * 0.82 },
             { y: P.neckLen * 1.25, width: P.neckR * 0.93, depth: P.neckR * 0.86 },
           ],
           segs.radial,
@@ -366,9 +366,9 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
             anatomicalSection(
               [
                 { y: -P.upperArm * 0.48, width: P.armR * 1.12, depth: P.armR * 1.14 },
-                { y: -P.upperArm * 0.24, width: P.armR * 1.19, depth: P.armR * 1.19 },
-                { y: -P.upperArm * 0.04, width: P.armR * 1.15, depth: P.armR * 1.1 },
-                { y: P.upperArm * 0.07, width: P.armR * 0.81, depth: P.armR * 0.78 },
+                { y: -P.upperArm * 0.24, width: P.armR * 1.13, depth: P.armR * 1.12 },
+                { y: -P.upperArm * 0.04, width: P.armR * 1.1, depth: P.armR * 1.04 },
+                { y: P.upperArm * 0.07, width: P.armR * 0.87, depth: P.armR * 0.82 },
                 { y: P.upperArm * 0.11, width: P.armR * 0.28, depth: P.armR * 0.27 },
               ],
               segs.radial,
@@ -432,10 +432,21 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
               { y: -handR * 1.5, width: handR * 0.67, depth: handR * 0.27 },
               { y: -handR * 0.85, width: handR * 0.77, depth: handR * 0.34 },
               { y: -handR * 0.25, width: handR * 0.59, depth: handR * 0.32 },
-              { y: handR * 0.08, width: handR * 0.54, depth: handR * 0.31 },
+              {
+                y: handR * 0.08,
+                width: P.armR * (look.gloves ? 0.6 : 0.55),
+                depth: P.armR * (look.gloves ? 0.48 : 0.43),
+              },
+              ...(look.gloves
+                ? [
+                    { y: handR * 0.22, width: P.armR * 0.61, depth: P.armR * 0.49 },
+                    { y: handR * 0.34, width: P.armR * 0.6, depth: P.armR * 0.48 },
+                  ]
+                : []),
             ],
             segs.radial,
-            0.8,
+            look.gloves ? 0.9 : 0.8,
+            "bottom",
           ),
           handR,
           side,
@@ -469,18 +480,6 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
                 depth: handR * 0.16,
                 centerDepth: -handR * 0.24,
               },
-            ],
-            8,
-          ),
-          handMat,
-        ),
-      );
-      hand.push(
-        rigPart(
-          anatomicalSection(
-            [
-              { y: -handR * 0.22, width: handR * 0.61, depth: handR * 0.36 },
-              { y: handR * 0.26, width: handR * 0.56, depth: handR * 0.33 },
             ],
             8,
           ),
@@ -681,6 +680,23 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     bootDetailR: mergeRigParts(bootDetailR),
   };
 
+  if (look.gloves) {
+    for (const meshes of [merged.handL, merged.handR])
+      for (const mesh of meshes) {
+        if (mesh.material !== mats.glove) continue;
+        const positions = mesh.geometry.getAttribute("position");
+        const colors = mesh.geometry.getAttribute("color");
+        if (!colors) continue;
+        for (let i = 0; i < positions.count; i++) {
+          const y = positions.getY(i) / handR;
+          const closure =
+            THREE.MathUtils.smoothstep(y, -0.06, 0.015) *
+            (1 - THREE.MathUtils.smoothstep(y, 0.22, 0.32));
+          const value = 1 - closure * 0.48;
+          colors.setXYZ(i, value, value, value);
+        }
+      }
+  }
   const all: RigMesh[] = [];
   for (const meshes of Object.values(merged)) all.push(...meshes);
   return { ...merged, all };

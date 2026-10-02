@@ -11,6 +11,34 @@
 import * as THREE from "three";
 
 const cache = new Map<string, THREE.CanvasTexture | null>();
+let latexNormal: THREE.DataTexture | undefined;
+
+/** Shared fine latex grain: gloves have a different surface from woven shirts.
+ * 64 square pixels, generated once without a canvas or external asset. */
+export function gloveLatexNormal(): THREE.DataTexture {
+  if (latexNormal) return latexNormal;
+  const size = 64;
+  const data = new Uint8Array(size * size * 4);
+  const tau = (Math.PI * 2) / size;
+  for (let y = 0; y < size; y++)
+    for (let x = 0; x < size; x++) {
+      const nx = Math.sin(x * tau * 19) * 0.08 + Math.cos((x + y) * tau * 7) * 0.05;
+      const ny = Math.cos(y * tau * 17) * 0.08 + Math.cos((x + y) * tau * 7) * 0.05;
+      const length = Math.hypot(nx, ny, 1);
+      const i = (y * size + x) * 4;
+      data[i] = Math.round(((nx / length) * 0.5 + 0.5) * 255);
+      data[i + 1] = Math.round(((ny / length) * 0.5 + 0.5) * 255);
+      data[i + 2] = Math.round(((1 / length) * 0.5 + 0.5) * 255);
+      data[i + 3] = 255;
+    }
+  latexNormal = new THREE.DataTexture(data, size, size);
+  latexNormal.name = "athlete-glove-latex";
+  latexNormal.wrapS = latexNormal.wrapT = THREE.RepeatWrapping;
+  latexNormal.repeat.set(8, 8);
+  latexNormal.anisotropy = 4;
+  latexNormal.needsUpdate = true;
+  return latexNormal;
+}
 
 export function hairFiberColor(color: string): THREE.CanvasTexture | null {
   const texture = make(`hair-color:${color}`, 256, 1, (ctx, size) => {

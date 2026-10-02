@@ -355,7 +355,7 @@ export function promotionRule(upper: string, year = REGULATION_BASE_YEAR): Promo
     bra3: {
       direct: 0,
       playoff: 6,
-      candidates: 16,
+      candidates: 64,
       againstUpper: false,
       source: REGULATION_SOURCES.serieD,
     },

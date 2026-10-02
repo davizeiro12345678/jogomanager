@@ -40,7 +40,14 @@ export function TrustBadges() {
 export function ConsentCenter() {
   const [state, setState] = useState<ConsentState | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [cookieManagerReady, setCookieManagerReady] = useState(false);
   useEffect(() => setState(readConsent()), []);
+  useEffect(() => {
+    const checkReady = () => setCookieManagerReady(getCookieManager()?.APIReady === true);
+    checkReady();
+    document.addEventListener("zarazConsentAPIReady", checkReady);
+    return () => document.removeEventListener("zarazConsentAPIReady", checkReady);
+  }, []);
   if (!state) return null;
 
   const update = (patch: Partial<ConsentState>) => {
@@ -99,7 +106,10 @@ export function ConsentCenter() {
   ];
 
   return (
-    <section className="surface-card rounded-xl border border-border/60 p-5" aria-labelledby="consent-title">
+    <section
+      className="surface-card rounded-xl border border-border/60 p-5"
+      aria-labelledby="consent-title"
+    >
       <h2 id="consent-title" className="font-display text-lg uppercase tracking-wide">
         Central de consentimento
       </h2>
@@ -120,6 +130,18 @@ export function ConsentCenter() {
         ))}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
+        {cookieManagerReady && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const manager = getCookieManager();
+              if (manager?.APIReady) manager.modal = true;
+            }}
+          >
+            <ShieldCheck className="mr-1.5 h-4 w-4" aria-hidden /> Preferências de cookies
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Download className="mr-1.5 h-4 w-4" aria-hidden /> Exportar meus dados (JSON)
         </Button>
@@ -135,6 +157,15 @@ export function ConsentCenter() {
       </p>
     </section>
   );
+}
+
+/** Only opens the provider's existing dialog; the visitor chooses their consent. */
+function getCookieManager() {
+  return (
+    window as Window & {
+      zaraz?: { consent?: { APIReady?: boolean; modal: boolean } };
+    }
+  ).zaraz?.consent;
 }
 
 /** Aviso discreto na primeira visita; some depois da escolha. */
@@ -171,11 +202,18 @@ export function ConsentBanner() {
       <div className="pointer-events-auto rounded-xl border border-border bg-card p-4 shadow-lg">
         <p className="text-sm text-muted-foreground">
           Usamos só o essencial para salvar seu jogo. Quer ajudar a melhorar o desempenho com dados
-          anônimos? <a href="/privacidade" className="text-primary underline">Saiba mais</a>
+          anônimos?{" "}
+          <a href="/privacidade" className="text-primary underline">
+            Saiba mais
+          </a>
         </p>
         <div className="mt-3 flex gap-2">
-          <Button size="sm" onClick={() => choose(true)}>Aceitar</Button>
-          <Button size="sm" variant="outline" onClick={() => choose(false)}>Só o essencial</Button>
+          <Button size="sm" onClick={() => choose(true)}>
+            Aceitar
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => choose(false)}>
+            Só o essencial
+          </Button>
         </div>
       </div>
     </div>

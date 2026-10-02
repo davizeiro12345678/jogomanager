@@ -39,18 +39,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { CLUBS } from "@/game/data/leagues";
 import { useClubTheme } from "@/game/theme";
 import { useCareer, useSignedIn } from "@/hooks/useCareer";
-import { LANGS, LANG_NAMES, useT, type Lang } from "@/i18n";
+import { useT } from "@/i18n";
+import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
 import { CommandPalette } from "./CommandPalette";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { Crest } from "./Crest";
@@ -97,6 +91,14 @@ const TABS: {
 const MOBILE = ["/dashboard", "/squad", "/tactics", "/transfers"];
 
 const NAV_GROUPS = ["Equipe", "Competição", "Mercado", "Clube", "Carreira", "Extras"];
+const GROUP_KEYS: Record<string, string> = {
+  Equipe: "group.team",
+  Competição: "group.competition",
+  Mercado: "group.market",
+  Clube: "group.club",
+  Carreira: "group.career",
+  Extras: "group.extras",
+};
 
 export function GameShell({
   career,
@@ -108,9 +110,14 @@ export function GameShell({
   const navigate = useNavigate();
   const pathname = useLocation({ select: (location) => location.pathname });
   const signedIn = useSignedIn();
-  const { t, lang, setLang } = useT();
+  const { t, dir } = useT();
   const { sync } = useCareer();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuQuery, setMenuQuery] = useState("");
+  useEffect(() => {
+    setMenuOpen(false);
+    setMenuQuery("");
+  }, [pathname]);
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   useEffect(() => {
     try {
@@ -135,7 +142,17 @@ export function GameShell({
   useActiveTimeTracking(career, signedIn);
 
   function navigationLinks(group: string, closeMenu = false) {
-    return TABS.filter((tab) => tab.group === group && tab.to !== "/dashboard").map((tab) => {
+    return TABS.filter(
+      (tab) =>
+        tab.group === group &&
+        tab.to !== "/dashboard" &&
+        (!closeMenu ||
+          `${t(tab.key)} ${tab.to}`
+            .normalize("NFD")
+            .replace(/\p{M}/gu, "")
+            .toLocaleLowerCase()
+            .includes(menuQuery.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase())),
+    ).map((tab) => {
       const Icon = tab.icon;
       return (
         <Link
@@ -172,14 +189,14 @@ export function GameShell({
     >
       <OfflineBar />
       <a href="#career-content" className="career-skip">
-        Ir para o conteúdo
+        {t("common.skip")}
       </a>
       <header className="game-shell-header career-header">
         <div className="career-header-inner">
           <button
             type="button"
             className="career-menu-trigger"
-            aria-label="Abrir menu da carreira"
+            aria-label={t("nav.openMenu")}
             aria-expanded={menuOpen}
             aria-controls="career-mobile-menu"
             onClick={() => setMenuOpen(true)}
@@ -204,17 +221,22 @@ export function GameShell({
             </div>
           </Link>
           <div className="career-current-page">
-            <span>{current?.group ?? "Carreira"}</span>
+            <span>{t(GROUP_KEYS[current?.group ?? "Carreira"]!)}</span>
             <ChevronRight size={13} />
             <strong>{current ? t(current.key) : "Manager 3D"}</strong>
           </div>
           <div className="career-header-actions">
             <CommandPalette
-              items={TABS.map((tab) => ({ to: tab.to, label: t(tab.key), group: tab.group }))}
+              items={TABS.map((tab) => ({
+                to: tab.to,
+                label: t(tab.key),
+                group: t(GROUP_KEYS[tab.group]!),
+              }))}
             />
             <div className="hidden sm:block">
               <ShortcutsDialog />
             </div>
+            <AccessibilitySettings className="career-icon-button" />
             <DropdownMenu>
               <DropdownMenuTrigger className="career-icon-button" aria-label="Preferências e conta">
                 <Settings2 size={19} />
@@ -222,7 +244,7 @@ export function GameShell({
               <DropdownMenuContent align="end" className="career-preferences w-72">
                 <p className="mb-3 text-sm font-semibold">Preferências e conta</p>
                 <p className="text-xs text-muted-foreground" id="career-density-label">
-                  Espaçamento da interface
+                  {t("shell.density")}
                 </p>
                 <div className="career-density" role="group" aria-labelledby="career-density-label">
                   <button
@@ -230,31 +252,16 @@ export function GameShell({
                     aria-pressed={density === "comfortable"}
                     onClick={() => changeDensity("comfortable")}
                   >
-                    Confortável
+                    {t("shell.comfortable")}
                   </button>
                   <button
                     type="button"
                     aria-pressed={density === "compact"}
                     onClick={() => changeDensity("compact")}
                   >
-                    Compacta
+                    {t("shell.compact")}
                   </button>
                 </div>
-                <label className="mb-1 block text-xs text-muted-foreground">
-                  {t("shell.language")}
-                </label>
-                <Select value={lang} onValueChange={(value) => setLang(value as Lang)}>
-                  <SelectTrigger aria-label={t("shell.language")} className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGS.map((l) => (
-                      <SelectItem key={l} value={l}>
-                        {LANG_NAMES[l]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <div className="my-3">
                   <SyncBadge sync={sync} />
                 </div>
@@ -293,17 +300,17 @@ export function GameShell({
       </header>
 
       <div className="career-workspace">
-        <aside className="career-sidebar" aria-label="Menu da carreira">
-          <nav aria-label="Navegação principal da carreira">
+        <aside className="career-sidebar" aria-label={t("nav.menu")}>
+          <nav aria-label={t("nav.menu")}>
             {overview()}
             {NAV_GROUPS.filter((group) => group !== "Extras").map((group) => (
               <div key={group} className="career-nav-group">
-                <p className="career-nav-heading">{group}</p>
+                <h2 className="career-nav-heading">{t(GROUP_KEYS[group]!)}</h2>
                 {navigationLinks(group)}
               </div>
             ))}
             <details className="career-nav-group" open={current?.group === "Extras" || undefined}>
-              <summary className="career-nav-heading cursor-pointer">Mais recursos</summary>
+              <summary className="career-nav-heading cursor-pointer">{t("group.extras")}</summary>
               {navigationLinks("Extras")}
             </details>
           </nav>
@@ -338,18 +345,26 @@ export function GameShell({
 
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetContent
-          side="left"
+          side={dir === "rtl" ? "right" : "left"}
           id="career-mobile-menu"
           className="career-menu-sheet"
-          closeLabel="Fechar menu da carreira"
+          closeLabel={t("nav.closeMenu")}
         >
-          <SheetTitle className="pr-10 font-display">Menu da carreira</SheetTitle>
-          <SheetDescription>Escolha o que você quer gerenciar.</SheetDescription>
-          <nav aria-label="Todas as áreas da carreira" className="mt-5">
+          <SheetTitle className="pe-10 font-display">{t("nav.menu")}</SheetTitle>
+          <SheetDescription>{t("nav.menuHint")}</SheetDescription>
+          <input
+            type="search"
+            className="career-mobile-search"
+            aria-label={t("nav.search")}
+            placeholder={t("common.search")}
+            value={menuQuery}
+            onChange={(e) => setMenuQuery(e.target.value)}
+          />
+          <nav aria-label={t("nav.openMenu")} className="mt-5">
             {overview(true)}
             {NAV_GROUPS.map((group) => (
               <div key={group} className="career-nav-group">
-                <p className="career-nav-heading">{group === "Extras" ? "Mais recursos" : group}</p>
+                <h2 className="career-nav-heading">{t(GROUP_KEYS[group]!)}</h2>
                 {navigationLinks(group, true)}
               </div>
             ))}
@@ -370,7 +385,7 @@ export function GameShell({
         <button
           type="button"
           onClick={() => setMenuOpen(true)}
-          aria-label="Abrir todas as áreas"
+          aria-label={t("nav.openMenu")}
           aria-expanded={menuOpen}
           aria-controls="career-mobile-menu"
         >

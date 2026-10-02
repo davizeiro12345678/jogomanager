@@ -11,6 +11,7 @@ import { censusRef } from "@/game/scene-census";
 import { broadcastInterest, ShotHold } from "@/game/broadcast-interest";
 import { StaticBatch } from "@/components/game/stadium/StaticBatch";
 import { GrassChunks } from "@/components/game/stadium/GrassChunks";
+import { ArenaArchitecture } from "@/components/game/stadium/ArenaArchitecture";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, AdaptiveEvents, Trail } from "@react-three/drei";
 import { easing } from "maath";
@@ -21,6 +22,7 @@ import * as THREE from "three";
 import { FrameProbe } from "@/components/game/FrameProbe";
 import { GraphicsBoundary } from "@/components/game/GraphicsBoundary";
 import { MatchPlayers } from "@/components/game/players/MatchPlayers";
+import { OfficialRig } from "@/components/game/players/OfficialRig";
 import { CrowdLod } from "@/components/game/stadium/CrowdLod";
 import { PostFX } from "@/components/game/post/LazyPostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
@@ -105,6 +107,7 @@ function useBladeMaterial(color: string) {
       roughness: 0.94,
       metalness: 0,
       vertexColors: true,
+      side: THREE.DoubleSide,
     });
     m.onBeforeCompile = (shader) => {
       shader.uniforms["uTime"] = uniforms.current.uTime;
@@ -122,15 +125,15 @@ function useBladeMaterial(color: string) {
           "#include <begin_vertex>",
           `#include <begin_vertex>
            vec3 wp = (instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-           float h = clamp(position.y / 0.22, 0.0, 1.0);
+           float h = clamp(position.y / 0.085, 0.0, 1.0);
            float w = sin(uTime * 1.7 + wp.x * 0.35 + wp.z * 0.22)
                    + 0.5 * sin(uTime * 3.1 + wp.x * 0.9);
-           transformed.x += w * 0.07 * h * uWind;
-           transformed.z += w * 0.04 * h * uWind;
+           transformed.x += w * 0.018 * h * h * uWind;
+           transformed.z += w * 0.012 * h * h * uWind;
            vec2 d = wp.xz - uBall.xz;
            float near = 1.0 - smoothstep(0.0, 1.6, length(d));
-           transformed.xz += normalize(d + 0.0001) * near * 0.16 * h;
-           transformed.y -= near * 0.1 * h;`,
+           transformed.xz += normalize(d + 0.0001) * near * 0.035 * h;
+           transformed.y -= near * 0.034 * h;`,
         );
     };
     return m;
@@ -257,7 +260,7 @@ function Pitch({
       : ((compressed ? ktx2("grassNormal") : null) ?? grassNormal(mow));
   }, [quality, mow, compressed, textureRevision]);
   const normalScale = useMemo(
-    () => new THREE.Vector2(quality === "alta" ? 1.18 : 0.82, quality === "alta" ? 1.18 : 0.82),
+    () => new THREE.Vector2(quality === "alta" ? 0.44 : 0.28, quality === "alta" ? 0.44 : 0.28),
     [quality],
   );
   const wear = useMemo(() => (quality === "baixa" ? null : pitchWearTexture()), [quality]);
@@ -1627,12 +1630,13 @@ function Stands({
       for (let i = 0; i < density; i++) {
         const t = i / density;
         const px = -FIELD_X - 10 + t * (FIELD_X * 2 + 20);
+        if ([-36, 0, 36].some((aisle) => Math.abs(px - aisle) < 0.88)) continue;
         const sector = Math.floor(t * SECTORS);
         for (const zSide of [-1, 1]) {
           positions.push(
             new THREE.Vector3(
               px + ((i * 7 + ring * 3) % 5) * 0.06,
-              2.6 + ring * 1.45,
+              2.8 + ring * 1.45,
               zSide * (FIELD_Z + 7 + ring * 1.5),
             ),
           );
@@ -1646,10 +1650,11 @@ function Stands({
       for (let i = 0; i < n; i++) {
         const t = i / n;
         const pz = -FIELD_Z - 8 + t * (FIELD_Z * 2 + 16);
+        if ([-24, 24].some((aisle) => Math.abs(pz - aisle) < 0.88)) continue;
         const sector = Math.floor(t * SECTORS);
         for (const xSide of [-1, 1]) {
           positions.push(
-            new THREE.Vector3(xSide * (FIELD_X + 10 + ring * 1.5), 2.6 + ring * 1.45, pz),
+            new THREE.Vector3(xSide * (FIELD_X + 10 + ring * 1.5), 2.8 + ring * 1.45, pz),
           );
           // atrás do gol mandante: mosaico em faixas alternadas
           const mosaic =
@@ -1682,6 +1687,9 @@ function Stands({
 
       <Tiers rings={rings} homeColor={homeColor} awayColor={awayColor} high={quality === "alta"} />
       <Roof rings={rings} />
+      {quality !== "baixa" ? (
+        <ArenaArchitecture rings={rings} color={homeColor} night={night} />
+      ) : null}
       <CrowdBackdrop
         homeColor={homeColor}
         awayColor={awayColor}
@@ -2486,270 +2494,12 @@ function GoalFx({
  * árbitro corre na diagonal clássica e levanta o cartão quando há falta; os
  * assistentes acompanham a linha e levantam a bandeira quando o lance para.
  */
-function Official({
-  sim,
-  role,
-  quality,
-}: {
-  sim: SimView;
-  role: "ref" | "ar1" | "ar2";
-  quality: Quality;
-}) {
-  const g = useRef<THREE.Group>(null);
-  const legL = useRef<THREE.Group>(null);
-  const legR = useRef<THREE.Group>(null);
-  const armL = useRef<THREE.Group>(null);
-  const armR = useRef<THREE.Group>(null);
-  const cardRef = useRef<THREE.Mesh>(null);
-  const redCardRef = useRef<THREE.Mesh>(null);
-  const sprayRef = useRef<THREE.Mesh>(null);
-  const flagRef = useRef<THREE.Group>(null);
-  const phase = useRef(0);
-  const gesture = useRef(0); // tempo restante do gesto (cartão / bandeira)
-  const gestureKind = useRef<"none" | "yellow" | "red" | "goal" | "offside">("none");
-  const fouls = useRef(-1);
-  const cards = useRef(-1);
-  const offsides = useRef(-1);
-  const goals = useRef(-1);
-  const sprayUntil = useRef(0);
-  const lastReds = useRef(0);
-  const detail = quality === "alta";
-
-  useFrame(({ clock }, rawDt) => {
-    const grp = g.current;
-    if (!grp) return;
-    const dt = Math.min(rawDt, 0.05);
-    const t = clock.elapsedTime;
-    const visualBall = presentationBall(sim);
-    const totalFouls = sim.stats.home.fouls + sim.stats.away.fouls;
-    const totalCards =
-      sim.stats.home.yellow + sim.stats.away.yellow + sim.stats.home.red + sim.stats.away.red;
-    const totalReds = sim.stats.home.red + sim.stats.away.red;
-    const totalOffs = sim.stats.home.offsides + sim.stats.away.offsides;
-    const totalGoals = sim.stats.home.goals + sim.stats.away.goals;
-    if (fouls.current < 0) {
-      fouls.current = totalFouls;
-      cards.current = totalCards;
-      offsides.current = totalOffs;
-      goals.current = totalGoals;
-      lastReds.current = totalReds;
-    } else {
-      // cartão: amarelo mostra e baixa; vermelho mostra e aponta a rua
-      if (totalCards > cards.current) {
-        cards.current = totalCards;
-        const red = totalReds > lastReds.current;
-        lastReds.current = totalReds;
-        gesture.current = red ? 3.4 : 2.2;
-        gestureKind.current = red ? "red" : "yellow";
-      } else if (totalGoals > goals.current) {
-        // gol: árbitro aponta o centro; assistentes correm para o meio
-        goals.current = totalGoals;
-        gesture.current = 2.4;
-        gestureKind.current = "goal";
-      } else if (totalOffs > offsides.current) {
-        // impedimento: assistente do lado ergue a bandeira
-        offsides.current = totalOffs;
-        gesture.current = 2.6;
-        gestureKind.current = "offside";
-      } else if (totalFouls > fouls.current) {
-        fouls.current = totalFouls;
-        gesture.current = 2.2;
-        gestureKind.current = "none";
-        // spray de barreira: linha branca onde a falta aconteceu
-        if (role === "ref" && sprayRef.current) {
-          sprayRef.current.position.set(visualBall.x, 0.02, visualBall.z);
-          sprayRef.current.rotation.y = Math.atan2(visualBall.x, visualBall.z);
-          sprayUntil.current = t + 9;
-        }
-      }
-    }
-    gesture.current = Math.max(0, gesture.current - dt);
-
-    let tx: number;
-    let tz: number;
-    if (role === "ref") {
-      // diagonal clássica: fica atrás e do lado oposto ao assistente próximo
-      const diag = visualBall.x * 0.9;
-      tx = diag - 5;
-      tz = visualBall.z * 0.55 + 7;
-    } else {
-      const side = role === "ar1" ? 1 : -1;
-      tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, visualBall.x * 0.85));
-      tz = side * (FIELD_Z + 1.6);
-    }
-    tx = Math.max(-FIELD_X - 2, Math.min(FIELD_X + 2, tx));
-    tz = Math.max(-FIELD_Z - 3, Math.min(FIELD_Z + 3, tz));
-    const dx = tx - grp.position.x;
-    const dz = tz - grp.position.z;
-    const dist = Math.hypot(dx, dz);
-    const sp = Math.min(7, dist * 1.6);
-    if (dist > 0.05) {
-      grp.position.x += (dx / dist) * sp * dt;
-      grp.position.z += (dz / dist) * sp * dt;
-      grp.rotation.y = Math.atan2(visualBall.x - grp.position.x, visualBall.z - grp.position.z);
-      phase.current += sp * dt * 3;
-    }
-    const swing = Math.sin(phase.current) * Math.min(0.72, sp * 0.1);
-    if (legL.current) legL.current.rotation.x = swing;
-    if (legR.current) legR.current.rotation.x = -swing;
-    const showing = gesture.current > 0;
-    const kind = gestureKind.current;
-    // árbitro: amarelo levanta, vermelho levanta e aponta a rua, gol aponta o centro
-    if (armL.current) {
-      const want = showing && role === "ref" && kind === "red" ? -1.6 : -swing * 0.8;
-      armL.current.rotation.x += (want - armL.current.rotation.x) * Math.min(1, dt * 9);
-      const wantZ = showing && role === "ref" && kind === "red" ? 1.35 : 0;
-      armL.current.rotation.z += (wantZ - armL.current.rotation.z) * Math.min(1, dt * 9);
-    }
-    if (armR.current) {
-      const want =
-        showing && role === "ref" && (kind === "yellow" || kind === "red")
-          ? -2.5
-          : showing && role === "ref" && kind === "goal"
-            ? -1.15
-            : swing * 0.8;
-      armR.current.rotation.x += (want - armR.current.rotation.x) * Math.min(1, dt * 9);
-    }
-    if (cardRef.current) cardRef.current.visible = showing && role === "ref" && kind === "yellow";
-    if (redCardRef.current)
-      redCardRef.current.visible = showing && role === "ref" && kind === "red";
-    if (flagRef.current) {
-      // impedimento: bandeira reta para cima, tremendo; gol: corre para o meio
-      const up =
-        showing && role !== "ref" && kind === "offside"
-          ? Math.PI - 0.06 + Math.sin(t * 22) * 0.05
-          : showing && role !== "ref"
-            ? -1.9
-            : -0.45;
-      flagRef.current.rotation.z += (up - flagRef.current.rotation.z) * Math.min(1, dt * 7);
-    }
-    // spray da barreira some em ~9s
-    if (sprayRef.current) {
-      const left = sprayUntil.current - t;
-      const mat = sprayRef.current.material as THREE.MeshBasicMaterial;
-      sprayRef.current.visible = left > 0;
-      if (left > 0) mat.opacity = Math.min(0.85, left / 3);
-    }
-  });
-
-  const kit = role === "ref" ? "#101318" : "#f6ff5c";
-  const skin = "#c98d63";
-  return (
-    <>
-      <group ref={g} position={[0, 0, role === "ref" ? 8 : FIELD_Z + 1.6]}>
-        {/* tronco */}
-        <mesh position={[0, 1.3, 0]} castShadow={detail}>
-          <capsuleGeometry args={[0.2, 0.52, 4, detail ? 12 : 8]} />
-          <meshStandardMaterial color={kit} roughness={0.7} />
-        </mesh>
-        {/* gola */}
-        {detail ? (
-          <mesh position={[0, 1.58, 0]}>
-            <torusGeometry args={[0.13, 0.025, 6, 12]} />
-            <meshStandardMaterial color="#e7ecf3" roughness={0.6} />
-          </mesh>
-        ) : null}
-        {/* pescoço + cabeça */}
-        <mesh position={[0, 1.63, 0]}>
-          <capsuleGeometry args={[0.055, 0.08, 3, 8]} />
-          <meshStandardMaterial color={skin} roughness={0.85} />
-        </mesh>
-        <mesh position={[0, 1.78, 0]} castShadow={detail}>
-          <sphereGeometry args={[0.135, detail ? 16 : 10, detail ? 16 : 10]} />
-          <meshStandardMaterial color={skin} roughness={0.85} />
-        </mesh>
-        {/* calção */}
-        <mesh position={[0, 0.92, 0]}>
-          <capsuleGeometry args={[0.185, 0.14, 3, detail ? 12 : 8]} />
-          <meshStandardMaterial color={role === "ref" ? "#0b0e12" : "#141820"} roughness={0.78} />
-        </mesh>
-        {/* pernas com meião claro */}
-        <group ref={legL} position={[-0.11, 0.86, 0]}>
-          <mesh position={[0, -0.32, 0]}>
-            <capsuleGeometry args={[0.075, 0.42, 3, 6]} />
-            <meshStandardMaterial color={skin} roughness={0.85} />
-          </mesh>
-          <mesh position={[0, -0.66, 0]}>
-            <capsuleGeometry args={[0.072, 0.2, 3, 6]} />
-            <meshStandardMaterial color={role === "ref" ? "#1d2229" : "#20262f"} roughness={0.8} />
-          </mesh>
-        </group>
-        <group ref={legR} position={[0.11, 0.86, 0]}>
-          <mesh position={[0, -0.32, 0]}>
-            <capsuleGeometry args={[0.075, 0.42, 3, 6]} />
-            <meshStandardMaterial color={skin} roughness={0.85} />
-          </mesh>
-          <mesh position={[0, -0.66, 0]}>
-            <capsuleGeometry args={[0.072, 0.2, 3, 6]} />
-            <meshStandardMaterial color={role === "ref" ? "#1d2229" : "#20262f"} roughness={0.8} />
-          </mesh>
-        </group>
-        {/* braços */}
-        <group ref={armL} position={[-0.21, 1.48, 0]}>
-          <mesh position={[0, -0.22, 0]}>
-            <capsuleGeometry args={[0.055, 0.34, 3, 6]} />
-            <meshStandardMaterial color={kit} roughness={0.72} />
-          </mesh>
-        </group>
-        <group ref={armR} position={[0.21, 1.48, 0]}>
-          <mesh position={[0, -0.22, 0]}>
-            <capsuleGeometry args={[0.055, 0.34, 3, 6]} />
-            <meshStandardMaterial color={kit} roughness={0.72} />
-          </mesh>
-          {/* cartões na mão, visíveis só no gesto */}
-          <mesh ref={cardRef} position={[0, -0.46, 0.03]} visible={false}>
-            <planeGeometry args={[0.1, 0.15]} />
-            <meshBasicMaterial color="#ffd93b" side={THREE.DoubleSide} />
-          </mesh>
-          <mesh ref={redCardRef} position={[0, -0.46, 0.03]} visible={false}>
-            <planeGeometry args={[0.1, 0.15]} />
-            <meshBasicMaterial color="#e02424" side={THREE.DoubleSide} />
-          </mesh>
-        </group>
-        {/* apito e relógio */}
-        {detail && role === "ref" ? (
-          <>
-            <mesh position={[0, 1.44, 0.14]}>
-              <capsuleGeometry args={[0.022, 0.05, 3, 6]} />
-              <meshStandardMaterial color="#d8dde5" metalness={0.5} roughness={0.35} />
-            </mesh>
-            <mesh position={[-0.2, 1.22, 0.05]}>
-              <boxGeometry args={[0.05, 0.05, 0.02]} />
-              <meshStandardMaterial color="#20252c" roughness={0.4} metalness={0.3} />
-            </mesh>
-          </>
-        ) : null}
-        {/* bandeira do assistente */}
-        {role !== "ref" ? (
-          <group ref={flagRef} position={[0.24, 1.44, 0]} rotation={[0, 0, -0.45]}>
-            <mesh position={[0, 0.2, 0]}>
-              <cylinderGeometry args={[0.012, 0.012, 0.42, 6]} />
-              <meshStandardMaterial color="#2a2f36" roughness={0.6} />
-            </mesh>
-            <mesh position={[0.13, 0.34, 0]}>
-              <planeGeometry args={[0.26, 0.2]} />
-              <meshBasicMaterial color="#ffe14d" side={THREE.DoubleSide} />
-            </mesh>
-          </group>
-        ) : null}
-      </group>
-      {/* spray da barreira: linha branca no gramado, fora do grupo móvel */}
-      {role === "ref" ? (
-        <mesh ref={sprayRef} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
-          <planeGeometry args={[3.2, 0.14]} />
-          <meshBasicMaterial color="#f4f7fa" transparent opacity={0.85} depthWrite={false} />
-        </mesh>
-      ) : null}
-    </>
-  );
-}
-
 function Officials({ sim, quality }: { sim: SimView; quality: Quality }) {
   return (
     <group>
-      <Official sim={sim} role="ref" quality={quality} />
-      <Official sim={sim} role="ar1" quality={quality} />
-      <Official sim={sim} role="ar2" quality={quality} />
+      <OfficialRig sim={sim} role="ref" quality={quality} />
+      <OfficialRig sim={sim} role="ar1" quality={quality} />
+      <OfficialRig sim={sim} role="ar2" quality={quality} />
     </group>
   );
 }
@@ -3143,17 +2893,43 @@ function CompressedTextures({ enabled }: { enabled: boolean }) {
   return null;
 }
 
+/** Finish a camera transition in demand mode, then release the GPU while paused. */
+function PausedCameraFrames({
+  paused,
+  visible,
+  mode,
+}: {
+  paused: boolean;
+  visible: boolean;
+  mode: CameraMode;
+}) {
+  const invalidate = useThree((state) => state.invalidate);
+  const remaining = useRef(0);
+  useEffect(() => {
+    remaining.current = paused && visible ? 1.2 : 0;
+    if (remaining.current > 0) invalidate();
+  }, [paused, visible, mode, invalidate]);
+  useFrame((_, dt) => {
+    if (remaining.current <= 0) return;
+    remaining.current -= Math.min(dt, 0.1);
+    if (remaining.current > 0) invalidate();
+  });
+  return null;
+}
+
 function Stadium3DImpl({
   sim,
   mode,
   quality: deviceQuality,
   pixelRatio,
   supporters,
+  paused = false,
 }: {
   sim: SimView;
   mode: CameraMode;
   quality: Quality;
   pixelRatio?: number;
+  paused?: boolean;
   supporters?: SupporterMatchday | undefined;
 }) {
   const vis = useResolvedVisual(sim.home.clubId);
@@ -3275,7 +3051,7 @@ function Stadium3DImpl({
         <Canvas
           key={backend}
           shadows={shadowsOn ? SHADOW_SETTINGS : false}
-          frameloop={visible ? "always" : "demand"}
+          frameloop={visible && !paused ? "always" : "demand"}
           dpr={
             pixelRatio === undefined
               ? dpr
@@ -3322,8 +3098,14 @@ function Stadium3DImpl({
             );
           }}
         >
+          <PausedCameraFrames paused={paused} visible={visible} mode={mode} />
           <CompressedTextures enabled={quality === "alta"} />
-          <RuntimeBudget tier={sceneTier} enabled={vis.adaptive} onChange={setPressure} />
+          <RuntimeBudget
+            tier={sceneTier}
+            enabled={vis.adaptive}
+            suspended={paused}
+            onChange={setPressure}
+          />
           <QualityPressure.Provider value={pressure}>
             <RuntimeSceneBudgetContext.Provider value={sceneBudget}>
               <Scene
@@ -3338,7 +3120,9 @@ function Stadium3DImpl({
               />
             </RuntimeSceneBudgetContext.Provider>
           </QualityPressure.Provider>
-          {vis.showFps ? <FpsMeter onSample={setFps} backend={backend} quality={eff} /> : null}
+          {vis.showFps && !paused ? (
+            <FpsMeter onSample={setFps} backend={backend} quality={eff} />
+          ) : null}
         </Canvas>
       </GraphicsBoundary>
       {vis.showFps && fps ? (

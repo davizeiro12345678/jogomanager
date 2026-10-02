@@ -1,17 +1,22 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { createPortal } from "@react-three/fiber";
 import * as THREE from "three";
 import type { Speaker } from "@/content/cutscenes";
 import { cinematicActorPose, cinematicIdleAt, cinematicLook } from "@/game/cinematic-actor";
 import { cinematicDetail } from "@/game/cinematic-performance";
+import { compactCinematicSkin } from "@/game/cinematic-skin";
+import { cinematicGestureAt } from "@/game/cinematic-cue";
 import { emptyPose, mixPose } from "@/game/animation-core";
 import { proportionsFor } from "@/game/player-model";
 import { playerMaterials, retainPlayerMaterials } from "@/game/player-materials";
 import { buildRigSkin } from "@/game/rig-skin";
+import { updateRigCorrectives } from "@/game/rig-correctives";
 import { shoulderPose } from "@/game/athlete-posture";
 import { applyHandPose } from "@/game/player-hands";
 import type { Kit } from "@/game/kits";
 import { cinematicTrophyPose } from "@/game/cinematic-trophy-pose";
 import { ClubTrophy } from "./CinematicSetDetails";
+import { CinematicDumbbell } from "./CinematicDumbbell";
 import { useCinematicFrame, useCinematicRuntime } from "./cinematic-runtime";
 
 export function CinematicActor({
@@ -27,6 +32,9 @@ export function CinematicActor({
   role,
   attention,
   holdingTrophy = false,
+  entrance = false,
+  drillPhase,
+  exercise = false,
 }: {
   x: number;
   z: number;
@@ -41,6 +49,9 @@ export function CinematicActor({
   /** Another actor's stage mark, used for listening and eye contact. */
   attention?: readonly [number, number] | undefined;
   holdingTrophy?: boolean;
+  entrance?: boolean;
+  drillPhase?: number;
+  exercise?: boolean;
 }) {
   const runtime = useCinematicRuntime();
   const staff = Boolean(role && role !== "captain" && role !== "fan");
@@ -84,26 +95,25 @@ export function CinematicActor({
     }),
     [materialBase, formal],
   );
-  const skin = useMemo(
-    () =>
-      buildRigSkin(
-        {
-          P: p,
-          look,
-          mats,
-          hi: detail.high,
-          segs: { radial: detail.radial, cap: 4 },
-          jerseyInk: color,
-          handR: p.handR,
-          handMat: mats.skin,
-          trousers: staff,
-          staffStyle: staff ? (formal ? "jacket" : "polo") : undefined,
-        },
-        [0, 0, 0],
-        { mergeLods: true },
-      ),
-    [p, look, mats, detail.high, detail.radial, color, staff, formal],
-  );
+  const skin = useMemo(() => {
+    const built = buildRigSkin(
+      {
+        P: p,
+        look,
+        mats,
+        hi: detail.high,
+        segs: { radial: detail.radial, cap: 4 },
+        jerseyInk: color,
+        handR: p.handR,
+        handMat: mats.skin,
+        trousers: staff,
+        staffStyle: staff ? (formal ? "jacket" : "polo") : undefined,
+      },
+      [0, 0, 0],
+      { mergeLods: true },
+    );
+    return detail.high ? built : compactCinematicSkin(built);
+  }, [p, look, mats, detail.high, detail.radial, color, staff, formal]);
   const group = useRef<THREE.Group>(null);
   const trophy = useRef<THREE.Group>(null);
   const gripL = useMemo(() => new THREE.Vector3(), []);
@@ -119,7 +129,7 @@ export function CinematicActor({
     // Static inspection must refresh its pose; running dialogue blends into
     // the new speaker's gesture instead of snapping all joints at once.
     if (runtime.stopped || runtime.reduced) first.current = true;
-  }, [acting, pose, runtime.stopped, runtime.reduced]);
+  }, [acting, pose, runtime.stopped, runtime.reduced, runtime.cue?.id]);
   const meshes = useMemo(
     () =>
       skin.groups.map((part) => {
@@ -137,7 +147,24 @@ export function CinematicActor({
   useEffect(() => () => skin.dispose(), [skin]);
   useCinematicFrame((time, dt) => {
     if (dt === 0 && !first.current) return;
-    cinematicActorPose(time, seed, pose, acting, p, target.current, runtime.manner);
+    const arriving = entrance && time < 4.8;
+    const posture = arriving ? "walk" : pose;
+    cinematicActorPose(
+      time,
+      seed,
+      posture,
+      acting && !arriving,
+      p,
+      target.current,
+      runtime.manner,
+      runtime.cue,
+      runtime.clock.lineTime,
+    );
+    if (exercise && !acting) {
+      const curl = (1 - Math.cos(time * 1.5)) * 0.5;
+      target.current.armLPitch = target.current.armRPitch = -0.15 - curl * 0.65;
+      target.current.elbowL = target.current.elbowR = -0.3 - curl * 1.4;
+    }
     if (holdingTrophy) cinematicTrophyPose(target.current, time);
     const idle = cinematicIdleAt(time, seed, pose === "sit");
     const cross = !holdingTrophy && !acting && idle.kind === "cross" ? idle.weight : 0;
@@ -149,10 +176,9 @@ export function CinematicActor({
     );
     const c = current.current,
       b = skin.boneOf;
-    const wantedYaw =
-      attention && !acting
-        ? THREE.MathUtils.clamp(Math.atan2(attention[0] - x, attention[1] - z) - rot, -0.7, 0.7)
-        : 0;
+    const wantedYaw = attention
+      ? THREE.MathUtils.clamp(Math.atan2(attention[0] - x, attention[1] - z) - rot, -0.7, 0.7)
+      : 0;
     listening.current =
       first.current || runtime.reduced
         ? wantedYaw
@@ -203,24 +229,40 @@ export function CinematicActor({
       b[`knee${s}`].rotation.x = -(left ? c.kneeL : c.kneeR);
       b[`ankle${s}`].rotation.x = left ? c.ankleL : c.ankleR;
     }
+    updateRigCorrectives(b);
+    const delivery = runtime.cue
+      ? cinematicGestureAt(runtime.clock.lineTime, runtime.cue, seed)
+      : null;
+    // The face and mouth remain expressive in the balanced and light modes.
+    b.jaw.rotation.x = acting
+      ? (delivery?.jaw ?? 0.02 + Math.abs(Math.sin(time * 7.4 + seed)) * 0.07)
+      : 0;
+    const blink = (time + seed * 0.37) % (4.1 + (seed % 3) * 0.2);
+    b.blink.scale.y = blink < 0.16 ? 0.08 + Math.sin((blink / 0.16) * Math.PI) * 0.9 : 0.08;
+    for (const left of [true, false]) {
+      const brow = b[left ? "browL" : "browR"];
+      brow.position.y = p.headR * 0.31 + (acting ? (delivery?.weight ?? 1) * 0.005 : 0);
+      brow.rotation.z =
+        (left ? 1 : -1) * (runtime.cue?.gesture === "confront" ? -0.08 : acting ? 0.035 : 0);
+    }
     if (detail.high) {
       applyHandPose(
         b,
         {
-          grip: holdingTrophy ? 0.65 : cross > 0.3 ? 0.4 : acting ? 0.14 : 0.22,
+          grip: holdingTrophy
+            ? 0.65
+            : cross > 0.3
+              ? 0.4
+              : acting && runtime.cue?.gesture === "rally"
+                ? 0.7
+                : acting
+                  ? 0.14
+                  : 0.22,
           spread: acting ? 0.07 : 0.02,
           wrist: cross * 0.06,
         },
         first.current ? 0.25 : dt,
       );
-      b.jaw.rotation.x = acting ? 0.02 + Math.abs(Math.sin(time * 7.4 + seed)) * 0.07 : 0;
-      const blink = time % (4.1 + (seed % 3) * 0.2);
-      b.blink.scale.y = blink < 0.16 ? 0.08 + Math.sin((blink / 0.16) * Math.PI) * 0.9 : 0.08;
-      for (const left of [true, false]) {
-        const brow = b[left ? "browL" : "browR"];
-        brow.position.y = p.headR * 0.31 + (acting ? Math.sin(time * 2.2 + seed) * 0.004 : 0);
-        brow.rotation.z = (left ? 1 : -1) * (acting ? 0.035 : 0);
-      }
     }
     first.current = false;
     if (group.current) {
@@ -230,6 +272,16 @@ export function CinematicActor({
         pose === "walk" ? Math.max(0, c.hipY * 0.4) : 0,
         z + Math.cos(rot) * rise,
       );
+      if (entrance) {
+        const u = Math.min(1, time / 4.8);
+        group.current.position.z = z - (1 - u) * 3;
+      }
+      if (drillPhase !== undefined) {
+        const phase = time * 0.45 + drillPhase;
+        group.current.position.x = x + Math.sin(phase) * 0.75;
+        group.current.position.z = z + Math.cos(phase) * 0.75;
+        group.current.rotation.y = Math.PI / 2 + phase;
+      }
       if (holdingTrophy && trophy.current) {
         // Anchor to the animated grip midpoint in actor space, including
         // breathing, the lift and the return. Props remain outside batching.
@@ -254,6 +306,8 @@ export function CinematicActor({
           <ClubTrophy x={0} y={0} z={0} scale={0.9} dynamic />
         </group>
       )}
+      {exercise && createPortal(<CinematicDumbbell dynamic />, skin.boneOf.handL)}
+      {exercise && createPortal(<CinematicDumbbell dynamic />, skin.boneOf.handR)}
     </group>
   );
 }

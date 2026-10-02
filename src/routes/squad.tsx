@@ -91,7 +91,7 @@ function SquadPage() {
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
   if (!career) return <NoCareer />;
 
-  const players = Object.values(career.players);
+  const players = Object.values(career.players).filter((p) => p.clubId === career.clubId);
   const slots = FORMATIONS[career.tactics.formation];
   const lineup = career.lineup.map((id) => career.players[id]).filter(Boolean) as Player[];
   const reserves = players.filter((p) => !career.lineup.includes(p.id));
@@ -143,6 +143,17 @@ function SquadPage() {
           <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
             {players.length} jogadores · Formação {career.tactics.formation}
           </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {players.filter((p) => p.pos === "GK").length} goleiros ·{" "}
+            {players.filter((p) => p.pos === "DF").length} defensores ·{" "}
+            {players.filter((p) => p.pos === "MF").length} meias ·{" "}
+            {players.filter((p) => p.pos === "FW").length} atacantes
+          </p>
+          {players.some((p) => p.rosterSource === "generated") && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              O elenco inclui reservas gerados para completar as posições sem dados disponíveis.
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <HudStat label="OVR médio" value={Math.round(avgOvr)} tone={toneFor(avgOvr)} />

@@ -41,6 +41,7 @@ export interface RemotePlayer {
   name: string;
   position: string;
   age?: number | undefined;
+  birthDate?: string | undefined;
   shirtNumber?: number | undefined;
   nationality?: string | undefined;
   photoUrl?: string | undefined;
@@ -277,10 +278,13 @@ export async function sdbTeamHonours(teamId: string): Promise<RemoteHonour[]> {
       externalId: item.id,
     };
     current.count += 1;
-    if (item.strSeason && !current.seasons.includes(item.strSeason)) current.seasons.push(item.strSeason);
+    if (item.strSeason && !current.seasons.includes(item.strSeason))
+      current.seasons.push(item.strSeason);
     grouped.set(competition, current);
   }
-  return [...grouped.values()].sort((a, b) => b.count - a.count || a.competition.localeCompare(b.competition));
+  return [...grouped.values()].sort(
+    (a, b) => b.count - a.count || a.competition.localeCompare(b.competition),
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -419,6 +423,7 @@ export async function sdbSquad(teamId: string): Promise<RemotePlayer[]> {
       name: p.strPlayer!,
       position: mapPosition(p.strPosition),
       age: p.dateBorn ? ageFrom(p.dateBorn) : undefined,
+      birthDate: p.dateBorn || undefined,
       shirtNumber: p.strNumber ? Number(p.strNumber) || undefined : undefined,
       nationality: p.strNationality ?? undefined,
       photoUrl: p.strCutout ?? p.strThumb ?? undefined,
@@ -522,4 +527,3 @@ export async function sportmonksSquad(teamId: string): Promise<RemotePlayer[]> {
       photoUrl: r.player?.image_path ?? undefined,
     }));
 }
-

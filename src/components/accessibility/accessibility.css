@@ -1,0 +1,295 @@
+/* Settings affect DOM readability without adding work to the 3D frame loop. */
+html[data-text-size="large"] {
+  font-size: 18px;
+}
+html[data-text-size="xlarge"] {
+  font-size: 20px;
+}
+html[data-text-size] body {
+  font-size: 1rem;
+}
+:where(
+  button,
+  [role="button"],
+  select,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])
+) {
+  min-height: 44px;
+}
+:where(button, [role="button"]) {
+  touch-action: manipulation;
+}
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid oklch(0.85 0.19 145);
+  outline-offset: 4px;
+}
+html[data-contrast="high"] {
+  --background: oklch(0.1 0.008 210);
+  --card: oklch(0.18 0.01 205);
+  --popover: oklch(0.18 0.01 205);
+  --foreground: oklch(1 0 0);
+  --card-foreground: oklch(1 0 0);
+  --muted-foreground: oklch(0.89 0.012 205);
+  --border: oklch(0.64 0.014 205);
+  --input: oklch(0.72 0.014 205);
+  --ring: oklch(0.9 0.15 92);
+  --sidebar-border: oklch(0.64 0.014 205);
+}
+html[data-contrast="high"]
+  :where(
+    [class*="text-white/"],
+    .studio-hint,
+    .career-nav-heading,
+    .career-save-note,
+    .career-sidebar-footer span
+  ) {
+  color: var(--foreground);
+}
+html[data-contrast="high"] :focus-visible {
+  outline-color: oklch(0.94 0.17 98);
+}
+html[data-reading-space="true"] :where(p, li, dd, dt, td, .career-nav-link, .preference-help) {
+  line-height: 1.85;
+}
+html[data-reading-space="true"] :where(td, th, .career-nav-link) {
+  padding-block: 0.8rem;
+}
+html[data-motion="reduced"] {
+  scroll-behavior: auto;
+}
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] *::before,
+html[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion="full"]),
+  html:not([data-motion="full"]) * {
+    scroll-behavior: auto;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+.preferences-dialog {
+  width: min(42rem, calc(100vw - 1.5rem));
+  max-height: 88dvh;
+  overflow-y: auto;
+  border-radius: 1rem;
+  padding: 1.6rem;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.preferences-dialog h2 {
+  padding-inline-end: 2rem;
+  line-height: 1.4;
+}
+.preference-launcher,
+.preference-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.85rem;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.preference-launcher:hover,
+.preference-button:hover {
+  background: var(--accent);
+}
+.preference-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-block-end: 0.5rem;
+}
+.preference-badge {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+  padding: 0.15rem 0.5rem;
+}
+.preference-help {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  margin-block: 0.4rem;
+}
+.reading-preferences {
+  display: grid;
+  gap: 0.6rem;
+}
+.preference-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 56px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  cursor: pointer;
+}
+.preference-toggle strong {
+  font-size: 0.95rem;
+}
+.preference-toggle input {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  accent-color: var(--primary);
+}
+.preference-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.preference-choices legend {
+  margin-block-end: 0.7rem;
+}
+.preference-choices label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+.preference-choices label.selected {
+  background: var(--accent);
+  border-color: var(--primary);
+  color: var(--foreground);
+}
+.preference-choices input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+.reading-preview {
+  padding: 0.9rem;
+  border-inline-start: 4px solid var(--primary);
+  background: var(--accent);
+  border-radius: 0.4rem;
+  line-height: 1.8;
+}
+.language-picker {
+  border-block-start: 1px solid var(--border);
+  padding-block-start: 1rem;
+}
+.language-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--input);
+  border-radius: 0.6rem;
+  padding-inline: 0.65rem;
+  background: var(--background);
+}
+.language-search input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  color: var(--foreground);
+  min-height: 48px;
+  padding-block: 0.6rem;
+  font: inherit;
+}
+.language-options {
+  width: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  border-radius: 0.6rem;
+  padding: 0.25rem;
+  font: inherit;
+}
+.language-options option {
+  padding: 0.6rem 0.7rem;
+  min-height: 44px;
+}
+.language-options option:checked {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.narration-fields {
+  display: grid;
+  gap: 0.9rem;
+}
+.narration-fields label:not(.preference-toggle) {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+.narration-fields select {
+  width: 100%;
+  border: 1px solid var(--input);
+  border-radius: 0.6rem;
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+  padding: 0.6rem;
+}
+.narration-fields input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+}
+.match-caption {
+  font-size: 1rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+  max-width: min(56rem, calc(100vw - 2rem));
+  border: 1px solid oklch(0.95 0.02 150 / 45%);
+  background: oklch(0.09 0.01 205 / 96%);
+  color: oklch(1 0 0);
+  padding: 0.7rem 1rem;
+  border-radius: 0.7rem;
+}
+.career-nav-link {
+  min-height: 44px;
+}
+.career-mobile-search {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--input);
+  border-radius: 0.6rem;
+  background: var(--card);
+  color: var(--foreground);
+  padding: 0.7rem;
+  margin-block: 1rem;
+  font: inherit;
+}
+[dir="rtl"] .career-current-page > svg,
+[dir="rtl"] .career-nav-link > svg:last-child {
+  transform: scaleX(-1);
+}
+[dir="rtl"] .career-sidebar {
+  border-inline-end: 1px solid var(--border);
+  border-left: 0;
+}
+@media (max-width: 600px) {
+  .preferences-dialog {
+    padding: 1.1rem;
+  }
+  .preference-launcher > span {
+    display: none;
+  }
+  .preference-choices label {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}

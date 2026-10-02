@@ -7,7 +7,7 @@
 
 import { CLUBS } from "./data/leagues";
 import { makeRng } from "./rng";
-import { clearPhysiqueCache, profileIdentityFor } from "./player-identity";
+import { buildAttrs } from "./player-physique";
 import type { Personality, Player, Position } from "./types";
 
 export interface DetailedAttributes {
@@ -209,7 +209,6 @@ let deltas: AttrDeltas = {};
 export function setAttrDeltas(next: AttrDeltas | undefined) {
   deltas = next ?? {};
   cache.clear();
-  clearPhysiqueCache();
 }
 
 export function getAttrDeltas(): AttrDeltas {
@@ -332,12 +331,14 @@ function buildSpells(p: Player, rnd: () => number): ClubSpell[] {
 export function profileFor(p: Player): PlayerProfile {
   const hit = cache.get(p.id);
   if (hit) return hit;
-  const { rnd, attrs, foot, height, weight } = profileIdentityFor(p);
+  const rnd = makeRng(`profile-${p.id}-${p.name}`);
+  const attrs = buildAttrs(p, rnd);
+  const tall = p.pos === "GK" ? 8 : p.pos === "DF" ? 4 : 0;
   const profile: PlayerProfile = {
     attrs,
-    foot,
-    height,
-    weight,
+    foot: rnd() < 0.72 ? "destro" : rnd() < 0.9 ? "canhoto" : "ambidestro",
+    height: Math.round(171 + tall + rnd() * 16),
+    weight: Math.round(65 + tall * 0.9 + rnd() * 18),
     traits: pickTraits(p, attrs, rnd),
     personality: p.personality ?? PERSONALITIES[Math.floor(rnd() * PERSONALITIES.length)]!,
     spells: buildSpells(p, rnd),

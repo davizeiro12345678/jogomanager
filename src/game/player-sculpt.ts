@@ -20,13 +20,13 @@ const HEAD_PROFILE = [
   [-1.14, 0.012, 0.012, 0.2],
   [-1.08, 0.32, 0.38, 0.16],
   [-0.96, 0.57, 0.59, 0.1],
-  [-0.78, 0.73, 0.74, 0.055],
-  [-0.52, 0.82, 0.83, 0.015],
-  [-0.25, 0.91, 0.9, -0.015],
+  [-0.78, 0.76, 0.77, 0.065],
+  [-0.52, 0.84, 0.86, 0.025],
+  [-0.25, 0.91, 0.93, -0.005],
   [0, 0.94, 0.96, -0.035],
-  [0.24, 0.91, 0.94, -0.035],
-  [0.48, 0.92, 0.9, -0.025],
-  [0.7, 0.85, 0.79, -0.035],
+  [0.24, 0.91, 0.94, -0.025],
+  [0.48, 0.89, 0.89, -0.015],
+  [0.7, 0.82, 0.78, -0.025],
   [0.9, 0.66, 0.62, -0.055],
   [1.06, 0.36, 0.35, -0.065],
   [1.14, 0.006, 0.006, -0.07],
@@ -86,19 +86,19 @@ export function headPoint(P: HeadShape, y: number, angle: number, seed = 0) {
   const front = Math.max(0, Math.cos(angle));
   const nose =
     f.noseProjection * gauss(x, y, 0, -0.14, f.noseWidth, 0.145) +
-    0.075 * gauss(x, y, 0, 0.08, f.noseWidth * 0.7, 0.28) +
+    0.082 * gauss(x, y, 0, 0.06, f.noseWidth * 0.9, 0.32) +
     0.046 * gauss(x, y, 0, -0.24, f.noseWidth * 1.75, 0.09);
   const sockets =
-    -0.068 *
-    (gauss(x, y, f.eyeSpacing, 0.14, 0.22, 0.14) + gauss(x, y, -f.eyeSpacing, 0.14, 0.22, 0.14));
+    -0.043 *
+    (gauss(x, y, f.eyeSpacing, 0.14, 0.25, 0.18) + gauss(x, y, -f.eyeSpacing, 0.14, 0.25, 0.18));
   const brows =
     0.026 *
     (gauss(x, y, f.eyeSpacing, 0.31, 0.26, 0.095) + gauss(x, y, -f.eyeSpacing, 0.31, 0.26, 0.095));
   const cheeks =
-    0.065 * (gauss(x, y, 0.52, -0.15, 0.28, 0.24) + gauss(x, y, -0.52, -0.15, 0.28, 0.24));
+    0.044 * (gauss(x, y, 0.5, -0.13, 0.33, 0.28) + gauss(x, y, -0.5, -0.13, 0.33, 0.28));
   const muzzle = 0.038 * gauss(x, y, 0, -0.51, 0.38, 0.19);
   const philtrum = -0.016 * gauss(x, y, 0, -0.35, 0.045, 0.07);
-  const chin = 0.05 * gauss(x, y, 0, -0.85, 0.37, 0.18);
+  const chin = 0.065 * gauss(x, y, 0, -0.85, 0.39, 0.2);
   const nasolabial = -0.014 * gauss(Math.abs(x), y, 0.31, -0.45, 0.055, 0.19);
   return new THREE.Vector3(
     x * P.headW,
@@ -146,10 +146,18 @@ function gridSurface(
   return geometry;
 }
 
-export function sculptedHead(P: HeadShape, seed = 0, detail = true, portrait = true) {
-  const columns = detail ? (portrait ? 96 : 56) : 18;
-  const geometry = gridSurface(columns, detail ? (portrait ? 72 : 48) : 20, (u, v) =>
-    headPoint(P, -1.14 + v * 2.28, headAngle(u), seed),
+export function sculptedHead(
+  P: HeadShape,
+  seed = 0,
+  detail = true,
+  portrait = true,
+  sampling?: { columns: number; rows: number },
+) {
+  const columns = sampling?.columns ?? (detail ? (portrait ? 96 : 56) : 18);
+  const geometry = gridSurface(
+    columns,
+    sampling?.rows ?? (detail ? (portrait ? 72 : 48) : 20),
+    (u, v) => headPoint(P, -1.14 + v * 2.28, headAngle(u), seed),
   );
   // Average the duplicated UV seam rather than leaving a visible stripe.
   const normal = geometry.getAttribute("normal");
@@ -183,47 +191,62 @@ export function sculptedHead(P: HeadShape, seed = 0, detail = true, portrait = t
 }
 
 /** Fitted hairline with a tapered fade, directional locks and matte volume. */
-export function sculptedHair(P: HeadShape, look: PlayerLook, detail = true) {
+export function sculptedHair(
+  P: HeadShape,
+  look: PlayerLook,
+  detail = true,
+  sampling?: { columns: number; rows: number },
+) {
   const style = look.hairStyle;
   const f = faceMorphology(look.seed);
-  return gridSurface(detail ? 56 : 18, detail ? 28 : 10, (u, v) => {
-    const angle = headAngle(u);
-    const front = Math.max(0, Math.cos(angle));
-    const temples = Math.abs(Math.sin(angle));
-    const hairline =
-      -0.4 +
-      (0.94 + f.hairline) * front ** 1.6 +
-      0.065 * temples ** 6 * front -
-      0.016 * Math.cos(angle * 3 + f.parting);
-    const y = hairline + (1.14 - hairline) * v;
-    const p = headPoint(P, y, angle, look.seed);
-    const fade = THREE.MathUtils.smoothstep(v, 0, 0.22);
-    const textured = style === "curly" || style === "afro";
-    const volume =
-      style === "buzz" || style === "braids" || style === "mohawk"
-        ? 0.008
-        : style === "afro"
-          ? 0.31
-          : style === "curly"
-            ? 0.16
-            : style === "medium"
-              ? 0.105
-              : 0.042;
-    const strands = detail
-      ? textured
-        ? 0.025 * Math.sin(angle * 17 + v * 37) * Math.sin(v * 31 - angle * 11)
-        : 0.005 * Math.sin(angle * 21 + v * 8 + f.parting * 3)
-      : 0;
-    const shell = 1 + (0.008 + (volume * look.hairVolume + strands) * fade);
-    p.x *= shell;
-    p.z *= shell;
-    p.y +=
-      P.headR *
-      (volume * fade +
-        (style === "short" || style === "medium" ? 0.085 * front * v * (1 - v) * 4 : 0));
-    p.x += P.headR * (0.05 + f.parting * 0.075) * Math.sin(v * Math.PI) * front * fade;
-    return p;
-  });
+  return gridSurface(
+    sampling?.columns ?? (detail ? 56 : 18),
+    sampling?.rows ?? (detail ? 28 : 10),
+    (u, v) => {
+      const angle = headAngle(u);
+      const front = Math.max(0, Math.cos(angle));
+      const temples = Math.abs(Math.sin(angle));
+      const hairline =
+        -0.4 +
+        (0.94 + f.hairline) * front ** 1.6 +
+        0.065 * temples ** 6 * front -
+        0.016 * Math.cos(angle * 3 + f.parting);
+      const y = hairline + (1.14 - hairline) * v;
+      const p = headPoint(P, y, angle, look.seed);
+      const minimumRadius = Math.hypot(p.x, p.z) + P.headR * 0.024;
+      const fade = THREE.MathUtils.smoothstep(v, 0, 0.22);
+      const textured = style === "curly" || style === "afro";
+      const volume =
+        style === "buzz" || style === "braids" || style === "mohawk"
+          ? 0.008
+          : style === "afro"
+            ? 0.31
+            : style === "curly"
+              ? 0.16
+              : style === "medium"
+                ? 0.105
+                : 0.042;
+      const strands = detail
+        ? textured
+          ? 0.025 * Math.sin(angle * 17 + v * 37) * Math.sin(v * 31 - angle * 11)
+          : 0.005 * Math.sin(angle * 21 + v * 8 + f.parting * 3)
+        : 0;
+      const shell = 1 + (0.008 + (volume * look.hairVolume + strands) * fade);
+      p.x *= shell;
+      p.z *= shell;
+      p.y +=
+        P.headR *
+        (volume * fade +
+          (style === "short" || style === "medium" ? 0.085 * front * v * (1 - v) * 4 : 0));
+      p.x += P.headR * (0.025 + f.parting * 0.035) * Math.sin(v * Math.PI) * front * fade;
+      const radius = Math.hypot(p.x, p.z);
+      if (radius < minimumRadius && radius > 1e-6) {
+        p.x *= minimumRadius / radius;
+        p.z *= minimumRadius / radius;
+      }
+      return p;
+    },
+  );
 }
 
 function curve(points: THREE.Vector3[], radius: number, segments = 14) {
@@ -468,31 +491,32 @@ export function buildSculptedFace(
     if (look.hairStyle === "dreads" || look.hairStyle === "braids") {
       const rng = makeLookRng(look.seed);
       for (let i = 0; i < 12; i++) {
-        const angle = (i / 12) * Math.PI * 2;
+        let angle = ((i + 0.5) / 12) * Math.PI * 2;
+        const frontal = Math.cos(angle) > 0.4;
+        if (frontal) angle = Math.sign(Math.sin(angle)) * (0.95 + Math.abs(Math.sin(angle)) * 0.25);
         const p = headPoint(P, 0.7, angle, look.seed);
         const end = p
           .clone()
-          .setY(-R * (0.35 + rng() * 0.6))
+          .setY(-R * (0.35 + rng() * (frontal ? 0.22 : 0.6)))
           .multiply(new THREE.Vector3(1.1, 1, 1.08));
-        hair.push(
-          rigPart(
-            curve(
-              [
-                p,
-                p
-                  .clone()
-                  .multiplyScalar(1.09)
-                  .setY(R * 0.15),
-                end,
-              ],
-              R * 0.055,
-              9,
-            ),
-            mats.hair,
-            undefined,
-            true,
-          ),
+        const strand = curve(
+          [
+            p,
+            p
+              .clone()
+              .multiplyScalar(1.09)
+              .setY(R * 0.15),
+            end,
+          ],
+          R * 0.055,
+          9,
         );
+        // The scalp mask fades its hairline, but must not cut an open slice
+        // through the circumference of a tubular lock using that same atlas.
+        const strandUv = strand.getAttribute("uv");
+        for (let vertex = 0; vertex < strandUv.count; vertex++)
+          strandUv.setY(vertex, 0.16 + strandUv.getY(vertex) * 0.68);
+        hair.push(rigPart(strand, mats.hair, undefined, true));
       }
     }
     if (look.headband)

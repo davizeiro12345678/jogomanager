@@ -2,6 +2,7 @@
 @source "../src";
 @import "tw-animate-css";
 @import "./components/game/career-interface.css";
+@import "./components/accessibility/accessibility.css";
 
 @custom-variant dark (&:is(.dark *));
 
