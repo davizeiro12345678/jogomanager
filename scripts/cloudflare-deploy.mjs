@@ -78,10 +78,22 @@ async function prepare() {
   }
   config.vars = vars;
   config.name = "jogomanager-web";
+  if (settings["CLOUDFLARE_ACCOUNT_ID"]) config.account_id = settings["CLOUDFLARE_ACCOUNT_ID"];
   config.keep_vars = true;
   config.workers_dev = true;
   config.compatibility_date = "2026-10-02";
   config.observability = { enabled: true };
+  const siteZone = settings["CLOUDFLARE_SITE_ZONE"];
+  if (siteZone) {
+    if (!/^[a-z0-9.-]+$/.test(siteZone) || siteZone.includes(".."))
+      throw new Error("CLOUDFLARE_SITE_ZONE must be a domain name, without protocol or path.");
+    // The custom domain serves every apex path. Avoid running this same Worker
+    // both as a route and as the origin. Separate sports-import routes stay intact.
+    config.routes = [
+      { pattern: siteZone, custom_domain: true },
+      { pattern: `www.${siteZone}/*`, zone_name: siteZone },
+    ];
+  }
   // Keep Nitro's module rules/assets configuration. Never add secret values to vars.
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
   console.log(

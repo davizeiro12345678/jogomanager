@@ -64,9 +64,17 @@ export function useCareer() {
     enabled: signedIn !== null,
     queryFn: async (): Promise<{ career: CareerState | null; sync: SyncState }> => {
       const local = await loadLocalCareer();
-      if (!signedIn) return { career: local ? migrateCareer(local) : null, sync: "local" };
+      const repairLocal = async (raw: CareerState) => {
+        const migrated = migrateCareer(raw);
+        if (JSON.stringify(raw) !== JSON.stringify(migrated)) {
+          await saveLocalCareer(raw, "Antes da correção de integridade");
+          await saveLocalCareer(migrated, "Correção de integridade");
+        }
+        return migrated;
+      };
+      if (!signedIn) return { career: local ? await repairLocal(local) : null, sync: "local" };
       if (!isOnline()) {
-        return { career: local ? migrateCareer(local) : null, sync: "offline" };
+        return { career: local ? await repairLocal(local) : null, sync: "offline" };
       }
 
       let cloud: CareerState | null = null;
@@ -78,13 +86,13 @@ export function useCareer() {
           cloudAt = raw.updatedAt ? Date.parse(raw.updatedAt) : 0;
         }
       } catch {
-        return { career: local ? migrateCareer(local) : null, sync: "offline" };
+        return { career: local ? await repairLocal(local) : null, sync: "offline" };
       }
 
       const localAt = await localSavedAt();
       // Conflito resolvido por data: a versão mais recente vence.
       if (local && (!cloud || localAt > cloudAt)) {
-        const migrated = migrateCareer(local);
+        const migrated = await repairLocal(local);
         try {
           await save({ data: { state: migrated } });
           return { career: migrated, sync: "synced" };
@@ -94,7 +102,7 @@ export function useCareer() {
         }
       }
       if (cloud) {
-        const migrated = migrateCareer(cloud);
+        const migrated = await repairLocal(cloud);
         await saveLocalCareer(migrated, "nuvem");
         return { career: migrated, sync: "synced" };
       }
@@ -143,7 +151,7 @@ export function useCareer() {
     flushing.current = true;
     setSync("syncing");
     try {
-      await save({ data: { state: entry.state } });
+      await save({ data: { state: migrateCareer(entry.state) } });
       await clearOutbox();
       setSync("synced");
     } catch {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { SERIE_D_IDS } from "./data/serie-d";
 import { LEAGUES } from "./data/leagues";
-import { applyPyramid, leagueClubIds, pyramidZones } from "./pyramid";
+import { applyPyramid, leagueClubIds, pyramidZones, pyramidTiers } from "./pyramid";
 import type { CareerState, TableRow } from "./types";
 
 const stateFor = (leagueId: string, season = 1, leagueClubs: Record<string, string[]> = {}) =>
@@ -18,15 +19,11 @@ describe("pirâmides nacionais", () => {
     const state = stateFor("bra2");
     const move = applyPyramid(state, tableFor(state));
     expect(move?.leagueId).toBe("bra");
-    expect(
-      move?.movements.some(
-        (m) => m.from === "y5079a" || m.from === "y5079b" || m.from === "y5079c",
-      ),
-    ).toBe(true);
+    expect(move?.movements.some((m) => SERIE_D_IDS.includes(m.from))).toBe(true);
     expect(move?.movements.filter((m) => m.to === "bra3").flatMap((m) => m.promoted)).toHaveLength(
       6,
     );
-    const ids = ["bra", "bra2", "bra3", "y5079a", "y5079b", "y5079c"];
+    const ids = ["bra", "bra2", "bra3", ...SERIE_D_IDS];
     const all = ids.flatMap((id) => move?.leagueClubs[id] ?? []);
     expect(new Set(all).size).toBe(all.length);
     expect(move?.leagueClubs["bra"]).toHaveLength(20);
@@ -52,8 +49,8 @@ describe("pirâmides nacionais", () => {
     for (const leagueId of representativeIds) {
       let state = stateFor(leagueId);
       const country = LEAGUES.find((l) => l.id === leagueId)?.country;
-      const original = LEAGUES.filter((l) => l.country === country).flatMap((l) =>
-        l.clubs.map((c) => c.id),
+      const original = LEAGUES.filter((l) => pyramidTiers(leagueId)?.flat().includes(l.id)).flatMap(
+        (l) => l.clubs.map((c) => c.id),
       );
       for (let season = 1; season <= 10; season++) {
         const move = applyPyramid(state, tableFor(state));
@@ -65,13 +62,13 @@ describe("pirâmides nacionais", () => {
           leagueId: move?.leagueId ?? state.leagueId,
           leagueClubs: { ...state.leagueClubs, ...move?.leagueClubs },
         };
-        const all = LEAGUES.filter((l) => l.country === country).flatMap((l) =>
-          leagueClubIds(next, l.id),
+        const all = LEAGUES.filter((l) => pyramidTiers(leagueId)?.flat().includes(l.id)).flatMap(
+          (l) => leagueClubIds(next, l.id),
         );
         expect(all.length).toBe(original.length);
         expect(new Set(all).size).toBe(all.length);
-        for (const l of LEAGUES.filter((l) => l.country === country))
-          if (leagueId !== "bra" || !["bra3", "y5079a", "y5079b", "y5079c"].includes(l.id))
+        for (const l of LEAGUES.filter((l) => pyramidTiers(leagueId)?.flat().includes(l.id)))
+          if (leagueId !== "bra" || !["bra3", ...SERIE_D_IDS].includes(l.id))
             expect(leagueClubIds(next, l.id).length).toBe(l.clubs.length);
         state = next;
       }
@@ -85,7 +82,7 @@ describe("pirâmides nacionais", () => {
     expect(zones.slice(2, 6)).toEqual(Array(4).fill("playoff"));
     expect(zones.slice(-4)).toEqual(Array(4).fill("rebaixamento"));
     expect(applyPyramid(state, tableFor(state))?.leagueClubs["bra3"]).toBeDefined();
-    const regionalTotal = ["y5079a", "y5079b", "y5079c"].reduce(
+    const regionalTotal = SERIE_D_IDS.reduce(
       (sum, id) =>
         sum +
         pyramidZones(id, leagueClubIds(state, id).length, undefined, 1).filter(
@@ -93,6 +90,6 @@ describe("pirâmides nacionais", () => {
         ).length,
       0,
     );
-    expect(regionalTotal).toBe(16);
+    expect(regionalTotal).toBe(64);
   });
 });

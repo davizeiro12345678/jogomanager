@@ -5,6 +5,7 @@ import { clampPoseAnatomy } from "./ground-contact";
 import { lookFor, type PlayerLook, type Proportions } from "./player-model";
 import type { ManagerLook } from "./types";
 import { SKIN_TONES } from "./kits";
+import { cinematicGestureAt, type CinematicCue } from "./cinematic-cue";
 
 export interface CinematicManner {
   assertiveness: number;
@@ -69,6 +70,8 @@ export function cinematicActorPose(
   p: Proportions,
   out: Pose = emptyPose(),
   manner: CinematicManner = { assertiveness: 55, warmth: 55 },
+  cue?: CinematicCue,
+  lineTime = time,
 ): Pose {
   for (const key of Object.keys(out) as (keyof Pose)[]) out[key] = 0;
   const t = time + (seed % 17) * 0.37;
@@ -140,6 +143,69 @@ export function cinematicActorPose(
     out.elbowL -= gesture * 0.28;
     out.spine += gesture * 0.035;
     out.headPitch += Math.sin(t * 2.2) * 0.045;
+  }
+  if (cue) {
+    const action = cinematicGestureAt(lineTime, cue, seed);
+    const strength = 0.55 + Math.max(0, Math.min(100, manner.assertiveness)) * 0.005;
+    const w = action.weight * strength;
+    if (acting) {
+      // Each line returns to a neutral listening pose after its delivery.
+      out.armLPitch = 0;
+      out.armRPitch = 0;
+      out.armLRoll = 0.07;
+      out.armRRoll = -0.07;
+      out.elbowL = out.elbowR = posture === "sit" ? -1.05 : -0.2;
+      out.headPitch = action.nod;
+      switch (cue.gesture) {
+        case "question":
+          out.armLPitch = -w * 0.42;
+          out.armRPitch = -w * 0.45;
+          out.armLRoll += w * 0.2;
+          out.armRRoll -= w * 0.24;
+          out.elbowL -= w * 0.7;
+          out.elbowR -= w * 0.7;
+          out.headPitch -= w * 0.06;
+          break;
+        case "rally":
+          out.armRPitch = -w * 0.88;
+          out.elbowR -= w * 0.8;
+          out.armLPitch = -w * 0.4;
+          out.elbowL -= w * 0.5;
+          out.chest -= w * 0.025;
+          break;
+        case "reassure":
+          out.armLPitch = -w * 0.56;
+          out.elbowL -= w * 1.05;
+          out.armRPitch = -w * 0.25;
+          out.elbowR -= w * 0.45;
+          out.headPitch += w * 0.045;
+          break;
+        case "confront":
+          out.armRPitch = -w * 0.96;
+          out.elbowR -= w * 0.52;
+          out.armRRoll -= w * 0.15;
+          out.headPitch += w * 0.065;
+          out.spine += w * 0.035;
+          break;
+        case "celebrate":
+          out.armLPitch = out.armRPitch = -w * 1.25;
+          out.armLRoll += w * 0.5;
+          out.armRRoll -= w * 0.5;
+          out.elbowL -= w * 0.5;
+          out.elbowR -= w * 0.5;
+          out.headPitch -= w * 0.08;
+          break;
+        default:
+          out.armRPitch = -w * 0.62;
+          out.elbowR -= w * 0.95;
+          out.armRRoll -= w * 0.2;
+          out.armLPitch = -w * 0.18;
+      }
+    } else {
+      // Staggered acknowledgement, with restrained warmth or concern.
+      const reaction = Math.max(0, 1 - Math.abs(lineTime - 1.8 - (seed % 4) * 0.4) / 0.8);
+      out.headPitch += Math.sin(reaction * Math.PI) * (cue.mood === "bad" ? 0.065 : 0.09);
+    }
   }
   return clampPoseAnatomy(out);
 }

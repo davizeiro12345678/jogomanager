@@ -30,15 +30,7 @@ function rng(seed: number) {
 
 /** Padrões de corte usados pelos clubes. */
 export type MowPattern =
-  | "stripes"
-  | "checker"
-  | "rings"
-  | "diagonal"
-  | "wide"
-  | "diamond"
-  | "fine"
-  | "spiral"
-  | "bands";
+  "stripes" | "checker" | "rings" | "diagonal" | "wide" | "diamond" | "fine" | "spiral" | "bands";
 
 export const MOW_PATTERNS: MowPattern[] = [
   "stripes",
@@ -99,7 +91,7 @@ function canvas(size: number) {
 
 /* -------------------------------------------------------------------- cor */
 
-function buildAlbedo(pattern: MowPattern = "checker", size = 2048) {
+function buildAlbedo(pattern: MowPattern = "checker", size = 1024) {
   const spec = MOW[pattern];
 
   const made = canvas(size);
@@ -109,10 +101,10 @@ function buildAlbedo(pattern: MowPattern = "checker", size = 2048) {
 
   // base: variação larga de tonalidade, sem verde chapado
   const g = ctx.createLinearGradient(0, 0, size * 0.35, size);
-  g.addColorStop(0, "#125c33");
-  g.addColorStop(0.35, "#1a7342");
-  g.addColorStop(0.7, "#15663a");
-  g.addColorStop(1, "#11542f");
+  g.addColorStop(0, "#214d25");
+  g.addColorStop(0.35, "#2b6430");
+  g.addColorStop(0.7, "#245829");
+  g.addColorStop(1, "#204823");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, size, size);
 
@@ -134,9 +126,10 @@ function buildAlbedo(pattern: MowPattern = "checker", size = 2048) {
     const light = i % 2 === 0;
     const a = light ? "rgba(226,255,214," : "rgba(0,24,10,";
     const grad = ctx.createLinearGradient(x, 0, x + w, 0);
-    grad.addColorStop(0, `${a}0.04)`);
-    grad.addColorStop(0.5, `${a}0.17)`);
-    grad.addColorStop(1, `${a}0.04)`);
+    grad.addColorStop(0, `${a}0.06)`);
+    grad.addColorStop(0.12, `${a}0.12)`);
+    grad.addColorStop(0.88, `${a}0.12)`);
+    grad.addColorStop(1, `${a}0.06)`);
     ctx.fillStyle = grad;
     ctx.fillRect(x, 0, w, size * 2);
     // borda serrilhada da passagem do cortador
@@ -183,13 +176,36 @@ function buildAlbedo(pattern: MowPattern = "checker", size = 2048) {
   {
     const img = ctx.getImageData(0, 0, size, size);
     const px = img.data;
+    // Soil variation is low frequency. Sample 65² points once rather than
+    // invoking simplex at a million pixels during the first match paint.
+    const cells = 64;
+    const grid = new Float32Array((cells + 1) * (cells + 1));
+    const warmGrid = new Float32Array(grid.length);
+    for (let gy = 0; gy <= cells; gy++)
+      for (let gx = 0; gx <= cells; gx++) {
+        const i = gy * (cells + 1) + gx;
+        grid[i] = noise2D(gx / (cells * 0.16), gy / (cells * 0.16));
+        warmGrid[i] = noise2D(gx / (cells * 0.4) + 9, gy / (cells * 0.4) + 9);
+      }
+    const sample = (values: Float32Array, x: number, y: number) => {
+      const gx = (x / size) * cells,
+        gy = (y / size) * cells;
+      const ix = Math.floor(gx),
+        iy = Math.floor(gy),
+        tx = gx - ix,
+        ty = gy - iy;
+      const i = iy * (cells + 1) + ix;
+      const a = values[i]! * (1 - tx) + values[i + 1]! * tx;
+      const b = values[i + cells + 1]! * (1 - tx) + values[i + cells + 2]! * tx;
+      return a * (1 - ty) + b * ty;
+    };
     const step = 2; // amostra grossa: interpolação visual suficiente
     for (let y = 0; y < size; y += step) {
       for (let x = 0; x < size; x += step) {
-        const n = noise2D(x / (size * 0.16), y / (size * 0.16));
+        const n = sample(grid, x, y);
         if (n < 0.34) continue; // só os topos do ruído viram mancha
         const a = Math.min(0.16, (n - 0.34) * 0.35);
-        const warm = noise2D(x / (size * 0.4) + 9, y / (size * 0.4) + 9) > 0;
+        const warm = sample(warmGrid, x, y) > 0;
         const rC = warm ? 150 : 10;
         const gC = warm ? 132 : 52;
         const bC = warm ? 84 : 26;
@@ -208,12 +224,12 @@ function buildAlbedo(pattern: MowPattern = "checker", size = 2048) {
 
   // microfibras: granulação vista de perto
   ctx.lineWidth = 1;
-  for (let i = 0; i < 60000; i++) {
+  for (let i = 0; i < 16000; i++) {
     const x = rand() * size;
     const y = rand() * size;
-    const len = 2 + rand() * 8;
+    const len = 1 + rand() * 4;
     const bright = rand() > 0.44;
-    ctx.strokeStyle = `rgba(${bright ? "205,250,180" : "8,54,26"},${0.025 + rand() * 0.07})`;
+    ctx.strokeStyle = `rgba(${bright ? "160,191,117" : "20,49,18"},${0.04 + rand() * 0.06})`;
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x + (rand() - 0.5) * 3, y - len);
@@ -255,20 +271,13 @@ function buildAlbedo(pattern: MowPattern = "checker", size = 2048) {
 
 /* ----------------------------------------------------------------- relevo */
 
-function buildNormal(pattern: MowPattern = "checker", size = 1024) {
-  const spec = MOW[pattern];
+function buildNormal(_pattern: MowPattern = "checker", size = 512) {
   const made = canvas(size);
   if (!made) return null;
   const { c, ctx } = made;
   const rand = rng(0x5eed02);
   ctx.fillStyle = "#8080ff";
   ctx.fillRect(0, 0, size, size);
-
-  // inclinação oposta das faixas ceifadas
-  withStripes(ctx, size / 2, spec, (i, x, w) => {
-    ctx.fillStyle = i % 2 === 0 ? "rgba(104,128,255,0.6)" : "rgba(156,128,255,0.6)";
-    ctx.fillRect(x, 0, w, size * 2);
-  });
 
   // ondulação larga do terreno
   for (let i = 0; i < 90; i++) {
@@ -284,10 +293,10 @@ function buildNormal(pattern: MowPattern = "checker", size = 1024) {
 
   // lâminas
   ctx.lineWidth = 1;
-  for (let i = 0; i < 34000; i++) {
+  for (let i = 0; i < 9000; i++) {
     const x = rand() * size;
     const y = rand() * size;
-    ctx.strokeStyle = `rgba(${(90 + rand() * 80) | 0},${(90 + rand() * 80) | 0},255,0.3)`;
+    ctx.strokeStyle = `rgba(${(116 + rand() * 24) | 0},${(116 + rand() * 24) | 0},255,0.22)`;
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x + (rand() - 0.5) * 2, y - 2 - rand() * 5);
@@ -303,7 +312,7 @@ function buildNormal(pattern: MowPattern = "checker", size = 1024) {
 
 /* ------------------------------------------------------------- rugosidade */
 
-function buildRoughness(pattern: MowPattern = "checker", size = 1024) {
+function buildRoughness(pattern: MowPattern = "checker", size = 512) {
   const spec = MOW[pattern];
   const made = canvas(size);
   if (!made) return null;
@@ -314,7 +323,7 @@ function buildRoughness(pattern: MowPattern = "checker", size = 1024) {
 
   // grama penteada para lados opostos reflete diferente: brilho úmido rasante
   withStripes(ctx, size, spec, (i, x, w) => {
-    ctx.fillStyle = i % 2 === 0 ? "#828282" : "#d6d6d6";
+    ctx.fillStyle = i % 2 === 0 ? "#c0c0c0" : "#d2d2d2";
     ctx.fillRect(x, 0, w, size * 2);
   });
 

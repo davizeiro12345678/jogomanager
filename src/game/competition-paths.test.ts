@@ -9,9 +9,10 @@ import {
   seasonTables,
   sameClub,
 } from "./competition-season";
-import { createCups, playCupStage } from "./cup";
+import { createCups, playCupStage, cupPrize } from "./cup";
 import { computeTable } from "./season";
 import { applyPyramid, pyramidZones, leagueClubIds } from "./pyramid";
+import { SERIE_D_IDS } from "./data/serie-d";
 import { rankTable } from "./standings";
 import type { CareerState, CupState, TableRow } from "./types";
 
@@ -55,16 +56,16 @@ describe("classificação entre campeonatos", () => {
       cup("regional:x5686", champion!, [champion!, runnerUp!]),
     ]);
     expect(entries.filter((e) => e.clubId === champion).map((e) => e.competitionId)).toEqual([
-      "league:y5079b",
+      "league:y5079l",
       "national:Brasil",
     ]);
     expect(entries.filter((e) => e.clubId === runnerUp).map((e) => e.competitionId)).toEqual([
       "national:Brasil",
     ]);
     const admitted = applyRegionalEntries(state, {}, entries, { x5686: table });
-    expect(admitted.leagueId).toBe("y5079b");
-    expect(admitted.leagueClubs["y5079b"]).toContain(champion);
-    expect(admitted.leagueClubs["y5079b"]).toHaveLength(getLeague("y5079b").clubs.length);
+    expect(admitted.leagueId).toBe("y5079l");
+    expect(admitted.leagueClubs["y5079l"]).toContain(champion);
+    expect(admitted.leagueClubs["y5079l"]).toHaveLength(getLeague("y5079l").clubs.length);
     expect(getLeague("x5686").clubs.some((c) => c.id === champion)).toBe(true);
   });
   it("repassa a vaga estadual quando o campeão já está na Série C e preserva a identidade do clube", () => {
@@ -85,7 +86,7 @@ describe("classificação entre campeonatos", () => {
       [cup("regional:x5686", champion!, [champion!, runnerUp!])],
       composition,
     );
-    expect(entries.find((e) => e.competitionId === "league:y5079b")?.clubId).toBe(runnerUp);
+    expect(entries.find((e) => e.competitionId === "league:y5079l")?.clubId).toBe(runnerUp);
     const aliases = Object.keys(CLUBS).filter((id) => id !== champion && sameClub(id, champion!));
     for (const alias of aliases) expect(sameClub(alias, champion!)).toBe(true);
   });
@@ -109,6 +110,10 @@ describe("classificação entre campeonatos", () => {
       lowerWin.some((e) => e.clubId === lower && e.competitionId === "continental:CONMEBOL"),
     ).toBe(false);
     expect(lowerWin.filter((e) => e.competitionId === "continental:CONMEBOL")).toHaveLength(7);
+    expect(
+      lowerWin.find((e) => e.competitionId === "continental:CONMEBOL" && e.clubId === runner)
+        ?.phase,
+    ).toBe("principal");
   });
   it("um clube estadual não entra automaticamente na Libertadores", () => {
     const state = base("x5686"),
@@ -149,10 +154,10 @@ describe("classificação entre campeonatos", () => {
     );
     expect(next.season).toBe(2);
     expect(next.calendarYear).toBe(2027);
-    expect(next.leagueId).toBe("y5079b");
+    expect(next.leagueId).toBe("y5079l");
     expect(next.fixtures.some((f) => f.home === champ || f.away === champ)).toBe(true);
     expect(
-      next.qualifications?.find((e) => e.clubId === champ && e.competitionId === "league:y5079b"),
+      next.qualifications?.find((e) => e.clubId === champ && e.competitionId === "league:y5079l"),
     ).toBeTruthy();
     expect(Object.keys(next.competitionHistory![0]!.champions).length).toBeGreaterThan(6);
     expect(next.trophies.some((t) => t.name === getLeague("x5686").name)).toBe(true);
@@ -161,9 +166,7 @@ describe("classificação entre campeonatos", () => {
       next.qualifications,
     );
     // O clube não some nem se duplica dentro da pirâmide nacional; estadual é uma competição paralela.
-    const ids = ["bra", "bra2", "bra3", "y5079a", "y5079b", "y5079c"].flatMap((id) =>
-      leagueClubIds(next, id),
-    );
+    const ids = ["bra", "bra2", "bra3", ...SERIE_D_IDS].flatMap((id) => leagueClubIds(next, id));
     expect(new Set(ids).size).toBe(ids.length);
   });
 });
@@ -190,6 +193,18 @@ describe("regulamentos nacionais e critérios de tabela", () => {
     expect(countryRegulation("Rússia").primary).toBe(0);
     expect(countryRegulation("Inglaterra", 2026).primary).toBe(5);
     expect(countryRegulation("França").primaryDirect).toBe(3);
+  });
+  it("a copa inglesa admite um campeão de divisão inferior e fases preliminares sempre pagam prêmio positivo", () => {
+    const state = base("eng2"),
+      winner = state.clubId;
+    const entries = resolveQualifications(state, { eng: rows("eng") }, [
+      cup("national:Inglaterra", winner),
+    ]);
+    expect(entries.some((e) => e.competitionId === "secondary:UEFA" && e.clubId === winner)).toBe(
+      true,
+    );
+    for (let stage = -4; stage <= 4; stage++)
+      expect(cupPrize("national", stage)).toBeGreaterThan(0);
   });
   it("Brasil desempata por vitórias antes do saldo e Espanha por confronto direto", () => {
     const a = { ...rows("bra")[0]!, pts: 10, w: 3, gf: 5, ga: 10 },

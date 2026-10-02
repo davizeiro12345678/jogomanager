@@ -1,6 +1,7 @@
 export type Position = "GK" | "DF" | "MF" | "FW";
 
 export interface Club {
+  sourceTeamId?: string;
   id: string;
   name: string;
   short: string;
@@ -11,6 +12,9 @@ export interface Club {
 }
 
 export interface League {
+  membershipSeason?: string;
+  membershipSource?: string;
+  catalogStatus?: "sourced" | "legacy";
   id: string;
   name: string;
   country: string;
@@ -61,6 +65,12 @@ export interface Player {
   unhappy?: boolean;
   nationality?: string;
   photo?: string;
+  rosterSource?: "catalog" | "generated" | "imported" | "custom";
+  sourcePlayerId?: string;
+  sourceProvider?: string;
+  sourceExternalId?: string;
+  sourceIdentityAliases?: string[];
+  birthDate?: string;
 }
 
 export type FormationKey = "4-3-3" | "4-4-2" | "3-5-2" | "4-2-3-1";
@@ -197,6 +207,11 @@ export interface CareerState {
   /** Persistent local career identity, relationships and football memories. */
   world?: import("./career-world-types").CareerWorld;
   version: 3;
+  /** One-time roster/catalog migration; never refills players sold afterwards. */
+  catalogRevision?: number;
+  /** One-time calibration of exact, untouched built-in roster fingerprints. */
+  simulationRatingRevision?: 1;
+  catalogCalendarPending?: boolean;
   leagueId: string;
   clubId: string;
   managerName: string;

@@ -1,0 +1,118 @@
+import type { AddedLang } from "./locale-catalog";
+
+export const CORE_NAV_KEYS = [
+  "nav.panel",
+  "nav.central",
+  "nav.squad",
+  "nav.tactics",
+  "nav.training",
+  "nav.league",
+  "nav.cups",
+  "nav.market",
+  "nav.scouting",
+  "nav.finances",
+  "nav.board",
+  "nav.stats",
+  "nav.news",
+  "nav.history",
+  "nav.coach",
+  "nav.auto",
+  "nav.awards",
+  "nav.profile",
+  "nav.ai",
+  "nav.editor",
+  "nav.chat",
+  "nav.store",
+  "nav.purchases",
+  "nav.versus",
+  "nav.replays",
+  "nav.visual",
+  "action.play",
+  "shell.language",
+  "common.search",
+  "common.close",
+] as const;
+
+/** Core navigation is translated, rather than registering English-only locales.
+ * Longer career narratives retain the established English/Portuguese fallback. */
+const ROWS: Record<AddedLang, string> = {
+  af: "Paneel|Klub|Span|Taktiek|Oefening|Liga|Bekers|Oordragte|Talentsoek|Finansies|Bestuur|Statistiek|Nuus|Geskiedenis|Loopbaan|Outomatiese seisoen|Prestasies|Profiel|Assistent|Redigeerder|Gesels|Winkel|Aankope|Multispeler|Herhalings|Grafika|Speel|Taal|Soek|Sluit",
+  am: "መቆጣጠሪያ|ክለብ|ቡድን|ስልቶች|ልምምድ|ሊግ|ዋንጫዎች|ዝውውር|ተሰጥኦ ፍለጋ|ፋይናንስ|አመራር|ስታቲስቲክስ|ዜና|ታሪክ|ሙያ|ራስ ሰር ወቅት|ስኬቶች|መገለጫ|ረዳት|አርታዒ|ውይይት|ሱቅ|ግዢዎች|ባለብዙ ተጫዋች|ድጋሚ እይታ|ግራፊክስ|ተጫወት|ቋንቋ|ፈልግ|ዝጋ",
+  as: "ডেশ্বব’ৰ্ড|ক্লাব|দল|কৌশল|প্ৰশিক্ষণ|লীগ|কাপ|বদলি|প্ৰতিভা সন্ধান|বিত্ত|পৰিচালনা|পৰিসংখ্যা|বাতৰি|ইতিহাস|কেৰিয়াৰ|স্বয়ংক্ৰিয় ছিজন|সাফল্য|প্ৰফাইল|সহায়ক|সম্পাদক|আড্ডা|দোকান|ক্ৰয়|বহু খেলুৱৈ|পুনৰ প্ৰদৰ্শন|গ্ৰাফিক্স|খেলক|ভাষা|সন্ধান|বন্ধ কৰক",
+  az: "İdarə paneli|Klub|Heyət|Taktika|Məşq|Liqa|Kuboklar|Transferlər|İstedad axtarışı|Maliyyə|Rəhbərlik|Statistika|Xəbərlər|Tarixçə|Karyera|Avtomatik mövsüm|Nailiyyətlər|Profil|Köməkçi|Redaktor|Söhbət|Mağaza|Alışlar|Çoxoyunçu|Təkrarlar|Qrafika|Oyna|Dil|Axtar|Bağla",
+  be: "Панэль|Клуб|Склад|Тактыка|Трэніроўка|Ліга|Кубкі|Трансферы|Пошук талентаў|Фінансы|Кіраўніцтва|Статыстыка|Навіны|Гісторыя|Кар’ера|Аўтаматычны сезон|Дасягненні|Профіль|Памочнік|Рэдактар|Чат|Крама|Пакупкі|Сеткавая гульня|Паўторы|Графіка|Гуляць|Мова|Пошук|Закрыць",
+  bs: "Kontrolna ploča|Klub|Ekipa|Taktika|Trening|Liga|Kupovi|Transferi|Skauting|Finansije|Uprava|Statistika|Vijesti|Historija|Karijera|Automatska sezona|Dostignuća|Profil|Asistent|Uređivač|Razgovor|Prodavnica|Kupovine|Više igrača|Snimci|Grafika|Igraj|Jezik|Pretraži|Zatvori",
+  ceb: "Dashboard|Klub|Pundok|Taktika|Pagbansay|Liga|Mga kopa|Pagbalhin|Pagpangita og talento|Panalapi|Pagdumala|Estadistika|Balita|Kasaysayan|Karera|Awtomatikong panahon|Mga kalampusan|Profayl|Katabang|Editor|Panag-istorya|Tindahan|Mga gipamalit|Daghang magdudula|Mga pag-usab|Grapika|Dula|Pinulongan|Pangitaa|Isira",
+  cy: "Dangosfwrdd|Clwb|Carfan|Tactegau|Hyfforddiant|Cynghrair|Cwpanau|Trosglwyddiadau|Sgowtio|Cyllid|Bwrdd|Ystadegau|Newyddion|Hanes|Gyrfa|Tymor awtomatig|Cyflawniadau|Proffil|Cynorthwyydd|Golygydd|Sgwrs|Siop|Pryniannau|Aml-chwaraewr|Ailchwarae|Graffeg|Chwarae|Iaith|Chwilio|Cau",
+  eo: "Panelo|Klubo|Teamo|Taktiko|Trejnado|Ligo|Pokaloj|Transiroj|Talentoserĉo|Financoj|Estraro|Statistiko|Novaĵoj|Historio|Kariero|Aŭtomata sezono|Atingoj|Profilo|Asistanto|Redaktilo|Babilejo|Vendejo|Aĉetoj|Plurludanto|Ripetoj|Grafiko|Ludi|Lingvo|Serĉi|Fermi",
+  et: "Töölaud|Klubi|Koosseis|Taktika|Treening|Liiga|Karikad|Üleminekud|Talendiotsing|Rahandus|Juhatus|Statistika|Uudised|Ajalugu|Karjäär|Automaatne hooaeg|Saavutused|Profiil|Abiline|Redaktor|Vestlus|Pood|Ostud|Mitmikmäng|Kordused|Graafika|Mängi|Keel|Otsi|Sulge",
+  eu: "Panela|Kluba|Taldea|Taktikak|Entrenamendua|Liga|Kopak|Fitxaketak|Talentuen bilaketa|Finantzak|Zuzendaritza|Estatistikak|Albisteak|Historia|Ibilbidea|Denboraldi automatikoa|Lorpenak|Profila|Laguntzailea|Editorea|Txata|Denda|Erosketak|Jokalari anitz|Errepikapenak|Grafikoak|Jokatu|Hizkuntza|Bilatu|Itxi",
+  fil: "Dashboard|Klub|Koponan|Taktika|Pagsasanay|Liga|Mga tasa|Paglipat|Paghahanap ng talento|Pananalapi|Pamunuan|Estadistika|Balita|Kasaysayan|Karera|Awtomatikong season|Mga tagumpay|Profile|Katulong|Editor|Usapan|Tindahan|Mga binili|Maraming manlalaro|Mga replay|Grapika|Maglaro|Wika|Maghanap|Isara",
+  ga: "Deais|Club|Foireann|Oirbheartaíocht|Traenáil|Sraith|Cupáin|Aistrithe|Lorg tallainne|Airgeadas|Bord|Staitisticí|Nuacht|Stair|Gairm|Séasúr uathoibríoch|Éachtaí|Próifíl|Cúntóir|Eagarthóir|Comhrá|Siopa|Ceannacháin|Il-imreoir|Athchraoltaí|Grafaicí|Imir|Teanga|Cuardaigh|Dún",
+  gd: "Deas-bhòrd|Club|Sgioba|Innleachdan|Trèanadh|Lìog|Cupan|Gluasadan|Lorg tàlant|Ionmhas|Bòrd|Staitistig|Naidheachdan|Eachdraidh|Dreuchd|Seusan fèin-obrachail|Euchdan|Pròifil|Neach-cuideachaidh|Deasaiche|Còmhradh|Bùth|Ceannachdan|Ioma-chluicheadair|Ath-chluichean|Grafaigs|Cluich|Cànan|Lorg|Dùin",
+  gl: "Panel|Club|Cadro|Tácticas|Adestramento|Liga|Copas|Fichaxes|Observación|Finanzas|Directiva|Estatísticas|Novas|Historia|Carreira|Tempada automática|Logros|Perfil|Asistente|Editor|Conversa|Tenda|Compras|Multixogador|Repeticións|Gráficos|Xogar|Idioma|Buscar|Pechar",
+  gu: "ડેશબોર્ડ|ક્લબ|ટુકડી|રણનીતિ|તાલીમ|લીગ|કપ|ટ્રાન્સફર|પ્રતિભા શોધ|નાણાં|વ્યવસ્થાપન|આંકડા|સમાચાર|ઇતિહાસ|કારકિર્દી|સ્વચાલિત સિઝન|સિદ્ધિઓ|પ્રોફાઇલ|સહાયક|સંપાદક|ચેટ|દુકાન|ખરીદી|બહુ ખેલાડી|રીપ્લે|ગ્રાફિક્સ|રમો|ભાષા|શોધો|બંધ કરો",
+  ha: "Allon sarrafawa|Ƙungiya|Yan wasa|Dabaru|Horo|Gasar lig|Kofuna|Canja wurin wasa|Neman ƙwarewa|Kuɗi|Hukuma|Ƙididdiga|Labarai|Tarihi|Sana’a|Kaka ta atomatik|Nasarori|Bayanan kai|Mataimaki|Mai gyara|Hira|Shago|Sayayya|Yan wasa da yawa|Maimaitawa|Zane|Buga wasa|Harshe|Nema|Rufe",
+  hy: "Վահանակ|Ակումբ|Կազմ|Մարտավարություն|Մարզում|Լիգա|Գավաթներ|Տրանսֆերներ|Տաղանդների որոնում|Ֆինանսներ|Ղեկավարություն|Վիճակագրություն|Նորություններ|Պատմություն|Կարիերա|Ավտոմատ մրցաշրջան|Նվաճումներ|Պրոֆիլ|Օգնական|Խմբագրիչ|Զրույց|Խանութ|Գնումներ|Բազմախաղացող|Կրկնություններ|Գրաֆիկա|Խաղալ|Լեզու|Որոնել|Փակել",
+  ig: "Ogwe njikwa|Klọb|Ndị egwuregwu|Usoro|Ọzụzụ|Njikọ|Iko|Mbufe|Nchọpụta nka|Ego|Ndị isi|Ọnụọgụ|Akụkọ|Akụkọ ihe mere eme|Ọrụ|Oge akpaka|Ihe ịga nke ọma|Profaịlụ|Onye enyemaka|Onye ndezi|Mkparịta ụka|Ụlọ ahịa|Ịzụ ahịa|Ọtụtụ ndị egwuregwu|Nmegharị|Eserese|Gwuo egwu|Asụsụ|Chọọ|Mechie",
+  is: "Yfirlit|Félag|Leikmannahópur|Leikaðferðir|Æfingar|Deild|Bikarkeppnir|Félagaskipti|Leikmannaleit|Fjármál|Stjórn|Tölfræði|Fréttir|Saga|Ferill|Sjálfvirkt tímabil|Afrek|Prófíll|Aðstoðarmaður|Ritill|Spjall|Verslun|Kaup|Fjölspilun|Endursýningar|Grafík|Spila|Tungumál|Leita|Loka",
+  jv: "Dasbor|Klub|Tim|Taktik|Latihan|Liga|Piala|Transfer|Golek bakat|Keuangan|Pengurus|Statistik|Warta|Sejarah|Karir|Mangsa otomatis|Prestasi|Profil|Asisten|Editor|Obrolan|Toko|Tuku|Akeh pemain|Baleni|Grafis|Dolanan|Basa|Goleki|Tutup",
+  ka: "პანელი|კლუბი|შემადგენლობა|ტაქტიკა|ვარჯიში|ლიგა|თასები|ტრანსფერები|ტალანტების ძიება|ფინანსები|ხელმძღვანელობა|სტატისტიკა|სიახლეები|ისტორია|კარიერა|ავტომატური სეზონი|მიღწევები|პროფილი|ასისტენტი|რედაქტორი|ჩატი|მაღაზია|შესყიდვები|მრავალმოთამაშიანი|გამეორებები|გრაფიკა|თამაში|ენა|ძიება|დახურვა",
+  kk: "Басқару панелі|Клуб|Құрам|Тактика|Жаттығу|Лига|Кубоктар|Трансферлер|Талант іздеу|Қаржы|Басшылық|Статистика|Жаңалықтар|Тарих|Мансап|Автоматты маусым|Жетістіктер|Профиль|Көмекші|Редактор|Чат|Дүкен|Сатып алулар|Көп ойыншы|Қайталау|Графика|Ойнау|Тіл|Іздеу|Жабу",
+  km: "ផ្ទាំងគ្រប់គ្រង|ក្លិប|ក្រុម|យុទ្ធសាស្ត្រ|ហ្វឹកហាត់|លីគ|ពានរង្វាន់|ការផ្ទេរ|ស្វែងរកទេពកោសល្យ|ហិរញ្ញវត្ថុ|ថ្នាក់ដឹកនាំ|ស្ថិតិ|ព័ត៌មាន|ប្រវត្តិ|អាជីព|រដូវកាលស្វ័យប្រវត្តិ|សមិទ្ធផល|ប្រវត្តិរូប|ជំនួយការ|កម្មវិធីកែសម្រួល|ជជែក|ហាង|ការទិញ|អ្នកលេងច្រើន|មើលឡើងវិញ|ក្រាហ្វិក|លេង|ភាសា|ស្វែងរក|បិទ",
+  kn: "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್|ಕ್ಲಬ್|ತಂಡ|ತಂತ್ರಗಳು|ತರಬೇತಿ|ಲೀಗ್|ಕಪ್‌ಗಳು|ವರ್ಗಾವಣೆ|ಪ್ರತಿಭೆ ಹುಡುಕಾಟ|ಹಣಕಾಸು|ನಿರ್ವಹಣೆ|ಅಂಕಿಅಂಶಗಳು|ಸುದ್ದಿ|ಇತಿಹಾಸ|ವೃತ್ತಿ|ಸ್ವಯಂಚಾಲಿತ ಋತು|ಸಾಧನೆಗಳು|ಪ್ರೊಫೈಲ್|ಸಹಾಯಕ|ಸಂಪಾದಕ|ಚಾಟ್|ಅಂಗಡಿ|ಖರೀದಿಗಳು|ಬಹು ಆಟಗಾರರು|ಮರುಪ್ರಸಾರ|ಗ್ರಾಫಿಕ್ಸ್|ಆಡಿ|ಭಾಷೆ|ಹುಡುಕಿ|ಮುಚ್ಚಿ",
+  ku: "Panela kontrolê|Klûb|Tîm|Taktîk|Perwerde|Lîg|Kûpa|Veguhastin|Lêgerîna jêhatîbûnê|Darayî|Rêveberî|Amar|Nûçe|Dîrok|Karîyer|Demsala otomatîk|Destkeftî|Profîl|Alîkar|Edîtor|Sohbet|Dikan|Kirîn|Pir-lîstikvan|Dubare|Grafîk|Bilîze|Ziman|Lêgerîn|Bigire",
+  ky: "Башкаруу панели|Клуб|Курам|Тактика|Машыгуу|Лига|Кубоктор|Трансферлер|Талант издөө|Каржы|Жетекчилик|Статистика|Жаңылыктар|Тарых|Карьера|Автоматтык сезон|Жетишкендиктер|Профиль|Жардамчы|Редактор|Чат|Дүкөн|Сатып алуулар|Көп оюнчу|Кайталоолор|Графика|Ойноо|Тил|Издөө|Жабуу",
+  lb: "Iwwersiicht|Club|Ekipp|Taktik|Training|Liga|Coupen|Transferen|Talentsich|Finanzen|Direktioun|Statistiken|Neiegkeeten|Geschicht|Karriär|Automatesch Saison|Erfolleger|Profil|Assistent|Editeur|Chat|Buttek|Akeef|Méispeeler|Widderhuelungen|Grafik|Spillen|Sprooch|Sichen|Zoumaachen",
+  lo: "ແຜງຄວບຄຸມ|ສະໂມສອນ|ທີມ|ຍຸດທະວິທີ|ຝຶກຊ້ອມ|ລີກ|ຖ້ວຍ|ການຍ້າຍ|ຄົ້ນຫາພອນສະຫວັນ|ການເງິນ|ຜູ້ບໍລິຫານ|ສະຖິຕິ|ຂ່າວ|ປະຫວັດ|ອາຊີບ|ລະດູການອັດຕະໂນມັດ|ຄວາມສຳເລັດ|ໂປຣໄຟລ໌|ຜູ້ຊ່ວຍ|ຕົວແກ້ໄຂ|ສົນທະນາ|ຮ້ານ|ການຊື້|ຫຼາຍຜູ້ຫຼິ້ນ|ຫຼິ້ນຄືນ|ກຣາຟິກ|ຫຼິ້ນ|ພາສາ|ຄົ້ນຫາ|ປິດ",
+  lt: "Skydelis|Klubas|Sudėtis|Taktika|Treniruotės|Lyga|Taurės|Perėjimai|Talentų paieška|Finansai|Valdyba|Statistika|Naujienos|Istorija|Karjera|Automatinis sezonas|Pasiekimai|Profilis|Asistentas|Redaktorius|Pokalbis|Parduotuvė|Pirkiniai|Keli žaidėjai|Pakartojimai|Grafika|Žaisti|Kalba|Ieškoti|Uždaryti",
+  lv: "Panelis|Klubs|Sastāvs|Taktika|Treniņi|Līga|Kausi|Pārejas|Talantu meklēšana|Finanses|Vadība|Statistika|Ziņas|Vēsture|Karjera|Automātiska sezona|Sasniegumi|Profils|Asistents|Redaktors|Saruna|Veikals|Pirkumi|Vairāki spēlētāji|Atkārtojumi|Grafika|Spēlēt|Valoda|Meklēt|Aizvērt",
+  mk: "Контролна табла|Клуб|Состав|Тактика|Тренинг|Лига|Купови|Трансфери|Скаутинг|Финансии|Управа|Статистика|Вести|Историја|Кариера|Автоматска сезона|Достигнувања|Профил|Асистент|Уредувач|Разговор|Продавница|Купувања|Повеќе играчи|Повторувања|Графика|Играј|Јазик|Пребарај|Затвори",
+  ml: "ഡാഷ്‌ബോർഡ്|ക്ലബ്|സംഘം|തന്ത്രങ്ങൾ|പരിശീലനം|ലീഗ്|കപ്പുകൾ|കൈമാറ്റങ്ങൾ|പ്രതിഭാന്വേഷണം|സാമ്പത്തികം|ഭരണസമിതി|സ്ഥിതിവിവരങ്ങൾ|വാർത്തകൾ|ചരിത്രം|കരിയർ|സ്വയമേവ സീസൺ|നേട്ടങ്ങൾ|പ്രൊഫൈൽ|സഹായി|എഡിറ്റർ|ചാറ്റ്|കട|വാങ്ങലുകൾ|പല കളിക്കാർ|റീപ്ലേ|ഗ്രാഫിക്സ്|കളിക്കുക|ഭാഷ|തിരയുക|അടയ്ക്കുക",
+  mn: "Хяналтын самбар|Клуб|Бүрэлдэхүүн|Тактик|Бэлтгэл|Лиг|Цомууд|Шилжилт|Авьяас хайх|Санхүү|Удирдлага|Статистик|Мэдээ|Түүх|Карьер|Автомат улирал|Амжилтууд|Профайл|Туслах|Засварлагч|Чат|Дэлгүүр|Худалдан авалт|Олон тоглогч|Давталт|График|Тоглох|Хэл|Хайх|Хаах",
+  mr: "डॅशबोर्ड|क्लब|संघ|रणनीती|प्रशिक्षण|लीग|चषक|बदल्या|प्रतिभा शोध|अर्थव्यवस्था|व्यवस्थापन|आकडेवारी|बातम्या|इतिहास|कारकीर्द|स्वयंचलित हंगाम|कामगिरी|प्रोफाइल|सहाय्यक|संपादक|गप्पा|दुकान|खरेदी|अनेक खेळाडू|पुनर्प्रक्षेपण|ग्राफिक्स|खेळा|भाषा|शोधा|बंद करा",
+  mt: "Pannell|Klabb|Skwadra|Tattiċi|Taħriġ|Kampjonat|Tazzi|Trasferimenti|Tfittxija ta’ talent|Finanzi|Bord|Statistika|Aħbarijiet|Storja|Karriera|Staġun awtomatiku|Kisbiet|Profil|Assistent|Editur|Chat|Ħanut|Xiri|Ħafna plejers|Replays|Grafika|Ilgħab|Lingwa|Fittex|Agħlaq",
+  my: "ဒက်ရှ်ဘုတ်|အသင်း|ကစားသမားအဖွဲ့|နည်းဗျူဟာ|လေ့ကျင့်ရေး|လိဂ်|ဖလားများ|အပြောင်းအရွှေ့|စွမ်းရည်ရှာဖွေမှု|ဘဏ္ဍာရေး|စီမံခန့်ခွဲမှု|စာရင်းအင်း|သတင်း|သမိုင်း|အသက်မွေးမှု|အလိုအလျောက်ရာသီ|အောင်မြင်မှုများ|ပရိုဖိုင်|လက်ထောက်|တည်းဖြတ်သူ|စကားပြော|ဆိုင်|ဝယ်ယူမှုများ|ကစားသမားများစွာ|ပြန်ကြည့်ရန်|ဂရပ်ဖစ်|ကစားရန်|ဘာသာစကား|ရှာရန်|ပိတ်ရန်",
+  ne: "ड्यासबोर्ड|क्लब|टोली|रणनीति|प्रशिक्षण|लिग|कपहरू|स्थानान्तरण|प्रतिभा खोज|वित्त|व्यवस्थापन|तथ्याङ्क|समाचार|इतिहास|करिअर|स्वचालित सिजन|उपलब्धिहरू|प्रोफाइल|सहायक|सम्पादक|कुराकानी|पसल|खरिदहरू|बहु खेलाडी|रिप्ले|ग्राफिक्स|खेल्नुहोस्|भाषा|खोज्नुहोस्|बन्द गर्नुहोस्",
+  pa: "ਡੈਸ਼ਬੋਰਡ|ਕਲੱਬ|ਟੀਮ|ਰਣਨੀਤੀ|ਸਿਖਲਾਈ|ਲੀਗ|ਕੱਪ|ਬਦਲੀਆਂ|ਪ੍ਰਤਿਭਾ ਖੋਜ|ਵਿੱਤ|ਪ੍ਰਬੰਧਨ|ਅੰਕੜੇ|ਖ਼ਬਰਾਂ|ਇਤਿਹਾਸ|ਕਰੀਅਰ|ਆਟੋਮੈਟਿਕ ਸੀਜ਼ਨ|ਪ੍ਰਾਪਤੀਆਂ|ਪ੍ਰੋਫਾਈਲ|ਸਹਾਇਕ|ਸੰਪਾਦਕ|ਗੱਲਬਾਤ|ਦੁਕਾਨ|ਖ਼ਰੀਦਾਂ|ਬਹੁ ਖਿਡਾਰੀ|ਰੀਪਲੇ|ਗ੍ਰਾਫਿਕਸ|ਖੇਡੋ|ਭਾਸ਼ਾ|ਖੋਜੋ|ਬੰਦ ਕਰੋ",
+  ps: "کنټرول پاڼه|کلب|لوبډله|تګلارې|روزنه|لیګ|جامونه|لېږدونه|د استعداد لټون|مالیه|مدیریت|احصایې|خبرونه|تاریخ|مسلک|اتومات فصل|لاسته راوړنې|پروفایل|مرستیال|سمونګر|خبرې|پلورنځی|پېرودنې|څو لوبغاړي|بیاکتنې|ګرافیک|لوبه وکړئ|ژبه|لټون|تړل",
+  si: "පාලක පුවරුව|ක්ලබ්|කණ්ඩායම|උපාය|පුහුණුව|ලීගය|කුසලාන|මාරුවීම්|දක්ෂතා සෙවීම|මූල්‍ය|පාලනය|සංඛ්‍යාලේඛන|පුවත්|ඉතිහාසය|වෘත්තිය|ස්වයංක්‍රීය වාරය|ජයග්‍රහණ|පැතිකඩ|සහකරු|සංස්කාරක|කතාබහ|වෙළඳසැල|මිලදී ගැනීම්|බහු ක්‍රීඩක|නැවත දර්ශන|ග්‍රැෆික්ස්|ක්‍රීඩා කරන්න|භාෂාව|සොයන්න|වසන්න",
+  sl: "Nadzorna plošča|Klub|Ekipa|Taktika|Trening|Liga|Pokali|Prestopi|Iskanje talentov|Finance|Uprava|Statistika|Novice|Zgodovina|Kariera|Samodejna sezona|Dosežki|Profil|Pomočnik|Urejevalnik|Klepet|Trgovina|Nakupi|Več igralcev|Ponovitve|Grafika|Igraj|Jezik|Išči|Zapri",
+  so: "Guddiga|Naadiga|Kooxda|Xeeladaha|Tababarka|Horyaalka|Koobabka|Wareejinta|Raadinta hibada|Dhaqaalaha|Maamulka|Tirakoobka|Wararka|Taariikhda|Xirfadda|Xilli otomaatig ah|Guulaha|Astaanta|Kaaliye|Tifaftire|Wada sheekaysi|Dukaan|Iibsiyada|Ciyaartoy badan|Ku celin|Garaafyada|Ciyaar|Luqad|Raadi|Xir",
+  sq: "Paneli|Klubi|Skuadra|Taktikat|Stërvitja|Liga|Kupat|Transferimet|Zbulimi i talenteve|Financat|Bordi|Statistikat|Lajmet|Historia|Karriera|Sezon automatik|Arritjet|Profili|Asistenti|Redaktuesi|Biseda|Dyqani|Blerjet|Shumë lojtarë|Përsëritjet|Grafika|Luaj|Gjuha|Kërko|Mbyll",
+  ta: "கட்டுப்பாட்டகம்|கழகம்|அணி|தந்திரங்கள்|பயிற்சி|லீக்|கோப்பைகள்|இடமாற்றங்கள்|திறமை தேடல்|நிதி|நிர்வாகம்|புள்ளிவிவரங்கள்|செய்திகள்|வரலாறு|வாழ்க்கைப்பணி|தானியங்கி பருவம்|சாதனைகள்|சுயவிவரம்|உதவியாளர்|திருத்தி|அரட்டை|கடை|கொள்முதல்கள்|பல வீரர்கள்|மறு ஒளிபரப்பு|வரைகலை|விளையாடு|மொழி|தேடு|மூடு",
+  te: "డ్యాష్‌బోర్డ్|క్లబ్|జట్టు|వ్యూహాలు|శిక్షణ|లీగ్|కప్పులు|బదిలీలు|ప్రతిభ అన్వేషణ|ఆర్థికం|నిర్వహణ|గణాంకాలు|వార్తలు|చరిత్ర|కెరీర్|స్వయంచాలక సీజన్|విజయాలు|ప్రొఫైల్|సహాయకుడు|ఎడిటర్|చాట్|దుకాణం|కొనుగోళ్లు|బహుళ ఆటగాళ్లు|రీప్లేలు|గ్రాఫిక్స్|ఆడండి|భాష|వెతకండి|మూసివేయండి",
+  tg: "Панел|Клуб|Ҳайат|Тактика|Машқ|Лига|Ҷомҳо|Интиқолҳо|Ҷустуҷӯи истеъдод|Молия|Роҳбарият|Омор|Хабарҳо|Таърих|Карера|Мавсими худкор|Дастовардҳо|Профил|Ёрдамчӣ|Муҳаррир|Суҳбат|Мағоза|Харидҳо|Бисёрбозигар|Такрорҳо|Графика|Бозӣ|Забон|Ҷустуҷӯ|Пӯшидан",
+  tk: "Dolandyryş paneli|Klub|Topar|Taktika|Türgenleşik|Liga|Kuboklar|Geçirişler|Zehin gözlegi|Maliýe|Ýolbaşçylyk|Statistika|Habarlar|Taryh|Karýera|Awtomatiki möwsüm|Üstünlikler|Profil|Kömekçi|Redaktor|Söhbet|Dükan|Satyn alyşlar|Köp oýunçy|Gaýtalamalar|Grafika|Oýna|Dil|Gözle|Ýap",
+  ur: "ڈیش بورڈ|کلب|اسکواڈ|حکمت عملی|تربیت|لیگ|کپ|منتقلیاں|ٹیلنٹ کی تلاش|مالیات|انتظامیہ|اعداد و شمار|خبریں|تاریخ|کیریئر|خودکار سیزن|کامیابیاں|پروفائل|معاون|ایڈیٹر|گفتگو|دکان|خریداری|متعدد کھلاڑی|ری پلے|گرافکس|کھیلیں|زبان|تلاش|بند کریں",
+  uz: "Boshqaruv paneli|Klub|Tarkib|Taktika|Mashgʻulot|Liga|Kuboklar|Transferlar|Isteʼdod izlash|Moliya|Rahbariyat|Statistika|Yangiliklar|Tarix|Karyera|Avtomatik mavsum|Yutuqlar|Profil|Yordamchi|Muharrir|Suhbat|Doʻkon|Xaridlar|Koʻp oʻyinchi|Takrorlar|Grafika|Oʻynash|Til|Qidirish|Yopish",
+  yo: "Pátákó ìṣàkóso|Ẹgbẹ́|Àwọn agbábọ́ọ̀lù|Ọgbọ́n|Ìdánilẹ́kọ̀ọ́|Ajumọṣe|Àwọn ife ẹ̀yẹ|Gbigbe|Wíwá ẹ̀bùn|Ìnáwó|Ìṣàkóso|Ìṣirò|Ìròyìn|Ìtàn|Iṣẹ́|Àkókò aládàáṣiṣẹ́|Àṣeyọrí|Profaili|Olùrànlọ́wọ́|Olóòtú|Ìjíròrò|Ilé ìtajà|Rírà|Ọ̀pọ̀ eléré|Àtúnṣe eré|Àwòrán|Ṣeré|Èdè|Wá|Pa dé",
+  zu: "Ideshibhodi|Ikilabhu|Iqembu|Amaqhinga|Ukuqeqesha|Iligi|Izindebe|Ukudluliswa|Ukufuna ithalente|Izimali|Abaphathi|Izibalo|Izindaba|Umlando|Umsebenzi|Isizini ezenzakalelayo|Impumelelo|Iphrofayela|Umsizi|Umhleli|Ingxoxo|Isitolo|Okuthengiwe|Abadlali abaningi|Ukuphindaphinda|Izithombe|Dlala|Ulimi|Sesha|Vala",
+  rw: "Ikibaho|Ikipe|Abakinnyi|Amayeri|Imyitozo|Shampiyona|Ibikombe|Ihererekanya|Gushaka impano|Imari|Ubuyobozi|Imibare|Amakuru|Amateka|Umwuga|Igihembwe cyikora|Ibyagezweho|Umwirondoro|Umufasha|Muhinduzi|Ikiganiro|Iduka|Ibyaguzwe|Abakinnyi benshi|Gusubiramo|Amashusho|Kina|Ururimi|Shakisha|Funga",
+  mg: "Tabilao|Klioba|Ekipa|Tetika|Fanazaran-tena|Ligy|Amboara|Famindrana|Fikarohana talenta|Fitantanam-bola|Fitantanana|Antontanisa|Vaovao|Tantara|Asa|Vanim-potoana mandeha ho azy|Zava-bita|Mombamomba|Mpanampy|Mpanova|Resaka|Fivarotana|Fividianana|Mpilalao maro|Famerenana|Sary|Milalao|Fiteny|Mitady|Akatona",
+  ny: "Bolodi|Kalabu|Gulu|Njira|Maphunziro|Ligi|Makapu|Kusamuka|Kufufuza luso|Ndalama|Oyang’anira|Ziwerengero|Nkhani|Mbiri|Ntchito|Nyengo yodziyendetsa|Zopambana|Mbiri yanu|Wothandizira|Mkonzi|Macheza|Sitolo|Zogula|Osewera ambiri|Kubwereza|Zithunzi|Sewerani|Chilankhulo|Fufuzani|Tsekani",
+  sd: "ڊيش بورڊ|ڪلب|ٽيم|حڪمت عمليون|تربيت|ليگ|ڪپ|منتقليون|صلاحيت جي ڳولا|ماليات|انتظاميا|انگ اکر|خبرون|تاريخ|ڪيريئر|خودڪار موسم|ڪاميابيون|پروفائيل|مددگار|ايڊيٽر|ڳالهه ٻولهه|دڪان|خريداري|گهڻا رانديگر|ٻيهر ڏيک|گرافڪس|کيڏو|ٻولي|ڳولا|بند ڪريو",
+  yi: "קאָנטראָל־ברעט|קלוב|מאַנשאַפֿט|טאַקטיק|טרענירונג|ליגע|בעכערס|טראַנספֿערס|טאַלאַנט־זוכן|פֿינאַנצן|פֿאַרוואַלטונג|סטאַטיסטיק|נײַעס|געשיכטע|קאַריערע|אויטאָמאַטישע סעזאָן|דערגרייכונגען|פּראָפֿיל|העלפֿער|רעדאַקטאָר|שמועס|קראָם|קויפֿן|מערשפּילער|איבערשפּילן|גראַפֿיק|שפּילן|שפּראַך|זוכן|פֿאַרמאַכן",
+  ug: "باشقۇرۇش تاختىسى|كۇلۇب|ئەترەت|تاكتىكا|مەشىق|بىرلەشمە|لوڭقىلار|يۆتكەش|تالانت ئىزدەش|مالىيە|باشقۇرۇش|ستاتىستىكا|خەۋەرلەر|تارىخ|كەسىپ|ئاپتوماتىك پەسىل|مۇۋەپپەقىيەت|ئارخىپ|ياردەمچى|تەھرىرلىگۈچ|پاراڭ|دۇكان|سېتىۋېلىش|كۆپ ئوينىغۇچى|قايتا كۆرۈش|گرافىك|ئويناش|تىل|ئىزدەش|تاقاش",
+  dv: "ޑޭޝްބޯޑް|ކްލަބް|ޓީމް|ޓެކްޓިކްސް|ތަމްރީނު|ލީގް|ކަޕްތައް|ޓްރާންސްފަރތައް|ހުނަރު ހޯދުން|ފައިސާ|އިދާރާ|އަދަދުތައް|ޚަބަރު|ތާރީޚު|ކެރިއަރ|އޮޓޯމެޓިކް ސީޒަން|ކާމިޔާބީ|ޕްރޮފައިލް|އެސިސްޓަންޓް|އެޑިޓަރ|ޗެޓް|ފިހާރަ|ގަތް ތަކެތި|ގިނަ ކުޅޭމީހުން|ރީޕްލޭ|ގްރެފިކްސް|ކުޅެން|ބަސް|ހޯދާ|ލައްޕާ",
+};
+
+export const EXPANDED_MESSAGES: Record<AddedLang, Record<string, string>> = Object.fromEntries<
+  Record<string, string>
+>(
+  Object.entries(ROWS).map(([lang, row]) => {
+    const cells = row.split("|");
+    if (cells.length !== CORE_NAV_KEYS.length)
+      throw new Error(`Invalid navigation phrasebook: ${lang}`);
+    const dict = Object.fromEntries(CORE_NAV_KEYS.map((key, i) => [key, cells[i]!]));
+    return [
+      lang,
+      {
+        ...dict,
+        "nav.press": dict["nav.news"]!,
+        "shell.career": dict["nav.coach"]!,
+        "shell.more": dict["nav.editor"]!,
+      },
+    ];
+  }),
+) as Record<AddedLang, Record<string, string>>;

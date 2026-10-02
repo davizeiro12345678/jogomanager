@@ -4,6 +4,8 @@ import { ACCESS_LEAGUES } from "./leagues-access";
 import { EXTRA_LEAGUES } from "./leagues-extra";
 import { WORLD_LEAGUES } from "./leagues-world";
 import { applyLeagueFill } from "./leagues-fill";
+import { applyMembership, CATALOG_ALIASES } from "./league-memberships";
+import { SERIE_D_IDS } from "./serie-d";
 
 type Raw = [
   id: string,
@@ -15,39 +17,42 @@ type Raw = [
 ];
 
 const BRA: Raw[] = [
-  ["fla", "Flamengo", "FLA", "#c52613", "#111111", 88],
-  ["pal", "Palmeiras", "PAL", "#0a6b3c", "#ffffff", 87],
-  ["bot", "Botafogo", "BOT", "#141414", "#ffffff", 84],
-  ["cru", "Cruzeiro", "CRU", "#1f3f95", "#ffffff", 83],
-  ["mgo", "Atlético Mineiro", "CAM", "#101010", "#ffffff", 82],
-  ["sao", "São Paulo", "SAO", "#c1121f", "#ffffff", 81],
-  ["flu", "Fluminense", "FLU", "#7a1b30", "#0d5b3c", 80],
-  ["int", "Internacional", "INT", "#c8102e", "#ffffff", 79],
-  ["gre", "Grêmio", "GRE", "#0d8bd9", "#111111", 79],
-  ["cor", "Corinthians", "COR", "#101010", "#ffffff", 79],
-  ["bah", "Bahia", "BAH", "#1c5cb8", "#e10600", 78],
-  ["vas", "Vasco da Gama", "VAS", "#111111", "#ffffff", 77],
-  ["for", "Fortaleza", "FOR", "#1a3fa0", "#e10600", 76],
-  ["san", "Santos", "SAN", "#f2f2f2", "#111111", 76],
-  ["rbb", "Red Bull Bragantino", "RBB", "#e10600", "#ffffff", 75],
+  // Game quality priors, reviewed 2026-10-02 against CBF 2025 + 2026 results.
+  // These are not official ratings or a direct encoding of league positions.
+  // https://www.cbf.com.br/futebol-brasileiro/tabelas/campeonato-brasileiro/serie-a/2026?documento=Regulamento
+  ["fla", "Flamengo", "FLA", "#c52613", "#111111", 85],
+  ["pal", "Palmeiras", "PAL", "#0a6b3c", "#ffffff", 85],
+  ["bot", "Botafogo", "BOT", "#141414", "#ffffff", 78],
+  ["cru", "Cruzeiro", "CRU", "#1f3f95", "#ffffff", 80],
+  ["mgo", "Atlético Mineiro", "CAM", "#101010", "#ffffff", 79],
+  ["sao", "São Paulo", "SAO", "#c1121f", "#ffffff", 78],
+  ["flu", "Fluminense", "FLU", "#7a1b30", "#0d5b3c", 82],
+  ["int", "Internacional", "INT", "#c8102e", "#ffffff", 75],
+  ["gre", "Grêmio", "GRE", "#0d8bd9", "#111111", 75],
+  ["cor", "Corinthians", "COR", "#101010", "#ffffff", 78],
+  ["bah", "Bahia", "BAH", "#1c5cb8", "#e10600", 80],
+  ["vas", "Vasco da Gama", "VAS", "#111111", "#ffffff", 75],
+  ["for", "Fortaleza", "FOR", "#1a3fa0", "#e10600", 72],
+  ["san", "Santos", "SAN", "#f2f2f2", "#111111", 77],
+  ["rbb", "Red Bull Bragantino", "RBB", "#e10600", "#ffffff", 76],
   ["mir", "Mirassol", "MIR", "#f5b400", "#0a6b3c", 73],
-  ["cea", "Ceará", "CEA", "#101010", "#ffffff", 72],
-  ["spt", "Sport Recife", "SPT", "#c8102e", "#111111", 71],
-  ["vit", "Vitória", "VIT", "#c8102e", "#111111", 71],
-  ["juv", "Juventude", "JUV", "#0a8f3c", "#ffffff", 69],
+  ["cea", "Ceará", "CEA", "#101010", "#ffffff", 70],
+  ["spt", "Sport Recife", "SPT", "#c8102e", "#111111", 66],
+  ["vit", "Vitória", "VIT", "#c8102e", "#111111", 73],
+  ["juv", "Juventude", "JUV", "#0a8f3c", "#ffffff", 67],
 ];
 
 const BRA2: Raw[] = [
   ["gao", "Goiás", "GOI", "#0a8f3c", "#ffffff", 72],
-  ["cor_pr", "Coritiba", "CFC", "#0a6b3c", "#ffffff", 71],
-  ["ath", "Athletico Paranaense", "CAP", "#c8102e", "#111111", 73],
+  ["cor_pr", "Coritiba", "CFC", "#0a6b3c", "#ffffff", 73],
+  ["ath", "Athletico Paranaense", "CAP", "#c8102e", "#111111", 80],
   ["cri", "Criciúma", "CRI", "#f5b400", "#111111", 68],
   ["ame", "América-MG", "AME", "#0a8f3c", "#ffffff", 69],
   ["avai", "Avaí", "AVA", "#1f3f95", "#f5b400", 66],
-  ["cha", "Chapecoense", "CHA", "#0a8f3c", "#ffffff", 67],
+  ["cha", "Chapecoense", "CHA", "#0a8f3c", "#ffffff", 68],
   ["nov", "Novorizontino", "NOV", "#f5b400", "#111111", 68],
   ["pay", "Paysandu", "PAY", "#1f3f95", "#ffffff", 66],
-  ["rem", "Remo", "REM", "#1f3f95", "#ffffff", 65],
+  ["rem", "Remo", "REM", "#1f3f95", "#ffffff", 68],
   ["ope", "Operário-PR", "OPE", "#111111", "#f5b400", 64],
   ["vnv", "Vila Nova", "VIL", "#c8102e", "#0a8f3c", 65],
   ["crb", "CRB", "CRB", "#c8102e", "#111111", 66],
@@ -1116,16 +1121,43 @@ const BASE_LEAGUES: League[] = [
   ...ACCESS_LEAGUES,
 ];
 
-/** Cada liga sai com o número real de clubes do campeonato correspondente. */
-export const LEAGUES: League[] = BASE_LEAGUES.map((l) => ({
+/** Retain old identities for named rosters and careers from previous catalogs. */
+export const LEGACY_LEAGUES: League[] = BASE_LEAGUES.map((l) => ({
   ...l,
   clubs: applyLeagueFill(l.id, l.clubs),
 }));
 
-export const CLUBS: Record<string, Club> = Object.fromEntries(
-  LEAGUES.flatMap((l) => l.clubs).map((c) => [c.id, c]),
+const legacyClubs: Record<string, Club> = Object.fromEntries(
+  LEGACY_LEAGUES.flatMap((l) => l.clubs).map((c) => [c.id, c]),
 );
+const current = LEGACY_LEAGUES.filter((l) => !CATALOG_ALIASES[l.id]).map((l) =>
+  applyMembership(l, legacyClubs),
+);
+for (const id of SERIE_D_IDS.slice(3))
+  current.push(
+    applyMembership(
+      {
+        id,
+        name: `Brasileirão Série D · Grupo A${SERIE_D_IDS.indexOf(id) + 1}`,
+        country: "Brasil",
+        flag: "🇧🇷",
+        clubs: LEGACY_LEAGUES.find((l) => l.id === "y5079a")!.clubs,
+      },
+      legacyClubs,
+    ),
+  );
+current.push(
+  applyMembership(
+    { id: "x4683", name: "Danish 1st Division", country: "Dinamarca", flag: "🇩🇰", clubs: [] },
+    legacyClubs,
+  ),
+);
+export const LEAGUES: League[] = current;
+export const CLUBS: Record<string, Club> = {
+  ...legacyClubs,
+  ...Object.fromEntries(LEAGUES.flatMap((l) => l.clubs).map((c) => [c.id, c])),
+};
 
 export function getLeague(id: string): League {
-  return LEAGUES.find((l) => l.id === id) ?? LEAGUES[0]!;
+  return LEAGUES.find((l) => l.id === id) ?? LEGACY_LEAGUES.find((l) => l.id === id) ?? LEAGUES[0]!;
 }

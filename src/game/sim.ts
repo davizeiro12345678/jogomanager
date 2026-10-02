@@ -1,6 +1,8 @@
 import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
-import { physiqueFor } from "./player-identity";
+import { physiqueFor } from "./player-physique";
+import { matchAttributes } from "./match-readiness";
+import { positionalOverall } from "./overall";
 import {
   BOX_DEPTH,
   BOX_HALF,
@@ -26,6 +28,7 @@ import {
   solveCornerDuel,
   solveDirectFK,
   solvePenalty,
+  shotProbabilities,
   staminaDrainMult,
   type WeatherKind,
   woodworkAt,
@@ -61,6 +64,9 @@ import type {
 import { FIELD_X, FIELD_Z, GOAL_Z } from "./sim-rules";
 export { FIELD_X, FIELD_Z, GOAL_Z };
 export const LIVE_MATCH_CLOCK_SCALE = 6;
+/** Batch completion shares the live spatial step and match clock. */
+export const MATCH_SIMULATION_STEP = 1 / 30;
+export const MATCH_SIMULATION_TICK_LIMIT = 60_000;
 export const MAX_LIVE_MOTION_SCALE = 2;
 
 export type Side = "home" | "away";
@@ -519,12 +525,7 @@ export class MatchSim {
         vz: 0,
         slotX: slot.x * dir,
         slotZ: slot.z * dir,
-        pace: p.pace,
-        shooting: p.shooting,
-        passing: p.passing,
-        defending: p.defending,
-        physical: p.physical,
-        stamina: Math.max(60, p.condition),
+        ...matchAttributes(p, this.matchSeed, side),
         action: null,
         actionT: 0,
         actionDur: 0,
@@ -570,12 +571,7 @@ export class MatchSim {
       pos: incoming.pos,
       heightCm: physique.height,
       weightKg: physique.weight,
-      pace: incoming.pace,
-      shooting: incoming.shooting,
-      passing: incoming.passing,
-      defending: incoming.defending,
-      physical: incoming.physical,
-      stamina: Math.max(70, incoming.condition),
+      ...matchAttributes(incoming, this.matchSeed, side),
       action: null,
       actionT: 0,
       actionDur: 0,
@@ -1110,7 +1106,7 @@ export class MatchSim {
         injuryWeeks: p.injuryWeeks,
         sentOff: p.sentOff,
         yellows: p.yellows,
-        ovr: Math.round((p.pace + p.shooting + p.passing + p.defending + p.physical) / 5),
+        ovr: positionalOverall(p.pos as Player["pos"], p),
       }));
     const setupBench = this.setup(side).bench ?? [];
     const bench: AiBenchInput[] = setupBench.map((b) => ({
@@ -2625,12 +2621,22 @@ export class MatchSim {
     const { dist: pressDist } = this.nearestOpponent(holder);
     const mentality = this.setup(holder.side).tactics.mentality;
 
+    // Take an open chance before dribbling into the keeper and a crowded goalmouth.
+    const chance = xgForShot({
+      dist: distGoal,
+      wide: Math.abs(holder.z),
+      bodyPart: "foot",
+      pressDist,
+      onRun: Math.hypot(holder.vx, holder.vz) > 5,
+    });
     const shootUrge =
       distGoal < 30
-        ? (holder.shooting / 100) * (1 - distGoal / 34) * (pressDist > 2.5 ? 1.2 : 0.7)
+        ? Math.min(0.72, chance * 2.4 + (distGoal < 9 ? 0.08 : 0)) *
+          (0.8 + holder.shooting / 500) *
+          (0.9 + mentality * 0.05)
         : 0;
 
-    if (holder.pos !== "GK" && this.rnd() < shootUrge * 0.08) {
+    if (holder.pos !== "GK" && this.rnd() < shootUrge) {
       this.shoot(holder, distGoal);
       return;
     }
@@ -2730,7 +2736,6 @@ export class MatchSim {
     this.stats[side].shots++;
     holder.shots++;
     const gk = this.players.find((p) => p.side !== side && p.pos === "GK");
-    const accuracy = (holder.shooting / 100) * (1 - Math.min(0.75, distGoal / 40));
     const gkSkill = gk ? gk.defending * 0.7 + gk.physical * 0.3 : 60;
     const { dist: pressD } = this.nearestOpponent(holder);
     const xg = xgForShot({
@@ -2744,11 +2749,16 @@ export class MatchSim {
     holder.xg += xg;
 
     // 1) decide o desfecho ANTES da trajetória, para que o visual corresponda ao evento
-    const onTarget = this.rnd() < 0.34 + accuracy * 0.55;
-    const goalChance = Math.max(0.04, Math.min(0.75, xg * (1.15 + accuracy * 0.5) - gkSkill / 500));
+    const probabilities = shotProbabilities({
+      xg,
+      shooting: holder.shooting - Math.max(0, 55 - holder.stamina) * 0.08,
+      goalkeeper: gkSkill,
+      distance: distGoal,
+    });
+    const onTarget = this.rnd() < probabilities.onTarget;
     const outcome: "goal" | "saved" | "off" = !onTarget
       ? "off"
-      : this.rnd() < goalChance
+      : this.rnd() < probabilities.goalGivenTarget
         ? "goal"
         : "saved";
 

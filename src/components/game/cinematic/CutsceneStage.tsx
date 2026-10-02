@@ -38,6 +38,9 @@ import {
 import { speakerName, type Cast } from "@/game/cast";
 import { SHOTS } from "@/game/cutscene-timeline";
 import { directScene } from "@/game/cutscene-director";
+import { cinematicCueFor } from "@/game/cinematic-cue";
+import { CinematicSound } from "@/game/cinematic-sound";
+import { beginCinematicOverlay } from "@/game/cinematic-overlay";
 import { cutsceneBranch } from "@/game/cutscene-choice";
 import { prefersReducedMotion } from "@/game/device";
 import type { Club, ManagerLook } from "@/game/types";
@@ -83,6 +86,8 @@ interface Props {
   manner?: CinematicManner | undefined;
   /** Initial actor time for the studio's pose inspection. */
   previewTime?: number | undefined;
+  autoPlay?: boolean;
+  reduceMotion?: boolean;
 }
 
 /* ------------------------------------------------------------------ arte */
@@ -740,6 +745,8 @@ export function CutsceneStage({
   sceneData,
   manner,
   previewTime,
+  autoPlay = false,
+  reduceMotion = false,
 }: Props) {
   // uniforme real do clube tinge o cenário quando nenhuma cor é forçada
   const accent = accentProp ?? club?.primary ?? "#0a8f3c";
@@ -785,7 +792,9 @@ export function CutsceneStage({
     return () => cancelAnimationFrame(frame);
   }, [mode, data]);
   const [captions, setCaptions] = useState(true);
-  const [automatic, setAutomatic] = useState(false);
+  const [automatic, setAutomatic] = useState(autoPlay);
+  const [ambientEnabled, setAmbientEnabled] = useState(false);
+  const ambientRef = useRef<CinematicSound | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     setLines(data?.lines ?? []);
@@ -805,7 +814,8 @@ export function CutsceneStage({
   }, [direction, data, i]);
   const lineTension = direction?.lines[i]?.emotion.tension ?? 0;
   const [typed, setTyped] = useState(0);
-  const reduced = useMemo(() => prefersReducedMotion(), []);
+  const systemReduced = useMemo(() => prefersReducedMotion(), []);
+  const reduced = reduceMotion || systemReduced;
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
   const stageRef = useRef<HTMLDivElement>(null);
@@ -864,9 +874,39 @@ export function CutsceneStage({
 
   const line = lines[i];
   const full = line?.text ?? "";
+  const cue = useMemo(
+    () =>
+      line && direction?.lines[i] && data
+        ? cinematicCueFor(`${data.id}:${i}:${line.text}`, line, direction.lines[i]!, lineMood)
+        : undefined,
+    [line, direction, i, data, lineMood],
+  );
+
+  useEffect(() => () => ambientRef.current?.dispose(), []);
+  useEffect(() => {
+    ambientRef.current?.setPaused(paused || hidden);
+  }, [paused, hidden]);
+  useEffect(() => {
+    if (ambientEnabled) ambientRef.current?.accent(lineTension, lineMood === "good");
+  }, [i, ambientEnabled, lineTension, lineMood]);
+  const toggleAmbience = useCallback(() => {
+    if (!data) return;
+    if (ambientEnabled) {
+      ambientRef.current?.dispose();
+      ambientRef.current = null;
+      setAmbientEnabled(false);
+    } else {
+      const sound = CinematicSound.create(data.art);
+      if (sound) {
+        ambientRef.current = sound;
+        sound.setPaused(paused || hidden);
+        setAmbientEnabled(true);
+      }
+    }
+  }, [ambientEnabled, data, paused, hidden]);
 
   useEffect(() => {
-    if (!narrate || !voiceEnabled || !data || !line) {
+    if (!narrate || !voiceEnabled || !data || !line || (mode === "3d" && !stageReady)) {
       stopVoice();
       setVoiceState("idle");
       return;
@@ -928,24 +968,28 @@ export function CutsceneStage({
       alive = false;
       stopVoice();
     };
-  }, [data, i, line, narrate, stopVoice, voiceEnabled, lines, loadVoice]);
+  }, [data, i, line, narrate, stopVoice, voiceEnabled, lines, loadVoice, mode, stageReady]);
 
-  // máquina de escrever
+  // The dialogue begins with the visible scene, in small batches of characters.
   useEffect(() => {
     if (reduced || !full) {
       setTyped(full.length);
       return;
     }
     setTyped(0);
-    let n = 0;
+    if (mode === "3d" && !stageReady) return;
+    let elapsed = 0;
+    let previous = performance.now();
     const id = setInterval(() => {
-      if (pausedRef.current) return;
-      n += 1;
-      setTyped((previous) => Math.min(full.length, previous + 1));
-      if (n >= full.length) clearInterval(id);
-    }, 26);
+      const now = performance.now();
+      if (!pausedRef.current) elapsed += Math.min(100, now - previous);
+      previous = now;
+      const length = Math.min(full.length, Math.floor(elapsed / 24));
+      setTyped((value) => Math.max(value, length));
+      if (length >= full.length) clearInterval(id);
+    }, 50);
     return () => clearInterval(id);
-  }, [full, reduced]);
+  }, [full, i, reduced, mode, stageReady]);
 
   useEffect(() => {
     if (!data) doneRef.current();
@@ -1022,11 +1066,13 @@ export function CutsceneStage({
 
   useEffect(() => {
     if (!portalHost) return;
+    const releaseOverlay = beginCinematicOverlay();
     const previousFocus = document.activeElement;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     dialogRef.current?.focus();
     return () => {
+      releaseOverlay();
       document.body.style.overflow = previousOverflow;
       if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
     };
@@ -1044,6 +1090,7 @@ export function CutsceneStage({
   useEffect(() => {
     if (
       !automatic ||
+      (mode === "3d" && !stageReady) ||
       paused ||
       hidden ||
       typed < full.length ||
@@ -1052,9 +1099,26 @@ export function CutsceneStage({
       voiceState === "loading"
     )
       return;
-    const timer = setTimeout(next, Math.max(1200, full.length * 35));
+    const timer = setTimeout(
+      next,
+      Math.max(1200, full.length * 28) + (direction?.lines[i]?.pause ?? 0.45) * 1000,
+    );
     return () => clearTimeout(timer);
-  }, [automatic, paused, hidden, typed, full, line, chosen, voiceState, next]);
+  }, [
+    automatic,
+    paused,
+    hidden,
+    typed,
+    full,
+    line,
+    chosen,
+    voiceState,
+    next,
+    direction,
+    i,
+    mode,
+    stageReady,
+  ]);
 
   if (!data || !line || !portalHost) return null;
   // elenco que fala: nome e rosto do locutor atual vêm do elenco da carreira
@@ -1075,7 +1139,11 @@ export function CutsceneStage({
       className="cutscene-screen"
       data-scene-mode={mode}
       data-scene-paused={paused || hidden}
+      data-scene-reduced={reduced}
       data-scene-loading={mode === "3d" && !stageReady}
+      data-scene-art={data.art}
+      data-scene-mood={lineMood}
+      data-scene-beat={i}
     >
       <div
         ref={stageRef}
@@ -1125,6 +1193,7 @@ export function CutsceneStage({
                 qualityMode={renderQuality}
                 manner={manner}
                 previewTime={previewTime}
+                cue={cue}
               />
             </Suspense>
           </GraphicsBoundary>
@@ -1135,6 +1204,13 @@ export function CutsceneStage({
           </p>
         ) : null}
       </div>
+      <div className="cutscene-matte" aria-hidden="true" />
+      {stageReady && i === 0 && (
+        <div className="cutscene-slate" aria-hidden="true">
+          <span>{club?.short ?? "Futebol. Bastidores. História."}</span>
+          <strong>{data.title}</strong>
+        </div>
+      )}
       <header className="cutscene-top">
         <div className="flex min-w-0 items-center gap-3">
           {club ? (
@@ -1173,12 +1249,8 @@ export function CutsceneStage({
       </header>
       <div className="cutscene-bottom">
         {(captions || pendingChoice) && (
-          <section className="cutscene-dialogue" aria-label="Diálogo da cena">
-            {speaker ? (
-              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-primary">
-                {speaker}
-              </p>
-            ) : null}
+          <section key={i} className="cutscene-dialogue" aria-label="Diálogo da cena">
+            {speaker ? <p className="cutscene-speaker">{speaker}</p> : null}
             <button
               type="button"
               onClick={next}
@@ -1217,6 +1289,9 @@ export function CutsceneStage({
             )}
           </section>
         )}
+        {pendingChoice && (
+          <p className="cutscene-decision">Sua resposta muda o rumo da conversa.</p>
+        )}
         {settingsOpen && (
           <div
             id="cutscene-settings"
@@ -1247,6 +1322,15 @@ export function CutsceneStage({
             )}
             <button
               type="button"
+              aria-pressed={ambientEnabled}
+              onClick={toggleAmbience}
+              className="cutscene-control px-3 text-xs"
+            >
+              {ambientEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
+              Som ambiente
+            </button>
+            <button
+              type="button"
               aria-pressed={automatic}
               onClick={() => setAutomatic((value) => !value)}
               className="cutscene-control px-3 text-xs"
@@ -1265,6 +1349,11 @@ export function CutsceneStage({
             </button>
           </div>
         )}
+        <div className="cutscene-progress" aria-hidden="true">
+          {lines.map((_, index) => (
+            <span key={index} data-complete={index < i} data-active={index === i} />
+          ))}
+        </div>
         <div className="cutscene-controls" role="group" aria-label="Controles da cena">
           <button
             type="button"

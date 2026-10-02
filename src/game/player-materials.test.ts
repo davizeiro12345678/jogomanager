@@ -4,6 +4,27 @@ import type { Kit } from "./kits";
 import { lookFor } from "./player-model";
 import { playerMaterials, retainPlayerMaterials } from "./player-materials";
 
+it("shares a small latex surface between keeper gloves while preserving distinct fabric and skin response", () => {
+  const look = lookFor("latex-keeper", "GK");
+  const kit: Kit = {
+    base: "#ffff00",
+    shorts: "#101418",
+    socks: "#ffff00",
+    detail: "#101418",
+    pattern: "solid",
+  };
+  const first = playerMaterials(look, kit, null, "alta");
+  const second = playerMaterials({ ...look, gloveColor: "#ffffff" }, kit, null, "alta");
+  const glove = first.glove as THREE.MeshPhysicalMaterial;
+  expect(glove.normalMap).toBe((second.glove as THREE.MeshPhysicalMaterial).normalMap);
+  expect(glove.normalMap).not.toBe((first.jersey as THREE.MeshPhysicalMaterial).normalMap);
+  expect((glove.normalMap as THREE.DataTexture).image.width).toBe(64);
+  expect(glove.metalness).toBe(0);
+  expect(glove.clearcoat).toBeLessThan(0.3);
+  expect((first.boot as THREE.MeshPhysicalMaterial).roughness).toBeLessThan(glove.roughness);
+  expect((first.skin as THREE.MeshPhysicalMaterial).clearcoat).toBeLessThan(glove.clearcoat);
+});
+
 it("keeps a shared uniform alive through LRU eviction until both rigs release it", () => {
   const look = lookFor("live-uniform", "MF");
   const kit: Kit = {

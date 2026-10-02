@@ -17,11 +17,19 @@ for (const name of await readdir(assets)) {
   }
   if (!name.endsWith(".js")) continue;
   const data = await readFile(path.join(assets, name));
-  const [imports] = parse(data.toString());
+  const source = data.toString();
+  const [imports] = parse(source);
   chunks.push({
     name,
     bytes: data.length,
     gzipBytes: gzipSync(data, { level: 9 }).length,
+    surface:
+      source.includes("SEU CLUBE.") || source.includes("Você é o manager.")
+        ? "home"
+        : source.includes("Novo treinador") &&
+            (source.includes("manager-name") || source.includes("career-step-title"))
+          ? "new"
+          : null,
     imports: imports
       .filter((i) => i.d === -1 && i.n?.startsWith("."))
       .map((i) => path.basename(i.n)),
@@ -44,8 +52,10 @@ const closure = (entry) => {
 const root = chunks.find((c) => c.dynamicImports.some((name) => name.startsWith("dashboard-")));
 const rootDependencies = root ? closure(root.name) : [];
 const entries = chunks
-  .filter((c) =>
-    /^(?:client-|index-|dashboard-|match-|partida-rapida-|match\.worker-)/.test(c.name),
+  .filter(
+    (c) =>
+      /^(?:client-|index-|new-|dashboard-|match-|partida-rapida-|match\.worker-)/.test(c.name) ||
+      c.surface === "home",
   )
   .map((c) => {
     const dependencies = closure(c.name);
@@ -57,6 +67,7 @@ const entries = chunks
     ];
     return {
       name: c.name,
+      surface: c.surface,
       bytes: c.bytes,
       gzipBytes: c.gzipBytes,
       staticBytes: dependencies.reduce((sum, name) => sum + byName.get(name).bytes, 0),
@@ -83,6 +94,8 @@ const report = {
 if (process.argv.includes("--check")) {
   const worker = entries.find((e) => e.name.startsWith("match.worker-"));
   const quick = entries.find((e) => e.name.startsWith("partida-rapida-"));
+  const home = entries.find((e) => e.surface === "home");
+  const newCareer = entries.find((e) => e.surface === "new");
   const physics = chunks.find(
     (c) => c.name.startsWith("rapier-") && !c.name.startsWith("rapier-ball-"),
   );
@@ -107,6 +120,21 @@ if (process.argv.includes("--check")) {
     quick.dependencies.some((name) => forbidden.test(name))
   )
     throw new Error("Quick match selection bundle budget failed");
+  if (
+    !home ||
+    home.startupBytes > 900_000 ||
+    home.dependencies.some((name) => forbidden.test(name) || name.startsWith("leagues-"))
+  )
+    throw new Error(
+      "Home must remain below 900 KB including startup and keep the catalogue/3D out of static dependencies",
+    );
+  if (
+    !newCareer ||
+    newCareer.dependencies.some(
+      (name) => forbidden.test(name) || name.startsWith("CinematicStage3D-"),
+    )
+  )
+    throw new Error("New career wizard must load the 3D stage on demand");
 }
 const output = path.resolve("verification/bundle-2026-10-01", `${label}.json`);
 await mkdir(path.dirname(output), { recursive: true });

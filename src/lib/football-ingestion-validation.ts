@@ -7,6 +7,7 @@
 import { z } from "zod";
 
 import type { RemotePlayer } from "./football-api.server";
+import { validBirthDate } from "../game/player-identity";
 
 const trimmed = (maximum: number) => z.string().trim().min(1).max(maximum);
 const httpsUrl = z
@@ -21,6 +22,10 @@ const remotePlayerSchema = z.object({
   name: trimmed(120),
   position: z.enum(["GK", "DF", "MF", "FW"]),
   age: z.number().int().min(15).max(55).optional(),
+  birthDate: z
+    .string()
+    .refine((value) => validBirthDate(value) === value && !!value)
+    .optional(),
   shirtNumber: z.number().int().min(1).max(99).optional(),
   nationality: trimmed(80).optional(),
   photoUrl: httpsUrl.optional(),
@@ -53,7 +58,7 @@ export function validateRemotePlayers(rows: readonly unknown[]): RemotePlayersVa
       return;
     }
 
-    const player: RemotePlayer = parsed.data;
+    const player: RemotePlayer = { ...parsed.data, source: parsed.data.source.toLowerCase() };
     const providerId = `${player.source}:${player.externalId}`;
     if (providerIds.has(providerId)) {
       rejected.push({ index, reason: "duplicate-provider-id" });

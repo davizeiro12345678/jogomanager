@@ -10,7 +10,7 @@ import {
   VOICE_BY_LANG,
   type NarrationContext,
   type NarrationEvent,
-  type NarrationLang,
+  type RemoteNarrationLang,
 } from "@/game/narration-lines";
 import { CUTSCENES } from "@/content/cutscenes";
 
@@ -40,7 +40,7 @@ const NarrateInput = z.object({
     "fulltime",
   ]),
   team: z.string().max(28).default(""),
-  variant: z.number().int().min(0).max(99).default(0),
+  variant: z.number().int().min(0).max(1023).default(0),
   context: z
     .object({
       minute: z.number().int().min(0).max(120).optional(),
@@ -71,7 +71,7 @@ export const narrateEvent = createServerFn({ method: "POST" })
     const { reserveAiBudget } = await import("@/lib/ai-budget.server");
     if (!(await reserveAiBudget("voice"))) return { ok: false, reason: "unavailable" };
 
-    const lang = data.lang as NarrationLang;
+    const lang = data.lang as RemoteNarrationLang;
     const event = data.event as NarrationEvent;
     const context: NarrationContext | undefined = data.context
       ? {
@@ -221,9 +221,25 @@ export const narrateScene = createServerFn({ method: "POST" })
         ...(nextText ? { next_text: nextText } : {}),
       },
       voiceSettings: {
-        stability: authoritative ? 0.78 : reflective ? 0.58 : scene.mood === "bad" ? 0.56 : emphatic ? 0.28 : 0.46,
+        stability: authoritative
+          ? 0.78
+          : reflective
+            ? 0.58
+            : scene.mood === "bad"
+              ? 0.56
+              : emphatic
+                ? 0.28
+                : 0.46,
         similarity_boost: authoritative ? 0.9 : 0.85,
-        style: authoritative ? 0.18 : reflective ? 0.42 : scene.mood === "good" ? (emphatic ? 0.88 : 0.62) : 0.5,
+        style: authoritative
+          ? 0.18
+          : reflective
+            ? 0.42
+            : scene.mood === "good"
+              ? emphatic
+                ? 0.88
+                : 0.62
+              : 0.5,
         use_speaker_boost: true,
         speed: authoritative ? 0.92 : emphatic ? 1.08 : scene.mood === "bad" ? 0.94 : 0.99,
       },

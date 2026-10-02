@@ -14,6 +14,8 @@ import {
 } from "./live-match";
 import {
   LIVE_MATCH_CLOCK_SCALE,
+  MATCH_SIMULATION_STEP,
+  MATCH_SIMULATION_TICK_LIMIT,
   MAX_LIVE_MOTION_SCALE,
   MatchSim,
   type Side,
@@ -170,7 +172,9 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         localSim.step(fixed * motionScale, (LIVE_MATCH_CLOCK_SCALE * localSpeed) / motionScale);
       }
       sequence += 1;
-      apply(localSim.finished ? resultMatch(localSim, sequence) : snapshotMatch(localSim, sequence));
+      apply(
+        localSim.finished ? resultMatch(localSim, sequence) : snapshotMatch(localSim, sequence),
+      );
       if (localSim.finished) stopLocal();
     }, 100);
   };
@@ -193,7 +197,8 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         if (message.type === "snapshot") apply(message.snapshot);
         else if (message.type === "finished") apply(message.result);
       };
-      liveWorker.onerror = () => startFallback("O Worker falhou; a partida continuou no modo compatível.");
+      liveWorker.onerror = () =>
+        startFallback("O Worker falhou; a partida continuou no modo compatível.");
       send({
         type: "startLive",
         home: options.home,
@@ -280,9 +285,10 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         let guard = 0;
         const finishInChunks = () => {
           if (!localSim || disposed) return;
-          const end = Math.min(guard + 240, 16_000);
-          while (!localSim.finished && guard++ < end) localSim.step(0.4);
-          if (localSim.finished || guard >= 16_000) {
+          const end = Math.min(guard + 240, MATCH_SIMULATION_TICK_LIMIT);
+          while (!localSim.finished && guard++ < end)
+            localSim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
+          if (localSim.finished || guard >= MATCH_SIMULATION_TICK_LIMIT) {
             sequence += 1;
             apply(resultMatch(localSim, sequence));
             localSkipTimer = null;
@@ -319,9 +325,5 @@ export function autoSeasonAsync(
   career: CareerState,
   maxWeeks = 60,
 ): Promise<{ weeks: AutoWeek[]; state: CareerState }> {
-  return call(
-    { type: "autoSeason", career, maxWeeks },
-    () => autoSeason(career, maxWeeks),
-    90_000,
-  );
+  return call({ type: "autoSeason", career, maxWeeks }, () => autoSeason(career, maxWeeks), 90_000);
 }

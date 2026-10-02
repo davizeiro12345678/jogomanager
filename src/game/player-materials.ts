@@ -19,6 +19,7 @@ import * as THREE from "three";
 
 import {
   bootGrainNormal,
+  gloveLatexNormal,
   hairStrandNormal,
   hairFiberColor,
   hairlineMask,
@@ -164,6 +165,18 @@ onKtx2Ready(() => {
 
 type TextureSlot = "normalMap" | "roughnessMap" | "clearcoatNormalMap";
 
+function constantMap(bytes: [number, number, number, number], name: string) {
+  const texture = new THREE.DataTexture(new Uint8Array(bytes), 1, 1);
+  texture.name = name;
+  texture.needsUpdate = true;
+  return texture;
+}
+// Keep high-quality shader features constant before compressed assets arrive.
+// Neutral maps preserve the original roughness and flat surface, and share
+// eight bytes of pixel data instead of creating more intermediate programs.
+const FLAT_NORMAL = constantMap([128, 128, 255, 255], "player-neutral-normal");
+const WHITE_ROUGHNESS = constantMap([255, 255, 255, 255], "player-neutral-roughness");
+
 function updateTexture(material: THREE.Material, slot: TextureSlot, texture: THREE.Texture | null) {
   const target = material as THREE.MeshPhysicalMaterial;
   const previous = target[slot];
@@ -178,22 +191,28 @@ function updateTexture(material: THREE.Material, slot: TextureSlot, texture: THR
 
 function playerTextureMaps(hi: boolean, names: ReturnType<typeof detailTextureNames>) {
   const [jerseyNormal, jerseyRough, shortsNormal, socksNormal, bootNormal, skinNormal] = names;
-  const weave = hi ? (ktx2(jerseyNormal) ?? ktx2("fiberNormal") ?? jerseyWeaveNormal()) : null;
-  const grain = hi ? (ktx2(bootNormal) ?? ktx2("bootNormal") ?? bootGrainNormal()) : null;
+  const weave = hi
+    ? (ktx2(jerseyNormal) ?? ktx2("fiberNormal") ?? jerseyWeaveNormal() ?? FLAT_NORMAL)
+    : null;
+  const grain = hi
+    ? (ktx2(bootNormal) ?? ktx2("bootNormal") ?? bootGrainNormal() ?? FLAT_NORMAL)
+    : null;
   return {
     weave,
-    rib: hi ? (ktx2(socksNormal) ?? ktx2("sockNormal") ?? sockRibNormal()) : null,
-    pores: hi ? (ktx2(skinNormal) ?? ktx2("skinNormal") ?? skinPoreNormal()) : null,
+    rib: hi ? (ktx2(socksNormal) ?? ktx2("sockNormal") ?? sockRibNormal() ?? FLAT_NORMAL) : null,
+    pores: hi ? (ktx2(skinNormal) ?? ktx2("skinNormal") ?? skinPoreNormal() ?? FLAT_NORMAL) : null,
     grain,
     shorts: hi ? (ktx2(shortsNormal) ?? weave) : null,
-    jerseyRough: hi ? (ktx2(jerseyRough) ?? ktx2("fiberRough") ?? jerseyRoughness()) : null,
-    skinRough: ktx2("sweatMask") ?? (hi ? skinRoughness() : null),
-    hairNormal: ktx2("hairNormal") ?? (hi ? hairStrandNormal() : null),
-    hairRough: ktx2("hairRough"),
-    bootRough: ktx2("bootRough"),
-    shinNormal: ktx2("shinNormal"),
-    shinRough: ktx2("shinRough"),
-    sweatNormal: ktx2("sweatNormal"),
+    jerseyRough: hi
+      ? (ktx2(jerseyRough) ?? ktx2("fiberRough") ?? jerseyRoughness() ?? WHITE_ROUGHNESS)
+      : null,
+    skinRough: hi ? (ktx2("sweatMask") ?? skinRoughness() ?? WHITE_ROUGHNESS) : null,
+    hairNormal: hi ? (ktx2("hairNormal") ?? hairStrandNormal() ?? FLAT_NORMAL) : null,
+    hairRough: hi ? (ktx2("hairRough") ?? WHITE_ROUGHNESS) : null,
+    bootRough: hi ? (ktx2("bootRough") ?? WHITE_ROUGHNESS) : null,
+    shinNormal: hi ? (ktx2("shinNormal") ?? FLAT_NORMAL) : null,
+    shinRough: hi ? (ktx2("shinRough") ?? WHITE_ROUGHNESS) : null,
+    sweatNormal: hi ? (ktx2("sweatNormal") ?? FLAT_NORMAL) : null,
   };
 }
 
@@ -221,7 +240,7 @@ function refreshPlayerTextureMaps(
   updateTexture(set.boot, "roughnessMap", maps.bootRough);
   updateTexture(set.boot, "clearcoatNormalMap", maps.grain);
   updateTexture(set.shin, "roughnessMap", maps.shinRough);
-  updateTexture(set.glove, "normalMap", maps.weave);
+  updateTexture(set.glove, "normalMap", gloveLatexNormal());
 }
 
 /**
@@ -305,11 +324,11 @@ export function playerMaterials(
       ? new THREE.MeshPhysicalMaterial({
           color: skinAlbedo(look.skin),
           vertexColors: true,
-          roughness: 0.72 - sweat * 0.1,
+          roughness: 0.88 - sweat * 0.1,
           normalMap: pores,
           roughnessMap: skinRough,
-          normalScale: new THREE.Vector2(0.23, 0.23),
-          clearcoat: 0.035 + sweat * 0.13,
+          normalScale: new THREE.Vector2(0.12, 0.12),
+          clearcoat: 0.025 + sweat * 0.1,
           clearcoatRoughness: 0.64 - sweat * 0.15,
           // gotas de suor: só o verniz recebe o relevo, a pele continua macia
           clearcoatNormalMap: sweatNormal,
@@ -321,7 +340,7 @@ export function playerMaterials(
           // tom avermelhado do sangue sob a pele: imita o espalhamento sub-superficial
           // sem o custo de transmissão — a borda do rosto/braço fica "viva".
           sheenColor: new THREE.Color(skinAlbedo(look.skin)).lerp(new THREE.Color("#e8c6c4"), 0.4),
-          specularIntensity: 0.28,
+          specularIntensity: 0.22,
           specularColor: new THREE.Color("#fff1e4"),
         })
       : new THREE.MeshStandardMaterial({
@@ -341,9 +360,9 @@ export function playerMaterials(
           normalMap: weave,
           roughnessMap: jerseyRough,
           normalScale: NORMAL_SCALE,
-          roughness: 0.76 - sweat * 0.14,
+          roughness: 0.94 - sweat * 0.14,
           envMapIntensity: 0.85,
-          clearcoat: sweat * 0.3,
+          clearcoat: sweat * 0.16,
           clearcoatRoughness: 0.6,
           sheen: 0.5,
           sheenRoughness: 0.7,
@@ -356,7 +375,7 @@ export function playerMaterials(
         }),
     jerseyPlain: new THREE.MeshStandardMaterial({
       color: kit.pattern === "sleeves" ? kit.detail : kit.base,
-      roughness: 0.82 - sweat * 0.1,
+      roughness: 0.98 - sweat * 0.1,
       normalMap: weave,
       roughnessMap: jerseyRough,
       normalScale: NORMAL_SCALE,
@@ -365,7 +384,7 @@ export function playerMaterials(
     shorts: hi
       ? new THREE.MeshPhysicalMaterial({
           color: kit.shorts,
-          roughness: 0.84,
+          roughness: 0.98,
           normalMap: maps.shorts,
           roughnessMap: jerseyRough,
           normalScale: NORMAL_SCALE,
@@ -425,13 +444,13 @@ export function playerMaterials(
     boot: hi
       ? new THREE.MeshPhysicalMaterial({
           color: look.bootColor,
-          roughness: 0.34,
+          roughness: 0.46,
           normalMap: grain,
           roughnessMap: bootRough,
           normalScale: NORMAL_SCALE,
           metalness: 0.02,
-          clearcoat: 0.45,
-          clearcoatRoughness: 0.3,
+          clearcoat: 0.25,
+          clearcoatRoughness: 0.35,
           clearcoatNormalMap: grain,
           clearcoatNormalScale: new THREE.Vector2(0.4, 0.4),
         })
@@ -439,13 +458,13 @@ export function playerMaterials(
           color: look.bootColor,
           roughness: 0.34,
           normalMap: grain,
-          metalness: 0.22,
+          metalness: 0.035,
         }),
     bootAccent: hi
       ? new THREE.MeshPhysicalMaterial({
           color: look.bootAccent,
-          roughness: 0.2,
-          clearcoat: 0.7,
+          roughness: 0.32,
+          clearcoat: 0.42,
           clearcoatRoughness: 0.2,
         })
       : new THREE.MeshStandardMaterial({ color: look.bootAccent, roughness: 0.4 }),
@@ -474,15 +493,20 @@ export function playerMaterials(
     glove: hi
       ? new THREE.MeshPhysicalMaterial({
           color: look.gloveColor,
-          roughness: 0.46,
-          normalMap: weave,
-          normalScale: new THREE.Vector2(0.35, 0.35),
-          clearcoat: 0.24 + sweat * 0.3,
-          clearcoatRoughness: 0.45,
-          sheen: 0.2,
-          sheenRoughness: 0.75,
+          vertexColors: true,
+          roughness: 0.63,
+          normalMap: gloveLatexNormal(),
+          normalScale: new THREE.Vector2(0.22, 0.22),
+          clearcoat: 0.14 + sweat * 0.13,
+          clearcoatRoughness: 0.52,
+          sheen: 0.08,
+          sheenRoughness: 0.8,
         })
-      : new THREE.MeshStandardMaterial({ color: look.gloveColor, roughness: 0.7 }),
+      : new THREE.MeshStandardMaterial({
+          color: look.gloveColor,
+          roughness: 0.7,
+          vertexColors: true,
+        }),
   };
 
   // Superfície da partida: suor, grama e chuva em cima dos materiais já

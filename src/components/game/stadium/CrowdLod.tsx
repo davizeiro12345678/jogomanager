@@ -1,7 +1,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { supporterGeometry } from "@/game/crowd-geometry";
 
 import type { RuntimeSceneBudget } from "@/game/runtime-scene-budget";
 import { censusRef } from "@/game/scene-census";
@@ -13,38 +13,17 @@ const TILE_SECTORS = 12;
 const TILE_RINGS = 3;
 const MAX_CROWD_INSTANCES = 5_120;
 
-function humanGeometry(detailed: boolean) {
-  const parts: THREE.BufferGeometry[] = [];
-  const part = (geometry: THREE.BufferGeometry, y: number, color: THREE.Color) => {
-    geometry.translate(0, y, 0);
-    const colors = new Float32Array(geometry.getAttribute("position").count * 3);
-    for (let i = 0; i < colors.length; i += 3) color.toArray(colors, i);
-    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    parts.push(geometry);
-  };
-  part(new THREE.CylinderGeometry(0.25, 0.19, 0.64, detailed ? 7 : 4), 0, new THREE.Color("white"));
-  part(
-    new THREE.SphereGeometry(0.16, detailed ? 7 : 4, detailed ? 5 : 3),
-    0.49,
-    new THREE.Color("#e8c19d"),
-  );
-  part(new THREE.BoxGeometry(0.33, 0.32, 0.22), -0.46, new THREE.Color("#28303a"));
-  const merged = mergeGeometries(parts)!;
-  parts.forEach((geometry) => geometry.dispose());
-  return merged;
-}
-
 function crowdCard() {
   if (typeof document === "undefined") return new THREE.Texture();
   const canvas = document.createElement("canvas");
   canvas.width = 64;
   canvas.height = 128;
   const c = canvas.getContext("2d")!;
-  c.fillStyle = "#e8c19d";
+  c.fillStyle = "#ffffff";
   c.beginPath();
   c.ellipse(32, 20, 11, 14, 0, 0, Math.PI * 2);
   c.fill();
-  c.fillStyle = "#28221d";
+  c.fillStyle = "#ffffff";
   c.beginPath();
   c.ellipse(32, 12, 11, 7, 0, 0, Math.PI * 2);
   c.fill();
@@ -56,7 +35,7 @@ function crowdCard() {
   c.lineTo(10, 81);
   c.closePath();
   c.fill();
-  c.fillStyle = "#343d47";
+  c.fillStyle = "#ffffff";
   c.fillRect(18, 81, 12, 42);
   c.fillRect(34, 81, 12, 42);
   const texture = new THREE.CanvasTexture(canvas);
@@ -125,7 +104,8 @@ export function CrowdLod({
       const material = new THREE.MeshStandardMaterial({
         roughness: 0.93,
         vertexColors: true,
-        flatShading: tier < 2,
+        flatShading: false,
+        side: THREE.DoubleSide,
         ...(tier === 2 ? { map: card, alphaTest: 0.4, side: THREE.DoubleSide } : {}),
       });
       material.onBeforeCompile = (shader) => {
@@ -136,12 +116,18 @@ export function CrowdLod({
         shader.vertexShader = shader.vertexShader
           .replace(
             "#include <common>",
-            "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave; uniform float crowdAgitation;",
+            "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave; uniform float crowdAgitation; attribute vec3 crowdSkin; attribute vec2 crowdStyle; attribute float crowdRegion;",
           )
           .replace(
             "#include <begin_vertex>",
             `#include <begin_vertex>
               float phase = instanceMatrix[3].x * 0.71 + instanceMatrix[3].z * 0.37;
+              // Supporters clap/raise their arms at different phases. Only
+              // arm vertices move: heads and bodies keep their silhouettes.
+              float arm = ${tier < 2 ? "step(0.19, abs(position.x)) * (1.0 - step(0.36, position.y))" : "0.0"};
+              float cheer = crowdPulse * (0.5 + 0.5 * sin(phase + crowdTime * 2.0));
+              transformed.y += arm * cheer * 0.38;
+              transformed.x -= sign(position.x) * arm * cheer * 0.075;
               transformed.x += sin(crowdTime * 1.7 + phase) * 0.035 * max(0.0, position.y + 0.6);
               transformed.z += sin(crowdTime * 5.2 + phase) * crowdAgitation * 0.05 * max(0.0, position.y + 0.6);
               transformed.y += abs(sin(crowdTime * 7.0 + phase)) * crowdPulse * 0.48;
@@ -151,15 +137,52 @@ export function CrowdLod({
               float dw = abs(mod(ang - crowdWave + 3.14159265, 6.2831853) - 3.14159265);
               transformed.y += exp(-dw * dw * 5.0) * (0.1 + crowdPulse * 0.6);`,
           );
+        if (tier < 2)
+          // color_vertex includes the instance tint when available; its vColor
+          // is also valid during the first render before setColorAt allocates it.
+          shader.vertexShader = shader.vertexShader.replace(
+            "#include <color_vertex>",
+            `#include <color_vertex>
+           if (crowdRegion > 0.5 && crowdRegion < 1.5) vColor.rgb = crowdSkin;
+           else if (crowdRegion > 1.5 && crowdRegion < 2.5) vColor.rgb = mix(vec3(0.021, 0.035, 0.049), vec3(0.15, 0.18, 0.22), crowdStyle.x);
+           else if (crowdRegion > 2.5 && crowdRegion < 3.5) vColor.rgb = mix(vec3(0.012, 0.009, 0.007), vec3(0.23, 0.12, 0.047), crowdStyle.y);
+           else if (crowdRegion > 3.5) vColor.rgb = mix(vColor.rgb, vec3(0.75), step(0.6, crowdStyle.x));`,
+          );
+        else
+          shader.vertexShader = shader.vertexShader.replace(
+            "#include <color_vertex>",
+            `#include <color_vertex>
+           if (uv.y > 0.70) vColor.rgb = mix(crowdSkin, vec3(0.024, 0.014, 0.009), step(0.89, uv.y));
+           else if (uv.y < 0.37) vColor.rgb = vec3(0.028, 0.043, 0.06);`,
+          );
       };
       return material;
     });
+    const geometries = [
+      supporterGeometry(true),
+      supporterGeometry(false),
+      new THREE.PlaneGeometry(0.64, 1.5).translate(0, -0.04, 0),
+    ];
+    geometries.forEach((geometry, tier) => {
+      if (tier === 2)
+        geometry.setAttribute(
+          "crowdRegion",
+          new THREE.Float32BufferAttribute(
+            new Float32Array(geometry.getAttribute("position").count),
+            1,
+          ),
+        );
+      geometry.setAttribute(
+        "crowdSkin",
+        new THREE.InstancedBufferAttribute(new Float32Array(MAX_CROWD_INSTANCES * 3), 3),
+      );
+      geometry.setAttribute(
+        "crowdStyle",
+        new THREE.InstancedBufferAttribute(new Float32Array(MAX_CROWD_INSTANCES * 2), 2),
+      );
+    });
     return {
-      geometries: [
-        humanGeometry(true),
-        humanGeometry(false),
-        new THREE.PlaneGeometry(0.64, 1.35).translate(0, 0.03, 0),
-      ],
+      geometries,
       materials,
       card,
       uniforms,
@@ -167,6 +190,8 @@ export function CrowdLod({
       projection: new THREE.Matrix4(),
       frustum: new THREE.Frustum(),
       counts: [0, 0, 0],
+      selection: ["", "", ""],
+      seats: [0, 1, 2].map(() => new Int32Array(MAX_CROWD_INSTANCES).fill(-1)),
     };
   }, []);
   useEffect(
@@ -179,7 +204,14 @@ export function CrowdLod({
   );
 
   const elapsed = useRef(Number.POSITIVE_INFINITY);
-  useFrame(({ camera, clock }, dt) => {
+  useEffect(() => {
+    // Another match can reuse the same seat numbers with different club colours.
+    // Reset the cached uploads while retaining geometry and material pools.
+    data.seats.forEach((seats) => seats.fill(-1));
+    data.selection.fill("");
+    elapsed.current = Number.POSITIVE_INFINITY;
+  }, [crowd, data]);
+  useFrame(({ camera, clock, size }, dt) => {
     data.uniforms.time.value = clock.elapsedTime;
     data.uniforms.pulse.value = pulse.current;
     data.uniforms.agitation.value =
@@ -194,6 +226,7 @@ export function CrowdLod({
     elapsed.current = 0;
 
     data.counts.fill(0);
+    const selection: string[][] = [[], [], []];
     if (budget.crowdInstances > 0) {
       camera.updateMatrixWorld();
       data.projection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
@@ -213,8 +246,12 @@ export function CrowdLod({
         1,
         Math.ceil(budget.crowdInstances / Math.max(1, selectedTiles.length)),
       );
-      const near = budget.stage >= 5 ? 18 : 28;
-      const mid = budget.stage >= 5 ? 44 : 62;
+      // Keep facial geometry for supporters large enough to read on screen.
+      // Distance alone kept hundreds of 10–20 px spectators in a mesh LOD.
+      const projectedScale = size.height * Math.abs(camera.projectionMatrix.elements[5]!) * 0.675;
+      const perspective = camera instanceof THREE.PerspectiveCamera;
+      const detailedPixels = budget.stage >= 5 ? 52 : 42;
+      const meshPixels = budget.stage >= 5 ? 34 : 28;
 
       for (const tile of selectedTiles) {
         const stride = Math.max(1, Math.ceil(tile.indices.length / perTile));
@@ -224,16 +261,30 @@ export function CrowdLod({
           const total = data.counts[0]! + data.counts[1]! + data.counts[2]!;
           if (total >= budget.crowdInstances) break;
           const distance = camera.position.distanceTo(position);
-          const tier = distance < near ? 0 : distance < mid ? 1 : 2;
+          const pixels = perspective ? projectedScale / Math.max(1, distance) : projectedScale;
+          const tier = pixels >= detailedPixels ? 0 : pixels >= meshPixels ? 1 : 2;
           const mesh = refs.current[tier];
           if (!mesh || data.counts[tier]! >= MAX_CROWD_INSTANCES) continue;
           const instance = data.counts[tier]!++;
+          selection[tier]!.push(`${index}`);
+          if (data.seats[tier]![instance] === index) continue;
+          data.seats[tier]![instance] = index;
           data.dummy.position.copy(position);
-          data.dummy.scale.setScalar(0.9 + (index % 5) * 0.045);
+          const height = 0.9 + (index % 7) * 0.025;
+          data.dummy.scale.set(height * (0.92 + (index % 3) * 0.06), height, height);
           data.dummy.rotation.set(0, Math.atan2(-position.x, -position.z), 0);
           data.dummy.updateMatrix();
           mesh.setMatrixAt(instance, data.dummy.matrix);
           mesh.setColorAt(instance, crowd.colors[index]!);
+          const skin = crowd.skins[index]!;
+          const skinAttribute = mesh.geometry.getAttribute(
+            "crowdSkin",
+          ) as THREE.InstancedBufferAttribute;
+          const styleAttribute = mesh.geometry.getAttribute(
+            "crowdStyle",
+          ) as THREE.InstancedBufferAttribute;
+          skinAttribute.setXYZ(instance, skin.r, skin.g, skin.b);
+          styleAttribute.setXY(instance, (index % 13) / 12, (index % 11) / 10);
         }
       }
     }
@@ -241,8 +292,18 @@ export function CrowdLod({
     refs.current.forEach((mesh, tier) => {
       if (!mesh) return;
       mesh.count = data.counts[tier]!;
-      mesh.instanceMatrix.needsUpdate = true;
-      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      // Matrices and colours are static until the visible seat selection
+      // changes. A stationary camera no longer uploads the crowd every tick.
+      const key = selection[tier]!.join(",");
+      if (data.selection[tier] !== key) {
+        data.selection[tier] = key;
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        (mesh.geometry.getAttribute("crowdSkin") as THREE.InstancedBufferAttribute).needsUpdate =
+          true;
+        (mesh.geometry.getAttribute("crowdStyle") as THREE.InstancedBufferAttribute).needsUpdate =
+          true;
+      }
       // Fixed pools intentionally skip computeBoundingSphere(), which was a
       // periodic CPU spike in the original global crowd pass.
       mesh.frustumCulled = false;

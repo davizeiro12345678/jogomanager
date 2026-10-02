@@ -27,26 +27,6 @@ const DECISIONS = [
     cta: "Organizar as finanças",
   },
 ] as const;
-const MODES = [
-  {
-    title: "Partida rápida",
-    kicker: "Para experimentar",
-    text: "Escolha os times e conheça as câmeras e os controles da partida em 3D antes de começar uma carreira.",
-    to: "/partida-rapida",
-  },
-  {
-    title: "Modo carreira",
-    kicker: "Para construir uma história",
-    text: "Assuma um clube e cuide de elenco, tática, calendário e finanças ao longo das temporadas.",
-    to: "/new",
-  },
-  {
-    title: "Multiplayer",
-    kicker: "Para combinar com amigos",
-    text: "Abra o multiplayer, confira os modos disponíveis e compartilhe o código da sala com seu adversário.",
-    to: "/multiplayer",
-  },
-] as const;
 const FAQ = [
   [
     "Preciso criar uma conta para começar?",
@@ -90,30 +70,6 @@ export function HomeDetails() {
               >
                 {item.cta}
                 <ArrowRight size={16} aria-hidden="true" />
-              </Link>
-            </article>
-          ))}
-        </div>
-      </section>
-      <section className="mt-14" aria-labelledby="choose-mode">
-        <h2 id="choose-mode" className="font-display text-3xl">
-          Qual é o seu jogo de hoje?
-        </h2>
-        <p className="mt-3 max-w-2xl text-muted-foreground">
-          Teste uma ideia em uma partida, construa seu projeto por temporadas ou convide um amigo
-          para disputar o próximo confronto.
-        </p>
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
-          {MODES.map((item) => (
-            <article
-              key={item.title}
-              className="surface-card rounded-xl border border-border/60 p-5"
-            >
-              <p className="text-xs uppercase tracking-widest text-primary">{item.kicker}</p>
-              <h3 className="mt-2 font-display text-2xl">{item.title}</h3>
-              <p className="mt-3 text-sm text-muted-foreground">{item.text}</p>
-              <Link to={item.to} className="mt-4 inline-flex min-h-11 items-center text-primary">
-                Abrir {item.title.toLowerCase()} →
               </Link>
             </article>
           ))}

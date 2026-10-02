@@ -17,6 +17,7 @@ import {
 } from "@/game/agent";
 import { acceptOffer, rejectOffer } from "@/game/career";
 import { CLUBS } from "@/game/data/leagues";
+import { ownsRealPlayer } from "@/game/player-identity";
 import { formatMoney, formatWage, wageBill } from "@/game/economy";
 import {
   askingPrice,
@@ -91,7 +92,9 @@ function TransfersPage() {
   const players = Object.values(career.players);
   const bill = wageBill(players);
   const open = windowOpen(career);
-  const rows = (data?.rows ?? []).map(toTarget).filter((t) => !signed.has(t.id));
+  const rows = (data?.rows ?? [])
+    .map(toTarget)
+    .filter((t) => !signed.has(t.id) && t.clubId !== career.clubId && !ownsRealPlayer(career, t));
 
   return (
     <GameShell career={career}>

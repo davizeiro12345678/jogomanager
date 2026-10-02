@@ -30,7 +30,12 @@ import type { Cast } from "@/game/cast";
 import type { ManagerLook } from "@/game/types";
 import type { CinematicManner } from "@/game/cinematic-actor";
 import { cinematicIdleAt } from "@/game/cinematic-actor";
-import { cinematicFocus } from "@/game/cinematic-blocking";
+import { cinematicShotFor } from "@/game/cinematic-shot";
+import type { CinematicCue } from "@/game/cinematic-cue";
+import { CinematicAtmosphere } from "./cinematic/CinematicAtmosphere";
+import { CinematicTraining } from "./cinematic/CinematicTraining";
+import { CinematicSpecialSet } from "./cinematic/CinematicSpecialSet";
+import { CinematicPortraitLight } from "./cinematic/CinematicPortraitLight";
 import { CinematicActor as Figure } from "./cinematic/CinematicActor";
 import { CinematicRuntime } from "./cinematic/CinematicRuntime";
 import { CinematicFrameProbe } from "./cinematic/CinematicFrameProbe";
@@ -77,71 +82,6 @@ const SET_BY_ART: Record<SceneArt, SetKind> = {
   office: "office",
   medical: "locker",
   gala: "press",
-};
-
-/**
- * Enquadramentos por cenário: a câmera corta para o próximo a cada fala.
- * Os dois últimos de cada lista são o contra-plano (o "outro lado" da cena,
- * para imprensa/torcida) e o close baixo (clímax: tensão e revelação).
- */
-const SHOTS: Record<SetKind, Array<[number, number, number, number, number, number]>> = {
-  //          posX   posY  posZ   alvoX alvoY alvoZ
-  locker: [
-    [0, 1.9, 5.6, 0, 1.2, -1.2],
-    [-3.2, 1.35, 2.4, -0.6, 1.1, -2.4],
-    [2.6, 2.4, 3.2, 0.4, 1.0, -2.0],
-    [0.4, 1.05, 1.9, -0.4, 1.25, -2.8],
-    [0, 1.5, -3.4, 0, 1.3, 4.5],
-    [-0.9, 1.35, 0.4, -0.3, 1.2, -2.6],
-  ],
-  tunnel: [
-    [0, 1.7, 7.4, 0, 1.6, -8],
-    [1.5, 1.2, 3.2, -0.6, 1.5, -6],
-    [-1.6, 2.5, 1.2, 0.2, 1.3, -7],
-    [0, 1.45, -1.5, 0, 1.7, -9.5],
-    [0, 1.9, -6.5, 0, 1.5, 5],
-    [0.7, 1.1, 0.8, -0.3, 1.6, -8],
-  ],
-  press: [
-    [0, 1.75, 5.4, 0, 1.25, -2.2],
-    [-2.8, 1.3, 2.6, 0.1, 1.3, -2.6],
-    [2.4, 2.1, 2.2, -0.2, 1.2, -2.8],
-    [0.2, 1.1, 1.6, 0, 1.3, -3],
-    [0, 1.6, -3.2, 0, 1.2, 4],
-    [-0.7, 1.5, 0.3, 0.1, 1.25, -2.8],
-  ],
-  pitch: [
-    [0, 2.4, 9.5, 0, 1.2, -1],
-    [-6.5, 1.1, 4.5, 0, 1.3, -2],
-    [5.5, 3.4, 5.5, -0.5, 1.0, -3],
-    [0, 0.85, 3.2, 0, 1.5, -4],
-    [0, 3.8, -8.5, 0, 1.4, 4],
-    [-1.4, 1.0, 1.1, 0.4, 1.4, -3.5],
-  ],
-  stands: [
-    [0, 3.2, 11, 0, 3.4, -6],
-    [-7, 2.1, 6, 1, 3.2, -7],
-    [6.5, 4.6, 7, -1, 3.0, -7],
-    [0, 1.6, 4.5, 0, 3.8, -8],
-    [0, 4.2, -9, 0, 3.2, 6],
-    [2.1, 1.9, 2.6, -0.5, 3.6, -7.5],
-  ],
-  office: [
-    [0, 1.8, 5.2, 0, 1.15, -1.6],
-    [-2.7, 1.45, 2.8, 0.3, 1.1, -2.2],
-    [2.5, 2.0, 2.6, -0.3, 1.1, -2.2],
-    [0.3, 1.2, 1.9, 0, 1.2, -2.6],
-    [0, 1.6, -2.8, 0, 1.15, 3.6],
-    [-0.8, 1.4, 0.5, 0.2, 1.15, -2.4],
-  ],
-  arrival: [
-    [0, 2.6, 10.5, 0, 1.6, -2],
-    [-5.5, 1.4, 4.5, 0.5, 1.5, -3],
-    [5.5, 2.2, 4.5, -0.5, 1.4, -3],
-    [1.2, 1.0, 2.6, -0.4, 1.5, -4],
-    [0, 2.2, -7.5, 0, 1.6, 5],
-    [-1.6, 1.3, 0.6, 0.2, 1.5, -4.5],
-  ],
 };
 
 /* ------------------------------------------------------------- figurantes */
@@ -373,6 +313,7 @@ function LockerRoom({
         color={primary}
         seed={5}
         role="captain"
+        attention={[0.2, -2.1]}
         acting={speaker === "captain"}
       />
       <Figure x={1.4} z={0.6} rot={0.12} pose="sit" color={secondary} seed={9} />
@@ -384,6 +325,7 @@ function LockerRoom({
         color="#1d2b24"
         seed={21}
         role="manager"
+        attention={[-0.4, 0.6]}
         acting={actsFor(speaker, ["manager", "assistant"])}
       />
     </group>
@@ -611,11 +553,13 @@ function PitchEntry({
   secondary,
   speaker,
   festive,
+  training = false,
 }: {
   primary: string;
   secondary: string;
   speaker: Speaker | null;
   festive: boolean;
+  training?: boolean;
 }) {
   return (
     <group>
@@ -627,7 +571,11 @@ function PitchEntry({
           position={[0, i % 2 ? 0.001 : 0, 8 - i * 2.2]}
         >
           <planeGeometry args={[40, 2.2]} />
-          <meshStandardMaterial color={i % 2 ? "#157a3f" : "#126b37"} roughness={0.94} />
+          <meshStandardMaterial
+            color={i % 2 ? "#337b43" : "#2c6e3b"}
+            map={cinematicSurface("grass")}
+            roughness={0.94}
+          />
         </mesh>
       ))}
       {/* linhas */}
@@ -650,6 +598,17 @@ function PitchEntry({
           <meshStandardMaterial color="#f3fff7" />
         </mesh>
       </group>
+      {/* Terraces support the crowd silhouettes in daylight as well as night. */}
+      {Array.from({ length: 7 }, (_, row) => (
+        <mesh key={row} position={[0, (2.28 + row * 0.62) / 2, -22 - row * 0.7]} receiveShadow>
+          <boxGeometry args={[33, 2.28 + row * 0.62, 0.8]} />
+          <meshStandardMaterial color={row % 2 ? "#536371" : "#5c6c7a"} roughness={0.92} />
+        </mesh>
+      ))}
+      <mesh position={[0, 1.3, -21.52]} receiveShadow>
+        <boxGeometry args={[33, 1.1, 0.08]} />
+        <meshStandardMaterial color={secondary} roughness={0.85} />
+      </mesh>
       <Crowd tint={primary} y={2.6} z={-22} rows={7} cols={44} />
       {/* refletores */}
       {[-14, 14].map((x) => (
@@ -665,19 +624,23 @@ function PitchEntry({
         </group>
       ))}
       {/* fila de entrada + bola */}
-      {Array.from({ length: 11 }).map((_, i) => (
-        <Figure
-          key={i}
-          x={festive && i === 0 ? 0 : festive && i === 5 ? -5.2 : -5.2 + i * 1.06}
-          z={0.4 + (i % 2) * 0.5}
-          role={i === 0 ? "captain" : undefined}
-          holdingTrophy={festive && i === 0}
-          pose="stand"
-          color={i < 6 ? primary : secondary}
-          seed={i * 9 + 1}
-          acting={i === 0 && actsFor(speaker, ["captain", "manager"])}
-        />
-      ))}
+      {training ? (
+        <CinematicTraining primary={primary} secondary={secondary} speaker={speaker} />
+      ) : (
+        Array.from({ length: 11 }).map((_, i) => (
+          <Figure
+            key={i}
+            x={festive && i === 0 ? 0 : festive && i === 5 ? -5.2 : -5.2 + i * 1.06}
+            z={0.4 + (i % 2) * 0.5}
+            role={i === 0 ? "captain" : undefined}
+            holdingTrophy={festive && i === 0}
+            pose="stand"
+            color={i < 6 ? primary : secondary}
+            seed={i * 9 + 1}
+            acting={i === 0 && actsFor(speaker, ["captain", "manager"])}
+          />
+        ))
+      )}
       {festive ? <CelebrationRain /> : null}
       <mesh position={[0, 0.11, 2.4]} castShadow>
         <sphereGeometry args={[0.11, 20, 16]} />
@@ -903,6 +866,8 @@ function BusArrival({
         color={primary}
         seed={77}
         role="captain"
+        entrance
+        attention={[-6.1, -3.4]}
         acting={actsFor(speaker, ["captain", "manager"])}
       />
       <pointLight ref={beacon} position={[-7.5, 2.2, 5]} color="#3a7bff" distance={18} />
@@ -913,12 +878,7 @@ function BusArrival({
 
 /* ----------------------------------------------------------- direção 3D */
 
-/**
- * Papel de cada plano na lista de SHOTS: geral abre, médios alternam,
- * próximo aperta, contra-plano mostra o outro lado e close é o clímax.
- */
-const SHOT_ROLE = ["geral", "medio", "medio", "proximo", "contra", "close"] as const;
-
+/** Editing cuts establish geography before a face; cameras never fly through actors. */
 function Director({
   kind,
   beat,
@@ -932,155 +892,62 @@ function Director({
 }: {
   kind: SetKind;
   beat: number;
-  /**
-   * Tensão da fala atual (0..1, vinda da direção). Tensão alta deixa o tremor
-   * de mão mais presente e a aproximação de lente mais agressiva; tensão zero
-   * mantém o comportamento clássico e calmo.
-   */
   intensity?: number;
-  /** tamanho do plano pedido pela direção (quem fala define o plano) */
-  size?: "geral" | "medio" | "proximo" | "close";
-  /** travelling dentro da fala: de → para (0..1), vindo da direção */
+  size?: ShotSize;
   dollyFrom?: number;
   dollyTo?: number;
-  /** fala de clímax: tremor e aperto de lente no máximo */
   climax?: boolean;
   speaker?: Speaker | null;
   festive?: boolean;
 }) {
   const runtime = useCinematicRuntime();
-  const shots = SHOTS[kind];
-  // o plano respeita a direção; linhas seguidas do mesmo tamanho alternam
-  // entre as duas opções médias para não repetir o enquadramento
-  const roleIndex = useMemo(() => {
-    const pick = (role: string, fallback: number) => {
-      const options = SHOT_ROLE.map((r, idx) => (r === role ? idx : -1)).filter((v) => v >= 0);
-      if (!options.length) return fallback;
-      return options[beat % options.length]!;
-    };
-    if (size === "geral") return pick("geral", 0);
-    if (size === "proximo") return pick("proximo", 3);
-    if (size === "close") return pick("close", 5);
-    return pick("medio", 1);
-  }, [size, beat]);
+  const position = useMemo(() => new THREE.Vector3(), []);
   const target = useMemo(() => new THREE.Vector3(), []);
-  const look = useMemo(() => new THREE.Vector3(), []);
-  const current = useRef(new THREE.Vector3());
-  const currentLook = useRef(new THREE.Vector3());
-  const started = useRef(false);
-  // tempo desde a troca de plano: o corte começa devagar e acelera, como um
-  // travelling de verdade, em vez de saltar para a posição nova
-  const since = useRef(0);
-  const lastBeat = useRef(beat);
-  const reduced = useMemo(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
-    [],
-  );
-
-  const dolly = useRef({ from: dollyFrom, to: dollyTo });
-  dolly.current.from = dollyFrom;
-  dolly.current.to = dollyTo;
-  const climaxRef = useRef(climax);
-  climaxRef.current = climax;
-
+  const lastFraming = useRef("");
   useFrame(({ camera }) => {
-    const delta = runtime.clock.dt;
-    const time = runtime.clock.time;
-    const shot = shots[roleIndex % shots.length]!;
-    const t = time;
-    if (lastBeat.current !== beat) {
-      lastBeat.current = beat;
-      since.current = 0;
-      if (delta === 0) started.current = false;
+    if (!(camera instanceof THREE.PerspectiveCamera)) return;
+    const { time, lineTime } = runtime.clock;
+    const opening = beat === 0 && lineTime < 1.45 && !runtime.reduced;
+    const shot = cinematicShotFor(kind, speaker, size, camera.aspect, festive, opening);
+    position.fromArray(shot.position);
+    target.fromArray(shot.target);
+    const framing = `${beat}-${shot.framing}-${speaker}-${size}`;
+    const cut = lastFraming.current !== framing;
+    lastFraming.current = framing;
+    const focus = size !== "geral" && shot.framing === "dialogue";
+    if (focus && kind === "locker" && speaker === "captain") {
+      const idle = cinematicIdleAt(time, 5, true);
+      const rise = idle.kind === "rise" ? idle.weight * 0.45 : 0;
+      position.y += rise;
+      target.y += rise;
     }
-    since.current += delta;
-
-    const drift = reduced ? 0 : 1;
-    // travelling lento + micro tremor de câmera na mão; a tensão multiplica o
-    // tremor (até 3×) para a imagem "respirar" junto com a cena — e o clímax
-    // dobra a aposta mais uma vez
-    const nerves = (1 + intensity * 2) * (climaxRef.current ? 1.6 : 1);
-    target.set(
-      shot[0] + (Math.sin(t * 0.16) * 0.5 + Math.sin(t * 2.7) * 0.012 * nerves) * drift,
-      shot[1] + (Math.sin(t * 0.21) * 0.11 + Math.sin(t * 3.1) * 0.008 * nerves) * drift,
-      shot[2] + Math.cos(t * 0.13) * 0.32 * drift,
-    );
-    look.set(shot[3], shot[4], shot[5]);
-    const focus = cinematicFocus(kind, speaker, festive);
-    if (focus && size !== "geral") {
-      const lens = size === "close" ? 1.35 : size === "proximo" ? 2.35 : 3.6;
-      const enclosed = kind === "locker" || kind === "press" || kind === "office";
-      const narrow =
-        camera instanceof THREE.PerspectiveCamera
-          ? Math.min(enclosed ? 1.35 : 1.85, Math.max(1, 0.72 / camera.aspect))
-          : 1;
-      const offset = (beat % 2 ? -1 : 1) * (size === "close" ? 0.35 : 0.85);
-      const seated = kind === "locker" && speaker === "captain";
-      const seatedIdle = seated ? cinematicIdleAt(time, 5, true) : null;
-      const rise = seatedIdle?.kind === "rise" ? seatedIdle.weight * 0.45 : 0;
-      const subjectY =
-        rise +
-        (size === "close"
-          ? seated
-            ? 1.09
-            : 1.58
-          : size === "proximo"
-            ? seated
-              ? 0.98
-              : 1.35
-            : seated
-              ? 0.8
-              : 1.25);
-      target.set(
-        focus[0] + offset,
-        subjectY + 0.12,
-        focus[1] + lens * narrow * (kind === "press" && speaker === "press" ? -1 : 1),
-      );
-      look.set(focus[0], subjectY, focus[1]);
+    if (!runtime.reduced) {
+      const u = Math.min(1, lineTime / Math.max(3, runtime.cue?.duration ?? 5));
+      const eased = u * u * (3 - 2 * u);
+      const travel = THREE.MathUtils.clamp((dollyTo - dollyFrom) * 0.18 * eased, -0.04, 0.13);
+      position.lerp(target, travel);
+      // Dolly on a small arc, with sub-centimetre handheld only on tense lines.
+      const motion = focus ? 0.045 : 0.16;
+      position.x += Math.sin(lineTime * 0.27) * motion;
+      position.y += Math.sin(time * 1.3) * intensity * 0.003;
+      position.z += Math.sin(lineTime * 0.2) * motion * 0.5;
     }
-    // push-in da direção: a câmera desliza em direção ao alvo durante a fala
-    if (!reduced) {
-      const travel = dolly.current.to - dolly.current.from;
-      if (Math.abs(travel) > 0.001) {
-        const u = Math.min(1, since.current / 4);
-        const e = u * u * (3 - 2 * u);
-        target.lerp(look, Math.max(-0.2, Math.min(0.4, travel * 0.55 * e)));
-      }
+    // A cut snaps to a composed shot. Only the movement inside that shot drifts.
+    if (cut || runtime.stopped || runtime.reduced) {
+      camera.position.copy(position);
+      runtime.focus.copy(target);
+    } else {
+      const k = 1 - Math.exp(-8 * runtime.clock.dt);
+      camera.position.lerp(position, k);
+      runtime.focus.lerp(target, k);
     }
-    if (kind === "locker" || kind === "press" || kind === "office") {
-      target.x = THREE.MathUtils.clamp(target.x, -6.5, 6.5);
-      target.z = THREE.MathUtils.clamp(target.z, -3.5, 6.6);
+    camera.lookAt(runtime.focus);
+    const fov = shot.fov - (climax && focus ? 1 : 0);
+    if (Math.abs(camera.fov - fov) > 0.01) {
+      camera.fov = fov;
+      camera.updateProjectionMatrix();
     }
-    if (!started.current) {
-      current.current.copy(target);
-      currentLook.current.copy(look);
-      started.current = true;
-    }
-    // aceleração suave do plano: 0 → 1 em ~1,2 s (ease-in-out)
-    const u = Math.min(1, since.current / 1.2);
-    const eased = u * u * (3 - 2 * u);
-    const speed = reduced ? 0.0002 : 0.02 - eased * 0.0186;
-    const k = 1 - Math.pow(speed, delta);
-    current.current.lerp(target, k);
-    currentLook.current.lerp(look, k);
-    runtime.focus.copy(currentLook.current);
-    camera.position.copy(current.current);
-    camera.lookAt(currentLook.current);
-
-    // leve aproximação de lente ao longo do plano: dá respiro cinematográfico.
-    // Com tensão, a lente fecha mais (efeito de "aperto" no clímax).
-    const cam = camera as THREE.PerspectiveCamera;
-    if (cam.isPerspectiveCamera) {
-      const wanted = reduced
-        ? 42
-        : 44 - eased * (3.4 + intensity * 3.2) - (climaxRef.current ? 3 : 0);
-      if (Math.abs(cam.fov - wanted) > 0.01) {
-        cam.fov += (wanted - cam.fov) * Math.min(1, delta * 2.4);
-        cam.updateProjectionMatrix();
-      }
-    }
+    camera.userData["cinematicFraming"] = shot.framing;
   });
   return null;
 }
@@ -1096,6 +963,7 @@ const LINE_TINT: Record<LineLight, { sky: string; rim: string; amb: number }> = 
 
 function Stage({
   kind,
+  art,
   beat,
   primary,
   secondary,
@@ -1113,6 +981,7 @@ function Stage({
   onBatch,
 }: {
   kind: SetKind;
+  art: SceneArt;
   beat: number;
   primary: string;
   secondary: string;
@@ -1136,9 +1005,17 @@ function Stage({
   const amb = (indoor ? 0.46 : 0.55) * tint.amb;
   return (
     <>
+      <color
+        attach="background"
+        args={[art === "training" ? "#83a8ba" : indoor ? "#0b1017" : "#101b29"]}
+      />
       <fog
         attach="fog"
-        args={[indoor ? "#0b1017" : "#0a1310", indoor ? 8 : 22, indoor ? 34 : 70]}
+        args={[
+          art === "training" ? "#83a8ba" : indoor ? "#0b1017" : "#0a1310",
+          indoor ? 8 : 22,
+          indoor ? 34 : 70,
+        ]}
       />
       <ambientLight intensity={amb} color={warm} />
       <hemisphereLight intensity={indoor ? 0.65 : 0.45} color="#dce8f4" groundColor="#30333a" />
@@ -1185,16 +1062,20 @@ function Stage({
         kind={kind}
         beat={beat}
         intensity={intensity}
-        size={size}
+        size={art === "gym" && beat === 0 ? "geral" : size}
         dollyFrom={dollyFrom}
         dollyTo={dollyTo}
         climax={climax}
         speaker={speaker}
         festive={festive}
       />
+      <CinematicAtmosphere kind={kind} art={art} mood={mood} quality={quality} />
+      <CinematicPortraitLight />
       <CinematicSetBatch key={`${kind}-${primary}-${secondary}`} onReady={onBatch}>
-        <CinematicSetFinish kind={kind} primary={primary} />
-        {kind === "locker" ? (
+        {art !== "medical" && art !== "gym" && <CinematicSetFinish kind={kind} primary={primary} />}
+        {art === "medical" || art === "gym" ? (
+          <CinematicSpecialSet medical={art === "medical"} primary={primary} speaker={speaker} />
+        ) : kind === "locker" ? (
           <LockerRoom primary={primary} secondary={secondary} speaker={speaker} />
         ) : null}
         {kind === "tunnel" ? (
@@ -1204,7 +1085,13 @@ function Stage({
           <PressRoom primary={primary} secondary={secondary} speaker={speaker} />
         ) : null}
         {kind === "pitch" ? (
-          <PitchEntry primary={primary} secondary={secondary} speaker={speaker} festive={festive} />
+          <PitchEntry
+            primary={primary}
+            secondary={secondary}
+            speaker={speaker}
+            festive={festive}
+            training={art === "training"}
+          />
         ) : null}
         {kind === "stands" ? <Stands primary={primary} secondary={secondary} /> : null}
         {kind === "office" ? (
@@ -1240,6 +1127,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   manner,
   onReady,
   previewTime,
+  cue,
 }: {
   art: SceneArt;
   primary: string;
@@ -1265,6 +1153,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   manner?: CinematicManner | undefined;
   onReady?: (() => void) | undefined;
   previewTime?: number | undefined;
+  cue?: CinematicCue | undefined;
 }) {
   const kind = SET_BY_ART[art] ?? "locker";
   const initialQuality = useMemo(() => detectQuality(), []);
@@ -1387,6 +1276,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
             reduced={reduced}
             manner={manner}
             previewTime={previewTime}
+            cue={cue}
           >
             <CinematicFrameProbe
               host={host}
@@ -1396,6 +1286,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
             />
             <Stage
               kind={kind}
+              art={art}
               beat={beat}
               primary={primary}
               secondary={secondary}

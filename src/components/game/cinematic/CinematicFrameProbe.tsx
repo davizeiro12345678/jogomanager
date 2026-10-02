@@ -1,5 +1,6 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef, type RefObject } from "react";
+import { useCinematicRuntime } from "./cinematic-runtime";
 
 /** Local diagnostics, sampled once a second without React frame updates. */
 export function CinematicFrameProbe({
@@ -13,14 +14,21 @@ export function CinematicFrameProbe({
   stopped: boolean;
   onReady?: (() => void) | undefined;
 }) {
+  const runtime = useCinematicRuntime();
   const sample = useRef({ frames: 0, seconds: 0, times: [] as number[], ready: false });
-  useFrame(({ gl }, dt) => {
+  useFrame(({ gl, camera }, dt) => {
     const draws = gl.info.render.calls;
     const triangles = gl.info.render.triangles;
     gl.info.reset();
     const element = host.current;
     if (!element) return;
     const current = sample.current;
+    element.dataset["cinematicTime"] = runtime.clock.time.toFixed(3);
+    element.dataset["cinematicLineTime"] = runtime.clock.lineTime.toFixed(3);
+    element.dataset["cinematicGesture"] = runtime.cue?.gesture ?? "idle";
+    element.dataset["cinematicFraming"] = String(
+      camera.userData["cinematicFraming"] ?? "establishing",
+    );
     if (!current.ready && ++current.frames >= 4) {
       current.ready = true;
       element.dataset["firstFrameMs"] = (performance.now() - openedAt).toFixed(1);
@@ -43,6 +51,6 @@ export function CinematicFrameProbe({
     element.dataset["cinematicTriangles"] = String(triangles);
     current.seconds = 0;
     current.times.length = 0;
-  }, -101);
+  }, -80);
   return null;
 }

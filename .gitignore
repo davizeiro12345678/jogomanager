@@ -13,6 +13,7 @@ dist-ssr
 dist-benchmark
 .npm-cache/
 .bun-cache/
+.cache/
 .output
 .vinxi
 .tanstack/**

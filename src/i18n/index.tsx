@@ -7,100 +7,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { LANGS, RTL_LANGS, resolveLang, type Lang } from "./locale-catalog";
+import { EXPANDED_MESSAGES } from "./expanded-messages";
+import { INTERFACE_MESSAGES } from "./interface-messages";
+export { LANGS, LANG_NAMES, RTL_LANGS, type Lang } from "./locale-catalog";
 
 /**
- * i18n — 39 idiomas, detecção automática pelo navegador, persistência local.
+ * i18n — 98 idiomas, detecção automática pelo navegador, persistência local.
  * Tradução cobre o núcleo da interface (navegação, ações comuns, banner de convidado).
  * Chaves ausentes caem no inglês; idiomas RTL ajustam document.dir.
  */
-
-export const LANGS = [
-  "pt-BR",
-  "pt-PT",
-  "en",
-  "es",
-  "fr",
-  "de",
-  "it",
-  "nl",
-  "pl",
-  "tr",
-  "ru",
-  "uk",
-  "ar",
-  "he",
-  "fa",
-  "hi",
-  "bn",
-  "id",
-  "ms",
-  "vi",
-  "th",
-  "ja",
-  "ko",
-  "zh-CN",
-  "zh-TW",
-  "sv",
-  "no",
-  "da",
-  "fi",
-  "cs",
-  "sk",
-  "hu",
-  "ro",
-  "el",
-  "bg",
-  "sr",
-  "hr",
-  "ca",
-  "sw",
-] as const;
-
-export type Lang = (typeof LANGS)[number];
-
-export const LANG_NAMES: Record<Lang, string> = {
-  "pt-BR": "Português (Brasil)",
-  "pt-PT": "Português (Portugal)",
-  en: "English",
-  es: "Español",
-  fr: "Français",
-  de: "Deutsch",
-  it: "Italiano",
-  nl: "Nederlands",
-  pl: "Polski",
-  tr: "Türkçe",
-  ru: "Русский",
-  uk: "Українська",
-  ar: "العربية",
-  he: "עברית",
-  fa: "فارسی",
-  hi: "हिन्दी",
-  bn: "বাংলা",
-  id: "Bahasa Indonesia",
-  ms: "Bahasa Melayu",
-  vi: "Tiếng Việt",
-  th: "ไทย",
-  ja: "日本語",
-  ko: "한국어",
-  "zh-CN": "简体中文",
-  "zh-TW": "繁體中文",
-  sv: "Svenska",
-  no: "Norsk",
-  da: "Dansk",
-  fi: "Suomi",
-  cs: "Čeština",
-  sk: "Slovenčina",
-  hu: "Magyar",
-  ro: "Română",
-  el: "Ελληνικά",
-  bg: "Български",
-  sr: "Српски",
-  hr: "Hrvatski",
-  ca: "Català",
-  sw: "Kiswahili",
-};
-
-export const RTL_LANGS: ReadonlySet<Lang> = new Set(["ar", "he", "fa"]);
 
 type Dict = Record<string, string>;
 
@@ -1251,6 +1167,7 @@ const sw: Dict = {
 };
 
 const DICTS: Record<Lang, Dict> = {
+  ...EXPANDED_MESSAGES,
   "pt-BR": ptBR,
   "pt-PT": ptPT,
   en,
@@ -1298,18 +1215,14 @@ function detect(): Lang {
   if (typeof window === "undefined") return "pt-BR";
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved && (LANGS as readonly string[]).includes(saved)) return saved as Lang;
-    for (const nav of window.navigator.languages ?? [window.navigator.language]) {
-      const tag = nav.toLowerCase();
-      const exact = LANGS.find((l) => l.toLowerCase() === tag);
-      if (exact) return exact;
-      const prefix = tag.split("-")[0];
-      if (prefix === "pt") return tag.includes("pt") && !tag.includes("br") ? "pt-PT" : "pt-BR";
-      const byPrefix = LANGS.find((l) => l.toLowerCase().split("-")[0] === prefix);
-      if (byPrefix) return byPrefix;
-    }
+    const selected = resolveLang(saved ?? undefined);
+    if (selected) return selected;
   } catch {
     /* sem acesso ao storage */
+  }
+  for (const nav of window.navigator.languages ?? [window.navigator.language]) {
+    const supported = resolveLang(nav);
+    if (supported) return supported;
   }
   return "pt-BR";
 }
@@ -1321,10 +1234,21 @@ interface I18nValue {
   dir: "ltr" | "rtl";
 }
 
+export function translate(lang: Lang, key: string): string {
+  return (
+    INTERFACE_MESSAGES[lang]?.[key] ??
+    DICTS[lang][key] ??
+    INTERFACE_MESSAGES.en?.[key] ??
+    en[key] ??
+    ptBR[key] ??
+    key
+  );
+}
+
 const I18nContext = createContext<I18nValue>({
   lang: "pt-BR",
   setLang: () => undefined,
-  t: (k) => DICTS["pt-BR"][k] ?? en[k] ?? k,
+  t: (key) => translate("pt-BR", key),
   dir: "ltr",
 });
 
@@ -1336,6 +1260,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setLang = useCallback((l: Lang) => {
+    if (!(LANGS as readonly string[]).includes(l)) return;
     setLangState(l);
     try {
       window.localStorage.setItem(STORAGE_KEY, l);
@@ -1356,7 +1281,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       lang,
       setLang,
       dir,
-      t: (key: string) => DICTS[lang][key] ?? en[key] ?? ptBR[key] ?? key,
+      t: (key: string) => translate(lang, key),
     }),
     [lang, setLang, dir],
   );

@@ -1,105 +1,76 @@
-import { makeRng } from "./rng";
-import type { Player } from "./types";
-import type { DetailedAttributes, PlayerProfile } from "./attributes";
+import type { CareerState, Player } from "./types";
 
-function clamp(v: number) {
-  return Math.max(20, Math.min(99, Math.round(v)));
+export const identityText = (value: unknown): string =>
+  typeof value === "string" ? value.trim() : "";
+export const providerName = (value: unknown): string => identityText(value).toLowerCase();
+export const normalizedPlayerName = (value: unknown): string =>
+  identityText(value)
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+
+export function validBirthDate(value: unknown): string {
+  const text = identityText(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return "";
+  const time = Date.parse(`${text}T00:00:00Z`);
+  return Number.isFinite(time) && new Date(time).toISOString().slice(0, 10) === text ? text : "";
 }
 
-function buildAttrs(p: Player, rnd: () => number): DetailedAttributes {
-  const j = (base: number, spread = 7) => clamp(base + rnd() * spread - spread / 2);
-  const { ovr, pos } = p;
-  const pace = p.pace;
-  const sho = p.shooting;
-  const pas = p.passing;
-  const def = p.defending;
-  const phy = p.physical;
-
-  const common = {
-    pace: j(pace, 4),
-    acceleration: j(pace + (pos === "FW" ? 3 : 0)),
-    strength: j(phy),
-    stamina: j(phy - 2 + (pos === "MF" ? 6 : 0)),
-    agility: j(pace - 2 + (pos === "GK" ? 6 : 0)),
-    jumping: j(phy - 3 + (pos === "DF" || pos === "GK" ? 6 : 0)),
-    positioning: j(ovr - 2),
-    composure: j(ovr - 3),
-    leadership: j(ovr - 10 + (p.age > 29 ? 8 : 0)),
-    workRate: j(ovr - 4),
-    discipline: j(72 + rnd() * 20, 6),
-    decisions: j(ovr - 3),
-  };
-
-  if (pos === "GK") {
-    return {
-      ...common,
-      finishing: j(30, 10),
-      dribbling: j(38, 10),
-      passing: j(pas),
-      vision: j(pas - 6),
-      crossing: j(28, 10),
-      firstTouch: j(pas - 8),
-      longShots: j(34, 12),
-      setPieces: j(35, 14),
-      marking: j(35, 10),
-      tackling: j(32, 10),
-      heading: j(40, 12),
-      interceptions: j(42, 12),
-      reflexes: j(def + 3),
-      handling: j(def),
-      aerialReach: j(def - 2),
-      distribution: j(pas + 2),
-    };
-  }
-
-  const attack = pos === "FW";
-  const mid = pos === "MF";
-  const back = pos === "DF";
-
-  return {
-    ...common,
-    finishing: j(sho + (attack ? 4 : mid ? -6 : -18)),
-    dribbling: j((sho + pas) / 2 + (attack ? 4 : mid ? 2 : -12)),
-    passing: j(pas),
-    vision: j(pas + (mid ? 5 : -3)),
-    crossing: j(pas + (back ? 2 : mid ? 3 : -2)),
-    firstTouch: j((pas + sho) / 2 + 2),
-    longShots: j(sho - (back ? 12 : 2)),
-    setPieces: j((pas + sho) / 2 - 4, 16),
-    marking: j(def + (back ? 4 : mid ? -4 : -18)),
-    tackling: j(def + (back ? 3 : mid ? -2 : -20)),
-    heading: j((phy + def) / 2 + (back || attack ? 5 : -4)),
-    interceptions: j(def + (mid ? 2 : 0)),
-    reflexes: j(30, 8),
-    handling: j(28, 8),
-    aerialReach: j(30, 8),
-    distribution: j(pas - 10),
-  };
+/** An exact birth date and full name in the same registration context, never name alone. */
+export function verifiedPersonKey(name: unknown, birth: unknown, club: string): string {
+  const fullName = normalizedPlayerName(name);
+  const date = validBirthDate(birth);
+  return date && fullName.includes(" ") && club ? `person:${club}:${fullName}:${date}` : "";
 }
 
-export function profileIdentityFor(p: Player) {
-  const rnd = makeRng(`profile-${p.id}-${p.name}`);
-  const attrs = buildAttrs(p, rnd);
-  const tall = p.pos === "GK" ? 8 : p.pos === "DF" ? 4 : 0;
-  const foot: PlayerProfile["foot"] =
-    rnd() < 0.72 ? "destro" : rnd() < 0.9 ? "canhoto" : "ambidestro";
-  const height = Math.round(171 + tall + rnd() * 16);
-  const weight = Math.round(65 + tall * 0.9 + rnd() * 18);
-  return { rnd, attrs, foot, height, weight };
+export function playerSourceKeys(player: Pick<Player, "id"> & Partial<Player>): string[] {
+  const keys = new Set<string>();
+  const record = identityText(player.sourcePlayerId);
+  if (record) keys.add(`record:${record}`);
+  // Saves created before provenance was recorded still have this unambiguous prefix.
+  if (player.id.startsWith("real-") && player.rosterSource !== "custom")
+    keys.add(`record:${player.id.slice(5)}`);
+  const source = providerName(player.sourceProvider);
+  const external = identityText(player.sourceExternalId);
+  if (source && external) keys.add(`provider:${source}:${external}`);
+  const aliases = Array.isArray(player.sourceIdentityAliases) ? player.sourceIdentityAliases : [];
+  for (const alias of aliases)
+    if (typeof alias === "string" && /^(record|provider):/.test(alias)) keys.add(alias);
+  return [...keys];
 }
 
-const physiques = new Map<string, Pick<PlayerProfile, "height" | "weight">>();
-
-export function clearPhysiqueCache() {
-  physiques.clear();
+export interface RealPlayerIdentity {
+  id: string;
+  source?: string | null;
+  source_id?: string | null;
+  birth_date?: string | null;
+  name: string;
+  clubId: string;
+  identity_aliases?: string[];
 }
 
-/** Matches the full profile's random stream without importing club history. */
-export function physiqueFor(p: Player): Pick<PlayerProfile, "height" | "weight"> {
-  const existing = physiques.get(p.id);
-  if (existing) return existing;
-  const { height, weight } = profileIdentityFor(p);
-  const physique = { height, weight };
-  physiques.set(p.id, physique);
-  return physique;
+export function realPlayerKeys(target: RealPlayerIdentity): string[] {
+  const keys = [`record:${identityText(target.id)}`];
+  const source = providerName(target.source);
+  const external = identityText(target.source_id);
+  if (source && external) keys.push(`provider:${source}:${external}`);
+  const aliases = Array.isArray(target.identity_aliases) ? target.identity_aliases : [];
+  keys.push(...aliases.filter((k) => typeof k === "string" && /^(record|provider):/.test(k)));
+  return keys;
+}
+
+/** Includes imported registrations and legacy purchases, not just the transfer-history list. */
+export function ownsRealPlayer(state: CareerState, target: RealPlayerIdentity): boolean {
+  const keys = new Set(realPlayerKeys(target));
+  const person = verifiedPersonKey(target.name, target.birth_date, state.clubId);
+  return Object.values(state.players).some(
+    (player) =>
+      player.clubId === state.clubId &&
+      (playerSourceKeys(player).some((key) => keys.has(key)) ||
+        (player.rosterSource === "imported" &&
+          !!person &&
+          person === verifiedPersonKey(player.name, player.birthDate, player.clubId))),
+  );
 }

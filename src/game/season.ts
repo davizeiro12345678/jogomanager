@@ -52,7 +52,7 @@ export function generateFixtures(leagueId: string, seed: string, clubIds?: strin
     awayGoals: null,
   }));
 
-  return [...first, ...second];
+  return leagueId === "x5686" ? first : [...first, ...second];
 }
 
 export function computeTable(state: CareerState): TableRow[] {
