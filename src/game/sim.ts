@@ -1,5 +1,6 @@
 import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
+import { physiqueFor } from "./player-identity";
 import {
   BOX_DEPTH,
   BOX_HALF,
@@ -73,6 +74,9 @@ export interface SimPlayer {
   name: string;
   number: number;
   pos: string;
+  /** Cosmetic body measurements from the player's profile (cm / kg). */
+  heightCm?: number;
+  weightKg?: number;
   x: number;
   z: number;
   vx: number;
@@ -498,6 +502,7 @@ export class MatchSim {
     const dir = side === "home" ? 1 : -1;
     return setup.players.slice(0, 11).map((p, i) => {
       const slot = slots[Math.min(i, slots.length - 1)]!;
+      const physique = physiqueFor(p);
       const x = slot.x * FIELD_X * 0.92 * dir;
       const z = slot.z * FIELD_Z * 0.8 * dir;
       return {
@@ -506,6 +511,8 @@ export class MatchSim {
         name: p.name,
         number: p.number,
         pos: p.pos,
+        heightCm: physique.height,
+        weightKg: physique.weight,
         x,
         z,
         vx: 0,
@@ -551,6 +558,7 @@ export class MatchSim {
     const idx = this.players.findIndex((p) => p.side === side && p.pid === outPid);
     if (idx < 0) return false;
     const out = this.players[idx]!;
+    const physique = physiqueFor(incoming);
     out.minutes += this.minute() - out.onSince;
     this.subsOut.push(out);
     const fresh: SimPlayer = {
@@ -560,6 +568,8 @@ export class MatchSim {
       name: incoming.name,
       number: incoming.number,
       pos: incoming.pos,
+      heightCm: physique.height,
+      weightKg: physique.weight,
       pace: incoming.pace,
       shooting: incoming.shooting,
       passing: incoming.passing,
@@ -808,13 +818,23 @@ export class MatchSim {
       this.ball.holder = null;
       this.pendingShot = null;
       this.pass = null;
-      this.pushEvent({ minute: 105, type: "halftime", side: "neutral", text: "Fim do 1º tempo da prorrogação." });
+      this.pushEvent({
+        minute: 105,
+        type: "halftime",
+        side: "neutral",
+        text: "Fim do 1º tempo da prorrogação.",
+      });
       return false;
     }
     if (this.phase === "etBreak") {
       this.phase = "et2";
       this.kickoff("away");
-      this.pushEvent({ minute: 105, type: "kickoff", side: "neutral", text: "Começa o 2º tempo da prorrogação." });
+      this.pushEvent({
+        minute: 105,
+        type: "kickoff",
+        side: "neutral",
+        text: "Começa o 2º tempo da prorrogação.",
+      });
       return false;
     }
     // fim da prorrogação
@@ -1210,7 +1230,8 @@ export class MatchSim {
       rnd: this.rnd,
     });
     this.trigger(taker, "shot", 0.8);
-    if (gk) this.trigger(gk, out.gkSide === 0 ? "save" : out.gkSide > 0 ? "diveRight" : "diveLeft", 1.15);
+    if (gk)
+      this.trigger(gk, out.gkSide === 0 ? "save" : out.gkSide > 0 ? "diveRight" : "diveLeft", 1.15);
     this.lastPass[side] = null; // pênalti não tem assistência
     this.stats[side].shots++;
     this.stats[side].pens++;
@@ -1527,7 +1548,8 @@ export class MatchSim {
       return;
     }
     // ataque ganha: cabeçada com o xG sorteado
-    const header = [...attack].sort((a, b) => b.physical + b.shooting - (a.physical + a.shooting))[0] ?? null;
+    const header =
+      [...attack].sort((a, b) => b.physical + b.shooting - (a.physical + a.shooting))[0] ?? null;
     if (!header) {
       this.restartFor(side, "throwIn");
       return;

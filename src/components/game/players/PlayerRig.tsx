@@ -13,7 +13,7 @@
 //  taxa reduzida longe da câmera e materiais simplificados fora do modo "alta".
 // ============================================================================
 
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import type React from "react";
 import { createElement, memo, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -35,16 +35,18 @@ import {
   playerMaterials,
   retainPlayerMaterials,
 } from "@/game/player-materials";
-import { requestKtx2, useKtx2Revision } from "@/game/textures/ktx2";
+import { onKtx2Ready, requestKtx2 } from "@/game/textures/ktx2";
 import { visualDataFor } from "@/game/visual-frame-cache";
 import { useVisual } from "@/game/visual-settings";
 import {
   lodForDistance,
   lookFor,
+  lookWithPhysique,
   proportionsFor,
   segmentsFor,
   shade,
   type LodLevel,
+  type PlayerLook,
 } from "@/game/player-model";
 import { type SimView, type SimPlayer } from "@/game/sim";
 import {
@@ -62,14 +64,10 @@ import { censusRef } from "@/game/scene-census";
 import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
 import { gaitPoseAt, locomotionWeight } from "@/game/gait-kinematics";
 import { visualMotionFor } from "@/game/visual-motion";
-import { refineFootballAction } from "@/game/football-action";
+import { footballSupportFor, refineFootballAction } from "@/game/football-action";
 import { refineAthletePosture, shoulderPose } from "@/game/athlete-posture";
 import { applyHandPose, handPoseAt } from "@/game/player-hands";
-
-/** duração da transição cruzada entre dois movimentos, em segundos */
-const BLEND_TIME = 0.18;
-// quintic smootherstep: velocidade e aceleração zero nas pontas da transição
-const ease = (u: number) => u * u * u * (u * (u * 6 - 15) + 10);
+import { AthletePoseBlender } from "@/game/athlete-pose-blender";
 
 /**
  * Velocidade (m/s) para a qual cada ciclo de passada foi desenhado. A cadência
@@ -111,6 +109,11 @@ interface RigProps {
   respectVisualSettings?: boolean;
   /** Optional studio sampling; ordinary match playback always uses its clock. */
   previewAt?: number | undefined;
+  /** Studio-only presentation override; never changes the simulation/save. */
+  lookOverride?: PlayerLook | undefined;
+  previewClip?: ClipName | undefined;
+  /** Dense face topology is reserved for the isolated portrait preview. */
+  portrait?: boolean;
 }
 
 export const PlayerRig = memo(function PlayerRig({
@@ -118,6 +121,9 @@ export const PlayerRig = memo(function PlayerRig({
   sim,
   kit,
   goalPulse,
+  lookOverride,
+  portrait = false,
+  previewClip,
   quality: baseQuality,
   paused = false,
   respectVisualSettings = true,
@@ -145,8 +151,13 @@ export const PlayerRig = memo(function PlayerRig({
   /* ------------------------------------------------------------ aparência */
 
   const look = useMemo(
-    () => lookFor(player.id, player.pos, player.number === 10),
-    [player.id, player.pos, player.number],
+    () =>
+      lookOverride ??
+      lookWithPhysique(lookFor(player.pid, player.pos, player.number === 10), {
+        height: player.heightCm,
+        weight: player.weightKg,
+      }),
+    [lookOverride, player.pid, player.pos, player.number, player.heightCm, player.weightKg],
   );
   const P = useMemo(() => proportionsFor(look), [look]);
   // Só os atletas com rig completo (perto da câmera) recebem a camisa em 512²
@@ -170,6 +181,13 @@ export const PlayerRig = memo(function PlayerRig({
   const isGK = player.pos === "GK";
   const hi = quality === "alta";
   const shadows = quality === "alta";
+  const invalidate = useThree((state) => state.invalidate);
+  // Demand-rendered studio previews still display newly loaded maps while
+  // paused. Match playback needs no React updates for texture streaming.
+  useEffect(() => {
+    if (paused) return onKtx2Ready(invalidate);
+    return undefined;
+  }, [paused, invalidate]);
 
   /* -------------------------------------------------------------- juntas */
 
@@ -215,14 +233,11 @@ export const PlayerRig = memo(function PlayerRig({
   /* ---------------------------------------------------------- animação */
 
   const cur = useRef<Pose>(emptyPose());
-  const target = useRef<Pose>(emptyPose());
+  const poseBlender = useRef(new AthletePoseBlender());
   const blendBuf = useRef<Pose>(emptyPose());
   const ikBuf = useRef<Pose>(emptyPose());
   const clipName = useRef<ClipName>("idle");
-  const prevName = useRef<ClipName | null>(null);
   const clipTime = useRef(0);
-  const prevTime = useRef(0);
-  const blend = useRef(1);
   const acc = useRef(0);
   // tempo acumulado abaixo do limiar de caminhada, para decidir clipes de parada
   const idleFor = useRef(0);
@@ -316,52 +331,29 @@ export const PlayerRig = memo(function PlayerRig({
     else if (speed > 0.9) idleFor.current = 0;
     const stopped = idleFor.current > 0.25;
 
-    const next = selectClip({
-      isGK,
-      action: player.action,
-      speed,
-      hasBall: sim.ball.holder === player.id,
-      ballDist: Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z),
-      stamina: player.stamina,
-      defending: sim.possession !== player.side,
-      stopped,
-      seed,
-      time: sim.time,
-    });
+    const next =
+      previewClip ??
+      selectClip({
+        isGK,
+        action: player.action,
+        speed,
+        hasBall: sim.ball.holder === player.id,
+        ballDist: Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z),
+        stamina: player.stamina,
+        defending: sim.possession !== player.side,
+        stopped,
+        seed,
+        time: sim.time,
+      });
 
     if (next !== clipName.current) {
-      if (blend.current < 0.5 && prevName.current && prevName.current !== next) {
-        // troca no meio de uma transição: o clipe anterior ainda domina a pose,
-        // então ele continua como origem e só o destino muda (sem "estalo").
-        clipName.current = next;
-        clipTime.current = 0;
-      } else {
-        // guarda o clipe anterior para fazer a transição cruzada
-        prevName.current = clipName.current;
-        prevTime.current = clipTime.current;
-        clipName.current = next;
-        clipTime.current = 0;
-        blend.current = 0;
-      }
+      clipName.current = next;
+      clipTime.current = 0;
     }
     // ---- cadência sincronizada com o deslocamento real (sem patinar)
     const nominal = GAIT_SPEED[clipName.current];
     const cadence = nominal ? Math.max(0.55, Math.min(1.7, speed / nominal)) : 1;
-    const prevNominal = prevName.current ? GAIT_SPEED[prevName.current] : undefined;
-    const prevCadence = prevNominal ? Math.max(0.55, Math.min(1.7, speed / prevNominal)) : 1;
     clipTime.current += adt * cadence;
-    prevTime.current += adt * prevCadence;
-    // troca entre andar/correr pede mistura mais longa; ação com bola, mais curta
-    // correr→parar desacelera o corpo mais devagar; parado→correr arranca rápido
-    const stoppingFromGait = !nominal && prevNominal !== undefined && !player.action;
-    const blendTime = player.action
-      ? BLEND_TIME * 0.6
-      : stoppingFromGait
-        ? BLEND_TIME * 1.8
-        : nominal
-          ? BLEND_TIME * 1.4
-          : BLEND_TIME;
-    blend.current = Math.min(1, blend.current + adt / blendTime);
 
     const u =
       previewAt ??
@@ -370,7 +362,7 @@ export const PlayerRig = memo(function PlayerRig({
         : (clipTime.current % 1.4) / 1.4);
 
     const ctx = {
-      t: clipTime.current,
+      t: previewAt !== undefined ? previewAt * (player.actionDur || 1.4) : clipTime.current,
       u,
       speed,
       stride: Math.min(1, speed / 7),
@@ -378,15 +370,6 @@ export const PlayerRig = memo(function PlayerRig({
     };
     let p = getClip(clipName.current)(ctx);
 
-    // ---- transição cruzada com o clipe anterior (nada de troca seca)
-    if (previewAt === undefined && blend.current < 1 && prevName.current) {
-      const prev = getClip(prevName.current)({
-        ...ctx,
-        t: prevTime.current,
-        u: (prevTime.current % 1.4) / 1.4,
-      });
-      p = mixPose(prev, p, ease(blend.current), blendBuf.current);
-    }
     const gaitWeight = locomotionWeight(speed, player.action, clipName.current);
     if (gaitWeight > 0) {
       const gait = gaitPoseAt(motion.phase, speed, P, gaitBuffer.current, {
@@ -395,6 +378,7 @@ export const PlayerRig = memo(function PlayerRig({
         turnRate: motion.turnRate,
         stamina: player.stamina,
         hasBall: sim.ball.holder === player.id,
+        style: look.seed,
       }).pose;
       p = mixPose(p, gait, gaitWeight, blendBuf.current);
     }
@@ -461,13 +445,12 @@ export const PlayerRig = memo(function PlayerRig({
     // a pose e também remove qualquer NaN antes que ele vire matriz de osso.
     clampPoseAnatomy(p);
 
-    target.current = p;
-    mixPose(
-      cur.current,
-      target.current,
-      previewAt !== undefined ? 1 : 1 - Math.exp(-(player.action ? 27 : 18) * adt),
-      cur.current,
-    );
+    cur.current = poseBlender.current.sample(p, adt, {
+      clip: clipName.current,
+      action: player.action,
+      progress: u,
+      instant: paused || previewAt !== undefined,
+    });
     const c = clampPoseAnatomy(cur.current);
 
     // ---- contato com o gramado (cinemática direta das duas pernas)
@@ -475,10 +458,20 @@ export const PlayerRig = memo(function PlayerRig({
     // construção de `P.hipY`. Bastava agachar, dobrar o joelho ou inclinar o
     // corpo para o pé afundar ou flutuar. Agora medimos onde a sola realmente
     // está e movemos a raiz para plantá-la.
+    const actionSupport = footballSupportFor(
+      player.action,
+      u,
+      P.hipW,
+      actionContext.action ? actionContext.usedFoot : dominantFoot,
+    );
     const support = c.legRPitch - c.legLPitch;
-    const shift = Math.max(-1, Math.min(1, support)) * 0.045 * Math.min(1, speed / 4);
+    const shift =
+      Math.max(-1, Math.min(1, support)) * 0.045 * Math.min(1, speed / 4) + actionSupport.shiftX;
     const previousShift = hips.current?.position.x ?? 0;
-    const hipShiftX = previousShift + (shift - previousShift) * Math.min(1, adt * 14);
+    const hipShiftX =
+      previewAt !== undefined
+        ? shift
+        : previousShift + (shift - previousShift) * Math.min(1, adt * 14);
     const ground = solveGroundContact({
       P,
       pose: c,
@@ -488,7 +481,9 @@ export const PlayerRig = memo(function PlayerRig({
       leanZ: g.rotation.z,
       airborne: airborneFactor(clipName.current, c.hipY),
       previousRootY: rootY.current,
-      dt: adt,
+      dt: previewAt !== undefined ? 1 : adt,
+      plantedFoot: actionSupport.plantedFoot,
+      bodyContact: actionSupport.bodyContact,
     });
     rootY.current = ground.rootY;
     contactL.current = ground.contactL;
@@ -644,16 +639,14 @@ export const PlayerRig = memo(function PlayerRig({
   // Materiais compartilhados entre jogadores com a mesma combinação de
   // uniforme/aparência: derruba o número de programas de shader e de objetos
   // de material de ~200 para poucas dezenas numa partida.
-  const textureRevision = useKtx2Revision();
   useEffect(() => {
     if (quality !== "alta") return;
     requestKtx2(detailTextureNames(look, kit));
   }, [quality, kit, look]);
-  const mats = useMemo(() => {
-    // Decoding a new HD texture invalidates the shared material cache.
-    void textureRevision;
-    return playerMaterials(look, kit, tex ?? null, quality, surface);
-  }, [look, kit, tex, quality, textureRevision, surface]);
+  const mats = useMemo(
+    () => playerMaterials(look, kit, tex ?? null, quality, surface),
+    [look, kit, tex, quality, surface],
+  );
   useLayoutEffect(() => retainPlayerMaterials(mats), [mats]);
 
   // Corpo em SkinnedMesh: um desenho por grupo de material (~18) em vez de um
@@ -668,6 +661,7 @@ export const PlayerRig = memo(function PlayerRig({
           look,
           segs: { radial: segs.radial, cap: segs.cap },
           hi,
+          portrait,
           mats,
           jerseyInk,
           handR: look.gloves ? P.handR * 1.25 : P.handR,
@@ -679,12 +673,18 @@ export const PlayerRig = memo(function PlayerRig({
     // pelo three.js a cada quadro, e incluí-los aqui reconstruiria as 18 malhas
     // do atleta a cada movimento.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [P, look, segs.radial, segs.cap, hi, mats, jerseyInk],
+    [P, look, segs.radial, segs.cap, hi, portrait, mats, jerseyInk],
   );
   useEffect(() => () => skin.dispose(), [skin]);
   useLayoutEffect(() => {
     painted.current = false;
-  }, [skin]);
+    lodState.current = null;
+    castState.current = null;
+    // A paused preview must open its eyes on its first paint, including
+    // appearance changes that rebuild the skin.
+    skin.boneOf.blink.scale.y = 0.001;
+    nextBlink.current = 1 + (look.seed % 4);
+  }, [skin, look.seed]);
 
   // As malhas são criadas fora do JSX para carregar esqueleto, esfera de
   // culling generosa (a pose animada sai da pose de bind) e o estado de LOD.
@@ -747,7 +747,7 @@ export const PlayerRig = memo(function PlayerRig({
     filhos já estão ligados em `skin`, então a cena fica correta com um único
     elemento; os refs da animação são ligados aqui.
   */
-  useEffect(() => {
+  useLayoutEffect(() => {
     const entries = Object.entries(boneRefs) as [RigJoint, React.RefObject<THREE.Bone | null>][];
     for (const [joint, ref] of entries) ref.current = skin.boneOf[joint] ?? null;
     return () => {

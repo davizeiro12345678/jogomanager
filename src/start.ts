@@ -60,7 +60,7 @@ const PERMISSIONS_POLICY = [
   "gyroscope=()",
   "magnetometer=()",
   "microphone=()",
-  "payment=(self \"https://js.stripe.com\")",
+  'payment=(self "https://js.stripe.com")',
   "usb=()",
   "interest-cohort=()",
 ].join(", ");
@@ -82,6 +82,13 @@ const HASHED_PREFIXES = ["/assets/", "/_build/", "/_serverFn/assets/"];
 const PUBLIC_STATIC = /\.(?:png|jpe?g|webp|avif|gif|svg|ico|ttf|woff2?|webmanifest|txt)$/i;
 
 function cacheControlFor(pathname: string, contentType: string): string | null {
+  if (
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/_serverFn/") ||
+    pathname.startsWith("/lovable/") ||
+    pathname === "/mcp"
+  )
+    return "no-store";
   if (HASHED_PREFIXES.some((p) => pathname.startsWith(p))) return IMMUTABLE;
   // Vite injeta hash de 8 caracteres antes da extensão nos bundles.
   if (/-[A-Za-z0-9_]{8}\.(?:js|mjs|css|woff2)$/.test(pathname)) return IMMUTABLE;

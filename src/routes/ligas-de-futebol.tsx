@@ -12,14 +12,15 @@ const DESC =
   "Mais de 30 ligas de futebol jogáveis: Brasileirão, Premier League, La Liga e mais. Escolha seu clube e comece a carreira de técnico.";
 
 export const Route = createFileRoute("/ligas-de-futebol")({
-  head: () => ({
+  loader: async () => {
+    const { LEAGUES } = await import("@/game/data/leagues");
+    return LEAGUES.map((league) => league.name);
+  },
+  head: ({ loaderData }) => ({
     meta: seoMeta({ title: TITLE, description: DESC, path: PATH }),
     links: canonical(PATH),
     scripts: [
-      itemListLd(
-        "Ligas jogáveis",
-        LEAGUES.map((l) => l.name),
-      ),
+      itemListLd("Ligas jogáveis", loaderData ?? []),
       breadcrumbLd([
         { name: "Início", path: "/" },
         { name: "Ligas de futebol", path: PATH },

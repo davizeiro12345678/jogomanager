@@ -1,12 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guias";
-const TITLE = "Guias de Football Manager: táticas, finanças e scouting | PFM3D";
+const TITLE =
+  "Guias de manager de futebol: como começar bem | Pro Football Manager 3D: Jogo de Futebol Manager Online";
 const DESC =
-  "Aprenda as melhores formações, como montar o elenco, fechar contratações baratas e equilibrar as finanças do clube. Guias práticos e grátis.";
+  "Guias completos do Pro Football Manager 3D: táticas, finanças, scouting, mercado e tudo para dominar sua carreira de técnico.";
 
 export const Route = createFileRoute("/guias")({
   head: () => ({
@@ -90,10 +91,64 @@ function GuidesPage() {
       path={PATH}
       readMinutes={7}
       level="Iniciante"
-      updated="setembro de 2026"
+      updated="outubro de 2026"
       toc={GUIDES.map((g) => ({ id: g.id, title: g.title }))}
       faq={FAQ}
     >
+      <Section id="primeiros-passos" title="Seu roteiro para as primeiras rodadas">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>Escolha um clube e leia o objetivo da diretoria antes de mexer no elenco.</li>
+          <li>
+            Monte uma formação simples, confira a condição física e deixe alternativas no banco.
+          </li>
+          <li>
+            Jogue a primeira rodada com o mesmo plano e observe onde o time cria e concede chances.
+          </li>
+          <li>
+            Revise uma decisão por vez: formação, pressão ou substituições. Compare o efeito nos
+            próximos jogos.
+          </li>
+          <li>
+            Antes de contratar, confira folha salarial, contratos e a reserva para o restante da
+            temporada.
+          </li>
+        </ol>
+      </Section>
+      <Section title="Aprofunde a decisão que está tomando agora">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[
+            {
+              to: "/taticas-e-formacoes",
+              title: "Táticas e formações",
+              detail: "Entenda o papel de cada setor e escolha um esquema para o seu elenco.",
+            },
+            {
+              to: "/guia-de-scouting",
+              title: "Scouting",
+              detail: "Compare atletas por função, potencial e custo antes de negociar.",
+            },
+            {
+              to: "/gestao-financeira",
+              title: "Finanças",
+              detail: "Organize salários e transferências para sustentar o projeto.",
+            },
+            {
+              to: "/jogar-offline",
+              title: "Progresso e backup",
+              detail: "Conheça o uso offline e mantenha uma cópia da sua carreira.",
+            },
+          ].map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className="rounded-lg border border-border/60 p-4 transition hover:border-primary"
+            >
+              <span className="block font-display text-base text-primary">{item.title} →</span>
+              <span className="mt-2 block text-sm">{item.detail}</span>
+            </Link>
+          ))}
+        </div>
+      </Section>
       {GUIDES.map((g) => (
         <Section key={g.id} id={g.id} title={g.title}>
           <p>{g.body}</p>

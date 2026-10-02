@@ -61,6 +61,41 @@ function vertices(geometry: THREE.BufferGeometry): number[] {
 }
 
 describe("rig skin", () => {
+  it("batches cinematic LOD groups without losing vertices or changing skinning", () => {
+    const ctx = context();
+    const original = buildRigSkin(ctx, ROOT);
+    const cinema = buildRigSkin(ctx, ROOT, { mergeLods: true });
+    const vertexCount = (skin: typeof original) =>
+      skin.groups.reduce(
+        (count, group) => count + group.geometry.getAttribute("position").count,
+        0,
+      );
+    expect(vertexCount(cinema)).toBe(vertexCount(original));
+    expect(cinema.groups.length).toBeLessThan(original.groups.length);
+    expect(cinema.bones.map((bone) => bone.name)).toEqual(original.bones.map((bone) => bone.name));
+    const attributes = (skin: typeof original) =>
+      skin.groups
+        .flatMap((group) => {
+          const position = group.geometry.getAttribute("position");
+          const indices = group.geometry.getAttribute("skinIndex");
+          const weights = group.geometry.getAttribute("skinWeight");
+          return Array.from({ length: position.count }, (_, i) =>
+            [
+              position.getX(i),
+              position.getY(i),
+              position.getZ(i),
+              indices.getX(i),
+              indices.getY(i),
+              weights.getX(i),
+              weights.getY(i),
+            ].join("|"),
+          );
+        })
+        .sort();
+    expect(attributes(cinema)).toEqual(attributes(original));
+    original.dispose();
+    cinema.dispose();
+  });
   it("plants the final sole using the actual Three skeleton after root and pelvis lean", () => {
     const ctx = context();
     const skin = buildRigSkin(ctx, ROOT);

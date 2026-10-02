@@ -47,10 +47,15 @@ export interface ChatMessage {
 
 /** Chamada crua ao gateway. Trocar de provedor significa trocar só esta função. */
 export async function callModel(messages: ChatMessage[]): Promise<string> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
+  const independent = Boolean(process.env["AI_API_KEY"]);
+  const apiKey = independent ? process.env["AI_API_KEY"] : process.env["LOVABLE_API_KEY"];
   if (!apiKey) {
     throw new AiError("unknown", "IA indisponível no momento. Tente novamente mais tarde.");
   }
+  const gateway = independent ? process.env["AI_API_URL"] : GATEWAY_URL;
+  const model = independent ? process.env["AI_MODEL"] : MODEL;
+  if (!gateway || !model || !gateway.startsWith("https://"))
+    throw new AiError("unknown", "IA indisponível no momento. Tente novamente mais tarde.");
 
   // Teto mensal de gasto: reserva antes de gerar custo.
   const { reserveAiBudget } = await import("@/lib/ai-budget.server");
@@ -60,13 +65,14 @@ export async function callModel(messages: ChatMessage[]): Promise<string> {
 
   let res: Response;
   try {
-    res = await fetch(GATEWAY_URL, {
+    res = await fetch(gateway, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model: MODEL, messages }),
+      body: JSON.stringify({ model, messages }),
+      signal: AbortSignal.timeout(30_000),
     });
   } catch {
     throw new AiError("unknown", "Não foi possível falar com a IA agora. Tente novamente.");

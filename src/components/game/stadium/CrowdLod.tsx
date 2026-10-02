@@ -101,6 +101,7 @@ export function CrowdLod({
   crowd,
   pulse,
   budget,
+  supporters,
 }: {
   crowd: CrowdData;
   pulse: React.MutableRefObject<number>;
@@ -108,12 +109,18 @@ export function CrowdLod({
     RuntimeSceneBudget,
     "crowdInstances" | "crowdVisibleTiles" | "crowdUpdateSeconds" | "stage"
   >;
+  supporters?: import("@/game/career-world-types").SupporterMatchday | undefined;
 }) {
   const refs = useRef<(THREE.InstancedMesh | null)[]>([]);
   const tiles = useMemo(() => buildTiles(crowd.positions), [crowd.positions]);
   const data = useMemo(() => {
     const card = crowdCard();
-    const uniforms = { time: { value: 0 }, pulse: { value: 0 }, wave: { value: 0 } };
+    const uniforms = {
+      time: { value: 0 },
+      pulse: { value: 0 },
+      wave: { value: 0 },
+      agitation: { value: 0 },
+    };
     const materials = [0, 1, 2].map((tier) => {
       const material = new THREE.MeshStandardMaterial({
         roughness: 0.93,
@@ -125,16 +132,18 @@ export function CrowdLod({
         shader.uniforms["crowdTime"] = uniforms.time;
         shader.uniforms["crowdPulse"] = uniforms.pulse;
         shader.uniforms["crowdWave"] = uniforms.wave;
+        shader.uniforms["crowdAgitation"] = uniforms.agitation;
         shader.vertexShader = shader.vertexShader
           .replace(
             "#include <common>",
-            "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave;",
+            "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave; uniform float crowdAgitation;",
           )
           .replace(
             "#include <begin_vertex>",
             `#include <begin_vertex>
               float phase = instanceMatrix[3].x * 0.71 + instanceMatrix[3].z * 0.37;
               transformed.x += sin(crowdTime * 1.7 + phase) * 0.035 * max(0.0, position.y + 0.6);
+              transformed.z += sin(crowdTime * 5.2 + phase) * crowdAgitation * 0.05 * max(0.0, position.y + 0.6);
               transformed.y += abs(sin(crowdTime * 7.0 + phase)) * crowdPulse * 0.48;
               // ola mexicana: corcova que viaja ao redor do anel (uma volta a
               // cada ~28 s); sutil no jogo corrido, erupção quando sai o gol
@@ -173,6 +182,12 @@ export function CrowdLod({
   useFrame(({ camera, clock }, dt) => {
     data.uniforms.time.value = clock.elapsedTime;
     data.uniforms.pulse.value = pulse.current;
+    data.uniforms.agitation.value =
+      supporters?.climate === "protesto"
+        ? supporters.intensity
+        : supporters?.climate === "cobrança"
+          ? supporters.intensity * 0.4
+          : 0;
     data.uniforms.wave.value = (clock.elapsedTime * 0.22) % (Math.PI * 2);
     elapsed.current += dt;
     if (elapsed.current < budget.crowdUpdateSeconds) return;

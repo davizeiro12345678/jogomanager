@@ -1,0 +1,1932 @@
+/* Career office and match HUD. Club colours come from useClubTheme. */
+.career-shell {
+  --background: #0c151f;
+  --foreground: #edf3f8;
+  --card: #14212e;
+  --card-foreground: #edf3f8;
+  --secondary: #1e2e3f;
+  --secondary-foreground: #edf3f8;
+  --muted: #1a2938;
+  --muted-foreground: #a5b6c7;
+  --border: #2c3e50;
+  --input: #3b5066;
+  --career-surface: var(--card);
+  --career-line: #2c3e50;
+  --career-accent-soft: color-mix(in oklab, var(--primary) 12%, var(--card));
+  --career-radius: 18px;
+  font-variant-numeric: tabular-nums;
+  color-scheme: dark;
+}
+.career-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  border-bottom: 1px solid var(--career-line);
+}
+.career-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 28px;
+}
+.career-brand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex-shrink: 0;
+}
+.career-season {
+  margin-top: 2px;
+}
+.career-current-page {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.career-current-page strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.career-header-actions {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.career-icon-button,
+.career-menu-trigger {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.career-icon-button:hover,
+.career-menu-trigger:hover {
+  background: var(--secondary);
+  color: var(--foreground);
+}
+.career-menu-trigger {
+  display: none;
+}
+.career-search-button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  color: var(--muted-foreground);
+  border: 1px solid var(--career-line);
+  border-radius: 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.career-search-button kbd {
+  margin-inline-start: 24px;
+  font-size: 10px;
+  background: var(--secondary);
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+.career-search-button:hover {
+  border-color: var(--primary);
+  color: var(--foreground);
+}
+.career-primary-button,
+.career-secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
+}
+.career-primary-button {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.career-primary-button:hover {
+  background: color-mix(in oklab, var(--primary) 85%, var(--foreground));
+}
+.career-secondary-button {
+  border: 1px solid var(--career-line);
+}
+.career-workspace {
+  display: grid;
+  max-width: 1680px;
+  margin: 0 auto;
+}
+.career-sidebar {
+  position: sticky;
+  display: flex;
+  flex-direction: column;
+  border-inline-end: 1px solid var(--career-line);
+}
+.career-sidebar > nav {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0 5px 12px;
+}
+.career-nav-heading {
+  text-transform: uppercase;
+  margin: 0 10px 7px;
+}
+.career-nav-item {
+  display: flex;
+  align-items: center;
+}
+.career-nav-item span {
+  flex: 1;
+}
+.career-nav-item[aria-current="page"] {
+  box-shadow: inset 3px 0 var(--primary);
+}
+.career-nav-overview {
+  min-height: 46px;
+}
+.career-sidebar-footer {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border-top: 1px solid var(--career-line);
+  font-size: 12px;
+}
+.career-sidebar-footer p {
+  font-weight: 600;
+}
+.career-sidebar-footer span:not(.career-manager-avatar) {
+  display: block;
+}
+.career-manager-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.career-content {
+  margin: 0 auto;
+  outline: none;
+}
+.career-save-note {
+  display: flex;
+  justify-content: space-between;
+}
+.career-save-note a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+}
+.career-menu-sheet {
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+.career-menu-sheet .career-nav-item {
+  min-height: 44px;
+}
+.career-bottom-nav {
+  display: none;
+}
+.career-skip {
+  position: fixed;
+  top: -100px;
+  left: 20px;
+}
+.career-skip:focus {
+  top: 10px;
+}
+
+.trainer-heading {
+  display: flex;
+  justify-content: space-between;
+}
+.trainer-eyebrow {
+  text-transform: uppercase;
+}
+.trainer-heading h1 {
+  font-family: var(--font-display);
+}
+.trainer-league-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.trainer-league-link svg:first-child {
+  color: var(--primary);
+}
+.trainer-league-link:hover {
+  color: var(--foreground);
+}
+.trainer-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-radius: var(--career-radius);
+}
+.trainer-summary > a {
+  border-inline-end: 1px solid var(--career-line);
+}
+.trainer-summary strong {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  font-family: var(--font-mono);
+  margin: 8px 0;
+}
+.trainer-summary small {
+  font-family: var(--font-sans);
+}
+.trainer-match-grid {
+  display: grid;
+}
+.trainer-match-card {
+  overflow: hidden;
+}
+.trainer-match-card::before {
+  transform: translateX(-50%);
+}
+.trainer-match-top {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 19px 23px;
+}
+.trainer-match-top h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.trainer-match-teams {
+  display: grid;
+  align-items: center;
+  position: relative;
+}
+.trainer-match-teams > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.trainer-match-teams > div > span:not(.trainer-match-vs span) {
+  margin-top: 10px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--muted-foreground);
+}
+.trainer-match-teams h3 {
+  font-family: var(--font-display);
+  margin-top: 4px;
+}
+.trainer-match-vs span {
+  font-family: var(--font-display);
+  font-style: italic;
+}
+.trainer-match-vs small {
+  font-size: 9px;
+  color: var(--muted-foreground);
+  margin-top: 8px;
+}
+.trainer-match-footer {
+  position: relative;
+  padding: 15px 23px 20px;
+}
+.trainer-match-footer p {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.trainer-live-dot {
+  border-radius: 50%;
+  background: var(--primary);
+  flex-shrink: 0;
+}
+.trainer-match-footer > div {
+  display: flex;
+}
+.trainer-match-footer .career-primary-button {
+  flex: 1;
+}
+.trainer-season-end {
+  text-align: center;
+}
+.trainer-season-end > svg {
+  color: var(--primary);
+  margin: 0 auto 12px;
+}
+.trainer-season-end h3 {
+  font-family: var(--font-display);
+  font-size: 22px;
+}
+.trainer-season-end p {
+  margin: 8px 0 20px;
+  color: var(--muted-foreground);
+}
+.trainer-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.trainer-section-heading > svg {
+  color: var(--muted-foreground);
+}
+.trainer-task {
+  display: flex;
+  align-items: center;
+}
+.trainer-task > div {
+  flex: 1;
+}
+.trainer-task p {
+  margin-top: 3px;
+}
+.trainer-task:hover strong,
+.trainer-task:hover > svg {
+  color: var(--primary);
+}
+.trainer-task-icon {
+  display: grid;
+  place-items: center;
+}
+.trainer-attention {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.trainer-attention > svg {
+  flex-shrink: 0;
+  color: oklch(0.85 0.14 85);
+}
+.trainer-attention > div {
+  flex: 1;
+}
+.trainer-attention p {
+  margin-top: 3px;
+}
+.trainer-attention a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.trainer-onboarding {
+  margin-top: 18px;
+}
+.trainer-onboarding summary {
+  cursor: pointer;
+}
+.trainer-onboarding summary span:first-child {
+  font-weight: 600;
+  margin-inline-end: 12px;
+}
+.trainer-onboarding ol {
+  list-style: none;
+  padding: 0;
+}
+.trainer-onboarding a {
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.trainer-onboarding a:hover {
+  color: var(--primary);
+}
+.trainer-onboarding button {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--primary);
+}
+.trainer-overview-heading {
+  margin: 30px 0 16px;
+}
+.trainer-overview-heading h2 {
+  font-family: var(--font-display);
+}
+.trainer-overview-heading a {
+  gap: 7px;
+}
+.trainer-club-grid .hud-card {
+  background: var(--card);
+  border: 1px solid var(--career-line);
+  border-radius: var(--career-radius);
+  backdrop-filter: none;
+  box-shadow: none;
+}
+.trainer-club-grid .hud-card-interactive:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: color-mix(in oklab, var(--primary) 32%, var(--career-line));
+}
+.trainer-club-grid .hud-label {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.trainer-club-grid .hud-card > header a {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  font-size: 11px;
+  text-transform: none;
+}
+
+@media (max-width: 1179px) {
+  .career-sidebar {
+    display: none;
+  }
+  .career-menu-trigger {
+    display: grid;
+  }
+  .career-brand {
+    flex-shrink: 1;
+  }
+  .career-header-inner {
+    gap: 12px;
+  }
+  .career-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid var(--career-line);
+  }
+  .career-bottom-nav a,
+  .career-bottom-nav button {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 62px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    cursor: pointer;
+  }
+  .career-bottom-nav a[aria-current="page"] {
+    color: var(--primary);
+    background: var(--career-accent-soft);
+    border-top: 2px solid var(--primary);
+  }
+}
+@media (max-width: 767px) {
+  .trainer-summary > a {
+    border-bottom: 1px solid var(--career-line);
+  }
+  .trainer-summary > a:nth-child(even) {
+    border-inline-end: 0;
+  }
+  .trainer-summary > a:nth-child(n + 3) {
+    border-bottom: 0;
+  }
+  .trainer-heading {
+    flex-direction: column;
+  }
+  .career-search-button span,
+  .career-search-button kbd {
+    display: none;
+  }
+  .career-search-button {
+    min-width: 42px;
+    justify-content: center;
+    border: 0;
+    padding: 8px;
+  }
+}
+@media (max-width: 479px) {
+  /* Keep the upcoming match and its primary action in the first phone view. */
+  .trainer-summary > a:nth-child(-n + 2) {
+    border-bottom: 0;
+  }
+  .career-header-inner {
+    padding: 10px 10px;
+  }
+  .career-brand img,
+  .career-brand svg {
+    width: 29px;
+    height: 29px;
+  }
+  .career-header-actions {
+    gap: 0;
+  }
+  .career-header-play {
+    display: none;
+  }
+  .career-save-note > span {
+    max-width: 56%;
+  }
+  .trainer-summary strong {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .trainer-match-top {
+    padding: 15px;
+  }
+  .trainer-match-teams img,
+  .trainer-match-teams svg {
+    max-height: 56px;
+  }
+  .trainer-match-footer {
+    padding: 14px 15px 17px;
+  }
+  .trainer-match-footer .career-primary-button,
+  .trainer-match-footer .career-secondary-button {
+    padding-inline: 11px;
+    font-size: 12px;
+  }
+  .trainer-attention {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .trainer-onboarding summary span {
+    display: block;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .career-shell *,
+  .career-menu-sheet {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Office chrome: a steady reading surface, with a single club accent. */
+.career-header {
+  background: #0f1a25;
+  box-shadow: 0 5px 24px #00000024;
+}
+.career-header-inner {
+  min-height: 80px;
+  padding-inline: 28px;
+}
+.career-brand {
+  width: 222px;
+  gap: 13px;
+}
+.career-brand > div > p:first-child {
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+.career-season {
+  color: #a5b6c7;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.career-current-page {
+  padding-inline-start: 24px;
+  border-inline-start: 1px solid var(--career-line);
+}
+.career-current-page strong {
+  font-size: 13px;
+}
+.career-search-button {
+  min-height: 44px;
+  background: #14212e;
+  border-color: #33485c;
+}
+.career-icon-button,
+.career-menu-trigger {
+  min-width: 44px;
+  color: #bdcbd8;
+}
+.career-primary-button,
+.career-secondary-button {
+  min-height: 46px;
+  gap: 9px;
+  padding: 11px 17px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 12px;
+}
+.career-primary-button {
+  box-shadow: 0 4px 16px color-mix(in oklab, var(--primary) 15%, transparent);
+}
+.career-secondary-button {
+  border-color: #41566c;
+  background: #1b2c3d;
+}
+.career-primary-button:hover {
+  filter: brightness(1.08);
+}
+.career-secondary-button:hover {
+  background: #263b4e;
+  border-color: #6a8096;
+}
+.career-workspace {
+  grid-template-columns: 250px minmax(0, 1fr);
+}
+.career-sidebar {
+  background: #0f1a25;
+  padding: 20px 14px 14px;
+  top: 80px;
+  height: calc(100dvh - 80px);
+}
+.career-sidebar > nav {
+  scrollbar-width: thin;
+  scrollbar-color: #35495b transparent;
+  padding-inline: 2px;
+}
+.career-nav-group {
+  margin-top: 22px;
+}
+.career-nav-heading {
+  color: #8fa4b9;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 0 13px;
+  margin-bottom: 8px;
+}
+.career-nav-item {
+  position: relative;
+  min-height: 44px;
+  gap: 12px;
+  margin-block: 3px;
+  padding: 10px 13px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: #bbc9d7;
+  font-size: 13px;
+  transition:
+    background 140ms,
+    border-color 140ms,
+    color 140ms;
+}
+.career-nav-item > svg:first-child {
+  opacity: 0.85;
+}
+.career-nav-item > svg:last-child:not(:first-child) {
+  margin-inline-start: auto;
+}
+.career-nav-item:hover {
+  background: #1c2a38;
+  color: #fff;
+}
+.career-nav-item[aria-current="page"] {
+  background: var(--career-accent-soft);
+  border-color: color-mix(in oklab, var(--primary) 35%, transparent);
+  color: var(--foreground);
+  font-weight: 700;
+}
+.career-nav-item[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: -1px;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--primary);
+}
+.career-nav-item[aria-current="page"] > svg {
+  color: var(--primary);
+  opacity: 1;
+}
+.career-nav-overview {
+  margin-bottom: 12px;
+}
+.career-sidebar-footer {
+  padding: 16px 10px 2px;
+  margin-top: 18px;
+}
+.career-manager-avatar {
+  width: 38px;
+  height: 38px;
+  background: #203244;
+  border: 1px solid #3a5066;
+  color: #d7e2ec;
+}
+.career-sidebar-footer p {
+  font-size: 12px;
+  max-width: 155px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.career-sidebar-footer span:not(.career-manager-avatar) {
+  font-size: 10px;
+  color: #91a6ba;
+}
+.career-page {
+  min-width: 0;
+}
+.career-content {
+  max-width: 1600px;
+  padding: 32px clamp(20px, 3vw, 48px) 64px;
+  margin-inline: auto;
+}
+.career-save-note {
+  min-height: 42px;
+  padding: 8px clamp(20px, 3vw, 48px);
+  gap: 12px;
+  border-bottom: 1px solid #233547;
+  background: #101e2a;
+  color: #a5b6c7;
+  font-size: 11px;
+}
+.career-save-note a {
+  color: #d5e2ee;
+  padding-block: 5px;
+}
+.career-menu-sheet,
+.career-preferences {
+  --background: #101c28;
+  --foreground: #edf3f8;
+  --card: #14212e;
+  --muted-foreground: #a5b6c7;
+  --secondary: #203246;
+  --border: #344a60;
+  --input: #3b5066;
+  --career-line: #344a60;
+  --career-accent-soft: color-mix(in oklab, var(--primary) 12%, #14212e);
+  background: #101c28;
+  color: #edf3f8;
+  color-scheme: dark;
+}
+.career-menu-sheet {
+  width: min(360px, 90vw);
+  padding: 24px 18px max(32px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.career-menu-sheet .career-nav-heading {
+  margin-top: 24px;
+}
+.career-preferences {
+  padding: 18px;
+  border-radius: 16px;
+  box-shadow: 0 20px 64px #0007;
+}
+.career-density {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin-block: 8px 16px;
+  border-radius: 10px;
+  background: #0b1621;
+}
+.career-density button {
+  min-height: 40px;
+  padding: 7px;
+  border-radius: 7px;
+  font-size: 11px;
+  color: #a5b6c7;
+}
+.career-density button[aria-pressed="true"] {
+  background: #2b4359;
+  color: #fff;
+  font-weight: 700;
+}
+.career-shell :where(a, button, summary, input, select, textarea, [tabindex]):focus-visible,
+.career-menu-sheet :where(a, button, summary):focus-visible,
+.career-preferences :where(button, a):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+}
+.career-skip {
+  z-index: 100;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: 8px;
+  padding: 12px 18px;
+}
+
+/* The next fixture is the central decision. The rest supports it. */
+.trainer-heading {
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+.trainer-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--primary);
+  margin-bottom: 9px;
+}
+.trainer-eyebrow::before {
+  content: "";
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+}
+.trainer-heading h1 {
+  font-size: clamp(26px, 2.5vw, 38px);
+  font-weight: 800;
+  line-height: 1.13;
+  letter-spacing: -0.035em;
+}
+.trainer-heading > div > p:last-child {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #a5b6c7;
+  line-height: 1.7;
+}
+.trainer-league-link {
+  border: 1px solid #30475d;
+  background: #152433;
+  padding: 12px 14px;
+  border-radius: 11px;
+  font-size: 11px;
+  color: #d3dfeb;
+}
+.trainer-league-link:hover {
+  background: #203347;
+  border-color: #6a8096;
+}
+.trainer-summary {
+  gap: 12px;
+  background: transparent;
+  border: 0;
+  overflow: visible;
+  margin-bottom: 24px;
+}
+.trainer-summary > a {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 136px;
+  padding: 20px;
+  border: 1px solid #2c3e50;
+  border-radius: 16px;
+  background: #14212e;
+  overflow: hidden;
+  transition:
+    border-color 140ms,
+    background 140ms;
+}
+.trainer-summary > a:last-child {
+  border: 1px solid #2c3e50;
+}
+.trainer-summary > a::after {
+  content: "";
+  position: absolute;
+  inset-inline: 20px;
+  bottom: 0;
+  height: 2px;
+  background: color-mix(in oklab, var(--primary) 60%, transparent);
+}
+.trainer-summary > a:hover {
+  background: #1b2b3a;
+  border-color: #617d95;
+}
+.trainer-summary > a > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #adbecd;
+  font-size: 11px;
+  font-weight: 500;
+}
+.trainer-summary > a > span > svg {
+  color: var(--primary);
+  opacity: 0.85;
+}
+.trainer-summary strong {
+  margin-top: 12px;
+  font-size: clamp(24px, 2.3vw, 34px);
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+  font-weight: 750;
+}
+.trainer-summary small {
+  font-size: 11px;
+  margin-inline-start: 8px;
+  color: #a5b6c7;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.trainer-summary p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #92a8bd;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+.trainer-match-grid {
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr);
+  gap: 20px;
+}
+.trainer-match-card {
+  position: relative;
+  isolation: isolate;
+  padding: 24px;
+  border: 1px solid #3d5a6b;
+  border-radius: 20px;
+  background: linear-gradient(
+    130deg,
+    color-mix(in oklab, var(--primary) 10%, #152433),
+    #14212e 65%
+  );
+  box-shadow: 0 10px 30px #0002;
+}
+.trainer-match-card::before {
+  content: "";
+  z-index: -1;
+  position: absolute;
+  width: 280px;
+  height: 170px;
+  top: 72px;
+  left: calc(50% - 140px);
+  border: 1px solid #ffffff07;
+  border-radius: 50%;
+  background: transparent;
+  opacity: 1;
+  pointer-events: none;
+}
+.trainer-match-top {
+  gap: 12px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #ffffff12;
+}
+.trainer-match-top h2 {
+  color: #eef5fa;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.trainer-match-top h2 svg {
+  color: var(--primary);
+}
+.trainer-match-top > span {
+  padding: 5px 9px;
+  background: #09152060;
+  border: 1px solid #ffffff14;
+  border-radius: 7px;
+  color: #bdcddb;
+  font-size: 10px;
+}
+.trainer-match-teams {
+  padding: 30px 0;
+  grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 202px;
+}
+.trainer-match-teams > div {
+  min-width: 0;
+  gap: 7px;
+}
+.trainer-match-teams > div > span {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #91aabe;
+}
+.trainer-match-teams h3 {
+  font-size: clamp(14px, 1.6vw, 20px);
+  font-weight: 750;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.trainer-match-vs span {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto;
+  background: #0b172580;
+  border: 1px solid #ffffff14;
+  border-radius: 50%;
+  color: #dae6ef;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+.trainer-match-vs small {
+  display: none;
+}
+.trainer-match-footer {
+  padding-top: 18px;
+  border-top: 1px solid #ffffff14;
+}
+.trainer-match-footer p {
+  margin-bottom: 16px;
+  font-size: 11px;
+  color: #bdcddb;
+  line-height: 1.6;
+}
+.trainer-live-dot {
+  width: 6px;
+  height: 6px;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 13%, transparent);
+}
+.trainer-match-footer > div {
+  gap: 10px;
+}
+.trainer-match-footer .career-primary-button {
+  min-width: 155px;
+  margin-inline-start: auto;
+}
+.trainer-season-end {
+  padding: 30px 10px;
+}
+.trainer-season-end p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.trainer-preparation {
+  background: #14212e;
+  padding: 22px;
+  border: 1px solid #2c3e50;
+  border-radius: 20px;
+}
+.trainer-section-heading {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ffffff12;
+  margin-bottom: 6px;
+}
+.trainer-section-heading h2 {
+  font-size: 13px;
+  color: #eef5fa;
+  font-weight: 700;
+}
+.trainer-preparation-count {
+  font-size: 10px;
+  font-weight: 700;
+  background: #263d50;
+  color: #c1d7e9;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.trainer-task {
+  min-height: 78px;
+  gap: 12px;
+  padding: 13px 4px;
+  border-bottom: 1px solid #ffffff0d;
+  border-radius: 0;
+}
+.trainer-task:last-of-type {
+  border-bottom: 0;
+}
+.trainer-task > div {
+  min-width: 0;
+}
+.trainer-task strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.trainer-task p {
+  font-size: 11px;
+  color: #a1b5c7;
+  line-height: 1.6;
+}
+.trainer-task > svg {
+  color: #718ca2;
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}
+.trainer-task:hover {
+  background: #ffffff04;
+}
+.trainer-task-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  background: #24394c;
+  color: #bcd3e6;
+}
+.trainer-task-icon.is-ready {
+  background: #163c34;
+  color: #8fdfbf;
+}
+.trainer-task-icon.is-warning {
+  background: #413423;
+  color: #f5ca85;
+}
+.trainer-preparation-note {
+  margin-top: 14px;
+  font-size: 10px;
+  line-height: 1.7;
+  color: #93a9bc;
+}
+.trainer-attention {
+  background: #352b20;
+  border: 1px solid #705739;
+  border-inline-start: 3px solid #e8b86d;
+  padding: 16px 18px;
+  border-radius: 12px;
+  margin-top: 20px;
+  color: #f4dfbe;
+}
+.trainer-attention strong {
+  font-size: 12px;
+}
+.trainer-attention p {
+  color: #d9c4a7;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.trainer-attention a {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #aa8354;
+  border-radius: 9px;
+  color: #ffe3b9;
+  font-size: 11px;
+}
+.trainer-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-block: 22px;
+}
+.trainer-quick-actions a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 76px;
+  border: 1px solid #2b4054;
+  border-radius: 13px;
+  background: #12202e;
+  padding: 14px;
+  transition:
+    background 140ms,
+    border-color 140ms;
+}
+.trainer-quick-actions a:hover {
+  background: #1e3143;
+  border-color: #607e98;
+}
+.trainer-quick-actions a > svg:first-child {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+.trainer-quick-actions a > svg:last-child {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  color: #718ca2;
+}
+.trainer-quick-actions span {
+  min-width: 0;
+}
+.trainer-quick-actions strong {
+  display: block;
+  font-size: 12px;
+  color: #e4edf6;
+}
+.trainer-quick-actions small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: #93a9bc;
+}
+.trainer-onboarding {
+  margin-block: 18px 26px;
+  padding: 0;
+  background: #111f2b;
+  border: 1px solid #2b4054;
+  border-radius: 12px;
+}
+.trainer-onboarding summary {
+  padding: 15px 18px;
+  min-height: 48px;
+  font-size: 12px;
+  color: #d1e0ee;
+}
+.trainer-onboarding summary span:last-child {
+  color: #93a9bc;
+  font-size: 10px;
+}
+.trainer-onboarding > div {
+  padding: 0 18px 18px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.trainer-onboarding a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.trainer-onboarding button {
+  min-height: 44px;
+  padding: 8px 12px;
+  margin-top: 10px;
+  border: 1px solid #425a70;
+  border-radius: 8px;
+}
+.trainer-overview-heading {
+  margin-top: 30px;
+  margin-bottom: 18px;
+}
+.trainer-overview-heading h2 {
+  font-size: 19px;
+  letter-spacing: -0.025em;
+  color: #e6f0f7;
+}
+.trainer-overview-heading a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  color: #adbdcc;
+}
+
+/* Shared content: roster, tables, finances, tactics and forms. */
+.career-content .surface-card {
+  background: #14212e;
+  background-image: none;
+  border-color: #2c3e50;
+  border-radius: 16px;
+  box-shadow: 0 5px 20px #00000014;
+  backdrop-filter: none;
+}
+.career-content .surface-card::before,
+.career-content .surface-card::after {
+  opacity: 0;
+}
+.career-content .surface-card > :where(h1, h2) {
+  letter-spacing: -0.02em;
+  text-transform: none;
+  line-height: 1.4;
+}
+.career-content .stat-strip {
+  gap: 12px;
+}
+.career-content .stat-cell {
+  padding: 18px;
+}
+.career-content .stat-cell dt {
+  color: #a5b6c7;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.career-content .stat-cell dd:first-of-type {
+  font-size: clamp(24px, 2.2vw, 32px);
+  letter-spacing: -0.03em;
+}
+.career-content .stat-cell dd + dd {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #93a9bc;
+  margin-top: 7px;
+}
+.career-content .surface-card dl dd {
+  text-align: end;
+  white-space: nowrap;
+}
+.career-content .hud-card {
+  background: #14212e;
+  background-image: none;
+  border: 1px solid #2c3e50;
+  border-radius: 16px;
+  box-shadow: 0 5px 20px #00000014;
+  backdrop-filter: none;
+}
+.career-content .hud-card::before,
+.career-content .hud-card::after {
+  opacity: 0;
+}
+.career-content .hud-card-interactive:hover {
+  transform: none;
+  border-color: #57728a;
+  background: #1a2a39;
+}
+.career-content .hud-card > header {
+  min-height: 54px;
+  gap: 12px;
+  border-bottom: 1px solid #ffffff0c;
+  padding-block: 16px;
+}
+.career-content .hud-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  color: #acbdcc;
+}
+.career-content .hud-card > header a {
+  color: var(--primary);
+  font-size: 10px;
+}
+.career-content .screen-heading {
+  padding-bottom: 22px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid #2c3e50;
+  gap: 20px;
+}
+.career-content .screen-heading h1 {
+  text-transform: none;
+  font-size: clamp(26px, 2.5vw, 36px);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+.career-content .screen-heading p {
+  line-height: 1.7;
+}
+.career-content
+  :where(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    [data-slot="select-trigger"]
+  ) {
+  min-height: 44px;
+  border-color: #3b5066;
+  border-radius: 9px;
+  background-color: #0e1b28;
+  color: #e3edf6;
+}
+.career-content input::placeholder,
+.career-content textarea::placeholder {
+  color: #91a6ba;
+  opacity: 1;
+}
+.career-content :where(select, textarea):focus {
+  border-color: var(--primary);
+}
+.career-content input[type="range"] {
+  min-height: 32px;
+  accent-color: var(--primary);
+}
+.career-content textarea {
+  border: 1px solid #3b5066;
+  background: #0e1b28;
+  border-radius: 9px;
+}
+.career-content button:not([role="switch"]):not([role="checkbox"]):not([data-slot="slider-thumb"]) {
+  min-height: 40px;
+}
+.career-content table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+.career-content table th {
+  color: #a5bbcf;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  background: #101e2b;
+  padding-block: 13px;
+  border-bottom: 1px solid #344a5e;
+}
+.career-content table td {
+  padding-block: 14px;
+  border-bottom: 1px solid #233747;
+  font-size: 12px;
+}
+.career-content table tbody tr:hover {
+  background: #ffffff04;
+}
+.career-content table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.career-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #466279 #102130;
+  border-radius: 10px;
+}
+.career-table-scroll table {
+  min-width: 510px;
+}
+.career-table-hint {
+  display: none;
+}
+.career-shell[data-density="compact"] .career-content {
+  padding-top: 22px;
+}
+.career-shell[data-density="compact"] .career-content table td {
+  padding-block: 9px;
+}
+.career-shell[data-density="compact"] .career-content .hud-card > header {
+  min-height: 46px;
+  padding-block: 12px;
+}
+.career-shell[data-density="compact"] .trainer-summary > a {
+  min-height: 116px;
+  padding-block: 15px;
+}
+
+/* Live match: only the score and transport stay on the playfield. */
+.match-interface {
+  color-scheme: dark;
+}
+.match-interface .match-scoreboard {
+  background: #0b1726e8;
+  border-color: #bacbde40;
+  border-radius: 15px;
+  box-shadow: 0 5px 24px #0005;
+  backdrop-filter: blur(8px);
+}
+.match-interface .match-transport {
+  display: flex;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  left: 24px;
+  max-width: calc(100% - 48px);
+  transform: none;
+  border-radius: 15px;
+  padding: 6px;
+  gap: 4px;
+  overflow-x: auto;
+  background: #0b1726eb;
+  border-color: #bacbde40;
+  box-shadow: 0 5px 24px #0005;
+  backdrop-filter: blur(8px);
+}
+.match-transport-secondary {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding-inline: 6px;
+  border-inline-start: 1px solid #ffffff26;
+}
+.match-interface .match-transport > button:first-child {
+  color: var(--primary-foreground);
+}
+.match-interface .match-control-panel option {
+  background: #0b1726;
+  color: #eef4fa;
+}
+.match-interface .match-transport button {
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: 10px;
+  color: #d9e5f2;
+}
+.match-interface .match-transport button[aria-pressed="true"],
+.match-interface .match-transport button[aria-expanded="true"] {
+  background: #365873;
+  color: #fff;
+}
+.match-interface .match-feed {
+  bottom: 96px;
+}
+.match-interface .match-control-panel {
+  bottom: 90px;
+  right: 24px;
+  top: auto;
+  width: 320px;
+  max-width: calc(100% - 32px);
+  max-height: calc(100dvh - 220px);
+  overflow-y: auto;
+  padding: 18px;
+  border: 1px solid #91a7be55;
+  border-radius: 16px;
+  background: #101e2df5;
+  color: #eef4fa;
+  box-shadow: 0 16px 48px #0006;
+  transform: none;
+  opacity: 1;
+  backdrop-filter: blur(8px);
+}
+.match-interface .match-control-panel[hidden] {
+  display: none;
+}
+.match-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #ffffff20;
+}
+.match-panel-heading h2 {
+  font-size: 13px;
+  font-weight: 700;
+}
+.match-panel-heading button {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: #c8d8e7;
+  background: #ffffff08;
+}
+.match-interface .match-control-panel select {
+  min-height: 44px;
+  border: 1px solid #526980;
+  border-radius: 8px;
+  background: #0b1726;
+  color: #eef4fa;
+  padding-inline: 9px;
+}
+.match-interface .match-control-panel :where(button, a) {
+  min-height: 44px;
+}
+.match-panel-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #ffffff20;
+}
+.match-panel-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #526980;
+  border-radius: 9px;
+  font-size: 12px;
+  background: #21354a;
+}
+.match-interface .match-stats-panel {
+  background: #101e2df5;
+  border: 1px solid #91a7be55;
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+}
+.match-interface :where(button, select):focus-visible {
+  outline: 2px solid #b9defb;
+  outline-offset: 3px;
+}
+.match-interface button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1399px) and (min-width: 1180px) {
+  .career-workspace {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+  .career-brand {
+    width: 192px;
+  }
+  .career-current-page {
+    padding-inline-start: 16px;
+  }
+  .career-content {
+    padding-inline: 26px;
+  }
+  .trainer-match-grid {
+    grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr);
+  }
+  .trainer-summary > a {
+    padding-inline: 16px;
+  }
+  .trainer-summary strong {
+    font-size: 28px;
+  }
+  .trainer-quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1179px) {
+  .career-workspace {
+    display: block;
+  }
+  .career-header-inner {
+    min-height: 72px;
+    padding: 12px 22px;
+  }
+  .career-brand {
+    width: auto;
+  }
+  .career-current-page {
+    display: none;
+  }
+  .career-content {
+    padding: 28px 24px 112px;
+  }
+  .career-save-note {
+    padding-inline: 24px;
+  }
+  .career-bottom-nav {
+    position: fixed;
+    z-index: 35;
+    inset-inline: 16px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    height: 66px;
+    padding: 6px;
+    gap: 4px;
+    border: 1px solid #45617a;
+    border-radius: 18px;
+    background: #102131f5;
+    box-shadow: 0 10px 32px #0006;
+    backdrop-filter: blur(8px);
+  }
+  .career-bottom-nav :where(a, button) {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    border-radius: 11px;
+    color: #9db4c8;
+    font-size: 10px;
+    min-width: 0;
+    min-height: 48px;
+  }
+  .career-bottom-nav [aria-current="page"] {
+    color: var(--primary);
+    background: var(--career-accent-soft);
+  }
+  .career-bottom-nav [aria-current="page"]::before {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  .career-header-inner {
+    min-height: 68px;
+    gap: 8px;
+    padding: 10px 16px;
+  }
+  .career-header-actions {
+    gap: 4px;
+  }
+  .career-brand {
+    gap: 8px;
+  }
+  .career-brand > div > p:first-child {
+    font-size: 14px;
+  }
+  .career-season {
+    font-size: 9px;
+  }
+  .career-content {
+    padding: 24px 18px 112px;
+  }
+  .career-save-note {
+    padding-inline: 18px;
+    gap: 8px;
+    font-size: 10px;
+  }
+  .trainer-heading {
+    display: block;
+    margin-bottom: 22px;
+  }
+  .trainer-heading h1 {
+    font-size: 29px;
+  }
+  .trainer-heading > div > p:last-child {
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  .trainer-league-link {
+    display: inline-flex;
+    margin-top: 16px;
+    padding: 9px 12px;
+    min-height: 40px;
+  }
+  .trainer-summary {
+    gap: 10px;
+    margin-bottom: 18px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .trainer-summary > a {
+    min-height: 126px;
+    padding: 16px;
+    border-radius: 13px;
+  }
+  .trainer-summary strong {
+    font-size: 28px;
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .trainer-summary small {
+    font-size: 10px;
+  }
+  .trainer-summary p {
+    font-size: 10px;
+  }
+  .trainer-match-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .trainer-match-card,
+  .trainer-preparation {
+    padding: 20px;
+    border-radius: 16px;
+  }
+  .trainer-match-teams {
+    padding: 26px 0;
+    min-height: 185px;
+    grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .trainer-match-teams h3 {
+    font-size: 16px;
+  }
+  .trainer-match-footer > div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .trainer-match-footer .career-primary-button {
+    min-width: 0;
+    margin: 0;
+  }
+  .trainer-quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-block: 18px;
+  }
+  .trainer-quick-actions a {
+    padding: 13px 11px;
+    gap: 9px;
+  }
+  .trainer-quick-actions a > svg:last-child {
+    display: none;
+  }
+  .trainer-onboarding summary span:last-child {
+    display: block;
+    margin-top: 5px;
+  }
+  .trainer-overview-heading {
+    margin-top: 26px;
+  }
+  .career-table-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 0;
+    color: #a5bbcf;
+    font-size: 10px;
+  }
+  .career-content table td {
+    padding-block: 13px;
+  }
+  .career-content
+    button:not([role="switch"]):not([role="checkbox"]):not([data-slot="slider-thumb"]) {
+    min-height: 44px;
+  }
+  .career-shell[data-density="compact"] .career-content table td {
+    padding-block: 13px;
+  }
+  .match-interface .match-transport {
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: max(12px, env(safe-area-inset-bottom));
+    max-width: calc(100% - 24px);
+    gap: 5px;
+    padding: 6px;
+  }
+  .match-interface .match-fps {
+    top: 96px;
+  }
+  .match-transport-secondary {
+    display: none;
+  }
+  .match-camera-control > button {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .match-camera-control > button > span,
+  .match-camera-control > button > svg:last-child {
+    display: none;
+  }
+  .match-interface .match-control-panel {
+    right: 12px;
+    bottom: max(82px, calc(env(safe-area-inset-bottom) + 74px));
+    width: 340px;
+    max-width: calc(100% - 24px);
+    max-height: calc(100dvh - 190px);
+    padding: 16px;
+  }
+  .match-interface .match-feed {
+    bottom: 90px;
+    max-width: calc(100% - 28px);
+  }
+  .match-interface .match-stats-panel {
+    bottom: max(84px, calc(env(safe-area-inset-bottom) + 76px));
+    margin-inline: 12px;
+  }
+}
+@media (max-width: 479px) {
+  .career-header-inner {
+    padding-inline: 10px;
+    gap: 4px;
+  }
+  .career-brand > div > p:first-child {
+    max-width: 110px;
+    font-size: 13px;
+  }
+  .career-brand > svg,
+  .career-brand > img {
+    width: 30px;
+  }
+  .career-header-play {
+    min-width: 44px;
+    padding: 10px;
+  }
+  .career-header-play span {
+    display: none;
+  }
+  .career-search-button {
+    width: 40px;
+    min-width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+  .career-icon-button,
+  .career-menu-trigger {
+    min-width: 40px;
+  }
+  .career-content {
+    padding-inline: 14px;
+  }
+  .career-save-note {
+    padding-inline: 14px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  .trainer-heading h1 {
+    font-size: 27px;
+  }
+  .trainer-summary > a:nth-child(n + 3) {
+    display: none;
+  }
+  .trainer-summary > a {
+    padding: 14px 12px;
+  }
+  .trainer-summary > a > span {
+    font-size: 10px;
+  }
+  .trainer-summary strong {
+    font-size: 26px;
+  }
+  .trainer-summary strong small {
+    margin-inline-start: 6px;
+  }
+  .trainer-match-card,
+  .trainer-preparation {
+    padding: 17px;
+  }
+  .trainer-match-top {
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .trainer-match-top > span {
+    max-width: 130px;
+    line-height: 1.5;
+  }
+  .trainer-match-teams h3 {
+    font-size: 15px;
+  }
+  .trainer-match-footer > div {
+    grid-template-columns: 1fr;
+  }
+  .trainer-match-footer .career-primary-button {
+    order: -1;
+  }
+  .trainer-match-footer .career-secondary-button {
+    min-height: 44px;
+  }
+  .trainer-quick-actions strong {
+    font-size: 11px;
+  }
+  .trainer-quick-actions small {
+    font-size: 10px;
+  }
+  .career-bottom-nav {
+    inset-inline: 10px;
+    border-radius: 16px;
+    gap: 2px;
+  }
+  .career-bottom-nav span {
+    font-size: 9px;
+  }
+  .trainer-attention {
+    padding: 14px;
+  }
+  .trainer-attention a {
+    margin-inline-start: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .match-interface *,
+  .career-preferences * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+@media (forced-colors: active) {
+  .career-nav-item[aria-current="page"],
+  .career-bottom-nav [aria-current="page"],
+  .career-primary-button,
+  .trainer-summary > a {
+    border: 1px solid Highlight;
+  }
+  .career-shell :focus-visible,
+  .match-interface :focus-visible {
+    outline: 2px solid Highlight;
+  }
+}

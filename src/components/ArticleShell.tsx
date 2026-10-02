@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { PublicLinks } from "@/components/PublicLinks";
+import { CommunityInvite } from "@/components/CommunityInvite";
 
 export interface GuideFaq {
   q: string;
@@ -122,6 +123,7 @@ export function ArticleShell({
           </Link>
         </div>
 
+        <CommunityInvite compact />
         <PublicLinks exclude={path} />
       </article>
     </main>

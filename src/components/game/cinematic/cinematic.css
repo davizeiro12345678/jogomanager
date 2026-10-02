@@ -1,6 +1,6 @@
 /* DOM UI reserves the middle of the viewport for the actual scene. */
 .cutscene-screen {
-  --cine-panel: oklch(0.15 0.012 210 / 0.88);
+  --cine-panel: oklch(0.15 0.012 210 / 0.82);
   --cine-line: oklch(0.96 0.008 210 / 0.16);
   position: fixed;
   inset: 0;
@@ -14,6 +14,18 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
+}
+.cutscene-loading {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  padding: 0.8rem 1.2rem;
+  border-radius: 0.75rem;
+  background: var(--cine-panel);
+  color: white;
+  text-align: center;
+  font-size: 0.875rem;
 }
 .cutscene-screen[data-scene-paused="true"] * {
   animation-play-state: paused;
@@ -61,6 +73,20 @@
   border: 1px solid var(--cine-line);
   border-radius: 0.9rem;
   background: var(--cine-panel);
+}
+.cutscene-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  border: 1px solid var(--cine-line);
+  border-radius: 0.9rem;
+  background: oklch(0.15 0.012 210 / 0.96);
+  padding: 0.45rem;
+}
+.cutscene-control:focus-visible,
+.cutscene-choice:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 .cutscene-control {
   display: inline-flex;

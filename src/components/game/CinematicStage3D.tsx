@@ -11,26 +11,47 @@
 import { Environment, Lightformer } from "@react-three/drei";
 import { PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  memo,
+  startTransition,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import * as THREE from "three";
 
 import type { SceneArt, Speaker } from "@/content/cutscenes";
 import type { LineLight, ShotSize } from "@/game/cutscene-director";
 import type { Cast } from "@/game/cast";
 import type { ManagerLook } from "@/game/types";
+import type { CinematicManner } from "@/game/cinematic-actor";
+import { cinematicIdleAt } from "@/game/cinematic-actor";
 import { cinematicFocus } from "@/game/cinematic-blocking";
 import { CinematicActor as Figure } from "./cinematic/CinematicActor";
 import { CinematicRuntime } from "./cinematic/CinematicRuntime";
+import { CinematicFrameProbe } from "./cinematic/CinematicFrameProbe";
 import { useCinematicFrame, useCinematicRuntime } from "./cinematic/cinematic-runtime";
 import { CinematicSetBatch, type CinematicBatchSnapshot } from "./cinematic/CinematicSetBatch";
 import { GraphicsBoundary } from "./GraphicsBoundary";
 import { HangingShirt, TacticsBoard, ClubTrophy } from "./cinematic/CinematicSetDetails";
+import { CinematicSetFinish } from "./cinematic/CinematicSetFinish";
+import {
+  cinematicBackdrop,
+  cinematicSurface,
+  releaseCinematicBackdrop,
+} from "./cinematic/cinematic-surfaces";
 
 /** true quando o locutor da fala atual é um dos donos deste figurante-herói */
 function actsFor(speaker: Speaker | null, roles: Speaker[]): boolean {
   return speaker !== null && roles.includes(speaker);
 }
-import { PostFX } from "@/components/game/post/PostFX";
+import { cinematicGpuQuality, cinematicInitialQuality } from "@/game/cinematic-performance";
+const CinematicLens = lazy(() => import("./cinematic/CinematicLens"));
+let automaticQuality: QualityLevel | undefined;
 import { detectQuality, lowerQuality, type QualityLevel } from "@/game/device";
 
 type SetKind = "locker" | "tunnel" | "press" | "pitch" | "stands" | "office" | "arrival";
@@ -291,12 +312,17 @@ function LockerRoom({
     <group>
       <mesh receiveShadow rotation-x={-Math.PI / 2}>
         <planeGeometry args={[18, 14]} />
-        <meshStandardMaterial color="#2c3235" roughness={0.42} metalness={0.1} />
+        <meshStandardMaterial
+          color="#68727a"
+          map={cinematicSurface("tile")}
+          roughness={0.68}
+          metalness={0.03}
+        />
       </mesh>
       {/* paredes */}
       <mesh receiveShadow position={[0, 2.4, -4.4]}>
         <boxGeometry args={[18, 4.8, 0.2]} />
-        <meshStandardMaterial color="#141d18" roughness={0.9} />
+        <meshStandardMaterial color="#343e48" map={cinematicSurface("wall")} roughness={0.9} />
       </mesh>
       <mesh receiveShadow position={[-7, 2.4, 0]}>
         <boxGeometry args={[0.2, 4.8, 14]} />
@@ -311,7 +337,7 @@ function LockerRoom({
         <group key={i} position={[-6.4 + i * 1.6, 0, -4]}>
           <mesh position={[0, 1.3, 0]} receiveShadow castShadow>
             <boxGeometry args={[1.42, 2.6, 0.62]} />
-            <meshStandardMaterial color="#1c2a22" roughness={0.78} />
+            <meshStandardMaterial color="#35454f" roughness={0.72} />
           </mesh>
           <mesh position={[0, 0.42, 0.34]} castShadow>
             <boxGeometry args={[1.42, 0.12, 0.62]} />
@@ -327,7 +353,7 @@ function LockerRoom({
       {/* banco central e quadro tático */}
       <mesh position={[0, 0.44, 0.6]} castShadow receiveShadow>
         <boxGeometry args={[6.4, 0.16, 0.72]} />
-        <meshStandardMaterial color="#6b4d2c" roughness={0.8} />
+        <meshStandardMaterial color="#987c57" map={cinematicSurface("wood")} roughness={0.72} />
       </mesh>
       <TacticsBoard />
       {/* lâmpadas práticas */}
@@ -337,7 +363,7 @@ function LockerRoom({
           <meshBasicMaterial color="#e9fff1" toneMapped={false} />
         </mesh>
       ))}
-      <pointLight ref={lamp} position={[0, 3.3, -1]} intensity={9} distance={14} color="#dcffe9" />
+      <pointLight ref={lamp} position={[0, 3.3, -1]} intensity={9} distance={14} color="#fff0dc" />
       <Figure x={-1.9} z={0.6} rot={0.2} pose="sit" color={primary} seed={2} />
       <Figure
         x={-0.4}
@@ -449,6 +475,8 @@ function PressRoom({
   secondary: string;
   speaker: Speaker | null;
 }) {
+  const backdrop = useMemo(() => cinematicBackdrop(primary, secondary), [primary, secondary]);
+  useEffect(() => () => releaseCinematicBackdrop(backdrop), [backdrop]);
   const flashes = useRef<THREE.Group>(null);
   useCinematicFrame((time) => {
     if (!flashes.current) return;
@@ -462,19 +490,17 @@ function PressRoom({
     <group>
       <mesh receiveShadow rotation-x={-Math.PI / 2}>
         <planeGeometry args={[18, 12]} />
-        <meshStandardMaterial color="#1c2322" roughness={0.5} />
+        <meshStandardMaterial color="#65727d" map={cinematicSurface("tile")} roughness={0.65} />
       </mesh>
       {/* painel de patrocinadores */}
       <mesh position={[0, 2.4, -4]} receiveShadow>
         <boxGeometry args={[13, 4.8, 0.2]} />
-        <meshStandardMaterial color={primary} roughness={0.62} />
+        <meshStandardMaterial color="#21303b" roughness={0.72} />
       </mesh>
-      {Array.from({ length: 24 }).map((_, i) => (
-        <mesh key={i} position={[-5.8 + (i % 6) * 2.32, 0.95 + Math.floor(i / 6) * 0.82, -3.88]}>
-          <planeGeometry args={[1.0, 0.3]} />
-          <meshStandardMaterial color={i % 3 ? secondary : "#0f1a14"} roughness={0.45} />
-        </mesh>
-      ))}
+      <mesh position={[0, 2.45, -3.88]}>
+        <planeGeometry args={[12.6, 4.25]} />
+        <meshStandardMaterial map={backdrop} roughness={0.78} />
+      </mesh>
       {/* mesa, microfones e garrafa */}
       <mesh position={[0, 0.76, -1.4]} castShadow receiveShadow>
         <boxGeometry args={[4.6, 0.14, 1.1]} />
@@ -499,6 +525,7 @@ function PressRoom({
         shorts="#1a1f21"
         seed={31}
         role="manager"
+        attention={[-3.4, 2.4]}
         acting={actsFor(speaker, ["manager", "president"])}
       />
       {/* fotógrafos e flashes */}
@@ -511,6 +538,7 @@ function PressRoom({
           color="#20262b"
           seed={i * 17 + 2}
           role={i === 0 ? "press" : undefined}
+          attention={[0, -1.95]}
           acting={i === 0 && speaker === "press"}
         />
       ))}
@@ -640,9 +668,10 @@ function PitchEntry({
       {Array.from({ length: 11 }).map((_, i) => (
         <Figure
           key={i}
-          x={-5.2 + i * 1.06}
+          x={festive && i === 0 ? 0 : festive && i === 5 ? -5.2 : -5.2 + i * 1.06}
           z={0.4 + (i % 2) * 0.5}
           role={i === 0 ? "captain" : undefined}
+          holdingTrophy={festive && i === 0}
           pose="stand"
           color={i < 6 ? primary : secondary}
           seed={i * 9 + 1}
@@ -650,7 +679,6 @@ function PitchEntry({
         />
       ))}
       {festive ? <CelebrationRain /> : null}
-      {festive ? <ClubTrophy x={0} y={0.6} z={1.6} scale={1.5} /> : null}
       <mesh position={[0, 0.11, 2.4]} castShadow>
         <sphereGeometry args={[0.11, 20, 16]} />
         <meshStandardMaterial color="#f7f9f2" roughness={0.42} />
@@ -702,21 +730,21 @@ function Office({
     <group>
       <mesh receiveShadow rotation-x={-Math.PI / 2}>
         <planeGeometry args={[16, 12]} />
-        <meshStandardMaterial color="#3b2c1f" roughness={0.6} />
+        <meshStandardMaterial color="#866c50" map={cinematicSurface("wood")} roughness={0.66} />
       </mesh>
       <mesh receiveShadow position={[0, 2.4, -4]}>
         <boxGeometry args={[16, 4.8, 0.2]} />
-        <meshStandardMaterial color="#1a2420" roughness={0.9} />
+        <meshStandardMaterial color="#384653" map={cinematicSurface("wall")} roughness={0.9} />
       </mesh>
       {/* janela com estádio ao fundo */}
       <mesh position={[4.4, 2.2, -3.86]}>
         <planeGeometry args={[4.6, 2.6]} />
-        <meshBasicMaterial color="#cfeede" toneMapped={false} />
+        <meshBasicMaterial color="#9ab7cc" />
       </mesh>
       {/* mesa e cadeiras */}
       <mesh position={[0, 0.74, -1.4]} castShadow receiveShadow>
         <boxGeometry args={[3.8, 0.12, 1.5]} />
-        <meshStandardMaterial color="#4a3320" roughness={0.42} />
+        <meshStandardMaterial color="#a7875d" map={cinematicSurface("wood")} roughness={0.5} />
       </mesh>
       {[-1.5, 1.5].map((x) => (
         <mesh key={x} position={[x, 0.36, -1.4]} castShadow>
@@ -740,6 +768,7 @@ function Office({
         shorts="#1b1f22"
         seed={41}
         role="president"
+        attention={[1.1, -2.3]}
         acting={actsFor(speaker, ["president", "agent"])}
       />
       <Figure
@@ -750,6 +779,7 @@ function Office({
         shorts="#1b1f22"
         seed={57}
         role="manager"
+        attention={[-0.9, -2.3]}
         acting={actsFor(speaker, ["manager", "scout"])}
       />
     </group>
@@ -787,11 +817,37 @@ function BusArrival({
           <boxGeometry args={[2.94, 0.7, 9.0]} />
           <meshStandardMaterial color={secondary} roughness={0.4} metalness={0.3} />
         </mesh>
-        {/* para-brisa aceso */}
+        {/* Tinted windshield reflects the court lighting instead of glowing. */}
         <mesh position={[0, 1.9, 4.78]}>
           <planeGeometry args={[2.4, 1.1]} />
-          <meshBasicMaterial color="#ffe9b0" toneMapped={false} />
+          <meshStandardMaterial color="#273c4b" roughness={0.22} metalness={0.6} />
         </mesh>
+        <mesh position={[0, 1.9, 4.8]}>
+          <boxGeometry args={[0.045, 1.1, 0.025]} />
+          <meshStandardMaterial color="#151d24" roughness={0.5} />
+        </mesh>
+        <mesh position={[0, 0.97, 4.8]}>
+          <boxGeometry args={[1.6, 0.25, 0.045]} />
+          <meshStandardMaterial color="#202c34" roughness={0.4} metalness={0.5} />
+        </mesh>
+        <mesh position={[0, 0.45, 4.82]}>
+          <boxGeometry args={[2.7, 0.15, 0.06]} />
+          <meshStandardMaterial color="#a3afb7" roughness={0.35} metalness={0.7} />
+        </mesh>
+        {[-1, 1].map((side) => (
+          <group key={side}>
+            <mesh position={[side * 1.6, 2.05, 4.5]}>
+              <boxGeometry args={[0.16, 0.45, 0.22]} />
+              <meshStandardMaterial color="#18232b" roughness={0.5} />
+            </mesh>
+            {Array.from({ length: 7 }, (_, i) => (
+              <mesh key={i} position={[side * 1.48, 2.3, -3.6 + i * 1.13]}>
+                <boxGeometry args={[0.025, 0.62, 0.97]} />
+                <meshStandardMaterial color="#293b49" roughness={0.22} metalness={0.6} />
+              </mesh>
+            ))}
+          </group>
+        ))}
         {/* faróis + fachos */}
         {[-0.9, 0.9].map((x) => (
           <group key={x}>
@@ -851,11 +907,6 @@ function BusArrival({
       />
       <pointLight ref={beacon} position={[-7.5, 2.2, 5]} color="#3a7bff" distance={18} />
       <pointLight position={[0, 2.4, 6]} intensity={10} distance={20} color="#ffd9a0" />
-      {/* brilho do estádio ao fundo */}
-      <mesh position={[0, 6, -14]}>
-        <planeGeometry args={[30, 8]} />
-        <meshBasicMaterial color="#bfd9ff" transparent opacity={0.28} toneMapped={false} />
-      </mesh>
     </group>
   );
 }
@@ -877,6 +928,7 @@ function Director({
   dollyTo = 0,
   climax = false,
   speaker = null,
+  festive = false,
 }: {
   kind: SetKind;
   beat: number;
@@ -894,6 +946,7 @@ function Director({
   /** fala de clímax: tremor e aperto de lente no máximo */
   climax?: boolean;
   speaker?: Speaker | null;
+  festive?: boolean;
 }) {
   const runtime = useCinematicRuntime();
   const shots = SHOTS[kind];
@@ -955,15 +1008,21 @@ function Director({
       shot[2] + Math.cos(t * 0.13) * 0.32 * drift,
     );
     look.set(shot[3], shot[4], shot[5]);
-    const focus = cinematicFocus(kind, speaker);
+    const focus = cinematicFocus(kind, speaker, festive);
     if (focus && size !== "geral") {
-      const lens = size === "close" ? 2.15 : size === "proximo" ? 3.1 : 4.7;
+      const lens = size === "close" ? 1.35 : size === "proximo" ? 2.35 : 3.6;
+      const enclosed = kind === "locker" || kind === "press" || kind === "office";
       const narrow =
-        camera instanceof THREE.PerspectiveCamera ? Math.max(1, 0.85 / camera.aspect) : 1;
-      const offset = (beat % 2 ? -1 : 1) * (size === "close" ? 0.65 : 1.15);
+        camera instanceof THREE.PerspectiveCamera
+          ? Math.min(enclosed ? 1.35 : 1.85, Math.max(1, 0.72 / camera.aspect))
+          : 1;
+      const offset = (beat % 2 ? -1 : 1) * (size === "close" ? 0.35 : 0.85);
       const seated = kind === "locker" && speaker === "captain";
+      const seatedIdle = seated ? cinematicIdleAt(time, 5, true) : null;
+      const rise = seatedIdle?.kind === "rise" ? seatedIdle.weight * 0.45 : 0;
       const subjectY =
-        size === "close"
+        rise +
+        (size === "close"
           ? seated
             ? 1.09
             : 1.58
@@ -973,7 +1032,7 @@ function Director({
               : 1.35
             : seated
               ? 0.8
-              : 1.1;
+              : 1.25);
       target.set(
         focus[0] + offset,
         subjectY + 0.12,
@@ -989,6 +1048,10 @@ function Director({
         const e = u * u * (3 - 2 * u);
         target.lerp(look, Math.max(-0.2, Math.min(0.4, travel * 0.55 * e)));
       }
+    }
+    if (kind === "locker" || kind === "press" || kind === "office") {
+      target.x = THREE.MathUtils.clamp(target.x, -6.5, 6.5);
+      target.z = THREE.MathUtils.clamp(target.z, -3.5, 6.6);
     }
     if (!started.current) {
       current.current.copy(target);
@@ -1046,6 +1109,7 @@ function Stage({
   climax = false,
   light = "neutra",
   festive = false,
+  enhanced = true,
   onBatch,
 }: {
   kind: SetKind;
@@ -1062,6 +1126,7 @@ function Stage({
   climax?: boolean;
   light?: LineLight;
   festive?: boolean;
+  enhanced?: boolean;
   onBatch?: ((snapshot: CinematicBatchSnapshot) => void) | undefined;
 }) {
   const base = mood === "good" ? "#fff3e1" : mood === "bad" ? "#d8e3fa" : "#eef2f7";
@@ -1076,28 +1141,44 @@ function Stage({
         args={[indoor ? "#0b1017" : "#0a1310", indoor ? 8 : 22, indoor ? 34 : 70]}
       />
       <ambientLight intensity={amb} color={warm} />
-      <hemisphereLight intensity={0.35} color={warm} groundColor="#0a140f" />
+      <hemisphereLight intensity={indoor ? 0.65 : 0.45} color="#dce8f4" groundColor="#30333a" />
+      {indoor ? (
+        <>
+          <directionalLight position={[0, 2.5, 6]} intensity={0.75} color="#e8f0f7" />
+          <directionalLight
+            position={[-4, 3, -4]}
+            intensity={kind === "press" ? 0.9 : 0.45}
+            color="#d4e3ff"
+          />
+        </>
+      ) : null}
       <directionalLight
         castShadow
         position={[5, 11, 6]}
-        intensity={indoor ? 1.4 : 2.6}
-        color={warm}
+        intensity={indoor ? 1.9 : 2.6}
+        color={light === "neutra" ? "#fff8f2" : warm}
         shadow-mapSize={quality === "alta" ? [2048, 2048] : [1024, 1024]}
         shadow-bias={-0.0004}
+        shadow-normalBias={0.02}
+        shadow-radius={3}
+        shadow-camera-left={indoor ? -12 : -24}
+        shadow-camera-right={indoor ? 12 : 24}
+        shadow-camera-top={indoor ? 10 : 22}
+        shadow-camera-bottom={indoor ? -10 : -22}
       />
-      {/* luz de recorte atrás dos personagens (tingida pela fala) */}
+      {/* Neutral rim preserves the complexion; club colour stays in the set. */}
       <spotLight
         position={[-5, 6, -5]}
         angle={0.7}
         penumbra={0.9}
-        intensity={28}
-        color={light === "neutra" ? primary : tint.rim}
+        intensity={indoor ? 12 : 22}
+        color={light === "neutra" ? "#d4e6ff" : tint.rim}
       />
-      {quality !== "baixa" && (
+      {enhanced && quality !== "baixa" && (
         <Environment resolution={quality === "alta" ? 96 : 64} frames={1}>
           <Lightformer position={[0, 6, 2]} scale={[10, 3, 1]} intensity={2.2} color={warm} />
-          <Lightformer position={[-6, 3, -4]} scale={[6, 4, 1]} intensity={1.1} color={primary} />
-          <Lightformer position={[6, 3, -4]} scale={[6, 4, 1]} intensity={1.1} color={secondary} />
+          <Lightformer position={[-6, 3, -4]} scale={[6, 4, 1]} intensity={1.1} color="#d6e5f4" />
+          <Lightformer position={[6, 3, -4]} scale={[6, 4, 1]} intensity={0.8} color="#e6dfd3" />
         </Environment>
       )}
       <Director
@@ -1109,8 +1190,10 @@ function Stage({
         dollyTo={dollyTo}
         climax={climax}
         speaker={speaker}
+        festive={festive}
       />
       <CinematicSetBatch key={`${kind}-${primary}-${secondary}`} onReady={onBatch}>
+        <CinematicSetFinish kind={kind} primary={primary} />
         {kind === "locker" ? (
           <LockerRoom primary={primary} secondary={secondary} speaker={speaker} />
         ) : null}
@@ -1154,6 +1237,9 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   cast,
   onUnavailable,
   qualityMode = "auto",
+  manner,
+  onReady,
+  previewTime,
 }: {
   art: SceneArt;
   primary: string;
@@ -1176,17 +1262,38 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   cast?: Cast | undefined;
   onUnavailable?: (() => void) | undefined;
   qualityMode?: QualityLevel | "auto";
+  manner?: CinematicManner | undefined;
+  onReady?: (() => void) | undefined;
+  previewTime?: number | undefined;
 }) {
   const kind = SET_BY_ART[art] ?? "locker";
   const initialQuality = useMemo(() => detectQuality(), []);
   const [quality, setQuality] = useState<QualityLevel>(
-    qualityMode === "auto" ? initialQuality : qualityMode,
+    qualityMode === "auto" && automaticQuality
+      ? automaticQuality
+      : cinematicInitialQuality(initialQuality, qualityMode),
   );
   useEffect(() => {
-    setQuality(qualityMode === "auto" ? initialQuality : qualityMode);
+    setQuality(
+      qualityMode === "auto" && automaticQuality
+        ? automaticQuality
+        : cinematicInitialQuality(initialQuality, qualityMode),
+    );
   }, [qualityMode, initialQuality]);
   const [hidden, setHidden] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [enhanced, setEnhanced] = useState(false);
+  const stageReady = useCallback(() => {
+    setReady(true);
+    onReady?.();
+  }, [onReady]);
+  useEffect(() => {
+    if (!ready || paused || reduced || hidden || quality === "baixa") return;
+    const timer = window.setTimeout(() => startTransition(() => setEnhanced(true)), 200);
+    return () => window.clearTimeout(timer);
+  }, [ready, paused, reduced, hidden, quality]);
   const host = useRef<HTMLDivElement>(null);
+  const openedAt = useRef(performance.now());
   const onBatch = useCallback(({ sources, batches, visibleSources }: CinematicBatchSnapshot) => {
     if (!host.current) return;
     host.current.dataset["staticSources"] = String(sources);
@@ -1211,7 +1318,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
           <button
             type="button"
             onClick={onUnavailable}
-            className="absolute inset-0 bg-background p-8 text-white"
+            className="absolute inset-0 z-10 bg-background p-8 text-white"
           >
             A cena 3D não carregou. Abrir cena ilustrada.
           </button>
@@ -1232,12 +1339,23 @@ export const CinematicStage3D = memo(function CinematicStage3D({
             gl.toneMappingExposure = 1.05;
             gl.outputColorSpace = THREE.SRGBColorSpace;
             gl.shadowMap.type = THREE.PCFShadowMap;
+            gl.info.autoReset = false;
+            const context = gl.getContext();
+            const debug = context.getExtension("WEBGL_debug_renderer_info");
+            if (debug) {
+              const renderer = String(context.getParameter(debug.UNMASKED_RENDERER_WEBGL));
+              if (host.current) host.current.dataset["cinematicGpu"] = renderer;
+              if (qualityMode === "auto") {
+                automaticQuality = cinematicGpuQuality(quality, renderer);
+                setQuality(automaticQuality);
+              }
+            }
           }}
           fallback={
             <button
               type="button"
               onClick={onUnavailable}
-              className="absolute inset-0 bg-background p-8 text-white"
+              className="absolute inset-0 z-10 bg-background p-8 text-white"
             >
               O 3D está indisponível neste navegador. Abrir cena ilustrada.
             </button>
@@ -1247,9 +1365,18 @@ export const CinematicStage3D = memo(function CinematicStage3D({
             <PerformanceMonitor
               flipflops={2}
               bounds={() => [24, 45]}
-              iterations={6}
+              iterations={3}
               threshold={0.8}
-              onDecline={() => setQuality((current) => lowerQuality(current))}
+              onDecline={() =>
+                setQuality((current) => {
+                  automaticQuality = lowerQuality(current);
+                  return automaticQuality;
+                })
+              }
+              onFallback={() => {
+                automaticQuality = "baixa";
+                setQuality("baixa");
+              }}
             />
           ) : null}
           <CinematicRuntime
@@ -1258,7 +1385,15 @@ export const CinematicStage3D = memo(function CinematicStage3D({
             cast={cast}
             stopped={paused || hidden}
             reduced={reduced}
+            manner={manner}
+            previewTime={previewTime}
           >
+            <CinematicFrameProbe
+              host={host}
+              openedAt={openedAt.current}
+              stopped={paused || reduced || hidden}
+              onReady={stageReady}
+            />
             <Stage
               kind={kind}
               beat={beat}
@@ -1275,24 +1410,16 @@ export const CinematicStage3D = memo(function CinematicStage3D({
               light={light}
               festive={(art === "trophy" || art === "celebration") && mood === "good"}
               onBatch={onBatch}
+              enhanced={enhanced}
             />
-            <CinematicLens quality={quality} />
+            {enhanced && quality !== "baixa" ? (
+              <Suspense fallback={null}>
+                <CinematicLens quality={quality} />
+              </Suspense>
+            ) : null}
           </CinematicRuntime>
         </Canvas>
       </GraphicsBoundary>
     </div>
   );
 });
-
-function CinematicLens({ quality }: { quality: QualityLevel }) {
-  const runtime = useCinematicRuntime();
-  return (
-    <PostFX
-      quality={quality}
-      moment="drama"
-      time="entardecer"
-      intensity={quality === "alta" ? 0.72 : 0.5}
-      focusTarget={runtime.focus}
-    />
-  );
-}

@@ -22,7 +22,7 @@ import { FrameProbe } from "@/components/game/FrameProbe";
 import { GraphicsBoundary } from "@/components/game/GraphicsBoundary";
 import { MatchPlayers } from "@/components/game/players/MatchPlayers";
 import { CrowdLod } from "@/components/game/stadium/CrowdLod";
-import { PostFX } from "@/components/game/post/PostFX";
+import { PostFX } from "@/components/game/post/LazyPostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
 import { adTexture } from "@/components/game/stadium/textures/ads";
 import {
@@ -40,6 +40,7 @@ import {
 import { LINES_H, LINES_W, pitchLinesTexture } from "@/components/game/stadium/textures/lines";
 import { pitchWearTexture, wearRoughness } from "@/components/game/stadium/textures/wear";
 import { skyTexture } from "@/components/game/stadium/textures/sky";
+import { lightGlowTexture } from "@/components/game/stadium/textures/light-glow";
 import {
   bannerTexture,
   bigFlagTexture,
@@ -53,6 +54,7 @@ import { kitFor, gkKitFor, skinFor, hairFor, colorClash, type Kit } from "@/game
 import { Atmosphere } from "@/components/game/stadium/Atmosphere";
 import { AmbientLife } from "@/components/game/stadium/AmbientLife";
 import { CrowdReaction } from "@/components/game/stadium/CrowdReaction";
+import type { SupporterMatchday } from "@/game/career-world-types";
 import { BenchLife } from "@/components/game/stadium/BenchLife";
 import { SidelineLife } from "@/components/game/stadium/SidelineLife";
 import { PitchResponse } from "@/components/game/stadium/PitchResponse";
@@ -1049,11 +1051,13 @@ function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quality }) {
 
                 <sprite position={[0, 28.5, 0]} scale={[30, 30, 1]}>
                   <spriteMaterial
+                    map={lightGlowTexture()}
                     color={haloColor}
                     opacity={time === "entardecer" ? 0.14 : 0.18}
                     transparent
                     depthWrite={false}
                     blending={THREE.AdditiveBlending}
+                    toneMapped={false}
                   />
                 </sprite>
                 {quality === "alta" && (
@@ -1488,10 +1492,12 @@ function CrowdBackdrop({
   homeColor,
   awayColor,
   rings,
+  occupancy = 1,
 }: {
   homeColor: string;
   awayColor: string;
   rings: number;
+  occupancy?: number;
 }) {
   const texture = useMemo(() => crowdBackdropTexture(homeColor, awayColor), [homeColor, awayColor]);
   useEffect(() => () => texture?.dispose(), [texture]);
@@ -1522,7 +1528,7 @@ function CrowdBackdrop({
           <meshBasicMaterial
             map={texture}
             transparent
-            opacity={0.9}
+            opacity={0.9 * occupancy}
             depthWrite={false}
             toneMapped={false}
             side={THREE.DoubleSide}
@@ -1539,7 +1545,7 @@ function CrowdBackdrop({
           <meshBasicMaterial
             map={texture}
             transparent
-            opacity={0.84}
+            opacity={0.84 * occupancy}
             depthWrite={false}
             toneMapped={false}
             side={THREE.DoubleSide}
@@ -1556,16 +1562,23 @@ function Stands({
   quality,
   goalPulse,
   night,
+  supporters,
 }: {
   homeColor: string;
   awayColor: string;
   quality: Quality;
   goalPulse: React.MutableRefObject<number>;
   night: boolean;
+  supporters?: SupporterMatchday | undefined;
 }) {
   const vis = useVisual();
   const pressure = useQualityPressure();
   const budget = useRuntimeSceneBudget();
+  const occupancy = supporters?.occupancy ?? 1;
+  const crowdBudget = useMemo(
+    () => ({ ...budget, crowdInstances: Math.round(budget.crowdInstances * occupancy) }),
+    [budget, occupancy],
+  );
   const maximumDensity = quality === "alta" ? 460 : quality === "media" ? 240 : 100;
   const rings = Math.min(quality === "alta" ? 14 : quality === "media" ? 9 : 5, budget.propRings);
   // Keep enough source people to fill visible tiles, without allocating the
@@ -1669,11 +1682,16 @@ function Stands({
 
       <Tiers rings={rings} homeColor={homeColor} awayColor={awayColor} high={quality === "alta"} />
       <Roof rings={rings} />
-      <CrowdBackdrop homeColor={homeColor} awayColor={awayColor} rings={rings} />
+      <CrowdBackdrop
+        homeColor={homeColor}
+        awayColor={awayColor}
+        rings={rings}
+        occupancy={occupancy}
+      />
       <Banners color={homeColor} alt={awayColor} rings={rings} />
       <CrowdFlags color={homeColor} alt={awayColor} rings={rings} count={budget.flagCount} />
 
-      <CrowdLod crowd={crowd} pulse={goalPulse} budget={budget} />
+      <CrowdLod crowd={crowd} pulse={goalPulse} budget={crowdBudget} supporters={supporters} />
     </group>
   );
 }
@@ -2839,6 +2857,7 @@ function Scene({
   shadows,
   backend,
   postIntensity,
+  supporters,
 }: {
   sim: SimView;
   mode: CameraMode;
@@ -2847,6 +2866,7 @@ function Scene({
   shadows: boolean;
   backend: GpuBackend;
   postIntensity: number;
+  supporters?: SupporterMatchday | undefined;
 }) {
   useFrame(() => {
     const interpolated = sim as SimView & { renderTick?: (now?: number) => void };
@@ -3026,6 +3046,7 @@ function Scene({
         quality={quality}
         goalPulse={goalPulse}
         night={time !== "dia"}
+        supporters={supporters}
       />
       {/* O que a arquibancada faz em cada lance: gol, chance, falta, protesto */}
       <CrowdReaction
@@ -3033,6 +3054,7 @@ function Scene({
         quality={quality}
         night={time === "noite"}
         color={sim.home.primary}
+        supporters={supporters}
       />
       <StadiumProps
         rings={budget.propRings}
@@ -3126,11 +3148,13 @@ function Stadium3DImpl({
   mode,
   quality: deviceQuality,
   pixelRatio,
+  supporters,
 }: {
   sim: SimView;
   mode: CameraMode;
   quality: Quality;
   pixelRatio?: number;
+  supporters?: SupporterMatchday | undefined;
 }) {
   const vis = useResolvedVisual(sim.home.clubId);
   // Escolha do jogador em /visual manda; "auto" segue a detecção do aparelho.
@@ -3242,7 +3266,11 @@ function Stadium3DImpl({
     );
 
   return (
-    <div className="relative h-full w-full">
+    <div
+      className="relative h-full w-full"
+      data-supporter-climate={supporters?.climate}
+      data-supporter-occupancy={supporters?.occupancy.toFixed(3)}
+    >
       <GraphicsBoundary>
         <Canvas
           key={backend}
@@ -3306,6 +3334,7 @@ function Stadium3DImpl({
                 shadows={shadowsOn}
                 backend={backend}
                 postIntensity={vis.postIntensity * (vis.quality === "cinema" ? 1.12 : 1)}
+                supporters={supporters}
               />
             </RuntimeSceneBudgetContext.Provider>
           </QualityPressure.Provider>

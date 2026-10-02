@@ -10,6 +10,7 @@
 // ============================================================================
 
 import { makeRng } from "./rng";
+import { recordPlayerConversation, worldFor } from "./career-world";
 import type { CareerState, NewsItem, Personality, Player } from "./types";
 
 export type UnhappyReason = "minutos" | "oferta" | "salario" | "moral" | "promessa";
@@ -139,8 +140,15 @@ export function talkTo(
             ? 0.25
             : -0.25
           : 0.1;
+  const world = worldFor(state);
+  const bond = world.relationships[p.id];
+  const remembered = ((bond?.trust ?? 55) - 55) / 220;
+  const manner =
+    action === "multar"
+      ? (50 - world.identity.protection) / 450
+      : (world.identity.protection - 50) / 550;
   const need = 0.35 + grievance.level * 0.12;
-  const ok = roll + bonus >= need;
+  const ok = roll + bonus + remembered + manner >= need;
 
   if (action === "elogiar") {
     return ok
@@ -220,7 +228,13 @@ export function applyTalk(
       body: `O treinador autorizou ${p.name} a ouvir propostas. O mercado reage nas próximas rodadas.`,
     });
   }
-  return { ...state, players, promises, news: [...news, ...state.news].slice(0, 60) };
+  return recordPlayerConversation(
+    state,
+    { ...state, players, promises, news: [...news, ...state.news].slice(0, 60) },
+    pid,
+    action,
+    result.ok,
+  );
 }
 
 /**

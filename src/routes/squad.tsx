@@ -27,6 +27,7 @@ import {
   type TalkAction,
 } from "@/game/unhappy";
 import type { Player } from "@/game/types";
+import { worldFor } from "@/game/career-world";
 
 export const Route = createFileRoute("/squad")({
   ssr: false,
@@ -136,7 +137,7 @@ function SquadPage() {
 
   return (
     <GameShell career={career}>
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="screen-heading flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">Elenco</h1>
           <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
@@ -260,7 +261,13 @@ function SquadPage() {
               {sortDir === 1 ? "↑" : "↓"}
             </button>
           </div>
-          <div className="max-h-[70vh] overflow-auto" tabIndex={0} aria-label="Tabela do elenco">
+          <p className="career-table-hint">↔ Deslize a tabela para ver valores e ações.</p>
+          <div
+            className="career-table-scroll max-h-[70vh] overflow-auto"
+            role="region"
+            tabIndex={0}
+            aria-label="Tabela do elenco; role para ver todas as colunas"
+          >
             <table className="w-full text-sm">
               <caption className="sr-only">Jogadores titulares e reservas do clube</caption>
               <thead className="sticky top-0 z-10 bg-card/95 text-[10px] uppercase tracking-wider text-muted-foreground backdrop-blur">
@@ -407,11 +414,14 @@ function DressingRoom({ career, update }: { career: Career; update: (s: Career) 
   const [result, setResult] = useState<{ pid: string; message: string; ok: boolean } | null>(null);
   const grievances = detectUnhappy(career);
   const promises = career.promises ?? [];
+  const world = worldFor(career);
+  const talkStamp = `${career.clubId}:${career.season}:${career.round}`;
 
   function talk(pid: string, action: TalkAction) {
     const p = career.players[pid];
     const g = grievances.find((x) => x.pid === pid);
     if (!p || !g) return;
+    if (world.relationships[pid]?.lastTalk === talkStamp) return;
     const res = talkTo(career, p, g, action);
     setResult({ pid, message: res.message, ok: res.ok });
     update(applyTalk(career, pid, action, res));
@@ -449,6 +459,8 @@ function DressingRoom({ career, update }: { career: Career; update: (s: Career) 
           {grievances.map((g) => {
             const p = career.players[g.pid];
             if (!p) return null;
+            const bond = world.relationships[g.pid];
+            const alreadyTalked = bond?.lastTalk === talkStamp;
             return (
               <li key={g.pid} className="rounded-xl border border-border/40 bg-background/40 p-3">
                 <div className="flex flex-wrap items-center gap-2">
@@ -469,6 +481,11 @@ function DressingRoom({ career, update }: { career: Career; update: (s: Career) 
                   </div>
                   <span className="ml-auto text-xs text-muted-foreground">Moral {p.morale}</span>
                 </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Confiança {Math.round(bond?.trust ?? 50)}% · Respeito{" "}
+                  {Math.round(bond?.respect ?? 50)}%
+                  {alreadyTalked ? " · Conversa registrada nesta rodada" : ""}
+                </p>
                 {result?.pid === g.pid ? (
                   <p
                     className={`mt-2 rounded-lg p-2 text-xs ${result.ok ? "bg-primary/10 text-foreground" : "bg-destructive/10 text-foreground"}`}
@@ -480,8 +497,9 @@ function DressingRoom({ career, update }: { career: Career; update: (s: Career) 
                   {(Object.keys(TALK_LABEL) as TalkAction[]).map((a) => (
                     <button
                       key={a}
+                      disabled={alreadyTalked}
                       onClick={() => talk(g.pid, a)}
-                      className="rounded-md bg-secondary px-2.5 py-1.5 text-[11px] uppercase tracking-wider transition hover:brightness-125"
+                      className="min-h-11 rounded-md bg-secondary px-3 py-2 text-[11px] uppercase tracking-wider transition hover:brightness-125 disabled:opacity-40"
                     >
                       {TALK_LABEL[a]}
                     </button>

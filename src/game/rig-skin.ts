@@ -145,11 +145,11 @@ function jointSpecs(
     { joint: "handR", parent: "foreR", offset: [0, -P.foreArm, 0] },
     { joint: "handDetailR", parent: "handR", offset: [0, 0, 0] },
     ...handBoneSpecs(handRadius),
-    { joint: "legL", parent: "hips", offset: [P.hipW * 0.46, -P.hipH * 0.4, 0] },
+    { joint: "legL", parent: "hips", offset: [P.hipW * 0.36, -P.hipH * 0.4, 0] },
     { joint: "kneeL", parent: "legL", offset: [0, -P.thigh, 0] },
     { joint: "ankleL", parent: "kneeL", offset: [0, -P.shin, 0] },
     { joint: "bootDetailL", parent: "ankleL", offset: [0, 0, 0] },
-    { joint: "legR", parent: "hips", offset: [-P.hipW * 0.46, -P.hipH * 0.4, 0] },
+    { joint: "legR", parent: "hips", offset: [-P.hipW * 0.36, -P.hipH * 0.4, 0] },
     { joint: "kneeR", parent: "legR", offset: [0, -P.thigh, 0] },
     { joint: "ankleR", parent: "kneeR", offset: [0, -P.shin, 0] },
     { joint: "bootDetailR", parent: "ankleR", offset: [0, 0, 0] },
@@ -231,6 +231,7 @@ const CULL_MARGIN = 0.45;
 export function buildRigSkin(
   ctx: RigBodyContext,
   rootOffset: readonly [number, number, number],
+  options?: { mergeLods?: boolean },
 ): RigSkin {
   const body = buildRigBody(ctx);
   const specs = jointSpecs(ctx.P, ctx.handR);
@@ -309,15 +310,20 @@ export function buildRigSkin(
     RigJoint,
   ][]) {
     const meshes = body[key];
-    const lod = MESH_LOD[key];
+    // Cinematic actors retain every surface at a fixed detail level, so the
+    // same material can share a draw across face, body and boot groups.
+    const lod = options?.mergeLods ? "core" : MESH_LOD[key];
     const boneIndex = bones.indexOf(boneOf[owner]);
     const rest = localRest.get(owner)!;
     for (const mesh of meshes) {
       const geometry = mesh.geometry.clone();
       if (mesh.material === ctx.mats.skin) {
         const position = geometry.getAttribute("position");
-        const color = new Float32Array(position.count * 3).fill(1);
-        if (key === "head")
+        const authored = geometry.getAttribute("color");
+        const color = authored
+          ? new Float32Array(authored.array)
+          : new Float32Array(position.count * 3).fill(1);
+        if (key === "head" && !authored)
           for (let i = 0; i < position.count; i++) {
             const x = position.getX(i) / ctx.P.headW,
               y = position.getY(i) / ctx.P.headR,
@@ -325,8 +331,8 @@ export function buildRigSkin(
             const blush =
               Math.exp(-(((Math.abs(x) - 0.52) / 0.24) ** 2) - ((y + 0.18) / 0.24) ** 2) *
               Math.max(0, z);
-            color[i * 3 + 1] = 1 - blush * 0.09;
-            color[i * 3 + 2] = 1 - blush * 0.075;
+            color[i * 3 + 1] = color[i * 3 + 1]! * (1 - blush * 0.09);
+            color[i * 3 + 2] = color[i * 3 + 2]! * (1 - blush * 0.075);
           }
         geometry.setAttribute("color", new THREE.Float32BufferAttribute(color, 3));
       }
@@ -433,6 +439,19 @@ function addSkinning(
     skinIndex[i * 4 + 1] = otherIndex;
     skinWeight[i * 4] = 1 - weight;
     skinWeight[i * 4 + 1] = weight;
+    if (part === "hips" && !ctx.trousers) {
+      const x = positions.getX(i);
+      const y = positions.getY(i);
+      // The top stays at the waist; each opening follows its femur. The
+      // centre panel divides the load gradually instead of tearing apart.
+      const legWeight = 1 - THREE.MathUtils.smoothstep(y, -p.hipH * 0.85, p.hipH * 0.1);
+      const left = THREE.MathUtils.smoothstep(x, -p.hipW * 0.12, p.hipW * 0.12);
+      skinIndex[i * 4 + 1] = indexOf.legL;
+      skinIndex[i * 4 + 2] = indexOf.legR;
+      skinWeight[i * 4] = 1 - legWeight;
+      skinWeight[i * 4 + 1] = legWeight * left;
+      skinWeight[i * 4 + 2] = legWeight * (1 - left);
+    }
     if (part === "spine") {
       // One continuous shirt spans the lumbar and chest bones. Its upper
       // rows must follow the chest, including arm raises and torso twists.

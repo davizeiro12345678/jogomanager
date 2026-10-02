@@ -2,12 +2,38 @@ import { describe, expect, it } from "vitest";
 
 import { buildTeamSetup } from "./quickMatch";
 import { FIELD_X, MatchSim } from "./sim";
+import { profileFor } from "./attributes";
+import { snapshotMatch, WorkerMatchView } from "./live-match";
 
 function create(seed = "engine-regression") {
   return new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), seed);
 }
 
 describe("MatchSim", () => {
+  it("carries profile physique through worker snapshots and substitutes", () => {
+    const home = buildTeamSetup("fla");
+    const away = buildTeamSetup("pal");
+    const sim = new MatchSim(home, away, "physique-snapshot");
+    for (const athlete of sim.players) {
+      const setup = athlete.side === "home" ? home : away;
+      const original = setup.players.find((p) => p.id === athlete.pid)!;
+      const profile = profileFor(original);
+      expect(athlete.heightCm).toBe(profile.height);
+      expect(athlete.weightKg).toBe(profile.weight);
+    }
+    const player = sim.players.find((p) => p.side === "home")!;
+    const original = home.players.find((p) => p.id === player.pid)!;
+    expect(player.heightCm).toBe(profileFor(original).height);
+    expect(player.weightKg).toBe(profileFor(original).weight);
+    const view = new WorkerMatchView(home, away);
+    view.apply(snapshotMatch(sim, 1));
+    expect(view.players.find((p) => p.id === player.id)?.heightCm).toBe(player.heightCm);
+    const incoming = { ...original, id: "replacement-physique", name: "Replacement", number: 99 };
+    expect(sim.substitute("home", player.pid, incoming)).toBe(true);
+    const replacement = sim.players.find((p) => p.pid === incoming.id)!;
+    expect(replacement.heightCm).toBe(profileFor(incoming).height);
+    expect(replacement.weightKg).toBe(profileFor(incoming).weight);
+  });
   it("produces the same result from the same seed", () => {
     const first = create();
     const second = create();

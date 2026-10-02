@@ -46,12 +46,21 @@ export function refineAthletePosture(pose: Pose, input: AthletePostureInput): Po
   pose.headPitch += fatigue * 0.06 - acceleration * 0.28;
   const turn = clamp(input.turnRate, -4, 4) * effort * actionFree;
   pose.hipYaw += turn * 0.012;
+  // The gaze and upper trunk lead a turn; the pelvis and support catch up.
+  pose.headYaw += turn * 0.04;
+  pose.chest += turn * 0.02;
   pose.armLRoll += Math.max(0, -turn) * 0.025;
   pose.armRRoll -= Math.max(0, turn) * 0.025;
   // Upper arms lag the hip cycle; retain authored actions and quiet idle arms.
   const secondary = Math.sin(input.phase - 0.32) * effort * 0.035 * actionFree;
   pose.armLPitch += secondary;
   pose.armRPitch -= secondary;
+  if (input.speed < 0.5 && actionFree) {
+    const shift = Math.sin(input.time * 0.62 + input.seed * 0.17) * (1 - input.speed / 0.5);
+    pose.hipRoll += shift * 0.026;
+    pose.kneeL -= Math.max(0, shift) * 0.045;
+    pose.kneeR -= Math.max(0, -shift) * 0.045;
+  }
   if (input.defending && input.speed < 3.2 && actionFree) {
     const readiness = clamp((3.2 - input.speed) / 3.2, 0, 1) * 0.045;
     pose.spine += readiness;

@@ -1,98 +1,199 @@
 import { useMemo, useState } from "react";
-import { Clapperboard, Play } from "lucide-react";
+import {
+  Clapperboard,
+  Play,
+  Shirt,
+  Mic2,
+  BusFront,
+  Building2,
+  DoorOpen,
+  Trophy,
+  Search,
+} from "lucide-react";
 import { CUTSCENES } from "@/content/cutscenes";
 import { safeClub } from "@/game/squad";
 import type { ManagerLook } from "@/game/types";
 import type { QualityLevel } from "@/game/device";
 import { CutsceneStage as Cutscene } from "./CutsceneStage";
+import { preloadCinematicStage, useCinematicPreload } from "./cinematic-loading";
+import "./studio.css";
 
 const look: ManagerLook = { skin: 2, hair: 2, hairColor: "#30231d", beard: 1, outfit: 1 };
-const examples = ["dressing", "press", "arrival", "board", "tunnel", "trophy"] as const;
-const labels = ["Vestiário", "Coletiva", "Chegada", "Diretoria", "Túnel", "Taça"];
+const examples = [
+  { art: "dressing", label: "Vestiário", hint: "Conversas de grupo", icon: Shirt },
+  { art: "press", label: "Coletiva", hint: "Sob os holofotes", icon: Mic2 },
+  { art: "arrival", label: "Chegada", hint: "A recepção da torcida", icon: BusFront },
+  { art: "board", label: "Diretoria", hint: "Decisões nos bastidores", icon: Building2 },
+  { art: "tunnel", label: "Túnel", hint: "Antes de entrar em campo", icon: DoorOpen },
+  { art: "trophy", label: "Taça", hint: "A noite da conquista", icon: Trophy },
+] as const;
+const searchable = (text: string) =>
+  text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 
 export default function CinematicStudio({ clubId = "fla" }: { clubId?: string }) {
+  useCinematicPreload();
   const [scene, setScene] = useState<string | null>(null);
   const [selected, setSelected] = useState("derby-eve-talk");
+  const [query, setQuery] = useState("");
   const [outcome, setOutcome] = useState("");
   const [quality, setQuality] = useState<QualityLevel | "auto">("auto");
+  const [previewTime, setPreviewTime] = useState(0);
   const club = safeClub(clubId);
   const scenes = useMemo(() => Object.values(CUTSCENES), []);
+  const filtered = useMemo(
+    () => scenes.filter((item) => searchable(item.title).includes(searchable(query))),
+    [scenes, query],
+  );
+  const selectedScene = CUTSCENES[selected];
+  const open = (id: string) => {
+    setOutcome("");
+    setScene(id);
+  };
   return (
-    <section
-      className="mt-5 rounded-2xl border border-border/70 surface-card p-5"
-      aria-label="Prévia das cenas cinematográficas"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-primary">
-            <Clapperboard size={16} /> Cinema da carreira
+    <section className="studio-card" aria-label="Prévia das cenas cinematográficas">
+      <div className="cinema-intro">
+        <div className="mr-auto">
+          <p className="studio-kicker flex items-center gap-2">
+            <Clapperboard size={16} />
+            Cinema da carreira
           </p>
-          <h2 className="font-display text-xl uppercase">A cena ocupa o palco</h2>
-          <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-            Confira os personagens, a luz e a câmera. As escolhas nesta prévia servem apenas para
-            experimentar o diálogo.
+          <h2>
+            O futebol também acontece
+            <br />
+            fora das quatro linhas.
+          </h2>
+          <p className="studio-hint">
+            Explore os ambientes, acompanhe os gestos e experimente os diálogos em uma cena 3D. Suas
+            escolhas aqui ficam apenas na prévia.
           </p>
         </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <span className="studio-height">{scenes.length} cenas para explorar</span>
+      </div>
+      <div className="studio-toolbar">
+        <label className="min-w-0 flex-1 basis-48 text-xs text-slate-400">
+          <span className="flex items-center gap-2">
+            <Search size={14} />
+            Buscar cena
+          </span>
+          <input
+            type="search"
+            className="studio-input"
+            aria-label="Buscar cena"
+            placeholder="Clássico, contratação, título…"
+            value={query}
+            onChange={(e) => {
+              const value = e.target.value;
+              setQuery(value);
+              const first = scenes.find((item) =>
+                searchable(item.title).includes(searchable(value)),
+              );
+              if (first) setSelected(first.id);
+            }}
+          />
+        </label>
+        <label className="min-w-0 flex-1 basis-60 text-xs text-slate-400">
+          Cena cinematográfica
           <select
             aria-label="Cena cinematográfica"
-            className="h-11 w-full max-w-xs rounded-xl border border-border bg-background px-3 text-sm sm:w-64"
+            className="studio-select"
             value={selected}
-            onChange={(event) => setSelected(event.target.value)}
+            disabled={filtered.length === 0}
+            onChange={(e) => setSelected(e.target.value)}
           >
-            {scenes.map((item) => (
+            {filtered.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.title}
               </option>
             ))}
           </select>
-          <select
-            aria-label="Qualidade do cinema"
-            value={quality}
-            onChange={(event) => setQuality(event.target.value as QualityLevel | "auto")}
-            className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-          >
-            <option value="auto">Qualidade automática</option>
-            <option value="alta">Mais detalhes</option>
-            <option value="media">Equilibrada</option>
-            <option value="baixa">Mais leve</option>
-          </select>
-          <button
-            type="button"
-            className="flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
-            onClick={() => {
-              setOutcome("");
-              setScene(selected);
-            }}
-          >
-            <Play size={16} /> Ver cena
-          </button>
-        </div>
+        </label>
+        <button
+          type="button"
+          className="studio-button studio-button-primary self-end"
+          disabled={filtered.length === 0}
+          onPointerEnter={() => void preloadCinematicStage().catch(() => undefined)}
+          onFocus={() => void preloadCinematicStage().catch(() => undefined)}
+          onClick={() => open(selected)}
+        >
+          <Play size={16} />
+          Ver cena
+        </button>
       </div>
-      <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-        {examples.map((art, index) => (
+      <p className="studio-hint px-4 pt-3" role="status">
+        {filtered.length === 0
+          ? "Nenhuma cena encontrada. Experimente outra palavra."
+          : query
+            ? filtered.length + " cenas encontradas"
+            : selectedScene?.title + " · " + selectedScene?.lines.length + " falas"}
+      </p>
+      <div className="cinema-library" aria-label="Ambientes do cinema">
+        {examples.map(({ art, label, hint, icon: Icon }) => (
           <button
             type="button"
             key={art}
+            className="cinema-card"
             onClick={() => {
-              const example = scenes.find((item) => item.art === art);
+              const example =
+                art === "trophy"
+                  ? CUTSCENES["trophy-lift"]
+                  : art === "arrival"
+                    ? CUTSCENES["bus-arrival"]
+                    : scenes.find((item) => item.art === art);
               if (example) {
-                setOutcome("");
-                setScene(example.id);
+                setSelected(example.id);
+                setQuery("");
+                open(example.id);
               }
             }}
-            className="min-h-12 rounded-xl border border-border/70 bg-secondary/40 px-3 text-sm font-semibold transition-colors hover:border-primary/50 hover:bg-primary/10"
           >
-            {labels[index]}
+            <Icon size={24} />
+            <strong>{label}</strong>
+            <span>{hint}</span>
           </button>
         ))}
       </div>
-      {outcome ? (
-        <p role="status" className="mt-3 text-sm text-primary">
+      <details className="cinema-config">
+        <summary>Ajustes de exibição e encenação</summary>
+        <div className="studio-fields">
+          <label>
+            Qualidade
+            <select
+              aria-label="Qualidade do cinema"
+              value={quality}
+              onChange={(e) => setQuality(e.target.value as QualityLevel | "auto")}
+              className="studio-select"
+            >
+              <option value="auto">Qualidade automática</option>
+              <option value="alta">Mais detalhes</option>
+              <option value="media">Equilibrada</option>
+              <option value="baixa">Mais leve</option>
+            </select>
+          </label>
+          <label>
+            Momento da encenação
+            <select
+              aria-label="Momento da encenação"
+              value={previewTime}
+              onChange={(e) => setPreviewTime(Number(e.target.value))}
+              className="studio-select"
+            >
+              <option value={0}>Início da encenação</option>
+              <option value={8}>Olhares e pés · 8 s</option>
+              <option value={13}>Posturas e braços · 13 s</option>
+              <option value={17}>Levantar do banco · 17 s</option>
+            </select>
+          </label>
+        </div>
+      </details>
+      {outcome && (
+        <p role="status" className="studio-footer">
           {outcome}
         </p>
-      ) : null}
-      {scene ? (
+      )}
+      {scene && (
         <Cutscene
           scene={scene}
           look={look}
@@ -102,10 +203,11 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
           club={club}
           managerName="Treinador"
           renderQuality={quality}
+          previewTime={previewTime}
           onEffect={() => setOutcome("Resposta experimentada. A prévia não altera sua carreira.")}
           onDone={() => setScene(null)}
         />
-      ) : null}
+      )}
     </section>
   );
 }

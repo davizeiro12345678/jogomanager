@@ -4,6 +4,7 @@ import { Vector3 } from "three";
 import type { Cast } from "@/game/cast";
 import type { ManagerLook } from "@/game/types";
 import type { QualityLevel } from "@/game/device";
+import type { CinematicManner } from "@/game/cinematic-actor";
 
 export interface CinematicRuntimeState {
   clock: { time: number; dt: number };
@@ -11,12 +12,15 @@ export interface CinematicRuntimeState {
   quality: QualityLevel;
   look?: ManagerLook | undefined;
   cast?: Cast | undefined;
+  stopped: boolean;
   reduced: boolean;
+  manner?: CinematicManner | undefined;
 }
 export const CinematicContext = createContext<CinematicRuntimeState>({
   clock: { time: 0, dt: 0 },
   focus: new Vector3(0, 1.2, 0),
   quality: "media",
+  stopped: false,
   reduced: false,
 });
 export const useCinematicRuntime = () => useContext(CinematicContext);

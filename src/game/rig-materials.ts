@@ -12,7 +12,8 @@
 // ============================================================================
 
 import * as THREE from "three";
-import { beardFiberMask, hairStrandNormal } from "./textures/fabric";
+import { beardFiberColor, beardFiberMask, hairStrandNormal, irisColor } from "./textures/fabric";
+import { skinAlbedo } from "./player-morphology";
 
 const MAX_ENTRIES = 64;
 const cache = new Map<string, THREE.Material>();
@@ -65,20 +66,27 @@ export function eyeWhiteMaterial(): THREE.Material {
 
 /** Stubble stays close to the skin; full beards have a softer hair tone. */
 export function beardMaterial(skin: string, hair: string, style: string): THREE.Material {
-  return sharedDetailMaterial(
-    `beard:${skin}:${hair}:${style}`,
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color(skin).lerp(new THREE.Color(hair), style === "stubble" ? 0.47 : 0.86),
-        roughness: 0.91,
-        alphaMap: beardFiberMask(),
-        alphaTest: style === "stubble" ? 0.64 : 0.4,
-        alphaToCoverage: true,
-        normalMap: hairStrandNormal(),
-        normalScale: new THREE.Vector2(0.2, 0.3),
-        envMapIntensity: 0.35,
-      }),
-  );
+  return sharedDetailMaterial(`beard:${skin}:${hair}:${style}`, () => {
+    const tone = new THREE.Color(skinAlbedo(skin)).lerp(
+      new THREE.Color(hair),
+      style === "stubble" ? 0.3 : 0.8,
+    );
+    const map = beardFiberColor("#" + tone.getHexString());
+    return new THREE.MeshStandardMaterial({
+      color: map ? "#ffffff" : tone,
+      map,
+      roughness: 0.91,
+      alphaMap: beardFiberMask(style === "stubble"),
+      alphaTest: 0.04,
+      transparent: true,
+      opacity: style === "stubble" ? 0.65 : 0.96,
+      depthWrite: false,
+      alphaToCoverage: true,
+      normalMap: hairStrandNormal(),
+      normalScale: new THREE.Vector2(0.08, 0.12),
+      envMapIntensity: 0.35,
+    });
+  });
 }
 
 /** Pupila. */
@@ -93,7 +101,12 @@ export function pupilMaterial(): THREE.Material {
 export function irisMaterial(color: string): THREE.Material {
   return sharedDetailMaterial(
     `iris:${color}`,
-    () => new THREE.MeshStandardMaterial({ color, roughness: 0.22, metalness: 0.05 }),
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: irisColor(color) ? "#ffffff" : color,
+        map: irisColor(color),
+        roughness: 0.36,
+      }),
   );
 }
 
@@ -119,8 +132,8 @@ export function armbandMaterial(): THREE.Material {
  */
 export function skinDetailMaterial(skin: string): THREE.Material {
   return sharedDetailMaterial(`skin-detail:${skin}`, () => {
-    const dark = new THREE.Color(skin).lerp(new THREE.Color("#3a1d12"), 0.45);
-    return new THREE.MeshStandardMaterial({ color: dark, roughness: 0.62 });
+    const dark = new THREE.Color(skinAlbedo(skin)).lerp(new THREE.Color("#3a1d12"), 0.45);
+    return new THREE.MeshStandardMaterial({ color: dark, vertexColors: true, roughness: 0.62 });
   });
 }
 

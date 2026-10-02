@@ -1,6 +1,4 @@
 /// <reference lib="webworker" />
-import { advanceRound } from "./career";
-import { autoSeason } from "./autoplay";
 import { resultMatch, snapshotMatch, type LiveWorkerRequest } from "./live-match";
 import { LIVE_MATCH_CLOCK_SCALE, MAX_LIVE_MOTION_SCALE, MatchSim } from "./sim";
 import type { BallPhysicsAuthority } from "./rapier-ball-authority";
@@ -290,11 +288,13 @@ async function handleMessage(message: LiveWorkerRequest) {
     return;
   }
   if (message.type === "advance") {
+    const { advanceRound } = await import("./career");
     const career = advanceRound(message.career, message.result, message.performances);
     post({ id: message.id, ok: true, result: career });
     return;
   }
   if (message.type === "autoSeason") {
+    const { autoSeason } = await import("./autoplay");
     post({ id: message.id, ok: true, result: autoSeason(message.career, message.maxWeeks) });
     return;
   }

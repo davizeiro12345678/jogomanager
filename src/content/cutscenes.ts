@@ -61,6 +61,7 @@ export interface ChoiceEffect {
   fanApproval?: number;
   pressure?: number;
   headline?: string;
+  careerDecision?: import("@/game/career-world-types").InterviewDecision;
 }
 
 export interface CutsceneChoice {

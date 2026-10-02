@@ -51,6 +51,14 @@ export function rigPart(
   transform?: RigTransform,
   castShadow = false,
 ): RigPart {
+  if ((material as THREE.MeshStandardMaterial).vertexColors && !geometry.hasAttribute("color"))
+    geometry.setAttribute(
+      "color",
+      new THREE.Float32BufferAttribute(
+        new Float32Array(geometry.getAttribute("position").count * 3).fill(1),
+        3,
+      ),
+    );
   scratch.position.fromArray(transform?.position ?? [0, 0, 0]);
   scratch.rotation.set(...(transform?.rotation ?? [0, 0, 0]));
   if (typeof transform?.scale === "number") scratch.scale.setScalar(transform.scale);
@@ -225,6 +233,40 @@ export function anatomicalSection(
   return geometry;
 }
 
+/** Sternomastoid contours and a small larynx live on the neck surface itself. */
+export function neckSurface(geometry: THREE.BufferGeometry, radius: number, length: number) {
+  const position = geometry.getAttribute("position");
+  for (let i = 0; i < position.count; i++) {
+    const x = position.getX(i) / radius,
+      y = position.getY(i) / length;
+    const z = position.getZ(i);
+    if (z <= 0) continue;
+    const envelope = Math.sin(Math.min(1, Math.max(0, y / 1.25)) * Math.PI);
+    const tendon = Math.exp(-(((Math.abs(x) - 0.33 - y * 0.3) / 0.18) ** 2));
+    const larynx = Math.exp(-((x / 0.32) ** 2) - ((y - 0.6) / 0.17) ** 2);
+    position.setZ(i, z + radius * envelope * (tendon * 0.035 + larynx * 0.065));
+  }
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+/** Thenar volume and dorsal tendons refine the palm without changing knuckle pivots. */
+export function palmSurface(geometry: THREE.BufferGeometry, radius: number, side: number) {
+  const position = geometry.getAttribute("position");
+  for (let i = 0; i < position.count; i++) {
+    const x = position.getX(i) / radius,
+      y = position.getY(i) / radius,
+      z = position.getZ(i);
+    const envelope = Math.sin(Math.min(1, Math.max(0, (y + 1.5) / 1.58)) * Math.PI);
+    const thenar = Math.exp(-(((x * side + 0.38) / 0.32) ** 2) - ((y + 0.65) / 0.45) ** 2);
+    const tendon =
+      (0.5 + Math.cos((x * Math.PI) / 0.36) * 0.5) * Math.exp(-(((y + 0.85) / 0.48) ** 2));
+    position.setZ(i, z + radius * envelope * (z > 0 ? thenar * 0.06 : -tendon * 0.025));
+  }
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 /** Millimetre-scale folds baked once into cloth, with zero per-frame work. */
 export function clothSurface(geometry: THREE.BufferGeometry, amplitude = 0.002) {
   const position = geometry.getAttribute("position");
@@ -232,9 +274,14 @@ export function clothSurface(geometry: THREE.BufferGeometry, amplitude = 0.002) 
   for (let i = 0; i < position.count; i++) {
     const u = uv.getX(i),
       v = uv.getY(i);
+    const angle = u * Math.PI * 2;
     const fold =
-      Math.sin(u * Math.PI * 12 + v * 11) * Math.sin(v * Math.PI) +
-      0.35 * Math.sin(v * 39 + u * 8) * (1 - v) ** 2;
+      Math.sin(angle * 6 + v * 11) * Math.sin(v * Math.PI) * 0.45 +
+      Math.sin(v * 39 + Math.cos(angle) * 8) * (1 - v) ** 2 * 0.55 +
+      Math.sin(angle * 8) * Math.sin(v * Math.PI) ** 2 * 0.18 +
+      // Diagonal tension from the shoulder and compressed fabric at the hem.
+      Math.sin(angle * 5 - v * 17) * Math.exp(-(((v - 0.78) / 0.18) ** 2)) * 0.3 +
+      Math.sin(angle * 3 + v * 23) * Math.exp(-(((v - 0.12) / 0.12) ** 2)) * 0.32;
     const x = position.getX(i),
       z = position.getZ(i),
       length = Math.hypot(x, z);
@@ -248,6 +295,46 @@ export function clothSurface(geometry: THREE.BufferGeometry, amplitude = 0.002) 
   }
   geometry.computeVertexNormals();
   return geometry;
+}
+
+/** Pectorals and shoulder blades shape the jersey itself; they never add
+ * separate muscle meshes or move the neck/waist attachment landmarks. */
+export function athleticTorsoSurface(
+  geometry: THREE.BufferGeometry,
+  width: number,
+  height: number,
+) {
+  const positions = geometry.getAttribute("position");
+  for (let i = 0; i < positions.count; i++) {
+    const x = positions.getX(i) / width;
+    const y = (positions.getY(i) + height * 0.04) / height;
+    const z = positions.getZ(i);
+    const envelope = Math.sin(THREE.MathUtils.clamp(y, 0, 1) * Math.PI) ** 2;
+    const pectoral = Math.exp(-(((Math.abs(x) - 0.46) / 0.31) ** 2) - ((y - 0.69) / 0.17) ** 2);
+    const sternum = Math.exp(-((x / 0.12) ** 2) - ((y - 0.7) / 0.22) ** 2);
+    const scapula = Math.exp(-(((Math.abs(x) - 0.48) / 0.3) ** 2) - ((y - 0.72) / 0.2) ** 2);
+    positions.setZ(
+      i,
+      z + width * envelope * (z > 0 ? pectoral * 0.032 - sternum * 0.009 : -scapula * 0.022),
+    );
+  }
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+/** Tapered phalanges with a soft fingertip and articulated knuckle rings. */
+export function anatomicalFinger(radius: number, length: number) {
+  return anatomicalSection(
+    [
+      { y: -length * 0.5 - radius * 0.7, width: radius * 0.15, depth: radius * 0.18 },
+      { y: -length * 0.5, width: radius * 0.82, depth: radius * 0.8 },
+      { y: -length * 0.16, width: radius * 0.91, depth: radius * 0.83 },
+      { y: length * 0.12, width: radius, depth: radius * 0.95 },
+      { y: length * 0.42, width: radius * 0.98, depth: radius * 0.88 },
+      { y: length * 0.5 + radius * 0.5, width: radius * 0.32, depth: radius * 0.35 },
+    ],
+    8,
+  );
 }
 
 /** A continuous last with a fitted heel, instep and flattened toe box. */
@@ -289,6 +376,23 @@ export function scalpGeometry(radius: number, radial = 14, rows = 10) {
 }
 
 export type LimbProfile = "upperArm" | "forearm" | "thigh" | "calf";
+
+function smoothRingSeams(geometry: THREE.BufferGeometry, radial: number) {
+  const normal = geometry.getAttribute("normal");
+  const rows = Math.floor(geometry.getAttribute("position").count / (radial + 1));
+  const n = new THREE.Vector3();
+  for (let row = 0; row < rows; row++) {
+    const a = row * (radial + 1),
+      b = a + radial;
+    n.set(
+      normal.getX(a) + normal.getX(b),
+      normal.getY(a) + normal.getY(b),
+      normal.getZ(a) + normal.getZ(b),
+    ).normalize();
+    normal.setXYZ(a, n.x, n.y, n.z);
+    normal.setXYZ(b, n.x, n.y, n.z);
+  }
+}
 
 /** Shared tapered anatomy for both skinned and instanced players. The pivot
  * is at the proximal joint and the segment extends down to -length.
@@ -357,6 +461,29 @@ export function anatomicalLimb(
     1,
     rigidEnds,
   );
+  const position = geometry.getAttribute("position");
+  for (let i = 0; i < position.count; i++) {
+    const u = -position.getY(i) / length;
+    const envelope = Math.sin(THREE.MathUtils.clamp(u, 0, 1) * Math.PI) ** 2;
+    const x = position.getX(i),
+      z = position.getZ(i);
+    const front = z >= 0 ? 1 : -1;
+    const bulge =
+      kind === "upperArm"
+        ? (front > 0 ? 0.13 : 0.09) * Math.exp(-(((u - 0.48) / 0.24) ** 2))
+        : kind === "thigh"
+          ? (front > 0 ? 0.13 : 0.075) * Math.exp(-(((u - 0.5) / 0.3) ** 2))
+          : kind === "calf"
+            ? (front > 0 ? 0.025 : 0.12) * Math.exp(-(((u - 0.37) / 0.23) ** 2))
+            : 0.065 * Math.exp(-(((u - 0.32) / 0.3) ** 2));
+    const angular = Math.abs(z) / Math.max(radius * 0.1, Math.hypot(x, z));
+    position.setZ(i, z + front * radius * bulge * envelope * angular);
+    // Two heads of the calf/quadriceps avoid a uniformly circular cylinder.
+    if (kind === "thigh" || kind === "calf")
+      position.setX(i, x * (1 + envelope * 0.035 * Math.exp(-(((u - 0.43) / 0.25) ** 2))));
+  }
+  geometry.computeVertexNormals();
+  smoothRingSeams(geometry, radial);
   if (rigidEnds) return geometry;
   // Matching ellipse, weights and radial normals on both sides of a joint.
   const normals = geometry.getAttribute("normal");
@@ -368,6 +495,63 @@ export function anatomicalLimb(
       normals.setXYZ(i, n.x, n.y, n.z);
     }
   return geometry;
+}
+
+/** Cloth samples the already sculpted limb, including its muscle bulges.
+ * Interpolate the opening ring so every sock height stays fitted to the calf. */
+export function fittedLimbCover(
+  kind: LimbProfile,
+  length: number,
+  radius: number,
+  radial: number,
+  from: number,
+  offset = 0.002,
+  to = 1.035,
+) {
+  const limb = anatomicalLimb(kind, length, radius, radial);
+  const source = limb.getAttribute("position");
+  const rows = source.count / (radial + 1);
+  const opening = -length * from;
+  const bottom = -length * to;
+  const heights = [bottom];
+  for (let row = 0; row < rows; row++) {
+    const y = source.getY(row * (radial + 1));
+    if (y < opening - 1e-6 && y > bottom + 1e-6) heights.push(y);
+  }
+  heights.push(opening);
+  const positions: number[] = [],
+    uv: number[] = [],
+    indices: number[] = [];
+  for (const y of heights) {
+    let lower = 0;
+    while (lower < rows - 2 && source.getY((lower + 1) * (radial + 1)) < y) lower++;
+    const aY = source.getY(lower * (radial + 1));
+    const bY = source.getY((lower + 1) * (radial + 1));
+    const t = THREE.MathUtils.clamp((y - aY) / (bY - aY), 0, 1);
+    for (let side = 0; side <= radial; side++) {
+      const a = lower * (radial + 1) + side,
+        b = a + radial + 1;
+      const x = THREE.MathUtils.lerp(source.getX(a), source.getX(b), t);
+      const z = THREE.MathUtils.lerp(source.getZ(a), source.getZ(b), t);
+      const r = Math.max(1e-6, Math.hypot(x, z));
+      positions.push(x + (x / r) * offset, y, z + (z / r) * offset);
+      uv.push(side / radial, (y - bottom) / (opening - bottom));
+    }
+  }
+  for (let row = 0; row < heights.length - 1; row++)
+    for (let side = 0; side < radial; side++) {
+      const a = row * (radial + 1) + side,
+        b = a + radial + 1;
+      indices.push(a, a + 1, b, a + 1, b + 1, b);
+    }
+  limb.dispose();
+  const cover = new THREE.BufferGeometry();
+  cover.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  cover.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  cover.setIndex(indices);
+  cover.computeVertexNormals();
+  smoothRingSeams(cover, radial);
+  return cover;
 }
 
 /** Libera as geometrias criadas pelo merge (materiais são compartilhados). */

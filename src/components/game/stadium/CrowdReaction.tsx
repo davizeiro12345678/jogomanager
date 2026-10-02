@@ -24,6 +24,7 @@ import * as THREE from "three";
 import { censusRef } from "@/game/scene-census";
 import { useRuntimeSceneBudget } from "@/components/game/RuntimeBudget";
 import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
+import type { SupporterMatchday } from "@/game/career-world-types";
 
 export type CrowdMood = "idle" | "buzz" | "chance" | "erupt" | "protest";
 
@@ -70,7 +71,7 @@ const RANK: Record<CrowdMood, number> = {
  * Observa o jogo e mantém o estado de reação. Roda uma vez por quadro e não
  * aloca nada: os contadores anteriores ficam em refs.
  */
-function useReactionTracker(sim: SimView) {
+function useReactionTracker(sim: SimView, supporters?: SupporterMatchday) {
   const ref = useRef<CrowdReactionState>({ ...EMPTY });
   const last = useRef({ goals: 0, shots: 0, cards: 0, fouls: 0, minute: 0, homeGoals: 0 });
 
@@ -117,6 +118,16 @@ function useReactionTracker(sim: SimView) {
         boost = 0.24;
       }
     }
+    if (supporters && mood === "idle" && minute > 0) {
+      const against =
+        supporters.side === "home" ? away.goals > home.goals : home.goals > away.goals;
+      mood =
+        supporters.climate === "protesto" || (supporters.climate === "cobrança" && against)
+          ? "protest"
+          : "buzz";
+      side = supporters.side;
+      boost = (mood === "protest" ? 0.18 : 0.06) + supporters.intensity * 0.1;
+    }
 
     if (mood !== "idle" && RANK[mood] >= RANK[state.mood]) {
       state.mood = mood;
@@ -132,7 +143,12 @@ function useReactionTracker(sim: SimView) {
       state.intensity = 0;
     }
 
-    last.current = { goals, shots, cards, fouls, minute, homeGoals: home.goals };
+    prev.goals = goals;
+    prev.shots = shots;
+    prev.cards = cards;
+    prev.fouls = fouls;
+    prev.minute = minute;
+    prev.homeGoals = home.goals;
   });
 
   return ref;
@@ -344,14 +360,16 @@ export const CrowdReaction = memo(function CrowdReaction({
   quality,
   night,
   color = "#ffb347",
+  supporters,
 }: {
   sim: SimView;
   quality: "alta" | "media" | "baixa";
   night: boolean;
   color?: string;
+  supporters?: SupporterMatchday | undefined;
 }) {
   const budget = useRuntimeSceneBudget();
-  const reaction = useReactionTracker(sim);
+  const reaction = useReactionTracker(sim, supporters);
   const [, force] = useState(0);
 
   // Só o mandante comemora de verdade; o protesto é do lado prejudicado. O

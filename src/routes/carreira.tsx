@@ -1,21 +1,29 @@
 /**
  * Carreira de treinador: cada semana você escolhe o foco do trabalho, vê o
  * efeito no elenco e na diretoria, e a rodada é resolvida. Momentos marcantes
- * abrem cutscenes 2D (treino, vestiário, sala de troféus, comissão técnica).
+ * abrem cenas 3D (treino, vestiário, sala de troféus, comissão técnica).
  */
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Clapperboard, Sparkles } from "lucide-react";
 
 import { GameShell } from "@/components/game/GameShell";
 import { NoCareer } from "@/components/game/screen-kit";
 import { Crest } from "@/components/game/Crest";
 import { Cutscene } from "@/components/game/Cutscene";
+import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loading";
+import { CareerWorldPanel } from "@/components/game/CareerWorldPanel";
 import { CLUBS } from "@/game/data/leagues";
-import { coachWeek, WEEK_ACTIONS, type CoachWeek, type WeekActionId } from "@/game/season-mode";
+import {
+  coachWeekAsync,
+  WEEK_ACTIONS,
+  type CoachWeek,
+  type WeekActionId,
+} from "@/game/season-mode";
 import { CUTSCENES, SCENE_LIST } from "@/content/cutscenes";
 import { castFor } from "@/game/cast";
 import { applyChoiceEffect } from "@/game/choice-effects";
+import { worldFor } from "@/game/career-world";
 import { prefersReducedMotion } from "@/game/device";
 import { useCareer } from "@/hooks/useCareer";
 import type { ManagerLook } from "@/game/types";
@@ -73,10 +81,15 @@ function Bar({ label, value, tone }: { label: string; value: number; tone: strin
 }
 
 function CoachCareerPage() {
+  useCinematicPreload();
   const { career, update } = useCareer();
   const [weeks, setWeeks] = useState<CoachWeek[]>([]);
   const [scene, setScene] = useState<string | null>(null);
   const [gallery, setGallery] = useState(false);
+  const [preview, setPreview] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const running = useRef(false);
+  const [weekError, setWeekError] = useState("");
   const calm = prefersReducedMotion();
 
   const club = career ? CLUBS[career.clubId] : undefined;
@@ -110,13 +123,26 @@ function CoachCareerPage() {
 
   if (!career) return <NoCareer />;
 
-  function run(action: WeekActionId) {
-    if (!career) return;
-    const w = coachWeek(career, action);
-    if (!w) return;
-    setWeeks((cur) => [w, ...cur].slice(0, 40));
-    update(w.state);
-    if (w.scene && CUTSCENES[w.scene]) setScene(w.scene);
+  async function run(action: WeekActionId) {
+    if (!career || career.sacked || running.current) return;
+    running.current = true;
+    setBusy(true);
+    setWeekError("");
+    try {
+      const w = await coachWeekAsync(career, action);
+      if (!w) return;
+      setWeeks((cur) => [w, ...cur].slice(0, 40));
+      update(w.state);
+      setPreview(false);
+      if (w.scene && CUTSCENES[w.scene]) setScene(w.scene);
+    } catch {
+      setWeekError(
+        "Não foi possível concluir a semana. Sua carreira foi preservada; tente novamente.",
+      );
+    } finally {
+      running.current = false;
+      setBusy(false);
+    }
   }
 
   const seen = new Set(career.seenScenes ?? []);
@@ -135,7 +161,8 @@ function CoachCareerPage() {
           managerName={career.managerName}
           captainName={captainName}
           cast={cast ?? undefined}
-          onEffect={(effect) => update(applyChoiceEffect(career, effect))}
+          manner={worldFor(career).identity}
+          onEffect={preview ? undefined : (effect) => update(applyChoiceEffect(career, effect))}
           onDone={() => setScene(null)}
         />
       ) : null}
@@ -171,11 +198,16 @@ function CoachCareerPage() {
         </p>
       </header>
 
+      <div inert={busy || undefined}>
+        <CareerWorldPanel career={career} update={update} />
+      </div>
+
       {gallery ? (
         <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Galeria de cenas</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            {seen.size} de {SCENE_LIST.length} cenas vistas nesta carreira.
+            {seen.size} de {SCENE_LIST.length} cenas vistas nesta carreira. Reassistir não altera o
+            save.
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             {SCENE_LIST.map((s) => {
@@ -183,7 +215,10 @@ function CoachCareerPage() {
               return (
                 <button
                   key={s.id}
-                  onClick={() => setScene(s.id)}
+                  onClick={() => {
+                    setPreview(true);
+                    setScene(s.id);
+                  }}
                   className={`rounded-xl border p-3 text-left text-sm transition-colors ${
                     unlocked
                       ? "border-primary/40 bg-primary/10 hover:bg-primary/20"
@@ -206,6 +241,7 @@ function CoachCareerPage() {
           {WEEK_ACTIONS.map((a) => (
             <button
               key={a.id}
+              disabled={busy || career.sacked}
               onClick={() => run(a.id)}
               className="rounded-2xl border border-border/60 surface-card p-4 text-left transition-transform hover:-translate-y-0.5 hover:border-primary/50"
             >
@@ -214,6 +250,16 @@ function CoachCareerPage() {
             </button>
           ))}
         </div>
+        {busy ? (
+          <p role="status" className="mt-3 text-sm text-primary">
+            Simulando a rodada e registrando a repercussão…
+          </p>
+        ) : null}
+        {weekError ? (
+          <p role="alert" className="mt-3 text-sm text-destructive">
+            {weekError}
+          </p>
+        ) : null}
       </section>
 
       <section className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -255,7 +301,10 @@ function CoachCareerPage() {
               ) : null}
               {w.scene ? (
                 <button
-                  onClick={() => setScene(w.scene!)}
+                  onClick={() => {
+                    setPreview(true);
+                    setScene(w.scene!);
+                  }}
                   className="mt-2 text-xs text-primary underline-offset-2 hover:underline"
                 >
                   Rever a cena

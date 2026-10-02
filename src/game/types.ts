@@ -103,14 +103,7 @@ export interface TableRow {
 export type TrainingFocus = "ataque" | "defesa" | "fisico" | "tecnica" | "equilibrado";
 
 export type NewsKind =
-  | "resultado"
-  | "mercado"
-  | "lesao"
-  | "cartao"
-  | "sistema"
-  | "premio"
-  | "vestiario"
-  | "coletiva";
+  "resultado" | "mercado" | "lesao" | "cartao" | "sistema" | "premio" | "vestiario" | "coletiva";
 
 export interface NewsItem {
   id: string;
@@ -201,6 +194,8 @@ export interface ScoutReport {
 }
 
 export interface CareerState {
+  /** Persistent local career identity, relationships and football memories. */
+  world?: import("./career-world-types").CareerWorld;
   version: 3;
   leagueId: string;
   clubId: string;
@@ -253,6 +248,11 @@ export interface CareerState {
   sacked: boolean;
   /** copas nacionais e continentais da temporada */
   cups?: CupState[];
+  /** Ano e classificação pertencem apenas a este save pessoal; não atestam conquistas. */
+  calendarYear?: number;
+  competitionHistory?: CompetitionSeasonRecord[];
+  qualifications?: CompetitionQualification[];
+  regionalLeagueId?: string;
 
   /* ---------------------------------------------------------- v4 */
   /** histórico partida a partida (gols, assistências e minutos por jogo) */
@@ -411,7 +411,24 @@ export interface CupGroup {
 }
 
 export interface CupState {
-  id: "national" | "continental" | "intercontinental" | "club_world_cup";
+  id:
+    | "national"
+    | "continental"
+    | "continental_secondary"
+    | "conference"
+    | "regional"
+    | "regional_path"
+    | "intercontinental"
+    | "club_world_cup";
+  competitionId?: string;
+  /** Inscrição decorrente de classificação; false distingue ausência de vaga de eliminação. */
+  entered?: boolean;
+  formatNote?: string;
+  automaticEntrants?: string[];
+  intercontinentalChampions?: Partial<
+    Record<"UEFA" | "CONMEBOL" | "CONCACAF" | "CAF" | "AFC" | "OFC", string>
+  >;
+  finalists?: string[];
   name: string;
   stage: number;
   ties: CupTie[];
@@ -424,6 +441,32 @@ export interface CupState {
   groups?: CupGroup[];
   /** próxima rodada da fase de grupos; ausente ou >= 3 significa fase concluída */
   groupRound?: number;
+}
+
+export interface CompetitionQualification {
+  clubId: string;
+  competitionId: string;
+  name: string;
+  season: number;
+  phase: "principal" | "preliminar";
+  reason: string;
+}
+
+export interface CompetitionSeasonRecord {
+  season: number;
+  year: number;
+  champions: Record<string, string>;
+  continentalPoints: Record<string, number>;
+  /** Apenas divisões do país da carreira; as demais tabelas são consumidas no fechamento. */
+  tables: Record<string, TableRow[]>;
+  playoffs?: {
+    home: string;
+    away: string;
+    winner: string;
+    first: { hg: number; ag: number };
+    second: { hg: number; ag: number };
+    penalties: boolean;
+  }[];
 }
 
 export interface MatchEventLog {

@@ -11,18 +11,17 @@ const DESC =
   "Comande um clube do Brasileirão Série A ou Série B em um jogo de manager de futebol 3D e gratuito. Veja todos os times disponíveis e comece sua carreira.";
 
 export const Route = createFileRoute("/brasileirao")({
-  head: () => {
-    const a = getLeague("bra");
-    const b = getLeague("bra2");
+  loader: async () => {
+    const { getLeague } = await import("@/game/data/leagues");
+    return [...getLeague("bra").clubs, ...getLeague("bra2").clubs].map((club) => club.name);
+  },
+  head: ({ loaderData }) => {
     return {
       meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
       links: canonical(PATH),
       scripts: [
         articleLd({ headline: "Brasileirão no jogo de manager", description: DESC, path: PATH }),
-        itemListLd(
-          "Clubes do Brasileirão jogáveis",
-          [...a.clubs, ...b.clubs].map((c) => c.name),
-        ),
+        itemListLd("Clubes do Brasileirão jogáveis", loaderData ?? []),
         breadcrumbLd([
           { name: "Início", path: "/" },
           { name: "Brasileirão", path: PATH },

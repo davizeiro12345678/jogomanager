@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { cinematicDelta, cinematicDetail } from "./cinematic-performance";
-import { cinematicActorPose, cinematicLook } from "./cinematic-actor";
+import {
+  cinematicDelta,
+  cinematicDetail,
+  cinematicInitialQuality,
+  cinematicGpuQuality,
+} from "./cinematic-performance";
+import { cinematicActorPose, cinematicIdleAt, cinematicLook } from "./cinematic-actor";
 import { proportionsFor } from "./player-model";
 import { soleHeightFor } from "./ground-contact";
 import { cinematicFocus } from "./cinematic-blocking";
@@ -10,6 +15,22 @@ import { CUTSCENES } from "@/content/cutscenes";
 import { batchStaticStadium } from "./static-stadium-batch";
 
 describe("cinematic runtime", () => {
+  it("uses the actual integrated GPU to avoid costly startup effects", () => {
+    expect(cinematicGpuQuality("media", "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics, D3D11)")).toBe(
+      "baixa",
+    );
+    expect(cinematicGpuQuality("media", "Intel(R) UHD Graphics 620")).toBe("baixa");
+    expect(cinematicGpuQuality("media", "ANGLE (Google, SwiftShader Device)")).toBe("baixa");
+    expect(cinematicGpuQuality("media", "NVIDIA GeForce RTX 4060")).toBe("media");
+    expect(cinematicGpuQuality("baixa", "NVIDIA GeForce RTX 4060")).toBe("baixa");
+  });
+  it("starts auto balanced on CPU-rich devices and honours manual quality", () => {
+    expect(cinematicInitialQuality("alta", "auto")).toBe("media");
+    expect(cinematicInitialQuality("baixa", "auto")).toBe("baixa");
+    expect(cinematicInitialQuality("media", "auto")).toBe("media");
+    expect(cinematicInitialQuality("baixa", "alta")).toBe("alta");
+    expect(cinematicInitialQuality("alta", "baixa")).toBe("baixa");
+  });
   it("freezes on pause and contains stalls without injecting invalid time", () => {
     expect(cinematicDelta(0.016, true)).toBe(0);
     expect(cinematicDelta(12, false)).toBeLessThan(0.1);
@@ -27,6 +48,7 @@ describe("cinematic runtime", () => {
     expect(cinematicDetail("alta", false).high).toBe(false);
     expect(cinematicDetail("baixa", true).high).toBe(false);
     expect(cinematicDetail("alta", true).high).toBe(true);
+    expect(cinematicDetail("media", true).high).toBe(false);
   });
   it("plants the soles of seated actors across different leg proportions", () => {
     for (let seed = 1; seed < 12; seed++) {
@@ -50,6 +72,60 @@ describe("cinematic runtime", () => {
     const arms = samples.map((pose) => pose.armRPitch);
     expect(Math.max(...arms) - Math.min(...arms)).toBeGreaterThan(0.5);
     expect(cinematicActorPose(0, 21, "stand", false, p).armRPitch).toBe(0);
+  });
+  it("staggers small actions and keeps a seated actor grounded while standing up", () => {
+    expect(cinematicIdleAt(0, 9, true).kind).toBe("none");
+    expect(cinematicIdleAt(17, 9, true).kind).toBe("rise");
+    expect(cinematicIdleAt(17, 9, true).weight).toBe(1);
+    const p = proportionsFor(cinematicLook(9));
+    const sitting = cinematicActorPose(0, 9, "sit", false, p);
+    const upright = cinematicActorPose(17, 9, "sit", false, p);
+    expect(upright.hipY).toBeGreaterThan(sitting.hipY + 0.3);
+    for (let frame = 0; frame <= 24 * 30; frame++) {
+      const pose = cinematicActorPose(frame / 30, 9, "sit", false, p);
+      for (const left of [true, false])
+        expect(
+          Math.abs(
+            soleHeightFor(
+              {
+                P: p,
+                pose,
+                hipShiftX: 0,
+                leanX: 0,
+                leanZ: 0,
+                airborne: 0,
+                previousRootY: 0,
+                dt: 0,
+              },
+              left,
+            ).y,
+          ),
+        ).toBeLessThan(0.003);
+    }
+    expect(cinematicIdleAt(12.5, 13, true).kind).toBe("cross");
+    expect(cinematicIdleAt(6.5, 5, true).kind).toBe("foot");
+    expect(cinematicIdleAt(10.5, 2, true).kind).toBe("tilt");
+  });
+  it("lets an assertive manager speak with different timing and amplitude", () => {
+    const p = proportionsFor(cinematicLook(21));
+    const assertive = Array.from(
+      { length: 120 },
+      (_, i) =>
+        cinematicActorPose(i / 30, 21, "stand", true, p, undefined, {
+          assertiveness: 90,
+          warmth: 25,
+        }).armRPitch,
+    );
+    const calm = Array.from(
+      { length: 120 },
+      (_, i) =>
+        cinematicActorPose(i / 30, 21, "stand", true, p, undefined, {
+          assertiveness: 20,
+          warmth: 80,
+        }).armRPitch,
+    );
+    expect(Math.min(...assertive)).toBeLessThan(Math.min(...calm) - 0.2);
+    expect(assertive).not.toEqual(calm);
   });
   it("focuses the actual interlocutor instead of the room behind them", () => {
     expect(cinematicFocus("office", "manager")).toEqual([1.1, -2.3]);

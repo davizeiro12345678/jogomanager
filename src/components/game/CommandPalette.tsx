@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 import {
   CommandDialog,
@@ -44,13 +45,17 @@ export function CommandPalette({ items }: { items: PaletteItem[] }) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Buscar tela"
-        className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-border/70 px-2.5 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground md:flex"
+        className="career-search-button"
       >
         <Search size={13} />
-        Buscar
-        <kbd className="rounded bg-secondary px-1 py-0.5 text-[10px]">⌘K</kbd>
+        <span>Buscar área</span>
+        <kbd>Ctrl K</kbd>
       </button>
       <CommandDialog open={open} onOpenChange={setOpen}>
+        <DialogTitle className="sr-only">Buscar uma área da carreira</DialogTitle>
+        <DialogDescription className="sr-only">
+          Digite o nome de uma tela e selecione para navegar.
+        </DialogDescription>
         <CommandInput placeholder="Ir para… (elenco, táticas, mercado)" />
         <CommandList>
           <CommandEmpty>Nada encontrado.</CommandEmpty>

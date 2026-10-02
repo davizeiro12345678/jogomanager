@@ -1,25 +1,42 @@
 import { useFrame } from "@react-three/fiber";
 import { createElement, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { emptyPose, getClip, mixPose, selectClip } from "@/game/animation";
+import { emptyPose, getClip, mixPose, selectClip, type ClipName } from "@/game/animation";
 import { gaitPoseAt, locomotionWeight } from "@/game/gait-kinematics";
 import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
 import type { Kit } from "@/game/kits";
-import { lowDetailBodyFor, lookFor, proportionsFor } from "@/game/player-model";
+import {
+  lowDetailBodyFor,
+  lookFor,
+  lookWithPhysique,
+  proportionsFor,
+  type PlayerLook,
+} from "@/game/player-model";
 import {
   anatomicalLimb,
   anatomicalSection,
+  athleticTorsoSurface,
   footballBoot,
+  fittedLimbCover,
   type LimbProfile,
 } from "@/game/rig-geometry";
-import { sculptedHead, sculptedHair } from "@/game/player-sculpt";
+import { sculptedHead } from "@/game/player-sculpt";
+import { footballShorts } from "@/game/player-shorts";
+import { LOW_HAIR_FAMILIES, lowHairFamily, lowHairGeometry } from "@/game/player-lod-hair";
+import { skinAlbedo } from "@/game/player-morphology";
+import {
+  appendPlayerInstance,
+  capturePlayerPalette,
+  type PlayerInstancePalette,
+} from "@/game/player-instance-batch";
 import { censusRef } from "@/game/scene-census";
 import type { SimView } from "@/game/sim";
 import { visualMotionFor } from "@/game/visual-motion";
-import { refineFootballAction } from "@/game/football-action";
+import { footballSupportFor, refineFootballAction } from "@/game/football-action";
 import { refineAthletePosture, shoulderPose } from "@/game/athlete-posture";
 import { visualDataFor } from "@/game/visual-frame-cache";
 import { getDominantFoot } from "@/game/visual-context";
+import { AthletePoseBlender } from "@/game/athlete-pose-blender";
 
 type LowPlayersProps = {
   sim: SimView;
@@ -31,9 +48,13 @@ type LowPlayersProps = {
   simplified?: boolean;
   paused?: boolean;
   previewAt?: number | undefined;
+  lookOverrides?: ReadonlyMap<string, PlayerLook> | undefined;
+  previewClip?: ClipName | undefined;
 };
 const MAX_PLAYERS = 22;
-const BODY_BATCHES = ["torso", "hips", "head", "hair", "neck", "shadow"] as const;
+const SOCK_BATCHES = ["socksLow", "socksMid", "socksHigh"] as const;
+const SOCK_TOP = { socksLow: 0.62, socksMid: 0.38, socksHigh: 0.15 } as const;
+const BODY_BATCHES = ["torso", "hips", "head", ...LOW_HAIR_FAMILIES, "neck", "shadow"] as const;
 const LIMB_BATCHES = [
   "arms",
   "forearms",
@@ -42,7 +63,7 @@ const LIMB_BATCHES = [
   "thighs",
   "shorts",
   "shins",
-  "socks",
+  ...SOCK_BATCHES,
   "boots",
 ] as const;
 type Batch = (typeof BODY_BATCHES)[number] | (typeof LIMB_BATCHES)[number];
@@ -57,34 +78,67 @@ export function LowPlayers({
   excluded,
   paused = false,
   previewAt,
+  lookOverrides,
+  previewClip,
 }: LowPlayersProps) {
   const refs = useRef<Partial<Record<Batch, THREE.InstancedMesh>>>({});
+  const palettes = useRef<Partial<Record<Batch, PlayerInstancePalette>>>({});
   const painted = useRef(false);
   const sampled = useRef<number | undefined>(undefined);
   useLayoutEffect(() => {
     painted.current = false;
-  }, [sim.players]);
+  }, [sim.players, lookOverrides]);
   const looks = useMemo(
-    () => sim.players.map((p) => lookFor(p.id, p.pos, p.number === 10)),
-    [sim.players],
+    () =>
+      sim.players.map(
+        (p) =>
+          lookOverrides?.get(p.id) ??
+          lookWithPhysique(lookFor(p.pid, p.pos, p.number === 10), {
+            height: p.heightCm,
+            weight: p.weightKg,
+          }),
+      ),
+    [sim.players, lookOverrides],
   );
   const proportions = useMemo(() => looks.map(proportionsFor), [looks]);
   const shapes = useMemo(() => proportions.map(lowDetailBodyFor), [proportions]);
-  const poses = useMemo(() => sim.players.map(() => emptyPose()), [sim.players]);
+  const poseBlenders = useMemo(
+    () => sim.players.map(() => new AthletePoseBlender()),
+    [sim.players],
+  );
   const headGeometry = useMemo(
     () => sculptedHead({ headR: 0.5, headW: 0.5, headD: 0.5 }, 0, false),
     [],
   );
-  const hairGeometry = useMemo(
+  const hairGeometries = useMemo(
+    () => Object.fromEntries(LOW_HAIR_FAMILIES.map((family) => [family, lowHairGeometry(family)])),
+    [],
+  );
+  const bootGeometry = useMemo(() => footballBoot(1, 0.5, 8), []);
+  const shortsGeometry = useMemo(
     () =>
-      sculptedHair(
-        { headR: 0.5, headW: 0.5, headD: 0.5 },
-        { ...lookFor("lod-hair", "MF"), hairStyle: "short", hairVolume: 1 },
+      anatomicalSection(
+        [
+          { y: -0.5, width: 0.64, depth: 0.65 },
+          { y: -0.15, width: 0.65, depth: 0.665 },
+          { y: 0.5, width: 0.67, depth: 0.69 },
+        ],
+        8,
+        1,
         false,
       ),
     [],
   );
-  const bootGeometry = useMemo(() => footballBoot(1, 0.5, 8), []);
+  const sockGeometries = useMemo(
+    () =>
+      Object.fromEntries(
+        SOCK_BATCHES.map((name) => [
+          name,
+          fittedLimbCover("calf", 1, 0.5, 8, SOCK_TOP[name], 0.014),
+        ]),
+      ),
+    [],
+  );
   const gaitBuffer = useRef(emptyPose());
   const limbGeometries = useMemo(() => {
     const profiles: Record<string, LimbProfile> = {
@@ -96,7 +150,10 @@ export function LowPlayers({
     return Object.fromEntries(
       Object.entries(profiles).map(([batch, profile]) => [
         batch,
-        anatomicalLimb(profile, 1, 0.5, 8, true).translate(0, 0.5, 0),
+        (batch === "thighs"
+          ? fittedLimbCover("thigh", 1, 0.5, 8, 0.43, 0)
+          : anatomicalLimb(profile, 1, 0.5, 8, true)
+        ).translate(0, 0.5, 0),
       ]),
     );
   }, []);
@@ -126,45 +183,56 @@ export function LowPlayers({
   );
   const torsoGeometry = useMemo(
     () =>
-      anatomicalSection(
-        [
-          { y: -0.5, width: 0.38, depth: 0.42 },
-          { y: -0.15, width: 0.44, depth: 0.47 },
-          { y: 0.22, width: 0.5, depth: 0.5 },
-          { y: 0.38, width: 0.46, depth: 0.45 },
-          { y: 0.5, width: 0.22, depth: 0.25 },
-        ],
-        10,
-      ),
+      athleticTorsoSurface(
+        anatomicalSection(
+          [
+            { y: -0.5, width: 0.38, depth: 0.42 },
+            { y: -0.15, width: 0.44, depth: 0.47 },
+            { y: 0.22, width: 0.5, depth: 0.5 },
+            { y: 0.38, width: 0.46, depth: 0.45 },
+            { y: 0.5, width: 0.22, depth: 0.25 },
+          ],
+          10,
+        ).translate(0, 0.5, 0),
+        0.5,
+        1,
+      ).translate(0, -0.5, 0),
     [],
   );
   const pelvisGeometry = useMemo(
     () =>
-      anatomicalSection(
-        [
-          { y: -0.5, width: 0.43, depth: 0.45 },
-          { y: 0, width: 0.5, depth: 0.5 },
-          { y: 0.5, width: 0.47, depth: 0.45 },
-        ],
-        8,
-      ),
+      footballShorts({ hipW: 1, hipH: 1, chestD: 0.47, legR: 0.306, thigh: 3.4 }, 8, {
+        waistOnly: true,
+      }),
     [],
   );
   useEffect(
     () => () => {
       torsoGeometry.dispose();
       pelvisGeometry.dispose();
-      hairGeometry.dispose();
+      Object.values(hairGeometries).forEach((geometry) => geometry.dispose());
       headGeometry.dispose();
       bootGeometry.dispose();
+      shortsGeometry.dispose();
+      Object.values(sockGeometries).forEach((geometry) => geometry.dispose());
       Object.values(limbGeometries).forEach((geometry) => geometry.dispose());
     },
-    [torsoGeometry, pelvisGeometry, limbGeometries, hairGeometry, headGeometry, bootGeometry],
+    [
+      torsoGeometry,
+      pelvisGeometry,
+      limbGeometries,
+      hairGeometries,
+      headGeometry,
+      bootGeometry,
+      shortsGeometry,
+      sockGeometries,
+    ],
   );
   useEffect(() => {
     const color = new THREE.Color();
     sim.players.slice(0, MAX_PLAYERS).forEach((player, index) => {
       const look = looks[index]!;
+      const skinColor = skinAlbedo(look.skin);
       const kit =
         player.pos === "GK"
           ? player.side === "home"
@@ -177,29 +245,30 @@ export function LowPlayers({
         refs.current[batch]?.setColorAt(i, color.set(hex));
       set("torso", index, kit.base);
       set("hips", index, kit.shorts);
-      set("head", index, look.skin);
-      set("neck", index, look.skin);
-      set("hair", index, look.hairColor);
+      set("head", index, skinColor);
+      set("neck", index, skinColor);
+      for (const family of LOW_HAIR_FAMILIES) set(family, index, look.hairColor);
       for (let side = 0; side < 2; side++) {
         const i = index * 2 + side;
-        set("arms", i, look.skin);
-        set("forearms", i, look.sleeves === "long" ? kit.base : look.skin);
-        set("hands", i, look.gloves ? look.gloveColor : look.skin);
+        set("arms", i, skinColor);
+        set("forearms", i, look.sleeves === "long" ? kit.base : skinColor);
+        set("hands", i, look.gloves ? look.gloveColor : skinColor);
         set("sleeves", i, kit.pattern === "sleeves" ? kit.detail : kit.base);
-        set("thighs", i, look.skin);
+        set("thighs", i, skinColor);
         set("shorts", i, kit.shorts);
-        set("shins", i, look.skin);
-        set("socks", i, kit.socks);
+        set("shins", i, skinColor);
+        for (const sockBatch of SOCK_BATCHES) set(sockBatch, i, kit.socks);
         set("boots", i, look.bootColor);
       }
     });
-    const count = Math.min(MAX_PLAYERS, sim.players.length);
     for (const [name, mesh] of Object.entries(refs.current)) {
-      mesh.count = BODY_BATCHES.includes(name as (typeof BODY_BATCHES)[number]) ? count : count * 2;
+      palettes.current[name as Batch] = capturePlayerPalette(mesh);
+      mesh.count = 0;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.frustumCulled = false;
     }
+    painted.current = false;
   }, [sim.players, looks, homeKit, awayKit, homeGkKit, awayGkKit]);
   useFrame(({ clock }, rawDt) => {
     // A model mounted while paused still needs its first set of matrices.
@@ -208,6 +277,12 @@ export function LowPlayers({
     painted.current = true;
     const dt = Math.min(rawDt, 0.1);
     const meshes = refs.current;
+    for (const mesh of Object.values(meshes)) mesh.count = 0;
+    const commit = (batch: Batch, source: number) => {
+      const mesh = meshes[batch];
+      const palette = palettes.current[batch];
+      if (mesh && palette) appendPlayerInstance(mesh, palette, source, part);
+    };
     const visual = visualDataFor(sim);
     const {
       root,
@@ -241,7 +316,7 @@ export function LowPlayers({
     ) => {
       position.set(x, y, z);
       scale.set(1, 1, 1);
-      quaternion.setFromEuler(euler.set(pitch, yaw, roll, "YXZ"));
+      quaternion.setFromEuler(euler.set(pitch, yaw, roll, "XYZ"));
       local.compose(position, quaternion, scale);
       out.multiplyMatrices(parent, local);
     };
@@ -256,14 +331,16 @@ export function LowPlayers({
       sy: number,
       sz: number,
     ) => {
+      if (sx === 0 || sy === 0 || sz === 0) return;
       position.set(x, y, z);
       quaternion.identity();
       scale.set(sx, sy, sz);
       local.compose(position, quaternion, scale);
       part.multiplyMatrices(parent, local);
-      meshes[batch]?.setMatrixAt(i, part);
+      commit(batch, i);
     };
     sim.players.slice(0, MAX_PLAYERS).forEach((player, index) => {
+      if (excluded?.has(player.id) || player.sentOff) return;
       const p = proportions[index]!;
       const shape = shapes[index]!;
       const look = looks[index]!;
@@ -277,34 +354,28 @@ export function LowPlayers({
         sim.possession !== player.side &&
           Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z) < 12,
       );
-      if (excluded?.has(player.id) || player.sentOff) {
-        part.makeScale(0, 0, 0);
-        for (const name of BODY_BATCHES) meshes[name]?.setMatrixAt(index, part);
-        for (const name of LIMB_BATCHES) {
-          meshes[name]?.setMatrixAt(index * 2, part);
-          meshes[name]?.setMatrixAt(index * 2 + 1, part);
-        }
-        return;
-      }
       const speed = motion.speed;
-      const clip = selectClip({
-        isGK: player.pos === "GK",
-        action: player.action,
-        speed,
-        hasBall: sim.ball.holder === player.id,
-        ballDist: Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z),
-        stamina: player.stamina,
-        defending: sim.possession !== player.side,
-        stopped: speed < 0.35,
-        seed: look.seed % 97,
-        time: sim.time,
-      });
+      const clip =
+        previewClip ??
+        selectClip({
+          isGK: player.pos === "GK",
+          action: player.action,
+          speed,
+          hasBall: sim.ball.holder === player.id,
+          ballDist: Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z),
+          stamina: player.stamina,
+          defending: sim.possession !== player.side,
+          stopped: speed < 0.35,
+          seed: look.seed % 97,
+          time: sim.time,
+        });
       const u =
-        player.action && player.actionDur > 0
+        previewAt ??
+        (player.action && player.actionDur > 0
           ? Math.max(0, Math.min(1, 1 - player.actionT / player.actionDur))
-          : (clock.elapsedTime % 1.4) / 1.4;
+          : (clock.elapsedTime % 1.4) / 1.4);
       const authored = getClip(clip)({
-        t: clock.elapsedTime,
+        t: previewAt !== undefined ? previewAt * (player.actionDur || 1.4) : clock.elapsedTime,
         u,
         speed,
         stride: Math.min(1, speed / 7),
@@ -320,6 +391,7 @@ export function LowPlayers({
             turnRate: motion.turnRate,
             stamina: player.stamina,
             hasBall: sim.ball.holder === player.id,
+            style: look.seed,
           }).pose,
           gaitWeight,
           authored,
@@ -344,15 +416,24 @@ export function LowPlayers({
         defending: sim.possession !== player.side,
       });
       const pose = clampPoseAnatomy(
-        mixPose(
-          poses[index]!,
-          clampPoseAnatomy(authored),
-          previewAt !== undefined ? 1 : 1 - Math.exp(-(player.action ? 27 : 18) * dt),
-          poses[index],
-        ),
+        poseBlenders[index]!.sample(clampPoseAnatomy(authored), dt, {
+          clip,
+          action: player.action,
+          progress: u,
+          instant: paused || previewAt !== undefined,
+        }),
+      );
+      const actionSupport = footballSupportFor(
+        player.action,
+        u,
+        p.hipW,
+        action?.action ? action.usedFoot : getDominantFoot(player.pid),
       );
       const shift =
-        Math.max(-1, Math.min(1, pose.legRPitch - pose.legLPitch)) * 0.045 * Math.min(1, speed / 4);
+        Math.max(-1, Math.min(1, pose.legRPitch - pose.legLPitch)) *
+          0.045 *
+          Math.min(1, speed / 4) +
+        actionSupport.shiftX;
       const ground = solveGroundContact({
         P: p,
         pose,
@@ -362,9 +443,14 @@ export function LowPlayers({
         leanZ: motion.leanZ,
         airborne: airborneFactor(clip, pose.hipY),
         previousRootY: rootY.current[index] ?? 0,
-        dt,
+        dt: previewAt !== undefined ? 1 : dt,
+        plantedFoot: actionSupport.plantedFoot,
+        bodyContact: actionSupport.bodyContact,
       });
       rootY.current[index] = ground.rootY;
+      pose.ankleL += ground.ankleLFix;
+      pose.ankleR += ground.ankleRFix;
+      clampPoseAnatomy(pose);
       position.set(player.x, ground.rootY, player.z);
       scale.set(1, 1, 1);
       quaternion.setFromEuler(euler.set(motion.leanX, motion.yaw, motion.leanZ, "YXZ"));
@@ -379,17 +465,7 @@ export function LowPlayers({
         pose.hipYaw,
         pose.hipRoll + shift * 1.2,
       );
-      draw(
-        "hips",
-        index,
-        hips,
-        0,
-        -p.hipH * 0.12,
-        0,
-        shape.pelvisWidth,
-        shape.pelvisHeight,
-        shape.pelvisDepth,
-      );
+      draw("hips", index, hips, 0, 0, 0, p.hipW, p.hipH, p.chestD / 0.47);
       joint(spine, hips, 0, p.hipH * 0.5, 0, pose.spine, -pose.hipYaw * 0.45, -pose.hipRoll * 0.35);
       draw(
         "torso",
@@ -407,19 +483,22 @@ export function LowPlayers({
       draw("neck", index, neck, 0, p.neckLen * 0.5, 0, p.neckR * 2, p.neckLen * 1.15, p.neckR * 2);
       joint(head, neck, 0, p.neckLen + p.headR * 0.82, 0);
       draw("head", index, head, 0, 0, 0, p.headW * 2, p.headR * 2, p.headD * 2);
-      const hairHeight = look.hairStyle === "afro" ? 1.25 : look.hairStyle === "curly" ? 1.12 : 1;
-      const hairScale = look.hairStyle === "bald" ? 0 : 1;
-      draw(
-        "hair",
-        index,
-        head,
-        0,
-        0,
-        0,
-        p.headW * 2 * hairScale,
-        p.headR * 2 * hairHeight * look.hairVolume * hairScale,
-        p.headD * 2 * hairScale,
-      );
+      const hairHeight = look.hairStyle === "afro" ? 1.13 : look.hairStyle === "buzz" ? 0.96 : 1;
+      for (const family of LOW_HAIR_FAMILIES) {
+        const hairScale =
+          look.hairStyle !== "bald" && lowHairFamily(look.hairStyle) === family ? 1 : 0;
+        draw(
+          family,
+          index,
+          head,
+          0,
+          0,
+          0,
+          p.headW * 2 * hairScale,
+          p.headR * 2 * hairHeight * look.hairVolume * hairScale,
+          p.headD * 2 * hairScale,
+        );
+      }
       for (const side of [1, -1] as const) {
         const i = index * 2 + (side === 1 ? 0 : 1);
         const left = side === 1;
@@ -476,7 +555,7 @@ export function LowPlayers({
         joint(
           thigh,
           hips,
-          side * p.hipW * 0.46,
+          side * p.hipW * 0.36,
           -p.hipH * 0.4,
           0,
           left ? pose.legLPitch : pose.legRPitch,
@@ -484,39 +563,42 @@ export function LowPlayers({
           left ? pose.legLRoll : pose.legRRoll,
         );
         draw("thighs", i, thigh, 0, -p.thigh * 0.5, 0, p.legR * 2, p.thigh, p.legR * 2);
-        draw("shorts", i, thigh, 0, -p.thigh * 0.26, 0, p.legR * 2.6, p.thigh * 0.5, p.legR * 2.6);
+        draw("shorts", i, thigh, 0, -p.thigh * 0.245, 0, p.legR * 2, p.thigh * 0.49, p.legR * 2);
         joint(shin, thigh, 0, -p.thigh, 0, -(left ? pose.kneeL : pose.kneeR));
         draw("shins", i, shin, 0, -p.shin * 0.5, 0, p.legR * 2, p.shin, p.legR * 2);
-        const sockLength =
-          look.sockHeight === "low" ? 0.35 : look.sockHeight === "high" ? 0.75 : 0.6;
-        draw(
-          "socks",
-          i,
-          shin,
-          0,
-          -p.shin * (1 - sockLength / 2),
-          0,
-          p.legR * 1.88,
-          p.shin * sockLength,
-          p.legR * 1.88,
-        );
-        joint(
-          ankle,
-          shin,
-          0,
-          -p.shin,
-          0,
-          left ? pose.ankleL + ground.ankleLFix : pose.ankleR + ground.ankleRFix,
-        );
+        const selectedSock =
+          look.sockHeight === "low"
+            ? "socksLow"
+            : look.sockHeight === "high"
+              ? "socksHigh"
+              : "socksMid";
+        for (const sockBatch of SOCK_BATCHES) {
+          const sockScale = sockBatch === selectedSock ? 1 : 0;
+          draw(
+            sockBatch,
+            i,
+            shin,
+            0,
+            0,
+            0,
+            p.legR * 2 * sockScale,
+            p.shin * sockScale,
+            p.legR * 2 * sockScale,
+          );
+        }
+        joint(ankle, shin, 0, -p.shin, 0, left ? pose.ankleL : pose.ankleR);
         draw("boots", i, ankle, 0, 0, 0, p.footH * 2, p.footH * 2, p.footLen);
       }
       position.set(player.x, 0.012, player.z);
       quaternion.setFromEuler(euler.set(-Math.PI / 2, 0, -motion.yaw));
       scale.set(0.29 + ground.stanceSpread * 0.09, 0.39 + ground.stanceSpread * 0.16, 1);
       part.compose(position, quaternion, scale);
-      meshes.shadow?.setMatrixAt(index, part);
+      commit("shadow", index);
     });
-    for (const mesh of Object.values(meshes)) mesh.instanceMatrix.needsUpdate = true;
+    for (const mesh of Object.values(meshes)) {
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.visible = mesh.count > 0;
+    }
   });
   return (
     <group ref={censusRef("playerLow")}>
@@ -560,10 +642,14 @@ export function LowPlayers({
             createElement("primitive", { object: headGeometry, attach: "geometry" })
           ) : name === "boots" ? (
             createElement("primitive", { object: bootGeometry, attach: "geometry" })
+          ) : name === "shorts" ? (
+            createElement("primitive", { object: shortsGeometry, attach: "geometry" })
+          ) : sockGeometries[name] ? (
+            createElement("primitive", { object: sockGeometries[name], attach: "geometry" })
           ) : name === "hands" ? (
             <sphereGeometry args={[0.5, 10, 8]} />
-          ) : name === "hair" ? (
-            createElement("primitive", { object: hairGeometry, attach: "geometry" })
+          ) : hairGeometries[name] ? (
+            createElement("primitive", { object: hairGeometries[name], attach: "geometry" })
           ) : name === "neck" ? (
             <cylinderGeometry args={[0.4, 0.5, 1, 8]} />
           ) : name === "shadow" ? (

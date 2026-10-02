@@ -1,5 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import {
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  Coins,
+  ClipboardList,
+  Dumbbell,
+  HeartPulse,
+  LayoutGrid,
+  Play,
+  ShieldAlert,
+  ArrowLeftRight,
+  Trophy,
+} from "lucide-react";
+import type { CareerState } from "@/game/types";
 
 import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
@@ -12,17 +27,16 @@ import {
   HudChip,
   HudRing,
   HudStat,
-  SparkBars,
   Sparkline,
   toneFor,
 } from "@/components/ui/hud";
-import { CLUBS } from "@/game/data/leagues";
+import { CLUBS, getLeague } from "@/game/data/leagues";
 import { FORMATIONS, MENTALITIES, PRESSING, TEMPOS, WIDTHS } from "@/game/formations";
 import { formatMoney, wageBill } from "@/game/economy";
 import { formOf } from "@/game/events";
+import { drillDoneThisRound } from "@/game/training-drills";
 import { computeTable, nextFixture } from "@/game/season";
 import { useCareer } from "@/hooks/useCareer";
-import { GuestCloudPrompt } from "@/components/GuestCloudPrompt";
 import { ClubHeritagePanel, ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
 
 export const Route = createFileRoute("/dashboard")({
@@ -58,10 +72,11 @@ function Dashboard() {
     return (
       <NoCareer hint="Escolha um clube, monte o elenco e comande a temporada inteira em 3D." />
     );
+
   return <DashboardContent key={`${career.clubId}:${career.season}`} career={career} />;
 }
 
-function DashboardContent({ career }: { career: NonNullable<ReturnType<typeof useCareer>["career"]> }) {
+function DashboardContent({ career }: { career: CareerState }) {
   const club = CLUBS[career.clubId]!;
   const fixture = nextFixture(career);
   const atHome = fixture ? fixture.home === career.clubId : false;
@@ -71,7 +86,6 @@ function DashboardContent({ career }: { career: NonNullable<ReturnType<typeof us
   const table = computeTable(career);
   const pos = table.findIndex((r) => r.clubId === career.clubId) + 1;
   const myRow = table.find((r) => r.clubId === career.clubId);
-  const oppRow = opponentId ? table.find((r) => r.clubId === opponentId) : undefined;
 
   const players = Object.values(career.players);
   const morale = players.reduce((s, p) => s + p.morale, 0) / Math.max(1, players.length);
@@ -91,168 +105,336 @@ function DashboardContent({ career }: { career: NonNullable<ReturnType<typeof us
   const goalsFor = recent.reduce((s, r) => s + r.gf, 0);
   const goalsAgainst = recent.reduce((s, r) => s + r.ga, 0);
   const wageWeek = wageBill(players);
-  // folha anual em M€ comparada ao caixa disponível
-  const wageYear = (wageWeek * 52) / 1000;
-  const payrollShare = Math.min(
-    100,
-    (wageYear / Math.max(0.1, wageYear + Math.max(0, career.finances.budget))) * 100,
-  );
 
   // tons por desempenho
   const formTone = toneFor(form);
   const moraleTone = toneFor(morale);
   const boardTone = toneFor(career.approval);
-  const objectiveTone: "good" | "warn" | "bad" =
-    pos > 0 && pos <= career.objective ? "good" : pos <= career.objective + 3 ? "warn" : "bad";
   const squadTone = injured + suspended >= 4 ? "bad" : injured + suspended >= 2 ? "warn" : "good";
 
   const topScorers = [...players]
     .sort((a, b) => (b.goals ?? 0) - (a.goals ?? 0) || b.ovr - a.ovr)
     .slice(0, 4);
 
-  // checklist de boas-vindas: só nas primeiras rodadas e até dispensar
-  const onboardKey = `onboard-done:${career.clubId}:${career.season}`;
-  const [onboardDone, setOnboardDone] = useState(
-    () => typeof localStorage !== "undefined" && localStorage.getItem(onboardKey) === "1",
+  const starters = career.lineup.map((id) => career.players[id]).filter((p) => p !== undefined);
+  const unavailableStarters = starters.filter((p) => p.injuryWeeks > 0 || p.suspended);
+  const availableStarters = starters.filter((p) => p.injuryWeeks === 0 && !p.suspended).length;
+  const tiredStarters = starters.filter(
+    (p) => p.condition < 65 && p.injuryWeeks === 0 && !p.suspended,
   );
+  const league = getLeague(career.leagueId);
+  const homeClub = atHome ? club : opponent;
+  const awayClub = atHome ? opponent : club;
+  const drillDone = Boolean(drillDoneThisRound(career));
+  const onboardKey = `onboard-done:${career.clubId}:${career.season}`;
+  const [onboardDone, setOnboardDone] = useState(() => {
+    try {
+      return localStorage.getItem(onboardKey) === "1";
+    } catch {
+      return false;
+    }
+  });
   const showOnboard = !onboardDone && career.round <= 4 && career.season <= 1;
-  const playedFirst = mine.length > 0;
-  const onboardSteps = [
-    { label: "Conheça seu elenco e ajuste a escalação", to: "/squad", done: false },
-    { label: "Escolha a formação e o estilo de jogo", to: "/tactics", done: false },
-    { label: "Jogue a primeira partida", to: "/match", done: playedFirst },
-  ];
 
   return (
     <GameShell career={career}>
-      <div className="mb-4">
-        <GuestCloudPrompt next="/dashboard" compact />
+      <div className="trainer-heading">
+        <div>
+          <p className="trainer-eyebrow">Sua central de decisões</p>
+          <h1>Painel do treinador</h1>
+          <p>
+            {fixture
+              ? `Prepare o ${club.name} para o próximo desafio.`
+              : `Veja o balanço da temporada do ${club.name}.`}
+          </p>
+        </div>
+        <Link to="/league" className="trainer-league-link">
+          <Trophy size={17} />
+          <span>{league.name}</span>
+          <ArrowRight size={15} />
+        </Link>
       </div>
-      {showOnboard ? (
-        <section
-          aria-label="Primeiros passos"
-          className="mb-4 rounded-2xl border border-primary/30 bg-primary/[0.05] p-4"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display text-sm uppercase tracking-wider">
-              Primeiros passos no {club.name}
+
+      <div className="trainer-summary" aria-label="Resumo da temporada">
+        <Link to="/league">
+          <span>
+            Na liga <Trophy size={16} aria-hidden="true" />
+          </span>
+          <strong>
+            {pos > 0 ? `${pos}º` : "—"}
+            <small>{myRow?.pts ?? 0} pontos</small>
+          </strong>
+          <p>Meta: {career.objective}º ou melhor</p>
+        </Link>
+        <Link to="/finances">
+          <span>
+            Caixa disponível <Coins size={16} aria-hidden="true" />
+          </span>
+          <strong>{formatMoney(career.finances.budget)}</strong>
+          <p>
+            Gerenciar orçamento <ArrowRight size={12} />
+          </p>
+        </Link>
+        <Link to="/squad">
+          <span>
+            Condição do elenco <HeartPulse size={16} aria-hidden="true" />
+          </span>
+          <strong>
+            {Math.round(
+              players.reduce((sum, p) => sum + p.condition, 0) / Math.max(1, players.length),
+            )}
+            <small>/ 100</small>
+          </strong>
+          <p>
+            {injured + suspended
+              ? `${injured} lesionados · ${suspended} suspensos`
+              : `${players.length} jogadores disponíveis`}
+          </p>
+        </Link>
+        <Link to="/board">
+          <span>
+            Confiança da diretoria <ClipboardList size={16} aria-hidden="true" />
+          </span>
+          <strong>
+            {Math.round(career.approval)}
+            <small>%</small>
+          </strong>
+          <p>
+            {pos <= career.objective
+              ? "Dentro do objetivo da temporada"
+              : "Acompanhar os objetivos"}
+          </p>
+        </Link>
+      </div>
+
+      <div className="trainer-match-grid">
+        <section className="trainer-match-card" aria-labelledby="next-match-title">
+          <div className="trainer-match-top">
+            <h2 id="next-match-title">
+              <CalendarDays size={17} />
+              Próximo jogo
             </h2>
+            <span>
+              {fixture
+                ? `Rodada ${fixture.round} · ${atHome ? "Em casa" : "Fora de casa"}`
+                : "Balanço da temporada"}
+            </span>
+          </div>
+          {fixture && homeClub && awayClub ? (
+            <>
+              <div className="trainer-match-teams">
+                <div>
+                  <Crest club={homeClub} size={68} />
+                  <span>Mandante</span>
+                  <h3>{homeClub.name}</h3>
+                </div>
+                <div className="trainer-match-vs">
+                  <span>VS</span>
+                  <small>{league.name}</small>
+                </div>
+                <div>
+                  <Crest club={awayClub} size={68} />
+                  <span>Visitante</span>
+                  <h3>{awayClub.name}</h3>
+                </div>
+              </div>
+              <div className="trainer-match-footer">
+                <p>
+                  <span className="trainer-live-dot" />
+                  {unavailableStarters.length
+                    ? `${unavailableStarters.length} titular(es) indisponível(is). Revise a escalação.`
+                    : availableStarters < 11
+                      ? "Complete os 11 titulares antes de entrar em campo."
+                      : tiredStarters.length
+                        ? `${tiredStarters.length} titular(es) cansado(s). Confira a condição da equipe.`
+                        : "Escalação completa. Sua equipe está pronta."}
+                </p>
+                <div>
+                  <Link to="/tactics" className="career-secondary-button">
+                    <LayoutGrid size={16} />
+                    Preparar equipe
+                  </Link>
+                  <Link to="/match" className="career-primary-button">
+                    <Play size={16} />
+                    Ir para o jogo
+                  </Link>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="trainer-season-end">
+              <Trophy size={40} />
+              <h3>Temporada encerrada</h3>
+              <p>Confira os resultados e a evolução do seu clube.</p>
+              <Link to="/league" className="career-primary-button">
+                Ver classificação <ArrowRight size={16} />
+              </Link>
+            </div>
+          )}
+        </section>
+
+        <section className="trainer-preparation" aria-labelledby="preparation-title">
+          <div className="trainer-section-heading">
+            <h2 id="preparation-title">Antes de entrar em campo</h2>
+            <span className="trainer-preparation-count">Rodada {career.round}</span>
+          </div>
+          <Link to="/squad" className="trainer-task">
+            <span
+              className={
+                availableStarters === 11
+                  ? "trainer-task-icon is-ready"
+                  : "trainer-task-icon is-warning"
+              }
+            >
+              {availableStarters === 11 ? <CheckCircle2 size={19} /> : <ShieldAlert size={19} />}
+            </span>
+            <div>
+              <strong>Confira a escalação</strong>
+              <p>{availableStarters}/11 titulares disponíveis</p>
+            </div>
+            <ArrowRight size={16} />
+          </Link>
+          <Link to="/tactics" className="trainer-task">
+            <span className="trainer-task-icon">
+              <LayoutGrid size={19} />
+            </span>
+            <div>
+              <strong>Defina seu plano de jogo</strong>
+              <p>
+                {career.tactics.formation} · {MENTALITIES[career.tactics.mentality]}
+              </p>
+            </div>
+            <ArrowRight size={16} />
+          </Link>
+          <Link to="/training" className="trainer-task">
+            <span className={`trainer-task-icon ${drillDone ? "is-ready" : ""}`}>
+              <Dumbbell size={19} />
+            </span>
+            <div>
+              <strong>Prepare o time no treino</strong>
+              <p>
+                {drillDone ? "Exercício da rodada concluído" : "Exercício da rodada disponível"}
+              </p>
+            </div>
+            <ArrowRight size={16} />
+          </Link>
+          <p className="trainer-preparation-note">
+            Uma boa preparação começa fora das quatro linhas.
+          </p>
+        </section>
+      </div>
+
+      {(unavailableStarters.length > 0 || tiredStarters.length > 0 || unhappy > 0) && (
+        <aside className="trainer-attention" aria-label="Atenção ao elenco">
+          <HeartPulse size={20} />
+          <div>
+            <strong>O elenco precisa da sua atenção</strong>
+            <p>
+              {[
+                unavailableStarters.length
+                  ? `Indisponíveis na escalação: ${unavailableStarters.map((p) => p.name).join(", ")}`
+                  : "",
+                tiredStarters.length
+                  ? `${tiredStarters.length} titular(es) com condição abaixo de 65%`
+                  : "",
+                unhappy ? `${unhappy} jogador(es) insatisfeito(s)` : "",
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          </div>
+          <Link to="/squad">
+            Revisar elenco <ArrowRight size={15} />
+          </Link>
+        </aside>
+      )}
+
+      <nav className="trainer-quick-actions" aria-label="Atalhos do clube">
+        <Link to="/squad">
+          <ClipboardList size={20} aria-hidden="true" />
+          <span>
+            <strong>Gerenciar elenco</strong>
+            <small>Titulares e reservas</small>
+          </span>
+          <ArrowRight size={15} aria-hidden="true" />
+        </Link>
+        <Link to="/training">
+          <Dumbbell size={20} aria-hidden="true" />
+          <span>
+            <strong>Centro de treino</strong>
+            <small>Evolução da equipe</small>
+          </span>
+          <ArrowRight size={15} aria-hidden="true" />
+        </Link>
+        <Link to="/transfers">
+          <ArrowLeftRight size={20} aria-hidden="true" />
+          <span>
+            <strong>Buscar reforços</strong>
+            <small>Mercado e propostas</small>
+          </span>
+          <ArrowRight size={15} aria-hidden="true" />
+        </Link>
+        <Link to="/finances">
+          <Coins size={20} aria-hidden="true" />
+          <span>
+            <strong>Finanças do clube</strong>
+            <small>Receitas e despesas</small>
+          </span>
+          <ArrowRight size={15} aria-hidden="true" />
+        </Link>
+      </nav>
+
+      {showOnboard && (
+        <details className="trainer-onboarding">
+          <summary>
+            <span>Começando sua carreira?</span>
+            <span>Veja os 3 primeiros passos</span>
+          </summary>
+          <div>
+            <ol>
+              <li>
+                <Link to="/squad">
+                  1. Conheça os jogadores e escolha os titulares <ArrowRight size={14} />
+                </Link>
+              </li>
+              <li>
+                <Link to="/tactics">
+                  2. Ajuste a formação e o estilo de jogo <ArrowRight size={14} />
+                </Link>
+              </li>
+              <li>
+                <Link to="/match">
+                  3. Entre em campo para a primeira partida <ArrowRight size={14} />
+                </Link>
+              </li>
+            </ol>
             <button
               type="button"
               onClick={() => {
-                localStorage.setItem(onboardKey, "1");
+                try {
+                  localStorage.setItem(onboardKey, "1");
+                } catch {
+                  /* The current visit can still dismiss the guide. */
+                }
                 setOnboardDone(true);
               }}
-              className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
             >
-              Dispensar
+              Já conheço o jogo
             </button>
           </div>
-          <ol className="mt-3 grid gap-2 sm:grid-cols-3">
-            {onboardSteps.map((s, idx) => (
-              <li key={s.to}>
-                <Link
-                  to={s.to}
-                  className={`flex min-h-[44px] items-center gap-2.5 rounded-xl border px-3 py-2 text-sm transition-colors ${
-                    s.done
-                      ? "border-primary/30 bg-primary/10 text-muted-foreground line-through"
-                      : "border-border/60 bg-background/60 hover:border-primary/50 hover:text-primary"
-                  }`}
-                >
-                  <span
-                    className={`hud-num flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                      s.done ? "bg-primary text-primary-foreground" : "bg-foreground/10"
-                    }`}
-                  >
-                    {s.done ? "✓" : idx + 1}
-                  </span>
-                  {s.label}
-                </Link>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+        </details>
+      )}
+
+      <div className="trainer-section-heading trainer-overview-heading">
         <div>
-          <h1 className="font-display text-2xl uppercase sm:text-3xl">Painel do treinador</h1>
-          <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
-            {club.name} · Temporada {career.season} · Rodada {career.round}
-          </p>
+          <p className="trainer-eyebrow">Visão do clube</p>
+          <h2>Acompanhe sua temporada</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <HudStat
-            label="Posição"
-            value={pos > 0 ? `${pos}º` : "—"}
-            hint={`Objetivo ${career.objective}º`}
-            tone={objectiveTone}
-          />
-          <HudStat
-            label="Caixa"
-            value={formatMoney(career.finances.budget)}
-            hint={`Folha €${wageWeek.toLocaleString("pt-BR")}k/sem`}
-          />
-        </div>
+        <Link to="/club">
+          Central do clube <ArrowRight size={15} />
+        </Link>
       </div>
-
-      <div className="mt-5 grid items-start gap-4 hud-stagger md:grid-cols-2 lg:grid-cols-3">
-        {/* Próxima partida — cartão herói */}
-        <HudCard
-          title="Próxima partida"
-          tone={fixture ? "good" : "neutral"}
-          className="md:col-span-2"
-          badge={
-            fixture ? (
-              <HudChip>
-                {atHome ? "Em casa" : "Fora"} · Rodada {fixture.round}
-              </HudChip>
-            ) : null
-          }
-        >
-          {opponent && fixture ? (
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-              <div className="flex flex-1 items-center justify-between gap-4">
-                <div className="flex min-w-0 flex-col items-center gap-2 text-center">
-                  <Crest club={club} size={56} />
-                  <p className="truncate font-display text-sm uppercase">{club.name}</p>
-                  <p className="hud-num text-[10px] text-muted-foreground">
-                    {myRow ? `${myRow.pts} pts · ${pos}º` : "—"}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="font-display text-3xl italic text-muted-foreground">VS</p>
-                  <p className="hud-num mt-1 text-[10px] uppercase text-muted-foreground">
-                    {atHome ? "Mando seu" : "Mando do rival"}
-                  </p>
-                </div>
-                <div className="flex min-w-0 flex-col items-center gap-2 text-center">
-                  <Crest club={opponent} size={56} />
-                  <p className="truncate font-display text-sm uppercase">{opponent.name}</p>
-                  <p className="hud-num text-[10px] text-muted-foreground">
-                    {oppRow ? `${oppRow.pts} pts` : "—"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-col gap-3 sm:w-48">
-                <Link
-                  to="/match"
-                  className="grid min-h-[44px] place-items-center rounded-xl bg-primary px-4 font-display text-sm uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.02] motion-reduce:transform-none"
-                >
-                  Jogar agora
-                </Link>
-                <Link
-                  to="/tactics"
-                  className="grid min-h-[44px] place-items-center rounded-xl border border-border px-4 font-display text-sm uppercase tracking-wider transition-colors hover:border-primary/60"
-                >
-                  Ajustar tática
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Temporada encerrada.</p>
-          )}
-        </HudCard>
-
+      <div className="trainer-club-grid grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
         {/* Forma recente */}
         <HudCard
           title="Forma recente"
@@ -278,7 +460,7 @@ function DashboardContent({ career }: { career: NonNullable<ReturnType<typeof us
 
         {/* Finanças */}
         <HudCard
-          title="Finanças"
+          title="Finanças do clube"
           tone={career.finances.budget > 0 ? "good" : "bad"}
           action={
             <Link to="/finances" className="text-[10px] font-bold uppercase text-tone">
@@ -289,19 +471,22 @@ function DashboardContent({ career }: { career: NonNullable<ReturnType<typeof us
           <p className="hud-num text-3xl font-bold text-foreground">
             {formatMoney(career.finances.budget)}
           </p>
-          <SparkBars className="mt-3" data={[3, 5, 4, 6, 5, 7, 6, 8]} />
-          <div className="mt-3">
-            <HudBar label="Peso da folha" value={payrollShare} />
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Patrocínio {formatMoney(career.sponsor)} · Folha €{wageWeek.toLocaleString("pt-BR")}
-            k/sem
-          </p>
+          <p className="mt-2 text-xs text-muted-foreground">Orçamento para administrar seu clube</p>
+          <dl className="mt-4 space-y-2 text-xs">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Folha semanal</dt>
+              <dd className="hud-num">{formatMoney(wageWeek / 1000)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Patrocínio por rodada</dt>
+              <dd className="hud-num">{formatMoney(career.sponsor)}</dd>
+            </div>
+          </dl>
         </HudCard>
 
         {/* Elenco */}
         <HudCard
-          title="Elenco principal"
+          title="Saúde do elenco"
           tone={squadTone}
           className="md:col-span-2"
           action={
@@ -420,7 +605,7 @@ function DashboardContent({ career }: { career: NonNullable<ReturnType<typeof us
 
         {/* Histórico de jogos */}
         <HudCard
-          title="Últimos jogos"
+          title="Resultados recentes"
           tone="neutral"
           action={
             <Link to="/history" className="text-[10px] font-bold uppercase text-tone">

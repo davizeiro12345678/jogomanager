@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { anatomicalLimb } from "./rig-geometry";
+import { anatomicalLimb, anatomicalSection, neckSurface, palmSurface } from "./rig-geometry";
 import { buildRigSkin, countRigSkin } from "./rig-skin";
 import { HERO_MESH_COST } from "./draw-budget";
 import { lookFor, proportionsFor, type HairStyle } from "./player-model";
@@ -18,6 +18,95 @@ const look = lookFor("studio-fla-MF-1", "MF", true);
 const P = proportionsFor(look);
 
 describe("sculpted football player", () => {
+  it("retains formal shirt and lapels when merging the staff costume into the animated rig", () => {
+    const base = playerMaterials(look, kit, null, "alta");
+    const mats = { ...base, trim: base.bootAccent };
+    const context = {
+      P,
+      look,
+      mats,
+      hi: true,
+      segs: { radial: 16, cap: 4 },
+      handR: P.handR,
+      handMat: mats.skin,
+      jerseyInk: "#fff",
+      trousers: true,
+    };
+    const plain = buildRigSkin(context, [0, 0, 0], { mergeLods: true });
+    const formal = buildRigSkin({ ...context, staffStyle: "jacket" }, [0, 0, 0], {
+      mergeLods: true,
+    });
+    const trimVertices = (skin: typeof formal) =>
+      skin.groups
+        .filter((group) => group.material === mats.trim)
+        .reduce((sum, group) => sum + group.geometry.getAttribute("position").count, 0);
+    expect(trimVertices(formal)).toBeGreaterThan(trimVertices(plain));
+    expect(countRigSkin(formal)).toBeLessThanOrEqual(HERO_MESH_COST);
+    for (const group of formal.groups) {
+      expect(group.geometry.getIndex()?.count).toBeGreaterThan(0);
+      expect(Array.from(group.geometry.getAttribute("position").array).every(Number.isFinite)).toBe(
+        true,
+      );
+    }
+    plain.dispose();
+    formal.dispose();
+  });
+  it("refines neck and palm volume while preserving attachment landmarks and topology", () => {
+    for (const part of ["neck", "palm"] as const) {
+      const geometry = anatomicalSection(
+        part === "neck"
+          ? [
+              { y: 0, width: P.neckR, depth: P.neckR * 0.92 },
+              { y: P.neckLen * 0.65, width: P.neckR * 0.83, depth: P.neckR * 0.8 },
+              { y: P.neckLen * 1.25, width: P.neckR * 0.93, depth: P.neckR * 0.86 },
+            ]
+          : [
+              { y: -P.handR * 1.5, width: P.handR * 0.67, depth: P.handR * 0.27 },
+              { y: -P.handR * 0.85, width: P.handR * 0.77, depth: P.handR * 0.34 },
+              { y: P.handR * 0.08, width: P.handR * 0.54, depth: P.handR * 0.31 },
+            ],
+        16,
+      );
+      const original = geometry.getAttribute("position").clone();
+      if (part === "neck") neckSurface(geometry, P.neckR, P.neckLen);
+      else palmSurface(geometry, P.handR, 1);
+      const points = geometry.getAttribute("position");
+      expect(points.count).toBe(original.count);
+      let volumeChanged = false;
+      for (let i = 0; i < points.count; i++) {
+        expect(points.getX(i)).toBe(original.getX(i));
+        expect(points.getY(i)).toBe(original.getY(i));
+        const delta = Math.abs(points.getZ(i) - original.getZ(i));
+        expect(delta).toBeLessThan(0.006);
+        volumeChanged ||= delta > 0.00001;
+      }
+      expect(volumeChanged).toBe(true);
+      expect(Array.from(geometry.getAttribute("normal").array).every(Number.isFinite)).toBe(true);
+      geometry.dispose();
+    }
+  });
+  it("bakes natural complexion without seams, new material groups or a different skull", () => {
+    const detailed = sculptedHead(P, look.seed);
+    const light = sculptedHead(P, look.seed, false);
+    for (const geometry of [detailed, light]) {
+      const colors = geometry.getAttribute("color");
+      const positions = geometry.getAttribute("position");
+      expect(colors.count).toBe(positions.count);
+      expect(
+        Array.from(colors.array).every(
+          (value) => Number.isFinite(value) && value >= 0.8 && value <= 1,
+        ),
+      ).toBe(true);
+      expect(Math.min(...Array.from(colors.array))).toBeLessThan(0.94);
+      const columns = geometry === detailed ? 96 : 18;
+      for (let row = 0; row < colors.count; row += columns + 1) {
+        for (const component of ["getX", "getY", "getZ"] as const)
+          expect(colors[component](row)).toBeCloseTo(colors[component](row + columns), 6);
+      }
+      expect(geometry.groups).toHaveLength(0);
+      geometry.dispose();
+    }
+  });
   it("preserves adult skull height and a tapered jaw with finite outward normals", () => {
     const geometry = sculptedHead(P, look.seed);
     geometry.computeBoundingBox();

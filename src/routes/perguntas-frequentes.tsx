@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { PublicLinks } from "@/components/PublicLinks";
 import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
+import { CommunityInvite } from "@/components/CommunityInvite";
 
 const PATH = "/perguntas-frequentes";
 const TITLE =
@@ -24,8 +25,31 @@ export const Route = createFileRoute("/perguntas-frequentes")({
 });
 
 const QA = [
+  [
+    "Como participo da comunidade?",
+    "Use o convite do Discord disponível nesta página. Você pode trocar táticas, encontrar adversários e compartilhar sugestões sobre o jogo.",
+  ],
+  [
+    "Esqueci minha senha. Como volto à conta?",
+    "Abra a página de entrada, selecione Esqueci minha senha e informe seu e-mail. Se houver uma conta associada, você receberá as instruções; confira também o spam.",
+  ],
+  [
+    "Posso limpar o navegador sem perder a carreira?",
+    "Exporte uma cópia no editor e confirme que o save foi sincronizado antes de limpar os dados. Uma carreira de convidado depende dos dados locais desse navegador.",
+  ],
+  [
+    "Como relatar um problema?",
+    "Na página de contato, escolha o assunto. Informe aparelho, navegador, página e passos que levam à falha. Evite publicar e-mail, comprovantes ou dados da conta no Discord.",
+  ],
+  [
+    "As sugestões entram automaticamente no jogo?",
+    "Sugestões da comunidade precisam ser avaliadas. Personalizações feitas no editor pertencem ao seu jogo e não alteram a base dos outros jogadores.",
+  ],
   ["Preciso instalar alguma coisa?", "Não. O jogo roda no navegador, em computador ou celular."],
-  ["É gratuito?", "Sim, todo o jogo é gratuito."],
+  [
+    "É gratuito?",
+    "Você pode jogar gratuitamente. A loja oferece compras opcionais; confira a descrição e o preço de cada produto antes de comprar.",
+  ],
   [
     "Preciso criar conta?",
     "Não. Jogando como convidado, a carreira fica salva no próprio aparelho. Criar conta é opcional e serve para salvar na nuvem e continuar em outro dispositivo.",
@@ -79,6 +103,7 @@ function Page() {
           </Link>
         </div>
 
+        <CommunityInvite compact />
         <PublicLinks exclude={PATH} />
       </div>
     </div>

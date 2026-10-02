@@ -2,12 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
 import { NoCareer } from "@/components/game/screen-kit";
-import { Crest } from "@/components/game/Crest";
+import { CompetitionRules } from "@/components/game/CompetitionRules";
+import { LeagueStandings } from "@/components/game/LeagueStandings";
 import { HudCard, HudChip, HudStat, SparkBars, Sparkline, toneFor } from "@/components/ui/hud";
 
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { computeTable, roundFixtures } from "@/game/season";
-import { hasPyramid, pyramidZones, slotsFor } from "@/game/pyramid";
+import { pyramidZones } from "@/game/pyramid";
+import { calendarYear } from "@/game/competition-regulations";
 import { useCareer } from "@/hooks/useCareer";
 import { Flag } from "@/components/game/Flag";
 
@@ -20,7 +22,7 @@ export const Route = createFileRoute("/league")({
       {
         name: "description",
         content:
-          "Tabela de classificação, calendário de jogos e zonas de acesso e rebaixamento da sua liga no Pro Football Manager 3D.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       {
         property: "og:title",
@@ -29,7 +31,7 @@ export const Route = createFileRoute("/league")({
       {
         property: "og:description",
         content:
-          "Tabela de classificação, calendário de jogos e zonas de acesso e rebaixamento da sua liga no Pro Football Manager 3D.",
+          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -39,7 +41,7 @@ export const Route = createFileRoute("/league")({
 });
 
 function LeaguePage() {
-  const { career, update } = useCareer();
+  const { career } = useCareer();
   if (!career) return <NoCareer />;
 
   const league = getLeague(career.leagueId);
@@ -47,12 +49,12 @@ function LeaguePage() {
   const fixtures = roundFixtures(career, career.round);
   const lastRound = career.round > 1 ? roundFixtures(career, career.round - 1) : [];
 
-  const linked = hasPyramid(career.leagueId);
-  const slots = linked ? slotsFor(career.leagueId, career.pyramidSlots) : 0;
-  const zones = pyramidZones(career.leagueId, table.length, career.pyramidSlots, career.season);
-  const accessCount = zones.filter((zone) => zone === "acesso").length;
-  const relegationCount = zones.filter((zone) => zone === "rebaixamento").length;
-  const maxSlots = Math.max(1, Math.min(8, Math.floor(table.length / 2) || 1));
+  const zones = pyramidZones(
+    career.leagueId,
+    table.length,
+    career.pyramidSlots,
+    career.calendarYear ?? career.season,
+  );
 
   const zoneOf = (index: number): "acesso" | "rebaixamento" | null => {
     const zone = zones[index];
@@ -85,7 +87,7 @@ function LeaguePage() {
             <Flag league={league.id} country={league.country} size={28} /> {league.name}
           </h1>
           <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
-            Temporada {career.season} · Rodada {career.round}
+            {calendarYear(career)} · Temporada {career.season} · Rodada {career.round}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-4">
@@ -127,106 +129,10 @@ function LeaguePage() {
         </div>
       </div>
 
-      {linked && (
-        <HudCard title="Acesso e rebaixamento" tone="neutral" className="mt-5">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
-            <p className="flex-1 text-muted-foreground">
-              {accessCount > 0 ? `${accessCount} vaga(s) de acesso. ` : ""}
-              {relegationCount > 0 ? `${relegationCount} vaga(s) de rebaixamento. ` : ""}
-              Com grupos paralelos, as vagas giram entre os grupos a cada temporada.
-            </p>
-            <label className="flex items-center gap-2">
-              <span className="text-muted-foreground">Vagas</span>
-              <input
-                type="number"
-                min={1}
-                max={maxSlots}
-                value={slots}
-                onChange={(e) => {
-                  const next = Math.max(
-                    1,
-                    Math.min(maxSlots, Math.round(Number(e.target.value) || 1)),
-                  );
-                  update({ ...career, pyramidSlots: next });
-                }}
-                className="h-11 w-20 rounded-lg border border-border/60 bg-background px-3 text-center font-display"
-                aria-label="Número de vagas de acesso e rebaixamento"
-              />
-            </label>
-          </div>
-        </HudCard>
-      )}
+      <CompetitionRules career={career} />
 
-      <div className="mt-4 grid items-start gap-4 hud-stagger lg:grid-cols-[1.4fr_1fr]">
-        <HudCard
-          title="Classificação"
-          bodyClassName="-mx-4 -mb-4 overflow-hidden sm:-mx-5 sm:-mb-5"
-        >
-          <table className="w-full text-sm">
-            <thead className="bg-foreground/[0.05] text-[10px] uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="p-2 text-left">#</th>
-                <th className="p-2 text-left">Clube</th>
-                <th className="p-2">J</th>
-                <th className="p-2">V</th>
-                <th className="p-2">E</th>
-                <th className="p-2">D</th>
-                <th className="p-2">SG</th>
-                <th className="p-2">P</th>
-              </tr>
-            </thead>
-            <tbody>
-              {table.map((r, i) => {
-                const club = CLUBS[r.clubId]!;
-                const mine = r.clubId === career.clubId;
-                const zone = zoneOf(i);
-                return (
-                  <tr
-                    key={r.clubId}
-                    className={`border-t border-border/40 transition-colors hover:bg-foreground/[0.04] ${
-                      mine ? "bg-primary/10 font-semibold" : ""
-                    }`}
-                  >
-                    <td className="hud-num p-2 text-muted-foreground">
-                      <span className="flex items-center gap-2">
-                        <span
-                          aria-hidden
-                          className={`h-5 w-1 rounded-full ${
-                            zone === "acesso"
-                              ? "bg-primary"
-                              : zone === "rebaixamento"
-                                ? "bg-destructive"
-                                : "bg-transparent"
-                          }`}
-                        />
-                        <span className="sr-only">
-                          {zone === "acesso"
-                            ? "Zona de acesso."
-                            : zone === "rebaixamento"
-                              ? "Zona de rebaixamento."
-                              : ""}
-                        </span>
-                        {i + 1}
-                      </span>
-                    </td>
-                    <td className="p-2">
-                      <span className="flex items-center gap-2">
-                        <Crest club={club} size={20} />
-                        <span className="truncate">{club.name}</span>
-                      </span>
-                    </td>
-                    <td className="hud-num p-2 text-center text-muted-foreground">{r.p}</td>
-                    <td className="hud-num p-2 text-center">{r.w}</td>
-                    <td className="hud-num p-2 text-center">{r.d}</td>
-                    <td className="hud-num p-2 text-center">{r.l}</td>
-                    <td className="hud-num p-2 text-center">{r.gf - r.ga}</td>
-                    <td className="hud-num p-2 text-center font-bold">{r.pts}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </HudCard>
+      <div className="mt-4 grid items-start gap-4 hud-stagger xl:grid-cols-[minmax(0,1fr)_290px]">
+        <LeagueStandings career={career} table={table} />
 
         <div className="space-y-4">
           <HudCard
@@ -248,22 +154,22 @@ function LeaguePage() {
             title={`Rodada ${career.round}`}
             badge={<HudChip>{fixtures.length} jogos</HudChip>}
           >
-          <ul className="space-y-2 text-sm">
-            {fixtures.map((f) => (
-              <li
-                key={`${f.home}-${f.away}`}
-                className={`flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-foreground/[0.03] px-3 py-2 ${
-                  f.home === career.clubId || f.away === career.clubId ? "border-primary/50" : ""
-                }`}
-              >
-                <span className="flex-1 truncate">{CLUBS[f.home]?.short}</span>
-                <span className="hud-num rounded-md border border-border px-2 py-0.5 text-xs font-bold">
-                  {f.homeGoals === null ? "x" : `${f.homeGoals} - ${f.awayGoals}`}
-                </span>
-                <span className="flex-1 truncate text-right">{CLUBS[f.away]?.short}</span>
-              </li>
-            ))}
-          </ul>
+            <ul className="space-y-2 text-sm">
+              {fixtures.map((f) => (
+                <li
+                  key={`${f.home}-${f.away}`}
+                  className={`flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-foreground/[0.03] px-3 py-2 ${
+                    f.home === career.clubId || f.away === career.clubId ? "border-primary/50" : ""
+                  }`}
+                >
+                  <span className="flex-1 truncate">{CLUBS[f.home]?.short}</span>
+                  <span className="hud-num rounded-md border border-border px-2 py-0.5 text-xs font-bold">
+                    {f.homeGoals === null ? "x" : `${f.homeGoals} - ${f.awayGoals}`}
+                  </span>
+                  <span className="flex-1 truncate text-right">{CLUBS[f.away]?.short}</span>
+                </li>
+              ))}
+            </ul>
           </HudCard>
 
           {lastRound.length > 0 && (
@@ -287,7 +193,10 @@ function LeaguePage() {
                           <li key={i} className={e.side === "away" ? "ml-auto" : ""}>
                             <span className="hud-num">{e.minute}&apos;</span>{" "}
                             {e.kind === "vermelho" ? (
-                              <span className="inline-block h-2.5 w-2 rounded-[1px] bg-destructive align-middle" aria-label="Cartão vermelho" />
+                              <span
+                                className="inline-block h-2.5 w-2 rounded-[1px] bg-destructive align-middle"
+                                aria-label="Cartão vermelho"
+                              />
                             ) : e.kind === "penalti" ? (
                               "Gol (pên.)"
                             ) : e.kind === "gol_contra" ? (

@@ -1,103 +1,27 @@
-import { CLUBS, LEAGUES } from "./data/leagues";
+import { CLUBS, LEAGUES, getLeague } from "./data/leagues";
 import { makeRng } from "./rng";
+import { competitionScore } from "./competition-match";
 import { shootoutWinner, solvePenalty, type ShootoutKick } from "./sim-rules";
+import {
+  calendarYear,
+  CONTINENTAL_NAMES,
+  SECONDARY_NAMES,
+  countryRegulation,
+  type Confederation,
+} from "./competition-regulations";
+import {
+  countryOfClub,
+  sameClub,
+  primaryCompetitionId,
+  secondaryCompetitionId,
+  nationalCompetitionId,
+  seasonTables,
+  resolveQualifications,
+} from "./competition-season";
+import { simulateDivisionTable } from "./standings";
+import { intercontinentalField, worldCupField } from "./competition-fields";
 import type { CareerState, CupGroup, CupGroupMatch, CupState, CupTie } from "./types";
-
-/** Nomes de copa por país (fallback genérico). */
-const CUP_NAMES: Record<string, string> = {
-  Brasil: "Copa do Brasil",
-  Inglaterra: "FA Cup",
-  Espanha: "Copa del Rey",
-  Itália: "Coppa Italia",
-  Alemanha: "DFB-Pokal",
-  França: "Coupe de France",
-  Portugal: "Taça de Portugal",
-  Holanda: "KNVB Beker",
-  Argentina: "Copa Argentina",
-  México: "Copa MX",
-  "Estados Unidos": "US Open Cup",
-};
-
-/** Competição continental por país. */
-const CONTINENTAL: Record<string, string> = {
-  Brasil: "Copa Libertadores",
-  Argentina: "Copa Libertadores",
-  Uruguai: "Copa Libertadores",
-  Chile: "Copa Libertadores",
-  Colômbia: "Copa Libertadores",
-  Peru: "Copa Libertadores",
-  Equador: "Copa Libertadores",
-  Paraguai: "Copa Libertadores",
-  Bolívia: "Copa Libertadores",
-  Venezuela: "Copa Libertadores",
-};
-
-const EUROPE = new Set([
-  "Inglaterra",
-  "Espanha",
-  "Itália",
-  "Alemanha",
-  "França",
-  "Portugal",
-  "Holanda",
-  "Bélgica",
-  "Turquia",
-  "Escócia",
-  "Grécia",
-  "Suíça",
-  "Áustria",
-  "Dinamarca",
-  "Noruega",
-  "Suécia",
-  "Polônia",
-  "Ucrânia",
-  "Croácia",
-  "Sérvia",
-  "Tchéquia",
-  "Romênia",
-  "Rússia",
-  "Israel",
-  "Hungria",
-  "Bulgária",
-  "Eslováquia",
-  "Eslovênia",
-  "Chipre",
-  "Irlanda",
-  "Finlândia",
-  "Islândia",
-]);
-
-const AFRICA = new Set([
-  "Egito",
-  "Nigéria",
-  "África do Sul",
-  "Marrocos",
-  "Argélia",
-  "Tunísia",
-  "Gana",
-  "Quênia",
-  "Angola",
-]);
-
-function clubCountry(clubId: string): string {
-  const club = CLUBS[clubId];
-  const league = LEAGUES.find((l) => l.id === club?.league);
-  return league?.country ?? "Brasil";
-}
-
-function continentalName(country: string): string {
-  if (CONTINENTAL[country]) return CONTINENTAL[country]!;
-  if (EUROPE.has(country)) return "Champions League";
-  if (AFRICA.has(country)) return "CAF Champions League";
-  if (
-    country === "Estados Unidos" ||
-    country === "México" ||
-    country === "Canadá" ||
-    country === "Costa Rica"
-  )
-    return "CONCACAF Champions Cup";
-  return "AFC Champions League";
-}
+export { CLUB_WORLD_CUP_QUOTA } from "./competition-fields";
 
 function shuffled<T>(list: T[], rnd: () => number): T[] {
   const arr = [...list];
@@ -107,167 +31,222 @@ function shuffled<T>(list: T[], rnd: () => number): T[] {
   }
   return arr;
 }
-
 function makeTies(ids: string[], round: number): CupTie[] {
   const ties: CupTie[] = [];
-  for (let i = 0; i < ids.length; i += 2) {
+  for (let i = 0; i + 1 < ids.length; i += 2)
     ties.push({ round, home: ids[i]!, away: ids[i + 1]!, hg: null, ag: null });
-  }
   return ties;
 }
 
-/** Cria a copa nacional e o torneio continental da temporada. */
+/** O sorteio só inscreve quem obteve uma vaga; os outros continentes continuam a ser simulados. */
 export function createCups(state: CareerState): CupState[] {
-  const country = clubCountry(state.clubId);
-  const rnd = makeRng(`cup-${state.clubId}-${state.season}`);
-
-  // Copa nacional: 16 clubes do mesmo país
-  const national = LEAGUES.filter((l) => l.country === country).flatMap((l) => l.clubs);
-  const natPool = shuffled(
-    national.filter((c) => c.id !== state.clubId),
-    rnd,
-  )
-    .slice(0, 15)
-    .map((c) => c.id);
-  const nationalIds = shuffled([state.clubId, ...natPool], rnd);
-
-  // Continental: 16 clubes fortes do continente
-  const contName = continentalName(country);
-  const sameGroup = LEAGUES.filter((l) => continentalName(l.country) === contName).flatMap(
-    (l) => l.clubs,
-  );
-  const contPool = shuffled(
-    sameGroup
-      .filter((c) => c.id !== state.clubId)
-      .sort((a, b) => b.strength - a.strength)
-      .slice(0, 40),
-    rnd,
-  )
-    .slice(0, 15)
-    .map((c) => c.id);
-  const contIds = shuffled([state.clubId, ...contPool], rnd);
-
-  const cups: CupState[] = [
-    {
-      id: "national",
-      name: CUP_NAMES[country] ?? `Copa ${country}`,
-      stage: 0,
-      ties: makeTies(nationalIds, 0),
-      out: false,
+  const country = countryOfClub(state.clubId) ?? getLeague(state.leagueId).country;
+  const rnd = makeRng(`cup-${state.season}`);
+  const hasCurrent = state.qualifications?.some((e) => e.season === state.season);
+  const entries = hasCurrent
+    ? state.qualifications!.filter((e) => e.season === state.season)
+    : (() => {
+        const actual = simulateDivisionTable(
+          getLeague(state.leagueId).clubs.map((c) => c.id),
+          country,
+          `season-${state.season - 1}-${state.leagueId}`,
+        );
+        const prior = { ...state, season: state.season - 1, calendarYear: calendarYear(state) };
+        return resolveQualifications(
+          prior,
+          seasonTables(prior, actual),
+          [],
+          state.leagueClubs,
+          state.season,
+        );
+      })();
+  const pool = (id: string) => {
+    const ids: string[] = [];
+    for (const e of entries.filter((e) => e.competitionId === id)) {
+      const club = sameClub(e.clubId, state.clubId) ? state.clubId : e.clubId;
+      if (!ids.some((other) => sameClub(other, club))) ids.push(club);
+    }
+    return ids;
+  };
+  const cups: CupState[] = [];
+  const maxRound = Math.max(8, ...state.fixtures.map((f) => f.round));
+  const knockout = (
+    id: CupState["id"],
+    competitionId: string,
+    name: string,
+    ids: string[],
+    note: string,
+  ) => {
+    if (ids.length < 2) return;
+    const shuffledIds = shuffled(ids, rnd);
+    let size = 2;
+    while (size < shuffledIds.length) size *= 2;
+    const byes = size - shuffledIds.length;
+    const automaticEntrants = shuffledIds.slice(0, byes);
+    const stage = 4 - Math.log2(size);
+    cups.push({
+      id,
+      competitionId,
+      name,
+      entered: ids.includes(state.clubId),
+      stage,
+      ties: makeTies(shuffledIds.slice(byes), stage),
+      automaticEntrants,
+      out: !ids.includes(state.clubId),
       winner: null,
-      everyRounds: 4,
-    },
-    {
+      everyRounds: Math.max(1, Math.floor(maxRound / Math.log2(size))),
+      formatNote: note,
+    });
+  };
+
+  for (const cupCountry of new Set(LEAGUES.map((l) => l.country))) {
+    const nationalRules = countryRegulation(cupCountry, calendarYear(state));
+    if (nationalRules.domesticCup)
+      knockout(
+        "national",
+        nationalCompetitionId(cupCountry),
+        nationalRules.domesticCup,
+        pool(nationalCompetitionId(cupCountry)),
+        "Participantes classificados pela divisão nacional e pelos estaduais do catálogo; calendário e número de fases adaptados.",
+      );
+  }
+
+  for (const confed of Object.keys(CONTINENTAL_NAMES) as Confederation[]) {
+    const id = primaryCompetitionId(confed),
+      ids = pool(id);
+    if (ids.length < 2) continue;
+    // Inscrições preliminares são decididas antes do grupo; não entram automaticamente por força.
+    const direct = ids.filter((club) =>
+      entries.some(
+        (e) => e.competitionId === id && sameClub(e.clubId, club) && e.phase === "principal",
+      ),
+    );
+    const qualifying = shuffled(
+      ids.filter((club) => !direct.includes(club)),
+      rnd,
+    );
+    const target = confed === "UEFA" || confed === "CONMEBOL" ? 32 : 16;
+    const qualifyingTies: CupTie[] = [];
+    const qualified = qualifying;
+    while (qualified.length > Math.max(0, target - direct.length)) {
+      const a = qualified.shift(),
+        b = qualified.pop();
+      if (!a || !b) {
+        if (a) qualified.push(a);
+        break;
+      }
+      const tie = playTie(
+        { round: -3, home: a, away: b, hg: null, ag: null },
+        `qualifier-${state.season}-${id}-${a}-${b}`,
+      );
+      qualifyingTies.push(tie);
+      qualified.push(tie.hg! > tie.ag! ? a : b);
+    }
+    const field = shuffled([...direct, ...qualified], rnd);
+    // Com poucos representantes (OFC), usar mata-mata em vez de inventar adversários.
+    if (field.length < 8) {
+      knockout(
+        "continental",
+        id,
+        CONTINENTAL_NAMES[confed],
+        field,
+        "Campo adaptado às associações presentes no catálogo.",
+      );
+      continue;
+    }
+    let groupSize = 8;
+    while (groupSize * 2 <= Math.min(target, field.length)) groupSize *= 2;
+    const selected = field.slice(0, groupSize);
+    // Nenhuma inscrição é apagada: extras disputam qualificatória antes da entrada nos grupos.
+    const spare = field.slice(groupSize);
+    for (const extra of spare) {
+      const defender = selected.pop()!;
+      const tie = playTie(
+        { round: -3, home: extra, away: defender, hg: null, ag: null },
+        `qualifier-extra-${state.season}-${id}-${extra}`,
+      );
+      qualifyingTies.push(tie);
+      selected.push(tie.hg! > tie.ag! ? extra : defender);
+    }
+    const entered = ids.includes(state.clubId);
+    cups.push({
       id: "continental",
-      name: contName,
-      // O continental começa na fase de grupos e entra no mata-mata nas quartas.
-      stage: 1,
-      ties: [],
-      out: false,
+      competitionId: id,
+      name: CONTINENTAL_NAMES[confed],
+      entered,
+      stage: 4 - Math.log2(groupSize / 2),
+      ties: qualifyingTies,
+      out: !selected.includes(state.clubId),
       winner: null,
-      everyRounds: 6,
-      groups: makeGroups(contIds),
+      everyRounds: Math.max(1, Math.floor(maxRound / 7)),
+      groups: makeGroups(selected),
       groupRound: 0,
-    },
-  ];
-
-  const inter = createIntercontinental(state, contName, rnd);
-  if (inter) cups.push(inter);
-  const world = createClubWorldCup(state, contName, rnd);
-  if (world) cups.push(world);
+      formatNote: `Vagas por associação; grupos e mata-mata em formato adaptado de ${groupSize} clubes. ${!hasCurrent ? "Primeira edição usa uma temporada anterior simulada." : ""}`,
+    });
+  }
+  for (const confed of Object.keys(SECONDARY_NAMES) as Confederation[]) {
+    const id = secondaryCompetitionId(confed),
+      name = SECONDARY_NAMES[confed];
+    if (name)
+      knockout(
+        "continental_secondary",
+        id,
+        name,
+        pool(id),
+        "Inscrição por classificação nacional; fases adaptadas ao calendário da carreira.",
+      );
+  }
+  knockout(
+    "conference",
+    "conference:UEFA",
+    "Conference League",
+    pool("conference:UEFA"),
+    "Vaga nacional após Champions e Europa League; fases adaptadas.",
+  );
+  knockout(
+    "regional_path",
+    "regional_path:CONCACAF",
+    "Classificatórias da América Central e Caribe",
+    pool("regional_path:CONCACAF"),
+    "Torneios regionais adaptados: seis classificados da América Central e três do Caribe alimentam a Champions Cup.",
+  );
+  const champions = intercontinentalField(state);
+  if (Object.keys(champions).length === 6) {
+    const field = Object.values(champions) as string[];
+    cups.push({
+      id: "intercontinental",
+      competitionId: "world:intercontinental",
+      name: "Copa Intercontinental",
+      entered: field.includes(state.clubId),
+      out: !field.includes(state.clubId),
+      stage: 0,
+      ties: makeTies([champions.AFC!, champions.OFC!], 0),
+      winner: null,
+      everyRounds: Math.max(1, Math.floor(maxRound / 4)),
+      intercontinentalChampions: champions,
+      formatNote:
+        "Seis campeões continentais; campeão UEFA entra na final. Calendário deslocado para a temporada seguinte do save.",
+    });
+  }
+  const world = worldCupField(state);
+  if (world.length === 32)
+    cups.push({
+      id: "club_world_cup",
+      competitionId: "world:club_world_cup",
+      name: "Mundial de Clubes",
+      entered: world.includes(state.clubId),
+      out: !world.includes(state.clubId),
+      stage: 0,
+      ties: [],
+      winner: null,
+      everyRounds: Math.max(1, Math.floor(maxRound / 7)),
+      groups: makeGroups(shuffled(world, rnd)),
+      groupRound: 0,
+      formatNote:
+        "32 clubes; campeões e pontos continentais de quatro anos. Cotas FIFA da edição de 2025; sede EUA e calendário futuro adaptados.",
+    });
   return cups;
 }
-
-const CONTINENT_GROUPS = [
-  "Copa Libertadores",
-  "Champions League",
-  "CAF Champions League",
-  "CONCACAF Champions Cup",
-  "AFC Champions League",
-];
-
-/** Os clubes mais fortes de um continente (representantes simulados). */
-function strongestOf(contName: string, count: number, exclude: Set<string>) {
-  return LEAGUES.filter((l) => continentalName(l.country) === contName)
-    .flatMap((l) => l.clubs)
-    .filter((c) => !exclude.has(c.id))
-    .sort((a, b) => b.strength - a.strength)
-    .slice(0, count)
-    .map((c) => c.id);
-}
-
-function wonContinental(state: CareerState, contName: string, seasons: number[]): boolean {
-  return state.trophies.some((t) => t.name === contName && seasons.includes(t.season));
-}
-
-/** Copa Intercontinental: campeão continental da temporada anterior + outros três campeões. */
-function createIntercontinental(
-  state: CareerState,
-  contName: string,
-  rnd: () => number,
-): CupState | null {
-  if (!wonContinental(state, contName, [state.season - 1])) return null;
-  const used = new Set([state.clubId]);
-  const rivals = CONTINENT_GROUPS.filter((c) => c !== contName)
-    .flatMap((c) => strongestOf(c, 1, used))
-    .sort((a, b) => (CLUBS[b]?.strength ?? 0) - (CLUBS[a]?.strength ?? 0))
-    .slice(0, 3);
-  if (rivals.length < 3) return null;
-  return {
-    id: "intercontinental",
-    name: "Copa Intercontinental",
-    // Começa na semifinal (estágio 2) com quatro campeões.
-    stage: 2,
-    ties: makeTies(shuffled([state.clubId, ...rivals], rnd), 2),
-    out: false,
-    winner: null,
-    everyRounds: 12,
-  };
-}
-
-/** Supermundial da FIFA: a cada 4 temporadas, 32 clubes, 8 grupos de 4 e mata-mata. */
-export const CLUB_WORLD_CUP_QUOTA: Record<string, number> = {
-  "Champions League": 12,
-  "Copa Libertadores": 6,
-  "CONCACAF Champions Cup": 5,
-  "AFC Champions League": 5,
-  "CAF Champions League": 4,
-};
-
-function createClubWorldCup(
-  state: CareerState,
-  contName: string,
-  rnd: () => number,
-): CupState | null {
-  if (state.season % 4 !== 0) return null;
-  const recent = [1, 2, 3, 4].map((n) => state.season - n);
-  const used = new Set<string>([state.clubId]);
-  const field: string[] = [];
-  for (const [cont, quota] of Object.entries(CLUB_WORLD_CUP_QUOTA)) {
-    // O continente do usuário cede uma vaga para o clube dele.
-    const ids = strongestOf(cont, cont === contName ? quota - 1 : quota, used);
-    ids.forEach((id) => used.add(id));
-    field.push(...ids);
-  }
-  const strongInContinent = strongestOf(contName, CLUB_WORLD_CUP_QUOTA[contName] ?? 0, new Set());
-  const qualifies =
-    wonContinental(state, contName, recent) || strongInContinent.includes(state.clubId);
-  if (!qualifies || field.length !== 31) return null;
-  const clubs = field;
-  const ids = shuffled([state.clubId, ...clubs], rnd);
-  return {
-    id: "club_world_cup",
-    name: "Supermundial de Clubes",
-    stage: 0,
-    ties: [],
-    out: false,
-    winner: null,
-    everyRounds: 5,
-    groups: makeGroups(ids),
-    groupRound: 0,
-  };
-}
-
 /** Rodadas de um grupo de quatro: todos contra todos, turno único. */
 const GROUP_PAIRS: [number, number][][] = [
   [
@@ -349,7 +328,7 @@ export function groupTable(group: CupGroup): GroupRow[] {
 const STAGE_NAMES = ["Oitavas de final", "Quartas de final", "Semifinal", "Final"];
 
 export function stageName(stage: number): string {
-  return STAGE_NAMES[stage] ?? "Fase";
+  return STAGE_NAMES[stage] ?? (stage < 0 ? `Fase de ${2 ** (4 - stage)} clubes` : "Fase");
 }
 
 /** A fase de grupos ainda está em andamento? */
@@ -430,24 +409,8 @@ function playTie(tie: CupTie, seed: string): CupTie {
 
 /** Placar de um jogo de grupo: pode terminar empatado. */
 function playGroupMatch(match: CupGroupMatch, seed: string): CupGroupMatch {
-  const tie = playTie(
-    { round: match.round, home: match.home, away: match.away, hg: null, ag: null },
-    seed,
-  );
-  const rnd = makeRng(`${seed}-draw`);
-  // na fase de grupos não há disputa: empate após 90' (e ET) é empate
-  if (tie.pens) {
-    const level = Math.min(tie.hg ?? 0, tie.ag ?? 0);
-    return { ...match, hg: level, ag: level };
-  }
-  // playTie desempata sempre; no grupo devolvemos o empate em parte dos jogos.
-  if (Math.abs((tie.hg ?? 0) - (tie.ag ?? 0)) === 1 && rnd() < 0.3) {
-    const level = Math.min(tie.hg ?? 0, tie.ag ?? 0);
-    return { ...match, hg: level, ag: level };
-  }
-  return { ...match, hg: tie.hg, ag: tie.ag };
+  return { ...match, ...competitionScore(match.home, match.away, seed) };
 }
-
 /** Joga a próxima rodada da fase de grupos. */
 function playGroupRound(cup: CupState, state: CareerState): CupResult {
   const round = cup.groupRound ?? 0;
@@ -506,7 +469,7 @@ function playGroupRound(cup: CupState, state: CareerState): CupResult {
 
 /** Joga a fase atual da copa e devolve o novo estado dela. */
 export function playCupStage(cup: CupState, state: CareerState): CupResult {
-  if (cup.out || cup.winner)
+  if (cup.winner)
     return {
       cup,
       userPlayed: false,
@@ -525,7 +488,10 @@ export function playCupStage(cup: CupState, state: CareerState): CupResult {
   );
   const played = ties.filter((t) => t.round === cup.stage);
   const userTie = played.find((t) => t.home === state.clubId || t.away === state.clubId);
-  const winners = played.map((t) => ((t.hg ?? 0) > (t.ag ?? 0) ? t.home : t.away));
+  const winners = [
+    ...(cup.automaticEntrants ?? []),
+    ...played.map((t) => ((t.hg ?? 0) > (t.ag ?? 0) ? t.home : t.away)),
+  ];
 
   let userWon = false;
   let userScore: string | null = null;
@@ -540,9 +506,16 @@ export function playCupStage(cup: CupState, state: CareerState): CupResult {
   }
 
   const out = Boolean(userTie) && !userWon;
-  const isFinal = winners.length === 1;
+  const isFinal = winners.length === 1 && (!cup.intercontinentalChampions || cup.stage === 3);
   const nextStage = cup.stage + 1;
-  const nextTies = isFinal ? ties : [...ties, ...makeTies(winners, nextStage)];
+  let nextIds = winners;
+  if (cup.intercontinentalChampions) {
+    const c = cup.intercontinentalChampions;
+    if (cup.stage === 0) nextIds = [winners[0]!, c.CAF!, c.CONMEBOL!, c.CONCACAF!];
+    if (cup.stage === 2) nextIds = [winners[0]!, c.UEFA!];
+  }
+  const oddBye = !isFinal && nextIds.length % 2 === 1 ? nextIds.slice(0, 1) : [];
+  const nextTies = isFinal ? ties : [...ties, ...makeTies(nextIds.slice(oddBye.length), nextStage)];
 
   return {
     cup: {
@@ -551,6 +524,8 @@ export function playCupStage(cup: CupState, state: CareerState): CupResult {
       stage: isFinal ? cup.stage : nextStage,
       out: out || cup.out,
       winner: isFinal ? winners[0]! : null,
+      automaticEntrants: oddBye,
+      ...(isFinal ? { finalists: played.flatMap((t) => [t.home, t.away]) } : {}),
     },
     userPlayed: Boolean(userTie),
     userWon,

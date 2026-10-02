@@ -165,11 +165,13 @@ export function ClubTrophy({
   y,
   z,
   scale = 1,
+  dynamic = false,
 }: {
   x: number;
   y: number;
   z: number;
   scale?: number;
+  dynamic?: boolean;
 }) {
   const profile = useMemo(
     () =>
@@ -187,7 +189,7 @@ export function ClubTrophy({
   );
   return (
     <group position={[x, y, z]} scale={scale}>
-      <mesh castShadow>
+      <mesh castShadow userData={{ cinematicDynamic: dynamic }}>
         <latheGeometry args={[profile, 24]} />
         <meshStandardMaterial
           color="#d8b55c"
@@ -197,12 +199,17 @@ export function ClubTrophy({
         />
       </mesh>
       {[-1, 1].map((side) => (
-        <mesh key={side} position={[side * 0.17, 0.35, 0]} scale={[0.75, 1, 1]}>
+        <mesh
+          key={side}
+          position={[side * 0.17, 0.35, 0]}
+          scale={[0.75, 1, 1]}
+          userData={{ cinematicDynamic: dynamic }}
+        >
           <torusGeometry args={[0.11, 0.017, 6, 16]} />
           <meshStandardMaterial color="#d8b55c" metalness={0.9} roughness={0.23} />
         </mesh>
       ))}
-      <mesh position={[0, -0.04, 0]}>
+      <mesh position={[0, -0.04, 0]} userData={{ cinematicDynamic: dynamic }}>
         <boxGeometry args={[0.32, 0.08, 0.28]} />
         <meshStandardMaterial color="#141922" roughness={0.65} />
       </mesh>

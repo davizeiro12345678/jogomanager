@@ -6,8 +6,9 @@ export function motionMetadata(name: string, family: AnimationFamily): Partial<C
   const aerial = /header|headClear|jump|bicycle|dive|saveHigh|volleyAir/i.test(name);
   const ground = /slide|fall|kneeSlide|prone/i.test(name);
   const locomotion = family === "locomotion";
-  const contactAt =
-    family === "shooting"
+  const contactAt = /header|headClear|dive|catch|save/i.test(name)
+    ? footballContactAt(name)
+    : family === "shooting"
       ? 0.4
       : family === "passing"
         ? 0.45

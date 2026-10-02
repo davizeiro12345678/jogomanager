@@ -6,7 +6,7 @@
 //  materiais diferentes — e é esse contraste que faz a partida "acontecer" na
 //  tela. O custo precisa ser zero em draw call, então a evolução é aplicada em
 //  cima dos materiais COMPARTILHADOS (ver `player-materials.ts`) e quantizada
-//  em degraus: o cache de materiais cresce no máximo 3× (não 90×) e nenhum
+//  em degraus: até 18 combinações de superfície, e nenhum
 //  atleta ganha material próprio.
 //
 //  A quantização é a chave: `surfaceStep` devolve um número pequeno e estável
@@ -142,32 +142,53 @@ export function fatigueTint(base: string, fatigue: number): string {
  * (roughness, clearcoat, sheen, cor): nenhuma recompilação de shader, nenhum
  * upload de textura — seguro para acontecer uma vez por segundo.
  */
-export function applySurface(material: THREE.Material, state: SurfaceState): void {
-  const { sweat, dirt, wet, fatigue } = state;
-  const any = (m: unknown): m is THREE.MeshPhysicalMaterial =>
-    typeof m === "object" && m !== null && "clearcoat" in (m as object);
-  const std = material as THREE.MeshStandardMaterial;
+type SurfaceBaseline = {
+  color: THREE.Color;
+  roughness: number;
+  environment: number;
+  clearcoat: number;
+  coatRoughness: number;
+  sheen: number;
+};
+const baselines = new WeakMap<THREE.Material, SurfaceBaseline>();
 
-  if (std.roughness !== undefined) {
-    // suor e chuva baixam a rugosidade (brilho), sujeira e cansaço sobem
-    std.roughness = clamp01(
-      std.roughness - sweat * 0.12 - wet * 0.3 + dirt * 0.14 + fatigue * 0.04,
+export function applySurface(
+  material: THREE.Material,
+  state: SurfaceState,
+  kind: "fabric" | "skin" = "fabric",
+): void {
+  const { sweat, dirt, wet, fatigue } = state;
+  const std = material as THREE.MeshStandardMaterial;
+  if (!std.isMeshStandardMaterial) return;
+  const physical = material as THREE.MeshPhysicalMaterial;
+  let base = baselines.get(material);
+  if (!base) {
+    base = {
+      color: std.color.clone(),
+      roughness: std.roughness,
+      environment: std.envMapIntensity,
+      clearcoat: physical.clearcoat ?? 0,
+      coatRoughness: physical.clearcoatRoughness ?? 0.5,
+      sheen: physical.sheen ?? 0,
+    };
+    baselines.set(material, base);
+  }
+  // Always rebuild from the authored material. Reapplying the same weather
+  // must not progressively turn fabric into a mirror or erase the club color.
+  const moisture = kind === "skin" ? sweat * 0.15 + wet * 0.1 : sweat * 0.08 + wet * 0.24;
+  std.roughness = Math.max(0.28, clamp01(base.roughness - moisture + dirt * 0.1 + fatigue * 0.035));
+  std.envMapIntensity = Math.max(0, base.environment + wet * 0.26 + sweat * 0.08 - dirt * 0.12);
+  std.color.copy(base.color);
+  if (kind === "fabric") {
+    const tinted = fatigueTint(dirtTint(`#${base.color.getHexString()}`, dirt), fatigue);
+    std.color.set(tinted).multiplyScalar(1 - clamp01(wet) * 0.09);
+  }
+  if (physical.isMeshPhysicalMaterial) {
+    physical.clearcoat = clamp01(
+      base.clearcoat + wet * (kind === "skin" ? 0.1 : 0.2) + sweat * 0.08,
     );
-  }
-  if (std.envMapIntensity !== undefined) {
-    std.envMapIntensity = clamp01(0.85 + wet * 0.5 + sweat * 0.12 - dirt * 0.18);
-  }
-  if (any(material)) {
-    const physical = material as THREE.MeshPhysicalMaterial;
-    if (physical.clearcoat !== undefined) {
-      physical.clearcoat = clamp01((physical.clearcoat || 0) + wet * 0.45 + sweat * 0.1);
-    }
-    if (physical.clearcoatRoughness !== undefined) {
-      physical.clearcoatRoughness = clamp01((physical.clearcoatRoughness || 0.5) - wet * 0.25);
-    }
-    if (physical.sheen !== undefined) {
-      physical.sheen = clamp01((physical.sheen || 0) * (1 - wet * 0.45));
-    }
+    physical.clearcoatRoughness = Math.max(0.25, base.coatRoughness - wet * 0.16);
+    physical.sheen = clamp01(base.sheen * (1 - wet * 0.45));
   }
 }
 

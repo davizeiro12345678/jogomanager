@@ -3,7 +3,8 @@ import { useRef, useState } from "react";
 import * as THREE from "three";
 import type { CameraMode } from "@/game/camera-modes";
 import { GRAPHICS_PROFILES } from "@/game/contracts/graphics-profile";
-import { allocateHeroes, nonHeroDraws } from "@/game/draw-budget";
+import { allocateHeroes } from "@/game/draw-budget";
+import { censusScene } from "@/game/scene-census";
 import type { RuntimeSceneBudget } from "@/game/runtime-scene-budget";
 import type { SimView } from "@/game/sim";
 import { gkKitFor, type Kit } from "@/game/kits";
@@ -47,7 +48,7 @@ export function MatchPlayers({
   // histerese para subir heróis: só aumenta depois de 3 amostras seguidas
   const headroom = useRef(0);
 
-  useFrame(({ camera, gl }, dt) => {
+  useFrame(({ camera, scene }, dt) => {
     // ---- orçamento medido: quantos heróis cabem no que sobrou
     drawTimer.current += dt;
     if (drawTimer.current >= 0.5) {
@@ -55,8 +56,13 @@ export function MatchPlayers({
       const base = quality === "baixa" ? 0 : replay ? budget.replayHeroPlayers : budget.heroPlayers;
       if (base > 0) {
         const maxDraws = GRAPHICS_PROFILES[budget.tier].maxDrawCalls;
-        const measured = gl.info.render.calls;
-        const wanted = allocateHeroes(maxDraws, nonHeroDraws(measured, near.size), base, 1).count;
+        // Renderer counters can be reset by post-processing or FrameProbe.
+        // Measure actual non-player surfaces instead of treating zero as headroom.
+        const census = censusScene(scene);
+        const actors = census.buckets.player;
+        const otherDraws =
+          census.total.draws - actors.draws + census.total.shadowCasters - actors.shadowCasters;
+        const wanted = allocateHeroes(maxDraws, otherDraws, base, 1).count;
         if (wanted < heroLimit) {
           headroom.current = 0;
           setHeroLimit(wanted);
