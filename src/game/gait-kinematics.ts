@@ -57,6 +57,7 @@ export interface GaitDirection {
   stamina: number;
   turnRate: number;
   hasBall: boolean;
+  style?: number;
 }
 
 /** Stance and swing are distinct phases: the supporting foot sweeps back
@@ -127,13 +128,16 @@ export function gaitPoseAt(
   out.ankleR = right.ankle;
   // An arm moves opposite its own leg, rather than using an unrelated sine
   // wave. The two arms need not be exact opposites during double support.
-  const armAmplitude = (0.14 + amount * 0.62) * active;
+  const individual = direction?.style === undefined ? 0 : (direction.style % 101) / 100 - 0.5;
+  const armAmplitude = (0.14 + amount * 0.62) * active * (1 + individual * 0.12);
   out.armLPitch = halfStride > 0.001 ? (left.travel / halfStride) * armAmplitude : 0.04;
   out.armRPitch = halfStride > 0.001 ? (right.travel / halfStride) * armAmplitude : 0.04;
   out.armLRoll = 0.13;
   out.armRRoll = -0.13;
   out.elbowL = -0.26 - amount * 0.74 - Math.max(0, -out.armLPitch) * 0.22;
   out.elbowR = -0.26 - amount * 0.74 - Math.max(0, -out.armRPitch) * 0.22;
+  out.elbowL -= individual * 0.08 * active;
+  out.elbowR -= individual * 0.08 * active;
   if (direction) {
     const turning = clamp(direction.turnRate, -3, 3) * 0.045 * active;
     out.armLRoll += Math.max(0, -turning) + Math.abs(lateral) * 0.13;

@@ -11,6 +11,7 @@ import { ManagerPortrait } from "@/components/game/ManagerPortrait";
 import { NoCareer } from "@/components/game/screen-kit";
 import { castFor } from "@/game/cast";
 import { applyChoiceEffect } from "@/game/choice-effects";
+import { recordLegacyInterview, worldFor } from "@/game/career-world";
 import { CLUBS } from "@/game/data/leagues";
 import { computeTable, nextFixture } from "@/game/season";
 import { detectUnhappy } from "@/game/unhappy";
@@ -238,7 +239,10 @@ function PressPage() {
   }, [career, cast]);
 
   if (!career) return <NoCareer />;
-  if (career.pressRound === career.round && !done) {
+  const alreadyInterviewed =
+    career.pressRound === career.round ||
+    worldFor(career).interviewedAt === `${career.clubId}:${career.season}:${career.round}`;
+  if (alreadyInterviewed && !done) {
     return (
       <GameShell career={career}>
         <section className="rounded-2xl border border-border/60 surface-card p-8 text-center">
@@ -278,6 +282,7 @@ function PressPage() {
 
   function finish() {
     if (!career) return;
+    if (alreadyInterviewed) return;
     const dominant = tones
       .concat()
       .sort((a, b) => tones.filter((t) => t === b).length - tones.filter((t) => t === a).length)[0];
@@ -287,10 +292,13 @@ function PressPage() {
         : dominant === "Confiante"
           ? "Treinador banca o time antes do jogo"
           : "Treinador prega cautela antes do jogo";
-    update({
-      ...applyChoiceEffect(career, { ...totals, headline }),
-      pressRound: career.round,
-    });
+    update(
+      recordLegacyInterview(
+        applyChoiceEffect(career, { ...totals, headline }),
+        dominant === "Provocador" ? "provoke" : dominant === "Confiante" ? "protect" : "diplomatic",
+        headline,
+      ),
+    );
     setDone(true);
   }
 

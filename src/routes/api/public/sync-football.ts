@@ -11,14 +11,26 @@ export const Route = createFileRoute("/api/public/sync-football")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env["LOVABLE_CRON_SECRET"];
+        const secret = process.env["FOOTBALL_SYNC_SECRET"] || process.env["LOVABLE_CRON_SECRET"];
         const provided = request.headers.get("x-sync-secret");
         if (!secret || provided !== secret) {
           return new Response("Unauthorized", { status: 401 });
         }
         const url = new URL(request.url);
         const scope = url.searchParams.get("scope") ?? "clubs";
-        if (!["seed", "clubs", "squads", "history", "all", "premium", "stats", "career", "premium-chain"].includes(scope)) {
+        if (
+          ![
+            "seed",
+            "clubs",
+            "squads",
+            "history",
+            "all",
+            "premium",
+            "stats",
+            "career",
+            "premium-chain",
+          ].includes(scope)
+        ) {
           return new Response("Invalid scope", { status: 400 });
         }
         const phase = url.searchParams.get("phase");
@@ -28,7 +40,14 @@ export const Route = createFileRoute("/api/public/sync-football")({
         }
         const leagueId = url.searchParams.get("leagueId") ?? undefined;
         const season = url.searchParams.get("season") ?? undefined;
-        if (scope === "premium-chain" && phase === "schedule" && (!leagueId || !/^\d{1,12}$/.test(leagueId) || !season || !/^\d{4}(?:-\d{4})?$/.test(season))) {
+        if (
+          scope === "premium-chain" &&
+          phase === "schedule" &&
+          (!leagueId ||
+            !/^\d{1,12}$/.test(leagueId) ||
+            !season ||
+            !/^\d{4}(?:-\d{4})?$/.test(season))
+        ) {
           return new Response("Invalid league or season", { status: 400 });
         }
         const num = (k: string, d: number, min: number, max: number) => {
@@ -45,7 +64,16 @@ export const Route = createFileRoute("/api/public/sync-football")({
         }
 
         const { runSync } = await import("@/lib/football-sync.server");
-        const result = await runSync({ scope, limit, offset, concurrency, budgetMs, ...(leagueId ? { leagueId } : {}), ...(season ? { season } : {}), ...(scope === "premium-chain" ? { phase: phases.find((item) => item === phase) } : {}) });
+        const result = await runSync({
+          scope,
+          limit,
+          offset,
+          concurrency,
+          budgetMs,
+          ...(leagueId ? { leagueId } : {}),
+          ...(season ? { season } : {}),
+          ...(scope === "premium-chain" ? { phase: phases.find((item) => item === phase) } : {}),
+        });
 
         return new Response(JSON.stringify(result), {
           status: result.ok ? 200 : 500,

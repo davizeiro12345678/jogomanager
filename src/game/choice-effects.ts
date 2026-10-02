@@ -9,13 +9,16 @@
 
 import type { ChoiceEffect } from "@/content/cutscenes";
 import type { CareerState, NewsItem } from "./types";
+import { applyInterviewDecision } from "./career-world";
 
 const clamp = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
 
 export function applyChoiceEffect(state: CareerState, effect: ChoiceEffect): CareerState {
+  if (effect.careerDecision) return applyInterviewDecision(state, effect.careerDecision);
   const players = { ...state.players };
   if (effect.morale || effect.condition) {
     for (const [id, p] of Object.entries(players)) {
+      if (p.clubId !== state.clubId) continue;
       players[id] = {
         ...p,
         morale: clamp(p.morale + (effect.morale ?? 0)),

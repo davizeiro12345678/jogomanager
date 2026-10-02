@@ -41,6 +41,7 @@ import {
 const NEUTRAL_STEPS: SurfaceSteps = { sweat: 0, dirt: 0, wet: 0 };
 import { SKIN_TONES } from "@/game/kits";
 import { shade, skinShadow } from "@/game/player-model";
+import { skinAlbedo } from "./player-morphology";
 
 export type MaterialQuality = "alta" | "media" | "baixa";
 
@@ -75,6 +76,7 @@ export interface PlayerMaterials {
 const NORMAL_SCALE = new THREE.Vector2(0.55, 0.55);
 const MAX_ENTRIES = 96;
 const cache = new Map<string, PlayerMaterials>();
+const textureRefreshers = new Map<PlayerMaterials, () => void>();
 
 /** arredonda o suor para poucos degraus: evita um material por jogador */
 const sweatStep = (s: number) => Math.round(Math.max(0, Math.min(1, s)) * 4) / 4;
@@ -123,6 +125,7 @@ export function detailTextureNames(
 }
 
 function dispose(set: PlayerMaterials) {
+  textureRefreshers.delete(set);
   Object.values(set).forEach((m) => m.dispose());
 }
 
@@ -135,8 +138,8 @@ function retire(set: PlayerMaterials) {
 }
 
 /** Keep shared materials alive while any mounted rig still draws them.
- * Eviction and HD texture replacement release GPU resources only after the
- * last owner leaves, so a cache refresh cannot strip a live uniform. */
+ * Eviction releases GPU resources only after the last owner leaves, so a
+ * cache refresh cannot strip a live uniform. */
 export function retainPlayerMaterials(set: PlayerMaterials): () => void {
   users.set(set, (users.get(set) ?? 0) + 1);
   let released = false;
@@ -152,14 +155,74 @@ export function retainPlayerMaterials(set: PlayerMaterials): () => void {
   };
 }
 
-// Quando as texturas KTX2 terminam de baixar, os materiais já criados ficam
-// desatualizados: o cache é esvaziado para que os próximos usem o alta definição.
-let ktx2Ready = false;
+// Keep material identities stable as compressed maps arrive. Replacing the
+// whole set also rebuilt the rig's skin and skeleton on every texture event,
+// including grass and stadium maps that the athlete never uses.
 onKtx2Ready(() => {
-  ktx2Ready = true;
-  for (const set of cache.values()) retire(set);
-  cache.clear();
+  for (const refresh of textureRefreshers.values()) refresh();
 });
+
+type TextureSlot = "normalMap" | "roughnessMap" | "clearcoatNormalMap";
+
+function updateTexture(material: THREE.Material, slot: TextureSlot, texture: THREE.Texture | null) {
+  const target = material as THREE.MeshPhysicalMaterial;
+  const previous = target[slot];
+  if (previous === texture) return;
+  target[slot] = texture;
+  // Switching an existing map needs only a uniform update. Shader defines
+  // change when a map appears/disappears or uses a different UV channel.
+  if (Boolean(previous) !== Boolean(texture) || previous?.channel !== texture?.channel) {
+    target.needsUpdate = true;
+  }
+}
+
+function playerTextureMaps(hi: boolean, names: ReturnType<typeof detailTextureNames>) {
+  const [jerseyNormal, jerseyRough, shortsNormal, socksNormal, bootNormal, skinNormal] = names;
+  const weave = hi ? (ktx2(jerseyNormal) ?? ktx2("fiberNormal") ?? jerseyWeaveNormal()) : null;
+  const grain = hi ? (ktx2(bootNormal) ?? ktx2("bootNormal") ?? bootGrainNormal()) : null;
+  return {
+    weave,
+    rib: hi ? (ktx2(socksNormal) ?? ktx2("sockNormal") ?? sockRibNormal()) : null,
+    pores: hi ? (ktx2(skinNormal) ?? ktx2("skinNormal") ?? skinPoreNormal()) : null,
+    grain,
+    shorts: hi ? (ktx2(shortsNormal) ?? weave) : null,
+    jerseyRough: hi ? (ktx2(jerseyRough) ?? ktx2("fiberRough") ?? jerseyRoughness()) : null,
+    skinRough: ktx2("sweatMask") ?? (hi ? skinRoughness() : null),
+    hairNormal: ktx2("hairNormal") ?? (hi ? hairStrandNormal() : null),
+    hairRough: ktx2("hairRough"),
+    bootRough: ktx2("bootRough"),
+    shinNormal: ktx2("shinNormal"),
+    shinRough: ktx2("shinRough"),
+    sweatNormal: ktx2("sweatNormal"),
+  };
+}
+
+function refreshPlayerTextureMaps(
+  set: PlayerMaterials,
+  hi: boolean,
+  maps: ReturnType<typeof playerTextureMaps>,
+) {
+  updateTexture(set.jerseyPlain, "normalMap", maps.weave);
+  updateTexture(set.jerseyPlain, "roughnessMap", maps.jerseyRough);
+  updateTexture(set.hair, "normalMap", maps.hairNormal);
+  updateTexture(set.boot, "normalMap", maps.grain);
+  updateTexture(set.sole, "normalMap", maps.grain);
+  updateTexture(set.shin, "normalMap", maps.shinNormal);
+  if (!hi) return;
+  updateTexture(set.skin, "normalMap", maps.pores);
+  updateTexture(set.skin, "roughnessMap", maps.skinRough);
+  updateTexture(set.skin, "clearcoatNormalMap", maps.sweatNormal);
+  updateTexture(set.jersey, "normalMap", maps.weave);
+  updateTexture(set.jersey, "roughnessMap", maps.jerseyRough);
+  updateTexture(set.shorts, "normalMap", maps.shorts);
+  updateTexture(set.shorts, "roughnessMap", maps.jerseyRough);
+  updateTexture(set.socks, "normalMap", maps.rib);
+  updateTexture(set.hair, "roughnessMap", maps.hairRough);
+  updateTexture(set.boot, "roughnessMap", maps.bootRough);
+  updateTexture(set.boot, "clearcoatNormalMap", maps.grain);
+  updateTexture(set.shin, "roughnessMap", maps.shinRough);
+  updateTexture(set.glove, "normalMap", maps.weave);
+}
 
 /**
  * Devolve (e memoriza) o conjunto de materiais de um jogador.
@@ -173,6 +236,7 @@ export function playerMaterials(
   surface?: SurfaceSteps,
 ): PlayerMaterials {
   const sweat = sweatStep(look.sweat);
+  const detailNames = detailTextureNames(look, kit);
   const [
     jerseyNormalName,
     jerseyRoughName,
@@ -180,10 +244,9 @@ export function playerMaterials(
     socksNormalName,
     bootNormalName,
     skinNormalName,
-  ] = detailTextureNames(look, kit);
+  ] = detailNames;
   const key = [
     quality,
-    ktx2Ready ? "hd" : "sd",
     look.skin,
     sweat,
     look.hairColor,
@@ -221,27 +284,28 @@ export function playerMaterials(
   const hi = quality === "alta";
   // Preferimos sempre o mapa KTX2 (1024², comprimido na GPU); o canvas
   // procedural continua como rede de segurança até o download terminar.
-  const weave = hi ? (ktx2(jerseyNormalName) ?? ktx2("fiberNormal") ?? jerseyWeaveNormal()) : null;
-  const rib = hi ? (ktx2(socksNormalName) ?? ktx2("sockNormal") ?? sockRibNormal()) : null;
-  const pores = hi ? (ktx2(skinNormalName) ?? ktx2("skinNormal") ?? skinPoreNormal()) : null;
-  const grain = hi ? (ktx2(bootNormalName) ?? ktx2("bootNormal") ?? bootGrainNormal()) : null;
-  const jerseyRough = hi
-    ? (ktx2(jerseyRoughName) ?? ktx2("fiberRough") ?? jerseyRoughness())
-    : null;
-  const skinRough = ktx2("sweatMask") ?? (hi ? skinRoughness() : null);
-  const hairNormal = ktx2("hairNormal") ?? (hi ? hairStrandNormal() : null);
-  const hairRough = ktx2("hairRough");
-  const bootRough = ktx2("bootRough");
-  const shinNormal = ktx2("shinNormal");
-  const shinRough = ktx2("shinRough");
-  const sweatNormal = ktx2("sweatNormal");
+  const maps = playerTextureMaps(hi, detailNames);
+  const {
+    weave,
+    rib,
+    pores,
+    grain,
+    jerseyRough,
+    skinRough,
+    hairNormal,
+    hairRough,
+    bootRough,
+    shinNormal,
+    shinRough,
+    sweatNormal,
+  } = maps;
 
   const set: PlayerMaterials = {
     skin: hi
       ? new THREE.MeshPhysicalMaterial({
-          color: look.skin,
+          color: skinAlbedo(look.skin),
           vertexColors: true,
-          roughness: 0.77 - sweat * 0.1,
+          roughness: 0.72 - sweat * 0.1,
           normalMap: pores,
           roughnessMap: skinRough,
           normalScale: new THREE.Vector2(0.23, 0.23),
@@ -256,12 +320,12 @@ export function playerMaterials(
           sheenRoughness: 0.78,
           // tom avermelhado do sangue sob a pele: imita o espalhamento sub-superficial
           // sem o custo de transmissão — a borda do rosto/braço fica "viva".
-          sheenColor: new THREE.Color(look.skin).lerp(new THREE.Color("#ff8a6a"), 0.45),
+          sheenColor: new THREE.Color(skinAlbedo(look.skin)).lerp(new THREE.Color("#e8c6c4"), 0.4),
           specularIntensity: 0.28,
           specularColor: new THREE.Color("#fff1e4"),
         })
       : new THREE.MeshStandardMaterial({
-          color: look.skin,
+          color: skinAlbedo(look.skin),
           vertexColors: true,
           roughness: 0.85,
           envMapIntensity: 0.85,
@@ -302,7 +366,7 @@ export function playerMaterials(
       ? new THREE.MeshPhysicalMaterial({
           color: kit.shorts,
           roughness: 0.84,
-          normalMap: ktx2(shortsNormalName) ?? weave,
+          normalMap: maps.shorts,
           roughnessMap: jerseyRough,
           normalScale: NORMAL_SCALE,
           sheen: 0.4,
@@ -336,21 +400,21 @@ export function playerMaterials(
           alphaMap: hairlineMask(),
           alphaTest: 0.3,
           alphaToCoverage: true,
-          roughness: 0.85,
+          roughness: 0.94,
           // fios individuais: o mapa dá direção ao brilho em vez de um capacete liso
           normalMap: hairNormal,
           roughnessMap: hairRough,
-          normalScale: new THREE.Vector2(0.3, 0.5),
+          normalScale: new THREE.Vector2(0.1, 0.16),
           metalness: 0,
           clearcoat: 0,
           clearcoatRoughness: 0.85,
-          sheen: 0.14,
+          sheen: 0.06,
           sheenRoughness: 0.82,
           sheenColor: new THREE.Color(shade(look.hairColor, 0.55)),
-          anisotropy: 0.35,
+          anisotropy: 0.18,
           anisotropyRotation: Math.PI / 2,
-          specularIntensity: 0.22,
-          envMapIntensity: 0.32,
+          specularIntensity: 0.12,
+          envMapIntensity: 0.18,
         })
       : new THREE.MeshStandardMaterial({
           color: look.hairColor,
@@ -361,13 +425,13 @@ export function playerMaterials(
     boot: hi
       ? new THREE.MeshPhysicalMaterial({
           color: look.bootColor,
-          roughness: 0.22,
+          roughness: 0.34,
           normalMap: grain,
           roughnessMap: bootRough,
           normalScale: NORMAL_SCALE,
-          metalness: 0.1,
-          clearcoat: 0.85,
-          clearcoatRoughness: 0.18,
+          metalness: 0.02,
+          clearcoat: 0.45,
+          clearcoatRoughness: 0.3,
           clearcoatNormalMap: grain,
           clearcoatNormalScale: new THREE.Vector2(0.4, 0.4),
         })
@@ -425,7 +489,7 @@ export function playerMaterials(
   // criados. Só escalares — nenhuma recompilação de shader, nenhum upload.
   if (surface && quality !== "baixa") {
     const state = surfaceFromSteps(surface);
-    applySurface(set.skin, { ...state, sweat: Math.min(1, state.sweat * 1.25) });
+    applySurface(set.skin, { ...state, sweat: Math.min(1, state.sweat * 1.25) }, "skin");
     applySurface(set.jersey, state);
     applySurface(set.jerseyPlain, state);
     applySurface(set.shorts, state);
@@ -434,6 +498,9 @@ export function playerMaterials(
     applySurface(set.shin, state);
   }
 
+  textureRefreshers.set(set, () =>
+    refreshPlayerTextureMaps(set, hi, playerTextureMaps(hi, detailNames)),
+  );
   cache.set(key, set);
   if (cache.size > MAX_ENTRIES) {
     const oldest = cache.keys().next().value;

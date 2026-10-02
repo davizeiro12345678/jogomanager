@@ -18,7 +18,7 @@ export function hairFiberColor(color: string): THREE.CanvasTexture | null {
     ctx.fillRect(0, 0, size, size);
     for (let strand = 0; strand < size * 2; strand++) {
       const x = strand * 0.5;
-      ctx.strokeStyle = strand % 5 === 0 ? "rgba(255,245,224,0.14)" : "rgba(0,0,0,0.14)";
+      ctx.strokeStyle = strand % 5 === 0 ? "rgba(255,245,224,0.07)" : "rgba(0,0,0,0.12)";
       ctx.lineWidth = 0.55;
       ctx.beginPath();
       for (let y = 0; y <= size; y += 4) {
@@ -39,7 +39,7 @@ export function hairlineMask(): THREE.CanvasTexture | null {
     for (let y = 0; y < size; y++)
       for (let x = 0; x < size; x++) {
         const v = 1 - y / (size - 1),
-          edge = 0.012 + 0.025 * (0.5 + 0.5 * Math.sin(x * 2.1));
+          edge = 0.012 + 0.006 * (0.5 + 0.5 * Math.sin(x * 1.1));
         const a = THREE.MathUtils.smoothstep(v, edge, edge + 0.055) * 255;
         const i = (y * size + x) * 4;
         data.data[i] = data.data[i + 1] = data.data[i + 2] = a;
@@ -51,9 +51,9 @@ export function hairlineMask(): THREE.CanvasTexture | null {
   return texture;
 }
 
-export function beardFiberMask(): THREE.CanvasTexture | null {
-  return make("beard-fiber-mask", 256, 2, (ctx, size) => {
-    ctx.fillStyle = "#474747";
+export function beardFiberMask(stubble = false): THREE.CanvasTexture | null {
+  return make(`beard-fiber-mask:${stubble}`, 256, 1, (ctx, size) => {
+    ctx.fillStyle = stubble ? "#303030" : "#b9b9b9";
     ctx.fillRect(0, 0, size, size);
     let state = 173;
     const random = () => {
@@ -61,19 +61,88 @@ export function beardFiberMask(): THREE.CanvasTexture | null {
       return state / 4294967296;
     };
     // Short, irregular whiskers avoid the regular hatch of the old mask.
-    for (let strand = 0; strand < 7800; strand++) {
+    for (let strand = 0; strand < 12000; strand++) {
       const x = random() * size,
         y = random() * size;
-      const length = 1.4 + random() * 4.6;
-      const grey = Math.round(158 + random() * 97);
+      const length = stubble ? 0.4 + random() * 0.9 : 0.8 + random() * 2.1;
+      const grey = Math.round(180 + random() * 75);
       ctx.strokeStyle = `rgb(${grey},${grey},${grey})`;
-      ctx.lineWidth = 0.65 + random() * 0.6;
+      ctx.lineWidth = 0.35 + random() * 0.3;
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x + (random() - 0.5) * 1.7, y + length);
       ctx.stroke();
     }
+    const data = ctx.getImageData(0, 0, size, size);
+    for (let y = 0; y < size; y++)
+      for (let x = 0; x < size; x++) {
+        const v = y / (size - 1);
+        const edge = 0.008 + 0.012 * (0.5 + 0.5 * Math.sin(x * 1.7));
+        const fade =
+          THREE.MathUtils.smoothstep(v, edge, 0.12) *
+          (1 - THREE.MathUtils.smoothstep(v, 0.89, 1 - edge));
+        const i = (y * size + x) * 4;
+        data.data[i] = data.data[i + 1] = data.data[i + 2] = data.data[i]! * fade;
+      }
+    ctx.putImageData(data, 0, 0);
   });
+}
+
+export function beardFiberColor(color: string): THREE.CanvasTexture | null {
+  const texture = make(`beard-color:${color}`, 256, 1, (ctx, size) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, size, size);
+    let state = 0x91e10;
+    const random = () => {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      return state / 4294967296;
+    };
+    for (let i = 0; i < 9000; i++) {
+      const x = random() * size,
+        y = random() * size;
+      ctx.strokeStyle = i % 3 === 0 ? "rgba(240,218,191,0.13)" : "rgba(3,5,4,0.22)";
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + (x / size - 0.5) * 2, y + 1.5 + random() * 2);
+      ctx.stroke();
+    }
+  });
+  if (texture) texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+/** A shared radial iris atlas, with a dark limbal edge and fine fibres. */
+export function irisColor(color: string): THREE.CanvasTexture | null {
+  const texture = make(`iris-color:${color}`, 128, 1, (ctx, size) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, size, size);
+    for (let i = 0; i < 240; i++) {
+      const angle = (i * Math.PI * 2) / 240;
+      const inner = size * (0.17 + 0.04 * Math.sin(i * 1.9));
+      const outer = size * (0.47 + 0.025 * Math.sin(i * 2.7));
+      ctx.strokeStyle = i % 3 === 0 ? "rgba(230,222,176,0.25)" : "rgba(16,21,16,0.36)";
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(size / 2 + Math.cos(angle) * inner, size / 2 + Math.sin(angle) * inner);
+      ctx.lineTo(size / 2 + Math.cos(angle) * outer, size / 2 + Math.sin(angle) * outer);
+      ctx.stroke();
+    }
+    const shade = ctx.createRadialGradient(
+      size / 2,
+      size / 2,
+      size * 0.32,
+      size / 2,
+      size / 2,
+      size * 0.5,
+    );
+    shade.addColorStop(0, "rgba(0,0,0,0)");
+    shade.addColorStop(1, "rgba(6,12,10,0.65)");
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, size, size);
+  });
+  if (texture) texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 }
 
 /** Fine directional fibre grooves, available even before HD assets load. */

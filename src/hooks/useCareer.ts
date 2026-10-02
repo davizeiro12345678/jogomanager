@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { migrateCareer } from "@/game/career";
+import { recordWorldTransition, withCareerWorld } from "@/game/career-world";
 import { supabase } from "@/integrations/supabase/client";
 import { loadCareer, saveCareer, deleteCareer } from "@/lib/career.functions";
 import {
@@ -169,11 +170,15 @@ export function useCareer() {
   const mutate = mutation.mutate;
   const update = useCallback(
     (next: CareerState) => {
-      qc.setQueryData([...CAREER_KEY, signedIn], (old: { sync: SyncState } | undefined) => ({
-        career: next,
-        sync: old?.sync ?? "local",
-      }));
-      mutate(next);
+      const old = qc.getQueryData<{ career: CareerState | null; sync: SyncState }>([
+        ...CAREER_KEY,
+        signedIn,
+      ]);
+      const prepared = old?.career
+        ? recordWorldTransition(old.career, next)
+        : withCareerWorld(next);
+      qc.setQueryData([...CAREER_KEY, signedIn], { career: prepared, sync: old?.sync ?? "local" });
+      mutate(prepared);
     },
     [qc, mutate, signedIn],
   );

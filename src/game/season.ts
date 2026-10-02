@@ -2,6 +2,7 @@ import { getLeague } from "./data/leagues";
 import { leagueClubIds } from "./pyramid";
 import { makeRng } from "./rng";
 import type { CareerState, Fixture, TableRow } from "./types";
+import { tableFromFixtures } from "./standings";
 
 /** marcador de folga usado quando a divisão tem número ímpar de clubes */
 const BYE = "__bye__";
@@ -55,41 +56,7 @@ export function generateFixtures(leagueId: string, seed: string, clubIds?: strin
 }
 
 export function computeTable(state: CareerState): TableRow[] {
-  const rows: Record<string, TableRow> = {};
-  leagueClubIds(state).forEach((id) => {
-    rows[id] = { clubId: id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
-  });
-
-  for (const f of state.fixtures) {
-    if (f.homeGoals === null || f.awayGoals === null) continue;
-    const h = rows[f.home];
-    const a = rows[f.away];
-    if (!h || !a) continue;
-    h.p++;
-    a.p++;
-    h.gf += f.homeGoals;
-    h.ga += f.awayGoals;
-    a.gf += f.awayGoals;
-    a.ga += f.homeGoals;
-    if (f.homeGoals > f.awayGoals) {
-      h.w++;
-      h.pts += 3;
-      a.l++;
-    } else if (f.homeGoals < f.awayGoals) {
-      a.w++;
-      a.pts += 3;
-      h.l++;
-    } else {
-      h.d++;
-      a.d++;
-      h.pts++;
-      a.pts++;
-    }
-  }
-
-  return Object.values(rows).sort(
-    (x, y) => y.pts - x.pts || y.gf - y.ga - (x.gf - x.ga) || y.gf - x.gf,
-  );
+  return tableFromFixtures(leagueClubIds(state), state.fixtures, getLeague(state.leagueId).country);
 }
 
 export function nextFixture(state: CareerState): Fixture | undefined {

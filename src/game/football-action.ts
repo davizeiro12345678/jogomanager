@@ -7,10 +7,37 @@ import { footballContactAt } from "./motion-metadata";
 
 const smooth = (u: number) => {
   const t = Math.max(0, Math.min(1, u));
-  return t * t * (3 - 2 * t);
+  return t * t * t * (t * (t * 6 - 15) + 10);
 };
 const segment = (u: number, start: number, end: number, a: number, b: number) =>
   a + (b - a) * smooth((u - start) / (end - start));
+
+const FOOT_ACTIONS =
+  /^(shot|shotPower|shotPlaced|pass|passLong|cross|chip|volley|firstTime|goalKick|freeKick|penalty|corner|trap|intercept|tackle|feint|cut|elastico|stepover)$/;
+
+/** Support follows the event phase, including stationary actions. The striking
+ * foot keeps its authored ankle while the opposite leg carries the weight. */
+export function footballSupportFor(
+  action: PlayerAction | null,
+  progress: number,
+  hipWidth: number,
+  foot: DominantFoot,
+) {
+  const u = Math.max(0, Math.min(1, progress));
+  const weight = FOOT_ACTIONS.test(action ?? "") ? Math.sin(Math.PI * u) : 0;
+  const bodyContact =
+    action === "slide"
+      ? smooth(u / 0.35) * (1 - smooth((u - 0.72) / 0.28))
+      : action === "diveLeft" || action === "diveRight"
+        ? smooth((u - 0.62) / 0.14) * (1 - smooth((u - 0.8) / 0.2))
+        : 0;
+  return {
+    shiftX: (foot === "left" ? -1 : 1) * hipWidth * 0.2 * weight,
+    plantedFoot:
+      weight > 0.15 ? (foot === "left" ? ("right" as const) : ("left" as const)) : undefined,
+    bodyContact,
+  };
+}
 
 /** Match-event choreography over the existing catalog. The planted leg takes
  * the load while the striking leg winds up, makes contact and recovers.
@@ -29,12 +56,21 @@ export function refineFootballAction(
   const contact = footballContactAt(action);
   const leftFoot = foot === "left";
   const kicking =
-    /^(shot|shotPower|shotPlaced|pass|passLong|cross|chip|firstTime|goalKick|freeKick|penalty|corner)$/.test(
+    /^(shot|shotPower|shotPlaced|pass|passLong|cross|chip|volley|firstTime|goalKick|freeKick|penalty|corner)$/.test(
       action,
     );
   if (kicking) {
-    const power = /Power|Long|goalKick|freeKick/.test(action) ? 1 : action === "pass" ? 0.55 : 0.78;
-    const preparation = contact - 0.18;
+    const placed = action === "shotPlaced" || action === "penalty";
+    const chip = action === "chip";
+    const volley = action === "volley";
+    const power = /Power|Long|goalKick|freeKick/.test(action)
+      ? 1
+      : action === "pass"
+        ? 0.55
+        : chip
+          ? 0.5
+          : 0.78;
+    const preparation = contact - (action === "firstTime" ? 0.075 : 0.18);
     const follow = contact + 0.22;
     const z =
       u < preparation
@@ -45,9 +81,10 @@ export function refineFootballAction(
             ? segment(u, contact, follow, 0.38 * power, 0.5 * power)
             : segment(u, follow, 1, 0.5 * power, 0.02);
     const lift =
-      u < contact
+      (volley ? envelope * 0.24 : 0) +
+      (u < contact
         ? 0.025 + Math.sin((Math.PI * u) / contact) * 0.13 * power
-        : 0.025 + Math.sin((Math.PI * (u - contact)) / (1 - contact)) * 0.24 * power;
+        : 0.025 + Math.sin((Math.PI * (u - contact)) / (1 - contact)) * 0.24 * power);
     const drop = envelope * 0.07;
     const strike = solveLegTarget(z, length - drop - lift, p.thigh, p.shin);
     const support = solveLegTarget(-0.055, length - drop, p.thigh, p.shin);
@@ -56,14 +93,18 @@ export function refineFootballAction(
     pose.legRPitch = left ? support.pitch : strike.pitch;
     pose.kneeL = left ? strike.knee : support.knee;
     pose.kneeR = left ? support.knee : strike.knee;
-    pose.ankleL = left ? strike.ankle - 0.17 * envelope : support.ankle;
-    pose.ankleR = left ? support.ankle : strike.ankle - 0.17 * envelope;
+    const ankle = strike.ankle + (chip ? 0.12 : placed ? -0.045 : -0.17) * envelope;
+    pose.ankleL = left ? ankle : support.ankle;
+    pose.ankleR = left ? support.ankle : ankle;
+    pose.legLRoll = left ? -envelope * (placed ? 0.16 : 0.045) : envelope * 0.035;
+    pose.legRRoll = left ? -envelope * 0.035 : envelope * (placed ? 0.16 : 0.045);
     pose.hipY = -drop;
-    pose.hipYaw = (left ? -1 : 1) * Math.sin(Math.PI * (u - 0.2)) * power * 0.18;
+    pose.hipYaw =
+      (left ? -1 : 1) * envelope * Math.sin(Math.PI * (u - 0.2)) * (placed ? 0.34 : power * 0.24);
     pose.hipRoll = (left ? -1 : 1) * envelope * 0.07;
     pose.spine = 0.04 + envelope * 0.08;
     pose.chest = -pose.hipYaw * 0.2;
-    pose.headPitch = 0.1;
+    pose.headPitch = envelope * 0.1;
     // The support-side arm counterbalances the striking leg below shoulder
     // height. Mirror this too: the catalog's right-foot swing lifted one
     // fist overhead even when the athlete struck with the left foot.
@@ -74,27 +115,89 @@ export function refineFootballAction(
     pose.elbowL = -0.45 - envelope * 0.32;
     pose.elbowR = pose.elbowL;
   } else if (action === "header" || action === "headClear") {
-    pose.hipY = Math.sin(Math.PI * smooth((u - 0.08) / 0.84)) * 0.28;
-    pose.headPitch = u < 0.48 ? -envelope * 0.28 : envelope * 0.3;
-    pose.kneeL = -0.24 - envelope * 0.42;
-    pose.kneeR = -0.24 - envelope * 0.36;
-    pose.armLRoll = 0.3 + envelope * 0.52;
+    const load = Math.sin(Math.PI * smooth(u / 0.25));
+    const flight = Math.sin(Math.PI * smooth((u - 0.2) / 0.56));
+    const landing = Math.sin(Math.PI * smooth((u - 0.73) / 0.27));
+    pose.hipY = flight * 0.38 - load * 0.105 - landing * 0.11;
+    pose.headPitch =
+      u < contact ? segment(u, 0.2, contact, -0.35, 0.28) : segment(u, contact, 0.85, 0.28, 0);
+    pose.spine = -flight * 0.11 + landing * 0.15;
+    pose.kneeL = -0.08 - load * 0.44 - flight * 0.33 - landing * 0.55;
+    pose.kneeR = -0.08 - load * 0.42 - flight * 0.28 - landing * 0.55;
+    pose.armLRoll = 0.16 + flight * 0.66 + landing * 0.22;
     pose.armRRoll = -pose.armLRoll;
   } else if (action === "diveLeft" || action === "diveRight") {
     const side = action === "diveLeft" ? 1 : -1;
-    pose.hipY = envelope * 0.22;
-    pose.hipRoll = side * envelope * 1.2;
+    const launch = smooth((u - 0.12) / 0.28);
+    const recovery = 1 - smooth((u - 0.76) / 0.24);
+    const reach = launch * recovery;
+    const flight = Math.sin(Math.PI * smooth((u - 0.16) / 0.58));
+    const landing = Math.sin(Math.PI * smooth((u - 0.67) / 0.33));
+    pose.hipY = flight * 0.36 - landing * 0.43;
+    pose.hipRoll = side * reach * 1.3;
+    pose.spine = landing * 0.23;
     // Both hands lead the dive, above the head in the athlete's frame.
     // Wide arm abduction made the trailing hand point away from the save
     // after the pelvis rolled sideways.
-    pose.armLPitch = -envelope * (side === 1 ? 2.8 : 2.52);
-    pose.armRPitch = -envelope * (side === -1 ? 2.8 : 2.52);
-    pose.armLRoll = 0.12 + 0.07 * envelope;
+    pose.armLPitch = -reach * (side === 1 ? 2.8 : 2.52);
+    pose.armRPitch = -reach * (side === -1 ? 2.8 : 2.52);
+    pose.armLRoll = 0.12 + 0.07 * reach;
     pose.armRRoll = -pose.armLRoll;
-    pose.elbowL = -0.15 - (1 - envelope) * 0.5;
+    pose.elbowL = -0.15 - (1 - reach) * 0.5 - landing * 0.35;
     pose.elbowR = pose.elbowL;
-    pose.kneeL = -0.25 - (side === 1 ? 0.45 : 0.15) * envelope;
-    pose.kneeR = -0.25 - (side === -1 ? 0.45 : 0.15) * envelope;
+    pose.kneeL = -0.12 - (side === 1 ? 0.45 : 0.15) * reach - landing * 0.5;
+    pose.kneeR = -0.12 - (side === -1 ? 0.45 : 0.15) * reach - landing * 0.5;
+  } else if (
+    action === "feint" ||
+    action === "cut" ||
+    action === "elastico" ||
+    action === "stepover"
+  ) {
+    const circle = Math.sin(Math.PI * smooth(u));
+    const sway = Math.sin(u * Math.PI * 2) * envelope;
+    const lateral = action === "stepover" ? Math.sin(u * Math.PI * 2) * 0.18 : sway * 0.12;
+    const active = solveLegTarget(
+      circle * 0.19,
+      length - 0.08 - circle * 0.09,
+      p.thigh,
+      p.shin,
+      lateral,
+    );
+    const support = solveLegTarget(-0.04, length - 0.08, p.thigh, p.shin);
+    pose.legLPitch = leftFoot ? active.pitch : support.pitch;
+    pose.legRPitch = leftFoot ? support.pitch : active.pitch;
+    pose.kneeL = leftFoot ? active.knee : support.knee;
+    pose.kneeR = leftFoot ? support.knee : active.knee;
+    pose.legLRoll = leftFoot ? active.roll : 0.035;
+    pose.legRRoll = leftFoot ? -0.035 : -active.roll;
+    pose.ankleL = leftFoot ? active.ankle : support.ankle;
+    pose.ankleR = leftFoot ? support.ankle : active.ankle;
+    pose.hipY = -0.08 * envelope;
+    pose.hipYaw = (leftFoot ? -1 : 1) * sway * (action === "cut" ? 0.36 : 0.18);
+    pose.hipRoll = (leftFoot ? -1 : 1) * sway * 0.1;
+    pose.spine = envelope * 0.16;
+    pose.armLRoll = 0.16 + envelope * 0.42;
+    pose.armRRoll = -pose.armLRoll;
+    pose.elbowL = pose.elbowR = -0.35 - envelope * 0.5;
+  } else if (action === "slide") {
+    const extension = smooth(u / contact) * (1 - smooth((u - 0.7) / 0.3));
+    const lead = leftFoot ? -1 : 1;
+    pose.hipY = -extension * 0.48;
+    pose.hipPitch = -extension * 0.58;
+    pose.hipRoll = lead * extension * 0.32;
+    // Extend close to horizontal while the rear leg folds beneath the seat.
+    // A low rear thigh with a deeply bent knee kept its boot on the floor
+    // and lifted the entire slide back into a standing kick.
+    pose.legLPitch = leftFoot ? -extension * 0.93 : -extension * 1.62;
+    pose.legRPitch = leftFoot ? -extension * 1.62 : -extension * 0.93;
+    pose.kneeL = leftFoot ? -0.12 : -extension * 1.65;
+    pose.kneeR = leftFoot ? -extension * 1.65 : -0.12;
+    pose.spine = extension * 0.35;
+    pose.armLPitch = extension * 0.35;
+    pose.armRPitch = extension * 0.55;
+    pose.armLRoll = 0.18 + extension * 0.63;
+    pose.armRRoll = -pose.armLRoll;
+    pose.elbowL = pose.elbowR = -0.3 - extension * 0.5;
   } else if (action === "trap" || action === "intercept" || action === "tackle") {
     const reach = Math.sin(Math.PI * smooth(u)) * (action === "trap" ? 0.18 : 0.32);
     const drop = envelope * (action === "tackle" ? 0.16 : 0.06);

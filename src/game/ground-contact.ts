@@ -70,6 +70,10 @@ export interface GroundContactInput {
   airborne: number;
   previousRootY: number;
   dt: number;
+  /** The free foot retains its authored orientation at ball contact. */
+  plantedFoot?: "left" | "right" | undefined;
+  /** Landing on the hip/seat during a slide or goalkeeper recovery. */
+  bodyContact?: number | undefined;
 }
 
 export interface GroundContactResult {
@@ -111,7 +115,7 @@ export function soleHeightFor(input: GroundContactInput, left: boolean, ankleDel
     v = rotate(v, -knee, 0, 0);
     v.y -= P.thigh;
     v = rotate(v, pitch, 0, roll);
-    v.x += (left ? 1 : -1) * (P.hipW ?? 0.255) * 0.46;
+    v.x += (left ? 1 : -1) * (P.hipW ?? 0.255) * 0.36;
     v.y -= P.hipH * 0.4;
     v = rotate(v, pose.hipPitch, pose.hipYaw, pose.hipRoll + (input.hipRollOffset ?? 0));
     v.x += input.hipShiftX;
@@ -132,16 +136,41 @@ export function solveGroundContact(input: GroundContactInput): GroundContactResu
   const air = clamp(airborne, 0, 1);
   // Authored jump height already lives in pose.hipY. Accumulating the old
   // root offset in flight made repeated headers drift upwards.
-  const target = planted * (1 - air);
+  const bodyContact = clamp(input.bodyContact ?? 0, 0, 1);
+  const pelvisBottom = (side: number) => {
+    const point = rotate(
+      { x: side * (input.P.hipW ?? 0.255) * 0.6, y: -input.P.hipH * 0.7, z: 0 },
+      pose.hipPitch,
+      pose.hipYaw,
+      pose.hipRoll + (input.hipRollOffset ?? 0),
+    );
+    point.x += input.hipShiftX;
+    point.y += input.P.hipY + pose.hipY;
+    return rotate(point, input.leanX, 0, input.leanZ).y;
+  };
+  const bodyPlanted =
+    bodyContact > 0
+      ? clamp(0.012 - Math.min(pelvisBottom(-1), pelvisBottom(1)), -1.2, 0.6)
+      : planted;
+  // Feet remain protected against penetration while the seat/side of the
+  // pelvis becomes the support surface. Flight remains an authored offset.
+  const supported = planted + (Math.max(planted, bodyPlanted) - planted) * bodyContact;
+  const target = supported * (1 - air);
   const k = 1 - Math.exp(-20 * Math.max(0, dt));
   const eased = previousRootY + (target - previousRootY) * k;
   // Ground penetration must be corrected immediately; upward/downward
   // suspension can settle smoothly when the sole has clearance.
-  let rootY = air < 0.1 ? Math.max(eased, planted) : eased;
+  let rootY = air < 0.1 ? Math.max(eased, supported) : eased;
 
   const band = 0.05;
-  const contactL = clamp(1 - Math.max(0, l.y + rootY - 0.008) / band, 0, 1) * (1 - air);
-  const contactR = clamp(1 - Math.max(0, r.y + rootY - 0.008) / band, 0, 1) * (1 - air);
+  const contactL =
+    clamp(1 - Math.max(0, l.y + rootY - 0.008) / band, 0, 1) *
+    (1 - air) *
+    (input.plantedFoot === "right" ? 0 : 1);
+  const contactR =
+    clamp(1 - Math.max(0, r.y + rootY - 0.008) / band, 0, 1) *
+    (1 - air) *
+    (input.plantedFoot === "left" ? 0 : 1);
 
   const ankleLFix = clamp(-l.footAngle - pose.ankleL, -0.6, 0.6) * contactL * 0.5;
   const ankleRFix = clamp(-r.footAngle - pose.ankleR, -0.6, 0.6) * contactR * 0.5;

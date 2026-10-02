@@ -1,10 +1,37 @@
 import type { Pose } from "./animation-core";
 import { emptyPose } from "./animation-core";
-import { gaitPoseAt } from "./gait-kinematics";
+import { gaitPoseAt, solveLegTarget } from "./gait-kinematics";
 import { clampPoseAnatomy } from "./ground-contact";
 import { lookFor, type PlayerLook, type Proportions } from "./player-model";
 import type { ManagerLook } from "./types";
 import { SKIN_TONES } from "./kits";
+
+export interface CinematicManner {
+  assertiveness: number;
+  warmth: number;
+}
+const ease = (value: number) => {
+  const u = Math.max(0, Math.min(1, value));
+  return u * u * (3 - 2 * u);
+};
+export function cinematicIdleAt(time: number, seed: number, seated: boolean) {
+  const start = 4 + (seed % 5) * 2,
+    duration = seed % 5 === 4 && seated ? 10 : 5.5;
+  const phase = ((Math.max(0, time) % (28 + (seed % 7))) - start) / duration;
+  const kinds = ["foot", "look", "tilt", "cross", "rise"] as const;
+  const kind = kinds[seed % 5] ?? "look";
+  const active = phase > 0 && phase < 1;
+  const weight = active
+    ? kind === "rise" && seated
+      ? phase < 0.32
+        ? ease(phase / 0.32)
+        : phase < 0.63
+          ? 1
+          : 1 - ease((phase - 0.63) / 0.37)
+      : Math.sin(Math.PI * phase) ** 2
+    : 0;
+  return { kind: active ? kind : "none", weight, phase: Math.max(0, Math.min(1, phase)) };
+}
 
 export function cinematicLook(seed: number, identity?: ManagerLook): PlayerLook {
   const look = lookFor(`cinematic-actor-${seed}`, "MF");
@@ -41,6 +68,7 @@ export function cinematicActorPose(
   acting: boolean,
   p: Proportions,
   out: Pose = emptyPose(),
+  manner: CinematicManner = { assertiveness: 55, warmth: 55 },
 ): Pose {
   for (const key of Object.keys(out) as (keyof Pose)[]) out[key] = 0;
   const t = time + (seed % 17) * 0.37;
@@ -61,11 +89,51 @@ export function cinematicActorPose(
   out.spine += 0.015 + Math.sin(t * 1.5) * 0.006;
   out.headYaw = Math.sin(t * 0.32) * 0.1;
   out.headPitch = Math.sin(t * 0.7) * 0.025;
+  const idle = cinematicIdleAt(time, seed, posture === "sit");
+  if (!acting && idle.weight > 0) {
+    if (idle.kind === "look") out.headYaw += Math.sin(seed) * 0.48 * idle.weight;
+    if (idle.kind === "tilt") out.headPitch -= 0.12 * idle.weight;
+    if (idle.kind === "cross") {
+      out.armLPitch -= 0.65 * idle.weight;
+      out.armRPitch -= 0.62 * idle.weight;
+      out.elbowL -= 0.85 * idle.weight;
+      out.elbowR -= 0.8 * idle.weight;
+    }
+    if (idle.kind === "foot" && posture === "sit") {
+      const leg = solveLegTarget(
+        p.thigh - 0.035 * idle.weight,
+        p.shin - 0.045 * idle.weight,
+        p.thigh,
+        p.shin,
+      );
+      out.legRPitch = leg.pitch;
+      out.kneeR = leg.knee;
+      out.ankleR = leg.ankle;
+    }
+    if (idle.kind === "rise" && posture === "sit") {
+      const seatedHip = p.shin + p.hipH * 0.4 + p.footH * 0.7;
+      // The standing skeleton includes clearance above the sole. Subtract it
+      // here and reserve the IK reach margin, keeping the toes and heels on
+      // the floor throughout the rise instead of lifting the feet at the end.
+      const standingHip = p.hipY - p.footH * 0.14 - 0.001;
+      out.hipY = seatedHip + (standingHip - seatedHip) * idle.weight - p.hipY;
+      const down = p.hipY + out.hipY - p.hipH * 0.4 - p.footH * 0.7;
+      const leg = solveLegTarget(p.thigh * (1 - idle.weight), down, p.thigh, p.shin);
+      out.legLPitch = out.legRPitch = leg.pitch;
+      out.kneeL = out.kneeR = leg.knee;
+      out.ankleL = out.ankleR = leg.ankle;
+      out.armLPitch = out.armRPitch = 0.15 * (1 - idle.weight);
+      out.elbowL = out.elbowR = -1.05 + idle.weight * 0.85;
+      out.spine += idle.weight * (1 - idle.weight) * 0.18;
+    }
+  }
   if (acting) {
     // Pause between gestures, with a preparation, outward stroke and recovery.
-    const phrase = (t % 3.8) / 3.8;
+    const phraseLength = 4.5 - Math.max(0, Math.min(100, manner.assertiveness)) * 0.012;
+    const phrase = (t % phraseLength) / phraseLength;
     const gesture = Math.sin(Math.PI * Math.min(1, phrase / 0.78)) ** 2;
-    out.armRPitch = -0.32 - gesture * 0.62;
+    out.armRPitch =
+      -0.26 - gesture * (0.42 + Math.max(0, Math.min(100, manner.assertiveness)) * 0.004);
     out.armRRoll = -0.16 - gesture * 0.21;
     out.elbowR = -0.8 - gesture * 0.3;
     out.armLPitch = -gesture * 0.22;

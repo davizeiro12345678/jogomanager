@@ -10,6 +10,7 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 import { imagetools } from "vite-imagetools";
 import { protectThreeSourceTags } from "./scripts/r3f-source-compat";
+import { rapierWasmAsset } from "./scripts/rapier-wasm-asset";
 
 // Load non-VITE_ env vars into process.env for server routes (email, webhooks).
 // These are NOT injected into the client bundle.
@@ -23,20 +24,41 @@ Object.assign(process.env, serverEnv);
 // while validating a future plugin version on Windows.
 const enableMcpRouteGenerator =
   process.platform !== "win32" || process.env["PFM_ENABLE_MCP_GENERATOR"] === "1";
+const verificationOutput =
+  process.env["PFM_CLOUDFLARE_BUILD"] === "1"
+    ? ".cloudflare/production"
+    : process.env["PFM_VISUAL_VERIFY"] === "1"
+      ? "verification/visual-2026-10-02/production"
+      : process.env["PFM_GRAPHICS_VERIFY"] === "1"
+        ? "verification/graphics-2026-09-30/production"
+        : null;
 
 const projectConfig = defineConfig({
-  // An isolated local build can coexist with a preview that holds .output
-  // open on Windows. Deployment keeps the usual Lovable output directory.
-  ...(process.env["PFM_GRAPHICS_VERIFY"] === "1"
-    ? {
-        nitro: {
-          output: {
-            dir: path.resolve(import.meta.dirname, "verification/graphics-2026-09-30/production"),
-          },
+  nitro: {
+    preset: "cloudflare-module",
+    ...(verificationOutput
+      ? { output: { dir: path.resolve(import.meta.dirname, verificationOutput) } }
+      : {}),
+    cloudflare: {
+      nodeCompat: true,
+      deployConfig: true,
+      // Nitro accepts Wrangler settings; the Lovable wrapper's narrower type
+      // only declares nodeCompat and deployConfig. Keep the supported settings.
+      ...{
+        wrangler: {
+          name: "jogomanager-web",
+          compatibility_date: "2026-10-02",
+          workers_dev: true,
+          keep_vars: true,
+          observability: { enabled: true },
         },
-      }
-    : {}),
+      },
+    },
+  },
   vite: {
+    // Module workers retain dynamic import boundaries. IIFE output inlined
+    // Rapier's WASM and season management into every match worker startup.
+    worker: { format: "es", plugins: () => [rapierWasmAsset()] },
     // O preview do sandbox é servido num host *.e2b.app gerado por sessão; sem
     // liberar a lista de hosts o Vite responde 403 e o jogo não carrega.
     server: {

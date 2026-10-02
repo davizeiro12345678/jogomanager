@@ -14,8 +14,9 @@ import {
   Sparkles,
   Volume2,
   VolumeX,
+  X,
 } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Sheet,
@@ -24,17 +25,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { ChatPanel } from "@/components/game/ChatPanel";
 import { BroadcastCockpit } from "@/components/game/BroadcastCockpit";
-import { StorePanel } from "@/components/game/StorePanel";
 
-import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { Stadium3D, type CameraMode, type Quality } from "@/components/game/LazyStadium";
+import { MatchLoading } from "@/components/game/MatchLoading";
 import { MatchMinimap } from "@/components/game/MatchMinimap";
 import { nextCameraMode } from "@/game/camera-modes";
 import { FpsPanel } from "@/components/game/FpsPanel";
 import { fpsMeter } from "@/game/fps-meter";
 import { Cutscene } from "@/components/game/Cutscene";
-import { PrematchCeremony } from "@/components/game/PrematchCeremony";
+import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loading";
 import { ceremonyEnabled } from "@/game/ceremony-prefs";
 import { POSTMATCH_SCENE_IDS, PREMATCH_SCENE_IDS } from "@/content/cutscenes";
 import { Crest } from "@/components/game/Crest";
@@ -59,6 +59,7 @@ import {
 
 import { nextFixture } from "@/game/season";
 import { safeClub } from "@/game/squad";
+import { matchdaySupporters, worldFor } from "@/game/career-world";
 import { buildTeamSetup } from "@/game/quickMatch";
 import { useCareer } from "@/hooks/useCareer";
 import { useT } from "@/i18n";
@@ -74,6 +75,18 @@ const FALLBACK_LOOK: ManagerLook = {
 };
 
 const INTRO_KEY = "manager3d.prematchIntro";
+
+const PrematchCeremony = lazy(() =>
+  import("@/components/game/PrematchCeremony").then((module) => ({
+    default: module.PrematchCeremony,
+  })),
+);
+const StorePanel = lazy(() =>
+  import("@/components/game/StorePanel").then((module) => ({ default: module.StorePanel })),
+);
+const ChatPanel = lazy(() =>
+  import("@/components/game/ChatPanel").then((module) => ({ default: module.ChatPanel })),
+);
 
 function prematchIntroEnabled(): boolean {
   try {
@@ -125,6 +138,7 @@ function buildOpponent(clubId: string): TeamSetup {
 }
 
 function MatchPage() {
+  useCinematicPreload();
   const { career, update } = useCareer();
   const navigate = useNavigate();
 
@@ -328,7 +342,7 @@ const Scoreboard = memo(function Scoreboard({
         {`${home.name} ${snap.hg}, ${away.name} ${snap.ag}. ${paused ? "Partida pausada" : `${snap.minute} minutos`}.`}
       </p>
       <div
-        className={`w-full max-w-[22rem] overflow-hidden rounded-lg border bg-black/75 shadow-xl backdrop-blur-md transition-all duration-500 sm:max-w-sm ${
+        className={`match-scoreboard w-full max-w-[22rem] overflow-hidden rounded-lg border bg-black/75 shadow-xl backdrop-blur-md transition-all duration-500 sm:max-w-sm ${
           flash ? "scale-[1.03] border-primary/70 shadow-primary/30" : "border-white/12"
         }`}
       >
@@ -461,7 +475,7 @@ const Feed = memo(function Feed({ events }: { events: Snap["events"] }) {
     <div
       aria-label="Eventos da partida"
       role="log"
-      className="pointer-events-auto absolute bottom-24 left-3 z-10 hidden max-h-52 w-72 overflow-y-auto rounded-2xl border border-white/10 bg-black/60 p-3 text-xs text-white/85 backdrop-blur-xl md:bottom-4 md:block"
+      className="match-feed pointer-events-auto absolute bottom-24 left-3 z-10 hidden max-h-52 w-72 overflow-y-auto rounded-2xl border border-white/10 bg-black/60 p-3 text-xs text-white/85 backdrop-blur-xl md:bottom-4 md:block"
     >
       {[...events].reverse().map((e, i) => (
         <p
@@ -488,6 +502,7 @@ function LiveMatch({
 }) {
   const fixture = nextFixture(career)!;
   const isHome = fixture.home === career.clubId;
+  const supporters = useMemo(() => matchdaySupporters(career, isHome), [career, isHome]);
   const myClub = safeClub(career.clubId);
   const oppId = isHome ? fixture.away : fixture.home;
 
@@ -524,6 +539,23 @@ function LiveMatch({
   const [camera, setCamera] = useState<CameraMode>(() => getBroadcastPreferences().camera);
   const [showStats, setShowStats] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const panelTrigger = useRef<HTMLButtonElement>(null);
+  const panelClose = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!panelOpen) return;
+    panelClose.current?.focus();
+    function closeOnEscape(event: KeyboardEvent) {
+      if (
+        event.key !== "Escape" ||
+        (event.target instanceof HTMLElement && event.target.closest("[role='dialog']"))
+      )
+        return;
+      setPanelOpen(false);
+      panelTrigger.current?.focus();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [panelOpen]);
   /** gaveta lateral: loja ou chat sem sair da partida (o jogo pausa) */
   const [drawer, setDrawer] = useState<"none" | "store" | "chat">("none");
   const [done, setDone] = useState(false);
@@ -818,17 +850,10 @@ function LiveMatch({
   // Substituições ao vivo (até 5)
   const [outPid, setOutPid] = useState("");
   const [inId, setInId] = useState("");
-  const [subTick, setSubTick] = useState(0);
-  const onPitch = useMemo(
-    () => sim.players.filter((p) => p.side === mySide),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sim, mySide, subTick],
-  );
-  const usedIds = useMemo(
-    () => new Set(sim.players.filter((p) => p.side === mySide).map((p) => p.pid)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sim, mySide, subTick],
-  );
+  // The worker populates and mutates this view after the first render. Derive
+  // the roster from each snapshot so an initially empty team cannot stay cached.
+  const onPitch = sim.players.filter((p) => p.side === mySide);
+  const usedIds = new Set(onPitch.map((p) => p.pid));
   const benchAvailable = career.bench
     .map((id) => career.players[id]!)
     .filter((p) => p && !usedIds.has(p.id) && p.injuryWeeks === 0 && !p.suspended);
@@ -840,15 +865,14 @@ function LiveMatch({
     if (await controllerRef.current?.substitute(mySide, outPid, incoming)) {
       setOutPid("");
       setInId("");
-      setSubTick((n) => n + 1);
       setSnap(snapshot(sim));
     }
   }
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
-      <Stadium3D sim={sim} mode={camera} quality={quality} />
-      <div className="pointer-events-none absolute right-3 top-3 z-20">
+    <div className="match-interface relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
+      <Stadium3D sim={sim} mode={camera} quality={quality} supporters={supporters} />
+      <div className="match-fps pointer-events-none absolute right-3 top-3 z-20">
         <FpsPanel quality={quality} detail={{ Câmera: camera, Velocidade: speed }} />
       </div>
 
@@ -882,48 +906,49 @@ function LiveMatch({
             look={career.manager?.look ?? FALLBACK_LOOK}
             club={myClub}
             managerName={career.managerName}
+            manner={worldFor(career).identity}
             trophies={career.trophies.length}
             narrate
             cinematic
             onDone={() => setIntroStep((s) => s + 1)}
+            sequenceActions={
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIntroStep(PREMATCH_SCENE_IDS.length);
+                    setCeremony(false);
+                  }}
+                  className="cutscene-control px-3 text-xs"
+                >
+                  Pular para o jogo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    storePrematchIntro(false);
+                    setIntroStep(PREMATCH_SCENE_IDS.length);
+                    setCeremony(false);
+                  }}
+                  className="cutscene-control px-3 text-xs"
+                >
+                  Não mostrar mais
+                </button>
+              </>
+            }
           />
-          <div className="pointer-events-auto fixed inset-x-0 bottom-4 z-[60] flex flex-col items-center gap-2">
-            <div className="flex gap-1.5" aria-hidden="true">
-              {PREMATCH_SCENE_IDS.map((id, idx) => (
-                <span
-                  key={id}
-                  className={`h-1.5 w-6 rounded-full ${idx <= introStep ? "bg-primary" : "bg-white/25"}`}
-                />
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setIntroStep(PREMATCH_SCENE_IDS.length);
-                  setCeremony(false);
-                }}
-                className="rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs uppercase tracking-widest text-white/85 backdrop-blur"
-              >
-                Pular para o jogo
-              </button>
-              <button
-                onClick={() => {
-                  storePrematchIntro(false);
-                  setIntroStep(PREMATCH_SCENE_IDS.length);
-                  setCeremony(false);
-                }}
-                className="rounded-full border border-white/10 bg-black/60 px-4 py-2 text-xs uppercase tracking-widest text-white/60 backdrop-blur"
-              >
-                Não mostrar mais
-              </button>
-            </div>
-          </div>
         </>
       ) : null}
 
       {/* cerimônia 3D: o jogo só rola depois dela (ou do pulo) */}
       {ceremonyActive ? (
-        <PrematchCeremony home={setups.home} away={setups.away} onDone={() => setCeremony(false)} />
+        <Suspense fallback={<MatchLoading />}>
+          <PrematchCeremony
+            home={setups.home}
+            away={setups.away}
+            onDone={() => setCeremony(false)}
+          />
+        </Suspense>
       ) : null}
 
       <h1 className="sr-only">
@@ -936,7 +961,7 @@ function LiveMatch({
 
       {/* Estatísticas ao vivo — gaveta no celular, painel lateral no desktop */}
       {showStats ? (
-        <div className="pointer-events-auto absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 max-h-[55vh] space-y-3 overflow-y-auto rounded-xl border border-primary/25 bg-[#07100d]/95 p-4 shadow-2xl shadow-black/40 backdrop-blur-xl md:inset-x-auto md:bottom-auto md:right-3 md:top-24 md:max-h-none md:w-64 md:rounded-xl md:p-3">
+        <div className="match-stats-panel pointer-events-auto absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 max-h-[55vh] space-y-3 overflow-y-auto rounded-xl border border-primary/25 bg-[#07100d]/95 p-4 shadow-2xl shadow-black/40 backdrop-blur-xl md:inset-x-auto md:bottom-auto md:right-3 md:top-24 md:max-h-none md:w-64 md:rounded-xl md:p-3">
           <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-white/25 md:hidden" />
           <div className="flex items-center justify-between">
             <h2 className="font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
@@ -944,7 +969,8 @@ function LiveMatch({
             </h2>
             <button
               onClick={() => setShowStats(false)}
-              className="min-h-11 rounded-full bg-white/10 px-4 text-xs text-white/70 md:hidden"
+              aria-label="Fechar estatísticas"
+              className="min-h-11 rounded-full bg-white/10 px-4 text-xs text-white/70"
             >
               Fechar
             </button>
@@ -1006,11 +1032,12 @@ function LiveMatch({
       <div
         role="toolbar"
         aria-label="Controles da partida"
-        className="absolute bottom-[calc(.75rem+env(safe-area-inset-bottom))] left-1/2 z-20 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-0.5 overflow-x-auto rounded-full border border-white/12 bg-black/75 p-1.5 backdrop-blur-xl md:hidden"
+        className="match-transport absolute z-20 items-center border border-white/12"
       >
         <button
           onClick={() => setPaused((p) => !p)}
           aria-label={paused ? "Retomar partida" : "Pausar partida"}
+          title={paused ? "Retomar partida" : "Pausar partida"}
           className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-95 motion-reduce:transform-none"
         >
           {paused ? <Play size={16} /> : <Pause size={16} />}
@@ -1023,8 +1050,12 @@ function LiveMatch({
           {speed}x
         </button>
         <button
-          onClick={() => setShowStats((s) => !s)}
+          onClick={() => {
+            setShowStats((s) => !s);
+            setPanelOpen(false);
+          }}
           aria-label="Ver estatísticas"
+          title="Estatísticas ao vivo"
           aria-pressed={showStats}
           className={`grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${showStats ? "bg-white/25 text-white" : "text-white/70 hover:bg-white/10"}`}
         >
@@ -1035,45 +1066,54 @@ function LiveMatch({
           deviceQuality={quality}
           onCameraChange={chooseCamera}
           onQualityPreferenceChange={chooseQuality}
+          className="match-camera-control"
         />
+        <div className="match-transport-secondary">
+          <button
+            onClick={() => setNarrating((v) => !v)}
+            aria-label={narrating ? "Desligar narração" : "Ligar narração"}
+            aria-pressed={narrating}
+            className={`grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${narrating ? "text-primary" : "text-white/60 hover:bg-white/10"}`}
+          >
+            {narrating ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          </button>
+          <button
+            onClick={() => {
+              setPaused(true);
+              setDrawer("store");
+            }}
+            aria-label="Abrir loja"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <ShoppingBag size={16} />
+          </button>
+          <button
+            onClick={() => {
+              setPaused(true);
+              setDrawer("chat");
+            }}
+            aria-label="Abrir chat"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <MessageCircle size={16} />
+          </button>
+          <button
+            onClick={skip}
+            aria-label="Pular para o fim"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <SkipForward size={16} />
+          </button>
+        </div>
         <button
-          onClick={() => setNarrating((v) => !v)}
-          aria-label={narrating ? "Desligar narração" : "Ligar narração"}
-          aria-pressed={narrating}
-          className={`grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${narrating ? "text-primary" : "text-white/60 hover:bg-white/10"}`}
-        >
-          {narrating ? <Volume2 size={16} /> : <VolumeX size={16} />}
-        </button>
-        <button
+          ref={panelTrigger}
           onClick={() => {
-            setPaused(true);
-            setDrawer("store");
+            setPanelOpen((v) => !v);
+            setShowStats(false);
           }}
-          aria-label="Abrir loja"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <ShoppingBag size={16} />
-        </button>
-        <button
-          onClick={() => {
-            setPaused(true);
-            setDrawer("chat");
-          }}
-          aria-label="Abrir chat"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <MessageCircle size={16} />
-        </button>
-        <button
-          onClick={skip}
-          aria-label="Pular para o fim"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <SkipForward size={16} />
-        </button>
-        <button
-          onClick={() => setPanelOpen((v) => !v)}
-          aria-label="Abrir controles"
+          aria-label={panelOpen ? "Fechar controles" : "Abrir controles"}
+          title="Táticas e substituições"
+          aria-controls="match-control-panel"
           aria-expanded={panelOpen}
           className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
@@ -1083,9 +1123,13 @@ function LiveMatch({
 
       {/* Loja e chat sem sair da partida */}
       <Sheet open={drawer !== "none"} onOpenChange={(o) => !o && setDrawer("none")}>
-        <SheetContent side="right" className="flex w-full flex-col overflow-y-auto sm:max-w-md">
+        <SheetContent
+          side="right"
+          className="flex w-full flex-col overflow-y-auto sm:max-w-md"
+          closeLabel={drawer === "store" ? "Fechar loja" : "Fechar chat"}
+        >
           <SheetHeader>
-            <SheetTitle className="font-display uppercase tracking-wide">
+            <SheetTitle className="pr-10 font-display uppercase tracking-wide">
               {drawer === "store" ? "Loja" : "Chat global"}
             </SheetTitle>
             <SheetDescription>
@@ -1095,24 +1139,45 @@ function LiveMatch({
             </SheetDescription>
           </SheetHeader>
           <div className="mt-4 flex min-h-0 flex-1 flex-col">
-            {drawer === "store" ? (
-              <StorePanel next="/loja" columns={1} />
-            ) : drawer === "chat" ? (
-              <ChatPanel next="/match" />
-            ) : null}
+            <Suspense
+              fallback={
+                <p role="status" className="py-8 text-center text-sm text-muted-foreground">
+                  Carregando…
+                </p>
+              }
+            >
+              {drawer === "store" ? (
+                <StorePanel next="/loja" columns={1} />
+              ) : drawer === "chat" ? (
+                <ChatPanel next="/match" />
+              ) : null}
+            </Suspense>
           </div>
         </SheetContent>
       </Sheet>
 
       {/* Painel de controle */}
-      <div
-        className={`absolute bottom-16 right-3 z-20 w-[calc(100%-1.5rem)] max-w-xs space-y-3 rounded-xl border border-primary/25 bg-[#07100d]/90 p-3 shadow-2xl shadow-black/40 backdrop-blur-xl transition-all duration-300 md:bottom-4 md:w-72 md:translate-y-0 md:opacity-100 ${
-          panelOpen
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-4 opacity-0 md:pointer-events-auto"
-        }`}
+      <section
+        id="match-control-panel"
+        aria-label="Gestão da partida"
+        hidden={!panelOpen}
+        className="match-control-panel absolute z-20 space-y-3"
       >
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="match-panel-heading">
+          <h2>Gestão da partida</h2>
+          <button
+            type="button"
+            ref={panelClose}
+            aria-label="Fechar gestão da partida"
+            onClick={() => {
+              setPanelOpen(false);
+              panelTrigger.current?.focus();
+            }}
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-1">
           <button
             onClick={() => setPaused((p) => !p)}
             className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-primary px-2 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-95 motion-reduce:transform-none"
@@ -1151,14 +1216,6 @@ function LiveMatch({
             <FastForward size={14} />
           </button>
         </div>
-
-        <BroadcastCockpit
-          camera={camera}
-          deviceQuality={quality}
-          onCameraChange={chooseCamera}
-          onQualityPreferenceChange={chooseQuality}
-          className="hidden md:block"
-        />
 
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
@@ -1246,15 +1303,38 @@ function LiveMatch({
         </div>
 
         <button
-          onClick={() => setShowStats((s) => !s)}
+          onClick={() => {
+            setShowStats((s) => !s);
+            setPanelOpen(false);
+          }}
           className="flex w-full items-center justify-center gap-1 rounded-lg bg-white/10 px-2 py-1.5 text-xs text-white"
         >
           <Sparkles size={12} /> {showStats ? "Ocultar" : "Ver"} estatísticas
         </button>
+        <div className="match-panel-actions">
+          <button
+            type="button"
+            onClick={() => {
+              setPaused(true);
+              setDrawer("store");
+            }}
+          >
+            <ShoppingBag size={16} /> Loja
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPaused(true);
+              setDrawer("chat");
+            }}
+          >
+            <MessageCircle size={16} /> Chat
+          </button>
+        </div>
         <p className="hidden text-[10px] leading-relaxed text-white/40 md:block">
           Espaço pausa · 1–4 velocidade · C câmera · E estatísticas · S pular
         </p>
-      </div>
+      </section>
 
       {postMatchStep !== null && postMatchStep < POSTMATCH_SCENE_IDS.length ? (
         <Cutscene
@@ -1296,10 +1376,34 @@ function LiveMatch({
             <div className="mt-4 grid gap-2">
               {(
                 [
-                  { kind: "motivar", icon: "🔥", label: "Motivar", desc: "+6 moral · +2 fôlego", quote: '"É AGORA! Vamos virar isso juntos!"' },
-                  { kind: "cobrar", icon: "😠", label: "Cobrar", desc: "−2 moral · +6 fôlego", quote: '"Quero mais entrega! Ninguém sai vaiado!"' },
-                  { kind: "poupar", icon: "🧊", label: "Poupar", desc: "+1 moral · +8 fôlego", quote: '"Cabeça fria, pernas frescas. O jogo é longo."' },
-                ] as { kind: TeamTalkKind; icon: string; label: string; desc: string; quote: string }[]
+                  {
+                    kind: "motivar",
+                    icon: "🔥",
+                    label: "Motivar",
+                    desc: "+6 moral · +2 fôlego",
+                    quote: '"É AGORA! Vamos virar isso juntos!"',
+                  },
+                  {
+                    kind: "cobrar",
+                    icon: "😠",
+                    label: "Cobrar",
+                    desc: "−2 moral · +6 fôlego",
+                    quote: '"Quero mais entrega! Ninguém sai vaiado!"',
+                  },
+                  {
+                    kind: "poupar",
+                    icon: "🧊",
+                    label: "Poupar",
+                    desc: "+1 moral · +8 fôlego",
+                    quote: '"Cabeça fria, pernas frescas. O jogo é longo."',
+                  },
+                ] as {
+                  kind: TeamTalkKind;
+                  icon: string;
+                  label: string;
+                  desc: string;
+                  quote: string;
+                }[]
               ).map((opt) => (
                 <button
                   key={opt.kind}

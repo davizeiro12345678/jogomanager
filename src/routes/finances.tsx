@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer } from "@/components/game/screen-kit";
+import { NoCareer, ScreenHeader, StatStrip } from "@/components/game/screen-kit";
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, wageBill } from "@/game/economy";
 import { gateIncome, staffBill } from "@/game/events";
 import { useCareer } from "@/hooks/useCareer";
+import { supporterClimate, supporterOccupancy, worldFor } from "@/game/career-world";
 
 export const Route = createFileRoute("/finances")({
   ssr: false,
@@ -79,6 +80,11 @@ function FinancesPage() {
     ["Custo do staff", `${formatMoney(staffBill(career))}/sem`],
     ["Patrocínio", `${formatMoney(career.sponsor)}/rodada`],
     ["Bilheteria estimada", `${formatMoney(gate)}/jogo em casa`],
+    [
+      "Público estimado",
+      `${Math.round(career.capacity * supporterOccupancy(career)).toLocaleString("pt-BR")} pessoas`,
+    ],
+    ["Clima da torcida", supporterClimate(career)],
     ["Capacidade", career.capacity.toLocaleString("pt-BR")],
   ];
 
@@ -86,26 +92,50 @@ function FinancesPage() {
 
   return (
     <GameShell career={career}>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <ScreenHeader
+        title="Finanças do clube"
+        eyebrow="Gestão do orçamento"
+        description="Acompanhe o caixa, os custos da equipe e a receita do seu estádio."
+      />
+      <StatStrip
+        stats={[
+          {
+            label: "Caixa disponível",
+            value: formatMoney(career.finances.budget),
+            hint: "Orçamento atual do clube",
+          },
+          {
+            label: "Receitas",
+            value: formatMoney(career.finances.income),
+            hint: "Acumulado na temporada",
+          },
+          {
+            label: "Despesas",
+            value: formatMoney(career.finances.spent),
+            hint: "Acumulado na temporada",
+          },
+          {
+            label: "Saldo estimado",
+            value: formatMoney(balance),
+            hint: "Inclui a bilheteria estimada",
+          },
+        ]}
+      />
+      <div className="mt-6 grid gap-5 lg:grid-cols-2">
         <section className="rounded-2xl border border-border/60 surface-card p-5">
-          <h1 className="font-display text-2xl uppercase tracking-wide">Finanças</h1>
+          <h2 className="font-display text-lg">Custos e receitas recorrentes</h2>
           <dl className="mt-4 divide-y divide-border/40 text-sm">
-            {rows.map(([k, v]) => (
-              <div key={k} className="flex justify-between py-2">
+            {rows.slice(3).map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-4 py-3">
                 <dt className="text-muted-foreground">{k}</dt>
                 <dd className="font-medium">{v}</dd>
               </div>
             ))}
           </dl>
-          <p
-            className={`mt-3 font-display text-lg ${balance >= 0 ? "text-primary" : "text-destructive"}`}
-          >
-            Saldo semanal: {formatMoney(balance)}
-          </p>
         </section>
 
         <section className="rounded-2xl border border-border/60 surface-card p-5">
-          <h2 className="font-display text-xl uppercase tracking-wide">Bilheteria e estádio</h2>
+          <h2 className="font-display text-lg">Bilheteria e estádio</h2>
           <label htmlFor="ticket" className="mt-4 block text-sm text-muted-foreground">
             Preço do ingresso: €{career.ticketPrice}
           </label>
@@ -121,6 +151,10 @@ function FinancesPage() {
           />
           <p className="mt-1 text-xs text-muted-foreground">
             Preços altos aumentam a receita, mas irritam a torcida.
+          </p>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+            {worldFor(career).fans.lastReaction} A confiança, a cobrança e o preço do ingresso
+            entram na estimativa de público.
           </p>
           <button
             onClick={expand}

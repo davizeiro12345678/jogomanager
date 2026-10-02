@@ -3,10 +3,26 @@ import { describe, expect, it } from "vitest";
 import { emptyPose } from "./animation-core";
 import { gaitPoseAt } from "./gait-kinematics";
 import { soleHeightFor, solveGroundContact } from "./ground-contact";
-import { anatomyMeasurements, lookFor, proportionsFor } from "./player-model";
+import { anatomyMeasurements, lookFor, lookWithPhysique, proportionsFor } from "./player-model";
 import { anatomicalLimb, type LimbProfile } from "./rig-geometry";
 
 describe("adult player anatomy", () => {
+  it("changes stature and mass without rerolling the athlete's identity", () => {
+    const original = lookFor("fixed-athlete-identity", "FW", true);
+    const lean = lookWithPhysique(original, { height: 174, weight: 64 });
+    const strong = lookWithPhysique(original, { height: 192, weight: 99 });
+    for (const look of [lean, strong]) {
+      expect(look.seed).toBe(original.seed);
+      expect(look.skin).toBe(original.skin);
+      expect(look.hairStyle).toBe(original.hairStyle);
+      expect(look.eyeColor).toBe(original.eyeColor);
+      expect(look.beard).toBe(original.beard);
+      expect(anatomyMeasurements(proportionsFor(look)).height).toBeCloseTo(look.height * 1.8, 6);
+    }
+    expect(proportionsFor(strong).legR).toBeGreaterThan(proportionsFor(lean).legR);
+    expect(lookWithPhysique(original, { height: NaN, weight: Infinity })).toBe(original);
+    expect(lookWithPhysique(original, { height: 190 }).girth).toBe(original.girth);
+  });
   it("keeps stature, limb proportions and head scale consistent across roles and seeds", () => {
     for (const role of ["GK", "DF", "MF", "FW"]) {
       for (let seed = 0; seed < 80; seed++) {
@@ -107,5 +123,26 @@ describe("three dimensional sole contact", () => {
     }
     expect(Math.abs(previousRootY)).toBeLessThan(0.001);
     expect(pose.hipY).toBe(0.28);
+  });
+
+  it("preserves the striking ankle when the other foot supports a kick", () => {
+    const pose = emptyPose();
+    pose.legRPitch = -0.35;
+    pose.kneeR = -0.45;
+    pose.ankleR = -0.2;
+    const contact = solveGroundContact({
+      P: p,
+      pose,
+      hipShiftX: 0.045,
+      leanX: 0,
+      leanZ: 0,
+      airborne: 0,
+      previousRootY: 0,
+      dt: 1 / 60,
+      plantedFoot: "left",
+    });
+    expect(contact.contactR).toBe(0);
+    expect(contact.ankleRFix).toBe(0);
+    expect(contact.contactL).toBeGreaterThan(0.9);
   });
 });

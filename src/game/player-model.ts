@@ -297,6 +297,30 @@ export function lookFor(id: string, pos: string, isCaptain = false): PlayerLook 
 /*  Proporções ósseas                                                         */
 /* -------------------------------------------------------------------------- */
 
+/** Body measurements affect physique while preserving the athlete's face,
+ * hair, complexion and accessories. Saves without measurements retain the
+ * deterministic appearance. Values use the same cm/kg units as the profile. */
+export function lookWithPhysique(
+  look: PlayerLook,
+  measurements: { height?: number | undefined; weight?: number | undefined },
+): PlayerLook {
+  const height =
+    Number.isFinite(measurements.height) && measurements.height! > 0
+      ? Math.max(155, Math.min(210, measurements.height!)) / 180
+      : look.height;
+  const hasWeight = Number.isFinite(measurements.weight) && measurements.weight! > 0;
+  if (!hasWeight) return height === look.height ? look : { ...look, height };
+  const weight = Math.max(48, Math.min(120, measurements.weight!));
+  const bodyMassIndex = weight / (height * 1.8) ** 2;
+  const girth = Math.max(0.87, Math.min(1.16, Math.sqrt(bodyMassIndex / 23.7)));
+  return {
+    ...look,
+    height,
+    girth,
+    bodyType: girth > 1.06 ? "strong" : girth < 0.94 ? "slim" : "normal",
+  };
+}
+
 /**
  * Proporções em unidades de mundo (1 unidade = 1 metro).
  * Base: atleta de 1,80 m, cerca de 7,5 cabeças de altura, pernas ~48% do total.
@@ -377,7 +401,7 @@ export function proportionsFor(look: PlayerLook): Proportions {
     handR: 0.045 * g * metricScale,
     thigh,
     shin,
-    legR: 0.072 * frameScale,
+    legR: 0.078 * frameScale,
     footLen: 0.26 * h * metricScale,
     footH,
   };

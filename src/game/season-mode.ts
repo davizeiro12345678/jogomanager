@@ -210,6 +210,25 @@ export function pickStoryScene(
 export function coachWeek(state: CareerState, action: WeekActionId): CoachWeek | null {
   const prepared = applyWeekAction(state, action);
   const week = autoWeek(prepared);
+  return finishCoachWeek(state, action, week);
+}
+
+/** The browser uses the existing sequential season Worker for one week too. */
+export async function coachWeekAsync(
+  state: CareerState,
+  action: WeekActionId,
+): Promise<CoachWeek | null> {
+  const { autoSeasonAsync } = await import("./simWorkerClient");
+  const prepared = applyWeekAction(state, action);
+  const { weeks } = await autoSeasonAsync(prepared, 1);
+  return finishCoachWeek(state, action, weeks[0] ?? null);
+}
+
+function finishCoachWeek(
+  state: CareerState,
+  action: WeekActionId,
+  week: AutoWeek | null,
+): CoachWeek | null {
   if (!week) return null;
 
   const story = pickStoryScene(state, week.state, week);

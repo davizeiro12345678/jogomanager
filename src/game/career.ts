@@ -16,7 +16,17 @@ import { makeRng } from "./rng";
 import { applyRegens } from "./regen";
 import { checkSeasonIntegrity } from "./season-integrity";
 import { repairCareer } from "./career-repair";
-import { applyPyramid, leagueClubIds } from "./pyramid";
+import { recordWorldTransition, withCareerWorld } from "./career-world";
+import { applyPyramid, leagueClubIds, REGIONAL_LINKS } from "./pyramid";
+import {
+  applyRegionalEntries,
+  resolveQualifications,
+  regionalFinals,
+  seasonTables,
+  seasonCompetitionRecord,
+  topLeague,
+} from "./competition-season";
+import { calendarYear, countryRegulation } from "./competition-regulations";
 import { evolveSeason, setAttrDeltas } from "./attributes";
 
 import { computeTable, generateFixtures } from "./season";
@@ -279,7 +289,7 @@ export function initCareer(
   const budget = Math.round(club.strength * 0.9 * (0.7 + rep * 0.12) * 10) / 10;
   const approval = Math.max(20, Math.min(95, (profile?.approval ?? 62) + (loved ? 8 : 0)));
 
-  return {
+  return withCareerWorld({
     version: 3,
     leagueId,
     clubId,
@@ -319,12 +329,13 @@ export function initCareer(
     transferredIn: [],
     seenScenes: [],
     managerHistory: [{ clubId, from: 1, to: null, note: "Contratado" }],
-  };
+  });
 }
 
 /** Migra estados antigos (v1/v2) para o formato atual. */
 export function migrateCareer(raw: unknown): CareerState {
-  const { state, fixes } = repairCareer(migrateCareerShape(raw));
+  const { state: repaired, fixes } = repairCareer(migrateCareerShape(raw));
+  const state = withCareerWorld(repaired);
   if (!fixes.length) return state;
   console.warn("[career-repair]", fixes);
   const id = `repair-${state.season}-${state.round}`;
@@ -673,11 +684,19 @@ function applyWeeklyDevelopment(
 }
 
 function endSeason(state: CareerState): CareerState {
+  // As copas precisam ter campeão mesmo depois da eliminação do treinador ou em ligas curtas.
+  for (let step = 0; step < 16 && (state.cups ?? []).some((c) => !c.winner); step++)
+    state = processCups(state, state.round, true);
   const club = CLUBS[state.clubId]!;
   const table = computeTable(state);
+  const tables = seasonTables(state, table);
+  const regional = regionalFinals(state, tables);
+  const closingCups = [...(state.cups ?? []), ...regional.cups];
   const position = table.findIndex((r) => r.clubId === state.clubId) + 1;
   const row = table[position - 1]!;
-  const championId = table[0]!.clubId;
+  const championId =
+    regional.cups.find((c) => c.competitionId === `regional:${state.leagueId}`)?.winner ??
+    table[0]!.clubId;
   const champion = CLUBS[championId]!;
   const league = getLeague(state.leagueId);
 
@@ -698,7 +717,7 @@ function endSeason(state: CareerState): CareerState {
       body: `${champion.name} conquistou a ${league.name}. Premiação de €${prize}M. ${metObjective ? "A diretoria aprova o trabalho!" : "A diretoria esperava mais..."}`,
     },
   ];
-  if (position === 1) {
+  if (championId === state.clubId) {
     news.push({
       id: `champion-${state.season}`,
       season: state.season,
@@ -739,7 +758,37 @@ function endSeason(state: CareerState): CareerState {
   setAttrDeltas(attrDeltas);
 
   // acesso e rebaixamento entre as divisões do país
-  const move = applyPyramid(state, table, state.pyramidSlots);
+  const pyramidLeague = REGIONAL_LINKS[state.leagueId]
+    ? topLeague(getLeague(state.leagueId).country)!.id
+    : state.leagueId;
+  const movement = applyPyramid(
+    { ...state, leagueId: pyramidLeague },
+    tables[pyramidLeague] ?? table,
+    state.pyramidSlots,
+    tables,
+  );
+  const move =
+    movement && pyramidLeague !== state.leagueId && !movement.moved
+      ? { ...movement, leagueId: state.leagueId }
+      : movement;
+  const nationalComposition = { ...(state.leagueClubs ?? {}), ...move?.leagueClubs };
+  const qualifications = resolveQualifications(state, tables, closingCups, nationalComposition);
+  const admission =
+    getLeague(state.leagueId).country === "Brasil"
+      ? applyRegionalEntries(
+          { ...state, leagueId: move?.leagueId ?? state.leagueId },
+          nationalComposition,
+          qualifications,
+          tables,
+        )
+      : null;
+  const competitionRecord = seasonCompetitionRecord(
+    state,
+    tables,
+    closingCups,
+    move,
+    regional.playoffs,
+  );
 
   // Checagem de integridade da temporada que terminou. Não bloqueia a carreira:
   // registra no noticiário para que qualquer inconsistência fique visível.
@@ -759,10 +808,18 @@ function endSeason(state: CareerState): CareerState {
       body: `Foram encontradas ${issues.length} inconsistência(s) e a temporada foi fechada com a tabela oficial. Ex.: ${issues[0]}`,
     });
   }
-  const nextLeagueId = move?.leagueId ?? state.leagueId;
-  const nextLeagueClubs = move
-    ? { ...(state.leagueClubs ?? {}), ...move.leagueClubs }
-    : state.leagueClubs;
+  const nextLeagueId = admission?.leagueId ?? move?.leagueId ?? state.leagueId;
+  const nextLeagueClubs =
+    admission?.leagueClubs ?? (move ? nationalComposition : state.leagueClubs);
+  for (const entry of qualifications.filter((e) => e.clubId === state.clubId))
+    news.push({
+      id: `qualification-${state.season}-${entry.competitionId}`,
+      season: state.season,
+      round: state.round,
+      kind: "sistema",
+      title: `Vaga conquistada: ${entry.name}`,
+      body: `${entry.reason}. Inscrição na próxima temporada (${entry.phase === "preliminar" ? "fase preliminar" : "fase principal"}).`,
+    });
   if (move) {
     for (const change of move.movements) {
       const upper = getLeague(change.to).name;
@@ -794,6 +851,12 @@ function endSeason(state: CareerState): CareerState {
   return {
     ...state,
     season: state.season + 1,
+    calendarYear: calendarYear(state) + 1,
+    competitionHistory: [...(state.competitionHistory ?? []), competitionRecord].slice(-4),
+    qualifications,
+    ...(regional.cups.some((c) => c.competitionId === `regional:${state.leagueId}`)
+      ? { regionalLeagueId: state.leagueId }
+      : {}),
     round: 1,
     records: {
       ...(state.records ?? {}),
@@ -820,7 +883,7 @@ function endSeason(state: CareerState): CareerState {
     },
     approval,
     trophies:
-      position === 1
+      championId === state.clubId
         ? [...state.trophies, { season: state.season, name: league.name }]
         : state.trophies,
     history: [
@@ -1067,6 +1130,7 @@ export function advanceRound(
     next = endSeason(next);
   }
 
+  next = recordWorldTransition(state, next);
   next = checkSacking(next);
 
   const newlyUnlocked = evaluateAchievements(next);
@@ -1086,16 +1150,30 @@ export function advanceRound(
 }
 
 /** Roda as fases de copa que caem nesta rodada. */
-function processCups(state: CareerState, round: number): CareerState {
-  const cups: CupState[] = state.cups?.length ? state.cups : createCups(state);
+function processCups(state: CareerState, round: number, finish = false): CareerState {
+  const country = getLeague(state.leagueId).country;
+  const confed = countryRegulation(country).confederation;
+  const cups: CupState[] = (state.cups?.length ? state.cups : createCups(state)).map((c) =>
+    c.competitionId
+      ? c
+      : {
+          ...c,
+          entered: true,
+          competitionId:
+            c.id === "national"
+              ? `national:${country}`
+              : c.id === "continental"
+                ? `continental:${confed}`
+                : `world:${c.id}`,
+        },
+  );
   const news: NewsItem[] = [];
   const trophies = [...state.trophies];
   let budget = state.finances.budget;
   let income = state.finances.income;
 
   const updated = cups.map((cup) => {
-    if (cup.winner || round % cup.everyRounds !== 0) return cup;
-    if (cup.out) return cup;
+    if (cup.winner || (!finish && round % cup.everyRounds !== 0)) return cup;
     const wasGroupStage = inGroupStage(cup);
     const res = playCupStage(cup, state);
     if (res.userPlayed) {

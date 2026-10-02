@@ -13,7 +13,6 @@ dist-ssr
 dist-benchmark
 .npm-cache/
 .bun-cache/
-verification/
 .output
 .vinxi
 .tanstack/**
@@ -22,7 +21,11 @@ verification/
 
 # Wrangler / Cloudflare
 .wrangler/
+.cloudflare/
 .dev.vars
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*
@@ -37,3 +40,6 @@ verification/
 
 # artefato de typecheck incremental
 tsconfig.tsbuildinfo
+
+# Isolated verification artifacts
+verification/

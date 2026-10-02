@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "bundle:report": "node scripts/bundle-report.mjs current",
+    "bundle:check": "node scripts/bundle-report.mjs current .output/public/assets --check",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "preview:worker": "wrangler dev --config .output/server/wrangler.json --local",
@@ -14,7 +16,10 @@
     "test": "vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1",
     "test:stress": "vitest run src/game/sim.stress.test.ts --pool=forks --maxWorkers=1",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "cloudflare:build": "node scripts/cloudflare-deploy.mjs build",
+    "cloudflare:check": "node scripts/cloudflare-deploy.mjs check",
+    "cloudflare:deploy": "node scripts/cloudflare-deploy.mjs deploy"
   },
   "overrides": {
     "rolldown": "1.2.1"

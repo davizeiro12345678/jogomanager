@@ -2,6 +2,7 @@ import { CLUBS, getLeague, LEAGUES } from "./data/leagues";
 import { valueFor, wageFor } from "./economy";
 import { makeRng } from "./rng";
 import { computeTable } from "./season";
+import { supporterOccupancy } from "./career-world";
 import type { CareerState, JobOffer, NewsItem, Player, ScoutReport, TransferOffer } from "./types";
 
 /* ------------------------------------------------------------ helpers */
@@ -30,10 +31,7 @@ export function staffBill(state: CareerState): number {
 
 /** receita de bilheteria por rodada em casa (M€) */
 export function gateIncome(state: CareerState): number {
-  const fill = Math.max(
-    0.35,
-    Math.min(1, (state.fanApproval ?? 60) / 100 + 0.25 - (state.ticketPrice - 40) / 220),
-  );
+  const fill = supporterOccupancy(state);
   return (
     Math.round((((state.capacity ?? 45000) * fill * state.ticketPrice) / 1_000_000) * 100) / 100
   );

@@ -38,6 +38,7 @@ export function CinematicSetBatch({
       }
       cleanup.current = batchStaticStadium(group.current);
       prepared = true;
+      invalidate();
     }
     cleanup.current.hideSources();
     if (prepared || ++frames.current % 60 === 0) {

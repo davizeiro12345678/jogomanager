@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 
 import { CREATOR } from "@/content/changelog";
 import { shareDestinations } from "@/lib/share";
+import { DISCORD_INVITE } from "@/content/community";
 
 /**
  * Rodapé de confiança das páginas públicas.
@@ -49,9 +50,8 @@ export function SiteFooter({ path = "/" }: { path?: string }) {
             Quem escreve
           </h2>
           <p className="mt-3">
-            Jogo e conteúdo criados por{" "}
-            <strong className="text-foreground">{CREATOR.name}</strong>, que acompanha futebol e
-            jogos de gestão esportiva há mais de dez anos.
+            Jogo e conteúdo criados por <strong className="text-foreground">{CREATOR.name}</strong>,
+            que acompanha futebol e jogos de gestão esportiva há mais de dez anos.
           </p>
           <p className="mt-2">
             <Link to="/criador" className="underline underline-offset-4 hover:text-foreground">
@@ -81,6 +81,16 @@ export function SiteFooter({ path = "/" }: { path?: string }) {
             Institucional
           </h2>
           <ul className="mt-3 space-y-2">
+            <li>
+              <a
+                href={DISCORD_INVITE}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center text-primary hover:underline"
+              >
+                Comunidade no Discord ↗
+              </a>
+            </li>
             <li>
               <Link to="/sobre" className="hover:text-foreground">
                 Sobre o jogo

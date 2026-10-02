@@ -161,6 +161,7 @@ export function FrameProbe() {
       triangleSum = 0,
       maxDraws = 0,
       measured = 0;
+    let finalReport = false;
     const prior = gl.info.autoReset;
     gl.info.autoReset = false;
     let observer: PerformanceObserver | undefined;
@@ -175,6 +176,10 @@ export function FrameProbe() {
     }
     const stop = addAfterEffect(() => {
       const now = performance.now();
+      if (finalReport) {
+        gl.info.reset();
+        return;
+      }
       if (firstFrame === null && gl.info.render.calls > 0) firstFrame = now - start;
       if (!document.hidden && now - start > 5000 && now - start <= 65000) {
         metrics.add(now - last);
@@ -196,7 +201,22 @@ export function FrameProbe() {
           visibleSources: number;
           detachedSources: number;
         }[] = [];
+        const actorBatches: {
+          sources: number;
+          draws: number;
+          bones: number;
+          visibleSources: number;
+        }[] = [];
         scene.traverse((object) => {
+          const actors = object.userData["rigidActorBatch"] as
+            { sources: { visible: boolean }[]; draws: number; bones: number } | undefined;
+          if (actors)
+            actorBatches.push({
+              sources: actors.sources.length,
+              draws: actors.draws,
+              bones: actors.bones,
+              visibleSources: actors.sources.filter((source) => source.visible).length,
+            });
           const batch = object.userData["staticBatch"] as
             | {
                 eligible: number;
@@ -228,6 +248,7 @@ export function FrameProbe() {
               programs: gl.info.programs?.length ?? null,
               materials: census.materials,
               staticBatches,
+              actorBatches,
               census: {
                 buckets: census.buckets,
                 total: census.total,
@@ -271,6 +292,10 @@ export function FrameProbe() {
             },
           }),
         );
+        if (now - start >= 65000) {
+          finalReport = true;
+          observer?.disconnect();
+        }
       }
       last = now;
       gl.info.reset();

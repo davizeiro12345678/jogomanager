@@ -3,7 +3,9 @@ import { Trophy } from "lucide-react";
 
 import { GameShell } from "@/components/game/GameShell";
 import { Crest } from "@/components/game/Crest";
-import { CLUBS } from "@/game/data/leagues";
+import { CLUBS, getLeague } from "@/game/data/leagues";
+import { countryRegulation } from "@/game/competition-regulations";
+import { CompetitionRules } from "@/components/game/CompetitionRules";
 import { groupTable, nextPhaseName, stageName } from "@/game/cup";
 import { useCareer } from "@/hooks/useCareer";
 import type { CupState, CupTie } from "@/game/types";
@@ -38,14 +40,26 @@ export const Route = createFileRoute("/cup")({
 function CupPage() {
   const { career } = useCareer();
   if (!career) return <Empty />;
-  const cups = career.cups ?? [];
+  const country = getLeague(career.leagueId).country;
+  const confed = countryRegulation(country).confederation;
+  const cups = (career.cups ?? []).filter(
+    (c) =>
+      !c.competitionId ||
+      c.entered ||
+      c.competitionId === `national:${country}` ||
+      c.competitionId === `continental:${confed}` ||
+      c.competitionId.startsWith("world:") ||
+      (confed === "CONCACAF" && c.id === "regional_path"),
+  );
 
   return (
     <GameShell career={career}>
       <h1 className="font-display text-2xl uppercase tracking-wide">Copas e torneios</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        As fases eliminatórias acontecem entre as rodadas da liga. Vencer rende premiação e troféu.
+        A posição na liga, os títulos de copa e os torneios regionais definem suas vagas. As
+        competições continuam até a final mesmo após sua eliminação.
       </p>
+      <CompetitionRules career={career} />
 
       {cups.length === 0 ? (
         <p className="mt-6 rounded-2xl border border-border/60 surface-card p-5 text-sm text-muted-foreground">
@@ -54,7 +68,7 @@ function CupPage() {
       ) : (
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           {cups.map((cup) => (
-            <CupCard key={cup.id} cup={cup} clubId={career.clubId} />
+            <CupCard key={cup.competitionId ?? cup.id} cup={cup} clubId={career.clubId} />
           ))}
         </div>
       )}
@@ -63,13 +77,16 @@ function CupPage() {
 }
 
 function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
-  const status = cup.winner
-    ? cup.winner === clubId
-      ? "Campeão"
-      : `Campeão: ${CLUBS[cup.winner]?.name ?? "—"}`
-    : cup.out
-      ? "Eliminado"
-      : `Próxima fase: ${nextPhaseName(cup)}`;
+  const status =
+    cup.entered === false
+      ? "Sem vaga nesta edição"
+      : cup.winner
+        ? cup.winner === clubId
+          ? "Campeão"
+          : `Campeão: ${CLUBS[cup.winner]?.name ?? "—"}`
+        : cup.out
+          ? "Eliminado"
+          : `Próxima fase: ${nextPhaseName(cup)}`;
 
   const stages = [...new Set(cup.ties.map((t) => t.round))].sort((a, b) => a - b);
 
@@ -91,6 +108,9 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
           {status}
         </span>
       </div>
+      {cup.formatNote && (
+        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{cup.formatNote}</p>
+      )}
 
       {cup.groups?.length ? (
         <div className="mt-4 grid gap-3 sm:grid-cols-2">

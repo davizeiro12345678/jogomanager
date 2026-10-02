@@ -7,6 +7,7 @@ export type CinematicSet =
 export function cinematicFocus(
   kind: CinematicSet,
   speaker: Speaker | null,
+  festive = false,
 ): readonly [number, number] | null {
   if (!speaker || speaker === "narrator" || speaker === "commentator") return null;
   if (kind === "locker") return speaker === "captain" ? [-0.4, 0.6] : [0.2, -2.1];
@@ -14,7 +15,7 @@ export function cinematicFocus(
   if (kind === "office")
     return speaker === "president" || speaker === "agent" ? [-0.9, -2.3] : [1.1, -2.3];
   if (kind === "tunnel") return [-0.95, 1];
-  if (kind === "pitch") return [-5.2, 0.4];
+  if (kind === "pitch") return festive ? [0, 0.4] : [-5.2, 0.4];
   if (kind === "arrival") return speaker === "fan" ? [-6.1, -3.4] : [1.9, 1.8];
   return null;
 }

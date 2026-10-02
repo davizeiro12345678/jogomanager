@@ -1,6 +1,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { StaticBatch } from "./StaticBatch";
+import { RigidActorBatch } from "./RigidActorBatch";
 import * as THREE from "three";
 import { censusRef } from "@/game/scene-census";
 import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
@@ -207,7 +208,7 @@ function TvCameras({ sim }: { sim: SimView }) {
       const s = spots[i]!;
       g.rotation.y = Math.atan2(ball.x - s[0], ball.z - s[1]) + Math.PI;
     });
-  });
+  }, -20);
   return (
     <group>
       {spots.map((s, i) => (
@@ -382,7 +383,11 @@ export function StadiumProps({
         {quality === "alta" && <Gates rings={rings} color={homeColor} />}
         {quality === "alta" && <RoofCanopy rings={rings} color={homeColor} />}
       </StaticBatch>
-      {quality !== "baixa" && <TvCameras sim={sim} />}
+      {quality !== "baixa" && (
+        <RigidActorBatch signature="tv-cameras">
+          <TvCameras sim={sim} />
+        </RigidActorBatch>
+      )}
     </group>
   );
 }

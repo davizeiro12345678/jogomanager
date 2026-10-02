@@ -40,6 +40,7 @@ export function PostFX({
   cinematic = false,
   grading,
   focusTarget,
+  antialias = true,
 }: {
   quality: PostQuality;
   replay?: boolean;
@@ -55,6 +56,8 @@ export function PostFX({
   grading?: { time: GradeTime; weather: GradeWeather; moment: GradeMoment } | undefined;
   /** A live world-space target keeps cinematic dialogue faces in focus. */
   focusTarget?: THREE.Vector3 | undefined;
+  /** A canvas with native MSAA does not need a second antialias pass or SMAA images. */
+  antialias?: boolean;
 }) {
   const m: PostMoment = moment ?? (replay ? "replay" : "match");
   const p = useMemo(() => postPreset(quality, m, time, intensity), [quality, m, time, intensity]);
@@ -78,7 +81,7 @@ export function PostFX({
         <HueSaturation saturation={p.saturation * 1.25} hue={p.hue} />
         <BrightnessContrast brightness={p.brightness + 0.012} contrast={p.contrast * 1.2} />
         <Vignette offset={0.3} darkness={p.vignette * 0.7} />
-        <SMAA />
+        {antialias ? <SMAA /> : <></>}
       </EffectComposer>
     );
   }
@@ -88,7 +91,9 @@ export function PostFX({
   return (
     <EffectComposer
       key={`alta-${m}`}
-      enableNormalPass={cinema}
+      // N8AO reconstructs its normals from depth; the remaining lens effects
+      // also use depth/color. An unused NormalPass redrew the complete scene.
+      enableNormalPass={false}
       multisampling={0}
       resolutionScale={cinema ? 0.9 : 0.8}
     >
@@ -140,7 +145,7 @@ export function PostFX({
       )}
       <Vignette offset={cinema ? 0.15 : 0.26} darkness={p.vignette} />
       {/* O renderer já aplica ACES; uma segunda curva aqui esmagava médios e realces. */}
-      <SMAA />
+      {antialias ? <SMAA /> : <></>}
     </EffectComposer>
   );
 }

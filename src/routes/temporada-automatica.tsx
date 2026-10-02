@@ -7,7 +7,7 @@ import { GameShell } from "@/components/game/GameShell";
 import { NoCareer } from "@/components/game/screen-kit";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
-import { autoWeek, type AutoWeek } from "@/game/autoplay";
+import { type AutoWeek } from "@/game/autoplay";
 import { autoSeasonAsync } from "@/game/simWorkerClient";
 import { prefersReducedMotion } from "@/game/device";
 import { useCareer } from "@/hooks/useCareer";
@@ -58,15 +58,22 @@ function AutoSeasonPage() {
 
   if (!career) return <NoCareer />;
 
-  const runWeek = () => {
+  const runWeek = async () => {
+    if (busy) return;
     setBusy(true);
-    const w = autoWeek(career);
-    if (w) {
-      setWeeks((cur) => [w, ...cur].slice(0, 60));
-      notifyNewAchievements(career.achievements, w.state.achievements);
-      update(w.state);
+    try {
+      const { weeks: nextWeeks } = await autoSeasonAsync(career, 1);
+      const w = nextWeeks[0];
+      if (w) {
+        setWeeks((cur) => [w, ...cur].slice(0, 60));
+        notifyNewAchievements(career.achievements, w.state.achievements);
+        update(w.state);
+      }
+    } catch {
+      toast.error("Não foi possível simular a semana. Tente novamente.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   const runSeason = async () => {

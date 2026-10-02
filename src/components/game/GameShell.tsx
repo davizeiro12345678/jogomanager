@@ -8,14 +8,12 @@ import {
   Dumbbell,
   FastForward,
   Gauge,
-  Globe,
   History,
   Home,
   LayoutGrid,
   Medal,
   Menu,
   MessagesSquare,
-  Mic,
   Newspaper,
   Play,
   Receipt,
@@ -29,8 +27,10 @@ import {
   Users,
   Wrench,
   UserRound,
+  ChevronRight,
+  Settings2,
 } from "lucide-react";
-import type { ComponentType, ReactNode } from "react";
+import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 
 import { OfflineBar, SyncBadge, useServiceWorker } from "@/components/OfflineBar";
 import {
@@ -56,6 +56,8 @@ import { ShortcutsDialog } from "./ShortcutsDialog";
 import { Crest } from "./Crest";
 import type { CareerState } from "@/game/types";
 import { useActiveTimeTracking } from "@/features/activity/ActivityRanking";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { nextFixture } from "@/game/season";
 
 const TABS: {
   to: string;
@@ -92,10 +94,9 @@ const TABS: {
 ];
 
 /** Atalhos mostrados na barra inferior do celular. */
-const MOBILE = ["/dashboard", "/squad", "/tactics", "/league", "/transfers"];
+const MOBILE = ["/dashboard", "/squad", "/tactics", "/transfers"];
 
-/** Abas sempre visíveis no topo; o resto vive no menu "Mais". */
-const PRIMARY = ["/dashboard", "/squad", "/tactics", "/league", "/transfers", "/finances"];
+const NAV_GROUPS = ["Equipe", "Competição", "Mercado", "Clube", "Carreira", "Extras"];
 
 export function GameShell({
   career,
@@ -109,242 +110,273 @@ export function GameShell({
   const signedIn = useSignedIn();
   const { t, lang, setLang } = useT();
   const { sync } = useCareer();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("manager3d.career-density") === "compact") setDensity("compact");
+    } catch {
+      // The interface remains usable when browser storage is unavailable.
+    }
+  }, []);
+  function changeDensity(value: "comfortable" | "compact") {
+    setDensity(value);
+    try {
+      localStorage.setItem("manager3d.career-density", value);
+    } catch {
+      // Keep the preference for this session even without persistent storage.
+    }
+  }
   useServiceWorker();
   const club = career ? CLUBS[career.clubId] : undefined;
+  const fixture = career ? nextFixture(career) : undefined;
+  const current = TABS.find((tab) => tab.to === pathname);
   useClubTheme(club);
   useActiveTimeTracking(career, signedIn);
 
-  const primary = TABS.filter((tab) => PRIMARY.includes(tab.to));
-  const rest = TABS.filter((tab) => !PRIMARY.includes(tab.to));
-  const groups = Array.from(new Set(rest.map((tab) => tab.group)));
+  function navigationLinks(group: string, closeMenu = false) {
+    return TABS.filter((tab) => tab.group === group && tab.to !== "/dashboard").map((tab) => {
+      const Icon = tab.icon;
+      return (
+        <Link
+          key={tab.to}
+          to={tab.to}
+          onClick={() => closeMenu && setMenuOpen(false)}
+          aria-current={pathname === tab.to ? "page" : undefined}
+          className="career-nav-item"
+        >
+          <Icon size={17} aria-hidden="true" />
+          <span>{t(tab.key)}</span>
+          {pathname === tab.to && <ChevronRight size={14} aria-hidden="true" />}
+        </Link>
+      );
+    });
+  }
+
+  const overview = (closeMenu = false) => (
+    <Link
+      to="/dashboard"
+      onClick={() => closeMenu && setMenuOpen(false)}
+      className="career-nav-item career-nav-overview"
+      aria-current={pathname === "/dashboard" ? "page" : undefined}
+    >
+      <Gauge size={19} aria-hidden="true" />
+      <span>{t("nav.panel")}</span>
+    </Link>
+  );
 
   return (
-    <div className="game-shell min-h-screen min-h-[100dvh] bg-background text-foreground">
+    <div
+      className="game-shell career-shell min-h-[100dvh] bg-background text-foreground"
+      data-density={density}
+    >
       <OfflineBar />
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-x-0 top-0 z-0 h-64 opacity-70"
-        style={{
-          background:
-            "radial-gradient(70% 100% at 50% 0%, var(--club-glow, transparent), transparent 70%)",
-        }}
-      />
-      <header className="game-shell-header sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
-          {/* Identidade do clube */}
-          <div className="game-shell-brand flex min-w-0 items-center gap-2.5">
-            {club ? <Crest club={club} size={34} /> : null}
-            <div className="min-w-0 leading-tight">
-              <p className="truncate font-display text-base tracking-wide">
+      <a href="#career-content" className="career-skip">
+        Ir para o conteúdo
+      </a>
+      <header className="game-shell-header career-header">
+        <div className="career-header-inner">
+          <button
+            type="button"
+            className="career-menu-trigger"
+            aria-label="Abrir menu da carreira"
+            aria-expanded={menuOpen}
+            aria-controls="career-mobile-menu"
+            onClick={() => setMenuOpen(true)}
+          >
+            <Menu size={21} aria-hidden="true" />
+          </button>
+          <Link
+            to="/dashboard"
+            className="career-brand"
+            aria-label={`${club?.name ?? "Manager 3D"} — painel`}
+          >
+            {club && <Crest club={club} size={37} />}
+            <div className="min-w-0">
+              <p className="truncate font-display text-sm sm:text-base">
                 {club?.name ?? "Manager 3D"}
               </p>
-              {career ? (
-                <p className="hud-num truncate text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {t("shell.season")} {career.season} · {t("shell.round")} {career.round} ·{" "}
-                  <span className="text-primary">€{career.finances.budget.toFixed(1)}M</span>
-                </p>
-              ) : (
-                <p className="text-[11px] text-muted-foreground">{t("shell.career")}</p>
-              )}
+              <p className="career-season">
+                {career
+                  ? `${t("shell.season")} ${career.season} · ${t("shell.round")} ${career.round}`
+                  : t("shell.career")}
+              </p>
             </div>
+          </Link>
+          <div className="career-current-page">
+            <span>{current?.group ?? "Carreira"}</span>
+            <ChevronRight size={13} />
+            <strong>{current ? t(current.key) : "Manager 3D"}</strong>
           </div>
-
-          {/* Navegação principal */}
-          <nav
-            aria-label="Navegação principal da carreira"
-            className="ml-auto hidden items-center gap-0.5 lg:flex"
-          >
-            {primary.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <Link
-                  key={tab.to}
-                  to={tab.to}
-                  aria-current={pathname === tab.to ? "page" : undefined}
-                  className="game-nav-link flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground [&.active]:bg-primary/15 [&.active]:text-primary"
-                >
-                  <Icon size={13} />
-                  {t(tab.key)}
-                </Link>
-              );
-            })}
-
+          <div className="career-header-actions">
+            <CommandPalette
+              items={TABS.map((tab) => ({ to: tab.to, label: t(tab.key), group: tab.group }))}
+            />
+            <div className="hidden sm:block">
+              <ShortcutsDialog />
+            </div>
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
-                <Menu size={13} />
-                {t("shell.more")}
+              <DropdownMenuTrigger className="career-icon-button" aria-label="Preferências e conta">
+                <Settings2 size={19} />
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="max-h-[75vh] w-[min(30rem,calc(100vw-2rem))] overflow-y-auto p-3"
-              >
-                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                  {groups.map((g) => (
-                    <div key={g}>
-                      <p className="mb-1 px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        {g}
-                      </p>
-                      {rest
-                        .filter((tab) => tab.group === g)
-                        .map((tab) => {
-                          const Icon = tab.icon;
-                          return (
-                            <DropdownMenuItem key={tab.to} asChild>
-                              <Link
-                                to={tab.to}
-                                className="flex min-h-11 cursor-pointer items-center gap-2 text-sm"
-                              >
-                                <Icon size={14} />
-                                {t(tab.key)}
-                              </Link>
-                            </DropdownMenuItem>
-                          );
-                        })}
-                    </div>
-                  ))}
+              <DropdownMenuContent align="end" className="career-preferences w-72">
+                <p className="mb-3 text-sm font-semibold">Preferências e conta</p>
+                <p className="text-xs text-muted-foreground" id="career-density-label">
+                  Espaçamento da interface
+                </p>
+                <div className="career-density" role="group" aria-labelledby="career-density-label">
+                  <button
+                    type="button"
+                    aria-pressed={density === "comfortable"}
+                    onClick={() => changeDensity("comfortable")}
+                  >
+                    Confortável
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={density === "compact"}
+                    onClick={() => changeDensity("compact")}
+                  >
+                    Compacta
+                  </button>
                 </div>
-                <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/60 pt-3">
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Globe size={14} />
-                    <Select value={lang} onValueChange={(value) => setLang(value as Lang)}>
-                      <SelectTrigger
-                        aria-label={t("shell.language")}
-                        className="h-8 w-32 border-border/60 bg-background/60 text-xs"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LANGS.map((l) => (
-                          <SelectItem key={l} value={l}>
-                            {LANG_NAMES[l]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <label className="mb-1 block text-xs text-muted-foreground">
+                  {t("shell.language")}
+                </label>
+                <Select value={lang} onValueChange={(value) => setLang(value as Lang)}>
+                  <SelectTrigger aria-label={t("shell.language")} className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGS.map((l) => (
+                      <SelectItem key={l} value={l}>
+                        {LANG_NAMES[l]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="my-3">
                   <SyncBadge sync={sync} />
-                  {signedIn ? (
-                    <button
-                      onClick={async () => {
-                        await supabase.auth.signOut();
-                        navigate({ to: "/" });
-                      }}
-                      className="shrink-0 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      {t("action.signOut")}
-                    </button>
-                  ) : (
-                    <Link
-                      to="/auth"
-                      className="shrink-0 rounded-md border border-primary/50 px-2.5 py-1.5 text-xs text-primary hover:bg-primary/10"
-                    >
+                </div>
+                <DropdownMenuItem asChild>
+                  <Link to="/visual">
+                    <SlidersHorizontal size={16} />
+                    {t("nav.visual")}
+                  </Link>
+                </DropdownMenuItem>
+                {signedIn ? (
+                  <DropdownMenuItem
+                    onSelect={async () => {
+                      await supabase.auth.signOut();
+                      void navigate({ to: "/" });
+                    }}
+                  >
+                    {t("action.signOut")}
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem asChild>
+                    <Link to="/auth" search={{ next: pathname }}>
                       {t("action.saveCloud")}
                     </Link>
-                  )}
-                </div>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
-          </nav>
-
-          {/* Ações */}
-          <div className="ml-auto flex shrink-0 items-center gap-1 lg:ml-2">
-            {signedIn === false ? (
-              <Link
-                to="/auth"
-                search={{ next: "/dashboard" }}
-                className="hidden min-h-[38px] items-center rounded-lg border border-primary/50 px-3 font-display text-xs uppercase text-primary xl:inline-flex"
-              >
-                Salvar carreira
+            {fixture && (
+              <Link to="/match" className="career-primary-button career-header-play">
+                <Play size={15} aria-hidden="true" />
+                <span>{t("action.play")}</span>
               </Link>
-            ) : null}
-            <div className="hidden lg:block">
-              <CommandPalette
-                items={TABS.map((tab) => ({ to: tab.to, label: t(tab.key), group: tab.group }))}
-              />
-            </div>
-            <ShortcutsDialog />
-            <Link
-              to="/match"
-              className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
-            >
-              <Play size={13} /> {t("action.play")}
-            </Link>
+            )}
           </div>
         </div>
-
-        {/* Navegação secundária rolável no celular */}
-        <nav
-          aria-label="Mais áreas da carreira"
-          className="flex items-center gap-3 px-4 pb-3 lg:hidden"
-        >
-          <label
-            htmlFor="career-area"
-            className="shrink-0 text-xs font-semibold text-muted-foreground"
-          >
-            Área da carreira
-          </label>
-          <select
-            id="career-area"
-            value={TABS.some((tab) => tab.to === pathname) ? pathname : ""}
-            onChange={(event) => navigate({ to: event.target.value })}
-            className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-secondary/60 px-3 text-sm"
-          >
-            <option value="" disabled>
-              Escolha uma tela
-            </option>
-            {Array.from(new Set(TABS.map((tab) => tab.group))).map((group) => (
-              <optgroup key={group} label={group}>
-                {TABS.filter((tab) => tab.group === group).map((tab) => (
-                  <option key={tab.to} value={tab.to}>
-                    {t(tab.key)}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </nav>
       </header>
 
-      {signedIn === false && (
-        <div className="border-b border-border/50 bg-secondary/40">
-          <p className="mx-auto max-w-6xl px-4 py-2 text-xs text-muted-foreground">
-            {t("guest.line1")}{" "}
-            <Link
-              to="/auth"
-              search={{ next: "/dashboard" }}
-              className="text-primary underline underline-offset-2"
-            >
-              {t("guest.cta")}
-            </Link>{" "}
-            {t("guest.line2")}
-          </p>
+      <div className="career-workspace">
+        <aside className="career-sidebar" aria-label="Menu da carreira">
+          <nav aria-label="Navegação principal da carreira">
+            {overview()}
+            {NAV_GROUPS.filter((group) => group !== "Extras").map((group) => (
+              <div key={group} className="career-nav-group">
+                <p className="career-nav-heading">{group}</p>
+                {navigationLinks(group)}
+              </div>
+            ))}
+            <details className="career-nav-group" open={current?.group === "Extras" || undefined}>
+              <summary className="career-nav-heading cursor-pointer">Mais recursos</summary>
+              {navigationLinks("Extras")}
+            </details>
+          </nav>
+          <div className="career-sidebar-footer">
+            <span className="career-manager-avatar">
+              <UserRound size={18} />
+            </span>
+            <div>
+              <p>{career?.managerName ?? "Seu treinador"}</p>
+              <span>
+                {career
+                  ? `Meta: ${career.objective}º ou melhor`
+                  : "Sua próxima conquista começa aqui"}
+              </span>
+            </div>
+          </div>
+        </aside>
+        <div className="career-page">
+          {signedIn === false && (
+            <div className="career-save-note">
+              <span>Sua carreira é salva neste aparelho.</span>
+              <Link to="/auth" search={{ next: pathname }}>
+                Salvar na nuvem <ChevronRight size={13} />
+              </Link>
+            </div>
+          )}
+          <main id="career-content" tabIndex={-1} className="page-enter career-content">
+            {children}
+          </main>
         </div>
-      )}
+      </div>
 
-      <main className="page-enter mx-auto max-w-7xl px-4 py-5 pb-24 lg:py-6 lg:pb-6">
-        {children}
-      </main>
-
-      {/* Barra inferior do celular */}
-      <nav
-        aria-label="Navegação principal no celular"
-        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
-      >
-        {TABS.filter((tab) => MOBILE.includes(tab.to)).map((tab) => {
+      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <SheetContent
+          side="left"
+          id="career-mobile-menu"
+          className="career-menu-sheet"
+          closeLabel="Fechar menu da carreira"
+        >
+          <SheetTitle className="pr-10 font-display">Menu da carreira</SheetTitle>
+          <SheetDescription>Escolha o que você quer gerenciar.</SheetDescription>
+          <nav aria-label="Todas as áreas da carreira" className="mt-5">
+            {overview(true)}
+            {NAV_GROUPS.map((group) => (
+              <div key={group} className="career-nav-group">
+                <p className="career-nav-heading">{group === "Extras" ? "Mais recursos" : group}</p>
+                {navigationLinks(group, true)}
+              </div>
+            ))}
+          </nav>
+        </SheetContent>
+      </Sheet>
+      <nav aria-label="Navegação principal no celular" className="career-bottom-nav">
+        {MOBILE.map((path) => {
+          const tab = TABS.find((item) => item.to === path)!;
           const Icon = tab.icon;
           return (
-            <Link
-              key={tab.to}
-              to={tab.to}
-              aria-label={t(tab.key)}
-              aria-current={pathname === tab.to ? "page" : undefined}
-              className="flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] uppercase tracking-wider text-muted-foreground [&.active]:text-primary"
-            >
-              <Icon size={17} />
-              {t(tab.key)}
+            <Link key={path} to={path} aria-current={pathname === path ? "page" : undefined}>
+              <Icon size={20} aria-hidden="true" />
+              <span>{t(tab.key)}</span>
             </Link>
           );
         })}
+        <button
+          type="button"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Abrir todas as áreas"
+          aria-expanded={menuOpen}
+          aria-controls="career-mobile-menu"
+        >
+          <Menu size={20} />
+          <span>Menu</span>
+        </button>
       </nav>
     </div>
   );

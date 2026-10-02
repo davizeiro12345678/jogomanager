@@ -3,6 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicLinks } from "@/components/PublicLinks";
 import { CREATOR } from "@/content/changelog";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
+import { CommunityInvite } from "@/components/CommunityInvite";
+import { CLUBS, LEAGUES } from "@/game/data/leagues";
 
 const PATH = "/sobre";
 const TITLE =
@@ -53,8 +55,8 @@ const BLOCKS = [
 ];
 
 const FACTS = [
-  { label: "Ligas", value: "115" },
-  { label: "Clubes", value: "1.400+" },
+  { label: "Ligas e copas", value: String(LEAGUES.length) },
+  { label: "Clubes", value: String(Object.keys(CLUBS).length) },
   { label: "Idiomas", value: "39" },
   { label: "Preço", value: "Grátis" },
 ];
@@ -97,8 +99,9 @@ function SobrePage() {
           <h2 className="font-display text-2xl">Quem faz o jogo</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             O Pro Football Manager 3D é criado e mantido por{" "}
-            <strong className="text-foreground">{CREATOR.name}</strong> — {CREATOR.role.toLowerCase()}
-            . Bastidores, novidades e vídeos das partidas saem no canal do YouTube.
+            <strong className="text-foreground">{CREATOR.name}</strong> —{" "}
+            {CREATOR.role.toLowerCase()}. Bastidores, novidades e vídeos das partidas saem no canal
+            do YouTube.
           </p>
           <p className="mt-3 flex flex-wrap gap-3 text-sm">
             <a
@@ -139,6 +142,16 @@ function SobrePage() {
           </Link>
         </div>
 
+        <section className="mt-10 rounded-xl border border-border/60 surface-card p-6">
+          <h2 className="font-display text-2xl">Do primeiro teste ao seu projeto de clube</h2>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            Experimente uma partida rápida para conhecer o jogo. Na carreira, comece com uma
+            escalação equilibrada, confira o orçamento antes de contratar e mantenha uma cópia
+            exportada do progresso. Os guias ajudam a aprofundar cada decisão; a comunidade é um
+            espaço para compartilhar o que você aprendeu.
+          </p>
+        </section>
+        <CommunityInvite />
         <PublicLinks exclude={PATH} />
       </div>
     </div>

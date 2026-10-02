@@ -18,7 +18,7 @@ export type SendTemplateEmailResult =
   { sent: true } | { sent: false; reason: "recipient_suppressed" };
 
 export interface SendTemplateEmailOptions {
-  templateData?: Record<string, any>;
+  templateData?: Record<string, unknown>;
   /** Dedupes retries of the same logical send; defaults to a random UUID (no dedupe). */
   idempotencyKey?: string;
   replyTo?: string;
@@ -37,7 +37,8 @@ export async function sendTemplateEmail(
   options: SendTemplateEmailOptions = {},
 ): Promise<SendTemplateEmailResult> {
   const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) {
+  const useResend = process.env["TRANSACTIONAL_EMAIL_PROVIDER"] === "resend";
+  if (!apiKey && !useResend) {
     throw new Error("LOVABLE_API_KEY is not configured");
   }
 
@@ -62,6 +63,32 @@ export async function sendTemplateEmail(
   const subject =
     typeof template.subject === "function" ? template.subject(templateData) : template.subject;
 
+  if (useResend) {
+    const key = process.env["RESEND_API_KEY"];
+    const from = process.env["TRANSACTIONAL_EMAIL_FROM"];
+    if (!key || !from)
+      throw new Error("Configure RESEND_API_KEY and a verified TRANSACTIONAL_EMAIL_FROM.");
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": options.idempotencyKey || crypto.randomUUID(),
+      },
+      body: JSON.stringify({
+        from,
+        to: [recipient],
+        subject,
+        html,
+        text,
+        ...(options.replyTo ? { reply_to: options.replyTo } : {}),
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!response.ok) throw new Error(`Transactional email failed (${response.status}).`);
+    return { sent: true };
+  }
+
   try {
     await sendLovableEmail(
       {
@@ -76,7 +103,7 @@ export async function sendTemplateEmail(
         idempotency_key: options.idempotencyKey || crypto.randomUUID(),
         ...(options.replyTo ? { reply_to: options.replyTo } : {}),
       },
-      { apiKey, sendUrl: process.env["LOVABLE_SEND_URL"] },
+      { apiKey: apiKey!, sendUrl: process.env["LOVABLE_SEND_URL"] },
     );
   } catch (error) {
     if (error instanceof EmailAPIError && error.code === "recipient_suppressed") {

@@ -1,0 +1,373 @@
+.studio-page {
+  min-height: 100dvh;
+  padding: clamp(0.75rem, 2vw, 1.75rem);
+  background: radial-gradient(ellipse at 65% 0%, #182c37 0, transparent 65%), #0b141b;
+  color: #e7edf2;
+}
+.studio-shell {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.studio-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.studio-brand {
+  margin-right: auto;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  font-size: 0.75rem;
+  color: #ddeaf0;
+}
+.studio-nav a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 0.65rem;
+  color: #92a7b7;
+  font-size: 0.8rem;
+}
+.studio-nav a[aria-current="page"] {
+  background: #223743;
+  color: #8df0c9;
+}
+.studio-card {
+  border: 1px solid #344754;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #12212a;
+  color: #e7edf2;
+}
+.studio-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid #344754;
+}
+.studio-title {
+  margin-right: auto;
+}
+.studio-kicker {
+  color: #89abbd;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+.studio-title h2 {
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+.studio-height {
+  padding: 0.3rem 0.65rem;
+  border-radius: 0.4rem;
+  background: #213a40;
+  color: #9de2cb;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.studio-framing {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #9fb4c4;
+}
+.studio-select,
+.studio-input {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 0.35rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #39515f;
+  border-radius: 0.65rem;
+  background: #0c1b24;
+  color: #e2edf4;
+  font-size: 0.85rem;
+}
+.studio-framing select {
+  width: auto;
+  margin: 0;
+}
+.studio-viewport {
+  position: relative;
+  height: clamp(21rem, 63dvh, 42rem);
+  min-width: 0;
+  background: #253441;
+  padding-bottom: 3.75rem;
+}
+.studio-viewport::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 100px #07111a66;
+}
+.studio-view-actions {
+  position: absolute;
+  inset: auto 1rem 0.8rem;
+  z-index: 1;
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.studio-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #496575;
+  border-radius: 0.65rem;
+  background: #122430e8;
+  color: #e3edf3;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.studio-button:hover {
+  background: #284554;
+  border-color: #8ec0ca;
+}
+.studio-button-primary {
+  background: #9ce5ca;
+  border-color: #9ce5ca;
+  color: #102d27;
+  font-weight: 700;
+}
+.studio-button-primary:hover {
+  background: #c0f4e0;
+}
+.studio-button[aria-pressed="true"] {
+  background: #204840;
+  border-color: #75d2b1;
+}
+.studio-panel {
+  padding: 1rem;
+  border-top: 1px solid #344754;
+}
+.studio-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 0.7rem;
+  background: #0c1a24;
+  margin-bottom: 1.15rem;
+}
+.studio-tabs button {
+  flex: 1;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 0.5rem;
+  color: #9bb1c1;
+  font-size: 0.8rem;
+}
+.studio-tabs button[aria-pressed="true"] {
+  color: #d3f6e8;
+  background: #28413e;
+}
+.studio-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+.studio-fields label {
+  font-size: 0.75rem;
+  color: #abc0ce;
+  min-width: 0;
+}
+.studio-fields .studio-wide {
+  grid-column: 1 / -1;
+}
+.studio-hint {
+  color: #87a1b4;
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+.studio-phase {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #344754;
+}
+.studio-phase-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem;
+  margin: 0.65rem 0;
+}
+.studio-phase-buttons button {
+  flex: 1;
+  padding-inline: 0.5rem;
+  font-size: 0.73rem;
+}
+.studio-timeline {
+  width: 100%;
+  height: 44px;
+  accent-color: #9ce5ca;
+}
+.studio-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  border-top: 1px solid #344754;
+  font-size: 0.75rem;
+  color: #91aabd;
+}
+.studio-footer strong {
+  color: #dceaf3;
+  font-weight: 600;
+  margin-right: auto;
+}
+.studio-card :is(button, a, select, input):focus-visible,
+.studio-nav a:focus-visible {
+  outline: 2px solid #a9e9d1;
+  outline-offset: 3px;
+}
+.cinema-intro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  padding: clamp(1.2rem, 3vw, 2.2rem);
+  border-bottom: 1px solid #344754;
+  background: linear-gradient(120deg, #213744, #12212a);
+}
+.cinema-intro h2 {
+  font-size: clamp(1.5rem, 3vw, 2.35rem);
+  letter-spacing: -0.04em;
+  font-weight: 750;
+  line-height: 1.1;
+  margin: 0.4rem 0 0.7rem;
+}
+.cinema-intro p {
+  max-width: 34rem;
+}
+.cinema-library {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  padding: 1rem;
+}
+.cinema-card {
+  padding: 1.15rem;
+  min-height: 140px;
+  text-align: left;
+  border: 1px solid #344754;
+  border-radius: 0.8rem;
+  background: linear-gradient(135deg, #293e4c, #14252f);
+  color: #e2ecf3;
+}
+.cinema-card:hover {
+  border-color: #98d8c5;
+  background: #263e48;
+}
+.cinema-card svg {
+  margin-bottom: 1rem;
+  color: #9edcca;
+}
+.cinema-card strong {
+  display: block;
+  font-size: 1rem;
+}
+.cinema-card span {
+  display: block;
+  color: #91a9ba;
+  font-size: 0.75rem;
+  margin-top: 0.3rem;
+}
+.cinema-config {
+  padding: 1rem;
+  border-top: 1px solid #344754;
+}
+.cinema-config summary {
+  min-height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #c5d9e5;
+  font-size: 0.8rem;
+}
+.cinema-config summary::after {
+  content: "⌄";
+  margin-left: auto;
+  font-size: 1.2rem;
+}
+.cinema-config[open] summary::after {
+  content: "⌃";
+}
+.studio-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+@media (min-width: 60rem) {
+  .studio-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  .studio-viewport {
+    height: clamp(28rem, calc(100dvh - 12rem), 50rem);
+  }
+  .studio-panel {
+    border-top: 0;
+    border-left: 1px solid #344754;
+  }
+  .studio-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .studio-phase-buttons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cinema-library {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+}
+@media (max-width: 30rem) {
+  .studio-toolbar {
+    padding: 0.7rem;
+    gap: 0.4rem;
+  }
+  .studio-title h2 {
+    font-size: 0.95rem;
+  }
+  .studio-framing {
+    flex-basis: 100%;
+    justify-content: space-between;
+  }
+  .studio-view-actions {
+    inset-inline: 0.6rem;
+  }
+  .studio-view-actions button {
+    padding-inline: 0.65rem;
+    font-size: 0.73rem;
+  }
+  .studio-nav {
+    margin-bottom: 0.6rem;
+  }
+  .studio-nav a {
+    padding-inline: 0.55rem;
+  }
+  .cinema-card {
+    padding: 0.9rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-card * {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}

@@ -13,6 +13,8 @@ import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1600&qual
 import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1600&quality=62&as=srcset";
 import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
 import { Button } from "@/components/ui/button";
+import { CommunityInvite, DiscordLink } from "@/components/CommunityInvite";
+import { HomeDetails } from "@/components/home/HomeDetails";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -127,6 +129,7 @@ function Landing() {
               </span>
             </Link>
             <div className="hidden items-center gap-1 md:flex">
+              <DiscordLink className="px-3 py-2">Discord</DiscordLink>
               <Button variant="ghost" asChild>
                 <Link to="/guias">Guias</Link>
               </Button>
@@ -155,6 +158,7 @@ function Landing() {
           </div>
           {menuOpen ? (
             <div className="grid gap-1 border-t border-border/50 bg-background p-3 md:hidden">
+              <DiscordLink>Entrar na comunidade</DiscordLink>
               <Button variant="ghost" asChild>
                 <Link to="/guias" onClick={() => setMenuOpen(false)}>
                   Guias
@@ -239,11 +243,14 @@ function Landing() {
                 to="/auth"
                 className="font-medium text-primary underline underline-offset-4 hover:text-foreground"
               >
-                Salvar com Google
+                Criar conta e salvar
               </Link>{" "}
-              leva um clique.
+              quando estiver conectado.
             </p>
 
+            <div className="mt-5">
+              <DiscordLink>Encontre sua torcida no Discord</DiscordLink>
+            </div>
             <dl className="mt-9 grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:gap-x-10">
               {[
                 [`${Object.keys(CLUBS).length}+`, "clubes reais"],
@@ -338,6 +345,7 @@ function Landing() {
       </section>
 
       <div className="relative mx-auto max-w-6xl px-4 pb-16">
+        <CommunityInvite />
         {/* faixa de escudos: mostra de cara que os clubes são reais */}
         <div
           aria-hidden="true"
@@ -420,6 +428,7 @@ function Landing() {
           </ol>
         </section>
 
+        <HomeDetails />
         <nav
           aria-label="Links úteis"
           className="mt-10 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground sm:text-sm"

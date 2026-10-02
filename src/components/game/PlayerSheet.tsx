@@ -1,4 +1,5 @@
 import { PlayerPortrait } from "@/components/game/PlayerPortrait";
+import { useEffect, useRef } from "react";
 import { ATTR_LABELS, attrTone, groupsFor, PERSONALITY_DESC, profileFor } from "@/game/attributes";
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, formatWage } from "@/game/economy";
@@ -18,20 +19,41 @@ function OverallBreakdown({ player }: { player: Player }) {
   const weights = POSITION_WEIGHTS[player.pos];
   const base = positionalOverall(player.pos, player);
   const form = formAdjustment(player.form ?? 60);
-  const keys = (Object.keys(CORE_LABELS) as (keyof typeof CORE_LABELS)[]).filter((k) => weights[k] > 0);
+  const keys = (Object.keys(CORE_LABELS) as (keyof typeof CORE_LABELS)[]).filter(
+    (k) => weights[k] > 0,
+  );
   return (
     <section className="mt-4 rounded-xl border border-border/50 bg-background/40 p-3">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">Como o overall é calculado · {player.pos}</p>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+        Como o overall é calculado · {player.pos}
+      </p>
       <ul className="mt-2 space-y-1 text-sm">
         {keys.map((k) => (
           <li key={k} className="flex items-center justify-between gap-2">
-            <span>{CORE_LABELS[k]} <span className="text-muted-foreground">({player[k]} × {Math.round(weights[k] * 100)}%)</span></span>
+            <span>
+              {CORE_LABELS[k]}{" "}
+              <span className="text-muted-foreground">
+                ({player[k]} × {Math.round(weights[k] * 100)}%)
+              </span>
+            </span>
             <span className="hud-num">+{(player[k] * weights[k]).toFixed(1)}</span>
           </li>
         ))}
-        <li className="flex justify-between border-t border-border/50 pt-1"><span>Base pela posição</span><span className="hud-num">{base}</span></li>
-        <li className="flex justify-between"><span>Forma recente</span><span className="hud-num">{form >= 0 ? "+" : ""}{form}</span></li>
-        <li className="flex justify-between text-muted-foreground"><span>Overall atual</span><span className="hud-num font-semibold text-primary">{player.ovr}</span></li>
+        <li className="flex justify-between border-t border-border/50 pt-1">
+          <span>Base pela posição</span>
+          <span className="hud-num">{base}</span>
+        </li>
+        <li className="flex justify-between">
+          <span>Forma recente</span>
+          <span className="hud-num">
+            {form >= 0 ? "+" : ""}
+            {form}
+          </span>
+        </li>
+        <li className="flex justify-between text-muted-foreground">
+          <span>Overall atual</span>
+          <span className="hud-num font-semibold text-primary">{player.ovr}</span>
+        </li>
       </ul>
     </section>
   );
@@ -47,13 +69,54 @@ function Bar({ v }: { v: number }) {
 
 /** Ficha completa do jogador: retrato, atributos, personalidade e carreira. */
 export function PlayerSheet({ player, onClose }: { player: Player; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const dialog = dialogRef.current;
+    dialog?.querySelector<HTMLButtonElement>("button")?.focus();
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      } else if (event.key === "Tab" && dialog) {
+        const controls = [
+          ...dialog.querySelectorAll<HTMLElement>(
+            "button, a[href], input, select, textarea, [tabindex]",
+          ),
+        ].filter(
+          (element) =>
+            element.tabIndex >= 0 &&
+            !element.matches(":disabled") &&
+            element.getClientRects().length > 0,
+        );
+        const first = controls[0];
+        const last = controls.at(-1);
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus instanceof HTMLElement) previousFocus.focus();
+    };
+  }, [onClose]);
   const prof = profileFor(player);
   const club = CLUBS[player.clubId];
   const groups = groupsFor(player.pos);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-background/80 p-4 backdrop-blur"
+      ref={dialogRef}
+      className="career-player-dialog fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-background/80 p-4 backdrop-blur"
       role="dialog"
       aria-modal="true"
       aria-label={`Ficha de ${player.name}`}

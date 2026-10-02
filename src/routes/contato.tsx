@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicLinks } from "@/components/PublicLinks";
 import { CONTENT_UPDATED, SiteFooter } from "@/components/SiteFooter";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
+import { CommunityInvite } from "@/components/CommunityInvite";
 
 const PATH = "/contato";
 const TITLE = "Contato e suporte · Pro Football Manager 3D";
@@ -96,6 +97,19 @@ function ContatoPage() {
           </p>
         </section>
 
+        <CommunityInvite />
+        <section className="surface-card mt-8 rounded-xl border border-border/60 p-5">
+          <h2 className="font-display text-xl">Ajude a reproduzir o problema</h2>
+          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
+            <li>Informe a página, o aparelho e o navegador em que aconteceu.</li>
+            <li>Descreva a ação, o resultado esperado e o que apareceu na tela.</li>
+            <li>Para uma carreira, anote clube, temporada e rodada; guarde uma cópia exportada.</li>
+            <li>
+              Para compras, use o canal de atendimento e o número do pedido. Não publique
+              comprovantes com dados pessoais no servidor.
+            </li>
+          </ol>
+        </section>
         <div className="mt-8 space-y-4">
           {CHANNELS.map((c) => (
             <section key={c.title} className="surface-card rounded-xl border border-border/60 p-5">

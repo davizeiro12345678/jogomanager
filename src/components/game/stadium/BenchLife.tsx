@@ -15,6 +15,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import { censusRef } from "@/game/scene-census";
+import { RigidActorBatch } from "./RigidActorBatch";
 import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
 
 export type Quality = "alta" | "media" | "baixa";
@@ -75,10 +76,10 @@ const Seated = memo(function Seated({
     if (torso.current) torso.current.rotation.x = Math.sin(t * 1.4 + phase) * 0.05 - 0.06;
     if (g.current) {
       const jumping = bounce.current > 0.5 ? Math.abs(Math.sin(t * 9 + phase)) * 0.35 : 0;
-      g.current.position.y = jumping;
+      g.current.position.y = 0.62 + jumping;
       g.current.rotation.z = Math.sin(t * 0.9 + phase) * 0.03;
     }
-  });
+  }, -20);
   return (
     <group ref={g} position={[x, 0.62, z]} rotation={[0, face, 0]}>
       {/* tronco */}
@@ -188,7 +189,7 @@ function Coach({
       if (head.current) head.current.position.y = 1.72;
     }
     void goalPulse;
-  });
+  }, -20);
 
   return (
     <group ref={g} position={[0, 0, side * TECH_Z]} rotation={[0, side > 0 ? Math.PI : 0, 0]}>
@@ -249,7 +250,7 @@ function Warmup({ color, side }: { color: string; side: 1 | -1 }) {
       g.rotation.y = Math.atan2(-Math.sin(a) * 5.5, Math.cos(a) * 4.2) + (side > 0 ? 0 : Math.PI);
       g.position.y = Math.abs(Math.sin(clock.elapsedTime * 8 + k)) * 0.08;
     }
-  });
+  }, -20);
   return (
     <group>
       {[0, 1, 2].map((k) => (
@@ -313,46 +314,48 @@ export const BenchLife = memo(function BenchLife({
 
   return (
     <group ref={censusRef("props")} name="bench-life">
-      <group position={[0, 0, BENCH_Z]}>
-        <mesh geometry={homeDugout} material={cloth} />
-      </group>
-      <group position={[0, 0, -BENCH_Z]} rotation={[0, Math.PI, 0]}>
-        <mesh geometry={awayDugout} material={cloth} />
-      </group>
-      {reserves.slice(0, count).map((r, k) => (
-        <group key={k}>
-          <Seated
-            x={r.dx}
-            z={BENCH_Z - 0.4}
-            face={Math.PI}
-            shirt={homeColor}
-            skin={r.skin}
-            phase={r.phase}
-            bounce={goalPulse}
-          />
-          <Seated
-            x={-r.dx}
-            z={-(BENCH_Z - 0.4)}
-            face={0}
-            shirt={awayColor}
-            skin={SKINS[(k + 2) % SKINS.length]!}
-            phase={r.phase + 1}
-            bounce={goalPulse}
-          />
+      <RigidActorBatch signature={`bench:${quality}:${homeColor}:${awayColor}`}>
+        <group position={[0, 0, BENCH_Z]}>
+          <mesh geometry={homeDugout} material={cloth} />
         </group>
-      ))}
-      {quality !== "baixa" ? (
-        <>
-          <Coach sim={sim} side={1} shirt={homeColor} goalPulse={goalPulse} />
-          <Coach sim={sim} side={-1} shirt={awayColor} goalPulse={goalPulse} />
-        </>
-      ) : null}
-      {quality === "alta" ? (
-        <>
-          <Warmup color={homeColor} side={1} />
-          <Warmup color={awayColor} side={-1} />
-        </>
-      ) : null}
+        <group position={[0, 0, -BENCH_Z]} rotation={[0, Math.PI, 0]}>
+          <mesh geometry={awayDugout} material={cloth} />
+        </group>
+        {reserves.slice(0, count).map((r, k) => (
+          <group key={k}>
+            <Seated
+              x={r.dx}
+              z={BENCH_Z - 0.4}
+              face={Math.PI}
+              shirt={homeColor}
+              skin={r.skin}
+              phase={r.phase}
+              bounce={goalPulse}
+            />
+            <Seated
+              x={-r.dx}
+              z={-(BENCH_Z - 0.4)}
+              face={0}
+              shirt={awayColor}
+              skin={SKINS[(k + 2) % SKINS.length]!}
+              phase={r.phase + 1}
+              bounce={goalPulse}
+            />
+          </group>
+        ))}
+        {quality !== "baixa" ? (
+          <>
+            <Coach sim={sim} side={1} shirt={homeColor} goalPulse={goalPulse} />
+            <Coach sim={sim} side={-1} shirt={awayColor} goalPulse={goalPulse} />
+          </>
+        ) : null}
+        {quality === "alta" ? (
+          <>
+            <Warmup color={homeColor} side={1} />
+            <Warmup color={awayColor} side={-1} />
+          </>
+        ) : null}
+      </RigidActorBatch>
     </group>
   );
 });
