@@ -374,4 +374,3 @@ export const narrateScene = createServerFn({ method: "POST" })
     });
     return audio ? { ok: true, audio } : { ok: false, reason: "error" };
   });
-
