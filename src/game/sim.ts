@@ -1926,7 +1926,7 @@ export class MatchSim {
         // reação tardia a um chute próximo
         if ((this.reactionUntil.get(p.id) ?? 0) > this.time) speedEff *= 0.3;
       }
-      advanceAthlete(p, tx, tz, speedEff, dt, this.weather === "rain" ? .72 : 1);
+      advanceAthlete(p, tx, tz, speedEff, dt, this.weather === "rain" ? 0.72 : 1);
     }
   }
 

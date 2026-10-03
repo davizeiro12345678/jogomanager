@@ -582,9 +582,13 @@ export async function importSquads(limit = 200, offset = 0, concurrency = 6, bud
     });
     for (let from = 0; from < rowsToInsert.length && Date.now() < deadline; from += 100) {
       // Stable provider IDs make concurrent/repeated imports idempotent. Existing custom fields stay intact.
-      const res = await db.from("players").upsert(rowsToInsert.slice(from, from + 100), {
-        onConflict: "source,source_id", ignoreDuplicates: true,
-      }).select("id");
+      const res = await db
+        .from("players")
+        .upsert(rowsToInsert.slice(from, from + 100), {
+          onConflict: "source,source_id",
+          ignoreDuplicates: true,
+        })
+        .select("id");
       if (res.error) throw new Error("Falha ao gravar o lote de jogadores.");
       imported += res.data?.length ?? 0;
     }

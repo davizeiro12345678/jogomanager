@@ -38,9 +38,16 @@ export function cinematicExpressionAt(
   const warmth = Math.max(0, Math.min(1, cue?.warmth ?? 0.4));
   // Uneven intervals and short doubles avoid every blink becoming a metronome.
   const phase = (t + Math.abs(seed % 113) * 0.37) % 13.8;
-  const blinkAge = phase < 0.19 ? phase : phase >= 4.6 && phase < 4.79
-    ? phase - 4.6 : phase >= 4.98 && phase < 5.1
-      ? (phase - 4.98) * (0.19 / 0.12) : phase >= 10.2 && phase < 10.39 ? phase - 10.2 : -1;
+  const blinkAge =
+    phase < 0.19
+      ? phase
+      : phase >= 4.6 && phase < 4.79
+        ? phase - 4.6
+        : phase >= 4.98 && phase < 5.1
+          ? (phase - 4.98) * (0.19 / 0.12)
+          : phase >= 10.2 && phase < 10.39
+            ? phase - 10.2
+            : -1;
   const closure = blinkAge >= 0 ? Math.sin((Math.PI * blinkAge) / 0.19) ** 2 : 0;
   const focus = Math.max(-0.9, Math.min(0.9, Number.isFinite(attentionYaw) ? attentionYaw : 0));
   const delivery = acting ? Math.max(0, Math.min(1, emphasis)) : 0;
@@ -52,8 +59,8 @@ export function cinematicExpressionAt(
     blink: 0.08 + closure * 0.9,
     gazeX: Math.sin(focus) * 0.0018 + microGaze,
     gazeY: Math.sin(t * 0.51 + seed * 0.3) * 0.00012 - tension * 0.00012,
-    browLift: delivery * (0.0018 + warmth * 0.0015) - tension * 0.0005 +
-      acknowledgement * warmth * 0.00065,
+    browLift:
+      delivery * (0.0018 + warmth * 0.0015) - tension * 0.0005 + acknowledgement * warmth * 0.00065,
     browTilt: (warmth * 0.045 - tension * 0.065) * (0.25 + delivery * 0.75),
     headRoll: Math.sin(t * 0.43 + seed) * (acting ? 0.008 : 0.014),
   };

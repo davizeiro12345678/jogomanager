@@ -1049,8 +1049,10 @@ function Director({
     }
     camera.lookAt(runtime.focus);
     const fov = shot.fov - (climax && focus ? 1 : 0);
-    const nextFov = cut || runtime.stopped || runtime.reduced
-      ? fov : THREE.MathUtils.damp(camera.fov, fov, 8, runtime.clock.dt);
+    const nextFov =
+      cut || runtime.stopped || runtime.reduced
+        ? fov
+        : THREE.MathUtils.damp(camera.fov, fov, 8, runtime.clock.dt);
     if (Math.abs(camera.fov - nextFov) > 0.01) {
       camera.fov = nextFov;
       camera.updateProjectionMatrix();
