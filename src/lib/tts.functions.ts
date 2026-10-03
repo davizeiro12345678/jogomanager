@@ -109,18 +109,35 @@ export const narrateEvent = createServerFn({ method: "POST" })
       apiKey,
       voiceId,
       text,
-      format: "mp3_44100_96",
-      // Turbo v2.5 tem latência bem menor, que é o que importa no meio do
-      // lance; se a conta não tiver o modelo, cai no multilíngue v2.
-      models: [LIVE_MODEL, FALLBACK_MODEL],
+      format: "mp3_44100_128",
+      language: lang,
+      models: narrationModels(),
       voiceSettings: settings,
     });
     return audio ? { ok: true, audio } : { ok: false, reason: "error" };
   });
 
-const LIVE_MODEL = "eleven_turbo_v2_5";
-const SCENE_MODEL = "eleven_multilingual_v2";
-const FALLBACK_MODEL = "eleven_multilingual_v2";
+type TtsModel =
+  | "eleven_v4_turbo"
+  | "eleven_v4"
+  | "eleven_flash_v2_5"
+  | "eleven_multilingual_v2";
+
+const DEFAULT_TTS_MODEL: TtsModel = "eleven_v4_turbo";
+const ALLOWED_TTS_MODELS = new Set<TtsModel>([
+  "eleven_v4_turbo",
+  "eleven_v4",
+  "eleven_flash_v2_5",
+  "eleven_multilingual_v2",
+]);
+
+/** The model is server-configurable; never accept an arbitrary model ID. */
+function narrationModels(): TtsModel[] {
+  const configured = process.env["ELEVENLABS_TTS_MODEL"]?.trim() as TtsModel | undefined;
+  const preferred = configured && ALLOWED_TTS_MODELS.has(configured) ? configured : DEFAULT_TTS_MODEL;
+  const fallbacks: TtsModel[] = ["eleven_v4", "eleven_flash_v2_5", "eleven_multilingual_v2"];
+  return [...new Set([preferred, ...fallbacks])];
+}
 
 /**
  * Chamada única ao ElevenLabs com tentativa de modelo alternativo.
@@ -131,32 +148,56 @@ async function synthesize(opts: {
   voiceId: string;
   text: string;
   format: string;
-  models: string[];
+  language?: RemoteNarrationLang;
+  models: TtsModel[];
   voiceSettings: Record<string, unknown>;
-  extra?: Record<string, unknown>;
+  continuity?: { previousText?: string; nextText?: string };
 }): Promise<string | null> {
   const tried = new Set<string>();
   for (const model of opts.models) {
     if (tried.has(model)) continue;
     tried.add(model);
     try {
+      if (model === "eleven_v4_turbo") {
+        const audio = await synthesizeV4Turbo(opts);
+        if (audio) return audio;
+        continue;
+      }
+
+      const isV4 = model === "eleven_v4";
+      const endpoint = isV4
+        ? `https://api.elevenlabs.io/v1/text-to-dialogue?output_format=${opts.format}`
+        : `https://api.elevenlabs.io/v1/text-to-speech/${opts.voiceId}?output_format=${opts.format}`;
+      const context = opts.continuity;
+      const shortPrevious = context?.previousText?.slice(0, 100);
+      const shortNext = context?.nextText?.slice(0, 100);
+      const requestBody = isV4
+        ? {
+            inputs: [{ text: opts.text, voice_id: opts.voiceId }],
+            model_id: model,
+            ...(opts.language ? { language_code: opts.language } : {}),
+            ...(shortPrevious ? { previous_text: shortPrevious } : {}),
+            ...(shortNext ? { future_text: shortNext } : {}),
+          }
+        : {
+            text: opts.text,
+            model_id: model,
+            ...(shortPrevious ? { previous_text: shortPrevious } : {}),
+            ...(shortNext ? { next_text: shortNext } : {}),
+            voice_settings: opts.voiceSettings,
+          };
       const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${opts.voiceId}?output_format=${opts.format}`,
+        endpoint,
         {
           method: "POST",
           headers: { "xi-api-key": opts.apiKey, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: opts.text,
-            model_id: model,
-            ...(opts.extra ?? {}),
-            voice_settings: opts.voiceSettings,
-          }),
+          body: JSON.stringify(requestBody),
         },
       );
       if (res.ok) return Buffer.from(await res.arrayBuffer()).toString("base64");
       const body = await res.text();
       console.error(`ElevenLabs TTS falhou [${res.status}] (${model}): ${body}`);
-      // 422/400 costuma ser modelo indisponível na conta: vale tentar o próximo.
+      // A conta pode não ter acesso a um modelo; só esses erros avançam a cadeia.
       if (res.status !== 400 && res.status !== 422 && res.status !== 404) return null;
     } catch (err) {
       console.error("ElevenLabs TTS erro de rede", err);
@@ -164,6 +205,95 @@ async function synthesize(opts: {
     }
   }
   return null;
+}
+
+/** Eleven v4 Turbo is served through Text to Dialogue's WebSocket endpoint. */
+function synthesizeV4Turbo(opts: {
+  apiKey: string;
+  voiceId: string;
+  text: string;
+  format: string;
+  language?: RemoteNarrationLang;
+}): Promise<string | null> {
+  const url = new URL("wss://api.elevenlabs.io/v1/text-to-dialogue/stream-input");
+  url.searchParams.set("model_id", "eleven_v4_turbo");
+  url.searchParams.set("output_format", opts.format);
+  if (opts.language) url.searchParams.set("language_code", opts.language);
+
+  return new Promise((resolve) => {
+    const socket = new WebSocket(url.href);
+    const chunks: Buffer[] = [];
+    let settled = false;
+    const finish = (audio: string | null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try {
+        socket.close();
+      } catch {
+        // A socket that failed during its handshake may already be closed.
+      }
+      resolve(audio);
+    };
+    const timer = setTimeout(() => {
+      finish(chunks.length ? Buffer.concat(chunks).toString("base64") : null);
+    }, 6000);
+
+    socket.addEventListener("open", () => {
+      if (settled) return;
+      try {
+        // v4 Turbo registers exactly one voice per session. Credentials stay
+        // on the server and are sent in the first frame, as the API permits.
+        socket.send(JSON.stringify({ voices: [opts.voiceId], xi_api_key: opts.apiKey }));
+        socket.send(
+          JSON.stringify({
+            inputs: [{ text: opts.text, voice_id: opts.voiceId, new_turn: true }],
+          }),
+        );
+        // Closing flushes short match lines, which are often below the stream
+        // buffer threshold, and produces the final audio frame.
+        socket.send(JSON.stringify({ close_socket: true }));
+      } catch (error) {
+        console.error("ElevenLabs v4 Turbo envio WebSocket falhou", error);
+        finish(chunks.length ? Buffer.concat(chunks).toString("base64") : null);
+      }
+    });
+
+    socket.addEventListener("message", (event: MessageEvent) => {
+      const handle = (raw: string) => {
+        try {
+          const frame = JSON.parse(raw) as Record<string, unknown>;
+          if (typeof frame["audio"] === "string") {
+            chunks.push(Buffer.from(frame["audio"], "base64"));
+          }
+          if (frame["error"]) {
+            console.error("ElevenLabs v4 Turbo retornou erro", frame["error"]);
+            finish(chunks.length ? Buffer.concat(chunks).toString("base64") : null);
+            return;
+          }
+          if (frame["is_final"] === true || frame["is_final_audio_for_turn"] === true) {
+            finish(chunks.length ? Buffer.concat(chunks).toString("base64") : null);
+          }
+        } catch (error) {
+          console.error("ElevenLabs v4 Turbo retornou quadro inválido", error);
+          finish(chunks.length ? Buffer.concat(chunks).toString("base64") : null);
+        }
+      };
+
+      if (typeof event.data === "string") {
+        handle(event.data);
+      } else if (event.data instanceof ArrayBuffer) {
+        handle(new TextDecoder().decode(event.data));
+      } else if (typeof Blob !== "undefined" && event.data instanceof Blob) {
+        void event.data.text().then(handle).catch(() => finish(null));
+      }
+    });
+
+    socket.addEventListener("error", () => finish(null));
+    socket.addEventListener("close", () => {
+      finish(chunks.length ? Buffer.concat(chunks).toString("base64") : null);
+    });
+  });
 }
 
 const SceneNarrateInput = z.object({
@@ -215,34 +345,20 @@ export const narrateScene = createServerFn({ method: "POST" })
       voiceId,
       text,
       format: "mp3_44100_128",
-      models: [SCENE_MODEL, FALLBACK_MODEL],
-      extra: {
-        ...(previousText ? { previous_text: previousText } : {}),
-        ...(nextText ? { next_text: nextText } : {}),
+      language: "pt",
+      models: narrationModels(),
+      continuity: {
+        ...(previousText ? { previousText } : {}),
+        ...(nextText ? { nextText } : {}),
       },
       voiceSettings: {
-        stability: authoritative
-          ? 0.78
-          : reflective
-            ? 0.58
-            : scene.mood === "bad"
-              ? 0.56
-              : emphatic
-                ? 0.28
-                : 0.46,
+        stability: authoritative ? 0.78 : reflective ? 0.58 : scene.mood === "bad" ? 0.56 : emphatic ? 0.28 : 0.46,
         similarity_boost: authoritative ? 0.9 : 0.85,
-        style: authoritative
-          ? 0.18
-          : reflective
-            ? 0.42
-            : scene.mood === "good"
-              ? emphatic
-                ? 0.88
-                : 0.62
-              : 0.5,
+        style: authoritative ? 0.18 : reflective ? 0.42 : scene.mood === "good" ? (emphatic ? 0.88 : 0.62) : 0.5,
         use_speaker_boost: true,
         speed: authoritative ? 0.92 : emphatic ? 1.08 : scene.mood === "bad" ? 0.94 : 0.99,
       },
     });
     return audio ? { ok: true, audio } : { ok: false, reason: "error" };
   });
+
