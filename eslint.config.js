@@ -12,7 +12,6 @@ export default tseslint.config(
       ".output",
       ".vinxi",
       "src/integrations/supabase/types.ts",
-      "src/game/data/league-memberships.generated.ts",
       // Generated third-party WASM loader; keep vendor formatting out of lint.
       "public/basis/basis_transcoder.js",
     ],
@@ -47,4 +46,10 @@ export default tseslint.config(
     },
   },
   eslintPluginPrettier,
+  {
+    files: ["src/game/data/league-memberships.generated.ts"],
+    rules: {
+      "prettier/prettier": "off",
+    },
+  },
 );
