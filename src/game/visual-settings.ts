@@ -162,12 +162,14 @@ export function normalizeBroadcastPreferences(value: unknown): BroadcastPreferen
   const favorites = Array.isArray(raw["favorites"])
     ? raw["favorites"].filter(isCameraMode)
     : [...DEFAULT_BROADCAST.favorites];
-  const replayCamera = raw["replayCamera"] === "inherit" || isCameraMode(raw["replayCamera"])
-    ? raw["replayCamera"]
-    : DEFAULT_BROADCAST.replayCamera;
+  const replayCamera =
+    raw["replayCamera"] === "inherit" || isCameraMode(raw["replayCamera"])
+      ? raw["replayCamera"]
+      : DEFAULT_BROADCAST.replayCamera;
   // O modo Diretor é representado pelo mesmo ID usado pelo renderizador.
   const directorAuto =
-    raw["directorAuto"] === true || (raw["directorAuto"] !== false && selectedCamera === "director");
+    raw["directorAuto"] === true ||
+    (raw["directorAuto"] !== false && selectedCamera === "director");
 
   return {
     camera: directorAuto ? "director" : selectedCamera,
@@ -244,7 +246,10 @@ export function getVisual(): VisualSettings {
   if (cache) return cache;
   if (typeof localStorage === "undefined") return DEFAULT_VISUAL;
   try {
-    const raw = localStorage.getItem(KEY) ?? LEGACY_KEYS.map((key) => localStorage.getItem(key)).find(Boolean) ?? null;
+    const raw =
+      localStorage.getItem(KEY) ??
+      LEGACY_KEYS.map((key) => localStorage.getItem(key)).find(Boolean) ??
+      null;
     cache = raw
       ? sanitize({ ...DEFAULT_VISUAL, ...migrateVisualSettings(JSON.parse(raw) as unknown) })
       : DEFAULT_VISUAL;

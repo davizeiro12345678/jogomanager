@@ -7,3 +7,4 @@ package-lock.json
 bun.lock
 routeTree.gen.ts
 src/integrations/supabase/types.ts
+public/basis/basis_transcoder.js

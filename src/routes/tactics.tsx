@@ -137,8 +137,7 @@ function TacticsPage() {
 
   // força média por setor e OVR de cada titular, para os gráficos
   const sectors = ["GOL", "DEF", "MEI", "ATA"] as const;
-  const sectorOf = (pos: string) =>
-    pos === "GK" ? 0 : pos === "DF" ? 1 : pos === "MF" ? 2 : 3;
+  const sectorOf = (pos: string) => (pos === "GK" ? 0 : pos === "DF" ? 1 : pos === "MF" ? 2 : 3);
   const sectorOvr = sectors.map((_, s) => {
     const inSector = lineup.filter((p, i) => p && slots[i] && sectorOf(slots[i]!.pos) === s);
     return inSector.length
@@ -151,11 +150,11 @@ function TacticsPage() {
     <GameShell career={career}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          
           <p className="sr-only">
-            Para trocar jogadores usando o teclado: selecione um jogador com Espaço ou Enter, depois selecione outro para realizar a troca.
+            Para trocar jogadores usando o teclado: selecione um jogador com Espaço ou Enter, depois
+            selecione outro para realizar a troca.
           </p>
-<h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">
+          <h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">
             Plano de jogo
           </h1>
           <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
@@ -203,7 +202,7 @@ function TacticsPage() {
                   onClick={() => onSlotActivate(i)}
                   aria-label={`${p.name}, ${slot.label}. ${picked === i ? "Selecionado para troca." : "Pressione para selecionar para troca."} `}
                   aria-pressed={picked === i}
-                   className="absolute flex -translate-x-1/2 -translate-y-1/2 cursor-grab flex-col items-center rounded-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background active:cursor-grabbing"
+                  className="absolute flex -translate-x-1/2 -translate-y-1/2 cursor-grab flex-col items-center rounded-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background active:cursor-grabbing"
                   style={{ left: `${50 + slot.z * 40}%`, top: `${50 - slot.x * 42}%` }}
                 >
                   <span
