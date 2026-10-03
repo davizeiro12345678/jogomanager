@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { MATCH_PROTOCOL_VERSION, parseMatchTicketV1 } from "./match-protocol";
-import {
-  createMatchTicketNonce,
-  signMatchTicketV1,
-  verifyMatchTicketV1,
-} from "./ticket-signing";
+import { createMatchTicketNonce, signMatchTicketV1, verifyMatchTicketV1 } from "./ticket-signing";
 
 const secret = "test-only-match-ticket-signing-secret-at-least-32-bytes";
 

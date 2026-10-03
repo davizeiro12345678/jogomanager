@@ -24,13 +24,26 @@ function hash(text: string): string {
 
 export function exportCareerFile(career: CareerState): string {
   const payload = JSON.stringify(career);
-  const file: CareerTransferFile = { kind: CAREER_TRANSFER_KIND, version: CAREER_TRANSFER_VERSION, exportedAt: new Date().toISOString(), gameSaveVersion: career.version, checksum: hash(payload), career };
+  const file: CareerTransferFile = {
+    kind: CAREER_TRANSFER_KIND,
+    version: CAREER_TRANSFER_VERSION,
+    exportedAt: new Date().toISOString(),
+    gameSaveVersion: career.version,
+    checksum: hash(payload),
+    career,
+  };
   return JSON.stringify(file, null, 2);
 }
 
 export function importCareerFile(text: string): CareerState {
   const parsed = JSON.parse(text) as Partial<CareerTransferFile>;
-  if (parsed.kind !== CAREER_TRANSFER_KIND || parsed.version !== CAREER_TRANSFER_VERSION || !parsed.career) throw new Error("Este arquivo não é uma carreira compatível.");
-  if (hash(JSON.stringify(parsed.career)) !== parsed.checksum) throw new Error("O arquivo da carreira está incompleto ou foi alterado.");
+  if (
+    parsed.kind !== CAREER_TRANSFER_KIND ||
+    parsed.version !== CAREER_TRANSFER_VERSION ||
+    !parsed.career
+  )
+    throw new Error("Este arquivo não é uma carreira compatível.");
+  if (hash(JSON.stringify(parsed.career)) !== parsed.checksum)
+    throw new Error("O arquivo da carreira está incompleto ou foi alterado.");
   return migrateCareer(parsed.career);
 }

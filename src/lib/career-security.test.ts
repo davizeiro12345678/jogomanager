@@ -13,9 +13,18 @@ describe("official career progress", () => {
     const state = fresh();
     expect(verifyCareerProgress(state)).toBe(true);
     expect(verifyCareerProgress({ ...state, round: 2 })).toBe(false);
-    expect(verifyCareerProgress({ ...state, results: [{ ...state.fixtures[0]!, hg: 5, ag: 0 }] })).toBe(false);
+    expect(
+      verifyCareerProgress({ ...state, results: [{ ...state.fixtures[0]!, hg: 5, ag: 0 }] }),
+    ).toBe(false);
     expect(verifyCareerProgress({ ...state, trophies: [{ name: "Copa", season: 1 }] })).toBe(false);
-    expect(verifyCareerProgress({ ...state, matchLog: [{ gf: 10, ga: 0 }] as NonNullable<typeof state.matchLog> })).toBe(false);
-    expect(verifyCareerProgress({ ...state, finances: { ...state.finances, budget: 1000 } })).toBe(false);
+    expect(
+      verifyCareerProgress({
+        ...state,
+        matchLog: [{ gf: 10, ga: 0 }] as NonNullable<typeof state.matchLog>,
+      }),
+    ).toBe(false);
+    expect(verifyCareerProgress({ ...state, finances: { ...state.finances, budget: 1000 } })).toBe(
+      false,
+    );
   });
 });

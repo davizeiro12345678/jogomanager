@@ -48,8 +48,8 @@ function useMinimap(view: SimView, on: boolean) {
       ctx.arc(W / 2, H / 2, 14, 0, Math.PI * 2);
       ctx.stroke();
       // áreas
-      const boxW = ((16.5 / (FIELD_X * 2)) * (W - PAD * 2));
-      const boxH = ((40.3 / (FIELD_Z * 2)) * (H - PAD * 2));
+      const boxW = (16.5 / (FIELD_X * 2)) * (W - PAD * 2);
+      const boxH = (40.3 / (FIELD_Z * 2)) * (H - PAD * 2);
       ctx.strokeRect(PAD, H / 2 - boxH / 2, boxW, boxH);
       ctx.strokeRect(W - PAD - boxW, H / 2 - boxH / 2, boxW, boxH);
 

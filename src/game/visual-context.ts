@@ -23,21 +23,21 @@ export type DominantFoot = "left" | "right";
 export type ActionPhase = "anticipation" | "action" | "contact" | "followThrough" | "recovery";
 
 /** Tipo de contato fisico */
-export type ContactType = 
+export type ContactType =
   | "none"
-  | "ground"      // pe no chao
-  | "ball"        // contato com a bola
-  | "player"      // contato com outro jogador
-  | "groundBall"  // contato simultaneo com chao e bola
-  | "airBall";    // bola no ar
+  | "ground" // pe no chao
+  | "ball" // contato com a bola
+  | "player" // contato com outro jogador
+  | "groundBall" // contato simultaneo com chao e bola
+  | "airBall"; // bola no ar
 
 /** Resultado da acao visual (nao afeta placar) */
-export type VisualResult = 
+export type VisualResult =
   | "none"
-  | "success"     // acao completada com sucesso visual
+  | "success" // acao completada com sucesso visual
   | "interrupted" // acao interrompida
-  | "blocked"     // acao bloqueada
-  | "missed";     // errou o alvo
+  | "blocked" // acao bloqueada
+  | "missed"; // errou o alvo
 
 /** Intensidade da acao (0-1, afeta exageracao da animacao) */
 export type Intensity = number; // 0-1
@@ -60,37 +60,37 @@ export type Intensity = number; // 0-1
 export interface ActionContext {
   /** Acao atual do jogador (nula = idle/locomocao) */
   action: PlayerAction | null;
-  
+
   /** Tempo desde o inicio da acao (segundos) */
   actionT: number;
-  
+
   /** Duraao total da acao (segundos) */
   actionDur: number;
-  
+
   /** Fase atual da acao */
   phase: ActionPhase;
-  
+
   /** Pe dominante usado na acao */
   dominantFoot: DominantFoot;
-  
+
   /** Pe efetivamente usado (pode ser o nao-dominante em situacoes especificas) */
   usedFoot: DominantFoot;
-  
+
   /** Alvo da acao (coordenadas x, z) */
   target: { x: number; z: number } | null;
-  
+
   /** Ponto de impacto/contato (coordenadas x, z, altura) */
   contactPoint: { x: number; z: number; height: number } | null;
-  
+
   /** Direcao do movimento (radianos, 0 = frente) */
   direction: number;
-  
+
   /** Intensidade da acao (0-1) */
   intensity: Intensity;
-  
+
   /** Resultado visual da acao */
   result: VisualResult;
-  
+
   /** Reacao esperada (para transicoes suaves) */
   reaction: ReactionType;
 }
@@ -100,15 +100,15 @@ export interface ActionContext {
 // -----------------------------------------------------------------------------
 
 /** Tipo de reacao fisica */
-export type ReactionType = 
+export type ReactionType =
   | "none"
-  | "balance"      // ajustar equilíbrio
-  | "push"        // empurrao
-  | "pull"        // puxao
-  | "dodge"       // desvio
-  | "fall"        // queda
-  | "recovery"    // recuperacao
-  | "celebrate";  // comemoracao
+  | "balance" // ajustar equilíbrio
+  | "push" // empurrao
+  | "pull" // puxao
+  | "dodge" // desvio
+  | "fall" // queda
+  | "recovery" // recuperacao
+  | "celebrate"; // comemoracao
 
 /**
  * Contexto de contato fisico do jogador.
@@ -119,25 +119,25 @@ export type ReactionType =
 export interface ContactContext {
   /** Tipo de contato atual */
   type: ContactType;
-  
+
   /** Pe em contato com o chao (null = ambos ou nenhum) */
   groundFoot: DominantFoot | null;
-  
+
   /** Forca do contato (0-1) */
   force: number;
-  
+
   /** Ponto exato do contato no corpo (para IK) */
   bodyPoint: BodyContactPoint | null;
-  
+
   /** Jogador em contato (se type === "player") */
   contactPlayerId: string | null;
-  
+
   /** Velocidade relativa no momento do contato */
   relativeVelocity: { vx: number; vz: number } | null;
 }
 
 /** Pontos de contato no corpo para IK */
-export type BodyContactPoint = 
+export type BodyContactPoint =
   | "footLeft"
   | "footRight"
   | "kneeLeft"
@@ -163,25 +163,25 @@ export type BodyContactPoint =
 export interface VisualState {
   /** Contexto da acao atual */
   action: ActionContext;
-  
+
   /** Contexto de contato fisico */
   contact: ContactContext;
-  
+
   /** Foco visual (para onde o jogador esta olhando) */
   focus: FocusTarget;
-  
+
   /** Nivel de fadiga visual (0-1, afeta respiracao, suor, etc.) */
   visualFatigue: number;
-  
+
   /** Estado emocional (afeta expressoes faciais em Cinema) */
   emotion: EmotionState;
-  
+
   /** Modificadores de silhueta (para LOD e Cinema) */
   silhouette: SilhouetteModifiers;
 }
 
 /** Alvo de foco visual */
-export type FocusTarget = 
+export type FocusTarget =
   | { type: "none" }
   | { type: "ball"; x: number; z: number; height: number }
   | { type: "player"; playerId: string; x: number; z: number }
@@ -189,7 +189,7 @@ export type FocusTarget =
   | { type: "ground"; x: number; z: number };
 
 /** Estado emocional (para expressoes faciais em Cinema) */
-export type EmotionState = 
+export type EmotionState =
   | "neutral"
   | "focused"
   | "determined"
@@ -205,13 +205,13 @@ export type EmotionState =
 export interface SilhouetteModifiers {
   /** Multiplicador de tamanho da silhueta (para legibilidade) */
   sizeScale: number;
-  
+
   /** Ofset vertical (para evitar z-fighting) */
   verticalOffset: number;
-  
+
   /** Prioridade de renderizacao (para culling) */
   renderPriority: number;
-  
+
   /** Nivel de detalhe ativo */
   lodLevel: "cinema" | "high" | "medium" | "low";
 }
@@ -235,13 +235,13 @@ export type VisualDataVersion = typeof VISUAL_CONTEXT_VERSION;
 export interface VersionedVisualData {
   /** Versao do contrato visual */
   version: VisualDataVersion;
-  
+
   /** Dados de ActionContext por jogador (ou null se nao disponivel) */
   actionContexts: (ActionContext | null)[];
-  
+
   /** Dados de ContactContext por jogador (ou null se nao disponivel) */
   contactContexts: (ContactContext | null)[];
-  
+
   /** Metadados adicionais do frame (opcional) */
   metadata?: {
     /** Tempo de simulacao do frame */
@@ -250,6 +250,11 @@ export interface VersionedVisualData {
     hash?: string;
   } | null;
 }
+
+/** Dados persistidos de qualquer versão aceitos pelo migrador. */
+export type VersionedVisualDataInput = Omit<Partial<VersionedVisualData>, "version"> & {
+  version?: number;
+};
 
 // -----------------------------------------------------------------------------
 // Funcoes utilitarias
@@ -315,7 +320,7 @@ export function getDominantFoot(seed: string): DominantFoot {
     hash = (hash * 31 + seed.charCodeAt(i)) | 0;
   }
   // 50% de chance para cada pe (deterministico)
-  return (hash % 2 === 0) ? "right" : "left";
+  return hash % 2 === 0 ? "right" : "left";
 }
 
 /**
@@ -355,30 +360,30 @@ export function emptyVersionedVisualData(playerCount: number): VersionedVisualDa
  * @returns Dados migrados para a versao atual
  */
 export function migrateVisualData(
-  oldData: Partial<VersionedVisualData> | null | undefined,
+  oldData: VersionedVisualDataInput | null | undefined,
   playerCount: number,
 ): VersionedVisualData {
   // Se nao ha dados antigos, retorna dados vazios
   if (!oldData) {
     return emptyVersionedVisualData(playerCount);
   }
-  
+
   // Se a versao for a atual, apenas preenche campos missing
   if (oldData.version === VISUAL_CONTEXT_VERSION) {
     const actionContexts = oldData.actionContexts ?? [];
     const contactContexts = oldData.contactContexts ?? [];
-    
+
     // Garante que os arrays tem o tamanho correto
     const filledActionContexts = Array(playerCount).fill(null);
     const filledContactContexts = Array(playerCount).fill(null);
-    
+
     for (let i = 0; i < Math.min(actionContexts.length, playerCount); i++) {
       filledActionContexts[i] = actionContexts[i];
     }
     for (let i = 0; i < Math.min(contactContexts.length, playerCount); i++) {
       filledContactContexts[i] = contactContexts[i];
     }
-    
+
     return {
       version: VISUAL_CONTEXT_VERSION,
       actionContexts: filledActionContexts,
@@ -386,7 +391,7 @@ export function migrateVisualData(
       ...(oldData.metadata !== undefined && { metadata: oldData.metadata }),
     };
   }
-  
+
   // Migracao de versao 1 para 2
   // (Adicionar migracoes especificas aqui quando necessario)
   return emptyVersionedVisualData(playerCount);

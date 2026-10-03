@@ -1,7 +1,16 @@
 import config from "./ads.config.json";
 
 export type AdPlacement = "feed" | "inventory" | "sidebar" | "corner" | "native";
-export type AdContext = "dashboard" | "squad" | "tactics" | "transfers" | "news" | "match" | "postmatch" | "profile" | "store";
+export type AdContext =
+  | "dashboard"
+  | "squad"
+  | "tactics"
+  | "transfers"
+  | "news"
+  | "match"
+  | "postmatch"
+  | "profile"
+  | "store";
 
 export interface AdCampaign {
   id: string;
@@ -47,7 +56,8 @@ function readJson<T>(storage: Storage, key: string, fallback: T): T {
 }
 
 function sessionState(): SessionState {
-  if (typeof sessionStorage === "undefined") return { views: {}, dismissedAt: {}, interactions: [] };
+  if (typeof sessionStorage === "undefined")
+    return { views: {}, dismissedAt: {}, interactions: [] };
   return readJson(sessionStorage, SESSION_KEY, { views: {}, dismissedAt: {}, interactions: [] });
 }
 
@@ -63,7 +73,8 @@ export function selectAd(context: AdContext, placement: AdPlacement): AdCampaign
   const state = sessionState();
   const dismissed = state.dismissedAt[placement] ?? 0;
   if (Date.now() - dismissed < COOLDOWN_MS) return null;
-  const history = typeof localStorage === "undefined" ? [] : readJson<string[]>(localStorage, HISTORY_KEY, []);
+  const history =
+    typeof localStorage === "undefined" ? [] : readJson<string[]>(localStorage, HISTORY_KEY, []);
   const eligible = campaigns
     .filter((ad) => ad.contexts.includes(context) && ad.placements.includes(placement))
     .filter((ad) => (state.views[ad.id] ?? 0) < SESSION_CAP)
@@ -80,7 +91,8 @@ export function recordAdMetric(campaignId: string, placement: AdPlacement, type:
   const state = sessionState();
   if (type === "impression") state.views[campaignId] = (state.views[campaignId] ?? 0) + 1;
   if (type === "dismiss") state.dismissedAt[placement] = Date.now();
-  if (type === "click" && !state.interactions.includes(campaignId)) state.interactions.push(campaignId);
+  if (type === "click" && !state.interactions.includes(campaignId))
+    state.interactions.push(campaignId);
   saveSession(state);
   try {
     const metrics = readJson<AdMetric[]>(localStorage, METRICS_KEY, []);
@@ -88,12 +100,17 @@ export function recordAdMetric(campaignId: string, placement: AdPlacement, type:
     localStorage.setItem(METRICS_KEY, JSON.stringify(metrics.slice(-500)));
     if (type === "click") {
       const history = readJson<string[]>(localStorage, HISTORY_KEY, []);
-      localStorage.setItem(HISTORY_KEY, JSON.stringify([campaignId, ...history.filter((id) => id !== campaignId)].slice(0, 30)));
+      localStorage.setItem(
+        HISTORY_KEY,
+        JSON.stringify([campaignId, ...history.filter((id) => id !== campaignId)].slice(0, 30)),
+      );
     }
   } catch {
     /* Métricas são opcionais e nunca impedem a navegação. */
   }
-  void import("@/lib/analytics").then(({ track }) => track(`ad_${type}`, { campaign: campaignId, placement }));
+  void import("@/lib/analytics").then(({ track }) =>
+    track(`ad_${type}`, { campaign: campaignId, placement }),
+  );
 }
 
 export function getAdMetrics(): AdMetric[] {

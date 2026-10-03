@@ -82,7 +82,10 @@ export class AuthoritativeMatchSession {
   phase: MatchSessionPhase = "waiting";
 
   constructor(private readonly options: AuthoritativeMatchSessionOptions) {
-    if (options.homeTicket.roomId !== options.roomId || options.awayTicket.roomId !== options.roomId) {
+    if (
+      options.homeTicket.roomId !== options.roomId ||
+      options.awayTicket.roomId !== options.roomId
+    ) {
       throw new Error("match tickets must belong to the session room");
     }
     if (options.homeTicket.seat !== "home" || options.awayTicket.seat !== "away") {
@@ -107,7 +110,11 @@ export class AuthoritativeMatchSession {
     this.phase = "reconnecting";
   }
 
-  async receive(ticket: MatchTicketV1, command: MatchCommandV1, now: number): Promise<MatchCommandOutcome> {
+  async receive(
+    ticket: MatchTicketV1,
+    command: MatchCommandV1,
+    now: number,
+  ): Promise<MatchCommandOutcome> {
     const seat = this.connect(ticket, now);
     if (this.receipt) return this.reject(ticket.userId, command.sequence, "command_rejected", now);
     if (command.roomId !== this.options.roomId) {
@@ -129,7 +136,11 @@ export class AuthoritativeMatchSession {
         if (applied) this.tactics.set(seat, command.payload);
         break;
       case "substitute":
-        applied = this.options.engine.substitute(seat, command.payload.playerOut, command.payload.playerIn);
+        applied = this.options.engine.substitute(
+          seat,
+          command.payload.playerOut,
+          command.payload.playerIn,
+        );
         break;
       case "forfeit":
         await this.finalize("forfeit", now, seat);

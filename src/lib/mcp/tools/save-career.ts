@@ -25,7 +25,10 @@ export default defineTool({
       .from("careers")
       .upsert({ user_id: ctx.getUserId(), state: state as never }, { onConflict: "user_id" });
     return error
-      ? { content: [{ type: "text", text: "Career imports are unavailable through this tool." }], isError: true }
+      ? {
+          content: [{ type: "text", text: "Career imports are unavailable through this tool." }],
+          isError: true,
+        }
       : {
           content: [{ type: "text", text: "Career saved." }],
           structuredContent: { ok: true },

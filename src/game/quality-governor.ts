@@ -11,7 +11,12 @@ export class QualityGovernor {
   private slow = 0;
   private fast = 0;
   constructor(readonly budgetMs: number) {}
-  resetWindow() { this.window.reset(); this.elapsed = 0; this.slow = 0; this.fast = 0; }
+  resetWindow() {
+    this.window.reset();
+    this.elapsed = 0;
+    this.slow = 0;
+    this.fast = 0;
+  }
   sample(dt: number): number {
     if (!Number.isFinite(dt) || dt <= 0) return this.stage;
     this.cooldown -= dt;
@@ -19,14 +24,26 @@ export class QualityGovernor {
     this.window.add(dt * 1000);
     if (this.elapsed < 2) return this.stage;
     const { p95 } = this.window.summary();
-    this.window.reset(); this.elapsed = 0;
+    this.window.reset();
+    this.elapsed = 0;
     if (this.cooldown > 0) return this.stage;
     this.slow = p95 > this.budgetMs * 1.08 ? this.slow + 1 : 0;
     this.fast = p95 < this.budgetMs * 0.72 ? this.fast + 1 : 0;
-    if (this.slow >= 2 && this.stage < 8) { this.stage++; this.cooldown = 8; this.slow = 0; this.fast = 0; }
-    else if (this.fast >= 6 && this.stage > 0) { this.stage--; this.cooldown = 16; this.fast = 0; this.slow = 0; }
+    if (this.slow >= 2 && this.stage < 8) {
+      this.stage++;
+      this.cooldown = 8;
+      this.slow = 0;
+      this.fast = 0;
+    } else if (this.fast >= 6 && this.stage > 0) {
+      this.stage--;
+      this.cooldown = 16;
+      this.fast = 0;
+      this.slow = 0;
+    }
     return this.stage;
   }
 }
 
-export function resolutionForStage(stage: number) { return stage >= 2 ? 0.76 : stage >= 1 ? 0.88 : 1; }
+export function resolutionForStage(stage: number) {
+  return stage >= 2 ? 0.76 : stage >= 1 ? 0.88 : 1;
+}

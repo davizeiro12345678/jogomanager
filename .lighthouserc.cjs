@@ -2,12 +2,13 @@
 module.exports = {
   ci: {
     collect: {
-      // `vite preview` expects a static dist/index.html, while this app builds
-      // a Cloudflare/Nitro worker in `.output`. Nitro owns the worker preview
-      // and supplies the actual SSR and routing surface Lighthouse must audit.
-      startServerCommand: "npx nitro preview --host 127.0.0.1 --port 4173",
-      startServerReadyPattern: "Listening on:",
-      startServerReadyTimeout: 30000,
+      // Serve the built Worker directly. `nitro preview` reports its proxy as
+      // listening before Wrangler has finished starting the Worker, which can
+      // send Lighthouse to a transient Chrome network error page.
+      startServerCommand:
+        "npx wrangler dev --config .output/server/wrangler.json --local --ip 127.0.0.1 --port 4173",
+      startServerReadyPattern: "Ready on http://",
+      startServerReadyTimeout: 120000,
       url: ["http://127.0.0.1:4173/"],
       numberOfRuns: 1,
       settings: {

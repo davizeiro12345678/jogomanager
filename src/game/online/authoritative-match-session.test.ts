@@ -100,7 +100,9 @@ function command(
   });
 }
 
-function createSession(options: { limits?: Partial<Record<"set_tactics", { limit: number; windowMs: number }>> } = {}) {
+function createSession(
+  options: { limits?: Partial<Record<"set_tactics", { limit: number; windowMs: number }>> } = {},
+) {
   const engine = new FakeEngine();
   let signatures = 0;
   const signer: MatchReceiptSigner = {
@@ -149,7 +151,10 @@ describe("AuthoritativeMatchSession", () => {
 
     expect(session.connect(ticket("home"), issuedAt)).toBe("home");
     expect(() =>
-      session.connect(parseMatchTicketV1({ ...ticket("away"), roomId: "7008a399-62df-4d47-a314-0c2eb2d4c4c5" }), issuedAt),
+      session.connect(
+        parseMatchTicketV1({ ...ticket("away"), roomId: "7008a399-62df-4d47-a314-0c2eb2d4c4c5" }),
+        issuedAt,
+      ),
     ).toThrow(/room/i);
   });
 
@@ -169,7 +174,9 @@ describe("AuthoritativeMatchSession", () => {
   });
 
   it("applies an independent rate window for each command category", async () => {
-    const { session, engine } = createSession({ limits: { set_tactics: { limit: 1, windowMs: 5_000 } } });
+    const { session, engine } = createSession({
+      limits: { set_tactics: { limit: 1, windowMs: 5_000 } },
+    });
     const home = ticket("home");
     session.connect(home, issuedAt);
 

@@ -105,7 +105,10 @@ export async function premiumSyncSquads(limit = 40, offset = 0, budgetMs = 45_00
     }
     for (const r of toUpdate) {
       const { id, ...patch } = r;
-      const res = await db.from("players").update(patch).eq("id", id as string);
+      const res = await db
+        .from("players")
+        .update(patch)
+        .eq("id", id as string);
       if (!res.error) updated++;
     }
     await db
@@ -115,10 +118,28 @@ export async function premiumSyncSquads(limit = 40, offset = 0, budgetMs = 45_00
     clubs++;
   }
 
-  return { clubs, processed, inserted, updated, failed, nextOffset: offset + processed, total: links?.length ?? 0 };
+  return {
+    clubs,
+    processed,
+    inserted,
+    updated,
+    failed,
+    nextOffset: offset + processed,
+    total: links?.length ?? 0,
+  };
 }
 
-const STAT_MAP: Record<string, "appearances" | "starts" | "minutes" | "goals" | "assists" | "yellow_cards" | "red_cards" | "clean_sheets"> = {
+const STAT_MAP: Record<
+  string,
+  | "appearances"
+  | "starts"
+  | "minutes"
+  | "goals"
+  | "assists"
+  | "yellow_cards"
+  | "red_cards"
+  | "clean_sheets"
+> = {
   appearances: "appearances",
   starts: "starts",
   "mins played": "minutes",
@@ -137,7 +158,12 @@ const nonNeg = (v: unknown): number | null => {
 };
 
 /** Títulos individuais e clubes anteriores de cada jogador (idempotente por id da fonte). */
-export async function premiumSyncPlayerCareer(limit = 2000, offset = 0, budgetMs = 50_000, concurrency = 16) {
+export async function premiumSyncPlayerCareer(
+  limit = 2000,
+  offset = 0,
+  budgetMs = 50_000,
+  concurrency = 16,
+) {
   const { supabaseAdmin: db } = (await import("@/integrations/supabase/client.server")) as {
     supabaseAdmin: Admin;
   };
@@ -168,44 +194,65 @@ export async function premiumSyncPlayerCareer(limit = 2000, offset = 0, budgetMs
         const honour = str(r["strHonour"]);
         if (!id || !honour) return [];
         const trophy = str(r["strHonourTrophy"]);
-        return [{
-          player_id: p.id,
-          source_id: `h${id}`,
-          honour: honour.slice(0, 200),
-          team_name: str(r["strTeam"])?.slice(0, 120) ?? null,
-          season: str(r["strSeason"])?.slice(0, 20) ?? null,
-          trophy_url: trophy?.startsWith("https://") ? trophy : null,
-        }];
+        return [
+          {
+            player_id: p.id,
+            source_id: `h${id}`,
+            honour: honour.slice(0, 200),
+            team_name: str(r["strTeam"])?.slice(0, 120) ?? null,
+            season: str(r["strSeason"])?.slice(0, 20) ?? null,
+            trophy_url: trophy?.startsWith("https://") ? trophy : null,
+          },
+        ];
       });
       const tRows = t.flatMap((r) => {
         const id = str(r["id"]);
         const team = str(r["strFormerTeam"]);
         if (!id || !team) return [];
         const badge = str(r["strBadge"]);
-        return [{
-          player_id: p.id,
-          source_id: `t${id}`,
-          team_name: team.slice(0, 120),
-          move_type: str(r["strMoveType"])?.slice(0, 40) ?? null,
-          joined: str(r["strJoined"])?.slice(0, 20) ?? null,
-          departed: str(r["strDeparted"])?.slice(0, 20) ?? null,
-          appearances: nonNeg(r["intAppearances"]),
-          goals: nonNeg(r["intGoals"]),
-          badge_url: badge?.startsWith("https://") ? badge : null,
-        }];
+        return [
+          {
+            player_id: p.id,
+            source_id: `t${id}`,
+            team_name: team.slice(0, 120),
+            move_type: str(r["strMoveType"])?.slice(0, 40) ?? null,
+            joined: str(r["strJoined"])?.slice(0, 20) ?? null,
+            departed: str(r["strDeparted"])?.slice(0, 20) ?? null,
+            appearances: nonNeg(r["intAppearances"]),
+            goals: nonNeg(r["intGoals"]),
+            badge_url: badge?.startsWith("https://") ? badge : null,
+          },
+        ];
       });
-      if (hRows.length && !(await db.from("player_honours").upsert(hRows, { onConflict: "source_id" })).error)
+      if (
+        hRows.length &&
+        !(await db.from("player_honours").upsert(hRows, { onConflict: "source_id" })).error
+      )
         honours += hRows.length;
-      if (tRows.length && !(await db.from("player_career_clubs").upsert(tRows, { onConflict: "source_id" })).error)
+      if (
+        tRows.length &&
+        !(await db.from("player_career_clubs").upsert(tRows, { onConflict: "source_id" })).error
+      )
         clubs += tRows.length;
     }
   };
   await Promise.all(Array.from({ length: concurrency }, worker));
-  return { processed: done, honours, clubs, nextOffset: offset + claimed, total: players?.length ?? 0 };
+  return {
+    processed: done,
+    honours,
+    clubs,
+    nextOffset: offset + claimed,
+    total: players?.length ?? 0,
+  };
 }
 
 /** Estatísticas por temporada + recálculo do overall com a temporada mais recente. */
-export async function premiumSyncStats(limit = 400, offset = 0, budgetMs = 45_000, concurrency = 8) {
+export async function premiumSyncStats(
+  limit = 400,
+  offset = 0,
+  budgetMs = 45_000,
+  concurrency = 8,
+) {
   const { supabaseAdmin: db } = (await import("@/integrations/supabase/client.server")) as {
     supabaseAdmin: Admin;
   };
@@ -265,7 +312,10 @@ export async function premiumSyncStats(limit = 400, offset = 0, budgetMs = 45_00
 
       const latest = [...bySeason.keys()].sort().at(-1)!;
       const s = bySeason.get(latest)!;
-      const rel = p.clubs as unknown as { strength: number | null; competitions: { tier: number | null } | null } | null;
+      const rel = p.clubs as unknown as {
+        strength: number | null;
+        competitions: { tier: number | null } | null;
+      } | null;
       const b = computeOverall({
         seed: `${SOURCE}:${p.source_id}`,
         leagueTier: rel?.competitions?.tier ?? 1,

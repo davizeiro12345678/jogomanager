@@ -13,7 +13,10 @@ const schema = z
     gpuTier: z.number().int().min(0).max(3).nullable(),
     graphicsPreset: z.enum(["alta", "media", "baixa", "auto"]).nullable(),
     loadTimeMs: z.number().int().min(0).max(600_000).nullable(),
-    errorCode: z.string().regex(/^[a-z0-9_-]{1,40}$/).nullable(),
+    errorCode: z
+      .string()
+      .regex(/^[a-z0-9_-]{1,40}$/)
+      .nullable(),
     appVersion: z.string().regex(/^[0-9a-z.-]{1,24}$/),
   })
   .strict();

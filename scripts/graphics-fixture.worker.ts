@@ -35,7 +35,9 @@ function initialize(seed: string, manual: boolean) {
 
 // The default browser benchmark is animated, while `?manual=1` uses this
 // message bridge for deterministic Playwright input bursts.
-onmessage = ({ data }: MessageEvent<{ type?: string; ms?: number; manual?: boolean; seed?: string }>) => {
+onmessage = ({
+  data,
+}: MessageEvent<{ type?: string; ms?: number; manual?: boolean; seed?: string }>) => {
   if (data.type === "init") {
     initialize(data.seed?.trim().slice(0, 96) || "graphics-high-v1", data.manual === true);
     return;

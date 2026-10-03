@@ -10,7 +10,16 @@ describe("checagem de temporada", () => {
     const ids = getLeague("bra").clubs.map((c) => c.id);
     const fixtures = generateFixtures("bra", "seed-1");
     const games = (ids.length - 1) * 2;
-    const table: TableRow[] = ids.map((clubId) => ({ clubId, p: games, w: games, d: 0, l: 0, gf: 0, ga: 0, pts: games * 3 }));
+    const table: TableRow[] = ids.map((clubId) => ({
+      clubId,
+      p: games,
+      w: games,
+      d: 0,
+      l: 0,
+      gf: 0,
+      ga: 0,
+      pts: games * 3,
+    }));
     expect(checkSeasonIntegrity({ clubIds: ids, fixtures, table })).toEqual([]);
   });
   it("aponta pontos errados, jogos faltando e competição sem campeão", () => {
@@ -27,7 +36,8 @@ describe("checagem de temporada", () => {
 });
 
 describe("aposentadoria", () => {
-  const p = (age: number, extra: Partial<Player> = {}) => ({ age, pos: "MF", physical: 75, ovr: 75, injuryWeeks: 0, ...extra }) as Player;
+  const p = (age: number, extra: Partial<Player> = {}) =>
+    ({ age, pos: "MF", physical: 75, ovr: 75, injuryWeeks: 0, ...extra }) as Player;
   it("jovem não se aposenta, 41 anos sempre", () => {
     expect(retireChance(p(25))).toBe(0);
     expect(retireChance(p(41))).toBe(1);
