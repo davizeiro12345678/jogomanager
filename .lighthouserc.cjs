@@ -5,8 +5,10 @@ module.exports = {
       // Serve the built Worker directly. `nitro preview` reports its proxy as
       // listening before Wrangler has finished starting the Worker, which can
       // send Lighthouse to a transient Chrome network error page.
+      // The pinned local workerd build currently supports compatibility dates
+      // through 2026-09-28; this override affects only the Lighthouse preview.
       startServerCommand:
-        "npx wrangler dev --config .output/server/wrangler.json --local --ip 127.0.0.1 --port 4173",
+        "npx wrangler dev --config .output/server/wrangler.json --local --ip 127.0.0.1 --port 4173 --compatibility-date 2026-09-28",
       startServerReadyPattern: "Ready on http://",
       startServerReadyTimeout: 120000,
       url: ["http://127.0.0.1:4173/"],
@@ -29,3 +31,4 @@ module.exports = {
     },
   },
 };
+
