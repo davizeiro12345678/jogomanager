@@ -3,6 +3,8 @@ import * as THREE from "three";
 import type { Speaker } from "@/content/cutscenes";
 import { CinematicActor } from "./CinematicActor";
 import { useCinematicFrame } from "./cinematic-runtime";
+import { useCinematicRuntime } from "./cinematic-runtime";
+import { cinematicDrillAt, cinematicDrillFor } from "@/game/cinematic-action";
 
 /** Training has moving drills, equipment and a coach instead of a static lineup. */
 export function CinematicTraining({
@@ -14,18 +16,15 @@ export function CinematicTraining({
   secondary: string;
   speaker: Speaker | null;
 }) {
+  const runtime = useCinematicRuntime();
   const balls = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   useCinematicFrame((time) => {
     if (!balls.current) return;
     for (let i = 0; i < 5; i++) {
-      const phase = time * 0.45 + i * 1.3;
-      dummy.position.set(
-        -2.4 + i * 1.55 + Math.sin(phase) * 0.75 + Math.cos(phase) * 0.34,
-        0.11,
-        -1.2 + (i % 2) * 2.7 + Math.cos(phase) * 0.75 - Math.sin(phase) * 0.34,
-      );
-      dummy.rotation.set(time * 1.2, phase, 0);
+      const drill = cinematicDrillAt(time, i, cinematicDrillFor(runtime.cue?.id.split(":")[0]));
+      dummy.position.set(drill.ballX, drill.ballY, drill.ballZ);
+      dummy.rotation.set(time * 1.2, drill.yaw, 0);
       dummy.updateMatrix();
       balls.current.setMatrixAt(i, dummy.matrix);
     }
@@ -38,9 +37,20 @@ export function CinematicTraining({
         z={0.4}
         color={secondary}
         shorts="#19232b"
-        role="manager"
+        role="assistant"
         seed={21}
-        acting={speaker === "manager" || speaker === "assistant"}
+        acting={speaker === "assistant"}
+        attention={[-1, -1]}
+        clipboard
+      />
+      <CinematicActor
+        x={-4.7}
+        z={-1.8}
+        color="#283d46"
+        shorts="#19232b"
+        role="manager"
+        seed={31}
+        acting={speaker === "manager"}
         attention={[-1, -1]}
       />
       {Array.from({ length: 5 }, (_, i) => (
@@ -50,7 +60,10 @@ export function CinematicTraining({
           z={-1.2 + (i % 2) * 2.7}
           color={primary}
           seed={i * 11 + 4}
-          drillPhase={i * 1.3}
+          drillIndex={i}
+          role={i === 0 ? "captain" : undefined}
+          acting={i === 0 && speaker === "captain"}
+          attention={[-4.7, -1.8]}
           pose="walk"
         />
       ))}

@@ -2,9 +2,15 @@ import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 
 import { buildRigBody, countRigBody, type RigBodyContext } from "./rig-body";
-import { buildRigSkin, countRigSkin, MESH_OWNER, rigRestMatrix } from "./rig-skin";
+import {
+  buildRigSkin,
+  countRigSkin,
+  MESH_OWNER,
+  rebindRigSkinMaterials,
+  rigRestMatrix,
+} from "./rig-skin";
 import { lookFor, proportionsFor } from "./player-model";
-import { playerMaterials } from "./player-materials";
+import { playerMaterials, type PlayerMaterials } from "./player-materials";
 import { gaitPoseAt } from "./gait-kinematics";
 import { clampPoseAnatomy, solveGroundContact } from "./ground-contact";
 
@@ -61,6 +67,32 @@ function vertices(geometry: THREE.BufferGeometry): number[] {
 }
 
 describe("rig skin", () => {
+  it("rebinds surface materials without replacing geometry or the skeleton", () => {
+    const ctx = context();
+    const skin = buildRigSkin(ctx, ROOT);
+    const meshes = skin.groups.map((group) => {
+      const mesh = new THREE.SkinnedMesh(group.geometry, group.material);
+      mesh.skeleton = skin.skeleton;
+      return mesh;
+    });
+    const geometryBefore = meshes.map((mesh) => mesh.geometry);
+    const rebound = Object.fromEntries(
+      Object.entries(ctx.mats).map(([key, material]) => [key, material.clone()]),
+    ) as PlayerMaterials;
+
+    rebindRigSkinMaterials(skin, meshes, rebound);
+
+    skin.groups.forEach((group, index) => {
+      expect(meshes[index]!.geometry).toBe(geometryBefore[index]);
+      expect(meshes[index]!.skeleton).toBe(skin.skeleton);
+      expect(meshes[index]!.material).toBe(
+        group.materialKey ? rebound[group.materialKey] : group.material,
+      );
+    });
+    skin.dispose();
+    Object.values(rebound).forEach((material) => material.dispose());
+  });
+
   it("batches cinematic LOD groups without losing vertices or changing skinning", () => {
     const ctx = context();
     const original = buildRigSkin(ctx, ROOT);

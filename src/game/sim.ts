@@ -36,6 +36,7 @@ import {
   xgForShot,
 } from "./sim-rules";
 import { pitchCondition, windFor, type WindVector } from "./ball-climate";
+import { advanceAthlete, athleteContact } from "./athlete-dynamics";
 import type { PlayerAction } from "./animation";
 import type { MatchEventLog, Player, Tactics } from "./types";
 import {
@@ -1913,9 +1914,9 @@ export class MatchSim {
       const dx = tx - p.x;
       const dz = tz - p.z;
       const d = Math.hypot(dx, dz);
-      if (d > 0.3) {
+      let speedEff = speed;
+      if (d > 0.001) {
         // curva de corrida: quanto maior a mudança de direção, mais o jogador reduz
-        let speedEff = speed;
         const curSpeed = Math.hypot(p.vx, p.vz);
         if (curSpeed > 2.5) {
           const dot = (dx / d) * (p.vx / curSpeed) + (dz / d) * (p.vz / curSpeed);
@@ -1924,29 +1925,8 @@ export class MatchSim {
         }
         // reação tardia a um chute próximo
         if ((this.reactionUntil.get(p.id) ?? 0) > this.time) speedEff *= 0.3;
-        // A velocidade armazenada é a autoridade do deslocamento. Antes a
-        // posição saltava direto na velocidade-alvo e apenas o vetor era
-        // suavizado, criando arrancadas instantâneas e pés deslizando.
-        const tvx = (dx / d) * speedEff;
-        const tvz = (dz / d) * speedEff;
-        const accelerating = tvx * p.vx + tvz * p.vz >= 0;
-        const response = accelerating ? 3.2 : 5.4;
-        const k = 1 - Math.exp(-response * dt);
-        p.vx += (tvx - p.vx) * k;
-        p.vz += (tvz - p.vz) * k;
-        const currentSpeed = Math.hypot(p.vx, p.vz);
-        if (currentSpeed > speedEff) {
-          p.vx *= speedEff / currentSpeed;
-          p.vz *= speedEff / currentSpeed;
-        }
-        const step = Math.min(d, Math.hypot(p.vx, p.vz) * dt);
-        p.x += (p.vx / Math.max(0.001, Math.hypot(p.vx, p.vz))) * step;
-        p.z += (p.vz / Math.max(0.001, Math.hypot(p.vx, p.vz))) * step;
-      } else {
-        const k = Math.exp(-7 * dt);
-        p.vx *= k;
-        p.vz *= k;
       }
+      advanceAthlete(p, tx, tz, speedEff, dt, this.weather === "rain" ? .72 : 1);
     }
   }
 
@@ -1977,6 +1957,7 @@ export class MatchSim {
         const totalWeight = aWeight + bWeight;
         const nx = dx / d;
         const nz = dz / d;
+        athleteContact(a, b, nx, nz);
         a.x -= nx * overlap * (aWeight / totalWeight);
         a.z -= nz * overlap * (aWeight / totalWeight);
         b.x += nx * overlap * (bWeight / totalWeight);

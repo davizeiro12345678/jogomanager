@@ -27,6 +27,17 @@ export function canRequestTexture(failure: TextureFailure | undefined, now: numb
   );
 }
 
+/** Schedules one bounded retry and returns a cleanup function for scene disposal. */
+export function scheduleTextureRetry(
+  failure: TextureFailure,
+  now: number,
+  retry: () => void,
+): (() => void) | null {
+  if (!canRequestTexture(failure, failure.retryAt)) return null;
+  const timer = globalThis.setTimeout(retry, Math.max(0, failure.retryAt - now));
+  return () => globalThis.clearTimeout(timer);
+}
+
 /** Three FileLoader's HTTP errors carry the failed Response. */
 export function textureHttpStatus(error: unknown): number | undefined {
   if (!error || typeof error !== "object" || !("response" in error)) return undefined;

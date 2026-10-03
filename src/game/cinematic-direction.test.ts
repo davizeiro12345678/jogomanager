@@ -57,8 +57,10 @@ describe("cinematic direction and compact actors", () => {
         expect(cue.speaker).toBe(line.who);
         for (const time of [0, 0.15, 1, 2, cue.duration, cue.duration + 30]) {
           const sample = cinematicGestureAt(time, cue, 21);
+          const { phase, ...motion } = sample;
+          expect(["rest", "preparation", "emphasis", "recovery"]).toContain(phase);
           expect(
-            Object.values(sample).every(
+            Object.values(motion).every(
               (value) => typeof value === "boolean" || Number.isFinite(value),
             ),
           ).toBe(true);

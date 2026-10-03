@@ -43,6 +43,27 @@
   background: #12212a;
   color: #e7edf2;
 }
+.studio-card { box-shadow: 0 20px 60px #0003; }
+.studio-button, .studio-select, .studio-tabs button {
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.studio-card :where(button, select, input):focus-visible {
+  outline: 3px solid #a5e8ff;
+  outline-offset: 3px;
+}
+.studio-card :where(button, select):active { background: #2b4858; }
+.studio-viewport { isolation: isolate; }
+.studio-tabs button[data-state="active"] { background: #284b43; color: #d3f6e8; }
+.studio-panel { background: #101f2a; }
+.studio-panel label { line-height: 1.55; }
+.studio-phase-buttons { flex-wrap: wrap; }
+.studio-keyboard-camera { background: #10202bf2; padding: 6px; border: 1px solid #496575; border-radius: 12px; }
+@media (max-width: 40rem) {
+  .studio-viewport { height: clamp(24rem, 66dvh, 36rem); }
+  .studio-keyboard-camera { inset-block-start: 10px; inset-inline-end: 10px; gap: 4px; }
+  .studio-view-actions { gap: 8px; padding: 10px; }
+  .studio-view-actions button { flex: 1; }
+}
 .studio-toolbar {
   display: flex;
   align-items: center;
@@ -98,10 +119,17 @@
 }
 .studio-viewport {
   position: relative;
-  height: clamp(21rem, 63dvh, 42rem);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: clamp(26rem, 72dvh, 46rem);
   min-width: 0;
   background: #253441;
-  padding-bottom: 3.75rem;
+}
+.studio-canvas {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 .studio-viewport::after {
   content: "";
@@ -111,13 +139,16 @@
   box-shadow: inset 0 0 100px #07111a66;
 }
 .studio-view-actions {
-  position: absolute;
-  inset: auto 1rem 0.8rem;
+  position: relative;
+  inset: auto;
   z-index: 1;
   display: flex;
   gap: 0.45rem;
   align-items: center;
   flex-wrap: wrap;
+  padding: 0.6rem;
+  border-top: 1px solid #496575;
+  background: #10202b;
 }
 .studio-button {
   display: inline-flex;
@@ -183,7 +214,7 @@
   gap: 0.9rem;
 }
 .studio-fields label {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: #abc0ce;
   min-width: 0;
 }
@@ -191,8 +222,8 @@
   grid-column: 1 / -1;
 }
 .studio-hint {
-  color: #87a1b4;
-  font-size: 0.75rem;
+  color: #b4c9d9;
+  font-size: 0.875rem;
   line-height: 1.6;
 }
 .studio-phase {
@@ -209,7 +240,7 @@
 .studio-phase-buttons button {
   flex: 1;
   padding-inline: 0.5rem;
-  font-size: 0.73rem;
+  font-size: 0.875rem;
 }
 .studio-timeline {
   width: 100%;
@@ -223,8 +254,8 @@
   gap: 0.6rem;
   padding: 0.8rem 1rem;
   border-top: 1px solid #344754;
-  font-size: 0.75rem;
-  color: #91aabd;
+  font-size: 0.875rem;
+  color: #b4c9d9;
 }
 .studio-footer strong {
   color: #dceaf3;
@@ -315,14 +346,14 @@
 @media (min-width: 60rem) {
   .studio-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 300px;
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 21rem);
   }
   .studio-viewport {
     height: clamp(28rem, calc(100dvh - 12rem), 50rem);
   }
   .studio-panel {
     border-top: 0;
-    border-left: 1px solid #344754;
+    border-inline-start: 1px solid #344754;
   }
   .studio-fields {
     grid-template-columns: minmax(0, 1fr);
@@ -349,11 +380,11 @@
     justify-content: space-between;
   }
   .studio-view-actions {
-    inset-inline: 0.6rem;
+    inset-inline: auto;
   }
   .studio-view-actions button {
     padding-inline: 0.65rem;
-    font-size: 0.73rem;
+    font-size: 0.875rem;
   }
   .studio-nav {
     margin-bottom: 0.6rem;
@@ -363,6 +394,67 @@
   }
   .cinema-card {
     padding: 0.9rem;
+  }
+}
+.studio-select,
+.studio-input {
+  font-size: 1rem;
+}
+.studio-card .studio-panel :where(button, select, input) {
+  min-width: 0;
+}
+.studio-card :where(button, select, input) {
+  min-height: 2.75rem;
+}
+.studio-keyboard-camera {
+  max-width: calc(100% - 1.5rem);
+  flex-wrap: wrap;
+}
+@media (max-width: 40rem) {
+  .studio-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .cinema-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cinema-toolbar > label {
+    grid-column: 1;
+    width: 100%;
+    min-width: 0;
+  }
+  .cinema-toolbar > button {
+    grid-column: 1;
+    width: 100%;
+  }
+  .studio-title {
+    grid-column: 1 / -1;
+  }
+  .studio-framing {
+    grid-column: 1;
+    min-width: 0;
+  }
+  .studio-framing select {
+    width: 100%;
+    min-width: 0;
+  }
+  .studio-toolbar > .preference-launcher {
+    grid-column: 2;
+    grid-row: 3;
+    width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0.5rem;
+  }
+  .studio-toolbar > .preference-launcher span {
+    display: none;
+  }
+}
+@media (max-width: 24rem) {
+  .studio-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .studio-view-actions button:last-child {
+    flex-basis: 100%;
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -1,4 +1,7 @@
-import { parseMatchTicketV1, type MatchTicketV1 } from "./match-protocol";
+import {
+  parseMatchTicketV1,
+  type MatchTicketV1,
+} from "./match-protocol";
 import { canonicalize } from "./session-hash";
 
 export type UnsignedMatchTicketV1 = Omit<MatchTicketV1, "signature">;

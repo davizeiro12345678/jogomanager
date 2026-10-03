@@ -16,6 +16,7 @@ import {
 } from "@/game/player-model";
 import { getAnnotatedClip } from "@/game/register-animations";
 import { footballContactAt } from "@/game/motion-metadata";
+import { studioCameraFit } from "@/game/player-studio-camera";
 import type { RigSkin } from "@/game/rig-skin";
 import { safeClub } from "@/game/squad";
 import { cinematicOverlayActive, subscribeCinematicOverlay } from "@/game/cinematic-overlay";
@@ -24,6 +25,12 @@ import { GraphicsBoundary } from "../GraphicsBoundary";
 import { PlayerRig } from "./PlayerRig";
 import { LowPlayers } from "./LowPlayers";
 import { Pause, Play, RotateCcw, Shuffle, Scan, UserRound, Sun, Activity } from "lucide-react";
+import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut } from "lucide-react";
+import { useT } from "@/i18n/provider";
+import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
+import { useAccessibility } from "@/components/accessibility/AccessibilityProvider";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { studioMovementLabel } from "@/i18n/studio-movement-messages";
 import "../cinematic/studio.css";
 
 interface StudioMovement {
@@ -36,6 +43,7 @@ interface StudioMovement {
   profile?: "accelerate" | "brake" | "curve";
   hasBall?: boolean;
 }
+type CameraCommand = { action: "left" | "right" | "in" | "out"; sequence: number } | null;
 
 const MOVEMENTS: StudioMovement[] = [
   { id: "idle", label: "Em pé", speed: 0, action: null },
@@ -162,6 +170,8 @@ function StudioScene({
   appearance,
   viewReset,
   viewAngle,
+  cameraCommand,
+  clothPhysics,
 }: {
   preview: ReturnType<typeof fixture>;
   movement: (typeof MOVEMENTS)[number];
@@ -174,11 +184,34 @@ function StudioScene({
   appearance: PlayerLook;
   viewReset: number;
   viewAngle: string;
+  cameraCommand: CameraCommand;
+  clothPhysics: boolean;
 }) {
   const pulse = useRef(0);
   const actionClock = useRef(0);
   const controls = useRef<OrbitControlsImpl>(null);
   const { camera, invalidate, size } = useThree();
+  const { reducedMotion } = useAccessibility();
+  useEffect(() => {
+    const orbit = controls.current;
+    if (!orbit || !cameraCommand) return;
+    if (cameraCommand.action === "left" || cameraCommand.action === "right") {
+      orbit.setAzimuthalAngle(
+        orbit.getAzimuthalAngle() + (cameraCommand.action === "left" ? -0.26 : 0.26),
+      );
+    } else {
+      const offset = camera.position.clone().sub(orbit.target);
+      const next = THREE.MathUtils.clamp(
+        offset.length() * (cameraCommand.action === "in" ? 0.84 : 1.18),
+        orbit.minDistance,
+        orbit.maxDistance,
+      );
+      camera.position.copy(orbit.target).add(offset.setLength(next));
+    }
+    orbit.update();
+    camera.updateMatrixWorld();
+    invalidate();
+  }, [cameraCommand, camera, invalidate]);
   const height = appearance.height * 1.8;
   const inspection = useMemo(
     () => ({
@@ -230,6 +263,18 @@ function StudioScene({
     movement.action ?? "",
   );
   const groundAction = movement.action === "slide";
+  const cameraFit = useMemo(
+    () =>
+      studioCameraFit(
+        height,
+        size.width / Math.max(1, size.height),
+        32,
+        framing,
+        overhead,
+        groundAction,
+      ),
+    [height, size.width, size.height, framing, overhead, groundAction],
+  );
   const targetY =
     framing === "face"
       ? height - 0.12
@@ -248,9 +293,8 @@ function StudioScene({
       feet = framing === "boots",
       hands = framing === "hands",
       legs = framing === "legs";
-    const fit = Math.max(1, (framing === "body" ? 0.8 : 0.68) / (size.width / size.height));
     camera.position.set(
-      (close
+      close
         ? 0.32
         : shirt
           ? 0.65
@@ -264,7 +308,7 @@ function StudioScene({
                   ? 3.2
                   : groundAction
                     ? 2.2
-                    : 1.8) * fit,
+                    : 1.8,
       close
         ? height - 0.08
         : shirt
@@ -280,7 +324,7 @@ function StudioScene({
                   : groundAction
                     ? 1.35
                     : 1.55,
-      (close
+      close
         ? 0.68
         : shirt
           ? 1.5
@@ -294,8 +338,13 @@ function StudioScene({
                   ? 4.8
                   : groundAction
                     ? 3.8
-                    : 3.2) * fit,
+                    : 3.2,
     );
+    // Preserve the inspection angle while fitting the physical athlete to the
+    // available canvas, including height changes and narrow, tall screens.
+    camera.position.y -= targetY;
+    camera.position.normalize().multiplyScalar(cameraFit.distance);
+    camera.position.y += targetY;
     if (viewAngle !== "threeQuarter") {
       const radius = Math.hypot(camera.position.x, camera.position.z);
       camera.position.x = viewAngle === "profile" ? radius : 0;
@@ -318,6 +367,7 @@ function StudioScene({
     size.height,
     viewReset,
     viewAngle,
+    cameraFit,
   ]);
   const kit = useMemo(
     () => kitFor(preview.view.home.clubId, preview.view.home.primary, preview.view.home.secondary),
@@ -427,6 +477,7 @@ function StudioScene({
           kit={preview.player.pos === "GK" ? keeperKit : kit}
           goalPulse={pulse}
           quality="alta"
+          clothPhysics={clothPhysics}
           portrait
           respectVisualSettings={false}
           paused={paused}
@@ -454,8 +505,9 @@ function StudioScene({
         target={[0, targetY, 0]}
         enablePan={false}
         enableZoom
-        minDistance={framing === "body" ? 2.1 : 0.38}
-        maxDistance={overhead || groundAction ? 7 : 5.5}
+        enableDamping={!reducedMotion}
+        minDistance={cameraFit.minDistance}
+        maxDistance={cameraFit.maxDistance}
         minPolarAngle={0.35}
         maxPolarAngle={Math.PI / 2 - 0.04}
       />
@@ -464,12 +516,15 @@ function StudioScene({
 }
 
 export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
+  const { t, dir, lang } = useT();
+  const { reducedMotion } = useAccessibility();
   const [position, setPosition] = useState("MF");
   const [movementId, setMovementId] = useState("idle");
   const [variation, setVariation] = useState(1);
   const [light, setLight] = useState("dia");
   const [viewAngle, setViewAngle] = useState("threeQuarter");
   const [detail, setDetail] = useState(true);
+  const [clothPhysics, setClothPhysics] = useState(true);
   const [paused, setPaused] = useState(false);
   const cinematicCovered = useSyncExternalStore(
     subscribeCinematicOverlay,
@@ -487,6 +542,10 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
   const [weightKg, setWeightKg] = useState<number | undefined>(undefined);
   const [panel, setPanel] = useState("motion");
   const [viewReset, setViewReset] = useState(0);
+  const [cameraCommand, setCameraCommand] = useState<CameraCommand>(null);
+  useEffect(() => {
+    if (reducedMotion) setPaused(true);
+  }, [reducedMotion]);
   const preview = useMemo(
     () => fixture(clubId, position, variation),
     [clubId, position, variation],
@@ -518,69 +577,74 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
   const selectClass = "studio-select";
   return (
     <section
-      aria-label="Prévia 3D dos jogadores"
+      aria-label={t("studio.preview")}
       className="studio-card"
       data-cinematic-covered={cinematicCovered}
     >
       <div className="studio-toolbar">
         <div className="studio-title">
-          <p className="studio-kicker">Laboratório de atletas</p>
-          <h2>O jogador, em cada detalhe.</h2>
+          <p className="studio-kicker">{t("studio.kicker")}</p>
+          <h2>{t("studio.title")}</h2>
         </div>
         <span className="studio-height">{height} m</span>
         <label className="studio-framing">
           <Scan size={15} aria-hidden />
-          <span className="sr-only">Enquadramento</span>
+          <span className="sr-only">{t("studio.frame")}</span>
           <select
-            aria-label="Enquadramento"
+            aria-label={t("studio.frame")}
             value={framing}
             onChange={(e) => setFraming(e.target.value)}
             className={selectClass}
           >
-            <option value="body">Corpo inteiro</option>
-            <option value="face">Rosto e cabelo</option>
-            <option value="kit">Uniforme</option>
-            <option value="legs">Bermuda e pernas</option>
-            <option value="boots">Chuteiras</option>
-            <option value="hands">Mãos e luvas</option>
+            <option value="body">{t("studio.body")}</option>
+            <option value="face">{t("studio.face")}</option>
+            <option value="kit">{t("studio.kit")}</option>
+            <option value="legs">{t("studio.legs")}</option>
+            <option value="boots">{t("studio.boots")}</option>
+            <option value="hands">{t("studio.hands")}</option>
           </select>
         </label>
+        <AccessibilitySettings />
       </div>
       <div className="studio-layout">
         <div className="studio-viewport">
-          <GraphicsBoundary>
-            <Canvas
-              camera={{ position: [1.8, 1.55, 3.2], fov: 32 }}
-              dpr={[1, 1.5]}
-              shadows={{ type: THREE.PCFShadowMap }}
-              frameloop={scenePaused ? "demand" : "always"}
-              gl={{ antialias: true, powerPreference: "high-performance" }}
-              onCreated={({ gl }) => {
-                gl.toneMapping = THREE.ACESFilmicToneMapping;
-                gl.toneMappingExposure = 0.9;
-              }}
-              fallback={
-                <p role="status" className="p-8 text-center">
-                  A prévia 3D precisa de um navegador com WebGL.
-                </p>
-              }
-            >
-              <StudioScene
-                key={movementId}
-                preview={preview}
-                movement={movement}
-                light={light}
-                detail={detail}
-                paused={scenePaused}
-                framing={framing}
-                stamina={stamina}
-                previewAt={previewAt}
-                appearance={appearance}
-                viewReset={viewReset}
-                viewAngle={viewAngle}
-              />
-            </Canvas>
-          </GraphicsBoundary>
+          <div className="studio-canvas">
+            <GraphicsBoundary>
+              <Canvas
+                camera={{ position: [1.8, 1.55, 3.2], fov: 32 }}
+                dpr={[1, 1.5]}
+                shadows={{ type: THREE.PCFShadowMap }}
+                frameloop={scenePaused ? "demand" : "always"}
+                gl={{ antialias: true, powerPreference: "high-performance" }}
+                onCreated={({ gl }) => {
+                  gl.toneMapping = THREE.ACESFilmicToneMapping;
+                  gl.toneMappingExposure = 0.9;
+                }}
+                fallback={
+                  <p role="status" className="p-8 text-center">
+                    {t("studio.webgl")}
+                  </p>
+                }
+              >
+                <StudioScene
+                  key={movementId}
+                  preview={preview}
+                  movement={movement}
+                  light={light}
+                  detail={detail}
+                  paused={scenePaused}
+                  framing={framing}
+                  stamina={stamina}
+                  previewAt={previewAt}
+                  appearance={appearance}
+                  viewReset={viewReset}
+                  viewAngle={viewAngle}
+                  cameraCommand={cameraCommand}
+                  clothPhysics={clothPhysics}
+                />
+              </Canvas>
+            </GraphicsBoundary>
+          </div>
           <div className="studio-view-actions">
             <button
               type="button"
@@ -592,11 +656,11 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
               className="studio-button"
             >
               {paused ? <Play size={15} /> : <Pause size={15} />}
-              {paused ? "Reproduzir" : "Pausar"}
+              {t(paused ? "common.play" : "common.pause")}
             </button>
             <button
               type="button"
-              aria-label="Restaurar câmera"
+              aria-label={t("studio.resetCamera")}
               onClick={() => setViewReset((n) => n + 1)}
               className="studio-button"
             >
@@ -608,240 +672,273 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
               onClick={() => setDetail(!detail)}
               className="studio-button"
             >
-              {detail ? "Comparar modelo leve" : "Ver modelo detalhado"}
+              {t(detail ? "studio.compare" : "studio.detailed")}
             </button>
           </div>
-        </div>
-        <aside className="studio-panel" aria-label="Ajustes do atleta">
-          <div className="studio-tabs" role="group" aria-label="Categorias de ajustes">
-            {[
-              { id: "motion", label: "Movimento", icon: Activity },
-              { id: "look", label: "Aparência", icon: UserRound },
-              { id: "scene", label: "Cena", icon: Sun },
-            ].map(({ id, label, icon: Icon }) => (
+          <div className="studio-keyboard-camera" role="group" aria-label={t("studio.frame")}>
+            {(
+              [
+                ["left", "studio.left", ArrowLeft],
+                ["right", "studio.right", ArrowRight],
+                ["in", "studio.zoomIn", ZoomIn],
+                ["out", "studio.zoomOut", ZoomOut],
+              ] as const
+            ).map(([action, key, Icon]) => (
               <button
+                key={action}
                 type="button"
-                key={id}
-                aria-pressed={panel === id}
-                onClick={() => setPanel(id)}
+                className="studio-button"
+                aria-label={t(key)}
+                title={t(key)}
+                onClick={() =>
+                  setCameraCommand((old) => ({ action, sequence: (old?.sequence ?? 0) + 1 }))
+                }
               >
-                <Icon size={14} />
-                {label}
+                <Icon size={18} aria-hidden="true" />
               </button>
             ))}
           </div>
-          {panel === "motion" && (
-            <div className="studio-fields">
-              <label>
-                Porte por posição
-                <select
-                  aria-label="Porte por posição"
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                  className={selectClass}
-                >
-                  <option value="MF">Meio-campista</option>
-                  <option value="DF">Defensor</option>
-                  <option value="FW">Atacante</option>
-                  <option value="GK">Goleiro</option>
-                </select>
-              </label>
-              <label>
-                Movimento
-                <select
-                  aria-label="Movimento"
-                  value={movementId}
-                  onChange={(e) => {
-                    setMovementId(e.target.value);
-                    setPaused(false);
-                    setPreviewAt(undefined);
-                    if (/^(save|diveLeft|diveRight|saveHigh|catch)$/.test(e.target.value))
-                      setPosition("GK");
-                  }}
-                  className={selectClass}
-                >
-                  {MOVEMENTS.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="studio-wide">
-                Condição física
-                <select
-                  aria-label="Condição física"
-                  value={stamina}
-                  onChange={(e) => {
-                    setStamina(Number(e.target.value));
-                    setPaused(false);
-                    setPreviewAt(undefined);
-                  }}
-                  className={selectClass}
-                >
-                  <option value={100}>Descansado</option>
-                  <option value={45}>Cansado</option>
-                  <option value={10}>Exausto</option>
-                </select>
-              </label>
-            </div>
-          )}
-          {panel === "look" && (
-            <div className="studio-fields">
-              <label>
-                Cabelo
-                <select
-                  aria-label="Cabelo do atleta"
-                  value={hairStyle}
-                  onChange={(e) => setHairStyle(e.target.value as HairStyle | "original")}
-                  className={selectClass}
-                >
-                  <option value="original">Original do atleta</option>
-                  {[
-                    { id: "buzz", label: "Raspado" },
-                    { id: "short", label: "Curto" },
-                    { id: "medium", label: "Médio" },
-                    { id: "curly", label: "Cacheado" },
-                    { id: "afro", label: "Afro" },
-                    { id: "mohawk", label: "Moicano" },
-                    { id: "bun", label: "Coque" },
-                    { id: "ponytail", label: "Rabo de cavalo" },
-                    { id: "dreads", label: "Dreads" },
-                    { id: "braids", label: "Tranças" },
-                    { id: "headband", label: "Com faixa" },
-                    { id: "bald", label: "Sem cabelo" },
-                  ].map((item) => (
-                    <option value={item.id} key={item.id}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Barba
-                <select
-                  aria-label="Barba do atleta"
-                  value={beard}
-                  onChange={(e) => setBeard(e.target.value as BeardStyle | "original")}
-                  className={selectClass}
-                >
-                  <option value="original">Original do atleta</option>
-                  <option value="none">Sem barba</option>
-                  <option value="stubble">Por fazer</option>
-                  <option value="goatee">Cavanhaque</option>
-                  <option value="full">Completa</option>
-                  <option value="moustache">Bigode</option>
-                </select>
-              </label>
-              <label className="studio-wide">
-                Constituição física
-                <select
-                  aria-label="Constituição física"
-                  value={physique}
-                  onChange={(e) => {
-                    setPhysique(e.target.value as BodyType | "original");
+        </div>
+        <aside className="studio-panel" aria-label={t("studio.settings")}>
+          <Tabs value={panel} onValueChange={setPanel} dir={dir}>
+            <TabsList className="studio-tabs" aria-label={t("studio.settings")}>
+              {[
+                { id: "motion", label: t("studio.motion"), icon: Activity },
+                { id: "look", label: t("studio.look"), icon: UserRound },
+                { id: "scene", label: t("studio.scene"), icon: Sun },
+              ].map(({ id, label, icon: Icon }) => (
+                <TabsTrigger value={id} key={id}>
+                  <Icon size={14} />
+                  {label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {panel === "motion" && (
+              <TabsContent value="motion" className="studio-fields">
+                <label>
+                  {t("studio.position")}
+                  <select
+                    aria-label={t("studio.position")}
+                    value={position}
+                    onChange={(e) => setPosition(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="MF">{t("studio.mf")}</option>
+                    <option value="DF">{t("studio.df")}</option>
+                    <option value="FW">{t("studio.fw")}</option>
+                    <option value="GK">{t("studio.gk")}</option>
+                  </select>
+                </label>
+                <label>
+                  {t("studio.motion")}
+                  <select
+                    aria-label={t("studio.motion")}
+                    value={movementId}
+                    onChange={(e) => {
+                      setMovementId(e.target.value);
+                      setPaused(reducedMotion);
+                      setPreviewAt(undefined);
+                      if (/^(save|diveLeft|diveRight|saveHigh|catch)$/.test(e.target.value))
+                        setPosition("GK");
+                    }}
+                    className={selectClass}
+                  >
+                    {MOVEMENTS.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {studioMovementLabel(lang, m.id, m.label)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="studio-wide">
+                  {t("studio.condition")}
+                  <select
+                    aria-label={t("studio.condition")}
+                    value={stamina}
+                    onChange={(e) => {
+                      setStamina(Number(e.target.value));
+                      setPaused(false);
+                      setPreviewAt(undefined);
+                    }}
+                    className={selectClass}
+                  >
+                    <option value={100}>{t("studio.rested")}</option>
+                    <option value={45}>{t("studio.tired")}</option>
+                    <option value={10}>{t("studio.exhausted")}</option>
+                  </select>
+                </label>
+              </TabsContent>
+            )}
+            {panel === "look" && (
+              <TabsContent value="look" className="studio-fields">
+                <label>
+                  Cabelo
+                  <select
+                    aria-label="Cabelo do atleta"
+                    value={hairStyle}
+                    onChange={(e) => setHairStyle(e.target.value as HairStyle | "original")}
+                    className={selectClass}
+                  >
+                    <option value="original">Original do atleta</option>
+                    {[
+                      { id: "buzz", label: "Raspado" },
+                      { id: "short", label: "Curto" },
+                      { id: "medium", label: "Médio" },
+                      { id: "curly", label: "Cacheado" },
+                      { id: "afro", label: "Afro" },
+                      { id: "mohawk", label: "Moicano" },
+                      { id: "bun", label: "Coque" },
+                      { id: "ponytail", label: "Rabo de cavalo" },
+                      { id: "dreads", label: "Dreads" },
+                      { id: "braids", label: "Tranças" },
+                      { id: "headband", label: "Com faixa" },
+                      { id: "bald", label: "Sem cabelo" },
+                    ].map((item) => (
+                      <option value={item.id} key={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Barba
+                  <select
+                    aria-label="Barba do atleta"
+                    value={beard}
+                    onChange={(e) => setBeard(e.target.value as BeardStyle | "original")}
+                    className={selectClass}
+                  >
+                    <option value="original">Original do atleta</option>
+                    <option value="none">Sem barba</option>
+                    <option value="stubble">Por fazer</option>
+                    <option value="goatee">Cavanhaque</option>
+                    <option value="full">Completa</option>
+                    <option value="moustache">Bigode</option>
+                  </select>
+                </label>
+                <label className="studio-wide">
+                  Constituição física
+                  <select
+                    aria-label="Constituição física"
+                    value={physique}
+                    onChange={(e) => {
+                      setPhysique(e.target.value as BodyType | "original");
+                      setWeightKg(undefined);
+                    }}
+                    className={selectClass}
+                  >
+                    <option value="original">Original do atleta</option>
+                    <option value="slim">Esguio</option>
+                    <option value="normal">Atlético</option>
+                    <option value="strong">Robusto</option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="studio-button studio-wide"
+                  onClick={() => {
+                    setHairStyle("original");
+                    setBeard("original");
+                    setPhysique("original");
+                    setHeightCm(undefined);
                     setWeightKg(undefined);
                   }}
-                  className={selectClass}
                 >
-                  <option value="original">Original do atleta</option>
-                  <option value="slim">Esguio</option>
-                  <option value="normal">Atlético</option>
-                  <option value="strong">Robusto</option>
-                </select>
-              </label>
-              <button
-                type="button"
-                className="studio-button studio-wide"
-                onClick={() => {
-                  setHairStyle("original");
-                  setBeard("original");
-                  setPhysique("original");
-                  setHeightCm(undefined);
-                  setWeightKg(undefined);
-                }}
-              >
-                Restaurar aparência
-              </button>
-              <label className="studio-wide">
-                Altura · {Math.round(appearance.height * 180)} cm
-                <input
-                  type="range"
-                  aria-label="Altura do atleta"
-                  className="studio-timeline"
-                  min={160}
-                  max={205}
-                  value={Math.round(appearance.height * 180)}
-                  onChange={(e) => setHeightCm(Number(e.target.value))}
-                />
-              </label>
-              <label className="studio-wide">
-                Peso ·{" "}
-                {weightKg ?? Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)} kg
-                <input
-                  type="range"
-                  aria-label="Peso do atleta"
-                  className="studio-timeline"
-                  min={55}
-                  max={110}
-                  value={
-                    weightKg ?? Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)
-                  }
-                  onChange={(e) => setWeightKg(Number(e.target.value))}
-                />
-              </label>
-            </div>
-          )}
-          {panel === "scene" && (
-            <div className="studio-fields">
-              <label className="studio-wide">
-                Ângulo da câmera
-                <select
-                  aria-label="Ângulo da câmera"
-                  value={viewAngle}
-                  onChange={(e) => setViewAngle(e.target.value)}
-                  className={selectClass}
+                  Restaurar aparência
+                </button>
+                <label className="studio-wide">
+                  Altura · {Math.round(appearance.height * 180)} cm
+                  <input
+                    type="range"
+                    aria-label={t("studio.height")}
+                    aria-valuetext={`${Math.round(appearance.height * 180)} cm`}
+                    className="studio-timeline"
+                    min={160}
+                    max={205}
+                    value={Math.round(appearance.height * 180)}
+                    onChange={(e) => setHeightCm(Number(e.target.value))}
+                  />
+                </label>
+                <label className="studio-wide">
+                  Peso ·{" "}
+                  {weightKg ?? Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)}{" "}
+                  kg
+                  <input
+                    type="range"
+                    aria-label={t("studio.weight")}
+                    aria-valuetext={`${weightKg ?? Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)} kg`}
+                    className="studio-timeline"
+                    min={55}
+                    max={110}
+                    value={
+                      weightKg ??
+                      Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)
+                    }
+                    onChange={(e) => setWeightKg(Number(e.target.value))}
+                  />
+                </label>
+              </TabsContent>
+            )}
+            {panel === "scene" && (
+              <TabsContent value="scene" className="studio-fields">
+                <label className="studio-wide">
+                  Ângulo da câmera
+                  <select
+                    aria-label="Ângulo da câmera"
+                    value={viewAngle}
+                    onChange={(e) => setViewAngle(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="threeQuarter">Três quartos</option>
+                    <option value="front">Frente</option>
+                    <option value="profile">Perfil</option>
+                    <option value="back">Costas</option>
+                  </select>
+                </label>
+                <label className="studio-wide">
+                  {t("studio.light")}
+                  <select
+                    aria-label={t("studio.light")}
+                    value={light}
+                    onChange={(e) => setLight(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="dia">{t("studio.day")}</option>
+                    <option value="entardecer">{t("studio.sunset")}</option>
+                    <option value="noite">{t("studio.night")}</option>
+                  </select>
+                </label>
+                <p className="studio-hint studio-wide">{t("studio.cameraHint")}</p>
+                <label
+                  className="studio-wide"
+                  style={{ display: "flex", alignItems: "center", gap: 10 }}
                 >
-                  <option value="threeQuarter">Três quartos</option>
-                  <option value="front">Frente</option>
-                  <option value="profile">Perfil</option>
-                  <option value="back">Costas</option>
-                </select>
-              </label>
-              <label className="studio-wide">
-                Iluminação
-                <select
-                  aria-label="Iluminação da prévia"
-                  value={light}
-                  onChange={(e) => setLight(e.target.value)}
-                  className={selectClass}
-                >
-                  <option value="dia">Dia</option>
-                  <option value="entardecer">Entardecer</option>
-                  <option value="noite">Noite</option>
-                </select>
-              </label>
-              <p className="studio-hint studio-wide">
-                Arraste para girar o jogador. Use a roda do mouse ou dois dedos para aproximar. O
-                botão de câmera restaura o enquadramento.
-              </p>
-            </div>
-          )}
+                  <input
+                    type="checkbox"
+                    checked={clothPhysics}
+                    onChange={(e) => setClothPhysics(e.target.checked)}
+                  />
+                  {t("studio.clothMotion")}
+                </label>
+                <p className="studio-hint studio-wide">{t("studio.clothHint")}</p>
+              </TabsContent>
+            )}
+          </Tabs>
           {movement.action && (
             <div className="studio-phase" aria-label="Inspeção do movimento">
-              <p className="studio-kicker">Etapas da ação</p>
+              <p className="studio-kicker">{t("studio.phase")}</p>
               <div role="group" aria-label="Etapa do movimento" className="studio-phase-buttons">
                 {[
-                  { label: "Preparação", at: 0.12 },
+                  { label: t("studio.prepare"), at: 0.12 },
                   ...(/^(diveLeft|diveRight|saveHigh)$/.test(movement.action)
                     ? [{ label: "Impulsão", at: 0.28 }]
                     : []),
-                  { label: "Contato", at: footballContactAt(movement.action) },
+                  { label: t("studio.contact"), at: footballContactAt(movement.action) },
                   {
-                    label: "Continuação",
+                    label: t("studio.follow"),
                     at: Math.min(0.78, footballContactAt(movement.action) + 0.2),
                   },
-                  { label: "Recuperação", at: 0.88 },
+                  { label: t("studio.recover"), at: 0.88 },
                 ].map((stage) => (
                   <button
                     type="button"
@@ -858,10 +955,11 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                 ))}
               </div>
               <label className="studio-hint">
-                Quadro da ação · {Math.round((previewAt ?? 0) * 100)}%
+                {t("studio.timeline")} · {Math.round((previewAt ?? 0) * 100)}%
                 <input
                   type="range"
-                  aria-label="Quadro da ação"
+                  aria-label={t("studio.timeline")}
+                  aria-valuetext={`${Math.round((previewAt ?? 0) * 100)}%`}
                   className="studio-timeline"
                   min={0}
                   max={100}
@@ -872,9 +970,7 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                   }}
                 />
               </label>
-              <p className="studio-hint">
-                Pause em qualquer momento para conferir o apoio e o contato.
-              </p>
+              <p className="studio-hint">{t("studio.phaseHint")}</p>
             </div>
           )}
           <button
@@ -883,20 +979,20 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
             onClick={() => setVariation((n) => n + 1)}
           >
             <Shuffle size={15} />
-            Outro atleta
+            {t("studio.shuffle")}
           </button>
         </aside>
       </div>
       <div className="studio-footer" aria-live="polite">
-        <strong>{movement.label}</strong>
-        <span>{detail ? "Modelo detalhado" : "Modelo leve"}</span>
+        <strong>{studioMovementLabel(lang, movement.id, movement.label)}</strong>
+        <span>{t(detail ? "studio.detailModel" : "studio.lightModel")}</span>
         <span>•</span>
         <span>
           {metadata?.support === "airborne"
-            ? "Impulsão e aterrissagem"
+            ? t("studio.airborne")
             : metadata?.support === "alternating"
-              ? "Apoio alternado"
-              : "Arraste para girar"}
+              ? t("studio.support")
+              : t("studio.cameraHint")}
         </span>
       </div>
     </section>

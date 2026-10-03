@@ -184,8 +184,7 @@ export interface SignOptions {
 /** Fecha a contratação: elenco, caixa, folha e notícia. */
 export function signRealPlayer(state: CareerState, t: RealTarget, opts: SignOptions): CareerState {
   if (ownsRealPlayer(state, t) || t.clubId === state.clubId) return state;
-  if (![opts.fee, opts.wage, opts.agentFee ?? 0].every((v) => Number.isFinite(v) && v >= 0))
-    return state;
+  if (![opts.fee, opts.wage, opts.agentFee ?? 0].every(v => Number.isFinite(v) && v >= 0)) return state;
   const base = opts.loan ? Math.round(opts.fee * 0.25 * 10) / 10 : opts.fee;
   const cost = Math.round((base + (opts.agentFee ?? 0)) * 10) / 10;
   if (state.finances.budget < cost) return state;

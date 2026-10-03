@@ -98,6 +98,16 @@ describe("game login screen", () => {
     expect(markup).not.toContain("Continuar com Google");
   });
 
+  it("does not render Supabase providers excluded by the verified login allowlist", () => {
+    state.methods = parseAuthMethods({ external: { google: true, facebook: true, email: true } }, [
+      "google",
+    ]);
+    const markup = renderAuth();
+    expect(markup).toContain("Continuar com Google");
+    expect(markup).not.toContain("Continuar com Facebook");
+    expect(markup).toContain("Entrar com e-mail");
+  });
+
   it("explains unsupported passkeys before starting a browser ceremony", () => {
     state.passkeysSupported = false;
     expect(renderAuth()).toContain("navegador com suporte a chaves de acesso");

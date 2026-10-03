@@ -102,4 +102,51 @@ describe("tailored player shorts", () => {
     expect(afterHem.distanceTo(beforeHem)).toBeGreaterThan(0.14);
     rig.dispose();
   });
+
+  it("keeps both inner hems on their own femur when the openings cross the centre plane", () => {
+    const look = lookFor("shorts-inner-hem", "MF"),
+      p = proportionsFor(look),
+      mats = playerMaterials(look, kitFor("fla", "#cc1e32", "#161b21"), null, "alta");
+    const rig = buildRigSkin(
+      {
+        P: p,
+        look,
+        segs: { radial: 16, cap: 4 },
+        hi: true,
+        mats,
+        handR: p.handR,
+        handMat: mats.skin,
+        jerseyInk: "#fff",
+      },
+      [0, 0, 0],
+    );
+    const group = rig.groups.find((g) => g.material === mats.shorts && g.lod === "core")!;
+    const mesh = new THREE.SkinnedMesh(group.geometry, group.material);
+    mesh.bind(rig.skeleton, rig.bindMatrix);
+    rig.root.updateMatrixWorld(true);
+    rig.skeleton.update();
+    const pos = group.geometry.getAttribute("position"),
+      uv = group.geometry.getAttribute("uv");
+    const hemY = Math.min(...Array.from({ length: pos.count }, (_, i) => pos.getY(i)));
+    let left = -1,
+      right = -1;
+    for (let i = 0; i < pos.count; i++) {
+      if (Math.abs(pos.getY(i) - hemY) > 1e-6) continue;
+      if (uv.getX(i) <= 0.5 && pos.getX(i) < 0) left = i;
+      if (uv.getX(i) >= 0.5 && pos.getX(i) > 0) right = i;
+    }
+    expect(left).toBeGreaterThanOrEqual(0);
+    expect(right).toBeGreaterThanOrEqual(0);
+    const skinPoint = (i: number) =>
+      mesh.applyBoneTransform(i, new THREE.Vector3().fromBufferAttribute(pos, i));
+    const beforeLeft = skinPoint(left),
+      beforeRight = skinPoint(right);
+    rig.boneOf.legL.rotation.x = -0.9;
+    rig.root.updateMatrixWorld(true);
+    rig.skeleton.update();
+    expect(skinPoint(left).distanceTo(beforeLeft)).toBeGreaterThan(0.1);
+    expect(skinPoint(right).distanceTo(beforeRight)).toBeLessThan(0.002);
+    expect(group.geometry.hasAttribute("openingLeg")).toBe(false);
+    rig.dispose();
+  });
 });

@@ -15,6 +15,7 @@ import { makeRng } from "@/game/rng";
 import type { CareerState, Player } from "@/game/types";
 
 export interface AutoWeek {
+  kind: "match" | "bye";
   round: number;
   opponentId: string;
   home: boolean;
@@ -87,13 +88,28 @@ export function buildPerformances(
 
 /** Simula a partida do usuário desta rodada e devolve o estado já avançado. */
 export function autoWeek(state: CareerState): AutoWeek | null {
+  const roundFixtures = state.fixtures.filter((f) => f.round === state.round);
+  const scheduled = roundFixtures.find((f) => f.home === state.clubId || f.away === state.clubId);
   const fixture = state.fixtures.find(
     (f) =>
       f.round === state.round &&
       f.homeGoals === null &&
       (f.home === state.clubId || f.away === state.clubId),
   );
-  if (!fixture) return null;
+  if (!fixture) {
+    if (scheduled || !roundFixtures.length) return null;
+    const next = advanceRound(state, null, [], "Liga");
+    return {
+      kind: "bye",
+      round: state.round,
+      opponentId: "",
+      home: false,
+      gf: 0,
+      ga: 0,
+      scorers: [],
+      state: next,
+    };
+  }
 
   const seed = `${state.clubId}-auto-${state.season}-${state.round}`;
   const { hg, ag } = quickSimulate(
@@ -114,6 +130,7 @@ export function autoWeek(state: CareerState): AutoWeek | null {
     .map((p) => ({ name: state.players[p.pid]?.name ?? "—", goals: p.goals }));
 
   return {
+    kind: "match",
     round: state.round,
     opponentId: home ? fixture.away : fixture.home,
     home,

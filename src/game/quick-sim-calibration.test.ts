@@ -4,19 +4,13 @@ import { LEAGUES } from "./data/leagues";
 
 describe("calibração dos resultados (2.000 partidas)", () => {
   it("médias ficam perto do futebol real", () => {
-    let g = 0,
-      d = 0,
-      hw = 0,
-      big = 0,
-      n = 0;
+    let g = 0, d = 0, hw = 0, big = 0, n = 0;
     for (let i = 0; i < 2000; i++) {
       const L = LEAGUES[i % 12]!.clubs;
-      const h = L[i % L.length]!.id,
-        a = L[(i * 7 + 3) % L.length]!.id;
+      const h = L[i % L.length]!.id, a = L[(i * 7 + 3) % L.length]!.id;
       if (h === a) continue;
       const r = quickSimulate(h, a, `cal-${i}`);
-      n++;
-      g += r.hg + r.ag;
+      n++; g += r.hg + r.ag;
       if (r.hg === r.ag) d++;
       if (r.hg > r.ag) hw++;
       if (Math.abs(r.hg - r.ag) >= 4) big++;
@@ -32,8 +26,7 @@ describe("calibração dos resultados (2.000 partidas)", () => {
   });
   it("time em má forma e cansado rende menos", () => {
     const L = LEAGUES[0]!.clubs;
-    let good = 0,
-      bad = 0;
+    let good = 0, bad = 0;
     for (let i = 0; i < 1500; i++) {
       good += quickSimulate(L[0]!.id, L[1]!.id, `f${i}`, { homeForm: 90 }).hg;
       bad += quickSimulate(L[0]!.id, L[1]!.id, `f${i}`, { homeForm: 30, homeFatigue: 80 }).hg;
@@ -43,10 +36,7 @@ describe("calibração dos resultados (2.000 partidas)", () => {
   it("táticas agressivas criam mais chances para ambos os lados, de forma determinística", () => {
     const [home, away] = LEAGUES[0]!.clubs;
     const attacking = { mentality: 4, pressing: 2, tempo: 2 } as const;
-    let neutralHome = 0,
-      neutralAway = 0,
-      riskyHome = 0,
-      riskyAway = 0;
+    let neutralHome = 0, neutralAway = 0, riskyHome = 0, riskyAway = 0;
     for (let i = 0; i < 2000; i++) {
       const seed = `tactics-${i}`;
       const base = quickSimulate(home!.id, away!.id, seed);

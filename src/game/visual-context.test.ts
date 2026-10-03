@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildTeamSetup } from "./quickMatch";
 import { MatchSim } from "./sim";
-import { ReplayRecorder, ReplaySim, type Replay } from "./replay";
+import { ReplayRecorder, ReplaySim } from "./replay";
 import {
   emptyActionContext,
   emptyContactContext,
@@ -14,7 +14,6 @@ import {
   type ActionContext,
   type ContactContext,
   type VersionedVisualData,
-  type VersionedVisualDataInput,
 } from "./visual-context";
 
 function create(seed = "visual-context-test") {
@@ -26,18 +25,18 @@ function expectVisualDataEqual(actual: VersionedVisualData, expected: VersionedV
   expect(actual.version).toBe(expected.version);
   expect(actual.actionContexts.length).toBe(expected.actionContexts.length);
   expect(actual.contactContexts.length).toBe(expected.contactContexts.length);
-
+  
   for (let i = 0; i < actual.actionContexts.length; i++) {
     const actualAction = actual.actionContexts[i];
     const expectedAction = expected.actionContexts[i];
-
+    
     if (actualAction === null && expectedAction === null) {
       continue;
     }
-
+    
     expect(actualAction).not.toBeNull();
     expect(expectedAction).not.toBeNull();
-
+    
     if (actualAction && expectedAction) {
       expect(actualAction.action).toBe(expectedAction.action);
       expect(actualAction.actionT).toBe(expectedAction.actionT);
@@ -45,7 +44,7 @@ function expectVisualDataEqual(actual: VersionedVisualData, expected: VersionedV
       expect(actualAction.phase).toBe(expectedAction.phase);
       expect(actualAction.dominantFoot).toBe(expectedAction.dominantFoot);
       expect(actualAction.usedFoot).toBe(expectedAction.usedFoot);
-
+      
       // Verifica target (pode ser null)
       if (actualAction.target && expectedAction.target) {
         expect(actualAction.target.x).toBe(expectedAction.target.x);
@@ -54,7 +53,7 @@ function expectVisualDataEqual(actual: VersionedVisualData, expected: VersionedV
         expect(actualAction.target).toBeNull();
         expect(expectedAction.target).toBeNull();
       }
-
+      
       // Verifica contactPoint (pode ser null)
       if (actualAction.contactPoint && expectedAction.contactPoint) {
         expect(actualAction.contactPoint.x).toBe(expectedAction.contactPoint.x);
@@ -66,25 +65,25 @@ function expectVisualDataEqual(actual: VersionedVisualData, expected: VersionedV
       }
     }
   }
-
+  
   for (let i = 0; i < actual.contactContexts.length; i++) {
     const actualContact = actual.contactContexts[i];
     const expectedContact = expected.contactContexts[i];
-
+    
     if (actualContact === null && expectedContact === null) {
       continue;
     }
-
+    
     expect(actualContact).not.toBeNull();
     expect(expectedContact).not.toBeNull();
-
+    
     if (actualContact && expectedContact) {
       expect(actualContact.type).toBe(expectedContact.type);
       expect(actualContact.groundFoot).toBe(expectedContact.groundFoot);
       expect(actualContact.force).toBe(expectedContact.force);
       expect(actualContact.bodyPoint).toBe(expectedContact.bodyPoint);
       expect(actualContact.contactPlayerId).toBe(expectedContact.contactPlayerId);
-
+      
       if (actualContact.relativeVelocity && expectedContact.relativeVelocity) {
         expect(actualContact.relativeVelocity.vx).toBe(expectedContact.relativeVelocity.vx);
         expect(actualContact.relativeVelocity.vz).toBe(expectedContact.relativeVelocity.vz);
@@ -271,8 +270,8 @@ describe("Version Migration", () => {
   });
 
   it("migrates old version to current version", () => {
-    const oldData: VersionedVisualDataInput = {
-      version: 1,
+    const oldData: Partial<VersionedVisualData> = {
+      version: 1 as any,
       actionContexts: [emptyActionContext()],
       contactContexts: [emptyContactContext()],
     };
@@ -303,7 +302,7 @@ describe("Replay with Visual Context", () => {
 
     // Verifica que os frames tem dados visuais
     expect(replay.frames.length).toBeGreaterThan(0);
-
+    
     for (const frame of replay.frames) {
       expect(frame.v).toBeDefined();
       if (frame.v) {
@@ -340,9 +339,9 @@ describe("Replay with Visual Context", () => {
     // Cria um replay antigo sem dados visuais
     const flaSetup = buildTeamSetup("fla");
     const palSetup = buildTeamSetup("pal");
-
+    
     // Cria meta para 22 jogadores (11 de cada time)
-    const meta: Replay["meta"] = [];
+    const meta: any[] = [];
     for (const p of flaSetup.players.slice(0, 11)) {
       meta.push({
         id: `home-${p.id}`,
@@ -364,7 +363,7 @@ describe("Replay with Visual Context", () => {
       });
     }
 
-    const oldReplay: Replay = {
+    const oldReplay: any = {
       id: "old-replay",
       createdAt: Date.now(),
       title: "Old Replay",
@@ -375,8 +374,8 @@ describe("Replay with Visual Context", () => {
         {
           t: 0,
           b: [0, 0, 0] as [number, number, number],
-          p: Array<number>(22 * 4).fill(0),
-          a: Array.from({ length: 22 }, () => null),
+          p: Array(22 * 4).fill(0) as number[],
+          a: Array(22).fill(null) as (any | null)[],
           hg: 0,
           ag: 0,
           poss: "home" as const,
@@ -384,8 +383,8 @@ describe("Replay with Visual Context", () => {
         {
           t: 1,
           b: [1, 0, 0] as [number, number, number],
-          p: Array<number>(22 * 4).fill(0),
-          a: Array.from({ length: 22 }, () => null),
+          p: Array(22 * 4).fill(0) as number[],
+          a: Array(22).fill(null) as (any | null)[],
           hg: 0,
           ag: 0,
           poss: "home" as const,

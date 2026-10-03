@@ -1,15 +1,9 @@
 import type { CareerState, Player } from "./types";
 
-export const identityText = (value: unknown): string =>
-  typeof value === "string" ? value.trim() : "";
+export const identityText = (value: unknown): string => typeof value === "string" ? value.trim() : "";
 export const providerName = (value: unknown): string => identityText(value).toLowerCase();
-export const normalizedPlayerName = (value: unknown): string =>
-  identityText(value)
-    .normalize("NFKD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .trim();
+export const normalizedPlayerName = (value: unknown): string => identityText(value)
+  .normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 
 export function validBirthDate(value: unknown): string {
   const text = identityText(value);
@@ -30,14 +24,12 @@ export function playerSourceKeys(player: Pick<Player, "id"> & Partial<Player>): 
   const record = identityText(player.sourcePlayerId);
   if (record) keys.add(`record:${record}`);
   // Saves created before provenance was recorded still have this unambiguous prefix.
-  if (player.id.startsWith("real-") && player.rosterSource !== "custom")
-    keys.add(`record:${player.id.slice(5)}`);
+  if (player.id.startsWith("real-") && player.rosterSource !== "custom") keys.add(`record:${player.id.slice(5)}`);
   const source = providerName(player.sourceProvider);
   const external = identityText(player.sourceExternalId);
   if (source && external) keys.add(`provider:${source}:${external}`);
   const aliases = Array.isArray(player.sourceIdentityAliases) ? player.sourceIdentityAliases : [];
-  for (const alias of aliases)
-    if (typeof alias === "string" && /^(record|provider):/.test(alias)) keys.add(alias);
+  for (const alias of aliases) if (typeof alias === "string" && /^(record|provider):/.test(alias)) keys.add(alias);
   return [...keys];
 }
 
@@ -57,7 +49,7 @@ export function realPlayerKeys(target: RealPlayerIdentity): string[] {
   const external = identityText(target.source_id);
   if (source && external) keys.push(`provider:${source}:${external}`);
   const aliases = Array.isArray(target.identity_aliases) ? target.identity_aliases : [];
-  keys.push(...aliases.filter((k) => typeof k === "string" && /^(record|provider):/.test(k)));
+  keys.push(...aliases.filter(k => typeof k === "string" && /^(record|provider):/.test(k)));
   return keys;
 }
 
@@ -65,12 +57,8 @@ export function realPlayerKeys(target: RealPlayerIdentity): string[] {
 export function ownsRealPlayer(state: CareerState, target: RealPlayerIdentity): boolean {
   const keys = new Set(realPlayerKeys(target));
   const person = verifiedPersonKey(target.name, target.birth_date, state.clubId);
-  return Object.values(state.players).some(
-    (player) =>
-      player.clubId === state.clubId &&
-      (playerSourceKeys(player).some((key) => keys.has(key)) ||
-        (player.rosterSource === "imported" &&
-          !!person &&
-          person === verifiedPersonKey(player.name, player.birthDate, player.clubId))),
-  );
+  return Object.values(state.players).some(player => player.clubId === state.clubId && (
+    playerSourceKeys(player).some(key => keys.has(key)) ||
+    (player.rosterSource === "imported" && !!person && person === verifiedPersonKey(player.name, player.birthDate, player.clubId))
+  ));
 }

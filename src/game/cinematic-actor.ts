@@ -1,7 +1,7 @@
 import type { Pose } from "./animation-core";
 import { emptyPose } from "./animation-core";
 import { gaitPoseAt, solveLegTarget } from "./gait-kinematics";
-import { clampPoseAnatomy } from "./ground-contact";
+import { clampPoseAnatomy, soleHeightFor } from "./ground-contact";
 import { lookFor, type PlayerLook, type Proportions } from "./player-model";
 import type { ManagerLook } from "./types";
 import { SKIN_TONES } from "./kits";
@@ -72,6 +72,7 @@ export function cinematicActorPose(
   manner: CinematicManner = { assertiveness: 55, warmth: 55 },
   cue?: CinematicCue,
   lineTime = time,
+  keepSeated = false,
 ): Pose {
   for (const key of Object.keys(out) as (keyof Pose)[]) out[key] = 0;
   const t = time + (seed % 17) * 0.37;
@@ -92,7 +93,9 @@ export function cinematicActorPose(
   out.spine += 0.015 + Math.sin(t * 1.5) * 0.006;
   out.headYaw = Math.sin(t * 0.32) * 0.1;
   out.headPitch = Math.sin(t * 0.7) * 0.025;
-  const idle = cinematicIdleAt(time, seed, posture === "sit");
+  const idle = keepSeated
+    ? { kind: "none", weight: 0 }
+    : cinematicIdleAt(time, seed, posture === "sit");
   if (!acting && idle.weight > 0) {
     if (idle.kind === "look") out.headYaw += Math.sin(seed) * 0.48 * idle.weight;
     if (idle.kind === "tilt") out.headPitch -= 0.12 * idle.weight;
@@ -201,11 +204,47 @@ export function cinematicActorPose(
           out.armRRoll -= w * 0.2;
           out.armLPitch = -w * 0.18;
       }
+      // Alternate emphasis between phrases rather than repeating one stroke.
+      if (action.side < 0 && cue.gesture !== "celebrate") {
+        [out.armLPitch, out.armRPitch] = [out.armRPitch, out.armLPitch];
+        [out.elbowL, out.elbowR] = [out.elbowR, out.elbowL];
+        [out.armLRoll, out.armRRoll] = [-out.armRRoll, -out.armLRoll];
+      }
+      out.headYaw *= 0.35;
+      out.chest -= w * (0.012 + cue.tension * 0.018);
+      // The pelvis initiates the stroke while the ribcage counter-rotates.
+      // Keep the displacement restrained for seated delivery and held props.
+      out.hipYaw += action.side * w * (posture === "sit" ? 0.012 : 0.035);
+      if (posture === "stand") {
+        const weight = Math.sin(t * 0.47) * 0.008 + action.side * w * 0.012;
+        out.hipRoll += weight;
+        out.legLRoll -= weight;
+        out.legRRoll -= weight;
+        out.kneeL -= 0.025 + Math.max(0, weight) * 0.8;
+        out.kneeR -= 0.025 + Math.max(0, -weight) * 0.8;
+        out.chest += Math.sin(t * 1.4) * 0.003;
+      }
     } else {
       // Staggered acknowledgement, with restrained warmth or concern.
       const reaction = Math.max(0, 1 - Math.abs(lineTime - 1.8 - (seed % 4) * 0.4) / 0.8);
       out.headPitch += Math.sin(reaction * Math.PI) * (cue.mood === "bad" ? 0.065 : 0.09);
     }
+  }
+  clampPoseAnatomy(out);
+  if (posture === "sit" || posture === "stand") {
+    // Seat height is an authored target; the contact plane comes from the same
+    // boot envelope as the actual mesh, including the edge of a rolled foot.
+    const input = {
+      P: p,
+      pose: out,
+      hipShiftX: 0,
+      leanX: 0,
+      leanZ: 0,
+      airborne: 0,
+      previousRootY: 0,
+      dt: 0,
+    };
+    out.hipY -= Math.min(soleHeightFor(input, true).y, soleHeightFor(input, false).y);
   }
   return clampPoseAnatomy(out);
 }

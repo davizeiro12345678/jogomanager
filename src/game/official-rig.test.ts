@@ -1,8 +1,9 @@
 import { expect, it, vi } from "vitest";
 import * as THREE from "three";
-import { applyOfficialLegPose, buildOfficialRig } from "./official-rig";
+import { applyOfficialLegPose, assistantFlagGeometry, buildOfficialRig } from "./official-rig";
 import { gaitPoseAt } from "./gait-kinematics";
 import { clampPoseAnatomy, soleHeightFor, solveGroundContact } from "./ground-contact";
+import { SOLE_CONTACT_PROFILE } from "./boot-profile";
 
 it("retains every material surface in three core draws without incompatible geometry attributes", () => {
   const errors = vi.spyOn(console, "error");
@@ -27,6 +28,18 @@ it("retains every material surface in three core draws without incompatible geom
   }
   expect(errors).not.toHaveBeenCalled();
   errors.mockRestore();
+});
+
+it("keeps the assistant's checked flag in eight triangles without a texture", () => {
+  const geometry = assistantFlagGeometry();
+  expect(geometry.groups).toHaveLength(0);
+  expect(geometry.getAttribute("position").count / 3).toBe(8);
+  const colors = geometry.getAttribute("color");
+  const colorAt = (i: number) => [colors.getX(i), colors.getY(i), colors.getZ(i)];
+  expect(colorAt(0)).toEqual(colorAt(18));
+  expect(colorAt(6)).toEqual(colorAt(12));
+  expect(colorAt(0)).not.toEqual(colorAt(6));
+  geometry.dispose();
 });
 
 it("renders the same planted sole that the contact solver measured throughout walking and running", () => {
@@ -58,10 +71,19 @@ it("renders the same planted sole that the contact solver measured throughout wa
         [false, skin.boneOf.ankleR, contact.ankleRFix],
       ] as const) {
         const renderedSole = Math.min(
-          ...[-0.33, 0.53].map(
-            (z) =>
-              new THREE.Vector3(0, -p.footH * 0.7, p.footLen * z).applyMatrix4(ankle.matrixWorld).y,
-          ),
+          ...SOLE_CONTACT_PROFILE.map((section) => {
+            // Project the complete sole envelope through the rendered bones.
+            // The old toe/heel centre sample missed the edge during lateral roll.
+            const rx = section.width * p.footH,
+              ry = p.footH * 0.045;
+            const m = ankle.matrixWorld.elements;
+            const angle = Math.atan2(-m[5]! * ry, -m[1]! * rx);
+            return new THREE.Vector3(
+              rx * Math.cos(angle),
+              -p.footH * 0.64 + ry * Math.sin(angle),
+              section.z * p.footLen,
+            ).applyMatrix4(ankle.matrixWorld).y;
+          }),
         );
         const authoredAnkle = left ? pose.ankleL : pose.ankleR;
         const measuredSole =

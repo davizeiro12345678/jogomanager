@@ -594,9 +594,10 @@ function trainingAttr(focus: TrainingFocus): keyof Player {
 function applyWeeklyDevelopment(
   players: Record<string, Player>,
   state: CareerState,
-  won: boolean,
+  won: boolean | null,
   seed: string,
   livePids: Set<string> = new Set(),
+  matchPlayed = true,
 ): { players: Record<string, Player>; news: NewsItem[] } {
   const rnd = makeRng(seed);
   const news: NewsItem[] = [];
@@ -633,7 +634,10 @@ function applyWeeklyDevelopment(
 
     // condição e moral
     q.condition = Math.max(45, Math.min(100, q.condition + condRegen - 4 + Math.floor(rnd() * 6)));
-    q.morale = Math.max(30, Math.min(99, q.morale + (won ? 3 : -2) + Math.floor(rnd() * 5) - 2));
+    q.morale = Math.max(
+      30,
+      Math.min(99, q.morale + (won === null ? 0 : won ? 3 : -2) + Math.floor(rnd() * 5) - 2),
+    );
 
     // desenvolvimento por idade
     if (q.age <= 23 && rnd() < 0.16 * growthMult) {
@@ -656,7 +660,7 @@ function applyWeeklyDevelopment(
     // cartões e lesões da rodada (somente quem jogou; ao vivo já trouxe os dados)
     const played = state.lineup.includes(id) || state.bench.slice(0, 3).includes(id);
     const fromLive = livePids.has(id);
-    if (played && !fromLive) {
+    if (matchPlayed && played && !fromLive) {
       if (rnd() < 0.11) {
         q.yellows += 1;
         if (q.yellows >= 3) {
@@ -943,15 +947,20 @@ export interface MatchPerformance {
 
 export function advanceRound(
   state: CareerState,
-  userResult: { hg: number; ag: number },
+  userResult: { hg: number; ag: number } | null,
   performances: MatchPerformance[] = [],
   comp = "Liga",
 ) {
   const round = state.round;
+  const played = state.fixtures.find(
+    (f) => f.round === round && (f.home === state.clubId || f.away === state.clubId),
+  );
+  if (played && !userResult) throw new Error("O resultado da partida do clube é obrigatório.");
+  const matchResult = played ? userResult : null;
   const fixtures = state.fixtures.map((f) => {
     if (f.round !== round || f.homeGoals !== null) return f;
     if (f.home === state.clubId || f.away === state.clubId) {
-      return { ...f, homeGoals: userResult.hg, awayGoals: userResult.ag };
+      return matchResult ? { ...f, homeGoals: matchResult.hg, awayGoals: matchResult.ag } : f;
     }
     const { hg, ag, events } = quickSimulate(
       f.home,
@@ -962,15 +971,11 @@ export function advanceRound(
     return { ...f, homeGoals: hg, awayGoals: ag, events };
   });
 
-  const played = state.fixtures.find(
-    (f) => f.round === round && (f.home === state.clubId || f.away === state.clubId),
-  );
-
   const userHome = played ? played.home === state.clubId : true;
-  const gf = userHome ? userResult.hg : userResult.ag;
-  const ga = userHome ? userResult.ag : userResult.hg;
-  const won = gf > ga;
-  const draw = gf === ga;
+  const gf = matchResult ? (userHome ? matchResult.hg : matchResult.ag) : 0;
+  const ga = matchResult ? (userHome ? matchResult.ag : matchResult.hg) : 0;
+  const won = matchResult !== null && gf > ga;
+  const draw = matchResult !== null && gf === ga;
 
   // estatísticas individuais da partida (jogos, gols, assistências, cartões, lesões)
   let squadAfterMatch = state.players;
@@ -1031,9 +1036,10 @@ export function advanceRound(
   const { players, news } = applyWeeklyDevelopment(
     squadAfterMatch,
     state,
-    won,
+    matchResult ? won : null,
     `${state.clubId}-${round}-dev`,
     livePids,
+    matchResult !== null,
   );
   news.unshift(...liveNews);
 
@@ -1051,61 +1057,73 @@ export function advanceRound(
   const budget = Math.round((state.finances.budget + income - costs) * 100) / 100;
 
   // aprovação da diretoria e da torcida
-  const approval = Math.max(5, Math.min(100, state.approval + (won ? 2.5 : draw ? 0.5 : -2.5)));
-  const fanApproval = Math.max(
-    5,
-    Math.min(
-      100,
-      (state.fanApproval ?? 60) + (won ? 3 : draw ? 0 : -3) - (state.ticketPrice - 45) / 25,
-    ),
-  );
-  const pressure = Math.max(
-    0,
-    Math.min(
-      100,
-      (state.pressure ?? 25) + pressureDelta(won, draw, position || 10, state.objective),
-    ),
-  );
-  const streak = won
-    ? Math.max(1, (state.streak ?? 0) + 1)
-    : draw
-      ? 0
-      : Math.min(-1, (state.streak ?? 0) - 1);
-
-  const headline: NewsItem = {
-    id: `res-${round}-${state.season}`,
-    season: state.season,
-    round,
-    kind: "resultado",
-    title: won
-      ? `Vitória por ${gf}x${ga}!`
+  const approval = matchResult
+    ? Math.max(5, Math.min(100, state.approval + (won ? 2.5 : draw ? 0.5 : -2.5)))
+    : state.approval;
+  const fanApproval = matchResult
+    ? Math.max(
+        5,
+        Math.min(
+          100,
+          (state.fanApproval ?? 60) + (won ? 3 : draw ? 0 : -3) - (state.ticketPrice - 45) / 25,
+        ),
+      )
+    : state.fanApproval;
+  const pressure = matchResult
+    ? Math.max(
+        0,
+        Math.min(
+          100,
+          (state.pressure ?? 25) + pressureDelta(won, draw, position || 10, state.objective),
+        ),
+      )
+    : state.pressure;
+  const streak = !matchResult
+    ? (state.streak ?? 0)
+    : won
+      ? Math.max(1, (state.streak ?? 0) + 1)
       : draw
-        ? `Empate em ${gf}x${ga}`
-        : `Derrota por ${gf}x${ga}`,
-    body: played
-      ? `${CLUBS[played.home]?.name} ${userResult.hg} x ${userResult.ag} ${CLUBS[played.away]?.name} — Rodada ${round}.`
-      : "",
-  };
+        ? 0
+        : Math.min(-1, (state.streak ?? 0) - 1);
 
-  // histórico partida a partida
-  const logEntry = played
+  const headline: NewsItem | null = matchResult
     ? {
+        id: `res-${round}-${state.season}`,
         season: state.season,
         round,
-        comp,
-        opponentId: played.home === state.clubId ? played.away : played.home,
-        home: userHome,
-        gf,
-        ga,
-        players: performances.map((p) => ({
-          pid: p.pid,
-          goals: p.goals,
-          assists: p.assists,
-          minutes: p.minutes ?? 90,
-          rating: Math.round((p.rating ?? 6 + p.goals * 1.2 + p.assists * 0.7) * 10) / 10,
-        })),
+        kind: "resultado",
+        title: won
+          ? `Vitória por ${gf}x${ga}!`
+          : draw
+            ? `Empate em ${gf}x${ga}`
+            : `Derrota por ${gf}x${ga}`,
+        body: played
+          ? `${CLUBS[played.home]?.name} ${matchResult.hg} x ${matchResult.ag} ${CLUBS[played.away]?.name} — Rodada ${round}.`
+          : "",
       }
     : null;
+
+  // histórico partida a partida
+  const logEntry =
+    played && matchResult
+      ? {
+          season: state.season,
+          round,
+          clubId: state.clubId,
+          comp,
+          opponentId: played.home === state.clubId ? played.away : played.home,
+          home: userHome,
+          gf,
+          ga,
+          players: performances.map((p) => ({
+            pid: p.pid,
+            goals: p.goals,
+            assists: p.assists,
+            minutes: p.minutes ?? 90,
+            rating: Math.round((p.rating ?? 6 + p.goals * 1.2 + p.assists * 0.7) * 10) / 10,
+          })),
+        }
+      : null;
 
   let next: CareerState = {
     ...state,
@@ -1113,12 +1131,13 @@ export function advanceRound(
     players,
     round: round + 1,
     ...(logEntry ? { matchLog: [logEntry, ...(state.matchLog ?? [])].slice(0, 400) } : {}),
-    results: played
-      ? [
-          ...state.results,
-          { round, home: played.home, away: played.away, hg: userResult.hg, ag: userResult.ag },
-        ]
-      : state.results,
+    results:
+      played && matchResult
+        ? [
+            ...state.results,
+            { round, home: played.home, away: played.away, hg: matchResult.hg, ag: matchResult.ag },
+          ]
+        : state.results,
     finances: {
       budget,
       spent: state.finances.spent,
@@ -1128,7 +1147,7 @@ export function advanceRound(
     fanApproval: Math.round(fanApproval),
     pressure: Math.round(pressure),
     streak,
-    news: [headline, ...news, ...state.news].slice(0, 60),
+    news: [...(headline ? [headline] : []), ...news, ...state.news].slice(0, 60),
   };
 
   // eventos dinâmicos: bastidores, propostas por jogadores, sondagens por você
@@ -1152,7 +1171,7 @@ export function advanceRound(
   }
 
   next = recordWorldTransition(state, next);
-  next = checkSacking(next);
+  if (matchResult || next.season !== state.season) next = checkSacking(next);
 
   const newlyUnlocked = evaluateAchievements(next);
   if (newlyUnlocked.length) {

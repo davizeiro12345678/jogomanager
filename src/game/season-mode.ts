@@ -196,9 +196,9 @@ export function pickStoryScene(
 
   if (after.sacked) return valid(once("farewell"));
   if (after.pressure >= 78) return valid(once("sackrisk"));
-  if (week.gf - week.ga >= 3) return valid(once("winstreak"));
+  if (week.kind === "match" && week.gf - week.ga >= 3) return valid(once("winstreak"));
   if (after.streak >= 4) return valid(once("winstreak"));
-  if (week.ga - week.gf >= 3) return valid(once("badloss"));
+  if (week.kind === "match" && week.ga - week.gf >= 3) return valid(once("badloss"));
   if (after.trophies.length > before.trophies.length) return valid(once("trophyroom"));
   if (after.round <= 4 || (after.round >= 19 && after.round <= 22))
     return valid(once("transferwindow"));
@@ -237,11 +237,13 @@ function finishCoachWeek(
 
   const opp = clubName(week.opponentId);
   const headline =
-    week.gf > week.ga
-      ? `Vitória sobre o ${opp} por ${week.gf} a ${week.ga}`
-      : week.gf === week.ga
-        ? `Empate com o ${opp} em ${week.gf} a ${week.ga}`
-        : `Derrota para o ${opp} por ${week.ga} a ${week.gf}`;
+    week.kind === "bye"
+      ? `Folga na rodada ${week.round}`
+      : week.gf > week.ga
+        ? `Vitória sobre o ${opp} por ${week.gf} a ${week.ga}`
+        : week.gf === week.ga
+          ? `Empate com o ${opp} em ${week.gf} a ${week.ga}`
+          : `Derrota para o ${opp} por ${week.ga} a ${week.gf}`;
 
   const seen = new Set(week.state.seenScenes ?? []);
   if (scene) seen.add(scene);

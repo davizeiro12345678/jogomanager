@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Narrator } from "@/game/narrator";
-import { useT } from "@/i18n";
+import { useT } from "@/i18n/provider";
 import { useAccessibility } from "@/components/accessibility/AccessibilityProvider";
 import { useSignedIn } from "./useCareer";
 
@@ -13,9 +13,17 @@ export function useMatchNarration(session: unknown, paused: boolean) {
   const narratorRef = useRef<Narrator | null>(null);
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+  const languageRef = useRef(lang);
+  languageRef.current = lang;
   const narrating = p.narration !== "off";
   useEffect(() => {
-    const narrator = new Narrator({ lang, enabled: false, onCaption: setCaption });
+    // Language and voice preferences are applied below. Recreating the narrator
+    // on a language change would drop event cursors during the same match.
+    const narrator = new Narrator({
+      lang: languageRef.current,
+      enabled: false,
+      onCaption: setCaption,
+    });
     narratorRef.current = narrator;
     const visibility = () => narrator.setPaused(document.hidden || pausedRef.current);
     document.addEventListener("visibilitychange", visibility);

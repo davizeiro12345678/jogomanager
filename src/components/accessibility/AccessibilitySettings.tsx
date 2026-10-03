@@ -1,16 +1,18 @@
-import { useId, type ReactNode } from "react";
-import { Accessibility, Check, Type } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { useT } from "@/i18n";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Accessibility, Type } from "lucide-react";
+import { useT } from "@/i18n/provider";
 import { useAccessibility } from "./AccessibilityProvider";
-import { LanguagePicker } from "./LanguagePicker";
+type DialogModule = typeof import("./AccessibilityDialog");
+let dialogPromise: Promise<DialogModule> | undefined;
+const loadAccessibilityDialog = () => {
+  dialogPromise ??= import("./AccessibilityDialog").catch((error: unknown) => {
+    // An optional chunk can fail during a deployment or a connection outage.
+    // Keep the career usable and allow a fresh attempt instead of caching rejection.
+    dialogPromise = undefined;
+    throw error;
+  });
+  return dialogPromise;
+};
 
 export function PreferenceToggle({
   label,
@@ -27,12 +29,18 @@ export function PreferenceToggle({
   return (
     <label className="preference-toggle" htmlFor={id}>
       <span>
-        <strong>{label}</strong>
-        {hint && <span className="preference-help">{hint}</span>}
+        <strong id={`${id}-label`}>{label}</strong>
+        {hint && (
+          <span id={`${id}-hint`} className="preference-help">
+            {hint}
+          </span>
+        )}
       </span>
       <input
         id={id}
         type="checkbox"
+        aria-labelledby={`${id}-label`}
+        aria-describedby={hint ? `${id}-hint` : undefined}
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
       />
@@ -96,34 +104,98 @@ export function AccessibilitySettings({
   className?: string;
 }) {
   const { t } = useT();
+  const [open, setOpen] = useState(false);
+  const [DialogView, setDialogView] = useState<DialogModule["default"] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const trigger = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open || DialogView) return;
+    let active = true;
+    setFailed(false);
+    void loadAccessibilityDialog().then(
+      (module) => {
+        if (active) setDialogView(() => module.default);
+      },
+      () => {
+        if (active) setFailed(true);
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [open, DialogView, attempt]);
+  const close = () => {
+    setOpen(false);
+    trigger.current?.focus();
+  };
+  const preload = () => {
+    void loadAccessibilityDialog().catch(() => undefined);
+  };
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <button
-          type="button"
-          className={className}
-          aria-label={t("access.title")}
-          title={t("access.title")}
+    <>
+      <button
+        ref={trigger}
+        type="button"
+        className={className}
+        aria-label={t("access.title")}
+        title={t("access.title")}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onPointerEnter={preload}
+        onFocus={preload}
+        onClick={() => setOpen(true)}
+        onKeyDown={(event) => {
+          if (open && event.key === "Escape") {
+            event.preventDefault();
+            close();
+          }
+        }}
+      >
+        {children ?? (
+          <>
+            <Accessibility size={19} aria-hidden="true" />
+            <span>{t("access.title")}</span>
+          </>
+        )}
+      </button>
+      {open && DialogView ? <DialogView trigger={trigger} onClose={close} /> : null}
+      {open && !DialogView ? (
+        <div
+          className="preferences-load-panel"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              close();
+            }
+          }}
         >
-          {children ?? (
+          <p role={failed ? "alert" : "status"}>
+            {t(failed ? "access.loadError" : "access.loading")}
+          </p>
+          {failed ? (
             <>
-              <Accessibility size={19} aria-hidden="true" />
-              <span>{t("access.title")}</span>
+              <button
+                className="preference-button"
+                type="button"
+                onClick={() => setAttempt((value) => value + 1)}
+              >
+                {t("common.retry")}
+              </button>
+              <button
+                className="preference-button"
+                type="button"
+                onClick={() => window.location.reload()}
+              >
+                {t("common.reload")}
+              </button>
             </>
-          )}
-        </button>
-      </DialogTrigger>
-      <DialogContent className="preferences-dialog" closeLabel={t("common.close")}>
-        <DialogHeader>
-          <DialogTitle>{t("access.title")}</DialogTitle>
-          <DialogDescription>{t("access.description")}</DialogDescription>
-        </DialogHeader>
-        <ReadingPreferences />
-        <LanguagePicker />
-        <p className="preference-help">
-          <Check size={15} aria-hidden="true" /> {t("access.updated")}
-        </p>
-      </DialogContent>
-    </Dialog>
+          ) : null}
+          <button className="preference-button" type="button" onClick={close}>
+            {t("common.close")}
+          </button>
+        </div>
+      ) : null}
+    </>
   );
 }

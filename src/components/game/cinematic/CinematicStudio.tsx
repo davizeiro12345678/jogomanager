@@ -50,6 +50,7 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
   const [autoPlay, setAutoPlay] = useState(true);
   const [narration, setNarration] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [startPaused, setStartPaused] = useState(false);
   const club = safeClub(clubId);
   const scenes = useMemo(() => Object.values(CUTSCENES), []);
   const filtered = useMemo(
@@ -81,7 +82,7 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
         </div>
         <span className="studio-height">{scenes.length} cenas para explorar</span>
       </div>
-      <div className="studio-toolbar">
+      <div className="studio-toolbar cinema-toolbar">
         <label className="min-w-0 flex-1 basis-48 text-xs text-slate-400">
           <span className="flex items-center gap-2">
             <Search size={14} />
@@ -214,10 +215,19 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
               className="studio-select"
             >
               <option value={0}>Início da encenação</option>
+              <option value={1.972}>Contato do chute · 1,97 s</option>
               <option value={8}>Olhares e pés · 8 s</option>
               <option value={13}>Posturas e braços · 13 s</option>
               <option value={17}>Levantar do banco · 17 s</option>
             </select>
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={startPaused}
+              onChange={(e) => setStartPaused(e.target.checked)}
+            />
+            Pausar ao abrir
           </label>
         </div>
       </details>
@@ -237,6 +247,7 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
           managerName="Treinador"
           renderQuality={quality}
           previewTime={previewTime}
+          startPaused={startPaused}
           autoPlay={autoPlay}
           narrate={narration}
           reduceMotion={reduceMotion}

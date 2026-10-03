@@ -10,7 +10,12 @@ import { resolveRuntimeSceneBudget } from "@/game/runtime-scene-budget";
 import { censusRef } from "@/game/scene-census";
 import { broadcastInterest, ShotHold } from "@/game/broadcast-interest";
 import { StaticBatch } from "@/components/game/stadium/StaticBatch";
+import { GoalNetPanel } from "@/components/game/stadium/GoalNet";
+import { footballTextures } from "@/components/game/stadium/textures/ball";
+import { BallResponse } from "@/game/ball-response";
 import { GrassChunks } from "@/components/game/stadium/GrassChunks";
+import { createGrassBladeMaterial } from "@/game/grass-material";
+import { createPitchSurfaceMaterial } from "@/game/pitch-material";
 import { ArenaArchitecture } from "@/components/game/stadium/ArenaArchitecture";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, AdaptiveEvents, Trail } from "@react-three/drei";
@@ -96,49 +101,8 @@ function presentationBall(sim: SimView) {
  * A bola amassa a grama num raio curto ao passar.
  */
 function useBladeMaterial(color: string) {
-  const uniforms = useRef({
-    uTime: { value: 0 },
-    uBall: { value: new THREE.Vector3() },
-    uWind: { value: 1 },
-  });
-  const mat = useMemo(() => {
-    const m = new THREE.MeshStandardMaterial({
-      color,
-      roughness: 0.94,
-      metalness: 0,
-      vertexColors: true,
-      side: THREE.DoubleSide,
-    });
-    m.onBeforeCompile = (shader) => {
-      shader.uniforms["uTime"] = uniforms.current.uTime;
-      shader.uniforms["uBall"] = uniforms.current.uBall;
-      shader.uniforms["uWind"] = uniforms.current.uWind;
-      shader.vertexShader = shader.vertexShader
-        .replace(
-          "#include <common>",
-          `#include <common>
-           uniform float uTime;
-           uniform float uWind;
-           uniform vec3 uBall;`,
-        )
-        .replace(
-          "#include <begin_vertex>",
-          `#include <begin_vertex>
-           vec3 wp = (instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-           float h = clamp(position.y / 0.085, 0.0, 1.0);
-           float w = sin(uTime * 1.7 + wp.x * 0.35 + wp.z * 0.22)
-                   + 0.5 * sin(uTime * 3.1 + wp.x * 0.9);
-           transformed.x += w * 0.018 * h * h * uWind;
-           transformed.z += w * 0.012 * h * h * uWind;
-           vec2 d = wp.xz - uBall.xz;
-           float near = 1.0 - smoothstep(0.0, 1.6, length(d));
-           transformed.xz += normalize(d + 0.0001) * near * 0.035 * h;
-           transformed.y -= near * 0.034 * h;`,
-        );
-    };
-    return m;
-  }, [color]);
-  return { mat, uniforms: uniforms.current };
+  const data = useMemo(() => createGrassBladeMaterial(color), [color]);
+  return { mat: data.material, uniforms: data.uniforms };
 }
 
 function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
@@ -150,8 +114,16 @@ function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
   useFrame(({ clock }) => {
     const visualBall = presentationBall(sim);
     uniforms.uTime.value = clock.elapsedTime;
-    uniforms.uBall.value.set(visualBall.x, 0, visualBall.z);
-    uniforms.uWind.value = 0.4 + (sim.wind?.strength01 ?? 0.5) * 1.2;
+    uniforms.uBall.value.set(visualBall.x, visualBall.height, visualBall.z);
+    uniforms.uWind.value = (sim.wind?.strength01 ?? 0.25) * 1.6;
+    let count = 0;
+    for (const player of sim.players) {
+      if (player.sentOff || count >= 22) continue;
+      uniforms.uPlayers.value[count++]!.set(player.x, 0, player.z);
+    }
+    uniforms.uPlayerCount.value = count;
+    if (sim.wind && Math.hypot(sim.wind.x, sim.wind.z) > 0.001)
+      uniforms.uWindDirection.value.set(sim.wind.x, sim.wind.z).normalize();
   });
   return (
     <GrassChunks
@@ -222,11 +194,13 @@ function Pitch({
   sim,
   wet,
   mow,
+  webgl2,
 }: {
   quality: Quality;
   sim: SimView;
   wet: number;
   mow: MowPattern;
+  webgl2: boolean;
 }) {
   const textureRevision = useKtx2Revision();
   // The precompiled albedo is the default checker cut; retain procedural maps
@@ -273,6 +247,38 @@ function Pitch({
     return new THREE.Color(k, k, k);
   }, [vis.grassTint]);
   const wearOpacity = 0.1 + vis.grassWear * 0.48;
+  const markings = useMemo(pitchLinesTexture, []);
+  const surface = useMemo(
+    () =>
+      createPitchSurfaceMaterial({
+        albedo: tex,
+        roughness: wearRough ?? rough,
+        normal: norm,
+        normalScale,
+        markings,
+        wear,
+        wearOpacity,
+        tint,
+        wet,
+        high: quality === "alta",
+        mergeLayers: webgl2,
+      }),
+    [
+      tex,
+      wearRough,
+      rough,
+      norm,
+      normalScale,
+      markings,
+      wear,
+      wearOpacity,
+      tint,
+      wet,
+      quality,
+      webgl2,
+    ],
+  );
+  useEffect(() => () => surface.dispose(), [surface]);
 
   return (
     <group>
@@ -282,33 +288,18 @@ function Pitch({
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[FIELD_X * 2 + 10, FIELD_Z * 2 + 10]} />
-        <meshPhysicalMaterial
-          {...(tex ? { map: tex, color: tint } : { color: "#1d7a45" })}
-          {...(wearRough ? { roughnessMap: wearRough } : rough ? { roughnessMap: rough } : {})}
-          {...(norm ? { normalMap: norm, normalScale } : {})}
-          roughness={0.94 - wet * 0.22}
-          metalness={0.0}
-          clearcoat={quality === "alta" ? wet * 0.22 : quality === "media" ? wet * 0.3 : 0}
-          clearcoatRoughness={0.72 - wet * 0.48}
-          iridescence={quality === "alta" ? wet * 0.08 : 0}
-          iridescenceIOR={1.28}
-          sheen={quality === "alta" ? 0.05 + wet * 0.1 : 0}
-          sheenRoughness={0.75}
-          sheenColor="#5fae7c"
-          envMapIntensity={0.32 + wet * 0.35}
-        />
+        <primitive object={surface} attach="material" />
       </mesh>
-      {/* desgaste, lama e terra exposta por cima do gramado */}
-      {wear ? (
+      {/* WebGPU uses standard materials; the stable WebGL2 path merges both
+          layers in its opaque PBR shader without two field-sized passes. */}
+      {!webgl2 && wear ? (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0]} renderOrder={1}>
           <planeGeometry args={[LINES_W, LINES_H]} />
           <meshStandardMaterial
             map={wear}
             transparent
             opacity={wearOpacity}
-
             roughness={0.95}
-            metalness={0}
             depthWrite={false}
             polygonOffset
             polygonOffsetFactor={-1}
@@ -316,13 +307,27 @@ function Pitch({
           />
         </mesh>
       ) : null}
+      {!webgl2 && markings ? (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]} renderOrder={2}>
+          <planeGeometry args={[LINES_W, LINES_H]} />
+          <meshStandardMaterial
+            map={markings}
+            color="#c9cec6"
+            transparent
+            roughness={0.92}
+            depthWrite={false}
+            polygonOffset
+            polygonOffsetFactor={-2}
+            polygonOffsetUnits={-2}
+          />
+        </mesh>
+      ) : null}
       {quality !== "baixa" && <GrassField sim={sim} quality={quality} />}
       {quality !== "baixa" && <PitchMarks sim={sim} />}
       {quality !== "baixa" && wet > 0.5 ? <Puddles wet={wet} /> : null}
-      <PaintedLines />
       <Goal side={1} quality={quality} sim={sim} />
       <Goal side={-1} quality={quality} sim={sim} />
-      <CornerFlags wind={sim.wind?.strength01 ?? 0.5} />
+      <CornerFlags sim={sim} />
     </group>
   );
 }
@@ -457,27 +462,6 @@ function Weather({
  * gramado. Substitui as antigas linhas de 1 pixel, que serrilhavam e
  * pareciam desenho técnico.
  */
-function PaintedLines() {
-  const tex = useMemo(pitchLinesTexture, []);
-  if (!tex) return null;
-  return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]} renderOrder={2}>
-      <planeGeometry args={[LINES_W, LINES_H]} />
-      <meshStandardMaterial
-        map={tex}
-        color="#c9cec6"
-        transparent
-        roughness={0.92}
-        metalness={0}
-        depthWrite={false}
-        polygonOffset
-        polygonOffsetFactor={-2}
-        polygonOffsetUnits={-2}
-      />
-    </mesh>
-  );
-}
-
 /** Rede em losango, com nós — usada como alphaMap (recorte real, não plano leitoso). */
 function netTexture() {
   if (typeof document === "undefined") return null;
@@ -548,102 +532,6 @@ function useNetMaterial(repeatX: number, repeatY: number, high = false) {
     [material],
   );
   return material;
-}
-
-/**
- * Rede simulada: malha de pontos com equação de onda no eixo de profundidade.
- * O vento faz a rede respirar e a bola estufa o pano de verdade, com a
- * ondulação se espalhando pelos fios e amortecendo aos poucos.
- */
-function NetCloth({
-  side,
-  sim,
-  material,
-  quality,
-}: {
-  side: number;
-  sim: SimView;
-  material: THREE.Material;
-  quality: Quality;
-}) {
-  const cols = quality === "alta" ? 22 : quality === "media" ? 14 : 9;
-  const rows = quality === "alta" ? 14 : quality === "media" ? 9 : 6;
-  const W = 7.32;
-  const H = 2.44;
-
-  const geo = useMemo(() => new THREE.PlaneGeometry(W, H, cols, rows), [cols, rows]);
-  const state = useMemo(() => {
-    const n = (cols + 1) * (rows + 1);
-    return { z: new Float32Array(n), zp: new Float32Array(n) };
-  }, [cols, rows]);
-  const ref = useRef<THREE.Mesh>(null);
-  const acc = useRef(0);
-
-  useFrame(({ clock }, rawDt) => {
-    acc.current += Math.min(rawDt, 0.05);
-    const step = 1 / 60;
-    if (acc.current < step) return;
-    acc.current = 0;
-
-    const { z, zp } = state;
-    const cx = cols + 1;
-    const t = clock.elapsedTime;
-
-    // impulso da bola visual: dentro do gol, empurra a rede no ponto de impacto
-    const visualBall = presentationBall(sim);
-    const bx = visualBall.x;
-    const insideGoal = side > 0 ? bx > FIELD_X - 0.2 : bx < -FIELD_X + 0.2;
-    if (insideGoal && Math.abs(visualBall.z) < W / 2 && visualBall.height < H) {
-      const u = (visualBall.z / W + 0.5) * cols;
-      const v = (1 - visualBall.height / H) * rows;
-      const power = Math.min(1.4, 0.25 + Math.hypot(visualBall.vx, visualBall.vz) * 0.12);
-      for (let ry = -2; ry <= 2; ry++) {
-        for (const rx of [-2, -1, 0, 1, 2]) {
-          const ix = Math.round(u) + rx;
-          const iy = Math.round(v) + ry;
-          if (ix < 1 || ix >= cols || iy < 1 || iy >= rows) continue;
-          const f = Math.exp(-(rx * rx + ry * ry) * 0.35);
-          z[iy * cx + ix] = (z[iy * cx + ix] ?? 0) - power * f * 0.28;
-        }
-      }
-    }
-
-    // propagação + vento + gravidade leve (barriga da rede)
-    for (let y = 1; y < rows; y++) {
-      for (let x = 1; x < cols; x++) {
-        const i = y * cx + x;
-        const lap =
-          (z[i - 1] ?? 0) + (z[i + 1] ?? 0) + (z[i - cx] ?? 0) + (z[i + cx] ?? 0) - 4 * (z[i] ?? 0);
-        const wind = Math.sin(t * 1.3 + x * 0.4 + y * 0.2) * 0.0016;
-        const next = 2 * (z[i] ?? 0) - (zp[i] ?? 0) + lap * 0.22 + wind - 0.0009;
-        zp[i] = z[i] ?? 0;
-        z[i] = next * 0.986;
-      }
-    }
-
-    const pos = geo.attributes["position"] as THREE.BufferAttribute;
-    for (let y = 0; y <= rows; y++) {
-      for (let x = 0; x <= cols; x++) {
-        const i = y * cx + x;
-        const fx = 1 - Math.abs(x / cols - 0.5) * 2;
-        const fy = 1 - y / rows;
-        const sag = -0.5 * fx * (0.3 + 0.7 * fy);
-        pos.setZ(i, sag + (z[i] ?? 0));
-      }
-    }
-    pos.needsUpdate = true;
-    geo.computeVertexNormals();
-  });
-
-  return (
-    <mesh
-      ref={ref}
-      position={[side * 1.9, 1.22, 0]}
-      rotation={[0, side > 0 ? Math.PI / 2 : -Math.PI / 2, 0]}
-      geometry={geo}
-      material={material}
-    />
-  );
 }
 
 function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: SimView }) {
@@ -729,21 +617,16 @@ function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: Sim
           {post}
         </mesh>
         {/* rede: fundo (com barriga), laterais e teto */}
-        <NetCloth side={side} sim={sim} material={backMat} quality={quality} />
-        {[-3.66, 3.66].map((z) => (
-          <mesh key={`s${z}`} position={[side * 0.95, 1.22, z]} material={sideMat}>
-            <planeGeometry args={[1.9, 2.44]} />
-          </mesh>
-        ))}
-        <mesh position={[side * 0.95, 2.4, 0]} rotation={[-Math.PI / 2, 0, 0]} material={topMat}>
-          <planeGeometry args={[1.9, 7.32]} />
-        </mesh>
+        <GoalNetPanel side={side} sim={sim} material={backMat} quality={quality} />
+        <GoalNetPanel side={side} sim={sim} material={sideMat} quality={quality} face="left" />
+        <GoalNetPanel side={side} sim={sim} material={sideMat} quality={quality} face="right" />
+        <GoalNetPanel side={side} sim={sim} material={topMat} quality={quality} face="roof" />
       </group>
     </group>
   );
 }
 
-function CornerFlags({ wind = 0.5 }: { wind?: number }) {
+function CornerFlags({ sim }: { sim: SimView }) {
   const ref = useRef<THREE.Group>(null);
   const uTime = useRef({ value: 0 });
   const uAmp = useRef({ value: 0.16 });
@@ -777,11 +660,13 @@ function CornerFlags({ wind = 0.5 }: { wind?: number }) {
     uTime.current.value = clock.elapsedTime;
     const gust =
       0.75 + 0.25 * Math.sin(clock.elapsedTime * 0.9) + 0.12 * Math.sin(clock.elapsedTime * 2.7);
-    uAmp.current.value = (0.05 + wind * 0.22) * gust;
+    const wind = sim.wind?.strength01 ?? 0.25;
+    uAmp.current.value = (0.015 + wind * 0.2) * gust;
     const g = ref.current;
     if (!g) return;
     g.children.forEach((c, i) => {
-      c.rotation.z = Math.sin(clock.elapsedTime * 2.4 + i) * (0.05 + wind * 0.16);
+      c.rotation.y = Math.atan2(-(sim.wind?.z ?? 0.55), sim.wind?.x ?? 0.83);
+      c.rotation.z = Math.sin(clock.elapsedTime * 2.4 + i) * wind * 0.035;
     });
   });
   return (
@@ -1566,7 +1451,9 @@ function Stands({
   goalPulse,
   night,
   supporters,
+  sim,
 }: {
+  sim: SimView;
   homeColor: string;
   awayColor: string;
   quality: Quality;
@@ -1697,7 +1584,7 @@ function Stands({
         occupancy={occupancy}
       />
       <Banners color={homeColor} alt={awayColor} rings={rings} />
-      <CrowdFlags color={homeColor} alt={awayColor} rings={rings} count={budget.flagCount} />
+      <CrowdFlags sim={sim} color={homeColor} alt={awayColor} rings={rings} count={budget.flagCount} />
 
       <CrowdLod crowd={crowd} pulse={goalPulse} budget={crowdBudget} supporters={supporters} />
     </group>
@@ -1709,6 +1596,7 @@ function Stands({
  * pelas arquibancadas nas cores dos dois clubes.
  */
 function CrowdFlags({
+  sim,
   color,
   alt,
   rings,
@@ -1718,9 +1606,11 @@ function CrowdFlags({
   alt: string;
   rings: number;
   count: number;
+  sim: SimView;
 }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const uTime = useRef({ value: 0 });
+  const uWind = useRef({ value: 0.3 });
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
   const flags = useMemo(() => {
@@ -1761,15 +1651,16 @@ function CrowdFlags({
     });
     value.onBeforeCompile = (shader) => {
       shader.uniforms["uTime"] = uTime.current;
+      shader.uniforms["uWind"] = uWind.current;
       shader.vertexShader = shader.vertexShader
-        .replace("#include <common>", "#include <common>\nuniform float uTime;")
+        .replace("#include <common>", "#include <common>\nuniform float uTime; uniform float uWind;")
         .replace(
           "#include <begin_vertex>",
           `#include <begin_vertex>
            float phase = instanceMatrix[3].x * 0.17 + instanceMatrix[3].z * 0.13;
            float wave = sin(uTime * 2.2 + phase + position.x * 3.0) * 0.12
                       + sin(uTime * 3.7 + phase + position.y * 2.0) * 0.05;
-           transformed.z += wave * (0.4 + position.x + 0.5);`,
+           transformed.z += wave * uWind * smoothstep(-1.2, 1.2, position.x);`,
         );
     };
     return value;
@@ -1800,6 +1691,7 @@ function CrowdFlags({
 
   useFrame(({ clock }) => {
     uTime.current.value = clock.elapsedTime;
+    uWind.current.value = (0.12 + (sim.wind?.strength01 ?? 0.25) * 1.6) * (0.75 + 0.25 * Math.sin(clock.elapsedTime * 0.9));
   });
 
   if (!count) return null;
@@ -1813,58 +1705,6 @@ function CrowdFlags({
 }
 
 /* --------------------------------------------------------------- jogadores */
-
-/** Textura da bola: painéis escuros + costuras, gerada uma vez por sessão. */
-let _ballTex: THREE.Texture | null | undefined;
-function ballTexture(): THREE.Texture | null {
-  if (_ballTex !== undefined) return _ballTex;
-  _ballTex = null;
-  if (typeof document === "undefined") return null;
-  const s = 256;
-  const c = document.createElement("canvas");
-  c.width = c.height = s;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  ctx.fillStyle = "#f7f7f2";
-  ctx.fillRect(0, 0, s, s);
-  const pentagon = (cx: number, cy: number, r: number, rot: number) => {
-    ctx.beginPath();
-    for (let i = 0; i < 5; i++) {
-      const a = rot + (i / 5) * Math.PI * 2;
-      const px = cx + Math.cos(a) * r;
-      const py = cy + Math.sin(a) * r;
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-    ctx.fill();
-  };
-  ctx.fillStyle = "#15171c";
-  for (let row = 0; row < 5; row++) {
-    for (let col = 0; col < 7; col++) {
-      pentagon(
-        ((col + (row % 2) * 0.5) * s) / 7 + s / 14,
-        (row * s) / 5 + s / 10,
-        s * 0.045,
-        row * 0.6 + col,
-      );
-    }
-  }
-  // costuras: linhas curvas claras ligando os painéis
-  ctx.strokeStyle = "rgba(30,32,38,0.5)";
-  ctx.lineWidth = 1.4;
-  for (let row = 0; row < 6; row++) {
-    ctx.beginPath();
-    ctx.moveTo(0, (row * s) / 5);
-    ctx.bezierCurveTo(s * 0.3, (row * s) / 5 + 8, s * 0.7, (row * s) / 5 - 8, s, (row * s) / 5);
-    ctx.stroke();
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  _ballTex = tex;
-  return tex;
-}
 
 function Ball({
   sim,
@@ -1882,17 +1722,54 @@ function Ball({
   const puff = useRef<THREE.Mesh>(null);
   const prevH = useRef(0.12);
   const spray = useRef(0);
-  const tex = useMemo(ballTexture, []);
+  const textures = useMemo(footballTextures, []);
+  const response = useMemo(() => new BallResponse(), []);
+  const previous = useRef<{ x: number; z: number; height: number; vx: number; vz: number; vy: number } | null>(null);
+  const axis = useMemo(() => new THREE.Vector3(), []);
+  const squashAxis = useMemo(() => new THREE.Vector3(0, 1, 0), []);
+  const orientation = useMemo(() => new THREE.Quaternion(), []);
+  const worldScale = useMemo(() => new THREE.Vector3(), []);
   useFrame((_, dt) => {
     const m = ref.current;
     if (!m) return;
     const visualBall = presentationBall(sim);
-    m.position.x += (visualBall.x - m.position.x) * 0.5;
-    m.position.z += (visualBall.z - m.position.z) * 0.5;
-    m.position.y = 0.13 + visualBall.height;
+    const delta = Math.min(Math.max(0, dt), 0.05);
+    const snap = !previous.current || Math.hypot(visualBall.x - m.position.x, visualBall.z - m.position.z) > 4;
+    const blend = snap ? 1 : 1 - Math.exp(-42 * delta);
+    m.position.x += (visualBall.x - m.position.x) * blend;
+    m.position.z += (visualBall.z - m.position.z) * blend;
+    // The simulation exposes height of the centre, including the ball radius.
+    m.position.y = Math.max(0.12, visualBall.height);
+    const prior = previous.current;
+    const verticalVelocity = sim.visualBall?.vy ?? (prior && delta > 0 ? (visualBall.height - prior.height) / delta : 0);
+    if (prior && !snap) {
+      const kick = Math.hypot(visualBall.vx - prior.vx, visualBall.vz - prior.vz);
+      const bounce = prior.vy < -0.6 && verticalVelocity >= 0 && visualBall.height < 0.35;
+      if (bounce) {
+        response.impact(Math.abs(prior.vy)); squashAxis.set(0, 1, 0);
+      } else if (kick > 3.5) {
+        response.impact(kick); squashAxis.set(visualBall.vx - prior.vx, 0, visualBall.vz - prior.vz).normalize();
+      }
+    }
     const sp = Math.hypot(visualBall.vx, visualBall.vz);
-    m.rotation.x += dt * (2 + sp * 0.9);
-    m.rotation.z += dt * (1.5 + sp * 0.6);
+    if (sp > 0.03 && !snap) {
+      axis.set(visualBall.vz, 0, -visualBall.vx).normalize();
+      const rolling = visualBall.height <= 0.2;
+      m.rotateOnWorldAxis(axis, Math.min(90, sp / 0.12) * delta * (rolling ? 1 : 0.35));
+      if (!rolling) m.rotateOnWorldAxis(axis.set(0, 1, 0), (sim.visualBall?.spin ?? 0) * delta);
+    }
+    const scale = response.step(delta);
+    // Convert the collision normal to mesh-local coordinates so spin does not
+    // rotate the flattening plane away from the foot or the ground.
+    orientation.copy(m.quaternion).invert();
+    worldScale.copy(squashAxis).applyQuaternion(orientation);
+    m.scale.set(
+      scale.radial + (scale.axial - scale.radial) * worldScale.x ** 2,
+      scale.radial + (scale.axial - scale.radial) * worldScale.y ** 2,
+      scale.radial + (scale.axial - scale.radial) * worldScale.z ** 2,
+    );
+    if (!previous.current) previous.current = { x: visualBall.x, z: visualBall.z, height: visualBall.height, vx: visualBall.vx, vz: visualBall.vz, vy: verticalVelocity };
+    else Object.assign(previous.current, visualBall, { vy: verticalVelocity });
     const s = shadow.current;
     if (s) {
       s.position.set(m.position.x, 0.015, m.position.z);
@@ -1918,13 +1795,16 @@ function Ball({
   });
   const ball = (
     <mesh ref={ref} castShadow={quality === "alta"} position={[0, 0.13, 0]}>
-      <sphereGeometry args={[0.13, 24, 24]} />
+      <sphereGeometry args={[0.12, quality === "alta" ? 40 : 24, quality === "alta" ? 32 : 16]} />
       <meshStandardMaterial
-        map={tex}
+        map={textures?.map ?? null}
+        bumpMap={quality === "baixa" ? null : textures?.bumpMap ?? null}
+        bumpScale={0.0012}
+        roughnessMap={textures?.roughnessMap ?? null}
         // bola de alta visibilidade na neve; molhada reflete mais a luz
         color={hiVis ? "#f2ff45" : "#ffffff"}
-        roughness={0.32 - wet * 0.2}
-        metalness={0.04 + wet * 0.1}
+        roughness={0.65 - wet * 0.27}
+        metalness={0}
         envMapIntensity={0.8 + wet * 0.8}
       />
     </mesh>
@@ -2767,7 +2647,13 @@ function Scene({
       />
 
       <SkyDome time={time} />
-      <Pitch quality={quality} sim={sim} wet={look.wet} mow={look.mow} />
+      <Pitch
+        quality={quality}
+        sim={sim}
+        wet={look.wet}
+        mow={look.mow}
+        webgl2={backend === "webgl2"}
+      />
       {/* Arranhões de chute, escorregões e rastro da bola: 1 desenho no total */}
       <PitchResponse sim={sim} quality={quality} />
       {quality !== "baixa" ? (
@@ -2791,6 +2677,7 @@ function Scene({
         webgl2={backend === "webgl2"}
       />
       <Stands
+        sim={sim}
         homeColor={sim.home.primary}
         awayColor={sim.away.primary}
         quality={quality}

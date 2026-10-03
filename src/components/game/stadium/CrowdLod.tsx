@@ -1,6 +1,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { CROWD_MOTION_GLSL } from "@/game/crowd-motion";
 import { supporterGeometry } from "@/game/crowd-geometry";
 
 import type { RuntimeSceneBudget } from "@/game/runtime-scene-budget";
@@ -116,21 +117,21 @@ export function CrowdLod({
         shader.vertexShader = shader.vertexShader
           .replace(
             "#include <common>",
-            "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave; uniform float crowdAgitation; attribute vec3 crowdSkin; attribute vec2 crowdStyle; attribute float crowdRegion;",
+            "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave; uniform float crowdAgitation; attribute vec3 crowdSkin; attribute vec2 crowdStyle; attribute float crowdRegion;\n" +
+              CROWD_MOTION_GLSL,
+          )
+          .replace(
+            "#include <beginnormal_vertex>",
+            `#include <beginnormal_vertex>\n${tier < 2 ? "objectNormal = crowdArticulate(objectNormal, true);" : ""}`,
           )
           .replace(
             "#include <begin_vertex>",
             `#include <begin_vertex>
               float phase = instanceMatrix[3].x * 0.71 + instanceMatrix[3].z * 0.37;
-              // Supporters clap/raise their arms at different phases. Only
-              // arm vertices move: heads and bodies keep their silhouettes.
-              float arm = ${tier < 2 ? "step(0.19, abs(position.x)) * (1.0 - step(0.36, position.y))" : "0.0"};
-              float cheer = crowdPulse * (0.5 + 0.5 * sin(phase + crowdTime * 2.0));
-              transformed.y += arm * cheer * 0.38;
-              transformed.x -= sign(position.x) * arm * cheer * 0.075;
+              ${tier < 2 ? "transformed = crowdArticulate(transformed, false);" : ""}
               transformed.x += sin(crowdTime * 1.7 + phase) * 0.035 * max(0.0, position.y + 0.6);
               transformed.z += sin(crowdTime * 5.2 + phase) * crowdAgitation * 0.05 * max(0.0, position.y + 0.6);
-              transformed.y += abs(sin(crowdTime * 7.0 + phase)) * crowdPulse * 0.48;
+              transformed.y += abs(sin(crowdTime * (5.8 + crowdStyle.x) + phase)) * crowdPulse * 0.24;
               // ola mexicana: corcova que viaja ao redor do anel (uma volta a
               // cada ~28 s); sutil no jogo corrido, erupção quando sai o gol
               float ang = atan(instanceMatrix[3].z, instanceMatrix[3].x);
@@ -164,7 +165,7 @@ export function CrowdLod({
       new THREE.PlaneGeometry(0.64, 1.5).translate(0, -0.04, 0),
     ];
     geometries.forEach((geometry, tier) => {
-      if (tier === 2)
+      if (tier === 2) {
         geometry.setAttribute(
           "crowdRegion",
           new THREE.Float32BufferAttribute(
@@ -172,6 +173,14 @@ export function CrowdLod({
             1,
           ),
         );
+        geometry.setAttribute(
+          "crowdLimb",
+          new THREE.Float32BufferAttribute(
+            new Float32Array(geometry.getAttribute("position").count * 2),
+            2,
+          ),
+        );
+      }
       geometry.setAttribute(
         "crowdSkin",
         new THREE.InstancedBufferAttribute(new Float32Array(MAX_CROWD_INSTANCES * 3), 3),

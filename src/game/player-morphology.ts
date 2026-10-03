@@ -13,6 +13,12 @@ export interface FaceMorphology {
   lipVolume: number;
   hairline: number;
   parting: number;
+  /** Small deterministic offsets keep procedural faces from reading as mirrored copies. */
+  eyeAsymmetry: number;
+  browAsymmetry: number;
+  noseDeviation: number;
+  cheekAsymmetry: number;
+  mouthTilt: number;
 }
 
 const faces = new Map<number, Readonly<FaceMorphology>>();
@@ -55,6 +61,12 @@ export function faceMorphology(seed: number): Readonly<FaceMorphology> {
     lipVolume: range(0.018, 0.029),
     hairline: range(-0.015, 0.055),
     parting: range(-0.6, 0.6),
+    // Appended samples preserve all existing seeded face and hair landmarks.
+    eyeAsymmetry: range(-0.012, 0.012),
+    browAsymmetry: range(-0.018, 0.018),
+    noseDeviation: range(-0.012, 0.012),
+    cheekAsymmetry: range(-0.045, 0.045),
+    mouthTilt: range(-0.018, 0.018),
   });
   if (faces.size >= 256) faces.delete(faces.keys().next().value!);
   faces.set(seed, face);

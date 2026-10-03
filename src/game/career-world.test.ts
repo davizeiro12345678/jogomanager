@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { initCareer, advanceRound, migrateCareer } from "./career";
+import { initCareer, advanceRound, migrateCareer, takeJob } from "./career";
 import {
   applyInterviewDecision,
   identityLabels,
@@ -258,5 +258,38 @@ describe("persistent football world", () => {
     ).toBe(true);
     const loss = { ...state, round: 2, matchLog: [match(state, 0, 2)] };
     expect(buildCareerInterview(loss, "defeat")!.lines[1]!.text).toContain("2 a 0");
+  });
+
+  it("registra o primeiro jogo depois de assumir um clube contra um adversário já enfrentado", () => {
+    const original = career();
+    const oldMatch = match(original, 1, 0, "pal");
+    const withOffer = {
+      ...original,
+      matchLog: [oldMatch],
+      jobOffers: [
+        {
+          id: "job-flu",
+          clubId: "flu",
+          leagueId: original.leagueId,
+          season: original.season,
+          round: original.round,
+          expiresRound: original.round + 10,
+          budget: 20,
+          objective: 10,
+        },
+      ],
+    };
+    const newClub = takeJob(withOffer, "job-flu");
+    const newMatch = { ...match(newClub, 2, 1, "pal"), clubId: newClub.clubId };
+    const after = {
+      ...newClub,
+      round: newClub.round + 1,
+      matchLog: [newMatch, ...(newClub.matchLog ?? [])],
+    };
+
+    const recorded = recordWorldTransition(newClub, after);
+    expect(recorded.world!.applied).toContain(
+      `match:${newClub.clubId}:${newClub.season}:${newMatch.round}:${newMatch.comp}:${newMatch.opponentId}`,
+    );
   });
 });

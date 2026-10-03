@@ -7,9 +7,10 @@ import { Flag } from "@/components/game/Flag";
 import { MatchLoading } from "@/components/game/MatchLoading";
 import { LEAGUES, getLeague } from "@/game/data/leagues";
 import type { Difficulty } from "@/game/quickMatch";
-import { safeClub } from "@/game/squad";
+import { safeClub } from "@/game/club-reference";
 import { canonical, noindexMeta, seoMeta } from "@/lib/seo";
 import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
+import { useT } from "@/i18n/provider";
 
 const loadQuickLive = () => import("@/components/game/QuickLive");
 const QuickLive = lazy(loadQuickLive);
@@ -41,6 +42,7 @@ const DIFFS: { id: Difficulty; label: string }[] = [
 ];
 
 function QuickMatchPage() {
+  const { t, lang } = useT();
   const [leagueId, setLeagueId] = useState(LEAGUES[0]!.id);
   const league = getLeague(leagueId);
   const [myClub, setMyClub] = useState(league.clubs[0]!.id);
@@ -87,19 +89,16 @@ function QuickMatchPage() {
     <div className="pitch-bg min-h-screen px-4 py-10">
       <div className="mx-auto max-w-5xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="font-display text-4xl uppercase tracking-wide">Partida rápida</h1>
+          <h1 className="font-display text-4xl uppercase tracking-wide">{t("quick.title")}</h1>
           <AccessibilitySettings />
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Escolha seu time e o adversário. O computador comanda o outro lado — sua carreira não é
-          afetada.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("quick.description")}</p>
 
         {/* All leagues, grouped by country (was a 40-button wall that hid most leagues). */}
         <div className="mt-6 flex max-w-md items-center gap-3">
           <Flag league={league.id} country={league.country} size={24} />
           <label htmlFor="quick-league" className="sr-only">
-            Liga
+            {t("nav.league")}
           </label>
           <select
             id="quick-league"
@@ -114,7 +113,7 @@ function QuickMatchPage() {
               }, {}),
             )
               .sort(([a], [b]) =>
-                a === "Brasil" ? -1 : b === "Brasil" ? 1 : a.localeCompare(b, "pt-BR"),
+                a === "Brasil" ? -1 : b === "Brasil" ? 1 : a.localeCompare(b, lang),
               )
               .map(([country, ls]) => (
                 <optgroup key={country} label={country}>
@@ -130,14 +129,14 @@ function QuickMatchPage() {
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <TeamPicker
-            title="Seu time"
+            title={t("quick.home")}
             clubs={league.clubs.map((c) => c.id)}
             value={myClub}
             onChange={setMyClub}
             disabled={oppClub}
           />
           <TeamPicker
-            title="Adversário (computador)"
+            title={t("quick.away")}
             clubs={league.clubs.map((c) => c.id)}
             value={oppClub}
             onChange={setOppClub}
@@ -145,22 +144,27 @@ function QuickMatchPage() {
           />
         </div>
 
-        <p className="mt-3 text-xs text-muted-foreground">
-          Forma, condição física e escolhas táticas também pesam no resultado.
-        </p>
+        <p className="mt-3 text-xs text-muted-foreground">{t("quick.hint")}</p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <div className="flex gap-2">
             {DIFFS.map((d) => (
               <button
                 key={d.id}
                 onClick={() => setDifficulty(d.id)}
+                aria-pressed={difficulty === d.id}
                 className={`rounded-lg border px-3 py-2 font-display text-xs uppercase tracking-wide ${
                   difficulty === d.id
                     ? "border-primary bg-primary/15"
                     : "border-border surface-card text-muted-foreground"
                 }`}
               >
-                {d.label}
+                {t(
+                  d.id === "facil"
+                    ? "quick.easy"
+                    : d.id === "dificil"
+                      ? "quick.hard"
+                      : "quick.normal",
+                )}
               </button>
             ))}
           </div>
@@ -168,7 +172,7 @@ function QuickMatchPage() {
             onClick={randomize}
             className="flex items-center gap-2 rounded-lg border border-border surface-card px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground"
           >
-            <Shuffle size={14} /> Sortear confronto
+            <Shuffle size={14} aria-hidden="true" /> {t("quick.random")}
           </button>
           <button
             onClick={() => setStarted(true)}
@@ -177,10 +181,10 @@ function QuickMatchPage() {
             disabled={myClub === oppClub}
             className="rounded-lg bg-primary px-5 py-2 font-display text-sm uppercase tracking-wide text-primary-foreground disabled:opacity-40"
           >
-            Jogar
+            {t("quick.start")}
           </button>
           <Link to="/" className="text-xs text-muted-foreground underline">
-            Voltar ao início
+            {t("quick.back")}
           </Link>
         </div>
       </div>

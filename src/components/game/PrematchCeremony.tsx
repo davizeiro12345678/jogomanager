@@ -16,7 +16,7 @@ import { memo, useEffect, useMemo, useRef, useState, type RefObject } from "reac
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-import { useT } from "@/i18n";
+import { useT } from "@/i18n/provider";
 import { prefersReducedMotion } from "@/game/device";
 import { storeCeremony } from "@/game/ceremony-prefs";
 import { ClubFlag, TifoBanner, type ClubColors } from "@/components/game/stadium/ClubIdentity";

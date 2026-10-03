@@ -8,6 +8,15 @@ import { RecoveryEmail } from "@/lib/email-templates/recovery";
 import { EmailChangeEmail } from "@/lib/email-templates/email-change";
 import { ReauthenticationEmail } from "@/lib/email-templates/reauthentication";
 
+const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
+  signup: SignupEmail,
+  invite: InviteEmail,
+  magiclink: MagicLinkEmail,
+  recovery: RecoveryEmail,
+  email_change: EmailChangeEmail,
+  reauthentication: ReauthenticationEmail,
+};
+
 // Configuration
 const SITE_NAME = "Pro Football Manager 3D";
 const ROOT_DOMAIN = "football-manager.app";
@@ -19,7 +28,7 @@ const ROOT_DOMAIN = "football-manager.app";
 // even if the project's domain has changed since the template was scaffolded.
 const SAMPLE_PROJECT_URL = "https://stadium-stewards.lovable.app";
 const SAMPLE_EMAIL = "user@example.test";
-const SAMPLE_DATA = {
+const SAMPLE_DATA: Record<string, object> = {
   signup: {
     siteName: SITE_NAME,
     siteUrl: SAMPLE_PROJECT_URL,
@@ -49,29 +58,7 @@ const SAMPLE_DATA = {
   reauthentication: {
     token: "123456",
   },
-} satisfies {
-  signup: React.ComponentProps<typeof SignupEmail>;
-  invite: React.ComponentProps<typeof InviteEmail>;
-  magiclink: React.ComponentProps<typeof MagicLinkEmail>;
-  recovery: React.ComponentProps<typeof RecoveryEmail>;
-  email_change: React.ComponentProps<typeof EmailChangeEmail>;
-  reauthentication: React.ComponentProps<typeof ReauthenticationEmail>;
 };
-
-type EmailTemplateType = keyof typeof SAMPLE_DATA;
-
-const EMAIL_TEMPLATE_RENDERERS: Record<EmailTemplateType, () => React.ReactElement> = {
-  signup: () => React.createElement(SignupEmail, SAMPLE_DATA.signup),
-  invite: () => React.createElement(InviteEmail, SAMPLE_DATA.invite),
-  magiclink: () => React.createElement(MagicLinkEmail, SAMPLE_DATA.magiclink),
-  recovery: () => React.createElement(RecoveryEmail, SAMPLE_DATA.recovery),
-  email_change: () => React.createElement(EmailChangeEmail, SAMPLE_DATA.email_change),
-  reauthentication: () => React.createElement(ReauthenticationEmail, SAMPLE_DATA.reauthentication),
-};
-
-function isEmailTemplateType(type: string): type is EmailTemplateType {
-  return Object.prototype.hasOwnProperty.call(SAMPLE_DATA, type);
-}
 
 export const Route = createFileRoute("/lovable/email/auth/preview")({
   server: {
@@ -97,11 +84,14 @@ export const Route = createFileRoute("/lovable/email/auth/preview")({
           return Response.json({ error: "Invalid JSON in request body" }, { status: 400 });
         }
 
-        if (!isEmailTemplateType(type)) {
+        const EmailTemplate = EMAIL_TEMPLATES[type];
+
+        if (!EmailTemplate) {
           return Response.json({ error: `Unknown email type: ${type}` }, { status: 400 });
         }
 
-        const html = await render(EMAIL_TEMPLATE_RENDERERS[type]());
+        const sampleData = SAMPLE_DATA[type] || {};
+        const html = await render(React.createElement(EmailTemplate, sampleData));
 
         return new Response(html, {
           status: 200,

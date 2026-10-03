@@ -116,9 +116,7 @@ export const searchRealPlayers = createServerFn({ method: "GET" })
     const page = Math.max(0, data.page ?? 0);
     let query = db
       .from("players")
-      .select(
-        "id, source, source_id, birth_date, name, position, age, shirt_number, nationality, overall, photo_url, club_id",
-      )
+      .select("id, source, source_id, birth_date, name, position, age, shirt_number, nationality, overall, photo_url, club_id")
       .order("overall", { ascending: false })
       .order("id")
       .range(page * PAGE, page * PAGE + PAGE);

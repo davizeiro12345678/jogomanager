@@ -1,5 +1,4 @@
 import { defineTool } from "@lovable.dev/mcp-js";
-import { supabaseForUser } from "../supabase";
 
 export default defineTool({
   name: "delete_career",
@@ -13,10 +12,19 @@ export default defineTool({
         content: [{ type: "text", text: "Not authenticated" }],
         isError: true,
       };
-    const supabase = supabaseForUser(ctx);
-    const { error } = await supabase.from("careers").delete().eq("user_id", ctx.getUserId());
+    const userId = ctx.getUserId();
+    if (!userId)
+      return {
+        content: [{ type: "text", text: "Not authenticated" }],
+        isError: true,
+      };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("careers").delete().eq("user_id", userId);
     return error
-      ? { content: [{ type: "text", text: error.message }], isError: true }
+      ? {
+          content: [{ type: "text", text: "Career deletion is unavailable through this tool." }],
+          isError: true,
+        }
       : {
           content: [{ type: "text", text: "Career deleted." }],
           structuredContent: { ok: true },

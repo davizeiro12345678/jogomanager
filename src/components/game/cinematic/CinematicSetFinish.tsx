@@ -7,7 +7,14 @@ export function CinematicSetFinish({ kind, primary }: { kind: string; primary: s
       <group>
         <mesh position={[0, 3, -12]} receiveShadow>
           <boxGeometry args={[26, 6, 1.2]} />
-          <meshStandardMaterial color="#344552" map={cinematicSurface("wall")} roughness={0.88} />
+          <meshStandardMaterial
+            color="#344552"
+            map={cinematicSurface("wall")}
+            normalMap={cinematicSurface("wall", "normal")}
+            normalScale={[0.08, 0.08]}
+            roughnessMap={cinematicSurface("wall", "roughness")}
+            roughness={0.88}
+          />
         </mesh>
         <mesh position={[0, 5.5, -11.32]}>
           <boxGeometry args={[26, 0.12, 0.16]} />
@@ -19,11 +26,11 @@ export function CinematicSetFinish({ kind, primary }: { kind: string; primary: s
               <mesh key={y} position={[0, y, 0]}>
                 <boxGeometry args={[1.38, 1.16, 0.06]} />
                 <meshStandardMaterial
-                  color="#718e9c"
-                  emissive="#cfb48a"
-                  emissiveIntensity={0.16}
-                  roughness={0.35}
-                  metalness={0.35}
+                  color="#0d1a22"
+                  emissive="#8c7147"
+                  emissiveIntensity={0.025}
+                  roughness={0.5}
+                  metalness={0.12}
                 />
               </mesh>
             ))}
@@ -72,14 +79,28 @@ export function CinematicSetFinish({ kind, primary }: { kind: string; primary: s
       {kind !== "tunnel" && (
         <mesh position={[0, 2.4, 7.1]} receiveShadow>
           <boxGeometry args={[16, 4.8, 0.2]} />
-          <meshStandardMaterial color="#35434d" map={cinematicSurface("wall")} roughness={0.9} />
+          <meshStandardMaterial
+            color="#35434d"
+            map={cinematicSurface("wall")}
+            normalMap={cinematicSurface("wall", "normal")}
+            normalScale={[0.08, 0.08]}
+            roughnessMap={cinematicSurface("wall", "roughness")}
+            roughness={0.9}
+          />
         </mesh>
       )}
       {(kind === "press" || kind === "office") &&
         [-7, 7].map((x) => (
           <mesh key={x} position={[x, 2.4, 1.5]} receiveShadow>
             <boxGeometry args={[0.2, 4.8, 11]} />
-            <meshStandardMaterial color="#35434d" map={cinematicSurface("wall")} roughness={0.9} />
+            <meshStandardMaterial
+              color="#35434d"
+              map={cinematicSurface("wall")}
+              normalMap={cinematicSurface("wall", "normal")}
+              normalScale={[0.08, 0.08]}
+              roughnessMap={cinematicSurface("wall", "roughness")}
+              roughness={0.9}
+            />
           </mesh>
         ))}
       {kind === "press" &&

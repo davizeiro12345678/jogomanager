@@ -20,8 +20,7 @@ export function canonicalize(value: unknown): string {
     case "boolean":
       return value ? "true" : "false";
     case "number":
-      if (!Number.isFinite(value))
-        throw new TypeError("canonical values must contain finite numbers");
+      if (!Number.isFinite(value)) throw new TypeError("canonical values must contain finite numbers");
       return JSON.stringify(value);
     case "string":
       return JSON.stringify(value);
@@ -34,10 +33,7 @@ export function canonicalize(value: unknown): string {
       if (Array.isArray(value)) return `[${value.map((item) => canonicalize(item)).join(",")}]`;
       return `{${Object.keys(value)
         .sort()
-        .map(
-          (key) =>
-            `${JSON.stringify(key)}:${canonicalize((value as Record<string, unknown>)[key])}`,
-        )
+        .map((key) => `${JSON.stringify(key)}:${canonicalize((value as Record<string, unknown>)[key])}`)
         .join(",")}}`;
   }
 
@@ -56,10 +52,7 @@ async function sha256Hex(text: string): Promise<string> {
   if (!globalThis.crypto?.subtle) {
     throw new Error("Web Crypto subtle.digest is required for session hashing");
   }
-  const digest = await globalThis.crypto.subtle.digest(
-    SESSION_HASH_ALGORITHM,
-    new TextEncoder().encode(text),
-  );
+  const digest = await globalThis.crypto.subtle.digest(SESSION_HASH_ALGORITHM, new TextEncoder().encode(text));
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 

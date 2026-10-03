@@ -92,9 +92,10 @@ function AutoSeasonPage() {
     }
   };
 
-  const played = weeks.length;
-  const wins = weeks.filter((w) => w.gf > w.ga).length;
-  const draws = weeks.filter((w) => w.gf === w.ga).length;
+  const matches = weeks.filter((week) => week.kind === "match");
+  const played = matches.length;
+  const wins = matches.filter((w) => w.gf > w.ga).length;
+  const draws = matches.filter((w) => w.gf === w.ga).length;
 
   return (
     <GameShell career={career}>
@@ -139,18 +140,21 @@ function AutoSeasonPage() {
 
       <section className="mt-4 grid gap-3 sm:grid-cols-2">
         {weeks.map((w, i) => {
-          const club = CLUBS[w.opponentId];
-          const win = w.gf > w.ga;
-          const draw = w.gf === w.ga;
+          const isBye = w.kind === "bye";
+          const club = isBye ? undefined : CLUBS[w.opponentId];
+          const win = !isBye && w.gf > w.ga;
+          const draw = !isBye && w.gf === w.ga;
           return (
             <article
               key={`${w.round}-${w.opponentId}-${i}`}
               className={`rounded-2xl border p-4 ${calm ? "" : "animate-fade-in"} ${
-                win
-                  ? "border-emerald-500/40 bg-emerald-500/10"
-                  : draw
-                    ? "border-border/60 surface-card"
-                    : "border-destructive/40 bg-destructive/10"
+                isBye
+                  ? "border-border/40 surface-card opacity-80"
+                  : win
+                    ? "border-emerald-500/40 bg-emerald-500/10"
+                    : draw
+                      ? "border-border/60 surface-card"
+                      : "border-destructive/40 bg-destructive/10"
               }`}
               style={calm ? undefined : { animationDelay: `${Math.min(i, 10) * 45}ms` }}
             >
@@ -158,13 +162,17 @@ function AutoSeasonPage() {
                 {club ? <Crest club={club} size={30} detail="simple" /> : null}
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">
-                    {w.home ? "vs" : "em"} {club?.name ?? w.opponentId}
+                    {isBye
+                      ? "Folga na rodada"
+                      : `${w.home ? "vs" : "em"} ${club?.name ?? w.opponentId}`}
                   </p>
                   <p className="text-xs text-muted-foreground">Rodada {w.round}</p>
                 </div>
-                <span className="font-display text-2xl tabular-nums">
-                  {w.gf}–{w.ga}
-                </span>
+                {isBye ? null : (
+                  <span className="font-display text-2xl tabular-nums">
+                    {w.gf}–{w.ga}
+                  </span>
+                )}
               </div>
               {w.scorers.length ? (
                 <p className="mt-2 text-xs text-muted-foreground">

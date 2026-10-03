@@ -65,14 +65,14 @@ export function visualMotionFor(
   state.yaw = wrap(state.yaw + turn);
   const acceleration =
     ((player.vx - state.vx) * Math.sin(state.yaw) + (player.vz - state.vz) * Math.cos(state.yaw)) /
-    Math.max(dt, 1 / 120);
+    Math.max(elapsed, 1 / 120);
   const inertia = 1 - Math.exp(-9 * dt);
   state.accelerationLean +=
     (clamp(acceleration * 0.009, -0.085, 0.1) - state.accelerationLean) * inertia;
   const ease = 1 - Math.exp(-7 * dt);
   state.leanX += (Math.min(0.18, speed * 0.022) + state.accelerationLean - state.leanX) * ease;
   state.leanZ +=
-    (clamp((-turn / Math.max(dt, 1 / 120)) * 0.065 * Math.min(1, speed / 5), -0.22, 0.22) -
+    (clamp(-Math.atan(speed * turn / Math.max(dt, 1 / 120) / 9.81), -0.22, 0.22) -
       state.leanZ) *
     ease;
   state.turnRate += (clamp(turn / Math.max(dt, 1 / 120), -5, 5) - state.turnRate) * ease;

@@ -178,7 +178,8 @@ const RULES: Rule[] = [
   {
     id: "fan-fury",
     once: false,
-    matches: ({ after }) => !after.sacked && after.pressure >= 78 && (after.streak ?? 0) <= -3,
+    matches: ({ after }) =>
+      !after.sacked && after.pressure >= 78 && (after.streak ?? 0) <= -3,
   },
   {
     id: "board-pleased",

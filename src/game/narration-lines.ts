@@ -6,6 +6,7 @@
  */
 import { LANGS, resolveLang, type Lang } from "@/i18n/locale-catalog";
 import { MATCH_EVENT_MESSAGES } from "@/i18n/match-event-messages";
+import { ROBERTA_VOICE_ID } from "./narration-voice";
 
 export type NarrationEvent =
   | "goal"
@@ -55,7 +56,7 @@ export const SPEECH_TAG: Record<NarrationLang, string> = {
 
 /** Vozes ElevenLabs por idioma — narração empolgada, estilo transmissão. */
 export const VOICE_BY_LANG: Record<RemoteNarrationLang, string> = {
-  pt: "TX3LPaxmHKxFdv7VOQHJ", // Liam — jovem, energético (estilo Cazé TV)
+  pt: ROBERTA_VOICE_ID, // Roberta — Smooth and Confident, português brasileiro
   en: "JBFqnCBsd6RMkjVDRZzb", // George — locutor clássico
   es: "iP95p4xoKVk53GoZ742B", // Chris — animado
 };
@@ -65,9 +66,9 @@ export type BroadcastRole = "narrator" | "commentator" | "referee";
 /** Papéis de transmissão: ritmo de jogo, análise e decisões têm timbres próprios. */
 export const BROADCAST_VOICE: Record<RemoteNarrationLang, Record<BroadcastRole, string>> = {
   pt: {
-    narrator: "JBFqnCBsd6RMkjVDRZzb",
-    commentator: "TX3LPaxmHKxFdv7VOQHJ",
-    referee: "nPczCjzI2devNBz1zQrb",
+    narrator: ROBERTA_VOICE_ID,
+    commentator: ROBERTA_VOICE_ID,
+    referee: ROBERTA_VOICE_ID,
   },
   en: {
     narrator: "JBFqnCBsd6RMkjVDRZzb",
@@ -594,7 +595,7 @@ export function narrationLine(
   const base = tpl.replaceAll("{team}", team.trim() || "o time");
   if (!context) return base;
   const minute = Math.max(0, Math.min(120, Math.round(context.minute ?? 0)));
-  const score = `${Math.max(0, context.homeGoals ?? 0)} a ${Math.max(0, context.awayGoals ?? 0)}`;
+  const score = `${Math.max(0, context.homeGoals ?? 0)}${lang === "pt" ? " a " : "–"}${Math.max(0, context.awayGoals ?? 0)}`;
   const player = context.player?.trim();
   if (event === "goal" && context.importance === "decisive") {
     if (lang === "en") return `${base} A decisive moment in the ${minute}th minute, ${score}!`;

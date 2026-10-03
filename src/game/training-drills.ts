@@ -111,7 +111,9 @@ export function drillDoneThisRound(state: CareerState): string | null {
 }
 
 export function friendlyDoneThisRound(state: CareerState): boolean {
-  return (state.friendlies ?? []).some((f) => f.season === state.season && f.round === state.round);
+  return (state.friendlies ?? []).some(
+    (f) => f.season === state.season && f.round === state.round,
+  );
 }
 
 /** Aplica um exercício ao elenco: desgaste, moral e evolução de atributo. */

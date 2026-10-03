@@ -24,6 +24,7 @@ export const CORRECTIVE_DRIVERS: readonly {
 
 const rest = new THREE.Quaternion();
 const twistAxis = new THREE.Vector3(0, 1, 0);
+const twistSides = ["L", "R"] as const;
 
 export function updateRigCorrectives(
   bones: Record<CorrectiveJoint | Driver | TwistJoint, THREE.Bone>,
@@ -51,7 +52,7 @@ export function updateRigCorrectives(
       1 + correction * (1 - axisZ) + muscle,
     );
   }
-  for (const side of ["L", "R"] as const) {
+  for (const side of twistSides) {
     const hand = bones[`hand${side}`].quaternion;
     // Swing/twist decomposition about the forearm's length. Wrist flexion
     // cannot drag the elbow: only pronation reaches this child of the ulna.

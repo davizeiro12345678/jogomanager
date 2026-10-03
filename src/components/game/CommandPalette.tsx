@@ -1,8 +1,8 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useT } from "@/i18n";
+import { useT } from "@/i18n/provider";
 
 import {
   CommandDialog,
@@ -27,6 +27,7 @@ export function CommandPalette({ items }: { items: PaletteItem[] }) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const trigger = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -44,20 +45,34 @@ export function CommandPalette({ items }: { items: PaletteItem[] }) {
   return (
     <>
       <button
+        ref={trigger}
         type="button"
         onClick={() => setOpen(true)}
         aria-label={t("nav.search")}
+        aria-haspopup="dialog"
+        aria-expanded={open}
         className="career-search-button"
       >
         <Search size={17} aria-hidden="true" />
         <span>{t("nav.search")}</span>
         <kbd>Ctrl K</kbd>
       </button>
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog
+        open={open}
+        onOpenChange={setOpen}
+        contentProps={{
+          className: "career-command-dialog",
+          closeLabel: t("common.close"),
+          onCloseAutoFocus: (event) => {
+            event.preventDefault();
+            trigger.current?.focus();
+          },
+        }}
+      >
         <DialogTitle className="sr-only">{t("nav.searchTitle")}</DialogTitle>
         <DialogDescription className="sr-only">{t("nav.searchHint")}</DialogDescription>
         <CommandInput placeholder={t("common.search")} aria-label={t("nav.search")} />
-        <CommandList>
+        <CommandList label={t("nav.searchTitle")}>
           <CommandEmpty>{t("common.empty")}</CommandEmpty>
           {groups.map((g) => (
             <CommandGroup key={g} heading={g}>

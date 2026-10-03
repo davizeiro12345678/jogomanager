@@ -31,6 +31,8 @@ import {
 import {
   anatomicalLimb,
   anatomicalFinger,
+  anatomicalNail,
+  tailoredSleeve,
   anatomicalSection,
   neckSurface,
   palmSurface,
@@ -162,26 +164,37 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
             anatomicalSection(
               [
                 { y: -P.hipH * 0.12, width: P.hipW * 0.59, depth: P.chestD * 0.85 },
-                { y: P.spineLen * 0.4, width: P.chestW * 0.82, depth: P.chestD * 0.89 },
+                { y: P.spineLen * 0.4, width: P.chestW * 0.76, depth: P.chestD * 0.91 },
                 { y: P.spineLen * 1.06, width: P.chestW * 0.94, depth: P.chestD },
                 {
                   y: P.spineLen + P.chestLen * 0.4,
-                  width: P.chestW * 1.01,
-                  depth: P.chestD * 1.01,
+                  width: P.chestW * 1.04,
+                  depth: P.chestD * 1.04,
                 },
                 {
                   y: P.spineLen + P.chestLen * 0.8,
-                  width: P.shoulderW * 0.53,
+                  width: P.shoulderW * 0.59,
                   depth: P.chestD * 0.88,
+                },
+                {
+                  y: P.spineLen + P.chestLen * 0.9,
+                  width: P.shoulderW * 0.44,
+                  depth: P.chestD * 0.75,
+                },
+                {
+                  y: P.spineLen + P.chestLen * 0.95,
+                  width: P.shoulderW * 0.3,
+                  depth: P.chestD * 0.59,
                 },
                 { y: P.spineLen + P.chestLen, width: P.neckR * 1.55, depth: P.neckR * 1.35 },
               ],
-              Math.max(12, segs.radial + 4),
+              Math.max(12, segs.radial + (hi ? 8 : 4)),
               0.94,
             ),
             P.chestW,
             torsoHeight,
           ),
+          0.003,
         ),
       ),
       jersey,
@@ -353,7 +366,9 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
        separate spheres. Cloth, tape and tattoos follow that same surface. */
     arm.push(
       rigPart(
-        anatomicalLimb("upperArm", P.upperArm, P.armR, segs.radial),
+        look.sleeves === "short"
+          ? fittedLimbCover("upperArm", P.upperArm, P.armR, segs.radial, 0.44, 0, 1)
+          : tailoredSleeve(P.upperArm, P.armR, segs.radial),
         sleeveMat,
         undefined,
         cast,
@@ -365,11 +380,11 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
           clothSurface(
             anatomicalSection(
               [
-                { y: -P.upperArm * 0.48, width: P.armR * 1.12, depth: P.armR * 1.14 },
-                { y: -P.upperArm * 0.24, width: P.armR * 1.13, depth: P.armR * 1.12 },
-                { y: -P.upperArm * 0.04, width: P.armR * 1.1, depth: P.armR * 1.04 },
-                { y: P.upperArm * 0.07, width: P.armR * 0.87, depth: P.armR * 0.82 },
-                { y: P.upperArm * 0.11, width: P.armR * 0.28, depth: P.armR * 0.27 },
+                { y: -P.upperArm * 0.48, width: P.armR * 1.1, depth: P.armR * 1.1 },
+                { y: -P.upperArm * 0.26, width: P.armR * 1.11, depth: P.armR * 1.09 },
+                { y: -P.upperArm * 0.06, width: P.armR * 1.06, depth: P.armR * 1.02 },
+                { y: P.upperArm * 0.015, width: P.armR * 0.7, depth: P.armR * 0.68 },
+                { y: P.upperArm * 0.035, width: P.armR * 0.24, depth: P.armR * 0.24 },
               ],
               segs.radial,
             ),
@@ -390,7 +405,7 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
       );
     fore.push(
       rigPart(
-        anatomicalLimb("forearm", P.foreArm, P.armR, segs.radial),
+        anatomicalLimb("forearm", P.foreArm, P.armR, segs.radial, false, undefined, side),
         sleeveMat,
         undefined,
         cast,
@@ -498,21 +513,29 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
         cast,
       ),
     );
-    for (let i = 0; i < 4; i++)
+    for (let i = 0; i < 4; i++) {
       handDetail.push(
         rigPart(anatomicalFinger(handR * 0.15, handR * FINGER_LENGTHS[i]!), handMat, {
           position: [fingerX(i, handR), -handR * FINGER_CENTERS_Y[i]!, handR * 0.05],
           rotation: [0.28, 0, (i - 1.5) * 0.035],
         }),
       );
+      if (hi && !look.gloves)
+        handDetail.push(
+          rigPart(anatomicalNail(handR * 0.15, handR * FINGER_LENGTHS[i]!), handMat, {
+            position: [fingerX(i, handR), -handR * FINGER_CENTERS_Y[i]!, handR * 0.05],
+            rotation: [0.28, 0, (i - 1.5) * 0.035],
+          }),
+        );
+    }
 
     /* Covered upper-thigh faces cannot pierce the waistband during a raised
        femur. Bare skin starts just inside the hem, retaining overlap. */
     leg.push(
       rigPart(
         ctx.trousers
-          ? anatomicalLimb("thigh", P.thigh, P.legR, segs.radial)
-          : fittedLimbCover("thigh", P.thigh, P.legR, segs.radial, 0.43, 0),
+          ? anatomicalLimb("thigh", P.thigh, P.legR, segs.radial, false, undefined, side)
+          : fittedLimbCover("thigh", P.thigh, P.legR, segs.radial, 0.43, 0, 1.035, undefined, side),
         ctx.trousers ? shorts : skin,
         undefined,
         cast,
@@ -544,13 +567,13 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     };
     knee.push(
       rigPart(
-        anatomicalLimb("calf", P.shin, P.legR, segs.radial),
+        anatomicalLimb("calf", P.shin, P.legR, segs.radial, false, undefined, side),
         ctx.trousers ? shorts : skin,
         undefined,
         cast,
       ),
       rigPart(
-        fittedLimbCover("calf", P.shin, P.legR, segs.radial, sockTop),
+        fittedLimbCover("calf", P.shin, P.legR, segs.radial, sockTop, 0.002, 1.035, undefined, side),
         ctx.trousers ? shorts : socks,
         undefined,
         cast,

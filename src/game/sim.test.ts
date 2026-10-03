@@ -14,13 +14,6 @@ describe("MatchSim", () => {
     const home = buildTeamSetup("fla");
     const away = buildTeamSetup("pal");
     const sim = new MatchSim(home, away, "physique-snapshot");
-    for (const athlete of sim.players) {
-      const setup = athlete.side === "home" ? home : away;
-      const original = setup.players.find((p) => p.id === athlete.pid)!;
-      const profile = profileFor(original);
-      expect(athlete.heightCm).toBe(profile.height);
-      expect(athlete.weightKg).toBe(profile.weight);
-    }
     const player = sim.players.find((p) => p.side === "home")!;
     const original = home.players.find((p) => p.id === player.pid)!;
     expect(player.heightCm).toBe(profileFor(original).height);

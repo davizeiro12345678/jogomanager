@@ -1,3 +1,4 @@
+import { gamePageHead } from "@/lib/game-page-metadata";
 import { createFileRoute } from "@tanstack/react-router";
 import { Trophy } from "lucide-react";
 
@@ -12,28 +13,7 @@ import type { CupState, CupTie } from "@/game/types";
 
 export const Route = createFileRoute("/cup")({
   ssr: false,
-  head: () => ({
-    meta: [
-      { name: "robots", content: "noindex, follow" },
-      { title: "Copas e torneios · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      {
-        name: "description",
-        content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
-      },
-      {
-        property: "og:title",
-        content: "Copas e torneios · Pro Football Manager 3D: Jogo de Futebol Manager Online",
-      },
-      {
-        property: "og:description",
-        content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () => gamePageHead("/cup"),
   component: CupPage,
 });
 

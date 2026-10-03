@@ -22,10 +22,7 @@ const remotePlayerSchema = z.object({
   name: trimmed(120),
   position: z.enum(["GK", "DF", "MF", "FW"]),
   age: z.number().int().min(15).max(55).optional(),
-  birthDate: z
-    .string()
-    .refine((value) => validBirthDate(value) === value && !!value)
-    .optional(),
+  birthDate: z.string().refine(value => validBirthDate(value) === value && !!value).optional(),
   shirtNumber: z.number().int().min(1).max(99).optional(),
   nationality: trimmed(80).optional(),
   photoUrl: httpsUrl.optional(),

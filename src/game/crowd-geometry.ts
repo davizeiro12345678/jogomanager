@@ -13,6 +13,8 @@ export function supporterGeometry(detailed: boolean): THREE.BufferGeometry {
     y: number,
     z = 0,
     rotation = 0,
+    limb = 0,
+    side = 0,
   ) => {
     geometry.rotateZ(rotation);
     geometry.translate(x, y, z);
@@ -25,6 +27,12 @@ export function supporterGeometry(detailed: boolean): THREE.BufferGeometry {
       "crowdRegion",
       new THREE.Float32BufferAttribute(new Float32Array(count).fill(region), 1),
     );
+    const motion = new Float32Array(count * 2);
+    for (let i = 0; i < count; i++) {
+      motion[i * 2] = side;
+      motion[i * 2 + 1] = limb;
+    }
+    geometry.setAttribute("crowdLimb", new THREE.Float32BufferAttribute(motion, 2));
     parts.push(geometry);
   };
   part(new THREE.CylinderGeometry(0.205, 0.155, 0.55, radial, 1, !detailed), 0, 0, 0.03);
@@ -44,15 +52,29 @@ export function supporterGeometry(detailed: boolean): THREE.BufferGeometry {
   for (const side of [-1, 1]) {
     part(
       detailed
-        ? new THREE.CylinderGeometry(0.06, 0.047, 0.38, radial)
+        ? new THREE.CylinderGeometry(0.06, 0.052, 0.23, radial)
         : new THREE.PlaneGeometry(0.09, 0.38),
       0,
-      side * 0.24,
-      0.035,
+      side * (detailed ? 0.23 : 0.24),
+      detailed ? 0.137 : 0.035,
       0,
       side * 0.17,
+      1,
+      side,
     );
-    if (detailed) part(new THREE.SphereGeometry(0.054, 5, 3), 1, side * 0.275, -0.17, 0.01);
+    if (detailed) {
+      part(
+        new THREE.CylinderGeometry(0.051, 0.041, 0.21, radial),
+        1,
+        side * 0.263,
+        -0.08,
+        0,
+        side * 0.17,
+        2,
+        side,
+      );
+      part(new THREE.SphereGeometry(0.049, 5, 3), 1, side * 0.28, -0.2, 0.01, 0, 2, side);
+    }
     part(
       new THREE.CylinderGeometry(0.077, 0.057, 0.5, detailed ? radial : 3, 1, !detailed),
       2,

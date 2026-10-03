@@ -25,7 +25,7 @@ export function GrassChunks({
   // Lâminas só existem quando a câmera pode lê-las. O tapete PBR já cobre
   // planos abertos; desenhar milhares de cones ali criava pontos pretos e não
   // aumentava detalhe percebido.
-  const count = Math.max(1, Math.round(210 * Math.max(0, density)));
+  const count = Math.max(1, Math.round(420 * Math.min(2, Math.max(0, density))));
   const geometry = useMemo(() => grassBladeGeometry(), []);
   const chunks = useMemo(
     () =>
@@ -52,8 +52,11 @@ export function GrassChunks({
           0.01,
           chunk.z + (random() - 0.5) * DEPTH,
         );
-        d.rotation.set(0, random() * Math.PI, 0);
-        d.scale.setScalar(0.72 + random() * 0.48);
+        // Lean alternates with the mower's six-metre bands, with small
+        // deterministic variation rather than completely random hair spikes.
+        const band = Math.floor((d.position.x + FIELD_X) / 6) % 2;
+        d.rotation.set(0, band * Math.PI + (random() - 0.5) * 1.3, 0);
+        d.scale.setScalar(0.68 + random() * 0.4);
         d.updateMatrix();
         mesh.setMatrixAt(i, d.matrix);
         color.setHSL(0.27 + random() * 0.035, 0.36, 0.5 + random() * 0.13);

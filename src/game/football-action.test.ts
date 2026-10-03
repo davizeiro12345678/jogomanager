@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { emptyPose, JOINTS } from "./animation-core";
 import type { PlayerAction } from "./animation";
-import { footballSupportFor, refineFootballAction } from "./football-action";
+import { footballSupportFor, refineFootballAction, refineBallFootContact } from "./football-action";
 import { footballContactAt } from "./motion-metadata";
 import { clampPoseAnatomy, soleHeightFor, solveGroundContact } from "./ground-contact";
 import { lookFor, proportionsFor } from "./player-model";
@@ -11,6 +11,23 @@ const sample = (action: PlayerAction, u: number, foot: "left" | "right" = "right
   refineFootballAction(emptyPose(), action, u, proportions, foot);
 
 describe("football choreography", () => {
+  it("adjusts only the striking boot toward a reachable ball during contact", () => {
+    const p = proportionsFor(lookFor("foot-contact", "MF"));
+    const contact = footballContactAt("shotPower");
+    for (const foot of ["left", "right"] as const) {
+      const pose = sample("shotPower", contact, foot);
+      const support = foot === "left" ? pose.legRPitch : pose.legLPitch;
+      const strike = foot === "left" ? pose.legLPitch : pose.legRPitch;
+      refineBallFootContact(pose, "shotPower", contact, p, foot, { x: foot === "left" ? 0.14 : -0.14, z: 0.48, height: 0.12 });
+      expect(foot === "left" ? pose.legRPitch : pose.legLPitch).toBe(support);
+      expect(foot === "left" ? pose.legLPitch : pose.legRPitch).not.toBe(strike);
+      expect(pose.kneeL).toBeLessThanOrEqual(0);
+      expect(pose.kneeR).toBeLessThanOrEqual(0);
+      const before = { ...pose };
+      refineBallFootContact(pose, "shotPower", contact, p, foot, { x: 3, z: 5, height: 0.12 });
+      expect(pose).toEqual(before);
+    }
+  });
   it("keeps a slide near the turf instead of balancing it like a standing kick", () => {
     for (const foot of ["left", "right"] as const) {
       const p = proportionsFor(lookFor("sliding-athlete", "DF"));

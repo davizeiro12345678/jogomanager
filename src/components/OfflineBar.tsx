@@ -14,11 +14,9 @@ export function useServiceWorker() {
       window.location.hostname.includes("lovableproject.com") ||
       window.location.hostname.includes("-preview--");
     if (isPreview) {
-      void navigator.serviceWorker
-        .getRegistrations()
-        .then((registrations) =>
-          Promise.all(registrations.map((registration) => registration.unregister())),
-        );
+      void navigator.serviceWorker.getRegistrations().then((registrations) =>
+        Promise.all(registrations.map((registration) => registration.unregister())),
+      );
       return;
     }
     const id = window.setTimeout(() => {

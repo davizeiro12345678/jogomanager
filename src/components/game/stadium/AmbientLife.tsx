@@ -42,7 +42,7 @@ export const AmbientLife = memo(function AmbientLife({ time }: { time: TimeOfDay
   const flock = useMemo(
     () =>
       Array.from({ length: BIRDS }, (_, i) => ({
-        r: 38 + (i % 3) * 14 + ((i * 7) % 9),
+        r: 38 + (i % 3) * 14 + (i * 7) % 9,
         h: 24 + ((i * 13) % 12),
         speed: (0.05 + (i % 4) * 0.012) * (i % 2 ? 1 : -1),
         phase: (i / BIRDS) * Math.PI * 2,
@@ -123,11 +123,7 @@ export const AmbientLife = memo(function AmbientLife({ time }: { time: TimeOfDay
         const p = litter[i]!;
         // deriva do vento de oeste para leste, reciclando na borda
         const x = ((p.x + t * 1.1 + 60) % 120) - 60;
-        dummy.position.set(
-          x,
-          p.y + Math.sin(t * 1.3 + i * 1.7) * 0.35,
-          p.z + Math.sin(t * 0.4 + i) * 2,
-        );
+        dummy.position.set(x, p.y + Math.sin(t * 1.3 + i * 1.7) * 0.35, p.z + Math.sin(t * 0.4 + i) * 2);
         dummy.rotation.set(t * p.spin + p.tumble, p.tumble * 2 + t * 0.7, 0);
         dummy.updateMatrix();
         papers.current.setMatrixAt(i, dummy.matrix);

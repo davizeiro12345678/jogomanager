@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useT } from "@/i18n";
+import { useT } from "@/i18n/provider";
 import { voicesForLanguage } from "@/game/speech-voices";
 import { Narrator } from "@/game/narrator";
 import { useSignedIn } from "@/hooks/useCareer";
@@ -20,9 +20,11 @@ import { LanguagePicker } from "./LanguagePicker";
 export function NarrationSettings({
   onOpenChange,
   className = "preference-launcher",
+  showLabel = false,
 }: {
   onOpenChange?: (open: boolean) => void;
   className?: string;
+  showLabel?: boolean;
 }) {
   const { t, lang, dir } = useT();
   const { preferences: p, update } = useAccessibility();
@@ -57,6 +59,7 @@ export function NarrationSettings({
           title={t("match.settings")}
         >
           <Settings2 size={19} aria-hidden="true" />
+          {showLabel ? <span>{t("match.settings")}</span> : null}
         </button>
       </DialogTrigger>
       <DialogContent className="preferences-dialog" closeLabel={t("common.close")}>

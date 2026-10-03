@@ -37,4 +37,49 @@ describe("repairCareer", () => {
     expect(r.state.approval).toBe(100);
     expect(repairCareer(r.state).fixes).toEqual([]);
   });
+
+  it("descarta entradas nulas e malformadas de fixtures e resultados", () => {
+    const s = fresh();
+    const repaired = repairCareer({
+      ...s,
+      fixtures: [null, s.fixtures[0], { round: "um", home: s.clubId, away: "flu" }],
+      results: [null, { round: 1, home: s.clubId, away: "flu", hg: 2, ag: 0 }],
+    } as unknown as typeof s);
+
+    expect(repaired.state.fixtures).toEqual([s.fixtures[0]]);
+    expect(repaired.state.results).toEqual([
+      { round: 1, home: s.clubId, away: "flu", hg: 2, ag: 0 },
+    ]);
+    expect(repaired.fixes).toContain("2 partida(s) inválida(s) ou duplicada(s) removida(s)");
+    expect(repaired.fixes).toContain("Resultados inválidos ou repetidos removidos do histórico");
+    expect(() => repairCareer(repaired.state)).not.toThrow();
+  });
+
+  it("normaliza escalações malformadas antes de mesclar identidades duplicadas", () => {
+    const s = fresh();
+    const id = s.lineup[0]!;
+    const player = s.players[id]!;
+    const malformed = {
+      ...s,
+      lineup: { broken: true },
+      players: {
+        ...s.players,
+        [id]: { ...player, sourcePlayerId: "same-record" },
+        duplicate: { ...player, id: "duplicate", sourcePlayerId: "same-record" },
+      },
+      offers: [null],
+      matchLog: [null],
+      world: { relationships: null, memories: null },
+    } as unknown as typeof s;
+
+    const repaired = repairCareer(malformed);
+
+    expect(repaired.state.lineup).toHaveLength(11);
+    expect(
+      Object.values(repaired.state.players).filter(
+        (entry) => entry.sourcePlayerId === "same-record",
+      ),
+    ).toHaveLength(1);
+    expect(repaired.fixes).toContain("Escalação com jogadores inexistentes ou repetidos");
+  });
 });

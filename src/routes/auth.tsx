@@ -19,7 +19,12 @@ import {
   socialProviderLabel,
   type SocialProvider,
 } from "@/integrations/supabase/social-auth";
-import { authErrorMessage, safeAuthNext, type AuthMode } from "@/lib/auth-policy";
+import {
+  authCallbackErrorMessage,
+  authErrorMessage,
+  safeAuthNext,
+  type AuthMode,
+} from "@/lib/auth-policy";
 import { useAuthMethods } from "@/hooks/useAuthMethods";
 import { passkeyErrorMessage, supportsPasskeys } from "@/integrations/supabase/passkey-auth";
 
@@ -81,13 +86,14 @@ function AuthPage() {
     const recovery =
       search.recovery ||
       new URLSearchParams(window.location.hash.slice(1)).get("type") === "recovery";
-    const authError =
-      new URLSearchParams(window.location.hash.slice(1)).get("error_description") ||
-      new URLSearchParams(window.location.search).get("error_description");
-    if (authError)
-      setError(
-        "O link de acesso expirou ou não pôde ser validado. Solicite um novo link ou entre com e-mail.",
-      );
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const searchParams = new URLSearchParams(window.location.search);
+    const authErrorCode = hashParams.get("error_code") || searchParams.get("error_code");
+    const authErrorDescription =
+      hashParams.get("error_description") || searchParams.get("error_description");
+    const authError = hashParams.get("error") || searchParams.get("error");
+    if (authError || authErrorCode || authErrorDescription)
+      setError(authCallbackErrorMessage(authErrorCode, authErrorDescription));
     if (recovery) setMode("update");
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!alive) return;

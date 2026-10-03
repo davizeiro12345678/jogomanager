@@ -41,6 +41,12 @@ describe("optional cutscene voice", () => {
     vi.mocked(writeVoiceCache).mockImplementationOnce(() => new Promise(() => {}));
     expect(await sceneVoice(vi.fn().mockResolvedValue("ready"), "write-test", 0)).toBe("ready");
   });
+  it("keys cache entries by a stable dialogue id while preserving host indices", async () => {
+    const loader = vi.fn().mockResolvedValue("licensed-host-audio");
+    expect(await sceneVoice(loader, "arrival", 0, "arrival.line.001")).toBe("licensed-host-audio");
+    expect(loader).toHaveBeenCalledWith("arrival", 0);
+    expect(readVoiceCache).toHaveBeenCalledWith("roberta-v4-1|scene|arrival|id:arrival.line.001");
+  });
   it("expires hung transport requests so a later attempt can recover", async () => {
     const loader = vi
       .fn()

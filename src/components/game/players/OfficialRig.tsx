@@ -1,7 +1,7 @@
 import { createPortal, useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { applyOfficialLegPose, buildOfficialRig } from "@/game/official-rig";
+import { applyOfficialLegPose, assistantFlagGeometry, buildOfficialRig } from "@/game/official-rig";
 import { emptyPose } from "@/game/animation-core";
 import { gaitPoseAt } from "@/game/gait-kinematics";
 import { clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
@@ -9,6 +9,8 @@ import { shoulderPose } from "@/game/athlete-posture";
 import { updateRigCorrectives } from "@/game/rig-correctives";
 import {
   officialCue,
+  officialGestureWeight,
+  officialTrackingTarget,
   type OfficialCounts,
   type OfficialCue,
   type OfficialRole,
@@ -49,6 +51,7 @@ export function OfficialRig({
       p,
       skin,
       materials,
+      flagGeometry: role === "ref" ? null : assistantFlagGeometry(),
       meshes,
       cast: false,
       near: false,
@@ -56,6 +59,8 @@ export function OfficialRig({
       counts: null as OfficialCounts | null,
       cue: "none" as OfficialCue,
       remaining: 0,
+      duration: 0,
+      target: { x: 0, z: 0 },
       phase: 0,
       rootY: 0,
       sprayUntil: 0,
@@ -65,6 +70,7 @@ export function OfficialRig({
   useEffect(
     () => () => {
       data.skin.dispose();
+      data.flagGeometry?.dispose();
       data.materials.forEach((material) => material.dispose());
     },
     [data],
@@ -91,6 +97,7 @@ export function OfficialRig({
     if (cue !== "none") {
       data.cue = cue;
       data.remaining = cue === "red" ? 3.4 : 2.4;
+      data.duration = data.remaining;
       if (cue === "foul" && spray.current) {
         spray.current.position.set(ball.x, 0.019, ball.z);
         data.sprayUntil = data.time + 8;
@@ -99,17 +106,9 @@ export function OfficialRig({
     data.remaining = Math.max(0, data.remaining - dt);
     const showing = data.remaining > 0;
     const signaling = showing && (role === "ref" || data.cue === "offside");
-    const targetX = THREE.MathUtils.clamp(
-      role === "ref" ? ball.x * 0.84 - 5 : ball.x * 0.85,
-      -FIELD_X + 1,
-      FIELD_X - 1,
-    );
-    const targetZ =
-      role === "ref"
-        ? THREE.MathUtils.clamp(ball.z * 0.55 + 7, -FIELD_Z + 1, FIELD_Z - 1)
-        : (role === "ar1" ? 1 : -1) * (FIELD_Z + 1.6);
-    const dx = targetX - group.position.x,
-      dz = targetZ - group.position.z;
+    officialTrackingTarget(role, ball, sim.players, FIELD_X, FIELD_Z, data.target);
+    const dx = data.target.x - group.position.x,
+      dz = data.target.z - group.position.z;
     const distance = Math.hypot(dx, dz),
       speed = signaling ? 0 : Math.min(6.8, distance * 1.7);
     if (distance > 0.05) {
@@ -126,25 +125,25 @@ export function OfficialRig({
     const gait = gaitPoseAt(data.phase, speed, data.p, data.pose);
     data.phase += gait.cadence * dt * Math.PI * 2;
     const pose = data.pose;
-    const gestureWeight = showing ? Math.min(1, data.remaining * 4) : 0;
+    const gestureWeight = showing ? officialGestureWeight(data.remaining, data.duration) : 0;
     if (showing && role === "ref") {
       if (data.cue === "yellow" || data.cue === "red") {
         pose.armRPitch = -2.6 * gestureWeight;
-        pose.elbowR = -0.2;
-        pose.armRRoll = -0.15;
+        pose.elbowR = THREE.MathUtils.lerp(pose.elbowR, -0.2, gestureWeight);
+        pose.armRRoll = -0.15 * gestureWeight;
       }
       if (data.cue === "goal") {
         pose.armRPitch = -1.3 * gestureWeight;
-        pose.elbowR = -0.1;
+        pose.elbowR = THREE.MathUtils.lerp(pose.elbowR, -0.1, gestureWeight);
       }
       if (data.cue === "foul") {
         pose.armLPitch = -1.7 * gestureWeight;
-        pose.elbowL = -1.2;
+        pose.elbowL = THREE.MathUtils.lerp(pose.elbowL, -1.2, gestureWeight);
       }
     }
     if (showing && role !== "ref" && data.cue === "offside") {
       pose.armRPitch = -2.75 * gestureWeight;
-      pose.elbowR = -0.15;
+      pose.elbowR = THREE.MathUtils.lerp(pose.elbowR, -0.15, gestureWeight);
     }
     clampPoseAnatomy(pose);
     const contact = solveGroundContact({
@@ -212,6 +211,7 @@ export function OfficialRig({
       });
     }
   });
+  const flagGeometry = data.flagGeometry;
   return (
     <>
       <group
@@ -231,15 +231,15 @@ export function OfficialRig({
               <planeGeometry args={[0.1, 0.15]} />
               <meshBasicMaterial side={THREE.DoubleSide} />
             </mesh>
-            {role !== "ref" ? (
+            {flagGeometry ? (
               <group ref={flag} rotation={[0, 0, -0.25]}>
                 <mesh position={[0, -0.2, 0]}>
                   <cylinderGeometry args={[0.012, 0.012, 0.4, 5]} />
                   <meshStandardMaterial color="#263339" />
                 </mesh>
                 <mesh position={[0.13, -0.31, 0]}>
-                  <planeGeometry args={[0.26, 0.2]} />
-                  <meshBasicMaterial color="#ffc43c" side={THREE.DoubleSide} />
+                  <primitive object={flagGeometry} attach="geometry" />
+                  <meshBasicMaterial vertexColors side={THREE.DoubleSide} />
                 </mesh>
               </group>
             ) : null}

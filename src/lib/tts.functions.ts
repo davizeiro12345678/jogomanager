@@ -7,12 +7,12 @@ import {
   narrationLine,
   BROADCAST_VOICE,
   broadcastRole,
-  VOICE_BY_LANG,
   type NarrationContext,
   type NarrationEvent,
   type RemoteNarrationLang,
 } from "@/game/narration-lines";
 import { CUTSCENES } from "@/content/cutscenes";
+import { ROBERTA_VOICE_ID } from "@/game/narration-voice";
 
 /**
  * Narração da partida com voz realista (ElevenLabs).
@@ -111,7 +111,7 @@ export const narrateEvent = createServerFn({ method: "POST" })
       text,
       format: "mp3_44100_128",
       language: lang,
-      models: narrationModels(),
+      models: narrationModels("match"),
       voiceSettings: settings,
     });
     return audio ? { ok: true, audio } : { ok: false, reason: "error" };
@@ -120,6 +120,18 @@ export const narrateEvent = createServerFn({ method: "POST" })
 type TtsModel = "eleven_v4_turbo" | "eleven_v4" | "eleven_flash_v2_5" | "eleven_multilingual_v2";
 
 const DEFAULT_TTS_MODEL: TtsModel = "eleven_v4_turbo";
+type NarrationProfile = "match" | "scene";
+
+const DEFAULT_TTS_MODEL_BY_PROFILE: Record<NarrationProfile, TtsModel> = {
+  match: DEFAULT_TTS_MODEL,
+  scene: "eleven_v4",
+};
+
+const TTS_MODEL_ENV_BY_PROFILE: Record<NarrationProfile, string> = {
+  match: "ELEVENLABS_MATCH_TTS_MODEL",
+  scene: "ELEVENLABS_SCENE_TTS_MODEL",
+};
+
 const ALLOWED_TTS_MODELS = new Set<TtsModel>([
   "eleven_v4_turbo",
   "eleven_v4",
@@ -127,13 +139,30 @@ const ALLOWED_TTS_MODELS = new Set<TtsModel>([
   "eleven_multilingual_v2",
 ]);
 
-/** The model is server-configurable; never accept an arbitrary model ID. */
-function narrationModels(): TtsModel[] {
-  const configured = process.env["ELEVENLABS_TTS_MODEL"]?.trim() as TtsModel | undefined;
-  const preferred =
-    configured && ALLOWED_TTS_MODELS.has(configured) ? configured : DEFAULT_TTS_MODEL;
-  const fallbacks: TtsModel[] = ["eleven_v4", "eleven_flash_v2_5", "eleven_multilingual_v2"];
-  return [...new Set([preferred, ...fallbacks])];
+/** Models are server-configurable; never accept an arbitrary model ID. */
+function narrationModels(profile: NarrationProfile): TtsModel[] {
+  const configured = (
+    process.env[TTS_MODEL_ENV_BY_PROFILE[profile]]?.trim() ||
+    process.env["ELEVENLABS_TTS_MODEL"]?.trim()
+  ) as TtsModel | undefined;
+  const preferred = configured && ALLOWED_TTS_MODELS.has(configured)
+    ? configured
+    : DEFAULT_TTS_MODEL_BY_PROFILE[profile];
+  const fallbacks: Record<NarrationProfile, TtsModel[]> = {
+    match: ["eleven_v4", "eleven_flash_v2_5", "eleven_multilingual_v2"],
+    scene: ["eleven_v4_turbo", "eleven_multilingual_v2", "eleven_flash_v2_5"],
+  };
+  return [...new Set([preferred, ...fallbacks[profile]])];
+}
+
+/** Eleven v4 supports Stability and Similarity; Style and Speed are unavailable. */
+function v4VoiceSettings(settings: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...(settings["stability"] !== undefined ? { stability: settings["stability"] } : {}),
+    ...(settings["similarity_boost"] !== undefined
+      ? { similarity_boost: settings["similarity_boost"] }
+      : {}),
+  };
 }
 
 /**
@@ -155,23 +184,19 @@ async function synthesize(opts: {
     if (tried.has(model)) continue;
     tried.add(model);
     try {
-      if (model === "eleven_v4_turbo") {
-        const audio = await synthesizeV4Turbo(opts);
-        if (audio) return audio;
-        continue;
-      }
-
       const isV4 = model === "eleven_v4";
-      const endpoint = isV4
-        ? `https://api.elevenlabs.io/v1/text-to-dialogue?output_format=${opts.format}`
+      const isDialogueModel = isV4 || model === "eleven_v4_turbo";
+      const endpoint = isDialogueModel
+        ? `https://api.elevenlabs.io/v1/text-to-dialogue/stream?output_format=${opts.format}`
         : `https://api.elevenlabs.io/v1/text-to-speech/${opts.voiceId}?output_format=${opts.format}`;
       const context = opts.continuity;
       const shortPrevious = context?.previousText?.slice(0, 100);
       const shortNext = context?.nextText?.slice(0, 100);
-      const requestBody = isV4
+      const requestBody = isDialogueModel
         ? {
             inputs: [{ text: opts.text, voice_id: opts.voiceId }],
             model_id: model,
+            settings: v4VoiceSettings(opts.voiceSettings),
             ...(opts.language ? { language_code: opts.language } : {}),
             ...(shortPrevious ? { previous_text: shortPrevious } : {}),
             ...(shortNext ? { future_text: shortNext } : {}),
@@ -201,122 +226,12 @@ async function synthesize(opts: {
   return null;
 }
 
-/** Eleven v4 Turbo is served through Text to Dialogue's WebSocket endpoint. */
-function synthesizeV4Turbo(opts: {
-  apiKey: string;
-  voiceId: string;
-  text: string;
-  format: string;
-  language?: RemoteNarrationLang;
-}): Promise<string | null> {
-  const url = new URL("wss://api.elevenlabs.io/v1/text-to-dialogue/stream-input");
-  url.searchParams.set("model_id", "eleven_v4_turbo");
-  url.searchParams.set("output_format", opts.format);
-  if (opts.language) url.searchParams.set("language_code", opts.language);
-
-  return new Promise((resolve) => {
-    const socket = new WebSocket(url.href);
-    const chunks: Buffer[] = [];
-    let settled = false;
-    const finish = (audio: string | null) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      try {
-        socket.close();
-      } catch {
-        // A socket that failed during its handshake may already be closed.
-      }
-      resolve(audio);
-    };
-    const timer = setTimeout(() => {
-      finish(chunks.length ? Buffer.concat(chunks).toString("base64") : null);
-    }, 6000);
-
-    socket.addEventListener("open", () => {
-      if (settled) return;
-      try {
-        // v4 Turbo registers exactly one voice per session. Credentials stay
-        // on the server and are sent in the first frame, as the API permits.
-        socket.send(JSON.stringify({ voices: [opts.voiceId], xi_api_key: opts.apiKey }));
-        socket.send(
-          JSON.stringify({
-            inputs: [{ text: opts.text, voice_id: opts.voiceId, new_turn: true }],
-          }),
-        );
-        // Closing flushes short match lines, which are often below the stream
-        // buffer threshold, and produces the final audio frame.
-        socket.send(JSON.stringify({ close_socket: true }));
-      } catch (error) {
-        console.error("ElevenLabs v4 Turbo envio WebSocket falhou", error);
-        finish(chunks.length ? Buffer.concat(chunks).toString("base64") : null);
-      }
-    });
-
-    socket.addEventListener("message", (event: MessageEvent) => {
-      const handle = (raw: string) => {
-        try {
-          const frame = JSON.parse(raw) as Record<string, unknown>;
-          if (typeof frame["audio"] === "string") {
-            chunks.push(Buffer.from(frame["audio"], "base64"));
-          }
-          if (frame["error"]) {
-            console.error("ElevenLabs v4 Turbo retornou erro", frame["error"]);
-            finish(chunks.length ? Buffer.concat(chunks).toString("base64") : null);
-            return;
-          }
-          if (frame["is_final"] === true || frame["is_final_audio_for_turn"] === true) {
-            finish(chunks.length ? Buffer.concat(chunks).toString("base64") : null);
-          }
-        } catch (error) {
-          console.error("ElevenLabs v4 Turbo retornou quadro inválido", error);
-          finish(chunks.length ? Buffer.concat(chunks).toString("base64") : null);
-        }
-      };
-
-      if (typeof event.data === "string") {
-        handle(event.data);
-      } else if (event.data instanceof ArrayBuffer) {
-        handle(new TextDecoder().decode(event.data));
-      } else if (typeof Blob !== "undefined" && event.data instanceof Blob) {
-        void event.data
-          .text()
-          .then(handle)
-          .catch(() => finish(null));
-      }
-    });
-
-    socket.addEventListener("error", () => finish(null));
-    socket.addEventListener("close", () => {
-      finish(chunks.length ? Buffer.concat(chunks).toString("base64") : null);
-    });
-  });
-}
-
 const SceneNarrateInput = z.object({
   scene: z.string().min(1).max(48),
   line: z.number().int().min(0).max(12),
 });
 
-/**
- * Voz por papel na cena: cada personagem fala com um timbre diferente, o que
- * dá variedade e realismo à encenação. O texto continua vindo do roteiro fixo.
- */
-const SCENE_VOICE: Record<string, string> = {
-  narrator: "JBFqnCBsd6RMkjVDRZzb", // George — locução
-  commentator: "TX3LPaxmHKxFdv7VOQHJ", // Liam — transmissão empolgada
-  referee: "nPczCjzI2devNBz1zQrb", // Brian — autoridade e clareza
-  manager: "onwK4e9ZLuTAKqWW03F9", // Daniel — firme
-  president: "nPczCjzI2devNBz1zQrb", // Brian — grave
-  press: "cgSgspJ2msm6clMCkdW9", // Jessica — repórter
-  captain: "bIHbv24MWmeRgasZH58o", // Will — jovem
-  assistant: "cjVigY5qzO86Huf0OWal", // Eric
-  doctor: "pFZP5JQG7iQjIQuC4Bku", // Lily
-  scout: "N2lVS1w4EtoT3dr4eOWO", // Callum
-  agent: "iP95p4xoKVk53GoZ742B", // Chris
-  fan: "TX3LPaxmHKxFdv7VOQHJ", // Liam — empolgado
-};
-
+/** Roberta narrates the cinematic script in Brazilian Portuguese. */
 export const narrateScene = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => SceneNarrateInput.parse(input))
@@ -329,7 +244,7 @@ export const narrateScene = createServerFn({ method: "POST" })
     const { reserveAiBudget } = await import("@/lib/ai-budget.server");
     if (!(await reserveAiBudget("voice"))) return { ok: false, reason: "unavailable" };
 
-    const voiceId = SCENE_VOICE[current.who] ?? VOICE_BY_LANG.pt;
+    const voiceId = ROBERTA_VOICE_ID;
     // contexto das falas vizinhas: mantém a prosódia contínua entre linhas
     const previousText = scene.lines[data.line - 1]?.text;
     const nextText = scene.lines[data.line + 1]?.text;
@@ -343,7 +258,7 @@ export const narrateScene = createServerFn({ method: "POST" })
       text,
       format: "mp3_44100_128",
       language: "pt",
-      models: narrationModels(),
+      models: narrationModels("scene"),
       continuity: {
         ...(previousText ? { previousText } : {}),
         ...(nextText ? { nextText } : {}),

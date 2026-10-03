@@ -4,6 +4,8 @@ import type { SceneArt, SceneMood } from "@/content/cutscenes";
 import type { CinematicSet } from "@/game/cinematic-blocking";
 import type { QualityLevel } from "@/game/device";
 import { useCinematicFrame } from "./cinematic-runtime";
+import { useCinematicRuntime } from "./cinematic-runtime";
+import { cinematicDrillAt, cinematicDrillFor } from "@/game/cinematic-action";
 
 const MARKS: Record<CinematicSet, number[][]> = {
   locker: [
@@ -30,21 +32,31 @@ const MARKS: Record<CinematicSet, number[][]> = {
 };
 const TRAINING_MARKS = [
   [-5.2, 0.4],
+  [-4.7, -1.8],
   ...Array.from({ length: 5 }, (_, i) => [-2.4 + i * 1.55, -1.2 + (i % 2) * 2.7]),
 ];
-const RECOVERY_MARKS = [
+const GYM_MARKS = [
   [-0.4, 0.6],
-  [0.2, -2.1],
+  [1.7, -1.4],
+  [-1.6, -1.7],
+];
+const MEDICAL_MARKS = [
+  [-0.4, 0.6],
+  [-1.8, -0.9],
+  [1.6, -1.65],
 ];
 
 /** One draw for all contact shadows, including GPUs with dynamic shadows off. */
 function ContactShadows({ kind, art }: { kind: CinematicSet; art: SceneArt }) {
+  const runtime = useCinematicRuntime();
   const ref = useRef<THREE.InstancedMesh>(null);
   const marks =
     art === "training"
       ? TRAINING_MARKS
       : art === "gym" || art === "medical"
-        ? RECOVERY_MARKS
+        ? art === "gym"
+          ? GYM_MARKS
+          : MEDICAL_MARKS
         : MARKS[kind];
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const placed = useRef(false);
@@ -65,16 +77,22 @@ function ContactShadows({ kind, art }: { kind: CinematicSet; art: SceneArt }) {
       if (!ref.current) return;
       marks.forEach((mark, i) => {
         dummy.position.set(mark[0]!, 0.012, mark[1]!);
-        if (art === "training" && i > 0) {
-          const phase = time * 0.45 + (i - 1) * 1.3;
-          dummy.position.x += Math.sin(phase) * 0.75;
-          dummy.position.z += Math.cos(phase) * 0.75;
+        if (art === "training" && i > 1) {
+          const drill = cinematicDrillAt(
+            time,
+            i - 2,
+            cinematicDrillFor(runtime.cue?.id.split(":")[0]),
+          );
+          dummy.position.x = drill.x;
+          dummy.position.z = drill.z;
         }
         if (kind === "arrival" && i === 3) dummy.position.z -= (1 - Math.min(1, time / 4.8)) * 3;
         dummy.rotation.x = -Math.PI / 2;
         dummy.scale.set(
           0.85,
-          kind === "locker" && (marks === RECOVERY_MARKS ? i === 0 : i < 4) ? 1 : 0.55,
+          kind === "locker" && (marks === GYM_MARKS || marks === MEDICAL_MARKS ? i === 0 : i < 4)
+            ? 1
+            : 0.55,
           1,
         );
         dummy.updateMatrix();
@@ -83,7 +101,7 @@ function ContactShadows({ kind, art }: { kind: CinematicSet; art: SceneArt }) {
       ref.current.instanceMatrix.needsUpdate = true;
       placed.current = true;
     },
-    [marks, kind, art, dummy],
+    [marks, kind, art, dummy, runtime.cue?.id],
   );
   useLayoutEffect(() => place(0), [place]);
   useCinematicFrame((time, dt) => {

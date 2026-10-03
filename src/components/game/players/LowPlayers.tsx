@@ -15,6 +15,7 @@ import {
 import { LOW_HAIR_FAMILIES, lowHairFamily } from "@/game/player-lod-hair";
 import { createLowPlayerGeometries } from "@/game/player-lod-geometry";
 import { LowShortsAnimator } from "@/game/player-lod-shorts";
+import { LowTorsoAnimator } from "@/game/player-lod-torso";
 import { skinAlbedo } from "@/game/player-morphology";
 import {
   appendPlayerInstance,
@@ -100,6 +101,7 @@ export function LowPlayers({
   );
   const geometries = useMemo(createLowPlayerGeometries, []);
   const shortsAnimator = useMemo(() => new LowShortsAnimator(geometries["hips"]!), [geometries]);
+  const torsoAnimator = useMemo(() => new LowTorsoAnimator(geometries["torso"]!), [geometries]);
   const gaitBuffer = useRef(emptyPose());
   const rootY = useRef(new Float32Array(MAX_PLAYERS));
   const tmp = useMemo(
@@ -128,9 +130,10 @@ export function LowPlayers({
   useEffect(
     () => () => {
       shortsAnimator.dispose();
+      torsoAnimator.dispose();
       Object.values(geometries).forEach((geometry) => geometry.dispose());
     },
-    [geometries, shortsAnimator],
+    [geometries, shortsAnimator, torsoAnimator],
   );
   useEffect(() => {
     const color = new THREE.Color();
@@ -400,6 +403,18 @@ export function LowPlayers({
         shape.torsoHeight,
         shape.torsoDepth,
       );
+      const torsoMesh = meshes.torso;
+      if (torsoMesh && torsoMesh.count > 0)
+        torsoAnimator.update(
+          torsoMesh,
+          torsoMesh.count - 1,
+          pose.chest + p.posture,
+          -pose.hipYaw * 0.6,
+          p.spineLen - (shape.torsoCenterY - p.hipY - p.hipH * 0.5),
+          shape.torsoWidth,
+          shape.torsoHeight,
+          shape.torsoDepth,
+        );
       joint(chest, spine, 0, p.spineLen, 0, pose.chest + p.posture, -pose.hipYaw * 0.6);
       joint(neck, chest, 0, p.chestLen, 0, pose.headPitch, pose.headYaw);
       draw("neck", index, neck, 0, p.neckLen * 0.5, 0, p.neckR * 2, p.neckLen * 1.15, p.neckR * 2);

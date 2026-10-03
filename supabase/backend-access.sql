@@ -20,8 +20,7 @@ GRANT SELECT, INSERT, UPDATE ON public.player_profiles TO authenticated;
 GRANT SELECT, INSERT, DELETE ON public.user_blocks TO authenticated;
 GRANT SELECT, INSERT ON public.chat_reports TO authenticated;
 GRANT SELECT, DELETE ON public.chat_messages TO authenticated;
-GRANT SELECT, INSERT, DELETE ON public.match_rooms TO authenticated;
-GRANT UPDATE (guest_id, guest_club, status, updated_at) ON public.match_rooms TO authenticated;
+GRANT SELECT ON public.match_rooms TO authenticated;
 GRANT SELECT ON public.careers, public.user_achievements, public.user_purchases,
   public.user_wallet, public.subscriptions, public.wallet_item_log,
   public.user_boosts, public.coupon_redemptions TO authenticated;

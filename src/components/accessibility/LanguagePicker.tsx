@@ -1,6 +1,6 @@
 import { useMemo, useState, useId } from "react";
 import { Languages, Search } from "lucide-react";
-import { LANGS, LANG_NAMES, useT, type Lang } from "@/i18n";
+import { LANGS, LANG_NAMES, useT, type Lang } from "@/i18n/provider";
 import { languageSearchText, RTL_LANGS } from "@/i18n/locale-catalog";
 
 export function LanguagePicker() {
@@ -38,10 +38,18 @@ export function LanguagePicker() {
           id={id}
           size={Math.min(6, Math.max(2, filtered.length))}
           value={filtered.includes(lang) ? lang : ""}
-          onChange={(e) => setLang(e.target.value as Lang)}
+          onChange={(e) => {
+            setLang(e.target.value as Lang);
+            setQuery("");
+          }}
           aria-label={t("shell.language")}
           className="language-options"
         >
+          {!filtered.includes(lang) && (
+            <option value="" disabled>
+              {t("language.selected")}: {LANG_NAMES[lang]}
+            </option>
+          )}
           {filtered.map((l) => (
             <option key={l} value={l} lang={l} dir={RTL_LANGS.has(l) ? "rtl" : "ltr"}>
               {LANG_NAMES[l]} · {l}

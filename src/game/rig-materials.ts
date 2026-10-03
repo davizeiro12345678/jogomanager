@@ -57,10 +57,17 @@ export function sharedDetailMaterialCount(): number {
 /* -------------------------------------------------- materiais fixos */
 
 /** Esclera do olho. */
-export function eyeWhiteMaterial(): THREE.Material {
-  return sharedDetailMaterial(
-    "eye-white",
-    () => new THREE.MeshStandardMaterial({ color: "#c9c3b8", roughness: 0.38 }),
+export function eyeWhiteMaterial(hi = false): THREE.Material {
+  return sharedDetailMaterial(`eye-white:${hi}`, () =>
+    hi
+      ? new THREE.MeshPhysicalMaterial({
+          color: "#c9c3b8",
+          roughness: 0.3,
+          clearcoat: 0.35,
+          clearcoatRoughness: 0.08,
+          ior: 1.376,
+        })
+      : new THREE.MeshStandardMaterial({ color: "#c9c3b8", roughness: 0.38 }),
   );
 }
 
@@ -74,6 +81,7 @@ export function beardMaterial(skin: string, hair: string, style: string): THREE.
     const map = beardFiberColor("#" + tone.getHexString());
     return new THREE.MeshStandardMaterial({
       color: map ? "#ffffff" : tone,
+      vertexColors: true,
       map,
       roughness: 0.91,
       alphaMap: beardFiberMask(style === "stubble"),
@@ -98,14 +106,15 @@ export function pupilMaterial(): THREE.Material {
 }
 
 /** Íris na cor do atleta. */
-export function irisMaterial(color: string): THREE.Material {
+export function irisMaterial(color: string, hi = false): THREE.Material {
   return sharedDetailMaterial(
-    `iris:${color}`,
+    `iris:${color}:${hi}`,
     () =>
-      new THREE.MeshStandardMaterial({
+      new (hi ? THREE.MeshPhysicalMaterial : THREE.MeshStandardMaterial)({
         color: irisColor(color) ? "#ffffff" : color,
         map: irisColor(color),
-        roughness: 0.36,
+        roughness: hi ? 0.25 : 0.36,
+        ...(hi ? { clearcoat: 0.8, clearcoatRoughness: 0.08, ior: 1.376 } : {}),
       }),
   );
 }

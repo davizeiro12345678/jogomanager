@@ -4,6 +4,7 @@ import { anatomicalLimb, anatomicalSection, neckSurface, palmSurface } from "./r
 import { buildRigSkin, countRigSkin } from "./rig-skin";
 import { HERO_MESH_COST } from "./draw-budget";
 import { lookFor, proportionsFor, type HairStyle } from "./player-model";
+import { faceMorphology } from "./player-morphology";
 import { playerMaterials } from "./player-materials";
 import { buildSculptedFace, faceSurfaceZ, sculptedHair, sculptedHead } from "./player-sculpt";
 
@@ -144,6 +145,31 @@ describe("sculpted football player", () => {
         expect(projection).toBeLessThan(P.headR * 0.05);
       }
     }
+    for (const parts of Object.values(face)) for (const part of parts) part.geometry.dispose();
+  });
+
+  it("keeps facial asymmetry subtle, seed-stable, and aligned across eye landmarks", () => {
+    const morphology = faceMorphology(look.seed);
+    expect(faceMorphology(look.seed)).toBe(morphology);
+    expect(Math.abs(morphology.eyeAsymmetry)).toBeLessThanOrEqual(0.012);
+    expect(Math.abs(morphology.browAsymmetry)).toBeLessThanOrEqual(0.018);
+    expect(Math.abs(morphology.noseDeviation)).toBeLessThanOrEqual(0.012);
+    expect(Math.abs(morphology.cheekAsymmetry)).toBeLessThanOrEqual(0.045);
+    expect(Math.abs(morphology.mouthTilt)).toBeLessThanOrEqual(0.018);
+
+    const mats = playerMaterials(look, kit, null, "alta");
+    const face = buildSculptedFace(P, look, mats, true);
+    const eyePatches = face.face.filter(
+      (part) => (part.material as THREE.MeshStandardMaterial).color?.getHexString() === "c9c3b8",
+    );
+    expect(eyePatches).toHaveLength(2);
+    const centers = eyePatches.map((part) => {
+      const points = part.geometry.getAttribute("position");
+      let sum = 0;
+      for (let i = 0; i < points.count; i++) sum += points.getY(i);
+      return sum / points.count;
+    });
+    expect(centers[1]! - centers[0]!).toBeCloseTo(morphology.eyeAsymmetry * P.headR * 2, 5);
     for (const parts of Object.values(face)) for (const part of parts) part.geometry.dispose();
   });
 

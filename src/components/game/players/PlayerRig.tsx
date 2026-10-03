@@ -27,6 +27,7 @@ import {
   type Pose,
 } from "@/game/animation";
 import { expressionFor } from "@/game/animation-extra3";
+import { ballGazePitch, emptyFacialPose, facialPoseAt } from "@/game/facial-animation";
 import { kitTextureFor } from "@/game/graphics/kit-atlas";
 import { useMatchSurface } from "@/game/graphics/surface-context";
 import type { Kit } from "@/game/kits";
@@ -59,13 +60,21 @@ import {
   type DominantFoot,
 } from "@/game/visual-context";
 import { solveFullIK } from "@/game/ik-solver";
-import { buildRigSkin, type RigJoint, type RigSkin, type RigSkinLod } from "@/game/rig-skin";
+import {
+  buildRigSkin,
+  rebindRigSkinMaterials,
+  type RigJoint,
+  type RigSkin,
+  type RigSkinLod,
+} from "@/game/rig-skin";
 import { spineRollForAction, updateRigCorrectives } from "@/game/rig-correctives";
+import { faceMorphology } from "@/game/player-morphology";
+import { AthleteCloth } from "@/game/athlete-cloth";
 import { censusRef } from "@/game/scene-census";
 import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
 import { gaitPoseAt, locomotionWeight } from "@/game/gait-kinematics";
 import { visualMotionFor } from "@/game/visual-motion";
-import { footballSupportFor, refineFootballAction } from "@/game/football-action";
+import { footballSupportFor, refineFootballAction, refineBallFootContact } from "@/game/football-action";
 import { refineAthletePosture, shoulderPose } from "@/game/athlete-posture";
 import { applyHandPose, handPoseAt } from "@/game/player-hands";
 import { AthletePoseBlender } from "@/game/athlete-pose-blender";
@@ -115,6 +124,7 @@ interface RigProps {
   previewClip?: ClipName | undefined;
   /** Dense face topology is reserved for the isolated portrait preview. */
   portrait?: boolean;
+  clothPhysics?: boolean;
   /** Inspection cameras follow actual posed bones, never simulation positions. */
   onPoseReady?: ((skin: RigSkin) => void) | undefined;
 }
@@ -126,6 +136,7 @@ export const PlayerRig = memo(function PlayerRig({
   goalPulse,
   lookOverride,
   portrait = false,
+  clothPhysics = true,
   previewClip,
   quality: baseQuality,
   paused = false,
@@ -163,6 +174,7 @@ export const PlayerRig = memo(function PlayerRig({
       }),
     [lookOverride, player.pid, player.pos, player.number, player.heightCm, player.weightKg],
   );
+  const facialShape = useMemo(() => faceMorphology(look.seed), [look.seed]);
   const P = useMemo(() => proportionsFor(look), [look]);
   // Só os atletas com rig completo (perto da câmera) recebem a camisa em 512²
   // com nome; o resto do campo usa a versão de 128².
@@ -221,16 +233,14 @@ export const PlayerRig = memo(function PlayerRig({
   const clavRRef = useRef<THREE.Bone>(null);
   const jawRef = useRef<THREE.Bone>(null);
   const eyesRef = useRef<THREE.Bone>(null);
-  const nextBlink = useRef(1 + Math.random() * 4);
-  // alvo atual das sacadas (olhar): [lateral, vertical] em −1..1
-  const saccTarget = useRef<[number, number]>([0, 0]);
-  const saccTimer = useRef(0);
+  const facialBuffer = useRef(emptyFacialPose());
 
   // LOD por grupo de desenho: os grupos "near" (rosto, dedos) somem a partir
   // do LOD 1 e os "boot" (travas) a partir do LOD 2 — a maioria dos 22
   // atletas fica longe da câmera na maior parte do tempo.
   const nearMeshes = useRef<THREE.SkinnedMesh[]>([]);
   const bootMeshes = useRef<THREE.SkinnedMesh[]>([]);
+  const skinnedMeshes = useRef<THREE.SkinnedMesh[]>([]);
   const lodState = useRef<LodLevel | null>(null);
   const castState = useRef<boolean | null>(null);
 
@@ -421,6 +431,15 @@ export const PlayerRig = memo(function PlayerRig({
       P,
       actionContext.action ? actionContext.usedFoot : dominantFoot,
     );
+    if (player.action && lod === 0) {
+      const ball = sim.visualBall ?? sim.ball;
+      const dx = ball.x - g.position.x, dz = ball.z - g.position.z;
+      const yaw = motion.yaw;
+      refineBallFootContact(p, player.action, u, P,
+        actionContext.action ? actionContext.usedFoot : dominantFoot,
+        { x: dx * Math.cos(yaw) - dz * Math.sin(yaw),
+          z: dx * Math.sin(yaw) + dz * Math.cos(yaw), height: ball.height });
+    }
 
     // ---- camada superior: tronco e cabeça acompanham a bola
     const toBall = Math.atan2(sim.ball.x - player.x, sim.ball.z - player.z);
@@ -429,9 +448,12 @@ export const PlayerRig = memo(function PlayerRig({
     while (look2 < -Math.PI) look2 += Math.PI * 2;
     const gaze = Math.max(-0.9, Math.min(0.9, look2));
     const ballH = Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z);
+    const eyeHeight =
+      P.hipY + P.hipH * 0.5 + P.spineLen + P.chestLen + P.neckLen + P.headR * 0.96 + p.hipY;
+    const gazePitch = ballGazePitch(ballH, sim.ball.height, eyeHeight);
     p.headYaw += gaze * 0.75;
     p.chest += Math.min(0.12, gaze * gaze * 0.1);
-    p.headPitch += ballH < 6 ? 0.12 : -0.03;
+    p.headPitch += gazePitch;
 
     // Balance, acceleration and fatigue use the same layer as distant players.
     const tired = 1 - Math.min(1, Math.max(0, player.stamina) / 100);
@@ -577,6 +599,16 @@ export const PlayerRig = memo(function PlayerRig({
     if (lod === 0) {
       const effort = Math.min(1, speed / 7);
       const expr = expressionFor(clipName.current, effort, tired);
+      const facePose = facialPoseAt(
+        previewAt !== undefined ? ctx.t : sim.time,
+        look.seed,
+        expr,
+        gaze,
+        gazePitch,
+        effort,
+        facialBuffer.current,
+      );
+      const faceResponse = previewAt !== undefined ? 1 : 1 - Math.exp(-18 * adt);
       const celebrating = /celebrat|fist|victory|applaud|hug/i.test(clipName.current);
       const protesting = /protest|argue|complain/i.test(clipName.current);
       const browLift =
@@ -584,50 +616,25 @@ export const PlayerRig = memo(function PlayerRig({
       const browTilt = celebrating ? -0.035 : protesting ? 0.12 : effort * 0.06;
       for (const side of ["L", "R"] as const) {
         const brow = side === "L" ? skin.boneOf.browL : skin.boneOf.browR;
-        const response = 1 - Math.exp(-12 * adt);
-        brow.position.y += (P.headR * 0.31 + browLift - brow.position.y) * response;
+        const response = previewAt !== undefined ? 1 : 1 - Math.exp(-12 * adt);
+        const sideSign = side === "L" ? 1 : -1;
+        brow.position.y +=
+          (P.headR * (0.31 + facialShape.browAsymmetry * sideSign) + browLift - brow.position.y) *
+          response;
         brow.rotation.z += ((side === "L" ? 1 : -1) * browTilt - brow.rotation.z) * response;
       }
-      // mandíbula: o clipe sugere (grito, reclamação, ofego) e a fala treme
+      // Jaw, eyelids and saccades share the match clock and freeze with the pose.
       if (jawRef.current) {
-        const talking =
-          expr.jaw > 0.3 && expr.jaw < 0.7
-            ? Math.sin(state.clock.elapsedTime * 9 + seed) * 0.05
-            : 0;
-        const jawTarget = 0.015 + expr.jaw * 0.24 + talking * 0.4;
-        jawRef.current.rotation.x +=
-          (jawTarget - jawRef.current.rotation.x) * Math.min(1, adt * 10);
+        jawRef.current.rotation.x += (facePose.jaw - jawRef.current.rotation.x) * faceResponse;
       }
-      // olhar: persegue a bola com sacadas rápidas; atenção baixa = vagueia
       if (eyesRef.current) {
-        saccTimer.current -= adt;
-        if (saccTimer.current <= 0) {
-          saccTimer.current = 0.18 + Math.random() * 0.3;
-          const wander = 1 - expr.gaze;
-          saccTarget.current = [
-            gaze * 0.5 * expr.gaze + (Math.random() - 0.5) * 0.9 * wander,
-            (ballH < 6 ? 0.35 : -0.1) * expr.gaze + (Math.random() - 0.5) * 0.6 * wander,
-          ];
-        }
-        const k = Math.min(1, adt * 18);
-        const ex = Math.max(-1, Math.min(1, saccTarget.current[0])) * P.headR * 0.055;
-        const ey = Math.max(-1, Math.min(1, saccTarget.current[1])) * P.headR * 0.045;
-        eyesRef.current.position.x += (ex - eyesRef.current.position.x) * k;
-        eyesRef.current.position.y += (ey - eyesRef.current.position.y) * k;
+        eyesRef.current.position.x +=
+          (facePose.eyeX * P.headR * 0.055 - eyesRef.current.position.x) * faceResponse;
+        eyesRef.current.position.y +=
+          (facePose.eyeY * P.headR * 0.045 - eyesRef.current.position.y) * faceResponse;
       }
-      // piscada: intervalo sugerido pelo clipe (encarar x pestanejar), com as
-      // pálpebras pesadas quando cansado
       if (blinkRef.current) {
-        nextBlink.current -= adt;
-        const b = blinkRef.current;
-        const rest = expr.lids >= 1 ? 0.001 : (1 - expr.lids) * 0.45;
-        if (nextBlink.current <= 0) {
-          b.scale.y = Math.min(1, b.scale.y + adt * 22);
-          if (b.scale.y >= 1)
-            nextBlink.current = (2 + ((seed % 7) + Math.random() * 3)) * expr.blinkRate;
-        } else {
-          b.scale.y = Math.max(rest, b.scale.y - adt * 16);
-        }
+        blinkRef.current.scale.y += (facePose.lidClosure - blinkRef.current.scale.y) * faceResponse;
       }
     }
 
@@ -638,6 +645,15 @@ export const PlayerRig = memo(function PlayerRig({
     if (ankleLRef.current) ankleLRef.current.rotation.x = c.ankleL;
     if (ankleRRef.current) ankleRRef.current.rotation.x = c.ankleR;
     updateRigCorrectives(skin.boneOf);
+    cloth.update(paused ? 0 : adt, {
+      x: player.vx * Math.cos(motion.yaw) - player.vz * Math.sin(motion.yaw),
+      z: motion.forward,
+      lift: Math.max(0, c.hipY + ground.rootY),
+      effort: Math.min(1, dirLen / 8),
+      bend: Math.abs(c.spine) + Math.abs(c.legLPitch - c.legRPitch) * 0.22,
+      yaw: motion.yaw,
+      roll: c.hipRoll,
+    });
     onPoseReady?.(skin);
 
     // ---- sombra de contato acompanha a altura do quadril
@@ -700,17 +716,19 @@ export const PlayerRig = memo(function PlayerRig({
     // pelo three.js a cada quadro, e incluí-los aqui reconstruiria as 18 malhas
     // do atleta a cada movimento.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [P, look, segs.radial, segs.cap, hi, portrait, mats, jerseyInk],
+    [P, look, kit, segs.radial, segs.cap, hi, portrait, jerseyInk],
   );
   useEffect(() => () => skin.dispose(), [skin]);
+  const cloth = useMemo(
+    () => new AthleteCloth(skin, P, hi && clothPhysics),
+    [skin, P, hi, clothPhysics],
+  );
   useLayoutEffect(() => {
     painted.current = false;
     lodState.current = null;
     castState.current = null;
-    // A paused preview must open its eyes on its first paint, including
-    // appearance changes that rebuild the skin.
+    // The first sample sets a deterministic expression on each rebuilt skin.
     skin.boneOf.blink.scale.y = 0.001;
-    nextBlink.current = 1 + (look.seed % 4);
   }, [skin, look.seed]);
 
   // As malhas são criadas fora do JSX para carregar esqueleto, esfera de
@@ -718,8 +736,13 @@ export const PlayerRig = memo(function PlayerRig({
   const drawMeshes = useMemo(() => {
     nearMeshes.current = [];
     bootMeshes.current = [];
+    skinnedMeshes.current = [];
     return skin.groups.map((group, index) => {
       const mesh = new THREE.SkinnedMesh(group.geometry, group.material);
+      // The portrait camera can sit beside an overhead glove, far outside
+      // that detail bucket's rest-pose bounds. The single inspected athlete
+      // stays visible; ordinary match players retain frustum culling.
+      mesh.frustumCulled = !portrait;
       // Sem esqueleto e matriz de bind a malha não deforma (e apareceria
       // deslocada). `bindMatrixInverse` é mantido pelo three.js a cada quadro.
       mesh.skeleton = skin.skeleton;
@@ -736,9 +759,22 @@ export const PlayerRig = memo(function PlayerRig({
       if (sphere) mesh.boundingSphere = sphere.clone();
       if (group.lod === "near") nearMeshes.current.push(mesh);
       if (group.lod === "boot") bootMeshes.current.push(mesh);
+      skinnedMeshes.current.push(mesh);
       return createElement("primitive", { key: `${group.material.uuid}-${index}`, object: mesh });
     });
-  }, [skin, shadows]);
+  }, [skin, shadows, portrait]);
+
+  // Material maps/surface steps change far more often than body geometry.
+  // Rebind their stable slots in place and keep the mesh and skeleton objects.
+  useLayoutEffect(() => {
+    rebindRigSkinMaterials(skin, skinnedMeshes.current, mats);
+  }, [skin, mats, drawMeshes]);
+  useLayoutEffect(() => {
+    for (const mesh of skinnedMeshes.current) {
+      cloth.bind(mesh);
+      if (!hi || !clothPhysics) mesh.morphTargetInfluences?.fill(0);
+    }
+  }, [skin, cloth, drawMeshes, hi, clothPhysics]);
 
   // Junta -> osso. `createElement` (e não JSX) de propósito: o plugin de
   // desenvolvimento injeta atributos de origem no JSX e o R3F não aceita isso

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { safeAuthNext, authErrorMessage } from "./auth-policy";
+import { safeAuthNext, authCallbackErrorMessage, authErrorMessage } from "./auth-policy";
 
 describe("auth callback destinations", () => {
   it("keeps local paths, queries and anchors", () => {
@@ -19,6 +19,16 @@ describe("auth callback destinations", () => {
 });
 
 describe("auth errors", () => {
+  it("uses the provider-login message for an OAuth code exchange error", () => {
+    const message = authCallbackErrorMessage("unexpected_failure", "Unable to exchange code");
+    expect(message).toMatch(/concluir o login com esse provedor/);
+    expect(message).not.toMatch(/expirou|Unable to exchange/);
+  });
+  it("keeps an actionable expired-link message for email callbacks", () => {
+    expect(authCallbackErrorMessage("otp_expired", "Email link is invalid")).toMatch(
+      /Solicite outro e-mail/,
+    );
+  });
   it("offers a new email after an expired passwordless code", () => {
     expect(authErrorMessage({ code: "otp_expired" }, "magic")).toMatch(/Solicite um novo/);
   });

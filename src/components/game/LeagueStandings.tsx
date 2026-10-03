@@ -106,6 +106,22 @@ export function LeagueStandings({ career, table }: { career: CareerState; table:
           </select>
         </label>
       </div>
+      <div className="league-filter-status">
+        <p role="status" aria-live="polite">
+          {visible.length} de {table.length} clubes
+        </p>
+        {query || filter !== "all" ? (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery("");
+              setFilter("all");
+            }}
+          >
+            Limpar filtros
+          </button>
+        ) : null}
+      </div>
       <div className="league-zone-legend" aria-label="Legenda das zonas">
         {activeZones.map((zone) => (
           <span key={zone}>

@@ -12,11 +12,15 @@
 //   - números de camisa e nomes nunca se repetem no mesmo time.
 // ============================================================================
 
-import { CLUBS } from "./data/leagues";
+import { safeClub } from "./club-reference";
 import { NAMED_SQUADS } from "./data/squads";
 import { poolForLeague } from "./data/names";
 import { makeRng } from "./rng";
 import type { Club, Player, Position } from "./types";
+
+// Keep the existing API for match/career consumers while selection can use
+// the lightweight lookup without loading named squads and player name pools.
+export { safeClub } from "./club-reference";
 
 const SHAPE: Position[] = [
   "GK",
@@ -264,21 +268,6 @@ function makePlayer(
     injuryWeeks: 0,
     rosterSource: d.named ? "catalog" : "generated",
   };
-}
-
-/** Clube genérico para ids fora do catálogo: evita `CLUBS[id]!` estourando. */
-export function safeClub(clubId: string): Club {
-  return (
-    CLUBS[clubId] ?? {
-      id: clubId,
-      name: "Clube convidado",
-      short: "CVD",
-      league: "bra",
-      primary: "#c9d2dc",
-      secondary: "#1d2733",
-      strength: 68,
-    }
-  );
 }
 
 export function buildSquad(clubId: string): Player[] {

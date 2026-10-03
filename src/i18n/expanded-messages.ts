@@ -111,7 +111,6 @@ export const EXPANDED_MESSAGES: Record<AddedLang, Record<string, string>> = Obje
         ...dict,
         "nav.press": dict["nav.news"]!,
         "shell.career": dict["nav.coach"]!,
-        "shell.more": dict["nav.editor"]!,
       },
     ];
   }),

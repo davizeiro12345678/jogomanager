@@ -19,6 +19,21 @@ export function safeAuthNext(value: unknown): string | undefined {
 
 export type AuthMode = "in" | "up" | "reset" | "update" | "magic";
 
+/** Callback URLs may report an expired email link or a failed OAuth code exchange. */
+export function authCallbackErrorMessage(errorCode: unknown, errorDescription: unknown): string {
+  const code = typeof errorCode === "string" ? errorCode.trim().toLowerCase() : "";
+  const description =
+    typeof errorDescription === "string" ? errorDescription.trim().toLowerCase() : "";
+  const emailLinkError =
+    code.startsWith("otp_") ||
+    code === "email_not_confirmed" ||
+    /(?:e-?mail).*(?:link|code|confirm|expir)|(?:link|code).*(?:expir|invalid)/.test(description);
+
+  return emailLinkError
+    ? "O link ou código de e-mail expirou ou não pôde ser validado. Solicite outro e-mail de acesso."
+    : "Não foi possível concluir o login com esse provedor. Tente outro método ou entre com e-mail.";
+}
+
 export function authErrorMessage(error: unknown, mode: AuthMode): string {
   const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
   const messages: Record<string, string> = {

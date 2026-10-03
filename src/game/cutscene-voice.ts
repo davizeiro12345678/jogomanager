@@ -1,4 +1,5 @@
 import { readVoiceCache, writeVoiceCache } from "./audio-cache";
+import { NARRATION_VOICE_REVISION } from "./narration-voice";
 
 export type SceneVoiceLoader = (scene: string, line: number) => Promise<string | null>;
 const pending = new Map<string, Promise<string | null>>();
@@ -18,9 +19,14 @@ export function voiceWithin(request: Promise<string | null>, timeout = SCENE_VOI
 }
 
 /** Includes cache lookup in the deduplicated request; persistence never delays playback. */
-export function sceneVoice(loader: SceneVoiceLoader | undefined, scene: string, line: number) {
+export function sceneVoice(
+  loader: SceneVoiceLoader | undefined,
+  scene: string,
+  line: number,
+  stableLineId?: string,
+) {
   if (!loader) return Promise.resolve(null);
-  const key = `scene|${scene}|${line}`;
+  const key = `${NARRATION_VOICE_REVISION}|scene|${scene}|${stableLineId ? `id:${stableLineId}` : line}`;
   const existing = pending.get(key);
   if (existing) return existing;
   const request = (async () => {

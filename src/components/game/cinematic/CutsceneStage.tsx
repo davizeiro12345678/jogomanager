@@ -50,7 +50,18 @@ import { LazyCinematicStage, preloadCinematicStage } from "./cinematic-loading";
 import { GraphicsBoundary } from "../GraphicsBoundary";
 import { Button } from "@/components/ui/button";
 import { audioBlobUrl } from "@/game/audio-cache";
-import { sceneVoice, voiceWithin, type SceneVoiceLoader } from "@/game/cutscene-voice";
+import {
+  sceneVoice,
+  voiceWithin,
+  SCENE_VOICE_WAIT_MS,
+  type SceneVoiceLoader,
+} from "@/game/cutscene-voice";
+import { cutsceneVoiceFor } from "@/game/cutscene-voice-manifest";
+import {
+  RESTING_VOICE_CLOCK,
+  voiceClockFromContext,
+  type TimedViseme,
+} from "@/game/cutscene-visemes";
 
 type VoiceLoader = SceneVoiceLoader;
 
@@ -88,6 +99,7 @@ interface Props {
   previewTime?: number | undefined;
   autoPlay?: boolean;
   reduceMotion?: boolean;
+  startPaused?: boolean;
 }
 
 /* ------------------------------------------------------------------ arte */
@@ -747,6 +759,7 @@ export function CutsceneStage({
   previewTime,
   autoPlay = false,
   reduceMotion = false,
+  startPaused = false,
 }: Props) {
   // uniforme real do clube tinge o cenário quando nenhuma cor é forçada
   const accent = accentProp ?? club?.primary ?? "#0a8f3c";
@@ -759,7 +772,7 @@ export function CutsceneStage({
   const [chosen, setChosen] = useState<number | null>(null);
   const chosenRef = useRef<number | null>(null);
   const [mode, setMode] = useState<"3d" | "2d">(cinematic ? "3d" : "2d");
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(startPaused);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
   useEffect(() => setPortalHost(document.body), []);
@@ -768,11 +781,21 @@ export function CutsceneStage({
   const [mountStage, setMountStage] = useState(false);
   const sceneStartedAt = useRef(0);
   const onStageReady = useCallback(() => {
-    if (dialogRef.current)
+    if (dialogRef.current) {
       dialogRef.current.dataset["sceneLoadMs"] = (
         performance.now() - sceneStartedAt.current
       ).toFixed(1);
+      dialogRef.current.dataset["sceneInteractiveMs"] = (
+        performance.now() - sceneStartedAt.current
+      ).toFixed(1);
+    }
     setStageReady(true);
+  }, []);
+  const onStageVisible = useCallback(() => {
+    if (dialogRef.current && !dialogRef.current.dataset["sceneVisibleMs"])
+      dialogRef.current.dataset["sceneVisibleMs"] = (
+        performance.now() - sceneStartedAt.current
+      ).toFixed(1);
   }, []);
   const onUnavailable = useCallback(() => setMode("2d"), []);
   useEffect(() => {
@@ -785,11 +808,26 @@ export function CutsceneStage({
     sceneStartedAt.current = performance.now();
     setStageReady(false);
     setMountStage(false);
+    if (dialogRef.current) {
+      delete dialogRef.current.dataset["sceneVisibleMs"];
+      delete dialogRef.current.dataset["sceneInteractiveMs"];
+      delete dialogRef.current.dataset["sceneLoadMs"];
+      delete dialogRef.current.dataset["sceneBackdropVisibleMs"];
+    }
     if (mode !== "3d") return;
+    const visibleFrame = requestAnimationFrame(() => {
+      if (dialogRef.current)
+        dialogRef.current.dataset["sceneBackdropVisibleMs"] = (
+          performance.now() - sceneStartedAt.current
+        ).toFixed(1);
+    });
     void preloadCinematicStage().catch(() => undefined);
     // Commit the lightweight controls before constructing the actor meshes.
     const frame = requestAnimationFrame(() => startTransition(() => setMountStage(true)));
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(visibleFrame);
+      cancelAnimationFrame(frame);
+    };
   }, [mode, data]);
   const [captions, setCaptions] = useState(true);
   const [automatic, setAutomatic] = useState(autoPlay);
@@ -826,16 +864,76 @@ export function CutsceneStage({
   pausedRef.current = paused || hidden;
   const voiceRef = useRef<HTMLAudioElement | null>(null);
   const voiceUrlRef = useRef<string | null>(null);
+  const voiceContextRef = useRef<AudioContext | null>(null);
+  const voiceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const voiceClockRef = useRef<ReturnType<typeof voiceClockFromContext> | null>(null);
+  const voiceVisemesRef = useRef<readonly TimedViseme[]>([]);
+  const voiceFallbackTimerRef = useRef<number | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(narrate);
   const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing" | "fallback">("idle");
 
+  const clearVoiceFallbackTimer = useCallback(() => {
+    if (voiceFallbackTimerRef.current !== null) {
+      window.clearTimeout(voiceFallbackTimerRef.current);
+      voiceFallbackTimerRef.current = null;
+    }
+  }, []);
+
   const stopVoice = useCallback(() => {
+    clearVoiceFallbackTimer();
     voiceRef.current?.pause();
     voiceRef.current = null;
+    voiceNodeRef.current?.disconnect();
+    voiceNodeRef.current = null;
+    voiceClockRef.current = null;
+    voiceVisemesRef.current = [];
     if (voiceUrlRef.current) URL.revokeObjectURL(voiceUrlRef.current);
     voiceUrlRef.current = null;
     window.speechSynthesis?.cancel();
-  }, []);
+  }, [clearVoiceFallbackTimer]);
+
+  const startVoiceAudio = useCallback(
+    async (audio: HTMLAudioElement, visemes: readonly TimedViseme[]) => {
+      let context = voiceContextRef.current;
+      if (visemes.length) {
+        try {
+          if (typeof window !== "undefined" && window.AudioContext) {
+            context ??= new window.AudioContext();
+            voiceContextRef.current = context;
+            if (context.state === "suspended") await context.resume();
+            if (!voiceNodeRef.current) {
+              voiceNodeRef.current = context.createMediaElementSource(audio);
+              voiceNodeRef.current.connect(context.destination);
+            }
+          }
+        } catch {
+          context = null;
+        }
+      }
+      await audio.play();
+      if (context && visemes.length) {
+        voiceClockRef.current = voiceClockFromContext(
+          context,
+          context.currentTime,
+          audio.currentTime * 1000,
+          visemes,
+        );
+      } else {
+        voiceClockRef.current = null;
+      }
+    },
+    [],
+  );
+
+  useEffect(
+    () => () => {
+      stopVoice();
+      const context = voiceContextRef.current;
+      voiceContextRef.current = null;
+      if (context && context.state !== "closed") void context.close();
+    },
+    [stopVoice],
+  );
 
   useEffect(() => {
     dollyTime.current = 0;
@@ -877,7 +975,7 @@ export function CutsceneStage({
   const cue = useMemo(
     () =>
       line && direction?.lines[i] && data
-        ? cinematicCueFor(`${data.id}:${i}:${line.text}`, line, direction.lines[i]!, lineMood)
+        ? cinematicCueFor(`${data.id}:${line.id ?? i}`, line, direction.lines[i]!, lineMood)
         : undefined,
     [line, direction, i, data, lineMood],
   );
@@ -912,10 +1010,25 @@ export function CutsceneStage({
       return;
     }
     let alive = true;
+    let fallbackStarted = false;
+    let audio: HTMLAudioElement | null = null;
     stopVoice();
     setVoiceState("loading");
     const fallback = () => {
-      if (!alive) return;
+      if (!alive || fallbackStarted) return;
+      fallbackStarted = true;
+      clearVoiceFallbackTimer();
+      voiceClockRef.current = null;
+      voiceVisemesRef.current = [];
+      audio?.pause();
+      if (audio) {
+        audio.onplaying = null;
+        audio.onended = null;
+        audio.onerror = null;
+      }
+      voiceNodeRef.current?.disconnect();
+      voiceNodeRef.current = null;
+      voiceRef.current = null;
       if (!("speechSynthesis" in window)) {
         setVoiceState("idle");
         return;
@@ -940,35 +1053,78 @@ export function CutsceneStage({
       window.speechSynthesis.speak(utterance);
       if (pausedRef.current) window.speechSynthesis.pause();
     };
+    const beginAudio = (src: string, visemes: readonly TimedViseme[]) => {
+      if (!alive || fallbackStarted) return;
+      audio = new Audio(src);
+      audio.preload = "auto";
+      voiceRef.current = audio;
+      voiceVisemesRef.current = visemes;
+      audio.onplaying = () => {
+        if (!alive || fallbackStarted) return;
+        clearVoiceFallbackTimer();
+        setVoiceState("playing");
+      };
+      audio.onended = () => {
+        if (!alive || fallbackStarted) return;
+        clearVoiceFallbackTimer();
+        voiceClockRef.current = visemes.length ? RESTING_VOICE_CLOCK : null;
+        setVoiceState("idle");
+      };
+      audio.onerror = fallback;
+      voiceFallbackTimerRef.current = window.setTimeout(fallback, SCENE_VOICE_WAIT_MS);
+      if (!pausedRef.current) void startVoiceAudio(audio, visemes).catch(fallback);
+      else setVoiceState("idle");
+    };
+
+    const localClip = cutsceneVoiceFor(data.id, line.id);
+    if (localClip) {
+      beginAudio(localClip.src, localClip.visemes);
+    } else {
+      const authoredIndex = data.lines.indexOf(line);
+      // The optional host loader remains compatible with its scene/index API.
+      // Local licensed files use stable line IDs and also cover branch replies.
+      void voiceWithin(
+        authoredIndex < 0
+          ? Promise.resolve(null)
+          : sceneVoice(loadVoice, data.id, authoredIndex, line.id),
+      )
+        .then((audioData) => {
+          if (!alive || !audioData) {
+            fallback();
+            return;
+          }
+          const url = audioBlobUrl(audioData);
+          voiceUrlRef.current = url;
+          beginAudio(url, []);
+        })
+        .catch(fallback);
+    }
+
     const authoredIndex = data.lines.indexOf(line);
-    // Inserted choice responses have no server-authored audio. Read the actual
-    // response text, then resume the original audio indices on authored lines.
-    void voiceWithin(
-      authoredIndex < 0 ? Promise.resolve(null) : sceneVoice(loadVoice, data.id, authoredIndex),
-    )
-      .then((audioData) => {
-        if (!alive || !audioData) {
-          fallback();
-          return;
-        }
-        const url = audioBlobUrl(audioData);
-        voiceUrlRef.current = url;
-        const audio = new Audio(url);
-        audio.preload = "auto";
-        audio.onplaying = () => alive && setVoiceState("playing");
-        audio.onended = () => alive && setVoiceState("idle");
-        voiceRef.current = audio;
-        if (!pausedRef.current) void audio.play().catch(fallback);
-        else setVoiceState("idle");
-      })
-      .catch(fallback);
-    const nextAuthored = data.lines.indexOf(lines[i + 1]!);
-    if (nextAuthored >= 0) void sceneVoice(loadVoice, data.id, nextAuthored).catch(() => undefined);
+    const nextLine = lines[i + 1];
+    const nextAuthored = nextLine ? data.lines.indexOf(nextLine) : -1;
+    if (nextAuthored >= 0 && nextLine) {
+      void sceneVoice(loadVoice, data.id, nextAuthored, nextLine.id).catch(() => undefined);
+    }
     return () => {
       alive = false;
+      clearVoiceFallbackTimer();
       stopVoice();
     };
-  }, [data, i, line, narrate, stopVoice, voiceEnabled, lines, loadVoice, mode, stageReady]);
+  }, [
+    data,
+    i,
+    line,
+    narrate,
+    stopVoice,
+    voiceEnabled,
+    lines,
+    loadVoice,
+    mode,
+    stageReady,
+    clearVoiceFallbackTimer,
+    startVoiceAudio,
+  ]);
 
   // The dialogue begins with the visible scene, in small batches of characters.
   useEffect(() => {
@@ -1080,13 +1236,18 @@ export function CutsceneStage({
   useEffect(() => {
     if (!narrate || !voiceEnabled) return;
     if (paused || hidden) {
+      voiceClockRef.current = voiceVisemesRef.current.length ? RESTING_VOICE_CLOCK : null;
       voiceRef.current?.pause();
       window.speechSynthesis?.pause();
     } else {
-      if (voiceRef.current?.paused) void voiceRef.current.play().catch(() => undefined);
+      const audio = voiceRef.current;
+      if (audio?.paused)
+        void startVoiceAudio(audio, voiceVisemesRef.current).catch(() => {
+          voiceClockRef.current = null;
+        });
       window.speechSynthesis?.resume();
     }
-  }, [paused, hidden, narrate, voiceEnabled]);
+  }, [paused, hidden, narrate, voiceEnabled, startVoiceAudio]);
   useEffect(() => {
     if (
       !automatic ||
@@ -1189,11 +1350,13 @@ export function CutsceneStage({
                 look={look}
                 cast={cast}
                 onUnavailable={onUnavailable}
+                onVisible={onStageVisible}
                 onReady={onStageReady}
                 qualityMode={renderQuality}
                 manner={manner}
                 previewTime={previewTime}
                 cue={cue}
+                voiceClockRef={voiceClockRef}
               />
             </Suspense>
           </GraphicsBoundary>

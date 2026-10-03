@@ -6,18 +6,30 @@ import { cinematicActorPose, cinematicIdleAt, cinematicLook } from "@/game/cinem
 import { cinematicDetail } from "@/game/cinematic-performance";
 import { compactCinematicSkin } from "@/game/cinematic-skin";
 import { cinematicGestureAt } from "@/game/cinematic-cue";
+import { cinematicExpressionAt, CinematicGaze } from "@/game/cinematic-expression";
+import {
+  cinematicAttentionYaw,
+  cinematicCurlAt,
+  cinematicDrillAt,
+  cinematicDrillFor,
+  cinematicDrillPose,
+} from "@/game/cinematic-action";
 import { emptyPose, mixPose } from "@/game/animation-core";
 import { proportionsFor } from "@/game/player-model";
+import { faceMorphology } from "@/game/player-morphology";
 import { playerMaterials, retainPlayerMaterials } from "@/game/player-materials";
 import { buildRigSkin } from "@/game/rig-skin";
 import { updateRigCorrectives } from "@/game/rig-correctives";
+import { AthleteCloth } from "@/game/athlete-cloth";
 import { shoulderPose } from "@/game/athlete-posture";
 import { applyHandPose } from "@/game/player-hands";
 import type { Kit } from "@/game/kits";
 import { cinematicTrophyPose } from "@/game/cinematic-trophy-pose";
 import { ClubTrophy } from "./CinematicSetDetails";
 import { CinematicDumbbell } from "./CinematicDumbbell";
+import { CinematicClipboard } from "./CinematicClipboard";
 import { useCinematicFrame, useCinematicRuntime } from "./cinematic-runtime";
+import type { MouthPose } from "@/game/cutscene-visemes";
 
 export function CinematicActor({
   x,
@@ -33,8 +45,11 @@ export function CinematicActor({
   attention,
   holdingTrophy = false,
   entrance = false,
-  drillPhase,
+  drillIndex,
   exercise = false,
+  recovery = false,
+  clipboard = false,
+  costume,
 }: {
   x: number;
   z: number;
@@ -50,11 +65,14 @@ export function CinematicActor({
   attention?: readonly [number, number] | undefined;
   holdingTrophy?: boolean;
   entrance?: boolean;
-  drillPhase?: number;
+  drillIndex?: number;
   exercise?: boolean;
+  recovery?: boolean;
+  clipboard?: boolean;
+  costume?: "staff" | "player";
 }) {
   const runtime = useCinematicRuntime();
-  const staff = Boolean(role && role !== "captain" && role !== "fan");
+  const staff = costume === "staff" || Boolean(role && role !== "captain" && role !== "fan");
   const formal = role === "president" || role === "agent";
   const identity =
     role === "manager" ? runtime.look : role ? runtime.cast?.[role]?.look : undefined;
@@ -67,6 +85,7 @@ export function CinematicActor({
     }),
     [seed, identity, staff, formal],
   );
+  const facialShape = useMemo(() => faceMorphology(look.seed), [look.seed]);
   const p = useMemo(() => proportionsFor(look), [look]);
   const kit = useMemo<Kit>(
     () => ({
@@ -102,6 +121,7 @@ export function CinematicActor({
         look,
         mats,
         hi: detail.high,
+        portrait: detail.high && Boolean(role),
         segs: { radial: detail.radial, cap: 4 },
         jerseyInk: color,
         handR: p.handR,
@@ -113,15 +133,18 @@ export function CinematicActor({
       { mergeLods: true },
     );
     return detail.high ? built : compactCinematicSkin(built);
-  }, [p, look, mats, detail.high, detail.radial, color, staff, formal]);
+  }, [p, look, mats, detail.high, detail.radial, color, staff, formal, role]);
+  const cloth = useMemo(() => new AthleteCloth(skin, p, detail.high), [skin, p, detail.high]);
   const group = useRef<THREE.Group>(null);
   const trophy = useRef<THREE.Group>(null);
   const gripL = useMemo(() => new THREE.Vector3(), []);
   const gripR = useMemo(() => new THREE.Vector3(), []);
   const target = useRef(emptyPose());
+  const drillScratch = useRef(emptyPose());
+  const mouthPose = useRef<MouthPose>({ open: 0.015, wide: 0.1, round: 0 });
   const current = useRef(emptyPose());
   const first = useRef(true);
-  const listening = useRef(0);
+  const listening = useRef(new CinematicGaze());
   useLayoutEffect(() => {
     first.current = true;
   }, [skin]);
@@ -134,6 +157,7 @@ export function CinematicActor({
     () =>
       skin.groups.map((part) => {
         const mesh = new THREE.SkinnedMesh(part.geometry, part.material);
+        cloth.bind(mesh);
         mesh.skeleton = skin.skeleton;
         mesh.bindMatrix.copy(skin.bindMatrix);
         mesh.bindMatrixInverse.copy(skin.bindMatrix).invert();
@@ -142,7 +166,7 @@ export function CinematicActor({
           runtime.quality !== "baixa" && part.castShadow && part.lod === "core" && Boolean(role);
         return mesh;
       }),
-    [skin, runtime.quality, role],
+    [skin, runtime.quality, role, cloth],
   );
   useEffect(() => () => skin.dispose(), [skin]);
   useCinematicFrame((time, dt) => {
@@ -159,15 +183,31 @@ export function CinematicActor({
       runtime.manner,
       runtime.cue,
       runtime.clock.lineTime,
+      exercise || recovery,
     );
+    const drill =
+      drillIndex === undefined
+        ? null
+        : cinematicDrillAt(time, drillIndex, cinematicDrillFor(runtime.cue?.id.split(":")[0]));
+    if (drill) cinematicDrillPose(target.current, drill, p, time, acting, drillScratch.current);
     if (exercise && !acting) {
-      const curl = (1 - Math.cos(time * 1.5)) * 0.5;
-      target.current.armLPitch = target.current.armRPitch = -0.15 - curl * 0.65;
-      target.current.elbowL = target.current.elbowR = -0.3 - curl * 1.4;
+      const curl = cinematicCurlAt(time);
+      target.current.armLPitch = -0.1 - curl.left * 0.22;
+      target.current.armRPitch = -0.1 - curl.right * 0.22;
+      target.current.elbowL = -0.25 - curl.left * 1.65;
+      target.current.elbowR = -0.25 - curl.right * 1.65;
+    }
+    if (clipboard) {
+      target.current.armLPitch = -0.24;
+      target.current.armLRoll = 0.09;
+      target.current.elbowL = -1.22;
     }
     if (holdingTrophy) cinematicTrophyPose(target.current, time);
     const idle = cinematicIdleAt(time, seed, pose === "sit");
-    const cross = !holdingTrophy && !acting && idle.kind === "cross" ? idle.weight : 0;
+    const cross =
+      !holdingTrophy && !exercise && !recovery && !clipboard && !acting && idle.kind === "cross"
+        ? idle.weight
+        : 0;
     mixPose(
       current.current,
       target.current,
@@ -177,13 +217,10 @@ export function CinematicActor({
     const c = current.current,
       b = skin.boneOf;
     const wantedYaw = attention
-      ? THREE.MathUtils.clamp(Math.atan2(attention[0] - x, attention[1] - z) - rot, -0.7, 0.7)
+      ? cinematicAttentionYaw(drill?.x ?? x, drill?.z ?? z, drill?.yaw ?? rot, attention)
       : 0;
-    listening.current =
-      first.current || runtime.reduced
-        ? wantedYaw
-        : THREE.MathUtils.damp(listening.current, wantedYaw, 5, dt);
-    const listeningYaw = listening.current;
+    const gaze = listening.current.sample(wantedYaw, dt, first.current || runtime.reduced);
+    const listeningYaw = gaze.headYaw;
     if (pose === "sit") {
       // Leg IK already follows a smooth contact path. Interpolating the
       // joint angles again would disconnect it from the root's rise timing.
@@ -198,15 +235,26 @@ export function CinematicActor({
       ] as const)
         c[key] = target.current[key];
     }
+    const delivery = runtime.cue
+      ? cinematicGestureAt(runtime.clock.lineTime, runtime.cue, seed)
+      : null;
+    const expression = cinematicExpressionAt(
+      time,
+      seed,
+      acting,
+      gaze.eyeYaw,
+      runtime.cue,
+      delivery?.weight ?? 0,
+    );
     b.hips.position.y = p.hipY + c.hipY;
     b.hips.rotation.set(c.hipPitch, c.hipYaw, c.hipRoll);
     b.spine.rotation.set(c.spine, -c.hipYaw * 0.45, -c.hipRoll * 0.35);
-    b.chest.rotation.x = c.chest + p.posture;
+    b.chest.rotation.set(c.chest + p.posture, -c.hipYaw * 0.55, -c.hipRoll * 0.2);
     b.neck.rotation.set(c.headPitch * 0.45, (c.headYaw + listeningYaw) * 0.55, 0);
     b.face.rotation.set(
       c.headPitch * 0.55,
       (c.headYaw + listeningYaw) * 0.45,
-      !acting && idle.kind === "tilt" ? idle.weight * 0.085 : 0,
+      (!acting && idle.kind === "tilt" ? idle.weight * 0.085 : 0) + expression.headRoll,
     );
     for (const left of [true, false]) {
       const s = left ? "L" : "R";
@@ -221,6 +269,18 @@ export function CinematicActor({
         shoulder.armRoll,
       );
       b[`fore${s}`].rotation.x = left ? c.elbowL : c.elbowR;
+      const dominant = delivery ? delivery.side === (left ? -1 : 1) : !left;
+      const openness =
+        acting && !exercise && !holdingTrophy && !(clipboard && left)
+          ? (delivery?.weight ?? 0) * (dominant ? 1 : 0.55)
+          : 0;
+      // Palms rotate toward the listener during a question/explanation, then
+      // settle. The existing forearm twist distributes that rotation.
+      b[`hand${s}`].rotation.set(
+        -openness * 0.12,
+        (left ? 1 : -1) * openness * 0.48,
+        (left ? 1 : -1) * openness * 0.075,
+      );
       b[`leg${s}`].rotation.set(
         left ? c.legLPitch : c.legRPitch,
         0,
@@ -229,58 +289,84 @@ export function CinematicActor({
       b[`knee${s}`].rotation.x = -(left ? c.kneeL : c.kneeR);
       b[`ankle${s}`].rotation.x = left ? c.ankleL : c.ankleR;
     }
-    updateRigCorrectives(b);
-    const delivery = runtime.cue
-      ? cinematicGestureAt(runtime.clock.lineTime, runtime.cue, seed)
+    // Authored mouth shapes follow the same audio clock in every render tier.
+    // Reuse the output object so viseme sampling does not allocate per actor/frame.
+    const syncedMouth = acting
+      ? (runtime.voiceClockRef?.current?.sample(mouthPose.current) ?? null)
       : null;
-    // The face and mouth remain expressive in the balanced and light modes.
     b.jaw.rotation.x = acting
-      ? (delivery?.jaw ?? 0.02 + Math.abs(Math.sin(time * 7.4 + seed)) * 0.07)
+      ? syncedMouth
+        ? 0.02 + syncedMouth.open * 0.22
+        : (delivery?.jaw ?? 0.02 + Math.abs(Math.sin(time * 7.4 + seed)) * 0.07)
       : 0;
-    const blink = (time + seed * 0.37) % (4.1 + (seed % 3) * 0.2);
-    b.blink.scale.y = blink < 0.16 ? 0.08 + Math.sin((blink / 0.16) * Math.PI) * 0.9 : 0.08;
+    b.jaw.scale.set(
+      syncedMouth ? 1 + syncedMouth.wide * 0.08 - syncedMouth.round * 0.05 : 1,
+      1,
+      syncedMouth ? 1 + syncedMouth.round * 0.06 : 1,
+    );
+    b.blink.scale.y = expression.blink;
+    b.eyes.position.set(expression.gazeX, expression.gazeY, 0);
     for (const left of [true, false]) {
       const brow = b[left ? "browL" : "browR"];
-      brow.position.y = p.headR * 0.31 + (acting ? (delivery?.weight ?? 1) * 0.005 : 0);
-      brow.rotation.z =
-        (left ? 1 : -1) * (runtime.cue?.gesture === "confront" ? -0.08 : acting ? 0.035 : 0);
+      brow.position.y =
+        p.headR * (0.31 + facialShape.browAsymmetry * (left ? 1 : -1)) + expression.browLift;
+      brow.rotation.z = (left ? 1 : -1) * expression.browTilt;
+      const wrist = b[left ? "handL" : "handR"];
+      if (exercise) wrist.rotation.set(0, 0, (left ? 1 : -1) * 0.06);
+      else if (clipboard && left) wrist.rotation.set(0, 0.08, 0);
     }
     if (detail.high) {
       applyHandPose(
         b,
         {
-          grip: holdingTrophy
-            ? 0.65
-            : cross > 0.3
-              ? 0.4
-              : acting && runtime.cue?.gesture === "rally"
-                ? 0.7
-                : acting
-                  ? 0.14
-                  : 0.22,
+          grip:
+            exercise || clipboard
+              ? 0.6
+              : holdingTrophy
+                ? 0.65
+                : cross > 0.3
+                  ? 0.4
+                  : acting && runtime.cue?.gesture === "rally"
+                    ? 0.7
+                    : acting
+                      ? 0.14
+                      : 0.22,
           spread: acting ? 0.07 : 0.02,
           wrist: cross * 0.06,
         },
         first.current ? 0.25 : dt,
       );
     }
+    // Wrist pose must be final before distributing pronation into the ulna.
+    updateRigCorrectives(b);
+    cloth.update(dt, {
+      x: c.hipRoll * 2,
+      z: arriving ? 3 / 4.8 : pose === "walk" ? 1.3 : 0,
+      lift: Math.max(0, c.hipY),
+      effort: exercise || drill ? 0.7 : acting ? 0.2 : 0,
+      bend: Math.abs(c.spine) + Math.abs(c.legLPitch - c.legRPitch) * 0.18,
+      yaw: rot,
+      roll: c.hipRoll,
+    });
     first.current = false;
     if (group.current) {
-      const rise = !acting && pose === "sit" && idle.kind === "rise" ? p.thigh * idle.weight : 0;
+      const rise =
+        !exercise && !recovery && !acting && pose === "sit" && idle.kind === "rise"
+          ? p.thigh * idle.weight
+          : 0;
       group.current.position.set(
         x + Math.sin(rot) * rise,
-        pose === "walk" ? Math.max(0, c.hipY * 0.4) : 0,
+        pose === "walk" && !drill ? Math.max(0, c.hipY * 0.4) : 0,
         z + Math.cos(rot) * rise,
       );
       if (entrance) {
         const u = Math.min(1, time / 4.8);
         group.current.position.z = z - (1 - u) * 3;
       }
-      if (drillPhase !== undefined) {
-        const phase = time * 0.45 + drillPhase;
-        group.current.position.x = x + Math.sin(phase) * 0.75;
-        group.current.position.z = z + Math.cos(phase) * 0.75;
-        group.current.rotation.y = Math.PI / 2 + phase;
+      if (drill) {
+        group.current.position.x = drill.x;
+        group.current.position.z = drill.z;
+        group.current.rotation.y = drill.yaw;
       }
       if (holdingTrophy && trophy.current) {
         // Anchor to the animated grip midpoint in actor space, including
@@ -308,6 +394,7 @@ export function CinematicActor({
       )}
       {exercise && createPortal(<CinematicDumbbell dynamic />, skin.boneOf.handL)}
       {exercise && createPortal(<CinematicDumbbell dynamic />, skin.boneOf.handR)}
+      {clipboard && createPortal(<CinematicClipboard />, skin.boneOf.handL)}
     </group>
   );
 }

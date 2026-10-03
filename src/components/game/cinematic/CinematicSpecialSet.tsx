@@ -3,6 +3,7 @@ import { CinematicActor } from "./CinematicActor";
 import { cinematicSurface } from "./cinematic-surfaces";
 
 import { CinematicDumbbell } from "./CinematicDumbbell";
+import { CinematicRoomDetails } from "./CinematicRoomDetails";
 
 /** Shared adult rigs, distinct places for recovery and gym cinematics. */
 export function CinematicSpecialSet({
@@ -21,6 +22,9 @@ export function CinematicSpecialSet({
         <meshStandardMaterial
           color={medical ? "#849b9e" : "#343e46"}
           map={cinematicSurface("tile")}
+          normalMap={cinematicSurface("tile", "normal")}
+          normalScale={[0.22, 0.22]}
+          roughnessMap={cinematicSurface("tile", "roughness")}
           roughness={0.82}
         />
       </mesh>
@@ -29,6 +33,9 @@ export function CinematicSpecialSet({
         <meshStandardMaterial
           color={medical ? "#aac3ca" : "#475862"}
           map={cinematicSurface("wall")}
+          normalMap={cinematicSurface("wall", "normal")}
+          normalScale={[0.08, 0.08]}
+          roughnessMap={cinematicSurface("wall", "roughness")}
           roughness={0.88}
         />
       </mesh>
@@ -61,19 +68,34 @@ export function CinematicSpecialSet({
         seed={5}
         role="captain"
         exercise={!medical}
-        attention={[0.2, -2.1]}
+        recovery={medical}
+        attention={medical ? [-1.8, -0.9] : [1.7, -1.4]}
         acting={speaker === "captain"}
       />
       <CinematicActor
-        x={0.2}
-        z={-2.1}
+        x={medical ? -1.8 : 1.7}
+        z={medical ? -0.9 : -1.4}
+        rot={medical ? 0.6 : -0.5}
         color={medical ? "#d6e7e9" : "#243b45"}
         shorts="#21313b"
         seed={21}
         role="doctor"
         attention={[-0.4, 0.6]}
-        acting={speaker !== "captain" && speaker !== "narrator"}
+        acting={speaker === "doctor"}
+        clipboard
       />
+      <CinematicActor
+        x={medical ? 1.6 : -1.6}
+        z={medical ? -1.65 : -1.7}
+        rot={medical ? -0.4 : 0.4}
+        color="#283d46"
+        shorts="#19232b"
+        seed={31}
+        role="manager"
+        attention={[-0.4, 0.6]}
+        acting={speaker === "manager"}
+      />
+      <CinematicRoomDetails medical={medical} primary={primary} />
       {medical ? (
         <group>
           <group position={[3.2, 0, -2.4]}>
@@ -85,20 +107,6 @@ export function CinematicSpecialSet({
               <planeGeometry args={[0.84, 0.5]} />
               <meshBasicMaterial color="#162b31" />
             </mesh>
-            <mesh position={[0, 1.25, 0.09]}>
-              <boxGeometry args={[0.68, 0.016, 0.008]} />
-              <meshBasicMaterial color="#8eddab" />
-            </mesh>
-            {[0, 1, 2].map((i) => (
-              <mesh
-                key={i}
-                position={[-0.24 + i * 0.22, 1.26, 0.1]}
-                rotation-z={i === 1 ? -0.8 : 0.65}
-              >
-                <boxGeometry args={[0.11, 0.012, 0.008]} />
-                <meshBasicMaterial color="#8eddab" />
-              </mesh>
-            ))}
             <mesh position={[0, 0.55, 0]}>
               <cylinderGeometry args={[0.035, 0.035, 1.1, 8]} />
               <meshStandardMaterial color="#90a7b0" metalness={0.65} roughness={0.4} />

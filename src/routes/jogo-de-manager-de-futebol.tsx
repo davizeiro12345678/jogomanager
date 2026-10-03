@@ -5,7 +5,8 @@ import { LEAGUES } from "@/game/data/leagues";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/jogo-de-manager-de-futebol";
-const TITLE = "Jogo de manager de futebol online grátis | Pro Football Manager 3D";
+const TITLE =
+  "Jogo de manager de futebol online grátis | Pro Football Manager 3D";
 const DESC =
   "Jogo de manager de futebol grátis e online: monte o elenco, defina a tática e assista às partidas em 3D no navegador, sem instalar nada.";
 
@@ -63,21 +64,21 @@ function Page() {
         <h2 className="mt-12 font-display text-2xl">Como funciona</h2>
         <ol className="mt-4 space-y-3 text-muted-foreground">
           <li>
-            <h3 className="font-display text-lg text-foreground">1. Escolha o clube</h3> Clubes com
-            força acima de 85 cobram título já na primeira temporada; entre 70 e 78 a diretoria dá
-            tempo para você construir um projeto.
+            <h3 className="font-display text-lg text-foreground">1. Escolha o clube</h3> Clubes com força acima
+            de 85 cobram título já na primeira temporada; entre 70 e 78 a diretoria dá tempo para
+            você construir um projeto.
           </li>
           <li>
-            <h3 className="font-display text-lg text-foreground">2. Monte o elenco</h3> 22 a 26
-            jogadores é o equilíbrio entre folha salarial e segurança contra lesões.
+            <h3 className="font-display text-lg text-foreground">2. Monte o elenco</h3> 22 a 26 jogadores é o
+            equilíbrio entre folha salarial e segurança contra lesões.
           </li>
           <li>
-            <h3 className="font-display text-lg text-foreground">3. Defina a tática</h3> Formação,
-            mentalidade, altura da linha e ritmo mudam o comportamento do time dentro da partida.
+            <h3 className="font-display text-lg text-foreground">3. Defina a tática</h3> Formação, mentalidade,
+            altura da linha e ritmo mudam o comportamento do time dentro da partida.
           </li>
           <li>
-            <h3 className="font-display text-lg text-foreground">4. Assista ou pule</h3> Veja o jogo
-            em 3D com câmera de transmissão ou simule o resultado em segundos.
+            <h3 className="font-display text-lg text-foreground">4. Assista ou pule</h3> Veja o jogo em 3D com
+            câmera de transmissão ou simule o resultado em segundos.
           </li>
         </ol>
 

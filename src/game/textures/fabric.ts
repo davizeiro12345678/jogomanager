@@ -12,6 +12,71 @@ import * as THREE from "three";
 
 const cache = new Map<string, THREE.CanvasTexture | null>();
 let latexNormal: THREE.DataTexture | undefined;
+let shortsNormal: THREE.DataTexture | undefined;
+const garmentMaps = new Map<string, THREE.DataTexture>();
+
+/** Shared linear-data maps distinguish twill shorts from knitted socks. */
+export function garmentRoughness(kind: "shorts" | "socks"): THREE.DataTexture {
+  const cached = garmentMaps.get(kind);
+  if (cached) return cached;
+  const size = 64, tau = Math.PI * 2 / size;
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const thread = kind === "shorts"
+      ? Math.sin((x + y) * tau * 13) * 9 + Math.cos(y * tau * 21) * 4
+      : Math.cos(x * tau * 8) * 12 + Math.sin(y * tau * 16) * 3;
+    const value = Math.round(234 + thread), i = (y * size + x) * 4;
+    data[i] = data[i + 1] = data[i + 2] = value;
+    data[i + 3] = 255;
+  }
+  const texture = new THREE.DataTexture(data, size, size);
+  texture.name = `athlete-${kind}-roughness`;
+  texture.colorSpace = THREE.NoColorSpace;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(kind === "shorts" ? 2 : 4, kind === "shorts" ? 2 : 8);
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+  garmentMaps.set(kind, texture);
+  return texture;
+}
+
+/** Fine twill and a stitched panel seam, shared by every fallback uniform.
+ * Periodic derivatives keep repeating normals seamless at the texture edges. */
+export function shortsPanelNormal(): THREE.DataTexture {
+  if (shortsNormal) return shortsNormal;
+  const size = 64,
+    tau = (Math.PI * 2) / size;
+  const data = new Uint8Array(size * size * 4);
+  const height = (x: number, y: number) => {
+    const panel = Math.pow(0.5 + 0.5 * Math.cos(x * tau), 28);
+    const stitch = Math.pow(0.5 + 0.5 * Math.cos(y * tau * 8), 4);
+    return (
+      Math.sin((x + y) * tau * 13) * 0.09 +
+      Math.sin(y * tau * 21) * 0.04 +
+      panel * (0.1 + stitch * 0.19)
+    );
+  };
+  for (let y = 0; y < size; y++)
+    for (let x = 0; x < size; x++) {
+      const dx = (height(x - 1, y) - height(x + 1, y)) * 0.65;
+      const dy = (height(x, y - 1) - height(x, y + 1)) * 0.65;
+      const length = Math.hypot(dx, dy, 1),
+        i = (y * size + x) * 4;
+      data[i] = Math.round(((dx / length) * 0.5 + 0.5) * 255);
+      data[i + 1] = Math.round(((dy / length) * 0.5 + 0.5) * 255);
+      data[i + 2] = Math.round(((1 / length) * 0.5 + 0.5) * 255);
+      data[i + 3] = 255;
+    }
+  shortsNormal = new THREE.DataTexture(data, size, size);
+  shortsNormal.name = "athlete-shorts-twill-seam";
+  shortsNormal.wrapS = shortsNormal.wrapT = THREE.RepeatWrapping;
+  shortsNormal.repeat.set(2, 2);
+  shortsNormal.anisotropy = 4;
+  shortsNormal.needsUpdate = true;
+  return shortsNormal;
+}
 
 /** Shared fine latex grain: gloves have a different surface from woven shirts.
  * 64 square pixels, generated once without a canvas or external asset. */

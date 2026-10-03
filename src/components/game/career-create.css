@@ -243,7 +243,11 @@
   margin: 10px 0;
 }
 .career-step-heading h2:focus {
-  outline: none;
+  width: fit-content;
+  max-width: 100%;
+  outline: 2px solid var(--career-accent);
+  outline-offset: 4px;
+  border-radius: 3px;
 }
 .career-step-heading > p:last-child {
   color: #93a68f;

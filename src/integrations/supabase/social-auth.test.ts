@@ -42,6 +42,16 @@ describe("configured authentication methods", () => {
     expect(methods).toMatchObject({ email: true, passkeys: true, signup: true });
   });
 
+  it("filters enabled social providers through an explicit public allowlist", () => {
+    const methods = parseAuthMethods(enabledSettings, ["google", "github"]);
+    expect(methods.socialProviders).toEqual(["google", "github"]);
+    expect(methods).toMatchObject({ email: true, passkeys: true, signup: true });
+  });
+
+  it("supports hiding all social buttons until provider credentials are validated", () => {
+    expect(parseAuthMethods(enabledSettings, ["none"]).socialProviders).toEqual([]);
+  });
+
   it("never treats email, phone, anonymous users, unknown flags or truthy strings as OAuth", () => {
     expect(
       parseAuthMethods({
@@ -112,9 +122,10 @@ describe("public settings discovery", () => {
   });
 
   it("uses the configured project, publishable key, a bounded request and fresh settings", async () => {
+    vi.stubEnv("VITE_AUTH_PROVIDER_ALLOWLIST", "google, github,google");
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(enabledSettings)));
     vi.stubGlobal("fetch", fetchMock);
-    expect((await availableAuthMethods()).socialProviders).toHaveLength(8);
+    expect((await availableAuthMethods()).socialProviders).toEqual(["google", "github"]);
     expect(fetchMock).toHaveBeenCalledWith(
       "https://project.supabase.co/auth/v1/settings",
       expect.objectContaining({

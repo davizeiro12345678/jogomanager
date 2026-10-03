@@ -31,7 +31,13 @@ type FigureOpts = {
 };
 
 /** Enfileira as peças de um boneco simples com cor por vértice. */
-function pushFigure(geos: THREE.BufferGeometry[], x: number, z: number, ry: number, o: FigureOpts) {
+function pushFigure(
+  geos: THREE.BufferGeometry[],
+  x: number,
+  z: number,
+  ry: number,
+  o: FigureOpts,
+) {
   const tmp = new THREE.Color();
   const paint = (g: THREE.BufferGeometry, color: string) => {
     tmp.set(color);

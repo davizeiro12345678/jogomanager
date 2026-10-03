@@ -5,7 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { useT } from "@/i18n";
+import { useT } from "@/i18n/provider";
 
 const Dialog = DialogPrimitive.Root;
 

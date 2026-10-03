@@ -193,6 +193,12 @@
     border-radius: var(--radius-sm);
   }
 
+  /* Programmatic route focus keeps its keyboard ring around the heading text. */
+  main :where(h1, h2, h3)[tabindex="-1"]:focus-visible {
+    width: fit-content;
+    max-width: 100%;
+  }
+
   ::selection {
     background: oklch(0.79 0.19 148 / 0.28);
     color: var(--color-foreground);

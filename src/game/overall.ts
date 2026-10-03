@@ -131,7 +131,12 @@ export function formAdjustment(form: number): number {
  * Potencial: jovens com minutos crescem mais; a partir dos 29 o potencial é
  * o próprio overall. `minutesShare` = fração dos minutos possíveis (0–1).
  */
-export function potentialFor(ovr: number, age: number, minutesShare: number, seed: string): number {
+export function potentialFor(
+  ovr: number,
+  age: number,
+  minutesShare: number,
+  seed: string,
+): number {
   if (age >= 29) return ovr;
   const rng = makeRng(`pot:${seed}`);
   const years = 29 - age;

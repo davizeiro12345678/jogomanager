@@ -1,3 +1,4 @@
+import { gamePageHead } from "@/lib/game-page-metadata";
 /**
  * /visual — Ajustes visuais do jogo.
  *
@@ -35,18 +36,7 @@ const CinematicStudio = lazy(() => import("@/components/game/cinematic/Cinematic
 
 export const Route = createFileRoute("/visual")({
   ssr: false,
-  head: () => ({
-    meta: [
-      ...seoMeta({
-        title: "Ajustes visuais e atletas 3D · Pro Football Manager 3D",
-        path: "/visual",
-        description:
-          "Confira proporções e movimentos dos atletas em uma prévia 3D. Ajuste resolução, sombras, gramado, clima, torcida e efeitos para o seu aparelho.",
-      }),
-      ...noindexMeta,
-    ],
-    links: canonical("/visual"),
-  }),
+  head: () => gamePageHead("/visual"),
   component: VisualPage,
 });
 

@@ -16,6 +16,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useT } from "../i18n";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
 import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
+import { gamePageMetadata } from "@/lib/game-page-metadata";
 
 function NotFoundComponent() {
   return (
@@ -39,8 +40,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: import("@tanstack/react-router").ErrorComponentProps) {
-  console.error(error);
+function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
@@ -96,6 +96,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "application-name", content: "Pro Football Manager 3D" },
       { name: "theme-color", content: "#0b1220" },
       { name: "color-scheme", content: "dark" },
+      { name: "format-detection", content: "telephone=no" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
@@ -207,18 +208,58 @@ function SkipContentLabel() {
   return <>{useT().t("common.skip")}</>;
 }
 function RootReadingControls({ pathname }: { pathname: string }) {
-  const previous = useRef(pathname);
+  const { lang, t } = useT();
+  const router = useRouter();
+  const renderedPath = useRef(pathname);
   useEffect(() => {
-    if (previous.current === pathname) return;
-    previous.current = pathname;
-    const heading = document.querySelector<HTMLElement>(
-      "main h1, #career-content h1, #conteudo h1",
-    );
-    if (heading) {
-      heading.tabIndex = -1;
-      heading.focus({ preventScroll: true });
+    const page = gamePageMetadata(pathname, lang, t);
+    if (!page) return;
+    document.title = page.title;
+    for (const selector of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
+      document.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", page.title);
     }
-  }, [pathname]);
+    for (const selector of [
+      'meta[name="description"]',
+      'meta[property="og:description"]',
+      'meta[name="twitter:description"]',
+    ]) {
+      document.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", page.description);
+    }
+    let localeTag = document.querySelector<HTMLMetaElement>('meta[property="og:locale"]');
+    if (page.locale) {
+      if (!localeTag) {
+        localeTag = document.createElement("meta");
+        localeTag.setAttribute("property", "og:locale");
+        document.head.append(localeTag);
+      }
+      localeTag.content = page.locale;
+    } else localeTag?.remove();
+  }, [pathname, lang, t]);
+  useEffect(() => {
+    let frame = 0;
+    // A pathname can change before the lazy page mounts. Wait for the router
+    // to acknowledge the new DOM, then allow closing menus to release focus.
+    const unsubscribe = router.subscribe("onRendered", ({ toLocation }) => {
+      // Lazy routes can acknowledge rendering after the URL is already
+      // resolved. Compare the rendered destinations, not event.pathChanged.
+      if (renderedPath.current === toLocation.pathname) return;
+      renderedPath.current = toLocation.pathname;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const heading = document.querySelector<HTMLElement>(
+          "main h1, #career-content h1, #conteudo h1",
+        );
+        if (heading) {
+          heading.tabIndex = -1;
+          heading.focus({ preventScroll: true });
+        }
+      });
+    });
+    return () => {
+      unsubscribe();
+      cancelAnimationFrame(frame);
+    };
+  }, [router]);
   return pathname === "/" ? (
     <div className="public-reading-controls">
       <AccessibilitySettings />

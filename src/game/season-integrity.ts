@@ -40,11 +40,17 @@ export function checkSeasonIntegrity(input: SeasonCheckInput): string[] {
   }
 
   const expectedGames = input.expectedGamesPerClub ?? (clubs.size - 1) * 2;
+  const tableClubs = new Set<string>();
   for (const row of input.table) {
     if (!clubs.has(row.clubId)) issues.push(`Clube fora da liga na tabela: ${row.clubId}`);
+    if (tableClubs.has(row.clubId)) issues.push(`Clube duplicado na tabela: ${row.clubId}`);
+    tableClubs.add(row.clubId);
     if (row.p !== expectedGames) issues.push(`${row.clubId} jogou ${row.p} de ${expectedGames}`);
     if (row.w + row.d + row.l !== row.p) issues.push(`${row.clubId}: V+E+D diferente de jogos`);
     if (row.pts !== row.w * 3 + row.d) issues.push(`${row.clubId}: pontos incorretos`);
+  }
+  for (const id of clubs) {
+    if (!tableClubs.has(id)) issues.push(`Clube ausente na tabela: ${id}`);
   }
 
   if (input.expectedPromoted != null && (input.promoted?.length ?? 0) !== input.expectedPromoted)

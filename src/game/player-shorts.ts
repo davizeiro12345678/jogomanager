@@ -11,6 +11,7 @@ export function footballShorts(
 ): THREE.BufferGeometry {
   const positions: number[] = [];
   const uvs: number[] = [];
+  const openingLeg: number[] = [];
   const indices: number[] = [];
   const centers = p.hipW * 0.36;
   // The crotch closes between the legs, but its outer contour still has to
@@ -20,15 +21,16 @@ export function footballShorts(
   const top = p.hipH * 0.5;
   const crotch = -p.hipH * 0.73;
   const hem = -p.hipH * 0.4 - p.thigh * 0.49;
-  const append = (x: number, y: number, z: number, u: number) => {
+  const append = (x: number, y: number, z: number, u: number, leg = 0) => {
     positions.push(x, y, z);
     uvs.push(u, (y - hem) / (top - hem));
+    openingLeg.push(leg);
   };
   const stitch = (a: number, b: number, count: number) => {
     for (let i = 0; i < count; i++)
       indices.push(a + i, b + i, a + i + 1, a + i + 1, b + i, b + i + 1);
   };
-  const rows = options?.waistRows ?? 6;
+  const rows = options?.waistRows ?? 8;
   for (let row = 0; row <= rows; row++) {
     const t = row / rows;
     const split = t * t * (3 - 2 * t);
@@ -52,7 +54,7 @@ export function footballShorts(
   const branch = rows * (radial * 2 + 1);
   for (const sign of options?.waistOnly ? [] : [1, -1]) {
     let previous = branch + (sign === 1 ? 0 : radial);
-    const legRows = options?.legRows ?? 5;
+    const legRows = options?.legRows ?? 7;
     for (let row = 1; row <= legRows; row++) {
       const t = row / legRows;
       const y = crotch + (hem - crotch) * t;
@@ -62,12 +64,16 @@ export function footballShorts(
       const start = positions.length / 3;
       for (let i = 0; i <= radial; i++) {
         const phase = (i / radial) * Math.PI * 2;
-        const crease = Math.sin(phase * 5 + t * 4) * Math.sin(Math.PI * t) * 0.0012;
+        const hemRoll = Math.exp(-(((t - 0.97) / 0.07) ** 2)) * 0.0022;
+        const panel = Math.cos(phase * 2) * Math.sin(Math.PI * t) * 0.001;
+        const crease =
+          Math.sin(phase * 5 + t * 4) * Math.sin(Math.PI * t) * 0.0018 + hemRoll + panel;
         append(
           sign * (center - Math.cos(phase) * (width + crease)),
           y,
           sign * Math.sin(phase) * (depth + crease),
           (sign === 1 ? 0 : 0.5) + i / (radial * 2),
+          sign,
         );
       }
       stitch(previous, start, radial);
@@ -77,7 +83,27 @@ export function footballShorts(
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  // Both openings cross the centre plane. Preserve their authored identity
+  // until skinning, instead of assigning a femur from the vertex's x sign.
+  geometry.setAttribute("openingLeg", new THREE.Float32BufferAttribute(openingLeg, 1));
   geometry.setIndex(indices);
+  const color = new Float32Array(positions.length);
+  const attributes = geometry.getAttribute("uv");
+  for (let i = 0; i < attributes.count; i++) {
+    const v = attributes.getY(i);
+    const waistband = Math.exp(-(((v - 0.965) / 0.027) ** 2)) * 0.13;
+    const hemShade = Math.exp(-(((v - 0.015) / 0.025) ** 2)) * 0.12;
+    const panel = Math.exp(-((Math.cos(attributes.getX(i) * Math.PI * 4) / 0.07) ** 2)) * 0.055;
+    color.set(
+      [
+        1 - waistband - hemShade - panel,
+        1 - waistband - hemShade - panel,
+        1 - waistband - hemShade - panel,
+      ],
+      i * 3,
+    );
+  }
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(color, 3));
   geometry.computeVertexNormals();
   // Smooth duplicated UV seams, including the split at the crotch.
   const normal = geometry.getAttribute("normal");

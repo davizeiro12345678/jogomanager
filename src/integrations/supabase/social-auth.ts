@@ -45,17 +45,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** Read only explicit enabled flags, never infer providers from client credentials. */
-export function parseAuthMethods(settings: unknown): AuthMethods {
+export function parseAuthMethods(
+  settings: unknown,
+  providerAllowlist?: readonly string[],
+): AuthMethods {
   if (!isRecord(settings) || !isRecord(settings["external"])) {
     throw new Error("Invalid public authentication settings");
   }
   const external = settings["external"];
+  const allowed = providerAllowlist ? new Set(providerAllowlist) : null;
   const builtIn = (Object.keys(SOCIAL_LABELS) as (keyof typeof SOCIAL_LABELS)[]).filter(
-    (provider) => external[provider] === true,
+    (provider) => external[provider] === true && (!allowed || allowed.has(provider)),
   );
   const custom = Object.keys(external).filter(
     (provider): provider is `custom:${string}` =>
-      provider.startsWith("custom:") && provider.length > 7 && external[provider] === true,
+      provider.startsWith("custom:") &&
+      provider.length > 7 &&
+      external[provider] === true &&
+      (!allowed || allowed.has(provider)),
   );
   return {
     socialProviders: [...builtIn, ...custom],
@@ -77,7 +84,19 @@ export async function availableAuthMethods(signal?: AbortSignal): Promise<AuthMe
     cache: "no-store",
   });
   if (!response.ok) throw new Error("Authentication settings unavailable");
-  return parseAuthMethods(await response.json());
+  const rawAllowlist = import.meta.env["VITE_AUTH_PROVIDER_ALLOWLIST"];
+  const configured = typeof rawAllowlist === "string" ? rawAllowlist.trim() : "";
+  const allowlist: string[] | undefined = configured
+    ? [
+        ...new Set<string>(
+          configured
+            .split(",")
+            .map((provider) => provider.trim())
+            .filter(Boolean),
+        ),
+      ]
+    : undefined;
+  return parseAuthMethods(await response.json(), allowlist);
 }
 
 export function lovableOAuthProvider(provider: SocialProvider) {

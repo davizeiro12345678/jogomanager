@@ -17,7 +17,7 @@
 // ============================================================================
 
 import { useFrame } from "@react-three/fiber";
-import { createContext, memo, useContext, useMemo, useRef, useState } from "react";
+import { createContext, memo, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import * as THREE from "three";
 
@@ -189,6 +189,7 @@ function SmokePlumes({
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
   }, []);
+  useEffect(() => () => texture?.dispose(), [texture]);
 
   useFrame((state, dt) => {
     if (!enabled) return;

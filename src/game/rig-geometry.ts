@@ -17,6 +17,7 @@
 // ============================================================================
 
 import * as THREE from "three";
+import { FOOTBALL_BOOT_PROFILE } from "./boot-profile";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 /** Transformação local de uma peça dentro da junta. */
@@ -277,10 +278,16 @@ export function palmSurface(geometry: THREE.BufferGeometry, radius: number, side
 export function clothSurface(geometry: THREE.BufferGeometry, amplitude = 0.002) {
   const position = geometry.getAttribute("position");
   const uv = geometry.getAttribute("uv");
+  const colors = new Float32Array(position.count * 3);
   for (let i = 0; i < position.count; i++) {
     const u = uv.getX(i),
       v = uv.getY(i);
     const angle = u * Math.PI * 2;
+    const hem = Math.exp(-(((v - 0.022) / 0.022) ** 2)) * 0.12;
+    const seam = Math.exp(-((Math.cos(angle) / 0.075) ** 2)) * 0.065;
+    const thread = Math.sin(u * 240) * Math.sin(v * 180) * 0.006;
+    const shade = 1 - hem - seam + thread;
+    colors.set([shade, shade, shade], i * 3);
     const fold =
       Math.sin(angle * 6 + v * 11) * Math.sin(v * Math.PI) * 0.45 +
       Math.sin(v * 39 + Math.cos(angle) * 8) * (1 - v) ** 2 * 0.55 +
@@ -300,6 +307,7 @@ export function clothSurface(geometry: THREE.BufferGeometry, amplitude = 0.002) 
       );
   }
   geometry.computeVertexNormals();
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
   return geometry;
 }
 
@@ -358,6 +366,73 @@ export function anatomicalFinger(radius: number, length: number) {
   );
 }
 
+/** Fitted dorsal nail bed, merged into the existing finger material/draw. */
+export function anatomicalNail(radius: number, length: number) {
+  const geometry = new THREE.CircleGeometry(1, 16);
+  const position = geometry.getAttribute("position");
+  const colors = new Float32Array(position.count * 3);
+  for (let i = 0; i < position.count; i++) {
+    const x = position.getX(i),
+      y = position.getY(i);
+    position.setXYZ(
+      i,
+      x * radius * 0.67,
+      -length * 0.25 + y * length * 0.22,
+      -radius * (0.94 + 0.045 * (1 - x * x)),
+    );
+    colors.set([1.07, 0.96, 0.96], i * 3);
+  }
+  const indices = geometry.getIndex()!;
+  for (let i = 0; i < indices.count; i += 3) {
+    const a = indices.getX(i);
+    indices.setX(i, indices.getX(i + 2));
+    indices.setX(i + 2, a);
+  }
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+/** Full cloth sleeve with an inset, rounded shoulder cap and the same elbow
+ * ellipse as the forearm. The upper opening no longer forms a flat ledge. */
+export function tailoredSleeve(length: number, radius: number, radial: number) {
+  const geometry = clothSurface(
+    anatomicalSection(
+      [
+        { y: -length, width: radius * 0.75, depth: radius * 0.78 },
+        { y: -length * 0.84, width: radius * 0.8, depth: radius * 0.84 },
+        { y: -length * 0.55, width: radius * 0.99, depth: radius * 1.06 },
+        { y: -length * 0.24, width: radius * 1.1, depth: radius * 1.03 },
+        { y: -length * 0.04, width: radius * 1.04, depth: radius * 0.98 },
+        { y: length * 0.015, width: radius * 0.7, depth: radius * 0.68 },
+        { y: length * 0.035, width: radius * 0.24, depth: radius * 0.24 },
+      ],
+      radial,
+      1,
+      "top",
+    ),
+    0.0012,
+  );
+  // Cloth folds must not separate the elbow seam from the authored forearm.
+  const position = geometry.getAttribute("position");
+  for (let i = 0; i <= radial; i++) {
+    const angle = (i / radial) * Math.PI * 2;
+    position.setXYZ(i, Math.sin(angle) * radius * 0.75, -length, Math.cos(angle) * radius * 0.78);
+  }
+  geometry.computeVertexNormals();
+  // The lower ring joins the authored forearm's radial surface normals.
+  const normal = geometry.getAttribute("normal");
+  for (let i = 0; i <= radial; i++) {
+    const n = new THREE.Vector3(
+      position.getX(i) / (radius * 0.75) ** 2,
+      0,
+      position.getZ(i) / (radius * 0.78) ** 2,
+    ).normalize();
+    normal.setXYZ(i, n.x, 0, n.z);
+  }
+  return geometry;
+}
+
 /** A continuous last with a fitted heel, instep and flattened toe box. */
 export function footballBoot(
   length: number,
@@ -367,15 +442,12 @@ export function footballBoot(
   subdivisions?: number,
 ) {
   const geometry = anatomicalSection(
-    [
-      { y: -length * 0.3, width: height * 0.25, depth: height * 0.19, centerDepth: height * 0.31 },
-      { y: -length * 0.19, width: height * 0.54, depth: height * 0.42, centerDepth: height * 0.26 },
-      { y: length * 0.03, width: height * 0.58, depth: height * 0.39, centerDepth: height * 0.3 },
-      { y: length * 0.29, width: height * 0.63, depth: height * 0.26, centerDepth: height * 0.42 },
-      { y: length * 0.49, width: height * 0.56, depth: height * 0.2, centerDepth: height * 0.47 },
-      { y: length * 0.59, width: height * 0.24, depth: height * 0.12, centerDepth: height * 0.49 },
-      { y: length * 0.61, width: height * 0.015, depth: height * 0.02, centerDepth: height * 0.49 },
-    ].map((r) => (sole ? { ...r, depth: height * 0.045, centerDepth: height * 0.64 } : r)),
+    FOOTBALL_BOOT_PROFILE.map((section) => ({
+      y: section.z * length,
+      width: section.width * height,
+      depth: height * (sole ? 0.045 : section.depth),
+      centerDepth: height * (sole ? 0.64 : section.centerDepth),
+    })),
     radial,
     1,
     true,
@@ -435,6 +507,7 @@ export function anatomicalLimb(
   radial = 12,
   rigidEnds = false,
   subdivisions?: number,
+  side: -1 | 1 = 1,
 ) {
   const profiles: Record<LimbProfile, readonly [number, number, number][]> = {
     upperArm: [
@@ -518,23 +591,46 @@ export function anatomicalLimb(
       const heads = Math.exp(-(((u - 0.33) / 0.19) ** 2)) * lateral * (1 - lateral) * 4;
       position.setZ(
         i,
-        position.getZ(i) + radius * envelope * (front > 0 ? shin * 0.027 : -heads * 0.034),
+        position.getZ(i) +
+          radius * envelope * (front > 0 ? shin * 0.027 : -heads * 0.034) +
+          (front > 0
+            ? radius *
+              0.1 *
+              Math.sqrt(Math.max(0, Math.sin(Math.PI * THREE.MathUtils.clamp(u, 0, 1)))) *
+              Math.exp(-(((u - 0.075) / 0.11) ** 2)) *
+              angular ** 2
+            : 0),
       );
     } else if (kind === "forearm") {
       position.setX(i, x * (1 + envelope * lateral * 0.055 * Math.exp(-(((u - 0.3) / 0.23) ** 2))));
     } else if (kind === "thigh" && front > 0) {
       const teardrop = Math.exp(-(((u - 0.79) / 0.12) ** 2)) * lateral;
       const rectus = Math.exp(-(((u - 0.48) / 0.26) ** 2)) * (1 - lateral) ** 2;
-      position.setZ(i, position.getZ(i) + radius * envelope * (teardrop * 0.065 + rectus * 0.025));
+      const separation = Math.exp(-(((lateral - 0.56) / 0.11) ** 2) - ((u - 0.58) / 0.27) ** 2);
+      position.setZ(
+        i,
+        position.getZ(i) +
+          radius * envelope * angular * (teardrop * 0.09 + rectus * 0.04 - separation * 0.025),
+      );
     } else if (kind === "upperArm") {
       const deltoid = Math.exp(-(((u - 0.2) / 0.17) ** 2));
       position.setX(i, x * (1 + envelope * lateral * deltoid * 0.065));
+    }
+    // Medial quadriceps/calf heads and the forearm flexors mirror across the
+    // body. Their envelope vanishes at both joints, preserving bind seams.
+    const medial = THREE.MathUtils.clamp((-x * side) / radius, -1, 1);
+    if (kind !== "upperArm") {
+      const landmark = kind === "thigh" ? 0.72 : kind === "calf" ? 0.34 : 0.3;
+      const relief = Math.exp(-(((u - landmark) / 0.22) ** 2));
+      position.setZ(i, position.getZ(i) + radius * 0.035 * envelope * relief * medial * angular);
     }
     // Two heads of the calf/quadriceps avoid a uniformly circular cylinder.
     if (kind === "thigh" || kind === "calf")
       position.setX(
         i,
-        position.getX(i) * (1 + envelope * 0.035 * Math.exp(-(((u - 0.43) / 0.25) ** 2))),
+        position.getX(i) *
+          (1 +
+            envelope * (kind === "thigh" ? 0.065 : 0.055) * Math.exp(-(((u - 0.43) / 0.25) ** 2))),
       );
   }
   geometry.computeVertexNormals();
@@ -563,8 +659,9 @@ export function fittedLimbCover(
   offset = 0.002,
   to = 1.035,
   subdivisions?: number,
+  side: -1 | 1 = 1,
 ) {
-  const limb = anatomicalLimb(kind, length, radius, radial, false, subdivisions);
+  const limb = anatomicalLimb(kind, length, radius, radial, false, subdivisions, side);
   const source = limb.getAttribute("position");
   const rows = source.count / (radial + 1);
   const opening = -length * from;

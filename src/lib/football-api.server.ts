@@ -278,13 +278,10 @@ export async function sdbTeamHonours(teamId: string): Promise<RemoteHonour[]> {
       externalId: item.id,
     };
     current.count += 1;
-    if (item.strSeason && !current.seasons.includes(item.strSeason))
-      current.seasons.push(item.strSeason);
+    if (item.strSeason && !current.seasons.includes(item.strSeason)) current.seasons.push(item.strSeason);
     grouped.set(competition, current);
   }
-  return [...grouped.values()].sort(
-    (a, b) => b.count - a.count || a.competition.localeCompare(b.competition),
-  );
+  return [...grouped.values()].sort((a, b) => b.count - a.count || a.competition.localeCompare(b.competition));
 }
 
 /* ------------------------------------------------------------------ */
@@ -527,3 +524,4 @@ export async function sportmonksSquad(teamId: string): Promise<RemotePlayer[]> {
       photoUrl: r.player?.image_path ?? undefined,
     }));
 }
+

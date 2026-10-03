@@ -46,13 +46,15 @@ describe("live visual-ball snapshots", () => {
     };
 
     view.apply(snapshotMatch(sim, 1, visual));
-    view.renderTick(performance.now() + 100);
+    view.renderTick(performance.now() + 300);
     expect(view.visualBall).toMatchObject(visual);
 
     sim.step(1 / 30);
     view.apply(snapshotMatch(sim, 2));
     expect(view.visualBall).toBeUndefined();
-    view.renderTick(performance.now() + 100);
+    // WorkerMatchView adapts to snapshot intervals up to 250 ms. Allow that
+    // complete interval even when a slower machine spends time in sim.step.
+    view.renderTick(performance.now() + 300);
     expect(view.ball).toMatchObject(sim.ball);
   });
 
@@ -94,7 +96,7 @@ describe("live visual-ball snapshots", () => {
       vz: 0.4,
       spin: 2.5,
     });
-    view.renderTick(performance.now() + 100);
+    view.renderTick(performance.now() + 300);
     expect(view.visualBall).toMatchObject({ x: 4, z: -2, height: 0.75, vx: 6, vy: 1.2, spin: 2.5 });
     expect(view.visualBall?.vz).toBeCloseTo(0.4, 8);
   });

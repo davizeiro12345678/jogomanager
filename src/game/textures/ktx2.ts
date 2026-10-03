@@ -19,6 +19,7 @@ import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { deviceTextureDecodeWorkers } from "@/game/device-workload";
 import {
   canRequestTexture,
+  scheduleTextureRetry,
   textureFailureAfter,
   textureHttpStatus,
   type TextureFailure,
@@ -175,8 +176,10 @@ const loaded = new Map<TextureName, THREE.Texture>();
 const requested = new Set<TextureName>();
 const pending = new Set<TextureName>();
 const failures = new Map<TextureName, TextureFailure>();
+const retryTimers = new Map<TextureName, () => void>();
 let loader: KTX2Loader | null = null;
 let started = false;
+let generation = 0;
 let anisotropy = 8;
 const listeners = new Set<() => void>();
 let revision = 0;
@@ -207,12 +210,27 @@ export function requestKtx2(names: readonly TextureName[]): void {
     return;
   }
   for (const name of names) {
-    if (requested.has(name) || !canRequestTexture(failures.get(name), Date.now())) continue;
+    if (
+      loaded.has(name) ||
+      requested.has(name) ||
+      !canRequestTexture(failures.get(name), Date.now())
+    )
+      continue;
+    retryTimers.get(name)?.();
+    retryTimers.delete(name);
     requested.add(name);
     const src = SOURCES[name];
-    loader.load(
+    const activeLoader = loader;
+    const activeGeneration = generation;
+    activeLoader.load(
       src.url,
       (tex) => {
+        if (activeGeneration !== generation || loader !== activeLoader) {
+          tex.dispose();
+          return;
+        }
+        retryTimers.get(name)?.();
+        retryTimers.delete(name);
         tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
         tex.repeat.set(src.repeat, src.repeat);
         tex.anisotropy = anisotropy;
@@ -225,11 +243,19 @@ export function requestKtx2(names: readonly TextureName[]): void {
       },
       undefined,
       (error) => {
-        failures.set(
-          name,
-          textureFailureAfter(failures.get(name), Date.now(), textureHttpStatus(error)),
+        if (activeGeneration !== generation || loader !== activeLoader) return;
+        const failure = textureFailureAfter(
+          failures.get(name),
+          Date.now(),
+          textureHttpStatus(error),
         );
+        failures.set(name, failure);
         requested.delete(name);
+        const cancel = scheduleTextureRetry(failure, Date.now(), () => {
+          retryTimers.delete(name);
+          if (!loaded.has(name)) requestKtx2([name]);
+        });
+        if (cancel) retryTimers.set(name, cancel);
       },
     );
   }
@@ -279,6 +305,9 @@ export function initKtx2(
 
 /** libera tudo (troca de cena / descarte do renderer) */
 export function disposeKtx2(): void {
+  generation += 1;
+  for (const cancel of retryTimers.values()) cancel();
+  retryTimers.clear();
   for (const tex of loaded.values()) tex.dispose();
   loaded.clear();
   requested.clear();

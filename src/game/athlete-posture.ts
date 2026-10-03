@@ -17,7 +17,7 @@ export function shoulderPose(pitch: number, roll: number) {
     clavRoll,
     armPitch: safePitch - clavPitch,
     armRoll: safeRoll - clavRoll,
-    armYaw: -Math.sin(safePitch) * Math.abs(safeRoll) * 0.08,
+    armYaw: -Math.sin(safePitch) * safeRoll * 0.08,
   };
 }
 
@@ -57,6 +57,15 @@ export function refineAthletePosture(pose: Pose, input: AthletePostureInput): Po
   pose.armLPitch += secondary;
   pose.armRPitch -= secondary;
   if (input.speed < 0.5 && actionFree) {
+    const relaxed = (1 - input.speed / 0.5) * actionFree;
+    // Natural humeral abduction and relaxed elbows leave air at the waist,
+    // instead of a rigid mannequin silhouette with wrists pressed to shorts.
+    pose.armLRoll += relaxed * 0.055;
+    pose.armRRoll -= relaxed * 0.055;
+    pose.elbowL -= relaxed * (0.1 + breath * 0.014);
+    pose.elbowR -= relaxed * (0.1 - breath * 0.014);
+    pose.armLPitch -= relaxed * 0.025;
+    pose.armRPitch -= relaxed * 0.025;
     const shift = Math.sin(input.time * 0.62 + input.seed * 0.17) * (1 - input.speed / 0.5);
     pose.hipRoll += shift * 0.026;
     pose.kneeL -= Math.max(0, shift) * 0.045;

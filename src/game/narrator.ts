@@ -12,6 +12,7 @@ import {
   type NarrationLang,
 } from "./narration-lines";
 import { audioBlobUrl, readVoiceCache, writeVoiceCache } from "./audio-cache";
+import { NARRATION_VOICE_REVISION } from "./narration-voice";
 import { voicesForLanguage } from "./speech-voices";
 import { boundedNumber } from "@/lib/accessibility-preferences";
 export type { NarrationEvent } from "./narration-lines";
@@ -139,7 +140,7 @@ export class Narrator {
     this.queue = [];
     this.busyGeneration = null;
     this.audio?.pause();
-    this.synth?.cancel();
+    if (this.utterance) this.synth?.cancel();
     this.cancelPlayback?.();
     this.cancelPlayback = null;
     this.audio = null;
@@ -181,7 +182,9 @@ export class Narrator {
   private async speakLocal(item: QueueItem, token: number): Promise<boolean> {
     if (!this.synth || this.volume === 0) return false;
     const voices = voicesForLanguage(await this.availableVoices(token), item.speechTag);
-    const voice = voices.find((v) => v.voiceURI === this.voiceURI) ?? voices[0];
+    const role = broadcastRole(item.event);
+    const roleVoice = voices[role === "referee" ? 1 : role === "narrator" ? 2 : 0] ?? voices[0];
+    const voice = voices.find((v) => v.voiceURI === this.voiceURI) ?? roleVoice;
     if (!voice || !this.valid(token)) return false;
     await new Promise<void>((resolve) => {
       const utter = new SpeechSynthesisUtterance(item.text);
@@ -219,9 +222,9 @@ export class Narrator {
     });
     return true;
   }
-  private playBase64(mp3: string, token: number): Promise<void> {
+  private playBase64(mp3: string, token: number): Promise<boolean> {
     return new Promise((resolve) => {
-      if (!this.valid(token) || this.volume === 0) return resolve();
+      if (!this.valid(token) || this.volume === 0) return resolve(false);
       const url = audioBlobUrl(mp3),
         el = new Audio();
       el.src = url;
@@ -230,7 +233,7 @@ export class Narrator {
       el.playbackRate = this.rate;
       this.audio = el;
       let settled = false;
-      const finish = () => {
+      const finish = (played = false) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
@@ -239,26 +242,24 @@ export class Narrator {
         el.pause();
         URL.revokeObjectURL(url);
         if (this.audio === el) this.audio = null;
-        if (this.cancelPlayback === finish) this.cancelPlayback = null;
-        resolve();
+        if (this.cancelPlayback === cancel) this.cancelPlayback = null;
+        resolve(played);
       };
-      const timer = setTimeout(finish, 16000 / this.rate);
-      el.onended = finish;
-      el.onerror = finish;
-      this.cancelPlayback = finish;
-      void el.play().catch(finish);
+      const cancel = () => finish(false);
+      const timer = setTimeout(cancel, 16000 / this.rate);
+      el.onended = () => finish(true);
+      el.onerror = cancel;
+      this.cancelPlayback = cancel;
+      void el.play().catch(cancel);
     });
   }
   private async speakRemote(item: QueueItem, token: number): Promise<boolean> {
     if (!supportsRemoteNarration(item.lang)) return false;
-    const key = `${item.lang}|${broadcastRole(item.event)}|${item.event}|${item.variant}|${item.team}|${JSON.stringify(item.context ?? {})}`;
+    const key = `${NARRATION_VOICE_REVISION}|${item.lang}|${broadcastRole(item.event)}|${item.event}|${item.variant}|${item.team}|${JSON.stringify(item.context ?? {})}`;
     try {
       const cached = await readVoiceCache(key);
       if (!this.valid(token)) return true;
-      if (cached) {
-        await this.playBase64(cached, token);
-        return true;
-      }
+      if (cached) return await this.playBase64(cached, token);
       let request = pendingAudio.get(key);
       if (!request) {
         const remoteLang = item.lang;
@@ -297,8 +298,7 @@ export class Narrator {
         return false;
       }
       this.remoteFailures = 0;
-      await this.playBase64(audio, token);
-      return true;
+      return await this.playBase64(audio, token);
     } catch {
       if (this.valid(token)) this.remoteFailures++;
       return false;

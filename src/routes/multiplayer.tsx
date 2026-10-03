@@ -12,6 +12,7 @@ import { createLiveMatchController, type LiveMatchController } from "@/game/simW
 import { useOnline } from "@/hooks/useOnline";
 import { useSignedIn } from "@/hooks/useCareer";
 import { supabase } from "@/integrations/supabase/client";
+import type { MultiplayerRoomRecord as Room } from "@/lib/multiplayer.functions";
 
 export const Route = createFileRoute("/multiplayer")({
   ssr: false,
@@ -40,26 +41,6 @@ export const Route = createFileRoute("/multiplayer")({
   component: MultiplayerPage,
 });
 
-interface Room {
-  id: string;
-  code: string;
-  host_id: string;
-  guest_id: string | null;
-  host_club: string;
-  guest_club: string | null;
-  seed: string;
-  status: string;
-  minute: number;
-  state: Record<string, unknown>;
-}
-
-function randomCode() {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let out = "";
-  for (let i = 0; i < 5; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
-  return out;
-}
-
 function MultiplayerPage() {
   const signedIn = useSignedIn();
   const online = useOnline();
@@ -84,6 +65,7 @@ function MultiplayerPage() {
         .from("match_rooms")
         .select("*")
         .eq("status", "open")
+        .eq("server_seeded", true)
         .is("guest_id", null)
         .order("created_at", { ascending: false })
         .limit(12),
@@ -97,7 +79,17 @@ function MultiplayerPage() {
     setOpen((rooms ?? []) as unknown as Room[]);
     const list = (mine ?? []) as unknown as Room[];
     const active = list.find((r) => r.status !== "done");
-    setHistory(list.filter((r) => r.status === "done"));
+    setHistory(
+      list.filter((r) => {
+        const state = r.state as { hg?: unknown; ag?: unknown };
+        return (
+          r.server_seeded &&
+          r.status === "done" &&
+          Number.isInteger(state.hg) &&
+          Number.isInteger(state.ag)
+        );
+      }),
+    );
     setRoom((cur) => cur ?? active ?? null);
   }, [userId]);
 
@@ -107,12 +99,13 @@ function MultiplayerPage() {
 
   // Atualização em tempo real da sala atual.
   useEffect(() => {
-    if (!room) return;
+    const roomId = room?.id;
+    if (!roomId) return;
     const channel = supabase
-      .channel(`room-${room.id}`)
+      .channel(`room-${roomId}`)
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "match_rooms", filter: `id=eq.${room.id}` },
+        { event: "UPDATE", schema: "public", table: "match_rooms", filter: `id=eq.${roomId}` },
         (payload) => setRoom(payload.new as unknown as Room),
       )
       .subscribe();
@@ -121,7 +114,7 @@ function MultiplayerPage() {
       const { data } = await supabase
         .from("match_rooms")
         .select("*")
-        .eq("id", room.id)
+        .eq("id", roomId)
         .maybeSingle();
       if (data) setRoom(data as unknown as Room);
     }, 8000);
@@ -132,39 +125,30 @@ function MultiplayerPage() {
   }, [room?.id]);
 
   async function createRoom() {
-    if (!userId) return;
+    if (!userId) return setError("Entre na conta novamente para criar uma sala.");
     setBusy(true);
     setError(null);
-    const { data, error: err } = await supabase
-      .from("match_rooms")
-      .insert({
-        code: randomCode(),
-        host_id: userId,
-        host_club: club,
-        seed: `mp-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
-        status: "open",
-      })
-      .select()
-      .single();
+    const { createMatchRoom } = await import("@/lib/multiplayer.functions");
+    const result = await createMatchRoom({ data: { hostClub: club } }).catch(() => ({
+      ok: false as const,
+      reason: "create_failed",
+    }));
     setBusy(false);
-    if (err) return setError("Não foi possível criar a sala.");
-    setRoom(data as unknown as Room);
+    if (!result.ok) return setError("Não foi possível criar a sala.");
+    setRoom(result.room as unknown as Room);
   }
 
   async function joinRoom(target: Room) {
-    if (!userId) return;
+    if (!userId) return setError("Entre na conta novamente para entrar na sala.");
     setBusy(true);
     setError(null);
-    const { data, error: err } = await supabase
-      .from("match_rooms")
-      .update({ guest_id: userId, guest_club: club, status: "ready" })
-      .eq("id", target.id)
-      .is("guest_id", null)
-      .select()
-      .maybeSingle();
+    const { joinMatchRoom } = await import("@/lib/multiplayer.functions");
+    const result = await joinMatchRoom({
+      data: { roomId: target.id, guestClub: club },
+    }).catch(() => ({ ok: false as const, reason: "room_unavailable" }));
     setBusy(false);
-    if (err || !data) return setError("Essa sala já foi ocupada.");
-    setRoom(data as unknown as Room);
+    if (!result.ok) return setError("Essa sala já foi ocupada ou não está mais disponível.");
+    setRoom(result.room as unknown as Room);
   }
 
   async function joinByCode() {
@@ -175,6 +159,7 @@ function MultiplayerPage() {
       .select("*")
       .eq("code", code)
       .eq("status", "open")
+      .eq("server_seeded", true)
       .maybeSingle();
     if (!data) return setError("Código não encontrado.");
     await joinRoom(data as unknown as Room);
@@ -182,7 +167,15 @@ function MultiplayerPage() {
 
   async function leave() {
     if (!room) return;
-    await supabase.from("match_rooms").update({ status: "done" }).eq("id", room.id);
+    const { leaveMatchRoom } = await import("@/lib/multiplayer.functions");
+    const result = await leaveMatchRoom({ data: { roomId: room.id } }).catch(() => ({
+      ok: false as const,
+      reason: "leave_failed",
+    }));
+    if (!result.ok) {
+      setError("Não foi possível encerrar a sala. Tente novamente.");
+      return;
+    }
     setRoom(null);
     void refresh();
   }
@@ -268,8 +261,14 @@ function MultiplayerPage() {
               disabled={!room.guest_club || busy}
               onClick={async () => {
                 setBusy(true);
-                await supabase.from("match_rooms").update({ status: "live" }).eq("id", room.id);
+                const { startMatchRoom } = await import("@/lib/multiplayer.functions");
+                const result = await startMatchRoom({ data: { roomId: room.id } }).catch(() => ({
+                  ok: false as const,
+                  reason: "room_not_ready",
+                }));
                 setBusy(false);
+                if (result.ok) setRoom(result.room as unknown as Room);
+                else setError("A sala não está mais pronta para iniciar.");
               }}
               className="mt-5 flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 font-display text-sm uppercase tracking-wide text-primary-foreground disabled:opacity-40"
             >
@@ -333,8 +332,8 @@ function MultiplayerPage() {
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                 placeholder="Código"
-                maxLength={5}
-                className="w-28 rounded-lg border border-border bg-background px-3 py-2 text-center font-display tracking-[0.3em]"
+                maxLength={8}
+                className="w-32 rounded-lg border border-border bg-background px-3 py-2 text-center font-display tracking-[0.2em]"
               />
               <button
                 onClick={() => void joinByCode()}
@@ -549,6 +548,7 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
   const [snap, setSnap] = useState({ minute: 0, hg: 0, ag: 0, finished: false });
   const published = useRef(false);
   const controllerRef = useRef<LiveMatchController | null>(null);
+  const publishRetry = useRef<number | null>(null);
 
   useEffect(() => {
     const controller = createLiveMatchController({
@@ -582,25 +582,35 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
   }, [setups, sim]);
 
   useEffect(() => {
-    if (!isHost) return;
-    if (snap.finished && !published.current) {
+    if (!isHost || !snap.finished || published.current) return;
+    let disposed = false;
+    let attempts = 0;
+    const publish = async () => {
       published.current = true;
-      // O resultado passa pelo servidor, que confere se quem envia é mesmo o
-      // anfitrião e se a partida chegou ao fim antes de gravar o placar.
-      void import("@/lib/multiplayer.functions").then(({ finishMatchRoom }) =>
-        finishMatchRoom({
-          data: {
-            roomId: room.id,
-            minute: snap.minute,
-            homeGoals: snap.hg,
-            awayGoals: snap.ag,
-          },
-        }).catch(() => {
-          published.current = false;
-        }),
-      );
-    }
-  }, [snap, isHost, room.id]);
+      try {
+        const { finishMatchRoom } = await import("@/lib/multiplayer.functions");
+        const result = await finishMatchRoom({ data: { roomId: room.id } });
+        if (result.ok || disposed) return;
+      } catch {
+        if (disposed) return;
+      }
+      published.current = false;
+      if (attempts++ < 4) {
+        publishRetry.current = window.setTimeout(() => {
+          publishRetry.current = null;
+          if (!disposed && !published.current) void publish();
+        }, 3000);
+      }
+    };
+    void publish();
+    return () => {
+      disposed = true;
+      if (publishRetry.current !== null) {
+        window.clearTimeout(publishRetry.current);
+        publishRetry.current = null;
+      }
+    };
+  }, [snap.finished, isHost, room.id]);
 
   const home = CLUBS[room.host_club]!;
   const away = CLUBS[room.guest_club!]!;

@@ -8,7 +8,7 @@
 //  e faz um travelling contínuo dentro da fala.
 // ============================================================================
 
-import { Environment, Lightformer } from "@react-three/drei";
+import { Environment, Lightformer, RoundedBox } from "@react-three/drei";
 import { PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
@@ -29,8 +29,12 @@ import type { LineLight, ShotSize } from "@/game/cutscene-director";
 import type { Cast } from "@/game/cast";
 import type { ManagerLook } from "@/game/types";
 import type { CinematicManner } from "@/game/cinematic-actor";
+import type { CinematicVoiceClockRef } from "@/game/cutscene-visemes";
 import { cinematicIdleAt } from "@/game/cinematic-actor";
 import { cinematicShotFor } from "@/game/cinematic-shot";
+import { cinematicDrillFor } from "@/game/cinematic-action";
+import { cinematicReactionSpeaker } from "@/game/cinematic-blocking";
+import { CinematicCrowd } from "./cinematic/CinematicCrowd";
 import type { CinematicCue } from "@/game/cinematic-cue";
 import { CinematicAtmosphere } from "./cinematic/CinematicAtmosphere";
 import { CinematicTraining } from "./cinematic/CinematicTraining";
@@ -255,6 +259,9 @@ function LockerRoom({
         <meshStandardMaterial
           color="#68727a"
           map={cinematicSurface("tile")}
+          normalMap={cinematicSurface("tile", "normal")}
+          normalScale={[0.22, 0.22]}
+          roughnessMap={cinematicSurface("tile", "roughness")}
           roughness={0.68}
           metalness={0.03}
         />
@@ -262,7 +269,14 @@ function LockerRoom({
       {/* paredes */}
       <mesh receiveShadow position={[0, 2.4, -4.4]}>
         <boxGeometry args={[18, 4.8, 0.2]} />
-        <meshStandardMaterial color="#343e48" map={cinematicSurface("wall")} roughness={0.9} />
+        <meshStandardMaterial
+          color="#343e48"
+          map={cinematicSurface("wall")}
+          normalMap={cinematicSurface("wall", "normal")}
+          normalScale={[0.08, 0.08]}
+          roughnessMap={cinematicSurface("wall", "roughness")}
+          roughness={0.9}
+        />
       </mesh>
       <mesh receiveShadow position={[-7, 2.4, 0]}>
         <boxGeometry args={[0.2, 4.8, 14]} />
@@ -293,7 +307,14 @@ function LockerRoom({
       {/* banco central e quadro tático */}
       <mesh position={[0, 0.44, 0.6]} castShadow receiveShadow>
         <boxGeometry args={[6.4, 0.16, 0.72]} />
-        <meshStandardMaterial color="#987c57" map={cinematicSurface("wood")} roughness={0.72} />
+        <meshStandardMaterial
+          color="#987c57"
+          map={cinematicSurface("wood")}
+          normalMap={cinematicSurface("wood", "normal")}
+          normalScale={[0.2, 0.2]}
+          roughnessMap={cinematicSurface("wood", "roughness")}
+          roughness={0.72}
+        />
       </mesh>
       <TacticsBoard />
       {/* lâmpadas práticas */}
@@ -327,6 +348,7 @@ function LockerRoom({
         role="manager"
         attention={[-0.4, 0.6]}
         acting={actsFor(speaker, ["manager", "assistant"])}
+        clipboard
       />
     </group>
   );
@@ -352,7 +374,14 @@ function Tunnel({
     <group>
       <mesh receiveShadow rotation-x={-Math.PI / 2}>
         <planeGeometry args={[7, 30]} />
-        <meshStandardMaterial color="#161a19" roughness={0.3} metalness={0.2} />
+        <meshStandardMaterial
+          color="#50565a"
+          map={cinematicSurface("asphalt")}
+          normalMap={cinematicSurface("asphalt", "normal")}
+          normalScale={[0.12, 0.12]}
+          roughnessMap={cinematicSurface("asphalt", "roughness")}
+          roughness={0.82}
+        />
       </mesh>
       {/* arcos do túnel */}
       {Array.from({ length: 10 }).map((_, i) => (
@@ -432,7 +461,14 @@ function PressRoom({
     <group>
       <mesh receiveShadow rotation-x={-Math.PI / 2}>
         <planeGeometry args={[18, 12]} />
-        <meshStandardMaterial color="#65727d" map={cinematicSurface("tile")} roughness={0.65} />
+        <meshStandardMaterial
+          color="#65727d"
+          map={cinematicSurface("tile")}
+          normalMap={cinematicSurface("tile", "normal")}
+          normalScale={[0.22, 0.22]}
+          roughnessMap={cinematicSurface("tile", "roughness")}
+          roughness={0.65}
+        />
       </mesh>
       {/* painel de patrocinadores */}
       <mesh position={[0, 2.4, -4]} receiveShadow>
@@ -482,6 +518,8 @@ function PressRoom({
           role={i === 0 ? "press" : undefined}
           attention={[0, -1.95]}
           acting={i === 0 && speaker === "press"}
+          costume="staff"
+          clipboard={i === 0}
         />
       ))}
       <PressFlashes />
@@ -494,57 +532,6 @@ function PressRoom({
         ))}
       </group>
     </group>
-  );
-}
-
-function Crowd({
-  rows = 8,
-  cols = 40,
-  y = 3,
-  z = -14,
-  tint,
-}: {
-  rows?: number;
-  cols?: number;
-  y?: number;
-  z?: number;
-  tint: string;
-}) {
-  const mesh = useRef<THREE.InstancedMesh>(null);
-  const matrix = useMemo(() => new THREE.Matrix4(), []);
-  const count = rows * cols;
-  const colors = useMemo(() => {
-    const base = new THREE.Color(tint);
-    const arr = new Float32Array(count * 3);
-    for (let i = 0; i < count; i += 1) {
-      const c = base.clone().offsetHSL(0, 0, (hash(i) - 0.5) * 0.36);
-      arr[i * 3] = c.r;
-      arr[i * 3 + 1] = c.g;
-      arr[i * 3 + 2] = c.b;
-    }
-    return arr;
-  }, [count, tint]);
-
-  useCinematicFrame((time) => {
-    if (!mesh.current) return;
-    const t = time;
-    for (let i = 0; i < count; i += 1) {
-      const row = Math.floor(i / cols);
-      const col = i % cols;
-      const x = -cols * 0.35 + col * 0.7 + (hash(i) - 0.5) * 0.18;
-      const sway = Math.sin(t * 2 + col * 0.35 + row) * 0.05;
-      matrix.makeTranslation(x, y + row * 0.62 + sway, z - row * 0.7);
-      mesh.current.setMatrixAt(i, matrix);
-    }
-    mesh.current.instanceMatrix.needsUpdate = true;
-  });
-
-  return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, count]} frustumCulled={false}>
-      <capsuleGeometry args={[0.14, 0.34, 3, 6]} />
-      <meshStandardMaterial vertexColors roughness={0.86} />
-      <instancedBufferAttribute attach="instanceColor" args={[colors, 3]} />
-    </instancedMesh>
   );
 }
 
@@ -574,6 +561,9 @@ function PitchEntry({
           <meshStandardMaterial
             color={i % 2 ? "#337b43" : "#2c6e3b"}
             map={cinematicSurface("grass")}
+            normalMap={cinematicSurface("grass", "normal")}
+            normalScale={[0.14, 0.14]}
+            roughnessMap={cinematicSurface("grass", "roughness")}
             roughness={0.94}
           />
         </mesh>
@@ -609,7 +599,15 @@ function PitchEntry({
         <boxGeometry args={[33, 1.1, 0.08]} />
         <meshStandardMaterial color={secondary} roughness={0.85} />
       </mesh>
-      <Crowd tint={primary} y={2.6} z={-22} rows={7} cols={44} />
+      <CinematicCrowd
+        secondary={secondary}
+        festive={festive}
+        tint={primary}
+        y={2.6}
+        z={-22}
+        rows={7}
+        cols={44}
+      />
       {/* refletores */}
       {[-14, 14].map((x) => (
         <group key={x} position={[x, 0, -18]}>
@@ -657,8 +655,39 @@ function Stands({ primary, secondary }: { primary: string; secondary: string }) 
         <planeGeometry args={[48, 30]} />
         <meshStandardMaterial color="#14512c" roughness={0.95} />
       </mesh>
-      <Crowd tint={primary} y={2.2} z={-12} rows={10} cols={52} />
-      <Crowd tint={secondary} y={2.2} z={12} rows={5} cols={52} />
+      {[
+        { z: -12, rows: 10 },
+        { z: 12, rows: 5 },
+      ].map((section) =>
+        Array.from({ length: section.rows }, (_, row) => (
+          <mesh
+            key={section.z + "-" + row}
+            position={[0, (1.84 + row * 0.62) / 2, section.z - row * 0.7]}
+            receiveShadow
+          >
+            <boxGeometry args={[37, 1.84 + row * 0.62, 0.75]} />
+            <meshStandardMaterial color={row % 2 ? "#465e70" : "#536b7d"} roughness={0.92} />
+          </mesh>
+        )),
+      )}
+      <CinematicCrowd
+        secondary={primary}
+        festive
+        tint={primary}
+        y={2.2}
+        z={-12}
+        rows={10}
+        cols={52}
+      />
+      <CinematicCrowd
+        secondary={primary}
+        festive
+        tint={secondary}
+        y={2.2}
+        z={12}
+        rows={5}
+        cols={52}
+      />
       {/* bandeirões */}
       {[-9, -3, 3, 9].map((x, i) => (
         <mesh key={x} position={[x, 3.4 + (i % 2) * 0.5, -9]} rotation-z={(hash(i) - 0.5) * 0.12}>
@@ -693,11 +722,25 @@ function Office({
     <group>
       <mesh receiveShadow rotation-x={-Math.PI / 2}>
         <planeGeometry args={[16, 12]} />
-        <meshStandardMaterial color="#866c50" map={cinematicSurface("wood")} roughness={0.66} />
+        <meshStandardMaterial
+          color="#866c50"
+          map={cinematicSurface("wood")}
+          normalMap={cinematicSurface("wood", "normal")}
+          normalScale={[0.2, 0.2]}
+          roughnessMap={cinematicSurface("wood", "roughness")}
+          roughness={0.66}
+        />
       </mesh>
       <mesh receiveShadow position={[0, 2.4, -4]}>
         <boxGeometry args={[16, 4.8, 0.2]} />
-        <meshStandardMaterial color="#384653" map={cinematicSurface("wall")} roughness={0.9} />
+        <meshStandardMaterial
+          color="#384653"
+          map={cinematicSurface("wall")}
+          normalMap={cinematicSurface("wall", "normal")}
+          normalScale={[0.08, 0.08]}
+          roughnessMap={cinematicSurface("wall", "roughness")}
+          roughness={0.9}
+        />
       </mesh>
       {/* janela com estádio ao fundo */}
       <mesh position={[4.4, 2.2, -3.86]}>
@@ -707,7 +750,14 @@ function Office({
       {/* mesa e cadeiras */}
       <mesh position={[0, 0.74, -1.4]} castShadow receiveShadow>
         <boxGeometry args={[3.8, 0.12, 1.5]} />
-        <meshStandardMaterial color="#a7875d" map={cinematicSurface("wood")} roughness={0.5} />
+        <meshStandardMaterial
+          color="#a7875d"
+          map={cinematicSurface("wood")}
+          normalMap={cinematicSurface("wood", "normal")}
+          normalScale={[0.18, 0.18]}
+          roughnessMap={cinematicSurface("wood", "roughness")}
+          roughness={0.5}
+        />
       </mesh>
       {[-1.5, 1.5].map((x) => (
         <mesh key={x} position={[x, 0.36, -1.4]} castShadow>
@@ -761,30 +811,59 @@ function BusArrival({
 }) {
   const beacon = useRef<THREE.PointLight>(null);
   useCinematicFrame((time) => {
-    // giroflex do batedor: pulso azul alternado
-    if (beacon.current) beacon.current.intensity = Math.sin(time * 6) > 0 ? 14 : 2;
+    // Sinalizador prático junto à grade: permanece localizado e não lava a câmera.
+    if (beacon.current) beacon.current.intensity = Math.sin(time * 6) > 0 ? 2.8 : 0.35;
   });
   return (
     <group>
       <mesh receiveShadow rotation-x={-Math.PI / 2}>
         <planeGeometry args={[26, 20]} />
-        <meshStandardMaterial color="#14171b" roughness={0.55} metalness={0.15} />
+        <meshStandardMaterial
+          color="#14171b"
+          map={cinematicSurface("asphalt")}
+          normalMap={cinematicSurface("asphalt", "normal")}
+          normalScale={[0.18, 0.18]}
+          roughnessMap={cinematicSurface("asphalt", "roughness")}
+          roughness={0.82}
+          metalness={0.02}
+        />
       </mesh>
       {/* ônibus */}
       <group position={[0, 0, -3]}>
-        <mesh position={[0, 1.55, 0]} castShadow>
-          <boxGeometry args={[2.9, 2.5, 9.5]} />
+        <RoundedBox
+          position={[0, 1.55, 0]}
+          args={[2.9, 2.5, 9.5]}
+          radius={0.12}
+          smoothness={3}
+          castShadow
+        >
           <meshStandardMaterial color={primary} roughness={0.32} metalness={0.45} />
-        </mesh>
-        <mesh position={[0, 2.35, 0]}>
-          <boxGeometry args={[2.94, 0.7, 9.0]} />
+        </RoundedBox>
+        <RoundedBox
+          position={[0, 2.55, -0.12]}
+          args={[2.82, 0.42, 8.9]}
+          radius={0.09}
+          smoothness={3}
+        >
           <meshStandardMaterial color={secondary} roughness={0.4} metalness={0.3} />
-        </mesh>
-        {/* Tinted windshield reflects the court lighting instead of glowing. */}
-        <mesh position={[0, 1.9, 4.78]}>
-          <planeGeometry args={[2.4, 1.1]} />
-          <meshStandardMaterial color="#273c4b" roughness={0.22} metalness={0.6} />
-        </mesh>
+        </RoundedBox>
+        {/* Para-brisa escuro e moldura dão profundidade ao volume frontal. */}
+        <RoundedBox
+          position={[0, 1.98, 4.79]}
+          args={[2.52, 1.2, 0.08]}
+          radius={0.09}
+          smoothness={3}
+        >
+          <meshStandardMaterial color="#182833" roughness={0.34} metalness={0.58} />
+        </RoundedBox>
+        <RoundedBox
+          position={[0, 2, 4.842]}
+          args={[2.35, 1.03, 0.035]}
+          radius={0.07}
+          smoothness={3}
+        >
+          <meshPhysicalMaterial color="#0d1b25" roughness={0.2} metalness={0.5} clearcoat={0.65} />
+        </RoundedBox>
         <mesh position={[0, 1.9, 4.8]}>
           <boxGeometry args={[0.045, 1.1, 0.025]} />
           <meshStandardMaterial color="#151d24" roughness={0.5} />
@@ -805,39 +884,44 @@ function BusArrival({
             </mesh>
             {Array.from({ length: 7 }, (_, i) => (
               <mesh key={i} position={[side * 1.48, 2.3, -3.6 + i * 1.13]}>
-                <boxGeometry args={[0.025, 0.62, 0.97]} />
-                <meshStandardMaterial color="#293b49" roughness={0.22} metalness={0.6} />
+                <boxGeometry args={[0.035, 0.64, 0.99]} />
+                <meshPhysicalMaterial
+                  color="#142631"
+                  roughness={0.24}
+                  metalness={0.52}
+                  clearcoat={0.5}
+                />
               </mesh>
             ))}
+            <mesh position={[side * 1.475, 1.02, -0.1]}>
+              <boxGeometry args={[0.035, 0.12, 8.45]} />
+              <meshStandardMaterial color={secondary} roughness={0.42} metalness={0.36} />
+            </mesh>
           </group>
         ))}
-        {/* faróis + fachos */}
+        {/* Lentes práticas: iluminam a frente sem cones transparentes na imagem. */}
         {[-0.9, 0.9].map((x) => (
           <group key={x}>
-            <mesh position={[x, 0.65, 4.78]}>
-              <sphereGeometry args={[0.13, 10, 10]} />
+            <mesh position={[x, 0.68, 4.83]}>
+              <sphereGeometry args={[0.115, 14, 12]} />
               <meshBasicMaterial color="#fff6d8" toneMapped={false} />
             </mesh>
-            <mesh position={[x, 0.5, 7.2]} rotation-x={-Math.PI / 2 - 0.06}>
-              <coneGeometry args={[0.9, 5, 12, 1, true]} />
-              <meshBasicMaterial
-                color="#ffedb5"
-                transparent
-                opacity={0.1}
-                depthWrite={false}
-                blending={THREE.AdditiveBlending}
-                side={THREE.DoubleSide}
-              />
-            </mesh>
+            <pointLight position={[x, 0.72, 5.05]} intensity={1.8} distance={7} color="#ffe8b5" />
           </group>
         ))}
         {[3.1, -3.1].map((z) => (
           <group key={z}>
             {[-1.35, 1.35].map((x) => (
-              <mesh key={x} position={[x, 0.5, z]} rotation-z={Math.PI / 2}>
-                <cylinderGeometry args={[0.5, 0.5, 0.35, 14]} />
-                <meshStandardMaterial color="#0c0e10" roughness={0.9} />
-              </mesh>
+              <group key={x} position={[x, 0.5, z]} rotation-z={Math.PI / 2}>
+                <mesh castShadow>
+                  <cylinderGeometry args={[0.5, 0.5, 0.35, 18]} />
+                  <meshStandardMaterial color="#101316" roughness={0.82} />
+                </mesh>
+                <mesh position={[0, 0.19, 0]}>
+                  <cylinderGeometry args={[0.24, 0.24, 0.025, 16]} />
+                  <meshStandardMaterial color="#89949a" metalness={0.78} roughness={0.3} />
+                </mesh>
+              </group>
             ))}
           </group>
         ))}
@@ -870,8 +954,8 @@ function BusArrival({
         attention={[-6.1, -3.4]}
         acting={actsFor(speaker, ["captain", "manager"])}
       />
-      <pointLight ref={beacon} position={[-7.5, 2.2, 5]} color="#3a7bff" distance={18} />
-      <pointLight position={[0, 2.4, 6]} intensity={10} distance={20} color="#ffd9a0" />
+      <pointLight ref={beacon} position={[-5.05, 1.45, 4]} color="#3a7bff" distance={6} />
+      <pointLight position={[0, 2.1, 5.4]} intensity={3.6} distance={13} color="#ffd9a0" />
     </group>
   );
 }
@@ -881,6 +965,7 @@ function BusArrival({
 /** Editing cuts establish geography before a face; cameras never fly through actors. */
 function Director({
   kind,
+  art,
   beat,
   intensity = 0,
   size = "medio",
@@ -891,6 +976,7 @@ function Director({
   festive = false,
 }: {
   kind: SetKind;
+  art?: SceneArt;
   beat: number;
   intensity?: number;
   size?: ShotSize;
@@ -908,14 +994,34 @@ function Director({
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
     const { time, lineTime } = runtime.clock;
     const opening = beat === 0 && lineTime < 1.45 && !runtime.reduced;
-    const shot = cinematicShotFor(kind, speaker, size, camera.aspect, festive, opening);
+    const reaction = Boolean(
+      runtime.cue &&
+      !runtime.cue.decision &&
+      !opening &&
+      !festive &&
+      lineTime > runtime.cue.duration + 0.7,
+    );
+    const listener = cinematicReactionSpeaker(kind, speaker, art);
+    const subject = reaction && listener ? listener : speaker;
+    const shot = cinematicShotFor(
+      kind,
+      subject,
+      reaction ? "medio" : size,
+      camera.aspect,
+      festive,
+      opening,
+      art,
+      beat,
+      time,
+      cinematicDrillFor(runtime.cue?.id.split(":")[0]),
+    );
     position.fromArray(shot.position);
     target.fromArray(shot.target);
-    const framing = `${beat}-${shot.framing}-${speaker}-${size}`;
+    const framing = `${beat}-${shot.framing}-${subject}-${size}`;
     const cut = lastFraming.current !== framing;
     lastFraming.current = framing;
     const focus = size !== "geral" && shot.framing === "dialogue";
-    if (focus && kind === "locker" && speaker === "captain") {
+    if (focus && kind === "locker" && art !== "gym" && art !== "medical" && subject === "captain") {
       const idle = cinematicIdleAt(time, 5, true);
       const rise = idle.kind === "rise" ? idle.weight * 0.45 : 0;
       position.y += rise;
@@ -943,11 +1049,20 @@ function Director({
     }
     camera.lookAt(runtime.focus);
     const fov = shot.fov - (climax && focus ? 1 : 0);
-    if (Math.abs(camera.fov - fov) > 0.01) {
-      camera.fov = fov;
+    const nextFov = cut || runtime.stopped || runtime.reduced
+      ? fov : THREE.MathUtils.damp(camera.fov, fov, 8, runtime.clock.dt);
+    if (Math.abs(camera.fov - nextFov) > 0.01) {
+      camera.fov = nextFov;
       camera.updateProjectionMatrix();
     }
     camera.userData["cinematicFraming"] = shot.framing;
+    camera.userData["cinematicSubject"] = subject ?? "environment";
+    camera.userData["cinematicShotType"] =
+      opening || shot.framing === "establishing"
+        ? "master"
+        : reaction && listener
+          ? "reaction"
+          : "dialogue";
   });
   return null;
 }
@@ -1002,7 +1117,7 @@ function Stage({
   const tint = LINE_TINT[light];
   const warm = light === "neutra" ? base : tint.sky;
   const indoor = kind === "locker" || kind === "press" || kind === "office" || kind === "tunnel";
-  const amb = (indoor ? 0.46 : 0.55) * tint.amb;
+  const amb = (indoor ? 0.34 : 0.5) * tint.amb;
   return (
     <>
       <color
@@ -1018,10 +1133,10 @@ function Stage({
         ]}
       />
       <ambientLight intensity={amb} color={warm} />
-      <hemisphereLight intensity={indoor ? 0.65 : 0.45} color="#dce8f4" groundColor="#30333a" />
+      <hemisphereLight intensity={indoor ? 0.4 : 0.45} color="#dce8f4" groundColor="#30333a" />
       {indoor ? (
         <>
-          <directionalLight position={[0, 2.5, 6]} intensity={0.75} color="#e8f0f7" />
+          <directionalLight position={[0, 2.5, 6]} intensity={0.38} color="#e8f0f7" />
           <directionalLight
             position={[-4, 3, -4]}
             intensity={kind === "press" ? 0.9 : 0.45}
@@ -1032,7 +1147,7 @@ function Stage({
       <directionalLight
         castShadow
         position={[5, 11, 6]}
-        intensity={indoor ? 1.9 : 2.6}
+        intensity={indoor ? 1.55 : 2.6}
         color={light === "neutra" ? "#fff8f2" : warm}
         shadow-mapSize={quality === "alta" ? [2048, 2048] : [1024, 1024]}
         shadow-bias={-0.0004}
@@ -1060,9 +1175,10 @@ function Stage({
       )}
       <Director
         kind={kind}
+        art={art}
         beat={beat}
         intensity={intensity}
-        size={art === "gym" && beat === 0 ? "geral" : size}
+        size={size}
         dollyFrom={dollyFrom}
         dollyTo={dollyTo}
         climax={climax}
@@ -1071,7 +1187,7 @@ function Stage({
       />
       <CinematicAtmosphere kind={kind} art={art} mood={mood} quality={quality} />
       <CinematicPortraitLight />
-      <CinematicSetBatch key={`${kind}-${primary}-${secondary}`} onReady={onBatch}>
+      <CinematicSetBatch key={`${art}-${kind}-${primary}-${secondary}`} onReady={onBatch}>
         {art !== "medical" && art !== "gym" && <CinematicSetFinish kind={kind} primary={primary} />}
         {art === "medical" || art === "gym" ? (
           <CinematicSpecialSet medical={art === "medical"} primary={primary} speaker={speaker} />
@@ -1125,9 +1241,11 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   onUnavailable,
   qualityMode = "auto",
   manner,
+  onVisible,
   onReady,
   previewTime,
   cue,
+  voiceClockRef,
 }: {
   art: SceneArt;
   primary: string;
@@ -1151,9 +1269,11 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   onUnavailable?: (() => void) | undefined;
   qualityMode?: QualityLevel | "auto";
   manner?: CinematicManner | undefined;
+  onVisible?: (() => void) | undefined;
   onReady?: (() => void) | undefined;
   previewTime?: number | undefined;
   cue?: CinematicCue | undefined;
+  voiceClockRef?: CinematicVoiceClockRef | undefined;
 }) {
   const kind = SET_BY_ART[art] ?? "locker";
   const initialQuality = useMemo(() => detectQuality(), []);
@@ -1215,7 +1335,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
       >
         <Canvas
           frameloop={paused || reduced || hidden ? "demand" : "always"}
-          shadows={quality !== "baixa"}
+          shadows={quality === "baixa" ? false : { type: THREE.PCFShadowMap }}
           dpr={quality === "alta" ? [0.9, 1.4] : quality === "media" ? [0.75, 1.1] : 0.7}
           camera={{ position: [0, 2.2, 6.5], fov: 42, near: 0.05, far: 90 }}
           gl={{
@@ -1277,11 +1397,13 @@ export const CinematicStage3D = memo(function CinematicStage3D({
             manner={manner}
             previewTime={previewTime}
             cue={cue}
+            voiceClockRef={voiceClockRef}
           >
             <CinematicFrameProbe
               host={host}
               openedAt={openedAt.current}
               stopped={paused || reduced || hidden}
+              onVisible={onVisible}
               onReady={stageReady}
             />
             <Stage

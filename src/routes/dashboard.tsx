@@ -1,3 +1,4 @@
+import { gamePageHead } from "@/lib/game-page-metadata";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
@@ -41,28 +42,7 @@ import { ClubHeritagePanel, ClubHonoursPanel } from "@/components/game/ClubHerit
 
 export const Route = createFileRoute("/dashboard")({
   ssr: false,
-  head: () => ({
-    meta: [
-      { name: "robots", content: "noindex, follow" },
-      { title: "Painel do treinador · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      {
-        name: "description",
-        content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
-      },
-      {
-        property: "og:title",
-        content: "Painel do treinador · Pro Football Manager 3D: Jogo de Futebol Manager Online",
-      },
-      {
-        property: "og:description",
-        content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () => gamePageHead("/dashboard"),
   component: Dashboard,
 });
 
@@ -73,10 +53,10 @@ function Dashboard() {
       <NoCareer hint="Escolha um clube, monte o elenco e comande a temporada inteira em 3D." />
     );
 
-  return <DashboardContent key={`${career.clubId}:${career.season}`} career={career} />;
+  return <TrainerDashboard key={`${career.clubId}:${career.season}`} career={career} />;
 }
 
-function DashboardContent({ career }: { career: CareerState }) {
+function TrainerDashboard({ career }: { career: CareerState }) {
   const club = CLUBS[career.clubId]!;
   const fixture = nextFixture(career);
   const atHome = fixture ? fixture.home === career.clubId : false;

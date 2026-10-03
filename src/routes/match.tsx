@@ -1,6 +1,8 @@
+import { gamePageHead } from "@/lib/game-page-metadata";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { NoCareer } from "@/components/game/screen-kit";
 import { toast } from "sonner";
+import { canonical, noindexMeta, seoMeta } from "@/lib/seo";
 import {
   BarChart3,
   ChevronDown,
@@ -64,7 +66,7 @@ import { safeClub } from "@/game/squad";
 import { matchdaySupporters, worldFor } from "@/game/career-world";
 import { buildTeamSetup } from "@/game/quickMatch";
 import { useCareer } from "@/hooks/useCareer";
-import { useT } from "@/i18n";
+import { useT } from "@/i18n/provider";
 import type { CareerState, ManagerLook } from "@/game/types";
 
 /** Aparência padrão do treinador nas cenas, quando a carreira não tem uma. */
@@ -108,28 +110,7 @@ function storePrematchIntro(on: boolean) {
 
 export const Route = createFileRoute("/match")({
   ssr: false,
-  head: () => ({
-    meta: [
-      { name: "robots", content: "noindex, follow" },
-      { title: "Partida ao vivo em 3D · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      {
-        name: "description",
-        content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
-      },
-      {
-        property: "og:title",
-        content: "Partida ao vivo em 3D · Pro Football Manager 3D: Jogo de Futebol Manager Online",
-      },
-      {
-        property: "og:description",
-        content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () => gamePageHead("/match"),
   component: MatchPage,
 });
 
@@ -698,7 +679,7 @@ function LiveMatch({
         ...(player ? { player } : {}),
       });
     }
-  }, [snap, sim]);
+  }, [snap, sim, narratorRef]);
 
   const recorderRef = useRef<ReplayRecorder | null>(null);
   const savedRef = useRef(false);
@@ -873,7 +854,7 @@ function LiveMatch({
         mode={camera}
         quality={quality}
         supporters={supporters}
-        paused={paused || introActive || ceremonyActive || halfHeld}
+        paused={paused || introActive || ceremonyActive || halfHeld || done}
       />
       <div className="match-fps pointer-events-none absolute right-3 top-3 z-20">
         <FpsPanel quality={quality} detail={{ Câmera: camera, Velocidade: speed }} />

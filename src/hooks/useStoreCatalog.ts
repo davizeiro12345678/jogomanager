@@ -12,16 +12,7 @@ import type { Database } from "@/integrations/supabase/types";
  */
 export type StoreCatalogProduct = Pick<
   Database["public"]["Tables"]["store_products"]["Row"],
-  | "key"
-  | "name"
-  | "description"
-  | "price_cents"
-  | "currency"
-  | "coins"
-  | "kind"
-  | "sale_percent_off"
-  | "sale_starts_at"
-  | "sale_ends_at"
+  "key" | "name" | "description" | "price_cents" | "currency" | "coins" | "kind" | "sale_percent_off" | "sale_starts_at" | "sale_ends_at"
 >;
 
 export function useStoreCatalog() {
@@ -30,9 +21,7 @@ export function useStoreCatalog() {
     queryFn: async (): Promise<StoreCatalogProduct[]> => {
       const { data, error } = await supabase
         .from("store_products")
-        .select(
-          "key, name, description, price_cents, currency, coins, kind, sale_percent_off, sale_starts_at, sale_ends_at",
-        )
+        .select("key, name, description, price_cents, currency, coins, kind, sale_percent_off, sale_starts_at, sale_ends_at")
         .eq("active", true)
         .order("price_cents", { ascending: true });
 
@@ -45,10 +34,7 @@ export function useStoreCatalog() {
 }
 
 /** Preço com a promoção vigente (mesma regra do servidor, só para exibição). */
-export function salePrice(
-  p: StoreCatalogProduct,
-  now = Date.now(),
-): { cents: number; percent: number } {
+export function salePrice(p: StoreCatalogProduct, now = Date.now()): { cents: number; percent: number } {
   const pct = p.sale_percent_off ?? 0;
   const live =
     pct > 0 &&

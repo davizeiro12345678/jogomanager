@@ -7,10 +7,10 @@ export function grassBladeGeometry(): THREE.BufferGeometry {
     uvs: number[] = [],
     indices: number[] = [];
   const rows = [
-    [0, 0.013, 0],
-    [0.028, 0.01, 0.002],
-    [0.06, 0.005, 0.009],
-    [0.085, 0.0004, 0.019],
+    [0, 0.0035, 0],
+    [0.012, 0.0028, 0.001],
+    [0.026, 0.0014, 0.003],
+    [0.035, 0.00015, 0.006],
   ];
   rows.forEach(([height, width, bend], row) => {
     positions.push(-width!, height!, bend!, width!, height!, bend!);

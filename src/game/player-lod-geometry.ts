@@ -9,28 +9,31 @@ import {
 import { sculptedHead } from "./player-sculpt";
 import { lowShortsGeometry } from "./player-lod-shorts";
 import { LOW_HAIR_FAMILIES, lowHairGeometry } from "./player-lod-hair";
+import { articulateLowTorso } from "./player-lod-torso";
 
 /** Distant bodies use the same anatomical landmarks with one sample per span.
  * At match-camera scale extra intermediate rings add vertices without detail. */
 export function createLowPlayerGeometries(): Record<string, THREE.BufferGeometry> {
   const geometries: Record<string, THREE.BufferGeometry> = {
-    torso: athleticTorsoSurface(
-      anatomicalSection(
-        [
-          { y: -0.5, width: 0.38, depth: 0.42 },
-          { y: -0.15, width: 0.44, depth: 0.47 },
-          { y: 0.22, width: 0.5, depth: 0.5 },
-          { y: 0.38, width: 0.46, depth: 0.45 },
-          { y: 0.5, width: 0.22, depth: 0.25 },
-        ],
-        10,
+    torso: articulateLowTorso(
+      athleticTorsoSurface(
+        anatomicalSection(
+          [
+            { y: -0.5, width: 0.38, depth: 0.42 },
+            { y: -0.15, width: 0.44, depth: 0.47 },
+            { y: 0.22, width: 0.5, depth: 0.5 },
+            { y: 0.38, width: 0.46, depth: 0.45 },
+            { y: 0.5, width: 0.22, depth: 0.25 },
+          ],
+          10,
+          1,
+          true,
+          1,
+        ).translate(0, 0.5, 0),
+        0.5,
         1,
-        true,
-        1,
-      ).translate(0, 0.5, 0),
-      0.5,
-      1,
-    ).translate(0, -0.5, 0),
+      ).translate(0, -0.5, 0),
+    ),
     hips: lowShortsGeometry(),
     head: sculptedHead({ headR: 0.5, headW: 0.5, headD: 0.5 }, 0, false, false, {
       columns: 12,

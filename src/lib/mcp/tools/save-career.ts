@@ -1,6 +1,5 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { supabaseForUser } from "../supabase";
 
 export default defineTool({
   name: "save_career",
@@ -19,11 +18,20 @@ export default defineTool({
         content: [{ type: "text", text: "Not authenticated" }],
         isError: true,
       };
-    const supabase = supabaseForUser(ctx);
+    const userId = ctx.getUserId();
+    if (!userId)
+      return {
+        content: [{ type: "text", text: "Not authenticated" }],
+        isError: true,
+      };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // MCP imports are personal saves only. They cannot write official progress.
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("careers")
-      .upsert({ user_id: ctx.getUserId(), state: state as never }, { onConflict: "user_id" });
+      .upsert(
+        { user_id: userId, state: state as never, verified_progress: false },
+        { onConflict: "user_id" },
+      );
     return error
       ? {
           content: [{ type: "text", text: "Career imports are unavailable through this tool." }],

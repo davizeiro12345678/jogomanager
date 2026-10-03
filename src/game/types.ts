@@ -383,6 +383,8 @@ export interface ManagerProfile {
 export interface MatchLogEntry {
   season: number;
   round: number;
+  /** Clube do treinador neste resultado; opcional apenas em saves antigos. */
+  clubId?: string;
   /** competição da partida */
   comp: string;
   opponentId: string;

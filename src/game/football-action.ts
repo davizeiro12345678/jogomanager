@@ -16,6 +16,36 @@ const segment = (u: number, start: number, end: number, a: number, b: number) =>
 const FOOT_ACTIONS =
   /^(shot|shotPower|shotPlaced|pass|passLong|cross|chip|volley|firstTime|goalKick|freeKick|penalty|corner|trap|intercept|tackle|feint|cut|elastico|stepover)$/;
 
+/** Final contact correction after authored choreography. Only a reachable
+ * nearby ball can pull the striking boot; the planted leg stays untouched. */
+export function refineBallFootContact(
+  pose: Pose,
+  action: PlayerAction | null,
+  progress: number,
+  p: Pick<Proportions, "thigh" | "shin" | "hipW" | "footLen">,
+  foot: DominantFoot,
+  target: { x: number; z: number; height: number },
+) {
+  if (!FOOT_ACTIONS.test(action ?? "") || ![target.x, target.z, target.height].every(Number.isFinite)) return pose;
+  const distance = Math.hypot(target.x, target.z);
+  if (distance > 1.15 || target.z < -0.25 || target.height > 0.9 || target.height < 0) return pose;
+  const phase = Math.exp(-(((progress - footballContactAt(action)) / 0.075) ** 2));
+  const reach = 1 - smooth((distance - 0.65) / 0.5);
+  const weight = phase * reach * 0.72;
+  const left = foot === "left";
+  const lateral = Math.max(-0.22, Math.min(0.22, target.x - (left ? 1 : -1) * p.hipW * 0.36));
+  const forward = Math.max(-0.15, Math.min(0.58, target.z - p.footLen * 0.5));
+  const down = p.thigh + p.shin + pose.hipY - Math.max(0.03, target.height - 0.04);
+  const contact = solveLegTarget(forward, Math.max(0.18, down), p.thigh, p.shin, lateral);
+  const pitch = left ? "legLPitch" : "legRPitch";
+  const knee = left ? "kneeL" : "kneeR";
+  const roll = left ? "legLRoll" : "legRRoll";
+  pose[pitch] += (contact.pitch - pose[pitch]) * weight;
+  pose[knee] += (contact.knee - pose[knee]) * weight;
+  pose[roll] += ((left ? contact.roll : -contact.roll) - pose[roll]) * weight;
+  return pose;
+}
+
 /** Support follows the event phase, including stationary actions. The striking
  * foot keeps its authored ankle while the opposite leg carries the weight. */
 export function footballSupportFor(

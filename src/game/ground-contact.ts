@@ -4,6 +4,7 @@
 // ============================================================================
 
 import type { Pose } from "./animation-core";
+import { SOLE_CONTACT_PROFILE } from "./boot-profile";
 
 const clamp = (v: number, lo: number, hi: number) =>
   Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : 0;
@@ -109,8 +110,8 @@ export function soleHeightFor(input: GroundContactInput, left: boolean, ankleDel
   const ankle = (left ? pose.ankleL : pose.ankleR) + ankleDelta;
   const footH = P.footH ?? 0.07;
   const footLen = P.footLen ?? 0.26;
-  const transform = (soleZ: number) => {
-    let v = rotate({ x: 0, y: -footH * 0.7, z: soleZ }, ankle, 0, 0);
+  const transform = (point: Point) => {
+    let v = rotate(point, ankle, 0, 0);
     v.y -= P.shin;
     v = rotate(v, -knee, 0, 0);
     v.y -= P.thigh;
@@ -123,8 +124,23 @@ export function soleHeightFor(input: GroundContactInput, left: boolean, ankleDel
     // YXZ root yaw has no effect on height: roll then pitch are sufficient.
     return rotate(v, input.leanX, 0, input.leanZ).y;
   };
+  const origin = transform({ x: 0, y: 0, z: 0 });
+  const axisX = transform({ x: 1, y: 0, z: 0 }) - origin;
+  const axisY = transform({ x: 0, y: 1, z: 0 }) - origin;
+  const axisZ = transform({ x: 0, y: 0, z: 1 }) - origin;
+  const lateralScale = axisX * footH;
+  const depthSquared = (axisY * footH * 0.045) ** 2;
+  const centreY = origin - axisY * footH * 0.64;
+  let lowest = Infinity;
+  // Project each real elliptical sole section. This includes its outer edge
+  // during lateral roll and its full toe reach during a planted kick.
+  for (const section of SOLE_CONTACT_PROFILE) {
+    const centre = centreY + axisZ * section.z * footLen;
+    const radius = Math.sqrt((lateralScale * section.width) ** 2 + depthSquared);
+    lowest = Math.min(lowest, centre - radius);
+  }
   const angle = input.leanX + pose.hipPitch + pitch - knee;
-  return { y: Math.min(transform(-footLen * 0.33), transform(footLen * 0.53)), footAngle: angle };
+  return { y: lowest, footAngle: angle };
 }
 
 export function solveGroundContact(input: GroundContactInput): GroundContactResult {

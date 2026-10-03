@@ -97,6 +97,7 @@ export const PitchResponse = memo(function PitchResponse({
   const color = useMemo(() => new THREE.Color(), []);
 
   const texture = useMemo(() => scuffTexture(), []);
+  useEffect(() => () => texture?.dispose(), [texture]);
 
   const capacity =
     quality === "baixa" ? 0 : quality === "media" ? Math.round(MAX_MARKS * 0.5) : MAX_MARKS;

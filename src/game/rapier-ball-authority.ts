@@ -20,7 +20,7 @@ const GOAL_HEIGHT = 2.44;
 // em poste/travessão seja decidido como gol antes da colisão física.
 const GOAL_LINE_INSET = 1.6;
 const MAX_AUTHORITATIVE_STEP = 0.4;
-const TARGET_SUBSTEP = 1 / 30;
+const TARGET_SUBSTEP = 1 / 120;
 
 export interface RapierBallState {
   x: number;
@@ -90,8 +90,8 @@ function changed(a: RapierBallState | null, b: RapierBallState) {
 function makeWorld() {
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   // Uma bola mais os colisores do estádio, com custo constante por passo.
-  world.numSolverIterations = 4;
-  world.maxCcdSubsteps = 2;
+  world.numSolverIterations = 8;
+  world.maxCcdSubsteps = 4;
   return world;
 }
 

@@ -59,8 +59,8 @@ function initializeRapier() {
 function makeWorld() {
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   // Uma bola e poucos colisores: custo estável no Worker, sem 22 corpos.
-  world.numSolverIterations = 4;
-  world.maxCcdSubsteps = 2;
+  world.numSolverIterations = 8;
+  world.maxCcdSubsteps = 4;
   return world;
 }
 
@@ -157,9 +157,11 @@ class RapierVisualBall implements RapierVisualPhysics {
       this.visualSpin *= Math.exp(-0.85 * safeDt);
     }
 
-    // Um world.step por passo espacial do Worker mantém o custo previsível.
-    this.world.timestep = safeDt;
-    this.world.step();
+    // Bound the work to eight 120 Hz substeps, so fast post and turf contact
+    // resolve consistently even when the sequential Worker runs at 30 Hz.
+    const substeps = Math.min(8, Math.max(1, Math.ceil(safeDt * 120)));
+    this.world.timestep = safeDt / substeps;
+    for (let index = 0; index < substeps; index++) this.world.step();
   }
 
   read(fallback: CanonicalBallPhysicsState): VisualBallState {

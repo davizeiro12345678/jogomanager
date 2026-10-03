@@ -428,7 +428,9 @@ export function recordWorldTransition(before: CareerState, after: CareerState): 
           old.season === match.season &&
           old.round === match.round &&
           old.comp === match.comp &&
-          old.opponentId === match.opponentId,
+          old.opponentId === match.opponentId &&
+          old.home === match.home &&
+          old.clubId === match.clubId,
       )
     )
       continue;

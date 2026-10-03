@@ -25,6 +25,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { buildRigBody, type RigBody, type RigBodyContext } from "./rig-body";
 import { handBoneSpecs, FINGER_LENGTHS, type HandJoint } from "./player-hands";
 import { CORRECTIVE_DRIVERS, type CorrectiveJoint, type TwistJoint } from "./rig-correctives";
+import type { PlayerMaterials } from "./player-materials";
 
 /** Junta animada → osso. Os nomes batem com os refs de `PlayerRig`. */
 export type RigJoint =
@@ -69,6 +70,8 @@ export type RigSkinLod = "core" | "near" | "boot";
 
 export interface RigSkinGroup {
   material: THREE.Material;
+  /** Stable semantic slot avoids rebuilding geometry for material-only updates. */
+  materialKey?: keyof PlayerMaterials;
   geometry: THREE.BufferGeometry;
   lod: RigSkinLod;
   castShadow: boolean;
@@ -94,6 +97,20 @@ export interface RigSkin {
   boneOf: Record<RigJoint, THREE.Bone>;
   /** libera geometrias (materiais são compartilhados) */
   dispose(): void;
+}
+
+/** Rebinds cached material variants while preserving skin geometry and skeleton. */
+export function rebindRigSkinMaterials(
+  skin: RigSkin,
+  meshes: readonly THREE.SkinnedMesh[],
+  mats: PlayerMaterials,
+): void {
+  skin.groups.forEach((group, index) => {
+    const material = group.materialKey ? mats[group.materialKey] : group.material;
+    group.material = material;
+    const mesh = meshes[index];
+    if (mesh) mesh.material = material;
+  });
 }
 
 interface JointSpec {
@@ -230,7 +247,7 @@ const MESH_LOD: Record<Exclude<keyof RigBody, "all">, RigSkinLod> = {
 };
 
 /** Margem da esfera de culling: a pose animada sai da pose de bind. */
-const CULL_MARGIN = 0.45;
+const CULL_MARGIN = 0.6;
 
 /**
  * Constrói o corpo em SkinnedMesh.
@@ -309,12 +326,17 @@ export function buildRigSkin(
     string,
     {
       material: THREE.Material;
+      materialKey?: keyof PlayerMaterials;
       lod: RigSkinLod;
       geometries: THREE.BufferGeometry[];
       bone: number;
       castShadow: boolean;
     }
   >();
+  const materialKeys = new Map<THREE.Material, keyof PlayerMaterials>();
+  for (const key of Object.keys(ctx.mats) as (keyof PlayerMaterials)[]) {
+    materialKeys.set(ctx.mats[key], key);
+  }
   for (const [key, owner] of Object.entries(MESH_OWNER) as [
     Exclude<keyof RigBody, "all">,
     RigJoint,
@@ -369,19 +391,21 @@ export function buildRigSkin(
       }
       addSkinning(geometry, owner, bones, ctx, key);
       geometry.applyMatrix4(rest);
-      const bucketKey = `${mesh.material.uuid}|${lod}`;
-      let bucket = buckets.get(bucketKey);
-      if (!bucket) {
-        bucket = {
+      const materialKey = materialKeys.get(mesh.material);
+      const bucketKey = (materialKey ?? mesh.material.uuid) + "|" + lod;
+      const bucket = buckets.get(bucketKey);
+      if (bucket) {
+        bucket.geometries.push(geometry);
+      } else {
+        buckets.set(bucketKey, {
           material: mesh.material,
+          ...(materialKey !== undefined ? { materialKey } : {}),
           lod,
-          geometries: [],
+          geometries: [geometry],
           bone: boneIndex,
           castShadow: mesh.castShadow,
-        };
-        buckets.set(bucketKey, bucket);
+        });
       }
-      bucket.geometries.push(geometry);
     }
   }
 
@@ -397,10 +421,28 @@ export function buildRigSkin(
     if (!merged) continue;
     merged.computeBoundingSphere();
     merged.computeBoundingBox();
-    // esfera de culling generosa: a pose animada não sai da pose de bind
-    if (merged.boundingSphere) merged.boundingSphere.radius += CULL_MARGIN;
+    // Small detail buckets can travel much farther than their own rest
+    // radius (a glove moves from the hip to above the head). Bound the whole
+    // reachable athlete around the pelvis, retaining ordinary frustum tests.
+    if (merged.boundingSphere) {
+      const p = ctx.P;
+      const armReach =
+        p.hipH * 0.5 +
+        p.spineLen +
+        p.chestLen +
+        p.shoulderW * 0.52 +
+        p.upperArm +
+        p.foreArm +
+        ctx.handR * 2.3;
+      const legReach = p.hipH * 0.4 + p.thigh + p.shin + p.footLen + p.footH;
+      const headReach =
+        p.hipH * 0.5 + p.spineLen + p.chestLen + p.neckLen + p.headH + p.headR * 0.4;
+      merged.boundingSphere.center.set(0, p.hipY, 0);
+      merged.boundingSphere.radius = CULL_MARGIN + Math.max(armReach, legReach, headReach);
+    }
     groups.push({
       material: bucket.material,
+      ...(bucket.materialKey !== undefined ? { materialKey: bucket.materialKey } : {}),
       geometry: merged,
       lod: bucket.lod,
       castShadow: bucket.castShadow,
@@ -459,6 +501,7 @@ function addSkinning(
     number
   >;
   const positions = geometry.getAttribute("position");
+  const openingLeg = geometry.getAttribute("openingLeg");
   const count = geometry.getAttribute("position").count;
   const skinIndex = new Uint16Array(count * 4);
   const skinWeight = new Float32Array(count * 4);
@@ -547,7 +590,12 @@ function addSkinning(
       // The top stays at the waist; each opening follows its femur. The
       // centre panel divides the load gradually instead of tearing apart.
       const legWeight = 1 - THREE.MathUtils.smoothstep(y, -p.hipH * 0.85, p.hipH * 0.1);
-      const left = THREE.MathUtils.smoothstep(x, -p.hipW * 0.12, p.hipW * 0.12);
+      const opening = openingLeg?.getX(i) ?? 0;
+      const left = opening
+        ? opening > 0
+          ? 1
+          : 0
+        : THREE.MathUtils.smoothstep(x, -p.hipW * 0.12, p.hipW * 0.12);
       skinIndex[i * 4 + 1] = indexOf.legL;
       skinIndex[i * 4 + 2] = indexOf.legR;
       skinWeight[i * 4] = 1 - legWeight;
@@ -601,7 +649,8 @@ function addSkinning(
       // The sculpted chin and fitted beard share the animated jaw. No
       // duplicate chin mesh protrudes when the athlete breathes or shouts.
       const jawBlend =
-        1 - THREE.MathUtils.smoothstep(positions.getY(i), -p.headR * 0.8, -p.headR * 0.4);
+        (1 - THREE.MathUtils.smoothstep(positions.getY(i), -p.headR * 0.8, -p.headR * 0.4)) *
+        THREE.MathUtils.smoothstep(positions.getZ(i), -p.headD * 0.32, p.headD * 0.36);
       skinIndex[i * 4 + 1] = indexOf.jaw;
       skinWeight[i * 4] = 1 - jawBlend;
       skinWeight[i * 4 + 1] = jawBlend;
@@ -662,6 +711,7 @@ function addSkinning(
   }
   geometry.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
   geometry.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeight, 4));
+  geometry.deleteAttribute("openingLeg");
 }
 
 /**

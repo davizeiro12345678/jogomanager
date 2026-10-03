@@ -41,6 +41,3 @@ dist-benchmark
 
 # artefato de typecheck incremental
 tsconfig.tsbuildinfo
-
-# Isolated verification artifacts
-verification/

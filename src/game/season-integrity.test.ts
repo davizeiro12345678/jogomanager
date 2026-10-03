@@ -33,6 +33,27 @@ describe("checagem de temporada", () => {
     expect(issues.some((i) => i.includes("jogou"))).toBe(true);
     expect(issues.some((i) => i.includes("sem campeão"))).toBe(true);
   });
+
+  it("detecta clubes ausentes e duplicados na tabela", () => {
+    const clubs = ["a", "b"];
+    const row = (clubId: string): TableRow => ({
+      clubId,
+      p: 2,
+      w: 2,
+      d: 0,
+      l: 0,
+      gf: 2,
+      ga: 0,
+      pts: 6,
+    });
+
+    expect(checkSeasonIntegrity({ clubIds: clubs, fixtures: [], table: [row("a")] })).toContain(
+      "Clube ausente na tabela: b",
+    );
+    expect(
+      checkSeasonIntegrity({ clubIds: clubs, fixtures: [], table: [row("a"), row("a"), row("b")] }),
+    ).toContain("Clube duplicado na tabela: a");
+  });
 });
 
 describe("aposentadoria", () => {
