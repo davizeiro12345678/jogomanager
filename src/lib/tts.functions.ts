@@ -117,11 +117,7 @@ export const narrateEvent = createServerFn({ method: "POST" })
     return audio ? { ok: true, audio } : { ok: false, reason: "error" };
   });
 
-type TtsModel =
-  | "eleven_v4_turbo"
-  | "eleven_v4"
-  | "eleven_flash_v2_5"
-  | "eleven_multilingual_v2";
+type TtsModel = "eleven_v4_turbo" | "eleven_v4" | "eleven_flash_v2_5" | "eleven_multilingual_v2";
 
 const DEFAULT_TTS_MODEL: TtsModel = "eleven_v4_turbo";
 const ALLOWED_TTS_MODELS = new Set<TtsModel>([
@@ -134,7 +130,8 @@ const ALLOWED_TTS_MODELS = new Set<TtsModel>([
 /** The model is server-configurable; never accept an arbitrary model ID. */
 function narrationModels(): TtsModel[] {
   const configured = process.env["ELEVENLABS_TTS_MODEL"]?.trim() as TtsModel | undefined;
-  const preferred = configured && ALLOWED_TTS_MODELS.has(configured) ? configured : DEFAULT_TTS_MODEL;
+  const preferred =
+    configured && ALLOWED_TTS_MODELS.has(configured) ? configured : DEFAULT_TTS_MODEL;
   const fallbacks: TtsModel[] = ["eleven_v4", "eleven_flash_v2_5", "eleven_multilingual_v2"];
   return [...new Set([preferred, ...fallbacks])];
 }
@@ -186,14 +183,11 @@ async function synthesize(opts: {
             ...(shortNext ? { next_text: shortNext } : {}),
             voice_settings: opts.voiceSettings,
           };
-      const res = await fetch(
-        endpoint,
-        {
-          method: "POST",
-          headers: { "xi-api-key": opts.apiKey, "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
-        },
-      );
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "xi-api-key": opts.apiKey, "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
       if (res.ok) return Buffer.from(await res.arrayBuffer()).toString("base64");
       const body = await res.text();
       console.error(`ElevenLabs TTS falhou [${res.status}] (${model}): ${body}`);
@@ -285,7 +279,10 @@ function synthesizeV4Turbo(opts: {
       } else if (event.data instanceof ArrayBuffer) {
         handle(new TextDecoder().decode(event.data));
       } else if (typeof Blob !== "undefined" && event.data instanceof Blob) {
-        void event.data.text().then(handle).catch(() => finish(null));
+        void event.data
+          .text()
+          .then(handle)
+          .catch(() => finish(null));
       }
     });
 
@@ -352,9 +349,25 @@ export const narrateScene = createServerFn({ method: "POST" })
         ...(nextText ? { nextText } : {}),
       },
       voiceSettings: {
-        stability: authoritative ? 0.78 : reflective ? 0.58 : scene.mood === "bad" ? 0.56 : emphatic ? 0.28 : 0.46,
+        stability: authoritative
+          ? 0.78
+          : reflective
+            ? 0.58
+            : scene.mood === "bad"
+              ? 0.56
+              : emphatic
+                ? 0.28
+                : 0.46,
         similarity_boost: authoritative ? 0.9 : 0.85,
-        style: authoritative ? 0.18 : reflective ? 0.42 : scene.mood === "good" ? (emphatic ? 0.88 : 0.62) : 0.5,
+        style: authoritative
+          ? 0.18
+          : reflective
+            ? 0.42
+            : scene.mood === "good"
+              ? emphatic
+                ? 0.88
+                : 0.62
+              : 0.5,
         use_speaker_boost: true,
         speed: authoritative ? 0.92 : emphatic ? 1.08 : scene.mood === "bad" ? 0.94 : 0.99,
       },
