@@ -8,14 +8,25 @@ import { CLUBS } from "@/game/data/leagues";
 import type { CareerState } from "@/game/types";
 import { supabase } from "@/integrations/supabase/client";
 
-type RankingRow = {
-  rank?: number;
+type PublicRankingRow = {
+  rank: number;
   public_name: string;
   club_id: string | null;
+  weekly_active_seconds: number;
+  active_streak: number;
+  matches_completed: number;
+  wins: number;
+};
+
+type OwnRankingRow = {
+  public_name: string;
+  club_id: string;
   active_seconds: number;
   weekly_active_seconds: number;
   active_streak: number;
   opted_in: boolean;
+  matches_completed: number;
+  wins: number;
 };
 
 function formatDuration(seconds: number) {
@@ -59,8 +70,8 @@ export function ActivityRanking({
   career: CareerState;
   signedIn: boolean | null;
 }) {
-  const [rows, setRows] = useState<RankingRow[]>([]);
-  const [mine, setMine] = useState<RankingRow | null>(null);
+  const [rows, setRows] = useState<PublicRankingRow[]>([]);
+  const [mine, setMine] = useState<OwnRankingRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -73,10 +84,10 @@ export function ActivityRanking({
       supabase.rpc("get_public_activity_rankings", { p_limit: 20 }),
     ]);
     if (ranking.error) setError("O ranking está temporariamente indisponível.");
-    setRows((ranking.data ?? []) as RankingRow[]);
+    setRows(ranking.data ?? []);
     if (session.session?.user.id) {
       const own = await supabase.rpc("get_own_activity_ranking");
-      setMine((own.data?.[0] as RankingRow | undefined) ?? null);
+      setMine(own.data?.[0] ?? null);
     }
     setLoading(false);
   };
