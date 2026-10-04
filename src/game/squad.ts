@@ -290,7 +290,7 @@ function createSquad(clubId: string, legacy: boolean): Player[] {
   // Keep the original RNG sequence and identifiers of the first 18 players.
   while (draft.length < LEGACY_SQUAD_SIZE) {
     const pos = SHAPE[draft.length % SHAPE.length]!;
-    let name = "";
+    let name: string;
     let guard = 0;
     do {
       name = `${pool.first[Math.floor(rnd() * pool.first.length)]} ${pool.last[Math.floor(rnd() * pool.last.length)]}`;

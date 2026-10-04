@@ -199,7 +199,7 @@ export function cutsceneChoiceReactionFor(
   const playerId = playerIdOf(matched.participant.playerId);
   const intent = choiceIntent(choice);
   const connection = ((trust - 50) * 0.56 + (respect - 50) * 0.44) / 100;
-  let compatibility = 0;
+  let compatibility: number;
   switch (personality) {
     case "líder":
       compatibility = intent.support * 0.18 + intent.force * 0.05;

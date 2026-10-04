@@ -32,6 +32,19 @@ describe("live visual-ball snapshots", () => {
     expect(sim.ball).toEqual(canonicalBefore);
   });
 
+  it("supports event-sparse worker snapshots without clearing the consumer event history", () => {
+    const { home, away, sim } = fixture();
+    const view = new WorkerMatchView(home, away);
+    const full = snapshotMatch(sim, 1);
+    const sparse = snapshotMatch(sim, 2, undefined, false);
+
+    expect(sparse.events).toEqual([]);
+    expect(sparse.eventSeq).toBe(full.eventSeq);
+    view.apply(full);
+    view.apply(sparse);
+    expect(view.events).toEqual(full.events);
+  });
+
   it("interpolates the visual pose when present and falls back to the canonical ball when absent", () => {
     const { home, away, sim } = fixture();
     const view = new WorkerMatchView(home, away);
@@ -56,6 +69,26 @@ describe("live visual-ball snapshots", () => {
     // complete interval even when a slower machine spends time in sim.step.
     view.renderTick(performance.now() + 300);
     expect(view.ball).toMatchObject(sim.ball);
+  });
+
+  it("does not interpolate across player identity changes", () => {
+    const { home, away, sim } = fixture();
+    const view = new WorkerMatchView(home, away);
+    view.apply(snapshotMatch(sim, 1));
+    const replacementSnapshot = snapshotMatch(sim, 2);
+    const replacement = replacementSnapshot.players[0]!;
+    replacement.id = "replacement-player";
+    replacement.x += 6;
+    replacement.z -= 4;
+
+    view.apply(replacementSnapshot);
+    view.renderTick(performance.now());
+
+    expect(view.players[0]).toMatchObject({
+      id: replacement.id,
+      x: replacement.x,
+      z: replacement.z,
+    });
   });
 
   it("keeps the visual pose object stable across sequential Rapier snapshots", () => {

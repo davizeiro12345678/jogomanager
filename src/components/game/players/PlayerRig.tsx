@@ -183,6 +183,8 @@ export const PlayerRig = memo(function PlayerRig({
       }),
     [lookOverride, player.pid, player.pos, player.number, player.heightCm, player.weightKg],
   );
+  const detailTextures = useMemo(() => detailTextureNames(look, kit), [look, kit]);
+  const requestedDetailTextures = useRef(false);
   const facialShape = useMemo(() => faceMorphology(look.seed), [look.seed]);
   const P = useMemo(() => proportionsFor(look), [look]);
   // Só os atletas com rig completo (perto da câmera) recebem a camisa em 512²
@@ -323,6 +325,10 @@ export const PlayerRig = memo(function PlayerRig({
     // ---- LOD por distância
     const camDist = Math.sqrt(dist2);
     const lod = lodForDistance(camDist, quality, lodState.current);
+    if (lod === 0 && quality === "alta" && !requestedDetailTextures.current) {
+      requestKtx2(detailTextures);
+      requestedDetailTextures.current = true;
+    }
     if (lod !== lodState.current) {
       const first = lodState.current === null;
       lodState.current = lod;
@@ -751,9 +757,8 @@ export const PlayerRig = memo(function PlayerRig({
   // uniforme/aparência: derruba o número de programas de shader e de objetos
   // de material de ~200 para poucas dezenas numa partida.
   useEffect(() => {
-    if (quality !== "alta") return;
-    requestKtx2(detailTextureNames(look, kit));
-  }, [quality, kit, look]);
+    requestedDetailTextures.current = false;
+  }, [quality, detailTextures]);
   const mats = useMemo(
     () => playerMaterials(look, kit, tex ?? null, quality, surface),
     [look, kit, tex, quality, surface],

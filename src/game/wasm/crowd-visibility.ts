@@ -95,7 +95,13 @@ function intersectsFrustum(planes: Float64Array, x: number, y: number, z: number
     const ny = planes[index + 1]!;
     const nz = planes[index + 2]!;
     const constant = planes[index + 3]!;
-    if (![nx, ny, nz, constant].every(Number.isFinite)) return true;
+    if (
+      !Number.isFinite(nx) ||
+      !Number.isFinite(ny) ||
+      !Number.isFinite(nz) ||
+      !Number.isFinite(constant)
+    )
+      return true;
     if (nx * x + ny * y + nz * z + constant < -radius) return false;
   }
   return true;
@@ -139,23 +145,23 @@ export function selectCrowdFallback(input: CrowdVisibilityInput): CrowdSelection
     }
   }
   visible.sort((a, b) => a.distance - b.distance || a.tile - b.tile);
-  const selectedTiles = visible.length
-    ? visible.slice(0, maxTiles).map(({ tile }) => tile)
-    : Array.from({ length: maxTiles }, (_, tile) => tile);
-  const perTile = Math.max(1, Math.ceil(maxInstances / Math.max(1, selectedTiles.length)));
-  const indices: number[] = [];
-  const tiers: number[] = [];
+  const selectedCount = Math.min(maxTiles, visible.length || maxTiles);
+  const perTile = Math.max(1, Math.ceil(maxInstances / selectedCount));
+  const indices = new Uint32Array(Math.min(maxInstances, layout.tileIndices.length));
+  const tiers = new Uint8Array(indices.length);
   const counts = new Uint32Array(3);
   const detailedPixels = finite(input.detailedPixels);
   const meshPixels = finite(input.meshPixels);
   const projectedScale = finite(input.projectedScale);
+  let count = 0;
 
-  for (const tile of selectedTiles) {
+  for (let selectedIndex = 0; selectedIndex < selectedCount; selectedIndex += 1) {
+    const tile = visible.length ? visible[selectedIndex]!.tile : selectedIndex;
     const start = layout.tileOffsets[tile]!;
     const end = layout.tileOffsets[tile + 1]!;
     const stride = Math.max(1, Math.ceil((end - start) / perTile));
     for (let offset = start; offset < end; offset += stride) {
-      if (indices.length >= maxInstances) break;
+      if (count >= maxInstances || count >= indices.length) break;
       const seat = layout.tileIndices[offset]!;
       if (seat >= layout.positionCount) continue;
       const positionOffset = seat * 3;
@@ -166,13 +172,14 @@ export function selectCrowdFallback(input: CrowdVisibilityInput): CrowdSelection
       );
       const pixels = input.perspective ? projectedScale / Math.max(1, distance) : projectedScale;
       const tier = pixels >= detailedPixels ? 0 : pixels >= meshPixels ? 1 : 2;
-      indices.push(seat);
-      tiers.push(tier);
+      indices[count] = seat;
+      tiers[count] = tier;
+      count += 1;
       counts[tier]! += 1;
     }
   }
 
-  return { indices: Uint32Array.from(indices), tiers: Uint8Array.from(tiers), counts };
+  return { indices: indices.subarray(0, count), tiers: tiers.subarray(0, count), counts };
 }
 
 /** Rust packs a seat id in the high bits and its mesh tier in the low two bits. */
@@ -227,9 +234,12 @@ export function loadCrowdVisibilityWasm(): Promise<CrowdVisibilityKernel | null>
     try {
       const module = (await import("./pkg/crowd_visibility_wasm")) as CrowdVisibilityWasmModule;
       await module.default();
+      const camera = new Float64Array(3);
       return {
         select(input) {
-          const camera = new Float64Array([input.camera.x, input.camera.y, input.camera.z]);
+          camera[0] = input.camera.x;
+          camera[1] = input.camera.y;
+          camera[2] = input.camera.z;
           const packed = module.select_crowd(
             input.layout.positions,
             input.layout.tiles,

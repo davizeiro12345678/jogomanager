@@ -16,6 +16,7 @@ export const Route = createFileRoute("/mcp")({
         resourcePath: "/mcp",
         metadataPath: "/.well-known/oauth-protected-resource",
         trustForwardedHost: true,
+        trustForwardedProto: true,
       }),
     },
   },

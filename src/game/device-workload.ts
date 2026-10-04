@@ -5,7 +5,7 @@ export function textureDecodeWorkers(
 ): number {
   const available = Number.isFinite(cores) ? Math.max(1, Math.floor(cores ?? 2)) : 2;
   if (available <= 4 || (memoryGb !== undefined && memoryGb <= 3)) return 1;
-  return Math.min(4, available - 2);
+  return Math.min(4, available - 3);
 }
 
 export function deviceTextureDecodeWorkers(): number {

@@ -114,7 +114,7 @@ const securityHeadersMiddleware = createMiddleware().server(async ({ next, reque
   }
 
   if (!headers.get("cache-control")) {
-    let pathname = "/";
+    let pathname: string;
     try {
       pathname = new URL(request.url).pathname;
     } catch {

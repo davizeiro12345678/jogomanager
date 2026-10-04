@@ -291,6 +291,7 @@ export class MatchSim {
   private mentalityCache: Record<Side, number> | null = null;
   /** Reused every tick to avoid allocating/sorting temporary chase arrays. */
   private chaseIds = new Set<string>();
+  private readonly markTargets: Record<Side, SimPlayer[]> = { home: [], away: [] };
   finished = false;
   lastEventId = 0;
   private decisionTimer = 0;
@@ -1784,24 +1785,39 @@ export class MatchSim {
     const remaining = Math.max(0, 90 - this.time / 60);
     const lateGame = remaining < 15;
     const goalDiff = this.stats.home.goals - this.stats.away.goals;
-    const urgency = (side: Side) => {
-      if (!lateGame) return 0;
-      const diff = side === "home" ? goalDiff : -goalDiff;
-      if (diff < 0) return Math.min(1, (15 - remaining) / 15) * (diff <= -2 ? 1 : 0.8);
-      if (diff > 0) return -Math.min(1, (15 - remaining) / 15) * 0.6;
-      return 0;
-    };
+    let homeUrgency = 0;
+    let awayUrgency = 0;
+    if (lateGame) {
+      const urgencyScale = Math.min(1, (15 - remaining) / 15);
+      if (goalDiff < 0) {
+        homeUrgency = urgencyScale * (goalDiff <= -2 ? 1 : 0.8);
+        awayUrgency = -urgencyScale * 0.6;
+      } else if (goalDiff > 0) {
+        homeUrgency = -urgencyScale * 0.6;
+        awayUrgency = urgencyScale * (goalDiff >= 2 ? 1 : 0.8);
+      }
+    }
 
     // Linha defensiva conjunta: a referência é o zagueiro mais recuado do lado
     // sem a bola, o que permite subir junto e armar impedimento.
-    const lineX: Record<Side, number> = { home: FIELD_X, away: -FIELD_X };
+    let homeLineX = FIELD_X;
+    let awayLineX = -FIELD_X;
+    const homeMarkTargets = this.markTargets.home;
+    const awayMarkTargets = this.markTargets.away;
+    homeMarkTargets.length = 0;
+    awayMarkTargets.length = 0;
     for (const q of this.players) {
       if (q.pos === "GK" || q.sentOff) continue;
       if (q.side === "home") {
-        if (q.x < lineX.home) lineX.home = q.x;
-      } else if (q.x > lineX.away) lineX.away = q.x;
+        if (q.x < homeLineX) homeLineX = q.x;
+        homeMarkTargets.push(q);
+      } else {
+        if (q.x > awayLineX) awayLineX = q.x;
+        awayMarkTargets.push(q);
+      }
     }
 
+    const holder = this.players.find((player) => player.id === this.ball.holder);
     for (const p of this.players) {
       if (p.sentOff) continue;
       if (p.id === this.ball.holder) continue;
@@ -1862,14 +1878,14 @@ export class MatchSim {
         // cada um seguir a bola por conta própria — é isso que cria a linha reta
         // e permite a armadilha de impedimento.
         if (p.pos === "DF") {
-          const line = lineX[p.side];
+          const line = p.side === "home" ? homeLineX : awayLineX;
           const trap = setup.tactics.pressing >= 3 && Math.abs(bx - line) > 14 ? dir * 3.5 : 0;
           tx = tx * 0.35 + (line + trap) * 0.65;
           // marcação por zona: cobre o adversário mais perigoso da sua faixa
           let markZ: number | null = null;
           let best = 9;
-          for (const q of this.players) {
-            if (q.side === p.side || q.pos === "GK" || q.sentOff) continue;
+          const targets = p.side === "home" ? awayMarkTargets : homeMarkTargets;
+          for (const q of targets) {
             const gap = Math.abs(q.z - tz);
             if (gap < best && Math.abs(q.x - tx) < 16) {
               best = gap;
@@ -1885,15 +1901,14 @@ export class MatchSim {
           sprint = (surge ? 1.3 : 1.15) * (0.82 + p.stamina / 550);
         }
         // perdendo no fim: a equipe inteira sobe para pressionar
-        tx += urgency(p.side) * 7 * dir;
+        tx += (p.side === "home" ? homeUrgency : awayUrgency) * 7 * dir;
       } else {
         // Movimento sem bola de verdade, em vez de balanço aleatório:
         // atacante ataca as costas da linha, ponta corta para dentro,
         // lateral faz a sobreposição e o meia oferece o apoio de recuo.
-        const holder = this.players.find((q) => q.id === this.ball.holder);
         const ahead = holder ? (holder.x - p.x) * dir : 0;
         if (p.pos === "FW") {
-          const backline = lineX[p.side === "home" ? "away" : "home"];
+          const backline = p.side === "home" ? awayLineX : homeLineX;
           tx = tx * 0.4 + (backline + dir * 1.2) * 0.6;
           tz += (p.number % 2 === 0 ? 1 : -1) * 3.2;
         } else if (p.pos === "MF") {
@@ -1910,7 +1925,7 @@ export class MatchSim {
           sprint = 1.2;
         }
         tz += Math.sin(this.time * 0.4 + p.number) * 0.9;
-        tx += urgency(p.side) * 5 * dir;
+        tx += (p.side === "home" ? homeUrgency : awayUrgency) * 5 * dir;
       }
 
       tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, tx));
@@ -2630,20 +2645,36 @@ export class MatchSim {
       return;
     }
 
-    const mates = this.players.filter(
-      (p) => p.side === holder.side && p.id !== holder.id && !p.sentOff,
-    );
+    const mates: SimPlayer[] = [];
+    const defenders: SimPlayer[] = [];
+    for (const player of this.players) {
+      if (player.sentOff) continue;
+      if (player.side === holder.side) {
+        if (player.id !== holder.id) mates.push(player);
+      } else defenders.push(player);
+    }
     let best: SimPlayer | null = null;
     let bestScore = -Infinity;
-    const pack = (players: SimPlayer[]) =>
-      new Float64Array(players.flatMap((p) => [p.x, p.z, p.vx, p.vz]));
-    const defenders = this.players.filter((p) => p.side !== holder.side && !p.sentOff);
+    const pack = (players: SimPlayer[]) => {
+      const values = new Float64Array(players.length * 4);
+      for (let index = 0; index < players.length; index += 1) {
+        const player = players[index]!;
+        const offset = index * 4;
+        values[offset] = player.x;
+        values[offset + 1] = player.z;
+        values[offset + 2] = player.vx;
+        values[offset + 3] = player.vz;
+      }
+      return values;
+    };
+    const receiverData = pack(mates);
+    const defenderData = pack(defenders);
     let lanes: Float64Array;
     try {
-      lanes = this.passLaneKernel(holder.x, holder.z, pack(mates), pack(defenders));
+      lanes = this.passLaneKernel(holder.x, holder.z, receiverData, defenderData);
     } catch {
       this.passLaneKernel = evaluatePassLanesFallback;
-      lanes = this.passLaneKernel(holder.x, holder.z, pack(mates), pack(defenders));
+      lanes = this.passLaneKernel(holder.x, holder.z, receiverData, defenderData);
     }
     for (const [index, m] of mates.entries()) {
       const dist = lanes[index * 3]!;

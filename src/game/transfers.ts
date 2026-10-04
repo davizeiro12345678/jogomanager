@@ -36,7 +36,7 @@ export function generateMarket(seed: string, count = 12): MarketEntry[] {
   for (let i = 0; i < count; i++) {
     const league = LEAGUES[Math.floor(rnd() * LEAGUES.length)]!;
     const pool = poolForLeague(league.id);
-    let name = "";
+    let name: string;
     let guard = 0;
     do {
       name = `${pool.first[Math.floor(rnd() * pool.first.length)]} ${pool.last[Math.floor(rnd() * pool.last.length)]}`;

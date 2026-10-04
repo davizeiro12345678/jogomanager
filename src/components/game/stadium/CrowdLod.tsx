@@ -233,10 +233,15 @@ export function CrowdLod({
       projection: new THREE.Matrix4(),
       frustum: new THREE.Frustum(),
       counts: [0, 0, 0],
-      selection: ["", "", ""],
       seats: [0, 1, 2].map(() => new Int32Array(MAX_CROWD_INSTANCES).fill(-1)),
     };
   }, [webgl2]);
+  const skinAttributes = data.geometries.map(
+    (geometry) => geometry.getAttribute("crowdSkin") as THREE.InstancedBufferAttribute,
+  );
+  const styleAttributes = data.geometries.map(
+    (geometry) => geometry.getAttribute("crowdStyle") as THREE.InstancedBufferAttribute,
+  );
   useEffect(
     () => () => {
       data.geometries.forEach((geometry) => geometry.dispose());
@@ -251,7 +256,6 @@ export function CrowdLod({
     // Another match can reuse the same seat numbers with different club colours.
     // Reset the cached uploads while retaining geometry and material pools.
     data.seats.forEach((seats) => seats.fill(-1));
-    data.selection.fill("");
     elapsed.current = Number.POSITIVE_INFINITY;
   }, [crowd, data]);
   useFrame(({ camera, clock, size }, dt) => {
@@ -269,7 +273,7 @@ export function CrowdLod({
     elapsed.current = 0;
 
     data.counts.fill(0);
-    const selection: string[][] = [[], [], []];
+    const selectionChanged = [false, false, false];
     if (budget.crowdInstances > 0) {
       camera.updateMatrixWorld();
       data.projection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
@@ -314,9 +318,9 @@ export function CrowdLod({
         const mesh = refs.current[tier];
         if (!mesh || data.counts[tier]! >= MAX_CROWD_INSTANCES) continue;
         const instance = data.counts[tier]!++;
-        selection[tier]!.push(`${index}`);
         if (data.seats[tier]![instance] === index) continue;
         data.seats[tier]![instance] = index;
+        selectionChanged[tier] = true;
         data.dummy.position.copy(position);
         const height = 0.9 + (index % 7) * 0.025;
         data.dummy.scale.set(height * (0.92 + (index % 3) * 0.06), height, height);
@@ -325,14 +329,8 @@ export function CrowdLod({
         mesh.setMatrixAt(instance, data.dummy.matrix);
         mesh.setColorAt(instance, crowd.colors[index]!);
         const skin = crowd.skins[index]!;
-        const skinAttribute = mesh.geometry.getAttribute(
-          "crowdSkin",
-        ) as THREE.InstancedBufferAttribute;
-        const styleAttribute = mesh.geometry.getAttribute(
-          "crowdStyle",
-        ) as THREE.InstancedBufferAttribute;
-        skinAttribute.setXYZ(instance, skin.r, skin.g, skin.b);
-        styleAttribute.setXY(instance, (index % 13) / 12, (index % 11) / 10);
+        skinAttributes[tier]!.setXYZ(instance, skin.r, skin.g, skin.b);
+        styleAttributes[tier]!.setXY(instance, (index % 13) / 12, (index % 11) / 10);
       }
     }
 
@@ -341,15 +339,11 @@ export function CrowdLod({
       mesh.count = data.counts[tier]!;
       // Matrices and colours are static until the visible seat selection
       // changes. A stationary camera no longer uploads the crowd every tick.
-      const key = selection[tier]!.join(",");
-      if (data.selection[tier] !== key) {
-        data.selection[tier] = key;
+      if (selectionChanged[tier]) {
         mesh.instanceMatrix.needsUpdate = true;
         if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-        (mesh.geometry.getAttribute("crowdSkin") as THREE.InstancedBufferAttribute).needsUpdate =
-          true;
-        (mesh.geometry.getAttribute("crowdStyle") as THREE.InstancedBufferAttribute).needsUpdate =
-          true;
+        skinAttributes[tier]!.needsUpdate = true;
+        styleAttributes[tier]!.needsUpdate = true;
       }
       // Fixed pools intentionally skip computeBoundingSphere(), which was a
       // periodic CPU spike in the original global crowd pass.

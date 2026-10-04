@@ -28,6 +28,7 @@ let lastTick = 0;
 let accumulator = 0;
 let commandId = 0;
 let skipToken = 0;
+let publishedEventSeq = -1;
 let visualPhysics: RapierVisualPhysics | null = null;
 let visualPhysicsReady: Promise<RapierVisualPhysics | null> | null = null;
 let visualPhysicsGeneration = 0;
@@ -96,7 +97,7 @@ async function attachVisualFallback(target: MatchSim, epoch: number) {
 }
 
 async function attachBallAuthority(target: MatchSim, epoch: number) {
-  let authority: BallPhysicsAuthority | null = null;
+  let authority: BallPhysicsAuthority | null;
   try {
     // O import fica dentro do Worker: o WASM não entra no bundle da UI nem
     // bloqueia o primeiro snapshot de uma partida.
@@ -145,11 +146,14 @@ function resetVisualPhysicsToCanonical() {
 function publishSnapshot() {
   if (!live) return;
   sequence += 1;
+  const hasNewEvents = live.lastEventId !== publishedEventSeq;
+  const snapshot = snapshotMatch(live, sequence, latestVisualBall, hasNewEvents);
+  if (hasNewEvents) publishedEventSeq = live.lastEventId;
   post({
     id: commandId,
     ok: true,
     type: "snapshot",
-    snapshot: snapshotMatch(live, sequence, latestVisualBall),
+    snapshot,
   });
 }
 
@@ -227,6 +231,7 @@ async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive"
   paused = false;
   speed = 1;
   sequence = 0;
+  publishedEventSeq = -1;
   const target = live;
   const epoch = ++liveEpoch;
   // A partida começa imediatamente; Rapier se conecta quando o WASM estiver
@@ -248,8 +253,8 @@ async function handleMessage(message: LiveWorkerRequest) {
   }
   if (message.type === "pauseLive") {
     paused = message.paused;
-    lastTick = 0;
-    if (!paused) ensureTimer();
+    if (paused) stopTimer();
+    else ensureTimer();
     post({ id: message.id, ok: true, type: "command" });
     return;
   }

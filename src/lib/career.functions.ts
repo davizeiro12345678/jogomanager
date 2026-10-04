@@ -77,7 +77,7 @@ export const saveCareer = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const incoming = data.state as unknown as CareerState;
     // Malformed nested JSON is an unverified personal save, never an attested result.
-    let verified = false;
+    let verified: boolean;
     try {
       verified = verifyCareerProgress(incoming);
     } catch {

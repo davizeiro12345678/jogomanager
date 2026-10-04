@@ -25,7 +25,7 @@ export const syncAchievements = createServerFn({ method: "POST" })
     if (careerError) throw new Error(careerError.message);
     if (!career?.state || !career.verified_progress) return { ok: true, unlocked: [] as string[] };
 
-    let earned: string[] = [];
+    let earned: string[];
     try {
       const saved = career.state as unknown as CareerState;
       if (!verifyCareerProgress(saved)) return { ok: true, unlocked: [] as string[] };

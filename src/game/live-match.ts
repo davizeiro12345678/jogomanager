@@ -33,6 +33,7 @@ export interface LiveSnapshot {
   visualBall?: VisualBallState;
   possession: Side;
   stats: Record<Side, MatchStats>;
+  /** Histórico completo quando eventSeq muda; vazio em snapshots sem eventos novos. */
   events: MatchSim["events"];
   eventSeq: number;
   finished: boolean;
@@ -108,13 +109,18 @@ export function snapshotMatch(
   sim: MatchSim,
   seq: number,
   visualBall?: VisualBallState,
+  includeEvents = true,
 ): LiveSnapshot {
-  const cachedEvents = eventCache.get(sim);
-  const events =
-    cachedEvents?.seq === sim.lastEventId
-      ? cachedEvents.events
-      : sim.events.map((event) => ({ ...event }));
-  if (cachedEvents?.seq !== sim.lastEventId) eventCache.set(sim, { seq: sim.lastEventId, events });
+  let events: MatchSim["events"] = [];
+  if (includeEvents) {
+    const cachedEvents = eventCache.get(sim);
+    events =
+      cachedEvents?.seq === sim.lastEventId
+        ? cachedEvents.events
+        : sim.events.map((event) => ({ ...event }));
+    if (cachedEvents?.seq !== sim.lastEventId)
+      eventCache.set(sim, { seq: sim.lastEventId, events });
+  }
   return {
     seq,
     sentAt: performance.now(),
@@ -168,10 +174,11 @@ export class WorkerMatchView implements MatchRuntime {
   scorers: Scorer[] = [];
   subsUsed: Record<Side, number> = { home: 0, away: 0 };
   finished = false;
-  eventSeq = 0;
+  eventSeq = -1;
   private ratings: PlayerRating[] = [];
-  private previous = new Map<string, { x: number; z: number }>();
-  private targets = new Map<string, SimPlayer>();
+  private previousPositions = new Float64Array();
+  private targetPositions = new Float64Array();
+  private previousIds: string[] = [];
   private previousBall = { x: 0, z: 0, height: 0.12 };
   private targetBall = { x: 0, z: 0, height: 0.12 };
   private previousVisualBall: VisualBallState | null = null;
@@ -190,12 +197,27 @@ export class WorkerMatchView implements MatchRuntime {
     const now = performance.now();
     if (this.receivedAt) this.intervalMs = Math.max(50, Math.min(250, now - this.receivedAt));
     this.receivedAt = now;
-    this.previous.clear();
-    for (const player of this.players) this.previous.set(player.id, { x: player.x, z: player.z });
+    const positionCapacity = Math.max(this.players.length, next.players.length);
+    if (this.previousPositions.length < positionCapacity * 2) {
+      this.previousPositions = new Float64Array(positionCapacity * 2);
+      this.targetPositions = new Float64Array(positionCapacity * 2);
+      this.previousIds = new Array<string>(positionCapacity);
+    }
+    for (let index = 0; index < this.players.length; index += 1) {
+      const player = this.players[index]!;
+      const offset = index * 2;
+      this.previousPositions[offset] = player.x;
+      this.previousPositions[offset + 1] = player.z;
+      this.previousIds[index] = player.id;
+    }
     this.previousBall = { x: this.ball.x, z: this.ball.z, height: this.ball.height };
     const previousVisualBall = this.visualBall ? { ...this.visualBall } : null;
-    this.targets.clear();
-    for (const player of next.players) this.targets.set(player.id, player);
+    for (let index = 0; index < next.players.length; index += 1) {
+      const player = next.players[index]!;
+      const offset = index * 2;
+      this.targetPositions[offset] = player.x;
+      this.targetPositions[offset + 1] = player.z;
+    }
     if (!this.players.length || this.players.length !== next.players.length) {
       this.players = next.players.map((player) => ({ ...player }));
     } else {
@@ -252,12 +274,16 @@ export class WorkerMatchView implements MatchRuntime {
 
   renderTick(now = performance.now()) {
     const alpha = Math.max(0, Math.min(1, (now - this.receivedAt) / this.intervalMs));
-    for (const player of this.players) {
-      const from = this.previous.get(player.id);
-      const to = this.targets.get(player.id);
-      if (!to) continue;
-      player.x = (from?.x ?? to.x) + (to.x - (from?.x ?? to.x)) * alpha;
-      player.z = (from?.z ?? to.z) + (to.z - (from?.z ?? to.z)) * alpha;
+    for (let index = 0; index < this.players.length; index += 1) {
+      const player = this.players[index]!;
+      const offset = index * 2;
+      const targetX = this.targetPositions[offset]!;
+      const targetZ = this.targetPositions[offset + 1]!;
+      const samePlayer = this.previousIds[index] === player.id;
+      const fromX = samePlayer ? this.previousPositions[offset]! : targetX;
+      const fromZ = samePlayer ? this.previousPositions[offset + 1]! : targetZ;
+      player.x = fromX + (targetX - fromX) * alpha;
+      player.z = fromZ + (targetZ - fromZ) * alpha;
     }
     this.ball.x = this.previousBall.x + (this.targetBall.x - this.previousBall.x) * alpha;
     this.ball.z = this.previousBall.z + (this.targetBall.z - this.previousBall.z) * alpha;
