@@ -11,6 +11,11 @@ export default tseslint.config(
       "dist",
       ".output",
       ".vinxi",
+      "dist-benchmark",
+      ".npm-cache",
+      ".bun-cache",
+      "wasm/**/target/**",
+      "src/game/wasm/pkg/**",
       "src/integrations/supabase/types.ts",
       // Generated third-party WASM loader; keep vendor formatting out of lint.
       "public/basis/basis_transcoder.js",

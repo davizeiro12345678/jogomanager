@@ -27,7 +27,12 @@ import {
   type Pose,
 } from "@/game/animation";
 import { expressionFor } from "@/game/animation-extra3";
-import { ballGazePitch, emptyFacialPose, facialPoseAt } from "@/game/facial-animation";
+import {
+  ballGazePitch,
+  eyelidRotationFor,
+  emptyFacialPose,
+  facialPoseAt,
+} from "@/game/facial-animation";
 import { kitTextureFor } from "@/game/graphics/kit-atlas";
 import { useMatchSurface } from "@/game/graphics/surface-context";
 import type { Kit } from "@/game/kits";
@@ -200,7 +205,10 @@ export const PlayerRig = memo(function PlayerRig({
 
   const isGK = player.pos === "GK";
   const hi = quality === "alta";
-  const shadows = quality === "alta";
+  // The match keeps its small contact ellipse under each athlete. Full body
+  // shadow-map silhouettes stay in the isolated portrait studio; in broadcast
+  // views they read as broad cool blotches across the pitch.
+  const shadows = quality === "alta" && portrait;
   const invalidate = useThree((state) => state.invalidate);
   // Demand-rendered studio previews still display newly loaded maps while
   // paused. Match playback needs no React updates for texture streaming.
@@ -232,7 +240,10 @@ export const PlayerRig = memo(function PlayerRig({
   const ankleLRef = useRef<THREE.Bone>(null);
   const ankleRRef = useRef<THREE.Bone>(null);
   const shadowRef = useRef<THREE.Mesh>(null);
-  const blinkRef = useRef<THREE.Bone>(null);
+  const eyelidUpperLRef = useRef<THREE.Bone>(null);
+  const eyelidLowerLRef = useRef<THREE.Bone>(null);
+  const eyelidUpperRRef = useRef<THREE.Bone>(null);
+  const eyelidLowerRRef = useRef<THREE.Bone>(null);
   const clavLRef = useRef<THREE.Bone>(null);
   const clavRRef = useRef<THREE.Bone>(null);
   const jawRef = useRef<THREE.Bone>(null);
@@ -257,6 +268,7 @@ export const PlayerRig = memo(function PlayerRig({
   const clipName = useRef<ClipName>("idle");
   const clipTime = useRef(0);
   const acc = useRef(0);
+  const lastClothTime = useRef<number | null>(null);
   // tempo acumulado abaixo do limiar de caminhada, para decidir clipes de parada
   const idleFor = useRef(0);
   const accelerationLean = useRef(0);
@@ -273,13 +285,19 @@ export const PlayerRig = memo(function PlayerRig({
     if (paused && painted.current && sampled.current === previewAt) {
       // A paused pose still serves a changed inspection camera. Do not
       // re-run animation or smoothing just to switch from body to gloves.
+      // Keep the cloth clock current so resuming a paused studio pose cannot
+      // integrate every wall-clock millisecond as one visible fabric jump.
+      lastClothTime.current = state.clock.elapsedTime;
       onPoseReady?.(skin);
       return;
     }
     sampled.current = previewAt;
     painted.current = true;
     const g = root.current;
-    if (!g) return;
+    if (!g) {
+      lastClothTime.current = state.clock.elapsedTime;
+      return;
+    }
     const dt = Math.min(rawDt, 0.05);
 
     // A vista do Worker já interpola snapshots. Uma segunda mola aqui fazia o
@@ -296,12 +314,15 @@ export const PlayerRig = memo(function PlayerRig({
     const dist2 = toX * toX + toZ * toZ;
     if (facing < -4 && dist2 > 144) {
       acc.current = 0;
+      // A culled player resumes from the current rendering clock, not from
+      // an elapsed interval that may span a long off-screen sequence.
+      lastClothTime.current = state.clock.elapsedTime;
       return;
     }
 
     // ---- LOD por distância
     const camDist = Math.sqrt(dist2);
-    const lod = lodForDistance(camDist, quality);
+    const lod = lodForDistance(camDist, quality, lodState.current);
     if (lod !== lodState.current) {
       const first = lodState.current === null;
       lodState.current = lod;
@@ -624,6 +645,20 @@ export const PlayerRig = memo(function PlayerRig({
       const faceResponse = previewAt !== undefined ? 1 : 1 - Math.exp(-18 * adt);
       const celebrating = /celebrat|fist|victory|applaud|hug/i.test(clipName.current);
       const protesting = /protest|argue|complain/i.test(clipName.current);
+      // The head bone carries the large tracking pose.  A much smaller facial
+      // layer adds breathing, concentration and reaction tension without
+      // changing the skeleton, simulation state or any draw budget.
+      const faceBone = skin.boneOf.face;
+      const facialBreath = Math.sin(
+        (previewAt !== undefined ? ctx.t : sim.time) * (2.1 + effort) + seed,
+      );
+      const facePitch =
+        tired * 0.018 + effort * 0.006 + (protesting ? -0.01 : 0) + facialBreath * 0.0035;
+      const faceYaw = gaze * (celebrating ? 0.024 : 0.012) + facialBreath * 0.002;
+      const faceRoll = (celebrating ? -0.008 : protesting ? 0.008 : 0) + facialBreath * 0.0025;
+      faceBone.rotation.x += (facePitch - faceBone.rotation.x) * faceResponse;
+      faceBone.rotation.y += (faceYaw - faceBone.rotation.y) * faceResponse;
+      faceBone.rotation.z += (faceRoll - faceBone.rotation.z) * faceResponse;
       const browLift =
         P.headR * (celebrating ? 0.035 : protesting ? -0.012 : -effort * 0.01 - tired * 0.006);
       const browTilt = celebrating ? -0.035 : protesting ? 0.12 : effort * 0.06;
@@ -636,19 +671,32 @@ export const PlayerRig = memo(function PlayerRig({
           response;
         brow.rotation.z += ((side === "L" ? 1 : -1) * browTilt - brow.rotation.z) * response;
       }
-      // Jaw, eyelids and saccades share the match clock and freeze with the pose.
+      // Jaw, orbital hinges and saccades share the match clock and freeze with the pose.
       if (jawRef.current) {
-        jawRef.current.rotation.x += (facePose.jaw - jawRef.current.rotation.x) * faceResponse;
+        const vocalTension = celebrating ? 0.035 : protesting ? 0.024 : effort * 0.008;
+        jawRef.current.rotation.x +=
+          (Math.min(0.33, facePose.jaw + vocalTension) - jawRef.current.rotation.x) * faceResponse;
       }
       if (eyesRef.current) {
         eyesRef.current.position.x +=
           (facePose.eyeX * P.headR * 0.055 - eyesRef.current.position.x) * faceResponse;
         eyesRef.current.position.y +=
           (facePose.eyeY * P.headR * 0.045 - eyesRef.current.position.y) * faceResponse;
+        // The eye group is still a single bone, but a few degrees around the
+        // face centre lets the iris, pupil and new catchlight scan together.
+        eyesRef.current.rotation.y +=
+          (facePose.eyeX * 0.028 - eyesRef.current.rotation.y) * faceResponse;
+        eyesRef.current.rotation.x +=
+          (-facePose.eyeY * 0.02 - eyesRef.current.rotation.x) * faceResponse;
       }
-      if (blinkRef.current) {
-        blinkRef.current.scale.y += (facePose.lidClosure - blinkRef.current.scale.y) * faceResponse;
-      }
+      const exertionSquint = Math.min(0.1, effort * 0.045 + (protesting ? 0.025 : 0));
+      const lidClosure = Math.min(1, facePose.lidClosure + exertionSquint);
+      const upperLidRotation = eyelidRotationFor(lidClosure, true);
+      const lowerLidRotation = eyelidRotationFor(lidClosure, false);
+      for (const lid of [eyelidUpperLRef.current, eyelidUpperRRef.current])
+        if (lid) lid.rotation.x += (upperLidRotation - lid.rotation.x) * faceResponse;
+      for (const lid of [eyelidLowerLRef.current, eyelidLowerRRef.current])
+        if (lid) lid.rotation.x += (lowerLidRotation - lid.rotation.x) * faceResponse;
     }
 
     if (legLRef.current) legLRef.current.rotation.set(c.legLPitch, 0, c.legLRoll);
@@ -658,7 +706,12 @@ export const PlayerRig = memo(function PlayerRig({
     if (ankleLRef.current) ankleLRef.current.rotation.x = c.ankleL;
     if (ankleRRef.current) ankleRRef.current.rotation.x = c.ankleR;
     updateRigCorrectives(skin.boneOf);
-    cloth.update(paused ? 0 : adt, {
+    const clothElapsed =
+      lastClothTime.current === null
+        ? rawDt
+        : Math.max(0, state.clock.elapsedTime - lastClothTime.current);
+    lastClothTime.current = state.clock.elapsedTime;
+    cloth.update(paused ? 0 : clothElapsed, {
       x: player.vx * Math.cos(motion.yaw) - player.vz * Math.sin(motion.yaw),
       z: motion.forward,
       lift: Math.max(0, c.hipY + ground.rootY),
@@ -666,6 +719,8 @@ export const PlayerRig = memo(function PlayerRig({
       bend: Math.abs(c.spine) + Math.abs(c.legLPitch - c.legRPitch) * 0.22,
       yaw: motion.yaw,
       roll: c.hipRoll,
+      legL: Math.min(1, Math.abs(c.kneeL) * 0.58 + Math.abs(c.legLPitch) * 0.24),
+      legR: Math.min(1, Math.abs(c.kneeR) * 0.58 + Math.abs(c.legRPitch) * 0.24),
     });
     onPoseReady?.(skin);
 
@@ -740,8 +795,9 @@ export const PlayerRig = memo(function PlayerRig({
     painted.current = false;
     lodState.current = null;
     castState.current = null;
-    // The first sample sets a deterministic expression on each rebuilt skin.
-    skin.boneOf.blink.scale.y = 0.001;
+    // The first sample sets the articulated lids at their open rest pose.
+    for (const joint of ["eyelidUpperL", "eyelidLowerL", "eyelidUpperR", "eyelidLowerR"] as const)
+      skin.boneOf[joint].rotation.x = 0;
   }, [skin, look.seed]);
 
   // As malhas são criadas fora do JSX para carregar esqueleto, esfera de
@@ -801,7 +857,10 @@ export const PlayerRig = memo(function PlayerRig({
     neck,
     jaw: jawRef,
     eyes: eyesRef,
-    blink: blinkRef,
+    eyelidUpperL: eyelidUpperLRef,
+    eyelidLowerL: eyelidLowerLRef,
+    eyelidUpperR: eyelidUpperRRef,
+    eyelidLowerR: eyelidLowerRRef,
     clavL: clavLRef,
     armL: armLRef,
     foreL: foreLRef,

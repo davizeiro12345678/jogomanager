@@ -279,18 +279,8 @@ function buildNormal(_pattern: MowPattern = "checker", size = 512) {
   ctx.fillStyle = "#8080ff";
   ctx.fillRect(0, 0, size, size);
 
-  // ondulação larga do terreno
-  for (let i = 0; i < 90; i++) {
-    const x = rand() * size;
-    const y = rand() * size;
-    const r = size * (0.04 + rand() * 0.1);
-    const rg = ctx.createRadialGradient(x, y, 0, x, y, r);
-    rg.addColorStop(0, `rgba(${(110 + rand() * 40) | 0},${(110 + rand() * 40) | 0},255,0.22)`);
-    rg.addColorStop(1, "rgba(128,128,255,0)");
-    ctx.fillStyle = rg;
-    ctx.fillRect(x - r, y - r, r * 2, r * 2);
-  }
-
+  // Fine blade variation keeps the turf textured without broad, blue-looking
+  // patches when the normal map repeats across the full pitch.
   // lâminas
   ctx.lineWidth = 1;
   for (let i = 0; i < 9000; i++) {

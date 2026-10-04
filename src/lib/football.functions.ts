@@ -54,7 +54,7 @@ export const getOfficialAssets = createServerFn({ method: "GET" }).handler(
 
 /** Public read: real squad rows for one club, when they were imported. */
 export const getRealSquad = createServerFn({ method: "GET" })
-  .inputValidator((input: { clubId: string }) => input)
+  .validator((input: { clubId: string }) => input)
   .handler(async ({ data }) => {
     const db = publicClient();
     // Keyset pagination avoids the API row ceiling and preserves source identity.
@@ -110,7 +110,7 @@ const PAGE = 24;
 
 /** Public read: paginated search across every imported real player. */
 export const searchRealPlayers = createServerFn({ method: "GET" })
-  .inputValidator((input: MarketSearchInput) => input)
+  .validator((input: MarketSearchInput) => input)
   .handler(async ({ data }): Promise<{ rows: MarketRow[]; page: number; hasMore: boolean }> => {
     const db = publicClient();
     const page = Math.max(0, data.page ?? 0);

@@ -41,6 +41,7 @@ export function CareerWorldPanel({
   const roster = Object.values(career.players)
     .filter((p) => p.clubId === career.clubId)
     .sort((a, b) => b.ovr - a.ovr);
+  const captain = roster[0];
   const interview = (type: InterviewType) => {
     const scene = buildCareerInterview(career, type);
     if (scene && !blocked) setActive(scene);
@@ -255,10 +256,24 @@ export function CareerWorldPanel({
           look={career.manager?.look ?? fallback}
           club={CLUBS[career.clubId]}
           managerName={career.managerName}
+          captainName={captain?.name}
           cast={cast}
           cinematic
           manner={world.identity}
-          onEffect={(effect) => update(applyChoiceEffect(career, effect))}
+          choiceContext={
+            captain
+              ? {
+                  participants: {
+                    captain: {
+                      playerId: captain.id,
+                      relationship: world.relationships[captain.id],
+                      personality: captain.personality,
+                    },
+                  },
+                }
+              : undefined
+          }
+          onEffect={(effect, reaction) => update(applyChoiceEffect(career, effect, reaction))}
           onDone={() => setActive(null)}
         />
       ) : null}

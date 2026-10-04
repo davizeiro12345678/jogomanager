@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { cinematicCrowdUpdateAt } from "@/game/cinematic-crowd-timing";
 import { useCinematicFrame, useCinematicRuntime } from "./cinematic-runtime";
 
 const randomAt = (index: number) => {
@@ -33,6 +34,7 @@ export function CinematicCrowd({
   const legs = useRef<THREE.InstancedMesh>(null);
   const count = rows * cols;
   const initialized = useRef(false);
+  const cadence = useRef({ accumulator: 0, initialized: false });
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const palette = useMemo(
     () => [tint, secondary, "#233646", "#b6bbc1", "#665b55"].map((c) => new THREE.Color(c)),
@@ -50,15 +52,16 @@ export function CinematicCrowd({
   );
   useEffect(() => () => Object.values(materials).forEach((m) => m.dispose()), [materials]);
   useCinematicFrame((time, dt) => {
-    if (
-      !torso.current ||
-      !heads.current ||
-      !arms.current ||
-      !legs.current ||
-      !hair.current ||
-      (initialized.current && dt === 0)
-    )
+    if (!torso.current || !heads.current || !arms.current || !legs.current || !hair.current) return;
+    const nextCadence = cinematicCrowdUpdateAt(
+      cadence.current.accumulator,
+      dt,
+      cadence.current.initialized,
+    );
+    if (!nextCadence.update) {
+      cadence.current.accumulator = nextCadence.accumulator;
       return;
+    }
     const place = (
       mesh: THREE.InstancedMesh,
       index: number,
@@ -122,6 +125,7 @@ export function CinematicCrowd({
       if (!initialized.current && mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
     initialized.current = true;
+    cadence.current = { accumulator: nextCadence.accumulator, initialized: true };
   });
   const segments = runtime.quality === "alta" ? 8 : 5;
   return (

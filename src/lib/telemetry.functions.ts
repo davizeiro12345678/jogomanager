@@ -22,7 +22,7 @@ const schema = z
   .strict();
 
 export const sendTechTelemetry = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => schema.parse(data))
+  .validator((data: unknown) => schema.parse(data))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("tech_telemetry").insert({

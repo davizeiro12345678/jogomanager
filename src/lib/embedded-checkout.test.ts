@@ -82,6 +82,25 @@ describe("embedded payment lifecycle", () => {
     expect(f.instance.destroy).toHaveBeenCalledTimes(1);
   });
 
+  it("ignores a duplicate Stripe rendered callback after checkout is ready", async () => {
+    const f = fixture();
+    f.start();
+    await vi.advanceTimersByTimeAsync(0);
+    const onAnalyticsEvent = f.create.mock.calls[0]![0].onAnalyticsEvent!;
+    const rendered = {
+      eventType: "checkoutRendered" as const,
+      checkoutSession: "cs_test_fixture",
+      details: {},
+      clientMetadata: {},
+      timestamp: 0,
+    };
+
+    onAnalyticsEvent(rendered);
+    onAnalyticsEvent(rendered);
+
+    expect(f.phase.mock.calls.filter(([phase]) => phase === "ready")).toHaveLength(1);
+  });
+
   it("destroys a late SDK result after the player closes the checkout", async () => {
     const f = fixture();
     let resolve!: (instance: typeof f.instance) => void;

@@ -4,7 +4,8 @@ SELECT jsonb_build_object(
   'control', (SELECT jsonb_build_object('enabled',enabled,'status',status,'last_error',last_error,
     'source_complete',source_complete,'updated_at',updated_at) FROM public.sportsdb_bridge_control),
   'database_bytes',pg_database_size(current_database()),
-  'raw_records',(SELECT count(*) FROM public.sportsdb_records),
+  'archive_ledger_bytes',pg_total_relation_size('public.sportsdb_archives'::regclass),
+  'cloudflare_archive',(SELECT source_status->'archive' FROM public.sportsdb_bridge_control),
   'canonical',jsonb_build_object(
     'leagues',(SELECT count(*) FROM public.official_leagues),
     'teams',(SELECT count(*) FROM public.official_teams),

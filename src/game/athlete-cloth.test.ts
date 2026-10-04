@@ -5,6 +5,7 @@ import { lookFor, proportionsFor } from "./player-model";
 import { playerMaterials } from "./player-materials";
 import { buildRigSkin } from "./rig-skin";
 import { eyelidSurface } from "./player-sculpt";
+import { HIGH_FIDELITY_PHYSICS_HZ } from "./physics-quality";
 
 const still: ClothMotion = { x: 0, z: 0, lift: 0, effort: 0, bend: 0 };
 const kit = {
@@ -72,6 +73,20 @@ describe("bounded athlete garment mechanics", () => {
       return cloth.offset[1]!;
     });
     expect(Math.max(...results) - Math.min(...results)).toBeLessThan(0.0004);
+  });
+  it("executes the same exact 139 Hz cloth slices at every render cadence", () => {
+    const samples = [30, 60, 120, 139].map((fps) => {
+      const cloth = new ClothDynamics();
+      for (let frame = 0; frame < fps * 2; frame++)
+        cloth.advance(1 / fps, { ...still, z: Math.min(8, (frame / fps) * 4) });
+      return cloth;
+    });
+    for (const cloth of samples) {
+      expect(cloth.executedSubsteps).toBe(HIGH_FIDELITY_PHYSICS_HZ * 2);
+      expect(cloth.time).toBeCloseTo(2, 10);
+      expect(Number.isFinite(cloth.offset[0])).toBe(true);
+      expect(Number.isFinite(cloth.offset[1])).toBe(true);
+    }
   });
   it("pins collar and waist and adds no bones or material groups", () => {
     const look = lookFor("cloth-athlete", "MF"),

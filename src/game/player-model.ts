@@ -368,12 +368,10 @@ export function proportionsFor(look: PlayerLook): Proportions {
   // Breadth varies independently from stature, but short, strong athletes
   // still need a human shoulder span. Bound the whole frame together so
   // deltoids, torso and pelvis keep their relative widths.
+  const shoulderEnvelope = 0.375 * build.shoulder * 1.04 + 0.065 * 2.36;
   const frameScale = Math.min(
-    Math.max(
-      g * strong * metricScale,
-      (1.8 * h * 0.235) / (0.355 * build.shoulder * 1.04 + 0.059 * 2.36),
-    ),
-    (1.8 * h * 0.33) / (0.355 * build.shoulder * 1.04 + 0.059 * 2.36),
+    Math.max(g * strong * metricScale, (1.8 * h * 0.245) / shoulderEnvelope),
+    (1.8 * h * 0.35) / shoulderEnvelope,
   );
 
   return {
@@ -382,9 +380,9 @@ export function proportionsFor(look: PlayerLook): Proportions {
     hipH: rawHipH * metricScale,
     spineLen: rawSpineLen * metricScale,
     chestLen: rawChestLen * metricScale,
-    chestW: 0.2 * frameScale,
-    chestD: 0.12 * frameScale * (look.bodyType === "strong" ? 1.05 : 1),
-    shoulderW: 0.355 * build.shoulder * frameScale,
+    chestW: 0.21 * frameScale,
+    chestD: 0.123 * frameScale * (look.bodyType === "strong" ? 1.05 : 1),
+    shoulderW: 0.375 * build.shoulder * frameScale,
     neckLen: rawNeckLen * metricScale,
     neckR: 0.048 * g * (look.role === "DF" || look.role === "GK" ? 1.06 : 1) * metricScale,
     headR,
@@ -395,7 +393,7 @@ export function proportionsFor(look: PlayerLook): Proportions {
     chinFwd: headR * (0.12 + (faceLong - 0.94) * 0.5),
     upperArm: 0.3 * h * metricScale * armSpan,
     foreArm: 0.255 * h * metricScale * armSpan,
-    armR: 0.059 * frameScale,
+    armR: 0.065 * frameScale,
     armSpan,
     posture,
     handR: 0.049 * g * metricScale,
@@ -466,11 +464,31 @@ export function lowDetailBodyFor(p: Proportions): LowDetailBodyShape {
 
 export type LodLevel = 0 | 1 | 2; // 0 = perto (tudo), 1 = médio, 2 = longe
 
-export function lodForDistance(dist: number, quality: "alta" | "media" | "baixa"): LodLevel {
+export function lodForDistance(
+  dist: number,
+  quality: "alta" | "media" | "baixa",
+  previous?: LodLevel | null,
+): LodLevel {
   const detail = getVisual().playerDetail;
   const bias = detail === "detalhado" ? 1.6 : detail === "simples" ? 0.5 : 1;
   const near = (quality === "alta" ? 26 : quality === "media" ? 18 : 12) * bias;
   const mid = (quality === "alta" ? 62 : quality === "media" ? 46 : 32) * bias;
+  if (previous !== undefined && previous !== null) {
+    // Keep a small deadband around each boundary so camera jitter cannot make
+    // eyes, fingers and boot detail flash on and off every other frame.
+    const nearBand = Math.max(0.9, near * 0.06);
+    const midBand = Math.max(1.25, (mid - near) * 0.045);
+    if (previous === 0) {
+      if (dist < near + nearBand) return 0;
+      return dist < mid + midBand ? 1 : 2;
+    }
+    if (previous === 1) {
+      if (dist < near - nearBand) return 0;
+      return dist < mid + midBand ? 1 : 2;
+    }
+    if (dist < near - nearBand) return 0;
+    return dist < mid - midBand ? 1 : 2;
+  }
   if (dist < near) return 0;
   if (dist < mid) return 1;
   return 2;

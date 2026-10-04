@@ -26,6 +26,8 @@ import { buildRigBody, type RigBody, type RigBodyContext } from "./rig-body";
 import { handBoneSpecs, FINGER_LENGTHS, type HandJoint } from "./player-hands";
 import { CORRECTIVE_DRIVERS, type CorrectiveJoint, type TwistJoint } from "./rig-correctives";
 import type { PlayerMaterials } from "./player-materials";
+import type { Proportions } from "./player-model";
+import { eyelidPivot } from "./player-sculpt";
 
 /** Junta animada → osso. Os nomes batem com os refs de `PlayerRig`. */
 export type RigJoint =
@@ -41,7 +43,10 @@ export type RigJoint =
   | "jaw"
   | "browL"
   | "browR"
-  | "blink"
+  | "eyelidUpperL"
+  | "eyelidLowerL"
+  | "eyelidUpperR"
+  | "eyelidLowerR"
   | "clavL"
   | "armL"
   | "foreL"
@@ -121,25 +126,11 @@ interface JointSpec {
 }
 
 /** Hierarquia de juntas — precisa espelhar `PlayerRig.tsx` ponto a ponto. */
-function jointSpecs(
-  P: {
-    hipY: number;
-    hipH: number;
-    spineLen: number;
-    chestLen: number;
-    neckLen: number;
-    headR: number;
-    headW: number;
-    headD: number;
-    shoulderW: number;
-    upperArm: number;
-    foreArm: number;
-    hipW: number;
-    thigh: number;
-    shin: number;
-  },
-  handRadius: number,
-): JointSpec[] {
+function jointSpecs(P: Proportions, handRadius: number, seed: number): JointSpec[] {
+  const eyelidUpperL = eyelidPivot(P, 1, seed, true);
+  const eyelidLowerL = eyelidPivot(P, 1, seed, false);
+  const eyelidUpperR = eyelidPivot(P, -1, seed, true);
+  const eyelidLowerR = eyelidPivot(P, -1, seed, false);
   const specs: JointSpec[] = [
     { joint: "hips", parent: null, offset: [0, P.hipY, 0] },
     { joint: "spine", parent: "hips", offset: [0, P.hipH * 0.5, 0] },
@@ -153,7 +144,26 @@ function jointSpecs(
     { joint: "jaw", parent: "face", offset: [0, -P.headR * 0.18, -P.headD * 0.26] },
     { joint: "browL", parent: "face", offset: [P.headW * 0.36, P.headR * 0.31, P.headD * 0.86] },
     { joint: "browR", parent: "face", offset: [-P.headW * 0.36, P.headR * 0.31, P.headD * 0.86] },
-    { joint: "blink", parent: "face", offset: [0, P.headR * 0.14, 0] },
+    {
+      joint: "eyelidUpperL",
+      parent: "face",
+      offset: [eyelidUpperL.x, eyelidUpperL.y, eyelidUpperL.z],
+    },
+    {
+      joint: "eyelidLowerL",
+      parent: "face",
+      offset: [eyelidLowerL.x, eyelidLowerL.y, eyelidLowerL.z],
+    },
+    {
+      joint: "eyelidUpperR",
+      parent: "face",
+      offset: [eyelidUpperR.x, eyelidUpperR.y, eyelidUpperR.z],
+    },
+    {
+      joint: "eyelidLowerR",
+      parent: "face",
+      offset: [eyelidLowerR.x, eyelidLowerR.y, eyelidLowerR.z],
+    },
     { joint: "clavL", parent: "chest", offset: [P.shoulderW * 0.12, P.chestLen * 0.84, 0] },
     { joint: "armL", parent: "clavL", offset: [P.shoulderW * 0.4, 0, 0] },
     { joint: "foreL", parent: "armL", offset: [0, -P.upperArm, 0] },
@@ -194,7 +204,10 @@ export const MESH_OWNER: Record<Exclude<keyof RigBody, "all">, RigJoint> = {
   face: "face",
   eyes: "eyes",
   jaw: "jaw",
-  blink: "blink",
+  eyelidUpperL: "eyelidUpperL",
+  eyelidLowerL: "eyelidLowerL",
+  eyelidUpperR: "eyelidUpperR",
+  eyelidLowerR: "eyelidLowerR",
   armL: "armL",
   armR: "armR",
   foreL: "foreL",
@@ -225,7 +238,10 @@ const MESH_LOD: Record<Exclude<keyof RigBody, "all">, RigSkinLod> = {
   face: "near",
   eyes: "near",
   jaw: "near",
-  blink: "near",
+  eyelidUpperL: "near",
+  eyelidLowerL: "near",
+  eyelidUpperR: "near",
+  eyelidLowerR: "near",
   armL: "core",
   armR: "core",
   foreL: "core",
@@ -261,7 +277,7 @@ export function buildRigSkin(
   options?: { mergeLods?: boolean },
 ): RigSkin {
   const body = buildRigBody(ctx);
-  const specs = jointSpecs(ctx.P, ctx.handR);
+  const specs = jointSpecs(ctx.P, ctx.handR, ctx.look.seed);
 
   /* ------------------------------------------------------------- ossos */
 

@@ -1,6 +1,20 @@
 import { expect, it } from "vitest";
+import * as facialAnimation from "./facial-animation";
 import { expressionFor } from "./animation-extra3";
 import { ballGazePitch, emptyFacialPose, facialPoseAt } from "./facial-animation";
+
+it("maps deterministic lid closure to opposing orbital hinge rotations", () => {
+  const eyelidRotationFor = (facialAnimation as Record<string, unknown>)["eyelidRotationFor"];
+  expect(eyelidRotationFor).toBeTypeOf("function");
+  const rotationFor = eyelidRotationFor as (closure: number, upper: boolean) => number;
+
+  expect(rotationFor(0, true)).toBeCloseTo(0, 8);
+  expect(rotationFor(0, false)).toBeCloseTo(0, 8);
+  expect(rotationFor(1, true)).toBeGreaterThan(0);
+  expect(rotationFor(1, false)).toBeLessThan(0);
+  expect(rotationFor(1.4, true)).toBeCloseTo(rotationFor(1, true), 8);
+  expect(rotationFor(Number.NaN, false)).toBeCloseTo(0, 8);
+});
 
 it("looks up at an aerial ball and down at a ball near the ground at the same distance", () => {
   expect(ballGazePitch(3, 4, 1.7)).toBeLessThan(0);

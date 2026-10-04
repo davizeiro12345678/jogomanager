@@ -47,12 +47,12 @@ export async function seedFromBundledData() {
     })),
   );
 
-  const compRes = await db.from("competitions").upsert(competitions, { onConflict: "id" });
+  const compRes = await db.from("competitions").upsert(competitions, { onConflict: "id", ignoreDuplicates: true });
   if (compRes.error) throw new Error(compRes.error.message);
 
   for (let i = 0; i < clubs.length; i += 100) {
     const chunk = clubs.slice(i, i + 100);
-    const res = await db.from("clubs").upsert(chunk, { onConflict: "id" });
+    const res = await db.from("clubs").upsert(chunk, { onConflict: "id", ignoreDuplicates: true });
     if (res.error) throw new Error(res.error.message);
   }
   return { competitions: competitions.length, clubs: clubs.length };

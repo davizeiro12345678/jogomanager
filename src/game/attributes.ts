@@ -14,6 +14,9 @@ export interface DetailedAttributes {
   // técnico
   finishing: number;
   dribbling: number;
+  technique: number;
+  ballControl: number;
+  flair: number;
   passing: number;
   vision: number;
   crossing: number;
@@ -25,6 +28,10 @@ export interface DetailedAttributes {
   tackling: number;
   heading: number;
   interceptions: number;
+  anticipation: number;
+  concentration: number;
+  bravery: number;
+  aggression: number;
   // físico
   pace: number;
   acceleration: number;
@@ -32,6 +39,9 @@ export interface DetailedAttributes {
   stamina: number;
   agility: number;
   jumping: number;
+  balance: number;
+  naturalFitness: number;
+  injuryResistance: number;
   // mental
   positioning: number;
   composure: number;
@@ -39,11 +49,19 @@ export interface DetailedAttributes {
   workRate: number;
   discipline: number;
   decisions: number;
+  offBall: number;
+  teamwork: number;
+  determination: number;
+  consistency: number;
   // goleiro
   reflexes: number;
   handling: number;
   aerialReach: number;
   distribution: number;
+  oneOnOnes: number;
+  commandOfArea: number;
+  rushingOut: number;
+  communication: number;
 }
 
 export interface AttributeGroup {
@@ -54,6 +72,9 @@ export interface AttributeGroup {
 export const ATTR_LABELS: Record<keyof DetailedAttributes, string> = {
   finishing: "Finalização",
   dribbling: "Drible",
+  technique: "Técnica",
+  ballControl: "Controle de bola",
+  flair: "Criatividade",
   passing: "Passe",
   vision: "Visão de jogo",
   crossing: "Cruzamento",
@@ -64,22 +85,37 @@ export const ATTR_LABELS: Record<keyof DetailedAttributes, string> = {
   tackling: "Desarme",
   heading: "Cabeceio",
   interceptions: "Interceptação",
+  anticipation: "Antecipação",
+  concentration: "Concentração",
+  bravery: "Coragem",
+  aggression: "Combatividade",
   pace: "Velocidade",
   acceleration: "Aceleração",
   strength: "Força",
   stamina: "Fôlego",
   agility: "Agilidade",
   jumping: "Impulsão",
+  balance: "Equilíbrio",
+  naturalFitness: "Condição natural",
+  injuryResistance: "Resistência a lesões",
   positioning: "Posicionamento",
   composure: "Frieza",
   leadership: "Liderança",
   workRate: "Entrega",
   discipline: "Disciplina",
   decisions: "Decisão",
+  offBall: "Movimentação sem bola",
+  teamwork: "Trabalho em equipe",
+  determination: "Determinação",
+  consistency: "Regularidade",
   reflexes: "Reflexo",
   handling: "Encaixe",
   aerialReach: "Saída aérea",
   distribution: "Reposição",
+  oneOnOnes: "Um contra um",
+  commandOfArea: "Comando da área",
+  rushingOut: "Saída do gol",
+  communication: "Comunicação",
 };
 
 export const FIELD_GROUPS: AttributeGroup[] = [
@@ -88,6 +124,9 @@ export const FIELD_GROUPS: AttributeGroup[] = [
     keys: [
       "finishing",
       "dribbling",
+      "technique",
+      "ballControl",
+      "flair",
       "passing",
       "vision",
       "crossing",
@@ -96,22 +135,74 @@ export const FIELD_GROUPS: AttributeGroup[] = [
       "setPieces",
     ],
   },
-  { label: "Defensivo", keys: ["marking", "tackling", "heading", "interceptions"] },
-  { label: "Físico", keys: ["pace", "acceleration", "strength", "stamina", "agility", "jumping"] },
+  {
+    label: "Defensivo",
+    keys: [
+      "marking",
+      "tackling",
+      "heading",
+      "interceptions",
+      "anticipation",
+      "concentration",
+      "bravery",
+      "aggression",
+    ],
+  },
+  {
+    label: "Físico",
+    keys: [
+      "pace",
+      "acceleration",
+      "strength",
+      "stamina",
+      "agility",
+      "jumping",
+      "balance",
+      "naturalFitness",
+      "injuryResistance",
+    ],
+  },
   {
     label: "Mental",
-    keys: ["positioning", "composure", "leadership", "workRate", "discipline", "decisions"],
+    keys: [
+      "positioning",
+      "composure",
+      "leadership",
+      "workRate",
+      "discipline",
+      "decisions",
+      "offBall",
+      "teamwork",
+      "determination",
+      "consistency",
+    ],
   },
 ];
 
 export const GK_GROUPS: AttributeGroup[] = [
   {
     label: "Goleiro",
-    keys: ["reflexes", "handling", "aerialReach", "distribution", "positioning"],
+    keys: [
+      "reflexes",
+      "handling",
+      "aerialReach",
+      "distribution",
+      "oneOnOnes",
+      "commandOfArea",
+      "rushingOut",
+      "communication",
+      "positioning",
+    ],
   },
   { label: "Com os pés", keys: ["passing", "firstTouch", "composure", "decisions"] },
-  { label: "Físico", keys: ["agility", "jumping", "strength", "stamina", "pace"] },
-  { label: "Mental", keys: ["leadership", "workRate", "discipline", "vision"] },
+  {
+    label: "Físico",
+    keys: ["agility", "jumping", "strength", "stamina", "pace", "balance", "naturalFitness"],
+  },
+  {
+    label: "Mental",
+    keys: ["leadership", "workRate", "discipline", "vision", "concentration", "consistency"],
+  },
 ];
 
 export type Foot = "destro" | "canhoto" | "ambidestro";
@@ -196,7 +287,7 @@ const cache = new Map<string, PlayerProfile>();
 
 /* -------------------------------------------------------------------------- */
 /*  Evolução persistente                                                      */
-/*  A base dos 28 atributos continua determinística; o que a carreira guarda  */
+/*  A base dos 46 atributos continua determinística; o que a carreira guarda  */
 /*  é apenas a diferença acumulada (treino, idade, temporadas jogadas).       */
 /* -------------------------------------------------------------------------- */
 
@@ -222,6 +313,7 @@ const ALL_KEYS = Object.keys(ATTR_LABELS) as (keyof DetailedAttributes)[];
  * físico e ganham cabeça. O sorteio é determinístico por jogador e temporada.
  */
 export function evolveSeason(players: Player[], season: number, current: AttrDeltas): AttrDeltas {
+  setAttrDeltas(current);
   const out: AttrDeltas = { ...current };
   for (const p of players) {
     const rnd = makeRng(`evo-${p.id}-${season}`);
@@ -238,9 +330,21 @@ export function evolveSeason(players: Player[], season: number, current: AttrDel
         k === "acceleration" ||
         k === "stamina" ||
         k === "agility" ||
-        k === "jumping";
+        k === "jumping" ||
+        k === "balance" ||
+        k === "naturalFitness" ||
+        k === "injuryResistance";
       const mental =
-        k === "composure" || k === "leadership" || k === "decisions" || k === "positioning";
+        k === "composure" ||
+        k === "leadership" ||
+        k === "decisions" ||
+        k === "positioning" ||
+        k === "anticipation" ||
+        k === "concentration" ||
+        k === "teamwork" ||
+        k === "determination" ||
+        k === "consistency" ||
+        k === "communication";
       let move = young * (0.6 + room * 0.1) * (rnd() * 1.6 - 0.2);
       if (physical) move -= old * (0.5 + rnd() * 0.8);
       if (mental) move += (p.age >= 29 ? 0.5 : 0) + rnd() * 0.6;
@@ -329,7 +433,21 @@ function buildSpells(p: Player, rnd: () => number): ClubSpell[] {
 
 /** Ficha completa do jogador — determinística e em cache. */
 export function profileFor(p: Player): PlayerProfile {
-  const hit = cache.get(p.id);
+  const cacheKey = JSON.stringify([
+    p.id,
+    p.name,
+    p.pos,
+    p.age,
+    p.clubId,
+    p.personality,
+    p.ovr,
+    p.pace,
+    p.shooting,
+    p.passing,
+    p.defending,
+    p.physical,
+  ]);
+  const hit = cache.get(cacheKey);
   if (hit) return hit;
   const rnd = makeRng(`profile-${p.id}-${p.name}`);
   const attrs = buildAttrs(p, rnd);
@@ -348,10 +466,11 @@ export function profileFor(p: Player): PlayerProfile {
   if (d) {
     for (const [k, v] of Object.entries(d)) {
       const key = k as keyof DetailedAttributes;
-      attrs[key] = clamp(attrs[key] + v);
+      if (Object.hasOwn(attrs, key) && Number.isFinite(v)) attrs[key] = clamp(attrs[key] + v);
     }
   }
-  cache.set(p.id, profile);
+  if (cache.size > 2048) cache.clear();
+  cache.set(cacheKey, profile);
   return profile;
 }
 

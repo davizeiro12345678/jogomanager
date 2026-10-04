@@ -39,9 +39,7 @@ const diretorEsportivoSchema = z.object({
 
 export const diretorEsportivo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: z.infer<typeof diretorEsportivoSchema>) =>
-    diretorEsportivoSchema.parse(input),
-  )
+  .validator((input: z.infer<typeof diretorEsportivoSchema>) => diretorEsportivoSchema.parse(input))
   .handler(async ({ data }) =>
     wrap(async () => {
       const system =
@@ -71,7 +69,7 @@ const olheiroSchema = z.object({
 
 export const olheiro = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: z.infer<typeof olheiroSchema>) => olheiroSchema.parse(input))
+  .validator((input: z.infer<typeof olheiroSchema>) => olheiroSchema.parse(input))
   .handler(async ({ data }) =>
     wrap(async () => {
       const system =
@@ -96,7 +94,7 @@ const jornalistaSchema = z.object({
 
 export const jornalista = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: z.infer<typeof jornalistaSchema>) => jornalistaSchema.parse(input))
+  .validator((input: z.infer<typeof jornalistaSchema>) => jornalistaSchema.parse(input))
   .handler(async ({ data }) =>
     wrap(async () => {
       const system =
@@ -119,9 +117,7 @@ const assistenteTaticoSchema = z.object({
 
 export const assistenteTatico = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: z.infer<typeof assistenteTaticoSchema>) =>
-    assistenteTaticoSchema.parse(input),
-  )
+  .validator((input: z.infer<typeof assistenteTaticoSchema>) => assistenteTaticoSchema.parse(input))
   .handler(async ({ data }) =>
     wrap(async () => {
       const system =
@@ -155,7 +151,7 @@ const coletivaSchema = z.object({
 
 export const coletiva = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: z.infer<typeof coletivaSchema>) => coletivaSchema.parse(input))
+  .validator((input: z.infer<typeof coletivaSchema>) => coletivaSchema.parse(input))
   .handler(async ({ data }) =>
     wrap(async () => {
       // A instrução do modelo é montada apenas com texto do servidor.
@@ -183,7 +179,7 @@ const chatIASchema = z.object({
 
 export const chatIA = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: z.infer<typeof chatIASchema>) => chatIASchema.parse(input))
+  .validator((input: z.infer<typeof chatIASchema>) => chatIASchema.parse(input))
   .handler(async ({ data }) =>
     wrap(async () => {
       // O resumo da carreira é dado do usuário: entra como conteúdo, nunca

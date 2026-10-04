@@ -159,7 +159,7 @@ describe("anatomical surface and cinematic performance regressions", () => {
       if (probe.chin) expect(p.distanceTo(probe.point)).toBeGreaterThan(0.002);
       else expect(p.distanceTo(probe.point)).toBeLessThan(1e-6);
     }
-    expect(skin.bones.length).toBeLessThanOrEqual(64);
+    expect(skin.bones.length).toBe(63);
     expect(skin.groups.length).toBeLessThanOrEqual(24);
     skin.dispose();
   });
@@ -196,7 +196,9 @@ describe("anatomical surface and cinematic performance regressions", () => {
       new THREE.Vector3(...shot.position).distanceTo(new THREE.Vector3(...shot.target)) *
       2 *
       Math.tan(THREE.MathUtils.degToRad(shot.fov / 2));
-    expect(coverage(close)).toBeLessThan(0.85);
+    // Close dialogue retains the athlete's collar and shoulders. This avoids
+    // an extreme face crop while remaining distinctly tighter than medium.
+    expect(coverage(close)).toBeLessThan(1.15);
     expect(coverage(medium)).toBeGreaterThan(1.7);
     expect(close.position[2]).toBeGreaterThan(close.target[2]);
     const reverse = cinematicShotFor("press", "press", "close", 1.78);

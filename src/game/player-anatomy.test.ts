@@ -3,8 +3,15 @@ import { describe, expect, it } from "vitest";
 import { emptyPose } from "./animation-core";
 import { gaitPoseAt } from "./gait-kinematics";
 import { soleHeightFor, solveGroundContact } from "./ground-contact";
-import { anatomyMeasurements, lookFor, lookWithPhysique, proportionsFor } from "./player-model";
-import { anatomicalLimb, type LimbProfile } from "./rig-geometry";
+import {
+  anatomyMeasurements,
+  lodForDistance,
+  lookFor,
+  lookWithPhysique,
+  proportionsFor,
+} from "./player-model";
+import { anatomicalLimb, forearmTattooSurface, type LimbProfile } from "./rig-geometry";
+import { tattooAlphaMask } from "./rig-materials";
 
 describe("adult player anatomy", () => {
   it("changes stature and mass without rerolling the athlete's identity", () => {
@@ -36,8 +43,8 @@ describe("adult player anatomy", () => {
         expect(m.heads).toBeLessThan(8.7);
         expect(m.inseam / m.height).toBeGreaterThan(0.46);
         expect(m.inseam / m.height).toBeLessThan(0.54);
-        expect(m.shoulderWidth / m.height).toBeGreaterThan(0.23);
-        expect(m.shoulderWidth / m.height).toBeLessThan(0.34);
+        expect(m.shoulderWidth / m.height).toBeGreaterThan(0.24);
+        expect(m.shoulderWidth / m.height).toBeLessThan(0.36);
         expect(m.wristHeight).toBeLessThan(p.hipY);
         expect(m.wristHeight).toBeGreaterThan(p.hipY - p.thigh * 0.6);
         // LOD head and the detailed skull use the same neck and crown.
@@ -69,6 +76,77 @@ describe("adult player anatomy", () => {
       }
       geometry.dispose();
     }
+  });
+
+  it("fits seeded tattoos to the back of the forearm instead of wrapping around it", () => {
+    const p = proportionsFor(lookFor("tattoo-surface", "MF"));
+    const left = forearmTattooSurface(p.foreArm, p.armR, 12, 1);
+    const right = forearmTattooSurface(p.foreArm, p.armR, 12, -1);
+    const leftPositions = left.getAttribute("position");
+    const rightPositions = right.getAttribute("position");
+    const columns = 16;
+    const rows = 16;
+    for (let row = 0; row <= rows; row++)
+      for (let column = 0; column <= columns; column++) {
+        const index = row * (columns + 1) + column;
+        const mirrored = row * (columns + 1) + (columns - column);
+        expect(Math.abs(leftPositions.getX(index) + rightPositions.getX(mirrored))).toBeLessThan(
+          0.0001,
+        );
+        expect(Math.abs(leftPositions.getZ(index) - rightPositions.getZ(mirrored))).toBeLessThan(
+          0.003,
+        );
+        expect(leftPositions.getZ(index)).toBeLessThan(0);
+      }
+    const angles = Array.from({ length: leftPositions.count }, (_, index) => {
+      const angle = Math.atan2(leftPositions.getX(index), leftPositions.getZ(index));
+      return angle < 0 ? angle + Math.PI * 2 : angle;
+    });
+    const span = Math.max(...angles) - Math.min(...angles);
+    expect(span).toBeGreaterThan(1.8);
+    expect(span).toBeLessThan(Math.PI);
+    expect(left.getIndex()!.count).toBe(rows * columns * 6);
+    expect(Array.from(left.getAttribute("normal").array).every(Number.isFinite)).toBe(true);
+    left.dispose();
+    right.dispose();
+  });
+
+  it("generates deterministic tattoo ink with tapered UV edges and broken vertical motifs", () => {
+    const a = tattooAlphaMask(4182);
+    const b = tattooAlphaMask(4182);
+    expect(a).toEqual(b);
+    const maximum = Math.max(...a);
+    expect(maximum).toBeGreaterThan(140);
+    for (let y = 0; y < 64; y++) {
+      expect(a[y * 64]).toBe(0);
+      expect(a[y * 64 + 63]).toBe(0);
+    }
+    const fullestRow = Math.max(
+      ...Array.from(
+        { length: 64 },
+        (_, y) => a.slice(y * 64, (y + 1) * 64).filter((alpha) => alpha > 0).length,
+      ),
+    );
+    expect(fullestRow).toBeLessThan(40);
+  });
+
+  it("uses LOD hysteresis so small camera movement cannot flash face and hand detail", () => {
+    const near = Array.from({ length: 10000 }, (_, index) => index / 100).find(
+      (distance) => lodForDistance(distance, "alta") > 0,
+    )!;
+    const middle = Array.from({ length: 10000 }, (_, index) => index / 100).find(
+      (distance) => lodForDistance(distance, "alta") === 2,
+    )!;
+    const nearBand = Math.max(0.9, near * 0.06);
+    const middleBand = Math.max(1.25, (middle - near) * 0.045);
+    expect(lodForDistance(near + nearBand * 0.5, "alta", 0)).toBe(0);
+    expect(lodForDistance(near + nearBand + 0.1, "alta", 0)).toBe(1);
+    expect(lodForDistance(near, "alta", 1)).toBe(1);
+    expect(lodForDistance(near - nearBand - 0.1, "alta", 1)).toBe(0);
+    expect(lodForDistance(middle + middleBand * 0.5, "alta", 1)).toBe(1);
+    expect(lodForDistance(middle + middleBand + 0.1, "alta", 1)).toBe(2);
+    expect(lodForDistance(middle - middleBand * 0.5, "alta", 2)).toBe(2);
+    expect(lodForDistance(middle - middleBand - 0.1, "alta", 2)).toBe(1);
   });
 });
 

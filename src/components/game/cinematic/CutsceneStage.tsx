@@ -41,8 +41,12 @@ import { directScene } from "@/game/cutscene-director";
 import { cinematicCueFor } from "@/game/cinematic-cue";
 import { CinematicSound } from "@/game/cinematic-sound";
 import { beginCinematicOverlay } from "@/game/cinematic-overlay";
-import { cutsceneBranch } from "@/game/cutscene-choice";
-import { prefersReducedMotion } from "@/game/device";
+import {
+  cutsceneBranch,
+  type CutsceneChoiceContext,
+  type CutsceneChoiceReaction,
+} from "@/game/cutscene-choice";
+import { prefersReducedMotion, watchReducedMotion } from "@/game/device";
 import type { Club, ManagerLook } from "@/game/types";
 import type { QualityLevel } from "@/game/device";
 import type { CinematicManner } from "@/game/cinematic-actor";
@@ -84,8 +88,8 @@ interface Props {
   cinematic?: boolean;
   /** elenco da carreira: quem fala aparece com nome e rosto */
   cast?: Cast | undefined;
-  /** consequência de uma escolha (o chamador aplica na carreira) */
-  onEffect?: ((effect: ChoiceEffect) => void) | undefined;
+  /** Consequência authored e reação relacional opcional; o chamador aplica na carreira. */
+  onEffect?: ((effect: ChoiceEffect, reaction?: CutsceneChoiceReaction) => void) | undefined;
   onDone: () => void;
   /** The host supplies its own voice transport and official crest. */
   loadVoice?: VoiceLoader | undefined;
@@ -95,6 +99,8 @@ interface Props {
   renderQuality?: QualityLevel | "auto";
   sceneData?: SceneData | undefined;
   manner?: CinematicManner | undefined;
+  /** Optional live relationship data used only to direct branch reactions. */
+  choiceContext?: CutsceneChoiceContext | undefined;
   /** Initial actor time for the studio's pose inspection. */
   previewTime?: number | undefined;
   autoPlay?: boolean;
@@ -756,6 +762,7 @@ export function CutsceneStage({
   renderQuality = "auto",
   sceneData,
   manner,
+  choiceContext,
   previewTime,
   autoPlay = false,
   reduceMotion = false,
@@ -770,6 +777,8 @@ export function CutsceneStage({
   // roteiro vivo: a resposta da escolha é enxertada aqui e a cena continua
   const [lines, setLines] = useState<CutsceneLine[]>(data?.lines ?? []);
   const [chosen, setChosen] = useState<number | null>(null);
+  const [branchReaction, setBranchReaction] = useState<CutsceneChoiceReaction | undefined>();
+  const [branchLines, setBranchLines] = useState<readonly CutsceneLine[]>([]);
   const chosenRef = useRef<number | null>(null);
   const [mode, setMode] = useState<"3d" | "2d">(cinematic ? "3d" : "2d");
   const [paused, setPaused] = useState(startPaused);
@@ -838,6 +847,8 @@ export function CutsceneStage({
     setLines(data?.lines ?? []);
     setI(0);
     setChosen(null);
+    setBranchReaction(undefined);
+    setBranchLines([]);
     chosenRef.current = null;
   }, [data]);
   // Direção da cena: cada fala ganha tamanho de plano, luz e tensão. O palco
@@ -852,7 +863,7 @@ export function CutsceneStage({
   }, [direction, data, i]);
   const lineTension = direction?.lines[i]?.emotion.tension ?? 0;
   const [typed, setTyped] = useState(0);
-  const systemReduced = useMemo(() => prefersReducedMotion(), []);
+  const [systemReduced, setSystemReduced] = useState(() => prefersReducedMotion());
   const reduced = reduceMotion || systemReduced;
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
@@ -867,10 +878,13 @@ export function CutsceneStage({
   const voiceContextRef = useRef<AudioContext | null>(null);
   const voiceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const voiceClockRef = useRef<ReturnType<typeof voiceClockFromContext> | null>(null);
+  const voicePlayingRef = useRef(false);
   const voiceVisemesRef = useRef<readonly TimedViseme[]>([]);
   const voiceFallbackTimerRef = useRef<number | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(narrate);
   const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing" | "fallback">("idle");
+
+  useEffect(() => watchReducedMotion(setSystemReduced), []);
 
   const clearVoiceFallbackTimer = useCallback(() => {
     if (voiceFallbackTimerRef.current !== null) {
@@ -881,6 +895,7 @@ export function CutsceneStage({
 
   const stopVoice = useCallback(() => {
     clearVoiceFallbackTimer();
+    voicePlayingRef.current = false;
     voiceRef.current?.pause();
     voiceRef.current = null;
     voiceNodeRef.current?.disconnect();
@@ -971,13 +986,19 @@ export function CutsceneStage({
   );
 
   const line = lines[i];
+  const previousLine = i > 0 ? lines[i - 1] : undefined;
+  const branchReactionForLine =
+    line && branchReaction && branchLines.includes(line) ? branchReaction : undefined;
   const full = line?.text ?? "";
   const cue = useMemo(
     () =>
       line && direction?.lines[i] && data
-        ? cinematicCueFor(`${data.id}:${line.id ?? i}`, line, direction.lines[i]!, lineMood)
+        ? cinematicCueFor(`${data.id}:${line.id ?? i}`, line, direction.lines[i]!, lineMood, {
+            previousLine,
+            choiceReaction: branchReactionForLine,
+          })
         : undefined,
-    [line, direction, i, data, lineMood],
+    [line, direction, i, data, lineMood, previousLine, branchReactionForLine],
   );
 
   useEffect(() => () => ambientRef.current?.dispose(), []);
@@ -1018,6 +1039,7 @@ export function CutsceneStage({
       if (!alive || fallbackStarted) return;
       fallbackStarted = true;
       clearVoiceFallbackTimer();
+      voicePlayingRef.current = false;
       voiceClockRef.current = null;
       voiceVisemesRef.current = [];
       audio?.pause();
@@ -1034,9 +1056,23 @@ export function CutsceneStage({
         return;
       }
       setVoiceState("playing");
+      voicePlayingRef.current = true;
       const utterance = new SpeechSynthesisUtterance(line.text);
-      utterance.onend = () => alive && setVoiceState("idle");
-      utterance.onerror = () => alive && setVoiceState("idle");
+      utterance.onstart = () => {
+        if (!alive) return;
+        voicePlayingRef.current = true;
+        setVoiceState("playing");
+      };
+      utterance.onend = () => {
+        if (!alive) return;
+        voicePlayingRef.current = false;
+        setVoiceState("idle");
+      };
+      utterance.onerror = () => {
+        if (!alive) return;
+        voicePlayingRef.current = false;
+        setVoiceState("idle");
+      };
       const lang = document.documentElement.lang || navigator.language || "pt-BR";
       utterance.lang = lang;
       utterance.rate = line.who === "referee" ? 0.9 : line.who === "commentator" ? 1.08 : 0.96;
@@ -1062,11 +1098,13 @@ export function CutsceneStage({
       audio.onplaying = () => {
         if (!alive || fallbackStarted) return;
         clearVoiceFallbackTimer();
+        voicePlayingRef.current = true;
         setVoiceState("playing");
       };
       audio.onended = () => {
         if (!alive || fallbackStarted) return;
         clearVoiceFallbackTimer();
+        voicePlayingRef.current = false;
         voiceClockRef.current = visemes.length ? RESTING_VOICE_CLOCK : null;
         setVoiceState("idle");
       };
@@ -1170,15 +1208,18 @@ export function CutsceneStage({
   /** Escolhe uma opção: enxerta a resposta no roteiro e dispara o efeito. */
   const choose = useCallback(
     (index: number) => {
-      const branch = cutsceneBranch(lines, i, index);
+      const responseLines = lines[i]?.choices?.[index]?.response ?? [];
+      const branch = cutsceneBranch(lines, i, index, choiceContext);
       if (!branch || chosenRef.current !== null) return;
       chosenRef.current = index;
       setChosen(index);
       setLines(branch.lines);
+      setBranchReaction(branch.reaction);
+      setBranchLines(responseLines);
       setCaptions(true);
-      if (branch.effect) onEffectRef.current?.(branch.effect);
+      if (branch.effect) onEffectRef.current?.(branch.effect, branch.reaction);
     },
-    [lines, i],
+    [lines, i, choiceContext],
   );
   const onEffectRef = useRef(onEffect);
   onEffectRef.current = onEffect;
@@ -1357,6 +1398,7 @@ export function CutsceneStage({
                 previewTime={previewTime}
                 cue={cue}
                 voiceClockRef={voiceClockRef}
+                voicePlayingRef={voicePlayingRef}
               />
             </Suspense>
           </GraphicsBoundary>

@@ -5,13 +5,20 @@
  * imagem com quique, giro, trave e rede, mas nunca devolve dados para
  * `MatchSim`. Regras, placar, posse, saves e replays continuam canônicos.
  */
-import RAPIER from "@dimforge/rapier3d-compat";
+import {
+  ColliderDesc,
+  init as initializeRapierWasm,
+  RigidBodyDesc,
+  RigidBodyType,
+  World,
+} from "@dimforge/rapier3d-compat";
 
 import {
   type CanonicalBallPhysicsState,
   type VisualBallState,
   visualBallFromCanonical,
 } from "./visual-ball";
+import { highFidelitySubsteps } from "./physics-quality";
 
 export const BALL_PHYSICS_RADIUS = 0.12;
 
@@ -53,11 +60,11 @@ function distance3D(
 let rapierReady: Promise<void> | null = null;
 
 function initializeRapier() {
-  return (rapierReady ??= RAPIER.init());
+  return (rapierReady ??= initializeRapierWasm());
 }
 
 function makeWorld() {
-  const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
+  const world = new World({ x: 0, y: -9.81, z: 0 });
   // Uma bola e poucos colisores: custo estável no Worker, sem 22 corpos.
   world.numSolverIterations = 8;
   world.maxCcdSubsteps = 4;
@@ -84,7 +91,7 @@ class RapierVisualBall implements RapierVisualPhysics {
     this.world = makeWorld();
     this.createPitchAndGoalColliders();
     this.ballBody = this.world.createRigidBody(
-      RAPIER.RigidBodyDesc.dynamic()
+      RigidBodyDesc.dynamic()
         .setTranslation(0, BALL_PHYSICS_RADIUS, 0)
         .setCcdEnabled(true)
         .setCanSleep(false)
@@ -92,7 +99,7 @@ class RapierVisualBall implements RapierVisualPhysics {
         .setAngularDamping(0.28),
     );
     this.ballCollider = this.world.createCollider(
-      RAPIER.ColliderDesc.ball(BALL_PHYSICS_RADIUS).setFriction(0.72).setRestitution(0.54),
+      ColliderDesc.ball(BALL_PHYSICS_RADIUS).setFriction(0.72).setRestitution(0.54),
       this.ballBody,
     );
   }
@@ -142,26 +149,29 @@ class RapierVisualBall implements RapierVisualPhysics {
     }
 
     const safeDt = Math.max(1 / 240, Math.min(1 / 15, finite(dt, 1 / 30)));
-    const velocity = this.ballBody.linvel();
-    const speed = Math.hypot(velocity.x, velocity.z);
-    if (Math.abs(this.visualSpin) > 0.001 && speed > 0.01) {
-      const magnus = this.visualSpin * safeDt * 0.045;
-      this.ballBody.setLinvel(
-        {
-          x: velocity.x - (velocity.z / speed) * magnus,
-          y: velocity.y,
-          z: velocity.z + (velocity.x / speed) * magnus,
-        },
-        true,
-      );
-      this.visualSpin *= Math.exp(-0.85 * safeDt);
+    // Ten slices cover the largest live spatial tick (1 / 15 s) at at least
+    // 139 Hz. Magnus samples share those slices so a visual curve remains
+    // continuous through a post or turf collision.
+    const substeps = highFidelitySubsteps(safeDt, 10);
+    const substep = safeDt / substeps;
+    for (let index = 0; index < substeps; index++) {
+      const velocity = this.ballBody.linvel();
+      const speed = Math.hypot(velocity.x, velocity.z);
+      if (Math.abs(this.visualSpin) > 0.001 && speed > 0.01) {
+        const magnus = this.visualSpin * substep * 0.045;
+        this.ballBody.setLinvel(
+          {
+            x: velocity.x - (velocity.z / speed) * magnus,
+            y: velocity.y,
+            z: velocity.z + (velocity.x / speed) * magnus,
+          },
+          true,
+        );
+        this.visualSpin *= Math.exp(-0.85 * substep);
+      }
+      this.world.timestep = substep;
+      this.world.step();
     }
-
-    // Bound the work to eight 120 Hz substeps, so fast post and turf contact
-    // resolve consistently even when the sequential Worker runs at 30 Hz.
-    const substeps = Math.min(8, Math.max(1, Math.ceil(safeDt * 120)));
-    this.world.timestep = safeDt / substeps;
-    for (let index = 0; index < substeps; index++) this.world.step();
   }
 
   read(fallback: CanonicalBallPhysicsState): VisualBallState {
@@ -232,7 +242,7 @@ class RapierVisualBall implements RapierVisualPhysics {
   }
 
   private setAttached(state: CanonicalBallPhysicsState) {
-    this.ballBody.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
+    this.ballBody.setBodyType(RigidBodyType.KinematicPositionBased, true);
     this.ballCollider.setSensor(true);
     this.ballBody.setTranslation(
       {
@@ -248,7 +258,7 @@ class RapierVisualBall implements RapierVisualPhysics {
 
   private setDynamic(state: CanonicalBallPhysicsState) {
     this.attached = false;
-    this.ballBody.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
+    this.ballBody.setBodyType(RigidBodyType.Dynamic, true);
     this.ballCollider.setSensor(false);
     this.ballBody.setTranslation(
       {
@@ -268,7 +278,7 @@ class RapierVisualBall implements RapierVisualPhysics {
   private createPitchAndGoalColliders() {
     const { fieldX, fieldZ } = this.options;
     this.world.createCollider(
-      RAPIER.ColliderDesc.cuboid(fieldX + 2, BALL_PHYSICS_RADIUS, fieldZ + 2)
+      ColliderDesc.cuboid(fieldX + 2, BALL_PHYSICS_RADIUS, fieldZ + 2)
         .setTranslation(0, -BALL_PHYSICS_RADIUS, 0)
         .setFriction(0.84)
         .setRestitution(0.48),
@@ -278,21 +288,21 @@ class RapierVisualBall implements RapierVisualPhysics {
       const goalX = direction * fieldX;
       for (const goalZ of [-GOAL_HALF_WIDTH, GOAL_HALF_WIDTH]) {
         this.world.createCollider(
-          RAPIER.ColliderDesc.cylinder(GOAL_HEIGHT / 2, 0.075)
+          ColliderDesc.cylinder(GOAL_HEIGHT / 2, 0.075)
             .setTranslation(goalX, GOAL_HEIGHT / 2, goalZ)
             .setFriction(0.35)
             .setRestitution(0.7),
         );
       }
       this.world.createCollider(
-        RAPIER.ColliderDesc.cuboid(0.075, 0.075, GOAL_HALF_WIDTH)
+        ColliderDesc.cuboid(0.075, 0.075, GOAL_HALF_WIDTH)
           .setTranslation(goalX, GOAL_HEIGHT, 0)
           .setFriction(0.35)
           .setRestitution(0.68),
       );
       // Rede leve: dá retorno visual à finalização sem decidir se foi gol.
       this.world.createCollider(
-        RAPIER.ColliderDesc.cuboid(0.04, GOAL_HEIGHT / 2, GOAL_HALF_WIDTH)
+        ColliderDesc.cuboid(0.04, GOAL_HEIGHT / 2, GOAL_HALF_WIDTH)
           .setTranslation(direction * (fieldX + 0.95), GOAL_HEIGHT / 2, 0)
           .setFriction(0.72)
           .setRestitution(0.22),

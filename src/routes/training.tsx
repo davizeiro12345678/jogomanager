@@ -6,6 +6,7 @@ import { GameShell } from "@/components/game/GameShell";
 import { NoCareer } from "@/components/game/screen-kit";
 import { useCareer } from "@/hooks/useCareer";
 import { CLUBS, LEAGUES, getLeague } from "@/game/data/leagues";
+import { ATTR_LABELS } from "@/game/attributes";
 import {
   DRILLS,
   drillDoneThisRound,
@@ -56,6 +57,7 @@ function TrainingPage() {
   const avgCond = players.reduce((s, p) => s + p.condition, 0) / Math.max(1, players.length);
   const avgMorale = players.reduce((s, p) => s + p.morale, 0) / Math.max(1, players.length);
   const intensity = career.trainingIntensity ?? 1;
+  const lastTrainingReport = career.trainingReports?.[0] ?? null;
   const youngsters = players
     .filter((p) => p.age <= 23)
     .sort((a, b) => b.ovr - a.ovr)
@@ -142,10 +144,49 @@ function TrainingPage() {
                 <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
                   desgaste {d.fatigue} · {d.targets.join(" / ")}
                 </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Trabalha{" "}
+                  {d.attrKeys
+                    .slice(0, 3)
+                    .map((key) => ATTR_LABELS[key])
+                    .join(" · ")}
+                  {d.attrKeys.length > 3 ? " e mais" : ""}.
+                </p>
               </button>
             );
           })}
         </div>
+      </section>
+
+      <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
+        <h2 className="font-display text-lg uppercase tracking-wide">Resposta individual</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Cada sessão considera idade, condição, potencial e personalidade. A evolução detalhada é
+          gradual e fica ligada ao jogador, não a uma barra genérica do elenco.
+        </p>
+        {lastTrainingReport ? (
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <Metric label="Desgaste da última sessão" value={`${lastTrainingReport.load} pontos`} />
+            <Metric
+              label="Condição média após a sessão"
+              value={`${lastTrainingReport.recovery}%`}
+            />
+            <div className="rounded-xl border border-border/50 bg-background/40 p-3">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Responderam melhor
+              </p>
+              <p className="mt-1 text-sm">
+                {lastTrainingReport.responders.length
+                  ? lastTrainingReport.responders.slice(0, 3).join(", ")
+                  : "Nenhuma evolução destacada"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-3 rounded-xl border border-dashed border-border/60 p-3 text-sm text-muted-foreground">
+            Aplique o primeiro exercício da rodada para ver a resposta do grupo.
+          </p>
+        )}
       </section>
 
       <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
@@ -262,6 +303,15 @@ function Gauge({ label, value }: { label: string; value: number }) {
           style={{ width: `${Math.max(2, Math.min(100, value))}%` }}
         />
       </div>
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border/50 bg-background/40 p-3">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-1 font-display text-lg">{value}</p>
     </div>
   );
 }

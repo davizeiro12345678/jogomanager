@@ -13,6 +13,7 @@ import { lookFor, proportionsFor } from "./player-model";
 import { playerMaterials, type PlayerMaterials } from "./player-materials";
 import { gaitPoseAt } from "./gait-kinematics";
 import { clampPoseAnatomy, solveGroundContact } from "./ground-contact";
+import { eyelidRotationFor } from "./facial-animation";
 
 const KIT = {
   base: "#0a8f3c",
@@ -207,6 +208,95 @@ describe("rig skin", () => {
     // pivô do quadril na altura do quadril, não no chão
     expect(skin.boneOf.hips.position.y).toBeGreaterThan(0.5);
     expect(skin.boneOf.hips.position.y).toBeLessThan(1.4);
+  });
+
+  it("replaces the blink scale bone with four articulated orbital hinges", () => {
+    const skin = buildRigSkin(context(), ROOT);
+    const eyelids = ["eyelidUpperL", "eyelidLowerL", "eyelidUpperR", "eyelidLowerR"];
+
+    expect(skin.bones).toHaveLength(63);
+    expect(skin.bones.map((bone) => bone.name)).not.toContain("blink");
+    expect(
+      Object.keys(MESH_OWNER)
+        .filter((part) => part.startsWith("eyelid"))
+        .sort(),
+    ).toEqual(eyelids.slice().sort());
+    for (const joint of eyelids) {
+      const bone = skin.bones.find((candidate) => candidate.name === joint);
+      expect(bone).toBeDefined();
+      expect(bone!.parent).toBe(skin.boneOf.face);
+      expect(bone!.position.z).toBeGreaterThan(0);
+    }
+    const upperL = skin.bones.find((bone) => bone.name === "eyelidUpperL")!;
+    const lowerL = skin.bones.find((bone) => bone.name === "eyelidLowerL")!;
+    const upperR = skin.bones.find((bone) => bone.name === "eyelidUpperR")!;
+    const lowerR = skin.bones.find((bone) => bone.name === "eyelidLowerR")!;
+    expect(upperL.position.x).toBeGreaterThan(0);
+    expect(lowerL.position.x).toBeGreaterThan(0);
+    expect(upperR.position.x).toBeLessThan(0);
+    expect(lowerR.position.x).toBeLessThan(0);
+    expect(upperL.position.y).toBeGreaterThan(lowerL.position.y);
+    expect(upperR.position.y).toBeGreaterThan(lowerR.position.y);
+    skin.dispose();
+  });
+
+  it("keeps each orbital hinge fixed while its own free eyelid edge rotates", () => {
+    const skin = buildRigSkin(context(), ROOT);
+    const meshes = skin.groups.map((group) => {
+      const mesh = new THREE.SkinnedMesh(group.geometry, group.material);
+      mesh.skeleton = skin.skeleton;
+      mesh.bindMatrix.copy(skin.bindMatrix);
+      mesh.bindMatrixInverse.copy(skin.bindMatrix).invert();
+      return mesh;
+    });
+    const rootOffset = new THREE.Vector3(...ROOT);
+    const probeFor = (joint: "eyelidUpperL" | "eyelidLowerL", upper: boolean) => {
+      const bone = skin.boneOf[joint];
+      const index = skin.bones.indexOf(bone);
+      const pivot = new THREE.Vector3()
+        .setFromMatrixPosition(rigRestMatrix(skin, joint))
+        .sub(rootOffset);
+      let candidate:
+        | { mesh: THREE.SkinnedMesh; index: number; point: THREE.Vector3; distance: number }
+        | undefined;
+      for (const mesh of meshes) {
+        const positions = mesh.geometry.getAttribute("position");
+        const skinIndex = mesh.geometry.getAttribute("skinIndex");
+        const weights = mesh.geometry.getAttribute("skinWeight");
+        for (let vertex = 0; vertex < positions.count; vertex++) {
+          if (skinIndex.getX(vertex) !== index || weights.getX(vertex) < 0.999) continue;
+          const point = new THREE.Vector3().fromBufferAttribute(positions, vertex);
+          const distance = point.y - pivot.y;
+          if (!candidate || (upper ? distance < candidate.distance : distance > candidate.distance))
+            candidate = { mesh, index: vertex, point, distance };
+        }
+      }
+      expect(candidate).toBeDefined();
+      return { bone, pivot, probe: candidate! };
+    };
+
+    update(skin);
+    const upper = probeFor("eyelidUpperL", true);
+    const lower = probeFor("eyelidLowerL", false);
+    const upperHinge = upper.bone.getWorldPosition(new THREE.Vector3()).clone();
+    const lowerHinge = lower.bone.getWorldPosition(new THREE.Vector3()).clone();
+    upper.bone.rotation.x = eyelidRotationFor(1, true);
+    lower.bone.rotation.x = eyelidRotationFor(1, false);
+    update(skin);
+
+    expect(upper.bone.getWorldPosition(new THREE.Vector3()).distanceTo(upperHinge)).toBeLessThan(
+      1e-7,
+    );
+    expect(lower.bone.getWorldPosition(new THREE.Vector3()).distanceTo(lowerHinge)).toBeLessThan(
+      1e-7,
+    );
+    const transformedUpper = upper.probe.point.clone();
+    const transformedLower = lower.probe.point.clone();
+    upper.probe.mesh.applyBoneTransform(upper.probe.index, transformedUpper);
+    lower.probe.mesh.applyBoneTransform(lower.probe.index, transformedLower);
+    expect(transformedUpper.distanceTo(upper.probe.point)).toBeGreaterThan(0.002);
+    expect(transformedLower.distanceTo(lower.probe.point)).toBeGreaterThan(0.001);
+    skin.dispose();
   });
 
   it("normalizes every skin weight and blends vertices across joint boundaries", () => {

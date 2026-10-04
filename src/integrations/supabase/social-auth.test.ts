@@ -104,10 +104,20 @@ describe("configured authentication methods", () => {
     }
   });
 
-  it("preserves the callback destination and requests Microsoft's required email scope", () => {
+  it("preserves the callback destination for every configured direct provider", () => {
     const redirectTo = "https://jogomanager.com/auth?next=%2Fperfil";
+    for (const provider of [
+      "google",
+      "discord",
+      "facebook",
+      "github",
+      "linkedin_oidc",
+      "spotify",
+      "figma",
+    ] as const) {
+      expect(socialOAuthOptions(provider, redirectTo)).toEqual({ redirectTo });
+    }
     expect(socialOAuthOptions("azure", redirectTo)).toEqual({ redirectTo, scopes: "email" });
-    expect(socialOAuthOptions("discord", redirectTo)).toEqual({ redirectTo });
   });
 });
 

@@ -14,6 +14,26 @@ export function buildAttrs(p: Player, rnd: () => number): DetailedAttributes {
   const pas = p.passing;
   const def = p.defending;
   const phy = p.physical;
+  // New attributes have an independent stream: old face, height, foot and
+  // attribute identity must not shift when the schema gains a field.
+  const advancedRng = makeRng(`advanced-attributes-${p.id}-${p.name}`);
+  const extra = (base: number, spread = 7) => clamp(base + advancedRng() * spread - spread / 2);
+  const advanced = {
+    balance: extra((pace + phy) / 2 + (pos === "MF" ? 3 : 0)),
+    naturalFitness: extra(phy - 1),
+    injuryResistance: extra(phy - 3),
+    anticipation: extra(ovr - 4 + (pos === "DF" || pos === "GK" ? 4 : 0)),
+    concentration: extra(ovr - 4 + (p.age >= 28 ? 3 : 0)),
+    bravery: extra(phy - 3 + (pos === "DF" || pos === "GK" ? 5 : 0)),
+    aggression: extra(phy - 5 + (pos === "DF" ? 7 : 0)),
+    offBall: extra(ovr - 5 + (pos === "FW" ? 6 : pos === "MF" ? 2 : -4)),
+    teamwork: extra(ovr - 4 + (pos === "MF" ? 3 : 0)),
+    determination: extra(ovr - 5 + (p.age <= 23 ? 2 : 0)),
+    consistency: extra(ovr - 7 + (p.age >= 28 ? 4 : 0)),
+    technique: extra((pas + sho) / 2 + (pos === "MF" ? 3 : 0)),
+    ballControl: extra((pas + sho + pace) / 3 + (pos === "FW" || pos === "MF" ? 3 : -5)),
+    flair: extra((pas + sho) / 2 - 3 + (pos === "FW" ? 4 : 0), 12),
+  };
 
   const common = {
     pace: j(pace, 4),
@@ -32,6 +52,7 @@ export function buildAttrs(p: Player, rnd: () => number): DetailedAttributes {
 
   if (pos === "GK") {
     return {
+      ...advanced,
       ...common,
       finishing: j(30, 10),
       dribbling: j(38, 10),
@@ -49,6 +70,10 @@ export function buildAttrs(p: Player, rnd: () => number): DetailedAttributes {
       handling: j(def),
       aerialReach: j(def - 2),
       distribution: j(pas + 2),
+      oneOnOnes: extra(def + 2),
+      commandOfArea: extra(def - 1 + (p.age >= 27 ? 3 : 0)),
+      rushingOut: extra(pace + 1),
+      communication: extra(ovr - 5 + (p.age >= 29 ? 5 : 0)),
     };
   }
 
@@ -57,6 +82,7 @@ export function buildAttrs(p: Player, rnd: () => number): DetailedAttributes {
   const back = pos === "DF";
 
   return {
+    ...advanced,
     ...common,
     finishing: j(sho + (attack ? 4 : mid ? -6 : -18)),
     dribbling: j((sho + pas) / 2 + (attack ? 4 : mid ? 2 : -12)),
@@ -74,6 +100,10 @@ export function buildAttrs(p: Player, rnd: () => number): DetailedAttributes {
     handling: j(28, 8),
     aerialReach: j(30, 8),
     distribution: j(pas - 10),
+    oneOnOnes: extra(28, 8),
+    commandOfArea: extra(30, 8),
+    rushingOut: extra(pace - 14, 10),
+    communication: extra(ovr - 12, 10),
   };
 }
 

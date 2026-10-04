@@ -89,6 +89,56 @@ describe("rig body", () => {
     expect(unique.size).toBe(body.all.length);
   });
 
+  it("keeps garment construction inside the existing kit draws", () => {
+    const ctx = context();
+    const body = buildRigBody(ctx);
+    // Waistband, rolled hems, panel topstitching, shirt seams and boot
+    // construction all share the joint's existing material instead of
+    // multiplying draw calls.
+    expect(body.hips.filter((mesh) => mesh.material === ctx.mats.shorts)).toHaveLength(1);
+    expect(body.spine.filter((mesh) => mesh.material === ctx.mats.jersey)).toHaveLength(1);
+    expect(body.ankleL.filter((mesh) => mesh.material === ctx.mats.boot)).toHaveLength(1);
+    expect(body.ankleL.filter((mesh) => mesh.material === ctx.mats.bootAccent)).toHaveLength(1);
+  });
+
+  it("spends extra hand and garment vertices only in the high detail rig", () => {
+    const high = buildRigBody(context({ hi: true }));
+    const low = buildRigBody(context({ hi: false }));
+    const vertices = (body: ReturnType<typeof buildRigBody>, key: keyof typeof high) =>
+      body[key].reduce((sum, mesh) => sum + mesh.geometry.getAttribute("position").count, 0);
+    const triangles = (body: ReturnType<typeof buildRigBody>, key: keyof typeof high) =>
+      body[key].reduce(
+        (sum, mesh) =>
+          sum +
+          (mesh.geometry.getIndex()?.count ?? mesh.geometry.getAttribute("position").count) / 3,
+        0,
+      );
+    expect(vertices(high, "thumbL")).toBeGreaterThan(vertices(low, "thumbL"));
+    expect(vertices(high, "hips")).toBeGreaterThan(vertices(low, "hips"));
+    // A close-up-only nail and two short outseams are deliberately tiny. Keep
+    // their high-quality surplus bounded, so future visual polish cannot turn
+    // a shared articulated joint into a hidden LOD triangle regression.
+    expect(vertices(high, "thumbL") - vertices(low, "thumbL")).toBeLessThanOrEqual(24);
+    expect(triangles(high, "thumbL") - triangles(low, "thumbL")).toBeLessThanOrEqual(24);
+    expect(vertices(high, "hips") - vertices(low, "hips")).toBeLessThanOrEqual(128);
+    expect(triangles(high, "hips") - triangles(low, "hips")).toBeLessThanOrEqual(160);
+    // Their materials remain merged at either profile; visual detail never
+    // widens the articulated draw budget.
+    expect(countRigBody(high)).toBeLessThanOrEqual(56);
+    expect(countRigBody(low)).toBeLessThanOrEqual(56);
+  });
+
+  it("shows a short-sleeve compression layer without spending extra rig draws", () => {
+    const base = lookFor("rig-body-undershirt", "MF", false);
+    const bareCtx = context({ look: { ...base, sleeves: "short", undershirt: false } });
+    const layeredCtx = context({ look: { ...base, sleeves: "short", undershirt: true } });
+    const bare = buildRigBody(bareCtx);
+    const layered = buildRigBody(layeredCtx);
+    expect(countRigBody(layered)).toBe(countRigBody(bare));
+    expect(layered.armL.some((mesh) => mesh.material === layeredCtx.mats.skin)).toBe(false);
+    expect(layered.foreL.some((mesh) => mesh.material === layeredCtx.mats.skin)).toBe(false);
+  });
+
   it("shares materials between two rigs with the same look", () => {
     resetSharedDetailMaterials();
     const first = buildRigBody(context());

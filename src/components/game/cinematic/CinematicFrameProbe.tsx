@@ -43,6 +43,9 @@ export function CinematicFrameProbe({
     element.dataset["cinematicSubject"] = String(
       camera.userData["cinematicSubject"] ?? "environment",
     );
+    element.dataset["cinematicActorPresence"] = String(
+      camera.userData["cinematicActorPresence"] ?? "environment",
+    );
     element.dataset["cinematicShotType"] = String(camera.userData["cinematicShotType"] ?? "master");
     element.dataset["cinematicFraming"] = String(
       camera.userData["cinematicFraming"] ?? "establishing",

@@ -100,18 +100,19 @@ function presentationBall(sim: SimView) {
  * na CPU por quadro, então dá para colocar dezenas de milhares de folhas.
  * A bola amassa a grama num raio curto ao passar.
  */
-function useBladeMaterial(color: string) {
-  const data = useMemo(() => createGrassBladeMaterial(color), [color]);
+function useBladeMaterial(color: string, webgl2: boolean) {
+  const data = useMemo(() => createGrassBladeMaterial(color, { webgl2 }), [color, webgl2]);
   return { mat: data.material, uniforms: data.uniforms };
 }
 
-function GrassField({ sim, quality }: { sim: SimView; quality: Quality }) {
+function GrassField({ sim, quality, webgl2 }: { sim: SimView; quality: Quality; webgl2: boolean }) {
   const vis = useVisual();
   const pressure = useQualityPressure();
   const budget = useRuntimeSceneBudget();
-  const { mat, uniforms } = useBladeMaterial("#46824b");
+  const { mat, uniforms } = useBladeMaterial("#46824b", webgl2);
   useEffect(() => () => mat.dispose(), [mat]);
   useFrame(({ clock }) => {
+    if (!webgl2) return;
     const visualBall = presentationBall(sim);
     uniforms.uTime.value = clock.elapsedTime;
     uniforms.uBall.value.set(visualBall.x, visualBall.height, visualBall.z);
@@ -227,14 +228,11 @@ function Pitch({
     void textureRevision;
     return (compressed ? ktx2("grassRough") : null) ?? grassRoughness(mow);
   }, [mow, compressed, textureRevision]);
-  const norm = useMemo(() => {
-    void textureRevision;
-    return quality === "baixa"
-      ? null
-      : ((compressed ? ktx2("grassNormal") : null) ?? grassNormal(mow));
-  }, [quality, mow, compressed, textureRevision]);
+  // Keep broad relief out of the field normals; it reads as cool blue blotches
+  // from the high broadcast camera. The fine procedural blade detail remains.
+  const norm = useMemo(() => (quality === "baixa" ? null : grassNormal(mow)), [quality, mow]);
   const normalScale = useMemo(
-    () => new THREE.Vector2(quality === "alta" ? 0.44 : 0.28, quality === "alta" ? 0.44 : 0.28),
+    () => new THREE.Vector2(quality === "alta" ? 0.18 : 0.12, quality === "alta" ? 0.18 : 0.12),
     [quality],
   );
   const wear = useMemo(() => (quality === "baixa" ? null : pitchWearTexture()), [quality]);
@@ -322,12 +320,12 @@ function Pitch({
           />
         </mesh>
       ) : null}
-      {quality !== "baixa" && <GrassField sim={sim} quality={quality} />}
+      {quality !== "baixa" && <GrassField sim={sim} quality={quality} webgl2={webgl2} />}
       {quality !== "baixa" && <PitchMarks sim={sim} />}
       {quality !== "baixa" && wet > 0.5 ? <Puddles wet={wet} /> : null}
       <Goal side={1} quality={quality} sim={sim} />
       <Goal side={-1} quality={quality} sim={sim} />
-      <CornerFlags sim={sim} />
+      <CornerFlags sim={sim} webgl2={webgl2} />
     </group>
   );
 }
@@ -626,7 +624,7 @@ function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: Sim
   );
 }
 
-function CornerFlags({ sim }: { sim: SimView }) {
+function CornerFlags({ sim, webgl2 }: { sim: SimView; webgl2: boolean }) {
   const ref = useRef<THREE.Group>(null);
   const uTime = useRef({ value: 0 });
   const uAmp = useRef({ value: 0.16 });
@@ -638,23 +636,24 @@ function CornerFlags({ sim }: { sim: SimView }) {
       side: THREE.DoubleSide,
       roughness: 0.8,
     });
-    m.onBeforeCompile = (shader) => {
-      shader.uniforms["uTime"] = uTime.current;
-      shader.uniforms["uAmp"] = uAmp.current;
-      shader.vertexShader = shader.vertexShader
-        .replace(
-          "#include <common>",
-          "#include <common>\nuniform float uTime;\nuniform float uAmp;",
-        )
-        .replace(
-          "#include <begin_vertex>",
-          `#include <begin_vertex>
+    if (webgl2)
+      m.onBeforeCompile = (shader) => {
+        shader.uniforms["uTime"] = uTime.current;
+        shader.uniforms["uAmp"] = uAmp.current;
+        shader.vertexShader = shader.vertexShader
+          .replace(
+            "#include <common>",
+            "#include <common>\nuniform float uTime;\nuniform float uAmp;",
+          )
+          .replace(
+            "#include <begin_vertex>",
+            `#include <begin_vertex>
            float cphase = modelMatrix[3].x * 0.5 + modelMatrix[3].z * 0.5;
            transformed.z += sin(uTime * 6.0 + cphase + position.x * 8.0) * uAmp * (position.x + 0.275);`,
-        );
-    };
+          );
+      };
     return m;
-  }, []);
+  }, [webgl2]);
   useEffect(() => () => cloth.dispose(), [cloth]);
   useFrame(({ clock }) => {
     uTime.current.value = clock.elapsedTime;
@@ -1452,6 +1451,7 @@ function Stands({
   night,
   supporters,
   sim,
+  webgl2,
 }: {
   sim: SimView;
   homeColor: string;
@@ -1460,6 +1460,7 @@ function Stands({
   goalPulse: React.MutableRefObject<number>;
   night: boolean;
   supporters?: SupporterMatchday | undefined;
+  webgl2: boolean;
 }) {
   const vis = useVisual();
   const pressure = useQualityPressure();
@@ -1590,9 +1591,16 @@ function Stands({
         alt={awayColor}
         rings={rings}
         count={budget.flagCount}
+        webgl2={webgl2}
       />
 
-      <CrowdLod crowd={crowd} pulse={goalPulse} budget={crowdBudget} supporters={supporters} />
+      <CrowdLod
+        crowd={crowd}
+        pulse={goalPulse}
+        budget={crowdBudget}
+        supporters={supporters}
+        webgl2={webgl2}
+      />
     </group>
   );
 }
@@ -1607,12 +1615,14 @@ function CrowdFlags({
   alt,
   rings,
   count,
+  webgl2,
 }: {
   color: string;
   alt: string;
   rings: number;
   count: number;
   sim: SimView;
+  webgl2: boolean;
 }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const uTime = useRef({ value: 0 });
@@ -1655,25 +1665,26 @@ function CrowdFlags({
       metalness: 0,
       vertexColors: true,
     });
-    value.onBeforeCompile = (shader) => {
-      shader.uniforms["uTime"] = uTime.current;
-      shader.uniforms["uWind"] = uWind.current;
-      shader.vertexShader = shader.vertexShader
-        .replace(
-          "#include <common>",
-          "#include <common>\nuniform float uTime; uniform float uWind;",
-        )
-        .replace(
-          "#include <begin_vertex>",
-          `#include <begin_vertex>
+    if (webgl2)
+      value.onBeforeCompile = (shader) => {
+        shader.uniforms["uTime"] = uTime.current;
+        shader.uniforms["uWind"] = uWind.current;
+        shader.vertexShader = shader.vertexShader
+          .replace(
+            "#include <common>",
+            "#include <common>\nuniform float uTime; uniform float uWind;",
+          )
+          .replace(
+            "#include <begin_vertex>",
+            `#include <begin_vertex>
            float phase = instanceMatrix[3].x * 0.17 + instanceMatrix[3].z * 0.13;
            float wave = sin(uTime * 2.2 + phase + position.x * 3.0) * 0.12
                       + sin(uTime * 3.7 + phase + position.y * 2.0) * 0.05;
            transformed.z += wave * uWind * smoothstep(-1.2, 1.2, position.x);`,
-        );
-    };
+          );
+      };
     return value;
-  }, []);
+  }, [webgl2]);
   useEffect(
     () => () => {
       geometry.dispose();
@@ -2714,6 +2725,7 @@ function Scene({
         goalPulse={goalPulse}
         night={time !== "dia"}
         supporters={supporters}
+        webgl2={backend === "webgl2"}
       />
       {/* O que a arquibancada faz em cada lance: gol, chance, falta, protesto */}
       <CrowdReaction
@@ -2914,6 +2926,7 @@ function Stadium3DImpl({
   // A detecção acontece uma vez, antes de montar o palco, para não recriar
   // o contexto (e perder todas as texturas) no meio da partida.
   const [backend, setBackend] = useState<GpuBackend | null>(null);
+  const [rendererReady, setRendererReady] = useState(false);
   useEffect(() => {
     let alive = true;
     void detectWebGPU().then((ok) => {
@@ -2979,14 +2992,16 @@ function Stadium3DImpl({
           performance={{ min: 0.5 }}
           fallback={
             <div
-              role="status"
+              role={rendererReady ? undefined : "status"}
+              aria-hidden={rendererReady || undefined}
               className="flex h-full min-h-64 items-center justify-center px-6 text-center text-sm text-muted-foreground"
             >
-              O estádio 3D precisa de WebGL. Abra o jogo em um navegador atualizado para acompanhar
-              a partida.
+              Não foi possível iniciar os gráficos 3D. Os controles e o placar continuam
+              disponíveis.
             </div>
           }
           onCreated={({ gl }) => {
+            setRendererReady(true);
             const r = gl as unknown as {
               toneMapping: THREE.ToneMapping;
               toneMappingExposure: number;
@@ -3054,11 +3069,6 @@ function Stadium3DImpl({
           <span className="ml-2 text-white/60">{fps.drawCalls} draws</span>
           {fps.memoryMb ? <span className="ml-2 text-white/60">{fps.memoryMb} MB</span> : null}
         </div>
-      ) : null}
-      {vis.adaptive && pressure > 0 ? (
-        <span className="pointer-events-none absolute right-2 top-2 rounded-full bg-black/45 px-2 py-0.5 text-[10px] uppercase tracking-widest text-white/80">
-          Auto · etapa {sceneBudget.stage}/8 · {Math.round(sceneBudget.resolutionScale * 100)}%
-        </span>
       ) : null}
       {quality === "baixa" ? (
         <div

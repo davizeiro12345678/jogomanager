@@ -36,6 +36,7 @@ export function cinematicExpressionAt(
   const t = Number.isFinite(time) ? Math.max(0, time) : 0;
   const tension = Math.max(0, Math.min(1, cue?.tension ?? 0));
   const warmth = Math.max(0, Math.min(1, cue?.warmth ?? 0.4));
+  const gesture = cue?.gesture ?? "explain";
   // Uneven intervals and short doubles avoid every blink becoming a metronome.
   const phase = (t + Math.abs(seed % 113) * 0.37) % 13.8;
   const blinkAge =
@@ -51,17 +52,81 @@ export function cinematicExpressionAt(
   const closure = blinkAge >= 0 ? Math.sin((Math.PI * blinkAge) / 0.19) ** 2 : 0;
   const focus = Math.max(-0.9, Math.min(0.9, Number.isFinite(attentionYaw) ? attentionYaw : 0));
   const delivery = acting ? Math.max(0, Math.min(1, emphasis)) : 0;
-  const acknowledgement = acting ? 0 : Math.max(0, Math.sin(t * 1.1 + seed * 0.23)) ** 4;
+  const turn = cue?.turn;
+  // The gesture envelope is shared with listeners, so an answering actor can
+  // acknowledge a particular spoken beat without a second animation clock.
+  const listenerBeat =
+    !acting && turn ? Math.max(0, Math.min(1, emphasis)) * turn.listenerReaction : 0;
+  // A listener answers the line with occasional, held acknowledgement rather
+  // than a metronomic nod. A conversation handoff adds a small, synchronized
+  // reaction; warmth makes it readable while tension keeps the face guarded.
+  const idleAcknowledgement = acting
+    ? 0
+    : Math.max(0, Math.sin(t * 0.73 + seed * 0.23 + 0.9)) ** 6 * (0.45 + warmth * 0.55);
+  const acknowledgement = acting
+    ? 0
+    : Math.max(
+        idleAcknowledgement,
+        listenerBeat * (turn?.kind === "challenge" ? 0.72 : turn?.kind === "question" ? 0.82 : 1),
+      );
   // Fixations hold between brief saccades instead of continuously swimming.
   const fixation = Math.floor((t + Math.abs(seed % 7) * 0.19) / 0.83);
-  const microGaze = Math.sin(fixation * 2.37 + seed) * 0.00013;
+  const microGaze =
+    (Math.sin(fixation * 2.37 + seed) * 0.72 + Math.sin(fixation * 0.91 + seed * 0.4) * 0.28) *
+    0.00016;
+  const intentLift =
+    gesture === "question"
+      ? 0.00055
+      : gesture === "rally"
+        ? 0.00032
+        : gesture === "reassure"
+          ? 0.00042
+          : gesture === "confront"
+            ? -0.00018
+            : gesture === "celebrate"
+              ? 0.00068
+              : 0.00016;
+  const intentTilt =
+    gesture === "confront"
+      ? -0.032
+      : gesture === "question"
+        ? 0.026
+        : gesture === "reassure"
+          ? 0.022
+          : gesture === "celebrate"
+            ? 0.034
+            : 0.008;
+  const gazeX = Math.max(-0.00195, Math.min(0.00195, Math.sin(focus) * 0.00172 + microGaze));
+  const gazeY = Math.max(
+    -0.00042,
+    Math.min(
+      0.00042,
+      Math.sin(fixation * 1.71 + seed * 0.3) * 0.00014 -
+        tension * 0.00012 +
+        delivery * 0.00006 +
+        listenerBeat * (turn?.kind === "challenge" ? -0.00004 : 0.000035),
+    ),
+  );
   return {
     blink: 0.08 + closure * 0.9,
-    gazeX: Math.sin(focus) * 0.0018 + microGaze,
-    gazeY: Math.sin(t * 0.51 + seed * 0.3) * 0.00012 - tension * 0.00012,
-    browLift:
-      delivery * (0.0018 + warmth * 0.0015) - tension * 0.0005 + acknowledgement * warmth * 0.00065,
-    browTilt: (warmth * 0.045 - tension * 0.065) * (0.25 + delivery * 0.75),
-    headRoll: Math.sin(t * 0.43 + seed) * (acting ? 0.008 : 0.014),
+    gazeX,
+    gazeY,
+    browLift: Math.max(
+      -0.00185,
+      Math.min(
+        0.00185,
+        delivery * (0.0008 + warmth * 0.00075 + intentLift) -
+          tension * 0.00042 +
+          acknowledgement * warmth * 0.00048,
+      ),
+    ),
+    browTilt: (warmth * 0.04 - tension * 0.058 + intentTilt) * (0.25 + delivery * 0.75),
+    headRoll:
+      Math.sin(fixation * 0.73 + seed) * (acting ? 0.0065 : 0.011) +
+      delivery * (gesture === "question" ? 0.005 : gesture === "confront" ? -0.004 : 0) +
+      (!acting
+        ? listenerBeat *
+          (turn?.kind === "challenge" ? -0.008 : turn?.kind === "question" ? 0.01 : 0.006)
+        : 0),
   };
 }

@@ -71,7 +71,54 @@ export function handPoseAt(
   let wrist = effort * 0.075;
   let pronation = 0;
   let deviation = 0;
-  if (action === "throwIn") {
+  if (
+    /^(shot|shotPower|shotPlaced|chip|volley|firstTime|pass|passLong|cross|goalKick)$/.test(
+      action ?? "",
+    )
+  ) {
+    // Striking keeps one hand as a loose counterweight and the other tighter
+    // through the torso. The stable side split gives kicks and crosses a real
+    // silhouette even when no dominant-foot metadata is available here.
+    const swing = Math.sin(Math.PI * u);
+    const counterweight = side === "L" ? 1 : 0.62;
+    grip = 0.08 + (1 - counterweight) * 0.12 + effort * 0.08;
+    spread = 0.035 + swing * (0.095 * counterweight + 0.035);
+    wrist = (side === "L" ? -1 : 1) * swing * 0.13;
+    pronation = (side === "L" ? 1 : -1) * swing * 0.16;
+    deviation = (side === "L" ? 1 : -1) * swing * 0.045;
+  } else if (/^(bicycle|headClear|header)$/.test(action ?? "")) {
+    // Aerial actions need broad counterbalance, not the neutral running hand.
+    const brace = Math.sin(Math.PI * u);
+    grip = 0.09 + effort * 0.08;
+    spread = 0.055 + brace * 0.1;
+    wrist = (side === "L" ? -1 : 1) * brace * 0.12;
+    pronation = (side === "L" ? 1 : -1) * brace * 0.14;
+  } else if (/^(freeKick|corner|penalty)$/.test(action ?? "")) {
+    // Set pieces read as controlled tension rather than a clenched idle fist.
+    const settle = smooth((u - 0.12) / 0.3);
+    grip = 0.23 + settle * 0.2;
+    spread = 0.025 + (1 - settle) * 0.045;
+    wrist = (side === "L" ? -1 : 1) * settle * 0.055;
+    pronation = (side === "L" ? 1 : -1) * settle * 0.07;
+  } else if (/^(block|intercept|duel|tackle|slide)$/.test(action ?? "")) {
+    // Defenders protect the chest and face with open fingers before bracing.
+    const brace = smooth((u - 0.08) / 0.24) * (1 - smooth((u - 0.75) / 0.2));
+    grip = 0.16 + brace * 0.2;
+    spread = 0.05 + brace * 0.1;
+    wrist = (side === "L" ? -1 : 1) * brace * 0.11;
+    pronation = (side === "L" ? 1 : -1) * brace * 0.1;
+  } else if (/^(trap|distribute)$/.test(action ?? "")) {
+    const receive = smooth((u - 0.22) / 0.22) * (1 - smooth((u - 0.7) / 0.22));
+    grip = 0.12 + receive * 0.26;
+    spread = 0.028 + receive * 0.075;
+    wrist = (side === "L" ? -1 : 1) * receive * 0.075;
+  } else if (/^(feint|cut|stepover|elastico|turn|backpedal|decelerate)$/.test(action ?? "")) {
+    const balance = Math.sin(Math.PI * u);
+    grip = 0.12 + effort * 0.13;
+    spread = 0.03 + balance * 0.07;
+    wrist = (side === "L" ? -1 : 1) * balance * 0.09;
+    pronation = (side === "L" ? 1 : -1) * balance * 0.08;
+  } else if (action === "throwIn") {
     const release = smooth((u - footballContactAt(action)) / 0.17);
     grip = 0.55 * (1 - release) + 0.06 * release;
     spread = 0.1 * (1 - release) + 0.04;
@@ -98,9 +145,16 @@ export function handPoseAt(
       pronation += leading ? reach * 0.08 : -reach * 0.06;
       deviation *= leading ? 1 : 0.55;
     }
-  } else if (/celebrate|hug|protest/.test(action ?? "")) {
-    grip = 0.8;
-    wrist = 0.1;
+  } else if (/celebrate|kneeSlide|hug|protest/.test(action ?? "")) {
+    const accent = side === "L" ? 1 : 0.72;
+    grip = 0.56 + accent * 0.22;
+    spread = 0.035 + accent * 0.045;
+    wrist = (side === "L" ? -1 : 1) * 0.1;
+  } else if (action === "dejected") {
+    // Relaxed fingers make a dropped shoulder read as fatigue or frustration.
+    grip = 0.045;
+    spread = 0.012;
+    wrist = (side === "L" ? 1 : -1) * 0.035;
   }
   return { grip, spread, wrist, pronation, deviation };
 }

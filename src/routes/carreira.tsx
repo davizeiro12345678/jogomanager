@@ -108,18 +108,59 @@ function CoachCareerPage() {
     };
   }, [career]);
 
+  const clubPlayers = useMemo(
+    () =>
+      career
+        ? Object.values(career.players).filter((player) => player.clubId === career.clubId)
+        : [],
+    [career],
+  );
   // capitão: jogador de melhor média no elenco do clube da campanha
-  const captainName = useMemo(() => {
-    if (!career) return undefined;
-    const mine = Object.values(career.players).filter((p) => p.clubId === career.clubId);
-    if (!mine.length) return undefined;
-    return mine.reduce((best, p) => (p.ovr > best.ovr ? p : best), mine[0]!).name;
-  }, [career]);
+  const captain = useMemo(
+    () =>
+      clubPlayers.length
+        ? clubPlayers.reduce((best, player) => (player.ovr > best.ovr ? player : best), clubPlayers[0]!)
+        : undefined,
+    [clubPlayers],
+  );
+  const captainName = captain?.name;
 
   const cast = useMemo(
     () => (career ? castFor(career.clubId, career.season, career.managerName) : null),
     [career],
   );
+  const world = useMemo(() => (career ? worldFor(career) : null), [career]);
+  const choicePlayer = useMemo(() => {
+    if (!captain) return undefined;
+    if (scene === "unhappy-knock") {
+      const unsettled = clubPlayers
+        .filter((player) => player.unhappy || player.morale < 45)
+        .sort((a, b) => a.morale - b.morale || b.ovr - a.ovr)[0];
+      return unsettled ?? captain;
+    }
+    if (scene === "doctor-gamble") {
+      const injured = clubPlayers
+        .filter((player) => player.injuryWeeks > 0)
+        .sort((a, b) => b.ovr - a.ovr || b.injuryWeeks - a.injuryWeeks)[0];
+      return injured ?? captain;
+    }
+    return captain;
+  }, [captain, clubPlayers, scene]);
+  const choiceContext = useMemo(() => {
+    if (!captain || !choicePlayer || !world) return undefined;
+    const participant = (player: typeof choicePlayer) => ({
+      playerId: player.id,
+      relationship: world.relationships[player.id],
+      personality: player.personality,
+    });
+    return {
+      participants: {
+        captain: participant(scene === "unhappy-knock" ? choicePlayer : captain),
+        ...(scene === "agent-demands" ? { agent: participant(choicePlayer) } : {}),
+        ...(scene === "doctor-gamble" ? { doctor: participant(choicePlayer) } : {}),
+      },
+    };
+  }, [captain, choicePlayer, scene, world]);
 
   if (!career) return <NoCareer />;
 
@@ -159,10 +200,15 @@ function CoachCareerPage() {
           trophies={career.trophies.length}
           club={club}
           managerName={career.managerName}
-          captainName={captainName}
+          captainName={scene === "unhappy-knock" ? choicePlayer?.name ?? captainName : captainName}
           cast={cast ?? undefined}
-          manner={worldFor(career).identity}
-          onEffect={preview ? undefined : (effect) => update(applyChoiceEffect(career, effect))}
+          manner={world?.identity}
+          choiceContext={choiceContext}
+          onEffect={
+            preview
+              ? undefined
+              : (effect, reaction) => update(applyChoiceEffect(career, effect, reaction))
+          }
           onDone={() => setScene(null)}
         />
       ) : null}

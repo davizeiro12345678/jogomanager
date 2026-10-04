@@ -22,6 +22,10 @@ import {
   type TeamSetup,
   type TeamTalkKind,
 } from "./sim";
+import {
+  LIVE_MATCH_WORKER_TELEMETRY_NAME,
+  createSnapshotTelemetryTracker,
+} from "./snapshot-telemetry";
 import type { CareerState } from "./types";
 import type { Player, Tactics } from "./types";
 import type { WeatherKind } from "./sim-rules";
@@ -85,6 +89,28 @@ export interface LiveMatchController {
   dispose(): void;
 }
 
+export interface LiveMatchTelemetrySample {
+  /** Origem do snapshot: Worker dedicado ou a contingência local. */
+  source: "worker" | "fallback";
+  /** O resultado final é medido junto com os snapshots normais. */
+  kind: "snapshot" | "finished";
+  sequence: number;
+  /** Estimativa estrutural do clone entregue pela ponte, em bytes. */
+  estimatedSerializedBytes: number;
+  /** Cadência entre entregas recebidas neste lado da ponte. */
+  intervalMs: number | null;
+  /** Tempo gasto exclusivamente em WorkerMatchView.apply. */
+  applyMs: number;
+}
+
+export interface LiveMatchTelemetryOptions {
+  /**
+   * Callback opt-in fora do React. Use uma ref, um buffer ou User Timing no
+   * consumidor; não é preciso fazer setState a cada snapshot.
+   */
+  onSample(sample: LiveMatchTelemetrySample): void;
+}
+
 interface LiveMatchOptions {
   home: TeamSetup;
   away: TeamSetup;
@@ -95,6 +121,7 @@ interface LiveMatchOptions {
   onSnapshot: (view: WorkerMatchView) => void;
   onFinished: (view: WorkerMatchView) => void;
   onError?: (message: string) => void;
+  telemetry?: LiveMatchTelemetryOptions;
 }
 
 type LiveWorkerCommand = LiveWorkerRequest extends infer Request
@@ -102,6 +129,13 @@ type LiveWorkerCommand = LiveWorkerRequest extends infer Request
     ? Omit<Request, "id">
     : never
   : never;
+
+function createLiveMatchWorker(telemetry: boolean) {
+  return new Worker(new URL("./match.worker.ts", import.meta.url), {
+    ...(telemetry ? { name: LIVE_MATCH_WORKER_TELEMETRY_NAME } : {}),
+    type: "module",
+  });
+}
 
 /**
  * Controlador dedicado à partida atual. A física roda no Worker; a tela recebe
@@ -124,10 +158,32 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
   let sequence = 0;
   let command = 0;
   let latestState: LiveResult | Parameters<WorkerMatchView["apply"]>[0] | null = null;
+  const pendingCommands = new Set<() => void>();
+  const snapshotTelemetry = options.telemetry ? createSnapshotTelemetryTracker() : null;
 
-  const apply = (state: LiveResult | Parameters<WorkerMatchView["apply"]>[0]) => {
+  const apply = (
+    state: LiveResult | Parameters<WorkerMatchView["apply"]>[0],
+    source: LiveMatchTelemetrySample["source"],
+  ) => {
     if (disposed) return;
+    const applyStartedAt = snapshotTelemetry ? performance.now() : 0;
+    const transport = snapshotTelemetry?.sample(state, applyStartedAt);
     view.apply(state);
+    if (transport) {
+      const sample: LiveMatchTelemetrySample = {
+        source,
+        kind: "ratings" in state ? "finished" : "snapshot",
+        sequence: state.seq,
+        ...transport,
+        applyMs: Math.max(0, performance.now() - applyStartedAt),
+      };
+      // Uma sonda nunca deve interromper a partida ou acionar a contingência.
+      try {
+        options.telemetry?.onSample(sample);
+      } catch {
+        // O consumidor é opcional e externo à simulação.
+      }
+    }
     latestState = state;
     options.onSnapshot(view);
     if (state.finished) options.onFinished(view);
@@ -140,7 +196,39 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     localSkipTimer = null;
   };
 
+  const cancelPendingCommands = () => {
+    for (const cancel of [...pendingCommands]) cancel();
+  };
+
+  const requestBoolean = (payload: LiveWorkerCommand): Promise<boolean> => {
+    const current = liveWorker;
+    if (!current) return Promise.resolve(false);
+    const targetId = command + 1;
+    return new Promise<boolean>((resolve) => {
+      let settled = false;
+      const finish = (result: boolean) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        current.removeEventListener("message", onMessage);
+        pendingCommands.delete(cancel);
+        resolve(result);
+      };
+      const onMessage = (event: MessageEvent<LiveWorkerResponse>) => {
+        const message = event.data;
+        if (!message.ok || message.id !== targetId || message.type !== "command") return;
+        finish(message.result === true);
+      };
+      const cancel = () => finish(false);
+      const timer = setTimeout(cancel, 3000);
+      pendingCommands.add(cancel);
+      current.addEventListener("message", onMessage);
+      current.postMessage({ id: ++command, ...payload });
+    });
+  };
+
   const startFallback = (reason?: string) => {
+    cancelPendingCommands();
     liveWorker?.terminate();
     liveWorker = null;
     if (disposed || localSim) return;
@@ -157,7 +245,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         localSim.step(Math.min(0.2, latestState.time - localSim.time));
       }
     }
-    apply(snapshotMatch(localSim, ++sequence));
+    apply(snapshotMatch(localSim, ++sequence), "fallback");
     let last = performance.now();
     let accumulator = 0;
     localTimer = setInterval(() => {
@@ -174,6 +262,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
       sequence += 1;
       apply(
         localSim.finished ? resultMatch(localSim, sequence) : snapshotMatch(localSim, sequence),
+        "fallback",
       );
       if (localSim.finished) stopLocal();
     }, 100);
@@ -187,15 +276,15 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
 
   if (typeof Worker !== "undefined") {
     try {
-      liveWorker = new Worker(new URL("./match.worker.ts", import.meta.url), { type: "module" });
+      liveWorker = createLiveMatchWorker(Boolean(options.telemetry));
       liveWorker.onmessage = (event: MessageEvent<LiveWorkerResponse>) => {
         const message = event.data;
         if (!message || !message.ok) {
           startFallback(message && "error" in message ? message.error : undefined);
           return;
         }
-        if (message.type === "snapshot") apply(message.snapshot);
-        else if (message.type === "finished") apply(message.result);
+        if (message.type === "snapshot") apply(message.snapshot, "worker");
+        else if (message.type === "finished") apply(message.result, "worker");
       };
       liveWorker.onerror = () =>
         startFallback("O Worker falhou; a partida continuou no modo compatível.");
@@ -235,49 +324,11 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     },
     talk(side, kind) {
       if (localSim) return Promise.resolve(localSim.applyTeamTalk(side, kind));
-      return new Promise<boolean>((resolve) => {
-        const targetId = command + 1;
-        const current = liveWorker;
-        if (!current) {
-          resolve(false);
-          return;
-        }
-        const onMessage = (event: MessageEvent<LiveWorkerResponse>) => {
-          const message = event.data;
-          if (!message.ok || message.id !== targetId || message.type !== "command") return;
-          current.removeEventListener("message", onMessage);
-          resolve(message.result === true);
-        };
-        current.addEventListener("message", onMessage);
-        send({ type: "talkLive", side, kind });
-        setTimeout(() => {
-          current.removeEventListener("message", onMessage);
-          resolve(false);
-        }, 3000);
-      });
+      return requestBoolean({ type: "talkLive", side, kind });
     },
     substitute(side, outPid, incoming) {
       if (localSim) return Promise.resolve(localSim.substitute(side, outPid, incoming));
-      return new Promise<boolean>((resolve) => {
-        const targetId = command + 1;
-        const current = liveWorker;
-        if (!current) {
-          resolve(false);
-          return;
-        }
-        const onMessage = (event: MessageEvent<LiveWorkerResponse>) => {
-          const message = event.data;
-          if (!message.ok || message.id !== targetId || message.type !== "command") return;
-          current.removeEventListener("message", onMessage);
-          resolve(message.result === true);
-        };
-        current.addEventListener("message", onMessage);
-        send({ type: "substituteLive", side, outPid, incoming });
-        setTimeout(() => {
-          current.removeEventListener("message", onMessage);
-          resolve(false);
-        }, 3000);
-      });
+      return requestBoolean({ type: "substituteLive", side, outPid, incoming });
     },
     skip() {
       if (localSim) {
@@ -290,7 +341,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
             localSim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
           if (localSim.finished || guard >= MATCH_SIMULATION_TICK_LIMIT) {
             sequence += 1;
-            apply(resultMatch(localSim, sequence));
+            apply(resultMatch(localSim, sequence), "fallback");
             localSkipTimer = null;
             return;
           }
@@ -302,6 +353,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     dispose() {
       disposed = true;
       send({ type: "stopLive" });
+      cancelPendingCommands();
       liveWorker?.terminate();
       liveWorker = null;
       stopLocal();

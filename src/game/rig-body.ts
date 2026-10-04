@@ -39,6 +39,7 @@ import {
   athleticTorsoSurface,
   clothSurface,
   fittedLimbCover,
+  forearmTattooSurface,
   footballBoot,
   mergeRigParts,
   rigPart,
@@ -72,7 +73,7 @@ export interface RigBodyContext {
   handMat: THREE.Material;
 }
 
-/** Malhas de cada junta; `face`, `jaw` e `blink` ficam em grupos animados. */
+/** Malhas de cada junta; rosto, mandíbula e quatro pálpebras ficam em grupos animados. */
 export interface RigBody {
   hips: RigMesh[];
   spine: RigMesh[];
@@ -83,7 +84,10 @@ export interface RigBody {
   face: RigMesh[];
   eyes: RigMesh[];
   jaw: RigMesh[];
-  blink: RigMesh[];
+  eyelidUpperL: RigMesh[];
+  eyelidLowerL: RigMesh[];
+  eyelidUpperR: RigMesh[];
+  eyelidLowerR: RigMesh[];
   armL: RigMesh[];
   armR: RigMesh[];
   foreL: RigMesh[];
@@ -107,6 +111,59 @@ export interface RigBody {
 }
 
 const SIDES = [-1, 1] as const;
+
+/**
+ * A tubular garment edge reads as a stitched hem under studio light, yet it
+ * stays inside the material/joint that already owns the cloth.  The torus is
+ * authored in the XZ plane so it can follow an elliptical waist, sleeve or
+ * leg opening without a separate draw call.
+ */
+function ellipticalGarmentRing(
+  radiusX: number,
+  radiusZ: number,
+  tubeRadius: number,
+  radial: number,
+  tubular: number,
+) {
+  const safeRadius = Math.max(radiusX, 0.0001);
+  const ring = new THREE.TorusGeometry(safeRadius, Math.max(tubeRadius, 0.0005), tubular, radial);
+  ring.rotateX(Math.PI / 2);
+  ring.scale(1, 1, radiusZ / safeRadius);
+  return ring;
+}
+
+/**
+ * `footballShorts` owns an opening-leg attribute so the two hems deform with
+ * their respective femurs.  Construction rings need the same attribute or
+ * merging would either split the draw or make the inner hem follow the wrong
+ * leg during a stride.
+ */
+function withOpeningLeg(geometry: THREE.BufferGeometry, side: -1 | 1) {
+  geometry.setAttribute(
+    "openingLeg",
+    new THREE.Float32BufferAttribute(
+      new Float32Array(geometry.getAttribute("position").count).fill(side),
+      1,
+    ),
+  );
+  return geometry;
+}
+
+/**
+ * A construction stitch must still use the owning garment material so it
+ * merges into that joint's existing draw. A restrained vertex tint makes the
+ * seam legible under a close camera without turning it into a second kit trim.
+ */
+function garmentTopstitch(geometry: THREE.BufferGeometry, value: number) {
+  geometry.setAttribute(
+    "color",
+    new THREE.Float32BufferAttribute(
+      new Float32Array(geometry.getAttribute("position").count * 3).fill(value),
+      3,
+    ),
+  );
+  return geometry;
+}
 
 /** Constrói o corpo completo. Devolve malhas já mescladas por junta. */
 export function buildRigBody(ctx: RigBodyContext): RigBody {
@@ -155,6 +212,80 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
       cast,
     ),
   ];
+  if (!ctx.trousers) {
+    // A real waistband and two rolled leg openings break the flat, painted-on
+    // shorts silhouette.  They reuse `shorts`, therefore they are baked into
+    // the existing hips mesh rather than becoming three new draw calls.
+    hips.push(
+      rigPart(
+        withOpeningLeg(
+          ellipticalGarmentRing(
+            P.hipW * 0.62,
+            P.chestD * 0.87,
+            Math.max(P.hipH * 0.024, 0.002),
+            Math.max(12, segs.radial),
+            hi ? 5 : 4,
+          ),
+          1,
+        ),
+        shorts,
+        { position: [0, P.hipH * 0.49, 0] },
+        cast,
+      ),
+    );
+    const shortsHemY = -P.hipH * 0.4 - P.thigh * 0.49;
+    const shortsHemTube = Math.max(P.legR * 0.026, 0.0016);
+    for (const side of SIDES)
+      hips.push(
+        rigPart(
+          withOpeningLeg(
+            ellipticalGarmentRing(
+              P.legR * 1.21 + 0.002,
+              P.legR * 1.29 + 0.002,
+              shortsHemTube,
+              Math.max(10, segs.radial),
+              hi ? 5 : 4,
+            ),
+            side,
+          ),
+          shorts,
+          // Sit just above the authored opening: it reads as a rolled edge
+          // but leaves the garment's true lowest ring available to the
+          // leg-skinning contract and its inner-hem probes.
+          { position: [side * P.hipW * 0.36, shortsHemY + shortsHemTube * 1.25, 0] },
+          cast,
+        ),
+      );
+    if (hi)
+      for (const side of SIDES) {
+        // A short curved outseam anchors the waistband to each leg opening.
+        // It is marked with the same femur identity as the opening, so a
+        // stride carries the stitch with its own shorts panel rather than
+        // shearing it through the centre seam.
+        const outseam = withOpeningLeg(
+          garmentTopstitch(
+            new THREE.TubeGeometry(
+              new THREE.CatmullRomCurve3([
+                new THREE.Vector3(side * P.hipW * 0.48, P.hipH * 0.42, P.chestD * 0.76),
+                new THREE.Vector3(side * P.hipW * 0.53, -P.hipH * 0.15, P.legR * 1.24),
+                new THREE.Vector3(
+                  side * (P.hipW * 0.36 + P.legR * 0.9),
+                  shortsHemY + shortsHemTube * 1.5,
+                  P.legR * 1.19,
+                ),
+              ]),
+              6,
+              Math.max(P.hipH * 0.007, 0.0008),
+              3,
+              false,
+            ),
+            0.86,
+          ),
+          side,
+        );
+        hips.push(rigPart(outseam, shorts, undefined, cast));
+      }
+  }
 
   const spine: RigPart[] = [
     rigPart(
@@ -164,26 +295,26 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
             anatomicalSection(
               [
                 { y: -P.hipH * 0.12, width: P.hipW * 0.59, depth: P.chestD * 0.85 },
-                { y: P.spineLen * 0.4, width: P.chestW * 0.76, depth: P.chestD * 0.91 },
-                { y: P.spineLen * 1.06, width: P.chestW * 0.94, depth: P.chestD },
+                { y: P.spineLen * 0.4, width: P.chestW * 0.73, depth: P.chestD * 0.9 },
+                { y: P.spineLen * 1.06, width: P.chestW * 0.98, depth: P.chestD * 1.025 },
                 {
                   y: P.spineLen + P.chestLen * 0.4,
-                  width: P.chestW * 1.04,
-                  depth: P.chestD * 1.04,
+                  width: P.chestW * 1.08,
+                  depth: P.chestD * 1.065,
                 },
                 {
                   y: P.spineLen + P.chestLen * 0.8,
-                  width: P.shoulderW * 0.59,
-                  depth: P.chestD * 0.88,
+                  width: P.shoulderW * 0.65,
+                  depth: P.chestD * 0.91,
                 },
                 {
                   y: P.spineLen + P.chestLen * 0.9,
-                  width: P.shoulderW * 0.44,
-                  depth: P.chestD * 0.75,
+                  width: P.shoulderW * 0.49,
+                  depth: P.chestD * 0.77,
                 },
                 {
                   y: P.spineLen + P.chestLen * 0.95,
-                  width: P.shoulderW * 0.3,
+                  width: P.shoulderW * 0.32,
                   depth: P.chestD * 0.59,
                 },
                 { y: P.spineLen + P.chestLen, width: P.neckR * 1.55, depth: P.neckR * 1.35 },
@@ -202,6 +333,45 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
       cast,
     ),
   ];
+  // The shirt gets a tangible lower fold in every profile.  The high profile
+  // also gets subtle construction seams on its front-side panels: enough to
+  // catch a close camera or rim light without imposing a contrasting stripe
+  // on every club kit.
+  spine.push(
+    rigPart(
+      ellipticalGarmentRing(
+        P.hipW * 0.605,
+        P.chestD * 0.865,
+        Math.max(P.hipH * 0.021, 0.0019),
+        Math.max(12, segs.radial),
+        hi ? 5 : 4,
+      ),
+      jersey,
+      { position: [0, torsoBottom + P.hipH * 0.012, 0] },
+      cast,
+    ),
+  );
+  if (hi) {
+    for (const side of SIDES) {
+      const seam = new THREE.TubeGeometry(
+        new THREE.CatmullRomCurve3([
+          new THREE.Vector3(side * P.hipW * 0.6, torsoBottom + P.hipH * 0.018, P.chestD * 0.33),
+          new THREE.Vector3(side * P.chestW * 0.76, P.spineLen * 0.4, P.chestD * 0.36),
+          new THREE.Vector3(side * P.chestW * 1.0, P.spineLen + P.chestLen * 0.3, P.chestD * 0.4),
+          new THREE.Vector3(
+            side * P.shoulderW * 0.58,
+            P.spineLen + P.chestLen * 0.72,
+            P.chestD * 0.31,
+          ),
+        ]),
+        8,
+        Math.max(P.hipH * 0.012, 0.0012),
+        3,
+        false,
+      );
+      spine.push(rigPart(garmentTopstitch(seam, 0.87), jersey, undefined, cast));
+    }
+  }
 
   const chest: RigPart[] = [
     // gola
@@ -325,7 +495,7 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
   /* --------------------------------------------------------------- rosto */
 
   const sculpt = buildSculptedFace(P, look, mats, hi, ctx.portrait ?? true);
-  const { head, face, eyes, jaw, blink } = sculpt;
+  const { head, face, eyes, jaw, eyelidUpperL, eyelidLowerL, eyelidUpperR, eyelidLowerR } = sculpt;
   const hairParts = sculpt.hair;
 
   /* --------------------------------------------------------- braços/pernas */
@@ -348,6 +518,11 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
   const ankleR: RigPart[] = [];
   const bootDetailL: RigPart[] = [];
   const bootDetailR: RigPart[] = [];
+  // A compression layer replaces the exposed lower-arm skin only when the
+  // generated outfit asks for it.  It reuses the former skin owner, so the
+  // thermal shirt is visible below a short sleeve without adding rig groups.
+  const shortSleeveBase =
+    look.sleeves === "short" && look.undershirt ? undershirtMaterial(look.undershirtColor) : skin;
 
   for (const side of SIDES) {
     const isLeft = side === 1;
@@ -360,7 +535,7 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     const knee = isLeft ? kneeL : kneeR;
     const ankle = isLeft ? ankleL : ankleR;
     const bootDetail = isLeft ? bootDetailL : bootDetailR;
-    const sleeveMat = look.sleeves === "long" ? jerseyPlain : skin;
+    const sleeveMat = look.sleeves === "long" ? jerseyPlain : shortSleeveBase;
 
     /* Muscle volumes taper into elbows and wrists rather than overlapping
        separate spheres. Cloth, tape and tattoos follow that same surface. */
@@ -395,6 +570,21 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
           cast,
         ),
       );
+    if (look.sleeves === "short")
+      arm.push(
+        rigPart(
+          ellipticalGarmentRing(
+            P.armR * 1.08,
+            P.armR * 0.98,
+            Math.max(P.armR * 0.026, 0.0012),
+            Math.max(10, segs.radial),
+            hi ? 5 : 4,
+          ),
+          jerseyPlain,
+          { position: [0, -P.upperArm * 0.475, 0] },
+          cast,
+        ),
+      );
     if (look.captain && isLeft)
       arm.push(
         rigPart(
@@ -411,6 +601,21 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
         cast,
       ),
     );
+    if (look.sleeves === "long")
+      fore.push(
+        rigPart(
+          ellipticalGarmentRing(
+            P.armR * 0.59,
+            P.armR * 0.48,
+            Math.max(P.armR * 0.02, 0.001),
+            Math.max(8, segs.radial),
+            hi ? 5 : 4,
+          ),
+          jerseyPlain,
+          { position: [0, -P.foreArm * 0.91, 0] },
+          cast,
+        ),
+      );
     const taped = (isLeft && look.wristTape === "left") || (!isLeft && look.wristTape === "right");
     if (taped)
       fore.push(
@@ -426,14 +631,7 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     if (inked)
       fore.push(
         rigPart(
-          anatomicalSection(
-            [
-              { y: -P.foreArm * 0.81, width: P.armR * 0.617, depth: P.armR * 0.658 },
-              { y: -P.foreArm * 0.46, width: P.armR * 0.852, depth: P.armR * 0.812 },
-              { y: -P.foreArm * 0.25, width: P.armR * 0.912, depth: P.armR * 0.87 },
-            ],
-            segs.radial,
-          ),
+          forearmTattooSurface(P.foreArm, P.armR, segs.radial, side),
           tattooMaterial(look.seed + (isLeft ? 7 : 29)),
         ),
       );
@@ -502,17 +700,20 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
         ),
       );
     }
+    const thumbTransform = {
+      position: [-side * handR * 0.08, -handR * 0.27, handR * 0.08] as const,
+      rotation: [0.18, 0, -side * 0.55] as const,
+    };
+    // The old capsule made every thumb look like a smooth peg beside the
+    // articulated fingers. Reuse the tapered phalanx and its normal detail;
+    // it stays inside the existing thumb joint/material draw.
     thumb.push(
-      rigPart(
-        new THREE.CapsuleGeometry(handR * 0.19, handR * 0.5, 3, 6),
-        handMat,
-        {
-          position: [-side * handR * 0.08, -handR * 0.27, handR * 0.08],
-          rotation: [0.18, 0, -side * 0.55],
-        },
-        cast,
-      ),
+      rigPart(anatomicalFinger(handR * 0.195, handR * 0.62), handMat, thumbTransform, cast),
     );
+    if (hi && !look.gloves)
+      thumb.push(
+        rigPart(anatomicalNail(handR * 0.195, handR * 0.62), handMat, thumbTransform, cast),
+      );
     for (let i = 0; i < 4; i++) {
       handDetail.push(
         rigPart(anatomicalFinger(handR * 0.15, handR * FINGER_LENGTHS[i]!), handMat, {
@@ -629,6 +830,41 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
       rigPart(footballBoot(P.footLen, P.footH, segs.radial), boot, undefined, cast),
       rigPart(footballBoot(P.footLen, P.footH, segs.radial, true), sole, undefined, cast),
     );
+    if (hi) {
+      // A padded tongue and an open heel-counter seam turn the sculpted last
+      // into a recognisable football boot in close-ups.  Both use materials
+      // the ankle already owns, keeping the visible draw count unchanged.
+      ankle.push(
+        rigPart(
+          new THREE.CapsuleGeometry(P.footH * 0.14, P.footLen * 0.22, 2, 6),
+          boot,
+          {
+            position: [0, -P.footH * 0.105, P.footLen * 0.16],
+            rotation: [Math.PI / 2, 0, 0],
+            scale: [1, 0.72, 1],
+          },
+          cast,
+        ),
+      );
+      ankle.push(
+        rigPart(
+          new THREE.TubeGeometry(
+            new THREE.CatmullRomCurve3([
+              new THREE.Vector3(-P.footH * 0.31, -P.footH * 0.37, -P.footLen * 0.2),
+              new THREE.Vector3(-P.footH * 0.37, -P.footH * 0.17, -P.footLen * 0.245),
+              new THREE.Vector3(0, -P.footH * 0.04, -P.footLen * 0.265),
+              new THREE.Vector3(P.footH * 0.37, -P.footH * 0.17, -P.footLen * 0.245),
+              new THREE.Vector3(P.footH * 0.31, -P.footH * 0.37, -P.footLen * 0.2),
+            ]),
+            8,
+            Math.max(P.footH * 0.019, 0.001),
+            4,
+            false,
+          ),
+          bootAccent,
+        ),
+      );
+    }
     for (const bootSide of [-1, 1])
       ankle.push(
         rigPart(new THREE.CapsuleGeometry(P.footH * 0.032, P.footLen * 0.28, 2, 5), bootAccent, {
@@ -662,6 +898,25 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
         ),
       );
     }
+    // A shallow toe-cap seam catches a different highlight from the lace row.
+    // It uses the existing accent material and ankle owner, so the premium
+    // close-up gains boot construction detail without another material or draw.
+    ankle.push(
+      rigPart(
+        new THREE.TubeGeometry(
+          new THREE.CatmullRomCurve3([
+            new THREE.Vector3(-P.footH * 0.31, -P.footH * 0.11, P.footLen * 0.39),
+            new THREE.Vector3(0, -P.footH * 0.02, P.footLen * 0.47),
+            new THREE.Vector3(P.footH * 0.31, -P.footH * 0.11, P.footLen * 0.39),
+          ]),
+          8,
+          P.footH * 0.015,
+          4,
+          false,
+        ),
+        bootAccent,
+      ),
+    );
     for (const [sx, sz] of [
       [-0.3, 0.36],
       [0.3, 0.36],
@@ -692,7 +947,10 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     face: mergeRigParts(face),
     eyes: mergeRigParts(eyes),
     jaw: mergeRigParts(jaw),
-    blink: mergeRigParts(blink),
+    eyelidUpperL: mergeRigParts(eyelidUpperL),
+    eyelidLowerL: mergeRigParts(eyelidLowerL),
+    eyelidUpperR: mergeRigParts(eyelidUpperR),
+    eyelidLowerR: mergeRigParts(eyelidLowerR),
     armL: mergeRigParts(armL),
     armR: mergeRigParts(armR),
     foreL: mergeRigParts(foreL),

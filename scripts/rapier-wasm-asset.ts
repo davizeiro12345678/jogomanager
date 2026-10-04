@@ -24,6 +24,16 @@ export function externalizeRapierWasm(code: string, wasm: Uint8Array, wasmUrl: s
   );
 }
 
+/**
+ * Vite passes an absolute module path to `transform`. Rapier 0.21 keeps the
+ * ESM entry inside `dist/`; accepting the former root layout too keeps this
+ * adapter explicit about the only supported upstream path change.
+ */
+export function isRapierCompatModule(id: string): boolean {
+  const normalized = id.replaceAll("\\", "/").split("?")[0]!;
+  return /\/@dimforge\/rapier3d-compat\/(?:dist\/)?rapier\.mjs$/.test(normalized);
+}
+
 /** Worker-build only: server physics and development retain the package API. */
 export function rapierWasmAsset(): Plugin {
   return {
@@ -31,9 +41,9 @@ export function rapierWasmAsset(): Plugin {
     apply: "build",
     enforce: "pre",
     transform(code, id) {
-      const normalized = id.replaceAll("\\", "/").split("?")[0]!;
-      if (!normalized.endsWith("/@dimforge/rapier3d-compat/rapier.mjs")) return null;
-      const wasm = readFileSync(path.join(path.dirname(id), "rapier_wasm3d_bg.wasm"));
+      if (!isRapierCompatModule(id)) return null;
+      const modulePath = id.split("?")[0]!;
+      const wasm = readFileSync(path.join(path.dirname(modulePath), "rapier_wasm3d_bg.wasm"));
       const reference = this.emitFile({
         type: "asset",
         name: "rapier_wasm3d_bg.wasm",

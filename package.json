@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "wasm:build": "node scripts/build-wasm.mjs",
+    "wasm:test": "cargo test --manifest-path wasm/crowd-visibility/Cargo.toml --locked",
     "bundle:report": "node scripts/bundle-report.mjs current",
     "bundle:check": "node scripts/bundle-report.mjs current .output/public/assets --check",
     "build:dev": "vite build --mode development",

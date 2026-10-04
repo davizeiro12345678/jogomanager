@@ -6,6 +6,7 @@ import { compactCinematicSkin } from "./cinematic-skin";
 import { directScene } from "./cutscene-director";
 import { CUTSCENES } from "@/content/cutscenes";
 import { cinematicActorPose, cinematicLook } from "./cinematic-actor";
+import { cinematicReactionReady } from "./cinematic-blocking";
 import { proportionsFor } from "./player-model";
 import { buildRigSkin } from "./rig-skin";
 import { playerMaterials } from "./player-materials";
@@ -17,6 +18,15 @@ import {
 } from "./cinematic-overlay";
 
 describe("cinematic direction and compact actors", () => {
+  it("holds the speaker's shot through long playback and reacts after voice end", () => {
+    const estimated = 2.4;
+    expect(cinematicReactionReady(estimated + 4, estimated, true, true)).toBe(false);
+    expect(cinematicReactionReady(estimated + 0.69, estimated, false, true)).toBe(false);
+    expect(cinematicReactionReady(estimated + 0.71, estimated, false, true)).toBe(true);
+    expect(cinematicReactionReady(12, estimated, false, false)).toBe(false);
+    expect(cinematicReactionReady(Number.NaN, estimated, false, true)).toBe(false);
+  });
+
   it("resumes background previews only after the last dialog releases visual focus", () => {
     const changes: boolean[] = [];
     const unsubscribe = subscribeCinematicOverlay(() => changes.push(cinematicOverlayActive()));

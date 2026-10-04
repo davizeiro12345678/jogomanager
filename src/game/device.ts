@@ -14,6 +14,19 @@ export function prefersReducedMotion() {
   return matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+/** Follow OS/accessibility changes while a cinematic stays open. */
+export function watchReducedMotion(onChange: (reduced: boolean) => void): () => void {
+  if (typeof matchMedia === "undefined") return () => undefined;
+  const query = matchMedia("(prefers-reduced-motion: reduce)");
+  const change = (event: MediaQueryListEvent) => onChange(event.matches);
+  if (typeof query.addEventListener === "function") {
+    query.addEventListener("change", change);
+    return () => query.removeEventListener("change", change);
+  }
+  query.addListener(change);
+  return () => query.removeListener(change);
+}
+
 /** Heurística: núcleos, memória e tipo de ponteiro. */
 export function detectQuality(): QualityLevel {
   if (typeof navigator === "undefined") return "media";

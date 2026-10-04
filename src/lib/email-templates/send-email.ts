@@ -57,7 +57,7 @@ export async function sendTemplateEmail(
   }
 
   const templateData = options.templateData ?? {};
-  const element = React.createElement(template.component, templateData);
+  const element = React.createElement(template.component, templateData as never);
   const html = await render(element);
   const text = await render(element, { plainText: true });
   const subject =

@@ -1,14 +1,6 @@
 import { CLUBS, getLeague } from "./data/leagues";
-import { seasonPrize, valueFor, wageFor, weeklyIncome } from "./economy";
-import {
-  checkSacking,
-  closeSpell,
-  defaultStaff,
-  gateIncome,
-  pressureDelta,
-  runWeeklyEvents,
-  staffBill,
-} from "./events";
+import { seasonPrize, valueFor, wageFor } from "./economy";
+import { checkSacking, closeSpell, defaultStaff, pressureDelta, runWeeklyEvents } from "./events";
 import { customPlayersFor, toGamePlayer } from "@/lib/customData";
 import { realSquadFor } from "@/lib/realSquads";
 import { applyImportedSquad } from "./squad-import";
@@ -33,6 +25,8 @@ import {
 } from "./competition-season";
 import { calendarYear, countryRegulation } from "./competition-regulations";
 import { evolveSeason, setAttrDeltas } from "./attributes";
+import { operatingPlanFor, settleWeeklyFinance } from "./finance-forecast";
+import { buildAttrs } from "./player-physique";
 
 import { computeTable, generateFixtures } from "./season";
 import { settlePromises } from "./unhappy";
@@ -256,6 +250,7 @@ export function initCareer(
   profile?: ManagerProfile,
 ): CareerState {
   const club = CLUBS[clubId]!;
+  setAttrDeltas({});
   const squad = withCustomPlayers(
     clubId,
     withRealPlayers(clubId, buildSquad(clubId).map(enrichPlayer)),
@@ -603,18 +598,30 @@ function applyWeeklyDevelopment(
   const news: NewsItem[] = [];
   const attr = trainingAttr(state.training);
   const intensity = state.trainingIntensity ?? 1;
+  const operatingPlan = operatingPlanFor(state);
   const baseRegen = state.training === "fisico" ? 16 : state.training === "equilibrado" ? 12 : 9;
   // treino leve recupera mais e evolui menos; treino intenso é o contrário
   // Impulso semanal comprado na loja: +25% de treino e +5 de recuperação.
   const boosted = !!state.boostUntil && new Date(state.boostUntil).getTime() > Date.now();
   const condRegen =
-    baseRegen + (intensity === 0 ? 5 : intensity === 2 ? -5 : 0) + (boosted ? 5 : 0);
-  const growthMult = (0.75 + intensity * 0.3) * (boosted ? 1.25 : 1);
-  const injuryMult = 0.7 + intensity * 0.4;
+    baseRegen +
+    (intensity === 0 ? 5 : intensity === 2 ? -5 : 0) +
+    (boosted ? 5 : 0) +
+    operatingPlan.medical * 0.8;
+  const growthMult =
+    (0.75 + intensity * 0.3) * (boosted ? 1.25 : 1) * (1 + operatingPlan.academy * 0.035);
+  const injuryMult = (0.7 + intensity * 0.4) * (1 - operatingPlan.medical * 0.055);
 
   const next: Record<string, Player> = {};
   for (const [id, p] of Object.entries(players)) {
+    if (p.clubId !== state.clubId) {
+      next[id] = p;
+      continue;
+    }
     const q = { ...p };
+    const detailed = buildAttrs(p, makeRng(`profile-${p.id}-${p.name}`));
+    const fitnessRecovery = Math.max(-1.5, Math.min(1.5, (detailed.naturalFitness - 65) * 0.04));
+    const resilience = Math.max(0.85, Math.min(1.15, 1 - (detailed.injuryResistance - 65) * 0.006));
 
     // recuperação de lesão e suspensão cumprida
     if (q.injuryWeeks > 0) {
@@ -633,7 +640,10 @@ function applyWeeklyDevelopment(
     if (q.suspended) q.suspended = false;
 
     // condição e moral
-    q.condition = Math.max(45, Math.min(100, q.condition + condRegen - 4 + Math.floor(rnd() * 6)));
+    q.condition = Math.max(
+      45,
+      Math.min(100, q.condition + condRegen + fitnessRecovery - 4 + Math.floor(rnd() * 6)),
+    );
     q.morale = Math.max(
       30,
       Math.min(99, q.morale + (won === null ? 0 : won ? 3 : -2) + Math.floor(rnd() * 5) - 2),
@@ -643,7 +653,7 @@ function applyWeeklyDevelopment(
     if (q.age <= 23 && rnd() < 0.16 * growthMult) {
       (q as unknown as Record<string, number>)[attr] = Math.min(99, (q[attr] as number) + 1);
       if (rnd() < 0.35) {
-        q.ovr = Math.min(99, q.ovr + 1);
+        q.ovr = Math.min(99, Math.max(p.ovr, p.potential ?? 99), q.ovr + 1);
         news.push({
           id: `grow-${id}-${state.round}`,
           season: state.season,
@@ -676,7 +686,7 @@ function applyWeeklyDevelopment(
           });
         }
       }
-      if (rnd() < 0.045 * injuryMult) {
+      if (rnd() < 0.045 * injuryMult * resilience) {
         q.injuryWeeks = 1 + Math.floor(rnd() * 4);
         news.push({
           id: `inj-${id}-${state.round}`,
@@ -769,7 +779,7 @@ function endSeason(state: CareerState): CareerState {
   const squad = Object.values(players);
   const { lineup, bench } = pickLineup(squad, state.tactics.formation);
 
-  // Evolução dos 28 atributos: fica guardada na carreira e vale para sempre.
+  // Evolução dos 46 atributos: fica guardada na carreira e vale para sempre.
   const attrDeltas = evolveSeason(squad, state.season, state.attrDeltas ?? {});
   setAttrDeltas(attrDeltas);
 
@@ -1043,18 +1053,16 @@ export function advanceRound(
   );
   news.unshift(...liveNews);
 
-  // finanças semanais
+  // Finanças por rodada: a projeção separa receitas, custos e investimentos
+  // recorrentes. O lançamento tem uma chave estável para não ser cobrado duas
+  // vezes quando uma reconexão reprocessa a mesma rodada.
   const table = computeTable({ ...state, fixtures });
   const position = table.findIndex((r) => r.clubId === state.clubId) + 1;
   const homeGame = played ? played.home === state.clubId : false;
-  const gate = homeGame ? gateIncome(state) : 0;
-  const income =
-    weeklyIncome(CLUBS[state.clubId]?.strength ?? 70, position || 10, won) +
-    (state.sponsor ?? 0) +
-    gate;
-  const wages = Object.values(players).reduce((s, p) => s + p.wage, 0) / 1000;
-  const costs = wages + staffBill(state);
-  const budget = Math.round((state.finances.budget + income - costs) * 100) / 100;
+  const finance = settleWeeklyFinance(
+    { ...state, players },
+    { position: position || 10, won, homeGame, played: Boolean(played) },
+  );
 
   // aprovação da diretoria e da torcida
   const approval = matchResult
@@ -1126,7 +1134,7 @@ export function advanceRound(
       : null;
 
   let next: CareerState = {
-    ...state,
+    ...finance.state,
     fixtures,
     players,
     round: round + 1,
@@ -1138,11 +1146,6 @@ export function advanceRound(
             { round, home: played.home, away: played.away, hg: matchResult.hg, ag: matchResult.ag },
           ]
         : state.results,
-    finances: {
-      budget,
-      spent: state.finances.spent,
-      income: Math.round((state.finances.income + income) * 100) / 100,
-    },
     approval: Math.round(approval),
     fanApproval: Math.round(fanApproval),
     pressure: Math.round(pressure),
@@ -1453,10 +1456,11 @@ export function upgradeStaff(
 /** Gera relatórios de olheiros conforme o nível do departamento. */
 export function runScouting(state: CareerState): CareerState {
   const level = (state.staff ?? defaultStaff()).olheiro;
+  const investment = operatingPlanFor(state).scouting;
   const rnd = makeRng(`scout-${state.clubId}-${state.season}-${state.round}`);
   const ids = Object.keys(CLUBS).filter((id) => id !== state.clubId);
   const reports: ScoutReport[] = [];
-  for (let i = 0; i < 3 + level; i++) {
+  for (let i = 0; i < 3 + level + investment; i++) {
     const clubId = ids[Math.floor(rnd() * ids.length)]!;
     const squad = buildSquad(clubId).map(enrichPlayer);
     const p = squad[Math.floor(rnd() * squad.length)];

@@ -18,6 +18,12 @@ import { skinAlbedo } from "./player-morphology";
 const MAX_ENTRIES = 64;
 const cache = new Map<string, THREE.Material>();
 
+function disposeSharedMaterial(material: THREE.Material) {
+  material.dispose();
+  const owned = material.userData["ownedTexture"] as THREE.Texture | undefined;
+  owned?.dispose();
+}
+
 /**
  * Devolve (e memoriza) um material de detalhe. `make` só é chamado quando a
  * chave ainda não existe.
@@ -37,7 +43,7 @@ export function sharedDetailMaterial(key: string, make: () => THREE.Material): T
     if (oldest) {
       const victim = cache.get(oldest);
       cache.delete(oldest);
-      victim?.dispose();
+      if (victim) disposeSharedMaterial(victim);
     }
   }
   return material;
@@ -45,7 +51,7 @@ export function sharedDetailMaterial(key: string, make: () => THREE.Material): T
 
 /** Esvazia o cache (usado em teste para isolar os casos). */
 export function resetSharedDetailMaterials(): void {
-  for (const material of cache.values()) material.dispose();
+  for (const material of cache.values()) disposeSharedMaterial(material);
   cache.clear();
 }
 
@@ -71,28 +77,33 @@ export function eyeWhiteMaterial(hi = false): THREE.Material {
   );
 }
 
-/** Stubble stays close to the skin; full beards have a softer hair tone. */
+/** Stubble stays close to the skin; full beards retain a warm skin transition. */
 export function beardMaterial(skin: string, hair: string, style: string): THREE.Material {
   return sharedDetailMaterial(`beard:${skin}:${hair}:${style}`, () => {
     const tone = new THREE.Color(skinAlbedo(skin)).lerp(
       new THREE.Color(hair),
-      style === "stubble" ? 0.3 : 0.8,
+      // Pull a full beard slightly back toward the underlying skin. A nearly
+      // pure hair tone turned dark beards into a continuous painted mask in
+      // portrait light instead of leaving a believable warm transition.
+      style === "stubble" ? 0.3 : 0.7,
     );
     const map = beardFiberColor("#" + tone.getHexString());
     return new THREE.MeshStandardMaterial({
       color: map ? "#ffffff" : tone,
       vertexColors: true,
       map,
-      roughness: 0.91,
+      roughness: 0.94,
       alphaMap: beardFiberMask(style === "stubble"),
-      alphaTest: 0.04,
+      // Keep the dense central growth, but allow the fibre mask to soften the
+      // edge rather than layering an almost opaque dark shell over the jaw.
+      alphaTest: style === "stubble" ? 0.04 : 0.075,
       transparent: true,
-      opacity: style === "stubble" ? 0.65 : 0.96,
+      opacity: style === "stubble" ? 0.65 : 0.88,
       depthWrite: false,
       alphaToCoverage: true,
       normalMap: hairStrandNormal(),
-      normalScale: new THREE.Vector2(0.08, 0.12),
-      envMapIntensity: 0.35,
+      normalScale: new THREE.Vector2(0.055, 0.085),
+      envMapIntensity: 0.14,
     });
   });
 }
@@ -186,50 +197,119 @@ export function goldMaterial(): THREE.Material {
   );
 }
 
-/**
- * Tatuagem do antebraço: faixas tribais procedurais por semente, num cilindro
- * um pouco maior que o braço (fundo transparente). Uma textura 64² por atleta
- * tatuado — em campo, meia dúzia no máximo.
- */
+type TattooPoint = readonly [number, number];
+interface TattooStroke {
+  points: TattooPoint[];
+  width: number;
+}
+
+function tattooStrokes(seed: number): TattooStroke[] {
+  let state = (seed % 100003 || 1) >>> 0;
+  const random = () => {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    return (state >>> 0) / 4294967296;
+  };
+  const phase = random() * Math.PI * 2;
+  const spine: TattooPoint[] = Array.from({ length: 11 }, (_, index) => {
+    const t = index / 10;
+    return [32 + Math.sin(t * Math.PI * 2 + phase) * 4 + (random() - 0.5) * 2, 5 + t * 54];
+  });
+  const strokes: TattooStroke[] = [{ points: spine, width: 1.55 }];
+  for (let index = 1; index < 10; index += 2) {
+    const [x, y] = spine[index]!;
+    for (const side of [-1, 1]) {
+      const reach = 7 + random() * 5;
+      const bend = (random() - 0.5) * 4;
+      strokes.push({
+        points: [
+          [x, y],
+          [x + side * reach * 0.42, y + bend],
+          [x + side * reach, y + 3.5 + bend],
+        ],
+        width: 0.9 + random() * 0.35,
+      });
+      strokes.push({
+        points: [
+          [x + side * reach * 0.38, y + bend],
+          [x + side * (reach * 0.68), y - 3.5 + bend],
+          [x + side * (reach * 0.88), y - 4.8 + bend],
+        ],
+        width: 0.72,
+      });
+    }
+  }
+  return strokes;
+}
+
+function pointSegmentDistance(x: number, y: number, a: TattooPoint, b: TattooPoint) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const t = THREE.MathUtils.clamp(((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy), 0, 1);
+  return Math.hypot(x - a[0] - t * dx, y - a[1] - t * dy);
+}
+
+/** Seeded feather/branch ink mask. Broken, tapered strokes stay on one patch
+ * of skin instead of mapping horizontal bars into a full-circumference cuff. */
+export function tattooAlphaMask(seed: number, size = 64): Uint8Array {
+  const dimension = Math.max(16, Math.floor(size));
+  const mask = new Uint8Array(dimension * dimension);
+  const strokes = tattooStrokes(seed);
+  const smooth = (value: number) => {
+    const t = THREE.MathUtils.clamp(value, 0, 1);
+    return t * t * (3 - 2 * t);
+  };
+  for (let y = 0; y < dimension; y++)
+    for (let x = 0; x < dimension; x++) {
+      const px = ((x + 0.5) / dimension) * 64;
+      const py = ((y + 0.5) / dimension) * 64;
+      let coverage = 0;
+      for (const stroke of strokes) {
+        let distance = Infinity;
+        for (let index = 0; index < stroke.points.length - 1; index++)
+          distance = Math.min(
+            distance,
+            pointSegmentDistance(px, py, stroke.points[index]!, stroke.points[index + 1]!),
+          );
+        coverage = Math.max(coverage, 1 - smooth((distance - stroke.width * 0.35) / stroke.width));
+      }
+      const edgeX = smooth(px / 7) * (1 - smooth((px - 57) / 7));
+      const edgeY = smooth(py / 5) * (1 - smooth((py - 59) / 5));
+      mask[y * dimension + x] = Math.round(220 * coverage * edgeX * edgeY);
+    }
+  return mask;
+}
+
+/** Subtle, seeded ink conforms to a partial forearm decal (one small texture
+ * per tattooed athlete), with no extra geometry or material slot. */
 export function tattooMaterial(seed: number): THREE.Material {
   return sharedDetailMaterial(`tattoo:${seed % 100003}`, () => {
-    // fora do navegador (teste em Node) cai para tinta chapada
-    if (typeof document === "undefined") {
-      return new THREE.MeshStandardMaterial({ color: "#232126", roughness: 0.7 });
+    const size = 64;
+    const alpha = tattooAlphaMask(seed, size);
+    const pixels = new Uint8Array(size * size * 4);
+    for (let i = 0; i < alpha.length; i++) {
+      pixels[i * 4] = 28;
+      pixels[i * 4 + 1] = 26;
+      pixels[i * 4 + 2] = 29;
+      pixels[i * 4 + 3] = alpha[i]!;
     }
-    const canvas = document.createElement("canvas");
-    canvas.width = 64;
-    canvas.height = 64;
-    const c = canvas.getContext("2d")!;
-    let s = seed % 100003 || 1;
-    const rnd = () => {
-      s ^= s << 13;
-      s ^= s >>> 17;
-      s ^= s << 5;
-      return (s >>> 0) / 4294967296;
-    };
-    c.clearRect(0, 0, 64, 64);
-    c.fillStyle = "rgba(24,22,26,0.92)";
-    // 2 a 4 faixas horizontais irregulares + pontos
-    const bands = 2 + Math.floor(rnd() * 3);
-    for (let b = 0; b < bands; b++) {
-      const y = 6 + b * (52 / bands) + rnd() * 6;
-      const h = 3 + rnd() * 7;
-      c.fillRect(0, y, 64, h);
-      for (let d = 0; d < 8; d++) {
-        const x = rnd() * 64;
-        c.beginPath();
-        c.arc(x, y + h + 3 + rnd() * 5, 1 + rnd() * 1.6, 0, Math.PI * 2);
-        c.fill();
-      }
-    }
-    // espinhos verticais ligando as faixas
-    for (let t = 0; t < 10; t++) {
-      const x = rnd() * 64;
-      c.fillRect(x, 4 + rnd() * 10, 2, 20 + rnd() * 30);
-    }
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.7 });
+    const texture = new THREE.DataTexture(pixels, size, size, THREE.RGBAFormat);
+    texture.name = `athlete-tattoo-${seed % 100003}`;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.generateMipmaps = true;
+    texture.needsUpdate = true;
+    const material = new THREE.MeshStandardMaterial({
+      color: "#ffffff",
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+      roughness: 0.78,
+    });
+    material.userData["ownedTexture"] = texture;
+    return material;
   });
 }

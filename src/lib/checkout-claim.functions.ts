@@ -20,7 +20,7 @@ export type ClaimResult =
  */
 export const claimCheckoutSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { sessionId: string }) => {
+  .validator((data: { sessionId: string }) => {
     if (!/^cs_[a-zA-Z0-9_]+$/.test(data.sessionId)) {
       throw new Error("Invalid sessionId");
     }

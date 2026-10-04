@@ -26,20 +26,21 @@ export function RuntimeBudget({
 }) {
   const governor = useMemo(
     () => new QualityGovernor(GRAPHICS_PROFILES[tier].targetP95FrameMs),
-    [tier, enabled],
+    [tier],
   );
   const previous = useRef(0);
   const resume = useRef(false);
   useEffect(() => {
     previous.current = 0;
     onChange(0);
+    if (!enabled) governor.resetWindow();
     const visibility = () => {
       governor.resetWindow();
       resume.current = true;
     };
     document.addEventListener("visibilitychange", visibility);
     return () => document.removeEventListener("visibilitychange", visibility);
-  }, [governor, onChange]);
+  }, [governor, onChange, enabled]);
   useEffect(() => {
     // Demand rendering has no regular frame cadence while a match is paused.
     // Keep its chosen budget, then begin a fresh window when play resumes.

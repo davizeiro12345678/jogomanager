@@ -45,7 +45,7 @@ export async function resolveOrCreateCustomer(
 
 export const createCheckoutSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (data: {
       productKey: string;
       quantity?: number;
@@ -122,7 +122,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
 
 export const createPortalSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { returnUrl?: string }) => {
+  .validator((data: { returnUrl?: string }) => {
     if (data.returnUrl !== undefined && typeof data.returnUrl !== "string") {
       throw new Error("Invalid returnUrl");
     }

@@ -15,6 +15,40 @@ export type GpuBackend = "webgpu" | "webgl2";
 const PREF_KEY = "manager3d.webgpu";
 const FAIL_KEY = "manager3d.webgpu.failed";
 
+function safeStorage(): Storage | null {
+  try {
+    return globalThis.localStorage;
+  } catch {
+    // Sandboxed iframes and privacy modes can expose the global but reject
+    // every access with SecurityError. Rendering must still fall back safely.
+    return null;
+  }
+}
+
+function readStored(key: string): string | null {
+  try {
+    return safeStorage()?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStored(key: string, value: string) {
+  try {
+    safeStorage()?.setItem(key, value);
+  } catch {
+    // Storage is only a player preference cache, never a rendering dependency.
+  }
+}
+
+function removeStored(key: string) {
+  try {
+    safeStorage()?.removeItem(key);
+  } catch {
+    // Storage is only a player preference cache, never a rendering dependency.
+  }
+}
+
 /**
  * WebGPU é experimental: fica desligado por padrão (o caminho WebGL2 é o
  * estável) e só liga quando o jogador marca a opção nas Configurações.
@@ -22,21 +56,18 @@ const FAIL_KEY = "manager3d.webgpu.failed";
  * nesta máquina até o jogador religar manualmente.
  */
 export function webgpuEnabled(): boolean {
-  if (typeof localStorage === "undefined") return false;
-  if (localStorage.getItem(FAIL_KEY) === "1") return false;
-  return localStorage.getItem(PREF_KEY) === "on";
+  if (readStored(FAIL_KEY) === "1") return false;
+  return readStored(PREF_KEY) === "on";
 }
 
 export function setWebgpuEnabled(on: boolean) {
-  if (typeof localStorage === "undefined") return;
-  localStorage.setItem(PREF_KEY, on ? "on" : "off");
-  if (on) localStorage.removeItem(FAIL_KEY);
+  writeStored(PREF_KEY, on ? "on" : "off");
+  if (on) removeStored(FAIL_KEY);
 }
 
 /** Marca que o renderizador WebGPU falhou neste aparelho. */
 export function markWebgpuFailed() {
-  if (typeof localStorage === "undefined") return;
-  localStorage.setItem(FAIL_KEY, "1");
+  writeStored(FAIL_KEY, "1");
 }
 
 let cachedSupport: Promise<boolean> | null = null;
@@ -47,7 +78,7 @@ export function detectWebGPU(): Promise<boolean> {
   if (!webgpuEnabled()) return Promise.resolve(false);
   if (cachedSupport) return cachedSupport;
   cachedSupport = (async () => {
-    const gpu = (navigator as Navigator & { gpu?: { requestAdapter: () => Promise<unknown> } }).gpu;
+    const gpu = navigator.gpu;
     if (!gpu) return false;
     try {
       const adapter = await gpu.requestAdapter();
@@ -61,6 +92,25 @@ export function detectWebGPU(): Promise<boolean> {
 
 let extended = false;
 
+type WebGPURendererInternals = {
+  init: () => Promise<unknown>;
+  backend?: { isWebGPUBackend?: boolean; device?: GPUDevice };
+  dispose?: () => void | Promise<void>;
+};
+
+/** Three's WebGPURenderer may initialize a WebGL2 backend internally. */
+export function hasNativeWebGPUBackend(renderer: unknown): boolean {
+  return (renderer as WebGPURendererInternals | null)?.backend?.isWebGPUBackend === true;
+}
+
+async function disposeAfterFailedInit(renderer: WebGPURendererInternals | null) {
+  try {
+    await renderer?.dispose?.();
+  } catch {
+    // A partially initialized renderer must not prevent the WebGL2 recovery.
+  }
+}
+
 /**
  * Fábrica de renderizador para o `<Canvas>` do react-three-fiber.
  * Devolve `null` quando WebGPU não está disponível — nesse caso o chamador
@@ -71,6 +121,7 @@ export async function createWebGPURenderer(
   onDeviceError?: () => void,
 ): Promise<unknown | null> {
   if (!(await detectWebGPU())) return null;
+  let renderer: WebGPURendererInternals | null = null;
   try {
     const [webgpu, fiber] = await Promise.all([
       import("three/webgpu"),
@@ -82,11 +133,20 @@ export async function createWebGPURenderer(
       (fiber.extend as (catalogue: unknown) => void)(webgpu);
       extended = true;
     }
-    const renderer = new webgpu.WebGPURenderer({
+    renderer = new webgpu.WebGPURenderer({
       ...(props as ConstructorParameters<typeof webgpu.WebGPURenderer>[0]),
       forceWebGL: false,
     });
     await renderer.init();
+
+    // WebGPURenderer silently offers its own WebGL2 fallback. Do not report
+    // that renderer as native WebGPU: the scene needs the WebGL material path
+    // and the surrounding Canvas will construct an ordinary WebGLRenderer.
+    if (!hasNativeWebGPUBackend(renderer)) {
+      await disposeAfterFailedInit(renderer);
+      markWebgpuFailed();
+      return null;
+    }
 
     // Qualquer erro de validação do driver derruba o modo experimental na hora:
     // gravamos a falha e o chamador remonta o palco em WebGL2.
@@ -105,13 +165,11 @@ export async function createWebGPURenderer(
     }
     return renderer;
   } catch (err) {
+    // Do not retry a renderer that failed while compiling its first pipeline
+    // on every route transition. The preference UI is the explicit retry.
+    await disposeAfterFailedInit(renderer);
+    markWebgpuFailed();
     console.warn("WebGPU indisponível, seguindo em WebGL2:", err);
     return null;
   }
-}
-
-/** Superfície mínima do dispositivo WebGPU que usamos (evita depender dos tipos globais). */
-interface GPUDeviceLike {
-  onuncapturederror: ((ev: unknown) => void) | null;
-  lost?: Promise<unknown>;
 }

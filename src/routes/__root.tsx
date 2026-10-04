@@ -16,7 +16,6 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useT } from "../i18n";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
 import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
-import { gamePageMetadata } from "@/lib/game-page-metadata";
 
 function NotFoundComponent() {
   return (
@@ -212,28 +211,41 @@ function RootReadingControls({ pathname }: { pathname: string }) {
   const router = useRouter();
   const renderedPath = useRef(pathname);
   useEffect(() => {
-    const page = gamePageMetadata(pathname, lang, t);
-    if (!page) return;
-    document.title = page.title;
-    for (const selector of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
-      document.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", page.title);
-    }
-    for (const selector of [
-      'meta[name="description"]',
-      'meta[property="og:description"]',
-      'meta[name="twitter:description"]',
-    ]) {
-      document.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", page.description);
-    }
-    let localeTag = document.querySelector<HTMLMetaElement>('meta[property="og:locale"]');
-    if (page.locale) {
-      if (!localeTag) {
-        localeTag = document.createElement("meta");
-        localeTag.setAttribute("property", "og:locale");
-        document.head.append(localeTag);
-      }
-      localeTag.content = page.locale;
-    } else localeTag?.remove();
+    let active = true;
+    // Route metadata is only written after the client page renders. Keep its
+    // copy and translation tables out of every initial route's static closure.
+    void import("../lib/game-page-metadata")
+      .then(({ gamePageMetadata }) => {
+        if (!active) return;
+        const page = gamePageMetadata(pathname, lang, t);
+        if (!page) return;
+        document.title = page.title;
+        for (const selector of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
+          document.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", page.title);
+        }
+        for (const selector of [
+          'meta[name="description"]',
+          'meta[property="og:description"]',
+          'meta[name="twitter:description"]',
+        ]) {
+          document
+            .querySelector<HTMLMetaElement>(selector)
+            ?.setAttribute("content", page.description);
+        }
+        let localeTag = document.querySelector<HTMLMetaElement>('meta[property="og:locale"]');
+        if (page.locale) {
+          if (!localeTag) {
+            localeTag = document.createElement("meta");
+            localeTag.setAttribute("property", "og:locale");
+            document.head.append(localeTag);
+          }
+          localeTag.content = page.locale;
+        } else localeTag?.remove();
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
   }, [pathname, lang, t]);
   useEffect(() => {
     let frame = 0;

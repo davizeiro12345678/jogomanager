@@ -62,7 +62,7 @@ function safeTeam(raw: string): string {
 
 export const narrateEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => NarrateInput.parse(input))
+  .validator((input: unknown) => NarrateInput.parse(input))
   .handler(async ({ data }): Promise<NarrateResult> => {
     const apiKey = process.env["ELEVENLABS_API_KEY"];
     if (!apiKey) return { ok: false, reason: "unavailable" };
@@ -233,7 +233,7 @@ const SceneNarrateInput = z.object({
 /** Roberta narrates the cinematic script in Brazilian Portuguese. */
 export const narrateScene = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => SceneNarrateInput.parse(input))
+  .validator((input: unknown) => SceneNarrateInput.parse(input))
   .handler(async ({ data }): Promise<NarrateResult> => {
     const apiKey = process.env["ELEVENLABS_API_KEY"];
     const scene = CUTSCENES[data.scene];

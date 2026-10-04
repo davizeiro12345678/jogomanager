@@ -135,7 +135,11 @@ export function CinematicAtmosphere({
   quality: QualityLevel;
 }) {
   const indoor = ["locker", "office", "press"].includes(kind);
-  const count = quality === "baixa" ? 18 : 44;
+  const openAir = kind === "pitch" || kind === "stands" || kind === "arrival";
+  // The light profile retains a single contact shadow for grounding, but no
+  // animated particle buffer or office shaft. This keeps its promise of a
+  // genuinely low-cost path after the scene's props have been mounted.
+  const count = quality === "baixa" ? 0 : indoor ? 44 : 28;
   const geometry = useMemo(() => {
     const value = new THREE.BufferGeometry();
     value.setAttribute(
@@ -146,11 +150,26 @@ export function CinematicAtmosphere({
   }, [count]);
   const initialized = useRef(false);
   useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => {
+    initialized.current = false;
+  }, [kind, art, mood, count]);
   useCinematicFrame((time, dt) => {
-    if (!indoor || (initialized.current && dt === 0)) return;
+    if (!count || (!indoor && !openAir) || (initialized.current && dt === 0)) return;
     initialized.current = true;
     const positions = geometry.getAttribute("position");
     for (let i = 0; i < count; i++) {
+      if (openAir) {
+        const width = kind === "stands" ? 23 : kind === "arrival" ? 12 : 16;
+        const depth = kind === "stands" ? 13 : kind === "arrival" ? 10 : 18;
+        const baseZ = kind === "stands" ? -1 : kind === "arrival" ? -1.5 : -6;
+        positions.setXYZ(
+          i,
+          -width + ((i * 37) % 200) * (width / 100) + Math.sin(time * 0.13 + i) * 0.24,
+          0.55 + ((i * 19) % 36) * 0.075 + Math.sin(time * 0.18 + i * 0.4) * 0.1,
+          baseZ - depth / 2 + ((i * 23) % 100) * (depth / 100),
+        );
+        continue;
+      }
       positions.setXYZ(
         i,
         -5 + ((i * 37) % 100) * 0.1 + Math.sin(time * 0.18 + i) * 0.18,
@@ -163,19 +182,19 @@ export function CinematicAtmosphere({
   return (
     <group>
       <ContactShadows kind={kind} art={art} />
-      {indoor && (
+      {count > 0 && (indoor || openAir) && (
         <points geometry={geometry} frustumCulled={false}>
           <pointsMaterial
-            color={mood === "bad" ? "#b1c9eb" : "#ffe2ae"}
-            size={0.013}
+            color={mood === "bad" ? "#b1c9eb" : openAir ? "#e7f1d9" : "#ffe2ae"}
+            size={openAir ? 0.018 : 0.013}
             transparent
-            opacity={0.22}
+            opacity={openAir ? 0.12 : 0.22}
             depthWrite={false}
             sizeAttenuation
           />
         </points>
       )}
-      {kind === "office" && (
+      {quality !== "baixa" && kind === "office" && (
         <mesh position={[4.4, 2.15, -2.2]} rotation={[0.52, 0, 0.45]}>
           <coneGeometry args={[1.05, 3.5, 4, 1, true]} />
           <meshBasicMaterial

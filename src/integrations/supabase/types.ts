@@ -866,6 +866,7 @@ export type Database = {
           kind: string | null
           season: string | null
           source_id: string
+          source_updated_at: string | null
           team_source_id: string | null
           updated_at: string
         }
@@ -874,6 +875,7 @@ export type Database = {
           kind?: string | null
           season?: string | null
           source_id: string
+          source_updated_at?: string | null
           team_source_id?: string | null
           updated_at?: string
         }
@@ -882,6 +884,7 @@ export type Database = {
           kind?: string | null
           season?: string | null
           source_id?: string
+          source_updated_at?: string | null
           team_source_id?: string | null
           updated_at?: string
         }
@@ -896,6 +899,7 @@ export type Database = {
           payload: Json
           player_source_id: string | null
           source_id: string
+          source_updated_at: string | null
           team_source_id: string | null
           updated_at: string
         }
@@ -907,6 +911,7 @@ export type Database = {
           payload?: Json
           player_source_id?: string | null
           source_id: string
+          source_updated_at?: string | null
           team_source_id?: string | null
           updated_at?: string
         }
@@ -918,6 +923,7 @@ export type Database = {
           payload?: Json
           player_source_id?: string | null
           source_id?: string
+          source_updated_at?: string | null
           team_source_id?: string | null
           updated_at?: string
         }
@@ -942,6 +948,7 @@ export type Database = {
           league_source_id: string
           season: string
           source_id: string
+          source_updated_at: string | null
           starts_at: string | null
           status: string | null
           updated_at: string
@@ -958,6 +965,7 @@ export type Database = {
           league_source_id: string
           season: string
           source_id: string
+          source_updated_at?: string | null
           starts_at?: string | null
           status?: string | null
           updated_at?: string
@@ -974,6 +982,7 @@ export type Database = {
           league_source_id?: string
           season?: string
           source_id?: string
+          source_updated_at?: string | null
           starts_at?: string | null
           status?: string | null
           updated_at?: string
@@ -989,6 +998,7 @@ export type Database = {
           local_competition_id: string | null
           name: string
           source_id: string
+          source_updated_at: string | null
           sport: string
           updated_at: string
         }
@@ -998,6 +1008,7 @@ export type Database = {
           local_competition_id?: string | null
           name: string
           source_id: string
+          source_updated_at?: string | null
           sport: string
           updated_at?: string
         }
@@ -1007,6 +1018,7 @@ export type Database = {
           local_competition_id?: string | null
           name?: string
           source_id?: string
+          source_updated_at?: string | null
           sport?: string
           updated_at?: string
         }
@@ -1024,24 +1036,30 @@ export type Database = {
         Row: {
           entity_type: string
           kind: string
+          parent_source_id: string
           source: string
           source_id: string
+          source_updated_at: string | null
           updated_at: string
           url: string
         }
         Insert: {
           entity_type: string
           kind: string
+          parent_source_id?: string
           source?: string
           source_id: string
+          source_updated_at?: string | null
           updated_at?: string
           url: string
         }
         Update: {
           entity_type?: string
           kind?: string
+          parent_source_id?: string
           source?: string
           source_id?: string
+          source_updated_at?: string | null
           updated_at?: string
           url?: string
         }
@@ -1055,7 +1073,11 @@ export type Database = {
           photo_url: string | null
           position: string | null
           source_id: string
+          source_updated_at: string | null
+          sport: string
           team_source_id: string | null
+          team_source_is_explicit: boolean
+          team_source_priority: number
           updated_at: string
         }
         Insert: {
@@ -1065,7 +1087,11 @@ export type Database = {
           photo_url?: string | null
           position?: string | null
           source_id: string
+          source_updated_at?: string | null
+          sport?: string
           team_source_id?: string | null
+          team_source_is_explicit?: boolean
+          team_source_priority?: number
           updated_at?: string
         }
         Update: {
@@ -1075,7 +1101,11 @@ export type Database = {
           photo_url?: string | null
           position?: string | null
           source_id?: string
+          source_updated_at?: string | null
+          sport?: string
           team_source_id?: string | null
+          team_source_is_explicit?: boolean
+          team_source_priority?: number
           updated_at?: string
         }
         Relationships: []
@@ -1084,16 +1114,19 @@ export type Database = {
         Row: {
           league_source_id: string
           season: string
+          source_updated_at: string | null
           updated_at: string
         }
         Insert: {
           league_source_id: string
           season: string
+          source_updated_at?: string | null
           updated_at?: string
         }
         Update: {
           league_source_id?: string
           season?: string
+          source_updated_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1103,7 +1136,9 @@ export type Database = {
           league_source_id: string | null
           local_club_id: string | null
           name: string
+          source_updated_at: string | null
           source_id: string
+          sport: string
           updated_at: string
           venue_source_id: string | null
         }
@@ -1111,7 +1146,9 @@ export type Database = {
           league_source_id?: string | null
           local_club_id?: string | null
           name: string
+          source_updated_at?: string | null
           source_id: string
+          sport?: string
           updated_at?: string
           venue_source_id?: string | null
         }
@@ -1119,7 +1156,9 @@ export type Database = {
           league_source_id?: string | null
           local_club_id?: string | null
           name?: string
+          source_updated_at?: string | null
           source_id?: string
+          sport?: string
           updated_at?: string
           venue_source_id?: string | null
         }
@@ -1141,6 +1180,7 @@ export type Database = {
           name: string
           photo_url: string | null
           source_id: string
+          source_updated_at: string | null
           updated_at: string
         }
         Insert: {
@@ -1150,6 +1190,7 @@ export type Database = {
           name: string
           photo_url?: string | null
           source_id: string
+          source_updated_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -1159,6 +1200,7 @@ export type Database = {
           name?: string
           photo_url?: string | null
           source_id?: string
+          source_updated_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1532,13 +1574,84 @@ export type Database = {
           },
         ]
       }
+      sportsdb_competition_identity_aliases: {
+        Row: {
+          alias_id: string
+          canonical_id: string
+          created_at: string
+          reason: string
+        }
+        Insert: {
+          alias_id: string
+          canonical_id: string
+          created_at?: string
+          reason: string
+        }
+        Update: {
+          alias_id?: string
+          canonical_id?: string
+          created_at?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sportsdb_competition_identity_aliases_alias_id_fkey"
+            columns: ["alias_id"]
+            isOneToOne: true
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sportsdb_competition_identity_aliases_canonical_id_fkey"
+            columns: ["canonical_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sportsdb_club_identity_aliases: {
+        Row: {
+          alias_id: string
+          canonical_id: string
+          created_at: string
+          reason: string
+        }
+        Insert: {
+          alias_id: string
+          canonical_id: string
+          created_at?: string
+          reason: string
+        }
+        Update: {
+          alias_id?: string
+          canonical_id?: string
+          created_at?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sportsdb_club_identity_aliases_alias_id_fkey"
+            columns: ["alias_id"]
+            isOneToOne: true
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sportsdb_club_identity_aliases_canonical_id_fkey"
+            columns: ["canonical_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sportsdb_archives: {
         Row: {
           archive_key: string
           attempts: number
           hydrated_at: string | null
           last_error: string | null
-          payload: Json | null
           retry_at: string
           source_updated_at: string
           status: string
@@ -1548,7 +1661,6 @@ export type Database = {
           attempts?: number
           hydrated_at?: string | null
           last_error?: string | null
-          payload?: Json | null
           retry_at?: string
           source_updated_at: string
           status?: string
@@ -1558,7 +1670,6 @@ export type Database = {
           attempts?: number
           hydrated_at?: string | null
           last_error?: string | null
-          payload?: Json | null
           retry_at?: string
           source_updated_at?: string
           status?: string
@@ -1637,39 +1748,6 @@ export type Database = {
           source_total?: number
           status?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      sportsdb_records: {
-        Row: {
-          entity_type: string
-          imported_at: string
-          parent_id: string
-          payload: Json
-          season: string
-          source: string
-          source_id: string
-          source_updated_at: string
-        }
-        Insert: {
-          entity_type: string
-          imported_at?: string
-          parent_id?: string
-          payload: Json
-          season?: string
-          source?: string
-          source_id: string
-          source_updated_at: string
-        }
-        Update: {
-          entity_type?: string
-          imported_at?: string
-          parent_id?: string
-          payload?: Json
-          season?: string
-          source?: string
-          source_id?: string
-          source_updated_at?: string
         }
         Relationships: []
       }

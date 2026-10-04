@@ -227,6 +227,7 @@ function refreshPlayerTextureMaps(
 ) {
   updateTexture(set.jerseyPlain, "normalMap", maps.weave);
   updateTexture(set.jerseyPlain, "roughnessMap", maps.jerseyRough);
+  updateTexture(set.jerseyPlain, "clearcoatNormalMap", maps.sweatNormal);
   updateTexture(set.hair, "normalMap", maps.hairNormal);
   updateTexture(set.boot, "normalMap", maps.grain);
   updateTexture(set.sole, "normalMap", maps.grain);
@@ -237,6 +238,7 @@ function refreshPlayerTextureMaps(
   updateTexture(set.skin, "clearcoatNormalMap", maps.sweatNormal);
   updateTexture(set.jersey, "normalMap", maps.weave);
   updateTexture(set.jersey, "roughnessMap", maps.jerseyRough);
+  updateTexture(set.jersey, "clearcoatNormalMap", maps.sweatNormal);
   updateTexture(set.shorts, "normalMap", maps.shorts);
   updateTexture(set.shorts, "roughnessMap", maps.shortsRough);
   updateTexture(set.socks, "normalMap", maps.rib);
@@ -370,6 +372,8 @@ export function playerMaterials(
           envMapIntensity: 0.85,
           clearcoat: sweat * 0.16,
           clearcoatRoughness: 0.6,
+          clearcoatNormalMap: sweatNormal,
+          clearcoatNormalScale: new THREE.Vector2(0.2 + sweat * 0.55, 0.2 + sweat * 0.55),
           sheen: 0.5,
           sheenRoughness: 0.7,
           sheenColor: new THREE.Color(shade(kit.base, 0.4)),
@@ -390,6 +394,10 @@ export function playerMaterials(
       envMapIntensity: 0.7,
       ...(hi
         ? {
+            clearcoat: sweat * 0.16,
+            clearcoatRoughness: 0.6,
+            clearcoatNormalMap: sweatNormal,
+            clearcoatNormalScale: new THREE.Vector2(0.2 + sweat * 0.55, 0.2 + sweat * 0.55),
             sheen: 0.5,
             sheenRoughness: 0.7,
             sheenColor: new THREE.Color(
@@ -437,29 +445,34 @@ export function playerMaterials(
           color: "white",
           map: hairFiberColor(look.hairColor),
           alphaMap: hairlineMask(),
-          alphaTest: 0.3,
+          // Keep the wisps present at the hairline. A high alpha cutoff made
+          // the shared shell read as a hard, glossy helmet in portrait views.
+          alphaTest: 0.19,
           alphaToCoverage: true,
-          roughness: 0.84,
-          // fios individuais: o mapa dá direção ao brilho em vez de um capacete liso
+          roughness: 0.9,
+          // Fibres break the highlight into small strands instead of one broad
+          // plastic reflection, with no extra material or geometry.
           normalMap: hairNormal,
           roughnessMap: hairRough,
-          normalScale: new THREE.Vector2(0.16, 0.24),
+          normalScale: new THREE.Vector2(0.11, 0.18),
           metalness: 0,
           clearcoat: 0,
           clearcoatRoughness: 0.85,
-          sheen: 0.15,
-          sheenRoughness: 0.65,
+          sheen: 0.08,
+          sheenRoughness: 0.82,
           sheenColor: new THREE.Color(shade(look.hairColor, 0.55)),
-          anisotropy: 0.38,
+          anisotropy: 0.18,
           anisotropyRotation: Math.PI / 2,
-          specularIntensity: 0.24,
-          envMapIntensity: 0.3,
+          specularIntensity: 0.14,
+          envMapIntensity: 0.18,
         })
       : new THREE.MeshStandardMaterial({
           color: look.hairColor,
-          roughness: 0.85,
+          roughness: 0.9,
           normalMap: hairNormal,
-          metalness: 0.02,
+          normalScale: new THREE.Vector2(0.09, 0.15),
+          metalness: 0,
+          envMapIntensity: 0.14,
         }),
     boot: hi
       ? new THREE.MeshPhysicalMaterial({

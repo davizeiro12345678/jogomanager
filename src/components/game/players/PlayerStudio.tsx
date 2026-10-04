@@ -17,6 +17,10 @@ import {
 import { getAnnotatedClip } from "@/game/register-animations";
 import { footballContactAt } from "@/game/motion-metadata";
 import { studioCameraFit } from "@/game/player-studio-camera";
+import {
+  STUDIO_NEUTRAL_GAZE_BALL_Z,
+  studioBallFocusDistanceFor,
+} from "@/game/player-studio-presentation";
 import type { RigSkin } from "@/game/rig-skin";
 import { safeClub } from "@/game/squad";
 import { cinematicOverlayActive, subscribeCinematicOverlay } from "@/game/cinematic-overlay";
@@ -154,7 +158,10 @@ function fixture(clubId: string, position: string, variation: number) {
     xg: 0,
   };
   view.players = [player];
-  view.ball.z = 5;
+  // The rig shares the normal match gaze layer. Keep the off-stage target far
+  // enough away that an idle portrait looks at eye level instead of down at a
+  // ball on the studio floor. Ball-focused movements restore the close target.
+  view.ball.z = STUDIO_NEUTRAL_GAZE_BALL_Z;
   return { view, player };
 }
 
@@ -259,6 +266,16 @@ function StudioScene({
     !movement.action && CLIP_NAMES.includes(movement.id as ClipName)
       ? (movement.id as ClipName)
       : undefined;
+  const ballFocusDistance = studioBallFocusDistanceFor(movement);
+  useLayoutEffect(() => {
+    const ball = preview.view.ball;
+    // This fixture target is presentation-only. PlayerRig still owns the
+    // shared gaze calculation, so match play and action clips stay untouched.
+    ball.x = 0;
+    ball.z = ballFocusDistance;
+    ball.height = 0.12;
+    ball.holder = movement.hasBall ? preview.player.id : null;
+  }, [ballFocusDistance, movement.hasBall, preview]);
   const overhead = /^(throwIn|saveHigh|diveLeft|diveRight|header|celebrate)$/.test(
     movement.action ?? "",
   );
@@ -275,6 +292,13 @@ function StudioScene({
       ),
     [height, size.width, size.height, framing, overhead, groundAction],
   );
+  // The old whole-body fit left a larger safety border than the default
+  // studio needs. Tighten only the standing body view, retaining the wider
+  // envelopes for jumps, saves and compact screens.
+  const presentationDistance =
+    framing === "body" && !overhead && !groundAction
+      ? cameraFit.distance * 0.96
+      : cameraFit.distance;
   const targetY =
     framing === "face"
       ? height - 0.12
@@ -343,7 +367,7 @@ function StudioScene({
     // Preserve the inspection angle while fitting the physical athlete to the
     // available canvas, including height changes and narrow, tall screens.
     camera.position.y -= targetY;
-    camera.position.normalize().multiplyScalar(cameraFit.distance);
+    camera.position.normalize().multiplyScalar(presentationDistance);
     camera.position.y += targetY;
     if (viewAngle !== "threeQuarter") {
       const radius = Math.hypot(camera.position.x, camera.position.z);
@@ -368,6 +392,7 @@ function StudioScene({
     viewReset,
     viewAngle,
     cameraFit,
+    presentationDistance,
   ]);
   const kit = useMemo(
     () => kitFor(preview.view.home.clubId, preview.view.home.primary, preview.view.home.secondary),
@@ -436,6 +461,15 @@ function StudioScene({
         intensity={2.2}
       />
       <directionalLight position={[3.5, 2.3, 4]} color="#e4edf4" intensity={1.05} />
+      <spotLight
+        position={[-2.4, 3.1, -2.8]}
+        color={light === "noite" ? "#87b8ff" : warm ? "#ffc99f" : "#d7ebff"}
+        intensity={22}
+        angle={0.56}
+        penumbra={0.72}
+        distance={9}
+        decay={2}
+      />
       <Environment key={light} frames={1} resolution={128}>
         <Lightformer
           position={[-2, 3, 4]}

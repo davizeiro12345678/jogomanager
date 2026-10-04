@@ -18,6 +18,12 @@ export interface FacialPose {
 }
 export const emptyFacialPose = (): FacialPose => ({ jaw: 0, lidClosure: 0.001, eyeX: 0, eyeY: 0 });
 
+/** The upper lid sweeps down and the lower lid rises around orbital hinges. */
+export function eyelidRotationFor(lidClosure: number, upper: boolean): number {
+  const closure = clamp(lidClosure, 0, 1);
+  return closure * (upper ? 0.58 : -0.34);
+}
+
 /** Positive head pitch looks down. Aerial balls must lift the gaze even nearby. */
 export function ballGazePitch(distance: number, ballHeight: number, eyeHeight: number): number {
   return clamp(Math.atan2(eyeHeight - ballHeight, Math.max(0.4, distance)) * 0.55, -0.38, 0.28);

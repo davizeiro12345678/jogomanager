@@ -64,11 +64,13 @@ A chave existente do Supabase foi transferida, com autorização explícita do p
 | Stripe sandbox / live                    | `STRIPE_SANDBOX_API_KEY` / `STRIPE_LIVE_API_KEY` e respectivos `PAYMENTS_*_WEBHOOK_SECRET`  | A chave pública Stripe existente não permite cobrar ou conceder compras. Manter chaves e webhook no mesmo ambiente. |
 | Checkout de visitante                    | `GUEST_CHECKOUT_EMAIL_HASH_SECRET`, configuração `GUEST_CHECKOUT_*`                         | Requer credenciais de pagamento e validação do fluxo de compra e resgate.                                           |
 | Inteligência artificial                  | `AI_API_KEY`, `AI_API_URL`, `AI_MODEL`                                                      | Suporta provedor compatível com chat completions, com URL HTTPS; o gateway legado depende de `LOVABLE_API_KEY`.     |
-| Voz                                      | `ELEVENLABS_API_KEY`                                                                        | Requer credencial própria do provedor.                                                                              |
+| Voz                                      | `ELEVENLABS_API_KEY`                                                                        | `ELEVENLABS_TTS_MODEL` é opcional e aceita modelos permitidos; o padrão é `eleven_v4_turbo`.                        |
 | E-mail transacional independente         | `RESEND_API_KEY`, `TRANSACTIONAL_EMAIL_PROVIDER=resend`, `TRANSACTIONAL_EMAIL_FROM`         | Remetente deve pertencer a um domínio verificado. E-mails do Supabase Auth têm configuração de SMTP própria.        |
 | Dados esportivos premium                 | `THESPORTSDB_API_KEY`, `FOOTBALL_DATA_API_KEY`, `APIFOOTBALL_API_KEY`, `SPORTMONKS_API_KEY` | Importações devem ser limitadas, retomáveis e preservar identidades da fonte.                                       |
 
 As credenciais privadas dos provedores do Lovable não puderam ser exportadas automaticamente. A publicação do código não ativa esses serviços sem suas chaves e configurações. Não informar pagamento, IA, voz ou importação premium como concluídos até executar a verificação correspondente.
+
+A narração autenticada usa `eleven_v4_turbo` pelo WebSocket Text to Dialogue, adequado a falas curtas e interativas. Se esse modelo estiver indisponível, tenta Eleven v4, Flash v2.5 e Multilingual v2. Essas alternativas da ElevenLabs consomem a franquia da conta; se a chave/saldo não estiver disponível, a partida usa a voz gratuita instalada no navegador/dispositivo. Configure a chave como segredo criptografado `ELEVENLABS_API_KEY` no Worker; não use prefixo `VITE_`. Para trocar o modelo, configure `ELEVENLABS_TTS_MODEL` somente no servidor para um dos IDs permitidos no código.
 
 ## E-mails de autenticação
 

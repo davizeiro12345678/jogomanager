@@ -376,7 +376,7 @@ async function openStripeSession(
  * against Stripe before a session is created.
  */
 export const startGuestCheckout = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (data: {
       productKey: string;
       email: string;
@@ -445,7 +445,7 @@ export async function markGuestCheckoutFailed(
 }
 
 export const getGuestCheckoutStatus = createServerFn({ method: "POST" })
-  .inputValidator((data: { intentId: string; sessionId: string }) => {
+  .validator((data: { intentId: string; sessionId: string }) => {
     assertIntentId(data.intentId);
     assertStripeSessionId(data.sessionId);
     return data;
@@ -500,7 +500,7 @@ export const getGuestCheckoutStatus = createServerFn({ method: "POST" })
 
 export const claimGuestCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { intentId: string; sessionId: string }) => {
+  .validator((data: { intentId: string; sessionId: string }) => {
     assertIntentId(data.intentId);
     assertStripeSessionId(data.sessionId);
     return data;

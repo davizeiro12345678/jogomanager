@@ -17,7 +17,7 @@ export type SpendCoinsResult =
  */
 export const spendCoinsFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => SpendInput.parse(input))
+  .validator((input: unknown) => SpendInput.parse(input))
   .handler(async ({ data, context }): Promise<SpendCoinsResult> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin.rpc("spend_coins_for", {

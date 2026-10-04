@@ -47,12 +47,14 @@ const TIER_CLASS: Record<AchievementTier, string> = {
   ouro: "border-yellow-400/40 bg-yellow-400/10 text-yellow-300",
 };
 
+const EMPTY_UNLOCKED_IDS: string[] = [];
+
 function ConquistasPage() {
   const { career, signedIn } = useCareer();
   const sync = useServerFn(syncAchievements);
   const synced = useRef<string | null>(null);
 
-  const unlockedIds = career?.achievements ?? [];
+  const unlockedIds = career?.achievements ?? EMPTY_UNLOCKED_IDS;
   const unlockedSet = useMemo(() => new Set(unlockedIds), [unlockedIds]);
 
   useEffect(() => {

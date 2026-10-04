@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { Proportions } from "./player-model";
+import { HIGH_FIDELITY_PHYSICS_STEP } from "./physics-quality";
 import type { RigSkin } from "./rig-skin";
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -13,6 +14,9 @@ export interface ClothMotion {
   /** Facing angle and torso roll feed secondary cloth inertia, in radians. */
   yaw?: number;
   roll?: number;
+  /** Independent leg loading compresses the matching shorts hem. */
+  legL?: number;
+  legR?: number;
 }
 
 /** Cosmetic second-order mechanics: fixed substeps, bounded inertia, no changes
@@ -25,6 +29,8 @@ export class ClothDynamics {
   private priorLift = 0;
   private priorYaw = 0;
   private priorRoll = 0;
+  private accumulator = 0;
+  private executed = 0;
   private ready = false;
   time = 0;
   impact = 0;
@@ -34,6 +40,11 @@ export class ClothDynamics {
     private readonly stiffness = 86,
     private readonly damping = 15,
   ) {}
+
+  /** Diagnostics and tests can verify the true fixed 139 Hz integration. */
+  get executedSubsteps() {
+    return this.executed;
+  }
 
   advance(dt: number, motion: ClothMotion) {
     if (!Number.isFinite(dt) || dt <= 0) return;
@@ -53,14 +64,14 @@ export class ClothDynamics {
       this.priorRoll = roll;
       this.ready = true;
     }
-    const ax = clamp((x - this.priorX) / dt, -28, 28);
-    const az = clamp((z - this.priorZ) / dt, -28, 28);
-    const landing = lift <= 0.025 ? clamp((this.priorLift - lift) / dt, 0, 4) : 0;
+    const ax = clamp((x - this.priorX) / elapsed, -28, 28);
+    const az = clamp((z - this.priorZ) / elapsed, -28, 28);
+    const landing = lift <= 0.025 ? clamp((this.priorLift - lift) / elapsed, 0, 4) : 0;
     // Heading wraps at ±π. Use the shortest signed arc so a small turn across
     // that seam cannot kick the shirt as if the athlete spun all the way round.
     const yawDelta = Math.atan2(Math.sin(yaw - this.priorYaw), Math.cos(yaw - this.priorYaw));
-    this.turnRate = clamp(yawDelta / dt, -8, 8);
-    this.rollRate = clamp((roll - this.priorRoll) / dt, -10, 10);
+    this.turnRate = clamp(yawDelta / elapsed, -8, 8);
+    this.rollRate = clamp((roll - this.priorRoll) / elapsed, -10, 10);
     this.priorX = x;
     this.priorZ = z;
     this.priorLift = lift;
@@ -79,8 +90,22 @@ export class ClothDynamics {
       -0.018,
       0.018,
     );
-    const steps = Math.ceil(elapsed * 120),
-      h = elapsed / steps;
+    this.time += elapsed;
+    // Fixed slices avoid coupling cloth motion to browser refresh rate: a
+    // 30, 60, 120 or 144 Hz renderer all integrates the same 139 Hz fabric.
+    // dt is already capped at 250ms; 36 slices cover the full cap plus the
+    // carried remainder after a stalled frame without discarding simulation.
+    this.accumulator = Math.min(this.accumulator + elapsed, HIGH_FIDELITY_PHYSICS_STEP * 36);
+    // Repeated browser deltas accumulate tiny binary rounding error. A very
+    // small time epsilon prevents a mathematically complete 139th slice from
+    // being deferred to the next render frame.
+    const steps = Math.min(
+      36,
+      Math.floor(
+        (this.accumulator + HIGH_FIDELITY_PHYSICS_STEP * 1e-8) / HIGH_FIDELITY_PHYSICS_STEP,
+      ),
+    );
+    const h = HIGH_FIDELITY_PHYSICS_STEP;
     for (let step = 0; step < steps; step++) {
       for (let axis = 0; axis < 2; axis++) {
         const target = axis === 0 ? targetX : targetZ;
@@ -91,8 +116,9 @@ export class ClothDynamics {
         this.offset[axis] = clamp(this.offset[axis]! + this.velocity[axis]! * h, -0.021, 0.021);
       }
       this.impact += (landing * 0.1 - this.impact) * Math.min(1, h * 18);
-      this.time += h;
+      this.executed += 1;
     }
+    this.accumulator = Math.max(0, this.accumulator - steps * h);
   }
 }
 
@@ -224,6 +250,8 @@ export class AthleteCloth {
     const effort = Number.isFinite(motion.effort) ? clamp(motion.effort, 0, 1) : 0;
     const bend = Number.isFinite(motion.bend) ? clamp(Math.abs(motion.bend), 0, 1.5) : 0;
     const roll = Number.isFinite(motion.roll) ? Math.abs(motion.roll!) : 0;
+    const legL = Number.isFinite(motion.legL) ? clamp(Math.abs(motion.legL!), 0, 1) : 0;
+    const legR = Number.isFinite(motion.legR) ? clamp(Math.abs(motion.legR!), 0, 1) : 0;
     const angularLoad = clamp(Math.abs(this.dynamics.turnRate) / 5 + roll * 0.55, 0, 1);
     for (const garment of this.garments.values()) {
       const breath = 0.22 + Math.sin(this.dynamics.time * (1.9 + effort * 1.6)) * 0.09;
@@ -233,10 +261,24 @@ export class AthleteCloth {
         weights[1] = clamp(-x, 0, 1);
         weights[2] = clamp(z, 0, 1);
         weights[3] = clamp(-z, 0, 1);
+        if (garment.kind === "shorts") {
+          // Positive X is the left leg in the shared rig coordinate system.
+          // Reuse the existing lateral morphs so each hem responds to its own
+          // knee flexion without another garment mesh, material or draw.
+          weights[0] = clamp(weights[0]! + legL * 0.52, 0, 1);
+          weights[1] = clamp(weights[1]! + legR * 0.52, 0, 1);
+        }
         weights[4] =
           garment.kind === "shirt"
             ? folds
-            : clamp(bend * 0.27 + this.dynamics.impact + angularLoad * 0.04, 0, 1);
+            : clamp(
+                bend * 0.27 +
+                  Math.max(legL, legR) * 0.34 +
+                  this.dynamics.impact +
+                  angularLoad * 0.04,
+                0,
+                1,
+              );
       }
     }
   }

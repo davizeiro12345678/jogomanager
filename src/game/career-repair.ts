@@ -3,7 +3,14 @@
  * óbvia (valores fora da faixa, ids órfãos, partidas duplicadas); nunca inventa
  * resultados nem altera o que o jogador decidiu. Pura e determinística.
  */
-import type { CareerState, Fixture, Player } from "./types";
+import type {
+  CareerState,
+  FinanceLedgerEntry,
+  Fixture,
+  OperatingPlan,
+  Player,
+  TrainingReport,
+} from "./types";
 import {
   repairPlayerIdentities,
   repairShirtNumbers,
@@ -17,6 +24,95 @@ const clamp = (v: unknown, min: number, max: number, fallback: number) => {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizedPlan(value: unknown): { plan: OperatingPlan | undefined; changed: boolean } {
+  if (value === undefined) return { plan: undefined, changed: false };
+  const source = isRecord(value) ? value : {};
+  const plan: OperatingPlan = {
+    academy: Math.round(clamp(source["academy"], 0, 3, 1)) as OperatingPlan["academy"],
+    medical: Math.round(clamp(source["medical"], 0, 3, 1)) as OperatingPlan["medical"],
+    scouting: Math.round(clamp(source["scouting"], 0, 3, 1)) as OperatingPlan["scouting"],
+    commercial: Math.round(clamp(source["commercial"], 0, 3, 1)) as OperatingPlan["commercial"],
+  };
+  const changed =
+    !isRecord(value) ||
+    source["academy"] !== plan.academy ||
+    source["medical"] !== plan.medical ||
+    source["scouting"] !== plan.scouting ||
+    source["commercial"] !== plan.commercial;
+  return { plan, changed };
+}
+
+function normalizedLedger(value: unknown): {
+  entries: FinanceLedgerEntry[] | undefined;
+  dropped: number;
+} {
+  if (value === undefined) return { entries: undefined, dropped: 0 };
+  if (!Array.isArray(value)) return { entries: [], dropped: 1 };
+  const seen = new Set<string>();
+  let dropped = 0;
+  const entries: FinanceLedgerEntry[] = [];
+  for (const raw of value) {
+    if (!isRecord(raw) || typeof raw["id"] !== "string" || !raw["id"] || seen.has(raw["id"])) {
+      dropped++;
+      continue;
+    }
+    const validKind = ["operacao", "mercado", "infraestrutura", "premio"].includes(
+      String(raw["kind"]),
+    );
+    if (!validKind || typeof raw["label"] !== "string") {
+      dropped++;
+      continue;
+    }
+    seen.add(raw["id"]);
+    entries.push({
+      id: raw["id"],
+      season: Math.round(clamp(raw["season"], 1, 999, 1)),
+      round: Math.round(clamp(raw["round"], 1, 999, 1)),
+      kind: raw["kind"] as FinanceLedgerEntry["kind"],
+      label: raw["label"].slice(0, 160),
+      income: clamp(raw["income"], 0, 1e6, 0),
+      expense: clamp(raw["expense"], 0, 1e6, 0),
+    });
+  }
+  return { entries: entries.slice(0, 96), dropped: dropped + Math.max(0, entries.length - 96) };
+}
+
+function normalizedTrainingReports(value: unknown): {
+  reports: TrainingReport[] | undefined;
+  dropped: number;
+} {
+  if (value === undefined) return { reports: undefined, dropped: 0 };
+  if (!Array.isArray(value)) return { reports: [], dropped: 1 };
+  let dropped = 0;
+  const seen = new Set<string>();
+  const reports: TrainingReport[] = [];
+  for (const raw of value) {
+    if (
+      !isRecord(raw) ||
+      typeof raw["id"] !== "string" ||
+      !raw["id"] ||
+      seen.has(raw["id"]) ||
+      typeof raw["drillId"] !== "string"
+    ) {
+      dropped++;
+      continue;
+    }
+    seen.add(raw["id"]);
+    reports.push({
+      id: raw["id"],
+      season: Math.round(clamp(raw["season"], 1, 999, 1)),
+      round: Math.round(clamp(raw["round"], 1, 999, 1)),
+      drillId: raw["drillId"].slice(0, 80),
+      load: Math.round(clamp(raw["load"], 0, 100, 0)),
+      recovery: Math.round(clamp(raw["recovery"], 0, 100, 0)),
+      responders: Array.isArray(raw["responders"])
+        ? raw["responders"].filter((name): name is string => typeof name === "string").slice(0, 8)
+        : [],
+    });
+  }
+  return { reports: reports.slice(0, 24), dropped: dropped + Math.max(0, reports.length - 24) };
 }
 
 const PLAYER_RANGES: [keyof Player, number, number, number][] = [
@@ -141,11 +237,11 @@ export function repairCareer(input: CareerState): RepairResult {
   const fixtures = rawFixtures.flatMap((raw): Fixture[] => {
     if (
       !isRecord(raw) ||
-      !Number.isInteger(raw.round) ||
-      typeof raw.home !== "string" ||
-      !raw.home ||
-      typeof raw.away !== "string" ||
-      !raw.away
+      !Number.isInteger(raw["round"]) ||
+      typeof raw["home"] !== "string" ||
+      !raw["home"] ||
+      typeof raw["away"] !== "string" ||
+      !raw["away"]
     ) {
       dropped++;
       return [];
@@ -230,9 +326,40 @@ export function repairCareer(input: CareerState): RepairResult {
   )
     fixes.push("Medidores ou finanças com valores inválidos");
 
+  const planResult = normalizedPlan((input as unknown as Record<string, unknown>)["operatingPlan"]);
+  const ledgerResult = normalizedLedger(
+    (input as unknown as Record<string, unknown>)["financeLedger"],
+  );
+  const trainingResult = normalizedTrainingReports(
+    (input as unknown as Record<string, unknown>)["trainingReports"],
+  );
+  if (planResult.changed) fixes.push("Plano operacional com valores inválidos corrigido");
+  if (
+    ledgerResult.dropped ||
+    JSON.stringify(input.financeLedger) !== JSON.stringify(ledgerResult.entries)
+  )
+    fixes.push("Lançamentos financeiros inválidos corrigidos");
+  if (
+    trainingResult.dropped ||
+    JSON.stringify(input.trainingReports) !== JSON.stringify(trainingResult.reports)
+  )
+    fixes.push("Relatórios de treino inválidos corrigidos");
+
   if (!fixes.length) return { state: input, fixes };
   return {
-    state: { ...input, players, lineup, bench, fixtures, results, finances, ...meters },
+    state: {
+      ...input,
+      players,
+      lineup,
+      bench,
+      fixtures,
+      results,
+      finances,
+      ...meters,
+      ...(planResult.plan !== undefined ? { operatingPlan: planResult.plan } : {}),
+      ...(ledgerResult.entries !== undefined ? { financeLedger: ledgerResult.entries } : {}),
+      ...(trainingResult.reports !== undefined ? { trainingReports: trainingResult.reports } : {}),
+    },
     fixes,
   };
 }

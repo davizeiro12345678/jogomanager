@@ -9,8 +9,8 @@ import { loadEnv, type ConfigEnv } from "vite";
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 import { imagetools } from "vite-imagetools";
-import { protectThreeSourceTags } from "./scripts/r3f-source-compat";
-import { rapierWasmAsset } from "./scripts/rapier-wasm-asset";
+import { protectThreeSourceTags } from "./scripts/r3f-source-compat.ts";
+import { rapierWasmAsset } from "./scripts/rapier-wasm-asset.ts";
 
 // Load non-VITE_ env vars into process.env for server routes (email, webhooks).
 // These are NOT injected into the client bundle.

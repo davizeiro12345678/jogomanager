@@ -54,6 +54,7 @@ export function startEmbeddedCheckout({
   let checkout: StripeEmbeddedCheckout | null = null;
   let mounted = false;
   let rendered = false;
+  let readyNotified = false;
 
   const destroy = () => {
     const current = checkout;
@@ -68,7 +69,8 @@ export function startEmbeddedCheckout({
     onError(checkoutErrorMessage(cause));
   };
   const ready = () => {
-    if (!active || !mounted || !rendered) return;
+    if (!active || readyNotified || !mounted || !rendered) return;
+    readyNotified = true;
     clearTimeout(timer);
     onPhase("ready");
   };

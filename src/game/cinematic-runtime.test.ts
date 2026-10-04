@@ -3,6 +3,9 @@ import * as THREE from "three";
 import {
   cinematicDelta,
   cinematicDetail,
+  cinematicAutoQualityOnDecline,
+  cinematicAutoQualityOnFallback,
+  cinematicAutoQualityOnIncline,
   cinematicInitialQuality,
   cinematicGpuQuality,
 } from "./cinematic-performance";
@@ -31,13 +34,28 @@ describe("cinematic runtime", () => {
     expect(cinematicInitialQuality("baixa", "alta")).toBe("alta");
     expect(cinematicInitialQuality("alta", "baixa")).toBe("baixa");
   });
+  it("promotes automatic cinematic detail after a sustained high-FPS signal", () => {
+    expect(cinematicAutoQualityOnIncline("media")).toBe("alta");
+    expect(cinematicAutoQualityOnIncline("alta")).toBe("alta");
+  });
+  it("reduces automatic cinematic detail by one level after a sustained low-FPS signal", () => {
+    expect(cinematicAutoQualityOnDecline("alta")).toBe("media");
+    expect(cinematicAutoQualityOnDecline("media")).toBe("baixa");
+    expect(cinematicAutoQualityOnDecline("baixa")).toBe("baixa");
+  });
+  it("uses the measured fallback FPS instead of treating fallback itself as poor performance", () => {
+    expect(cinematicAutoQualityOnFallback("media", 60)).toBe("alta");
+    expect(cinematicAutoQualityOnFallback("alta", 60)).toBe("alta");
+    expect(cinematicAutoQualityOnFallback("alta", 20)).toBe("media");
+    expect(cinematicAutoQualityOnFallback("media", 30)).toBe("media");
+  });
   it("freezes on pause and contains stalls without injecting invalid time", () => {
     expect(cinematicDelta(0.016, true)).toBe(0);
     expect(cinematicDelta(12, false)).toBeLessThan(0.1);
     for (const dt of [NaN, Infinity, -1]) expect(cinematicDelta(dt, false)).toBe(0);
     expect(cinematicDelta(1 / 60, false) * 60).toBeCloseTo(1);
   });
-  it("reserves facial detail for speaking heroes and scales the same adult anatomy", () => {
+  it("keeps portrait anatomy on the narrative subject from medium quality upward", () => {
     for (let seed = 0; seed < 16; seed++) {
       const look = cinematicLook(seed);
       const p = proportionsFor(look);
@@ -49,6 +67,11 @@ describe("cinematic runtime", () => {
     expect(cinematicDetail("baixa", true).high).toBe(false);
     expect(cinematicDetail("alta", true).high).toBe(true);
     expect(cinematicDetail("media", true).high).toBe(false);
+    expect(cinematicDetail("baixa", true).portrait).toBe(false);
+    expect(cinematicDetail("media", true).portrait).toBe(true);
+    expect(cinematicDetail("alta", true).portrait).toBe(true);
+    expect(cinematicDetail("media", false).portrait).toBe(false);
+    expect(cinematicDetail("media", true).radial).toBe(12);
   });
   it("plants the soles of seated actors across different leg proportions", () => {
     for (let seed = 1; seed < 12; seed++) {

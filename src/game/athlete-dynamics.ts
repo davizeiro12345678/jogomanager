@@ -1,5 +1,7 @@
 /** Deterministic pitch-plane mechanics, shared by Worker and server replay.
  * Metres, seconds and kilograms; tactical destinations remain in MatchSim. */
+import { HIGH_FIDELITY_PHYSICS_STEP, highFidelitySubsteps } from "./physics-quality";
+
 export interface AthleteBody {
   x: number;
   z: number;
@@ -12,6 +14,11 @@ export interface AthleteBody {
 }
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 const mass = (p: AthleteBody) => (Number.isFinite(p.weightKg) ? clamp(p.weightKg!, 45, 130) : 78);
+// A 1 / 15 spatial tick plus the retained <1/139 remainder can need eleven
+// slices. This applies only to live motion; long recovery intervals still use
+// a bounded fallback below.
+const MAX_LIVE_ATHLETE_SUBSTEPS = 11;
+const liveRemainder = new WeakMap<AthleteBody, number>();
 
 /** Bounded acceleration, stopping distance and continuous coasting. Substeps
  * keep a coarse fast-forward tick consistent with the live match clock. */
@@ -32,12 +39,23 @@ export function advanceAthlete(
     mass(p);
   const acceleration = clamp(force, 3.2, 7.5) * grip;
   const braking = (7.2 + clamp(p.physical, 0, 100) * 0.02) * grip;
-  // Live ticks use 120 Hz integration; fast-forward caps work per player so
-  // sequential season simulation does not spend every tick on tiny substeps.
-  const steps = Math.min(8, Math.ceil(dt * 120)),
-    h = dt / steps;
-  const response = 1 - Math.exp(-6 * h);
+  // Spatial motion resolves at 139 Hz minimum while the deterministic match
+  // clock, AI and rules remain at 30 Hz. Ten slices cover the live 1 / 15 s
+  // motion interval without letting fast-forward create unbounded work.
+  const carried = liveRemainder.get(p) ?? 0;
+  const accumulated = dt + carried;
+  const fixedSteps = Math.floor(accumulated / HIGH_FIDELITY_PHYSICS_STEP);
+  // The ordinary live path runs identical 1 / 139 slices regardless of the
+  // outer render or Worker cadence. The weak remainder never becomes career
+  // data and is deterministic for the fixed 30 Hz match clock.
+  const useFixedSlices = fixedSteps <= MAX_LIVE_ATHLETE_SUBSTEPS;
+  const steps = useFixedSlices ? fixedSteps : highFidelitySubsteps(dt, MAX_LIVE_ATHLETE_SUBSTEPS);
+  if (useFixedSlices)
+    liveRemainder.set(p, Math.max(0, accumulated - steps * HIGH_FIDELITY_PHYSICS_STEP));
+  else liveRemainder.delete(p);
   for (let i = 0; i < steps; i++) {
+    const h = useFixedSlices ? HIGH_FIDELITY_PHYSICS_STEP : dt / steps;
+    const response = 1 - Math.exp(-6 * h);
     const dx = tx - p.x,
       dz = tz - p.z,
       distance = Math.hypot(dx, dz);

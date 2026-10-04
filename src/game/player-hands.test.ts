@@ -8,6 +8,7 @@ import { shoulderPose, refineAthletePosture } from "./athlete-posture";
 import { emptyPose } from "./animation-core";
 import { solveLegTarget, gaitPoseAt, gaitCadence } from "./gait-kinematics";
 import type { Kit } from "./kits";
+import type { PlayerAction } from "./animation";
 
 const kit: Kit = {
   base: "#ad1624",
@@ -113,6 +114,69 @@ describe("articulated athlete hands and shoulders", () => {
     );
     expect(handPoseAt("saveHigh", 0.5, 0).spread).toBeGreaterThan(handPoseAt(null, 0.5, 0).spread);
     expect(handPoseAt(null, 0.5, 8).grip).toBeGreaterThan(handPoseAt(null, 0.5, 0).grip);
+  });
+
+  it("keeps every authored action inside the hand envelope with readable action-specific gestures", () => {
+    const actions: PlayerAction[] = [
+      "shot",
+      "shotPower",
+      "shotPlaced",
+      "bicycle",
+      "headClear",
+      "duel",
+      "decelerate",
+      "turn",
+      "backpedal",
+      "chip",
+      "volley",
+      "header",
+      "firstTime",
+      "pass",
+      "passLong",
+      "cross",
+      "trap",
+      "tackle",
+      "slide",
+      "block",
+      "intercept",
+      "save",
+      "saveHigh",
+      "diveLeft",
+      "diveRight",
+      "catch",
+      "distribute",
+      "goalKick",
+      "throwIn",
+      "corner",
+      "freeKick",
+      "penalty",
+      "celebrate",
+      "celebrateRun",
+      "kneeSlide",
+      "hug",
+      "dejected",
+      "protest",
+      "feint",
+      "cut",
+      "stepover",
+      "elastico",
+    ];
+    for (const action of actions)
+      for (const side of ["L", "R"] as const) {
+        const pose = handPoseAt(action, 0.48, 6, side);
+        expect(Object.values(pose).every(Number.isFinite)).toBe(true);
+        expect(pose.grip).toBeGreaterThanOrEqual(0);
+        expect(pose.grip).toBeLessThanOrEqual(0.94);
+        expect(pose.spread).toBeGreaterThanOrEqual(0);
+        expect(pose.spread).toBeLessThanOrEqual(0.2);
+      }
+    const neutral = handPoseAt(null, 0.48, 6, "L");
+    expect(handPoseAt("shot", 0.48, 6, "L").spread).toBeGreaterThan(neutral.spread);
+    expect(handPoseAt("header", 0.48, 6, "L").spread).toBeGreaterThan(neutral.spread);
+    expect(handPoseAt("dejected", 0.48, 6, "L").grip).toBeLessThan(neutral.grip);
+    expect(handPoseAt("shot", 0.48, 6, "L").pronation).not.toBe(
+      handPoseAt("shot", 0.48, 6, "R").pronation,
+    );
   });
 
   it("uses mirrored upper-chest clavicles for overhead actions without changing arm reach", () => {

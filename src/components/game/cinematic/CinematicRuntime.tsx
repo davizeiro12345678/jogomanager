@@ -21,6 +21,7 @@ export function CinematicRuntime({
   previewTime = 0,
   cue,
   voiceClockRef,
+  voicePlayingRef,
 }: {
   children: ReactNode;
   quality: QualityLevel;
@@ -32,6 +33,7 @@ export function CinematicRuntime({
   previewTime?: number | undefined;
   cue?: CinematicCue | undefined;
   voiceClockRef?: CinematicVoiceClockRef | undefined;
+  voicePlayingRef?: { current: boolean } | undefined;
 }) {
   const clock = useRef({
     time: Number.isFinite(previewTime) ? Math.max(0, Math.min(60, previewTime)) : 0,
@@ -52,8 +54,9 @@ export function CinematicRuntime({
       manner,
       cue,
       voiceClockRef,
+      voicePlayingRef,
     }),
-    [quality, look, cast, stopped, reduced, focus, manner, cue, voiceClockRef],
+    [quality, look, cast, stopped, reduced, focus, manner, cue, voiceClockRef, voicePlayingRef],
   );
   useFrame((_, raw) => {
     clock.current.dt = cinematicDelta(raw, stopped || reduced);

@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { buildTeamSetup } from "./quickMatch";
 import { FIELD_X, MatchSim } from "./sim";
 import { profileFor } from "./attributes";
 import { snapshotMatch, WorkerMatchView } from "./live-match";
+import { createRapierBallAuthority } from "./rapier-ball-authority";
 
 function create(seed = "engine-regression") {
   return new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), seed);
@@ -36,6 +37,44 @@ describe("MatchSim", () => {
     expect(first.stats).toEqual(second.stats);
     expect(first.scorers).toEqual(second.scorers);
     expect(first.shotMap).toEqual(second.shotMap);
+  });
+
+  it("keeps goalkeeper contact visuals deterministic and independent of ambient randomness", () => {
+    const sim = create("visual-contact-determinism");
+    const keeper = sim.players.find((player) => player.side === "home" && player.pos === "GK");
+    expect(keeper).toBeDefined();
+    if (!keeper) return;
+
+    sim.ball.holder = keeper.id;
+    const ambientRandom = vi.spyOn(Math, "random");
+    try {
+      ambientRandom.mockReturnValueOnce(0);
+      const first = sim.generateVisualContext();
+      ambientRandom.mockReturnValueOnce(0.99);
+      const second = sim.generateVisualContext();
+      expect(second).toEqual(first);
+    } finally {
+      ambientRandom.mockRestore();
+    }
+  });
+
+  it("keeps halftime kickoff ball height valid in fallback and Rapier runs", async () => {
+    const heights: number[] = [];
+    for (let run = 0; run < 3; run += 1) {
+      const sim = create(`halftime-kickoff-height-${run}`);
+      const internals = sim as unknown as { freezeT: number };
+      if (run === 2) sim.setBallPhysicsAuthority(await createRapierBallAuthority());
+      sim.phase = "half";
+      sim.ball.height = 0.12;
+      internals.freezeT = 1 / 30;
+
+      sim.step(1 / 30, 6);
+      heights.push(sim.ball.height);
+      expect(sim.phase).toBe("second");
+      sim.dispose();
+    }
+
+    expect(heights).toEqual([0.12, 0.12, 0.12]);
   });
 
   it("finishes safely and keeps diagnostic collections bounded", () => {

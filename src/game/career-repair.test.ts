@@ -82,4 +82,29 @@ describe("repairCareer", () => {
     ).toHaveLength(1);
     expect(repaired.fixes).toContain("Escalação com jogadores inexistentes ou repetidos");
   });
+
+  it("limita novos dados de operação e treino sem quebrar save antigo", () => {
+    const s = fresh();
+    const broken = {
+      ...s,
+      operatingPlan: { academy: 99, medical: "ruim", scouting: -4, commercial: 1 },
+      financeLedger: [
+        null,
+        { id: "ok", season: 1, round: 1, kind: "operacao", label: "Teste", income: 2, expense: 1 },
+      ],
+      trainingReports: [{ id: "bad", drillId: 14 }, null],
+    } as unknown as typeof s;
+
+    const repaired = repairCareer(broken);
+
+    expect(repaired.state.operatingPlan).toEqual({
+      academy: 3,
+      medical: 1,
+      scouting: 0,
+      commercial: 1,
+    });
+    expect(repaired.state.financeLedger).toHaveLength(1);
+    expect(repaired.state.trainingReports).toHaveLength(0);
+    expect(repaired.fixes).toContain("Lançamentos financeiros inválidos corrigidos");
+  });
 });

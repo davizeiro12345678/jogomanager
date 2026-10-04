@@ -1,8 +1,16 @@
 import * as THREE from "three";
 
+export type GrassBladeMaterialOptions = Readonly<{
+  /** WebGPURenderer does not execute GLSL `onBeforeCompile` hooks. */
+  webgl2?: boolean;
+}>;
+
 /** One material for all field chunks. World-space wind is converted into each
  * blade's local orientation; root shading and distance fade need no textures. */
-export function createGrassBladeMaterial(color = "#46824b") {
+export function createGrassBladeMaterial(
+  color = "#46824b",
+  { webgl2 = true }: GrassBladeMaterialOptions = {},
+) {
   const uniforms = {
     uTime: { value: 0 },
     uBall: { value: new THREE.Vector3() },
@@ -18,23 +26,25 @@ export function createGrassBladeMaterial(color = "#46824b") {
     vertexColors: true,
     side: THREE.DoubleSide,
   });
-  material.customProgramCacheKey = () => "match-grass-contact-wind-v3";
-  material.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms);
-    shader.vertexShader = shader.vertexShader
-      .replace(
-        "#include <common>",
-        `#include <common>
+  material.customProgramCacheKey = () =>
+    `match-grass-contact-wind-v3:${webgl2 ? "webgl2" : "webgpu-standard"}`;
+  if (webgl2)
+    material.onBeforeCompile = (shader) => {
+      Object.assign(shader.uniforms, uniforms);
+      shader.vertexShader = shader.vertexShader
+        .replace(
+          "#include <common>",
+          `#include <common>
         uniform float uTime; uniform float uWind; uniform vec3 uBall;
         uniform vec2 uWindDirection; varying float vGrassHeight;`,
-      )
-      .replace(
-        "varying float vGrassHeight;",
-        "varying float vGrassHeight; uniform vec3 uPlayers[22]; uniform int uPlayerCount;",
-      )
-      .replace(
-        "#include <begin_vertex>",
-        `#include <begin_vertex>
+        )
+        .replace(
+          "varying float vGrassHeight;",
+          "varying float vGrassHeight; uniform vec3 uPlayers[22]; uniform int uPlayerCount;",
+        )
+        .replace(
+          "#include <begin_vertex>",
+          `#include <begin_vertex>
         vec3 wp = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
         float h = clamp(position.y / 0.035, 0.0, 1.0);
         vGrassHeight = h;
@@ -61,19 +71,19 @@ export function createGrassBladeMaterial(color = "#46824b") {
                             dot(bend, normalize(instanceMatrix[2].xyz)));
         transformed.y = max(0.0, transformed.y - (near * 0.012 + trample * 0.025) * h) * fade;
         transformed.xz *= fade;`,
-      )
-      .replace(
-        "#include <color_vertex>",
-        `#include <color_vertex>
+        )
+        .replace(
+          "#include <color_vertex>",
+          `#include <color_vertex>
         vColor.rgb *= mix(vec3(0.48, 0.57, 0.42), vec3(1.08, 1.12, 0.91), clamp(position.y / 0.035, 0.0, 1.0));`,
-      );
-    shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", "#include <common>\nvarying float vGrassHeight;")
-      .replace(
-        "#include <emissivemap_fragment>",
-        `#include <emissivemap_fragment>
+        );
+      shader.fragmentShader = shader.fragmentShader
+        .replace("#include <common>", "#include <common>\nvarying float vGrassHeight;")
+        .replace(
+          "#include <emissivemap_fragment>",
+          `#include <emissivemap_fragment>
         totalEmissiveRadiance += diffuseColor.rgb * vGrassHeight * (gl_FrontFacing ? 0.025 : 0.14);`,
-      );
-  };
+        );
+    };
   return { material, uniforms };
 }

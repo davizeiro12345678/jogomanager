@@ -31,9 +31,21 @@ import type { ManagerLook } from "@/game/types";
 import type { CinematicManner } from "@/game/cinematic-actor";
 import type { CinematicVoiceClockRef } from "@/game/cutscene-visemes";
 import { cinematicIdleAt } from "@/game/cinematic-actor";
+import { supportsWebGL } from "@/game/webgl-support";
+import {
+  cinematicCameraTransition,
+  type CinematicCameraTransitionInput,
+} from "@/game/cinematic-camera-transition";
 import { cinematicShotFor } from "@/game/cinematic-shot";
 import { cinematicDrillFor } from "@/game/cinematic-action";
-import { cinematicReactionSpeaker } from "@/game/cinematic-blocking";
+import {
+  cinematicReactionReady,
+  cinematicReactionSpeaker,
+  cinematicSetFor,
+  cinematicStageActorFor,
+  type CinematicSet,
+} from "@/game/cinematic-blocking";
+import { hashSeed } from "@/game/rng";
 import { CinematicCrowd } from "./cinematic/CinematicCrowd";
 import type { CinematicCue } from "@/game/cinematic-cue";
 import { CinematicAtmosphere } from "./cinematic/CinematicAtmosphere";
@@ -48,45 +60,25 @@ import { CinematicSetBatch, type CinematicBatchSnapshot } from "./cinematic/Cine
 import { GraphicsBoundary } from "./GraphicsBoundary";
 import { HangingShirt, TacticsBoard, ClubTrophy } from "./cinematic/CinematicSetDetails";
 import { CinematicSetFinish } from "./cinematic/CinematicSetFinish";
+import { CinematicStoryDressing } from "./cinematic/CinematicStoryDressing";
+import { CinematicMotivatedLight } from "./cinematic/CinematicMotivatedLight";
 import {
   cinematicBackdrop,
   cinematicSurface,
   releaseCinematicBackdrop,
 } from "./cinematic/cinematic-surfaces";
 
-/** true quando o locutor da fala atual é um dos donos deste figurante-herói */
-function actsFor(speaker: Speaker | null, roles: Speaker[]): boolean {
-  return speaker !== null && roles.includes(speaker);
-}
-import { cinematicGpuQuality, cinematicInitialQuality } from "@/game/cinematic-performance";
+import {
+  cinematicAutoQualityOnDecline,
+  cinematicAutoQualityOnFallback,
+  cinematicAutoQualityOnIncline,
+  cinematicGpuQuality,
+  cinematicInitialQuality,
+} from "@/game/cinematic-performance";
 const CinematicLens = lazy(() => import("./cinematic/CinematicLens"));
-let automaticQuality: QualityLevel | undefined;
-import { detectQuality, lowerQuality, type QualityLevel } from "@/game/device";
+import { detectQuality, type QualityLevel } from "@/game/device";
 
-type SetKind = "locker" | "tunnel" | "press" | "pitch" | "stands" | "office" | "arrival";
-
-const SET_BY_ART: Record<SceneArt, SetKind> = {
-  arrival: "arrival",
-  press: "press",
-  dressing: "locker",
-  trophy: "pitch",
-  training: "pitch",
-  gym: "locker",
-  tactics: "locker",
-  staff: "office",
-  board: "office",
-  transfer: "office",
-  tunnel: "tunnel",
-  kitroom: "locker",
-  pitchentry: "pitch",
-  celebration: "stands",
-  defeat: "locker",
-  farewell: "tunnel",
-  bus: "arrival",
-  office: "office",
-  medical: "locker",
-  gala: "press",
-};
+type SetKind = CinematicSet;
 
 /* ------------------------------------------------------------- figurantes */
 
@@ -347,7 +339,7 @@ function LockerRoom({
         seed={21}
         role="manager"
         attention={[-0.4, 0.6]}
-        acting={actsFor(speaker, ["manager", "assistant"])}
+        acting={speaker === "manager"}
         clipboard
       />
     </group>
@@ -423,7 +415,7 @@ function Tunnel({
           pose="stand"
           color={i % 2 ? primary : secondary}
           seed={i * 11 + 4}
-          acting={i === 0 && actsFor(speaker, ["captain", "manager"])}
+          acting={i === 0 && speaker === "captain"}
         />
       ))}
       {/* boca do túnel */}
@@ -504,7 +496,7 @@ function PressRoom({
         seed={31}
         role="manager"
         attention={[-3.4, 2.4]}
-        acting={actsFor(speaker, ["manager", "president"])}
+        acting={speaker === "manager"}
       />
       {/* fotógrafos e flashes */}
       {Array.from({ length: 5 }).map((_, i) => (
@@ -635,7 +627,7 @@ function PitchEntry({
             pose="stand"
             color={i < 6 ? primary : secondary}
             seed={i * 9 + 1}
-            acting={i === 0 && actsFor(speaker, ["captain", "manager"])}
+            acting={i === 0 && speaker === "captain"}
           />
         ))
       )}
@@ -782,7 +774,7 @@ function Office({
         seed={41}
         role="president"
         attention={[1.1, -2.3]}
-        acting={actsFor(speaker, ["president", "agent"])}
+        acting={speaker === "president"}
       />
       <Figure
         x={1.1}
@@ -793,7 +785,7 @@ function Office({
         seed={57}
         role="manager"
         attention={[-0.9, -2.3]}
-        acting={actsFor(speaker, ["manager", "scout"])}
+        acting={speaker === "manager"}
       />
     </group>
   );
@@ -938,7 +930,7 @@ function BusArrival({
         color={primary}
         seed={71}
         role="fan"
-        acting={actsFor(speaker, ["fan"])}
+        acting={speaker === "fan"}
       />
       <Figure x={-6.3} z={-1.1} rot={1.4} color={secondary} seed={72} />
       <Figure x={-6.0} z={1.2} rot={1.2} color={primary} seed={73} />
@@ -952,7 +944,7 @@ function BusArrival({
         role="captain"
         entrance
         attention={[-6.1, -3.4]}
-        acting={actsFor(speaker, ["captain", "manager"])}
+        acting={speaker === "captain"}
       />
       <pointLight ref={beacon} position={[-5.05, 1.45, 4]} color="#3a7bff" distance={6} />
       <pointLight position={[0, 2.1, 5.4]} intensity={3.6} distance={13} color="#ffd9a0" />
@@ -989,38 +981,53 @@ function Director({
   const runtime = useCinematicRuntime();
   const position = useMemo(() => new THREE.Vector3(), []);
   const target = useMemo(() => new THREE.Vector3(), []);
-  const lastFraming = useRef("");
+  const lastFraming = useRef<CinematicCameraTransitionInput | null>(null);
   useFrame(({ camera }) => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
     const { time, lineTime } = runtime.clock;
     const opening = beat === 0 && lineTime < 1.45 && !runtime.reduced;
-    const reaction = Boolean(
-      runtime.cue &&
-      !runtime.cue.decision &&
-      !opening &&
-      !festive &&
-      lineTime > runtime.cue.duration + 0.7,
-    );
+    const drill = cinematicDrillFor(runtime.cue?.id.split(":")[0]);
+    const sceneArt = art ?? "dressing";
+    const speakingActor = cinematicStageActorFor(sceneArt, speaker, festive, time, drill);
     const listener = cinematicReactionSpeaker(kind, speaker, art);
-    const subject = reaction && listener ? listener : speaker;
+    const listenerActor = listener
+      ? cinematicStageActorFor(sceneArt, listener, festive, time, drill)
+      : null;
+    const reaction =
+      cinematicReactionReady(
+        lineTime,
+        runtime.cue?.duration ?? 5,
+        runtime.voicePlayingRef?.current ?? false,
+        Boolean(runtime.cue && !runtime.cue.decision && !opening && !festive),
+      ) && listenerActor?.presence === "resident";
+    const stagedActor = reaction ? listenerActor : speakingActor;
+    const subject = stagedActor?.role ?? null;
+    const shotSize = reaction ? "medio" : size;
     const shot = cinematicShotFor(
       kind,
       subject,
-      reaction ? "medio" : size,
+      shotSize,
       camera.aspect,
       festive,
       opening,
       art,
       beat,
       time,
-      cinematicDrillFor(runtime.cue?.id.split(":")[0]),
+      drill,
     );
     position.fromArray(shot.position);
     target.fromArray(shot.target);
-    const framing = `${beat}-${shot.framing}-${subject}-${size}`;
-    const cut = lastFraming.current !== framing;
+    const framing: CinematicCameraTransitionInput = {
+      scene: sceneArt,
+      framing: shot.framing,
+      subject: subject ?? "environment",
+      size: shotSize,
+      reaction,
+      opening,
+    };
+    const cut = cinematicCameraTransition(lastFraming.current, framing) === "cut";
     lastFraming.current = framing;
-    const focus = size !== "geral" && shot.framing === "dialogue";
+    const focus = shotSize !== "geral" && shot.framing === "dialogue";
     if (focus && kind === "locker" && art !== "gym" && art !== "medical" && subject === "captain") {
       const idle = cinematicIdleAt(time, 5, true);
       const rise = idle.kind === "rise" ? idle.weight * 0.45 : 0;
@@ -1058,13 +1065,10 @@ function Director({
       camera.updateProjectionMatrix();
     }
     camera.userData["cinematicFraming"] = shot.framing;
-    camera.userData["cinematicSubject"] = subject ?? "environment";
+    camera.userData["cinematicSubject"] = stagedActor?.role ?? "environment";
+    camera.userData["cinematicActorPresence"] = stagedActor?.presence ?? "environment";
     camera.userData["cinematicShotType"] =
-      opening || shot.framing === "establishing"
-        ? "master"
-        : reaction && listener
-          ? "reaction"
-          : "dialogue";
+      opening || shot.framing === "establishing" ? "master" : reaction ? "reaction" : "dialogue";
   });
   return null;
 }
@@ -1120,6 +1124,10 @@ function Stage({
   const warm = light === "neutra" ? base : tint.sky;
   const indoor = kind === "locker" || kind === "press" || kind === "office" || kind === "tunnel";
   const amb = (indoor ? 0.34 : 0.5) * tint.amb;
+  // Existing fixtures retain their own detailed rigs. Every other authored
+  // speaker receives one semantic overlay, shared by the camera resolver.
+  const stagedActor = cinematicStageActorFor(art, speaker, festive);
+  const residentSpeaker = stagedActor?.presence === "resident" ? stagedActor.role : null;
   return (
     <>
       <color
@@ -1168,6 +1176,7 @@ function Stage({
         intensity={indoor ? 12 : 22}
         color={light === "neutra" ? "#d4e6ff" : tint.rim}
       />
+      <CinematicMotivatedLight kind={kind} art={art} mood={mood} light={light} quality={quality} />
       {enhanced && quality !== "baixa" && (
         <Environment resolution={quality === "alta" ? 96 : 64} frames={1}>
           <Lightformer position={[0, 6, 2]} scale={[10, 3, 1]} intensity={2.2} color={warm} />
@@ -1189,34 +1198,74 @@ function Stage({
       />
       <CinematicAtmosphere kind={kind} art={art} mood={mood} quality={quality} />
       <CinematicPortraitLight />
-      <CinematicSetBatch key={`${art}-${kind}-${primary}-${secondary}`} onReady={onBatch}>
+      <CinematicSetBatch
+        key={`${art}-${kind}-${primary}-${secondary}-${quality}`}
+        onReady={onBatch}
+      >
         {art !== "medical" && art !== "gym" && <CinematicSetFinish kind={kind} primary={primary} />}
+        <CinematicStoryDressing
+          kind={kind}
+          art={art}
+          primary={primary}
+          secondary={secondary}
+          quality={quality}
+        />
         {art === "medical" || art === "gym" ? (
-          <CinematicSpecialSet medical={art === "medical"} primary={primary} speaker={speaker} />
+          <CinematicSpecialSet
+            medical={art === "medical"}
+            primary={primary}
+            speaker={residentSpeaker}
+          />
         ) : kind === "locker" ? (
-          <LockerRoom primary={primary} secondary={secondary} speaker={speaker} />
+          <LockerRoom primary={primary} secondary={secondary} speaker={residentSpeaker} />
         ) : null}
         {kind === "tunnel" ? (
-          <Tunnel primary={primary} secondary={secondary} speaker={speaker} />
+          <Tunnel primary={primary} secondary={secondary} speaker={residentSpeaker} />
         ) : null}
         {kind === "press" ? (
-          <PressRoom primary={primary} secondary={secondary} speaker={speaker} />
+          <PressRoom primary={primary} secondary={secondary} speaker={residentSpeaker} />
         ) : null}
         {kind === "pitch" ? (
           <PitchEntry
             primary={primary}
             secondary={secondary}
-            speaker={speaker}
+            speaker={residentSpeaker}
             festive={festive}
             training={art === "training"}
           />
         ) : null}
         {kind === "stands" ? <Stands primary={primary} secondary={secondary} /> : null}
         {kind === "office" ? (
-          <Office primary={primary} secondary={secondary} speaker={speaker} />
+          <Office primary={primary} secondary={secondary} speaker={residentSpeaker} />
         ) : null}
         {kind === "arrival" ? (
-          <BusArrival primary={primary} secondary={secondary} speaker={speaker} />
+          <BusArrival primary={primary} secondary={secondary} speaker={residentSpeaker} />
+        ) : null}
+        {stagedActor?.presence === "overlay" ? (
+          <Figure
+            key={`speaker-${art}-${stagedActor.role}`}
+            x={stagedActor.mark[0]}
+            z={stagedActor.mark[1]}
+            color={
+              stagedActor.role === "captain" || stagedActor.role === "fan"
+                ? primary
+                : stagedActor.role === "referee"
+                  ? "#222d36"
+                  : secondary
+            }
+            shorts="#19232b"
+            seed={hashSeed(`cinematic-speaker:${stagedActor.role}`)}
+            role={stagedActor.role}
+            costume={
+              stagedActor.role === "captain" || stagedActor.role === "fan" ? "player" : "staff"
+            }
+            clipboard={
+              stagedActor.role === "assistant" ||
+              stagedActor.role === "doctor" ||
+              stagedActor.role === "scout"
+            }
+            acting
+          />
         ) : null}
       </CinematicSetBatch>
     </>
@@ -1248,6 +1297,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   previewTime,
   cue,
   voiceClockRef,
+  voicePlayingRef,
 }: {
   art: SceneArt;
   primary: string;
@@ -1276,33 +1326,47 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   previewTime?: number | undefined;
   cue?: CinematicCue | undefined;
   voiceClockRef?: CinematicVoiceClockRef | undefined;
+  voicePlayingRef?: { current: boolean } | undefined;
 }) {
-  const kind = SET_BY_ART[art] ?? "locker";
+  const kind = cinematicSetFor(art);
+  const webglAvailable = useMemo(() => supportsWebGL(), []);
   const initialQuality = useMemo(() => detectQuality(), []);
-  const [quality, setQuality] = useState<QualityLevel>(
-    qualityMode === "auto" && automaticQuality
-      ? automaticQuality
-      : cinematicInitialQuality(initialQuality, qualityMode),
+  const [quality, setQuality] = useState<QualityLevel>(() =>
+    cinematicInitialQuality(initialQuality, qualityMode),
   );
+  const previousQualityMode = useRef(qualityMode);
+  const rendererName = useRef<string | undefined>(undefined);
+  const contextListenerCleanup = useRef<(() => void) | null>(null);
   useEffect(() => {
+    if (previousQualityMode.current === qualityMode) return;
+    previousQualityMode.current = qualityMode;
+    const next = cinematicInitialQuality(initialQuality, qualityMode);
     setQuality(
-      qualityMode === "auto" && automaticQuality
-        ? automaticQuality
-        : cinematicInitialQuality(initialQuality, qualityMode),
+      qualityMode === "auto" && rendererName.current
+        ? cinematicGpuQuality(next, rendererName.current)
+        : next,
     );
   }, [qualityMode, initialQuality]);
   const [hidden, setHidden] = useState(false);
   const [ready, setReady] = useState(false);
   const [enhanced, setEnhanced] = useState(false);
+  const [contextLost, setContextLost] = useState(false);
+  const [canvasGeneration, setCanvasGeneration] = useState(0);
   const stageReady = useCallback(() => {
     setReady(true);
     onReady?.();
   }, [onReady]);
+  const enhancedAllowed =
+    ready && !paused && !reduced && !hidden && quality !== "baixa" && !contextLost;
+  const showEnhanced = enhanced && enhancedAllowed;
   useEffect(() => {
-    if (!ready || paused || reduced || hidden || quality === "baixa") return;
+    if (!enhancedAllowed) {
+      setEnhanced(false);
+      return;
+    }
     const timer = window.setTimeout(() => startTransition(() => setEnhanced(true)), 200);
     return () => window.clearTimeout(timer);
-  }, [ready, paused, reduced, hidden, quality]);
+  }, [enhancedAllowed]);
   const host = useRef<HTMLDivElement>(null);
   const openedAt = useRef(performance.now());
   const onBatch = useCallback(({ sources, batches, visibleSources }: CinematicBatchSnapshot) => {
@@ -1316,6 +1380,19 @@ export const CinematicStage3D = memo(function CinematicStage3D({
     changed();
     document.addEventListener("visibilitychange", changed);
     return () => document.removeEventListener("visibilitychange", changed);
+  }, []);
+  useEffect(
+    () => () => {
+      contextListenerCleanup.current?.();
+      contextListenerCleanup.current = null;
+    },
+    [],
+  );
+  const retryContext = useCallback(() => {
+    setReady(false);
+    setEnhanced(false);
+    setContextLost(false);
+    setCanvasGeneration((generation) => generation + 1);
   }, []);
   return (
     <div
@@ -1335,105 +1412,127 @@ export const CinematicStage3D = memo(function CinematicStage3D({
           </button>
         }
       >
-        <Canvas
-          frameloop={paused || reduced || hidden ? "demand" : "always"}
-          shadows={quality === "baixa" ? false : { type: THREE.PCFShadowMap }}
-          dpr={quality === "alta" ? [0.9, 1.4] : quality === "media" ? [0.75, 1.1] : 0.7}
-          camera={{ position: [0, 2.2, 6.5], fov: 42, near: 0.05, far: 90 }}
-          gl={{
-            antialias: quality !== "baixa",
-            powerPreference: "high-performance",
-            stencil: false,
-          }}
-          onCreated={({ gl }) => {
-            gl.toneMapping = THREE.ACESFilmicToneMapping;
-            gl.toneMappingExposure = 1.05;
-            gl.outputColorSpace = THREE.SRGBColorSpace;
-            gl.shadowMap.type = THREE.PCFShadowMap;
-            gl.info.autoReset = false;
-            const context = gl.getContext();
-            const debug = context.getExtension("WEBGL_debug_renderer_info");
-            if (debug) {
-              const renderer = String(context.getParameter(debug.UNMASKED_RENDERER_WEBGL));
-              if (host.current) host.current.dataset["cinematicGpu"] = renderer;
-              if (qualityMode === "auto") {
-                automaticQuality = cinematicGpuQuality(quality, renderer);
-                setQuality(automaticQuality);
+        {webglAvailable && !contextLost ? (
+          <Canvas
+            key={canvasGeneration}
+            frameloop={paused || reduced || hidden ? "demand" : "always"}
+            shadows={quality === "baixa" ? false : { type: THREE.PCFShadowMap }}
+            dpr={quality === "alta" ? [0.9, 1.4] : quality === "media" ? [0.75, 1.1] : 0.7}
+            camera={{ position: [0, 2.2, 6.5], fov: 42, near: 0.05, far: 90 }}
+            gl={{
+              antialias: quality !== "baixa",
+              powerPreference: "high-performance",
+              stencil: false,
+            }}
+            onCreated={({ gl }) => {
+              contextListenerCleanup.current?.();
+              const onContextLost = (event: Event) => {
+                // Prevent the browser's default reload path, then let the
+                // cutscene fall back to its already-mounted illustrated scene.
+                event.preventDefault();
+                contextListenerCleanup.current?.();
+                contextListenerCleanup.current = null;
+                setEnhanced(false);
+                setReady(false);
+                setContextLost(true);
+                onUnavailable?.();
+              };
+              gl.domElement.addEventListener("webglcontextlost", onContextLost, false);
+              contextListenerCleanup.current = () =>
+                gl.domElement.removeEventListener("webglcontextlost", onContextLost, false);
+              gl.toneMapping = THREE.ACESFilmicToneMapping;
+              gl.toneMappingExposure = 1.05;
+              gl.outputColorSpace = THREE.SRGBColorSpace;
+              gl.shadowMap.type = THREE.PCFShadowMap;
+              gl.info.autoReset = false;
+              const context = gl.getContext();
+              const debug = context.getExtension("WEBGL_debug_renderer_info");
+              if (debug) {
+                const renderer = String(context.getParameter(debug.UNMASKED_RENDERER_WEBGL));
+                rendererName.current = renderer;
+                if (host.current) host.current.dataset["cinematicGpu"] = renderer;
+                if (qualityMode === "auto") {
+                  setQuality(cinematicGpuQuality(quality, renderer));
+                }
               }
-            }
-          }}
-          fallback={
-            <button
-              type="button"
-              onClick={onUnavailable}
-              className="absolute inset-0 z-10 bg-background p-8 text-white"
-            >
-              O 3D está indisponível neste navegador. Abrir cena ilustrada.
-            </button>
-          }
-        >
-          {qualityMode === "auto" && !paused && !reduced && !hidden ? (
-            <PerformanceMonitor
-              flipflops={2}
-              bounds={() => [24, 45]}
-              iterations={3}
-              threshold={0.8}
-              onDecline={() =>
-                setQuality((current) => {
-                  automaticQuality = lowerQuality(current);
-                  return automaticQuality;
-                })
-              }
-              onFallback={() => {
-                automaticQuality = "baixa";
-                setQuality("baixa");
-              }}
-            />
-          ) : null}
-          <CinematicRuntime
-            quality={quality}
-            look={look}
-            cast={cast}
-            stopped={paused || hidden}
-            reduced={reduced}
-            manner={manner}
-            previewTime={previewTime}
-            cue={cue}
-            voiceClockRef={voiceClockRef}
+            }}
           >
-            <CinematicFrameProbe
-              host={host}
-              openedAt={openedAt.current}
-              stopped={paused || reduced || hidden}
-              onVisible={onVisible}
-              onReady={stageReady}
-            />
-            <Stage
-              kind={kind}
-              art={art}
-              beat={beat}
-              primary={primary}
-              secondary={secondary}
-              mood={mood}
-              quality={quality}
-              intensity={intensity}
-              speaker={speaker}
-              size={size}
-              dollyFrom={dollyFrom}
-              dollyTo={dollyTo}
-              climax={climax}
-              light={light}
-              festive={(art === "trophy" || art === "celebration") && mood === "good"}
-              onBatch={onBatch}
-              enhanced={enhanced}
-            />
-            {enhanced && quality !== "baixa" ? (
-              <Suspense fallback={null}>
-                <CinematicLens quality={quality} />
-              </Suspense>
+            {qualityMode === "auto" && !paused && !reduced && !hidden ? (
+              <PerformanceMonitor
+                // Drei counts high and low samples as flips. A high-refresh scene
+                // must never hit a generic fallback merely because it is healthy.
+                flipflops={Infinity}
+                bounds={(refreshRate) => (refreshRate > 100 ? [60, 120] : [24, 45])}
+                iterations={3}
+                threshold={0.8}
+                onIncline={() => setQuality((current) => cinematicAutoQualityOnIncline(current))}
+                onDecline={() => setQuality((current) => cinematicAutoQualityOnDecline(current))}
+                onFallback={({ fps }) =>
+                  setQuality((current) => cinematicAutoQualityOnFallback(current, fps))
+                }
+              />
             ) : null}
-          </CinematicRuntime>
-        </Canvas>
+            <CinematicRuntime
+              quality={quality}
+              look={look}
+              cast={cast}
+              stopped={paused || hidden}
+              reduced={reduced}
+              manner={manner}
+              previewTime={previewTime}
+              cue={cue}
+              voiceClockRef={voiceClockRef}
+              voicePlayingRef={voicePlayingRef}
+            >
+              <CinematicFrameProbe
+                host={host}
+                openedAt={openedAt.current}
+                stopped={paused || reduced || hidden}
+                onVisible={onVisible}
+                onReady={stageReady}
+              />
+              <Stage
+                kind={kind}
+                art={art}
+                beat={beat}
+                primary={primary}
+                secondary={secondary}
+                mood={mood}
+                quality={quality}
+                intensity={intensity}
+                speaker={speaker}
+                size={size}
+                dollyFrom={dollyFrom}
+                dollyTo={dollyTo}
+                climax={climax}
+                light={light}
+                festive={(art === "trophy" || art === "celebration") && mood === "good"}
+                onBatch={onBatch}
+                enhanced={showEnhanced}
+              />
+              {showEnhanced ? (
+                <Suspense fallback={null}>
+                  <CinematicLens
+                    quality={quality}
+                    intensity={intensity}
+                    climax={climax}
+                    mood={mood}
+                  />
+                </Suspense>
+              ) : null}
+            </CinematicRuntime>
+          </Canvas>
+        ) : (
+          <button
+            type="button"
+            onClick={contextLost ? retryContext : onUnavailable}
+            className="absolute inset-0 z-10 bg-background p-8 text-white"
+          >
+            {contextLost
+              ? "A cena 3D perdeu o contexto. Tentar novamente."
+              : "O 3D está indisponível neste navegador. Abrir cena ilustrada."}
+          </button>
+        )}
       </GraphicsBoundary>
     </div>
   );

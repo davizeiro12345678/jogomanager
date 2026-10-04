@@ -110,17 +110,33 @@ export const startMatchRoom = createServerFn({ method: "POST" })
   .validator((input: unknown) => z.object({ roomId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<RoomActionResult> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: currentRoom, error: roomError } = await supabaseAdmin
+      .from("match_rooms")
+      .select("id, host_id, host_club, guest_club, server_seeded, status")
+      .eq("id", data.roomId)
+      .maybeSingle();
+    if (roomError || !currentRoom) return { ok: false, reason: "room_not_ready" };
+    if (currentRoom.host_id !== context.userId) return { ok: false, reason: "not_host" };
+    if (
+      currentRoom.status !== "ready" ||
+      !currentRoom.server_seeded ||
+      !currentRoom.guest_club ||
+      !CLUBS[currentRoom.host_club] ||
+      !CLUBS[currentRoom.guest_club]
+    ) {
+      return { ok: false, reason: "room_not_ready" };
+    }
+
     const { data: secret, error: secretError } = await supabaseAdmin
       .from("match_room_secrets")
       .select("seed")
       .eq("room_id", data.roomId)
       .maybeSingle();
-    if (secretError || !secret) return { ok: false, reason: "room_not_ready" };
+    if (secretError || !secret?.seed) return { ok: false, reason: "room_not_ready" };
     const { data: room, error } = await supabaseAdmin
       .from("match_rooms")
       .update({
         status: "live",
-        seed: secret.seed,
         minute: 0,
         state: {},
         updated_at: new Date().toISOString(),
@@ -132,7 +148,7 @@ export const startMatchRoom = createServerFn({ method: "POST" })
       .not("guest_club", "is", null)
       .select("*")
       .maybeSingle();
-    if (error || !room || !CLUBS[room.host_club] || !CLUBS[room.guest_club ?? ""]) {
+    if (error || !room) {
       return { ok: false, reason: "room_not_ready" };
     }
     return { ok: true, room: room as unknown as MultiplayerRoomRecord };

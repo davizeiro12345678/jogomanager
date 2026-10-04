@@ -18,7 +18,7 @@ export type SimpleResult = { ok: true } | { ok: false; reason: "error" };
 
 export const blockUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => BlockInput.parse(input))
+  .validator((input: unknown) => BlockInput.parse(input))
   .handler(async ({ data, context }): Promise<SimpleResult> => {
     if (data.userId === context.userId) return { ok: false, reason: "error" };
     const { error } = await context.supabase
@@ -33,7 +33,7 @@ export const blockUser = createServerFn({ method: "POST" })
 
 export const unblockUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => BlockInput.parse(input))
+  .validator((input: unknown) => BlockInput.parse(input))
   .handler(async ({ data, context }): Promise<SimpleResult> => {
     const { error } = await context.supabase
       .from("user_blocks")
@@ -60,7 +60,7 @@ export const listBlockedUsers = createServerFn({ method: "POST" })
 
 export const reportChatMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => ReportInput.parse(input))
+  .validator((input: unknown) => ReportInput.parse(input))
   .handler(async ({ data, context }): Promise<SimpleResult> => {
     const { error } = await context.supabase.from("chat_reports").insert({
       message_id: data.messageId,

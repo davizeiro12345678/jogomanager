@@ -19,6 +19,7 @@ export interface CinematicRuntimeState {
   manner?: CinematicManner | undefined;
   cue?: CinematicCue | undefined;
   voiceClockRef?: CinematicVoiceClockRef | undefined;
+  voicePlayingRef?: { current: boolean } | undefined;
 }
 export const CinematicContext = createContext<CinematicRuntimeState>({
   clock: { time: 0, dt: 0, lineTime: 0 },

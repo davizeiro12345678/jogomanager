@@ -7,6 +7,7 @@ import { cinematicDetail } from "@/game/cinematic-performance";
 import { compactCinematicSkin } from "@/game/cinematic-skin";
 import { cinematicGestureAt } from "@/game/cinematic-cue";
 import { cinematicExpressionAt, CinematicGaze } from "@/game/cinematic-expression";
+import { eyelidRotationFor } from "@/game/facial-animation";
 import {
   cinematicAttentionYaw,
   cinematicCurlAt,
@@ -17,7 +18,12 @@ import {
 import { emptyPose, mixPose } from "@/game/animation-core";
 import { proportionsFor } from "@/game/player-model";
 import { faceMorphology } from "@/game/player-morphology";
-import { playerMaterials, retainPlayerMaterials } from "@/game/player-materials";
+import {
+  detailTextureNames,
+  playerMaterials,
+  retainPlayerMaterials,
+} from "@/game/player-materials";
+import { requestKtx2 } from "@/game/textures/ktx2";
 import { buildRigSkin } from "@/game/rig-skin";
 import { updateRigCorrectives } from "@/game/rig-correctives";
 import { AthleteCloth } from "@/game/athlete-cloth";
@@ -97,10 +103,22 @@ export function CinematicActor({
     }),
     [color, shorts, formal],
   );
-  const detail = cinematicDetail(runtime.quality, Boolean(role));
+  // A speaker or a player carrying the scene receives portrait anatomy in
+  // the automatic medium tier. Crowds stay compact, so a team procession
+  // does not spend the visual budget intended for the camera subject.
+  const narrativeSubject = Boolean(role || acting || holdingTrophy || entrance || clipboard);
+  const detail = cinematicDetail(runtime.quality, narrativeSubject);
+  // Close-up dialogue exposes pores, fabric, hair direction and boot grain.
+  // A cutscene normally has one or two narrative subjects, so their physical
+  // material pass can start at the balanced tier while extras remain on the
+  // inexpensive standard surfaces.
+  const materialQuality = detail.portrait ? "alta" : "media";
+  useEffect(() => {
+    if (detail.portrait) requestKtx2(detailTextureNames(look, kit));
+  }, [detail.portrait, look, kit]);
   const materialBase = useMemo(
-    () => playerMaterials(look, kit, null, detail.high ? "alta" : "media"),
-    [look, kit, detail.high],
+    () => playerMaterials(look, kit, null, materialQuality),
+    [look, kit, materialQuality],
   );
   useLayoutEffect(() => retainPlayerMaterials(materialBase), [materialBase]);
   // Solid cinematic costumes share equivalent surfaces while keeping skin,
@@ -120,8 +138,8 @@ export function CinematicActor({
         P: p,
         look,
         mats,
-        hi: detail.high,
-        portrait: detail.high && Boolean(role),
+        hi: detail.portrait,
+        portrait: detail.portrait,
         segs: { radial: detail.radial, cap: 4 },
         jerseyInk: color,
         handR: p.handR,
@@ -132,9 +150,12 @@ export function CinematicActor({
       [0, 0, 0],
       { mergeLods: true },
     );
-    return detail.high ? built : compactCinematicSkin(built);
-  }, [p, look, mats, detail.high, detail.radial, color, staff, formal, role]);
-  const cloth = useMemo(() => new AthleteCloth(skin, p, detail.high), [skin, p, detail.high]);
+    return detail.portrait ? built : compactCinematicSkin(built);
+  }, [p, look, mats, detail.portrait, detail.radial, color, staff, formal]);
+  const cloth = useMemo(
+    () => new AthleteCloth(skin, p, detail.portrait),
+    [skin, p, detail.portrait],
+  );
   const group = useRef<THREE.Group>(null);
   const trophy = useRef<THREE.Group>(null);
   const gripL = useMemo(() => new THREE.Vector3(), []);
@@ -163,10 +184,10 @@ export function CinematicActor({
         mesh.bindMatrixInverse.copy(skin.bindMatrix).invert();
         mesh.frustumCulled = false;
         mesh.castShadow =
-          runtime.quality !== "baixa" && part.castShadow && part.lod === "core" && Boolean(role);
+          runtime.quality !== "baixa" && part.castShadow && part.lod === "core" && narrativeSubject;
         return mesh;
       }),
-    [skin, runtime.quality, role, cloth],
+    [skin, runtime.quality, narrativeSubject, cloth],
   );
   useEffect(() => () => skin.dispose(), [skin]);
   useCinematicFrame((time, dt) => {
@@ -304,7 +325,12 @@ export function CinematicActor({
       1,
       syncedMouth ? 1 + syncedMouth.round * 0.06 : 1,
     );
-    b.blink.scale.y = expression.blink;
+    const upperLidRotation = eyelidRotationFor(expression.blink, true);
+    const lowerLidRotation = eyelidRotationFor(expression.blink, false);
+    b.eyelidUpperL.rotation.x = upperLidRotation;
+    b.eyelidUpperR.rotation.x = upperLidRotation;
+    b.eyelidLowerL.rotation.x = lowerLidRotation;
+    b.eyelidLowerR.rotation.x = lowerLidRotation;
     b.eyes.position.set(expression.gazeX, expression.gazeY, 0);
     for (const left of [true, false]) {
       const brow = b[left ? "browL" : "browR"];
@@ -315,10 +341,12 @@ export function CinematicActor({
       if (exercise) wrist.rotation.set(0, 0, (left ? 1 : -1) * 0.06);
       else if (clipboard && left) wrist.rotation.set(0, 0.08, 0);
     }
-    if (detail.high) {
-      applyHandPose(
-        b,
-        {
+    if (detail.portrait) {
+      const leftLeads = delivery ? delivery.side === -1 : false;
+      const handPose = (left: boolean) => {
+        const lead = left === leftLeads;
+        const gesture = acting ? (delivery?.weight ?? 0) : 0;
+        return {
           grip:
             exercise || clipboard
               ? 0.6
@@ -326,16 +354,13 @@ export function CinematicActor({
                 ? 0.65
                 : cross > 0.3
                   ? 0.4
-                  : acting && runtime.cue?.gesture === "rally"
-                    ? 0.7
-                    : acting
-                      ? 0.14
-                      : 0.22,
-          spread: acting ? 0.07 : 0.02,
-          wrist: cross * 0.06,
-        },
-        first.current ? 0.25 : dt,
-      );
+                  : 0.16 + gesture * (lead ? 0.28 : 0.12),
+          spread: acting ? 0.025 + gesture * (lead ? 0.11 : 0.055) : 0.02,
+          wrist: cross * 0.06 + (left ? -1 : 1) * gesture * (lead ? 0.05 : 0.018),
+        };
+      };
+      applyHandPose(b, handPose(true), first.current ? 0.25 : dt, "L");
+      applyHandPose(b, handPose(false), first.current ? 0.25 : dt, "R");
     }
     // Wrist pose must be final before distributing pronation into the ulna.
     updateRigCorrectives(b);
@@ -347,6 +372,8 @@ export function CinematicActor({
       bend: Math.abs(c.spine) + Math.abs(c.legLPitch - c.legRPitch) * 0.18,
       yaw: rot,
       roll: c.hipRoll,
+      legL: Math.min(1, Math.abs(c.kneeL) * 0.58 + Math.abs(c.legLPitch) * 0.24),
+      legR: Math.min(1, Math.abs(c.kneeR) * 0.58 + Math.abs(c.legRPitch) * 0.24),
     });
     first.current = false;
     if (group.current) {

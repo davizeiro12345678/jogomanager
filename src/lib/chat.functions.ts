@@ -16,7 +16,7 @@ export type SendMessageResult =
  */
 export const sendChatMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => SendMessageInput.parse(input))
+  .validator((input: unknown) => SendMessageInput.parse(input))
   .handler(async ({ data, context }): Promise<SendMessageResult> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: id, error } = await supabaseAdmin.rpc("send_chat_message_for", {

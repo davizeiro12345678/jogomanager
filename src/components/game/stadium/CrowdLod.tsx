@@ -6,6 +6,12 @@ import { supporterGeometry } from "@/game/crowd-geometry";
 
 import type { RuntimeSceneBudget } from "@/game/runtime-scene-budget";
 import { censusRef } from "@/game/scene-census";
+import {
+  createCrowdVisibilityLayout,
+  loadCrowdVisibilityWasm,
+  selectCrowdFallback,
+  type CrowdVisibilityKernel,
+} from "@/game/wasm/crowd-visibility";
 
 type CrowdData = { positions: THREE.Vector3[]; colors: THREE.Color[]; skins: THREE.Color[] };
 type CrowdTile = { indices: number[]; sphere: THREE.Sphere; distance: number };
@@ -82,6 +88,7 @@ export function CrowdLod({
   pulse,
   budget,
   supporters,
+  webgl2 = true,
 }: {
   crowd: CrowdData;
   pulse: React.MutableRefObject<number>;
@@ -90,9 +97,35 @@ export function CrowdLod({
     "crowdInstances" | "crowdVisibleTiles" | "crowdUpdateSeconds" | "stage"
   >;
   supporters?: import("@/game/career-world-types").SupporterMatchday | undefined;
+  /** Native WebGPU keeps the same instance pools, without GLSL-only motion hooks. */
+  webgl2?: boolean;
 }) {
   const refs = useRef<(THREE.InstancedMesh | null)[]>([]);
   const tiles = useMemo(() => buildTiles(crowd.positions), [crowd.positions]);
+  const layout = useMemo(
+    () =>
+      createCrowdVisibilityLayout(
+        crowd.positions,
+        tiles.map((tile) => ({
+          indices: tile.indices,
+          center: tile.sphere.center,
+          radius: tile.sphere.radius,
+        })),
+      ),
+    [crowd.positions, tiles],
+  );
+  const kernel = useRef<CrowdVisibilityKernel | null>(null);
+  const planes = useMemo(() => new Float64Array(24), []);
+  useEffect(() => {
+    let active = true;
+    void loadCrowdVisibilityWasm().then((loaded) => {
+      if (active) kernel.current = loaded;
+    });
+    return () => {
+      active = false;
+      kernel.current = null;
+    };
+  }, []);
   const data = useMemo(() => {
     const card = crowdCard();
     const uniforms = {
@@ -109,24 +142,25 @@ export function CrowdLod({
         side: THREE.DoubleSide,
         ...(tier === 2 ? { map: card, alphaTest: 0.4, side: THREE.DoubleSide } : {}),
       });
-      material.onBeforeCompile = (shader) => {
-        shader.uniforms["crowdTime"] = uniforms.time;
-        shader.uniforms["crowdPulse"] = uniforms.pulse;
-        shader.uniforms["crowdWave"] = uniforms.wave;
-        shader.uniforms["crowdAgitation"] = uniforms.agitation;
-        shader.vertexShader = shader.vertexShader
-          .replace(
-            "#include <common>",
-            "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave; uniform float crowdAgitation; attribute vec3 crowdSkin; attribute vec2 crowdStyle; attribute float crowdRegion;\n" +
-              CROWD_MOTION_GLSL,
-          )
-          .replace(
-            "#include <beginnormal_vertex>",
-            `#include <beginnormal_vertex>\n${tier < 2 ? "objectNormal = crowdArticulate(objectNormal, true);" : ""}`,
-          )
-          .replace(
-            "#include <begin_vertex>",
-            `#include <begin_vertex>
+      if (webgl2)
+        material.onBeforeCompile = (shader) => {
+          shader.uniforms["crowdTime"] = uniforms.time;
+          shader.uniforms["crowdPulse"] = uniforms.pulse;
+          shader.uniforms["crowdWave"] = uniforms.wave;
+          shader.uniforms["crowdAgitation"] = uniforms.agitation;
+          shader.vertexShader = shader.vertexShader
+            .replace(
+              "#include <common>",
+              "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave; uniform float crowdAgitation; attribute vec3 crowdSkin; attribute vec2 crowdStyle; attribute float crowdRegion;\n" +
+                CROWD_MOTION_GLSL,
+            )
+            .replace(
+              "#include <beginnormal_vertex>",
+              `#include <beginnormal_vertex>\n${tier < 2 ? "objectNormal = crowdArticulate(objectNormal, true);" : ""}`,
+            )
+            .replace(
+              "#include <begin_vertex>",
+              `#include <begin_vertex>
               float phase = instanceMatrix[3].x * 0.71 + instanceMatrix[3].z * 0.37;
               ${tier < 2 ? "transformed = crowdArticulate(transformed, false);" : ""}
               transformed.x += sin(crowdTime * 1.7 + phase) * 0.035 * max(0.0, position.y + 0.6);
@@ -137,26 +171,26 @@ export function CrowdLod({
               float ang = atan(instanceMatrix[3].z, instanceMatrix[3].x);
               float dw = abs(mod(ang - crowdWave + 3.14159265, 6.2831853) - 3.14159265);
               transformed.y += exp(-dw * dw * 5.0) * (0.1 + crowdPulse * 0.6);`,
-          );
-        if (tier < 2)
-          // color_vertex includes the instance tint when available; its vColor
-          // is also valid during the first render before setColorAt allocates it.
-          shader.vertexShader = shader.vertexShader.replace(
-            "#include <color_vertex>",
-            `#include <color_vertex>
+            );
+          if (tier < 2)
+            // color_vertex includes the instance tint when available; its vColor
+            // is also valid during the first render before setColorAt allocates it.
+            shader.vertexShader = shader.vertexShader.replace(
+              "#include <color_vertex>",
+              `#include <color_vertex>
            if (crowdRegion > 0.5 && crowdRegion < 1.5) vColor.rgb = crowdSkin;
            else if (crowdRegion > 1.5 && crowdRegion < 2.5) vColor.rgb = mix(vec3(0.021, 0.035, 0.049), vec3(0.15, 0.18, 0.22), crowdStyle.x);
            else if (crowdRegion > 2.5 && crowdRegion < 3.5) vColor.rgb = mix(vec3(0.012, 0.009, 0.007), vec3(0.23, 0.12, 0.047), crowdStyle.y);
            else if (crowdRegion > 3.5) vColor.rgb = mix(vColor.rgb, vec3(0.75), step(0.6, crowdStyle.x));`,
-          );
-        else
-          shader.vertexShader = shader.vertexShader.replace(
-            "#include <color_vertex>",
-            `#include <color_vertex>
+            );
+          else
+            shader.vertexShader = shader.vertexShader.replace(
+              "#include <color_vertex>",
+              `#include <color_vertex>
            if (uv.y > 0.70) vColor.rgb = mix(crowdSkin, vec3(0.024, 0.014, 0.009), step(0.89, uv.y));
            else if (uv.y < 0.37) vColor.rgb = vec3(0.028, 0.043, 0.06);`,
-          );
-      };
+            );
+        };
       return material;
     });
     const geometries = [
@@ -202,7 +236,7 @@ export function CrowdLod({
       selection: ["", "", ""],
       seats: [0, 1, 2].map(() => new Int32Array(MAX_CROWD_INSTANCES).fill(-1)),
     };
-  }, []);
+  }, [webgl2]);
   useEffect(
     () => () => {
       data.geometries.forEach((geometry) => geometry.dispose());
@@ -240,21 +274,6 @@ export function CrowdLod({
       camera.updateMatrixWorld();
       data.projection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
       data.frustum.setFromProjectionMatrix(data.projection);
-      const visibleTiles = tiles
-        .filter((tile) => data.frustum.intersectsSphere(tile.sphere))
-        .map((tile) => {
-          tile.distance = camera.position.distanceTo(tile.sphere.center);
-          return tile;
-        })
-        .sort((a, b) => a.distance - b.distance)
-        .slice(0, budget.crowdVisibleTiles);
-      const selectedTiles = visibleTiles.length
-        ? visibleTiles
-        : tiles.slice(0, budget.crowdVisibleTiles);
-      const perTile = Math.max(
-        1,
-        Math.ceil(budget.crowdInstances / Math.max(1, selectedTiles.length)),
-      );
       // Keep facial geometry for supporters large enough to read on screen.
       // Distance alone kept hundreds of 10–20 px spectators in a mesh LOD.
       const projectedScale = size.height * Math.abs(camera.projectionMatrix.elements[5]!) * 0.675;
@@ -262,39 +281,58 @@ export function CrowdLod({
       const detailedPixels = budget.stage >= 5 ? 52 : 42;
       const meshPixels = budget.stage >= 5 ? 34 : 28;
 
-      for (const tile of selectedTiles) {
-        const stride = Math.max(1, Math.ceil(tile.indices.length / perTile));
-        for (let offset = 0; offset < tile.indices.length; offset += stride) {
-          const index = tile.indices[offset]!;
-          const position = crowd.positions[index]!;
-          const total = data.counts[0]! + data.counts[1]! + data.counts[2]!;
-          if (total >= budget.crowdInstances) break;
-          const distance = camera.position.distanceTo(position);
-          const pixels = perspective ? projectedScale / Math.max(1, distance) : projectedScale;
-          const tier = pixels >= detailedPixels ? 0 : pixels >= meshPixels ? 1 : 2;
-          const mesh = refs.current[tier];
-          if (!mesh || data.counts[tier]! >= MAX_CROWD_INSTANCES) continue;
-          const instance = data.counts[tier]!++;
-          selection[tier]!.push(`${index}`);
-          if (data.seats[tier]![instance] === index) continue;
-          data.seats[tier]![instance] = index;
-          data.dummy.position.copy(position);
-          const height = 0.9 + (index % 7) * 0.025;
-          data.dummy.scale.set(height * (0.92 + (index % 3) * 0.06), height, height);
-          data.dummy.rotation.set(0, Math.atan2(-position.x, -position.z), 0);
-          data.dummy.updateMatrix();
-          mesh.setMatrixAt(instance, data.dummy.matrix);
-          mesh.setColorAt(instance, crowd.colors[index]!);
-          const skin = crowd.skins[index]!;
-          const skinAttribute = mesh.geometry.getAttribute(
-            "crowdSkin",
-          ) as THREE.InstancedBufferAttribute;
-          const styleAttribute = mesh.geometry.getAttribute(
-            "crowdStyle",
-          ) as THREE.InstancedBufferAttribute;
-          skinAttribute.setXYZ(instance, skin.r, skin.g, skin.b);
-          styleAttribute.setXY(instance, (index % 13) / 12, (index % 11) / 10);
-        }
+      data.frustum.planes.forEach((plane, index) => {
+        const offset = index * 4;
+        planes[offset] = plane.normal.x;
+        planes[offset + 1] = plane.normal.y;
+        planes[offset + 2] = plane.normal.z;
+        planes[offset + 3] = plane.constant;
+      });
+      const input = {
+        layout,
+        frustumPlanes: planes,
+        camera: camera.position,
+        projectedScale,
+        perspective,
+        maxTiles: budget.crowdVisibleTiles,
+        maxInstances: Math.min(MAX_CROWD_INSTANCES, budget.crowdInstances),
+        detailedPixels,
+        meshPixels,
+      };
+      let selected;
+      try {
+        selected = kernel.current?.select(input) ?? selectCrowdFallback(input);
+      } catch {
+        // A failed optional kernel must never interrupt a live match.
+        kernel.current = null;
+        selected = selectCrowdFallback(input);
+      }
+      for (let offset = 0; offset < selected.indices.length; offset += 1) {
+        const index = selected.indices[offset]!;
+        const position = crowd.positions[index]!;
+        const tier = selected.tiers[offset]!;
+        const mesh = refs.current[tier];
+        if (!mesh || data.counts[tier]! >= MAX_CROWD_INSTANCES) continue;
+        const instance = data.counts[tier]!++;
+        selection[tier]!.push(`${index}`);
+        if (data.seats[tier]![instance] === index) continue;
+        data.seats[tier]![instance] = index;
+        data.dummy.position.copy(position);
+        const height = 0.9 + (index % 7) * 0.025;
+        data.dummy.scale.set(height * (0.92 + (index % 3) * 0.06), height, height);
+        data.dummy.rotation.set(0, Math.atan2(-position.x, -position.z), 0);
+        data.dummy.updateMatrix();
+        mesh.setMatrixAt(instance, data.dummy.matrix);
+        mesh.setColorAt(instance, crowd.colors[index]!);
+        const skin = crowd.skins[index]!;
+        const skinAttribute = mesh.geometry.getAttribute(
+          "crowdSkin",
+        ) as THREE.InstancedBufferAttribute;
+        const styleAttribute = mesh.geometry.getAttribute(
+          "crowdStyle",
+        ) as THREE.InstancedBufferAttribute;
+        skinAttribute.setXYZ(instance, skin.r, skin.g, skin.b);
+        styleAttribute.setXY(instance, (index % 13) / 12, (index % 11) / 10);
       }
     }
 

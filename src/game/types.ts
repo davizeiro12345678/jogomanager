@@ -142,10 +142,46 @@ export interface SeasonSummary {
 export interface Finances {
   /** caixa em milhões de euros */
   budget: number;
-  /** total gasto em transferências na temporada (M€) */
+  /** total de despesas na temporada, incluindo transferências e operação (M€) */
   spent: number;
   /** total de receitas na temporada (M€) */
   income: number;
+}
+
+/**
+ * Distribui recursos fora da folha salarial. Os níveis são deliberadamente
+ * pequenos para manter o save legível e permitem que a estratégia financeira
+ * afete desenvolvimento, prevenção e receitas sem criar uma economia paralela.
+ */
+export interface OperatingPlan {
+  academy: 0 | 1 | 2 | 3;
+  medical: 0 | 1 | 2 | 3;
+  scouting: 0 | 1 | 2 | 3;
+  commercial: 0 | 1 | 2 | 3;
+}
+
+export type FinanceLedgerKind = "operacao" | "mercado" | "infraestrutura" | "premio";
+
+/** Um lançamento agregado por rodada, em milhões de euros. */
+export interface FinanceLedgerEntry {
+  id: string;
+  season: number;
+  round: number;
+  kind: FinanceLedgerKind;
+  label: string;
+  income: number;
+  expense: number;
+}
+
+/** Resultado auditável de um treino, preservado em quantidade limitada no save. */
+export interface TrainingReport {
+  id: string;
+  season: number;
+  round: number;
+  drillId: string;
+  load: number;
+  recovery: number;
+  responders: string[];
 }
 
 export type StaffRole = "assistente" | "preparador" | "medico" | "olheiro";
@@ -221,6 +257,8 @@ export interface CareerState {
   training: TrainingFocus;
   /** intensidade do treino: 0 leve, 1 normal, 2 intenso */
   trainingIntensity?: 0 | 1 | 2;
+  /** relatórios compactos de resposta individual aos últimos exercícios */
+  trainingReports?: TrainingReport[];
   lineup: string[]; // 11 player ids
   bench: string[];
   fixtures: Fixture[];
@@ -233,6 +271,10 @@ export interface CareerState {
     ag: number;
   }[];
   finances: Finances;
+  /** investimentos recorrentes que modulam receita, base, prevenção e scouting */
+  operatingPlan?: OperatingPlan;
+  /** razão agregada de receitas e despesas, idempotente por rodada */
+  financeLedger?: FinanceLedgerEntry[];
   /** satisfação da diretoria, 0-100 */
   approval: number;
   /** posição-alvo definida pela diretoria */
@@ -298,7 +340,7 @@ export interface CareerState {
   records?: CareerRecords;
   /** Fim do impulso de treino semanal (ISO). Só vale na carreira individual. */
   boostUntil?: string;
-  /** Evolução acumulada dos 28 atributos, por jogador. */
+  /** Evolução acumulada dos 46 atributos, por jogador. */
   attrDeltas?: Record<string, Partial<Record<string, number>>>;
 
   /* ---------------------------------------------------------- v8 */

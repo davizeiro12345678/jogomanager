@@ -529,24 +529,24 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string | null })
 }
 
 /**
- * Partida sincronizada: os dois lados rodam a mesma simulação determinística
- * (mesma semente), então o placar é idêntico sem enviar cada lance pela rede.
- * O anfitrião publica o minuto e o resultado final.
+ * Each browser renders a deterministic presentation seeded by the room ID.
+ * The server keeps the outcome seed private and publishes the replayed score.
  */
 function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExit: () => void }) {
   const setups = useMemo(
     () => ({
       home: buildTeamSetup(room.host_club),
       away: buildTeamSetup(room.guest_club!),
-      seed: room.seed,
+      seed: ["multiplayer-view", room.id].join(":"),
     }),
-    [room.host_club, room.guest_club, room.seed],
+    [room.id, room.host_club, room.guest_club],
   );
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
   const [quality] = useState<Quality>(() => detectQuality() as Quality);
   const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [snap, setSnap] = useState({ minute: 0, hg: 0, ag: 0, finished: false });
   const published = useRef(false);
+  const authoritativeResult = useRef(false);
   const controllerRef = useRef<LiveMatchController | null>(null);
   const publishRetry = useRef<number | null>(null);
 
@@ -555,6 +555,7 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
       ...setups,
       view: sim,
       onSnapshot: (view) => {
+        if (authoritativeResult.current) return;
         setSnap({
           minute: view.minute(),
           hg: view.stats.home.goals,
@@ -563,6 +564,7 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
         });
       },
       onFinished: (view) => {
+        if (authoritativeResult.current) return;
         setSnap({
           minute: view.minute(),
           hg: view.stats.home.goals,
@@ -611,6 +613,26 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
       }
     };
   }, [snap.finished, isHost, room.id]);
+
+  useEffect(() => {
+    if (room.status !== "done") return;
+    authoritativeResult.current = true;
+    controllerRef.current?.pause(true);
+
+    const state = room.state;
+    if (typeof state !== "object" || state === null || Array.isArray(state)) return;
+    const homeGoals = state["hg"];
+    const awayGoals = state["ag"];
+    if (
+      typeof homeGoals !== "number" ||
+      !Number.isInteger(homeGoals) ||
+      typeof awayGoals !== "number" ||
+      !Number.isInteger(awayGoals)
+    ) {
+      return;
+    }
+    setSnap({ minute: room.minute, hg: homeGoals, ag: awayGoals, finished: true });
+  }, [room.minute, room.state, room.status]);
 
   const home = CLUBS[room.host_club]!;
   const away = CLUBS[room.guest_club!]!;

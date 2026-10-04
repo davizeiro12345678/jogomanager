@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { externalizeRapierWasm } from "../../scripts/rapier-wasm-asset";
+import { externalizeRapierWasm, isRapierCompatModule } from "../../scripts/rapier-wasm-asset";
 
 const require = createRequire(import.meta.url);
 const packageDir = path.dirname(require.resolve("@dimforge/rapier3d-compat"));
@@ -21,6 +21,20 @@ async function adaptedApi(suffix: string) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Rapier worker bundle", () => {
+  it("recognizes the current compat ESM entry without relying on a stale path layout", () => {
+    expect(
+      isRapierCompatModule(
+        "C:\\workspace\\node_modules\\@dimforge\\rapier3d-compat\\dist\\rapier.mjs?worker_file&type=module",
+      ),
+    ).toBe(true);
+    expect(
+      isRapierCompatModule("/workspace/node_modules/@dimforge/rapier3d-compat/rapier.mjs"),
+    ).toBe(true);
+    expect(isRapierCompatModule("/workspace/node_modules/@dimforge/rapier3d/rapier.mjs")).toBe(
+      false,
+    );
+  });
+
   it("keeps the official physics results with WASM loaded as an asset", async () => {
     const fetchAsset = vi.fn(async () => new Response(wasm, { status: 200 }));
     vi.stubGlobal("fetch", fetchAsset);

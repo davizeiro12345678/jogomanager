@@ -268,7 +268,22 @@ export function palmSurface(geometry: THREE.BufferGeometry, radius: number, side
     const thenar = Math.exp(-(((x * side + 0.38) / 0.32) ** 2) - ((y + 0.65) / 0.45) ** 2);
     const tendon =
       (0.5 + Math.cos((x * Math.PI) / 0.36) * 0.5) * Math.exp(-(((y + 0.85) / 0.48) ** 2));
-    position.setZ(i, z + radius * envelope * (z > 0 ? thenar * 0.06 : -tendon * 0.025));
+    // The dorsal side carries four shallow extensor runs that converge at the
+    // wrist. They make an open hand read as a palm and knuckle plane rather
+    // than a rounded mitten, while remaining in the same merged skin mesh.
+    const dorsal = Math.max(0, -z / Math.max(radius * 0.1, Math.abs(z)));
+    const knuckleBand = Math.exp(-(((y + 1.28) / 0.16) ** 2));
+    const extensor =
+      (0.5 + 0.5 * Math.cos((x * Math.PI * 3.7) / 0.9)) * Math.exp(-(((y + 0.82) / 0.5) ** 2));
+    position.setZ(
+      i,
+      z +
+        radius *
+          envelope *
+          (z > 0
+            ? thenar * 0.072
+            : -tendon * 0.027 - dorsal * (extensor * 0.026 + knuckleBand * 0.04)),
+    );
   }
   geometry.computeVertexNormals();
   return geometry;
@@ -331,11 +346,16 @@ export function athleticTorsoSurface(
     const oblique = Math.exp(-(((Math.abs(x) - 0.7) / 0.21) ** 2) - ((y - 0.37) / 0.23) ** 2);
     const lat = Math.exp(-(((Math.abs(x) - 0.72) / 0.24) ** 2) - ((y - 0.56) / 0.23) ** 2);
     const deltoid = Math.exp(-(((Math.abs(x) - 0.93) / 0.2) ** 2) - ((y - 0.8) / 0.12) ** 2);
+    const serratus =
+      Math.exp(-(((Math.abs(x) - 0.72) / 0.18) ** 2) - ((y - 0.48) / 0.2) ** 2) *
+      (0.5 + 0.5 * Math.sin(y * Math.PI * 19));
+    const lowerPec = Math.exp(-(((Math.abs(x) - 0.43) / 0.35) ** 2) - ((y - 0.58) / 0.12) ** 2);
     // Shoulder cap and latissimus meet the ribcage as continuous surfaces.
     // The player's deterministic proportions and all bind pivots are retained.
     positions.setX(
       i,
-      positions.getX(i) + Math.sign(x) * width * envelope * (deltoid * 0.027 + lat * 0.016),
+      positions.getX(i) +
+        Math.sign(x) * width * envelope * (deltoid * 0.034 + lat * 0.02 + serratus * 0.008),
     );
     positions.setZ(
       i,
@@ -343,8 +363,12 @@ export function athleticTorsoSurface(
         width *
           envelope *
           (z > 0
-            ? pectoral * 0.045 + clavicle * 0.018 - sternum * 0.012 - oblique * 0.012
-            : -scapula * 0.035 - lat * 0.012),
+            ? pectoral * 0.057 +
+              lowerPec * 0.018 +
+              clavicle * 0.024 -
+              sternum * 0.016 -
+              oblique * 0.016
+            : -scapula * 0.042 - lat * 0.016),
     );
   }
   geometry.computeVertexNormals();
@@ -353,7 +377,7 @@ export function athleticTorsoSurface(
 
 /** Tapered phalanges with a soft fingertip and articulated knuckle rings. */
 export function anatomicalFinger(radius: number, length: number) {
-  return anatomicalSection(
+  const geometry = anatomicalSection(
     [
       { y: -length * 0.5 - radius * 0.7, width: radius * 0.15, depth: radius * 0.18 },
       { y: -length * 0.5, width: radius * 0.82, depth: radius * 0.8 },
@@ -364,6 +388,25 @@ export function anatomicalFinger(radius: number, length: number) {
     ],
     8,
   );
+  const position = geometry.getAttribute("position");
+  for (let i = 0; i < position.count; i++) {
+    const x = position.getX(i);
+    const y = position.getY(i);
+    const z = position.getZ(i);
+    // Root is at u=1 and the fingertip is at u=0.  Two restrained dorsal
+    // knuckle pads and a tendon ridge keep fingers slender without looking
+    // like four identical capsules in the portrait and hand closeups.
+    const u = THREE.MathUtils.clamp(y / Math.max(0.001, length) + 0.5, 0, 1);
+    const dorsal = Math.max(0, -z / Math.max(radius * 0.1, Math.abs(z)));
+    const distalKnuckle = Math.exp(-(((u - 0.36) / 0.11) ** 2));
+    const proximalKnuckle = Math.exp(-(((u - 0.73) / 0.12) ** 2));
+    const tendon = Math.exp(-(((u - 0.57) / 0.3) ** 2)) * (1 - Math.abs(x) / (radius + 1e-6));
+    const contour = dorsal * (distalKnuckle * 0.06 + proximalKnuckle * 0.075 + tendon * 0.025);
+    position.setZ(i, z - radius * contour);
+    position.setX(i, x * (1 + dorsal * (distalKnuckle + proximalKnuckle) * 0.035));
+  }
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
 /** Fitted dorsal nail bed, merged into the existing finger material/draw. */
@@ -583,21 +626,25 @@ export function anatomicalLimb(
             : 0.065 * Math.exp(-(((u - 0.32) / 0.3) ** 2));
     const angular = Math.abs(z) / Math.max(radius * 0.1, Math.hypot(x, z));
     position.setZ(i, z + front * radius * bulge * envelope * angular);
-    // Tibial ridge, two gastrocnemius heads and the lateral forearm muscle
-    // remove the round tube silhouette without separate overlapping meshes.
+    // Tibial ridge, integrated patellar tendon, two gastrocnemius heads and
+    // the lateral forearm muscle remove the round tube silhouette without
+    // separate overlapping meshes. Keeping the knee landmark in the calf
+    // surface avoids the small floating sphere that previously read as a
+    // plastic cap during a close inspection.
     const lateral = Math.abs(x) / Math.max(radius * 0.1, Math.hypot(x, z));
     if (kind === "calf") {
       const shin = Math.exp(-(((u - 0.62) / 0.3) ** 2)) * (1 - lateral) ** 3;
       const heads = Math.exp(-(((u - 0.33) / 0.19) ** 2)) * lateral * (1 - lateral) * 4;
+      const soleus = Math.exp(-(((u - 0.58) / 0.22) ** 2)) * lateral * (1 - lateral) * 4;
       position.setZ(
         i,
         position.getZ(i) +
-          radius * envelope * (front > 0 ? shin * 0.027 : -heads * 0.034) +
+          radius * envelope * (front > 0 ? shin * 0.034 : -heads * 0.041 - soleus * 0.012) +
           (front > 0
             ? radius *
-              0.1 *
+              0.125 *
               Math.sqrt(Math.max(0, Math.sin(Math.PI * THREE.MathUtils.clamp(u, 0, 1)))) *
-              Math.exp(-(((u - 0.075) / 0.11) ** 2)) *
+              Math.exp(-(((u - 0.085) / 0.13) ** 2)) *
               angular ** 2
             : 0),
       );
@@ -607,10 +654,16 @@ export function anatomicalLimb(
       const teardrop = Math.exp(-(((u - 0.79) / 0.12) ** 2)) * lateral;
       const rectus = Math.exp(-(((u - 0.48) / 0.26) ** 2)) * (1 - lateral) ** 2;
       const separation = Math.exp(-(((lateral - 0.56) / 0.11) ** 2) - ((u - 0.58) / 0.27) ** 2);
+      const quadricepsTendon =
+        Math.exp(-((x / Math.max(radius * 0.1, radius * 0.36)) ** 2) - ((u - 0.9) / 0.1) ** 2) *
+        angular;
       position.setZ(
         i,
         position.getZ(i) +
-          radius * envelope * angular * (teardrop * 0.09 + rectus * 0.04 - separation * 0.025),
+          radius *
+            envelope *
+            angular *
+            (teardrop * 0.105 + rectus * 0.055 + quadricepsTendon * 0.018 - separation * 0.034),
       );
     } else if (kind === "upperArm") {
       const deltoid = Math.exp(-(((u - 0.2) / 0.17) ** 2));
@@ -622,7 +675,11 @@ export function anatomicalLimb(
     if (kind !== "upperArm") {
       const landmark = kind === "thigh" ? 0.72 : kind === "calf" ? 0.34 : 0.3;
       const relief = Math.exp(-(((u - landmark) / 0.22) ** 2));
-      position.setZ(i, position.getZ(i) + radius * 0.035 * envelope * relief * medial * angular);
+      const reliefStrength = kind === "thigh" ? 0.045 : kind === "calf" ? 0.04 : 0.035;
+      position.setZ(
+        i,
+        position.getZ(i) + radius * reliefStrength * envelope * relief * medial * angular,
+      );
     }
     // Two heads of the calf/quadriceps avoid a uniformly circular cylinder.
     if (kind === "thigh" || kind === "calf")
@@ -646,6 +703,92 @@ export function anatomicalLimb(
       normals.setXYZ(i, n.x, n.y, n.z);
     }
   return geometry;
+}
+
+/** A fitted, rear-facing ink patch sampled from the same sculpted forearm
+ * surface. The angular limits keep a tattoo from reading as a bracelet, and
+ * the small normal offset prevents z-fighting without changing the limb. */
+export function forearmTattooSurface(
+  length: number,
+  radius: number,
+  radial = 12,
+  side: -1 | 1 = 1,
+) {
+  // Sample the same medial/lateral relief as the owning forearm. Otherwise a
+  // right-side tattoo follows the left-side surface after the mirrored
+  // flexor anatomy is applied.
+  const arm = anatomicalLimb("forearm", length, radius, radial, false, undefined, side);
+  const sourcePosition = arm.getAttribute("position") as THREE.BufferAttribute;
+  const sourceNormal = arm.getAttribute("normal") as THREE.BufferAttribute;
+  const sourceRows = sourcePosition.count / (radial + 1);
+  const rows = 16;
+  const columns = 16;
+  const startY = -length * 0.82;
+  const endY = -length * 0.24;
+  const center = Math.PI + side * 0.11;
+  const halfArc = 0.98;
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  const value = (
+    attribute: THREE.BufferAttribute,
+    y: number,
+    angle: number,
+    component: "x" | "y" | "z",
+  ) => {
+    let row = 0;
+    while (row < sourceRows - 2 && sourcePosition.getY((row + 1) * (radial + 1)) < y) row++;
+    const lowY = sourcePosition.getY(row * (radial + 1));
+    const highY = sourcePosition.getY((row + 1) * (radial + 1));
+    const rowT = THREE.MathUtils.clamp((y - lowY) / Math.max(1e-6, highY - lowY), 0, 1);
+    const ringPosition = THREE.MathUtils.clamp(angle / (Math.PI * 2), 0, 1) * radial;
+    const ring = Math.min(radial - 1, Math.floor(ringPosition));
+    const ringT = ringPosition - ring;
+    const get = (r: number, c: number) => {
+      const index = r * (radial + 1) + c;
+      return component === "x"
+        ? attribute.getX(index)
+        : component === "y"
+          ? attribute.getY(index)
+          : attribute.getZ(index);
+    };
+    const low = THREE.MathUtils.lerp(get(row, ring), get(row, ring + 1), ringT);
+    const high = THREE.MathUtils.lerp(get(row + 1, ring), get(row + 1, ring + 1), ringT);
+    return THREE.MathUtils.lerp(low, high, rowT);
+  };
+
+  for (let row = 0; row <= rows; row++) {
+    const v = row / rows;
+    const y = THREE.MathUtils.lerp(startY, endY, v);
+    for (let column = 0; column <= columns; column++) {
+      const u = column / columns;
+      const angle = center - halfArc + u * halfArc * 2;
+      const normal = new THREE.Vector3(
+        value(sourceNormal, y, angle, "x"),
+        value(sourceNormal, y, angle, "y"),
+        value(sourceNormal, y, angle, "z"),
+      ).normalize();
+      positions.push(
+        value(sourcePosition, y, angle, "x") + normal.x * 0.0012,
+        value(sourcePosition, y, angle, "y") + normal.y * 0.0012,
+        value(sourcePosition, y, angle, "z") + normal.z * 0.0012,
+      );
+      uvs.push(u, v);
+    }
+  }
+  for (let row = 0; row < rows; row++)
+    for (let column = 0; column < columns; column++) {
+      const a = row * (columns + 1) + column;
+      const b = a + columns + 1;
+      indices.push(a, a + 1, b, a + 1, b + 1, b);
+    }
+  arm.dispose();
+  const patch = new THREE.BufferGeometry();
+  patch.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  patch.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  patch.setIndex(indices);
+  patch.computeVertexNormals();
+  return patch;
 }
 
 /** Cloth samples the already sculpted limb, including its muscle bulges.

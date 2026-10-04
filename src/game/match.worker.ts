@@ -9,7 +9,15 @@ import {
 } from "./sim";
 import type { BallPhysicsAuthority } from "./rapier-ball-authority";
 import type { RapierVisualPhysics } from "./rapier-ball-visual";
+import {
+  LIVE_MATCH_WORKER_TELEMETRY_MARK,
+  createSnapshotTelemetryTracker,
+  isLiveSnapshotResponse,
+  isLiveTelemetryWorker,
+  markLiveWorkerSnapshot,
+} from "./snapshot-telemetry";
 import { visualBallFromCanonical, type VisualBallState } from "./visual-ball";
+import { loadPassLaneKernel } from "./wasm/match-perception";
 
 let live: MatchSim | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -27,8 +35,24 @@ let ballAuthority: BallPhysicsAuthority | null = null;
 let liveEpoch = 0;
 let latestVisualBall: VisualBallState | undefined;
 let commandQueue: Promise<void> = Promise.resolve();
+const snapshotTelemetry = isLiveTelemetryWorker((self as unknown as { name?: unknown }).name)
+  ? createSnapshotTelemetryTracker()
+  : null;
+let telemetryMarkCount = 0;
 
 function post(message: unknown) {
+  if (snapshotTelemetry && isLiveSnapshotResponse(message)) {
+    const measurement = snapshotTelemetry.sample(message.snapshot, performance.now());
+    // Mantém uma janela curta no User Timing do Worker para não acumular uma
+    // entrada por snapshot durante partidas longas. Não altera a mensagem nem
+    // toca no estado determinístico da simulação.
+    if (telemetryMarkCount >= 120 && typeof performance.clearMarks === "function") {
+      performance.clearMarks(LIVE_MATCH_WORKER_TELEMETRY_MARK);
+      telemetryMarkCount = 0;
+    }
+    markLiveWorkerSnapshot(measurement);
+    telemetryMarkCount += 1;
+  }
   self.postMessage(message);
 }
 
@@ -208,6 +232,9 @@ async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive"
   // A partida começa imediatamente; Rapier se conecta quando o WASM estiver
   // pronto e o fallback visual só é criado se essa inicialização falhar.
   void attachBallAuthority(target, epoch);
+  void loadPassLaneKernel().then((kernel) => {
+    if (kernel && live === target && liveEpoch === epoch) target.setPassLaneKernel(kernel);
+  });
   publishSnapshot();
   ensureTimer();
   post({ id: message.id, ok: true, type: "ready" });

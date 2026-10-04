@@ -1,4 +1,5 @@
 import { FORMATIONS } from "./formations";
+import { evaluatePassLanesFallback, type PassLaneKernel } from "./wasm/match-perception";
 import { makeRng } from "./rng";
 import { physiqueFor } from "./player-physique";
 import { matchAttributes } from "./match-readiness";
@@ -263,6 +264,11 @@ export interface SimView {
 }
 
 export class MatchSim {
+  private passLaneKernel: PassLaneKernel = evaluatePassLanesFallback;
+
+  setPassLaneKernel(kernel: PassLaneKernel) {
+    this.passLaneKernel = kernel;
+  }
   time = 0; // segundos de jogo
   players: SimPlayer[] = [];
   ball = { x: 0, z: 0, vx: 0, vz: 0, holder: null as string | null, height: 0 };
@@ -669,7 +675,9 @@ export class MatchSim {
     this.ball.z = 0;
     this.ball.vx = 0;
     this.ball.vz = 0;
-    this.ball.height = 0;
+    // Kickoff state can be serialized before another step sanitizes it; keep
+    // the canonical ball center at the physical ground radius immediately.
+    this.ball.height = 0.12;
     this.ballVy = 0;
     this.ballSpin = 0;
     this.pendingShot = null;
@@ -2627,27 +2635,22 @@ export class MatchSim {
     );
     let best: SimPlayer | null = null;
     let bestScore = -Infinity;
-    for (const m of mates) {
-      const dist = Math.hypot(m.x - holder.x, m.z - holder.z);
+    const pack = (players: SimPlayer[]) =>
+      new Float64Array(players.flatMap((p) => [p.x, p.z, p.vx, p.vz]));
+    const defenders = this.players.filter((p) => p.side !== holder.side && !p.sentOff);
+    let lanes: Float64Array;
+    try {
+      lanes = this.passLaneKernel(holder.x, holder.z, pack(mates), pack(defenders));
+    } catch {
+      this.passLaneKernel = evaluatePassLanesFallback;
+      lanes = this.passLaneKernel(holder.x, holder.z, pack(mates), pack(defenders));
+    }
+    for (const [index, m] of mates.entries()) {
+      const dist = lanes[index * 3]!;
       if (dist < 4 || dist > 42) continue;
       const forward = (m.x - holder.x) * dir;
-      const { dist: cover } = this.nearestOpponent(m);
-      // Evita passes atravessando um marcador alinhado ao corredor da bola.
-      let laneRisk = 0;
-      const mdx = m.x - holder.x;
-      const mdz = m.z - holder.z;
-      const len2 = mdx * mdx + mdz * mdz || 1;
-      for (const opponent of this.players) {
-        if (opponent.side === holder.side) continue;
-        const t = Math.max(
-          0,
-          Math.min(1, ((opponent.x - holder.x) * mdx + (opponent.z - holder.z) * mdz) / len2),
-        );
-        const laneX = holder.x + mdx * t;
-        const laneZ = holder.z + mdz * t;
-        const laneDistance = Math.hypot(opponent.x - laneX, opponent.z - laneZ);
-        if (laneDistance < 2.2) laneRisk += (2.2 - laneDistance) * 2.8;
-      }
+      const cover = lanes[index * 3 + 1]!;
+      const laneRisk = lanes[index * 3 + 2]!;
       const score =
         forward * (0.7 + mentality * 0.12) + cover * 1.7 - dist * 0.32 - laneRisk + this.rnd() * 8;
       if (score > bestScore) {
@@ -3253,7 +3256,7 @@ export class MatchSim {
   private determineBodyPoint(p: SimPlayer, contactType: ContactType): BodyContactPoint | null {
     if (contactType === "ball" || contactType === "groundBall") {
       if (p.pos === "GK") {
-        return Math.random() < 0.5 ? "handLeft" : "handRight";
+        return (this.hashString(`${this.matchSeed}:${p.pid}`) & 1) === 0 ? "handLeft" : "handRight";
       }
       return this.determineUsedFoot(p, getDominantFoot(p.pid)) === "left"
         ? "footLeft"

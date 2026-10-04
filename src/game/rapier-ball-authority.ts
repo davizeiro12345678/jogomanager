@@ -5,9 +5,16 @@
  * mas posição, velocidade, gravidade, contato com gramado, traves e rede são
  * calculados pelo mundo WASM do Rapier e escritos de volta nesse estado.
  */
-import RAPIER from "@dimforge/rapier3d-compat";
+import {
+  ColliderDesc,
+  init as initializeRapierWasm,
+  RigidBodyDesc,
+  RigidBodyType,
+  World,
+} from "@dimforge/rapier3d-compat";
 
 import { pitchCondition } from "./ball-climate";
+import { highFidelitySubsteps } from "./physics-quality";
 import type { WeatherKind } from "./sim-rules";
 
 export const BALL_PHYSICS_RADIUS = 0.12;
@@ -20,7 +27,6 @@ const GOAL_HEIGHT = 2.44;
 // em poste/travessão seja decidido como gol antes da colisão física.
 const GOAL_LINE_INSET = 1.6;
 const MAX_AUTHORITATIVE_STEP = 0.4;
-const TARGET_SUBSTEP = 1 / 120;
 
 export interface RapierBallState {
   x: number;
@@ -70,7 +76,7 @@ function copyState(state: RapierBallState): RapierBallState {
 let rapierReady: Promise<void> | null = null;
 
 function initializeRapier() {
-  return (rapierReady ??= RAPIER.init());
+  return (rapierReady ??= initializeRapierWasm());
 }
 
 function changed(a: RapierBallState | null, b: RapierBallState) {
@@ -88,7 +94,7 @@ function changed(a: RapierBallState | null, b: RapierBallState) {
 }
 
 function makeWorld() {
-  const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
+  const world = new World({ x: 0, y: -9.81, z: 0 });
   // Uma bola mais os colisores do estádio, com custo constante por passo.
   world.numSolverIterations = 8;
   world.maxCcdSubsteps = 4;
@@ -120,7 +126,7 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     this.world = makeWorld();
     this.createPitchAndGoalColliders();
     this.ballBody = this.world.createRigidBody(
-      RAPIER.RigidBodyDesc.dynamic()
+      RigidBodyDesc.dynamic()
         .setTranslation(0, BALL_PHYSICS_RADIUS, 0)
         .setCcdEnabled(true)
         .setCanSleep(false)
@@ -128,7 +134,7 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
         .setAngularDamping(0.28),
     );
     this.ballCollider = this.world.createCollider(
-      RAPIER.ColliderDesc.ball(BALL_PHYSICS_RADIUS).setFriction(0.72).setRestitution(0.54),
+      ColliderDesc.ball(BALL_PHYSICS_RADIUS).setFriction(0.72).setRestitution(0.54),
       this.ballBody,
     );
   }
@@ -165,9 +171,14 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     // Rapier, não de coordenadas manuais no MatchSim.
     if (this.attached || changed(this.lastWritten, state)) this.setDynamicState(state);
 
-    this.applyMagnusImpulse(dt, state.spin);
-    this.applyWindImpulse(dt);
-    this.stepWorld(dt);
+    // Aerodynamic impulses are distributed across the same high-fidelity
+    // slices as Rapier. Their total remains equal to the outer elapsed time,
+    // but a curving ball can now react to turf, post and net contacts between
+    // the force samples.
+    this.stepWorld(dt, (substep) => {
+      this.applyMagnusImpulse(substep, state.spin);
+      this.applyWindImpulse(substep);
+    });
     this.writeDynamicState(state);
     this.lastWritten = copyState(state);
   }
@@ -179,12 +190,13 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     this.world.free();
   }
 
-  private stepWorld(dt: number) {
+  private stepWorld(dt: number, beforeStep?: (substep: number) => void) {
     const total = Math.max(1 / 240, Math.min(MAX_AUTHORITATIVE_STEP, finite(dt, 1 / 30)));
-    const count = Math.max(1, Math.ceil(total / TARGET_SUBSTEP));
+    const count = highFidelitySubsteps(total);
     const substep = total / count;
     for (let index = 0; index < count; index += 1) {
       this.world.timestep = substep;
+      beforeStep?.(substep);
       this.world.step();
     }
   }
@@ -218,7 +230,7 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
   private setHeldState(state: RapierBallState, holder: RapierBallHolder) {
     const target = this.holderTarget(holder);
     this.attached = true;
-    this.ballBody.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
+    this.ballBody.setBodyType(RigidBodyType.KinematicPositionBased, true);
     this.ballCollider.setSensor(true);
     this.ballBody.setTranslation(target, true);
     this.ballBody.setNextKinematicTranslation(target);
@@ -250,7 +262,7 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
 
   private setDynamicState(state: RapierBallState) {
     this.attached = false;
-    this.ballBody.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
+    this.ballBody.setBodyType(RigidBodyType.Dynamic, true);
     this.ballCollider.setSensor(false);
     this.ballBody.setTranslation(
       {
@@ -283,7 +295,7 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
   private createPitchAndGoalColliders() {
     const { fieldX, fieldZ } = this.options;
     this.pitchCollider = this.world.createCollider(
-      RAPIER.ColliderDesc.cuboid(fieldX + 2, BALL_PHYSICS_RADIUS, fieldZ + 2)
+      ColliderDesc.cuboid(fieldX + 2, BALL_PHYSICS_RADIUS, fieldZ + 2)
         .setTranslation(0, -BALL_PHYSICS_RADIUS, 0)
         .setFriction(0.84)
         .setRestitution(0.48),
@@ -293,20 +305,20 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
       const goalX = direction * (fieldX - GOAL_LINE_INSET);
       for (const goalZ of [-GOAL_HALF_WIDTH, GOAL_HALF_WIDTH]) {
         this.world.createCollider(
-          RAPIER.ColliderDesc.cylinder(GOAL_HEIGHT / 2, 0.075)
+          ColliderDesc.cylinder(GOAL_HEIGHT / 2, 0.075)
             .setTranslation(goalX, GOAL_HEIGHT / 2, goalZ)
             .setFriction(0.35)
             .setRestitution(0.7),
         );
       }
       this.world.createCollider(
-        RAPIER.ColliderDesc.cuboid(0.075, 0.075, GOAL_HALF_WIDTH)
+        ColliderDesc.cuboid(0.075, 0.075, GOAL_HALF_WIDTH)
           .setTranslation(goalX, GOAL_HEIGHT, 0)
           .setFriction(0.35)
           .setRestitution(0.68),
       );
       this.world.createCollider(
-        RAPIER.ColliderDesc.cuboid(0.04, GOAL_HEIGHT / 2, GOAL_HALF_WIDTH)
+        ColliderDesc.cuboid(0.04, GOAL_HEIGHT / 2, GOAL_HALF_WIDTH)
           .setTranslation(direction * (fieldX - GOAL_LINE_INSET + 0.95), GOAL_HEIGHT / 2, 0)
           .setFriction(0.72)
           .setRestitution(0.22),
