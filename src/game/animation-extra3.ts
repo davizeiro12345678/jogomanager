@@ -543,11 +543,7 @@ const FACE_FOR_CLIP: Record<string, Partial<FaceExpression>> = {
  * Resolve a expressão do quadro: o clipe sugere, o esforço (sprint/cansaço)
  * abre a mandíbula e pesa as pálpebras por cima.
  */
-export function expressionFor(
-  clip: string,
-  effort: number,
-  fatigue: number,
-): FaceExpression {
+export function expressionFor(clip: string, effort: number, fatigue: number): FaceExpression {
   const hint = FACE_FOR_CLIP[clip];
   const e = clamp01(effort);
   const f = clamp01(fatigue);

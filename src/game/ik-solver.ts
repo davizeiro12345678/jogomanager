@@ -9,10 +9,10 @@ import { JOINTS, type Pose } from "./animation-core";
 /** Comprimentos padrao das partes do corpo (em metros) */
 export const BODY_LENGTHS = {
   hipToKnee: 0.45,
-  kneeToAnkle: 0.40,
-  ankleToFoot: 0.10,
-  hipToShoulder: 0.50,
-  shoulderToElbow: 0.30,
+  kneeToAnkle: 0.4,
+  ankleToFoot: 0.1,
+  hipToShoulder: 0.5,
+  shoulderToElbow: 0.3,
   elbowToHand: 0.25,
 } as const;
 
@@ -41,7 +41,14 @@ export function applyIKAdjustments(
 
   // Foco contextual
   if (actionCtx.target) {
-    applyFocus(pose, actionCtx.target.x, actionCtx.target.z, playerInfo.x, playerInfo.z, playerInfo.rotationY);
+    applyFocus(
+      pose,
+      actionCtx.target.x,
+      actionCtx.target.z,
+      playerInfo.x,
+      playerInfo.z,
+      playerInfo.rotationY,
+    );
   }
 
   // Estabilizacao de equilíbrio
@@ -112,7 +119,11 @@ function applyBallContact(pose: Pose, action: ActionContext, contact: ContactCon
   if (!action.action) return;
 
   const actionName = action.action;
-  const isBallAction = actionName.includes("shot") || actionName.includes("pass") || actionName.includes("cross") || actionName === "trap";
+  const isBallAction =
+    actionName.includes("shot") ||
+    actionName.includes("pass") ||
+    actionName.includes("cross") ||
+    actionName === "trap";
 
   if (isBallAction) {
     const foot = action.usedFoot;
@@ -121,11 +132,16 @@ function applyBallContact(pose: Pose, action: ActionContext, contact: ContactCon
     const ankleKey = foot === "left" ? "ankleL" : "ankleR";
     const oppositeLegKey = foot === "left" ? "legRPitch" : "legLPitch";
     const intensity = 0.65 + action.intensity * 0.35;
-    const phaseWeight = action.phase === "anticipation" ? -0.55
-      : action.phase === "action" ? -0.15
-      : action.phase === "contact" ? 0.95
-      : action.phase === "followThrough" ? 0.72
-      : 0.18;
+    const phaseWeight =
+      action.phase === "anticipation"
+        ? -0.55
+        : action.phase === "action"
+          ? -0.15
+          : action.phase === "contact"
+            ? 0.95
+            : action.phase === "followThrough"
+              ? 0.72
+              : 0.18;
 
     pose[legPitchKey] += phaseWeight * intensity;
     pose[kneeKey] += action.phase === "anticipation" ? -0.72 : -0.28 * intensity;
@@ -159,10 +175,13 @@ function applyBallContact(pose: Pose, action: ActionContext, contact: ContactCon
   if (actionName === "header") {
     // Peso pela fase: o pescoço só chicoteia no momento do contato.
     const w =
-      action.phase === "anticipation" ? 0.45
-      : action.phase === "contact" ? 1
-      : action.phase === "followThrough" ? 0.8
-      : 0.6;
+      action.phase === "anticipation"
+        ? 0.45
+        : action.phase === "contact"
+          ? 1
+          : action.phase === "followThrough"
+            ? 0.8
+            : 0.6;
     blendTo(pose, "headPitch", -0.4, w);
     blendTo(pose, "chest", 0.1, w);
     blendTo(pose, "spine", -0.1, w);
@@ -187,7 +206,14 @@ function wrapAngle(a: number): number {
   return v;
 }
 
-function applyFocus(pose: Pose, focusX: number, focusZ: number, playerX: number, playerZ: number, rotationY: number): void {
+function applyFocus(
+  pose: Pose,
+  focusX: number,
+  focusZ: number,
+  playerX: number,
+  playerZ: number,
+  rotationY: number,
+): void {
   const dx = focusX - playerX;
   const dz = focusZ - playerZ;
   const distance = Math.sqrt(dx * dx + dz * dz);
@@ -234,11 +260,15 @@ function applyGoalkeeperIK(pose: Pose, action: ActionContext): void {
   // A defesa cresce ao longo do mergulho: arma, estende no contato e segura no
   // acompanhamento. Trocar a pose de uma vez fazia o goleiro "teletransportar".
   const w =
-    action.phase === "anticipation" ? 0.5
-    : action.phase === "action" ? 0.8
-    : action.phase === "contact" ? 1
-    : action.phase === "followThrough" ? 0.9
-    : 0.7;
+    action.phase === "anticipation"
+      ? 0.5
+      : action.phase === "action"
+        ? 0.8
+        : action.phase === "contact"
+          ? 1
+          : action.phase === "followThrough"
+            ? 0.9
+            : 0.7;
 
   if (action.action === "diveLeft") {
     blendTo(pose, "armLPitch", 0.8, w);
@@ -251,8 +281,7 @@ function applyGoalkeeperIK(pose: Pose, action: ActionContext): void {
     blendTo(pose, "legRPitch", -0.2, w);
     blendTo(pose, "kneeL", -0.8, w);
     pose.hipRoll += 0.25 * w;
-  }
-  else if (action.action === "diveRight") {
+  } else if (action.action === "diveRight") {
     blendTo(pose, "armLPitch", -0.5, w);
     blendTo(pose, "armRPitch", 0.8, w);
     blendTo(pose, "elbowL", -0.5, w);
@@ -263,8 +292,7 @@ function applyGoalkeeperIK(pose: Pose, action: ActionContext): void {
     blendTo(pose, "legRPitch", 0.5, w);
     blendTo(pose, "kneeR", -0.8, w);
     pose.hipRoll -= 0.25 * w;
-  }
-  else if (action.action === "saveHigh" || action.action === "catch") {
+  } else if (action.action === "saveHigh" || action.action === "catch") {
     blendTo(pose, "armLPitch", 0.8, w);
     blendTo(pose, "armRPitch", 0.8, w);
     blendTo(pose, "elbowL", -1.2, w);
@@ -299,7 +327,7 @@ export function solveFullIK(
   if (out) {
     for (const joint of JOINTS) result[joint] = pose[joint];
   }
-  
+
   applyIKAdjustments(result, actionContext, contactContext, {
     x: player.x,
     z: player.z,
@@ -308,6 +336,6 @@ export function solveFullIK(
     rotationY: player.rotationY,
     isGK: player.isGK,
   });
-  
+
   return result;
 }

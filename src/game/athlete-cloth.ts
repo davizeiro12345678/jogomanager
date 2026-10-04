@@ -55,7 +55,7 @@ export class ClothDynamics {
     }
     const ax = clamp((x - this.priorX) / dt, -28, 28);
     const az = clamp((z - this.priorZ) / dt, -28, 28);
-    const landing = lift <= .025 ? clamp((this.priorLift - lift) / dt, 0, 4) : 0;
+    const landing = lift <= 0.025 ? clamp((this.priorLift - lift) / dt, 0, 4) : 0;
     // Heading wraps at ±π. Use the shortest signed arc so a small turn across
     // that seam cannot kick the shirt as if the athlete spun all the way round.
     const yawDelta = Math.atan2(Math.sin(yaw - this.priorYaw), Math.cos(yaw - this.priorYaw));

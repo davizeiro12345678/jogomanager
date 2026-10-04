@@ -42,7 +42,11 @@ describe("broadcast visual preferences", () => {
   it("falls back safely when storage is malformed", () => {
     expect(normalizeBroadcastPreferences(null)).toEqual(DEFAULT_BROADCAST);
     expect(
-      normalizeBroadcastPreferences({ camera: "removed-camera", replayCamera: "stale", favorites: "stale" }),
+      normalizeBroadcastPreferences({
+        camera: "removed-camera",
+        replayCamera: "stale",
+        favorites: "stale",
+      }),
     ).toEqual(DEFAULT_BROADCAST);
   });
 });

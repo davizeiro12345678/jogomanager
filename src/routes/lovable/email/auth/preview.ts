@@ -8,13 +8,20 @@ import { RecoveryEmail } from "@/lib/email-templates/recovery";
 import { EmailChangeEmail } from "@/lib/email-templates/email-change";
 import { ReauthenticationEmail } from "@/lib/email-templates/reauthentication";
 
-const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
-  signup: SignupEmail,
-  invite: InviteEmail,
-  magiclink: MagicLinkEmail,
-  recovery: RecoveryEmail,
-  email_change: EmailChangeEmail,
-  reauthentication: ReauthenticationEmail,
+type EmailTemplatePreview = (props: Record<string, string>) => React.ReactElement;
+
+const toPreviewComponent =
+  <Props extends object>(component: React.ComponentType<Props>): EmailTemplatePreview =>
+  (props) =>
+    React.createElement(component, props as Props);
+
+const EMAIL_TEMPLATES: Record<string, EmailTemplatePreview> = {
+  signup: toPreviewComponent(SignupEmail),
+  invite: toPreviewComponent(InviteEmail),
+  magiclink: toPreviewComponent(MagicLinkEmail),
+  recovery: toPreviewComponent(RecoveryEmail),
+  email_change: toPreviewComponent(EmailChangeEmail),
+  reauthentication: toPreviewComponent(ReauthenticationEmail),
 };
 
 // Configuration
@@ -28,7 +35,7 @@ const ROOT_DOMAIN = "football-manager.app";
 // even if the project's domain has changed since the template was scaffolded.
 const SAMPLE_PROJECT_URL = "https://stadium-stewards.lovable.app";
 const SAMPLE_EMAIL = "user@example.test";
-const SAMPLE_DATA: Record<string, object> = {
+const SAMPLE_DATA: Record<string, Record<string, string>> = {
   signup: {
     siteName: SITE_NAME,
     siteUrl: SAMPLE_PROJECT_URL,
@@ -76,15 +83,26 @@ export const Route = createFileRoute("/lovable/email/auth/preview")({
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        let type: string;
+        let body: unknown;
         try {
-          const body = await request.json();
-          type = body.type;
+          body = await request.json();
         } catch {
           return Response.json({ error: "Invalid JSON in request body" }, { status: 400 });
         }
 
-        const EmailTemplate = EMAIL_TEMPLATES[type];
+        if (
+          !body ||
+          typeof body !== "object" ||
+          !("type" in body) ||
+          typeof body.type !== "string"
+        ) {
+          return Response.json({ error: "Invalid email type" }, { status: 400 });
+        }
+
+        const type = body.type;
+        const EmailTemplate = Object.hasOwn(EMAIL_TEMPLATES, type)
+          ? EMAIL_TEMPLATES[type]
+          : undefined;
 
         if (!EmailTemplate) {
           return Response.json({ error: `Unknown email type: ${type}` }, { status: 400 });

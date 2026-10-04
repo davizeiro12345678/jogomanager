@@ -1584,7 +1584,13 @@ function Stands({
         occupancy={occupancy}
       />
       <Banners color={homeColor} alt={awayColor} rings={rings} />
-      <CrowdFlags sim={sim} color={homeColor} alt={awayColor} rings={rings} count={budget.flagCount} />
+      <CrowdFlags
+        sim={sim}
+        color={homeColor}
+        alt={awayColor}
+        rings={rings}
+        count={budget.flagCount}
+      />
 
       <CrowdLod crowd={crowd} pulse={goalPulse} budget={crowdBudget} supporters={supporters} />
     </group>
@@ -1653,7 +1659,10 @@ function CrowdFlags({
       shader.uniforms["uTime"] = uTime.current;
       shader.uniforms["uWind"] = uWind.current;
       shader.vertexShader = shader.vertexShader
-        .replace("#include <common>", "#include <common>\nuniform float uTime; uniform float uWind;")
+        .replace(
+          "#include <common>",
+          "#include <common>\nuniform float uTime; uniform float uWind;",
+        )
         .replace(
           "#include <begin_vertex>",
           `#include <begin_vertex>
@@ -1691,7 +1700,9 @@ function CrowdFlags({
 
   useFrame(({ clock }) => {
     uTime.current.value = clock.elapsedTime;
-    uWind.current.value = (0.12 + (sim.wind?.strength01 ?? 0.25) * 1.6) * (0.75 + 0.25 * Math.sin(clock.elapsedTime * 0.9));
+    uWind.current.value =
+      (0.12 + (sim.wind?.strength01 ?? 0.25) * 1.6) *
+      (0.75 + 0.25 * Math.sin(clock.elapsedTime * 0.9));
   });
 
   if (!count) return null;
@@ -1724,7 +1735,14 @@ function Ball({
   const spray = useRef(0);
   const textures = useMemo(footballTextures, []);
   const response = useMemo(() => new BallResponse(), []);
-  const previous = useRef<{ x: number; z: number; height: number; vx: number; vz: number; vy: number } | null>(null);
+  const previous = useRef<{
+    x: number;
+    z: number;
+    height: number;
+    vx: number;
+    vz: number;
+    vy: number;
+  } | null>(null);
   const axis = useMemo(() => new THREE.Vector3(), []);
   const squashAxis = useMemo(() => new THREE.Vector3(0, 1, 0), []);
   const orientation = useMemo(() => new THREE.Quaternion(), []);
@@ -1734,21 +1752,25 @@ function Ball({
     if (!m) return;
     const visualBall = presentationBall(sim);
     const delta = Math.min(Math.max(0, dt), 0.05);
-    const snap = !previous.current || Math.hypot(visualBall.x - m.position.x, visualBall.z - m.position.z) > 4;
+    const snap =
+      !previous.current || Math.hypot(visualBall.x - m.position.x, visualBall.z - m.position.z) > 4;
     const blend = snap ? 1 : 1 - Math.exp(-42 * delta);
     m.position.x += (visualBall.x - m.position.x) * blend;
     m.position.z += (visualBall.z - m.position.z) * blend;
     // The simulation exposes height of the centre, including the ball radius.
     m.position.y = Math.max(0.12, visualBall.height);
     const prior = previous.current;
-    const verticalVelocity = sim.visualBall?.vy ?? (prior && delta > 0 ? (visualBall.height - prior.height) / delta : 0);
+    const verticalVelocity =
+      sim.visualBall?.vy ?? (prior && delta > 0 ? (visualBall.height - prior.height) / delta : 0);
     if (prior && !snap) {
       const kick = Math.hypot(visualBall.vx - prior.vx, visualBall.vz - prior.vz);
       const bounce = prior.vy < -0.6 && verticalVelocity >= 0 && visualBall.height < 0.35;
       if (bounce) {
-        response.impact(Math.abs(prior.vy)); squashAxis.set(0, 1, 0);
+        response.impact(Math.abs(prior.vy));
+        squashAxis.set(0, 1, 0);
       } else if (kick > 3.5) {
-        response.impact(kick); squashAxis.set(visualBall.vx - prior.vx, 0, visualBall.vz - prior.vz).normalize();
+        response.impact(kick);
+        squashAxis.set(visualBall.vx - prior.vx, 0, visualBall.vz - prior.vz).normalize();
       }
     }
     const sp = Math.hypot(visualBall.vx, visualBall.vz);
@@ -1768,7 +1790,15 @@ function Ball({
       scale.radial + (scale.axial - scale.radial) * worldScale.y ** 2,
       scale.radial + (scale.axial - scale.radial) * worldScale.z ** 2,
     );
-    if (!previous.current) previous.current = { x: visualBall.x, z: visualBall.z, height: visualBall.height, vx: visualBall.vx, vz: visualBall.vz, vy: verticalVelocity };
+    if (!previous.current)
+      previous.current = {
+        x: visualBall.x,
+        z: visualBall.z,
+        height: visualBall.height,
+        vx: visualBall.vx,
+        vz: visualBall.vz,
+        vy: verticalVelocity,
+      };
     else Object.assign(previous.current, visualBall, { vy: verticalVelocity });
     const s = shadow.current;
     if (s) {
@@ -1798,7 +1828,7 @@ function Ball({
       <sphereGeometry args={[0.12, quality === "alta" ? 40 : 24, quality === "alta" ? 32 : 16]} />
       <meshStandardMaterial
         map={textures?.map ?? null}
-        bumpMap={quality === "baixa" ? null : textures?.bumpMap ?? null}
+        bumpMap={quality === "baixa" ? null : (textures?.bumpMap ?? null)}
         bumpScale={0.0012}
         roughnessMap={textures?.roughnessMap ?? null}
         // bola de alta visibilidade na neve; molhada reflete mais a luz

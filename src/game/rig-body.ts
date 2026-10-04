@@ -573,7 +573,17 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
         cast,
       ),
       rigPart(
-        fittedLimbCover("calf", P.shin, P.legR, segs.radial, sockTop, 0.002, 1.035, undefined, side),
+        fittedLimbCover(
+          "calf",
+          P.shin,
+          P.legR,
+          segs.radial,
+          sockTop,
+          0.002,
+          1.035,
+          undefined,
+          side,
+        ),
         ctx.trousers ? shorts : socks,
         undefined,
         cast,

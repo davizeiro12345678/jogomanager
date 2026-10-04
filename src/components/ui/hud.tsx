@@ -226,7 +226,9 @@ export function Sparkline({
     const y = height - ((v - min) / span) * (height - 4) - 2;
     return [x, y] as const;
   });
-  const line = pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const line = pts
+    .map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`)
+    .join(" ");
   const area = `${line} L${width},${height} L0,${height} Z`;
   const last = pts[pts.length - 1]!;
   return (
@@ -289,7 +291,10 @@ export function HudRing({
   const c = 2 * Math.PI * r;
   return (
     <div className="flex flex-col items-center" style={{ width: size }}>
-      <div className="relative grid shrink-0 place-items-center" style={{ width: size, height: size }}>
+      <div
+        className="relative grid shrink-0 place-items-center"
+        style={{ width: size, height: size }}
+      >
         <svg width={size} height={size} className="-rotate-90 text-tone" aria-hidden="true">
           <circle
             cx={size / 2}
@@ -320,7 +325,9 @@ export function HudRing({
           {label && <p className="mt-1 text-[10px] uppercase text-muted-foreground">{label}</p>}
         </div>
       </div>
-      {sub && <p className="mt-1 text-center text-[10px] leading-tight text-muted-foreground">{sub}</p>}
+      {sub && (
+        <p className="mt-1 text-center text-[10px] leading-tight text-muted-foreground">{sub}</p>
+      )}
     </div>
   );
 }
@@ -366,7 +373,9 @@ export function HudStat({
 }) {
   return (
     <div className={cn("min-w-0", tone && toneClass[tone])}>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
       <div className="hud-num mt-0.5 truncate text-xl font-bold text-foreground">{value}</div>
       {hint && <p className="truncate text-[10px] text-muted-foreground">{hint}</p>}
     </div>

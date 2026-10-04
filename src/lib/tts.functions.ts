@@ -141,13 +141,12 @@ const ALLOWED_TTS_MODELS = new Set<TtsModel>([
 
 /** Models are server-configurable; never accept an arbitrary model ID. */
 function narrationModels(profile: NarrationProfile): TtsModel[] {
-  const configured = (
-    process.env[TTS_MODEL_ENV_BY_PROFILE[profile]]?.trim() ||
-    process.env["ELEVENLABS_TTS_MODEL"]?.trim()
-  ) as TtsModel | undefined;
-  const preferred = configured && ALLOWED_TTS_MODELS.has(configured)
-    ? configured
-    : DEFAULT_TTS_MODEL_BY_PROFILE[profile];
+  const configured = (process.env[TTS_MODEL_ENV_BY_PROFILE[profile]]?.trim() ||
+    process.env["ELEVENLABS_TTS_MODEL"]?.trim()) as TtsModel | undefined;
+  const preferred =
+    configured && ALLOWED_TTS_MODELS.has(configured)
+      ? configured
+      : DEFAULT_TTS_MODEL_BY_PROFILE[profile];
   const fallbacks: Record<NarrationProfile, TtsModel[]> = {
     match: ["eleven_v4", "eleven_flash_v2_5", "eleven_multilingual_v2"],
     scene: ["eleven_v4_turbo", "eleven_multilingual_v2", "eleven_flash_v2_5"],

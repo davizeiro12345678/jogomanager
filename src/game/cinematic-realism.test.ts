@@ -9,8 +9,14 @@ import { soleHeightFor } from "./ground-contact";
 import type { CinematicCue } from "./cinematic-cue";
 
 const cue: CinematicCue = {
-  id: "delivery", speaker: "manager", gesture: "explain", mood: "neutral",
-  tension: 0.4, warmth: 0.8, duration: 5, decision: false,
+  id: "delivery",
+  speaker: "manager",
+  gesture: "explain",
+  mood: "neutral",
+  tension: 0.4,
+  warmth: 0.8,
+  duration: 5,
+  decision: false,
 };
 
 describe("cinematic physical performance", () => {
@@ -35,8 +41,27 @@ describe("cinematic physical performance", () => {
     const speaking = cinematicActorPose(1, 21, "stand", true, p, undefined, undefined, cue, 1);
     expect(Math.abs(speaking.hipYaw)).toBeGreaterThan(0.008);
     for (let frame = 0; frame <= 180; frame++) {
-      const pose = cinematicActorPose(frame / 30, 21, "stand", true, p, undefined, undefined, cue, frame / 30);
-      const input = { P: p, pose, hipShiftX: 0, leanX: 0, leanZ: 0, airborne: 0, previousRootY: 0, dt: 0 };
+      const pose = cinematicActorPose(
+        frame / 30,
+        21,
+        "stand",
+        true,
+        p,
+        undefined,
+        undefined,
+        cue,
+        frame / 30,
+      );
+      const input = {
+        P: p,
+        pose,
+        hipShiftX: 0,
+        leanX: 0,
+        leanZ: 0,
+        airborne: 0,
+        previousRootY: 0,
+        dt: 0,
+      };
       const heights = [soleHeightFor(input, true).y, soleHeightFor(input, false).y];
       expect(Math.min(...heights)).toBeGreaterThanOrEqual(-0.00001);
       expect(Math.min(...heights)).toBeLessThan(0.003);
@@ -56,7 +81,10 @@ describe("cinematic physical performance", () => {
       for (const speaker of ["manager", "president"] as const) {
         const shot = cinematicShotFor("office", speaker, "close", aspect);
         const actor = cinematicStageFocus("office", speaker)!;
-        const partner = cinematicStageFocus("office", speaker === "manager" ? "president" : "manager")!;
+        const partner = cinematicStageFocus(
+          "office",
+          speaker === "manager" ? "president" : "manager",
+        )!;
         const camera = new THREE.PerspectiveCamera(shot.fov, aspect, 0.1, 100);
         camera.position.fromArray(shot.position);
         camera.lookAt(new THREE.Vector3(...shot.target));
