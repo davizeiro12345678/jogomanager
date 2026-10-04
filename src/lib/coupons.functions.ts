@@ -18,7 +18,7 @@ const REASONS: Record<string, string> = {
 /** Resgate atômico no banco: uma vez por conta, recompensa creditada na carteira. */
 export const redeemCoupon = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { code: string }) =>
+  .validator((data: { code: string }) =>
     z
       .object({
         code: z
