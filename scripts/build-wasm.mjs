@@ -3,7 +3,8 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 
 const root = path.resolve(import.meta.dirname, "..");
-const cache = path.join(root, "wasm/crowd-visibility/target/wasm-pack");
+const cache =
+  process.env["PFM_WASM_PACK_CACHE"] || path.join(root, "wasm/crowd-visibility/target/wasm-pack");
 await mkdir(cache, { recursive: true });
 const result = spawnSync(
   "wasm-pack",

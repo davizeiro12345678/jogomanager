@@ -117,7 +117,10 @@ jobs:
       - run: cargo install wasm-pack --version 0.15.0 --locked
       - name: Preserve shipped WASM for validation
         run: cp src/game/wasm/pkg/crowd_visibility_wasm_bg.wasm "$RUNNER_TEMP/crowd_visibility_wasm_bg.shipped.wasm"
-      - run: npm run wasm:build
+      - name: Build WASM with an isolated tool cache
+        run: npm run wasm:build
+        env:
+          PFM_WASM_PACK_CACHE: ${{ runner.temp }}/wasm-pack-cache
       - name: Verify generated bindings
         run: |
           git diff --exit-code -- \
