@@ -4,8 +4,7 @@ import { ArticleShell, Section, type GuideFaq, type GuideTocItem } from "@/compo
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/taticas-e-formacoes";
-const TITLE =
-  "Táticas e formações de futebol: 4-3-3, 4-4-2, 3-5-2 e 5-3-2 | Pro Football Manager 3D";
+const TITLE = "Táticas e formações de futebol | Pro Football Manager 3D";
 const DESC =
   "Qual formação usar em cada jogo: pontos fortes e fracos do 4-3-3, 4-4-2, 3-5-2 e 5-3-2, altura da linha defensiva, pressão, ritmo e como virar um jogo no intervalo.";
 

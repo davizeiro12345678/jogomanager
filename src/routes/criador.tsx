@@ -5,8 +5,7 @@ import { CHANGELOG, CREATOR } from "@/content/changelog";
 import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/criador";
-const TITLE =
-  "Sobre o criador e novidades do jogo | Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE = "Criador e novidades do jogo | Pro Football Manager 3D";
 const DESC =
   "Conheça quem criou o Pro Football Manager 3D e acompanhe as novidades e atualizações mais recentes do jogo de manager de futebol online.";
 

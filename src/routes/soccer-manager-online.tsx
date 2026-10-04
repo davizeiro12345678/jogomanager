@@ -4,8 +4,7 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/soccer-manager-online";
-const TITLE =
-  "Soccer manager online: jogue no navegador em 3D | Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE = "Soccer manager online grátis | Pro Football Manager 3D";
 const DESC =
   "Soccer manager online em 3D: manage real clubs, set tactics and watch every match live in 3D. Free to play, no download needed.";
 
@@ -89,6 +88,13 @@ function Page() {
           use o modo mais leve para manter a partida fluida.
         </p>
 
+        <h2 className="mt-10 font-display text-2xl">Comece com uma partida rápida</h2>
+        <p className="mt-3 text-muted-foreground">
+          Antes de iniciar uma carreira, experimente uma partida rápida para conhecer as câmeras e
+          os controles. Escolha dois clubes e observe como a formação distribui os jogadores no
+          campo. Depois, crie seu treinador para acompanhar calendário, evolução do elenco e
+          decisões da diretoria ao longo das temporadas.
+        </p>
         <PublicLinks exclude={PATH} />
       </article>
     </div>

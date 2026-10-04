@@ -4,8 +4,7 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/dicas-de-gestao";
-const TITLE =
-  "Dicas de gestão para soccer manager: 12 táticas que funcionam · Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE = "Dicas de gestão do clube | Pro Football Manager 3D";
 const DESC =
   "Dicas práticas de gestão para vencer no manager de futebol: elenco, moral, condição física, finanças do clube e leitura de jogo.";
 

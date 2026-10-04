@@ -4,8 +4,7 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/regras";
-const TITLE =
-  "Regras do futebol explicadas: cartões, impedimento e faltas | Pro Football Manager 3D";
+const TITLE = "Regras do futebol explicadas | Pro Football Manager 3D";
 const DESC =
   "As regras do futebol em linguagem simples — tempo de jogo, impedimento, faltas, cartões, pênaltis, substituições e VAR — e como cada uma delas é aplicada dentro das partidas em 3D do jogo.";
 

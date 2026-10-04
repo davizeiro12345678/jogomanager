@@ -19,20 +19,20 @@ export const Route = createFileRoute("/compras")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Minhas compras · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { title: "Minhas compras · Pro Football Manager 3D" },
       {
         name: "description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Consulte o histórico das suas compras, pagamentos e itens adquiridos para acompanhar a entrega na sua conta.",
       },
       {
         property: "og:title",
-        content: "Minhas compras · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+        content: "Minhas compras · Pro Football Manager 3D",
       },
       {
         property: "og:description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Consulte o histórico das suas compras, pagamentos e itens adquiridos para acompanhar a entrega na sua conta.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

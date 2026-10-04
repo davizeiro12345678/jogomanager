@@ -21,8 +21,8 @@ const SOURCES = [
     label: "IFAB — Regras do Jogo",
   },
   {
-    href: "https://www.cbf.com.br/futebol-brasileiro/competicoes",
-    label: "CBF — competições brasileiras",
+    href: "https://www.cbf.com.br/futebol-brasileiro/tabelas/campeonato-brasileiro/serie-a",
+    label: "CBF — tabela do Brasileirão",
   },
   {
     href: "https://www.thesportsdb.com/",

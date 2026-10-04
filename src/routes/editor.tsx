@@ -73,7 +73,7 @@ export const Route = createFileRoute("/editor")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Editor e customização · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { title: "Editor e customização · Pro Football Manager 3D" },
       {
         name: "description",
         content:
@@ -81,7 +81,7 @@ export const Route = createFileRoute("/editor")({
       },
       {
         property: "og:title",
-        content: "Editor e customização · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+        content: "Editor e customização · Pro Football Manager 3D",
       },
       {
         property: "og:description",

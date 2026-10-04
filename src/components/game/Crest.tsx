@@ -138,6 +138,34 @@ export function Crest({
     );
   }
 
+  if (!full) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 64 64"
+        role="img"
+        aria-label={`Escudo do ${club.name}`}
+        className="shrink-0"
+      >
+        <path d={path} fill={club.primary} stroke={club.secondary} strokeWidth="3" />
+        <text
+          x="32"
+          y="38"
+          textAnchor="middle"
+          fontSize="18"
+          fontWeight="800"
+          fill={ink}
+          stroke={inkStroke}
+          strokeWidth="1.5"
+          paintOrder="stroke"
+        >
+          {club.short}
+        </text>
+      </svg>
+    );
+  }
+
   return (
     <svg
       width={size}

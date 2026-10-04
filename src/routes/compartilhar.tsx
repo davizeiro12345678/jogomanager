@@ -3,7 +3,7 @@ import { Check, Copy, Share2 } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { canonical, seoMeta } from "@/lib/seo";
+import { canonical, noindexMeta, seoMeta } from "@/lib/seo";
 import { COPY_FIRST_DESTINATIONS, SHARE_MESSAGE, SHARE_URL, shareDestinations } from "@/lib/share";
 
 const PATH = "/compartilhar";
@@ -12,11 +12,14 @@ const DESCRIPTION =
 
 export const Route = createFileRoute("/compartilhar")({
   head: () => ({
-    meta: seoMeta({
-      title: "Compartilhar Pro Football Manager 3D",
-      description: DESCRIPTION,
-      path: PATH,
-    }),
+    meta: [
+      ...seoMeta({
+        title: "Compartilhar Pro Football Manager 3D",
+        description: DESCRIPTION,
+        path: PATH,
+      }),
+      ...noindexMeta,
+    ],
     links: canonical(PATH),
   }),
   component: SharePage,
@@ -55,7 +58,7 @@ function SharePage() {
         <section className="surface-card mt-8 rounded-xl border border-border/60 p-5">
           <h2 className="font-display text-xl uppercase">Mensagem pronta</h2>
           <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-            {SHARE_MESSAGE}\n\n{SHARE_URL}
+            {`${SHARE_MESSAGE}\n\n${SHARE_URL}`}
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Button onClick={nativeShare}>

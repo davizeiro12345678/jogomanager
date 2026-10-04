@@ -5,8 +5,7 @@ import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 import { CommunityInvite } from "@/components/CommunityInvite";
 
 const PATH = "/perguntas-frequentes";
-const TITLE =
-  "Perguntas frequentes sobre o jogo | Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE = "Perguntas frequentes | Pro Football Manager 3D";
 const DESC =
   "Perguntas frequentes sobre o Pro Football Manager 3D: é grátis? Precisa instalar? Funciona no celular? Todas as respostas.";
 

@@ -33,20 +33,20 @@ export const Route = createFileRoute("/carreira")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Carreira de treinador · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { title: "Carreira de treinador · Pro Football Manager 3D" },
       {
         name: "description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Consulte a trajetória do treinador, suas propostas e os próximos passos para continuar a carreira em outro clube.",
       },
       {
         property: "og:title",
-        content: "Carreira de treinador · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+        content: "Carreira de treinador · Pro Football Manager 3D",
       },
       {
         property: "og:description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Consulte a trajetória do treinador, suas propostas e os próximos passos para continuar a carreira em outro clube.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

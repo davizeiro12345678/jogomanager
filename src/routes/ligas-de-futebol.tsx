@@ -3,24 +3,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Flag } from "@/components/game/Flag";
 import { LEAGUES } from "@/game/data/leagues";
 import { PublicLinks } from "@/components/PublicLinks";
-import { breadcrumbLd, canonical, itemListLd, seoMeta } from "@/lib/seo";
+import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/ligas-de-futebol";
-const TITLE =
-  "Ligas de futebol disponíveis no jogo de manager | Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE = "Ligas e clubes disponíveis | Pro Football Manager 3D";
 const DESC =
   "Mais de 30 ligas de futebol jogáveis: Brasileirão, Premier League, La Liga e mais. Escolha seu clube e comece a carreira de técnico.";
 
 export const Route = createFileRoute("/ligas-de-futebol")({
-  loader: async () => {
-    const { LEAGUES } = await import("@/game/data/leagues");
-    return LEAGUES.map((league) => league.name);
-  },
-  head: ({ loaderData }) => ({
+  head: () => ({
     meta: seoMeta({ title: TITLE, description: DESC, path: PATH }),
     links: canonical(PATH),
     scripts: [
-      itemListLd("Ligas jogáveis", loaderData ?? []),
       breadcrumbLd([
         { name: "Início", path: "/" },
         { name: "Ligas de futebol", path: PATH },

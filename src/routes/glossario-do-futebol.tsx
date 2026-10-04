@@ -4,8 +4,7 @@ import { ArticleShell } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/glossario-do-futebol";
-const TITLE =
-  "Glossário do futebol: 40 termos de tática e gestão explicados · Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE = "Glossário de tática e gestão | Pro Football Manager 3D";
 const DESC =
   "Glossário do futebol: entenda os termos táticos e de gestão usados no jogo, de 4-3-3 e pressão alta a xG e passe em profundidade.";
 
