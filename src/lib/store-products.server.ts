@@ -72,6 +72,26 @@ function nonNegativeInteger(value: unknown): number | null {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
 }
 
+/** Stripe's subtotal is the listed price before coupon discounts and taxes. */
+export function isValidCheckoutSubtotal(
+  subtotalCents: unknown,
+  listedPriceCents: unknown,
+): boolean {
+  return (
+    typeof subtotalCents === "number" &&
+    Number.isSafeInteger(subtotalCents) &&
+    subtotalCents >= 0 &&
+    typeof listedPriceCents === "number" &&
+    Number.isSafeInteger(listedPriceCents) &&
+    listedPriceCents >= 0 &&
+    subtotalCents === listedPriceCents
+  );
+}
+
+export function isValidPaidAmount(amountCents: unknown): amountCents is number {
+  return typeof amountCents === "number" && Number.isSafeInteger(amountCents) && amountCents >= 0;
+}
+
 /** Public function so the DB-backed contents contract can be unit tested. */
 export function parseStoreProductContents(value: unknown): StoreProductContents | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;

@@ -16,6 +16,9 @@ import { markGuestCheckoutFailed, markGuestCheckoutPaid } from "@/lib/guest-chec
 type StripeSessionEvent = {
   id: string;
   payment_status?: string | null;
+  amount_subtotal?: number | null;
+  amount_total?: number | null;
+  currency?: string | null;
   metadata?: Record<string, string> | null;
 };
 
@@ -41,7 +44,13 @@ async function handleGuestCheckoutSession(
   const intentId = guestCheckoutIntentId(session);
   if (!intentId) return false;
   if (session.payment_status === "paid" || session.payment_status === "no_payment_required") {
-    await markGuestCheckoutPaid(intentId, session.id, env);
+    await markGuestCheckoutPaid(
+      intentId,
+      session.id,
+      env,
+      session.amount_subtotal,
+      session.currency,
+    );
   }
   return true;
 }
@@ -72,18 +81,22 @@ async function resolvePurchase(sessionId: string, env: StripeEnv) {
   const productKey =
     full.metadata?.["productKey"] ||
     (stripeProductKey === "season_pass_monthly" ? "season_pass" : stripeProductKey);
-  const amount = lineItem?.amount_total ?? full.amount_total ?? 0;
-  return { productKey, amount, session: full };
+  const amount = lineItem?.amount_total ?? full.amount_total;
+  const subtotal = lineItem?.amount_subtotal ?? full.amount_subtotal;
+  return { productKey, amount, subtotal, session: full };
 }
 
 async function fulfillSession(sessionId: string, userId: string, env: StripeEnv) {
-  const { productKey, amount } = await resolvePurchase(sessionId, env);
+  const { productKey, amount, subtotal } = await resolvePurchase(sessionId, env);
   if (!productKey) {
     await markPurchaseFailed(sessionId, "Item da compra não identificado");
     throw new Error(`No product key on session ${sessionId}`);
   }
+  if (typeof amount !== "number" || typeof subtotal !== "number") {
+    throw new Error(`Missing verified checkout totals for ${sessionId}`);
+  }
   await recordPendingPurchase(userId, productKey, sessionId, amount);
-  await fulfillOneTimePurchase(userId, productKey, sessionId, amount);
+  await fulfillOneTimePurchase(userId, productKey, sessionId, amount, subtotal);
 }
 
 async function handleWebhook(req: Request, env: StripeEnv) {
@@ -124,8 +137,10 @@ async function handleWebhook(req: Request, env: StripeEnv) {
       if (session.payment_status === "unpaid") {
         // Boleto/PIX com confirmação lenta: registra pendente e espera.
         const { productKey, amount } = await resolvePurchase(session.id, env);
-        if (productKey) {
+        if (productKey && typeof amount === "number") {
           await recordPendingPurchase(userId, productKey, session.id, amount);
+        } else {
+          throw new Error(`Missing verified checkout total for ${session.id}`);
         }
         return;
       }

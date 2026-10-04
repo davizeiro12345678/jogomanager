@@ -19,6 +19,8 @@ import {
   getServerStoreProduct,
   getStoreServiceSupabase,
   parseStoreProductContents,
+  isValidCheckoutSubtotal,
+  isValidPaidAmount,
   resolveValidatedStripePrice,
   checkoutDiscountParams,
   type ServerStoreProduct,
@@ -137,7 +139,22 @@ async function readIntent(intentId: string): Promise<GuestIntentRow | null> {
   return (data as GuestIntentRow | null) ?? null;
 }
 
-async function markIntentPaid(intentId: string, sessionId: string): Promise<void> {
+async function markIntentPaid(
+  intentId: string,
+  sessionId: string,
+  subtotalCents: unknown,
+  currency: unknown,
+): Promise<void> {
+  const intent = await readIntent(intentId);
+  if (
+    !intent ||
+    intent.stripe_session_id !== sessionId ||
+    !isValidCheckoutSubtotal(subtotalCents, intent.amount_cents) ||
+    typeof currency !== "string" ||
+    currency.toUpperCase() !== intent.currency
+  ) {
+    throw new Error("O subtotal ou a moeda da sessão não confere com a compra visitante.");
+  }
   const { error } = await getServiceSupabase()
     .from("guest_checkout_intents")
     .update({ state: "paid", stripe_session_id: sessionId, error: null })
@@ -183,7 +200,8 @@ async function inspectExistingGuestCheckoutSession(
     throw new Error("A sessão existente não corresponde à compra visitante.");
   }
   const disposition = classifyGuestCheckoutSession(session.status, session.payment_status);
-  if (disposition === "paid") await markIntentPaid(intent.id, session.id);
+  if (disposition === "paid")
+    await markIntentPaid(intent.id, session.id, session.amount_subtotal, session.currency);
   return disposition;
 }
 
@@ -297,7 +315,7 @@ async function openStripeSession(
     const current = await stripe.checkout.sessions.retrieve(intent.stripe_session_id);
     const disposition = classifyGuestCheckoutSession(current.status, current.payment_status);
     if (disposition === "paid") {
-      await markIntentPaid(intent.id, current.id);
+      await markIntentPaid(intent.id, current.id, current.amount_subtotal, current.currency);
       return { error: "Esta compra já foi paga. Use o link de e-mail para receber o item." };
     }
     if (disposition === "open" && current.client_secret) {
@@ -417,6 +435,8 @@ export async function markGuestCheckoutPaid(
   intentId: string,
   sessionId: string,
   environment: StripeEnv,
+  subtotalCents: unknown,
+  currency: unknown,
 ): Promise<void> {
   if (!isStripeEnvironment(environment)) throw new Error("Ambiente de pagamento inválido.");
   assertIntentId(intentId);
@@ -425,7 +445,7 @@ export async function markGuestCheckoutPaid(
   if (!intent || intent.environment !== environment || intent.stripe_session_id !== sessionId) {
     throw new Error("A sessão não corresponde à compra visitante.");
   }
-  await markIntentPaid(intentId, sessionId);
+  await markIntentPaid(intentId, sessionId, subtotalCents, currency);
 }
 
 /** Called by Stripe after an asynchronous guest payment definitively fails. */
@@ -479,7 +499,7 @@ export const getGuestCheckoutStatus = createServerFn({ method: "POST" })
       }
       const disposition = classifyGuestCheckoutSession(session.status, session.payment_status);
       if (disposition === "paid") {
-        await markIntentPaid(intent.id, session.id);
+        await markIntentPaid(intent.id, session.id, session.amount_subtotal, session.currency);
         return { status: "paid", intentId: intent.id };
       }
       if (disposition === "settling") {
@@ -561,14 +581,16 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
       }
 
       const lineItem = session.line_items?.data?.[0];
-      const amount = lineItem?.amount_total ?? session.amount_total ?? 0;
+      const amount = lineItem?.amount_total ?? session.amount_total;
+      const subtotal = lineItem?.amount_subtotal ?? session.amount_subtotal;
       const paymentCurrency = lineItem?.price?.currency ?? session.currency;
       const snapshotContents = parseStoreProductContents(intent.contents_snapshot);
       if (
         !intent.stripe_price_id ||
         !snapshotContents ||
         lineItem?.price?.id !== intent.stripe_price_id ||
-        amount !== intent.amount_cents ||
+        !isValidCheckoutSubtotal(subtotal, intent.amount_cents) ||
+        !isValidPaidAmount(amount) ||
         paymentCurrency?.toUpperCase() !== intent.currency
       ) {
         return {
@@ -588,10 +610,14 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
 
       if (session.mode === "payment") {
         await recordPendingPurchase(context.userId, intent.product_key, session.id, amount);
-        await fulfillOneTimePurchase(context.userId, intent.product_key, session.id, amount, {
-          priceCents: intent.amount_cents,
-          contents: snapshotContents,
-        });
+        await fulfillOneTimePurchase(
+          context.userId,
+          intent.product_key,
+          session.id,
+          amount,
+          subtotal as number,
+          { priceCents: intent.amount_cents, contents: snapshotContents },
+        );
       } else {
         const subscriptionId =
           typeof session.subscription === "string"

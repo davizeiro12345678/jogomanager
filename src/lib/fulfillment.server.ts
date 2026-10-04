@@ -3,6 +3,8 @@ import type Stripe from "stripe";
 import {
   getServerStoreProduct,
   getStoreServiceSupabase,
+  isValidCheckoutSubtotal,
+  isValidPaidAmount,
   parseStoreProductContents,
   type StoreProductContents,
 } from "@/lib/store-products.server";
@@ -73,6 +75,7 @@ export async function fulfillOneTimePurchase(
   productKey: string,
   reference: string,
   amountCents: number,
+  checkoutSubtotalCents: number,
   snapshot?: FulfillmentSnapshot,
 ): Promise<boolean> {
   const supabase = getStoreServiceSupabase();
@@ -81,7 +84,10 @@ export async function fulfillOneTimePurchase(
     : await getServerStoreProduct(supabase, productKey, { activeOnly: false });
   const priceCents = snapshot?.priceCents ?? product!.priceCents;
   const contents = parseStoreProductContents(snapshot?.contents ?? product!.contents);
-  if (!Number.isInteger(priceCents) || priceCents < 0 || amountCents !== priceCents) {
+  if (
+    !isValidCheckoutSubtotal(checkoutSubtotalCents, priceCents) ||
+    !isValidPaidAmount(amountCents)
+  ) {
     await markPurchaseFailed(reference, "O valor pago não confere com o catálogo oficial.");
     throw new Error(`Unexpected checkout amount for ${productKey}`);
   }
