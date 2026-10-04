@@ -13,31 +13,11 @@ import { useOnline } from "@/hooks/useOnline";
 import { useSignedIn } from "@/hooks/useCareer";
 import { supabase } from "@/integrations/supabase/client";
 import type { MultiplayerRoomRecord as Room } from "@/lib/multiplayer.functions";
+import { gamePageHead } from "@/lib/game-page-metadata";
 
 export const Route = createFileRoute("/multiplayer")({
   ssr: false,
-  head: () => ({
-    meta: [
-      { title: "Multiplayer online 1x1 · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
-      {
-        name: "description",
-        content:
-          "Crie uma sala, convide um amigo e dispute partidas online 1x1 com táticas e transmissão em 3D no navegador.",
-      },
-      {
-        property: "og:title",
-        content: "Multiplayer online 1x1 · Pro Football Manager 3D: Jogo de Futebol Manager Online",
-      },
-      {
-        property: "og:description",
-        content:
-          "Crie uma sala, convide um amigo e dispute partidas online 1x1 com táticas e transmissão em 3D no navegador.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-    links: [{ rel: "canonical", href: "https://jogomanager.com/multiplayer" }],
-  }),
+  head: () => gamePageHead("/multiplayer"),
   component: MultiplayerPage,
 });
 

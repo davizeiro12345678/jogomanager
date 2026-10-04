@@ -24,7 +24,7 @@ export const Route = createFileRoute("/coletiva")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Coletiva de imprensa · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { title: "Coletiva de imprensa · Pro Football Manager 3D" },
       {
         name: "description",
         content:

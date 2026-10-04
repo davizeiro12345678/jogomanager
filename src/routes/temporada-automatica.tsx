@@ -18,20 +18,20 @@ export const Route = createFileRoute("/temporada-automatica")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Temporada automática · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { title: "Temporada automática · Pro Football Manager 3D" },
       {
         name: "description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Configure a simulação automática e acompanhe o avanço das rodadas e o histórico de partidas da carreira.",
       },
       {
         property: "og:title",
-        content: "Temporada automática · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+        content: "Temporada automática · Pro Football Manager 3D",
       },
       {
         property: "og:description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Configure a simulação automática e acompanhe o avanço das rodadas e o histórico de partidas da carreira.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -4,7 +4,7 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/como-ser-tecnico-de-futebol";
-const TITLE = "Carreira de técnico de futebol: como começar do zero | Pro Football Manager 3D";
+const TITLE = "Como ser técnico de futebol | Pro Football Manager 3D";
 const DESC =
   "Carreira de treinador passo a passo: escolher o clube certo, montar a primeira escalação, definir a tática de estreia, controlar salários e sobreviver às dez primeiras rodadas. Guia gratuito, jogável direto no navegador.";
 

@@ -4,8 +4,7 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guias";
-const TITLE =
-  "Guias de manager de futebol: como começar bem | Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE = "Guias para começar a carreira | Pro Football Manager 3D";
 const DESC =
   "Guias completos do Pro Football Manager 3D: táticas, finanças, scouting, mercado e tudo para dominar sua carreira de técnico.";
 

@@ -95,12 +95,19 @@ export function articleLd(opts: { headline: string; description: string; path: s
     "@context": "https://schema.org",
     "@type": "Article",
     headline: opts.headline,
+    url: pageUrl(opts.path),
     description: opts.description,
     inLanguage: "pt-BR",
     image: OG_IMAGE,
-    mainEntityOfPage: pageUrl(opts.path),
-    author: { "@type": "Organization", name: SITE_NAME },
-    publisher: { "@type": "Organization", name: SITE_NAME },
+    mainEntityOfPage: { "@type": "WebPage", "@id": pageUrl(opts.path) },
+    author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    publisher: {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: { "@type": "ImageObject", url: `${SITE_URL}/icon-512.png`, width: 512, height: 512 },
+    },
   });
 }
 
@@ -130,9 +137,11 @@ export function websiteLd() {
 }
 
 export function gameLd() {
+  // VideoGame also inherits SoftwareApplication, whose Google rich result
+  // requires a real rating or review. Describe the game without claiming it.
   return structuredData({
     "@context": "https://schema.org",
-    "@type": "VideoGame",
+    "@type": "Game",
     "@id": `${SITE_URL}/#game`,
     name: SITE_NAME,
     description: SITE_DESCRIPTION,
@@ -140,18 +149,7 @@ export function gameLd() {
     image: OG_IMAGE,
     inLanguage: "pt-BR",
     genre: ["Sports", "Simulation", "Management"],
-    gamePlatform: ["Web Browser"],
-    applicationCategory: "GameApplication",
-    operatingSystem: "Any",
-    browserRequirements: "JavaScript e WebGL2 para partidas 3D",
     keywords: SITE_KEYWORDS.join(", "),
-    featureList: [
-      "Carreira de treinador",
-      "Gestão de elenco e transferências",
-      "Formações e táticas",
-      "Partidas de futebol em 3D",
-      "Ajustes de qualidade gráfica",
-    ],
     isAccessibleForFree: true,
     publisher: { "@id": `${SITE_URL}/#organization` },
     isPartOf: { "@id": `${SITE_URL}/#website` },
@@ -161,15 +159,5 @@ export function gameLd() {
       priceCurrency: "BRL",
       availability: "https://schema.org/InStock",
     },
-  });
-}
-
-export function itemListLd(name: string, items: string[]) {
-  return structuredData({
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name,
-    numberOfItems: items.length,
-    itemListElement: items.map((n, i) => ({ "@type": "ListItem", position: i + 1, name: n })),
   });
 }

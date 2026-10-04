@@ -5,7 +5,7 @@ import { LEAGUES } from "@/game/data/leagues";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/jogo-de-manager-de-futebol";
-const TITLE = "Jogo de manager de futebol online grátis | Pro Football Manager 3D";
+const TITLE = "Manager de futebol online grátis | Pro Football Manager 3D";
 const DESC =
   "Jogo de manager de futebol grátis e online: monte o elenco, defina a tática e assista às partidas em 3D no navegador, sem instalar nada.";
 

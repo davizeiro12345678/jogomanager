@@ -4,8 +4,7 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/comparativo-jogos-manager";
-const TITLE =
-  "Comparativo de jogos de manager de futebol grátis no navegador · Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE = "Comparativo de jogos de manager | Pro Football Manager 3D";
 const DESC =
   "Comparativo honesto entre jogos de manager de futebol: o que o Pro Football Manager 3D faz diferente, com partidas em 3D, clubes reais e jogo grátis no navegador.";
 
@@ -110,6 +109,15 @@ function ComparePage() {
         <p>
           Se você quer abrir e jogar na hora, ver a partida em 3D com narração, gerenciar uma
           carreira completa e continuar jogando mesmo sem internet — no celular ou no computador.
+        </p>
+      </Section>
+      <Section title="Experimente antes de escolher">
+        <p>
+          Compare os controles, a clareza da interface e o tempo que você pretende dedicar a cada
+          sessão. Uma partida rápida ajuda a conhecer a apresentação em 3D; uma carreira permite
+          avaliar o planejamento de elenco, o calendário e as decisões entre jogos. No celular,
+          confira também os ajustes de qualidade gráfica para encontrar uma configuração confortável
+          para seu aparelho.
         </p>
       </Section>
     </ArticleShell>

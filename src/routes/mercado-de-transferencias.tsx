@@ -4,8 +4,7 @@ import { ArticleShell, Section, type GuideFaq, type GuideTocItem } from "@/compo
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/mercado-de-transferencias";
-const TITLE =
-  "Mercado de transferências: como contratar bem | Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE = "Guia de transferências | Pro Football Manager 3D";
 const DESC =
   "Como contratar bem no mercado de transferências: orçamento, salários, contratos e o momento certo de comprar e vender jogadores.";
 

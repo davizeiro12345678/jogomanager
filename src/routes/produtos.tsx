@@ -26,8 +26,7 @@ const PackScene = lazy(() =>
 );
 
 const PATH = "/produtos";
-const TITLE =
-  "Pacotes e passe de temporada · Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE = "Pacotes e passe de temporada | Pro Football Manager 3D";
 const DESC =
   "Catálogo atual de itens para a carreira no Pro Football Manager 3D. Consulte os detalhes e compre com e-mail ou entre para sua carreira.";
 
@@ -290,6 +289,52 @@ function ProdutosPage() {
             </div>
           </section>
         ) : null}
+
+        <section
+          aria-labelledby="catalog-help-title"
+          className="mt-8 max-w-3xl space-y-3 text-sm leading-relaxed text-muted-foreground"
+        >
+          <h2 id="catalog-help-title" className="font-display text-xl text-foreground">
+            Como consultar e comprar um item
+          </h2>
+          <p>
+            Cada item disponível apresenta seu nome, sua descrição e o preço de catálogo. Leia os
+            detalhes para entender o que será entregue e escolha a opção adequada à sua carreira. A
+            lista pode mudar: ofertas, disponibilidade e valores são confirmados no checkout antes
+            de concluir o pagamento.
+          </p>
+          <p>
+            Se você já tem uma conta, entre antes da compra para vincular o pedido à sua carreira.
+            Também é possível iniciar uma compra como visitante com e-mail. Use um endereço ao qual
+            tenha acesso e guarde a confirmação recebida para acompanhar o pedido e vincular os
+            itens quando necessário.
+          </p>
+          <p>
+            Após o pagamento, aguarde a confirmação e consulte o resultado apresentado na tela.
+            Evite repetir uma compra enquanto o pedido estiver em confirmação. Se houver uma dúvida
+            sobre cobrança ou entrega, consulte o histórico em
+            <Link to="/compras" className="text-primary hover:underline">
+              {" "}
+              minhas compras
+            </Link>{" "}
+            ou veja as orientações de{" "}
+            <Link to="/contato" className="text-primary hover:underline">
+              contato e suporte
+            </Link>
+            .
+          </p>
+          <p>
+            As condições de uso e de pagamento estão nos{" "}
+            <Link to="/termos" className="text-primary hover:underline">
+              termos de uso
+            </Link>
+            . Confira também a{" "}
+            <Link to="/privacidade" className="text-primary hover:underline">
+              política de privacidade
+            </Link>{" "}
+            para saber como os dados da conta e da compra são tratados.
+          </p>
+        </section>
 
         <div id="checkout-area" className="mt-10">
           {isOpen ? (

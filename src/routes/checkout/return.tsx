@@ -15,20 +15,20 @@ export const Route = createFileRoute("/checkout/return")({
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, follow" },
-      { title: "Resultado do pagamento · Pro Football Manager 3D: Jogo de Futebol Manager Online" },
+      { title: "Resultado do pagamento · Pro Football Manager 3D" },
       {
         name: "description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Consulte a confirmação do pagamento e acompanhe a entrega dos itens comprados para sua carreira.",
       },
       {
         property: "og:title",
-        content: "Resultado do pagamento · Pro Football Manager 3D: Jogo de Futebol Manager Online",
+        content: "Resultado do pagamento · Pro Football Manager 3D",
       },
       {
         property: "og:description",
         content:
-          "Monte seu elenco, defina táticas e assista aos 90 minutos em 3D. Jogo de manager de futebol online e grátis com clubes reais de 30+ ligas.",
+          "Consulte a confirmação do pagamento e acompanhe a entrega dos itens comprados para sua carreira.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -34,6 +34,70 @@ const ROUTE_LABELS: Record<string, string> = {
 };
 
 const DESCRIPTIONS: Record<string, readonly [string, string]> = {
+  "/scouting": [
+    "Consulte relatórios dos olheiros e compare alvos para reforçar seu elenco.",
+    "Review scouting reports and compare transfer targets for your squad.",
+  ],
+  "/board": [
+    "Consulte as metas da diretoria e a confiança no treinador.",
+    "Review board objectives and confidence in your manager.",
+  ],
+  "/stats": [
+    "Compare o desempenho dos jogadores e as estatísticas da temporada.",
+    "Compare player performance and season statistics.",
+  ],
+  "/news": [
+    "Leia as notícias da rodada e acompanhe os acontecimentos do clube.",
+    "Read matchweek news and follow events at your club.",
+  ],
+  "/history": [
+    "Reveja temporadas, resultados e troféus da carreira do treinador.",
+    "Review seasons, results and trophies in your manager career.",
+  ],
+  "/carreira": [
+    "Consulte a trajetória do treinador e as propostas para continuar sua carreira.",
+    "Review your manager history and offers to continue your career.",
+  ],
+  "/temporada-automatica": [
+    "Configure a simulação automática e acompanhe o avanço das rodadas.",
+    "Configure automatic simulation and follow matchweek progress.",
+  ],
+  "/conquistas": [
+    "Acompanhe as conquistas do treinador e os objetivos da carreira.",
+    "Follow manager achievements and career objectives.",
+  ],
+  "/perfil": [
+    "Consulte o perfil, a experiência e a trajetória do seu treinador.",
+    "Review your manager profile, experience and career history.",
+  ],
+  "/assistente": [
+    "Peça sugestões ao assistente de IA para analisar elenco, contratações e táticas.",
+    "Ask the AI assistant for squad, transfer and tactical suggestions.",
+  ],
+  "/editor": [
+    "Personalize clubes, jogadores e competições no editor do jogo.",
+    "Customize clubs, players and competitions in the game editor.",
+  ],
+  "/chat": [
+    "Converse com outros treinadores no chat global da comunidade.",
+    "Talk to other managers in the global community chat.",
+  ],
+  "/loja": [
+    "Consulte os itens disponíveis para sua carreira e confira os detalhes de compra.",
+    "Review items available for your career and purchase details.",
+  ],
+  "/compras": [
+    "Consulte o histórico de compras e acompanhe a entrega dos seus itens.",
+    "Review purchase history and follow item delivery.",
+  ],
+  "/multiplayer": [
+    "Crie uma sala, convide um amigo e dispute partidas online 1x1 em 3D.",
+    "Create a room, invite a friend and play online 1v1 matches in 3D.",
+  ],
+  "/replays": [
+    "Reveja os lances salvos das partidas em 3D na sua galeria de replays.",
+    "Watch saved 3D match highlights in your replay gallery.",
+  ],
   "/dashboard": [
     "Organize sua próxima partida, acompanhe o elenco e veja as prioridades da sua carreira de treinador.",
     "Prepare your next match, follow your squad and review your manager career priorities.",

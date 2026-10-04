@@ -4,8 +4,7 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/melhores-formacoes";
-const TITLE =
-  "Melhores formações de futebol: quando usar 4-3-3, 4-4-2 e 3-5-2 · Pro Football Manager 3D: Jogo de Futebol Manager Online";
+const TITLE = "Melhores formações de futebol | Pro Football Manager 3D";
 const DESC =
   "As melhores formações do futebol explicadas: 4-3-3, 4-4-2, 3-5-2 e quando usar cada uma para vencer no jogo de manager.";
 
