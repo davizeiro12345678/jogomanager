@@ -4,9 +4,12 @@ import { BallResponse } from "./ball-response";
 
 describe("tied goal cloth", () => {
   it("responds more strongly to powerful shots and dissipates the impact", () => {
-    const slow = new NetDynamics(28, 16), fast = new NetDynamics(28, 16);
-    slow.impact(0.5, 0.5, 5); fast.impact(0.5, 0.5, 30);
-    slow.step(1 / 30, 0, 0); fast.step(1 / 30, 0, 0);
+    const slow = new NetDynamics(28, 16),
+      fast = new NetDynamics(28, 16);
+    slow.impact(0.5, 0.5, 5);
+    fast.impact(0.5, 0.5, 30);
+    slow.step(1 / 30, 0, 0);
+    fast.step(1 / 30, 0, 0);
     expect(Math.max(...fast.displacement)).toBeGreaterThan(Math.max(...slow.displacement) * 3);
     const peak = Math.max(...fast.displacement);
     for (let i = 0; i < 600; i++) fast.step(1 / 120, i / 120, 0);
@@ -29,8 +32,10 @@ describe("tied goal cloth", () => {
     }
   });
   it("has the same impact propagation at 30 Hz and 120 Hz", () => {
-    const a = new NetDynamics(18, 10), b = new NetDynamics(18, 10);
-    a.impact(0.6, 0.4, 24); b.impact(0.6, 0.4, 24);
+    const a = new NetDynamics(18, 10),
+      b = new NetDynamics(18, 10);
+    a.impact(0.6, 0.4, 24);
+    b.impact(0.6, 0.4, 24);
     for (let i = 0; i < 30; i++) a.step(1 / 30, 0, 0);
     for (let i = 0; i < 120; i++) b.step(1 / 120, 0, 0);
     expect(a.displacement).toEqual(b.displacement);
@@ -55,7 +60,8 @@ describe("football shell response", () => {
     expect(ball.step(1 / 30)).toEqual({ axial: 1, radial: 1 });
   });
   it("briefly compresses with volume preserved and returns to rest", () => {
-    const ball = new BallResponse(); ball.impact(30);
+    const ball = new BallResponse();
+    ball.impact(30);
     const compressed = ball.step(1 / 60);
     expect(compressed.axial).toBeLessThan(1);
     expect(compressed.axial).toBeGreaterThanOrEqual(0.915);

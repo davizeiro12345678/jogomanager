@@ -29,7 +29,9 @@ function readStore(): Record<string, RealPlayer[]> {
   if (typeof localStorage === "undefined") return {};
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(KEY) ?? "{}");
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, RealPlayer[]> : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, RealPlayer[]>)
+      : {};
   } catch {
     return {};
   }

@@ -1,10 +1,10 @@
 import type { ComponentType } from "react";
 
 export interface TemplateEntry {
-  component: ComponentType<any>;
-  subject: string | ((data: Record<string, any>) => string);
+  component: ComponentType<Record<string, unknown>>;
+  subject: string | ((data: Record<string, unknown>) => string);
   displayName?: string;
-  previewData?: Record<string, any>;
+  previewData?: Record<string, unknown>;
   /** Fixed recipient — overrides caller-provided recipientEmail when set. */
   to?: string;
 }

@@ -8,6 +8,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { initializeAnimationCatalog as registerClips } from "./register-animations";
 import {
   ANIMATION_CATALOG,
+  type AnnotatedClip,
   selectClipFromContext,
   canTransition,
   calculateBlendWeight,
@@ -37,11 +38,11 @@ beforeAll(() => {
 describe("registerClips", () => {
   it("deve registrar todos os clipes no catálogo", () => {
     // Conta o número total de clipes registrados
-    let totalClips = 0;
-    for (const family of Object.keys(ANIMATION_CATALOG)) {
-      totalClips += Object.keys((ANIMATION_CATALOG as any)[family]).length;
-    }
-    
+    const totalClips = Object.values(ANIMATION_CATALOG).reduce(
+      (total, clips) => total + Object.keys(clips).length,
+      0,
+    );
+
     // Deve ter pelo menos 100 clipes registrados (base + extra + extra2)
     expect(totalClips).toBeGreaterThanOrEqual(140);
   });
@@ -58,61 +59,63 @@ describe("registerClips", () => {
       "recovery",
       "idle",
     ];
-    
+
     for (const family of expectedFamilies) {
       expect(ANIMATION_CATALOG[family as keyof typeof ANIMATION_CATALOG]).toBeDefined();
-      expect(Object.keys(ANIMATION_CATALOG[family as keyof typeof ANIMATION_CATALOG]).length).toBeGreaterThan(0);
+      expect(
+        Object.keys(ANIMATION_CATALOG[family as keyof typeof ANIMATION_CATALOG]).length,
+      ).toBeGreaterThan(0);
     }
   });
 
   it("deve registrar clipes de locomoção", () => {
     const locomotionClips = ANIMATION_CATALOG.locomotion;
     // "idle" pertence à família idle, não à locomoção.
-    expect(ANIMATION_CATALOG.idle['idle']).toBeDefined();
-    expect(locomotionClips['walk']).toBeDefined();
-    expect(locomotionClips['jog']).toBeDefined();
-    expect(locomotionClips['run']).toBeDefined();
-    expect(locomotionClips['sprint']).toBeDefined();
+    expect(ANIMATION_CATALOG.idle["idle"]).toBeDefined();
+    expect(locomotionClips["walk"]).toBeDefined();
+    expect(locomotionClips["jog"]).toBeDefined();
+    expect(locomotionClips["run"]).toBeDefined();
+    expect(locomotionClips["sprint"]).toBeDefined();
   });
 
   it("deve registrar clipes de controle de bola", () => {
     const ballControlClips = ANIMATION_CATALOG.ballControl;
-    expect(ballControlClips['dribbleLight']).toBeDefined();
-    expect(ballControlClips['dribbleFast']).toBeDefined();
-    expect(ballControlClips['feint']).toBeDefined();
-    expect(ballControlClips['elastico']).toBeDefined();
+    expect(ballControlClips["dribbleLight"]).toBeDefined();
+    expect(ballControlClips["dribbleFast"]).toBeDefined();
+    expect(ballControlClips["feint"]).toBeDefined();
+    expect(ballControlClips["elastico"]).toBeDefined();
   });
 
   it("deve registrar clipes de passes", () => {
     const passingClips = ANIMATION_CATALOG.passing;
-    expect(passingClips['passShort']).toBeDefined();
-    expect(passingClips['passLong']).toBeDefined();
-    expect(passingClips['cross']).toBeDefined();
+    expect(passingClips["passShort"]).toBeDefined();
+    expect(passingClips["passLong"]).toBeDefined();
+    expect(passingClips["cross"]).toBeDefined();
   });
 
   it("deve registrar clipes de finalização", () => {
     const shootingClips = ANIMATION_CATALOG.shooting;
-    expect(shootingClips['shotLow']).toBeDefined();
-    expect(shootingClips['shotPower']).toBeDefined();
-    expect(shootingClips['header']).toBeDefined();
-    expect(shootingClips['bicycle']).toBeDefined();
+    expect(shootingClips["shotLow"]).toBeDefined();
+    expect(shootingClips["shotPower"]).toBeDefined();
+    expect(shootingClips["header"]).toBeDefined();
+    expect(shootingClips["bicycle"]).toBeDefined();
   });
 
   it("deve registrar clipes de defesa", () => {
     const defenseClips = ANIMATION_CATALOG.defense;
-    expect(defenseClips['slideTackle']).toBeDefined();
-    expect(defenseClips['standTackle']).toBeDefined();
-    expect(defenseClips['block']).toBeDefined();
-    expect(defenseClips['intercept']).toBeDefined();
+    expect(defenseClips["slideTackle"]).toBeDefined();
+    expect(defenseClips["standTackle"]).toBeDefined();
+    expect(defenseClips["block"]).toBeDefined();
+    expect(defenseClips["intercept"]).toBeDefined();
   });
 
   it("deve registrar clipes de goleiro", () => {
     const goalkeeperClips = ANIMATION_CATALOG.goalkeeper;
-    expect(goalkeeperClips['gkStance']).toBeDefined();
-    expect(goalkeeperClips['gkSaveLow']).toBeDefined();
-    expect(goalkeeperClips['gkSaveHigh']).toBeDefined();
-    expect(goalkeeperClips['gkDiveLeft']).toBeDefined();
-    expect(goalkeeperClips['gkDiveRight']).toBeDefined();
+    expect(goalkeeperClips["gkStance"]).toBeDefined();
+    expect(goalkeeperClips["gkSaveLow"]).toBeDefined();
+    expect(goalkeeperClips["gkSaveHigh"]).toBeDefined();
+    expect(goalkeeperClips["gkDiveLeft"]).toBeDefined();
+    expect(goalkeeperClips["gkDiveRight"]).toBeDefined();
   });
 });
 
@@ -122,7 +125,7 @@ describe("registerClips", () => {
 
 describe("Clip Metadata", () => {
   it("deve ter metadados válidos para clipes de locomoção", () => {
-    const idleClip = ANIMATION_CATALOG.idle['idle']!;
+    const idleClip = ANIMATION_CATALOG.idle["idle"]!;
     expect(idleClip.metadata.family).toBe("idle");
     expect(idleClip.metadata.loop).toBe(true);
     expect(idleClip.metadata.priority).toBeGreaterThanOrEqual(0);
@@ -130,7 +133,7 @@ describe("Clip Metadata", () => {
   });
 
   it("deve ter metadados válidos para clipes de chute", () => {
-    const shotClip = ANIMATION_CATALOG.shooting['shotPower']!;
+    const shotClip = ANIMATION_CATALOG.shooting["shotPower"]!;
     expect(shotClip.metadata.family).toBe("shooting");
     expect(shotClip.metadata.loop).toBe(false);
     expect(shotClip.metadata.duration).toBeDefined();
@@ -141,24 +144,22 @@ describe("Clip Metadata", () => {
   });
 
   it("deve ter marcadores de contato para chutes", () => {
-    const shotClip = ANIMATION_CATALOG.shooting['shotLow']!;
-    const contactMarker = shotClip.metadata.markers!.find(
-      (m) => m.phase === "contact"
-    );
+    const shotClip = ANIMATION_CATALOG.shooting["shotLow"]!;
+    const contactMarker = shotClip.metadata.markers!.find((m) => m.phase === "contact");
     expect(contactMarker).toBeDefined();
     expect(contactMarker!.contactType).toBe("ball");
   });
 
   it("deve ter pé dominante definido para ações", () => {
-    const passClip = ANIMATION_CATALOG.passing['passLong']!;
+    const passClip = ANIMATION_CATALOG.passing["passLong"]!;
     expect(passClip.metadata.dominantFoot).toBe("right");
-    
-    const bicycleClip = ANIMATION_CATALOG.shooting['bicycle']!;
+
+    const bicycleClip = ANIMATION_CATALOG.shooting["bicycle"]!;
     expect(bicycleClip.metadata.dominantFoot).toBe("both");
   });
 
   it("deve ter duração definida para clipes não-loop", () => {
-    const tackleClip = ANIMATION_CATALOG.defense['slideTackle']!;
+    const tackleClip = ANIMATION_CATALOG.defense["slideTackle"]!;
     expect(tackleClip.metadata.loop).toBe(false);
     expect(tackleClip.metadata.duration).toBeDefined();
     expect(tackleClip.metadata.duration!).toBeGreaterThan(0);
@@ -313,9 +314,9 @@ describe("selectClipFromContext", () => {
 
 describe("canTransition", () => {
   it("deve permitir transição de idle para walk", () => {
-    const idleClip = ANIMATION_CATALOG.idle['idle']!;
-    const walkClip = ANIMATION_CATALOG.locomotion['walk']!;
-    
+    const idleClip = ANIMATION_CATALOG.idle["idle"]!;
+    const walkClip = ANIMATION_CATALOG.locomotion["walk"]!;
+
     const ctx = {
       action: null,
       speed: 1,
@@ -325,14 +326,14 @@ describe("canTransition", () => {
       defending: false,
       stopped: false,
     };
-    
+
     expect(canTransition(idleClip, walkClip, ctx)).toBe(true);
   });
 
   it("deve permitir transição de walk para jog", () => {
-    const walkClip = ANIMATION_CATALOG.locomotion['walk']!;
-    const jogClip = ANIMATION_CATALOG.locomotion['jog']!;
-    
+    const walkClip = ANIMATION_CATALOG.locomotion["walk"]!;
+    const jogClip = ANIMATION_CATALOG.locomotion["jog"]!;
+
     const ctx = {
       action: null,
       speed: 3,
@@ -342,14 +343,14 @@ describe("canTransition", () => {
       defending: false,
       stopped: false,
     };
-    
+
     expect(canTransition(walkClip, jogClip, ctx)).toBe(true);
   });
 
   it("deve permitir transição para ação de alta prioridade", () => {
-    const jogClip = ANIMATION_CATALOG.locomotion['jog']!;
-    const shotClip = ANIMATION_CATALOG.shooting['shotPower']!;
-    
+    const jogClip = ANIMATION_CATALOG.locomotion["jog"]!;
+    const shotClip = ANIMATION_CATALOG.shooting["shotPower"]!;
+
     const ctx = {
       action: "shotPower",
       speed: 2,
@@ -361,14 +362,14 @@ describe("canTransition", () => {
       actionT: 0,
       actionDur: 0.8,
     };
-    
+
     expect(canTransition(jogClip, shotClip, ctx)).toBe(true);
   });
 
   it("não deve permitir transição de ação não interruptível no meio", () => {
-    const shotClip = ANIMATION_CATALOG.shooting['shotPower']!;
-    const jogClip = ANIMATION_CATALOG.locomotion['jog']!;
-    
+    const shotClip = ANIMATION_CATALOG.shooting["shotPower"]!;
+    const jogClip = ANIMATION_CATALOG.locomotion["jog"]!;
+
     const ctx = {
       action: "shotPower",
       speed: 2,
@@ -380,15 +381,15 @@ describe("canTransition", () => {
       actionT: 0.5,
       actionDur: 0.8,
     };
-    
+
     // Não deve permitir transição no meio de uma ação não interruptível
     expect(canTransition(shotClip, jogClip, ctx)).toBe(false);
   });
 
   it("deve permitir transição de ação não interruptível no final", () => {
-    const shotClip = ANIMATION_CATALOG.shooting['shotPower']!;
-    const jogClip = ANIMATION_CATALOG.locomotion['jog']!;
-    
+    const shotClip = ANIMATION_CATALOG.shooting["shotPower"]!;
+    const jogClip = ANIMATION_CATALOG.locomotion["jog"]!;
+
     const ctx = {
       action: "shotPower",
       speed: 2,
@@ -400,15 +401,15 @@ describe("canTransition", () => {
       actionT: 0.95,
       actionDur: 0.8,
     };
-    
+
     // Deve permitir transição nos últimos 10%
     expect(canTransition(shotClip, jogClip, ctx)).toBe(true);
   });
 
   it("não deve permitir transição para clipe de prioridade menor", () => {
-    const shotClip = ANIMATION_CATALOG.shooting['shotPower']!;
-    const walkClip = ANIMATION_CATALOG.locomotion['walk']!;
-    
+    const shotClip = ANIMATION_CATALOG.shooting["shotPower"]!;
+    const walkClip = ANIMATION_CATALOG.locomotion["walk"]!;
+
     const ctx = {
       action: "shotPower",
       speed: 2,
@@ -420,7 +421,7 @@ describe("canTransition", () => {
       actionT: 0,
       actionDur: 0.8,
     };
-    
+
     // shotPower tem prioridade 0.9, walk tem prioridade 0.1
     expect(canTransition(shotClip, walkClip, ctx)).toBe(false);
   });
@@ -432,26 +433,47 @@ describe("canTransition", () => {
 
 describe("calculateBlendWeight", () => {
   it("deve devolver 0 para progresso 0", () => {
-    const from = ANIMATION_CATALOG.idle['idle']!;
-    const to = ANIMATION_CATALOG.locomotion['walk']!;
-    const ctx = { speed: 1, hasBall: false, ballDist: 10, stamina: 100, defending: false, stopped: false };
-    
+    const from = ANIMATION_CATALOG.idle["idle"]!;
+    const to = ANIMATION_CATALOG.locomotion["walk"]!;
+    const ctx = {
+      speed: 1,
+      hasBall: false,
+      ballDist: 10,
+      stamina: 100,
+      defending: false,
+      stopped: false,
+    };
+
     expect(calculateBlendWeight(from, to, ctx, 0)).toBe(0);
   });
 
   it("deve devolver 1 para progresso 1", () => {
-    const from = ANIMATION_CATALOG.idle['idle']!;
-    const to = ANIMATION_CATALOG.locomotion['walk']!;
-    const ctx = { speed: 1, hasBall: false, ballDist: 10, stamina: 100, defending: false, stopped: false };
-    
+    const from = ANIMATION_CATALOG.idle["idle"]!;
+    const to = ANIMATION_CATALOG.locomotion["walk"]!;
+    const ctx = {
+      speed: 1,
+      hasBall: false,
+      ballDist: 10,
+      stamina: 100,
+      defending: false,
+      stopped: false,
+    };
+
     expect(calculateBlendWeight(from, to, ctx, 1)).toBe(1);
   });
 
   it("deve devolver 0.5 para progresso 0.5", () => {
-    const from = ANIMATION_CATALOG.idle['idle']!;
-    const to = ANIMATION_CATALOG.locomotion['walk']!;
-    const ctx = { speed: 1, hasBall: false, ballDist: 10, stamina: 100, defending: false, stopped: false };
-    
+    const from = ANIMATION_CATALOG.idle["idle"]!;
+    const to = ANIMATION_CATALOG.locomotion["walk"]!;
+    const ctx = {
+      speed: 1,
+      hasBall: false,
+      ballDist: 10,
+      stamina: 100,
+      defending: false,
+      stopped: false,
+    };
+
     expect(calculateBlendWeight(from, to, ctx, 0.5)).toBe(0.5);
   });
 });
@@ -484,13 +506,11 @@ describe("createClipMetadata", () => {
 
 describe("createAnnotatedClip", () => {
   it("deve criar um clipe anotado com metadados", () => {
-    const annotated = createAnnotatedClip(
-      "testClip",
-      mockClip,
-      "locomotion",
-      { loop: true, priority: 0.1 }
-    );
-    
+    const annotated = createAnnotatedClip("testClip", mockClip, "locomotion", {
+      loop: true,
+      priority: 0.1,
+    });
+
     expect(annotated.clip).toBe(mockClip);
     expect(annotated.metadata.family).toBe("locomotion");
     expect(annotated.metadata.loop).toBe(true);
@@ -504,14 +524,14 @@ describe("createAnnotatedClip", () => {
 
 describe("Pose Continuity", () => {
   it("deve manter continuidade entre idle e walk", () => {
-    const idleClip = ANIMATION_CATALOG.idle['idle']!;
-    const walkClip = ANIMATION_CATALOG.locomotion['walk']!;
-    
+    const idleClip = ANIMATION_CATALOG.idle["idle"]!;
+    const walkClip = ANIMATION_CATALOG.locomotion["walk"]!;
+
     const ctx: ClipCtx = { t: 0, u: 0, speed: 0, stride: 0, seed: 0 };
-    
+
     const idlePose = idleClip.clip(ctx);
     const walkPose = walkClip.clip(ctx);
-    
+
     // Os clipes devem produzir poses válidas
     expect(idlePose).toBeDefined();
     expect(walkPose).toBeDefined();
@@ -520,13 +540,13 @@ describe("Pose Continuity", () => {
   });
 
   it("deve produzir poses consistentes para o mesmo contexto", () => {
-    const shotClip = ANIMATION_CATALOG.shooting['shotLow']!;
-    
+    const shotClip = ANIMATION_CATALOG.shooting["shotLow"]!;
+
     const ctx: ClipCtx = { t: 0.5, u: 0.5, speed: 0, stride: 0, seed: 42 };
-    
+
     const pose1 = shotClip.clip(ctx);
     const pose2 = shotClip.clip(ctx);
-    
+
     // Mesmas entradas devem produzir mesmas saídas (determinístico)
     expect(pose1).toEqual(pose2);
   });
@@ -539,7 +559,7 @@ describe("Pose Continuity", () => {
 describe("Family Coverage", () => {
   it("deve ter clipes em todas as famílias principais", () => {
     const families = Object.keys(ANIMATION_CATALOG) as Array<keyof typeof ANIMATION_CATALOG>;
-    
+
     for (const family of families) {
       const clips = ANIMATION_CATALOG[family];
       expect(Object.keys(clips).length).toBeGreaterThan(0);
@@ -547,10 +567,9 @@ describe("Family Coverage", () => {
   });
 
   it("deve ter metadados válidos para todos os clipes", () => {
-    for (const family of Object.keys(ANIMATION_CATALOG)) {
-      const clips = (ANIMATION_CATALOG as any)[family];
-      for (const name of Object.keys(clips)) {
-        const clip = clips[name];
+    const families: Record<string, AnnotatedClip>[] = Object.values(ANIMATION_CATALOG);
+    for (const clips of families) {
+      for (const clip of Object.values(clips)) {
         expect(clip.metadata).toBeDefined();
         expect(clip.metadata.family).toBeDefined();
         expect(typeof clip.metadata.priority).toBe("number");

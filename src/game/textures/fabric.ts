@@ -19,16 +19,20 @@ const garmentMaps = new Map<string, THREE.DataTexture>();
 export function garmentRoughness(kind: "shorts" | "socks"): THREE.DataTexture {
   const cached = garmentMaps.get(kind);
   if (cached) return cached;
-  const size = 64, tau = Math.PI * 2 / size;
+  const size = 64,
+    tau = (Math.PI * 2) / size;
   const data = new Uint8Array(size * size * 4);
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-    const thread = kind === "shorts"
-      ? Math.sin((x + y) * tau * 13) * 9 + Math.cos(y * tau * 21) * 4
-      : Math.cos(x * tau * 8) * 12 + Math.sin(y * tau * 16) * 3;
-    const value = Math.round(234 + thread), i = (y * size + x) * 4;
-    data[i] = data[i + 1] = data[i + 2] = value;
-    data[i + 3] = 255;
-  }
+  for (let y = 0; y < size; y++)
+    for (let x = 0; x < size; x++) {
+      const thread =
+        kind === "shorts"
+          ? Math.sin((x + y) * tau * 13) * 9 + Math.cos(y * tau * 21) * 4
+          : Math.cos(x * tau * 8) * 12 + Math.sin(y * tau * 16) * 3;
+      const value = Math.round(234 + thread),
+        i = (y * size + x) * 4;
+      data[i] = data[i + 1] = data[i + 2] = value;
+      data[i + 3] = 255;
+    }
   const texture = new THREE.DataTexture(data, size, size);
   texture.name = `athlete-${kind}-roughness`;
   texture.colorSpace = THREE.NoColorSpace;

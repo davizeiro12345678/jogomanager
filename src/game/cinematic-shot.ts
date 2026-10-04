@@ -1,6 +1,10 @@
 import type { SceneArt, Speaker } from "@/content/cutscenes";
 import type { ShotSize } from "./cutscene-director";
-import { cinematicReactionSpeaker, cinematicStageFocus, type CinematicSet } from "./cinematic-blocking";
+import {
+  cinematicReactionSpeaker,
+  cinematicStageFocus,
+  type CinematicSet,
+} from "./cinematic-blocking";
 import type { CinematicDrill } from "./cinematic-action";
 
 export interface CinematicShot {
@@ -99,12 +103,19 @@ export function cinematicShotFor(
     framing: "dialogue",
   };
   const partner = cinematicStageFocus(
-    kind, cinematicReactionSpeaker(kind, speaker, art), art, festive, time, drill,
+    kind,
+    cinematicReactionSpeaker(kind, speaker, art),
+    art,
+    festive,
+    time,
+    drill,
   );
   if (partner) {
-    const dx = shot.position[0] - mark[0], dz = shot.position[2] - mark[1];
+    const dx = shot.position[0] - mark[0],
+      dz = shot.position[2] - mark[1];
     const distanceXZ = Math.max(0.01, Math.hypot(dx, dz));
-    const rightX = dz / distanceXZ, rightZ = -dx / distanceXZ;
+    const rightX = dz / distanceXZ,
+      rightZ = -dx / distanceXZ;
     const direction = (partner[0] - mark[0]) * rightX + (partner[1] - mark[1]) * rightZ;
     const room = Math.max(-1, Math.min(1, direction)) * (size === "close" ? 0.075 : 0.11);
     shot.target[0] += rightX * room;

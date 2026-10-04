@@ -74,7 +74,11 @@ import { censusRef } from "@/game/scene-census";
 import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
 import { gaitPoseAt, locomotionWeight } from "@/game/gait-kinematics";
 import { visualMotionFor } from "@/game/visual-motion";
-import { footballSupportFor, refineFootballAction, refineBallFootContact } from "@/game/football-action";
+import {
+  footballSupportFor,
+  refineFootballAction,
+  refineBallFootContact,
+} from "@/game/football-action";
 import { refineAthletePosture, shoulderPose } from "@/game/athlete-posture";
 import { applyHandPose, handPoseAt } from "@/game/player-hands";
 import { AthletePoseBlender } from "@/game/athlete-pose-blender";
@@ -433,12 +437,21 @@ export const PlayerRig = memo(function PlayerRig({
     );
     if (player.action && lod === 0) {
       const ball = sim.visualBall ?? sim.ball;
-      const dx = ball.x - g.position.x, dz = ball.z - g.position.z;
+      const dx = ball.x - g.position.x,
+        dz = ball.z - g.position.z;
       const yaw = motion.yaw;
-      refineBallFootContact(p, player.action, u, P,
+      refineBallFootContact(
+        p,
+        player.action,
+        u,
+        P,
         actionContext.action ? actionContext.usedFoot : dominantFoot,
-        { x: dx * Math.cos(yaw) - dz * Math.sin(yaw),
-          z: dx * Math.sin(yaw) + dz * Math.cos(yaw), height: ball.height });
+        {
+          x: dx * Math.cos(yaw) - dz * Math.sin(yaw),
+          z: dx * Math.sin(yaw) + dz * Math.cos(yaw),
+          height: ball.height,
+        },
+      );
     }
 
     // ---- camada superior: tronco e cabeça acompanham a bola

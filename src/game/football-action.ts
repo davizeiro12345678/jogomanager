@@ -26,7 +26,12 @@ export function refineBallFootContact(
   foot: DominantFoot,
   target: { x: number; z: number; height: number },
 ) {
-  if (!FOOT_ACTIONS.test(action ?? "") || ![target.x, target.z, target.height].every(Number.isFinite)) return pose;
+  if (
+    action === null ||
+    !FOOT_ACTIONS.test(action) ||
+    ![target.x, target.z, target.height].every(Number.isFinite)
+  )
+    return pose;
   const distance = Math.hypot(target.x, target.z);
   if (distance > 1.15 || target.z < -0.25 || target.height > 0.9 || target.height < 0) return pose;
   const phase = Math.exp(-(((progress - footballContactAt(action)) / 0.075) ** 2));

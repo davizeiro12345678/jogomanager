@@ -18,8 +18,8 @@ const kit = {
 describe("bounded athlete garment mechanics", () => {
   it("reserves the impact fold for ground contact instead of airborne descent", () => {
     const cloth = new ClothDynamics();
-    cloth.advance(1 / 60, { ...still, lift: .5 });
-    cloth.advance(1 / 60, { ...still, lift: .3 });
+    cloth.advance(1 / 60, { ...still, lift: 0.5 });
+    cloth.advance(1 / 60, { ...still, lift: 0.3 });
     expect(cloth.impact).toBe(0);
     cloth.advance(1 / 60, still);
     expect(cloth.impact).toBeGreaterThan(0);

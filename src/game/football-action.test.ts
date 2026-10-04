@@ -18,7 +18,11 @@ describe("football choreography", () => {
       const pose = sample("shotPower", contact, foot);
       const support = foot === "left" ? pose.legRPitch : pose.legLPitch;
       const strike = foot === "left" ? pose.legLPitch : pose.legRPitch;
-      refineBallFootContact(pose, "shotPower", contact, p, foot, { x: foot === "left" ? 0.14 : -0.14, z: 0.48, height: 0.12 });
+      refineBallFootContact(pose, "shotPower", contact, p, foot, {
+        x: foot === "left" ? 0.14 : -0.14,
+        z: 0.48,
+        height: 0.12,
+      });
       expect(foot === "left" ? pose.legRPitch : pose.legLPitch).toBe(support);
       expect(foot === "left" ? pose.legLPitch : pose.legRPitch).not.toBe(strike);
       expect(pose.kneeL).toBeLessThanOrEqual(0);
