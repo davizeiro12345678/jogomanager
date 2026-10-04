@@ -133,25 +133,26 @@ export async function createWebGPURenderer(
       (fiber.extend as (catalogue: unknown) => void)(webgpu);
       extended = true;
     }
-    renderer = new webgpu.WebGPURenderer({
+    const rendererInstance = new webgpu.WebGPURenderer({
       ...(props as ConstructorParameters<typeof webgpu.WebGPURenderer>[0]),
       forceWebGL: false,
     });
-    await renderer.init();
+    const rendererInternals = rendererInstance as unknown as WebGPURendererInternals;
+    renderer = rendererInternals;
+    await rendererInstance.init();
 
     // WebGPURenderer silently offers its own WebGL2 fallback. Do not report
     // that renderer as native WebGPU: the scene needs the WebGL material path
     // and the surrounding Canvas will construct an ordinary WebGLRenderer.
-    if (!hasNativeWebGPUBackend(renderer)) {
-      await disposeAfterFailedInit(renderer);
+    if (!hasNativeWebGPUBackend(rendererInstance)) {
+      await disposeAfterFailedInit(rendererInternals);
       markWebgpuFailed();
       return null;
     }
 
     // Qualquer erro de validação do driver derruba o modo experimental na hora:
     // gravamos a falha e o chamador remonta o palco em WebGL2.
-    const device = (renderer as unknown as { backend?: { device?: GPUDeviceLike } }).backend
-      ?.device;
+    const device = rendererInternals.backend?.device;
     if (device) {
       let tripped = false;
       const trip = () => {
@@ -163,7 +164,7 @@ export async function createWebGPURenderer(
       device.onuncapturederror = trip;
       void device.lost?.then(trip);
     }
-    return renderer;
+    return rendererInstance;
   } catch (err) {
     // Do not retry a renderer that failed while compiling its first pipeline
     // on every route transition. The preference UI is the explicit retry.

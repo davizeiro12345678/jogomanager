@@ -28,8 +28,8 @@ fidelidade é 139 Hz, enquanto regras determinísticas têm relógio próprio de
 
 ## Compilação e integridade
 
-Use Node 24 e npm 11. Para modificar o Rust, instale Rust 1.94.1, o target
-`wasm32-unknown-unknown` e `wasm-pack` 0.14.0. Em seguida:
+Use Node 24 e npm 11. Para modificar o Rust, instale Rust 1.99.0, o target
+`wasm32-unknown-unknown` e `wasm-pack` 0.15.0. Em seguida:
 
 ```sh
 npm ci
@@ -42,8 +42,10 @@ npm exec -- vitest run src/game/wasm --pool=forks --maxWorkers=1
 remove somente o `.gitignore` automático do pacote gerado. Os artefatos são
 versionados para que o build habitual do frontend e o Lovable não dependam de
 uma instalação Rust. Entregue fonte, `Cargo.lock` e arquivos gerados juntos.
-O job Rust no CI recompila com ferramentas fixadas, compara os artefatos com o
-checkout e testa a paridade com o fallback.
+O wasm-opt pré-compilado usado pelo wasm-pack varia por sistema operacional,
+então os bytes do WASM podem diferir entre Windows e Linux. O job Rust no CI
+fixa as ferramentas, compara as bindings geradas e testa a paridade tanto do
+WASM recém-compilado quanto do binário versionado.
 
 Os testes executam o binário real, comparando índices, contagens e tiers em
 câmeras ampla/próxima, perspectiva/ortográfica, câmera voltada para fora,
