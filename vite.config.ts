@@ -67,6 +67,16 @@ const projectConfig = defineConfig({
           workers_dev: true,
           keep_vars: true,
           observability: { enabled: true },
+          // Keep Worker Previews isolated from the production D1 database.
+          previews: {
+            d1_databases: [
+              {
+                binding: "SPORTS_DB",
+                database_name: "jogomanager-preview",
+                database_id: "63ba0032-507e-4efc-9f8f-54f4b1b00830",
+              },
+            ],
+          },
         },
       },
     },
