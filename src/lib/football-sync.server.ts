@@ -47,7 +47,9 @@ export async function seedFromBundledData() {
     })),
   );
 
-  const compRes = await db.from("competitions").upsert(competitions, { onConflict: "id", ignoreDuplicates: true });
+  const compRes = await db
+    .from("competitions")
+    .upsert(competitions, { onConflict: "id", ignoreDuplicates: true });
   if (compRes.error) throw new Error(compRes.error.message);
 
   for (let i = 0; i < clubs.length; i += 100) {

@@ -108,7 +108,8 @@ if (process.argv.includes("--check")) {
   const crowdWasm = wasmAssets.find((c) => c.name.startsWith("crowd_visibility_wasm_bg-"));
   if (!crowdWasm || crowdWasm.bytes > 96_000)
     throw new Error("Crowd Rust kernel must remain an external WASM asset below 96 KB");
-  const forbidden = /^(?:three\.|react-three-|Stadium3D-|PostFX-|rapier-|QuickLive-|crowd_visibility_wasm-)/;
+  const forbidden =
+    /^(?:three\.|react-three-|Stadium3D-|PostFX-|rapier-|QuickLive-|crowd_visibility_wasm-)/;
   if (
     !root ||
     root.bytes > 430_000 ||

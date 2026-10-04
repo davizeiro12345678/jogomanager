@@ -119,7 +119,10 @@ function CoachCareerPage() {
   const captain = useMemo(
     () =>
       clubPlayers.length
-        ? clubPlayers.reduce((best, player) => (player.ovr > best.ovr ? player : best), clubPlayers[0]!)
+        ? clubPlayers.reduce(
+            (best, player) => (player.ovr > best.ovr ? player : best),
+            clubPlayers[0]!,
+          )
         : undefined,
     [clubPlayers],
   );
@@ -200,7 +203,9 @@ function CoachCareerPage() {
           trophies={career.trophies.length}
           club={club}
           managerName={career.managerName}
-          captainName={scene === "unhappy-knock" ? choicePlayer?.name ?? captainName : captainName}
+          captainName={
+            scene === "unhappy-knock" ? (choicePlayer?.name ?? captainName) : captainName
+          }
           cast={cast ?? undefined}
           manner={world?.identity}
           choiceContext={choiceContext}
