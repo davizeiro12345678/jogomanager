@@ -51,8 +51,8 @@
 - [x] Instalar r3f-perf (painel ?perf=1 na prévia), @use-gesture/react, meshoptimizer
 - [ ] Medição base da partida (fps, p95, draw calls)
 - [ ] Comprimir modelos com meshoptimizer e medir tamanho
-- [ ] Gestos de câmera/menu com @use-gesture
-- [ ] Vento (simplex-noise) em bandeiras e torcida
+- [x] Gesto de deslizar para fechar o menu (câmera pendente)
+- [x] Vento (simplex-noise) nas bandeiras de escanteio (torcida pendente)
 - [ ] Frases novas de narração (túnel, intervalo, taça; en/es) e cache de áudio
 - [ ] Mega importação (liga travada, calendários, detalhes, fotos, homônimos)
 - [ ] Painel desktop lento, partida ao vivo no celular, erros
