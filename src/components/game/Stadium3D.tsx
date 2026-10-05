@@ -442,8 +442,8 @@ function Weather({
   useEffect(() => () => geometry.dispose(), [geometry]);
   useFrame(({ clock }) => {
     if (!material.current) return;
-    material.current.uniforms.uTime!.value = clock.elapsedTime;
-    material.current.uniforms.uWind!.value = wind;
+    material.current.uniforms["uTime"]!.value = clock.elapsedTime;
+    material.current.uniforms["uWind"]!.value = wind;
   });
 
   if (!rain && !snow) return null;
