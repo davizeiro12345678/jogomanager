@@ -4,7 +4,14 @@ import type { Database, Json } from "@/integrations/supabase/types";
 
 type Admin = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 type MediaRow = Database["public"]["Tables"]["official_media"]["Insert"];
-export type PremiumPhase = "leagues" | "teams" | "players" | "schedule" | "events" | "details";
+export type PremiumPhase =
+  | "leagues"
+  | "teams"
+  | "kits"
+  | "players"
+  | "schedule"
+  | "events"
+  | "details";
 
 const MEDIA: Record<string, readonly [string, string][]> = {
   league: [
@@ -296,6 +303,55 @@ export async function syncPremiumChain(options: {
       unavailable,
       nextOffset: offset + processed,
       total: leagues?.length ?? 0,
+    };
+  }
+
+  if (phase === "kits") {
+    // Copies official crests/kits onto game clubs already linked to an official team.
+    const { data: teams, error } = await db
+      .from("official_teams")
+      .select("source_id,local_club_id")
+      .not("local_club_id", "is", null)
+      .order("source_id")
+      .range(offset, offset + limit - 1);
+    if (error) throw new Error(error.message);
+    for (const team of teams ?? []) {
+      if (!withinBudget()) break;
+      processed++;
+      const localId = team.local_club_id;
+      if (!localId) continue;
+      const equipment = await sdbV2.teamEquipment(team.source_id);
+      if (!equipment.length) unavailable++;
+      for (const kit of equipment) {
+        const image = str(kit["strEquipment"]);
+        const seasonName = str(kit["strSeason"]);
+        if (!image?.startsWith("https://") || !seasonName) continue;
+        const kindRaw = (str(kit["strType"]) ?? "home").toLowerCase();
+        const kind = kindRaw.includes("away")
+          ? "away"
+          : kindRaw.includes("third")
+            ? "third"
+            : kindRaw.includes("goal")
+              ? "goalkeeper"
+              : "home";
+        const saved = await db
+          .from("kits")
+          .upsert(
+            { club_id: localId, season: seasonName.slice(0, 30), kind, image_url: image },
+            { onConflict: "club_id,season,kind" },
+          );
+        if (saved.error) throw new Error(saved.error.message);
+        imported++;
+      }
+    }
+    return {
+      phase,
+      processed,
+      imported,
+      media,
+      unavailable,
+      nextOffset: offset + processed,
+      total: teams?.length ?? 0,
     };
   }
 
