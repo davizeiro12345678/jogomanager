@@ -247,7 +247,7 @@ function TransfersPage() {
                     <button
                       disabled={!open}
                       onClick={() => setTarget(t)}
-                      className="whitespace-nowrap rounded-md bg-primary px-3 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-40"
+                      className="col-span-3 whitespace-nowrap rounded-md bg-primary px-3 py-1.5 font-display sm:col-span-1 text-xs uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-40"
                     >
                       Negociar
                     </button>
