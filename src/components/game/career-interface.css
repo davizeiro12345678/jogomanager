@@ -529,9 +529,6 @@
   .career-header-actions {
     gap: 0;
   }
-  .career-header-play {
-    display: none;
-  }
   .career-save-note > span {
     max-width: 56%;
   }
