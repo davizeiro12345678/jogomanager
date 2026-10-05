@@ -288,3 +288,39 @@ export const narrateScene = createServerFn({ method: "POST" })
     });
     return audio ? { ok: true, audio } : { ok: false, reason: "error" };
   });
+
+const PrematchNarrateInput = z.object({
+  home: z.string().min(1).max(64),
+  away: z.string().min(1).max(64),
+  round: z.number().int().min(1).max(60),
+});
+
+/** Texto fixo da apresentação do pré-jogo; só nomes de clubes reais entram na frase. */
+export function prematchIntroText(home: string, away: string, round: number): string {
+  return `Boa noite, torcedor! Rodada ${round}. De um lado, ${home}. Do outro, ${away}. Estádio cheio, clima de decisão. Os times já se preparam no túnel. Vai começar!`;
+}
+
+/** Roberta apresenta o confronto no pré-jogo (ElevenLabs v4). */
+export const narratePrematch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => PrematchNarrateInput.parse(input))
+  .handler(async ({ data }): Promise<NarrateResult> => {
+    const apiKey = process.env["ELEVENLABS_API_KEY"];
+    const { CLUBS } = await import("@/game/data/leagues");
+    const home = CLUBS[data.home];
+    const away = CLUBS[data.away];
+    if (!apiKey || !home || !away) return { ok: false, reason: "unavailable" };
+    const { reserveAiBudget } = await import("@/lib/ai-budget.server");
+    if (!(await reserveAiBudget("voice"))) return { ok: false, reason: "unavailable" };
+    const audio = await synthesize({
+      apiKey,
+      voiceId: ROBERTA_VOICE_ID,
+      text: prematchIntroText(safeTeam(home.name), safeTeam(away.name), data.round),
+      format: "mp3_44100_128",
+      language: "pt",
+      models: narrationModels("scene"),
+      continuity: {},
+      voiceSettings: { stability: 0.4, similarity_boost: 0.85, style: 0.7, use_speaker_boost: true, speed: 1.04 },
+    });
+    return audio ? { ok: true, audio } : { ok: false, reason: "error" };
+  });
