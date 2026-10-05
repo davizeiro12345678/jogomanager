@@ -41,3 +41,5 @@
 - [ ] Etapa 4: modelo de jogador (corpo, rosto/cabelo, movimento, uniforme, 3 níveis).
 - [ ] Etapa 5: cenas 3D (abertura, túnel, gol com replay, intervalo/fim, taça).
 - [ ] Etapa 6: medição antes/depois.
+- [x] Importação 2026-10-05: 8.079 jogadores duplicados antigos removidos; títulos/clubes anteriores e estatísticas percorridos para todos os 26.076 jogadores oficiais; históricos de clubes percorridos até o fim da lista vinculada.
+- [ ] Modelo de jogador e cenas 3D (etapas 4–5): próximo ciclo.
