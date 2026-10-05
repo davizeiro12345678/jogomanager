@@ -2681,3 +2681,5 @@ html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.career-content :is(h1, h2):focus:not(:focus-visible),
+.career-content h1:focus { outline: none; box-shadow: none; }
