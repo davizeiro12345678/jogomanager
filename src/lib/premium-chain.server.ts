@@ -239,12 +239,13 @@ export async function syncPremiumChain(options: {
         const match = (locals ?? []).filter((c) => normalize(c.name) === normalize(name));
         const localId = match.length === 1 ? (match[0]?.id ?? null) : null;
         const venueId = str(team["idVenue"]);
+        // Never clear a link made by the country-wide name matcher on re-import.
         const saved = await db.from("official_teams").upsert({
           source_id: id,
           league_source_id: linked.source_id,
           name,
           venue_source_id: venueId,
-          local_club_id: localId,
+          ...(localId ? { local_club_id: localId } : {}),
         });
         if (saved.error) throw new Error(saved.error.message);
         if (localId) {
