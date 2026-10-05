@@ -62,3 +62,6 @@
 - [x] Cenas pré-carregadas no painel e no pré-jogo
 - [ ] Estádio melhor, kits reais e números no 3D, comemorações realistas (atlas/UV e classificação contextual corrigidos; direção de grupo ainda pendente)
 - [ ] Cena de gol importante + hino do clube no gol
+
+- [ ] Modo carreira de jogador completo (plano ampliado)
+- [ ] Jogador 3D nova geração (corpo, rosto, cabelo, uniforme, movimento)
