@@ -101,6 +101,12 @@ export async function fulfillOneTimePurchase(
     _themes: contents.themes,
   });
   if (error) throw new Error(error.message);
+  if (data === true) {
+    const { notifySlack } = await import("./slack.server");
+    notifySlack(
+      `Nova compra entregue: ${productKey} — R$ ${(amountCents / 100).toFixed(2).replace(".", ",")}`,
+    );
+  }
   return data === true;
 }
 

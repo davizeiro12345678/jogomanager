@@ -18,7 +18,9 @@
 - [ ] 4 Gráficos 3D — chuva, refletores, placas LED, bancos, túnel, bola e rede já existem; faltam validação de FPS/draw calls e refinamentos do rig
 - [ ] 5 Cutscenes — cenários 3D, diretor, timeline de voz, pular e movimento reduzido existem; falta expandir abertura, replays e cerimônias conforme o plano
 - [ ] 6 Simulação — calibragem de 2.000 partidas e teste tático determinístico feitos; faltam unificação dos lances da partida 3D e sim rápida e estresse de 2.000 partidas 3D (atual: 200)
-- [ ] 7 Design do jogo — navegação móvel, foco, toques de 44px, hierarquia da carreira e telas principais padronizados; falta revisão visual dos cinco grupos com dados reais
+- [x] 7 Design do jogo — revisão de início, loja, partida rápida e carreira em celular/desktop sem erros nem transbordo; botões da partida rápida em grade de toque
+- [x] Conectores: Slack ligado (aviso de compra entregue no canal #social); e-mail, análise de uso e IA já ativos
+- [x] Dependências: só atualizações seguras (postprocessing, sonner, date-fns); nenhum pacote 3D novo sem gargalo medido
 
 ## Importação e desempenho (pedido 2026-09-25)
 - [x] Endpoint protegido com validação de escopo e paginação; ligas e clubes locais importados (4.506 clubes).

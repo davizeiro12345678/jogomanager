@@ -145,14 +145,14 @@ function QuickMatchPage() {
         </div>
 
         <p className="mt-3 text-xs text-muted-foreground">{t("quick.hint")}</p>
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <div className="flex gap-2">
+        <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap sm:items-center">
+          <div className="grid grid-cols-3 gap-2 sm:flex">
             {DIFFS.map((d) => (
               <button
                 key={d.id}
                 onClick={() => setDifficulty(d.id)}
                 aria-pressed={difficulty === d.id}
-                className={`rounded-lg border px-3 py-2 font-display text-xs uppercase tracking-wide ${
+                className={`min-h-11 rounded-lg border px-3 py-2 font-display text-xs uppercase tracking-wide ${
                   difficulty === d.id
                     ? "border-primary bg-primary/15"
                     : "border-border surface-card text-muted-foreground"
@@ -170,7 +170,7 @@ function QuickMatchPage() {
           </div>
           <button
             onClick={randomize}
-            className="flex items-center gap-2 rounded-lg border border-border surface-card px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground"
+            className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border surface-card px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground"
           >
             <Shuffle size={14} aria-hidden="true" /> {t("quick.random")}
           </button>
@@ -179,11 +179,11 @@ function QuickMatchPage() {
             onPointerEnter={preloadQuickLive}
             onFocus={preloadQuickLive}
             disabled={myClub === oppClub}
-            className="rounded-lg bg-primary px-5 py-2 font-display text-sm uppercase tracking-wide text-primary-foreground disabled:opacity-40"
+            className="min-h-12 rounded-lg bg-primary px-6 py-2 font-display text-base uppercase tracking-wide text-primary-foreground shadow-lg disabled:opacity-40"
           >
             {t("quick.start")}
           </button>
-          <Link to="/" className="text-xs text-muted-foreground underline">
+          <Link to="/" className="py-2 text-center text-xs text-muted-foreground underline sm:text-left">
             {t("quick.back")}
           </Link>
         </div>

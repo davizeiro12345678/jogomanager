@@ -18,3 +18,4 @@
 - Import premium sports records in bounded, resumable batches using stable source identifiers; cache immutable KTX2 and public sports images separately from private API responses.
 - Limit KTX2 decoding workers from device capacity while reserving cores for rendering and the sequential match worker; saturating every core increases frame stalls.
 - Reuse the existing R3F, Rapier, post-processing, BVH, GPU-detection, and motion stack before adding 3D packages; duplicate engines increase bundle size and runtime ownership conflicts.
+- Send Slack notifications only from server code via `src/lib/slack.server.ts`, fire-and-forget; a Slack outage must never block purchases or matches.
