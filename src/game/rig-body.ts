@@ -73,6 +73,15 @@ export interface RigBodyContext {
   handMat: THREE.Material;
 }
 
+/** Maps torso rings to centered front/back atlas panels instead of stretching
+ * either decal around half of the athlete. */
+export function shirtPanelU(x: number, z: number): number {
+  const isFront = z >= 0;
+  const panelAngle = Math.atan2(x, isFront ? z : -z);
+  const panelU = THREE.MathUtils.clamp(0.5 + panelAngle / Math.PI, 0.04, 0.96);
+  return (isFront ? 0 : 0.5) + panelU * 0.5;
+}
+
 /** Malhas de cada junta; rosto, mandíbula e quatro pálpebras ficam em grupos animados. */
 export interface RigBody {
   hips: RigMesh[];
@@ -189,12 +198,9 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
       // Reserve separate atlas halves for front and back. Side vertices stay
       // close to the edge of their owning panel, preventing sponsor/number
       // ink from stretching around the ribs during animated torso bends.
-      const angle = Math.atan2(x, z);
-      const panelU = THREE.MathUtils.clamp(0.5 + angle / Math.PI, 0.04, 0.96);
-      const isFront = z >= 0;
       uv.setXY(
         i,
-        (isFront ? 0 : 0.5) + panelU * 0.5,
+        shirtPanelU(x, z),
         Math.max(0, Math.min(1, (positions.getY(i) + offset - torsoBottom) / torsoHeight)),
       );
     }

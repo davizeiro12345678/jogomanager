@@ -12,6 +12,7 @@ import {
 } from "./player-model";
 import { anatomicalLimb, forearmTattooSurface, type LimbProfile } from "./rig-geometry";
 import { tattooAlphaMask } from "./rig-materials";
+import { shirtPanelU } from "./rig-body";
 
 describe("adult player anatomy", () => {
   it("changes stature and mass without rerolling the athlete's identity", () => {
@@ -64,6 +65,13 @@ describe("adult player anatomy", () => {
     expect(m.shoulderWidth / m.height).toBeLessThan(0.32);
     expect(p.hipW * 2 / m.height).toBeLessThan(0.3);
     expect(p.armR / p.headR).toBeLessThan(0.7);
+  });
+
+  it("centers the crest and number on separate torso atlas panels", () => {
+    expect(shirtPanelU(0, 1)).toBeCloseTo(0.25, 6);
+    expect(shirtPanelU(0, -1)).toBeCloseTo(0.75, 6);
+    expect(shirtPanelU(1, 0.001)).toBeLessThan(0.5);
+    expect(shirtPanelU(1, -0.001)).toBeGreaterThan(0.5);
   });
 
   it("builds closed tapered limbs with finite, smooth seam normals", () => {
