@@ -27,7 +27,8 @@ export function assertPaymentsConfigured(): StripeEnv {
 export function assertGuestCheckoutEnabled(): StripeEnv {
   const environment = assertPaymentsConfigured();
   const requested = process.env["GUEST_CHECKOUT_ENVIRONMENT"]?.trim().toLowerCase();
-  if (requested && requested !== environment) {
+  // The preview always runs sandbox; the deploy-wide pin only governs published builds.
+  if (requested && requested !== environment && !import.meta.env.DEV) {
     throw new Error(
       "GUEST_CHECKOUT_ENVIRONMENT deve corresponder a PAYMENTS_ENVIRONMENT neste deploy.",
     );
