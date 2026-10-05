@@ -414,7 +414,7 @@ function TrainerDashboard({ career }: { career: CareerState }) {
           Central do clube <ArrowRight size={15} />
         </Link>
       </div>
-      <div className="trainer-club-grid grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="trainer-club-grid grid grid-flow-dense items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
         {/* Forma recente */}
         <HudCard
           title="Forma recente"
