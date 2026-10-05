@@ -789,6 +789,29 @@ export type Database = {
           },
         ]
       }
+      match_room_secrets: {
+        Row: {
+          room_id: string
+          seed: string
+        }
+        Insert: {
+          room_id: string
+          seed: string
+        }
+        Update: {
+          room_id?: string
+          seed?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_room_secrets_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: true
+            referencedRelation: "match_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_rooms: {
         Row: {
           code: string
@@ -837,59 +860,6 @@ export type Database = {
         }
         Relationships: []
       }
-      match_room_secrets: {
-        Row: {
-          room_id: string
-          seed: string
-        }
-        Insert: {
-          room_id: string
-          seed: string
-        }
-        Update: {
-          room_id?: string
-          seed?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "match_room_secrets_room_id_fkey"
-            columns: ["room_id"]
-            isOneToOne: true
-            referencedRelation: "match_rooms"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      official_equipment: {
-        Row: {
-          image_url: string | null
-          kind: string | null
-          season: string | null
-          source_id: string
-          source_updated_at: string | null
-          team_source_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          image_url?: string | null
-          kind?: string | null
-          season?: string | null
-          source_id: string
-          source_updated_at?: string | null
-          team_source_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          image_url?: string | null
-          kind?: string | null
-          season?: string | null
-          source_id?: string
-          source_updated_at?: string | null
-          team_source_id?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       official_event_details: {
         Row: {
           detail_type: string
@@ -899,7 +869,6 @@ export type Database = {
           payload: Json
           player_source_id: string | null
           source_id: string
-          source_updated_at: string | null
           team_source_id: string | null
           updated_at: string
         }
@@ -911,7 +880,6 @@ export type Database = {
           payload?: Json
           player_source_id?: string | null
           source_id: string
-          source_updated_at?: string | null
           team_source_id?: string | null
           updated_at?: string
         }
@@ -923,7 +891,6 @@ export type Database = {
           payload?: Json
           player_source_id?: string | null
           source_id?: string
-          source_updated_at?: string | null
           team_source_id?: string | null
           updated_at?: string
         }
@@ -948,7 +915,6 @@ export type Database = {
           league_source_id: string
           season: string
           source_id: string
-          source_updated_at: string | null
           starts_at: string | null
           status: string | null
           updated_at: string
@@ -965,7 +931,6 @@ export type Database = {
           league_source_id: string
           season: string
           source_id: string
-          source_updated_at?: string | null
           starts_at?: string | null
           status?: string | null
           updated_at?: string
@@ -982,7 +947,6 @@ export type Database = {
           league_source_id?: string
           season?: string
           source_id?: string
-          source_updated_at?: string | null
           starts_at?: string | null
           status?: string | null
           updated_at?: string
@@ -998,7 +962,6 @@ export type Database = {
           local_competition_id: string | null
           name: string
           source_id: string
-          source_updated_at: string | null
           sport: string
           updated_at: string
         }
@@ -1008,7 +971,6 @@ export type Database = {
           local_competition_id?: string | null
           name: string
           source_id: string
-          source_updated_at?: string | null
           sport: string
           updated_at?: string
         }
@@ -1018,7 +980,6 @@ export type Database = {
           local_competition_id?: string | null
           name?: string
           source_id?: string
-          source_updated_at?: string | null
           sport?: string
           updated_at?: string
         }
@@ -1036,98 +997,26 @@ export type Database = {
         Row: {
           entity_type: string
           kind: string
-          parent_source_id: string
           source: string
           source_id: string
-          source_updated_at: string | null
           updated_at: string
           url: string
         }
         Insert: {
           entity_type: string
           kind: string
-          parent_source_id?: string
           source?: string
           source_id: string
-          source_updated_at?: string | null
           updated_at?: string
           url: string
         }
         Update: {
           entity_type?: string
           kind?: string
-          parent_source_id?: string
           source?: string
           source_id?: string
-          source_updated_at?: string | null
           updated_at?: string
           url?: string
-        }
-        Relationships: []
-      }
-      official_players: {
-        Row: {
-          birth_date: string | null
-          name: string
-          nationality: string | null
-          photo_url: string | null
-          position: string | null
-          source_id: string
-          source_updated_at: string | null
-          sport: string
-          team_source_id: string | null
-          team_source_is_explicit: boolean
-          team_source_priority: number
-          updated_at: string
-        }
-        Insert: {
-          birth_date?: string | null
-          name: string
-          nationality?: string | null
-          photo_url?: string | null
-          position?: string | null
-          source_id: string
-          source_updated_at?: string | null
-          sport?: string
-          team_source_id?: string | null
-          team_source_is_explicit?: boolean
-          team_source_priority?: number
-          updated_at?: string
-        }
-        Update: {
-          birth_date?: string | null
-          name?: string
-          nationality?: string | null
-          photo_url?: string | null
-          position?: string | null
-          source_id?: string
-          source_updated_at?: string | null
-          sport?: string
-          team_source_id?: string | null
-          team_source_is_explicit?: boolean
-          team_source_priority?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      official_seasons: {
-        Row: {
-          league_source_id: string
-          season: string
-          source_updated_at: string | null
-          updated_at: string
-        }
-        Insert: {
-          league_source_id: string
-          season: string
-          source_updated_at?: string | null
-          updated_at?: string
-        }
-        Update: {
-          league_source_id?: string
-          season?: string
-          source_updated_at?: string | null
-          updated_at?: string
         }
         Relationships: []
       }
@@ -1136,9 +1025,7 @@ export type Database = {
           league_source_id: string | null
           local_club_id: string | null
           name: string
-          source_updated_at: string | null
           source_id: string
-          sport: string
           updated_at: string
           venue_source_id: string | null
         }
@@ -1146,9 +1033,7 @@ export type Database = {
           league_source_id?: string | null
           local_club_id?: string | null
           name: string
-          source_updated_at?: string | null
           source_id: string
-          sport?: string
           updated_at?: string
           venue_source_id?: string | null
         }
@@ -1156,9 +1041,7 @@ export type Database = {
           league_source_id?: string | null
           local_club_id?: string | null
           name?: string
-          source_updated_at?: string | null
           source_id?: string
-          sport?: string
           updated_at?: string
           venue_source_id?: string | null
         }
@@ -1171,39 +1054,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      official_venues: {
-        Row: {
-          capacity: number | null
-          city: string | null
-          country: string | null
-          name: string
-          photo_url: string | null
-          source_id: string
-          source_updated_at: string | null
-          updated_at: string
-        }
-        Insert: {
-          capacity?: number | null
-          city?: string | null
-          country?: string | null
-          name: string
-          photo_url?: string | null
-          source_id: string
-          source_updated_at?: string | null
-          updated_at?: string
-        }
-        Update: {
-          capacity?: number | null
-          city?: string | null
-          country?: string | null
-          name?: string
-          photo_url?: string | null
-          source_id?: string
-          source_updated_at?: string | null
-          updated_at?: string
-        }
-        Relationships: []
       }
       player_career_clubs: {
         Row: {
@@ -1539,215 +1389,6 @@ export type Database = {
           preferences?: Json
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      sportsdb_player_aliases: {
-        Row: {
-          alias_source_id: string
-          canonical_source_id: string
-          created_at: string
-          original_record: Json
-          reason: string
-        }
-        Insert: {
-          alias_source_id: string
-          canonical_source_id: string
-          created_at?: string
-          original_record: Json
-          reason?: string
-        }
-        Update: {
-          alias_source_id?: string
-          canonical_source_id?: string
-          created_at?: string
-          original_record?: Json
-          reason?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sportsdb_player_aliases_canonical_source_id_fkey"
-            columns: ["canonical_source_id"]
-            isOneToOne: false
-            referencedRelation: "official_players"
-            referencedColumns: ["source_id"]
-          },
-        ]
-      }
-      sportsdb_competition_identity_aliases: {
-        Row: {
-          alias_id: string
-          canonical_id: string
-          created_at: string
-          reason: string
-        }
-        Insert: {
-          alias_id: string
-          canonical_id: string
-          created_at?: string
-          reason: string
-        }
-        Update: {
-          alias_id?: string
-          canonical_id?: string
-          created_at?: string
-          reason?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sportsdb_competition_identity_aliases_alias_id_fkey"
-            columns: ["alias_id"]
-            isOneToOne: true
-            referencedRelation: "competitions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sportsdb_competition_identity_aliases_canonical_id_fkey"
-            columns: ["canonical_id"]
-            isOneToOne: false
-            referencedRelation: "competitions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sportsdb_club_identity_aliases: {
-        Row: {
-          alias_id: string
-          canonical_id: string
-          created_at: string
-          reason: string
-        }
-        Insert: {
-          alias_id: string
-          canonical_id: string
-          created_at?: string
-          reason: string
-        }
-        Update: {
-          alias_id?: string
-          canonical_id?: string
-          created_at?: string
-          reason?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sportsdb_club_identity_aliases_alias_id_fkey"
-            columns: ["alias_id"]
-            isOneToOne: true
-            referencedRelation: "clubs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sportsdb_club_identity_aliases_canonical_id_fkey"
-            columns: ["canonical_id"]
-            isOneToOne: false
-            referencedRelation: "clubs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sportsdb_archives: {
-        Row: {
-          archive_key: string
-          attempts: number
-          hydrated_at: string | null
-          last_error: string | null
-          retry_at: string
-          source_updated_at: string
-          status: string
-        }
-        Insert: {
-          archive_key: string
-          attempts?: number
-          hydrated_at?: string | null
-          last_error?: string | null
-          retry_at?: string
-          source_updated_at: string
-          status?: string
-        }
-        Update: {
-          archive_key?: string
-          attempts?: number
-          hydrated_at?: string | null
-          last_error?: string | null
-          retry_at?: string
-          source_updated_at?: string
-          status?: string
-        }
-        Relationships: []
-      }
-      sportsdb_bridge_control: {
-        Row: {
-          enabled: boolean
-          last_error: string | null
-          lease_owner: string | null
-          lease_until: string | null
-          max_database_bytes: number
-          singleton: boolean
-          source_complete: boolean
-          source_status: Json
-          status: string
-          token_sha256: string
-          updated_at: string
-        }
-        Insert: {
-          enabled?: boolean
-          last_error?: string | null
-          lease_owner?: string | null
-          lease_until?: string | null
-          max_database_bytes?: number
-          singleton?: boolean
-          source_complete?: boolean
-          source_status?: Json
-          status?: string
-          token_sha256: string
-          updated_at?: string
-        }
-        Update: {
-          enabled?: boolean
-          last_error?: string | null
-          lease_owner?: string | null
-          lease_until?: string | null
-          max_database_bytes?: number
-          singleton?: boolean
-          source_complete?: boolean
-          source_status?: Json
-          status?: string
-          token_sha256?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      sportsdb_import_cursors: {
-        Row: {
-          entity_type: string
-          fingerprint: string
-          last_serviced_at: string | null
-          next_offset: number
-          priority: number
-          source_total: number
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          entity_type: string
-          fingerprint: string
-          last_serviced_at?: string | null
-          next_offset?: number
-          priority: number
-          source_total?: number
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          entity_type?: string
-          fingerprint?: string
-          last_serviced_at?: string | null
-          next_offset?: number
-          priority?: number
-          source_total?: number
-          status?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -2190,59 +1831,6 @@ export type Database = {
           season_pass: boolean
         }[]
       }
-      sportsdb_bridge_acquire: { Args: never; Returns: string }
-      sportsdb_bridge_archive: {
-        Args: {
-          p_key: string
-          p_owner: string
-          p_payload: Json
-          p_rows: Json
-          p_updated_at: string
-        }
-        Returns: number
-      }
-      sportsdb_bridge_archive_catalog: {
-        Args: {
-          p_archives: Json
-          p_consumed: number
-          p_offset: number
-          p_owner: string
-          p_total: number
-        }
-        Returns: undefined
-      }
-      sportsdb_bridge_archive_error: {
-        Args: { p_error: string; p_key: string; p_owner: string }
-        Returns: undefined
-      }
-      sportsdb_bridge_authorize: { Args: { p_token: string }; Returns: boolean }
-      sportsdb_bridge_manifest: {
-        Args: {
-          p_manifest: Json
-          p_owner: string
-          p_source_complete: boolean
-          p_source_status: Json
-        }
-        Returns: undefined
-      }
-      sportsdb_bridge_page: {
-        Args: {
-          p_consumed: number
-          p_entity: string
-          p_offset: number
-          p_owner: string
-          p_rows: Json
-          p_total: number
-        }
-        Returns: number
-      }
-      sportsdb_bridge_release: {
-        Args: { p_error: string; p_owner: string }
-        Returns: undefined
-      }
-      sportsdb_bridge_timestamp: { Args: { p_value: string }; Returns: string }
-      sportsdb_bridge_work: { Args: { p_owner: string }; Returns: Json }
-      sportsdb_save_records: { Args: { p_rows: Json }; Returns: number }
       store_product_contents_valid: {
         Args: { _contents: Json }
         Returns: boolean

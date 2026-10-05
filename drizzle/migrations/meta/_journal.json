@@ -162,6 +162,13 @@
       "when": 1790589599194,
       "tag": "0022_premium_official_team_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791217714102,
+      "tag": "0023_multiplayer_server_authority",
+      "breakpoints": true
     }
   ]
 }

@@ -64,14 +64,9 @@ export function useCareer() {
     enabled: signedIn !== null,
     queryFn: async (): Promise<{ career: CareerState | null; sync: SyncState }> => {
       const local = await loadLocalCareer();
-      const repairLocal = async (raw: CareerState) => {
-        const migrated = migrateCareer(raw);
-        if (JSON.stringify(raw) !== JSON.stringify(migrated)) {
-          await saveLocalCareer(raw, "Antes da correção de integridade");
-          await saveLocalCareer(migrated, "Correção de integridade");
-        }
-        return migrated;
-      };
+      // Migration is in memory only: rewriting the save here would bump its
+      // timestamp and let a stale local copy beat newer cloud progress.
+      const repairLocal = async (raw: CareerState) => migrateCareer(raw);
       if (!signedIn) return { career: local ? await repairLocal(local) : null, sync: "local" };
       if (!isOnline()) {
         return { career: local ? await repairLocal(local) : null, sync: "offline" };
