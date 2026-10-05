@@ -17,6 +17,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import type React from "react";
 import { createElement, memo, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { softShadowTexture } from "./soft-shadow";
 
 import {
   emptyPose,
@@ -908,8 +909,8 @@ export const PlayerRig = memo(function PlayerRig({
     >
       {/* sombra de contato */}
       <mesh ref={shadowRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
-        <circleGeometry args={[0.36, 16]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.3} depthWrite={false} />
+        <planeGeometry args={[0.95, 0.95]} />
+        <meshBasicMaterial map={softShadowTexture()} color="#000000" transparent opacity={0.3} depthWrite={false} />
       </mesh>
 
       {/*

@@ -166,14 +166,14 @@ function PitchMarks({ sim }: { sim: SimView }) {
         slot.x = p.x;
         slot.z = p.z;
         slot.life = 1;
-        slot.s = 0.35 + Math.min(0.7, sp * 0.5);
+        slot.s = 0.18 + Math.min(0.25, sp * 0.15);
         slot.r = Math.atan2(p.vx, p.vz);
       }
     }
 
     for (let i = 0; i < COUNT; i++) {
       const s = slots.current[i]!;
-      if (s.life > 0) s.life = Math.max(0, s.life - dt * 0.06);
+      if (s.life > 0) s.life = Math.max(0, s.life - dt * 0.4);
       dummy.position.set(s.x, 0.012, s.z);
       dummy.rotation.set(-Math.PI / 2, 0, -s.r);
       const k = s.life > 0 ? s.s : 0.0001;
@@ -187,7 +187,7 @@ function PitchMarks({ sim }: { sim: SimView }) {
   return (
     <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, COUNT]}>
       <circleGeometry args={[0.5, 8]} />
-      <meshBasicMaterial color="#0d3a1f" transparent opacity={0.22} depthWrite={false} />
+      <meshBasicMaterial color="#0d3a1f" transparent opacity={0.08} depthWrite={false} />
     </instancedMesh>
   );
 }
@@ -324,7 +324,7 @@ function Pitch({
       ) : null}
       {quality !== "baixa" && <GrassField sim={sim} quality={quality} webgl2={webgl2} />}
       {quality !== "baixa" && <PitchMarks sim={sim} />}
-      {quality !== "baixa" && wet > 0.5 ? <Puddles wet={wet} /> : null}
+      {quality !== "baixa" && wet > 0.75 ? <Puddles wet={wet} /> : null}
       <Goal side={1} quality={quality} sim={sim} />
       <Goal side={-1} quality={quality} sim={sim} />
       <CornerFlags sim={sim} webgl2={webgl2} />
@@ -341,12 +341,12 @@ function Puddles({ wet }: { wet: number }) {
       s = (s * 1103515245 + 12345) & 0x7fffffff;
       return s / 0x7fffffff;
     };
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 6; i++) {
       out.push({
         x: (r() * 2 - 1) * FIELD_X * 0.95,
         z: (r() * 2 - 1) * FIELD_Z * 0.95,
-        rx: 0.8 + r() * 2.6,
-        rz: 0.5 + r() * 1.8,
+        rx: 0.5 + r() * 1.1,
+        rz: 0.35 + r() * 0.7,
       });
     }
     return out;
@@ -369,7 +369,7 @@ function Puddles({ wet }: { wet: number }) {
             clearcoat={1}
             clearcoatRoughness={0.05}
             transparent
-            opacity={0.35 + wet * 0.35}
+            opacity={0.1 + wet * 0.12}
             depthWrite={false}
             envMapIntensity={1.6}
           />
