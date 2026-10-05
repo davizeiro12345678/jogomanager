@@ -233,24 +233,32 @@ function TransfersPage() {
                 return (
                   <div
                     key={t.id}
-                    className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-xl border border-border/40 bg-background/40 p-3 transition hover:border-primary/60 sm:grid-cols-[auto_minmax(0,1fr)_auto_6rem_auto]"
+                    className="flex flex-col gap-3 rounded-xl border border-border/40 bg-background/40 p-3 transition hover:border-primary/60 sm:flex-row sm:items-center"
                   >
-                    {club ? <Crest club={club} size={34} detail="simple" /> : <span className="w-[34px]" />}
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{t.name}</p>
-                      <p className="truncate text-[11px] text-muted-foreground">
-                        {t.pos} · {t.age} anos · {t.nationality ?? "—"} · {clubName(t.clubId)}
-                      </p>
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <span className="w-[34px] shrink-0">
+                        {club ? <Crest club={club} size={34} detail="simple" /> : null}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{t.name}</p>
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {t.pos} · {t.age} anos · {clubName(t.clubId)}
+                        </p>
+                      </div>
+                      <span className="shrink-0 font-display text-xl">{t.ovr}</span>
                     </div>
-                    <span className="font-display text-xl">{t.ovr}</span>
-                    <span className="col-span-2 col-start-2 whitespace-nowrap text-sm sm:col-span-1 sm:col-start-auto sm:text-right">{formatMoney(price)}</span>
-                    <button
-                      disabled={!open}
-                      onClick={() => setTarget(t)}
-                      className="col-span-3 whitespace-nowrap rounded-md bg-primary px-3 py-1.5 font-display sm:col-span-1 text-xs uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-40"
-                    >
-                      Negociar
-                    </button>
+                    <div className="flex items-center justify-between gap-3 sm:justify-end">
+                      <span className="whitespace-nowrap text-sm sm:w-20 sm:text-right">
+                        {formatMoney(price)}
+                      </span>
+                      <button
+                        disabled={!open}
+                        onClick={() => setTarget(t)}
+                        className="whitespace-nowrap rounded-md bg-primary px-4 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-40"
+                      >
+                        Negociar
+                      </button>
+                    </div>
                   </div>
                 );
               })
