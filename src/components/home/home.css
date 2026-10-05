@@ -635,11 +635,11 @@
   }
   .home-hero-image {
     object-position: 62% 50%;
-    opacity: 0.6;
+    opacity: 0.95;
   }
   .home-hero-shade {
     background:
-      linear-gradient(90deg, #08130ff0, #08140f76), linear-gradient(0deg, #0c1211, transparent 55%);
+      linear-gradient(180deg, #08130f66 0%, #08130fb8 45%, #0c1211 100%);
   }
   .home-hero h1 {
     font-size: clamp(40px, 9.2vw, 65px);
