@@ -97,23 +97,34 @@ async function saveVenue(db: Admin, venueId: string, localClubId?: string | null
   if (!name) return 0;
   const photo = str(venue["strThumb"]);
   const capacity = num(venue["intCapacity"]);
-  const { data, error } = await db
-    .from("stadiums")
-    .upsert(
-      {
-        source_id: venueId,
-        name,
-        city: str(venue["strCity"]),
-        country: str(venue["strCountry"]),
-        capacity:
-          capacity != null && capacity >= 0 && capacity < 500000 ? Math.round(capacity) : null,
-        photo_url: photo?.startsWith("https://") ? photo : null,
-        last_synced_at: new Date().toISOString(),
-      },
-      { onConflict: "source_id" },
-    )
-    .select("id")
-    .single();
+  const city = str(venue["strCity"]);
+  const saveVenue = (venueName: string) =>
+    db
+      .from("stadiums")
+      .upsert(
+        {
+          source_id: venueId,
+          name: venueName,
+          city,
+          country: str(venue["strCountry"]),
+          capacity:
+            capacity != null && capacity >= 0 && capacity < 500000 ? Math.round(capacity) : null,
+          photo_url: photo?.startsWith("https://") ? photo : null,
+          last_synced_at: new Date().toISOString(),
+        },
+        { onConflict: "source_id" },
+      )
+      .select("id")
+      .single();
+  let { data, error } = await saveVenue(name);
+  // Different real venues share common names ("Estadio Municipal"); stadium
+  // names are unique, so disambiguate by city and then by the stable source ID.
+  if (error?.message.includes("stadiums_name_key")) {
+    ({ data, error } = await saveVenue(`${name} (${city ?? venueId})`.slice(0, 200)));
+    if (error?.message.includes("stadiums_name_key")) {
+      ({ data, error } = await saveVenue(`${name} (${venueId})`.slice(0, 200)));
+    }
+  }
   if (error) throw new Error(error.message);
   if (localClubId && data?.id) {
     const result = await db.from("clubs").update({ stadium_id: data.id }).eq("id", localClubId);

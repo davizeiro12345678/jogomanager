@@ -169,6 +169,13 @@
       "when": 1791217714102,
       "tag": "0023_multiplayer_server_authority",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791219139759,
+      "tag": "0024_stadiums_source_id_conflict_target",
+      "breakpoints": true
     }
   ]
 }

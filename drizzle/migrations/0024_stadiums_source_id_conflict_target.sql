@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS stadiums_source_id_key ON public.stadiums (source_id);
