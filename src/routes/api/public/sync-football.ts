@@ -34,7 +34,15 @@ export const Route = createFileRoute("/api/public/sync-football")({
           return new Response("Invalid scope", { status: 400 });
         }
         const phase = url.searchParams.get("phase");
-        const phases = ["leagues", "teams", "players", "schedule", "events", "details"] as const;
+        const phases = [
+          "leagues",
+          "teams",
+          "kits",
+          "players",
+          "schedule",
+          "events",
+          "details",
+        ] as const;
         if (scope === "premium-chain" && (!phase || !phases.some((item) => item === phase))) {
           return new Response("Invalid premium phase", { status: 400 });
         }
