@@ -10,7 +10,7 @@ const SaveInput = z.object({
 /** Saves de atleta são pessoais e nunca contam como progresso oficial. */
 export const saveAthleteCloud = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => SaveInput.parse(input))
+  .validator((input: unknown) => SaveInput.parse(input))
   .handler(async ({ data, context }) => {
     if (JSON.stringify(data.state).length > 400_000) throw new Error("Save grande demais.");
     const { error } = await context.supabase
@@ -33,7 +33,7 @@ export const loadAthletesCloud = createServerFn({ method: "GET" })
 
 export const deleteAthleteCloud = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ slot: z.number().int().min(1).max(3) }).parse(input))
+  .validator((input: unknown) => z.object({ slot: z.number().int().min(1).max(3) }).parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("player_careers").delete().eq("user_id", context.userId).eq("slot", data.slot);
     if (error) throw new Error("Não foi possível excluir o atleta.");
