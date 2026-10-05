@@ -7,8 +7,8 @@ const GATEWAY_URL = "https://connector-gateway.lovable.dev/slack/api";
 const DEFAULT_CHANNEL = "social";
 
 export async function postSlackMessage(text: string, channel?: string): Promise<boolean> {
-  const lovableKey = process.env.LOVABLE_API_KEY;
-  const slackKey = process.env.SLACK_API_KEY;
+  const lovableKey = process.env["LOVABLE_API_KEY"];
+  const slackKey = process.env["SLACK_API_KEY"];
   if (!lovableKey || !slackKey) return false;
   const res = await fetch(`${GATEWAY_URL}/chat.postMessage`, {
     method: "POST",
@@ -18,7 +18,7 @@ export async function postSlackMessage(text: string, channel?: string): Promise<
       "Content-Type": "application/json; charset=utf-8",
     },
     body: JSON.stringify({
-      channel: channel ?? process.env.SLACK_NOTIFY_CHANNEL ?? DEFAULT_CHANNEL,
+      channel: channel ?? process.env["SLACK_NOTIFY_CHANNEL"] ?? DEFAULT_CHANNEL,
       text: text.slice(0, 3000),
     }),
   });
