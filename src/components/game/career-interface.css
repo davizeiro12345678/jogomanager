@@ -2704,3 +2704,8 @@ html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
 }
 .career-content :is(h1, h2):focus:not(:focus-visible),
 .career-content h1:focus { outline: none; box-shadow: none; }
+
+/* Painel: escudo do clube ao lado do título */
+.trainer-heading-club { display: flex; align-items: center; gap: 0.875rem; min-width: 0; }
+.trainer-heading-club > :first-child { flex-shrink: 0; filter: drop-shadow(0 6px 14px oklch(0 0 0 / 0.45)); }
+.trainer-summary { margin-top: 1rem; }

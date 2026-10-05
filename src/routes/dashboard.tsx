@@ -119,7 +119,9 @@ function TrainerDashboard({ career }: { career: CareerState }) {
   return (
     <GameShell career={career}>
       <div className="trainer-heading">
-        <div>
+        <div className="trainer-heading-club">
+          <Crest club={club} size={56} />
+          <div>
           <p className="trainer-eyebrow">Sua central de decisões</p>
           <h1>Painel do treinador</h1>
           <p>
@@ -127,63 +129,12 @@ function TrainerDashboard({ career }: { career: CareerState }) {
               ? `Prepare o ${club.name} para o próximo desafio.`
               : `Veja o balanço da temporada do ${club.name}.`}
           </p>
+          </div>
         </div>
         <Link to="/league" className="trainer-league-link">
           <Trophy size={17} />
           <span>{league.name}</span>
           <ArrowRight size={15} />
-        </Link>
-      </div>
-
-      <div className="trainer-summary" aria-label="Resumo da temporada">
-        <Link to="/league">
-          <span>
-            Na liga <Trophy size={16} aria-hidden="true" />
-          </span>
-          <strong>
-            {pos > 0 ? `${pos}º` : "—"}
-            <small>{myRow?.pts ?? 0} pontos</small>
-          </strong>
-          <p>Meta: {career.objective}º ou melhor</p>
-        </Link>
-        <Link to="/finances">
-          <span>
-            Caixa disponível <Coins size={16} aria-hidden="true" />
-          </span>
-          <strong>{formatMoney(career.finances.budget)}</strong>
-          <p>
-            Gerenciar orçamento <ArrowRight size={12} />
-          </p>
-        </Link>
-        <Link to="/squad">
-          <span>
-            Condição do elenco <HeartPulse size={16} aria-hidden="true" />
-          </span>
-          <strong>
-            {Math.round(
-              players.reduce((sum, p) => sum + p.condition, 0) / Math.max(1, players.length),
-            )}
-            <small>/ 100</small>
-          </strong>
-          <p>
-            {injured + suspended
-              ? `${injured} lesionados · ${suspended} suspensos`
-              : `${players.length} jogadores disponíveis`}
-          </p>
-        </Link>
-        <Link to="/board">
-          <span>
-            Confiança da diretoria <ClipboardList size={16} aria-hidden="true" />
-          </span>
-          <strong>
-            {Math.round(career.approval)}
-            <small>%</small>
-          </strong>
-          <p>
-            {pos <= career.objective
-              ? "Dentro do objetivo da temporada"
-              : "Acompanhar os objetivos"}
-          </p>
         </Link>
       </div>
 
@@ -328,6 +279,58 @@ function TrainerDashboard({ career }: { career: CareerState }) {
           </Link>
         </aside>
       )}
+
+      <div className="trainer-summary" aria-label="Resumo da temporada">
+        <Link to="/league">
+          <span>
+            Na liga <Trophy size={16} aria-hidden="true" />
+          </span>
+          <strong>
+            {pos > 0 ? `${pos}º` : "—"}
+            <small>{myRow?.pts ?? 0} pontos</small>
+          </strong>
+          <p>Meta: {career.objective}º ou melhor</p>
+        </Link>
+        <Link to="/finances">
+          <span>
+            Caixa disponível <Coins size={16} aria-hidden="true" />
+          </span>
+          <strong>{formatMoney(career.finances.budget)}</strong>
+          <p>
+            Gerenciar orçamento <ArrowRight size={12} />
+          </p>
+        </Link>
+        <Link to="/squad">
+          <span>
+            Condição do elenco <HeartPulse size={16} aria-hidden="true" />
+          </span>
+          <strong>
+            {Math.round(
+              players.reduce((sum, p) => sum + p.condition, 0) / Math.max(1, players.length),
+            )}
+            <small>/ 100</small>
+          </strong>
+          <p>
+            {injured + suspended
+              ? `${injured} lesionados · ${suspended} suspensos`
+              : `${players.length} jogadores disponíveis`}
+          </p>
+        </Link>
+        <Link to="/board">
+          <span>
+            Confiança da diretoria <ClipboardList size={16} aria-hidden="true" />
+          </span>
+          <strong>
+            {Math.round(career.approval)}
+            <small>%</small>
+          </strong>
+          <p>
+            {pos <= career.objective
+              ? "Dentro do objetivo da temporada"
+              : "Acompanhar os objetivos"}
+          </p>
+        </Link>
+      </div>
 
       <nav className="trainer-quick-actions" aria-label="Atalhos do clube">
         <Link to="/squad">
