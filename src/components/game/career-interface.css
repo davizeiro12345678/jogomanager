@@ -2669,3 +2669,17 @@ html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
   .trainer-live-dot { animation: none; }
   .career-primary-button:hover, .trainer-task:hover { transform: none; }
 }
+/* Programmatically focused headings (route change) should not show a ring box. */
+.career-shell :is(h1, h2)[tabindex="-1"]:focus:not(:focus-visible) { outline: none; box-shadow: none; }
+/* Compact stat labels inside overview cards: never break words mid-letter. */
+.trainer-club-grid .grid-cols-3 > div > p:first-child {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  word-break: normal;
+  overflow-wrap: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.career-content :is(h1, h2):focus:not(:focus-visible),
+.career-content h1:focus { outline: none; box-shadow: none; }

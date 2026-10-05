@@ -318,11 +318,11 @@ export function HudRing({
             style={{ transition: "stroke-dashoffset 800ms cubic-bezier(.22,1,.36,1)" }}
           />
         </svg>
-        <div className="absolute text-center leading-none">
+        <div className="absolute text-center leading-none" style={{ maxWidth: size * 0.68 }}>
           <p className="hud-num text-xl font-bold">
             <CountUp value={pct} />
           </p>
-          {label && <p className="mt-1 text-[10px] uppercase text-muted-foreground">{label}</p>}
+          {label && <p className="hud-ring-label mt-1 truncate uppercase text-muted-foreground">{label}</p>}
         </div>
       </div>
       {sub && (
