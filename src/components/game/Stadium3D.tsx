@@ -25,6 +25,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { FrameProbe } from "@/components/game/FrameProbe";
+import { PerfPanel } from "@/components/game/PerfPanel";
 import { GraphicsBoundary } from "@/components/game/GraphicsBoundary";
 import { MatchPlayers } from "@/components/game/players/MatchPlayers";
 import { OfficialRig } from "@/components/game/players/OfficialRig";
@@ -2601,6 +2602,7 @@ function Scene({
       />
       <AdaptiveEvents />
       <FrameProbe />
+      <PerfPanel />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
       {quality !== "baixa" ? (
