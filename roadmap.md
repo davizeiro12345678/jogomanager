@@ -56,3 +56,8 @@
 - [ ] Frases novas de narração (túnel, intervalo, taça; en/es) e cache de áudio
 - [ ] Mega importação (liga travada, calendários, detalhes, fotos, homônimos)
 - [ ] Painel desktop lento, partida ao vivo no celular, erros
+- [ ] Bolas verdes estranhas na partida + sombra do jogador (fotos do usuário)
+- [ ] Voz do navegador aparecendo no lugar da ElevenLabs
+- [ ] Cutscenes lentas para carregar
+- [ ] Estádio melhor, kits reais e números no 3D, comemorações realistas
+- [ ] Cena de gol importante + hino do clube no gol
