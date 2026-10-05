@@ -76,7 +76,8 @@ import {
   cinematicInitialQuality,
 } from "@/game/cinematic-performance";
 const CinematicLens = lazy(() => import("./cinematic/CinematicLens"));
-import { detectQuality, type QualityLevel } from "@/game/device";
+import { detectQuality, dprFor, type QualityLevel } from "@/game/device";
+import { Button } from "@/components/ui/button";
 
 type SetKind = CinematicSet;
 
@@ -112,7 +113,7 @@ function CelebrationRain() {
     for (let i = 0; i < COUNT; i++) {
       const p = parts[i]!;
       p.y -= p.fall * dt;
-      if (p.y < 0.05) p.y = 8 + Math.random() * 2;
+      if (p.y < 0.05) p.y = 8 + hash(i * 19 + Math.floor(t * 0.25)) * 2;
       dummy.position.set(p.x + Math.sin(t * 1.4 + p.ph) * 0.5, p.y, p.z);
       dummy.rotation.set(t * p.spin + p.ph, p.ph, t * p.spin * 0.6);
       dummy.updateMatrix();
@@ -440,15 +441,6 @@ function PressRoom({
 }) {
   const backdrop = useMemo(() => cinematicBackdrop(primary, secondary), [primary, secondary]);
   useEffect(() => () => releaseCinematicBackdrop(backdrop), [backdrop]);
-  const flashes = useRef<THREE.Group>(null);
-  useCinematicFrame((time) => {
-    if (!flashes.current) return;
-    flashes.current.children.forEach((child, i) => {
-      const m = (child as THREE.Mesh).material as THREE.MeshBasicMaterial;
-      const t = time * 3 + i * 1.9;
-      m.opacity = Math.max(0, Math.sin(t) ** 24);
-    });
-  });
   return (
     <group>
       <mesh receiveShadow rotation-x={-Math.PI / 2}>
@@ -515,14 +507,6 @@ function PressRoom({
         />
       ))}
       <PressFlashes />
-      <group ref={flashes}>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <mesh key={i} position={[-3.4 + i * 1.7, 1.5, 2.1]}>
-            <planeGeometry args={[0.5, 0.5]} />
-            <meshBasicMaterial color="#ffffff" transparent opacity={0} toneMapped={false} />
-          </mesh>
-        ))}
-      </group>
     </group>
   );
 }
@@ -1198,10 +1182,7 @@ function Stage({
       />
       <CinematicAtmosphere kind={kind} art={art} mood={mood} quality={quality} />
       <CinematicPortraitLight />
-      <CinematicSetBatch
-        key={`${art}-${kind}-${primary}-${secondary}-${quality}`}
-        onReady={onBatch}
-      >
+      <CinematicSetBatch key={`${art}-${kind}-${quality}`} onReady={onBatch}>
         {art !== "medical" && art !== "gym" && <CinematicSetFinish kind={kind} primary={primary} />}
         <CinematicStoryDressing
           kind={kind}
@@ -1403,13 +1384,14 @@ export const CinematicStage3D = memo(function CinematicStage3D({
     >
       <GraphicsBoundary
         fallback={
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={onUnavailable}
-            className="absolute inset-0 z-10 bg-background p-8 text-white"
+            className="absolute inset-0 z-10 h-auto rounded-none bg-background p-8 text-foreground"
           >
             A cena 3D não carregou. Abrir cena ilustrada.
-          </button>
+          </Button>
         }
       >
         {webglAvailable && !contextLost ? (
@@ -1417,7 +1399,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
             key={canvasGeneration}
             frameloop={paused || reduced || hidden ? "demand" : "always"}
             shadows={quality === "baixa" ? false : { type: THREE.PCFShadowMap }}
-            dpr={quality === "alta" ? [0.9, 1.4] : quality === "media" ? [0.75, 1.1] : 0.7}
+            dpr={dprFor(quality)}
             camera={{ position: [0, 2.2, 6.5], fov: 42, near: 0.05, far: 90 }}
             gl={{
               antialias: quality !== "baixa",
@@ -1523,15 +1505,16 @@ export const CinematicStage3D = memo(function CinematicStage3D({
             </CinematicRuntime>
           </Canvas>
         ) : (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={contextLost ? retryContext : onUnavailable}
-            className="absolute inset-0 z-10 bg-background p-8 text-white"
+            className="absolute inset-0 z-10 h-auto rounded-none bg-background p-8 text-foreground"
           >
             {contextLost
               ? "A cena 3D perdeu o contexto. Tentar novamente."
               : "O 3D está indisponível neste navegador. Abrir cena ilustrada."}
-          </button>
+          </Button>
         )}
       </GraphicsBoundary>
     </div>

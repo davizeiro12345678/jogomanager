@@ -5,7 +5,7 @@
 - [x] Ciclo 2: overall por atributos/potencial, regens (aposentadoria realista, joias), checagem integrada
 - [x] Ciclo 3: calibração dos placares + eventos (exibição na tela pendente)
 - [ ] Ciclo 4: cupons, Pix/boleto/wallets, descontos
-- [ ] Ciclo 5: etapas 3/4/5 conferidas
+- [ ] Ciclo 5: stack compatível atualizada; interface e runtime das cenas otimizados; etapas 3/4/5 ainda exigem medição em celular real
 - [ ] Ciclo 6: KTX2, iluminação, rig, transições
 
 ## Grande ciclo (plano aprovado 2026-09-25)
@@ -18,7 +18,7 @@
 - [ ] 4 Gráficos 3D — chuva, refletores, placas LED, bancos, túnel, bola e rede já existem; faltam validação de FPS/draw calls e refinamentos do rig
 - [ ] 5 Cutscenes — cenários 3D, diretor, timeline de voz, pular e movimento reduzido existem; falta expandir abertura, replays e cerimônias conforme o plano
 - [ ] 6 Simulação — calibragem de 2.000 partidas e teste tático determinístico feitos; faltam unificação dos lances da partida 3D e sim rápida e estresse de 2.000 partidas 3D (atual: 200)
-- [ ] 7 Design do jogo — navegação móvel com aria-current/toques de 44px, skeleton de rota e erros recuperáveis; falta padronização das demais telas e revisão dos cinco grupos
+- [ ] 7 Design do jogo — navegação móvel, foco, toques de 44px, hierarquia da carreira e telas principais padronizados; falta revisão visual dos cinco grupos com dados reais
 
 ## Importação e desempenho (pedido 2026-09-25)
 - [x] Endpoint protegido com validação de escopo e paginação; ligas e clubes locais importados (4.506 clubes).
@@ -39,7 +39,7 @@
 - [ ] Etapa 1: medição em celular real (sandbox sem GPU não serve para FPS).
 - [x] Etapa 3 medida: temporada automática ~14 ms por rodada (380 jogos, Node); Rust não compensa aqui (custo de troca de dados > ganho). Torcida já usa Rust. Ossos ficam no Three.js (copiar matrizes para WASM custaria mais). Física só com medição em celular real.
 - [ ] Etapa 4: modelo de jogador (corpo, rosto/cabelo, movimento, uniforme, 3 níveis).
-- [ ] Etapa 5: cenas 3D (abertura, túnel, gol com replay, intervalo/fim, taça).
+- [ ] Etapa 5: abertura, túnel, intervalo/fim e taça já têm cenários e direção; runtime móvel otimizado; falta validar replay de gol e cerimônias em aparelho real.
 - [ ] Etapa 6: medição antes/depois.
 - [x] Importação 2026-10-05: 8.079 jogadores duplicados antigos removidos; títulos/clubes anteriores e estatísticas percorridos para todos os 26.076 jogadores oficiais; históricos de clubes percorridos até o fim da lista vinculada.
 - [ ] Modelo de jogador e cenas 3D (etapas 4–5): próximo ciclo.

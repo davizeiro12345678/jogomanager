@@ -22,6 +22,7 @@ export function CinematicFrameProbe({
   const sample = useRef({
     frames: 0,
     seconds: 0,
+    diagnosticsSeconds: 1,
     times: [] as number[],
     visible: false,
     ready: false,
@@ -33,23 +34,29 @@ export function CinematicFrameProbe({
     const element = host.current;
     if (!element) return;
     const current = sample.current;
-    element.dataset["cinematicTime"] = runtime.clock.time.toFixed(3);
-    element.dataset["cinematicLineTime"] = runtime.clock.lineTime.toFixed(3);
-    element.dataset["cinematicGesture"] = runtime.cue?.gesture ?? "idle";
-    element.dataset["cinematicDeliveryPhase"] = runtime.cue
-      ? cinematicGestureAt(runtime.clock.lineTime, runtime.cue, 21).phase
-      : "rest";
-    element.dataset["cinematicDrill"] = cinematicDrillFor(runtime.cue?.id.split(":")[0]);
-    element.dataset["cinematicSubject"] = String(
-      camera.userData["cinematicSubject"] ?? "environment",
-    );
-    element.dataset["cinematicActorPresence"] = String(
-      camera.userData["cinematicActorPresence"] ?? "environment",
-    );
-    element.dataset["cinematicShotType"] = String(camera.userData["cinematicShotType"] ?? "master");
-    element.dataset["cinematicFraming"] = String(
-      camera.userData["cinematicFraming"] ?? "establishing",
-    );
+    current.diagnosticsSeconds += dt;
+    if (current.diagnosticsSeconds >= 0.25 || !current.visible) {
+      current.diagnosticsSeconds = 0;
+      element.dataset["cinematicTime"] = runtime.clock.time.toFixed(3);
+      element.dataset["cinematicLineTime"] = runtime.clock.lineTime.toFixed(3);
+      element.dataset["cinematicGesture"] = runtime.cue?.gesture ?? "idle";
+      element.dataset["cinematicDeliveryPhase"] = runtime.cue
+        ? cinematicGestureAt(runtime.clock.lineTime, runtime.cue, 21).phase
+        : "rest";
+      element.dataset["cinematicDrill"] = cinematicDrillFor(runtime.cue?.id.split(":")[0]);
+      element.dataset["cinematicSubject"] = String(
+        camera.userData["cinematicSubject"] ?? "environment",
+      );
+      element.dataset["cinematicActorPresence"] = String(
+        camera.userData["cinematicActorPresence"] ?? "environment",
+      );
+      element.dataset["cinematicShotType"] = String(
+        camera.userData["cinematicShotType"] ?? "master",
+      );
+      element.dataset["cinematicFraming"] = String(
+        camera.userData["cinematicFraming"] ?? "establishing",
+      );
+    }
     if (!current.visible) {
       current.visible = true;
       element.dataset["firstFrameMs"] = (performance.now() - openedAt).toFixed(1);

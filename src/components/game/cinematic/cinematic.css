@@ -2,11 +2,14 @@
 .cutscene-screen {
   --cine-panel: oklch(0.15 0.012 210 / 0.82);
   --cine-line: oklch(0.96 0.008 210 / 0.16);
+  --cine-text: oklch(0.98 0.006 210);
+  --cine-muted: oklch(0.82 0.014 210);
+  --cine-highlight: oklch(0.84 0.105 82);
   position: fixed;
   inset: 0;
   z-index: 70;
   isolation: isolate;
-  color: oklch(0.98 0.006 210);
+  color: var(--cine-text);
   background: oklch(0.09 0.012 210);
   outline: none;
 }
@@ -19,15 +22,8 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    #030609 0,
-    #030609 1.3dvh,
-    transparent 1.3dvh,
-    transparent 96.5dvh,
-    #030609 96.5dvh
-  );
-  box-shadow: inset 0 0 10dvw rgb(0 0 0 / 0.18);
+  background: linear-gradient(to bottom, oklch(0.06 0.01 210) 0 1.3dvh, transparent 1.3dvh 96.5dvh, oklch(0.06 0.01 210) 96.5dvh);
+  box-shadow: inset 0 0 10dvw oklch(0 0 0 / 0.18);
 }
 .cutscene-slate {
   position: absolute;
@@ -38,7 +34,7 @@
   max-width: 75%;
   padding: 0.7rem 1.1rem;
   border-left: 2px solid var(--color-primary);
-  background: linear-gradient(90deg, rgb(3 7 12 / 0.7), transparent);
+  background: linear-gradient(90deg, oklch(0.08 0.014 210 / 0.7), transparent);
   pointer-events: none;
   animation: cutscene-slate 4.6s both;
 }
@@ -46,12 +42,12 @@
   font-size: 0.65rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #c3cbd4;
+  color: var(--cine-muted);
 }
 .cutscene-slate strong {
   font-size: clamp(1.15rem, 2.5vw, 2rem);
   font-weight: 600;
-  text-shadow: 0 2px 12px #000;
+  text-shadow: 0 2px 12px oklch(0 0 0);
 }
 @keyframes cutscene-slate {
   0% {
@@ -73,13 +69,13 @@
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #e6c886;
+  color: var(--cine-highlight);
 }
 .cutscene-decision {
   margin: 0;
   padding-left: 0.5rem;
   font-size: 0.72rem;
-  color: #e6c886;
+  color: var(--cine-highlight);
 }
 .cutscene-progress {
   display: flex;
@@ -90,13 +86,13 @@
   flex: 1;
   height: 2px;
   border-radius: 2px;
-  background: rgb(255 255 255 / 0.15);
+  background: oklch(1 0 0 / 0.15);
 }
 .cutscene-progress span[data-complete="true"] {
-  background: rgb(255 255 255 / 0.5);
+  background: oklch(1 0 0 / 0.5);
 }
 .cutscene-progress span[data-active="true"] {
-  background: #e6c886;
+  background: var(--cine-highlight);
 }
 .cutscene-loading {
   position: absolute;
@@ -106,7 +102,7 @@
   padding: 0.8rem 1.2rem;
   border-radius: 0.75rem;
   background: var(--cine-panel);
-  color: white;
+  color: var(--cine-text);
   text-align: center;
   font-size: 0.875rem;
 }
@@ -150,7 +146,7 @@
   padding: 1rem 1.3rem;
   border: 1px solid var(--cine-line);
   border-radius: 0.9rem;
-  background: linear-gradient(135deg, rgb(12 20 29 / 0.94), rgb(10 17 24 / 0.83));
+  background: linear-gradient(135deg, oklch(0.17 0.016 215 / 0.94), oklch(0.14 0.014 215 / 0.86));
   box-shadow: 0 12px 32px oklch(0.04 0 0 / 0.3);
   backdrop-filter: blur(8px);
   overflow-y: auto;
@@ -174,7 +170,8 @@
   padding: 0.35rem;
   border: 1px solid var(--cine-line);
   border-radius: 0.9rem;
-  background: var(--cine-panel);
+  background: color-mix(in oklab, var(--cine-panel) 92%, transparent);
+  backdrop-filter: blur(12px) saturate(1.15);
 }
 .cutscene-settings {
   display: flex;
@@ -229,6 +226,10 @@
   border-color: var(--color-primary);
   background-color: color-mix(in oklab, var(--color-primary) 12%, transparent);
 }
+.cutscene-choice:active,
+.cutscene-control:active {
+  transform: translateY(1px);
+}
 .cutscene-screen[data-scene-mood="bad"] .cutscene-speaker {
   color: #e1b8b4;
 }
@@ -239,6 +240,10 @@
   opacity: 0.4;
 }
 @media (max-width: 35rem) {
+  .cutscene-top {
+    align-items: flex-start;
+    padding-inline: 0.75rem;
+  }
   .cutscene-bottom {
     width: calc(100% - 1rem);
     bottom: max(0.5rem, env(safe-area-inset-bottom));
@@ -249,6 +254,17 @@
   }
   .cutscene-controls {
     gap: 0.15rem;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+  .cutscene-controls::-webkit-scrollbar {
+    display: none;
+  }
+  .cutscene-settings {
+    max-height: min(14rem, 32dvh);
+    overflow-y: auto;
   }
 }
 @media (prefers-reduced-motion: reduce) {
