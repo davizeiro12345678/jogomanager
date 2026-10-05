@@ -33,3 +33,11 @@
 
 ## Importação premium prolongada (pedido 2026-09-27)
 - [ ] Executar por até uma hora seguida lotes limitados dos endpoints premium para logos, kits, jogadores, históricos e eventos, registrando offsets e resultados sem repetir ou inventar dados.
+
+## Ciclo CPU/Rust/jogador/cenas (plano 2026-10-05)
+- [x] Etapa 2 (parcial, já existente): animação de jogadores longe em taxa reduzida (1/36s, 1/16s), jogadores fora de quadro só atualizam posição, sombra só perto, canvas pausa com aba oculta.
+- [ ] Etapa 1: medição em celular real (sandbox sem GPU não serve para FPS).
+- [ ] Etapa 3: Rust/WASM para torcida, ossos/IK, simulação rápida; física só com teste de 2.000 partidas idênticas.
+- [ ] Etapa 4: modelo de jogador (corpo, rosto/cabelo, movimento, uniforme, 3 níveis).
+- [ ] Etapa 5: cenas 3D (abertura, túnel, gol com replay, intervalo/fim, taça).
+- [ ] Etapa 6: medição antes/depois.
