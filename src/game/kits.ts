@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { kitStyleFor } from "./customStyle";
+import { REAL_KITS } from "./real-kits";
 
 export type KitPattern =
   | "solid"
@@ -77,7 +78,7 @@ function shortsAndSocks(base: string, detail: string, seed: string) {
 }
 
 export function kitFor(clubId: string, primary: string, secondary: string, away = false): Kit {
-  const custom = kitStyleFor(clubId);
+  const custom = kitStyleFor(clubId) ?? REAL_KITS[clubId];
   if (custom) {
     const base = away ? custom.awayBase : custom.base;
     const detail = away ? custom.awayDetail : custom.detail;
