@@ -979,6 +979,18 @@ export function selectClip(c: SelectCtx): ClipName {
   // sorteio é lento, então cada defesa usa um clipe só do início ao fim
   if (c.action === "save") return pick<ClipName>(["gkSaveLow", "gkDiveLow"], c, 1);
   if (c.action === "saveHigh") return pick<ClipName>(["gkSaveHigh", "gkDiveHigh"], c, 1);
+  if (c.action === "celebrate")
+    return pick<ClipName>(
+      ["celebrateArms", "celebrateArmsWide", "celebrateFistPump", "celebrateBadgeKiss"],
+      c,
+      2.4,
+    );
+  if (c.action === "celebrateRun")
+    return pick<ClipName>(["celebrateRun", "celebrateSiuu", "celebrateSlideStop"], c, 2.4);
+  if (c.action === "kneeSlide")
+    return pick<ClipName>(["kneeSlide", "celebrateKneeSlide"], c, 2.4);
+  if (c.action === "hug")
+    return pick<ClipName>(["groupHug", "celebrateJumpHug", "celebrateTeamLine"], c, 2.4);
   if (c.action) return ACTION_CLIP[c.action];
 
   if (c.isGK) {
