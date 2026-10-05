@@ -300,8 +300,8 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                     Destaque · melhor valor
                   </span>
                 )}
-                <div className="mx-5 mt-5 grid h-28 place-items-center overflow-hidden rounded-lg border border-border/50 bg-secondary/45">
-                  <div className="grid h-16 w-16 place-items-center rounded-full border border-primary/30 bg-primary/10 text-primary [&>svg]:h-8 [&>svg]:w-8">
+                <div className="mx-5 mt-5 grid h-20 place-items-center overflow-hidden rounded-lg border border-primary/25 bg-[radial-gradient(circle_at_50%_120%,color-mix(in_oklab,var(--primary)_35%,transparent),transparent_70%)]">
+                  <div className="grid h-14 w-14 place-items-center rounded-full border border-primary/40 bg-primary/15 text-primary shadow-lg [&>svg]:h-7 [&>svg]:w-7">
                     {KIND_ICONS[p.kind] ?? <Package />}
                   </div>
                 </div>
