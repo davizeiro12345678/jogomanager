@@ -466,17 +466,17 @@ function Weather({
             float fall = mix(2.4, 34.0, uRain);
             float cycle = 36.0;
             vec3 world = position;
-            world.y = mod(aOffset.y - uTime * fall * aSpeed + cycle * 64.0, cycle);
-            world.x += aOffset.x + uWind * uTime * mix(1.6, 5.0, uRain);
-            world.z += aOffset.z;
-            world.z += (1.0 - uRain) * sin(aPhase + world.y * 0.4 + uTime) * 0.42;
             if (uRain > 0.5) {
               float tilt = uWind * 0.28;
               mat2 rotation = mat2(cos(tilt), -sin(tilt), sin(tilt), cos(tilt));
               world.xy = rotation * world.xy;
             } else {
-              world.y += position.y * -0.5;
+              world.y *= 0.5;
             }
+            float spanX = ${(FIELD_X + 26) * 2}.0;
+            world.x += mod(aOffset.x + uWind * uTime * mix(1.6, 5.0, uRain) + spanX, spanX) - spanX * 0.5;
+            world.y += mod(aOffset.y - uTime * fall * aSpeed + cycle * 64.0, cycle);
+            world.z += aOffset.z + (1.0 - uRain) * sin(aPhase + world.y * 0.4 + uTime) * 0.42;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(world, 1.0);
           }
         `}
