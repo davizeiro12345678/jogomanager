@@ -233,21 +233,21 @@ function TransfersPage() {
                 return (
                   <div
                     key={t.id}
-                    className="flex flex-wrap items-center gap-3 rounded-xl border border-border/40 bg-background/40 p-3 transition hover:border-primary/60"
+                    className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-xl border border-border/40 bg-background/40 p-3 transition hover:border-primary/60 sm:grid-cols-[auto_minmax(0,1fr)_auto_6rem_auto]"
                   >
-                    {club ? <Crest club={club} size={34} detail="simple" /> : null}
+                    {club ? <Crest club={club} size={34} detail="simple" /> : <span className="w-[34px]" />}
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{t.name}</p>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="truncate text-[11px] text-muted-foreground">
                         {t.pos} · {t.age} anos · {t.nationality ?? "—"} · {clubName(t.clubId)}
                       </p>
                     </div>
-                    <span className="ml-auto font-display text-xl">{t.ovr}</span>
-                    <span className="w-24 text-right text-sm">{formatMoney(price)}</span>
+                    <span className="font-display text-xl">{t.ovr}</span>
+                    <span className="col-span-2 col-start-2 whitespace-nowrap text-sm sm:col-span-1 sm:col-start-auto sm:text-right">{formatMoney(price)}</span>
                     <button
                       disabled={!open}
                       onClick={() => setTarget(t)}
-                      className="rounded-md bg-primary px-3 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-40"
+                      className="whitespace-nowrap rounded-md bg-primary px-3 py-1.5 font-display text-xs uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-40"
                     >
                       Negociar
                     </button>
@@ -317,7 +317,7 @@ function SellPanel({ career, update }: { career: Career; update: (s: Career) => 
                   <span className="text-muted-foreground">{p.pos}</span> {p.name}
                   <span className="ml-2 font-display">{p.ovr}</span>
                 </span>
-                <span className="text-xs text-muted-foreground">{formatWage(p.wage)}</span>
+                <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">{formatWage(p.wage)}</span>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="text-[11px] text-muted-foreground">
