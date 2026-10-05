@@ -673,7 +673,7 @@ function LiveMatch({
             ? "pressure"
             : "routine";
       if (ev === "goal" && importance !== "routine" && (e.side === "home" || e.side === "away")) {
-        playGoalAnthem((e.side === "home" ? sim.home : sim.away).id);
+        playGoalAnthem((e.side === "home" ? sim.home : sim.away).clubId);
       }
       n.speak(ev, team, {
         minute: e.minute,
