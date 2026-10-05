@@ -737,13 +737,15 @@ export const PlayerRig = memo(function PlayerRig({
       // quadril: no ar ela encolhe e desbota, na base aberta ela alarga.
       const contact = Math.max(ground.contactL, ground.contactR);
       const lift = Math.max(0, ground.rootY);
-      const s = (1 - lift * 0.55) * (0.72 + 0.28 * contact) * (1 + ground.stanceSpread * 0.35);
-      shadowRef.current.scale.setScalar(Math.max(0.35, s));
+      const s = (1 - lift * 0.58) * (0.7 + 0.3 * contact);
+      const width = Math.max(0.3, s * (0.68 + ground.stanceSpread * 0.22));
+      const depth = Math.max(0.22, s * 0.44);
+      shadowRef.current.scale.set(width, depth, 1);
       // a sombra vive no gramado, não na raiz inclinada/erguida do atleta
       shadowRef.current.position.y = -ground.rootY + 0.012;
       shadowRef.current.rotation.set(-Math.PI / 2 - g.rotation.x, 0, -g.rotation.z);
       const m = shadowRef.current.material as THREE.MeshBasicMaterial;
-      m.opacity = 0.36 * Math.max(0.18, contact) * (1 - Math.min(0.7, lift));
+      m.opacity = 0.24 * Math.max(0.16, contact) * (1 - Math.min(0.74, lift));
     }
   });
 
@@ -909,8 +911,15 @@ export const PlayerRig = memo(function PlayerRig({
     >
       {/* sombra de contato */}
       <mesh ref={shadowRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
-        <planeGeometry args={[0.95, 0.95]} />
-        <meshBasicMaterial map={softShadowTexture()} color="#000000" transparent opacity={0.3} depthWrite={false} />
+        <planeGeometry args={[0.88, 0.88]} />
+        <meshBasicMaterial
+          map={softShadowTexture()}
+          color="#000000"
+          transparent
+          opacity={0.24}
+          depthWrite={false}
+          toneMapped={false}
+        />
       </mesh>
 
       {/*

@@ -577,6 +577,7 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
   const [panel, setPanel] = useState("motion");
   const [viewReset, setViewReset] = useState(0);
   const [cameraCommand, setCameraCommand] = useState<CameraCommand>(null);
+  const [sceneStatus, setSceneStatus] = useState<"loading" | "ready">("loading");
   useEffect(() => {
     if (reducedMotion) setPaused(true);
   }, [reducedMotion]);
@@ -614,6 +615,7 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
       aria-label={t("studio.preview")}
       className="studio-card"
       data-cinematic-covered={cinematicCovered}
+      data-scene-status={sceneStatus}
     >
       <div className="studio-toolbar">
         <div className="studio-title">
@@ -653,6 +655,7 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                 onCreated={({ gl }) => {
                   gl.toneMapping = THREE.ACESFilmicToneMapping;
                   gl.toneMappingExposure = 0.9;
+                  setSceneStatus("ready");
                 }}
                 fallback={
                   <p role="status" className="p-8 text-center">

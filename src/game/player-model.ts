@@ -312,7 +312,10 @@ export function lookWithPhysique(
   if (!hasWeight) return height === look.height ? look : { ...look, height };
   const weight = Math.max(48, Math.min(120, measurements.weight!));
   const bodyMassIndex = weight / (height * 1.8) ** 2;
-  const girth = Math.max(0.87, Math.min(1.16, Math.sqrt(bodyMassIndex / 23.7)));
+  // Footballers carry mass through the chest, glutes and thighs rather than
+  // expanding every joint uniformly. Keep the global frame athletic; local
+  // surfaces add the positional muscle volume below.
+  const girth = Math.max(0.89, Math.min(1.1, Math.sqrt(bodyMassIndex / 24.8)));
   return {
     ...look,
     height,
@@ -368,21 +371,21 @@ export function proportionsFor(look: PlayerLook): Proportions {
   // Breadth varies independently from stature, but short, strong athletes
   // still need a human shoulder span. Bound the whole frame together so
   // deltoids, torso and pelvis keep their relative widths.
-  const shoulderEnvelope = 0.375 * build.shoulder * 1.04 + 0.065 * 2.36;
+  const shoulderEnvelope = 0.35 * build.shoulder * 1.04 + 0.058 * 2.36;
   const frameScale = Math.min(
     Math.max(g * strong * metricScale, (1.8 * h * 0.245) / shoulderEnvelope),
-    (1.8 * h * 0.35) / shoulderEnvelope,
+    (1.8 * h * 0.315) / shoulderEnvelope,
   );
 
   return {
     hipY: thigh + shin + footH * 0.84 + rawHipH * metricScale * 0.4,
-    hipW: 0.255 * frameScale,
+    hipW: 0.232 * frameScale,
     hipH: rawHipH * metricScale,
     spineLen: rawSpineLen * metricScale,
     chestLen: rawChestLen * metricScale,
-    chestW: 0.21 * frameScale,
-    chestD: 0.123 * frameScale * (look.bodyType === "strong" ? 1.05 : 1),
-    shoulderW: 0.375 * build.shoulder * frameScale,
+    chestW: 0.196 * frameScale,
+    chestD: 0.116 * frameScale * (look.bodyType === "strong" ? 1.04 : 1),
+    shoulderW: 0.35 * build.shoulder * frameScale,
     neckLen: rawNeckLen * metricScale,
     neckR: 0.048 * g * (look.role === "DF" || look.role === "GK" ? 1.06 : 1) * metricScale,
     headR,
@@ -393,14 +396,14 @@ export function proportionsFor(look: PlayerLook): Proportions {
     chinFwd: headR * (0.12 + (faceLong - 0.94) * 0.5),
     upperArm: 0.3 * h * metricScale * armSpan,
     foreArm: 0.255 * h * metricScale * armSpan,
-    armR: 0.065 * frameScale,
+    armR: 0.058 * frameScale,
     armSpan,
     posture,
-    handR: 0.049 * g * metricScale,
+    handR: 0.052 * Math.sqrt(g) * metricScale,
     thigh,
     shin,
-    legR: 0.078 * frameScale,
-    footLen: 0.26 * h * metricScale,
+    legR: 0.071 * frameScale,
+    footLen: 0.255 * h * metricScale,
     footH,
   };
 }

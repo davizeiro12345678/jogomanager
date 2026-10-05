@@ -55,6 +55,17 @@ describe("adult player anatomy", () => {
     }
   });
 
+  it("keeps heavy athletes inside an athletic frame instead of scaling every joint equally", () => {
+    const base = lookFor("strong-athlete-frame", "DF");
+    const strong = lookWithPhysique(base, { height: 188, weight: 104 });
+    const p = proportionsFor(strong);
+    const m = anatomyMeasurements(p);
+    expect(strong.girth).toBeLessThanOrEqual(1.1);
+    expect(m.shoulderWidth / m.height).toBeLessThan(0.32);
+    expect(p.hipW * 2 / m.height).toBeLessThan(0.2);
+    expect(p.armR / p.headR).toBeLessThan(0.7);
+  });
+
   it("builds closed tapered limbs with finite, smooth seam normals", () => {
     for (const kind of ["upperArm", "forearm", "thigh", "calf"] satisfies LimbProfile[]) {
       const geometry = anatomicalLimb(kind, 0.4, 0.05, 12);
