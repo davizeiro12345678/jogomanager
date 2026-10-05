@@ -37,7 +37,7 @@
 ## Ciclo CPU/Rust/jogador/cenas (plano 2026-10-05)
 - [x] Etapa 2 (parcial, já existente): animação de jogadores longe em taxa reduzida (1/36s, 1/16s), jogadores fora de quadro só atualizam posição, sombra só perto, canvas pausa com aba oculta.
 - [ ] Etapa 1: medição em celular real (sandbox sem GPU não serve para FPS).
-- [ ] Etapa 3: Rust/WASM para torcida, ossos/IK, simulação rápida; física só com teste de 2.000 partidas idênticas.
+- [x] Etapa 3 medida: temporada automática ~14 ms por rodada (380 jogos, Node); Rust não compensa aqui (custo de troca de dados > ganho). Torcida já usa Rust. Ossos ficam no Three.js (copiar matrizes para WASM custaria mais). Física só com medição em celular real.
 - [ ] Etapa 4: modelo de jogador (corpo, rosto/cabelo, movimento, uniforme, 3 níveis).
 - [ ] Etapa 5: cenas 3D (abertura, túnel, gol com replay, intervalo/fim, taça).
 - [ ] Etapa 6: medição antes/depois.
