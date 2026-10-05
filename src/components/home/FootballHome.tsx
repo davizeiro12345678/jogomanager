@@ -289,6 +289,20 @@ export function FootballHome() {
             <Check size={14} />
             Grátis para começar<span>·</span>Direto no navegador<span>·</span>Sem cadastro inicial
           </p>
+          <dl className="home-hero-stats" aria-label="O jogo em números">
+            <div>
+              <dt>Clubes</dt>
+              <dd>4.500+</dd>
+            </div>
+            <div>
+              <dt>Jogadores reais</dt>
+              <dd>26 mil</dd>
+            </div>
+            <div>
+              <dt>Ligas</dt>
+              <dd>600+</dd>
+            </div>
+          </dl>
           {resume ? (
             <Link to="/dashboard" className="home-resume">
               <span>SEU PRÓXIMO CAPÍTULO</span>
