@@ -20,6 +20,7 @@ import { ArenaArchitecture } from "@/components/game/stadium/ArenaArchitecture";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, AdaptiveEvents, Trail } from "@react-three/drei";
 import { easing } from "maath";
+import { createNoise2D } from "simplex-noise";
 import type React from "react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -625,6 +626,8 @@ function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: Sim
   );
 }
 
+const windNoise = createNoise2D(() => 0.4242);
+
 function CornerFlags({ sim, webgl2 }: { sim: SimView; webgl2: boolean }) {
   const ref = useRef<THREE.Group>(null);
   const uTime = useRef({ value: 0 });
@@ -658,8 +661,8 @@ function CornerFlags({ sim, webgl2 }: { sim: SimView; webgl2: boolean }) {
   useEffect(() => () => cloth.dispose(), [cloth]);
   useFrame(({ clock }) => {
     uTime.current.value = clock.elapsedTime;
-    const gust =
-      0.75 + 0.25 * Math.sin(clock.elapsedTime * 0.9) + 0.12 * Math.sin(clock.elapsedTime * 2.7);
+    // rajadas orgânicas: 1 amostra de ruído por quadro (custo desprezível)
+    const gust = 0.8 + 0.35 * windNoise(clock.elapsedTime * 0.45, 0);
     const wind = sim.wind?.strength01 ?? 0.25;
     uAmp.current.value = (0.015 + wind * 0.2) * gust;
     const g = ref.current;

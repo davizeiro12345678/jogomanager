@@ -50,6 +50,7 @@ import { ShortcutsDialog } from "./ShortcutsDialog";
 import { Crest } from "./Crest";
 import type { CareerState } from "@/game/types";
 import { useActiveTimeTracking } from "@/features/activity/ActivityRanking";
+import { useDrag } from "@use-gesture/react";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { nextFixture } from "@/game/season";
 
@@ -129,6 +130,14 @@ export function GameShell({
     return () => cancelAnimationFrame(frame);
   }, []);
   const [menuOpen, setMenuOpen] = useState(false);
+  // deslizar o menu para fora fecha (gesto natural no celular)
+  const bindMenuSwipe = useDrag(
+    ({ last, movement: [mx], velocity: [vx] }) => {
+      const outward = dir === "rtl" ? mx : -mx;
+      if (last && (outward > 70 || (outward > 20 && vx > 0.5))) setMenuOpen(false);
+    },
+    { axis: "x", filterTaps: true, pointer: { touch: true } },
+  );
   const [menuQuery, setMenuQuery] = useState("");
   useEffect(() => {
     setMenuOpen(false);
@@ -385,6 +394,8 @@ export function GameShell({
           side={dir === "rtl" ? "right" : "left"}
           id="career-mobile-menu"
           className="career-menu-sheet"
+          {...bindMenuSwipe()}
+          style={{ touchAction: "pan-y" }}
           closeLabel={t("nav.closeMenu")}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
