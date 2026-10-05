@@ -747,14 +747,10 @@
 }
 .career-menu-sheet,
 .career-preferences {
-  --background: var(--background);
-  --foreground: var(--foreground);
-  --card: var(--card);
-  --muted-foreground: var(--muted-foreground);
+  /* Never redeclare a token from itself: a cyclic custom property becomes
+     invalid and left this drawer transparent over the page. */
   --secondary: var(--career-line);
   --border: var(--career-line);
-  --input: var(--input);
-  --career-line: var(--career-line);
   --career-accent-soft: color-mix(in oklab, var(--primary) 12%, var(--card));
   background: var(--background);
   color: var(--foreground);

@@ -98,7 +98,7 @@ const clampStage = (stage: number) => Math.max(0, Math.min(8, Math.floor(stage))
 export function resolveRuntimeSceneBudget(tier: GraphicsTier, rawStage = 0): RuntimeSceneBudget {
   const stage = clampStage(rawStage);
   const base = BASE[tier];
-  const resolutionScale = stage >= 2 ? 0.76 : stage >= 1 ? 0.88 : 1;
+  const resolutionScale = stage >= 3 ? 0.66 : stage >= 2 ? 0.76 : stage >= 1 ? 0.88 : 1;
   const textureScale = stage >= 7 ? 0.5 : stage >= 5 ? 0.75 : 1;
   const grassScale = stage >= 4 ? 0.32 : stage >= 3 ? 0.58 : 1;
   const crowdScale = stage >= 6 ? 0.42 : stage >= 5 ? 0.62 : stage >= 4 ? 0.78 : 1;
@@ -125,7 +125,8 @@ export function resolveRuntimeSceneBudget(tier: GraphicsTier, rawStage = 0): Run
     replayHeroPlayers: Math.max(0, Math.round(base.replayHeroPlayers * heroScale)),
     weatherDensity: base.weatherDensity * effectsScale,
     goalFxDensity: base.goalFxDensity * effectsScale,
-    shadows: stage < 6,
+    // Dynamic shadows are the biggest GPU cost on phones; drop them before crowd/heroes.
+    shadows: stage < 4,
     post: stage >= 7 ? "off" : stage >= 6 && base.post === "cinema" ? "balanced" : base.post,
   };
 }
