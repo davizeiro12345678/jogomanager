@@ -314,7 +314,7 @@ export function CrowdLod({
       for (let offset = 0; offset < selected.indices.length; offset += 1) {
         const index = selected.indices[offset]!;
         const position = crowd.positions[index]!;
-        const tier = selected.tiers[offset]!;
+        const tier: number = selected.tiers[offset]!;
         const mesh = refs.current[tier];
         if (!mesh || data.counts[tier]! >= MAX_CROWD_INSTANCES) continue;
         const instance = data.counts[tier]!++;

@@ -789,6 +789,29 @@ export type Database = {
           },
         ]
       }
+      match_room_secrets: {
+        Row: {
+          room_id: string
+          seed: string
+        }
+        Insert: {
+          room_id: string
+          seed: string
+        }
+        Update: {
+          room_id?: string
+          seed?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_room_secrets_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: true
+            referencedRelation: "match_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_rooms: {
         Row: {
           code: string
@@ -800,6 +823,7 @@ export type Database = {
           id: string
           minute: number
           seed: string
+          server_seeded: boolean
           state: Json
           status: string
           updated_at: string
@@ -814,6 +838,7 @@ export type Database = {
           id?: string
           minute?: number
           seed: string
+          server_seeded?: boolean
           state?: Json
           status?: string
           updated_at?: string
@@ -828,6 +853,7 @@ export type Database = {
           id?: string
           minute?: number
           seed?: string
+          server_seeded?: boolean
           state?: Json
           status?: string
           updated_at?: string
