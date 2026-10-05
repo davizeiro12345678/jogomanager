@@ -1,6 +1,7 @@
 import { useFrame } from "@react-three/fiber";
 import { createElement, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { softShadowTexture } from "./soft-shadow";
 import { emptyPose, getClip, mixPose, selectClip, type ClipName } from "@/game/animation";
 import { gaitPoseAt, locomotionWeight } from "@/game/gait-kinematics";
 import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
@@ -558,7 +559,7 @@ export function LowPlayers({
           renderOrder={name === "shadow" ? 1 : 0}
         >
           {name === "shadow" ? (
-            <meshBasicMaterial color="#050806" transparent opacity={0.23} depthWrite={false} />
+            <meshBasicMaterial map={softShadowTexture()} color="#050806" transparent opacity={0.32} depthWrite={false} />
           ) : (
             <meshStandardMaterial
               color="white"

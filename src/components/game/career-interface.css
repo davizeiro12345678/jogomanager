@@ -2709,3 +2709,4 @@ html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
 .trainer-heading-club { display: flex; align-items: center; gap: 0.875rem; min-width: 0; }
 .trainer-heading-club > :first-child { flex-shrink: 0; filter: drop-shadow(0 6px 14px oklch(0 0 0 / 0.45)); }
 .trainer-summary { margin-top: 1rem; }
+.trainer-match-teams h3 { overflow-wrap: normal; word-break: keep-all; hyphens: none; font-size: clamp(1rem, 2.4vw, 1.75rem); text-wrap: balance; }

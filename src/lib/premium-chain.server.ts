@@ -236,10 +236,21 @@ export async function syncPremiumChain(options: {
       const { data: locals } = linked.local_competition_id
         ? await db.from("clubs").select("id,name").eq("competition_id", linked.local_competition_id)
         : { data: null };
+      // Big leagues outlast one budget: skip teams already saved, stop at the
+      // deadline without advancing the offset, and the next call resumes.
+      const { data: done } = await db
+        .from("official_teams")
+        .select("source_id")
+        .eq("league_source_id", linked.source_id);
+      const doneIds = new Set((done ?? []).map((row) => row.source_id));
+      let leagueComplete = true;
       for (const listed of teams) {
-        // Finish the entire league before advancing its offset; retries upsert by source ID.
         const id = str(listed["idTeam"]);
-        if (!id) continue;
+        if (!id || doneIds.has(id)) continue;
+        if (!withinBudget()) {
+          leagueComplete = false;
+          break;
+        }
         const team = (await sdbV2.lookupTeam(id)) ?? listed;
         const name = str(team["strTeam"]) ?? str(listed["strTeam"]);
         if (!name) continue;
@@ -293,6 +304,7 @@ export async function syncPremiumChain(options: {
         }
         imported++;
       }
+      if (!leagueComplete) break;
       processed++;
     }
     return {
