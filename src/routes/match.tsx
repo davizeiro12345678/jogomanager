@@ -671,6 +671,9 @@ function LiveMatch({
           : snap.minute >= 65 && goalDifference <= 2
             ? "pressure"
             : "routine";
+      if (ev === "goal" && importance !== "routine" && (e.side === "home" || e.side === "away")) {
+        playGoalAnthem((e.side === "home" ? sim.home : sim.away).id);
+      }
       n.speak(ev, team, {
         minute: e.minute,
         homeGoals: snap.hg,
