@@ -602,12 +602,12 @@
 .career-search-button {
   min-height: 44px;
   background: var(--card);
-  border-color: #33485c;
+  border-color: var(--career-line);
 }
 .career-icon-button,
 .career-menu-trigger {
   min-width: 44px;
-  color: #bdcbd8;
+  color: var(--foreground);
 }
 .career-primary-button,
 .career-secondary-button {
@@ -622,14 +622,14 @@
   box-shadow: 0 4px 16px color-mix(in oklab, var(--primary) 15%, transparent);
 }
 .career-secondary-button {
-  border-color: #41566c;
-  background: #1b2c3d;
+  border-color: var(--input);
+  background: var(--muted);
 }
 .career-primary-button:hover {
   filter: brightness(1.08);
 }
 .career-secondary-button:hover {
-  background: #263b4e;
+  background: var(--career-line);
   border-color: var(--muted-foreground);
 }
 .career-workspace {
@@ -643,14 +643,14 @@
 }
 .career-sidebar > nav {
   scrollbar-width: thin;
-  scrollbar-color: #35495b transparent;
+  scrollbar-color: var(--career-line) transparent;
   padding-inline: 2px;
 }
 .career-nav-group {
   margin-top: 22px;
 }
 .career-nav-heading {
-  color: #8fa4b9;
+  color: var(--muted-foreground);
   font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -665,7 +665,7 @@
   padding: 10px 13px;
   border: 1px solid transparent;
   border-radius: 11px;
-  color: #bbc9d7;
+  color: var(--foreground);
   font-size: 0.875rem;
   transition:
     background 140ms,
@@ -679,7 +679,7 @@
   margin-inline-start: auto;
 }
 .career-nav-item:hover {
-  background: #1c2a38;
+  background: var(--muted);
   color: #fff;
 }
 .career-nav-item[aria-current="page"] {
@@ -712,9 +712,9 @@
 .career-manager-avatar {
   width: 38px;
   height: 38px;
-  background: #203244;
-  border: 1px solid #3a5066;
-  color: #d7e2ec;
+  background: var(--muted);
+  border: 1px solid var(--career-line);
+  color: var(--foreground);
 }
 .career-sidebar-footer p {
   font-size: 0.875rem;
@@ -739,13 +739,13 @@
   min-height: 42px;
   padding: 8px clamp(20px, 3vw, 48px);
   gap: 12px;
-  border-bottom: 1px solid #233547;
-  background: #101e2a;
+  border-bottom: 1px solid var(--career-line);
+  background: var(--card);
   color: var(--muted-foreground);
   font-size: 0.875rem;
 }
 .career-save-note a {
-  color: #d5e2ee;
+  color: var(--foreground);
   padding-block: 5px;
 }
 .career-menu-sheet,
@@ -754,7 +754,7 @@
   --foreground: var(--foreground);
   --card: var(--card);
   --muted-foreground: var(--muted-foreground);
-  --secondary: #203246;
+  --secondary: var(--career-line);
   --border: var(--career-line);
   --input: var(--input);
   --career-line: var(--career-line);
@@ -784,7 +784,7 @@
   padding: 4px;
   margin-block: 8px 16px;
   border-radius: 10px;
-  background: #0b1621;
+  background: var(--background);
 }
 .career-density button {
   min-height: 40px;
@@ -794,7 +794,7 @@
   color: var(--muted-foreground);
 }
 .career-density button[aria-pressed="true"] {
-  background: #2b4359;
+  background: var(--career-line);
   color: #fff;
   font-weight: 700;
 }
@@ -847,15 +847,15 @@
   line-height: 1.7;
 }
 .trainer-league-link {
-  border: 1px solid #30475d;
+  border: 1px solid var(--career-line);
   background: var(--muted);
   padding: 12px 14px;
   border-radius: 11px;
   font-size: 0.875rem;
-  color: #d3dfeb;
+  color: var(--foreground);
 }
 .trainer-league-link:hover {
-  background: #203347;
+  background: var(--career-line);
   border-color: var(--muted-foreground);
 }
 .trainer-summary {
@@ -892,15 +892,15 @@
   background: color-mix(in oklab, var(--primary) 60%, transparent);
 }
 .trainer-summary > a:hover {
-  background: #1b2b3a;
-  border-color: #617d95;
+  background: var(--muted);
+  border-color: var(--muted-foreground);
 }
 .trainer-summary > a > span {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  color: #adbecd;
+  color: var(--foreground);
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -927,7 +927,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.875rem;
-  color: #92a8bd;
+  color: var(--muted-foreground);
   line-height: 1.5;
   margin-top: 8px;
 }
@@ -939,7 +939,7 @@
   position: relative;
   isolation: isolate;
   padding: 24px;
-  border: 1px solid #3d5a6b;
+  border: 1px solid var(--input);
   border-radius: 20px;
   background: linear-gradient(
     130deg,
@@ -998,7 +998,7 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #91aabe;
+  color: var(--muted-foreground);
 }
 .trainer-match-teams h3 {
   font-size: clamp(0.875rem, 1.6vw, 1.25rem);
@@ -1015,7 +1015,7 @@
   background: #0b172580;
   border: 1px solid #ffffff14;
   border-radius: 50%;
-  color: #dae6ef;
+  color: var(--foreground);
   font-size: 0.75rem;
   letter-spacing: 0.06em;
 }
@@ -1070,7 +1070,7 @@
 .trainer-preparation-count {
   font-size: 0.875rem;
   font-weight: 700;
-  background: #263d50;
+  background: var(--career-line);
   color: #c1d7e9;
   padding: 4px 8px;
   border-radius: 6px;
@@ -1097,7 +1097,7 @@
 }
 .trainer-task p {
   font-size: 0.875rem;
-  color: #a1b5c7;
+  color: var(--muted-foreground);
   line-height: 1.6;
 }
 .trainer-task > svg {
@@ -1113,7 +1113,7 @@
   height: 38px;
   border-radius: 11px;
   flex-shrink: 0;
-  background: #24394c;
+  background: var(--career-line);
   color: #bcd3e6;
 }
 .trainer-task-icon.is-ready {
@@ -1168,15 +1168,15 @@
   min-height: 76px;
   border: 1px solid var(--career-line);
   border-radius: 13px;
-  background: #12202e;
+  background: var(--card);
   padding: 14px;
   transition:
     background 140ms,
     border-color 140ms;
 }
 .trainer-quick-actions a:hover {
-  background: #1e3143;
-  border-color: #607e98;
+  background: var(--muted);
+  border-color: var(--muted-foreground);
 }
 .trainer-quick-actions a > svg:first-child {
   flex-shrink: 0;
@@ -1205,7 +1205,7 @@
 .trainer-onboarding {
   margin-block: 18px 26px;
   padding: 0;
-  background: #111f2b;
+  background: var(--card);
   border: 1px solid var(--career-line);
   border-radius: 12px;
 }
@@ -1233,7 +1233,7 @@
   min-height: 44px;
   padding: 8px 12px;
   margin-top: 10px;
-  border: 1px solid #425a70;
+  border: 1px solid var(--input);
   border-radius: 8px;
 }
 .trainer-overview-heading {
@@ -1250,7 +1250,7 @@
   display: inline-flex;
   align-items: center;
   font-size: 0.875rem;
-  color: #adbdcc;
+  color: var(--foreground);
 }
 
 /* Shared content: roster, tables, finances, tactics and forms. */
@@ -1311,8 +1311,8 @@
 }
 .career-content .hud-card-interactive:hover {
   transform: none;
-  border-color: #57728a;
-  background: #1a2a39;
+  border-color: var(--input);
+  background: var(--muted);
 }
 .career-content .hud-card > header {
   min-height: 54px;
@@ -1324,7 +1324,7 @@
   font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.11em;
-  color: #acbdcc;
+  color: var(--foreground);
 }
 .career-content .hud-card > header a {
   color: var(--primary);
@@ -1355,7 +1355,7 @@
   min-height: 44px;
   border-color: var(--input);
   border-radius: 9px;
-  background-color: #0e1b28;
+  background-color: var(--card);
   color: #e3edf6;
 }
 .career-content input::placeholder,
@@ -1372,7 +1372,7 @@
 }
 .career-content textarea {
   border: 1px solid var(--input);
-  background: #0e1b28;
+  background: var(--card);
   border-radius: 9px;
 }
 .career-content button:not([role="switch"]):not([role="checkbox"]):not([data-slot="slider-thumb"]) {
@@ -1389,13 +1389,13 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   white-space: nowrap;
-  background: #101e2b;
+  background: var(--card);
   padding-block: 13px;
-  border-bottom: 1px solid #344a5e;
+  border-bottom: 1px solid var(--career-line);
 }
 .career-content table td {
   padding-block: 14px;
-  border-bottom: 1px solid #233747;
+  border-bottom: 1px solid var(--career-line);
   font-size: 0.875rem;
 }
 .career-content table tbody tr:hover {
@@ -1410,7 +1410,7 @@
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
-  scrollbar-color: #466279 #102130;
+  scrollbar-color: var(--input) var(--card);
   border-radius: 10px;
 }
 .career-table-scroll table {
@@ -1471,7 +1471,7 @@
   color: var(--primary-foreground);
 }
 .match-interface .match-control-panel option {
-  background: #0b1726;
+  background: var(--card);
   color: var(--foreground);
 }
 .match-interface .match-transport button {
@@ -1528,14 +1528,14 @@
   border-radius: 10px;
   display: grid;
   place-items: center;
-  color: #c8d8e7;
+  color: var(--foreground);
   background: #ffffff08;
 }
 .match-interface .match-control-panel select {
   min-height: 44px;
   border: 1px solid var(--input);
   border-radius: 8px;
-  background: #0b1726;
+  background: var(--card);
   color: var(--foreground);
   padding-inline: 9px;
 }
@@ -1558,7 +1558,7 @@
   border: 1px solid var(--input);
   border-radius: 9px;
   font-size: 0.75rem;
-  background: #21354a;
+  background: var(--career-line);
 }
 .match-interface .match-stats-panel {
   background: #101e2df5;
@@ -1631,7 +1631,7 @@
     height: 66px;
     padding: 6px;
     gap: 4px;
-    border: 1px solid #45617a;
+    border: 1px solid var(--input);
     border-radius: 18px;
     background: #102131f5;
     box-shadow: 0 10px 32px #0006;
@@ -1645,7 +1645,7 @@
     align-items: center;
     gap: 5px;
     border-radius: 11px;
-    color: #9db4c8;
+    color: var(--muted-foreground);
     font-size: 0.875rem;
     min-width: 0;
     min-height: 48px;
@@ -1951,7 +1951,7 @@
 .career-shell {
   --career-body-size: 0.9375rem;
   --career-label-size: 0.875rem;
-  --career-line: #40576c;
+  --career-line: var(--input);
   --career-header-height: 5rem;
   --career-footer-height: 0rem;
   --career-readable-accent: color-mix(in srgb, var(--primary) 35%, white);
@@ -2063,7 +2063,7 @@
 }
 .career-table-scroll {
   overscroll-behavior-inline: contain;
-  scrollbar-color: #7893ab #12212e;
+  scrollbar-color: var(--muted-foreground) var(--card);
   scrollbar-width: auto;
 }
 @media (max-width: 40rem) {
@@ -2209,13 +2209,13 @@
   font-size: 1rem;
 }
 html[data-contrast="high"] .career-shell {
-  --background: #070b0e;
-  --card: #111b23;
+  --background: var(--background);
+  --card: var(--card);
   --foreground: #fff;
   --card-foreground: #fff;
-  --muted-foreground: #dde7ee;
+  --muted-foreground: var(--foreground);
   --border: var(--muted-foreground);
-  --input: #bac9d4;
+  --input: var(--foreground);
   --career-line: var(--muted-foreground);
 }
 html[data-contrast="high"] .career-content :where(.text-muted-foreground, p, label, th) {
@@ -2267,7 +2267,7 @@ html[dir="rtl"] .match-quick-transport {
   border-radius: 9px;
 }
 .match-quick-transport select {
-  background: #142a3b;
+  background: var(--muted);
   border: 1px solid #8da6bc60;
   color: var(--foreground);
   padding-inline: 8px;
@@ -2343,7 +2343,7 @@ html[dir="rtl"] .match-quick-transport {
 }
 .match-tool-action:hover,
 .match-tool-action[aria-pressed="true"] {
-  background: #2c485d;
+  background: var(--career-line);
 }
 @media (max-width: 640px) {
   .match-quick-score-wrap {
@@ -2547,11 +2547,11 @@ html[dir="rtl"] .match-quick-transport {
   .match-quick-transport { gap: 4px; padding: 4px; }
 }
 @media (prefers-contrast: more) {
-  .career-shell { --border: #849bad; --muted-foreground: #d4e0eb; }
+  .career-shell { --border: var(--muted-foreground); --muted-foreground: var(--foreground); }
 }
 html[data-contrast="high"] .career-shell {
   --career-focus: #ffff80;
-  --career-panel: #213444;
+  --career-panel: var(--muted);
 }
 @media (forced-colors: active) {
   .career-shell :where(a, button, input, select, textarea), .studio-button {
