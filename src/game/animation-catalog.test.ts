@@ -171,6 +171,21 @@ describe("Clip Metadata", () => {
 // ============================================================================
 
 describe("selectClipFromContext", () => {
+  it("classifies contextual goal reactions as celebrations", () => {
+    for (const action of ["celebrate", "celebrateSiuu", "kneeSlide", "groupHug", "badgeKiss"])
+      expect(
+        selectClipFromContext({
+          action,
+          speed: 0,
+          stopped: true,
+          hasBall: false,
+          ballDist: 8,
+          stamina: 80,
+          defending: false,
+        }).family,
+      ).toBe("celebration");
+  });
+
   it("deve selecionar idle quando parado", () => {
     const result = selectClipFromContext({
       speed: 0,

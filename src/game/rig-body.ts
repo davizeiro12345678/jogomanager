@@ -184,9 +184,17 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     const positions = geometry.getAttribute("position");
     const uv = geometry.getAttribute("uv");
     for (let i = 0; i < uv.count; i++) {
+      const x = positions.getX(i);
+      const z = positions.getZ(i);
+      // Reserve separate atlas halves for front and back. Side vertices stay
+      // close to the edge of their owning panel, preventing sponsor/number
+      // ink from stretching around the ribs during animated torso bends.
+      const angle = Math.atan2(x, z);
+      const panelU = THREE.MathUtils.clamp(0.5 + angle / Math.PI, 0.04, 0.96);
+      const isFront = z >= 0;
       uv.setXY(
         i,
-        uv.getX(i) + 0.25,
+        (isFront ? 0 : 0.5) + panelU * 0.5,
         Math.max(0, Math.min(1, (positions.getY(i) + offset - torsoBottom) / torsoHeight)),
       );
     }
@@ -294,13 +302,13 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
           athleticTorsoSurface(
             anatomicalSection(
               [
-                { y: -P.hipH * 0.12, width: P.hipW * 0.59, depth: P.chestD * 0.85 },
-                { y: P.spineLen * 0.4, width: P.chestW * 0.73, depth: P.chestD * 0.9 },
-                { y: P.spineLen * 1.06, width: P.chestW * 0.98, depth: P.chestD * 1.025 },
+                { y: -P.hipH * 0.12, width: P.hipW * 0.56, depth: P.chestD * 0.82 },
+                { y: P.spineLen * 0.4, width: P.chestW * 0.69, depth: P.chestD * 0.87 },
+                { y: P.spineLen * 1.06, width: P.chestW * 0.94, depth: P.chestD * 0.99 },
                 {
                   y: P.spineLen + P.chestLen * 0.4,
-                  width: P.chestW * 1.08,
-                  depth: P.chestD * 1.065,
+                  width: P.chestW * 1.04,
+                  depth: P.chestD * 1.03,
                 },
                 {
                   y: P.spineLen + P.chestLen * 0.8,

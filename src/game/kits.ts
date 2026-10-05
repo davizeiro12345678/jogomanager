@@ -368,16 +368,16 @@ export function kitTexture(
   fabric.getContext("2d")?.drawImage(canvas, 0, 0);
   ctx.drawImage(fabric, 0, 0, size, size, 0, 0, size * 0.5, size);
   ctx.drawImage(fabric, 0, 0, size, size, size * 0.5, 0, size * 0.5, size);
-  drawCrest(ctx, size * 0.16, size * 0.23, size * 0.046, kit);
+  drawCrest(ctx, size * 0.14, size * 0.25, size * 0.038, kit);
 
   // patrocínio no peito
   const chestInk = luminance(kit.base) > 0.5 ? "rgba(16,20,24,0.85)" : "rgba(255,255,255,0.9)";
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `bold ${14 * s}px system-ui, sans-serif`;
+  ctx.font = `bold ${11 * s}px system-ui, sans-serif`;
   ctx.fillStyle = chestInk;
-  ctx.fillText("MANAGER 3D", size * 0.25, size * 0.43, size * 0.4);
+  ctx.fillText("MANAGER 3D", size * 0.25, size * 0.47, size * 0.31);
   ctx.restore();
 
   const ink = luminance(kit.base) > 0.5 ? "#101418" : "#ffffff";
@@ -387,21 +387,21 @@ export function kitTexture(
   // sobrenome nas costas (ilegível na versão reduzida: fora)
   if (name && detail === "hero") {
     const short = name.split(" ").pop()!.toUpperCase().slice(0, 12);
-    ctx.font = `bold ${22 * s}px system-ui, sans-serif`;
+    ctx.font = `bold ${16 * s}px system-ui, sans-serif`;
     ctx.lineWidth = 2 * s;
     ctx.strokeStyle = "rgba(0,0,0,0.5)";
     ctx.fillStyle = ink;
-    ctx.strokeText(short, size * 0.75, size * 0.23, size * 0.4);
-    ctx.fillText(short, size * 0.75, size * 0.23, size * 0.4);
+    ctx.strokeText(short, size * 0.75, size * 0.25, size * 0.31);
+    ctx.fillText(short, size * 0.75, size * 0.25, size * 0.31);
   }
 
   // número nas costas
-  ctx.font = `bold ${82 * s}px system-ui, sans-serif`;
+  ctx.font = `bold ${66 * s}px system-ui, sans-serif`;
   ctx.lineWidth = 3 * s;
   ctx.strokeStyle = "rgba(0,0,0,0.55)";
   ctx.fillStyle = ink;
-  ctx.strokeText(String(number), size * 0.75, size * 0.54, size * 0.4);
-  ctx.fillText(String(number), size * 0.75, size * 0.54, size * 0.4);
+  ctx.strokeText(String(number), size * 0.75, size * 0.55, size * 0.3);
+  ctx.fillText(String(number), size * 0.75, size * 0.55, size * 0.3);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;

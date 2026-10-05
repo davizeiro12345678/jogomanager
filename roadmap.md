@@ -40,7 +40,7 @@
 - [x] Etapa 2 (parcial, já existente): animação de jogadores longe em taxa reduzida (1/36s, 1/16s), jogadores fora de quadro só atualizam posição, sombra só perto, canvas pausa com aba oculta.
 - [ ] Etapa 1: medição em celular real (sandbox sem GPU não serve para FPS).
 - [x] Etapa 3 medida: temporada automática ~14 ms por rodada (380 jogos, Node); Rust não compensa aqui (custo de troca de dados > ganho). Torcida já usa Rust. Ossos ficam no Three.js (copiar matrizes para WASM custaria mais). Física só com medição em celular real.
-- [ ] Etapa 4: modelo de jogador (primeira recalibração atlética e sombra de contato concluídas; rosto/cabelo, movimento, uniforme e validação dos 3 níveis continuam).
+- [ ] Etapa 4: modelo de jogador (recalibração atlética, sombra de contato, torso e atlas frontal/traseiro concluídos; rosto/cabelo, movimento e validação dos 3 níveis continuam).
 - [ ] Etapa 5: abertura, túnel, intervalo/fim e taça já têm cenários e direção; runtime móvel otimizado; falta validar replay de gol e cerimônias em aparelho real.
 - [ ] Etapa 6: medição antes/depois.
 - [x] Importação 2026-10-05: 8.079 jogadores duplicados antigos removidos; títulos/clubes anteriores e estatísticas percorridos para todos os 26.076 jogadores oficiais; históricos de clubes percorridos até o fim da lista vinculada.
@@ -59,5 +59,5 @@
 - [x] Manchas no gramado reduzidas + sombra de contato menor, elíptica e suave (falta confirmar no aparelho)
 - [ ] Voz do navegador: plano gratuito ElevenLabs quase esgotado (8.990/10.000) — usuário precisa fazer upgrade
 - [x] Cenas pré-carregadas no painel e no pré-jogo
-- [ ] Estádio melhor, kits reais e números no 3D, comemorações realistas
+- [ ] Estádio melhor, kits reais e números no 3D, comemorações realistas (atlas/UV e classificação contextual corrigidos; direção de grupo ainda pendente)
 - [ ] Cena de gol importante + hino do clube no gol

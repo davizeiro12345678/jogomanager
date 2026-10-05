@@ -280,6 +280,18 @@ export function selectClipFromContext(ctx: ClipSelectionContext): {
     if (actionName.includes("trap")) {
       return { name: ctx.action, family: "ballControl" };
     }
+
+    if (
+      actionName.includes("celebrat") ||
+      actionName.includes("kneeslide") ||
+      actionName.includes("knee-slide") ||
+      actionName.includes("hug") ||
+      actionName.includes("fistpump") ||
+      actionName.includes("badgekiss") ||
+      actionName.includes("salute")
+    ) {
+      return { name: ctx.action, family: "celebration" };
+    }
   }
 
   // Se não tem ação, seleciona com base no movimento
