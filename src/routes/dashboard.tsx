@@ -185,7 +185,7 @@ function TrainerDashboard({ career }: { career: CareerState }) {
                     <LayoutGrid size={16} />
                     Preparar equipe
                   </Link>
-                  <Link to="/match" className="career-primary-button">
+                  <Link to="/pre-jogo" className="career-primary-button">
                     <Play size={16} />
                     Ir para o jogo
                   </Link>

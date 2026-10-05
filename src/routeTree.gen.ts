@@ -51,6 +51,7 @@ import { Route as NewsRouteImport } from './routes/news'
 import { Route as PartidaRapidaRouteImport } from './routes/partida-rapida'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as PerguntasFrequentesRouteImport } from './routes/perguntas-frequentes'
+import { Route as PreJogoRouteImport } from './routes/pre-jogo'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as RegrasRouteImport } from './routes/regras'
@@ -292,6 +293,11 @@ const PerguntasFrequentesRoute = PerguntasFrequentesRouteImport.update({
   path: '/perguntas-frequentes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PreJogoRoute = PreJogoRouteImport.update({
+  id: '/pre-jogo',
+  path: '/pre-jogo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacidadeRoute = PrivacidadeRouteImport.update({
   id: '/privacidade',
   path: '/privacidade',
@@ -489,6 +495,7 @@ export interface FileRoutesByFullPath {
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perfil': typeof PerfilRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
+  '/pre-jogo': typeof PreJogoRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/regras': typeof RegrasRoute
@@ -563,6 +570,7 @@ export interface FileRoutesByTo {
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perfil': typeof PerfilRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
+  '/pre-jogo': typeof PreJogoRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/regras': typeof RegrasRoute
@@ -638,6 +646,7 @@ export interface FileRoutesById {
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perfil': typeof PerfilRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
+  '/pre-jogo': typeof PreJogoRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/regras': typeof RegrasRoute
@@ -714,6 +723,7 @@ export interface FileRouteTypes {
     | '/partida-rapida'
     | '/perfil'
     | '/perguntas-frequentes'
+    | '/pre-jogo'
     | '/privacidade'
     | '/produtos'
     | '/regras'
@@ -788,6 +798,7 @@ export interface FileRouteTypes {
     | '/partida-rapida'
     | '/perfil'
     | '/perguntas-frequentes'
+    | '/pre-jogo'
     | '/privacidade'
     | '/produtos'
     | '/regras'
@@ -862,6 +873,7 @@ export interface FileRouteTypes {
     | '/partida-rapida'
     | '/perfil'
     | '/perguntas-frequentes'
+    | '/pre-jogo'
     | '/privacidade'
     | '/produtos'
     | '/regras'
@@ -937,6 +949,7 @@ export interface RootRouteChildren {
   PartidaRapidaRoute: typeof PartidaRapidaRoute
   PerfilRoute: typeof PerfilRoute
   PerguntasFrequentesRoute: typeof PerguntasFrequentesRoute
+  PreJogoRoute: typeof PreJogoRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ProdutosRoute: typeof ProdutosRoute
   RegrasRoute: typeof RegrasRoute
@@ -1265,6 +1278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerguntasFrequentesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pre-jogo': {
+      id: '/pre-jogo'
+      path: '/pre-jogo'
+      fullPath: '/pre-jogo'
+      preLoaderRoute: typeof PreJogoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacidade': {
       id: '/privacidade'
       path: '/privacidade'
@@ -1521,6 +1541,7 @@ const rootRouteChildren: RootRouteChildren = {
   PartidaRapidaRoute: PartidaRapidaRoute,
   PerfilRoute: PerfilRoute,
   PerguntasFrequentesRoute: PerguntasFrequentesRoute,
+  PreJogoRoute: PreJogoRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ProdutosRoute: ProdutosRoute,
   RegrasRoute: RegrasRoute,

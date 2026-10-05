@@ -45,3 +45,14 @@
 - [ ] Etapa 6: medição antes/depois.
 - [x] Importação 2026-10-05: 8.079 jogadores duplicados antigos removidos; títulos/clubes anteriores e estatísticas percorridos para todos os 26.076 jogadores oficiais; históricos de clubes percorridos até o fim da lista vinculada.
 - [ ] Modelo de jogador e cenas 3D (etapas 4–5): próximo ciclo.
+
+## Grande ciclo (plano aprovado 2026-10-05)
+- [x] Pré-jogo de transmissão (/pre-jogo) com narração v4 e legendas
+- [x] Instalar r3f-perf (painel ?perf=1 na prévia), @use-gesture/react, meshoptimizer
+- [ ] Medição base da partida (fps, p95, draw calls)
+- [ ] Comprimir modelos com meshoptimizer e medir tamanho
+- [ ] Gestos de câmera/menu com @use-gesture
+- [ ] Vento (simplex-noise) em bandeiras e torcida
+- [ ] Frases novas de narração (túnel, intervalo, taça; en/es) e cache de áudio
+- [ ] Mega importação (liga travada, calendários, detalhes, fotos, homônimos)
+- [ ] Painel desktop lento, partida ao vivo no celular, erros
