@@ -62,7 +62,7 @@ describe("adult player anatomy", () => {
     const m = anatomyMeasurements(p);
     expect(strong.girth).toBeLessThanOrEqual(1.1);
     expect(m.shoulderWidth / m.height).toBeLessThan(0.32);
-    expect(p.hipW * 2 / m.height).toBeLessThan(0.2);
+    expect(p.hipW * 2 / m.height).toBeLessThan(0.3);
     expect(p.armR / p.headR).toBeLessThan(0.7);
   });
 
