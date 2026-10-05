@@ -529,9 +529,6 @@
   .career-header-actions {
     gap: 0;
   }
-  .career-header-play {
-    display: none;
-  }
   .career-save-note > span {
     max-width: 56%;
   }
@@ -2569,23 +2566,26 @@ html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
   animation: none !important; transition: none !important; scroll-behavior: auto !important;
 }
 
-/* ===== Broadcast refresh: visible depth, club-accent glow, scoreboard match card ===== */
+/* ===== Career broadcast system: one final, coherent visual layer ===== */
 .career-shell {
+  --career-success: oklch(0.78 0.13 158);
+  --career-warning: oklch(0.85 0.14 85);
+  --career-danger: oklch(0.72 0.18 25);
+  --career-shadow: 0 18px 48px color-mix(in oklab, var(--background) 72%, transparent);
   background:
-    radial-gradient(1200px 500px at 85% -10%, color-mix(in oklab, var(--primary) 16%, transparent), transparent 70%),
-    radial-gradient(900px 400px at -10% 110%, color-mix(in oklab, var(--primary) 8%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in oklab, var(--primary) 7%, transparent), transparent 26rem),
     var(--background);
 }
 .career-header {
-  background: color-mix(in oklab, var(--background) 72%, transparent);
-  backdrop-filter: blur(14px) saturate(1.3);
+  background: color-mix(in oklab, var(--background) 90%, transparent);
+  backdrop-filter: blur(16px) saturate(1.2);
   box-shadow: 0 1px 0 color-mix(in oklab, var(--primary) 30%, transparent);
 }
-.career-sidebar { background: color-mix(in oklab, var(--card) 55%, transparent); }
+.career-sidebar { background: color-mix(in oklab, var(--card) 78%, var(--background)); }
 .career-nav-item { border-radius: 10px; transition: background 150ms ease, color 150ms ease; }
 .career-nav-item:hover { background: var(--secondary); }
 .career-nav-item[aria-current="page"] {
-  background: linear-gradient(90deg, color-mix(in oklab, var(--primary) 22%, transparent), transparent);
+  background: linear-gradient(90deg, color-mix(in oklab, var(--primary) 18%, var(--card)), var(--card));
   color: var(--foreground);
 }
 .career-primary-button {
@@ -2598,7 +2598,7 @@ html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
 .career-secondary-button { border-radius: 12px; }
 .career-secondary-button:hover { border-color: var(--primary); background: var(--career-accent-soft); }
 
-.trainer-heading h1 { font-size: clamp(1.75rem, 3vw + 1rem, 2.75rem); font-weight: 700; line-height: 1.05; }
+.trainer-heading h1 { font-size: clamp(1.75rem, 2.5vw, 2.75rem); font-weight: 700; line-height: 1.08; letter-spacing: 0; }
 .trainer-eyebrow { color: var(--primary); letter-spacing: 0.18em; font-weight: 700; font-size: 0.75rem; }
 
 .trainer-summary {
@@ -2606,9 +2606,12 @@ html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
   overflow: hidden;
   background: var(--career-line);
   border: 1px solid var(--career-line);
+  border-radius: var(--career-radius);
 }
 .trainer-summary > a {
   border: 0;
+  border-radius: 0;
+  min-height: 124px;
   padding: 16px 18px;
   background: var(--card);
   transition: background 150ms ease;
@@ -2622,21 +2625,22 @@ html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
   border: 1px solid color-mix(in oklab, var(--primary) 35%, var(--career-line));
   background:
     linear-gradient(180deg, color-mix(in oklab, var(--primary) 20%, transparent), transparent 55%),
-    repeating-linear-gradient(90deg, transparent 0 48px, color-mix(in oklab, var(--foreground) 3%, transparent) 48px 96px),
     var(--card);
-  box-shadow: 0 30px 60px -30px color-mix(in oklab, var(--primary) 55%, transparent);
+  box-shadow: var(--career-shadow);
 }
+.trainer-match-card::before { display: none; }
 .trainer-match-top h2 { text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.8rem; color: var(--primary); }
 .trainer-match-teams { padding: 12px 20px 24px; }
 .trainer-match-teams h3 { font-size: clamp(1.1rem, 1.5vw + 0.8rem, 1.6rem); font-weight: 700; }
 .trainer-match-teams img { filter: drop-shadow(0 10px 18px color-mix(in oklab, var(--background) 80%, transparent)); }
 .trainer-match-vs span {
-  font-size: clamp(2rem, 4vw, 3rem);
+  width: auto;
+  height: auto;
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
   font-weight: 800;
-  background: linear-gradient(180deg, var(--foreground), var(--muted-foreground));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  background: none;
+  border: 0;
+  color: var(--muted-foreground);
 }
 .trainer-match-footer { border-top: 1px solid var(--career-line); background: color-mix(in oklab, var(--background) 40%, transparent); }
 .trainer-live-dot { box-shadow: 0 0 0 0 var(--primary); animation: career-pulse 1.8s infinite; }
@@ -2649,6 +2653,8 @@ html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
 }
 .trainer-task:hover { border-color: var(--career-line); background: var(--career-accent-soft); transform: translateX(2px); }
 .trainer-task-icon { border-radius: 12px; background: var(--career-accent-soft); color: var(--primary); }
+.trainer-task-icon.is-ready { background: color-mix(in oklab, var(--career-success) 16%, var(--card)); color: var(--career-success); }
+.trainer-task-icon.is-warning { background: color-mix(in oklab, var(--career-warning) 16%, var(--card)); color: var(--career-warning); }
 .trainer-attention {
   border-radius: var(--career-radius);
   border: 1px solid color-mix(in oklab, oklch(0.85 0.14 85) 40%, var(--career-line));
@@ -2660,10 +2666,25 @@ html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
 }
 .career-shell table tbody tr { transition: background 120ms ease; }
 .career-shell table tbody tr:hover { background: var(--career-accent-soft); }
+.career-content .surface-card,
+.career-content .hud-card,
+.trainer-preparation,
+.trainer-quick-actions a {
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--foreground) 5%, transparent);
+}
 
 @media (max-width: 47.99rem) {
   .trainer-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .career-bottom-nav { backdrop-filter: blur(14px); background: color-mix(in oklab, var(--background) 80%, transparent); }
+}
+@media (max-width: 29.99rem) {
+  .trainer-summary > a:nth-child(n + 3) { display: flex; }
+  .trainer-summary > a { min-height: 108px; padding: 14px; }
+  .trainer-summary strong { font-size: 1.35rem; }
+  .trainer-summary small { display: block; width: 100%; margin-inline-start: 0; }
+  .trainer-match-teams { padding-inline: 0; }
+  .trainer-match-teams > div > span:not(.trainer-match-vs span) { display: none; }
+  .trainer-match-footer { background: transparent; }
 }
 @media (prefers-reduced-motion: reduce) {
   .trainer-live-dot { animation: none; }
