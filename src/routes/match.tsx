@@ -1,3 +1,4 @@
+import { playGoalAnthem } from "@/game/goal-anthem";
 import { gamePageHead } from "@/lib/game-page-metadata";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { NoCareer } from "@/components/game/screen-kit";
@@ -671,6 +672,9 @@ function LiveMatch({
           : snap.minute >= 65 && goalDifference <= 2
             ? "pressure"
             : "routine";
+      if (ev === "goal" && importance !== "routine" && (e.side === "home" || e.side === "away")) {
+        playGoalAnthem((e.side === "home" ? sim.home : sim.away).clubId);
+      }
       n.speak(ev, team, {
         minute: e.minute,
         homeGoals: snap.hg,
