@@ -442,10 +442,11 @@ function StudioScene({
       <fog attach="fog" args={[light === "noite" ? "#101922" : "#253441", 6, 15]} />
       <hemisphereLight args={["#e5edf2", "#29323a", light === "noite" ? 0.24 : 0.38]} />
       <directionalLight
-        position={[-3.5, 4.6, 4]}
+        position={[-2.2, 7.5, 2.4]}
         color={warm ? "#ffd5aa" : "#fff4e9"}
         intensity={3.05}
         castShadow
+        shadow-intensity={0.38}
         shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-3}
         shadow-camera-right={3}
@@ -496,10 +497,10 @@ function StudioScene({
       <ContactShadows
         key={`${appearance.seed}:${movement.id}:${previewAt ?? "live"}:${detail}`}
         position={[0, 0.002, 0]}
-        opacity={0.38}
+        opacity={0.26}
         scale={4}
-        blur={2.5}
-        far={2}
+        blur={3.2}
+        far={1.3}
         resolution={256}
         frames={1}
         color="#061018"
