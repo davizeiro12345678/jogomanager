@@ -561,7 +561,8 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
       }
 
       const lineItem = session.line_items?.data?.[0];
-      const amount = lineItem?.amount_total ?? session.amount_total ?? 0;
+      // List price before Stripe discounts; sales and promo codes lower only the total.
+      const amount = lineItem?.amount_subtotal ?? session.amount_subtotal ?? 0;
       const paymentCurrency = lineItem?.price?.currency ?? session.currency;
       const snapshotContents = parseStoreProductContents(intent.contents_snapshot);
       if (

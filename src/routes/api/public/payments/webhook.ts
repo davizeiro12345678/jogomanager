@@ -72,7 +72,9 @@ async function resolvePurchase(sessionId: string, env: StripeEnv) {
   const productKey =
     full.metadata?.["productKey"] ||
     (stripeProductKey === "season_pass_monthly" ? "season_pass" : stripeProductKey);
-  const amount = lineItem?.amount_total ?? full.amount_total ?? 0;
+  // Validate against the list price before Stripe discounts (sales/promo codes);
+  // Stripe already verified the customer paid the discounted total.
+  const amount = lineItem?.amount_subtotal ?? full.amount_subtotal ?? 0;
   return { productKey, amount, session: full };
 }
 
