@@ -1,3 +1,4 @@
+import { playGoalAnthem } from "@/game/goal-anthem";
 import { gamePageHead } from "@/lib/game-page-metadata";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { NoCareer } from "@/components/game/screen-kit";
