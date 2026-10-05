@@ -50,6 +50,7 @@
 - [x] Pré-jogo de transmissão (/pre-jogo) com narração v4 e legendas
 - [x] Instalar r3f-perf (painel ?perf=1 na prévia), @use-gesture/react, meshoptimizer
 - [ ] Medição base da partida (fps, p95, draw calls)
+- [x] Chuva/neve transferidas da atualização de milhares de matrizes na CPU para animação em shader; falta medir no aparelho
 - [ ] Comprimir modelos com meshoptimizer e medir tamanho
 - [x] Gesto de deslizar para fechar o menu (câmera pendente)
 - [x] Vento (simplex-noise) nas bandeiras de escanteio (torcida pendente)

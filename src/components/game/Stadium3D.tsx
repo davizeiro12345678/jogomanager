@@ -404,54 +404,89 @@ function Weather({
       (quality === "alta" ? (rain ? 2600 : 1500) : rain ? 1100 : 700) * partScale * density,
     ),
   );
-  const ref = useRef<THREE.InstancedMesh>(null);
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-  const drops = useMemo(
-    () =>
-      Array.from({ length: count }, () => ({
-        x: (Math.random() * 2 - 1) * (FIELD_X + 26),
-        y: Math.random() * 34,
-        z: (Math.random() * 2 - 1) * (FIELD_Z + 24),
-        s: 0.6 + Math.random() * 0.9,
-        p: Math.random() * 6.28,
-      })),
-    [count],
-  );
-
-  useFrame((_, rawDt) => {
-    const mesh = ref.current;
-    if (!mesh) return;
-    const dt = Math.min(rawDt, 0.05);
-    const fall = rain ? 34 : 2.4;
-    for (let i = 0; i < drops.length; i++) {
-      const d = drops[i]!;
-      d.y -= fall * dt * d.s;
-      d.x += wind * dt * (rain ? 5 : 1.6);
-      if (!rain) d.z += Math.sin(d.p + d.y * 0.4) * dt * 0.9;
-      if (d.y < 0) {
-        d.y = 30 + Math.random() * 6;
-        d.x = (Math.random() * 2 - 1) * (FIELD_X + 26);
-        d.z = (Math.random() * 2 - 1) * (FIELD_Z + 24);
-      }
-      dummy.position.set(d.x, d.y, d.z);
-      dummy.rotation.set(0, 0, rain ? wind * 0.28 : 0);
-      dummy.scale.set(1, rain ? 1 : 0.5, 1);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
+  const material = useRef<THREE.ShaderMaterial>(null);
+  const geometry = useMemo(() => {
+    const base = rain ? new THREE.PlaneGeometry(0.03, 0.85) : new THREE.CircleGeometry(0.05, 5);
+    const offsets = new Float32Array(count * 3);
+    const speeds = new Float32Array(count);
+    const phases = new Float32Array(count);
+    // Stable seeded distribution prevents hydration/re-entry changes and lets
+    // the GPU animate every particle without a matrix upload each frame.
+    let seed = count * 2654435761;
+    const random = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+    for (let i = 0; i < count; i++) {
+      offsets[i * 3] = (random() * 2 - 1) * (FIELD_X + 26);
+      offsets[i * 3 + 1] = random() * 36;
+      offsets[i * 3 + 2] = (random() * 2 - 1) * (FIELD_Z + 24);
+      speeds[i] = 0.6 + random() * 0.9;
+      phases[i] = random() * Math.PI * 2;
     }
-    mesh.instanceMatrix.needsUpdate = true;
+    base.setAttribute("aOffset", new THREE.InstancedBufferAttribute(offsets, 3));
+    base.setAttribute("aSpeed", new THREE.InstancedBufferAttribute(speeds, 1));
+    base.setAttribute("aPhase", new THREE.InstancedBufferAttribute(phases, 1));
+    return base;
+  }, [count, rain]);
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uWind: { value: wind },
+      uRain: { value: rain ? 1 : 0 },
+      uColor: { value: new THREE.Color(rain ? "#cfe6ff" : "#ffffff") },
+      uOpacity: { value: rain ? 0.35 : 0.8 },
+    }),
+    [rain, wind],
+  );
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  useFrame(({ clock }) => {
+    if (!material.current) return;
+    material.current.uniforms.uTime!.value = clock.elapsedTime;
+    material.current.uniforms.uWind!.value = wind;
   });
 
   if (!rain && !snow) return null;
 
   return (
-    <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, count]}>
-      {rain ? <planeGeometry args={[0.03, 0.85]} /> : <circleGeometry args={[0.05, 5]} />}
-      <meshBasicMaterial
-        color={rain ? "#cfe6ff" : "#ffffff"}
+    <instancedMesh frustumCulled={false} args={[geometry, undefined, count]}>
+      <shaderMaterial
+        ref={material}
+        uniforms={uniforms}
         transparent
-        opacity={rain ? 0.35 : 0.8}
         depthWrite={false}
+        vertexShader={/* glsl */ `
+          attribute vec3 aOffset;
+          attribute float aSpeed;
+          attribute float aPhase;
+          uniform float uTime;
+          uniform float uWind;
+          uniform float uRain;
+          void main() {
+            float fall = mix(2.4, 34.0, uRain);
+            float cycle = 36.0;
+            vec3 world = position;
+            world.y = mod(aOffset.y - uTime * fall * aSpeed + cycle * 64.0, cycle);
+            world.x += aOffset.x + uWind * uTime * mix(1.6, 5.0, uRain);
+            world.z += aOffset.z;
+            world.z += (1.0 - uRain) * sin(aPhase + world.y * 0.4 + uTime) * 0.42;
+            if (uRain > 0.5) {
+              float tilt = uWind * 0.28;
+              mat2 rotation = mat2(cos(tilt), -sin(tilt), sin(tilt), cos(tilt));
+              world.xy = rotation * world.xy;
+            } else {
+              world.y += position.y * -0.5;
+            }
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(world, 1.0);
+          }
+        `}
+        fragmentShader={/* glsl */ `
+          uniform vec3 uColor;
+          uniform float uOpacity;
+          void main() {
+            gl_FragColor = vec4(uColor, uOpacity);
+          }
+        `}
       />
     </instancedMesh>
   );
