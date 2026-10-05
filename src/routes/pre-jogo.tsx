@@ -1,3 +1,4 @@
+import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loading";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { LayoutGrid, Play, Users, Volume2, VolumeX } from "lucide-react";
@@ -45,6 +46,8 @@ function formFor(career: CareerState, clubId: string): FormLetter[] {
 }
 
 function PreMatch({ career }: { career: CareerState }) {
+  // aquece o motor das cenas antes do clique em "Jogar"
+  useCinematicPreload();
   const fixture = nextFixture(career);
   const league = getLeague(career.leagueId);
   const table = computeTable(career);
