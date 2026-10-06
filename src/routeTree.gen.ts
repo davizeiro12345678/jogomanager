@@ -78,6 +78,7 @@ import { Route as CheckoutReturnRouteImport } from './routes/checkout/return'
 import { Route as ClubeNovoRouteImport } from './routes/clube.novo'
 import { Route as JogadorIndexRouteImport } from './routes/jogador.index'
 import { Route as JogadorNovoRouteImport } from './routes/jogador.novo'
+import { Route as JogadorPainelRouteImport } from './routes/jogador.painel'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicSyncFootballRouteImport } from './routes/api/public/sync-football'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
@@ -431,6 +432,11 @@ const JogadorNovoRoute = JogadorNovoRouteImport.update({
   path: '/jogador/novo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JogadorPainelRoute = JogadorPainelRouteImport.update({
+  id: '/jogador/painel',
+  path: '/jogador/painel',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -533,6 +539,7 @@ export interface FileRoutesByFullPath {
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
   '/jogador/novo': typeof JogadorNovoRoute
+  '/jogador/painel': typeof JogadorPainelRoute
   '/jogador/': typeof JogadorIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
@@ -610,6 +617,7 @@ export interface FileRoutesByTo {
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
   '/jogador/novo': typeof JogadorNovoRoute
+  '/jogador/painel': typeof JogadorPainelRoute
   '/jogador': typeof JogadorIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
@@ -688,6 +696,7 @@ export interface FileRoutesById {
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
   '/jogador/novo': typeof JogadorNovoRoute
+  '/jogador/painel': typeof JogadorPainelRoute
   '/jogador/': typeof JogadorIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
@@ -767,6 +776,7 @@ export interface FileRouteTypes {
     | '/checkout/return'
     | '/clube/novo'
     | '/jogador/novo'
+    | '/jogador/painel'
     | '/jogador/'
     | '/.lovable/oauth/consent'
     | '/api/public/sync-football'
@@ -844,6 +854,7 @@ export interface FileRouteTypes {
     | '/checkout/return'
     | '/clube/novo'
     | '/jogador/novo'
+    | '/jogador/painel'
     | '/jogador'
     | '/.lovable/oauth/consent'
     | '/api/public/sync-football'
@@ -921,6 +932,7 @@ export interface FileRouteTypes {
     | '/checkout/return'
     | '/clube/novo'
     | '/jogador/novo'
+    | '/jogador/painel'
     | '/jogador/'
     | '/.lovable/oauth/consent'
     | '/api/public/sync-football'
@@ -999,6 +1011,7 @@ export interface RootRouteChildren {
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   ClubeNovoRoute: typeof ClubeNovoRoute
   JogadorNovoRoute: typeof JogadorNovoRoute
+  JogadorPainelRoute: typeof JogadorPainelRoute
   JogadorIndexRoute: typeof JogadorIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicSyncFootballRoute: typeof ApiPublicSyncFootballRoute
@@ -1493,6 +1506,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JogadorNovoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jogador/painel': {
+      id: '/jogador/painel'
+      path: '/jogador/painel'
+      fullPath: '/jogador/painel'
+      preLoaderRoute: typeof JogadorPainelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
       path: '/.lovable/oauth/consent'
@@ -1608,6 +1628,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutReturnRoute: CheckoutReturnRoute,
   ClubeNovoRoute: ClubeNovoRoute,
   JogadorNovoRoute: JogadorNovoRoute,
+  JogadorPainelRoute: JogadorPainelRoute,
   JogadorIndexRoute: JogadorIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicSyncFootballRoute: ApiPublicSyncFootballRoute,
