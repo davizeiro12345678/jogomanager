@@ -1108,6 +1108,36 @@ export type Database = {
           },
         ]
       }
+      player_careers: {
+        Row: {
+          created_at: string
+          id: string
+          slot: number
+          state: Json
+          updated_at: string
+          user_id: string
+          verified_progress: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          slot: number
+          state: Json
+          updated_at?: string
+          user_id: string
+          verified_progress?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          slot?: number
+          state?: Json
+          updated_at?: string
+          user_id?: string
+          verified_progress?: boolean
+        }
+        Relationships: []
+      }
       player_honours: {
         Row: {
           honour: string

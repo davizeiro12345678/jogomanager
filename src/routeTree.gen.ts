@@ -76,6 +76,9 @@ import { Route as CheckoutClaimRouteImport } from './routes/checkout/claim'
 import { Route as CheckoutGuestRouteImport } from './routes/checkout/guest'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout/return'
 import { Route as ClubeNovoRouteImport } from './routes/clube.novo'
+import { Route as JogadorIndexRouteImport } from './routes/jogador.index'
+import { Route as JogadorNovoRouteImport } from './routes/jogador.novo'
+import { Route as JogadorPainelRouteImport } from './routes/jogador.painel'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicSyncFootballRouteImport } from './routes/api/public/sync-football'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
@@ -419,6 +422,21 @@ const ClubeNovoRoute = ClubeNovoRouteImport.update({
   path: '/clube/novo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JogadorIndexRoute = JogadorIndexRouteImport.update({
+  id: '/jogador/',
+  path: '/jogador/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JogadorNovoRoute = JogadorNovoRouteImport.update({
+  id: '/jogador/novo',
+  path: '/jogador/novo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JogadorPainelRoute = JogadorPainelRouteImport.update({
+  id: '/jogador/painel',
+  path: '/jogador/painel',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -520,6 +538,9 @@ export interface FileRoutesByFullPath {
   '/checkout/guest': typeof CheckoutGuestRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
+  '/jogador/novo': typeof JogadorNovoRoute
+  '/jogador/painel': typeof JogadorPainelRoute
+  '/jogador/': typeof JogadorIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -595,6 +616,9 @@ export interface FileRoutesByTo {
   '/checkout/guest': typeof CheckoutGuestRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
+  '/jogador/novo': typeof JogadorNovoRoute
+  '/jogador/painel': typeof JogadorPainelRoute
+  '/jogador': typeof JogadorIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -671,6 +695,9 @@ export interface FileRoutesById {
   '/checkout/guest': typeof CheckoutGuestRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/clube/novo': typeof ClubeNovoRoute
+  '/jogador/novo': typeof JogadorNovoRoute
+  '/jogador/painel': typeof JogadorPainelRoute
+  '/jogador/': typeof JogadorIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -748,6 +775,9 @@ export interface FileRouteTypes {
     | '/checkout/guest'
     | '/checkout/return'
     | '/clube/novo'
+    | '/jogador/novo'
+    | '/jogador/painel'
+    | '/jogador/'
     | '/.lovable/oauth/consent'
     | '/api/public/sync-football'
     | '/api/public/payments/webhook'
@@ -823,6 +853,9 @@ export interface FileRouteTypes {
     | '/checkout/guest'
     | '/checkout/return'
     | '/clube/novo'
+    | '/jogador/novo'
+    | '/jogador/painel'
+    | '/jogador'
     | '/.lovable/oauth/consent'
     | '/api/public/sync-football'
     | '/api/public/payments/webhook'
@@ -898,6 +931,9 @@ export interface FileRouteTypes {
     | '/checkout/guest'
     | '/checkout/return'
     | '/clube/novo'
+    | '/jogador/novo'
+    | '/jogador/painel'
+    | '/jogador/'
     | '/.lovable/oauth/consent'
     | '/api/public/sync-football'
     | '/api/public/payments/webhook'
@@ -974,6 +1010,9 @@ export interface RootRouteChildren {
   CheckoutGuestRoute: typeof CheckoutGuestRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   ClubeNovoRoute: typeof ClubeNovoRoute
+  JogadorNovoRoute: typeof JogadorNovoRoute
+  JogadorPainelRoute: typeof JogadorPainelRoute
+  JogadorIndexRoute: typeof JogadorIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicSyncFootballRoute: typeof ApiPublicSyncFootballRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
@@ -1453,6 +1492,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClubeNovoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jogador/': {
+      id: '/jogador/'
+      path: '/jogador'
+      fullPath: '/jogador/'
+      preLoaderRoute: typeof JogadorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jogador/novo': {
+      id: '/jogador/novo'
+      path: '/jogador/novo'
+      fullPath: '/jogador/novo'
+      preLoaderRoute: typeof JogadorNovoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jogador/painel': {
+      id: '/jogador/painel'
+      path: '/jogador/painel'
+      fullPath: '/jogador/painel'
+      preLoaderRoute: typeof JogadorPainelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
       path: '/.lovable/oauth/consent'
@@ -1567,6 +1627,9 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutGuestRoute: CheckoutGuestRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
   ClubeNovoRoute: ClubeNovoRoute,
+  JogadorNovoRoute: JogadorNovoRoute,
+  JogadorPainelRoute: JogadorPainelRoute,
+  JogadorIndexRoute: JogadorIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicSyncFootballRoute: ApiPublicSyncFootballRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,

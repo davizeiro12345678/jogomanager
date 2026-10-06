@@ -383,6 +383,22 @@ export function FootballHome() {
                 <ArrowRight size={19} />
               </span>
             </Link>
+            <Link to="/jogador" className="home-mode">
+              <div className="home-mode-art home-mode-art-match" aria-hidden="true">
+                <span>★</span>
+                <Users size={76} />
+              </div>
+              <p className="home-kicker">DA BASE AO AUGE</p>
+              <h3>Carreira de jogador</h3>
+              <p>
+                Crie seu atleta, treine, ganhe a vaga de titular, negocie contratos e chegue à
+                seleção.
+              </p>
+              <span className="home-mode-link">
+                Criar meu atleta
+                <ArrowRight size={19} />
+              </span>
+            </Link>
             <Link to="/multiplayer" className="home-mode">
               <div className="home-mode-art home-mode-art-friends" aria-hidden="true">
                 <span>03</span>
