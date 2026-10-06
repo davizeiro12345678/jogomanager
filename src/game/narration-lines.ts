@@ -6,7 +6,12 @@
  */
 import { LANGS, resolveLang, type Lang } from "@/i18n/locale-catalog";
 import { MATCH_EVENT_MESSAGES } from "@/i18n/match-event-messages";
-import { ROBERTA_VOICE_ID } from "./narration-voice";
+import {
+  FABI_VOICE_ID,
+  FELIPE_VOICE_ID,
+  MARIANNE_VOICE_ID,
+  ROBERTA_VOICE_ID,
+} from "./narration-voice";
 
 export type NarrationEvent =
   | "goal"
@@ -66,9 +71,9 @@ export type BroadcastRole = "narrator" | "commentator" | "referee";
 /** Papéis de transmissão: ritmo de jogo, análise e decisões têm timbres próprios. */
 export const BROADCAST_VOICE: Record<RemoteNarrationLang, Record<BroadcastRole, string>> = {
   pt: {
-    narrator: ROBERTA_VOICE_ID,
-    commentator: ROBERTA_VOICE_ID,
-    referee: ROBERTA_VOICE_ID,
+    narrator: FELIPE_VOICE_ID,
+    commentator: FABI_VOICE_ID,
+    referee: MARIANNE_VOICE_ID,
   },
   en: {
     narrator: "JBFqnCBsd6RMkjVDRZzb",
