@@ -156,7 +156,7 @@ export function selectionFor(state: PlayerCareerState, rnd: () => number): Match
   const squadLevel = club?.strength ?? 70;
   const score = overall(state) - squadLevel + (state.form - 50) * 0.15 + (state.trust - 50) * 0.25 + (state.energy - 70) * 0.1 + rnd() * 8;
   if (score > -2) return "titular";
-  if (score > -22) return "reserva";
+  if (score > -30) return "reserva";
   return "fora";
 }
 

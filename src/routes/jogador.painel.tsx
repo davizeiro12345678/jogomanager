@@ -120,7 +120,7 @@ function Panel({ state, commit, syncError }: { state: PlayerCareerState; commit:
 }
 
 function Bar({ label, value }: { label: string; value: number }) {
-  return <div className="athlete-bar"><label><span>{label}</span><b>{Math.round(value)}</b></label><div><span style={{ width: `${Math.round(value)}%` }} /></div></div>;
+  return <div className="athlete-bar"><label><span>{label}</span><b>{Math.round(value)}</b></label><div className="athlete-track"><span className="athlete-fill" style={{ width: `${Math.round(value)}%` }} /></div></div>;
 }
 
 function WeekTab({ state, commit }: { state: PlayerCareerState; commit: (s: PlayerCareerState) => void }) {

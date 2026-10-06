@@ -30,8 +30,8 @@
 .athlete-bars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
 @media (min-width: 48rem) { .athlete-bars { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 .athlete-bar label { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .06em; }
-.athlete-bar div { height: .5rem; border-radius: 99px; background: var(--muted); overflow: hidden; margin-top: .3rem; }
-.athlete-bar > div > span { display: block; height: 100%; background: var(--club, var(--primary)); border-radius: inherit; }
+.athlete-track { height: .5rem; border-radius: 99px; background: var(--muted); overflow: hidden; margin-top: .3rem; }
+.athlete-fill { display: block; height: 100%; background: var(--club, var(--primary)); border-radius: inherit; }
 .athlete-grid { display: grid; gap: 1rem; }
 @media (min-width: 64rem) { .athlete-grid { grid-template-columns: 1.3fr 1fr; } }
 .athlete-tabs { display: flex; gap: .4rem; overflow-x: auto; scrollbar-width: none; }
