@@ -203,6 +203,8 @@ export function sculptedHead(
   portrait = true,
   sampling?: { columns: number; rows: number },
 ) {
+  // O retrato isolado é a bancada do modelo Hero: concentra mais amostras no
+  // rosto sem aumentar o custo dos 22 jogadores da partida.
   const columns = sampling?.columns ?? (detail ? (portrait ? 96 : 56) : 18);
   const geometry = gridSurface(
     columns,
@@ -246,12 +248,13 @@ export function sculptedHair(
   look: PlayerLook,
   detail = true,
   sampling?: { columns: number; rows: number },
+  portrait = true,
 ) {
   const style = look.hairStyle;
   const f = faceMorphology(look.seed);
   return gridSurface(
-    sampling?.columns ?? (detail ? 56 : 18),
-    sampling?.rows ?? (detail ? 28 : 10),
+    sampling?.columns ?? (detail ? (portrait ? 72 : 56) : 18),
+    sampling?.rows ?? (detail ? (portrait ? 36 : 28) : 10),
     (u, v) => {
       const angle = headAngle(u);
       const front = Math.max(0, Math.cos(angle));
@@ -614,7 +617,18 @@ export function buildSculptedFace(
   portrait = true,
 ) {
   const head: RigPart[] = [
-    rigPart(sculptedHead(P, look.seed, hi, portrait), mats.skin, undefined, true),
+    rigPart(
+      sculptedHead(
+        P,
+        look.seed,
+        hi,
+        portrait,
+        hi && portrait ? { columns: 112, rows: 84 } : undefined,
+      ),
+      mats.skin,
+      undefined,
+      true,
+    ),
   ];
   const face: RigPart[] = [],
     eyes: RigPart[] = [],
@@ -821,7 +835,18 @@ export function buildSculptedFace(
   if (look.hairStyle !== "bald") {
     // The fitted scalp remains fully lit in the beauty pass. Its thin shell
     // does not need to duplicate the head silhouette in the shadow map.
-    hair.push(rigPart(sculptedHair(P, look, hi), mats.hair));
+    hair.push(
+      rigPart(
+        sculptedHair(
+          P,
+          look,
+          hi,
+          hi && portrait ? { columns: 72, rows: 36 } : undefined,
+          portrait,
+        ),
+        mats.hair,
+      ),
+    );
     if (look.hairStyle === "bun")
       hair.push(
         rigPart(

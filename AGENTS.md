@@ -20,3 +20,4 @@
 - Reuse the existing R3F, Rapier, post-processing, BVH, GPU-detection, and motion stack before adding 3D packages; duplicate engines increase bundle size and runtime ownership conflicts.
 - Send Slack notifications only from server code via `src/lib/slack.server.ts`, fire-and-forget; a Slack outage must never block purchases or matches.
 - Preserve deterministic player identity while concentrating body mass in anatomical surfaces rather than uniformly scaling the whole rig; this keeps football silhouettes athletic across LODs.
+- Validate new athlete rendering in an isolated career portrait before promoting it to match squads; this protects the 22-player frame budget.

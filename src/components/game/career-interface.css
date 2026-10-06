@@ -115,7 +115,9 @@
   justify-content: center;
   transition:
     background 150ms ease,
-    border-color 150ms ease;
+    border-color 150ms ease,
+    transform 150ms ease,
+    box-shadow 150ms ease;
 }
 .career-primary-button {
   background: var(--primary);
@@ -123,6 +125,8 @@
 }
 .career-primary-button:hover {
   background: color-mix(in oklab, var(--primary) 85%, var(--foreground));
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px color-mix(in oklab, var(--primary) 24%, transparent);
 }
 .career-secondary-button {
   border: 1px solid var(--career-line);
@@ -628,6 +632,12 @@
 .career-secondary-button:hover {
   background: var(--career-line);
   border-color: var(--muted-foreground);
+  transform: translateY(-1px);
+}
+.career-primary-button:active,
+.career-secondary-button:active,
+.career-nav-item:active {
+  transform: translateY(0) scale(0.98);
 }
 .career-workspace {
   grid-template-columns: 250px minmax(0, 1fr);

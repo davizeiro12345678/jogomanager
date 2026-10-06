@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
-import { ArrowLeft, HeartPulse } from "lucide-react";
+import { ArrowLeft, Flag, HeartPulse, ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/game/Crest";
+import { AthleteHero3D } from "@/components/game/players/AthleteHero3D";
 import { CLUBS } from "@/game/data/leagues";
 import { ATTRIBUTES, GROUP_LABEL, POSITION_LABEL, TRAITS, keyAttributes } from "@/game/player-career/attributes";
 import { acceptOffer, advanceWeek, careerTotals, declineOffer, negotiateOffer, opponentFor, overall, prepareMoments, retire, seasonLength, TRAINING_INJURY } from "@/game/player-career/engine";
@@ -27,10 +28,11 @@ export const Route = createFileRoute("/jogador/painel")({
   component: AthletePanelPage,
 });
 
-type Tab = "semana" | "atributos" | "contrato" | "noticias" | "historico";
+type Tab = "semana" | "atributos" | "selecao" | "contrato" | "noticias" | "historico";
 const TABS: { id: Tab; label: string }[] = [
   { id: "semana", label: "Semana" },
   { id: "atributos", label: "Atributos" },
+  { id: "selecao", label: "Seleção" },
   { id: "contrato", label: "Contrato e propostas" },
   { id: "noticias", label: "Notícias" },
   { id: "historico", label: "Histórico" },
@@ -57,6 +59,17 @@ function Panel({ state, commit, syncError }: { state: PlayerCareerState; commit:
   const ovr = overall(state);
   const groups: AttributeGroup[] = state.position === "GOL" ? ["goleiro", "mental", "fisico", "tecnico", "defensivo"] : ["tecnico", "fisico", "mental", "defensivo"];
   const groupAvg = (g: AttributeGroup) => { const list = ATTRIBUTES.filter((a) => a.group === g); return Math.round(list.reduce((s, a) => s + (state.attrs[a.key] ?? 0), 0) / list.length); };
+  const heroAthlete = {
+    seed: state.seed,
+    nickname: state.nickname,
+    clubId: state.clubId,
+    position: state.position,
+    shirtNumber: state.shirtNumber,
+    heightCm: state.heightCm,
+    weightKg: state.weightKg,
+    build: state.build,
+    appearance: state.appearance,
+  };
 
   return (
     <main className="athlete-shell" style={{ ["--club" as string]: club?.primary }}>
@@ -66,8 +79,9 @@ function Panel({ state, commit, syncError }: { state: PlayerCareerState; commit:
           {syncError && <span className="athlete-meta">Sem conexão com a nuvem — salvo no aparelho</span>}
         </div>
         <section className="athlete-card athlete-hero">
-          <div className="athlete-ovr"><div className="text-center">{ovr}<small>Geral</small></div></div>
-          <div className="min-w-0">
+          <AthleteHero3D athlete={heroAthlete} className="athlete-hero-model" />
+          <div className="athlete-hero-copy min-w-0">
+            <div className="athlete-hero-badges"><span className="athlete-quality-badge"><Sparkles className="size-3" /> Modelo Hero</span>{state.nationalCaps > 0 && <span className="athlete-national-badge"><Flag className="size-3" /> Seleção</span>}</div>
             <div className="flex items-center gap-2">
               {club && <Crest club={club} size={34} />}
               <h1 className="text-2xl font-bold truncate">{state.nickname} <span className="athlete-meta">#{state.shirtNumber}</span></h1>
@@ -75,6 +89,7 @@ function Panel({ state, commit, syncError }: { state: PlayerCareerState; commit:
             <p className="athlete-meta">{POSITION_LABEL[state.position]} · {state.age} anos · {club?.name ?? "Sem clube"} · {state.nation}</p>
             <p className="athlete-meta">{state.retired ? "Carreira encerrada" : `Temporada ${state.season} · semana ${state.week} de ${seasonLength(state)}`} · Potencial {state.potentialSeenRange[0]}–{state.potentialSeenRange[1]}</p>
           </div>
+          <div className="athlete-ovr"><div className="text-center">{ovr}<small>Geral</small></div></div>
         </section>
         <section className="athlete-card athlete-bars" aria-label="Condição">
           <Bar label="Energia" value={state.energy} />
@@ -107,6 +122,7 @@ function Panel({ state, commit, syncError }: { state: PlayerCareerState; commit:
             </div>
           </section>
         )}
+        {tab === "selecao" && <NationalTeamTab state={state} />}
         {tab === "contrato" && <ContractTab state={state} commit={commit} />}
         {tab === "noticias" && (
           <section className="athlete-card">
@@ -116,6 +132,39 @@ function Panel({ state, commit, syncError }: { state: PlayerCareerState; commit:
         {tab === "historico" && <HistoryTab state={state} />}
       </div>
     </main>
+  );
+}
+
+function NationalTeamTab({ state }: { state: PlayerCareerState }) {
+  const isInternational = state.nationalCaps > 0;
+  const reputationGap = Math.max(0, 36 - Math.round(state.reputation));
+  const formGap = Math.max(0, 71 - Math.round(state.form));
+  return (
+    <div className="athlete-grid athlete-national-grid">
+      <section className="athlete-card athlete-national-callup">
+        <div className="athlete-national-mark"><Flag aria-hidden /></div>
+        <div>
+          <p className="athlete-eyebrow">Carreira internacional</p>
+          <h2>{state.nation}</h2>
+          <p className="athlete-meta">{isInternational ? "Você já vestiu a camisa da seleção principal." : "Seu desempenho está sendo acompanhado pela comissão técnica."}</p>
+        </div>
+      </section>
+      <section className="athlete-card athlete-national-stats">
+        <Stat label="Jogos" value={state.nationalCaps} />
+        <Stat label="Gols" value={state.nationalGoals} />
+        <Stat label="Reputação" value={Math.round(state.reputation)} />
+      </section>
+      <section className="athlete-card athlete-selection-path">
+        <div className="athlete-section-heading"><div><p className="athlete-eyebrow">Caminho da convocação</p><h2 className="font-bold">Status atual</h2></div><ShieldCheck aria-hidden /></div>
+        <div className="athlete-selection-step" data-complete={state.reputation >= 36}><span>01</span><div><strong>Reconhecimento nacional</strong><p className="athlete-meta">{reputationGap ? `Faltam ${reputationGap} pontos de reputação.` : "Patamar alcançado."}</p></div></div>
+        <div className="athlete-selection-step" data-complete={state.form >= 71}><span>02</span><div><strong>Boa fase</strong><p className="athlete-meta">{formGap ? `Eleve a forma em ${formGap} pontos.` : "Forma de convocação."}</p></div></div>
+        <div className="athlete-selection-step" data-complete={isInternational}><span>03</span><div><strong>Convocação</strong><p className="athlete-meta">{isInternational ? `${state.nationalCaps} partida(s) pela seleção.` : "Pode acontecer ao avançar uma semana em grande fase."}</p></div></div>
+      </section>
+      <section className="athlete-card athlete-national-honours">
+        <Trophy aria-hidden />
+        <div><h2 className="font-bold">Legado internacional</h2><p className="athlete-meta">{state.nationalGoals > 0 ? `${state.nationalGoals} gol(s) marcados pelo seu país.` : "A primeira convocação abre a corrida por recordes e títulos."}</p></div>
+      </section>
+    </div>
   );
 }
 
