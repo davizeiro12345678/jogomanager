@@ -183,6 +183,13 @@
       "when": 1791244628101,
       "tag": "0025_create_player_careers",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791308204804,
+      "tag": "0026_link_clubs_to_competitions",
+      "breakpoints": true
     }
   ]
 }
