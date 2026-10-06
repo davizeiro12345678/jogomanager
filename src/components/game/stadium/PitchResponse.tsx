@@ -160,7 +160,7 @@ export const PitchResponse = memo(function PitchResponse({
           length: 0.9 + Math.random() * 0.9,
           width: 0.5 + Math.random() * 0.4,
           kind: SCUFF,
-          dark: 0.32 + Math.random() * 0.16,
+          dark: 0.78 + Math.random() * 0.1,
         });
       }
     }
@@ -175,7 +175,7 @@ export const PitchResponse = memo(function PitchResponse({
           length: 1.4 + Math.random() * 1.1,
           width: 0.8 + Math.random() * 0.5,
           kind: SCUFF,
-          dark: 0.24 + Math.random() * 0.12,
+          dark: 0.72 + Math.random() * 0.1,
         });
       }
     }
@@ -194,7 +194,7 @@ export const PitchResponse = memo(function PitchResponse({
             length: 1.1 + speed * 0.06,
             width: 0.42,
             kind: TRAIL,
-            dark: 0.4 + Math.random() * 0.1,
+            dark: 0.85 + Math.random() * 0.08,
           });
         }
       }
@@ -219,7 +219,7 @@ export const PitchResponse = memo(function PitchResponse({
         <meshBasicMaterial
           map={texture}
           transparent
-          opacity={0.75}
+          opacity={0.28}
           depthWrite={false}
           polygonOffset
           polygonOffsetFactor={-2}
