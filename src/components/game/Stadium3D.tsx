@@ -2522,10 +2522,10 @@ function FpsMeter({
     sorted.set(ring.current.subarray(0, n));
     sorted.sort();
     let sum = 0;
-    for (let i = 0; i < n; i += 1) sum += sorted[i];
+    for (let i = 0; i < n; i += 1) sum += sorted[i] ?? 0;
     const meanMs = sum / Math.max(1, n);
-    const p95FrameMs = n ? sorted[Math.min(n - 1, Math.floor(n * 0.95))] : meanMs;
-    const p99FrameMs = n ? sorted[Math.min(n - 1, Math.floor(n * 0.99))] : meanMs;
+    const p95FrameMs = (n ? sorted[Math.min(n - 1, Math.floor(n * 0.95))] : meanMs) ?? meanMs;
+    const p99FrameMs = (n ? sorted[Math.min(n - 1, Math.floor(n * 0.99))] : meanMs) ?? meanMs;
     const info = state.gl.info;
     const canvas = state.gl.domElement;
     const memory = performance as Performance & { memory?: { usedJSHeapSize: number } };
