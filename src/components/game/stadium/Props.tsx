@@ -1,3 +1,4 @@
+import { useDisposable } from "../useDisposable";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { StaticBatch } from "./StaticBatch";
@@ -19,7 +20,7 @@ import { metalAlbedo, metalRoughness, grilleTexture } from "./textures/metal";
 export type PropsQuality = "alta" | "media" | "baixa";
 
 function useMetal(color = "#8d949b", repeat = 3) {
-  return useMemo(() => {
+  return useDisposable(() => {
     const map = metalAlbedo();
     const rough = metalRoughness();
     const m = new THREE.MeshStandardMaterial({
@@ -127,8 +128,8 @@ function Tunnel() {
 /* ------------------------------------------------------ grades e escadas */
 
 function SectorGrilles({ rings }: { rings: number }) {
-  const tex = useMemo(() => grilleTexture(), []);
-  const mat = useMemo(() => {
+  const tex = useDisposable(() => grilleTexture(), []);
+  const mat = useDisposable(() => {
     const m = new THREE.MeshStandardMaterial({
       color: "#b9c2cb",
       roughness: 0.5,
@@ -262,7 +263,7 @@ function TvCameras({ sim }: { sim: SimView }) {
 
 function PressBoxes({ rings }: { rings: number }) {
   const top = 2.0 + rings * 1.45;
-  const glass = useMemo(
+  const glass = useDisposable(
     () =>
       new THREE.MeshStandardMaterial({
         color: "#9dc6e0",

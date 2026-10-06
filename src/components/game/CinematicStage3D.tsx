@@ -8,6 +8,7 @@
 //  e faz um travelling contínuo dentro da fala.
 // ============================================================================
 
+import { useDisposable } from "./useDisposable";
 import { Environment, Lightformer, RoundedBox } from "@react-three/drei";
 import { PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -186,7 +187,7 @@ function PressFlashes() {
 function TunnelDust() {
   const COUNT = 70;
   const ref = useRef<THREE.Points>(null);
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(COUNT * 3), 3));
     return g;
