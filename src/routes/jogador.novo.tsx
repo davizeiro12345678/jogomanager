@@ -48,6 +48,7 @@ function CreateAthletePage() {
   const { slot } = Route.useSearch();
   const navigate = useNavigate();
   const { commit } = useAthlete(slot);
+  const slotId = slot as 1 | 2 | 3;
   const [name, setName] = useState("");
   const [nickname, setNickname] = useState("");
   const [nation, setNation] = useState("Brasil");
@@ -85,7 +86,7 @@ function CreateAthletePage() {
   const submit = () => {
     if (name.trim().length < 2) return setError("Digite o nome do atleta (pelo menos 2 letras).");
     if (!club) return setError("Escolha um clube.");
-    const state = createAthlete({ slot, name, nickname, nation, hometown, position, foot, heightCm, build, personality, origin, clubId: club.id, appearance: { skin, hair, hairColor, beard, boots: 0 }, shirtNumber: shirt });
+    const state = createAthlete({ slot: slotId, name, nickname, nation, hometown, position, foot, heightCm, build, personality, origin, clubId: club.id, appearance: { skin, hair, hairColor, beard, boots: 0 }, shirtNumber: shirt });
     commit(state);
     void navigate({ to: "/jogador/painel", search: { slot } });
   };

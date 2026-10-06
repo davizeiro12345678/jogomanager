@@ -18,7 +18,7 @@ export function useAthleteSlots() {
     loadAthletesCloud()
       .then((rows) => {
         for (const row of rows) {
-          const cloud = row.state as PlayerCareerState;
+          const cloud = JSON.parse(row.state) as PlayerCareerState;
           const local = readAthlete(row.slot);
           if (cloud?.version === 1 && (!local || cloud.updatedAt > local.updatedAt)) writeAthlete({ ...cloud, slot: row.slot as 1 | 2 | 3 });
         }

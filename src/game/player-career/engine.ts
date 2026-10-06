@@ -458,10 +458,10 @@ function endSeason(state: PlayerCareerState, rnd: () => number) {
   const avg = line.apps ? line.ratingSum / line.apps : 0;
   if (line.goals >= 10 && !state.traits.includes("finalizador")) state.traits.push("finalizador");
   if (line.assists >= 8 && !state.traits.includes("construtor")) state.traits.push("construtor");
-  if ((state.attrs.bola_parada ?? 0) >= 80 && !state.traits.includes("cobrador")) state.traits.push("cobrador");
-  if ((state.attrs.lideranca ?? 0) >= 78 && !state.traits.includes("lider")) state.traits.push("lider");
-  if ((state.attrs.garra ?? 0) >= 80 && !state.traits.includes("raçudo")) state.traits.push("raçudo");
-  if ((state.attrs.resistencia ?? 0) >= 82 && !state.traits.includes("motorzinho")) state.traits.push("motorzinho");
+  if ((state.attrs['bola_parada'] ?? 0) >= 80 && !state.traits.includes("cobrador")) state.traits.push("cobrador");
+  if ((state.attrs['lideranca'] ?? 0) >= 78 && !state.traits.includes("lider")) state.traits.push("lider");
+  if ((state.attrs['garra'] ?? 0) >= 80 && !state.traits.includes("raçudo")) state.traits.push("raçudo");
+  if ((state.attrs['resistencia'] ?? 0) >= 82 && !state.traits.includes("motorzinho")) state.traits.push("motorzinho");
   if (state.position === "GOL" && avg >= 7 && !state.traits.includes("paredao")) state.traits.push("paredao");
   if (state.age <= 21 && avg >= 7 && line.apps >= 10) state.awards.push(`Revelação da temporada ${state.season}`);
   if (line.goals >= 18) state.awards.push(`Artilheiro da temporada ${state.season}`);

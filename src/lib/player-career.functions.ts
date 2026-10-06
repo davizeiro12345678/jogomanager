@@ -28,7 +28,7 @@ export const loadAthletesCloud = createServerFn({ method: "GET" })
       .select("slot, state, updated_at")
       .eq("user_id", context.userId);
     if (error) throw new Error("Não foi possível carregar seus atletas.");
-    return (data ?? []).map((r) => ({ slot: r.slot as number, state: r.state as unknown, updatedAt: r.updated_at as string }));
+    return (data ?? []).map((r) => ({ slot: r.slot as number, state: JSON.stringify(r.state), updatedAt: r.updated_at as string }));
   });
 
 export const deleteAthleteCloud = createServerFn({ method: "POST" })
