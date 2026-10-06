@@ -1,6 +1,6 @@
 import { ContactShadows, Environment, Lightformer } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { Canvas, useThree } from "@react-three/fiber";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import { kitFor } from "@/game/kits";
@@ -203,6 +203,16 @@ function AthletePortraitScene({ athlete }: { athlete: AthleteHeroData }) {
   );
 }
 
+function PortraitCamera() {
+  const camera = useThree((state) => state.camera);
+  useLayoutEffect(() => {
+    camera.position.set(1.35, 1.28, 4.25);
+    camera.lookAt(0, 1.02, 0);
+    camera.updateProjectionMatrix();
+  }, [camera]);
+  return null;
+}
+
 export function AthleteHero3D({ athlete, className }: AthleteHero3DProps) {
   return (
     <div className={className} aria-label={`Modelo 3D de ${athlete.nickname || "atleta"}`}>
@@ -218,6 +228,7 @@ export function AthleteHero3D({ athlete, className }: AthleteHero3DProps) {
           }}
           fallback={<p className="athlete-preview-fallback">Prévia 3D indisponível neste aparelho.</p>}
         >
+          <PortraitCamera />
           <AthletePortraitScene athlete={athlete} />
         </Canvas>
       </GraphicsBoundary>
