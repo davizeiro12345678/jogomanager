@@ -76,10 +76,10 @@ export interface RigBodyContext {
 /** Maps torso rings to centered front/back atlas panels instead of stretching
  * either decal around half of the athlete. */
 export function shirtPanelU(x: number, z: number): number {
-  const isFront = z >= 0;
-  const panelAngle = Math.atan2(x, isFront ? z : -z);
-  const panelU = THREE.MathUtils.clamp(0.5 + panelAngle / Math.PI, 0.04, 0.96);
-  return (isFront ? 0 : 0.5) + panelU * 0.5;
+  // Continuous wrap: front centre 0.25, back centre 0.75, u falls as x rises so the
+  // back print reads left-to-right; the single seam sits on the +x side, away from prints.
+  const u = 0.25 - Math.atan2(x, z) / (Math.PI * 2);
+  return u - Math.floor(u);
 }
 
 /** Malhas de cada junta; rosto, mandíbula e quatro pálpebras ficam em grupos animados. */
