@@ -12,7 +12,18 @@ import {
   type RemoteNarrationLang,
 } from "@/game/narration-lines";
 import { CUTSCENES } from "@/content/cutscenes";
-import { ROBERTA_VOICE_ID } from "@/game/narration-voice";
+import {
+  FABI_VOICE_ID,
+  FELIPE_VOICE_ID,
+  MARIANNE_VOICE_ID,
+} from "@/game/narration-voice";
+
+/** Each cutscene speaker gets a distinct realistic Brazilian voice. */
+function sceneVoice(who: string): string {
+  if (who === "referee" || who === "president") return MARIANNE_VOICE_ID;
+  if (who === "commentator" || who === "reporter") return FABI_VOICE_ID;
+  return FELIPE_VOICE_ID;
+}
 
 /**
  * Narração da partida com voz realista (ElevenLabs).
@@ -168,7 +179,7 @@ function v4VoiceSettings(settings: Record<string, unknown>): Record<string, unkn
  * Chamada única ao ElevenLabs com tentativa de modelo alternativo.
  * Devolve o áudio em base64 ou `null` — o jogo sempre tem voz local de reserva.
  */
-async function synthesize(opts: {
+type SynthOpts = {
   apiKey: string;
   voiceId: string;
   text: string;
@@ -177,7 +188,16 @@ async function synthesize(opts: {
   models: TtsModel[];
   voiceSettings: Record<string, unknown>;
   continuity?: { previousText?: string; nextText?: string };
-}): Promise<string | null> {
+};
+
+/** Marianne requires a paid voice plan; Felipe keeps the voice realistic meanwhile. */
+async function synthesize(opts: SynthOpts): Promise<string | null> {
+  const audio = await synthesizeWith(opts);
+  if (audio || opts.voiceId !== MARIANNE_VOICE_ID) return audio;
+  return synthesizeWith({ ...opts, voiceId: FELIPE_VOICE_ID });
+}
+
+async function synthesizeWith(opts: SynthOpts): Promise<string | null> {
   const tried = new Set<string>();
   for (const model of opts.models) {
     if (tried.has(model)) continue;
