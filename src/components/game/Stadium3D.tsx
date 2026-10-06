@@ -90,6 +90,8 @@ const SKY: Record<TimeOfDay, string> = {
  * participar da simulação canônica. Replays antigos e o caminho sem Rapier
  * continuam apresentando a própria bola da partida.
  */
+const FPS_RING = 180 * 60;
+
 function presentationBall(sim: SimView) {
   return sim.visualBall ?? sim.ball;
 }
@@ -2478,42 +2480,52 @@ function FpsMeter({
   backend: GpuBackend;
   quality: Quality;
 }) {
-  const frameTimes = useRef<number[]>([]);
-  const secondFrames = useRef<number[]>([]);
+  // Buffers fixos reutilizados: zero alocação por quadro ou por segundo.
+  const ring = useRef(new Float32Array(FPS_RING));
+  const sortScratch = useRef(new Float32Array(FPS_RING));
+  const ringState = useRef({ head: 0, size: 0, secondCount: 0, lastPersist: 0 });
   const acc = useRef(0);
   const warmup = useRef(2);
 
   useEffect(() => {
-    frameTimes.current = [];
-    secondFrames.current = [];
+    ringState.current.head = 0;
+    ringState.current.size = 0;
+    ringState.current.secondCount = 0;
     acc.current = 0;
     warmup.current = 2;
   }, [quality, backend]);
 
   useFrame((state, dt) => {
     if (document.hidden || dt <= 0 || dt > 0.25) return;
+    const rs = ringState.current;
     acc.current += dt;
-    secondFrames.current.push(dt * 1000);
-    if (acc.current < 1) return;
+    rs.secondCount += 1;
+    if (acc.current < 1) {
+      ring.current[rs.head] = dt * 1000;
+      rs.head = (rs.head + 1) % FPS_RING;
+      if (rs.size < FPS_RING) rs.size += 1;
+      return;
+    }
     if (warmup.current > 0) {
       warmup.current -= 1;
       acc.current = 0;
-      secondFrames.current = [];
+      rs.secondCount = 0;
+      rs.head = 0;
+      rs.size = 0;
       return;
     }
-    const current = secondFrames.current;
-    const fps = current.length / acc.current;
+    const fps = rs.secondCount / acc.current;
     acc.current = 0;
-    secondFrames.current = [];
-    const history = frameTimes.current;
-    history.push(...current);
-    if (history.length > 180 * 60) history.splice(0, history.length - 180 * 60);
-    const sorted = [...history].sort((a, b) => a - b);
-    const meanMs = history.reduce((a, b) => a + b, 0) / Math.max(1, history.length);
-    const p95FrameMs =
-      sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] ?? meanMs;
-    const p99FrameMs =
-      sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.99))] ?? meanMs;
+    rs.secondCount = 0;
+    const n = rs.size;
+    const sorted = sortScratch.current.subarray(0, n);
+    sorted.set(ring.current.subarray(0, n));
+    sorted.sort();
+    let sum = 0;
+    for (let i = 0; i < n; i += 1) sum += sorted[i] ?? 0;
+    const meanMs = sum / Math.max(1, n);
+    const p95FrameMs = (n ? sorted[Math.min(n - 1, Math.floor(n * 0.95))] : meanMs) ?? meanMs;
+    const p99FrameMs = (n ? sorted[Math.min(n - 1, Math.floor(n * 0.99))] : meanMs) ?? meanMs;
     const info = state.gl.info;
     const canvas = state.gl.domElement;
     const memory = performance as Performance & { memory?: { usedJSHeapSize: number } };
@@ -2533,6 +2545,9 @@ function FpsMeter({
       measuredAt: new Date().toISOString(),
     };
     onSample(sample);
+    const now = performance.now();
+    if (now - rs.lastPersist < 10_000) return;
+    rs.lastPersist = now;
     try {
       localStorage.setItem("manager3d.performance.latest", JSON.stringify(sample));
     } catch {

@@ -8,6 +8,7 @@
 //  média (7/4 por lado); aquecimento só na alta. Animações em 3 useFrames.
 // ============================================================================
 
+import { useDisposable } from "../useDisposable";
 import { useFrame } from "@react-three/fiber";
 import { memo, useMemo, useRef } from "react";
 import type React from "react";
@@ -293,9 +294,9 @@ export const BenchLife = memo(function BenchLife({
 }) {
   const homeColor = sim.home.primary;
   const awayColor = sim.away.primary;
-  const homeDugout = useMemo(() => dugoutGeometries("#2a313a", "#9fb6c9"), []);
-  const awayDugout = useMemo(() => dugoutGeometries("#2a313a", "#9fb6c9"), []);
-  const cloth = useMemo(
+  const homeDugout = useDisposable(() => dugoutGeometries("#2a313a", "#9fb6c9"), []);
+  const awayDugout = useDisposable(() => dugoutGeometries("#2a313a", "#9fb6c9"), []);
+  const cloth = useDisposable(
     () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 }),
     [],
   );
