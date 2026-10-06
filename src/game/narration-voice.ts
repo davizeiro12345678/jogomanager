@@ -8,4 +8,4 @@ export const FABI_VOICE_ID = "e06XicPETIbfUaeHM9zH";
 export const MARIANNE_VOICE_ID = "PZMcMFpToj1IIYF0QDwX";
 
 /** Changing the voice must invalidate recordings persisted by earlier releases. */
-export const NARRATION_VOICE_REVISION = "felipe-fabi-marianne-1";
+export const NARRATION_VOICE_REVISION = "felipe-fabi-marianne-2";

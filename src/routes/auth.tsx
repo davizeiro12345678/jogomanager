@@ -80,6 +80,7 @@ function AuthPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [magicEmail, setMagicEmail] = useState("");
   const [recoveryReady, setRecoveryReady] = useState(false);
+  const [signedInAs, setSignedInAs] = useState<string | null>(null);
   const brokeredOAuth = import.meta.env["VITE_AUTH_MODE"] === "lovable";
   const passkeysSupported = supportsPasskeys();
 
@@ -136,7 +137,10 @@ function AuthPage() {
               () => undefined,
               () => undefined,
             );
-          void navigate({ href: destination });
+          // Só redireciona sozinho ao voltar de um login (next na URL);
+          // abrir /auth direto mostra a conta atual e permite trocar.
+          if (search.next) void navigate({ href: destination });
+          else setSignedInAs(data.session.user.email ?? "sua conta");
         }
       })
       .catch(() => {
@@ -147,7 +151,7 @@ function AuthPage() {
       alive = false;
       listener.subscription.unsubscribe();
     };
-  }, [destination, navigate, search.recovery]);
+  }, [destination, navigate, search.recovery, search.next]);
 
   const callback = (recovery = false) =>
     `${window.location.origin}/auth?next=${encodeURIComponent(destination)}${recovery ? "&recovery=1" : ""}`;
@@ -323,6 +327,30 @@ function AuthPage() {
   }[mode];
   const inputClass =
     "min-h-11 w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary";
+  if (signedInAs && mode !== "update")
+    return (
+      <main className="auth-stage grid min-h-screen place-items-center px-4 py-10">
+        <div className="auth-card w-full max-w-md rounded-2xl border border-border/60 bg-card/85 p-8 text-center shadow-2xl backdrop-blur-xl">
+          <h1 className="font-display text-2xl font-bold">Você já está conectado</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{signedInAs}</p>
+          <div className="mt-6 grid gap-3">
+            <Button size="lg" onClick={() => void navigate({ href: destination })}>
+              Continuar para o jogo
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                setSignedInAs(null);
+              }}
+            >
+              Sair e entrar com outra conta
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
   return (
     <main className="auth-stage grid min-h-screen place-items-center px-4 py-10">
       <div className="auth-card grid w-full max-w-5xl overflow-hidden rounded-2xl border border-border/60 bg-card/85 shadow-2xl backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr]">
