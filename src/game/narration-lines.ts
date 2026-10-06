@@ -10,7 +10,6 @@ import {
   FABI_VOICE_ID,
   FELIPE_VOICE_ID,
   MARIANNE_VOICE_ID,
-  ROBERTA_VOICE_ID,
 } from "./narration-voice";
 
 export type NarrationEvent =
@@ -61,7 +60,7 @@ export const SPEECH_TAG: Record<NarrationLang, string> = {
 
 /** Vozes ElevenLabs por idioma — narração empolgada, estilo transmissão. */
 export const VOICE_BY_LANG: Record<RemoteNarrationLang, string> = {
-  pt: ROBERTA_VOICE_ID, // Roberta — Smooth and Confident, português brasileiro
+  pt: FELIPE_VOICE_ID, // Felipe Leão — locutor brasileiro
   en: "JBFqnCBsd6RMkjVDRZzb", // George — locutor clássico
   es: "iP95p4xoKVk53GoZ742B", // Chris — animado
 };
