@@ -41,7 +41,8 @@ export default function CinematicLens({
   if (quality === "baixa") return null;
   return (
     <EffectComposer
-      key={`${quality}-${climax ? "climax" : "line"}`}
+      // Key só por qualidade: trocar a cada fala remontava o compositor e piscava preto/branco.
+      key={quality}
       enableNormalPass={false}
       multisampling={0}
       resolutionScale={quality === "alta" ? 0.85 : 0.7}
