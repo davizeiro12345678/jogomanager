@@ -65,3 +65,8 @@
 
 - [ ] Modo carreira de jogador completo (plano ampliado)
 - [ ] Jogador 3D nova geração (corpo, rosto, cabelo, uniforme, movimento)
+
+## Carreira de jogador e vertical slice 3D (pedido 2026-10-06)
+- [ ] Renovar painel, seleção, botões e animações da carreira de jogador.
+- [ ] Integrar um atleta 3D Hero personalizado à criação e ao painel antes de escalar para 22 jogadores.
+- [ ] Validar rosto, cabelo, corpo e uniforme no celular e no desktop sem regressões de compilação.
