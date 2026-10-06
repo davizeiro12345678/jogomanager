@@ -263,7 +263,7 @@ export const narrateScene = createServerFn({ method: "POST" })
     const { reserveAiBudget } = await import("@/lib/ai-budget.server");
     if (!(await reserveAiBudget("voice"))) return { ok: false, reason: "unavailable" };
 
-    const voiceId = ROBERTA_VOICE_ID;
+    const voiceId = sceneVoice(current.who);
     // contexto das falas vizinhas: mantém a prosódia contínua entre linhas
     const previousText = scene.lines[data.line - 1]?.text;
     const nextText = scene.lines[data.line + 1]?.text;
@@ -334,7 +334,7 @@ export const narratePrematch = createServerFn({ method: "POST" })
     if (!(await reserveAiBudget("voice"))) return { ok: false, reason: "unavailable" };
     const audio = await synthesize({
       apiKey,
-      voiceId: ROBERTA_VOICE_ID,
+      voiceId: FELIPE_VOICE_ID,
       text: prematchIntroText(safeTeam(home.name), safeTeam(away.name), data.round),
       format: "mp3_44100_128",
       language: "pt",
