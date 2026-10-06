@@ -1,0 +1,91 @@
+/* Sign-in + store: broadcast-style surfaces shared by both screens. */
+.auth-stage,
+.store-stage {
+  background:
+    radial-gradient(60rem 40rem at 10% -10%, color-mix(in oklab, var(--primary) 22%, transparent), transparent 60%),
+    radial-gradient(50rem 30rem at 110% 110%, color-mix(in oklab, var(--accent, var(--primary)) 16%, transparent), transparent 60%),
+    var(--background);
+}
+
+.auth-card {
+  animation: auth-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  box-shadow:
+    0 30px 80px -30px color-mix(in oklab, var(--primary) 45%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--foreground) 6%, transparent) inset;
+}
+
+.auth-hero {
+  background-size: cover;
+  background-position: center;
+}
+.auth-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--background) 55%, transparent) 0%,
+    color-mix(in oklab, var(--background) 92%, transparent) 70%
+  );
+}
+
+.auth-card input {
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.auth-card input:focus {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 30%, transparent);
+}
+
+.auth-social {
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.auth-social:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px -10px color-mix(in oklab, var(--primary) 60%, transparent);
+}
+
+.store-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+  background-size: cover;
+  background-position: center 40%;
+}
+.store-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--background) 94%, transparent) 0%,
+    color-mix(in oklab, var(--background) 60%, transparent) 100%
+  );
+}
+.store-hero > * {
+  position: relative;
+}
+.store-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  background: color-mix(in oklab, var(--primary) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 35%, transparent);
+}
+
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.99);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-card,
+  .auth-social {
+    animation: none;
+    transition: none;
+  }
+}

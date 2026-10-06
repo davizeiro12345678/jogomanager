@@ -27,6 +27,8 @@ import {
 } from "@/lib/auth-policy";
 import { useAuthMethods } from "@/hooks/useAuthMethods";
 import { passkeyErrorMessage, supportsPasskeys } from "@/integrations/supabase/passkey-auth";
+import authHero from "@/assets/hero-stadium.jpg?format=webp&w=1024&quality=60&as=url";
+import "@/components/auth-store.css";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -322,10 +324,13 @@ function AuthPage() {
   const inputClass =
     "min-h-11 w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary";
   return (
-    <main className="pitch-bg grid min-h-screen place-items-center px-4 py-10">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-xl border border-border/60 bg-card/90 shadow-2xl backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="hidden border-r border-border/60 bg-secondary/40 p-10 lg:flex lg:flex-col lg:justify-between">
-          <div>
+    <main className="auth-stage grid min-h-screen place-items-center px-4 py-10">
+      <div className="auth-card grid w-full max-w-5xl overflow-hidden rounded-2xl border border-border/60 bg-card/85 shadow-2xl backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr]">
+        <section
+          className="auth-hero relative hidden overflow-hidden border-r border-border/60 p-10 lg:flex lg:flex-col lg:justify-between"
+          style={{ backgroundImage: `url(${authHero})` }}
+        >
+          <div className="relative">
             <Link
               to="/"
               className="inline-flex items-center gap-2 font-display text-sm uppercase text-primary"
@@ -340,7 +345,7 @@ function AuthPage() {
               exportada da sua carreira.
             </p>
           </div>
-          <ul className="mt-10 space-y-4 text-sm">
+          <ul className="relative mt-10 space-y-4 text-sm">
             <li className="flex items-center gap-3">
               <Cloud className="shrink-0 text-primary" /> Salve sua carreira na nuvem quando estiver
               conectado
@@ -354,7 +359,7 @@ function AuthPage() {
               aparelho
             </li>
           </ul>
-          <div className="mt-8">
+          <div className="relative mt-8">
             <DiscordLink>Conhecer a comunidade</DiscordLink>
           </div>
         </section>
@@ -406,7 +411,7 @@ function AuthPage() {
                     type="button"
                     variant={provider === "google" ? "default" : "outline"}
                     disabled={busy}
-                    className="min-h-11 w-full"
+                    className="auth-social min-h-12 w-full font-semibold"
                     onClick={() => signInWith(provider)}
                   >
                     Continuar com {socialProviderLabel(provider)}
