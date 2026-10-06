@@ -1,4 +1,9 @@
 import { Link, useLocation } from "@tanstack/react-router";
+import artCoins from "@/assets/store/coins.jpg?format=webp&w=640&quality=65&as=url";
+import artScout from "@/assets/store/scout.jpg?format=webp&w=640&quality=65&as=url";
+import artTraining from "@/assets/store/training.jpg?format=webp&w=640&quality=65&as=url";
+import artCosmetic from "@/assets/store/cosmetic.jpg?format=webp&w=640&quality=65&as=url";
+import artPass from "@/assets/store/pass.jpg?format=webp&w=640&quality=65&as=url";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, type ReactNode } from "react";
@@ -57,6 +62,14 @@ const KIND_LABELS: Record<string, string> = {
   training: "Treino",
   cosmetic: "Cosmético",
   pass: "Passe de temporada",
+};
+
+const KIND_ART: Record<string, string> = {
+  coins: artCoins,
+  scout: artScout,
+  training: artTraining,
+  cosmetic: artCosmetic,
+  pass: artPass,
 };
 
 const KIND_ICONS: Record<string, ReactNode> = {
@@ -287,7 +300,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                   if (p.key === bestValueKey)
                     recordAdMetric(`store-${p.key}`, "inventory", "impression");
                 }}
-                className={`relative flex flex-col surface-card transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-glow)] motion-reduce:transform-none motion-reduce:transition-none ${
+                className={`group relative flex flex-col overflow-hidden surface-card transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-glow)] motion-reduce:transform-none motion-reduce:transition-none ${
                   selectedProduct === p.key
                     ? "border-primary/80 bg-primary/5 ring-1 ring-primary/40"
                     : p.key === bestValueKey
@@ -300,8 +313,17 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                     Destaque · melhor valor
                   </span>
                 )}
-                <div className="mx-5 mt-5 grid h-20 place-items-center overflow-hidden rounded-lg border border-primary/25 bg-[radial-gradient(circle_at_50%_120%,color-mix(in_oklab,var(--primary)_35%,transparent),transparent_70%)]">
-                  <div className="grid h-14 w-14 place-items-center rounded-full border border-primary/40 bg-primary/15 text-primary shadow-lg [&>svg]:h-7 [&>svg]:w-7">
+                <div className="relative mx-3 mt-3 aspect-[16/8] overflow-hidden rounded-xl border border-border/60">
+                  <img
+                    src={KIND_ART[p.kind] ?? KIND_ART["coins"]}
+                    alt=""
+                    loading="lazy"
+                    width={640}
+                    height={320}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/10 to-transparent" />
+                  <div className="absolute bottom-2 left-2 grid h-9 w-9 place-items-center rounded-lg border border-primary/40 bg-background/70 text-primary backdrop-blur [&>svg]:h-5 [&>svg]:w-5">
                     {KIND_ICONS[p.kind] ?? <Package />}
                   </div>
                 </div>
