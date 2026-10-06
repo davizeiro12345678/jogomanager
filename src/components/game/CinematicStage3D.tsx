@@ -1399,11 +1399,11 @@ export const CinematicStage3D = memo(function CinematicStage3D({
           <Canvas
             key={canvasGeneration}
             frameloop={paused || reduced || hidden ? "demand" : "always"}
-            shadows={quality === "baixa" ? false : { type: THREE.PCFShadowMap }}
+            shadows={initialQuality === "baixa" ? false : { type: THREE.PCFShadowMap }}
             dpr={dprFor(quality)}
             camera={{ position: [0, 2.2, 6.5], fov: 42, near: 0.05, far: 90 }}
             gl={{
-              antialias: quality !== "baixa",
+              antialias: initialQuality !== "baixa",
               powerPreference: "high-performance",
               stencil: false,
             }}
@@ -1444,7 +1444,9 @@ export const CinematicStage3D = memo(function CinematicStage3D({
               <PerformanceMonitor
                 // Drei counts high and low samples as flips. A high-refresh scene
                 // must never hit a generic fallback merely because it is healthy.
-                flipflops={Infinity}
+                // Limite de trocas evita oscilação de qualidade, que recompila
+                // shaders e piscava a tela em preto/branco.
+                flipflops={3}
                 bounds={(refreshRate) => (refreshRate > 100 ? [60, 120] : [24, 45])}
                 iterations={3}
                 threshold={0.8}

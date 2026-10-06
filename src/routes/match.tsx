@@ -382,14 +382,6 @@ const Scoreboard = memo(function Scoreboard({
           />
           <div className="flex-1" style={{ background: away.primary }} />
         </div>
-        <div className="hidden justify-between px-3 py-1 text-[10px] uppercase tracking-widest text-white/60 sm:flex">
-          <span>Posse {ph}%</span>
-          <span>
-            Chutes {snap.hShots} – {snap.aShots}
-          </span>
-          <span>Posse {pa}%</span>
-        </div>
-
         {/* pressão: de quem é o jogo neste momento */}
         <div className="hidden px-3 pb-1 sm:block">
           <div className="relative h-1.5 overflow-hidden rounded-full bg-white/10">
@@ -403,18 +395,10 @@ const Scoreboard = memo(function Scoreboard({
               }}
             />
           </div>
-          <p className="mt-0.5 text-center text-[9px] uppercase tracking-[0.25em] text-white/45">
-            Pressão
-          </p>
         </div>
 
         <div className="hidden sm:block">
           <Timeline minute={snap.minute} events={snap.events} />
-        </div>
-        <div className="hidden justify-between px-4 pb-1.5 text-[9px] uppercase tracking-widest text-white/35 sm:flex">
-          <span>0&apos;</span>
-          <span>45&apos;</span>
-          <span>90&apos;</span>
         </div>
       </div>
 
@@ -459,12 +443,12 @@ const Feed = memo(function Feed({ events }: { events: Snap["events"] }) {
     <div
       aria-label="Eventos da partida"
       role="log"
-      className="match-feed pointer-events-auto absolute bottom-24 left-3 z-10 hidden max-h-52 w-72 overflow-y-auto rounded-2xl border border-white/10 bg-black/60 p-3 text-xs text-white/85 backdrop-blur-xl md:bottom-4 md:block"
+      className="match-feed pointer-events-auto absolute bottom-24 left-3 z-10 hidden w-64 space-y-1 text-xs text-white/90 md:block [mask-image:linear-gradient(to_top,black_60%,transparent)]"
     >
-      {[...events].reverse().map((e, i) => (
+      {events.slice(-4).map((e, i) => (
         <p
-          key={`${e.minute}-${i}-${e.text.slice(0, 8)}`}
-          className={`mb-1 flex gap-2 ${e.type === "goal" ? "font-display text-sm text-primary" : ""}`}
+          key={`${e.minute}-${i}-${e.type}`}
+          className={`flex gap-2 rounded-lg bg-black/45 px-2.5 py-1.5 backdrop-blur-md ${e.type === "goal" ? "font-display text-sm text-primary" : ""}`}
         >
           <span className="w-8 shrink-0 tabular-nums text-white/45">{e.minute}'</span>
           <span className="shrink-0">{eventIcon(e.type)}</span>
