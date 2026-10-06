@@ -150,8 +150,8 @@ function appearanceFor(athlete: AthleteHeroData): PlayerLook {
 }
 
 function AthletePortraitScene({ athlete }: { athlete: AthleteHeroData }) {
-  const fixture = useMemo(() => portraitFixture(athlete), [athlete]);
-  const appearance = useMemo(() => appearanceFor(athlete), [athlete]);
+  const fixture = useMemo(() => portraitFixture(athlete), [athlete.seed, athlete.clubId, athlete.nickname, athlete.position, athlete.shirtNumber, athlete.heightCm, athlete.weightKg]);
+  const appearance = useMemo(() => appearanceFor(athlete), [athlete.seed, athlete.position, athlete.shirtNumber, athlete.heightCm, athlete.weightKg, athlete.build, athlete.appearance]);
   const club = safeClub(athlete.clubId);
   const kit = useMemo(
     () => kitFor(club.id, club.primary, club.secondary),

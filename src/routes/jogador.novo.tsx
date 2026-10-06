@@ -4,6 +4,7 @@ import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/game/Crest";
+import { AthleteHero3D } from "@/components/game/players/AthleteHero3D";
 import { LEAGUES } from "@/game/data/leagues";
 import { POSITION_LABEL } from "@/game/player-career/attributes";
 import { createAthlete, rngFrom } from "@/game/player-career/engine";
@@ -82,6 +83,17 @@ function CreateAthletePage() {
     return league.clubs;
   }, [league, origin, name, leagueId]);
   const club = clubPool.find((c) => c.id === clubId) ?? clubPool[0];
+  const previewAthlete = useMemo(() => ({
+    seed: `preview-${name || "novo"}-${skin}-${hair}-${hairColor}-${beard}`,
+    nickname: nickname || name.split(" ")[0] || "ATLETA",
+    clubId: club?.id ?? "fla",
+    position,
+    shirtNumber: shirt,
+    heightCm,
+    weightKg: Math.round((heightCm - 100) * (build === "forte" ? 0.98 : build === "leve" ? 0.82 : 0.9)),
+    build,
+    appearance: { skin, hair, hairColor, beard, boots: 0 },
+  }), [name, nickname, club?.id, position, shirt, heightCm, build, skin, hair, hairColor, beard]);
 
   const submit = () => {
     if (name.trim().length < 2) return setError("Digite o nome do atleta (pelo menos 2 letras).");
@@ -136,15 +148,11 @@ function CreateAthletePage() {
             </div>
           </section>
           <section className="athlete-card athlete-form" aria-label="Aparência">
-            <h2 className="text-lg font-bold">Aparência</h2>
-            <div className="athlete-avatar" aria-hidden>
-              <div className="hair" style={{ background: HAIR_COLORS[hairColor], height: hair === 0 ? "1rem" : hair === 4 ? "3rem" : "1.8rem" }} />
-              <div className="head" style={{ background: SKINS[skin], boxShadow: beard ? `inset 0 -${beard * 0.4}rem 0 ${HAIR_COLORS[hairColor]}` : undefined }} />
-              <div className="body" style={{ background: club?.primary, color: club?.secondary }}>{shirt}</div>
-            </div>
-            <div className="athlete-field"><span>Tom de pele</span><div className="athlete-chips">{SKINS.map((c, i) => <button key={c} type="button" className="athlete-chip" aria-label={`Tom ${i + 1}`} aria-pressed={skin === i} style={{ background: c, width: 44 }} onClick={() => setSkin(i)} />)}</div></div>
+            <div className="athlete-section-heading"><div><p className="athlete-eyebrow">Modelo Hero</p><h2 className="text-lg font-bold">Aparência 3D</h2></div><span className="athlete-quality-badge">Alta qualidade</span></div>
+            <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
+            <div className="athlete-field"><span>Tom de pele</span><div className="athlete-chips">{SKINS.map((c, i) => <Button key={c} type="button" variant="outline" size="icon" className="athlete-swatch" aria-label={`Tom ${i + 1}`} aria-pressed={skin === i} style={{ background: c }} onClick={() => setSkin(i)} />)}</div></div>
             <label className="athlete-field"><span>Cabelo</span><select value={hair} onChange={(e) => setHair(Number(e.target.value))}>{HAIR_STYLES.map((h, i) => <option key={h} value={i}>{h}</option>)}</select></label>
-            <div className="athlete-field"><span>Cor do cabelo</span><div className="athlete-chips">{HAIR_COLORS.map((c, i) => <button key={c} type="button" className="athlete-chip" aria-label={`Cor ${i + 1}`} aria-pressed={hairColor === i} style={{ background: c, width: 44 }} onClick={() => setHairColor(i)} />)}</div></div>
+            <div className="athlete-field"><span>Cor do cabelo</span><div className="athlete-chips">{HAIR_COLORS.map((c, i) => <Button key={c} type="button" variant="outline" size="icon" className="athlete-swatch" aria-label={`Cor ${i + 1}`} aria-pressed={hairColor === i} style={{ background: c }} onClick={() => setHairColor(i)} />)}</div></div>
             <label className="athlete-field"><span>Barba</span><select value={beard} onChange={(e) => setBeard(Number(e.target.value))}>{["Sem barba", "Rala", "Média", "Cheia"].map((b, i) => <option key={b} value={i}>{b}</option>)}</select></label>
             <label className="athlete-field"><span>Número da camisa</span><input type="number" min={1} max={99} value={shirt} onChange={(e) => setShirt(Math.max(1, Math.min(99, Number(e.target.value) || 1)))} /></label>
             {error && <p role="alert" className="text-destructive text-sm">{error}</p>}

@@ -203,10 +203,12 @@ export function sculptedHead(
   portrait = true,
   sampling?: { columns: number; rows: number },
 ) {
-  const columns = sampling?.columns ?? (detail ? (portrait ? 96 : 56) : 18);
+  // O retrato isolado é a bancada do modelo Hero: concentra mais amostras no
+  // rosto sem aumentar o custo dos 22 jogadores da partida.
+  const columns = sampling?.columns ?? (detail ? (portrait ? 112 : 56) : 18);
   const geometry = gridSurface(
     columns,
-    sampling?.rows ?? (detail ? (portrait ? 72 : 48) : 20),
+    sampling?.rows ?? (detail ? (portrait ? 84 : 48) : 20),
     (u, v) => headPoint(P, -1.14 + v * 2.28, headAngle(u), seed),
   );
   // Average the duplicated UV seam rather than leaving a visible stripe.
@@ -245,13 +247,14 @@ export function sculptedHair(
   P: HeadShape,
   look: PlayerLook,
   detail = true,
+  portrait = true,
   sampling?: { columns: number; rows: number },
 ) {
   const style = look.hairStyle;
   const f = faceMorphology(look.seed);
   return gridSurface(
-    sampling?.columns ?? (detail ? 56 : 18),
-    sampling?.rows ?? (detail ? 28 : 10),
+    sampling?.columns ?? (detail ? (portrait ? 72 : 56) : 18),
+    sampling?.rows ?? (detail ? (portrait ? 36 : 28) : 10),
     (u, v) => {
       const angle = headAngle(u);
       const front = Math.max(0, Math.cos(angle));
@@ -821,7 +824,7 @@ export function buildSculptedFace(
   if (look.hairStyle !== "bald") {
     // The fitted scalp remains fully lit in the beauty pass. Its thin shell
     // does not need to duplicate the head silhouette in the shadow map.
-    hair.push(rigPart(sculptedHair(P, look, hi), mats.hair));
+    hair.push(rigPart(sculptedHair(P, look, hi, portrait), mats.hair));
     if (look.hairStyle === "bun")
       hair.push(
         rigPart(
