@@ -31,11 +31,12 @@
 @media (min-width: 48rem) { .athlete-bars { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 .athlete-bar label { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .06em; }
 .athlete-bar div { height: .5rem; border-radius: 99px; background: var(--muted); overflow: hidden; margin-top: .3rem; }
-.athlete-bar span { display: block; height: 100%; background: var(--club, var(--primary)); border-radius: inherit; }
+.athlete-bar > div > span { display: block; height: 100%; background: var(--club, var(--primary)); border-radius: inherit; }
 .athlete-grid { display: grid; gap: 1rem; }
 @media (min-width: 64rem) { .athlete-grid { grid-template-columns: 1.3fr 1fr; } }
 .athlete-tabs { display: flex; gap: .4rem; overflow-x: auto; scrollbar-width: none; }
 .athlete-tabs button {
+  flex-shrink: 0;
   min-height: 44px; padding: 0 1rem; border-radius: 99px; border: 1px solid var(--border);
   background: var(--card); color: var(--muted-foreground); white-space: nowrap; font-weight: 600;
 }
@@ -55,7 +56,7 @@
 .athlete-news li { padding: .6rem .75rem; border-radius: 12px; background: var(--muted); font-size: .9rem; border-left: 3px solid var(--border); }
 .athlete-news li[data-tone="good"] { border-left-color: var(--primary); }
 .athlete-news li[data-tone="bad"] { border-left-color: var(--destructive); }
-.athlete-report { display: grid; gap: .5rem; }
+.athlete-report { display: grid; gap: .5rem; align-content: start; }
 .athlete-score { display: flex; align-items: center; justify-content: center; gap: 1rem; font: 700 1.6rem "Space Grotesk", system-ui; }
 .athlete-rating { font: 700 2.4rem/1 "Space Grotesk", system-ui; color: var(--club, var(--primary)); }
 .athlete-sticky {
