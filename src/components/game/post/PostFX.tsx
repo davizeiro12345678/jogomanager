@@ -90,7 +90,8 @@ export function PostFX({
 
   return (
     <EffectComposer
-      key={`alta-${m}`}
+      // Sem trocar a key por momento: remontar o compositor piscava a tela.
+      key="alta"
       // N8AO reconstructs its normals from depth; the remaining lens effects
       // also use depth/color. An unused NormalPass redrew the complete scene.
       enableNormalPass={false}
@@ -125,8 +126,9 @@ export function PostFX({
       )}
       <Bloom
         intensity={Math.max(0.05, p.bloom)}
-        luminanceThreshold={p.bloomThreshold}
-        luminanceSmoothing={0.35}
+        luminanceThreshold={Math.max(0.82, p.bloomThreshold)}
+        luminanceSmoothing={0.22}
+        radius={0.72}
         mipmapBlur
       />
       {cinema ? (
