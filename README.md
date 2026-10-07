@@ -1,5 +1,7 @@
 # Pro Football Manager 3D
 
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/davizeiro12345678/jogomanager?utm_source=badge)
+
 faça um jogo de futebol mega realista 3d onde vc e o manager
 
 This project was built with [Lovable](https://lovable.dev).
