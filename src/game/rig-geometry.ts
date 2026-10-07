@@ -52,6 +52,10 @@ export function rigPart(
   transform?: RigTransform,
   castShadow = false,
 ): RigPart {
+  // Authoring-only garment anchors are consumed before rig batching. Leaving
+  // them attached would make this part's attribute layout incompatible with
+  // its sibling trims during the same-material geometry merge.
+  geometry.deleteAttribute("waistBand");
   if ((material as THREE.MeshStandardMaterial).vertexColors && !geometry.hasAttribute("color"))
     geometry.setAttribute(
       "color",
