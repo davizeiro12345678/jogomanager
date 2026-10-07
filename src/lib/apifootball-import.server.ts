@@ -3,6 +3,8 @@
 // Mappings live in official_leagues/official_teams with an "af:" prefix so they
 // never collide with the other provider's ids.
 
+import type { TablesInsert } from "@/integrations/supabase/types";
+
 const BASE = "https://v3.football.api-sports.io";
 const SOURCE = "api-football";
 
@@ -179,8 +181,8 @@ async function importTeams(offset: number, limit: number, deadline: number): Pro
       .in("source_id", teams.map((t) => `af:${t.team.id}`));
     const known = new Map((already ?? []).map((r) => [r.source_id, r.local_club_id]));
 
-    const newClubs: Record<string, unknown>[] = [];
-    const maps: Record<string, unknown>[] = [];
+    const newClubs: TablesInsert<"clubs">[] = [];
+    const maps: TablesInsert<"official_teams">[] = [];
     for (const t of teams) {
       const sid = `af:${t.team.id}`;
       let local = known.get(sid) ?? byName.get(norm(t.team.name)) ?? null;
