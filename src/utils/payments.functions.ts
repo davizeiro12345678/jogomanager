@@ -114,6 +114,12 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         }),
       } as Parameters<ReturnType<typeof createStripeClient>["checkout"]["sessions"]["create"]>[0]);
 
+      // Record ownership so the return page can verify a session before any Stripe lookup.
+      const { error: ownerError } = await getStoreServiceSupabase()
+        .from("checkout_session_owners")
+        .insert({ session_id: session.id, user_id: context.userId, environment });
+      if (ownerError) throw new Error("Não foi possível registrar a compra.");
+
       return { clientSecret: session.client_secret ?? "" };
     } catch (error) {
       return { error: getStripeErrorMessage(error) };

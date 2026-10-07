@@ -29,6 +29,17 @@ export const claimCheckoutSession = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<ClaimResult> => {
     try {
       const environment = getConfiguredStripeEnvironment();
+      // Only sessions this server created for this user reach Stripe.
+      const { getStoreServiceSupabase } = await import("@/lib/store-products.server");
+      const { data: owner, error: ownerError } = await getStoreServiceSupabase()
+        .from("checkout_session_owners")
+        .select("session_id")
+        .eq("session_id", data.sessionId)
+        .eq("user_id", context.userId)
+        .eq("environment", environment)
+        .maybeSingle();
+      if (ownerError) throw new Error("Não foi possível verificar a compra.");
+      if (!owner) return { status: "error", message: "Esta compra não é desta conta." };
       const stripe = createStripeClient(environment);
       const session = await stripe.checkout.sessions.retrieve(data.sessionId, {
         expand: ["line_items.data.price"],
