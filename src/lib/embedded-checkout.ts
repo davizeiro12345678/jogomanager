@@ -104,6 +104,12 @@ export function startEmbeddedCheckout({
       checkout = instance;
       checkout.mount(element);
       mounted = true;
+      // The analytics callback is optional and can be blocked by privacy tools;
+      // never keep the spinner covering a checkout that already mounted.
+      setTimeout(() => {
+        rendered = true;
+        ready();
+      }, 2500);
       ready();
     } catch (cause) {
       fail(cause);
