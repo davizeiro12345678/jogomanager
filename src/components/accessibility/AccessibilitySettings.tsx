@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Accessibility, Type } from "lucide-react";
 import { useT } from "@/i18n/provider";
 import { useAccessibility } from "./AccessibilityProvider";
+import { reportSilent } from "@/lib/silent-errors";
 type DialogModule = typeof import("./AccessibilityDialog");
 let dialogPromise: Promise<DialogModule> | undefined;
 const loadAccessibilityDialog = () => {
@@ -9,6 +10,12 @@ const loadAccessibilityDialog = () => {
     // An optional chunk can fail during a deployment or a connection outage.
     // Keep the career usable and allow a fresh attempt instead of caching rejection.
     dialogPromise = undefined;
+    reportSilent("accessibility.chunk", error, {
+      classification: "degradation",
+      feature: "accessibility-dialog",
+      phase: "load",
+      dedupeKey: "accessibility-dialog-chunk",
+    });
     throw error;
   });
   return dialogPromise;

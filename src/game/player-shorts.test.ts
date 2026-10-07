@@ -103,6 +103,21 @@ describe("tailored player shorts", () => {
     rig.dispose();
   });
 
+  it("exposes a stable waist anchor and avoids a high-frequency panel color pattern", () => {
+    const p = proportionsFor(lookFor("shorts-surface", "MF"));
+    const geometry = footballShorts(p, 16);
+    const position = geometry.getAttribute("position");
+    const waist = geometry.getAttribute("waistBand");
+    const color = geometry.getAttribute("color");
+    expect(waist).toBeDefined();
+    expect(Array.from(waist.array).some((value) => value > 0.95)).toBe(true);
+    expect(Array.from(waist.array).some((value) => value < 0.05)).toBe(true);
+    expect(position.count).toBe(color.count);
+    const luminance = Array.from({ length: color.count }, (_, index) => color.getX(index));
+    expect(Math.max(...luminance) - Math.min(...luminance)).toBeLessThan(0.3);
+    geometry.dispose();
+  });
+
   it("keeps both inner hems on their own femur when the openings cross the centre plane", () => {
     const look = lookFor("shorts-inner-hem", "MF"),
       p = proportionsFor(look),

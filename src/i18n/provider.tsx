@@ -9,6 +9,7 @@ import {
 } from "react";
 import { LANGS, RTL_LANGS, resolveLang, type Lang } from "./locale-catalog";
 import { translateBootstrap } from "./bootstrap-messages";
+import { reportSilent } from "@/lib/silent-errors";
 export { LANGS, LANG_NAMES, RTL_LANGS, type Lang } from "./locale-catalog";
 // Preserve the synchronous, complete translation API for direct consumers.
 // Production UI consumes useT; its optional language pack stays a dynamic import.
@@ -21,8 +22,13 @@ function detect(): Lang {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     const selected = resolveLang(saved ?? undefined);
     if (selected) return selected;
-  } catch {
-    /* sem acesso ao storage */
+  } catch (error) {
+    reportSilent("storage.preference", error, {
+      classification: "ignorable",
+      feature: "i18n",
+      phase: "read",
+      dedupeKey: "i18n-storage-read",
+    });
   }
   for (const nav of window.navigator.languages ?? [window.navigator.language]) {
     const supported = resolveLang(nav);
@@ -58,8 +64,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       .then((module) => {
         if (active) setLoadedTranslator(() => module.translate);
       })
-      .catch(() => {
-        /* Keep the existing English fallback usable offline. */
+      .catch((error) => {
+        reportSilent("i18n.translation", error, {
+          classification: "degradation",
+          feature: "translation-catalog",
+          phase: "load",
+          dedupeKey: `translation:${lang}`,
+        });
       });
     return () => {
       active = false;
@@ -70,8 +81,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLangState(l);
     try {
       window.localStorage.setItem(STORAGE_KEY, l);
-    } catch {
-      /* storage is optional */
+    } catch (error) {
+      reportSilent("storage.preference", error, {
+        classification: "ignorable",
+        feature: "i18n",
+        phase: "write",
+        dedupeKey: "i18n-storage-write",
+      });
     }
   }, []);
   const dir: "ltr" | "rtl" = RTL_LANGS.has(lang) ? "rtl" : "ltr";

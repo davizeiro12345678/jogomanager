@@ -1,0 +1,85 @@
+{
+  "generatedAt": "2026-10-06T21:02:05.910Z",
+  "scope": [
+    "src/components/game/Stadium3D.tsx",
+    "src/components/game/FrameProbe.tsx",
+    "src/game/player-materials.ts",
+    "src/game/player-instance-batch.ts",
+    "src/game/rigid-actor-batch.ts",
+    "src/game/athlete-cloth.ts",
+    "src/game/player-lod-shorts.ts",
+    "src/game/player-shorts.ts"
+  ],
+  "totalDisposeCalls": 19,
+  "rows": [
+    {
+      "file": "src/components/game/Stadium3D.tsx",
+      "disposeCalls": 12,
+      "geometryDisposals": 1,
+      "materialDisposals": 3,
+      "textureDisposals": 1,
+      "refCountSignals": 31
+    },
+    {
+      "file": "src/components/game/FrameProbe.tsx",
+      "disposeCalls": 0,
+      "geometryDisposals": 0,
+      "materialDisposals": 0,
+      "textureDisposals": 0,
+      "refCountSignals": 0
+    },
+    {
+      "file": "src/game/player-materials.ts",
+      "disposeCalls": 1,
+      "geometryDisposals": 0,
+      "materialDisposals": 0,
+      "textureDisposals": 0,
+      "refCountSignals": 9
+    },
+    {
+      "file": "src/game/player-instance-batch.ts",
+      "disposeCalls": 0,
+      "geometryDisposals": 0,
+      "materialDisposals": 0,
+      "textureDisposals": 0,
+      "refCountSignals": 12
+    },
+    {
+      "file": "src/game/rigid-actor-batch.ts",
+      "disposeCalls": 4,
+      "geometryDisposals": 1,
+      "materialDisposals": 0,
+      "textureDisposals": 0,
+      "refCountSignals": 2
+    },
+    {
+      "file": "src/game/athlete-cloth.ts",
+      "disposeCalls": 1,
+      "geometryDisposals": 1,
+      "materialDisposals": 0,
+      "textureDisposals": 0,
+      "refCountSignals": 0
+    },
+    {
+      "file": "src/game/player-lod-shorts.ts",
+      "disposeCalls": 1,
+      "geometryDisposals": 0,
+      "materialDisposals": 0,
+      "textureDisposals": 0,
+      "refCountSignals": 5
+    },
+    {
+      "file": "src/game/player-shorts.ts",
+      "disposeCalls": 0,
+      "geometryDisposals": 0,
+      "materialDisposals": 0,
+      "textureDisposals": 0,
+      "refCountSignals": 0
+    }
+  ],
+  "notes": [
+    "Static inventory only; it does not claim runtime ownership for a call site.",
+    "player-materials.ts uses ref-counted retain/retire before disposing shared material sets.",
+    "The baseline census is the runtime authority for draw/triangle offenders."
+  ]
+}

@@ -6,6 +6,8 @@
  * jogo em 3D depois, além de exportar um vídeo.
  */
 import { get, set } from "idb-keyval";
+import { decodeReplay, encodeReplay, type StoredReplayV3 } from "./replay-codec";
+import { reportSilent } from "@/lib/silent-errors";
 
 import type { PlayerAction } from "./animation";
 import { emptyStats } from "./sim";
@@ -19,7 +21,8 @@ import {
   VISUAL_CONTEXT_VERSION,
 } from "./visual-context";
 
-const KEY = "manager3d.replays.v2";
+const KEY = "manager3d.replays.v3";
+const LEGACY_KEY = "manager3d.replays.v2";
 const MAX_REPLAYS = 20;
 /** amostras por segundo de jogo simulado */
 const HZ = 4;
@@ -310,8 +313,29 @@ function makePlayer(m: ReplayPlayerMeta): SimPlayer {
 export async function listReplays(): Promise<Replay[]> {
   if (typeof window === "undefined") return [];
   try {
-    return (await get<Replay[]>(KEY)) ?? [];
-  } catch {
+    const modern = await get<unknown>(KEY);
+    const stored = Array.isArray(modern) ? modern : await get<unknown[]>(LEGACY_KEY);
+    if (!Array.isArray(stored)) return [];
+    return stored.flatMap((value) => {
+      try {
+        return [decodeReplay(value)];
+      } catch (error) {
+        reportSilent("replay.storage", error, {
+          classification: "degradation",
+          feature: "replay",
+          phase: "decode",
+          dedupeKey: "replay-decode",
+        });
+        return [];
+      }
+    });
+  } catch (error) {
+    reportSilent("replay.storage", error, {
+      classification: "degradation",
+      feature: "replay",
+      phase: "read",
+      dedupeKey: "replay-read",
+    });
     return [];
   }
 }
@@ -320,8 +344,15 @@ export async function saveReplay(replay: Replay) {
   if (typeof window === "undefined") return;
   try {
     const list = await listReplays();
-    await set(KEY, [replay, ...list].slice(0, MAX_REPLAYS));
-  } catch {
+    const next = [replay, ...list].slice(0, MAX_REPLAYS).map(encodeReplay);
+    await set(KEY, next satisfies StoredReplayV3[]);
+  } catch (error) {
+    reportSilent("replay.storage", error, {
+      classification: "degradation",
+      feature: "replay",
+      phase: "write",
+      dedupeKey: "replay-write",
+    });
     /* sem espaço: a partida segue normalmente */
   }
 }
@@ -332,10 +363,16 @@ export async function deleteReplay(id: string) {
     const list = await listReplays();
     await set(
       KEY,
-      list.filter((r) => r.id !== id),
+      list.filter((r) => r.id !== id).map(encodeReplay),
     );
-  } catch {
-    /* ignore */
+  } catch (error) {
+    reportSilent("replay.storage", error, {
+      classification: "degradation",
+      feature: "replay",
+      phase: "delete",
+      dedupeKey: "replay-delete",
+    });
+    /* falha de quota/cache não impede a partida */
   }
 }
 

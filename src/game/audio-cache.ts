@@ -1,4 +1,5 @@
 import { del, get, set } from "idb-keyval";
+import { reportSilent } from "@/lib/silent-errors";
 
 const INDEX_KEY = "manager3d.voice-cache.v2.index";
 const ITEM_PREFIX = "manager3d.voice-cache.v2:";
@@ -39,7 +40,13 @@ export async function readVoiceCache(key: string): Promise<string | null> {
     index[key] = { bytes: entry.bytes, touchedAt: Date.now() };
     await set(INDEX_KEY, index);
     return entry.audio;
-  } catch {
+  } catch (error) {
+    reportSilent("assets.cache", error, {
+      classification: "ignorable",
+      feature: "voice-cache",
+      phase: "read",
+      dedupeKey: "voice-cache-read",
+    });
     return null;
   }
 }
@@ -63,7 +70,13 @@ export async function writeVoiceCache(key: string, audio: string): Promise<void>
     }
     await set(itemKey(key), { audio, bytes, touchedAt: now } satisfies CacheEntry);
     await set(INDEX_KEY, index);
-  } catch {
+  } catch (error) {
+    reportSilent("assets.cache", error, {
+      classification: "ignorable",
+      feature: "voice-cache",
+      phase: "write",
+      dedupeKey: "voice-cache-write",
+    });
     // A voz continua funcionando sem persistência quando o armazenamento está cheio.
   }
 }

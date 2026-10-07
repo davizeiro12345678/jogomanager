@@ -14,6 +14,7 @@ import { useSignedIn } from "@/hooks/useCareer";
 import { supabase } from "@/integrations/supabase/client";
 import type { MultiplayerRoomRecord as Room } from "@/lib/multiplayer.functions";
 import { gamePageHead } from "@/lib/game-page-metadata";
+import { reportSilent } from "@/lib/silent-errors";
 
 export const Route = createFileRoute("/multiplayer")({
   ssr: false,
@@ -74,7 +75,15 @@ function MultiplayerPage() {
   }, [userId]);
 
   useEffect(() => {
-    void refresh();
+    void refresh().catch((error) => {
+      reportSilent("multiplayer.operation", error, {
+        classification: "fatal",
+        feature: "rooms",
+        phase: "refresh",
+        dedupeKey: "rooms-refresh",
+      });
+      setError("Não foi possível atualizar as salas agora.");
+    });
   }, [refresh]);
 
   // Atualização em tempo real da sala atual.
@@ -109,10 +118,18 @@ function MultiplayerPage() {
     setBusy(true);
     setError(null);
     const { createMatchRoom } = await import("@/lib/multiplayer.functions");
-    const result = await createMatchRoom({ data: { hostClub: club } }).catch(() => ({
-      ok: false as const,
-      reason: "create_failed",
-    }));
+    const result = await createMatchRoom({ data: { hostClub: club } }).catch((error) => {
+      reportSilent("multiplayer.operation", error, {
+        classification: "fatal",
+        feature: "rooms",
+        phase: "create",
+        dedupeKey: "room-create",
+      });
+      return {
+        ok: false as const,
+        reason: "create_failed",
+      };
+    });
     setBusy(false);
     if (!result.ok) return setError("Não foi possível criar a sala.");
     setRoom(result.room as unknown as Room);
@@ -125,7 +142,15 @@ function MultiplayerPage() {
     const { joinMatchRoom } = await import("@/lib/multiplayer.functions");
     const result = await joinMatchRoom({
       data: { roomId: target.id, guestClub: club },
-    }).catch(() => ({ ok: false as const, reason: "room_unavailable" }));
+    }).catch((error) => {
+      reportSilent("multiplayer.operation", error, {
+        classification: "fatal",
+        feature: "rooms",
+        phase: "join",
+        dedupeKey: "room-join",
+      });
+      return { ok: false as const, reason: "room_unavailable" };
+    });
     setBusy(false);
     if (!result.ok) return setError("Essa sala já foi ocupada ou não está mais disponível.");
     setRoom(result.room as unknown as Room);
@@ -148,10 +173,18 @@ function MultiplayerPage() {
   async function leave() {
     if (!room) return;
     const { leaveMatchRoom } = await import("@/lib/multiplayer.functions");
-    const result = await leaveMatchRoom({ data: { roomId: room.id } }).catch(() => ({
-      ok: false as const,
-      reason: "leave_failed",
-    }));
+    const result = await leaveMatchRoom({ data: { roomId: room.id } }).catch((error) => {
+      reportSilent("multiplayer.operation", error, {
+        classification: "fatal",
+        feature: "rooms",
+        phase: "leave",
+        dedupeKey: "room-leave",
+      });
+      return {
+        ok: false as const,
+        reason: "leave_failed",
+      };
+    });
     if (!result.ok) {
       setError("Não foi possível encerrar a sala. Tente novamente.");
       return;
@@ -242,10 +275,20 @@ function MultiplayerPage() {
               onClick={async () => {
                 setBusy(true);
                 const { startMatchRoom } = await import("@/lib/multiplayer.functions");
-                const result = await startMatchRoom({ data: { roomId: room.id } }).catch(() => ({
-                  ok: false as const,
-                  reason: "room_not_ready",
-                }));
+                const result = await startMatchRoom({ data: { roomId: room.id } }).catch(
+                  (error) => {
+                    reportSilent("multiplayer.operation", error, {
+                      classification: "fatal",
+                      feature: "rooms",
+                      phase: "start",
+                      dedupeKey: "room-start",
+                    });
+                    return {
+                      ok: false as const,
+                      reason: "room_not_ready",
+                    };
+                  },
+                );
                 setBusy(false);
                 if (result.ok) setRoom(result.room as unknown as Room);
                 else setError("A sala não está mais pronta para iniciar.");
@@ -573,8 +616,14 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
         const { finishMatchRoom } = await import("@/lib/multiplayer.functions");
         const result = await finishMatchRoom({ data: { roomId: room.id } });
         if (result.ok || disposed) return;
-      } catch {
+      } catch (error) {
         if (disposed) return;
+        reportSilent("multiplayer.operation", error, {
+          classification: "fatal",
+          feature: "rooms",
+          phase: "finish",
+          dedupeKey: "room-finish",
+        });
       }
       published.current = false;
       if (attempts++ < 4) {

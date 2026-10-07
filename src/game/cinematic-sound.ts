@@ -1,4 +1,5 @@
 import type { SceneArt } from "@/content/cutscenes";
+import { reportSilent } from "@/lib/silent-errors";
 
 /** Optional local ambience, started only by the user's sound button.
  * One short noise buffer, two oscillators, no downloads or career side effects. */
@@ -11,7 +12,13 @@ export class CinematicSound {
     if (typeof window === "undefined" || !window.AudioContext) return null;
     try {
       return new CinematicSound(art);
-    } catch {
+    } catch (error) {
+      reportSilent("cutscene.audio", error, {
+        classification: "degradation",
+        feature: "ambience",
+        phase: "create",
+        dedupeKey: "ambience-create",
+      });
       return null;
     }
   }
@@ -60,12 +67,35 @@ export class CinematicSound {
       swell.start();
       this.sources.push(swell);
     }
-    void this.context.resume().catch(() => undefined);
+    void this.context.resume().catch((error) => {
+      reportSilent("cutscene.audio", error, {
+        classification: "ignorable",
+        feature: "ambience",
+        phase: "resume",
+        dedupeKey: "ambience-resume",
+      });
+    });
   }
   setPaused(paused: boolean) {
     if (this.disposed) return;
-    if (paused) void this.context.suspend().catch(() => undefined);
-    else void this.context.resume().catch(() => undefined);
+    if (paused)
+      void this.context.suspend().catch((error) => {
+        reportSilent("cutscene.audio", error, {
+          classification: "ignorable",
+          feature: "ambience",
+          phase: "suspend",
+          dedupeKey: "ambience-suspend",
+        });
+      });
+    else
+      void this.context.resume().catch((error) => {
+        reportSilent("cutscene.audio", error, {
+          classification: "ignorable",
+          feature: "ambience",
+          phase: "resume",
+          dedupeKey: "ambience-resume",
+        });
+      });
   }
   accent(tension: number, festive: boolean) {
     if (this.disposed) return;
@@ -78,6 +108,13 @@ export class CinematicSound {
     this.disposed = true;
     this.sources.forEach((source) => source.stop());
     this.volume.disconnect();
-    void this.context.close().catch(() => undefined);
+    void this.context.close().catch((error) => {
+      reportSilent("cutscene.audio", error, {
+        classification: "ignorable",
+        feature: "ambience",
+        phase: "close",
+        dedupeKey: "ambience-close",
+      });
+    });
   }
 }

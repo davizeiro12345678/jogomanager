@@ -728,6 +728,10 @@ function addSkinning(
   geometry.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
   geometry.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeight, 4));
   geometry.deleteAttribute("openingLeg");
+  // `waistBand` is authoring metadata for the shorts surface. It must not
+  // cross the material/lod merge boundary: sibling rig parts do not carry it
+  // and BufferGeometryUtils correctly rejects mismatched attribute layouts.
+  geometry.deleteAttribute("waistBand");
 }
 
 /**

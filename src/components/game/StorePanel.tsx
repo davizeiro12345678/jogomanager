@@ -35,6 +35,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { recordAdMetric } from "@/features/ads/ad-manager";
+import { reportSilent } from "@/lib/silent-errors";
 
 interface Wallet {
   coins: number;
@@ -102,8 +103,13 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
   let matchingEnvironment = false;
   try {
     matchingEnvironment = availability.data?.environment === getStripeEnvironment();
-  } catch {
-    /* unavailable */
+  } catch (error) {
+    reportSilent("checkout.operation", error, {
+      classification: "degradation",
+      feature: "checkout",
+      phase: "environment",
+      dedupeKey: "checkout-environment",
+    });
   }
   const checkoutEnabled =
     matchingEnvironment &&
@@ -173,8 +179,14 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
         productKey,
         returnUrl: `${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`,
       });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível abrir o checkout.");
+    } catch (error) {
+      reportSilent("checkout.operation", error, {
+        classification: "fatal",
+        feature: "checkout",
+        phase: "open",
+        dedupeKey: "checkout-open",
+      });
+      toast.error(error instanceof Error ? error.message : "Não foi possível abrir o checkout.");
     } finally {
       setOpeningKey(null);
     }

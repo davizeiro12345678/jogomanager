@@ -1,0 +1,12 @@
+{
+  "fixture": "Flamengo x Palmeiras",
+  "seed": "replay-codec",
+  "durationSeconds": 5821,
+  "frameCount": 23284,
+  "v2Bytes": 187672663,
+  "v3Bytes": 177132503,
+  "reductionRatio": 0.056162468371858676,
+  "v3Gate": 0.2,
+  "decision": "keep-v2-write",
+  "reason": "VersionedVisualData dominates this replay; v3 remains readable/tested but is not used for new writes until a separate visual stream codec produces a material reduction."
+}

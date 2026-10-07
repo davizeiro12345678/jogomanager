@@ -1,11 +1,28 @@
 // Captures the original Error out-of-band so server.ts can recover the stack
 // when h3 has already swallowed the throw into a generic 500 Response.
 
-let lastCapturedError: { error: unknown; at: number } | undefined;
+let lastCapturedError:
+  { error: unknown; at: number; context?: Record<string, unknown> } | undefined;
 const TTL_MS = 5_000;
 
-function record(error: unknown) {
-  lastCapturedError = { error, at: Date.now() };
+function record(error: unknown, context?: Record<string, unknown>) {
+  lastCapturedError = {
+    error,
+    at: Date.now(),
+    ...(context ? { context } : {}),
+  };
+}
+
+/**
+ * Records a handled failure for server-side recovery and diagnostics without
+ * changing the existing consume-once API used by h3.
+ */
+export function captureReportedError(error: unknown, context?: Record<string, unknown>) {
+  record(error, context);
+}
+
+export function lastCapturedErrorContext(): Record<string, unknown> | undefined {
+  return lastCapturedError?.context;
 }
 
 // h3's HTTPError serializes to {"status":500,"unhandled":true,"message":"HTTPError"} —

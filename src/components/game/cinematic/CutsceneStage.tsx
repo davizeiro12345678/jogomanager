@@ -51,6 +51,7 @@ import type { Club, ManagerLook } from "@/game/types";
 import type { QualityLevel } from "@/game/device";
 import type { CinematicManner } from "@/game/cinematic-actor";
 import { LazyCinematicStage, preloadCinematicStage } from "./cinematic-loading";
+import { CutsceneLoadFallback } from "./CutsceneLoadFallback";
 import { GraphicsBoundary } from "../GraphicsBoundary";
 import { Button } from "@/components/ui/button";
 import { audioBlobUrl } from "@/game/audio-cache";
@@ -788,6 +789,8 @@ export function CutsceneStage({
   const [hidden, setHidden] = useState(false);
   const [stageReady, setStageReady] = useState(false);
   const [mountStage, setMountStage] = useState(false);
+  const [stageLoadError, setStageLoadError] = useState<unknown>(null);
+  const [stageAttempt, setStageAttempt] = useState(0);
   const sceneStartedAt = useRef(0);
   const onStageReady = useCallback(() => {
     if (dialogRef.current) {
@@ -806,7 +809,16 @@ export function CutsceneStage({
         performance.now() - sceneStartedAt.current
       ).toFixed(1);
   }, []);
-  const onUnavailable = useCallback(() => setMode("2d"), []);
+  const onUnavailable = useCallback(() => {
+    setStageLoadError(null);
+    setMode("2d");
+  }, []);
+  const retryStage = useCallback(() => {
+    setStageLoadError(null);
+    setStageReady(false);
+    setMountStage(false);
+    setStageAttempt((attempt) => attempt + 1);
+  }, []);
   useEffect(() => {
     const changed = () => setHidden(document.hidden);
     changed();
@@ -817,6 +829,7 @@ export function CutsceneStage({
     sceneStartedAt.current = performance.now();
     setStageReady(false);
     setMountStage(false);
+    setStageLoadError(null);
     if (dialogRef.current) {
       delete dialogRef.current.dataset["sceneVisibleMs"];
       delete dialogRef.current.dataset["sceneInteractiveMs"];
@@ -830,14 +843,18 @@ export function CutsceneStage({
           performance.now() - sceneStartedAt.current
         ).toFixed(1);
     });
-    void preloadCinematicStage().catch(() => undefined);
+    let alive = true;
+    void preloadCinematicStage().catch((error: unknown) => {
+      if (alive) setStageLoadError(error);
+    });
     // Commit the lightweight controls before constructing the actor meshes.
     const frame = requestAnimationFrame(() => startTransition(() => setMountStage(true)));
     return () => {
+      alive = false;
       cancelAnimationFrame(visibleFrame);
       cancelAnimationFrame(frame);
     };
-  }, [mode, data]);
+  }, [mode, data, stageAttempt]);
   const [captions, setCaptions] = useState(true);
   const [automatic, setAutomatic] = useState(autoPlay);
   const [ambientEnabled, setAmbientEnabled] = useState(false);
@@ -1363,7 +1380,10 @@ export function CutsceneStage({
             />
           </div>
         ) : null}
-        {mode === "3d" && mountStage ? (
+        {mode === "3d" && stageLoadError ? (
+          <CutsceneLoadFallback onIllustrated={onUnavailable} onRetry={retryStage} />
+        ) : null}
+        {mode === "3d" && !stageLoadError && mountStage ? (
           <GraphicsBoundary
             fallback={
               <button type="button" onClick={onUnavailable} className="cutscene-loading z-10">
@@ -1371,9 +1391,15 @@ export function CutsceneStage({
               </button>
             }
           >
-            <Suspense fallback={null}>
+            <Suspense
+              fallback={
+                <p role="status" className="cutscene-loading">
+                  Preparando cena 3D…
+                </p>
+              }
+            >
               <LazyCinematicStage
-                key={data.id}
+                key={`${data.id}:${stageAttempt}`}
                 art={data.art}
                 primary={accent}
                 secondary={accent2}
@@ -1403,7 +1429,7 @@ export function CutsceneStage({
             </Suspense>
           </GraphicsBoundary>
         ) : null}
-        {mode === "3d" && !stageReady ? (
+        {mode === "3d" && !stageReady && !stageLoadError ? (
           <p role="status" className="cutscene-loading">
             Preparando cena 3D…
           </p>

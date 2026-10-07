@@ -1,0 +1,7 @@
+npm.cmd ci --no-audit --no-fund
+npm.cmd exec -- tsc --noEmit --pretty false --incremental false
+npm.cmd test
+npm.cmd run graphics:build
+npm.cmd exec -- vitest run src/game/performance-baseline.test.ts --pool=forks --maxWorkers=1 --reporter=verbose
+npm.cmd exec -- vite preview --config scripts/graphics-vite.config.ts --host 127.0.0.1 --port 4207
+http://127.0.0.1:4207/graphics-benchmark.html

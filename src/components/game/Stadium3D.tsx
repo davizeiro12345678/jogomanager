@@ -27,6 +27,7 @@ import * as THREE from "three";
 
 import { FrameProbe } from "@/components/game/FrameProbe";
 import { PerfPanel } from "@/components/game/PerfPanel";
+import { reportSilent } from "@/lib/silent-errors";
 import { GraphicsBoundary } from "@/components/game/GraphicsBoundary";
 import { MatchPlayers } from "@/components/game/players/MatchPlayers";
 import { OfficialRig } from "@/components/game/players/OfficialRig";
@@ -2550,7 +2551,13 @@ function FpsMeter({
     rs.lastPersist = now;
     try {
       localStorage.setItem("manager3d.performance.latest", JSON.stringify(sample));
-    } catch {
+    } catch (error) {
+      reportSilent("storage.preference", error, {
+        classification: "ignorable",
+        feature: "frame-sample",
+        phase: "write",
+        dedupeKey: "frame-sample-write",
+      });
       // Medição continua visível quando o armazenamento está indisponível.
     }
   });

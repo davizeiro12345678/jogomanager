@@ -1,0 +1,364 @@
+{
+  "source": "C:\\Users\\User\\Downloads\\stadium-stewards (3)\\audit-jogomanager-646afae\\src\\components\\game\\career-interface.css",
+  "bytes": 62740,
+  "lines": 2765,
+  "selectors": 739,
+  "repeatedSelectors": [
+    {
+      "selector": ".career-content",
+      "count": 13
+    },
+    {
+      "selector": ".trainer-summary > a",
+      "count": 12
+    },
+    {
+      "selector": "select",
+      "count": 10
+    },
+    {
+      "selector": ".career-header-inner",
+      "count": 9
+    },
+    {
+      "selector": ".career-brand",
+      "count": 8
+    },
+    {
+      "selector": ".trainer-summary strong",
+      "count": 8
+    },
+    {
+      "selector": ".career-save-note",
+      "count": 7
+    },
+    {
+      "selector": ".career-search-button",
+      "count": 7
+    },
+    {
+      "selector": ".career-sidebar",
+      "count": 7
+    },
+    {
+      "selector": ".trainer-match-card",
+      "count": 7
+    },
+    {
+      "selector": ".trainer-match-footer .career-primary-button",
+      "count": 7
+    },
+    {
+      "selector": ".career-bottom-nav",
+      "count": 6
+    },
+    {
+      "selector": ".career-current-page",
+      "count": 6
+    },
+    {
+      "selector": ".career-menu-sheet",
+      "count": 6
+    },
+    {
+      "selector": ".career-menu-trigger",
+      "count": 6
+    },
+    {
+      "selector": ".career-nav-item[aria-current=\"page\"]",
+      "count": 6
+    },
+    {
+      "selector": ".career-primary-button",
+      "count": 6
+    },
+    {
+      "selector": ".trainer-preparation",
+      "count": 6
+    },
+    {
+      "selector": ".career-header-actions",
+      "count": 5
+    },
+    {
+      "selector": ".career-nav-item",
+      "count": 5
+    },
+    {
+      "selector": ".career-secondary-button",
+      "count": 5
+    },
+    {
+      "selector": ".career-workspace",
+      "count": 5
+    },
+    {
+      "selector": ".trainer-heading",
+      "count": 5
+    },
+    {
+      "selector": ".trainer-match-footer > div",
+      "count": 5
+    },
+    {
+      "selector": ".trainer-match-grid",
+      "count": 5
+    },
+    {
+      "selector": ".trainer-match-top",
+      "count": 5
+    },
+    {
+      "selector": ".trainer-quick-actions a",
+      "count": 5
+    },
+    {
+      "selector": ".trainer-summary",
+      "count": 5
+    },
+    {
+      "selector": "input",
+      "count": 5
+    },
+    {
+      "selector": ".career-brand > div > p:first-child",
+      "count": 4
+    },
+    {
+      "selector": ".career-header",
+      "count": 4
+    },
+    {
+      "selector": ".career-icon-button",
+      "count": 4
+    },
+    {
+      "selector": ".career-season",
+      "count": 4
+    },
+    {
+      "selector": ".career-shell :where(button",
+      "count": 4
+    },
+    {
+      "selector": ".match-quick-transport",
+      "count": 4
+    },
+    {
+      "selector": ".trainer-attention",
+      "count": 4
+    },
+    {
+      "selector": ".trainer-heading h1",
+      "count": 4
+    },
+    {
+      "selector": ".trainer-league-link",
+      "count": 4
+    },
+    {
+      "selector": ".trainer-match-footer",
+      "count": 4
+    },
+    {
+      "selector": ".trainer-match-teams",
+      "count": 4
+    }
+  ],
+  "mediaQueries": [
+    "max-width: 1179px",
+    "max-width: 767px",
+    "max-width: 479px",
+    "prefers-reduced-motion: reduce",
+    "max-width: 1399px",
+    "max-width: 1179px",
+    "max-width: 767px",
+    "max-width: 479px",
+    "prefers-reduced-motion: reduce",
+    "forced-colors: active",
+    "max-width: 40rem",
+    "max-height: 32rem",
+    "max-width: 24rem",
+    "max-width: 640px",
+    "max-height: 420px",
+    "max-width: 340px",
+    "hover: hover",
+    "min-width: 1180px",
+    "max-width: 767px",
+    "max-width: 479px",
+    "prefers-contrast: more",
+    "forced-colors: active",
+    "prefers-reduced-motion: reduce",
+    "max-width: 1179px",
+    "min-width: 1180px"
+  ],
+  "mediaQueryCount": 25,
+  "primaryResponsiveBreakpoints": [
+    1180,
+    768,
+    480
+  ],
+  "contextualMediaQueries": [
+    "prefers-reduced-motion",
+    "prefers-contrast",
+    "forced-colors",
+    "hover/pointer",
+    "viewport-height"
+  ],
+  "containerQueryCount": 2,
+  "layers": [
+    "career.tokens, career.base, career.components, career.utilities, career.overrides",
+    "career.tokens"
+  ],
+  "literalHexColors": [
+    "#00000014",
+    "#00000024",
+    "#00000026",
+    "#0002",
+    "#0005",
+    "#0006",
+    "#0007",
+    "#070b0e",
+    "#08121ce6",
+    "#09152060",
+    "#091725ed",
+    "#0b1621",
+    "#0b172580",
+    "#0b1726",
+    "#0b1726e8",
+    "#0b1726eb",
+    "#0b1927fa",
+    "#0c151f",
+    "#0e1b28",
+    "#0f1a25",
+    "#101c28",
+    "#101e2a",
+    "#101e2b",
+    "#101e2df5",
+    "#102130",
+    "#111b23",
+    "#111f2b",
+    "#12202e",
+    "#12212e",
+    "#14212e",
+    "#142a3b",
+    "#152433",
+    "#163c34",
+    "#1a2938",
+    "#1a2a39",
+    "#1b2b3a",
+    "#1b2c3d",
+    "#1c2a38",
+    "#1e2e3f",
+    "#1e3143",
+    "#203244",
+    "#203246",
+    "#203347",
+    "#213444",
+    "#21354a",
+    "#233547",
+    "#233747",
+    "#24394c",
+    "#263b4e",
+    "#263d50",
+    "#2b4054",
+    "#2b4359",
+    "#2c3e50",
+    "#2c485d",
+    "#30475d",
+    "#33485c",
+    "#344a5e",
+    "#344a60",
+    "#352b20",
+    "#35495b",
+    "#365873",
+    "#3a5066",
+    "#3b5066",
+    "#3d5a6b",
+    "#40576c",
+    "#413423",
+    "#41566c",
+    "#425a70",
+    "#466279",
+    "#526980",
+    "#57728a",
+    "#607e98",
+    "#617d95",
+    "#6a8096",
+    "#705739",
+    "#718ca2",
+    "#7893ab",
+    "#849bad",
+    "#8da6bc60",
+    "#8ee4cc",
+    "#8fa4b9",
+    "#8fdfbf",
+    "#91a6b6",
+    "#91a6ba",
+    "#91a7be55",
+    "#91aabe",
+    "#92a8bd",
+    "#93a9bc",
+    "#95adbf80",
+    "#a1b5c7",
+    "#a5b6c7",
+    "#a5bbcf",
+    "#a5e8ff",
+    "#aa8354",
+    "#acbdcc",
+    "#adbdcc",
+    "#adbecd",
+    "#b8cadd55",
+    "#b9defb",
+    "#bac9d4",
+    "#bacbde40",
+    "#bbc9d7",
+    "#bcd3e6",
+    "#bdcbd8",
+    "#bdcddb",
+    "#c1d7e9",
+    "#c8d8e7",
+    "#c8f5e0",
+    "#d1e0ee",
+    "#d3dfeb",
+    "#d4e0eb",
+    "#d4e4f1",
+    "#d5e2ee",
+    "#d7e2ec",
+    "#d9c4a7",
+    "#d9e5f2",
+    "#dae6ef",
+    "#dde7ee",
+    "#e3edf6",
+    "#e4edf6",
+    "#e6f0f7",
+    "#e8b86d",
+    "#edf3f8",
+    "#eef4fa",
+    "#eef5fa",
+    "#f4dfbe",
+    "#f5ca85",
+    "#f6faff",
+    "#ff9b9b",
+    "#ffe3b9",
+    "#fff",
+    "#ffff80",
+    "#ffffff04",
+    "#ffffff07",
+    "#ffffff08",
+    "#ffffff0c",
+    "#ffffff0d",
+    "#ffffff12",
+    "#ffffff14",
+    "#ffffff20",
+    "#ffffff26"
+  ],
+  "zIndexValues": [
+    "z-index: var(--career-z-header, 30);",
+    "z-index: var(--career-z-skip, 100);",
+    "z-index: -1;",
+    "z-index: var(--career-z-nav, 35);",
+    "z-index: var(--career-z-match-transport, 20);",
+    "z-index: var(--career-z-match-tools, 25);"
+  ]
+}

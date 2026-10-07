@@ -1,4 +1,23 @@
 /* Career office and match HUD. Club colours come from useClubTheme. */
+@layer career.tokens, career.base, career.components, career.utilities, career.overrides;
+
+@layer career.tokens {
+  :where(.career-shell) {
+    --career-z-base: 0;
+    --career-z-sidebar: 20;
+    --career-z-header: 30;
+    --career-z-nav: 35;
+    --career-z-match-transport: 20;
+    --career-z-match-tools: 25;
+    --career-z-overlay: 70;
+    --career-z-skip: 100;
+    --career-nav-height: 4.125rem;
+    --career-content-bottom-space: 4rem;
+    --career-focus: #a5e8ff;
+    --career-panel: color-mix(in oklab, var(--card) 94%, var(--foreground));
+  }
+}
+
 .career-shell {
   --background: #0c151f;
   --foreground: #edf3f8;
@@ -14,6 +33,10 @@
   --career-line: #2c3e50;
   --career-accent-soft: color-mix(in oklab, var(--primary) 12%, var(--card));
   --career-radius: 18px;
+  --career-content-bottom-space: max(
+    4rem,
+    calc(var(--career-footer-height, 0rem) + 3rem + env(safe-area-inset-bottom))
+  );
   font-variant-numeric: tabular-nums;
   color-scheme: dark;
 }
@@ -35,7 +58,7 @@
 .career-header {
   position: sticky;
   top: 0;
-  z-index: 30;
+  z-index: var(--career-z-header, 30);
   border-bottom: 1px solid var(--career-line);
 }
 .career-header-inner {
@@ -185,6 +208,7 @@
 }
 .career-content {
   margin: 0 auto;
+  container: career-content / inline-size;
   outline: none;
 }
 .career-save-note {
@@ -808,7 +832,7 @@
   outline-offset: 4px;
 }
 .career-skip {
-  z-index: 100;
+  z-index: var(--career-z-skip, 100);
   background: var(--primary);
   color: var(--primary-foreground);
   border-radius: 8px;
@@ -1626,17 +1650,18 @@
   }
   .career-bottom-nav {
     position: fixed;
-    z-index: 35;
+    z-index: var(--career-z-nav, 35);
     inset-inline: 16px;
     bottom: max(12px, env(safe-area-inset-bottom));
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    height: 66px;
+    min-height: var(--career-nav-height, 4.125rem);
+    height: auto;
     padding: 6px;
     gap: 4px;
-    border: 1px solid var(--input);
+    border: 1px solid var(--career-line);
     border-radius: 18px;
-    background: #102131f5;
+    background: color-mix(in srgb, var(--card) 94%, transparent);
     box-shadow: 0 10px 32px #0006;
     backdrop-filter: blur(8px);
   }
@@ -2005,10 +2030,7 @@
   line-height: 1.35;
 }
 .career-content {
-  padding-block-end: max(
-    4rem,
-    calc(var(--career-footer-height) + 3rem + env(safe-area-inset-bottom))
-  );
+  padding-block-end: var(--career-content-bottom-space);
 }
 .career-content :where(p) {
   text-wrap: pretty;
@@ -2243,7 +2265,7 @@ html[data-reading-space="true"] .career-content :where(p, dd, td) {
 }
 .match-quick-transport {
   position: absolute;
-  z-index: 20;
+  z-index: var(--career-z-match-transport, 20);
   inset-block-end: max(var(--match-gap), env(safe-area-inset-bottom));
   inset-inline-start: 50%;
   transform: translateX(-50%);
@@ -2293,7 +2315,7 @@ html[dir="rtl"] .match-quick-transport {
 .match-quick-tools,
 .match-quick-feed {
   position: absolute;
-  z-index: 25;
+  z-index: var(--career-z-match-tools, 25);
   inset-inline-end: var(--match-gap);
   inset-block-end: calc(72px + env(safe-area-inset-bottom));
   width: min(21rem, calc(100% - 16px));
@@ -2403,7 +2425,11 @@ html[dir="rtl"] .match-quick-transport {
   --career-ease: cubic-bezier(0.2, 0.75, 0.25, 1);
   --career-focus: #a5e8ff;
   --career-panel: color-mix(in oklab, var(--card) 94%, var(--foreground));
-  background-image: radial-gradient(ellipse at 85% 0%, var(--career-accent-soft), transparent 48rem);
+  background-image: radial-gradient(
+    ellipse at 85% 0%,
+    var(--career-accent-soft),
+    transparent 48rem
+  );
   accent-color: var(--career-readable-accent, #8ee4cc);
   line-height: 1.55;
   overflow-wrap: break-word;
@@ -2417,11 +2443,15 @@ html[dir="rtl"] .match-quick-transport {
   text-wrap: balance;
   scroll-margin-top: calc(var(--career-header-height, 80px) + 20px);
 }
-.career-content :where(p, dd) { text-wrap: pretty; }
+.career-content :where(p, dd) {
+  text-wrap: pretty;
+}
 .career-shell :where(button, a, summary, input, select, textarea) {
   -webkit-tap-highlight-color: transparent;
 }
-.career-shell :where(button, select, summary) { touch-action: manipulation; }
+.career-shell :where(button, select, summary) {
+  touch-action: manipulation;
+}
 .career-shell :where(button, a, summary):focus-visible,
 .career-menu-sheet :focus-visible,
 .career-preferences :focus-visible {
@@ -2439,40 +2469,76 @@ html[dir="rtl"] .match-quick-transport {
   cursor: not-allowed;
   filter: saturate(0.35);
 }
-.career-shell [aria-busy="true"] { cursor: progress; }
+.career-shell [aria-busy="true"] {
+  cursor: progress;
+}
 .career-shell [aria-invalid="true"] {
   border-color: #ff9b9b;
   outline-color: #ff9b9b;
 }
-.career-primary-button, .career-secondary-button, .career-search-button,
-.trainer-quick-actions a, .trainer-summary > a, .career-icon-button {
-  transition: background 160ms var(--career-ease), border-color 160ms var(--career-ease),
-    transform 160ms var(--career-ease), box-shadow 160ms var(--career-ease);
+.career-primary-button,
+.career-secondary-button,
+.career-search-button,
+.trainer-quick-actions a,
+.trainer-summary > a,
+.career-icon-button {
+  transition:
+    background 160ms var(--career-ease),
+    border-color 160ms var(--career-ease),
+    transform 160ms var(--career-ease),
+    box-shadow 160ms var(--career-ease);
 }
 .career-shell :where(.career-primary-button, .career-secondary-button):active {
   transform: translateY(1px) scale(0.985);
 }
-.career-header, .career-sidebar { background: var(--background); }
-.career-header { border-bottom-color: var(--border); }
-.career-sidebar { scrollbar-gutter: stable; }
-.career-sidebar > nav { overscroll-behavior: contain; }
-.career-nav-item { color: var(--muted-foreground); }
+.career-header,
+.career-sidebar {
+  background: var(--background);
+}
+.career-header {
+  border-bottom-color: var(--border);
+}
+.career-sidebar {
+  scrollbar-gutter: stable;
+}
+.career-sidebar > nav {
+  overscroll-behavior: contain;
+}
+.career-nav-item {
+  color: var(--muted-foreground);
+}
 .career-nav-item[aria-current="page"] {
   color: var(--foreground);
   background: var(--career-accent-soft);
 }
-.career-nav-item > svg { flex-shrink: 0; }
-.career-save-note { align-items: center; flex-wrap: wrap; }
-.career-save-note > span { max-width: none; }
-.trainer-summary > a, .trainer-preparation, .trainer-quick-actions a,
-.trainer-club-grid .hud-card, .career-content .surface-card {
+.career-nav-item > svg {
+  flex-shrink: 0;
+}
+.career-save-note {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.career-save-note > span {
+  max-width: none;
+}
+.trainer-summary > a,
+.trainer-preparation,
+.trainer-quick-actions a,
+.trainer-club-grid .hud-card,
+.career-content .surface-card {
   background: var(--card);
   border-color: var(--border);
 }
-.trainer-summary strong { color: var(--foreground); }
-.trainer-summary > a > span, .trainer-summary p,
-.trainer-task p, .trainer-preparation-note, .trainer-quick-actions small,
-.career-season, .career-sidebar-footer span:not(.career-manager-avatar) {
+.trainer-summary strong {
+  color: var(--foreground);
+}
+.trainer-summary > a > span,
+.trainer-summary p,
+.trainer-task p,
+.trainer-preparation-note,
+.trainer-quick-actions small,
+.career-season,
+.career-sidebar-footer span:not(.career-manager-avatar) {
   color: var(--muted-foreground);
 }
 .trainer-match-card {
@@ -2480,96 +2546,239 @@ html[dir="rtl"] .match-quick-transport {
   border-color: color-mix(in oklab, var(--primary) 32%, var(--border));
   box-shadow: 0 16px 40px #00000024;
 }
-.trainer-match-top { padding: 0 0 18px; }
-.trainer-match-footer { padding: 18px 0 0; }
-.trainer-match-footer > div { flex-wrap: wrap; }
-.trainer-match-footer .career-primary-button { min-width: min(100%, 155px); }
-.trainer-heading { align-items: flex-start; }
-.trainer-task { padding-inline: 8px; border-radius: 8px; }
-.trainer-task strong, .trainer-quick-actions strong { color: var(--foreground); }
-.trainer-task:hover { background: var(--career-panel); }
-.trainer-task-icon { border: 1px solid #ffffff12; }
-.career-content table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.trainer-match-top {
+  padding: 0 0 18px;
+}
+.trainer-match-footer {
+  padding: 18px 0 0;
+}
+.trainer-match-footer > div {
+  flex-wrap: wrap;
+}
+.trainer-match-footer .career-primary-button {
+  min-width: min(100%, 155px);
+}
+.trainer-heading {
+  align-items: flex-start;
+}
+.trainer-task {
+  padding-inline: 8px;
+  border-radius: 8px;
+}
+.trainer-task strong,
+.trainer-quick-actions strong {
+  color: var(--foreground);
+}
+.trainer-task:hover {
+  background: var(--career-panel);
+}
+.trainer-task-icon {
+  border: 1px solid #ffffff12;
+}
+.career-content table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
 .career-content table th {
   color: var(--muted-foreground);
   background: var(--card);
   font-weight: 650;
   text-align: start;
 }
-.career-content table td { border-bottom: 1px solid var(--border); }
-.career-content table tbody tr:focus-within { background: var(--career-accent-soft); }
-.career-content table :where(th, td) { padding-block: 12px; }
+.career-content table td {
+  border-bottom: 1px solid var(--border);
+}
+.career-content table tbody tr:focus-within {
+  background: var(--career-accent-soft);
+}
+.career-content table :where(th, td) {
+  padding-block: 12px;
+}
 .career-content [data-slot="table-container"] {
   overscroll-behavior-inline: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--muted-foreground) var(--card);
 }
-.career-content :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+.career-content
+  :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
   min-height: 44px;
   font-size: 1rem;
 }
-.career-menu-sheet { overscroll-behavior: contain; scrollbar-gutter: stable; }
-.match-quick-tools, .match-quick-feed { animation: career-panel-in 180ms var(--career-ease); }
-.match-quick-transport { gap: 8px; padding: 6px; }
+.career-menu-sheet {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.match-quick-tools,
+.match-quick-feed {
+  animation: career-panel-in 180ms var(--career-ease);
+}
+.match-quick-transport {
+  gap: 8px;
+  padding: 6px;
+}
 .match-quick-transport :where(button, select):focus-visible {
   outline: 3px solid #a5e8ff;
   outline-offset: 3px;
 }
 @keyframes career-panel-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @media (hover: hover) and (pointer: fine) {
-  .trainer-summary > a:hover, .trainer-quick-actions a:hover {
+  .trainer-summary > a:hover,
+  .trainer-quick-actions a:hover {
     transform: translateY(-2px);
     border-color: var(--muted-foreground);
     box-shadow: 0 8px 22px #00000026;
   }
-  .career-content table tbody tr:hover { background: var(--career-accent-soft); }
+  .career-content table tbody tr:hover {
+    background: var(--career-accent-soft);
+  }
 }
 @media (min-width: 1180px) {
-  .career-workspace { grid-template-columns: clamp(222px, 17vw, 260px) minmax(0, 1fr); }
+  .career-workspace {
+    grid-template-columns: clamp(222px, 17vw, 260px) minmax(0, 1fr);
+  }
 }
 @media (max-width: 767px) {
-  .career-content { padding-inline: 16px; }
-  .trainer-match-card, .trainer-preparation { padding: 20px; }
-  .trainer-summary { gap: 10px; }
-  .trainer-summary > a { min-height: 116px; padding: 16px; }
-  .trainer-heading { gap: 14px; margin-bottom: 22px; }
-  .trainer-league-link { align-self: flex-start; }
+  .career-content {
+    padding-inline: 16px;
+  }
+  .trainer-match-card,
+  .trainer-preparation {
+    padding: 20px;
+  }
+  .trainer-summary {
+    gap: 10px;
+  }
+  .trainer-summary > a {
+    min-height: 116px;
+    padding: 16px;
+  }
+  .trainer-heading {
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .trainer-league-link {
+    align-self: flex-start;
+  }
 }
 @media (max-width: 479px) {
-  .career-content { padding-inline: 12px; }
-  .trainer-match-card, .trainer-preparation { padding: 16px; border-radius: 16px; }
-  .trainer-match-footer .career-primary-button { flex-basis: 100%; }
-  .trainer-match-footer .career-secondary-button { flex: 1; }
-  .trainer-match-teams { gap: 8px; grid-template-columns: minmax(0, 1fr) 38px minmax(0, 1fr); }
-  .trainer-match-vs span { width: 34px; height: 34px; }
-  .trainer-quick-actions a { padding: 12px; gap: 8px; }
-  .trainer-quick-actions small { font-size: 0.8125rem; }
-  .match-quick-transport { gap: 4px; padding: 4px; }
+  .career-content {
+    padding-inline: 12px;
+  }
+  .trainer-match-card,
+  .trainer-preparation {
+    padding: 16px;
+    border-radius: 16px;
+  }
+  .trainer-match-footer .career-primary-button {
+    flex-basis: 100%;
+  }
+  .trainer-match-footer .career-secondary-button {
+    flex: 1;
+  }
+  .trainer-match-teams {
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) 38px minmax(0, 1fr);
+  }
+  .trainer-match-vs span {
+    width: 34px;
+    height: 34px;
+  }
+  .trainer-quick-actions a {
+    padding: 12px;
+    gap: 8px;
+  }
+  .trainer-quick-actions small {
+    font-size: 0.8125rem;
+  }
+  .match-quick-transport {
+    gap: 4px;
+    padding: 4px;
+  }
 }
 @media (prefers-contrast: more) {
-  .career-shell { --border: var(--muted-foreground); --muted-foreground: var(--foreground); }
+  .career-shell {
+    --border: #849bad;
+    --muted-foreground: #d4e0eb;
+  }
 }
 html[data-contrast="high"] .career-shell {
   --career-focus: #ffff80;
   --career-panel: var(--muted);
 }
 @media (forced-colors: active) {
-  .career-shell :where(a, button, input, select, textarea), .studio-button {
+  .career-shell :where(a, button, input, select, textarea),
+  .studio-button {
     border: 1px solid ButtonText;
   }
-  .career-nav-item[aria-current="page"] { outline: 2px solid Highlight; }
+  .career-nav-item[aria-current="page"] {
+    outline: 2px solid Highlight;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .career-shell *, .match-quick-tools, .match-quick-feed {
-    animation: none !important; transition: none !important; scroll-behavior: auto !important;
+  .career-shell *,
+  .match-quick-tools,
+  .match-quick-feed {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }
 html[data-reduced-motion="true"] .career-shell *,
 html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
-  animation: none !important; transition: none !important; scroll-behavior: auto !important;
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* Container-driven card layout keeps the shell breakpoints small while letting
+ * embedded career panels adapt to their actual available width. */
+@container career-content (max-width: 52rem) {
+  .trainer-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trainer-match-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container career-content (max-width: 36rem) {
+  .trainer-summary > a {
+    min-height: 7.25rem;
+    padding-inline: 0.875rem;
+  }
+
+  .trainer-summary strong {
+    flex-wrap: wrap;
+  }
+}
+
+/* The mobile navigation is fixed and therefore cannot contribute to normal
+ * flow. The measured footer variable is the single source of truth for the
+ * content reservation, including the device safe area. */
+@media (max-width: 1179px) {
+  .career-content {
+    padding-block-end: max(
+      7rem,
+      calc(var(--career-footer-height, 0rem) + 3rem + env(safe-area-inset-bottom))
+    );
+  }
+}
+
+@media (min-width: 1180px) {
+  .career-shell {
+    --career-content-bottom-space: 3rem;
+  }
 }
 
 /* ===== Career broadcast system: one final, coherent visual layer ===== */

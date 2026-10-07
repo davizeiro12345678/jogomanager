@@ -1,0 +1,54 @@
+{
+  "capturedAt": "2026-10-06",
+  "checkout": "audit-jogomanager-646afae",
+  "fixture": "Flamengo x Palmeiras",
+  "seed": "graphics-high-v1",
+  "viewport": { "width": 1280, "height": 720, "dpr": 1 },
+  "node": {
+    "install": "npm ci --no-audit --no-fund: passed",
+    "typecheck": "npm exec -- tsc --noEmit --pretty false --incremental false: passed",
+    "tests": "npm test: 121 files / 711 tests passed before telemetry test was added",
+    "graphicsBuild": "npm run graphics:build: passed"
+  },
+  "snapshotObjectBaseline": {
+    "samples": 120,
+    "snapshotBytesMean": 15525.025,
+    "snapshotBytesP95": 15693,
+    "snapshotBytesMax": 15721,
+    "applyMsMean": 0.04615166666667013,
+    "applyMsP95": 0.09549999999990177,
+    "applyMsMax": 0.22420000000010987,
+    "heapBytes": null,
+    "heapNote": "Vitest Node process does not expose browser performance.memory."
+  },
+  "graphicsBenchmark": {
+    "durationSeconds": 65.0092,
+    "frames": 2121,
+    "fpsMean": 35.34587631442999,
+    "frameMsMean": 28.29184347006129,
+    "frameMsP50": 26.69999998807907,
+    "frameMsP95": 46.900000005960464,
+    "frameMsP99": 85.19999998807907,
+    "frameMsMax": 298.59999999403954,
+    "stallsOver50Ms": 90,
+    "drawCallsMean": 196.79773691654879,
+    "drawCallsMax": 322,
+    "trianglesMean": 140241.68882602546,
+    "geometries": 408,
+    "textures": 77,
+    "programs": 116,
+    "materials": 151,
+    "heapUsedBytesAtFinalSample": 244408688,
+    "firstFrameMs": 139.30000001192093,
+    "longTasks": 69,
+    "longTaskMs": 6720,
+    "backend": {
+      "kind": "webgl2",
+      "renderer": "ll",
+      "gpuRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x000046A6) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "gpuVendor": "Google Inc. (Intel)"
+    },
+    "fallbackVisible": true,
+    "fallbackNote": "The page exposed the WebGL fallback message in the in-app browser even though renderer metadata reported an Intel ANGLE adapter; do not treat this single run as a physical-device certification."
+  }
+}

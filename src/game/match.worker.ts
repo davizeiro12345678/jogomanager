@@ -1,5 +1,9 @@
 /// <reference lib="webworker" />
-import { resultMatch, snapshotMatch, type LiveWorkerRequest } from "./live-match";
+import {
+  resultMatch,
+  snapshotMatchPacket,
+  type LiveWorkerRequest,
+} from "./live-match";
 import {
   LIVE_MATCH_CLOCK_SCALE,
   MATCH_SIMULATION_STEP,
@@ -18,6 +22,8 @@ import {
 } from "./snapshot-telemetry";
 import { visualBallFromCanonical, type VisualBallState } from "./visual-ball";
 import { loadPassLaneKernel } from "./wasm/match-perception";
+import { serializeWorkerError } from "./worker-error";
+import { createSnapshotBufferPool } from "./live-match-buffer";
 
 let live: MatchSim | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -28,7 +34,6 @@ let lastTick = 0;
 let accumulator = 0;
 let commandId = 0;
 let skipToken = 0;
-let publishedEventSeq = -1;
 let visualPhysics: RapierVisualPhysics | null = null;
 let visualPhysicsReady: Promise<RapierVisualPhysics | null> | null = null;
 let visualPhysicsGeneration = 0;
@@ -40,8 +45,12 @@ const snapshotTelemetry = isLiveTelemetryWorker((self as unknown as { name?: unk
   ? createSnapshotTelemetryTracker()
   : null;
 let telemetryMarkCount = 0;
+let lastProtocolErrorKey = "";
+const snapshotPool = createSnapshotBufferPool(3);
+let rosterVersion = 1;
+let publishedRosterVersion = 0;
 
-function post(message: unknown) {
+function post(message: unknown, transfer: Transferable[] = []) {
   if (snapshotTelemetry && isLiveSnapshotResponse(message)) {
     const measurement = snapshotTelemetry.sample(message.snapshot, performance.now());
     // Mantém uma janela curta no User Timing do Worker para não acumular uma
@@ -54,8 +63,22 @@ function post(message: unknown) {
     markLiveWorkerSnapshot(measurement);
     telemetryMarkCount += 1;
   }
-  self.postMessage(message);
+  self.postMessage(message, transfer);
 }
+
+function publishWorkerError(event: ErrorEvent | MessageEvent | PromiseRejectionEvent) {
+  const payload = serializeWorkerError(event);
+  const key = `${commandId}:${payload.kind}:${payload.message}`;
+  if (key === lastProtocolErrorKey) return;
+  lastProtocolErrorKey = key;
+  post({ id: commandId, ok: false, type: "worker-error", error: payload });
+}
+
+self.addEventListener("error", (event) => publishWorkerError(event as ErrorEvent));
+self.addEventListener("messageerror", (event) => publishWorkerError(event as MessageEvent));
+self.addEventListener("unhandledrejection", (event) =>
+  publishWorkerError(event as PromiseRejectionEvent),
+);
 
 function stopTimer() {
   if (timer) clearInterval(timer);
@@ -146,15 +169,19 @@ function resetVisualPhysicsToCanonical() {
 function publishSnapshot() {
   if (!live) return;
   sequence += 1;
-  const hasNewEvents = live.lastEventId !== publishedEventSeq;
-  const snapshot = snapshotMatch(live, sequence, latestVisualBall, hasNewEvents);
-  if (hasNewEvents) publishedEventSeq = live.lastEventId;
+  const snapshot = snapshotMatchPacket(live, sequence, {
+    pool: snapshotPool,
+    rosterVersion,
+    includeMetadata: publishedRosterVersion !== rosterVersion,
+    ...(latestVisualBall ? { visualBall: latestVisualBall } : {}),
+  });
+  publishedRosterVersion = rosterVersion;
   post({
     id: commandId,
     ok: true,
     type: "snapshot",
     snapshot,
-  });
+  }, [snapshot.players.positions, snapshot.players.velocities, snapshot.players.states]);
 }
 
 function publishFinished() {
@@ -231,7 +258,8 @@ async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive"
   paused = false;
   speed = 1;
   sequence = 0;
-  publishedEventSeq = -1;
+  rosterVersion = 1;
+  publishedRosterVersion = 0;
   const target = live;
   const epoch = ++liveEpoch;
   // A partida começa imediatamente; Rapier se conecta quando o WASM estiver
@@ -277,9 +305,20 @@ async function handleMessage(message: LiveWorkerRequest) {
   }
   if (message.type === "substituteLive" && live) {
     const changed = live.substitute(message.side, message.outPid, message.incoming);
-    if (changed) resetVisualPhysicsToCanonical();
+    if (changed) {
+      rosterVersion += 1;
+      resetVisualPhysicsToCanonical();
+    }
     publishSnapshot();
     post({ id: message.id, ok: true, type: "command", result: changed });
+    return;
+  }
+  if (message.type === "recycle") {
+    snapshotPool.release({
+      positions: new Float32Array(message.positions),
+      velocities: new Float32Array(message.velocities),
+      states: new Float32Array(message.states),
+    });
     return;
   }
   if (message.type === "skipLive" && live) {

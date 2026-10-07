@@ -6,6 +6,7 @@
  * case the game falls back to its own hand-drawn crests.
  */
 import type { OfficialAssets } from "./football.functions";
+import { reportSilent } from "./silent-errors";
 
 const CACHE_KEY = "manager3d.official.v1";
 const PREF_KEY = "manager3d.officialLook";
@@ -50,7 +51,13 @@ function readCache(): OfficialAssets | null {
     const parsed = JSON.parse(raw) as { at: number; data: OfficialAssets };
     if (Date.now() - parsed.at > TTL) return null;
     return parsed.data;
-  } catch {
+  } catch (error) {
+    reportSilent("assets.cache", error, {
+      classification: "degradation",
+      feature: "official-assets",
+      phase: "read",
+      dedupeKey: "official-assets-read",
+    });
     return null;
   }
 }
@@ -76,14 +83,25 @@ export function loadOfficialAssets(): Promise<void> {
         cache = data;
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), data }));
-        } catch {
-          /* storage full — memory cache still works */
+        } catch (error) {
+          reportSilent("assets.cache", error, {
+            classification: "ignorable",
+            feature: "official-assets",
+            phase: "write",
+            dedupeKey: "official-assets-write",
+          });
         }
       }
       loaded = true;
       listeners.forEach((l) => l());
     })
-    .catch(() => {
+    .catch((error) => {
+      reportSilent("assets.cache", error, {
+        classification: "degradation",
+        feature: "official-assets",
+        phase: "load",
+        dedupeKey: "official-assets-load",
+      });
       loaded = true;
     })
     .finally(() => {

@@ -10,6 +10,8 @@
  * antigo), devolvemos `null` e o chamador segue com o caminho WebGL2 antigo.
  */
 
+import { reportSilent } from "@/lib/silent-errors";
+
 export type GpuBackend = "webgpu" | "webgl2";
 
 const PREF_KEY = "manager3d.webgpu";
@@ -83,7 +85,13 @@ export function detectWebGPU(): Promise<boolean> {
     try {
       const adapter = await gpu.requestAdapter();
       return Boolean(adapter);
-    } catch {
+    } catch (error) {
+      reportSilent("graphics.renderer", error, {
+        classification: "degradation",
+        feature: "webgpu",
+        phase: "adapter",
+        dedupeKey: "webgpu-adapter",
+      });
       return false;
     }
   })();
@@ -171,6 +179,12 @@ export async function createWebGPURenderer(
     await disposeAfterFailedInit(renderer);
     markWebgpuFailed();
     console.warn("WebGPU indisponível, seguindo em WebGL2:", err);
+    reportSilent("graphics.renderer", err, {
+      classification: "degradation",
+      feature: "webgpu",
+      phase: "init",
+      dedupeKey: "webgpu-init",
+    });
     return null;
   }
 }
