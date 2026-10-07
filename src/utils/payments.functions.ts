@@ -66,12 +66,29 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       const environment = assertPaymentsConfigured();
       if (data.clientEnvironment !== environment) throw new Error(PAYMENTS_UNAVAILABLE);
       const request = getRequest();
-      const requestOrigin = request ? new URL(request.url).origin : null;
+      // Behind the preview/custom-domain proxy request.url can carry an internal
+      // host, so also trust the browser-sent Origin/Referer of this same request.
+      const allowedOrigins = new Set<string>();
+      if (request) {
+        allowedOrigins.add(new URL(request.url).origin);
+        const origin = request.headers.get("origin");
+        if (origin) allowedOrigins.add(origin);
+        const referer = request.headers.get("referer");
+        if (referer) {
+          try {
+            allowedOrigins.add(new URL(referer).origin);
+          } catch {
+            /* ignore malformed referer */
+          }
+        }
+        const fwdHost = request.headers.get("x-forwarded-host");
+        if (fwdHost) allowedOrigins.add(`https://${fwdHost.split(",")[0]!.trim()}`);
+      }
       const returnUrl = new URL(data.returnUrl);
       if (
-        !requestOrigin ||
-        returnUrl.origin !== requestOrigin ||
-        returnUrl.pathname !== "/checkout/return"
+        returnUrl.protocol !== "https:" && returnUrl.hostname !== "localhost"
+          ? true
+          : !allowedOrigins.has(returnUrl.origin) || returnUrl.pathname !== "/checkout/return"
       ) {
         throw new Error("Invalid returnUrl");
       }
@@ -140,9 +157,14 @@ export const createPortalSession = createServerFn({ method: "POST" })
       let approvedReturnUrl: string | undefined;
       if (data.returnUrl) {
         const request = getRequest();
-        const requestOrigin = request ? new URL(request.url).origin : null;
+        const allowed = new Set<string>();
+        if (request) {
+          allowed.add(new URL(request.url).origin);
+          const origin = request.headers.get("origin");
+          if (origin) allowed.add(origin);
+        }
         const returnUrl = new URL(data.returnUrl);
-        if (!requestOrigin || returnUrl.origin !== requestOrigin) {
+        if (!allowed.has(returnUrl.origin)) {
           throw new Error("Invalid returnUrl");
         }
         approvedReturnUrl = returnUrl.toString();

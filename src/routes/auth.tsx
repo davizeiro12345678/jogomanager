@@ -434,20 +434,43 @@ function AuthPage() {
           )}
           {(mode === "in" || mode === "up") && Boolean(methods?.socialProviders.length) && (
             <div className="mt-5 space-y-2">
-              <div className="grid gap-2 sm:grid-cols-2">
-                {methods?.socialProviders.map((provider) => (
-                  <Button
-                    key={provider}
-                    type="button"
-                    variant={provider === "google" ? "default" : "outline"}
-                    disabled={busy}
-                    className="auth-social min-h-12 w-full font-semibold"
-                    onClick={() => signInWith(provider)}
-                  >
-                    Continuar com {socialProviderLabel(provider)}
-                  </Button>
-                ))}
-              </div>
+              {methods?.socialProviders.includes("google") && (
+                <Button
+                  type="button"
+                  disabled={busy}
+                  className="auth-social min-h-12 w-full font-semibold"
+                  onClick={() => signInWith("google")}
+                >
+                  Continuar com Google
+                </Button>
+              )}
+              {methods && methods.socialProviders.some((p) => p !== "google") && (
+                <div
+                  className="grid gap-2"
+                  style={{
+                    gridTemplateColumns: `repeat(${Math.min(
+                      3,
+                      methods.socialProviders.filter((p) => p !== "google").length,
+                    )}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {methods.socialProviders
+                    .filter((p) => p !== "google")
+                    .map((provider) => (
+                      <Button
+                        key={provider}
+                        type="button"
+                        variant="outline"
+                        disabled={busy}
+                        aria-label={`Continuar com ${socialProviderLabel(provider)}`}
+                        className="auth-social min-h-11 w-full text-sm"
+                        onClick={() => signInWith(provider)}
+                      >
+                        {socialProviderLabel(provider)}
+                      </Button>
+                    ))}
+                </div>
+              )}
               {methods?.email && (
                 <p className="pt-2 text-center text-xs text-muted-foreground">
                   ou continue com e-mail

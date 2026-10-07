@@ -18,6 +18,24 @@ export const Route = createFileRoute("/api/public/sync-football")({
         }
         const url = new URL(request.url);
         const scope = url.searchParams.get("scope") ?? "clubs";
+        if (scope === "apifootball") {
+          const p = url.searchParams.get("phase");
+          if (p !== "leagues" && p !== "teams" && p !== "squads") {
+            return new Response("Invalid phase", { status: 400 });
+          }
+          const n = (k: string, d: number, max: number) => {
+            const v = Number(url.searchParams.get(k) ?? d);
+            return Number.isSafeInteger(v) && v >= 0 && v <= max ? v : d;
+          };
+          const { runApiFootballImport } = await import("@/lib/apifootball-import.server");
+          const r = await runApiFootballImport({
+            phase: p,
+            offset: n("offset", 0, 1_000_000),
+            limit: Math.max(1, n("limit", 60, 500)),
+            budgetMs: Math.max(5_000, n("budgetMs", 50_000, 90_000)),
+          });
+          return Response.json(r, { status: r.ok ? 200 : 500 });
+        }
         if (
           ![
             "seed",
