@@ -104,12 +104,8 @@ export function startEmbeddedCheckout({
       checkout = instance;
       checkout.mount(element);
       mounted = true;
-      // The analytics callback is optional and can be blocked by privacy tools;
-      // never keep the spinner covering a checkout that already mounted.
-      setTimeout(() => {
-        rendered = true;
-        ready();
-      }, 2500);
+      // Stripe v10 no longer reliably emits "checkoutRendered"; the mounted
+      // iframe shows its own loader, so never keep our spinner covering it.
       ready();
     } catch (cause) {
       fail(cause);
