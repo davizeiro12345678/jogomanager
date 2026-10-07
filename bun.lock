@@ -101,7 +101,7 @@
       },
       "devDependencies": {
         "@eslint/js": "^10.0.1",
-        "@lovable.dev/vite-tanstack-config": "2.26.0",
+        "@lovable.dev/vite-tanstack-config": "2.25.3",
         "@types/node": "^26.6.4",
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
@@ -116,7 +116,7 @@
         "eslint-plugin-react-hooks": "^7.1.1",
         "eslint-plugin-react-refresh": "^0.5.7",
         "globals": "^17.13.0",
-        "nitro": "^3.0.260903-beta",
+        "nitro": "3.0.260603-beta",
         "postgres": "^3.4.9",
         "prettier": "^3.9.9",
         "sharp": "^0.35.5",
@@ -368,7 +368,7 @@
 
     "@lovable.dev/mcp-js": ["@lovable.dev/mcp-js@3.0.5", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@lovable.dev/mcp-js/-/mcp-js-3.0.5.tgz", { "dependencies": { "@modelcontextprotocol/sdk": "1.28.0", "@modelcontextprotocol/server": "2.0.0", "esbuild": "^0.27.0", "jose": "^6.2.2" }, "peerDependencies": { "vite": ">=5.0.0 <9.0.0", "zod": "^3.25 || ^4.0" }, "bin": { "lovable-mcp-extract-manifest": "./dist/cli/extract-manifest.cjs" } }, "sha512-t8X6baXgFq+65RpiTKtt9ZPNVfau0LBqkFoZDnm0kIcpUyEq2LEd2W/PI0dD5OmR++BLtWzDPxnPkbUvclNlag=="],
 
-    "@lovable.dev/vite-tanstack-config": ["@lovable.dev/vite-tanstack-config@2.26.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@lovable.dev/vite-tanstack-config/-/vite-tanstack-config-2.26.0.tgz", { "dependencies": { "@tanstack/devtools-vite": "^0.8.1", "lightningcss": "^1.30.0" }, "peerDependencies": { "@tailwindcss/vite": ">=4.0.0", "@tanstack/react-start": ">=1.100.0", "@tanstack/router-generator": ">=1.121.0 <1.166.45 || >=1.166.49", "@vitejs/plugin-react": ">=4.0.0", "nitro": ">=3.0.260603-beta", "vite": ">=5.0.0 <9.0.0", "vite-tsconfig-paths": ">=6.0.0" }, "optionalPeers": ["@tanstack/router-generator", "nitro"] }, "sha512-bphOC0b4P2E2l4T8gy9EMP4oDxJNZg6KU79Wa1erXUk/tfrTm9RekS14Z84MSR2ueB7P76UkjvA1UrzAG3K/sw=="],
+    "@lovable.dev/vite-tanstack-config": ["@lovable.dev/vite-tanstack-config@2.25.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@lovable.dev/vite-tanstack-config/-/vite-tanstack-config-2.25.3.tgz", { "dependencies": { "@tanstack/devtools-vite": "^0.8.1", "lightningcss": "^1.30.0" }, "peerDependencies": { "@tailwindcss/vite": ">=4.0.0", "@tanstack/react-start": ">=1.100.0", "@tanstack/router-generator": ">=1.121.0 <1.166.45 || >=1.166.49", "@vitejs/plugin-react": ">=4.0.0", "nitro": ">=3.0.260603-beta", "vite": ">=5.0.0 <9.0.0", "vite-tsconfig-paths": ">=6.0.0" }, "optionalPeers": ["@tanstack/router-generator", "nitro"] }, "sha512-a+/r0SxKRh6PG5VgmAwWs4KeLDQmJCBe6sSKFftGAibcBRRHnAAgSy6CiNfZNlQ6ajwUuMpQjZLRH4izhl5y6A=="],
 
     "@lovable.dev/webhooks-js": ["@lovable.dev/webhooks-js@0.0.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@lovable.dev/webhooks-js/-/webhooks-js-0.0.3.tgz", {}, "sha512-RfaqUdXkNPb5KZIeT8aZMRIZFyknZmNsTGqn5IvDW+HYcxLohlYXoiPLiWF+ku0aCORtuQNrofu8L6RF1PsudA=="],
 
@@ -980,7 +980,7 @@
 
     "date-fns": ["date-fns@4.4.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/date-fns/-/date-fns-4.4.0.tgz", {}, "sha512-+1UMbeh68lH1SegH83CGWwpb6OHHbpSgr3+s5Eww5M4CAgswBpoWS0AjTOfEJ33HiYKz1hdj/KTFprzXHmq/6w=="],
 
-    "db0": ["db0@0.4.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/db0/-/db0-0.4.1.tgz", {}, "sha512-6RBY/bSn42UrqATwsiULj2uYFyEykB3XeA/NLIVQeHNXlYV6D4Idxx3/aa6k5Y45Dwzx7sygeLotnqHWSeURYA=="],
+    "db0": ["db0@0.3.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/db0/-/db0-0.3.4.tgz", { "peerDependencies": { "@electric-sql/pglite": "*", "@libsql/client": "*", "better-sqlite3": "*", "drizzle-orm": "*", "mysql2": "*", "sqlite3": "*" }, "optionalPeers": ["@electric-sql/pglite", "@libsql/client", "better-sqlite3", "drizzle-orm", "mysql2", "sqlite3"] }, "sha512-RiXXi4WaNzPTHEOu8UPQKMooIbqOEyqA1t7Z6MsdxSCeb8iUC9ko3LcmsLmeUt2SM5bctfArZKkRQggKZz7JNw=="],
 
     "debug": ["debug@4.4.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/debug/-/debug-4.4.3.tgz", { "dependencies": { "ms": "^2.1.3" } }, "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA=="],
 
@@ -1034,7 +1034,7 @@
 
     "entities": ["entities@4.5.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/entities/-/entities-4.5.0.tgz", {}, "sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw=="],
 
-    "env-runner": ["env-runner@0.2.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/env-runner/-/env-runner-0.2.3.tgz", { "dependencies": { "crossws": "^0.4.12", "exsolve": "^1.1.1", "httpxy": "^0.5.5", "srvx": "^1.0.5" }, "bin": { "env-runner": "./dist/cli.mjs" } }, "sha512-S8EFBKyznRwPVwayK187cYjvnpgC92xy+q0BIF++V965pfjMVVRbQ/HoTYGA/1EHmZ7E68k6Heq+4WnvVhOL5w=="],
+    "env-runner": ["env-runner@0.1.16", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/env-runner/-/env-runner-0.1.16.tgz", { "dependencies": { "crossws": "^0.4.8", "exsolve": "^1.1.0", "httpxy": "^0.5.4", "srvx": "^0.11.19" }, "peerDependencies": { "@netlify/runtime": "^4.1.23", "@vercel/queue": ">=0.2.0", "miniflare": "^4.20260515.0", "wrangler": "^4.0.0" }, "optionalPeers": ["@netlify/runtime", "@vercel/queue", "miniflare", "wrangler"], "bin": { "env-runner": "dist/cli.mjs" } }, "sha512-2LRJM4P2KLX6J83QZZrMqvgCDt/D5ea7wPcI3yYiy5cG/9rX5QwdwZFx0D7ktWnjdRyZxYjttGGorb5nFqb1CA=="],
 
     "error-stack-parser-es": ["error-stack-parser-es@1.0.5", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/error-stack-parser-es/-/error-stack-parser-es-1.0.5.tgz", {}, "sha512-5qucVt2XcuGMcEGgWI7i+yZpmpByQ8J1lHhcL7PwqCwu9FPP3VUXzT4ltHe5i2z9dePwEHcDVOAfSnHsOlCXRA=="],
 
@@ -1336,7 +1336,7 @@
 
     "nf3": ["nf3@0.3.24", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/nf3/-/nf3-0.3.24.tgz", {}, "sha512-HxLK4bo+5jNsEETZp4w3tJblHOA9MCBY14IN9nZJJV8JDxt9yNIYxuBuLMjTAR5GFa3HL61+8VQDUrXv3/C8fw=="],
 
-    "nitro": ["nitro@3.0.260903-beta", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/nitro/-/nitro-3.0.260903-beta.tgz", { "dependencies": { "consola": "^3.4.2", "crossws": "^0.4.12", "db0": "^0.4.1", "env-runner": "^0.2.1", "h3": "^2.0.1-rc.31", "hookable": "^6.1.1", "nf3": "^0.3.24", "ocache": "^0.3.0", "rolldown": "^1.2.7", "rou3": "^0.9.2", "srvx": "^1.0.3", "unenv": "^2.0.0-rc.24", "unstorage": "^2.0.0-alpha.10" }, "bin": { "nitro": "dist/cli/index.mjs" } }, "sha512-54gANPi62O8rfMvepiJUVuIzEIinYfpeHbebywlLxvVTgIYXDwSvpaU9Id+0sJOBjBx0wC1/CVYXJkH7SY+l0g=="],
+    "nitro": ["nitro@3.0.260603-beta", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/nitro/-/nitro-3.0.260603-beta.tgz", { "dependencies": { "consola": "^3.4.2", "crossws": "^0.4.5", "db0": "^0.3.4", "env-runner": "^0.1.9", "h3": "^2.0.1-rc.22", "hookable": "^6.1.1", "nf3": "^0.3.17", "ocache": "^0.1.4", "ofetch": "^2.0.0-alpha.3", "ohash": "^2.0.11", "rolldown": "^1.0.3", "srvx": "^0.11.16", "unenv": "^2.0.0-rc.24", "unstorage": "^2.0.0-alpha.7" }, "peerDependencies": { "@vercel/queue": "^0.2.0", "dotenv": "*", "giget": "*", "jiti": "^2.7.0", "rollup": "^4.60.4", "vite": "^7 || ^8", "xml2js": "^0.6.2", "zephyr-agent": "^0.2.0" }, "optionalPeers": ["@vercel/queue", "dotenv", "giget", "jiti", "rollup", "vite", "xml2js", "zephyr-agent"], "bin": { "nitro": "dist/cli/index.mjs" } }, "sha512-ffaSHK00a7YDlDizoEHwcxPwpQpdBRRA8k42ymTsRnfl3ipGeKgv4gnPr6DgmCNTo4tYVPK3bHBEv1gNhWpo/A=="],
 
     "node-releases": ["node-releases@2.0.57", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/node-releases/-/node-releases-2.0.57.tgz", {}, "sha512-kQK9LGGFiHtrWiNhZtA7Qbw17AQz+dmsEKODRIVTXA9+e5MS/2gZEBhYJt13GrAz5/IOZKddH/0Z3TP/Zgo+yw=="],
 
@@ -1346,7 +1346,11 @@
 
     "obug": ["obug@2.2.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/obug/-/obug-2.2.1.tgz", {}, "sha512-XrsrhT5sybtKI6wakr2SPOlGZWWYbUXZ7a0jT8/QOeAPau+1X/bSegNe5YR75oJmEZQbKningirmGOEJCIk61Q=="],
 
-    "ocache": ["ocache@0.3.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/ocache/-/ocache-0.3.0.tgz", {}, "sha512-RS/9P0zeBb0gDJmadGERLH8lZNXK7xbufTDhclkXGvFGTsj0G4M5/cLk+mizcERH29mLXNnocfB5wjcK70wGJg=="],
+    "ocache": ["ocache@0.1.5", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/ocache/-/ocache-0.1.5.tgz", { "dependencies": { "ohash": "^2.0.11" } }, "sha512-kNNnkkVQup/QDvmTz8Q84wc2ntiyoVHDxa6eHWKt5qdGAmFRBIxy83rxgCYEjW0x06UJ9E3P6VgM2yY4rOBH4w=="],
+
+    "ofetch": ["ofetch@2.0.0-alpha.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/ofetch/-/ofetch-2.0.0-alpha.3.tgz", {}, "sha512-zpYTCs2byOuft65vI3z43Dd6iSdFbOZZLb9/d21aCpx2rGastVU9dOCv0lu4ykc1Ur1anAYjDi3SUvR0vq50JA=="],
+
+    "ohash": ["ohash@2.0.12", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/ohash/-/ohash-2.0.12.tgz", {}, "sha512-65S/5gk9YSsaRjcyf7Nfa6h/d3E8/1gslpXfI4W7Dxn/oap8IKRuNT5VXkLQ1YFKIEg4apRY4Pj6aiwFzrDdmw=="],
 
     "on-finished": ["on-finished@2.4.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/on-finished/-/on-finished-2.4.1.tgz", { "dependencies": { "ee-first": "1.1.1" } }, "sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg=="],
 
@@ -1460,7 +1464,7 @@
 
     "rolldown": ["rolldown@1.2.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/rolldown/-/rolldown-1.2.1.tgz", { "dependencies": { "@oxc-project/types": "=0.142.0", "@rolldown/pluginutils": "^1.0.0" }, "optionalDependencies": { "@rolldown/binding-android-arm64": "1.2.1", "@rolldown/binding-darwin-arm64": "1.2.1", "@rolldown/binding-darwin-x64": "1.2.1", "@rolldown/binding-freebsd-x64": "1.2.1", "@rolldown/binding-linux-arm-gnueabihf": "1.2.1", "@rolldown/binding-linux-arm64-gnu": "1.2.1", "@rolldown/binding-linux-arm64-musl": "1.2.1", "@rolldown/binding-linux-ppc64-gnu": "1.2.1", "@rolldown/binding-linux-s390x-gnu": "1.2.1", "@rolldown/binding-linux-x64-gnu": "1.2.1", "@rolldown/binding-linux-x64-musl": "1.2.1", "@rolldown/binding-openharmony-arm64": "1.2.1", "@rolldown/binding-wasm32-wasi": "1.2.1", "@rolldown/binding-win32-arm64-msvc": "1.2.1", "@rolldown/binding-win32-x64-msvc": "1.2.1" }, "bin": { "rolldown": "./bin/cli.mjs" } }, "sha512-4FKJhg8d3OiyQOA6Q1Q0hoFFpW9/OoX+VsHzpECsdsIZoOArrAK90gl59YK/Z+gnDel45bgJZK03ozH/9bCqEw=="],
 
-    "rou3": ["rou3@0.9.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/rou3/-/rou3-0.9.2.tgz", {}, "sha512-3SOzvaAg8rkHrXtRjpCvCvbyO5to9oOO27Z/XqHEYXfMRVSw/qMIVdmaOk9W2lcRLtR6dlqTjo9hDeJk70QBYQ=="],
+    "rou3": ["rou3@1.0.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/rou3/-/rou3-1.0.0.tgz", {}, "sha512-ySeaQkSrua+ut9g+65I7FHqOFBaY8tV0FmccXItoq0q21se32Q3u4YiW7/RqXSosWgYJaaKwRHXy3BST9PeCNQ=="],
 
     "router": ["router@2.2.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/router/-/router-2.2.0.tgz", { "dependencies": { "debug": "^4.4.0", "depd": "^2.0.0", "is-promise": "^4.0.0", "parseurl": "^1.3.3", "path-to-regexp": "^8.0.0" } }, "sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ=="],
 
@@ -1508,7 +1512,7 @@
 
     "source-map-support": ["source-map-support@0.5.21", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/source-map-support/-/source-map-support-0.5.21.tgz", { "dependencies": { "buffer-from": "^1.0.0", "source-map": "^0.6.0" } }, "sha512-uBHU3L3czsIyYXKX88fdrGovxdSCoTGDRZ6SYXtSRxLZUzHg5P/66Ht6uoUlHu9EZod+inXhKo3qQgwXUT/y1w=="],
 
-    "srvx": ["srvx@1.0.5", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/srvx/-/srvx-1.0.5.tgz", { "bin": { "srvx": "./bin/srvx.mjs" } }, "sha512-KvSKRpgPG/oaq3cyT614OQ2bAa7DynuGamivCZeoZzIUULOdbQz6wUtnnVuC4+DCx2Zglzo8v5gBYmWIWYhDxA=="],
+    "srvx": ["srvx@0.11.22", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/srvx/-/srvx-0.11.22.tgz", { "bin": { "srvx": "bin/srvx.mjs" } }, "sha512-LqZxxBDMKuMAZzFzJnDCkFOrs9MZQZr0LvHiO/SuSZVdQaXD7xQ5UWTUxheJrQPve1qk9MG2B/yttUvJxw8egQ=="],
 
     "stats-gl": ["stats-gl@2.4.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/stats-gl/-/stats-gl-2.4.2.tgz", { "dependencies": { "@types/three": "*", "three": "^0.170.0" } }, "sha512-g5O9B0hm9CvnM36+v7SFl39T7hmAlv541tU81ME8YeSb3i1CIP5/QdDeSB3A0la0bKNHpxpwxOVRo2wFTYEosQ=="],
 
@@ -1710,8 +1714,6 @@
 
     "@tanstack/router-generator/magic-string": ["magic-string@0.30.21", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/magic-string/-/magic-string-0.30.21.tgz", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.5" } }, "sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ=="],
 
-    "@tanstack/start-plugin-core/srvx": ["srvx@0.11.22", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/srvx/-/srvx-0.11.22.tgz", { "bin": { "srvx": "bin/srvx.mjs" } }, "sha512-LqZxxBDMKuMAZzFzJnDCkFOrs9MZQZr0LvHiO/SuSZVdQaXD7xQ5UWTUxheJrQPve1qk9MG2B/yttUvJxw8egQ=="],
-
     "@types/three/meshoptimizer": ["meshoptimizer@1.1.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/meshoptimizer/-/meshoptimizer-1.1.1.tgz", {}, "sha512-oRFNWJRDA/WTrVj7NWvqa5HqE1t9MYDj2VaWirQCzCCrAd2GHrqR/sQezCxiWATPNlKTcRaPRHPJwIRoPBAp5g=="],
 
     "@typescript-eslint/eslint-plugin/ignore": ["ignore@7.0.12", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/ignore/-/ignore-7.0.12.tgz", {}, "sha512-/8UvqAPU9DGTI9k4mxtf49U37Isfwr8Uts96+SBHIkFxPJnHS0Ew4f00sM4Scd8V8EjM0jUNtVDdv1kPdt35lg=="],
@@ -1726,11 +1728,11 @@
 
     "express/cookie": ["cookie@0.7.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/cookie/-/cookie-0.7.2.tgz", {}, "sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w=="],
 
-    "h3/rou3": ["rou3@1.0.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/rou3/-/rou3-1.0.0.tgz", {}, "sha512-ySeaQkSrua+ut9g+65I7FHqOFBaY8tV0FmccXItoq0q21se32Q3u4YiW7/RqXSosWgYJaaKwRHXy3BST9PeCNQ=="],
+    "h3/ocache": ["ocache@0.3.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/ocache/-/ocache-0.3.0.tgz", {}, "sha512-RS/9P0zeBb0gDJmadGERLH8lZNXK7xbufTDhclkXGvFGTsj0G4M5/cLk+mizcERH29mLXNnocfB5wjcK70wGJg=="],
+
+    "h3/srvx": ["srvx@1.0.5", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/srvx/-/srvx-1.0.5.tgz", { "bin": { "srvx": "./bin/srvx.mjs" } }, "sha512-KvSKRpgPG/oaq3cyT614OQ2bAa7DynuGamivCZeoZzIUULOdbQz6wUtnnVuC4+DCx2Zglzo8v5gBYmWIWYhDxA=="],
 
     "h3-v2/rou3": ["rou3@0.8.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/rou3/-/rou3-0.8.1.tgz", {}, "sha512-ePa+XGk00/3HuCqrEnK3LxJW7I0SdNg6EFzKUJG73hMAdDcOUC/i/aSz7LSDwLrGr33kal/rqOGydzwl6U7zBA=="],
-
-    "h3-v2/srvx": ["srvx@0.11.22", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/srvx/-/srvx-0.11.22.tgz", { "bin": { "srvx": "bin/srvx.mjs" } }, "sha512-LqZxxBDMKuMAZzFzJnDCkFOrs9MZQZr0LvHiO/SuSZVdQaXD7xQ5UWTUxheJrQPve1qk9MG2B/yttUvJxw8egQ=="],
 
     "miniflare/sharp": ["sharp@0.35.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/sharp/-/sharp-0.35.4.tgz", { "dependencies": { "@img/colour": "^1.1.0", "detect-libc": "^2.1.2", "semver": "^7.8.5" }, "optionalDependencies": { "@img/sharp-darwin-arm64": "0.35.4", "@img/sharp-darwin-x64": "0.35.4", "@img/sharp-freebsd-wasm32": "0.35.4", "@img/sharp-libvips-darwin-arm64": "1.3.3", "@img/sharp-libvips-darwin-x64": "1.3.3", "@img/sharp-libvips-linux-arm": "1.3.3", "@img/sharp-libvips-linux-arm64": "1.3.3", "@img/sharp-libvips-linux-ppc64": "1.3.3", "@img/sharp-libvips-linux-riscv64": "1.3.3", "@img/sharp-libvips-linux-s390x": "1.3.3", "@img/sharp-libvips-linux-x64": "1.3.3", "@img/sharp-libvips-linuxmusl-arm64": "1.3.3", "@img/sharp-libvips-linuxmusl-x64": "1.3.3", "@img/sharp-linux-arm": "0.35.4", "@img/sharp-linux-arm64": "0.35.4", "@img/sharp-linux-ppc64": "0.35.4", "@img/sharp-linux-riscv64": "0.35.4", "@img/sharp-linux-s390x": "0.35.4", "@img/sharp-linux-x64": "0.35.4", "@img/sharp-linuxmusl-arm64": "0.35.4", "@img/sharp-linuxmusl-x64": "0.35.4", "@img/sharp-webcontainers-wasm32": "0.35.4", "@img/sharp-win32-arm64": "0.35.4", "@img/sharp-win32-ia32": "0.35.4", "@img/sharp-win32-x64": "0.35.4" } }, "sha512-n++8XWcj+jCOr2IOl7h8LbKnGBDY4aPbmprMONBNFdn0ImXqpGVv5zliDs0V9HbmbCQLpbuo2ej9rAoOQTvMDA=="],
 

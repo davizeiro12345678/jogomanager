@@ -48,6 +48,7 @@ describe("payment availability before checkout", () => {
     expect(() => assertGuestCheckoutEnabled()).toThrow(/segurança/);
     vi.stubEnv("GUEST_CHECKOUT_EMAIL_HASH_SECRET", "fixture_hash_secret");
     vi.stubEnv("GUEST_CHECKOUT_ENVIRONMENT", "sandbox");
+    vi.stubEnv("DEV", false);
     expect(() => assertGuestCheckoutEnabled()).toThrow(/corresponder/);
   });
 });
