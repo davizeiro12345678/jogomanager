@@ -9,10 +9,10 @@ import { TEMPLATES } from "./registry";
 const SITE_NAME = "Pro Football Manager 3D";
 // SENDER_DOMAIN is the verified sender subdomain FQDN (e.g., "notify.example.com").
 // It MUST match the subdomain delegated to Lovable's nameservers. NEVER use the root domain.
-const SENDER_DOMAIN = "notify.football-manager.app";
+const SENDER_DOMAIN = "notify.jogomanager.com";
 // FROM_DOMAIN is the domain shown in the From: header (e.g., "example.com").
 // Can be the root domain when display_from_root is enabled — this is cosmetic only.
-const FROM_DOMAIN = "football-manager.app";
+const FROM_DOMAIN = "jogomanager.com";
 
 export type SendTemplateEmailResult =
   { sent: true } | { sent: false; reason: "recipient_suppressed" };

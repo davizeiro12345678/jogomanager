@@ -70,4 +70,4 @@
 - [ ] Renovar painel, seleção, botões e animações da carreira de jogador.
 - [ ] Integrar um atleta 3D Hero personalizado à criação e ao painel antes de escalar para 22 jogadores.
 - [ ] Validar rosto, cabelo, corpo e uniforme no celular e no desktop sem regressões de compilação.
-- [ ] Configurar e-mails do app em notify.jogomanager.com
+- [x] Configurar e-mails do app em notify.jogomanager.com (aguardando DNS)

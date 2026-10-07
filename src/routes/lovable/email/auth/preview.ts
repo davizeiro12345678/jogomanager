@@ -26,7 +26,7 @@ const EMAIL_TEMPLATES: Record<string, EmailTemplatePreview> = {
 
 // Configuration
 const SITE_NAME = "Pro Football Manager 3D";
-const ROOT_DOMAIN = "football-manager.app";
+const ROOT_DOMAIN = "jogomanager.com";
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.

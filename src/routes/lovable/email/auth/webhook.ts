@@ -10,9 +10,9 @@ import { ReauthenticationEmail } from "@/lib/email-templates/reauthentication";
 
 // Configuration
 const SITE_NAME = "Pro Football Manager 3D";
-const SENDER_DOMAIN = "notify.football-manager.app";
-const ROOT_DOMAIN = "football-manager.app";
-const FROM_DOMAIN = "football-manager.app";
+const SENDER_DOMAIN = "notify.jogomanager.com";
+const ROOT_DOMAIN = "jogomanager.com";
+const FROM_DOMAIN = "jogomanager.com";
 const SITE_URL = `https://${ROOT_DOMAIN}`;
 
 // The SDK handler owns verification, dispatch, and retry semantics; this file
