@@ -77,6 +77,7 @@ export interface PlayerMaterials {
 }
 
 const NORMAL_SCALE = new THREE.Vector2(0.55, 0.55);
+const SHORTS_NORMAL_SCALE = new THREE.Vector2(0.24, 0.24);
 const MAX_ENTRIES = 96;
 const cache = new Map<string, PlayerMaterials>();
 const textureRefreshers = new Map<PlayerMaterials, () => void>();
@@ -413,7 +414,9 @@ export function playerMaterials(
           roughness: 0.91,
           normalMap: maps.shorts,
           roughnessMap: maps.shortsRough,
-          normalScale: NORMAL_SCALE,
+          // The low-frequency garment normal carries the weave; a smaller
+          // amplitude prevents aliasing against the broadcast camera.
+          normalScale: SHORTS_NORMAL_SCALE,
           sheen: 0.48,
           sheenRoughness: 0.78,
           sheenColor: new THREE.Color(shade(kit.shorts, 0.35)),

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { availableAuthMethods, type AuthMethods } from "@/integrations/supabase/social-auth";
+import { reportSilent } from "@/lib/silent-errors";
 
 export function useAuthMethods() {
   const [methods, setMethods] = useState<AuthMethods | null>(null);
@@ -16,11 +17,18 @@ export function useAuthMethods() {
       .then((value) => {
         if (!controller.signal.aborted) setMethods(value);
       })
-      .catch(() => {
-        if (!controller.signal.aborted)
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          reportSilent("auth.operation", error, {
+            classification: "fatal",
+            feature: "auth-methods",
+            phase: "load",
+            dedupeKey: "auth-methods-load",
+          });
           setError(
             "Não foi possível carregar as formas de entrada. Confira a conexão e tente novamente.",
           );
+        }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);

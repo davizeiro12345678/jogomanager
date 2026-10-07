@@ -76,8 +76,8 @@ export function shortsPanelNormal(): THREE.DataTexture {
   shortsNormal = new THREE.DataTexture(data, size, size);
   shortsNormal.name = "athlete-shorts-twill-seam";
   shortsNormal.wrapS = shortsNormal.wrapT = THREE.RepeatWrapping;
-  shortsNormal.repeat.set(2, 2);
-  shortsNormal.anisotropy = 4;
+  shortsNormal.repeat.set(1.5, 1.5);
+  shortsNormal.anisotropy = 2;
   shortsNormal.needsUpdate = true;
   return shortsNormal;
 }

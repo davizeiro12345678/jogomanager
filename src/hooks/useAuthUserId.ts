@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { reportSilent } from "@/lib/silent-errors";
 
 /** undefined while loading, null for a visitor, otherwise the current account ID. */
 export function useAuthUserId() {
@@ -17,8 +18,16 @@ export function useAuthUserId() {
       .then(({ data: session }) => {
         if (alive && !changed) setUserId(session.session?.user.id ?? null);
       })
-      .catch(() => {
-        if (alive && !changed) setUserId(null);
+      .catch((error) => {
+        if (alive && !changed) {
+          reportSilent("auth.operation", error, {
+            classification: "fatal",
+            feature: "auth-session",
+            phase: "get-session",
+            dedupeKey: "auth-session-read",
+          });
+          setUserId(null);
+        }
       });
     return () => {
       alive = false;

@@ -235,11 +235,17 @@ export function languageSearchText(lang: Lang, displayLocale: string): string {
   let displayName = "";
   try {
     displayName = new Intl.DisplayNames([displayLocale], { type: "language" }).of(lang) ?? "";
-  } catch {
-    /* optional Intl data */
+  } catch (error) {
+    reportSilent("i18n.translation", error, {
+      classification: "ignorable",
+      feature: "display-name",
+      phase: "intl",
+      dedupeKey: "intl-display-names",
+    });
   }
   return `${LANG_NAMES[lang]} ${displayName} ${lang}`
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
     .toLocaleLowerCase();
 }
+import { reportSilent } from "@/lib/silent-errors";

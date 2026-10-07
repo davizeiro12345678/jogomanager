@@ -15,6 +15,19 @@ import {
 import type { WindVector } from "./ball-climate";
 import type { VisualBallState } from "./visual-ball";
 import type { MatchPhase, ShootoutKick, WeatherKind } from "./sim-rules";
+import type { WorkerErrorPayload } from "./worker-error";
+import {
+  applyLivePlayerBuffer,
+  createLivePlayerBuffer,
+  createLivePlayerMetadata,
+  createSnapshotBufferPool,
+  isLiveSnapshotPacket,
+  livePlayerBufferFromPacket,
+  recycleSnapshot,
+  type LivePlayerMeta,
+  type LiveSnapshotPacket,
+  type SnapshotBufferPool,
+} from "./live-match-buffer";
 
 export interface LiveSnapshot {
   seq: number;
@@ -41,6 +54,7 @@ export interface LiveSnapshot {
 }
 
 const eventCache = new WeakMap<MatchSim, { seq: number; events: MatchSim["events"] }>();
+const packetEventCache = new WeakMap<MatchSim, { seq: number; events: MatchSim["events"] }>();
 
 export interface LiveResult extends LiveSnapshot {
   ratings: PlayerRating[];
@@ -67,6 +81,13 @@ export type LiveWorkerRequest =
   | { id: number; type: "stopLive" }
   | {
       id: number;
+      type: "recycle";
+      positions: ArrayBuffer;
+      velocities: ArrayBuffer;
+      states: ArrayBuffer;
+    }
+  | {
+      id: number;
       type: "simulate";
       home: TeamSetup;
       away: TeamSetup;
@@ -85,9 +106,10 @@ export type LiveWorkerRequest =
 
 export type LiveWorkerResponse =
   | { id: number; ok: true; type: "ready" | "command"; result?: boolean }
-  | { id: number; ok: true; type: "snapshot"; snapshot: LiveSnapshot }
+  | { id: number; ok: true; type: "snapshot"; snapshot: LiveSnapshot | LiveSnapshotPacket }
   | { id: number; ok: true; type: "finished"; result: LiveResult }
   | { id: number; ok: true; type?: undefined; result: unknown }
+  | { id: number; ok: false; type: "worker-error"; error: WorkerErrorPayload }
   | { id: number; ok: false; error: string };
 
 export interface MatchRuntime extends SimView {
@@ -143,6 +165,62 @@ export function snapshotMatch(
   };
 }
 
+/**
+ * Compact live transport. The simulation remains the single owner of truth;
+ * this function only projects its current state into three transferable typed
+ * arrays and a small scalar/HUD envelope.
+ */
+export function snapshotMatchPacket(
+  sim: MatchSim,
+  seq: number,
+  options: {
+    pool?: SnapshotBufferPool;
+    rosterVersion?: number;
+    includeMetadata?: boolean;
+    visualBall?: VisualBallState;
+  } = {},
+): LiveSnapshotPacket {
+  const pool = options.pool ?? createSnapshotBufferPool(3);
+  const playerBuffer = createLivePlayerBuffer(sim.players, pool.acquire(sim.players.length));
+  const previousEvents = packetEventCache.get(sim);
+  const added = previousEvents
+    ? sim.events.filter((event) => !previousEvents.events.includes(event))
+    : sim.events;
+  const fromSeq = previousEvents?.seq ?? 0;
+  packetEventCache.set(sim, { seq: sim.lastEventId, events: sim.events.slice() });
+  const metadata = createLivePlayerMetadata(sim.players);
+  return {
+    type: "snapshot",
+    seq,
+    sentAt: performance.now(),
+    time: sim.time,
+    clock: sim.clock(),
+    phase: sim.phase,
+    shootout: sim.shootout.map((kick) => ({ ...kick })),
+    weather: sim.weather,
+    wind: { ...sim.wind },
+    refName: sim.ref.name,
+    players: {
+      positions: playerBuffer.positions.buffer as ArrayBuffer,
+      velocities: playerBuffer.velocities.buffer as ArrayBuffer,
+      states: playerBuffer.states.buffer as ArrayBuffer,
+    },
+    ...(options.includeMetadata ? { metadata } : {}),
+    ...(options.visualBall ? { visualBall: { ...options.visualBall } } : {}),
+    ball: { ...sim.ball },
+    possession: sim.possession,
+    stats: { home: { ...sim.stats.home }, away: { ...sim.stats.away } },
+    eventSeq: sim.lastEventId,
+    ...(fromSeq !== sim.lastEventId || added.length
+      ? { eventDelta: { fromSeq, toSeq: sim.lastEventId, added } }
+      : {}),
+    finished: sim.finished,
+    subsUsed: { ...sim.subsUsed },
+    rosterVersion: options.rosterVersion ?? 1,
+    bufferStarvation: pool.starvationCount(),
+  };
+}
+
 export function resultMatch(sim: MatchSim, seq: number, visualBall?: VisualBallState): LiveResult {
   return {
     ...snapshotMatch(sim, seq, visualBall),
@@ -179,6 +257,8 @@ export class WorkerMatchView implements MatchRuntime {
   private previousPositions = new Float64Array();
   private targetPositions = new Float64Array();
   private previousIds: string[] = [];
+  private playerMetadata: LivePlayerMeta[] = [];
+  private retainedPacketBuffers: LiveSnapshotPacket["players"][] = [];
   private previousBall = { x: 0, z: 0, height: 0.12 };
   private targetBall = { x: 0, z: 0, height: 0.12 };
   private previousVisualBall: VisualBallState | null = null;
@@ -193,11 +273,15 @@ export class WorkerMatchView implements MatchRuntime {
     this.stats = { home: emptyStats(), away: emptyStats() };
   }
 
-  apply(next: LiveSnapshot | LiveResult) {
+  apply(next: LiveSnapshot | LiveResult | LiveSnapshotPacket): ArrayBuffer[] {
     const now = performance.now();
     if (this.receivedAt) this.intervalMs = Math.max(50, Math.min(250, now - this.receivedAt));
     this.receivedAt = now;
-    const positionCapacity = Math.max(this.players.length, next.players.length);
+    const packet = isLiveSnapshotPacket(next) ? next : null;
+    const nextCount = packet
+      ? (packet.metadata?.length ?? this.playerMetadata.length)
+      : (next as LiveSnapshot | LiveResult).players.length;
+    const positionCapacity = Math.max(this.players.length, nextCount);
     if (this.previousPositions.length < positionCapacity * 2) {
       this.previousPositions = new Float64Array(positionCapacity * 2);
       this.targetPositions = new Float64Array(positionCapacity * 2);
@@ -212,25 +296,48 @@ export class WorkerMatchView implements MatchRuntime {
     }
     this.previousBall = { x: this.ball.x, z: this.ball.z, height: this.ball.height };
     const previousVisualBall = this.visualBall ? { ...this.visualBall } : null;
-    for (let index = 0; index < next.players.length; index += 1) {
-      const player = next.players[index]!;
+    let nextPlayers: readonly SimPlayer[];
+    let rosterChanged = false;
+    if (packet) {
+      const metadata = packet.metadata ?? this.playerMetadata;
+      if (!metadata.length) throw new RangeError("snapshot packet has no roster metadata");
+      this.playerMetadata = metadata.map((item) => ({ ...item }));
+      const buffer = livePlayerBufferFromPacket(packet);
+      const existingIds = this.players.map((player) => player.id).join("|");
+      const metadataIds = metadata.map((player) => player.id).join("|");
+      rosterChanged = existingIds !== metadataIds;
+      this.players = applyLivePlayerBuffer(this.players, metadata, buffer);
+      nextPlayers = this.players;
+      this.retainedPacketBuffers.push(packet.players);
+    } else {
+      const objectSnapshot = next as LiveSnapshot | LiveResult;
+      nextPlayers = objectSnapshot.players;
+      if (!this.players.length || this.players.length !== nextPlayers.length) {
+        this.players = nextPlayers.map((player) => ({ ...player }));
+        rosterChanged = true;
+      } else {
+        for (let index = 0; index < nextPlayers.length; index += 1) {
+          const target = nextPlayers[index];
+          const current = this.players[index];
+          if (!target || !current || current.id !== target.id) {
+            this.players = nextPlayers.map((player) => ({ ...player }));
+            rosterChanged = true;
+            break;
+          }
+          Object.assign(current, target, { x: current.x, z: current.z });
+        }
+      }
+    }
+    nextPlayers.forEach((player, index) => {
       const offset = index * 2;
       this.targetPositions[offset] = player.x;
       this.targetPositions[offset + 1] = player.z;
-    }
-    if (!this.players.length || this.players.length !== next.players.length) {
-      this.players = next.players.map((player) => ({ ...player }));
-    } else {
-      for (let index = 0; index < next.players.length; index += 1) {
-        const target = next.players[index];
-        const current = this.players[index];
-        if (!target || !current || current.id !== target.id) {
-          this.players = next.players.map((player) => ({ ...player }));
-          break;
-        }
-        Object.assign(current, target, { x: current.x, z: current.z });
+      const samePlayer = this.previousIds[index] === player.id;
+      if (!rosterChanged && samePlayer) {
+        player.x = this.previousPositions[offset]!;
+        player.z = this.previousPositions[offset + 1]!;
       }
-    }
+    });
     this.targetBall = { x: next.ball.x, z: next.ball.z, height: next.ball.height };
     Object.assign(this.ball, next.ball, this.previousBall);
     if (next.visualBall) {
@@ -261,7 +368,18 @@ export class WorkerMatchView implements MatchRuntime {
     this.refName = next.refName;
     this.possession = next.possession;
     this.stats = cloneStats(next.stats);
-    if (next.eventSeq !== this.eventSeq) this.events = next.events.map((event) => ({ ...event }));
+    if (packet) {
+      const delta = packet.eventDelta;
+      if (delta && delta.fromSeq === this.eventSeq) {
+        this.events = [
+          ...this.events,
+          ...delta.added.map((event) => ({ ...event })),
+        ].slice(-80);
+      }
+    } else if (next.eventSeq !== this.eventSeq) {
+      const objectSnapshot = next as LiveSnapshot | LiveResult;
+      this.events = objectSnapshot.events.map((event) => ({ ...event }));
+    }
     this.eventSeq = next.eventSeq;
     this.finished = next.finished;
     this.subsUsed = { ...next.subsUsed };
@@ -270,6 +388,11 @@ export class WorkerMatchView implements MatchRuntime {
       this.scorers = next.scorers.map((item) => ({ ...item }));
       this.shotMap = next.shotMap.map((item) => ({ ...item }));
     }
+    if (this.retainedPacketBuffers.length > 2) {
+      const recycled = recycleSnapshot({ players: this.retainedPacketBuffers.shift()! });
+      return [recycled.positions, recycled.velocities, recycled.states];
+    }
+    return [];
   }
 
   renderTick(now = performance.now()) {

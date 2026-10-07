@@ -29,6 +29,8 @@ import {
 import type { CareerState } from "./types";
 import type { Player, Tactics } from "./types";
 import type { WeatherKind } from "./sim-rules";
+import { reportSilent } from "@/lib/silent-errors";
+import { serializeWorkerError } from "./worker-error";
 
 let worker: Worker | null = null;
 let seq = 0;
@@ -39,13 +41,25 @@ function getWorker(): Worker | null {
   if (worker) return worker;
   try {
     worker = new Worker(new URL("./match.worker.ts", import.meta.url), { type: "module" });
-    worker.onerror = () => {
+    worker.onerror = (event) => {
+      reportSilent("worker.match", event.error ?? event.message, {
+        classification: "fatal",
+        feature: "live-match",
+        phase: "create",
+        dedupeKey: "worker-error",
+      });
       broken = true;
       worker?.terminate();
       worker = null;
     };
     return worker;
-  } catch {
+  } catch (error) {
+    reportSilent("worker.match", error, {
+      classification: "fatal",
+      feature: "live-match",
+      phase: "create",
+      dedupeKey: "worker-create",
+    });
     broken = true;
     return null;
   }
@@ -63,6 +77,13 @@ function call<T>(
   return new Promise<T>((resolve) => {
     const timer = setTimeout(() => {
       activeWorker.removeEventListener("message", onMsg);
+      reportSilent("worker.match", new Error(`timeout after ${timeoutMs}ms`), {
+        classification: "fatal",
+        feature: "live-match",
+        phase: "timeout",
+        dedupeKey: `worker-timeout:${id}`,
+        requestId: id,
+      });
       resolve(fallback());
     }, timeoutMs);
     function onMsg(ev: MessageEvent) {
@@ -160,15 +181,16 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
   let latestState: LiveResult | Parameters<WorkerMatchView["apply"]>[0] | null = null;
   const pendingCommands = new Set<() => void>();
   const snapshotTelemetry = options.telemetry ? createSnapshotTelemetryTracker() : null;
+  let failureReported = false;
 
   const apply = (
     state: LiveResult | Parameters<WorkerMatchView["apply"]>[0],
     source: LiveMatchTelemetrySample["source"],
-  ) => {
-    if (disposed) return;
+  ): ArrayBuffer[] => {
+    if (disposed) return [];
     const applyStartedAt = snapshotTelemetry ? performance.now() : 0;
     const transport = snapshotTelemetry?.sample(state, applyStartedAt);
-    view.apply(state);
+    const recycled = view.apply(state);
     if (transport) {
       const sample: LiveMatchTelemetrySample = {
         source,
@@ -187,6 +209,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     latestState = state;
     options.onSnapshot(view);
     if (state.finished) options.onFinished(view);
+    return recycled;
   };
 
   const stopLocal = () => {
@@ -268,10 +291,24 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     }, 100);
   };
 
-  const send = (payload: LiveWorkerCommand) => {
+  const send = (payload: LiveWorkerCommand, transfer: Transferable[] = []) => {
     if (!liveWorker) return;
     command += 1;
-    liveWorker.postMessage({ id: command, ...payload });
+    try {
+      liveWorker.postMessage({ id: command, ...payload }, transfer);
+    } catch (error) {
+      reportSilent("worker.match", error, {
+        classification: "fatal",
+        feature: "live-match",
+        phase: "postMessage",
+        dedupeKey: "worker-post-message",
+        requestType: payload.type,
+      });
+      if (!failureReported) {
+        failureReported = true;
+        startFallback("O Worker não aceitou o comando; a partida continuou no modo compatível.");
+      }
+    }
   };
 
   if (typeof Worker !== "undefined") {
@@ -279,15 +316,78 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
       liveWorker = createLiveMatchWorker(Boolean(options.telemetry));
       liveWorker.onmessage = (event: MessageEvent<LiveWorkerResponse>) => {
         const message = event.data;
+        if (message && !message.ok && "type" in message && message.type === "worker-error") {
+          reportSilent("worker.match.protocol", message.error, {
+            classification: "fatal",
+            feature: "live-match",
+            phase: message.error.kind,
+            dedupeKey: `worker-protocol:${message.error.kind}:${message.error.message}`,
+          });
+        }
         if (!message || !message.ok) {
-          startFallback(message && "error" in message ? message.error : undefined);
+          startFallback(
+            message && "error" in message
+              ? typeof message.error === "string"
+                ? message.error
+                : message.error.message
+              : undefined,
+          );
           return;
         }
-        if (message.type === "snapshot") apply(message.snapshot, "worker");
+        if (message.type === "snapshot") {
+          try {
+            const recycled = apply(message.snapshot, "worker");
+            if (recycled.length) {
+              const [positions, velocities, states] = recycled;
+              send({
+                type: "recycle",
+                positions: positions!,
+                velocities: velocities!,
+                states: states!,
+              }, [positions!, velocities!, states!]);
+            }
+          } catch (error) {
+            reportSilent("worker.match.protocol", error, {
+              classification: "fatal",
+              feature: "live-match",
+              phase: "snapshot-apply",
+              dedupeKey: "worker-snapshot-apply",
+            });
+            if (!failureReported) {
+              failureReported = true;
+              startFallback("O snapshot da partida não pôde ser aplicado; modo compatível ativado.");
+            }
+          }
+        }
         else if (message.type === "finished") apply(message.result, "worker");
       };
-      liveWorker.onerror = () =>
-        startFallback("O Worker falhou; a partida continuou no modo compatível.");
+      liveWorker.onerror = (event) => {
+        reportSilent("worker.match", event.error ?? event.message, {
+          classification: "fatal",
+          feature: "live-match",
+          phase: "error",
+          dedupeKey: "worker-runtime-error",
+        });
+        if (!failureReported) {
+          failureReported = true;
+          startFallback("O Worker falhou; a partida continuou no modo compatível.");
+        }
+      };
+      liveWorker.onmessageerror = (event) => {
+        const payload = serializeWorkerError(event);
+        reportSilent("worker.match.protocol", payload, {
+          classification: "fatal",
+          feature: "live-match",
+          phase: "messageerror",
+          dedupeKey: "worker-messageerror",
+        });
+        if (!failureReported) {
+          failureReported = true;
+          startFallback(
+            "A resposta do Worker não pôde ser lida; a partida continuou no modo compatível.",
+          );
+        }
+      };
       send({
         type: "startLive",
         home: options.home,
@@ -296,7 +396,13 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         knockout: options.knockout,
         weather: options.weather,
       });
-    } catch {
+    } catch (error) {
+      reportSilent("worker.match", error, {
+        classification: "fatal",
+        feature: "live-match",
+        phase: "bootstrap",
+        dedupeKey: "worker-bootstrap",
+      });
       startFallback();
     }
   } else {

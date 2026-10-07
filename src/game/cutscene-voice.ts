@@ -1,5 +1,6 @@
 import { readVoiceCache, writeVoiceCache } from "./audio-cache";
 import { NARRATION_VOICE_REVISION } from "./narration-voice";
+import { reportSilent } from "@/lib/silent-errors";
 
 export type SceneVoiceLoader = (scene: string, line: number) => Promise<string | null>;
 const pending = new Map<string, Promise<string | null>>();
@@ -10,7 +11,15 @@ export function voiceWithin(request: Promise<string | null>, timeout = SCENE_VOI
   return new Promise<string | null>((resolve) => {
     const timer = setTimeout(() => resolve(null), timeout);
     void request
-      .catch(() => null)
+      .catch((error) => {
+        reportSilent("cutscene.voice", error, {
+          classification: "degradation",
+          feature: "narration",
+          phase: "request",
+          dedupeKey: "voice-request",
+        });
+        return null;
+      })
       .then((audio) => {
         clearTimeout(timer);
         resolve(audio);
@@ -33,10 +42,26 @@ export function sceneVoice(
     const cached = await voiceWithin(readVoiceCache(key));
     if (cached) return cached;
     const audio = await voiceWithin(Promise.resolve().then(() => loader(scene, line)));
-    if (audio) void writeVoiceCache(key, audio).catch(() => undefined);
+    if (audio)
+      void writeVoiceCache(key, audio).catch((error) => {
+        reportSilent("assets.cache", error, {
+          classification: "ignorable",
+          feature: "voice-cache",
+          phase: "write",
+          dedupeKey: "voice-cache-write",
+        });
+      });
     return audio;
   })()
-    .catch(() => null)
+    .catch((error) => {
+      reportSilent("cutscene.voice", error, {
+        classification: "degradation",
+        feature: "narration",
+        phase: "load",
+        dedupeKey: `voice-load:${key}`,
+      });
+      return null;
+    })
     .finally(() => pending.delete(key));
   pending.set(key, request);
   return request;

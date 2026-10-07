@@ -1,7 +1,8 @@
 import { addAfterEffect, useThree } from "@react-three/fiber";
 import { useEffect } from "react";
-import { FrameMetrics } from "@/game/frame-metrics";
+import { FrameMetrics, heapUsedBytes } from "@/game/frame-metrics";
 import { censusBudgetUse, censusFitsBudget, censusScene } from "@/game/scene-census";
+import { reportSilent } from "@/lib/silent-errors";
 
 type GraphicsBenchmarkMetadata = {
   id: string;
@@ -141,8 +142,13 @@ export function FrameProbe() {
         const s = metrics.summary();
         void import("@/lib/telemetry-client")
           .then((m) => m.reportTechSample({ fps: s.fps, p95: s.p95 }))
-          .catch(() => {
-            /* Optional telemetry must never break the renderer. */
+          .catch((error) => {
+            reportSilent("telemetry.optional", error, {
+              classification: "ignorable",
+              feature: "frame-probe",
+              phase: "report",
+              dedupeKey: "frame-probe-report",
+            });
           });
       }
     });
@@ -279,6 +285,7 @@ export function FrameProbe() {
               width: gl.domElement.width,
               height: gl.domElement.height,
               dpr: gl.getPixelRatio(),
+              heapUsedBytes: heapUsedBytes(performance),
               scenario: benchmarkMetadata(),
               browser: browserMetadata(),
               hardware: hardwareMetadata(renderer),

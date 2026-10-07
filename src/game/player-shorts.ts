@@ -12,6 +12,7 @@ export function footballShorts(
   const positions: number[] = [];
   const uvs: number[] = [];
   const openingLeg: number[] = [];
+  const waistBand: number[] = [];
   const indices: number[] = [];
   const centers = p.hipW * 0.36;
   // The crotch closes between the legs, but its outer contour still has to
@@ -25,6 +26,7 @@ export function footballShorts(
     positions.push(x, y, z);
     uvs.push(u, (y - hem) / (top - hem));
     openingLeg.push(leg);
+    waistBand.push(Math.max(0, Math.min(1, (y - crotch) / (top - crotch))));
   };
   const stitch = (a: number, b: number, count: number) => {
     for (let i = 0; i < count; i++)
@@ -86,6 +88,7 @@ export function footballShorts(
   // Both openings cross the centre plane. Preserve their authored identity
   // until skinning, instead of assigning a femur from the vertex's x sign.
   geometry.setAttribute("openingLeg", new THREE.Float32BufferAttribute(openingLeg, 1));
+  geometry.setAttribute("waistBand", new THREE.Float32BufferAttribute(waistBand, 1));
   geometry.setIndex(indices);
   const color = new Float32Array(positions.length);
   const attributes = geometry.getAttribute("uv");
@@ -93,7 +96,9 @@ export function footballShorts(
     const v = attributes.getY(i);
     const waistband = Math.exp(-(((v - 0.965) / 0.027) ** 2)) * 0.13;
     const hemShade = Math.exp(-(((v - 0.015) / 0.025) ** 2)) * 0.12;
-    const panel = Math.exp(-((Math.cos(attributes.getX(i) * Math.PI * 4) / 0.07) ** 2)) * 0.055;
+    // Keep the panel cue broad. A high-frequency vertex pattern aliases against
+    // the repeated normal map and becomes moiré during the broadcast camera.
+    const panel = Math.sin(attributes.getX(i) * Math.PI) ** 2 * 0.018;
     color.set(
       [
         1 - waistband - hemShade - panel,
