@@ -69,7 +69,7 @@ export function startEmbeddedCheckout({
     onError(checkoutErrorMessage(cause));
   };
   const ready = () => {
-    if (!active || readyNotified || !mounted || !rendered) return;
+    if (!active || readyNotified || !mounted) return;
     readyNotified = true;
     clearTimeout(timer);
     onPhase("ready");
