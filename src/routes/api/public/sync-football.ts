@@ -20,7 +20,9 @@ export const Route = createFileRoute("/api/public/sync-football")({
         const scope = url.searchParams.get("scope") ?? "clubs";
         if (scope === "apifootball") {
           const p = url.searchParams.get("phase");
-          if (p !== "leagues" && p !== "teams" && p !== "squads") {
+          const allowed = ["leagues", "teams", "squads", "fixtures", "standings", "predictions", "odds", "stats"] as const;
+          const phase = allowed.find((x) => x === p);
+          if (!phase) {
             return new Response("Invalid phase", { status: 400 });
           }
           const n = (k: string, d: number, max: number) => {
@@ -29,7 +31,7 @@ export const Route = createFileRoute("/api/public/sync-football")({
           };
           const { runApiFootballImport } = await import("@/lib/apifootball-import.server");
           const r = await runApiFootballImport({
-            phase: p,
+            phase,
             offset: n("offset", 0, 1_000_000),
             limit: Math.max(1, n("limit", 60, 500)),
             budgetMs: Math.max(5_000, n("budgetMs", 50_000, 90_000)),
