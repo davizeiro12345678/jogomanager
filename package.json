@@ -143,7 +143,7 @@
     "postgres": "^3.4.9",
     "prettier": "^3.9.9",
     "sharp": "^0.35.5",
-    "typescript": "^7.0.2",
+    "typescript": "^5",
     "typescript-eslint": "^8.71.1",
     "vite": "^8.3.3",
     "vite-imagetools": "^12.0.1",
