@@ -19,10 +19,12 @@ let refreshing: Promise<void> | null = null;
 
 function apply(cache: Cache) {
   const byId = new Map(LEAGUES.map((l) => [l.id, l]));
+  const added = new Set<string>();
   for (const [id, name, country, flag] of cache.leagues) {
     if (!byId.has(id)) {
       const league: League = { id, name, country, flag: flag || "🏳️", clubs: [], catalogStatus: "sourced" };
       LEAGUES.push(league);
+      added.add(id);
       byId.set(id, league);
     }
   }
@@ -43,7 +45,7 @@ function apply(cache: Cache) {
     league.clubs.push(club);
   }
   // Leagues without any playable club would render empty lists.
-  for (let i = LEAGUES.length - 1; i >= 0; i--) if (LEAGUES[i]!.clubs.length < 2) LEAGUES.splice(i, 1);
+  for (let i = LEAGUES.length - 1; i >= 0; i--) if (added.has(LEAGUES[i]!.id) && LEAGUES[i]!.clubs.length < 2) LEAGUES.splice(i, 1);
   merged = true;
 }
 
