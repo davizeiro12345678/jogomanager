@@ -95,6 +95,27 @@ export type Database = {
         }
         Relationships: []
       }
+      api_football_data: {
+        Row: {
+          kind: string
+          payload: Json
+          ref: string
+          updated_at: string
+        }
+        Insert: {
+          kind: string
+          payload: Json
+          ref: string
+          updated_at?: string
+        }
+        Update: {
+          kind?: string
+          payload?: Json
+          ref?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       careers: {
         Row: {
           created_at: string
