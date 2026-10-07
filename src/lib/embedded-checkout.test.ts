@@ -65,7 +65,7 @@ describe("embedded payment lifecycle", () => {
     const stop = f.start();
     await vi.advanceTimersByTimeAsync(0);
     expect(f.instance.mount).toHaveBeenCalledWith(f.element);
-    expect(f.phase).not.toHaveBeenCalledWith("ready");
+    expect(f.phase).toHaveBeenCalledWith("ready");
     const options = f.create.mock.calls[0]![0];
     expect(await options.fetchClientSecret!()).toBe("cs_test_fixture_secret_fixture");
     options.onAnalyticsEvent!({

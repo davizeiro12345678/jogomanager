@@ -9,7 +9,7 @@ import { EmailChangeEmail } from "@/lib/email-templates/email-change";
 import { ReauthenticationEmail } from "@/lib/email-templates/reauthentication";
 
 // Configuration
-const SITE_NAME = "Pro Football Manager 3D";
+const SITE_NAME = "Jogo Manager";
 const SENDER_DOMAIN = "notify.jogomanager.com";
 const ROOT_DOMAIN = "jogomanager.com";
 const FROM_DOMAIN = "jogomanager.com";
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
       POST: ({ request }) => {
         const handler = createAuthEmailHandler({
           apiKey: process.env["LOVABLE_API_KEY"]!,
-          from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+          from: `${SITE_NAME} <contato@${FROM_DOMAIN}>`,
           senderDomain: SENDER_DOMAIN,
           sendUrl: process.env["LOVABLE_SEND_URL"],
           emails: {

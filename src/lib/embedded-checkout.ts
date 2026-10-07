@@ -69,7 +69,7 @@ export function startEmbeddedCheckout({
     onError(checkoutErrorMessage(cause));
   };
   const ready = () => {
-    if (!active || readyNotified || !mounted || !rendered) return;
+    if (!active || readyNotified || !mounted) return;
     readyNotified = true;
     clearTimeout(timer);
     onPhase("ready");
@@ -104,6 +104,8 @@ export function startEmbeddedCheckout({
       checkout = instance;
       checkout.mount(element);
       mounted = true;
+      // Stripe v10 no longer reliably emits "checkoutRendered"; the mounted
+      // iframe shows its own loader, so never keep our spinner covering it.
       ready();
     } catch (cause) {
       fail(cause);
