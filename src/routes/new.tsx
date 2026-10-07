@@ -1,3 +1,4 @@
+import { CATALOG_EVENT, loadDbCatalog } from "@/lib/db-catalog";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   lazy,
@@ -148,6 +149,13 @@ function NewCareer() {
       stepTitle.current?.focus();
     }
   }, [step]);
+  const [catalogVersion, setCatalogVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setCatalogVersion((v) => v + 1);
+    window.addEventListener(CATALOG_EVENT, bump);
+    void loadDbCatalog().then(bump);
+    return () => window.removeEventListener(CATALOG_EVENT, bump);
+  }, []);
   useEffect(() => {
     setLimit(24);
   }, [query, leagueId, challenge, available, scopeSearch]);
@@ -167,7 +175,7 @@ function NewCareer() {
             ? 1
             : a.country.localeCompare(b.country, "pt-BR"),
       );
-  }, [countryQuery]);
+  }, [countryQuery, catalogVersion]);
   const clubs = useMemo(
     () =>
       discoverClubs(LEAGUES, {
@@ -178,7 +186,7 @@ function NewCareer() {
         availableOnly: available,
         scopeSearch,
       }),
-    [query, leagueId, reputation, challenge, available, scopeSearch],
+    [query, leagueId, reputation, challenge, available, scopeSearch, catalogVersion],
   );
   const selectionLocked = !!selected && selected.reputation > reputation;
   function go(next: number) {

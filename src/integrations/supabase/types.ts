@@ -181,6 +181,27 @@ export type Database = {
           },
         ]
       }
+      checkout_session_owners: {
+        Row: {
+          created_at: string
+          environment: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          environment: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          environment?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       club_external_ids: {
         Row: {
           club_id: string

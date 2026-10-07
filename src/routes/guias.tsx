@@ -4,9 +4,9 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guias";
-const TITLE = "Guias para começar a carreira | Pro Football Manager 3D";
+const TITLE = "Tutorial e dicas para vencer no manager de futebol | Pro Football Manager 3D";
 const DESC =
-  "Guias completos do Pro Football Manager 3D: táticas, finanças, scouting, mercado e tudo para dominar sua carreira de técnico.";
+  "Dicas práticas para vencer desde a 1ª rodada: escolha do clube, escalação, tática, salários, treino e como agradar a diretoria e a torcida.";
 
 export const Route = createFileRoute("/guias")({
   head: () => ({
