@@ -6,11 +6,13 @@
 // ============================================================================
 
 import { applyCustomToWorld, revertCustomWorld } from "@/lib/customData";
+import { loadDbCatalog } from "@/lib/db-catalog";
 import { applyMyClubToWorld, readMyClub, restoreWorld } from "@/lib/myClub";
 import { activeWorldId, newWorldId, setActiveWorld } from "@/lib/world-scope";
 
 /** Monta o mundo da campanha ativa. Chamado no boot do app. */
 export function applyWorld() {
+  void loadDbCatalog();
   applyCustomToWorld();
   applyMyClubToWorld();
 }
