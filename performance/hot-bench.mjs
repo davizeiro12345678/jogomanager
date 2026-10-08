@@ -55,6 +55,7 @@ const base = await crowdFixture("wasm-base");
 const local = await crowdFixture("wasm-snapshot");
 const replayBase = await import("./replay-snapshot/replay-codec.ts");
 const replayLocal = await import("./replay-local/replay-codec.ts");
+const replayNullFast = await import("./replay-null-fast/replay-codec.ts");
 const meta = Array.from({length:22}, (_,i)=>({id:`player-${i}`, side:i<11?"home":"away"}));
 const frames = Array.from({length:1200},(_,f)=>({
  t:f/10, b:[f%100,0.25,0], p:Array.from({length:88},(_,i)=>(i+f)%64),
@@ -91,6 +92,8 @@ if(process.argv.includes("verify")) {
   bench.add(`${label} replay dense encode`,()=>{checksum+=codec.encodeReplayV3(denseReplay).motion.length;});
   bench.add(`${label} replay dense decode`,()=>{checksum+=codec.decodeReplay(densePacked).frames.length;});
  }
+ bench.add("previous replay decode",()=>{checksum+=replayNullFast.decodeReplay(packed).frames.length;});
+ bench.add("previous replay dense decode",()=>{checksum+=replayNullFast.decodeReplay(densePacked).frames.length;});
  await bench.run();
  console.log(JSON.stringify({checksum}));
 }

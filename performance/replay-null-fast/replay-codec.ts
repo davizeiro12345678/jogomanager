@@ -199,32 +199,23 @@ export function decodeReplay(stored: Replay | ReplayV3): Replay {
       active = change.meta.length;
     }
     if (active > count) throw new Error("Corrupt replay roster");
-    const playerOffset = index * count;
-    const a = new Array<ReplayFrame["a"][number]>(active);
-    for (let player = 0; player < active; player++) {
-      const code = stored.actions[playerOffset + player]!;
+    const a = Array.from(stored.actions.subarray(index * count, index * count + active), (code) => {
       if (code >= stored.actionDictionary.length) throw new Error("Corrupt replay action");
-      a[player] = stored.actionDictionary[code]!;
-    }
-    const positions = new Array<number>(active * 4);
-    for (let component = 0; component < positions.length; component++)
-      positions[component] = stored.motion[offset + 3 + component]!;
+      return stored.actionDictionary[code]!;
+    });
     const frame: ReplayFrame = {
       t: time / 1000,
       b: [stored.motion[offset]!, stored.motion[offset + 1]!, stored.motion[offset + 2]!],
-      p: positions,
+      p: Array.from(stored.motion.subarray(offset + 3, offset + 3 + active * 4)),
       a,
       hg: stored.scoreboard[index * 2]!,
       ag: stored.scoreboard[index * 2 + 1]!,
       poss: stored.possessions[index] === 0 ? "home" : "away",
     };
-    if (stored.timingPresent[index]) {
-      const timing = new Array<number>(active * 2);
-      const timingOffset = playerOffset * 2;
-      for (let component = 0; component < timing.length; component++)
-        timing[component] = stored.timing[timingOffset + component]!;
-      frame.timing = timing;
-    }
+    if (stored.timingPresent[index])
+      frame.timing = Array.from(
+        stored.timing.subarray(index * count * 2, index * count * 2 + active * 2),
+      );
     const version = stored.visualVersions[index]!;
     if (version) {
       const get = (player: number, column: number) => {
