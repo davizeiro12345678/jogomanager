@@ -60,7 +60,7 @@ const frames = Array.from({length:1200},(_,f)=>({
  t:f/10, b:[f%100,0.25,0], p:Array.from({length:88},(_,i)=>(i+f)%64),
  a:Array.from({length:22},(_,i)=>i===f%22?"shot":null),
  timing:Array.from({length:44},()=>0.25), hg:1, ag:0, poss:"home",
- v:{version:1,actionContexts:Array.from({length:22},(_,i)=>i===f%22?{kind:"shot",power:0.75}:null),contactContexts:Array(22).fill(null)}
+ v:{version:2,actionContexts:Array.from({length:22},(_,i)=>i===f%22?{kind:"shot",power:0.75}:null),contactContexts:Array(22).fill(null)}
 }));
 const replay={meta,frames,rosterFrames:[]};
 
@@ -69,7 +69,7 @@ for(const budget of [768,4096,5120]) for(const kind of ["production","stateless"
  assert.deepEqual(local.select(kind,budget),base.select(kind,budget));
 assert.deepEqual(replayLocal.encodeReplayV3(replay),packed);
 assert.deepEqual(replayLocal.decodeReplay(packed),replayBase.decodeReplay(packed));
-const denseReplay={...replay,frames:replay.frames.map((frame)=>({...frame,v:{version:1,
+const denseReplay={...replay,frames:replay.frames.map((frame)=>({...frame,v:{version:2,
  actionContexts:Array.from({length:22},(_,player)=>({kind:"shot",power:0.75,player})),
  contactContexts:Array.from({length:22},(_,player)=>({kind:"contact",strength:0.5,player}))
 }}))};
