@@ -69,6 +69,13 @@ for(const budget of [768,4096,5120]) for(const kind of ["production","stateless"
  assert.deepEqual(local.select(kind,budget),base.select(kind,budget));
 assert.deepEqual(replayLocal.encodeReplayV3(replay),packed);
 assert.deepEqual(replayLocal.decodeReplay(packed),replayBase.decodeReplay(packed));
+const denseReplay={...replay,frames:replay.frames.map((frame)=>({...frame,v:{version:1,
+ actionContexts:Array.from({length:22},(_,player)=>({kind:"shot",power:0.75,player})),
+ contactContexts:Array.from({length:22},(_,player)=>({kind:"contact",strength:0.5,player}))
+}}))};
+const densePacked=replayBase.encodeReplayV3(denseReplay);
+assert.deepEqual(replayLocal.encodeReplayV3(denseReplay),densePacked);
+assert.deepEqual(replayLocal.decodeReplay(densePacked),replayBase.decodeReplay(densePacked));
 if(process.argv.includes("verify")) {
  console.log("Hot benchmark parity and replay ownership fixture verified; no measurements");
 } else {
@@ -81,6 +88,8 @@ if(process.argv.includes("verify")) {
  for(const [label,codec] of [["base",replayBase],["local",replayLocal]]) {
   bench.add(`${label} replay encode`,()=>{checksum+=codec.encodeReplayV3(replay).motion.length;});
   bench.add(`${label} replay decode`,()=>{checksum+=codec.decodeReplay(packed).frames.length;});
+  bench.add(`${label} replay dense encode`,()=>{checksum+=codec.encodeReplayV3(denseReplay).motion.length;});
+  bench.add(`${label} replay dense decode`,()=>{checksum+=codec.decodeReplay(densePacked).frames.length;});
  }
  await bench.run();
  console.log(JSON.stringify({checksum}));
