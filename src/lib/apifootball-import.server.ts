@@ -8,7 +8,8 @@ import type { TablesInsert } from "@/integrations/supabase/types";
 const BASE = "https://v3.football.api-sports.io";
 const SOURCE = "api-football";
 
-export type Phase = "leagues" | "teams" | "squads" | "fixtures" | "standings" | "predictions" | "odds" | "stats";
+export type Phase = "leagues" | "teams" | "squads" | "fixtures" | "standings" | "predictions" | "odds" | "stats"
+  | "countries" | "timezones" | "venues" | "coaches" | "injuries" | "teamstats" | "details";
 export type AfImportResult = {
   ok: boolean;
   phase: Phase;
@@ -493,6 +494,97 @@ async function importOdds(offset: number, deadline: number): Promise<AfImportRes
   };
 }
 
+
+// ---- Reference + depth phases (countries, venues, coaches, injuries, team stats, match details) ----
+async function importSimple(phase: Phase, path: string, kind: string, refOf: (r: any) => string): Promise<AfImportResult> {
+  const list = await af<any>(path);
+  const created = await saveRaw(kind, list.map((r) => ({ ref: refOf(r), payload: r })));
+  return { ok: true, phase, processed: 1, created, linked: 0, nextOffset: null, remainingQuota: lastRemaining };
+}
+
+async function importVenues(offset: number, limit: number, deadline: number): Promise<AfImportResult> {
+  const countries = (await af<{ name: string }>("/countries")).slice(offset, offset + limit);
+  let created = 0;
+  const done = await pool(countries, 4, deadline, async (c) => {
+    const v = await af<{ id: number }>(`/venues?country=${encodeURIComponent(c.name)}`);
+    created += await saveRaw("venue", v.map((r) => ({ ref: String(r.id), payload: r })));
+  });
+  return { ok: true, phase: "venues", processed: done, created, linked: 0,
+    nextOffset: countries.length < limit && done === countries.length ? null : offset + done, remainingQuota: lastRemaining };
+}
+
+async function teamPage(offset: number, limit: number) {
+  const db = await admin();
+  const { data, error } = await db.from("official_teams").select("source_id, league_source_id")
+    .like("source_id", "af:%").order("source_id").range(offset, offset + limit - 1);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+async function perTeam(phase: Phase, offset: number, limit: number, deadline: number,
+  fn: (team: string, league: string | null) => Promise<number>): Promise<AfImportResult> {
+  const teams = await teamPage(offset, limit);
+  let created = 0;
+  const done = await pool(teams, 4, deadline, async (t) => {
+    created += await fn(t.source_id.slice(3), t.league_source_id?.startsWith("af:") ? t.league_source_id.slice(3) : null);
+  });
+  return { ok: true, phase, processed: done, created, linked: 0,
+    nextOffset: teams.length < limit && done === teams.length ? null : offset + done, remainingQuota: lastRemaining };
+}
+
+const seasonCache = new Map<string, string | null>();
+async function seasonOf(league: string) {
+  if (seasonCache.has(league)) return seasonCache.get(league)!;
+  const db = await admin();
+  const { data } = await db.from("official_leagues").select("current_season").eq("source_id", `af:${league}`).maybeSingle();
+  seasonCache.set(league, data?.current_season ?? null);
+  return data?.current_season ?? null;
+}
+
+async function coachesFor(team: string) {
+  const r = await af<{ id: number }>(`/coachs?team=${team}`);
+  return saveRaw("coach", r.map((c) => ({ ref: `${c.id}`, payload: c })));
+}
+
+async function teamStatsFor(team: string, league: string | null) {
+  if (!league) return 0;
+  const season = await seasonOf(league);
+  if (!season) return 0;
+  const key = process.env["APIFOOTBALL_API_KEY"]!;
+  const res = await fetch(`${BASE}/teams/statistics?team=${team}&league=${league}&season=${season}`, { headers: { "x-apisports-key": key } });
+  const rem = res.headers.get("x-ratelimit-requests-remaining");
+  if (rem) lastRemaining = Number(rem);
+  if (!res.ok) return 0;
+  const body = (await res.json()) as { response?: unknown };
+  return body.response && !Array.isArray(body.response)
+    ? saveRaw("team_stats", [{ ref: `${team}:${league}:${season}`, payload: body.response }]) : 0;
+}
+
+async function injuriesFor(id: string, season: string) {
+  const r = await af<{ player: { id: number }; fixture: { id: number } }>(`/injuries?league=${id}&season=${season}`);
+  return saveRaw("injury", r.map((x) => ({ ref: `${x.player.id}:${x.fixture.id}`, payload: x })));
+}
+
+// Finished fixtures, 20 per request: events, lineups, team stats and player ratings in one payload.
+async function importDetails(offset: number, limit: number, deadline: number): Promise<AfImportResult> {
+  const db = await admin();
+  const { data, error } = await db.from("official_events").select("source_id")
+    .like("source_id", "af:%").in("status", ["FT", "AET", "PEN"]).order("source_id").range(offset, offset + limit - 1);
+  if (error) throw new Error(error.message);
+  const ids = (data ?? []).map((r) => r.source_id.slice(3));
+  const batches: string[][] = [];
+  for (let k = 0; k < ids.length; k += 20) batches.push(ids.slice(k, k + 20));
+  let created = 0;
+  let doneIds = 0;
+  await pool(batches, 4, deadline, async (b) => {
+    const r = await af<{ fixture: { id: number } }>(`/fixtures?ids=${b.join("-")}`);
+    created += await saveRaw("fixture_detail", r.map((f) => ({ ref: String(f.fixture.id), payload: f })));
+    doneIds += b.length;
+  });
+  return { ok: true, phase: "details", processed: doneIds, created, linked: 0,
+    nextOffset: ids.length < limit && doneIds === ids.length ? null : offset + doneIds, remainingQuota: lastRemaining };
+}
+
 export async function runApiFootballImport(opts: {
   phase: Phase;
   offset: number;
@@ -511,6 +603,14 @@ export async function runApiFootballImport(opts: {
       return await perLeague("stats", opts.offset, opts.limit, deadline, statsFor);
     if (opts.phase === "predictions") return await importPredictions(opts.offset, opts.limit, deadline);
     if (opts.phase === "odds") return await importOdds(opts.offset, deadline);
+    if (opts.phase === "countries") return await importSimple("countries", "/countries", "country", (r) => r.name);
+    if (opts.phase === "timezones") return await importSimple("timezones", "/timezone", "timezone", (r) => String(r));
+    if (opts.phase === "venues") return await importVenues(opts.offset, opts.limit, deadline);
+    if (opts.phase === "coaches") return await perTeam("coaches", opts.offset, opts.limit, deadline, coachesFor);
+    if (opts.phase === "teamstats") return await perTeam("teamstats", opts.offset, opts.limit, deadline, teamStatsFor);
+    if (opts.phase === "injuries")
+      return await perLeague("injuries", opts.offset, opts.limit, deadline, injuriesFor);
+    if (opts.phase === "details") return await importDetails(opts.offset, opts.limit, deadline);
     return await importSquads(opts.offset, opts.limit, deadline);
   } catch (e) {
     return {
