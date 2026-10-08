@@ -2,5 +2,5 @@
   "crowd-visibility.ts": "2b1b7ae231309fa7d099f67397a4b1e8cca0cb538b4b467ee28166ae7e1797d8",
   "runtime.ts": "6e6700c3950fd92da5cf1033a4738a839832ea23a6d733216d7ffef2b37bc42a",
   "pkg/crowd_visibility_wasm.js": "b167accaa7c059e7db66d7311576736d03dbb19ed2685849c5b69ad81ed09feb",
-  "pkg/crowd_visibility_wasm_bg.wasm": "2111f65fcf764191a0aa9328779a5e874e69daaef52ffb67ffa588231ddf26dd"
+  "pkg/crowd_visibility_wasm_bg.wasm": "c498e6e08c2ca0c25e4776748f5e80359e53a0f0dd3bbf0728f9498f630c54ed"
 }
