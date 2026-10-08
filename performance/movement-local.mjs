@@ -671,7 +671,6 @@ function highFidelitySubsteps(elapsed, maxSubsteps = Infinity) {
 var clamp3 = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 var mass = (p) => Number.isFinite(p.weightKg) ? clamp3(p.weightKg, 45, 130) : 78;
 var MAX_LIVE_ATHLETE_SUBSTEPS = 11;
-var FIXED_ATHLETE_RESPONSE = 1 - Math.exp(-6 * HIGH_FIDELITY_PHYSICS_STEP);
 var liveRemainder = /* @__PURE__ */ new WeakMap();
 var athleteRemainder = (body) => liveRemainder.get(body) ?? 0;
 function restoreAthleteRemainder(body, remainder) {
@@ -693,13 +692,12 @@ function advanceAthlete(p, tx, tz, maxSpeed, dt, traction) {
   if (useFixedSlices)
     liveRemainder.set(p, Math.max(0, accumulated - steps * HIGH_FIDELITY_PHYSICS_STEP));
   else liveRemainder.delete(p);
-  const h = useFixedSlices ? HIGH_FIDELITY_PHYSICS_STEP : dt / steps;
-  const response = useFixedSlices ? FIXED_ATHLETE_RESPONSE : 1 - Math.exp(-6 * h);
-  const speedLimit = Math.max(0, maxSpeed);
   for (let i = 0; i < steps; i++) {
+    const h = useFixedSlices ? HIGH_FIDELITY_PHYSICS_STEP : dt / steps;
+    const response = 1 - Math.exp(-6 * h);
     const dx = tx - p.x, dz = tz - p.z, distance = Math.hypot(dx, dz);
     const desiredSpeed = Math.min(
-      speedLimit,
+      Math.max(0, maxSpeed),
       Math.sqrt(2 * braking * Math.max(0, distance - 0.08))
     );
     const ux = distance > 1e-5 ? dx / distance * desiredSpeed : 0;
@@ -2209,6 +2207,7 @@ var MatchSim = class {
     const bx = this.ball.x;
     const bz = this.ball.z;
     const chase = this.chasers();
+    const holder = this.ball.holder ? this.players.find((q) => q.id === this.ball.holder) : void 0;
     const remaining = Math.max(0, 90 - this.time / 60);
     const lateGame = remaining < 15;
     const goalDiff = this.stats.home.goals - this.stats.away.goals;
@@ -2288,7 +2287,6 @@ var MatchSim = class {
         }
         tx += urgency(p.side) * 7 * dir;
       } else {
-        const holder = this.players.find((q) => q.id === this.ball.holder);
         const ahead = holder ? (holder.x - p.x) * dir : 0;
         if (p.pos === "FW") {
           const backline = lineX[p.side === "home" ? "away" : "home"];
