@@ -1,0 +1,26 @@
+name: CodSpeed warmed functions on one runner
+on:
+  push:
+    branches: [codspeed/local-wasm-20261007]
+    paths: [performance/hot-bench.mjs, performance/wasm-base/**, performance/replay-local/**, .github/workflows/local-hot-comparison.yml]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  hot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: performance/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: performance
+      - run: node --experimental-transform-types performance/hot-bench.mjs verify
+      - uses: CodSpeedHQ/action@v5
+        with:
+          mode: simulation
+          run: node --experimental-transform-types performance/hot-bench.mjs

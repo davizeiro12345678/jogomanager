@@ -1,0 +1,1 @@
+{"name":"isolated-game-performance","private":true,"type":"module","dependencies":{"@codspeed/tinybench-plugin":"5.7.1","tinybench":"5.1.0"}}

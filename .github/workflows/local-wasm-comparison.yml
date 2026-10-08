@@ -2,7 +2,7 @@ name: CodSpeed local WASM comparison
 on:
   push:
     branches: [codspeed/local-wasm-20261007]
-    paths: [performance/**, codspeed.yml]
+    paths: [performance/wasm-workload.mjs, performance/wasm-snapshot/**, performance/replay-snapshot/**, performance/replay-workload.mjs, codspeed.yml]
 permissions:
   contents: read
   id-token: write
