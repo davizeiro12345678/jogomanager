@@ -3,12 +3,12 @@ import { readFileSync } from "node:fs";
 import { withCodSpeed } from "@codspeed/tinybench-plugin";
 import { Bench } from "tinybench";
 
-async function crowdFixture(folder) {
+async function crowdFixture(folder, tileCount = 36) {
  const wasm = await import(`./${folder}/pkg/crowd_visibility_wasm.js`);
  const crowd = await import(`./${folder}/crowd-visibility.ts`);
  wasm.initSync({ module: readFileSync(new URL(`./${folder}/pkg/crowd_visibility_wasm_bg.wasm`, import.meta.url)) });
  const { createCrowdVisibilityLayout } = crowd;
-const positions = Array.from({ length: 8640 }, (_, seat) => {
+const positions = Array.from({ length: tileCount * 240 }, (_, seat) => {
   const tile = Math.floor(seat / 240);
   const angle = ((tile % 12) * Math.PI) / 6 + (seat % 20) * 0.006;
   const radius = 64 + Math.floor(tile / 12) * 6 + Math.floor((seat % 240) / 20) * 0.3;
@@ -20,7 +20,7 @@ const positions = Array.from({ length: 8640 }, (_, seat) => {
 });
 const layout = createCrowdVisibilityLayout(
   positions,
-  Array.from({ length: 36 }, (_, tile) => ({
+  Array.from({ length: tileCount }, (_, tile) => ({
     indices: Array.from({ length: 240 }, (_, seat) => tile * 240 + seat),
     center: positions[tile * 240 + 115],
     radius: 8,
@@ -53,6 +53,9 @@ const camera = new Float64Array([60, 12, 10]);
 }
 const base = await crowdFixture("wasm-base");
 const local = await crowdFixture("wasm-snapshot");
+const largePrevious = await crowdFixture("wasm-previous", 256);
+const largeLocal = await crowdFixture("wasm-snapshot", 256);
+assert.deepEqual(largeLocal.select("production",4096),largePrevious.select("production",4096));
 const replayBase = await import("./replay-snapshot/replay-codec.ts");
 const replayLocal = await import("./replay-local/replay-codec.ts");
 const replayNullFast = await import("./replay-null-fast/replay-codec.ts");
@@ -82,6 +85,7 @@ if(process.argv.includes("verify")) {
 } else {
  const bench=withCodSpeed(new Bench({time:200,warmupTime:50}));
  let checksum=0;
+for(const [label, fixture] of [["previous",largePrevious],["local",largeLocal]]) bench.add(`${label} large crowd 4096`,()=>{const result=fixture.select("production",4096);checksum+=result.indices.length+result.indices[0];});
  for(const [label, fixture] of [["base",base],["local",local]]) {
   for(const budget of [768,4096,5120]) for(const kind of (label === "local" ? ["production","stateless","fallback","owned"] : ["production","stateless","fallback"]))
    bench.add(`${label} crowd ${kind} ${budget}`,()=>{const result=fixture.select(kind,budget);checksum+=result.indices.length+result.indices[0];});
@@ -97,4 +101,4 @@ if(process.argv.includes("verify")) {
  await bench.run();
  console.log(JSON.stringify({checksum}));
 }
-base.free();local.free();
+base.free();local.free();largePrevious.free();largeLocal.free();

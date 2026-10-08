@@ -1,0 +1,15 @@
+{
+  "name": "crowd-visibility",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "crowd_visibility_wasm_bg.wasm",
+    "crowd_visibility_wasm.js",
+    "crowd_visibility_wasm.d.ts"
+  ],
+  "main": "crowd_visibility_wasm.js",
+  "types": "crowd_visibility_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
