@@ -42,7 +42,7 @@ const camera = new Float64Array([60, 12, 10]);
    if(kind === "production" && selector?.select_into) {
     const length=selector.select_into(planes,camera,640,true,18,budget,42,28,reusable);
     packed=reusable.subarray(0,length);
-   } else packed = kind === "production" && selector
+   } else packed = (kind === "production" || kind === "owned") && selector
     ? selector.select(planes,camera,640,true,18,budget,42,28)
     : wasm.select_crowd(layout.positions,layout.tiles,layout.tileOffsets,layout.tileIndices,planes,camera,640,true,18,budget,42,28);
    decoded = crowd.decodeCrowdSelection(packed,decoded);
@@ -82,7 +82,7 @@ if(process.argv.includes("verify")) {
  const bench=withCodSpeed(new Bench({time:200,warmupTime:50}));
  let checksum=0;
  for(const [label, fixture] of [["base",base],["local",local]]) {
-  for(const budget of [768,4096,5120]) for(const kind of ["production","stateless","fallback"])
+  for(const budget of [768,4096,5120]) for(const kind of (label === "local" ? ["production","stateless","fallback","owned"] : ["production","stateless","fallback"]))
    bench.add(`${label} crowd ${kind} ${budget}`,()=>{const result=fixture.select(kind,budget);checksum+=result.indices.length+result.indices[0];});
  }
  for(const [label,codec] of [["base",replayBase],["local",replayLocal]]) {
