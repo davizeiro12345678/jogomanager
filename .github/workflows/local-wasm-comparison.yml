@@ -1,0 +1,21 @@
+name: CodSpeed local WASM comparison
+on:
+  push:
+    branches: [codspeed/local-wasm-20261007]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  wasm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: node performance/wasm-workload.mjs verify
+      - uses: CodSpeedHQ/action@v5
+        with:
+          mode: simulation
+          config: codspeed.yml

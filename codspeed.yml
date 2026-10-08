@@ -1,0 +1,23 @@
+$schema: https://raw.githubusercontent.com/CodSpeedHQ/codspeed/refs/heads/main/schemas/codspeed.schema.json
+options:
+  warmup-time: "0.2s"
+  max-time: "5s"
+benchmarks:
+  - name: "crowd production selection 768"
+    exec: node performance/wasm-workload.mjs production 768
+  - name: "crowd production selection 4096"
+    exec: node performance/wasm-workload.mjs production 4096
+  - name: "crowd production selection 5120"
+    exec: node performance/wasm-workload.mjs production 5120
+  - name: "crowd WASM stateless 768"
+    exec: node performance/wasm-workload.mjs stateless 768
+  - name: "crowd WASM stateless 4096"
+    exec: node performance/wasm-workload.mjs stateless 4096
+  - name: "crowd WASM stateless 5120"
+    exec: node performance/wasm-workload.mjs stateless 5120
+  - name: "crowd TypeScript fallback 768"
+    exec: node performance/wasm-workload.mjs fallback 768
+  - name: "crowd TypeScript fallback 4096"
+    exec: node performance/wasm-workload.mjs fallback 4096
+  - name: "crowd TypeScript fallback 5120"
+    exec: node performance/wasm-workload.mjs fallback 5120
