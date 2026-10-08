@@ -1,22 +1,27 @@
-name: CodSpeed local WASM comparison
+name: CodSpeed WASM walltime comparison
 on:
   push:
     branches: [codspeed/local-wasm-20261007]
+    paths: [.github/workflows/local-wasm-walltime.yml]
 permissions:
   contents: read
   id-token: write
 jobs:
-  wasm:
+  walltime:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      matrix:
+        revision: [1bba8d594647e002870420e7c16203972ee692d3, 359be9b29a76334c3aaf9aef0da62ef08654009b]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.revision }}
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
       - run: node performance/wasm-workload.mjs verify
-      - run: node --experimental-transform-types performance/replay-workload.mjs verify
       - uses: CodSpeedHQ/action@v5
         with:
-          mode: simulation
+          mode: walltime
           config: codspeed.yml

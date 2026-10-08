@@ -21,3 +21,7 @@ benchmarks:
     exec: node performance/wasm-workload.mjs fallback 4096
   - name: "crowd TypeScript fallback 5120"
     exec: node performance/wasm-workload.mjs fallback 5120
+  - name: "replay visual encode 1200 frames"
+    exec: node --experimental-transform-types performance/replay-workload.mjs encode
+  - name: "replay visual decode 1200 frames"
+    exec: node --experimental-transform-types performance/replay-workload.mjs decode
