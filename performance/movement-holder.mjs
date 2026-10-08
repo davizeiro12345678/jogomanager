@@ -2332,12 +2332,11 @@ var MatchSim = class {
     const R = 0.85;
     const list = this.players;
     for (let i = 0; i < list.length; i++) {
-      const a = list[i];
       for (let j = i + 1; j < list.length; j++) {
+        const a = list[i];
         const b = list[j];
         let dx = b.x - a.x;
         let dz = b.z - a.z;
-        if ((dx > 1.7 || dx < -1.7) && !Number.isNaN(dz)) continue;
         const d2 = dx * dx + dz * dz;
         if (d2 > 2.89) continue;
         let d = Math.sqrt(d2);

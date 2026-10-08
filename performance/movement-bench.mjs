@@ -3,6 +3,7 @@ import {withCodSpeed} from "@codspeed/tinybench-plugin";
 import {Bench} from "tinybench";
 import * as base from "./movement-base.mjs";
 import * as local from "./movement-local.mjs";
+import * as holder from "./movement-holder.mjs";
 
 const scenarios=[{name:"live",dt:1/30,time:0},{name:"coarse",dt:1/15,time:0},{name:"late",dt:1/30,time:78*60}];
 function chunk(module,scenario,seed="movement-codspeed") {
@@ -18,7 +19,7 @@ for(const scenario of scenarios)for(const seed of ["movement-1","movement-2","mo
 if(process.argv.includes("verify"))console.log("Exact movement, checkpoint and PRNG parity verified; no measurements");
 else {
  const bench=withCodSpeed(new Bench({time:200,warmupTime:50}));let checksum=0;
- for(const scenario of scenarios)for(const[label,module]of[["base",base],["local",local]])
+ for(const scenario of scenarios)for(const[label,module]of[["base",base],["holder",holder],["local",local]])
   bench.add(`${label} movement ${scenario.name} 600`,()=>{const result=chunk(module,scenario);checksum+=result.players[0].x+result.ball.x+result.time;});
  await bench.run();console.log(JSON.stringify({checksum}));
 }
