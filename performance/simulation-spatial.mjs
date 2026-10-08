@@ -792,10 +792,6 @@ function emptyStats() {
   };
 }
 var CHECKPOINT_EXTERNAL = /* @__PURE__ */ new Set(["rnd", "passLaneKernel", "ballPhysics"]);
-function clampFinite(value, lower, upper, fallback) {
-  if (!Number.isFinite(value)) value = fallback;
-  return value <= lower ? lower : value >= upper ? upper : value;
-}
 var MatchSim = class {
   constructor(home, away, seed, opts) {
     this.home = home;
@@ -2376,21 +2372,22 @@ var MatchSim = class {
   }
   /** blindagem contra NaN/Infinity vindos de dados ruins */
   sanitize() {
+    const fix = (v, fallback) => Number.isFinite(v) ? v : fallback;
     for (const p of this.players) {
-      p.x = clampFinite(p.x, -FIELD_X - 1, FIELD_X + 1, 0);
-      p.z = clampFinite(p.z, -FIELD_Z - 1, FIELD_Z + 1, 0);
-      p.vx = clampFinite(p.vx, -14, 14, 0);
-      p.vz = clampFinite(p.vz, -14, 14, 0);
-      p.stamina = clampFinite(p.stamina, 0, 100, 70);
+      p.x = Math.max(-FIELD_X - 1, Math.min(FIELD_X + 1, fix(p.x, 0)));
+      p.z = Math.max(-FIELD_Z - 1, Math.min(FIELD_Z + 1, fix(p.z, 0)));
+      p.vx = Math.max(-14, Math.min(14, fix(p.vx, 0)));
+      p.vz = Math.max(-14, Math.min(14, fix(p.vz, 0)));
+      p.stamina = Math.max(0, Math.min(100, fix(p.stamina, 70)));
     }
     const b = this.ball;
-    b.x = clampFinite(b.x, -FIELD_X - 2, FIELD_X + 2, 0);
-    b.z = clampFinite(b.z, -FIELD_Z - 2, FIELD_Z + 2, 0);
-    b.vx = clampFinite(b.vx, -45, 45, 0);
-    b.vz = clampFinite(b.vz, -45, 45, 0);
-    b.height = clampFinite(b.height, 0.1, 12, 0.12);
-    this.ballVy = clampFinite(this.ballVy, -30, 30, 0);
-    this.ballSpin = clampFinite(this.ballSpin, -12, 12, 0);
+    b.x = Math.max(-FIELD_X - 2, Math.min(FIELD_X + 2, fix(b.x, 0)));
+    b.z = Math.max(-FIELD_Z - 2, Math.min(FIELD_Z + 2, fix(b.z, 0)));
+    b.vx = Math.max(-45, Math.min(45, fix(b.vx, 0)));
+    b.vz = Math.max(-45, Math.min(45, fix(b.vz, 0)));
+    b.height = Math.max(0.1, Math.min(12, fix(b.height, 0.12)));
+    this.ballVy = Math.max(-30, Math.min(30, fix(this.ballVy, 0)));
+    this.ballSpin = Math.max(-12, Math.min(12, fix(this.ballSpin, 0)));
   }
   moveBall(dt, useBallPhysics = true) {
     const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
