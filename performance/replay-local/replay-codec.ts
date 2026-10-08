@@ -189,14 +189,15 @@ export function decodeReplay(stored: Replay | ReplayV3): Replay {
   )
     throw new Error("Corrupt replay arrays");
   let time = 0;
+  let rosterRevision = 0;
+  let active = stored.meta.length;
   const decoded: ReplayFrame[] = [];
   for (let index = 0; index < frames; index++) {
     time += stored.timeDeltas[index]!;
     const offset = index * stride;
-    let active = stored.meta.length;
-    for (const change of stored.rosterFrames) {
-      if (change.at > index) break;
-      active = change.meta.length;
+    while (rosterRevision < stored.rosterFrames.length &&
+      stored.rosterFrames[rosterRevision]!.at <= index) {
+      active = stored.rosterFrames[rosterRevision++]!.meta.length;
     }
     if (active > count) throw new Error("Corrupt replay roster");
     const playerOffset = index * count;
@@ -227,21 +228,24 @@ export function decodeReplay(stored: Replay | ReplayV3): Replay {
     }
     const version = stored.visualVersions[index]!;
     if (version) {
-      const get = (player: number, column: number) => {
-        const key = stored.contextIndices[(index * count + player) * 2 + column]!;
-        if (key >= stored.contexts.length) throw new Error("Corrupt replay context");
-        const context = stored.contexts[key];
-        // Preserve independent copies for objects; null has no mutable state.
-        return context === null ? null : structuredClone(context);
-      };
+      const actionContexts = new Array<VersionedVisualData["actionContexts"][number]>(active);
+      const contactContexts = new Array<VersionedVisualData["contactContexts"][number]>(active);
+      const contextOffset = playerOffset * 2;
+      for (let player = 0; player < active; player++) {
+        const actionKey = stored.contextIndices[contextOffset + player * 2]!;
+        const contactKey = stored.contextIndices[contextOffset + player * 2 + 1]!;
+        if (actionKey >= stored.contexts.length || contactKey >= stored.contexts.length)
+          throw new Error("Corrupt replay context");
+        const action = stored.contexts[actionKey];
+        const contact = stored.contexts[contactKey];
+        // Clone each slot independently, even when dictionary keys are shared.
+        actionContexts[player] = action === null ? null : structuredClone(action) as VersionedVisualData["actionContexts"][number];
+        contactContexts[player] = contact === null ? null : structuredClone(contact) as VersionedVisualData["contactContexts"][number];
+      }
       frame.v = {
         version: version as VersionedVisualData["version"],
-        actionContexts: Array.from({ length: active }, (_, player) =>
-          get(player, 0),
-        ) as VersionedVisualData["actionContexts"],
-        contactContexts: Array.from({ length: active }, (_, player) =>
-          get(player, 1),
-        ) as VersionedVisualData["contactContexts"],
+        actionContexts,
+        contactContexts,
       };
       const metadata = stored.visualMetadata[index];
       if (metadata !== undefined) frame.v.metadata = structuredClone(metadata);
