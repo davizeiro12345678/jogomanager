@@ -1,0 +1,29 @@
+name: CodSpeed integrated movement comparison
+on:
+  push:
+    branches: [codspeed/local-wasm-20261007]
+    paths: [performance/movement-*, .github/workflows/local-movement-comparison.yml]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  movement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        mode: [simulation, walltime]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: performance/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: performance
+      - run: node performance/movement-bench.mjs verify
+      - uses: CodSpeedHQ/action@v5
+        with:
+          mode: ${{ matrix.mode }}
+          run: node performance/movement-bench.mjs
