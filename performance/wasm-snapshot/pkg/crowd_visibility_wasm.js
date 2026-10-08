@@ -44,6 +44,24 @@ export class CrowdSelector {
         wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
         return v1;
     }
+    /**
+     * Copy into a JS-owned reusable output; no returned Vec or borrowed view.
+     * Output capacity bounds the instance budget before selection.
+     * @param {Float64Array} planes
+     * @param {Float64Array} camera
+     * @param {number} scale
+     * @param {boolean} perspective
+     * @param {number} max_tiles
+     * @param {number} max_instances
+     * @param {number} detailed_pixels
+     * @param {number} mesh_pixels
+     * @param {Uint32Array} output
+     * @returns {number}
+     */
+    select_into(planes, camera, scale, perspective, max_tiles, max_instances, detailed_pixels, mesh_pixels, output) {
+        const ret = wasm.crowdselector_select_into(this.__wbg_ptr, planes, camera, scale, perspective, max_tiles, max_instances, detailed_pixels, mesh_pixels, output);
+        return ret >>> 0;
+    }
 }
 if (Symbol.dispose) CrowdSelector.prototype[Symbol.dispose] = CrowdSelector.prototype.free;
 
@@ -138,7 +156,7 @@ export function wasm_abi_version() {
 }
 
 /**
- * Crowd=1, pass lanes=2, turf=4, persistent crowd=8, bounded crowd inputs=16.
+ * Crowd=1, pass lanes=2, turf=4, persistent crowd=8, bounded crowd inputs=16, reusable output=32.
  * These capabilities do not confer authority over saves, scores or progression.
  * @returns {number}
  */
@@ -165,6 +183,13 @@ function __wbg_get_imports() {
         },
         __wbg_prototypesetcall_d49a4fab5ca427bc: function(arg0, arg1, arg2) {
             Float64Array.prototype.set.call(getArrayF64FromWasm0(arg0, arg1), arg2);
+        },
+        __wbg_set_448fbc824992c3fd: function(arg0, arg1, arg2) {
+            arg0.set(getArrayU32FromWasm0(arg1, arg2));
+        },
+        __wbg_subarray_bb23bc0b23af26d9: function(arg0, arg1, arg2) {
+            const ret = arg0.subarray(arg1 >>> 0, arg2 >>> 0);
+            return ret;
         },
         __wbg_subarray_bc806d0bca615ffa: function(arg0, arg1, arg2) {
             const ret = arg0.subarray(arg1 >>> 0, arg2 >>> 0);

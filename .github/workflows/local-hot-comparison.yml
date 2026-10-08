@@ -2,7 +2,7 @@ name: CodSpeed warmed functions on one runner
 on:
   push:
     branches: [codspeed/local-wasm-20261007]
-    paths: [performance/hot-bench.mjs, performance/wasm-base/**, performance/replay-local/**, .github/workflows/local-hot-comparison.yml]
+    paths: [performance/hot-bench.mjs, performance/wasm-base/**, performance/wasm-snapshot/**, performance/replay-local/**, .github/workflows/local-hot-comparison.yml]
 permissions:
   contents: read
   id-token: write

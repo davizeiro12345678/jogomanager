@@ -6,6 +6,7 @@ export const WASM_CAPABILITY = {
   turf: 4,
   persistentCrowd: 8,
   boundedCrowd: 16,
+  reusableCrowdOutput: 32,
 } as const;
 export type GameWasmModule = typeof import("./pkg/crowd_visibility_wasm");
 type AbiModule = {

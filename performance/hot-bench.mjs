@@ -34,10 +34,15 @@ const camera = new Float64Array([60, 12, 10]);
  const selector = wasm.CrowdSelector ? new wasm.CrowdSelector(layout.positions,layout.tiles,layout.tileOffsets,layout.tileIndices) : null;
  const scratch = crowd.CrowdFallbackBuffers ? new crowd.CrowdFallbackBuffers(layout) : undefined;
  let decoded = null;
+ const reusable = new Uint32Array(5120);
  return {
   select(kind,budget) {
    if(kind === "fallback") return crowd.selectCrowdFallback({layout,frustumPlanes:planes,camera:{x:camera[0],y:camera[1],z:camera[2]},projectedScale:640,perspective:true,maxTiles:18,maxInstances:budget,detailedPixels:42,meshPixels:28},scratch);
-   const packed = kind === "production" && selector
+   let packed;
+   if(kind === "production" && selector?.select_into) {
+    const length=selector.select_into(planes,camera,640,true,18,budget,42,28,reusable);
+    packed=reusable.subarray(0,length);
+   } else packed = kind === "production" && selector
     ? selector.select(planes,camera,640,true,18,budget,42,28)
     : wasm.select_crowd(layout.positions,layout.tiles,layout.tileOffsets,layout.tileIndices,planes,camera,640,true,18,budget,42,28);
    decoded = crowd.decodeCrowdSelection(packed,decoded);
