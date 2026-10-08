@@ -10,13 +10,10 @@ jobs:
   walltime:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      matrix:
-        revision: [1bba8d594647e002870420e7c16203972ee692d3, 359be9b29a76334c3aaf9aef0da62ef08654009b]
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.revision }}
+          ref: 1bba8d594647e002870420e7c16203972ee692d3
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
