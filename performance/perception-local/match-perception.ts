@@ -26,14 +26,14 @@ export const evaluatePassLanesFallback: PassLaneKernel = (x, z, receivers, defen
     const lengthSquared = dx * dx + dz * dz;
     const distance = Math.sqrt(lengthSquared);
     const flight = distance / Math.min(31, 10 + distance * 0.8);
-    let cover = 100,
+    let coverSquared = 10000,
       risk = 0;
     for (let j = 0; j < defenderCount; j++) {
       const ox = finite(defenders[j * 4]),
         oz = finite(defenders[j * 4 + 1]);
       const cx = rx - ox,
         cz = rz - oz;
-      cover = Math.min(cover, Math.sqrt(cx * cx + cz * cz));
+      coverSquared = Math.min(coverSquared, cx * cx + cz * cz);
       const t = Math.max(0, Math.min(1, ((ox - x) * dx + (oz - z) * dz) / (lengthSquared || 1)));
       const lx = x + dx * t,
         lz = z + dz * t;
@@ -41,12 +41,12 @@ export const evaluatePassLanesFallback: PassLaneKernel = (x, z, receivers, defen
         az = oz - lz;
       const px = ax + Math.max(-1.5, Math.min(1.5, finite(defenders[j * 4 + 2]) * flight * t));
       const pz = az + Math.max(-1.5, Math.min(1.5, finite(defenders[j * 4 + 3]) * flight * t));
-      const laneDistance = Math.min(Math.sqrt(ax * ax + az * az), Math.sqrt(px * px + pz * pz));
-      if (laneDistance < 2.2) risk += (2.2 - laneDistance) * 2.8;
+      const laneSquared = Math.min(ax * ax + az * az, px * px + pz * pz);
+      if (laneSquared < 2.2 * 2.2) risk += (2.2 - Math.sqrt(laneSquared)) * 2.8;
     }
     const offset = i * 3;
     output[offset] = quantize(distance);
-    output[offset + 1] = quantize(cover);
+    output[offset + 1] = quantize(Math.sqrt(coverSquared));
     output[offset + 2] = quantize(risk);
   }
   return output;

@@ -57,6 +57,10 @@ const local = await crowdFixture("wasm-snapshot");
 const largePrevious = await crowdFixture("wasm-previous", 256);
 const largeLocal = await crowdFixture("wasm-snapshot", 256);
 assert.deepEqual(largeLocal.select("production",4096),largePrevious.select("production",4096));
+const {PassLaneBuffers}=await import("./perception-local/pass-lane-buffers.ts");
+const packingSquads=[11,64].map(count=>({count,players:Array.from({length:count},(_,i)=>({x:i,z:i/2,vx:1,vz:-1})),buffers:new PassLaneBuffers()}));
+const legacyPack=players=>new Float64Array(players.flatMap(p=>[p.x,p.z,p.vx,p.vz]));
+for(const squad of packingSquads)assert.deepEqual(squad.buffers.pack(squad.players),legacyPack(squad.players));
 const perceptionBase=await import("./perception-base/match-perception.ts");
 const perceptionLocal=await import("./perception-local/match-perception.ts");
 const squads=[11,64].map(count=>({count,receivers:Float64Array.from({length:count*4},(_,i)=>Math.sin(i)*22),defenders:Float64Array.from({length:count*4},(_,i)=>Math.cos(i*3)*17)}));
@@ -90,6 +94,7 @@ if(process.argv.includes("verify")) {
 } else {
  const bench=withCodSpeed(new Bench({time:200,warmupTime:50}));
  let checksum=0;
+for(const squad of packingSquads)for(const [label,pack]of [["base",legacyPack],["local",players=>squad.buffers.pack(players)]])bench.add(`${label} spatial packing ${squad.count}`,()=>{const result=pack(squad.players);checksum+=result[0]+result.length;});
 for(const squad of squads) for(const [label,kernel] of [["base wasm",largePrevious.perceive],["local wasm",local.perceive],["base js",perceptionBase.evaluatePassLanesFallback],["local js",perceptionLocal.evaluatePassLanesFallback]]) bench.add(`${label} perception ${squad.count}`,()=>{const result=kernel(0,2,squad.receivers,squad.defenders);checksum+=result[0]+result.length;});
 for(const [label, fixture] of [["previous",largePrevious],["local",largeLocal]]) bench.add(`${label} large crowd 4096`,()=>{const result=fixture.select("production",4096);checksum+=result.indices.length+result.indices[0];});
  for(const [label, fixture] of [["base",base],["local",local]]) {
