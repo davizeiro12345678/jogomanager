@@ -45,6 +45,8 @@ export function encodeReplayV3(replay: Replay): ReplayV3 {
   const visualMetadata: ReplayV3["visualMetadata"] = [];
   let previous = 0;
   const intern = (context: VisualContext) => {
+    // Null is the canonical absent context and already occupies dictionary 0.
+    if (context == null) return 0;
     const key = JSON.stringify(context ?? null);
     let index = keys.get(key);
     if (index === undefined) {
@@ -219,7 +221,9 @@ export function decodeReplay(stored: Replay | ReplayV3): Replay {
       const get = (player: number, column: number) => {
         const key = stored.contextIndices[(index * count + player) * 2 + column]!;
         if (key >= stored.contexts.length) throw new Error("Corrupt replay context");
-        return structuredClone(stored.contexts[key]);
+        const context = stored.contexts[key];
+        // Preserve independent copies for objects; null has no mutable state.
+        return context === null ? null : structuredClone(context);
       };
       frame.v = {
         version: version as VersionedVisualData["version"],
