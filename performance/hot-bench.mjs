@@ -65,6 +65,15 @@ const perceptionBase=await import("./perception-base/match-perception.ts");
 const perceptionLocal=await import("./perception-local/match-perception.ts");
 const squads=[11,64].map(count=>({count,receivers:Float64Array.from({length:count*4},(_,i)=>Math.sin(i)*22),defenders:Float64Array.from({length:count*4},(_,i)=>Math.cos(i*3)*17)}));
 for(const squad of squads) assert.deepEqual(local.perceive(0,2,squad.receivers,squad.defenders),perceptionBase.evaluatePassLanesFallback(0,2,squad.receivers,squad.defenders));
+const simulationBase=await import("./simulation-base.mjs");
+const simulationLocal=await import("./simulation-local.mjs");
+function simulationChunk(module,kernel) {
+ const sim=new module.MatchSim(module.buildTeamSetup("fla"),module.buildTeamSetup("pal"),"spatial-codspeed");
+ if(kernel)sim.setPassLaneKernel(kernel);
+ try {for(let tick=0;tick<600;tick++)sim.step(1/30,6);return {players:sim.players,ball:sim.ball,stats:sim.stats,events:sim.events};}finally{sim.dispose();}
+}
+assert.deepEqual(simulationChunk(simulationBase,perceptionBase.evaluatePassLanesFallback),simulationChunk(simulationLocal,perceptionLocal.evaluatePassLanesFallback));
+assert.deepEqual(simulationChunk(simulationBase,largePrevious.perceive),simulationChunk(simulationLocal,local.perceive));
 const replayBase = await import("./replay-snapshot/replay-codec.ts");
 const replayLocal = await import("./replay-local/replay-codec.ts");
 const replayNullFast = await import("./replay-null-fast/replay-codec.ts");
@@ -94,6 +103,7 @@ if(process.argv.includes("verify")) {
 } else {
  const bench=withCodSpeed(new Bench({time:200,warmupTime:50}));
  let checksum=0;
+for(const [label,module,kernel]of [["base js",simulationBase,perceptionBase.evaluatePassLanesFallback],["local js",simulationLocal,perceptionLocal.evaluatePassLanesFallback],["base wasm",simulationBase,largePrevious.perceive],["local wasm",simulationLocal,local.perceive]])bench.add(`${label} simulation 600`,()=>{const result=simulationChunk(module,kernel);checksum+=result.players[0].x+result.ball.x;});
 for(const squad of packingSquads)for(const [label,pack]of [["base",legacyPack],["local",players=>squad.buffers.pack(players)]])bench.add(`${label} spatial packing ${squad.count}`,()=>{const result=pack(squad.players);checksum+=result[0]+result.length;});
 for(const squad of squads) for(const [label,kernel] of [["base wasm",largePrevious.perceive],["local wasm",local.perceive],["base js",perceptionBase.evaluatePassLanesFallback],["local js",perceptionLocal.evaluatePassLanesFallback]]) bench.add(`${label} perception ${squad.count}`,()=>{const result=kernel(0,2,squad.receivers,squad.defenders);checksum+=result[0]+result.length;});
 for(const [label, fixture] of [["previous",largePrevious],["local",largeLocal]]) bench.add(`${label} large crowd 4096`,()=>{const result=fixture.select("production",4096);checksum+=result.indices.length+result.indices[0];});
