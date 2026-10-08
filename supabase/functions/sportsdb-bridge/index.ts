@@ -131,6 +131,7 @@ Deno.serve(async (request) => {
   } catch (error) {
     const message = String(error).slice(0, 300);
     await rpc("sportsdb_bridge_release", { p_owner: owner, p_error: message });
-    return Response.json({ error: message, pages, archives }, { status: 503 });
+    console.error("sportsdb-bridge sync failed", message);
+    return Response.json({ error: "sync_failed", pages, archives }, { status: 503 });
   }
 });
