@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { assertGuestCheckoutEnabled, readCheckoutAvailability } from "./payments-config.server";
+import {
+  GUEST_PAYMENTS_UNAVAILABLE,
+  assertGuestCheckoutEnabled,
+  readCheckoutAvailability,
+} from "./payments-config.server";
 
 beforeEach(() => {
   vi.stubEnv("PAYMENTS_ENVIRONMENT", "live");
@@ -16,11 +20,11 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("payment availability before checkout", () => {
-  it("allows account and guest checkout only with the required server configuration", () => {
+  it("allows account checkout and never offers guest checkout", () => {
     expect(readCheckoutAvailability()).toEqual({
       environment: "live",
       account: { enabled: true, message: null },
-      guest: { enabled: true, message: null },
+      guest: { enabled: false, message: GUEST_PAYMENTS_UNAVAILABLE },
     });
   });
   it.each(["STRIPE_LIVE_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "PAYMENTS_LIVE_WEBHOOK_SECRET"])(

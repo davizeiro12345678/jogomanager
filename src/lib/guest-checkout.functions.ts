@@ -376,6 +376,8 @@ async function openStripeSession(
  * against Stripe before a session is created.
  */
 export const startGuestCheckout = createServerFn({ method: "POST" })
+  // Purchases require a signed-in account; anonymous callers are rejected.
+  .middleware([requireSupabaseAuth])
   .validator(
     (data: {
       productKey: string;
