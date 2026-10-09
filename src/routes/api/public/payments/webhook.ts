@@ -12,6 +12,7 @@ import {
   syncSubscription,
 } from "@/lib/fulfillment.server";
 import { markGuestCheckoutFailed, markGuestCheckoutPaid } from "@/lib/guest-checkout.functions";
+import { deliverClaimedGuestPurchase } from "@/lib/guest-checkout-delivery.server";
 
 type StripeSessionEvent = {
   id: string;
@@ -42,6 +43,9 @@ async function handleGuestCheckoutSession(
   if (!intentId) return false;
   if (session.payment_status === "paid" || session.payment_status === "no_payment_required") {
     await markGuestCheckoutPaid(intentId, session.id, env);
+    // Se a compra já foi vinculada a uma conta, entrega aqui pelo fluxo
+    // verificado do webhook; sem vínculo, a entrega aguarda o claim.
+    await deliverClaimedGuestPurchase(intentId, session.id, env);
   }
   return true;
 }

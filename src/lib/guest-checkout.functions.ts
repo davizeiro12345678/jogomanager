@@ -3,11 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import {
-  fulfillOneTimePurchase,
-  recordPendingPurchase,
-  syncSubscriptionForUser,
-} from "@/lib/fulfillment.server";
+import { deliverClaimedGuestPurchase } from "@/lib/guest-checkout-delivery.server";
 import {
   type StripeEnv,
   createStripeClient,
@@ -589,31 +585,6 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
         return { status: "error", message: "Esta compra já está vinculada a outra conta." };
       }
 
-      if (session.mode === "payment") {
-        await recordPendingPurchase(context.userId, intent.product_key, session.id, amount);
-        await fulfillOneTimePurchase(context.userId, intent.product_key, session.id, amount, {
-          priceCents: intent.amount_cents,
-          contents: snapshotContents,
-        });
-      } else {
-        const subscriptionId =
-          typeof session.subscription === "string"
-            ? session.subscription
-            : session.subscription?.id;
-        if (!subscriptionId) {
-          return { status: "pending", message: "A assinatura ainda está sendo criada." };
-        }
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        await stripe.subscriptions.update(subscription.id, {
-          metadata: {
-            ...subscription.metadata,
-            userId: context.userId,
-            guestCheckoutIntentId: intent.id,
-          },
-        });
-        await syncSubscriptionForUser(subscription, context.userId, environment);
-      }
-
       const { error } = await getServiceSupabase()
         .from("guest_checkout_intents")
         .update({
@@ -625,6 +596,10 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
         })
         .eq("id", intent.id);
       if (error) throw new Error(error.message);
+      // A entrega segue o mesmo fluxo verificado do webhook de pagamento:
+      // esta função apenas vincula a conta; o crédito acontece em
+      // deliverClaimedGuestPurchase, compartilhado com o webhook assinado.
+      await deliverClaimedGuestPurchase(intent.id, data.sessionId, environment);
       return { status: "delivered", productKey: intent.product_key };
     } catch (error) {
       console.error("claimGuestCheckout falhou", error);
