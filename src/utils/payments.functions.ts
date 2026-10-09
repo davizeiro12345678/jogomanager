@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   createStripeClient,
@@ -43,6 +42,19 @@ export async function resolveOrCreateCustomer(
   return created.id;
 }
 
+// Fixed allowlist: request headers (Origin/Referer/forwarded host) are caller-controlled.
+const APP_HOSTS = new Set([
+  "jogomanager.com", "futmanager.xyz", "footballcarrer.fun", "football-manager.app",
+  "soccer-manager.fun", "futebolmanager.xyz", "soccermanagement.fun",
+]);
+function isApprovedAppOrigin(url: URL) {
+  if (url.hostname === "localhost") return true;
+  if (url.protocol !== "https:" || url.port) return false;
+  const host = url.hostname.replace(/^www\./, "");
+  return APP_HOSTS.has(host) || /^[a-z0-9-]+\.lovable\.app$/.test(url.hostname)
+    || /^[a-z0-9-]+\.lovableproject\.com$/.test(url.hostname);
+}
+
 export const createCheckoutSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(
@@ -65,30 +77,11 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     try {
       const environment = assertPaymentsConfigured();
       if (data.clientEnvironment !== environment) throw new Error(PAYMENTS_UNAVAILABLE);
-      const request = getRequest();
-      // Behind the preview/custom-domain proxy request.url can carry an internal
-      // host, so also trust the browser-sent Origin/Referer of this same request.
-      const allowedOrigins = new Set<string>();
-      if (request) {
-        allowedOrigins.add(new URL(request.url).origin);
-        const origin = request.headers.get("origin");
-        if (origin) allowedOrigins.add(origin);
-        const referer = request.headers.get("referer");
-        if (referer) {
-          try {
-            allowedOrigins.add(new URL(referer).origin);
-          } catch {
-            /* ignore malformed referer */
-          }
-        }
-        const fwdHost = request.headers.get("x-forwarded-host");
-        if (fwdHost) allowedOrigins.add(`https://${fwdHost.split(",")[0]!.trim()}`);
-      }
       const returnUrl = new URL(data.returnUrl);
       if (
         returnUrl.protocol !== "https:" && returnUrl.hostname !== "localhost"
           ? true
-          : !allowedOrigins.has(returnUrl.origin) || returnUrl.pathname !== "/checkout/return"
+          : !isApprovedAppOrigin(returnUrl) || returnUrl.pathname !== "/checkout/return"
       ) {
         throw new Error("Invalid returnUrl");
       }
@@ -156,15 +149,8 @@ export const createPortalSession = createServerFn({ method: "POST" })
       const environment = getConfiguredStripeEnvironment();
       let approvedReturnUrl: string | undefined;
       if (data.returnUrl) {
-        const request = getRequest();
-        const allowed = new Set<string>();
-        if (request) {
-          allowed.add(new URL(request.url).origin);
-          const origin = request.headers.get("origin");
-          if (origin) allowed.add(origin);
-        }
         const returnUrl = new URL(data.returnUrl);
-        if (!allowed.has(returnUrl.origin)) {
+        if (!isApprovedAppOrigin(returnUrl)) {
           throw new Error("Invalid returnUrl");
         }
         approvedReturnUrl = returnUrl.toString();
