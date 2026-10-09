@@ -6,7 +6,7 @@ import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 const PATH = "/soccer-manager-online";
 const TITLE = "Soccer manager online grátis | Pro Football Manager 3D";
 const DESC =
-  "Soccer manager online em 3D: manage real clubs, set tactics and watch every match live in 3D. Free to play, no download needed.";
+  "Soccer manager online em 3D: comande clubes reais, monte táticas e assista a cada partida ao vivo em 3D. Grátis, direto no navegador, sem download.";
 
 export const Route = createFileRoute("/soccer-manager-online")({
   head: () => ({

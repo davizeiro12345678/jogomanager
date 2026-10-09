@@ -4,9 +4,9 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guia-de-scouting";
-const TITLE = "Scouting: como buscar reforços | Pro Football Manager 3D";
+const TITLE = "Guia de scouting: como achar jogadores bons e baratos | Pro Football Manager 3D";
 const DESC =
-  "Como funciona o trabalho de olheiro: ler potencial e nota atual, escolher a faixa de idade certa, contratar por carência do elenco e reconhecer os quatro sinais de jogador barato.";
+  "Aprenda a contratar como um olheiro: leia potencial x nota atual, escolha a idade certa, reforce as carências do elenco e reconheça os 4 sinais de um jogador barato.";
 
 export const Route = createFileRoute("/guia-de-scouting")({
   head: () => ({
