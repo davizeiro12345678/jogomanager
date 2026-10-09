@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { assertGuestCheckoutEnabled, readCheckoutAvailability } from "./payments-config.server";
+import {
+  GUEST_PAYMENTS_UNAVAILABLE,
+  assertGuestCheckoutEnabled,
+  readCheckoutAvailability,
+} from "./payments-config.server";
 
 beforeEach(() => {
   vi.stubEnv("PAYMENTS_ENVIRONMENT", "live");
