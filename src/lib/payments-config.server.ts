@@ -55,18 +55,10 @@ export function readCheckoutAvailability() {
       guest: { enabled: false, message: PAYMENTS_UNAVAILABLE },
     };
   }
-  try {
-    assertGuestCheckoutEnabled();
-    return {
-      environment,
-      account: { enabled: true, message: null },
-      guest: { enabled: true, message: null },
-    };
-  } catch {
-    return {
-      environment,
-      account: { enabled: true, message: null },
-      guest: { enabled: false, message: GUEST_PAYMENTS_UNAVAILABLE },
-    };
-  }
+  // Buying requires a signed-in account, so the email-only flow is never offered.
+  return {
+    environment,
+    account: { enabled: true, message: null },
+    guest: { enabled: false, message: GUEST_PAYMENTS_UNAVAILABLE },
+  };
 }
