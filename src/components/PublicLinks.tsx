@@ -7,6 +7,7 @@ export const PUBLIC_PAGES = [
   { to: "/taticas-e-formacoes", label: "Táticas e formações" },
   { to: "/brasileirao", label: "Brasileirão no jogo" },
   { to: "/mercado-de-transferencias", label: "Mercado de transferências" },
+  { to: "/tabelas", label: "Tabelas das ligas reais" },
   { to: "/ligas-de-futebol", label: "Ligas disponíveis" },
   { to: "/guias", label: "Guias" },
   { to: "/dicas-de-gestao", label: "Dicas de gestão" },
