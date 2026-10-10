@@ -5,6 +5,7 @@ import { LayoutGrid, Play, Users, Volume2, VolumeX } from "lucide-react";
 import type { CareerState, Club } from "@/game/types";
 import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
+import { RealClubInfo } from "@/components/game/RealClubInfo";
 import { NoCareer } from "@/components/game/screen-kit";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { computeTable, nextFixture } from "@/game/season";
@@ -107,6 +108,11 @@ function PreMatch({ career }: { career: CareerState }) {
         </header>
 
         <Narration career={career} home={home} away={away} round={fixture.round} />
+
+        <div className="my-4 grid gap-3 sm:grid-cols-2">
+          <RealClubInfo name={home.name} />
+          <RealClubInfo name={away.name} />
+        </div>
 
         <div className="prematch-grid">
           <section className="prematch-card" aria-labelledby="lineup-title">

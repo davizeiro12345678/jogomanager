@@ -1,8 +1,8 @@
 export const SITE_URL = "https://jogomanager.com";
 export const SITE_NAME = "Pro Football Manager 3D";
-export const SITE_TITLE = "Pro Football Manager 3D | Manager de futebol grátis";
+export const SITE_TITLE = "Pro Football Manager 3D: jogo de técnico de futebol grátis em 3D";
 export const SITE_DESCRIPTION =
-  "Jogue Pro Football Manager 3D grátis no navegador. Escolha um clube, defina táticas, faça transferências e acompanhe partidas ao vivo em 3D no PC ou celular.";
+  "Assuma um clube real, contrate no mercado, monte a tática e veja seu time jogar em 3D. Grátis no navegador, no PC e no celular, com tabelas e elencos atualizados.";
 export const OG_IMAGE = `${SITE_URL}/og-cover.jpg`;
 export const SITE_KEYWORDS = [
   "manager de futebol",

@@ -8,6 +8,8 @@ export const PUBLIC_PAGES = [
   { to: "/modo-carreira-de-jogador", label: "Carreira de jogador" },
   { to: "/brasileirao", label: "Brasileirão no jogo" },
   { to: "/planejamento-de-elenco", label: "Scouting e planejamento do elenco" },
+  { to: "/mercado-de-transferencias", label: "Mercado de transferências" },
+  { to: "/tabelas", label: "Tabelas das ligas reais" },
   { to: "/ligas-de-futebol", label: "Ligas disponíveis" },
   { to: "/regras", label: "Regras do futebol" },
   { to: "/glossario-do-futebol", label: "Glossário do futebol" },
