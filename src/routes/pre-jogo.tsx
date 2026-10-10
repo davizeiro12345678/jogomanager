@@ -89,6 +89,11 @@ function PreMatch({ career }: { career: CareerState }) {
 
         <Narration career={career} home={home} away={away} round={fixture.round} />
 
+        <div className="my-4 grid gap-3 sm:grid-cols-2">
+          <RealClubInfo name={home.name} />
+          <RealClubInfo name={away.name} />
+        </div>
+
         <div className="prematch-grid">
           <section className="prematch-card" aria-labelledby="lineup-title">
             <h2 id="lineup-title"><Users size={16} /> Seus titulares</h2>

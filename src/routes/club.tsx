@@ -10,6 +10,7 @@ import { computeTable, nextFixture } from "@/game/season";
 import { useCareer } from "@/hooks/useCareer";
 import type { TrainingFocus } from "@/game/types";
 import { ClubHeritagePanel, ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
+import { RealClubInfo } from "@/components/game/RealClubInfo";
 
 export const Route = createFileRoute("/club")({
   ssr: false,
@@ -216,6 +217,7 @@ function ClubHub() {
 
         <ClubHeritagePanel clubId={career.clubId} compact className="lg:col-span-2" />
         <ClubHonoursPanel clubId={career.clubId} />
+        <div className="mt-6"><RealClubInfo name={club.name} /></div>
       </div>
     </GameShell>
   );
