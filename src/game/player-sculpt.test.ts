@@ -1,12 +1,29 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { anatomicalLimb, anatomicalSection, neckSurface, palmSurface } from "./rig-geometry";
+import {
+  anatomicalLimb,
+  anatomicalSection,
+  footballBoot,
+  neckSurface,
+  palmSurface,
+} from "./rig-geometry";
 import { buildRigSkin, countRigSkin } from "./rig-skin";
 import { HERO_MESH_COST } from "./draw-budget";
 import { lookFor, proportionsFor, type HairStyle } from "./player-model";
-import { faceMorphology } from "./player-morphology";
+import { faceMorphology, skinAlbedo } from "./player-morphology";
 import { playerMaterials } from "./player-materials";
-import { buildSculptedFace, faceSurfaceZ, sculptedHair, sculptedHead } from "./player-sculpt";
+import { beardAlbedo } from "./rig-materials";
+import {
+  buildSculptedFace,
+  eyelidSurface,
+  faceSurfaceZ,
+  headPoint,
+  lipPatch,
+  sculptedHair,
+  sculptedHead,
+  sculptedBeard,
+  sculptedMoustache,
+} from "./player-sculpt";
 
 const kit = {
   base: "#af1830",
@@ -19,6 +36,233 @@ const look = lookFor("studio-fla-MF-1", "MF", true);
 const P = proportionsFor(look);
 
 describe("sculpted football player", () => {
+  it("occludes the adult iris arcs with the relaxed orbital lids across seeded faces", () => {
+    const material = new THREE.MeshBasicMaterial();
+    for (const id of [
+      "studio-fla-MF-1",
+      "studio-flu-MF-1",
+      "orbital-depth-light",
+      "orbital-depth-dark",
+    ]) {
+      const athlete = lookFor(id, "MF", true),
+        p = proportionsFor(athlete),
+        morphology = faceMorphology(athlete.seed);
+      const face = buildSculptedFace(p, athlete, playerMaterials(athlete, kit, null, "alta"), true);
+      for (const side of [-1, 1]) {
+        const iris = new THREE.Mesh(face.eyes[side < 0 ? 0 : 4]!.geometry, material);
+        iris.updateMatrixWorld(true);
+        const x = side * p.headW * morphology.eyeSpacing,
+          y = p.headR * (0.14 + side * morphology.eyeAsymmetry);
+        for (const upper of [true, false]) {
+          const lid = new THREE.Mesh(eyelidSurface(p, side, athlete.seed, upper), material);
+          lid.updateMatrixWorld(true);
+          const probeY = y + p.headR * (upper ? 0.054 : -0.0565);
+          const ray = new THREE.Raycaster(
+            new THREE.Vector3(x, probeY, 1),
+            new THREE.Vector3(0, 0, -1),
+          );
+          const irisHit = ray.intersectObject(iris)[0],
+            lidHit = ray.intersectObject(lid)[0];
+          expect(irisHit).toBeDefined();
+          expect(lidHit).toBeDefined();
+          expect(lidHit!.distance).toBeLessThan(irisHit!.distance);
+          lid.geometry.dispose();
+        }
+      }
+      for (const parts of Object.values(face)) for (const part of parts) part.geometry.dispose();
+    }
+    material.dispose();
+  });
+
+  it("fits moustache growth against the upper lip without a projected circular tube", () => {
+    for (const detail of [true, false]) {
+      const geometry = sculptedMoustache(P, { ...look, beard: "full" }, detail),
+        positions = geometry.getAttribute("position"),
+        normals = geometry.getAttribute("normal");
+      // The former 14-by-5 tube cost 140 triangles, even at the light tier.
+      expect(geometry.index!.count).toBeLessThan(140 * 3);
+      expect(geometry.groups).toHaveLength(0);
+      const uv = geometry.getAttribute("uv");
+      const heights = new Map<number, { low: number; high: number }>();
+      for (let i = 0; i < positions.count; i++) {
+        const projection =
+          positions.getZ(i) - faceSurfaceZ(P, positions.getX(i), positions.getY(i), look.seed);
+        expect(projection).toBeGreaterThan(0);
+        expect(projection).toBeLessThan(P.headR * 0.018);
+        expect(positions.getY(i)).toBeGreaterThan(-P.headR * 0.455);
+        expect(positions.getY(i)).toBeLessThan(-P.headR * 0.32);
+        expect(normals.getZ(i)).toBeGreaterThan(0.1);
+        const u = uv.getX(i),
+          y = positions.getY(i);
+        const extent = heights.get(u) ?? { low: Infinity, high: -Infinity };
+        extent.low = Math.min(extent.low, y);
+        extent.high = Math.max(extent.high, y);
+        heights.set(u, extent);
+      }
+      const maximumHeight = Math.max(
+        ...Array.from(heights.values(), (extent) => extent.high - extent.low),
+      );
+      for (const u of [0, 1]) {
+        const tip = heights.get(u)!;
+        expect(tip.high - tip.low).toBeLessThan(maximumHeight * 0.15);
+      }
+      const philtrum = heights.get(0.5)!;
+      expect(philtrum.high - philtrum.low).toBeLessThan(maximumHeight * 0.65);
+      geometry.dispose();
+    }
+  });
+
+  it("settles the lips into the face with warm pigment and the skull's skin-map coordinates", () => {
+    for (const id of [
+      "studio-fla-MF-1",
+      "studio-flu-MF-1",
+      "orbital-depth-light",
+      "orbital-depth-dark",
+    ]) {
+      const athlete = lookFor(id, "MF", true),
+        p = proportionsFor(athlete);
+      for (const lower of [false, true]) {
+        const geometry = lipPatch(p, athlete.seed, lower),
+          positions = geometry.getAttribute("position"),
+          uv = geometry.getAttribute("uv"),
+          colors = geometry.getAttribute("color");
+        for (let i = 0; i < positions.count; i++) {
+          const x = positions.getX(i),
+            y = positions.getY(i);
+          const projection = positions.getZ(i) - faceSurfaceZ(p, x, y, athlete.seed);
+          expect(projection).toBeGreaterThan(0);
+          expect(projection).toBeLessThan(p.headR * 0.017);
+          if (i >= 6 * 25) {
+            expect(projection).toBeCloseTo(p.headR * 0.0008, 7);
+            expect(colors.getX(i)).toBeCloseTo(1, 7);
+            expect(colors.getY(i)).toBeCloseTo(1, 7);
+            expect(colors.getZ(i)).toBeCloseTo(1, 7);
+          }
+          // Reconstruct the head sample from its authored nonuniform UV grid.
+          // This verifies the attached lip samples pores/roughness at the same
+          // scale and position rather than stretching a full atlas per lip.
+          const theta = uv.getX(i) * Math.PI * 2;
+          const angle = theta - Math.sin(theta) * 0.6;
+          const centered = uv.getY(i) * 2 - 1;
+          const height = centered * (0.7 + centered * centered * 0.3) * 1.14;
+          const skull = headPoint(p, height, angle, athlete.seed);
+          expect(skull.x).toBeCloseTo(x, 6);
+          expect(skull.y).toBeCloseTo(y, 6);
+        }
+        const inner = 2 * 25 + 12;
+        expect(colors.getY(inner)).toBeLessThan(colors.getX(inner) * 0.8);
+        // Signed U changes continuously across the philtrum, with no 0/1 jump.
+        for (let row = 0; row <= 6; row++) {
+          for (let column = 1; column <= 24; column++) {
+            expect(
+              Math.abs(uv.getX(row * 25 + column) - uv.getX(row * 25 + column - 1)),
+            ).toBeLessThan(0.03);
+          }
+        }
+        geometry.dispose();
+      }
+    }
+  });
+
+  it("keeps beard growth below the lower lip and blends its edge into the rendered skin albedo", () => {
+    for (const skin of ["#efd0b0", "#3f281e"]) {
+      const athlete = { ...look, skin, hairColor: "#14120f", beard: "full" as const };
+      const geometry = sculptedBeard(P, athlete),
+        positions = geometry.getAttribute("position"),
+        uv = geometry.getAttribute("uv"),
+        colors = geometry.getAttribute("color");
+      const tone = beardAlbedo(skin, athlete.hairColor, athlete.beard),
+        complexion = new THREE.Color(skinAlbedo(skin));
+      for (let i = 0; i < positions.count; i++) {
+        if (Math.abs(positions.getX(i)) < P.headR * 0.035)
+          expect(positions.getY(i)).toBeLessThan(-P.headR * 0.57);
+        if (uv.getY(i) === 1) {
+          expect(colors.getX(i) * tone.r).toBeCloseTo(complexion.r, 6);
+          expect(colors.getY(i) * tone.g).toBeCloseTo(complexion.g, 6);
+          expect(colors.getZ(i) * tone.b).toBeCloseTo(complexion.b, 6);
+        }
+      }
+      geometry.dispose();
+    }
+  });
+
+  it("keeps the iris edge above the sclera and the pupil above the cornea", () => {
+    for (const id of [
+      "studio-fla-MF-1",
+      "studio-flu-MF-1",
+      "orbital-depth-light",
+      "orbital-depth-dark",
+    ]) {
+      const athlete = lookFor(id, "MF", true),
+        p = proportionsFor(athlete);
+      const face = buildSculptedFace(p, athlete, playerMaterials(athlete, kit, null, "alta"), true);
+      for (const offset of [0, 4]) {
+        const iris = face.eyes[offset]!,
+          pupil = face.eyes[offset + 2]!;
+        const points = iris.geometry.getAttribute("position");
+        let lowest = Infinity,
+          highest = -Infinity;
+        for (let i = 0; i < points.count; i++) {
+          const depth =
+            points.getZ(i) - faceSurfaceZ(p, points.getX(i), points.getY(i), athlete.seed);
+          lowest = Math.min(lowest, depth);
+          highest = Math.max(highest, depth);
+        }
+        // Peripheral cornea is recessed under the lids; the visible centre
+        // clears the sclera. Lid occlusion is checked with rays above.
+        expect(lowest).toBeGreaterThan(0);
+        expect(highest).toBeGreaterThan(p.headR * 0.03);
+        const pupilCentre = new THREE.Vector3().setFromMatrixPosition(pupil.matrix);
+        expect(
+          pupilCentre.z - faceSurfaceZ(p, pupilCentre.x, pupilCentre.y, athlete.seed),
+        ).toBeGreaterThan(highest);
+        const pupilPoints = pupil.geometry.getAttribute("position");
+        for (let i = 0; i < pupilPoints.count; i++) {
+          const point = new THREE.Vector3()
+            .fromBufferAttribute(pupilPoints, i)
+            .applyMatrix4(pupil.matrix);
+          expect(point.z - faceSurfaceZ(p, point.x, point.y, athlete.seed)).toBeGreaterThan(
+            highest,
+          );
+        }
+      }
+      for (const parts of Object.values(face)) for (const part of parts) part.geometry.dispose();
+    }
+  });
+  it("gives the two boot uppers mirrored medial arches while retaining the contact sole", () => {
+    const left = footballBoot(P.footLen, P.footH, 16, false, undefined, 1);
+    const right = footballBoot(P.footLen, P.footH, 16, false, undefined, -1);
+    const leftSole = footballBoot(P.footLen, P.footH, 16, true, undefined, 1);
+    const rightSole = footballBoot(P.footLen, P.footH, 16, true, undefined, -1);
+    const a = left.getAttribute("position"),
+      b = right.getAttribute("position");
+    expect(a.count).toBe(b.count);
+    let handed = 0;
+    for (let i = 0; i < a.count; i++) {
+      expect(a.getY(i)).toBe(b.getY(i));
+      expect(a.getZ(i)).toBe(b.getZ(i));
+      handed = Math.max(handed, Math.abs(a.getX(i) - b.getX(i)));
+    }
+    expect(handed).toBeGreaterThan(P.footH * 0.025);
+    expect(leftSole.getAttribute("position").array).toEqual(
+      rightSole.getAttribute("position").array,
+    );
+    for (const geometry of [left, right, leftSole, rightSole]) {
+      expect(Array.from(geometry.getAttribute("normal").array).every(Number.isFinite)).toBe(true);
+      geometry.dispose();
+    }
+  });
+  it("keeps both lip surfaces facing outward so the lower lip survives backface culling", () => {
+    for (const lower of [false, true]) {
+      const geometry = lipPatch(P, look.seed, lower);
+      const normals = geometry.getAttribute("normal");
+      let forward = 0;
+      for (let i = 0; i < normals.count; i++) forward += normals.getZ(i);
+      expect(forward / normals.count).toBeGreaterThan(0.2);
+      expect(Array.from(normals.array).every(Number.isFinite)).toBe(true);
+      geometry.dispose();
+    }
+  });
   it("retains formal shirt and lapels when merging the staff costume into the animated rig", () => {
     const base = playerMaterials(look, kit, null, "alta");
     const mats = { ...base, trim: base.bootAccent };
@@ -98,8 +342,12 @@ describe("sculpted football player", () => {
           (value) => Number.isFinite(value) && value >= 0.8 && value <= 1,
         ),
       ).toBe(true);
-      expect(Math.min(...Array.from(colors.array))).toBeLessThan(0.94);
-      const columns = geometry === detailed ? 96 : 18;
+      // Both LOD grids retain visible pigment variation without requiring
+      // the sparse mesh to land exactly on the deepest socket sample.
+      expect(
+        Math.max(...Array.from(colors.array)) - Math.min(...Array.from(colors.array)),
+      ).toBeGreaterThan(0.05);
+      const columns = geometry === detailed ? 136 : 18;
       for (let row = 0; row < colors.count; row += columns + 1) {
         for (const component of ["getX", "getY", "getZ"] as const)
           expect(colors[component](row)).toBeCloseTo(colors[component](row + columns), 6);

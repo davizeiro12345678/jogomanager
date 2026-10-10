@@ -204,18 +204,33 @@ export type Database = {
       }
       checkout_session_owners: {
         Row: {
+          product_key: string | null
+          price_cents: number | null
+          currency: string | null
+          stripe_price_id: string | null
+          contents_snapshot: Json | null
           created_at: string
           environment: string
           session_id: string
           user_id: string
         }
         Insert: {
+          product_key?: string | null
+          price_cents?: number | null
+          currency?: string | null
+          stripe_price_id?: string | null
+          contents_snapshot?: Json | null
           created_at?: string
           environment: string
           session_id: string
           user_id: string
         }
         Update: {
+          product_key?: string | null
+          price_cents?: number | null
+          currency?: string | null
+          stripe_price_id?: string | null
+          contents_snapshot?: Json | null
           created_at?: string
           environment?: string
           session_id?: string
@@ -1710,6 +1725,12 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_payment_reviews: {
+        Row: { reference: string; review_status: string; refunded_amount_cents: number; event_created: number; event_id: string; updated_at: string }
+        Insert: { reference: string; review_status: string; refunded_amount_cents?: number; event_created: number; event_id: string; updated_at?: string }
+        Update: { reference?: string; review_status?: string; refunded_amount_cents?: number; event_created?: number; event_id?: string; updated_at?: string }
+        Relationships: []
+      }
       user_purchases: {
         Row: {
           amount_cents: number
@@ -1822,6 +1843,22 @@ export type Database = {
           training_boosts: number
         }[]
       }
+      begin_payment_webhook_event: {
+        Args: { _event_id: string; _event_type: string }
+        Returns: boolean
+      }
+      finish_payment_webhook_event: {
+        Args: { _event_id: string; _succeeded: boolean }
+        Returns: undefined
+      }
+      reconcile_purchase_payment_review: {
+        Args: { _event_id: string; _reference: string; _event_type: string; _event_created: number; _refunded_amount_cents: number }
+        Returns: undefined
+      }
+      reconcile_subscription_wallet: {
+        Args: { _environment: string; _user_id: string }
+        Returns: boolean
+      }
       fulfill_store_purchase: {
         Args: {
           _amount_cents: number
@@ -1878,6 +1915,10 @@ export type Database = {
       redeem_game_coupon: { Args: { _code: string }; Returns: Json }
       reserve_ai_budget: {
         Args: { _cents: number; _kind: string }
+        Returns: boolean
+      }
+      reserve_tech_telemetry_slot: {
+        Args: { _bucket: string }
         Returns: boolean
       }
       reserve_guest_checkout_attempt: {

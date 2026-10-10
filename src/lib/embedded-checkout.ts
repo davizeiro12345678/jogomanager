@@ -22,15 +22,23 @@ export function withPaymentTimeout<T>(request: Promise<T>, timeoutMs = 30_000): 
 }
 
 export function checkoutErrorMessage(cause: unknown): string {
-  if (cause instanceof Error && cause.message.trim()) {
-    if (/unauthorized|invalid token|authorization header/i.test(cause.message)) {
+  const message = cause instanceof Error ? cause.message : "";
+  if (message) {
+    if (/unauthorized|invalid token|authorization header/i.test(message)) {
       return "Sua sessão expirou. Entre novamente na sua conta para abrir o pagamento.";
     }
-    if (/is not configured|chave privada|chave pública|PAYMENTS_ENVIRONMENT/i.test(cause.message)) {
+    if (/is not configured|chave privada|chave pública|PAYMENTS_ENVIRONMENT/i.test(message)) {
       return "Os pagamentos estão temporariamente indisponíveis. Tente novamente mais tarde.";
     }
-    return cause.message;
+    if (/sessão.*expir|checkout.*expir/i.test(message)) {
+      return "A sessão de pagamento expirou. Volte à loja para abrir uma nova tentativa.";
+    }
+    if (/demorou|timeout/i.test(message)) {
+      return "O pagamento seguro demorou para responder. Tente novamente.";
+    }
   }
+  // SDK, provider and network messages may include implementation details or
+  // request identifiers. The interface exposes only localized safe states.
   return "Não foi possível abrir o pagamento seguro. Tente novamente.";
 }
 

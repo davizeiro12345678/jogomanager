@@ -9,20 +9,35 @@ export function CinematicPortraitLight() {
   const light = useRef<THREE.DirectionalLight>(null);
   const target = useMemo(() => new THREE.Object3D(), []);
   const right = useMemo(() => new THREE.Vector3(), []);
+  const view = useMemo(() => new THREE.Vector3(), []);
   const runtime = useCinematicRuntime();
+  const first = useRef(true);
   useFrame(({ camera }) => {
     if (!light.current) return;
-    light.current.position.copy(camera.position);
     right.setFromMatrixColumn(camera.matrixWorld, 0);
-    light.current.position.addScaledVector(right, -2.4);
-    light.current.position.y += 1.7;
+    // Keep the key's three-quarter angle stable across wide, close and reverse
+    // shots. A fixed offset from a distant camera became a flat frontal light.
+    view.copy(camera.position).sub(runtime.focus);
+    view.y = 0;
+    if (view.lengthSq() < 0.001) view.set(0, 0, 1);
+    view.normalize();
+    light.current.position
+      .copy(runtime.focus)
+      .addScaledVector(view, 4.2)
+      .addScaledVector(right, -3.1);
+    light.current.position.y += 2.5;
     target.position.copy(runtime.focus);
-    light.current.intensity = camera.userData["cinematicFraming"] === "dialogue" ? 1.85 : 0.72;
+    const exposure = camera.userData["cinematicFraming"] === "dialogue" ? 1.5 : 0.72;
+    light.current.intensity =
+      first.current || runtime.reduced
+        ? exposure
+        : THREE.MathUtils.damp(light.current.intensity, exposure, 6, runtime.clock.dt);
+    first.current = false;
   });
   return (
     <>
       <primitive object={target} />
-      <directionalLight ref={light} target={target} color="#fff0e2" intensity={0.4} />
+      <directionalLight ref={light} target={target} color="#fff2e7" intensity={0.4} />
     </>
   );
 }

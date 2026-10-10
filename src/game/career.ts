@@ -24,9 +24,31 @@ import {
   topLeague,
 } from "./competition-season";
 import { calendarYear, countryRegulation } from "./competition-regulations";
-import { evolveSeason, setAttrDeltas } from "./attributes";
+import {
+  developedPlayer,
+  evolveSeason,
+  evolveSeasonV2,
+  profileFor,
+  withDevelopmentBase,
+} from "./attributes";
+import type { AttrDeltas } from "./attributes";
+import {
+  developmentResponse,
+  effectivePlayer,
+  FOCUS_ATTRIBUTES,
+  limitedDevelopmentDelta,
+  withDevelopmentSeasonStart,
+  type AttributeSource,
+} from "./player-development";
+import {
+  addMoney,
+  financialChange,
+  finiteAmount,
+  safeMoney,
+  validFinancialState,
+  financeLedgerFor,
+} from "./financial-inputs";
 import { operatingPlanFor, settleWeeklyFinance } from "./finance-forecast";
-import { buildAttrs } from "./player-physique";
 
 import { computeTable, generateFixtures } from "./season";
 import { settlePromises } from "./unhappy";
@@ -61,13 +83,15 @@ const COVER_ORDER: Record<Position, Position[]> = {
   FW: ["FW", "MF", "DF"],
 };
 
-export function pickLineup(players: Player[], formation: FormationKey) {
+export function pickLineup(players: Player[], formation: FormationKey, source?: AttributeSource) {
   // Formação desconhecida (save antigo, tática corrompida): cai no 4-3-3 em vez
   // de estourar e derrubar a tela inteira.
   const slots = FORMATIONS[formation] ?? FORMATIONS["4-3-3"];
   const available = [...players]
     .filter((p) => !p.suspended && p.injuryWeeks === 0)
-    .sort((a, b) => selectionRating(b) - selectionRating(a) || a.id.localeCompare(b.id));
+    .sort(
+      (a, b) => selectionRating(b, source) - selectionRating(a, source) || a.id.localeCompare(b.id),
+    );
   const taken = new Set<string>();
   const picks: Player[] = new Array(slots.length).fill(undefined);
 
@@ -250,11 +274,20 @@ export function initCareer(
   profile?: ManagerProfile,
 ): CareerState {
   const club = CLUBS[clubId]!;
-  setAttrDeltas({});
   const squad = withCustomPlayers(
     clubId,
     withRealPlayers(clubId, buildSquad(clubId).map(enrichPlayer)),
-  );
+  ).map((p) => {
+    const frozen = withDevelopmentBase(p, 2);
+    return {
+      ...frozen,
+      value: valueFor(p.ovr, p.age, {
+        economyRulesVersion: 2,
+        potential: p.potential,
+        contractYears: p.contractYears,
+      }),
+    };
+  });
   const formation: FormationKey = "4-3-3";
   const { lineup, bench } = pickLineup(squad, formation);
   const objective = Math.max(1, Math.min(15, Math.round((96 - club.strength) / 4)));
@@ -268,6 +301,12 @@ export function initCareer(
     version: 3,
     catalogRevision: 1,
     simulationRatingRevision: 1,
+    economyRulesVersion: 2,
+    developmentRulesVersion: 2,
+    developmentSeasonStart: {
+      season: 1,
+      ratings: Object.fromEntries(squad.map((p) => [p.id, p.ovr])),
+    },
     leagueId,
     clubId,
     managerName,
@@ -313,8 +352,19 @@ export function initCareer(
 export function migrateCareer(raw: unknown): CareerState {
   const { state: restored, fixes } = repairCareer(migrateCareerShape(raw));
   const repaired = migrateSquadRatings(restored);
-  setAttrDeltas(repaired.attrDeltas ?? {});
-  const state = withCareerWorld(upgradeCatalog(repaired));
+  const catalogState = upgradeCatalog(repaired);
+  const state = withCareerWorld({
+    ...catalogState,
+    players: Object.fromEntries(
+      Object.entries(catalogState.players).map(([id, p]) => [
+        id,
+        developedPlayer(
+          withDevelopmentBase(p, catalogState.developmentRulesVersion === 2 ? 2 : 1),
+          catalogState,
+        ),
+      ]),
+    ),
+  });
   if (!fixes.length) return state;
   console.warn("[career-repair]", fixes);
   const id = `repair-${state.season}-${state.round}`;
@@ -387,7 +437,6 @@ function migrateCareerShape(raw: unknown): CareerState {
       achievementsUnlockedAt: s.achievementsUnlockedAt ?? {},
       attrDeltas: s.attrDeltas ?? {},
     };
-    setAttrDeltas(ready.attrDeltas);
     return ready;
   }
   const club = CLUBS[s.clubId];
@@ -488,7 +537,8 @@ export function careerMatchContext(
     const average = (read: (p: Player) => number) =>
       players.reduce((sum, p) => sum + read(p), 0) / players.length;
     // Club strength represents a normal XI at overall strength-2.
-    ctx[`${side}Strength`] = average((p) => p.ovr) + 2 - Math.max(0, 11 - players.length) * 2;
+    ctx[`${side}Strength`] =
+      average((p) => effectivePlayer(p, state).ovr) + 2 - Math.max(0, 11 - players.length) * 2;
     ctx[`${side}Form`] = ctx[`${side}Form`]! * 0.7 + average((p) => p.form ?? 60) * 0.3;
     ctx[`${side}Fatigue`] = average((p) => 100 - p.condition);
   }
@@ -593,7 +643,8 @@ function applyWeeklyDevelopment(
   seed: string,
   livePids: Set<string> = new Set(),
   matchPlayed = true,
-): { players: Record<string, Player>; news: NewsItem[] } {
+  evaluatedAt: number | string = Date.now(),
+): { players: Record<string, Player>; news: NewsItem[]; attrDeltas: AttrDeltas } {
   const rnd = makeRng(seed);
   const news: NewsItem[] = [];
   const attr = trainingAttr(state.training);
@@ -602,7 +653,8 @@ function applyWeeklyDevelopment(
   const baseRegen = state.training === "fisico" ? 16 : state.training === "equilibrado" ? 12 : 9;
   // treino leve recupera mais e evolui menos; treino intenso é o contrário
   // Impulso semanal comprado na loja: +25% de treino e +5 de recuperação.
-  const boosted = !!state.boostUntil && new Date(state.boostUntil).getTime() > Date.now();
+  const boosted =
+    !!state.boostUntil && new Date(state.boostUntil).getTime() > new Date(evaluatedAt).getTime();
   const condRegen =
     baseRegen +
     (intensity === 0 ? 5 : intensity === 2 ? -5 : 0) +
@@ -613,13 +665,14 @@ function applyWeeklyDevelopment(
   const injuryMult = (0.7 + intensity * 0.4) * (1 - operatingPlan.medical * 0.055);
 
   const next: Record<string, Player> = {};
+  const attrDeltas: AttrDeltas = { ...(state.attrDeltas ?? {}) };
   for (const [id, p] of Object.entries(players)) {
     if (p.clubId !== state.clubId) {
       next[id] = p;
       continue;
     }
-    const q = { ...p };
-    const detailed = buildAttrs(p, makeRng(`profile-${p.id}-${p.name}`));
+    const q = { ...withDevelopmentBase(p, state.developmentRulesVersion === 2 ? 2 : 1) };
+    const detailed = profileFor(q, state).attrs;
     const fitnessRecovery = Math.max(-1.5, Math.min(1.5, (detailed.naturalFitness - 65) * 0.04));
     const resilience = Math.max(0.85, Math.min(1.15, 1 - (detailed.injuryResistance - 65) * 0.006));
 
@@ -650,7 +703,24 @@ function applyWeeklyDevelopment(
     );
 
     // desenvolvimento por idade
-    if (q.age <= 23 && rnd() < 0.16 * growthMult) {
+    if (state.developmentRulesVersion === 2) {
+      // Keep the established weekly chance; only the successful skill gain changes.
+      if (q.age <= 23 && rnd() < 0.16 * growthMult) {
+        const response = developmentResponse(
+          effectivePlayer(q, state),
+          intensity,
+          profileFor(q, state),
+        );
+        const keys =
+          q.pos === "GK" && state.training === "defesa"
+            ? (["reflexes", "handling", "oneOnOnes", "commandOfArea"] as const)
+            : FOCUS_ATTRIBUTES[state.training];
+        const changes = Object.fromEntries(
+          keys.map((key, index) => [key, (index === 0 ? 0.2 : 0.1) * response]),
+        );
+        attrDeltas[id] = limitedDevelopmentDelta(q, { ...state, attrDeltas }, changes);
+      }
+    } else if (q.age <= 23 && rnd() < 0.16 * growthMult) {
       (q as unknown as Record<string, number>)[attr] = Math.min(99, (q[attr] as number) + 1);
       if (rnd() < 0.35) {
         q.ovr = Math.min(99, Math.max(p.ovr, p.potential ?? 99), q.ovr + 1);
@@ -703,10 +773,15 @@ function applyWeeklyDevelopment(
       q.condition = Math.max(40, q.condition - 8 - Math.floor(rnd() * 8));
     }
 
-    q.value = valueFor(q.ovr, q.age);
-    next[id] = q;
+    const effective = developedPlayer(q, { ...state, attrDeltas });
+    effective.value = valueFor(effective.ovr, effective.age, {
+      economyRulesVersion: state.economyRulesVersion,
+      potential: effective.potential,
+      contractYears: effective.contractYears,
+    });
+    next[id] = effective;
   }
-  return { players: next, news };
+  return { players: next, news, attrDeltas };
 }
 
 function endSeason(state: CareerState): CareerState {
@@ -773,15 +848,26 @@ function endSeason(state: CareerState): CareerState {
 
   // aposentadorias e garotos da base
   const regen = applyRegens(aged, state.clubId, state.season, state.round);
-  const players = regen.players;
+  const players = Object.fromEntries(
+    Object.entries(regen.players).map(([id, p]) => [
+      id,
+      withDevelopmentBase(p, state.developmentRulesVersion === 2 ? 2 : 1),
+    ]),
+  );
   news.push(...regen.news);
 
   const squad = Object.values(players);
-  const { lineup, bench } = pickLineup(squad, state.tactics.formation);
 
   // Evolução dos 46 atributos: fica guardada na carreira e vale para sempre.
-  const attrDeltas = evolveSeason(squad, state.season, state.attrDeltas ?? {});
-  setAttrDeltas(attrDeltas);
+  const attrDeltas =
+    state.developmentRulesVersion === 2
+      ? evolveSeasonV2(squad, state)
+      : evolveSeason(squad, state.season, state.attrDeltas ?? {});
+  for (const p of squad) players[p.id] = developedPlayer(p, { ...state, attrDeltas });
+  const { lineup, bench } = pickLineup(Object.values(players), state.tactics.formation, {
+    ...state,
+    attrDeltas,
+  });
 
   // acesso e rebaixamento entre as divisões do país
   const pyramidLeague = REGIONAL_LINKS[state.leagueId]
@@ -907,12 +993,20 @@ function endSeason(state: CareerState): CareerState {
     ),
     players,
     attrDeltas,
+    ...(state.developmentRulesVersion === 2
+      ? {
+          developmentSeasonStart: {
+            season: state.season + 1,
+            ratings: Object.fromEntries(Object.values(players).map((p) => [p.id, p.ovr])),
+          },
+        }
+      : {}),
     lineup,
     bench,
     results: [],
     cups: [],
     finances: {
-      budget: Math.round((state.finances.budget + prize) * 10) / 10,
+      budget: addMoney(state.finances.budget, prize),
       spent: 0,
       income: 0,
     },
@@ -960,7 +1054,17 @@ export function advanceRound(
   userResult: { hg: number; ag: number } | null,
   performances: MatchPerformance[] = [],
   comp = "Liga",
+  evaluatedAt: number | string = Date.now(),
 ) {
+  const evaluationTime =
+    typeof evaluatedAt === "number" ? evaluatedAt : new Date(evaluatedAt).getTime();
+  if (
+    !Number.isSafeInteger(evaluationTime) ||
+    evaluationTime < 0 ||
+    evaluationTime > 8_640_000_000_000_000
+  )
+    throw new Error("Instante de avaliação da carreira inválido.");
+  state = withDevelopmentSeasonStart(state);
   const round = state.round;
   const played = state.fixtures.find(
     (f) => f.round === round && (f.home === state.clubId || f.away === state.clubId),
@@ -1043,13 +1147,14 @@ export function advanceRound(
 
   // mecânicas semanais sobre o elenco (quem tem dado ao vivo não entra no sorteio)
   const livePids = new Set(performances.map((p) => p.pid));
-  const { players, news } = applyWeeklyDevelopment(
+  const { players, news, attrDeltas } = applyWeeklyDevelopment(
     squadAfterMatch,
     state,
     matchResult ? won : null,
     `${state.clubId}-${round}-dev`,
     livePids,
     matchResult !== null,
+    evaluatedAt,
   );
   news.unshift(...liveNews);
 
@@ -1138,6 +1243,7 @@ export function advanceRound(
     fixtures,
     players,
     round: round + 1,
+    attrDeltas,
     ...(logEntry ? { matchLog: [logEntry, ...(state.matchLog ?? [])].slice(0, 400) } : {}),
     results:
       played && matchResult
@@ -1178,7 +1284,7 @@ export function advanceRound(
 
   const newlyUnlocked = evaluateAchievements(next);
   if (newlyUnlocked.length) {
-    const now = new Date().toISOString();
+    const now = new Date(evaluationTime).toISOString();
     next = {
       ...next,
       achievements: [...(next.achievements ?? []), ...newlyUnlocked],
@@ -1236,8 +1342,8 @@ function processCups(state: CareerState, round: number, finish = false): CareerS
         });
       } else if (res.userWon) {
         const prize = cupPrize(cup.id, cup.stage);
-        budget = Math.round((budget + prize) * 10) / 10;
-        income = Math.round((income + prize) * 10) / 10;
+        budget = addMoney(budget, prize);
+        income = addMoney(income, prize);
         news.push({
           id: newsId,
           season: state.season,
@@ -1260,8 +1366,8 @@ function processCups(state: CareerState, round: number, finish = false): CareerS
     if (res.champion === state.clubId) {
       trophies.push({ season: state.season, name: res.cup.name });
       const prize = cupPrize(cup.id, 4);
-      budget = Math.round((budget + prize) * 10) / 10;
-      income = Math.round((income + prize) * 10) / 10;
+      budget = addMoney(budget, prize);
+      income = addMoney(income, prize);
       news.push({
         id: `cup-win-${cup.id}-${state.season}`,
         season: state.season,
@@ -1287,10 +1393,23 @@ function processCups(state: CareerState, round: number, finish = false): CareerS
 
 /** Aceita uma proposta por um dos seus jogadores. */
 export function acceptOffer(state: CareerState, offerId: string): CareerState {
+  if (!validFinancialState(state)) return state;
   const offer = (state.offers ?? []).find((o) => o.id === offerId);
-  if (!offer) return state;
+  if (
+    !offer ||
+    offer.season !== state.season ||
+    offer.expiresRound < state.round ||
+    !finiteAmount(offer.amount) ||
+    !CLUBS[offer.clubId] ||
+    offer.clubId === state.clubId
+  )
+    return state;
   const player = state.players[offer.playerId];
-  if (!player) return state;
+  if (!player || player.clubId !== state.clubId) return state;
+  if (Object.values(state.players).filter((p) => p.clubId === state.clubId).length <= 16)
+    return state;
+  const finances = financialChange(state, offer.amount, 0);
+  if (!finances) return state;
   const players = { ...state.players };
   delete players[offer.playerId];
   const club = CLUBS[offer.clubId];
@@ -1300,12 +1419,20 @@ export function acceptOffer(state: CareerState, offerId: string): CareerState {
     players,
     lineup: state.lineup.filter((id) => id !== offer.playerId),
     bench: state.bench.filter((id) => id !== offer.playerId),
-    offers: (state.offers ?? []).filter((o) => o.id !== offerId),
-    finances: {
-      ...state.finances,
-      budget: Math.round((state.finances.budget + offer.amount) * 10) / 10,
-      income: Math.round((state.finances.income + offer.amount) * 10) / 10,
-    },
+    offers: (state.offers ?? []).filter((o) => o.playerId !== offer.playerId),
+    finances,
+    financeLedger: [
+      {
+        id: `sale-${state.clubId}-${state.season}-${state.round}-${offer.playerId}`,
+        season: state.season,
+        round: state.round,
+        kind: "mercado" as const,
+        label: `Venda de ${player.name} ao ${club?.name ?? "exterior"}`,
+        income: safeMoney(offer.amount),
+        expense: 0,
+      },
+      ...financeLedgerFor(state),
+    ].slice(0, 96),
     fanApproval: Math.max(5, (state.fanApproval ?? 60) - (player.ovr >= 80 ? 6 : 2)),
     news: [
       {
@@ -1346,24 +1473,51 @@ export function rejectOffer(state: CareerState, offerId: string): CareerState {
 /** Assume um novo clube (após demissão, pedido de demissão ou convite). */
 export function takeJob(state: CareerState, jobId: string): CareerState {
   const job = (state.jobOffers ?? []).find((j) => j.id === jobId);
-  if (!job) return state;
-  const club = CLUBS[job.clubId]!;
-  const squad = withCustomPlayers(job.clubId, withRealPlayers(job.clubId, buildSquad(job.clubId)));
+  if (
+    !job ||
+    job.season !== state.season ||
+    job.expiresRound < state.round ||
+    !finiteAmount(job.budget)
+  )
+    return state;
+  const club = CLUBS[job.clubId];
+  const leagueId =
+    Object.entries(state.leagueClubs ?? {}).find(([, ids]) => ids.includes(job.clubId))?.[0] ??
+    club?.league;
+  if (!club || !leagueId || job.clubId === state.clubId) return state;
+  const squad = withCustomPlayers(
+    job.clubId,
+    withRealPlayers(job.clubId, buildSquad(job.clubId)),
+  ).map((p) => withDevelopmentBase(p, state.developmentRulesVersion === 2 ? 2 : 1));
   const { lineup, bench } = pickLineup(squad, state.tactics.formation);
   const history = state.sacked ? (state.managerHistory ?? []) : closeSpell(state, "Saiu do clube");
 
   return {
     ...state,
-    leagueId: job.leagueId,
+    leagueId,
     clubId: job.clubId,
     round: 1,
-    fixtures: generateFixtures(job.leagueId, `${job.clubId}-${state.managerName}-s${state.season}`),
+    fixtures: generateFixtures(
+      leagueId,
+      `${job.clubId}-${state.managerName}-s${state.season}`,
+      leagueClubIds(state, leagueId),
+    ),
     players: Object.fromEntries(squad.map((p) => [p.id, p])),
     lineup,
     bench,
     results: [],
     cups: [],
     finances: { budget: job.budget, spent: 0, income: 0 },
+    financeSettledThrough: undefined,
+    attrDeltas: {},
+    ...(state.developmentRulesVersion === 2
+      ? {
+          developmentSeasonStart: {
+            season: state.season,
+            ratings: Object.fromEntries(squad.map((p) => [p.id, p.ovr])),
+          },
+        }
+      : {}),
     approval: 60,
     objective: job.objective,
     ...defaultV3(club),
@@ -1437,19 +1591,29 @@ export function upgradeStaff(
   state: CareerState,
   role: keyof ReturnType<typeof defaultStaff>,
 ): CareerState {
+  if (!validFinancialState(state) || !Object.hasOwn(defaultStaff(), role)) return state;
   const staff = state.staff ?? defaultStaff();
   const level = staff[role];
-  if (level >= 5) return state;
+  if (!Number.isSafeInteger(level) || level < 0 || level >= 5) return state;
   const cost = Math.round((level + 1) * 1.2 * 10) / 10;
-  if (state.finances.budget < cost) return state;
+  const finances = financialChange(state, 0, cost);
+  if (!finances || finances.budget < 0) return state;
   return {
     ...state,
     staff: { ...staff, [role]: level + 1 },
-    finances: {
-      ...state.finances,
-      budget: Math.round((state.finances.budget - cost) * 10) / 10,
-      spent: Math.round((state.finances.spent + cost) * 10) / 10,
-    },
+    finances,
+    financeLedger: [
+      {
+        id: `staff-${state.clubId}-${state.season}-${state.round}-${role}-${level + 1}`,
+        season: state.season,
+        round: state.round,
+        kind: "infraestrutura" as const,
+        label: `Melhoria de ${role} para nível ${level + 1}`,
+        income: 0,
+        expense: cost,
+      },
+      ...financeLedgerFor(state),
+    ].slice(0, 96),
   };
 }
 

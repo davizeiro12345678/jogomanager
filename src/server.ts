@@ -2,6 +2,8 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { CSP_NONCE_HEADER, createCspNonce, secureResponse } from "./lib/security-headers";
+import { publicPageRedirect } from "./lib/public-page-redirects";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -46,16 +48,39 @@ function isH3SwallowedErrorBody(body: string): boolean {
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    const nonce = createCspNonce();
     try {
+      const redirect = publicPageRedirect(request);
+      if (redirect) return secureResponse(redirect, request, nonce);
+      const headers = new Headers(request.headers);
+      headers.set(CSP_NONCE_HEADER, nonce);
+      // Vite's development bridge can provide a Request-like object from a
+      // different Undici realm. Passing that object directly to the Request
+      // constructor throws before SSR starts (`private member #state`). Build
+      // a standards-shaped request from its public fields instead, preserving
+      // the streamed body only for methods that are allowed to have one.
+      const init: RequestInit & { duplex?: "half" } = {
+        method: request.method,
+        headers,
+      };
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        init.body = request.body;
+        init.duplex = "half";
+      }
+      const securedRequest = new Request(request.url, init);
       const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const response = await handler.fetch(securedRequest, env, ctx);
+      return secureResponse(await normalizeCatastrophicSsrResponse(response), request, nonce);
     } catch (error) {
       console.error(error);
-      return new Response(renderErrorPage(), {
-        status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
-      });
+      return secureResponse(
+        new Response(renderErrorPage(), {
+          status: 500,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        }),
+        request,
+        nonce,
+      );
     }
   },
 };

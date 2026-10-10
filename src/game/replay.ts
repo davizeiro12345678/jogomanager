@@ -12,6 +12,7 @@ import { reportSilent } from "@/lib/silent-errors";
 import type { PlayerAction } from "./animation";
 import { emptyStats } from "./sim";
 import type { MatchStats, Side, SimPlayer, SimView, TeamSetup } from "./sim";
+import type { MatchExecutionContract } from "./match-execution-contract";
 import {
   emptyActionContext,
   emptyContactContext,
@@ -61,6 +62,8 @@ interface VisualContextSource {
 }
 
 export interface Replay {
+  /** Absent on existing saves. Playback preserves recorded frames. */
+  execution?: MatchExecutionContract;
   id: string;
   createdAt: number;
   title: string;
@@ -124,7 +127,12 @@ export class ReplayRecorder {
 
   build(title: string): Replay {
     const sim = this.sim;
+    const contractSource = sim as SimView & {
+      executionContract?: () => MatchExecutionContract | undefined;
+    };
+    const execution = contractSource.executionContract?.();
     return {
+      ...(execution ? { execution } : {}),
       id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
       createdAt: Date.now(),
       title,
@@ -361,10 +369,7 @@ export async function deleteReplay(id: string) {
   if (typeof window === "undefined") return;
   try {
     const list = await listReplays();
-    await set(
-      KEY,
-      list.filter((r) => r.id !== id).map(encodeReplay),
-    );
+    await set(KEY, list.filter((r) => r.id !== id).map(encodeReplay));
   } catch (error) {
     reportSilent("replay.storage", error, {
       classification: "degradation",

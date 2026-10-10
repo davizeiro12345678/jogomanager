@@ -7,6 +7,7 @@
  * Worker deliberately never cross this boundary.
  */
 
+import { loadGameWasm, WASM_CAPABILITY } from "./runtime.ts";
 export type CrowdPoint = Readonly<{ x: number; y: number; z: number }>;
 
 export type CrowdTileInput = Readonly<{
@@ -122,18 +123,68 @@ function distance3(x: number, y: number, z: number) {
   return Math.sqrt(x * x + y * y + z * z);
 }
 
-function emptySelection(): CrowdSelection {
-  return { indices: new Uint32Array(), tiers: new Uint8Array(), counts: new Uint32Array(3) };
+/** Per-layout scratch storage. Results are borrowed until the next select;
+ * ordinary selectCrowdFallback calls without scratch remain independent. */
+export class CrowdFallbackBuffers {
+  readonly layout: CrowdVisibilityLayout;
+  readonly tiles: Int32Array;
+  readonly distances: Float64Array;
+  indices = new Uint32Array();
+  tiers = new Uint8Array();
+  readonly counts = new Uint32Array(3);
+  readonly compareTiles = (left: number, right: number): number => {
+    const leftDistance = this.distances[left]!,
+      rightDistance = this.distances[right]!;
+    if (Number.isNaN(leftDistance)) return Number.isNaN(rightDistance) ? left - right : 1;
+    if (Number.isNaN(rightDistance)) return -1;
+    // Infinity - Infinity yields NaN; comparisons plus the index tie-break
+    // form the same total order as the Rust selector for malformed cameras.
+    return leftDistance < rightDistance ? -1 : leftDistance > rightDistance ? 1 : left - right;
+  };
+  private result: CrowdSelection | null = null;
+  constructor(layout: CrowdVisibilityLayout) {
+    this.layout = layout;
+    this.tiles = new Int32Array(layout.tileCount);
+    this.distances = new Float64Array(layout.tileCount);
+  }
+  prepare(capacity: number): void {
+    this.counts.fill(0);
+    if (this.indices.length < capacity) {
+      this.indices = new Uint32Array(capacity);
+      this.tiers = new Uint8Array(capacity);
+      this.result = null;
+    }
+  }
+  selection(length: number): CrowdSelection {
+    if (this.result?.indices.length !== length)
+      this.result = {
+        indices: this.indices.subarray(0, length),
+        tiers: this.tiers.subarray(0, length),
+        counts: this.counts,
+      };
+    return this.result;
+  }
 }
 
 /** Mirrors the historic Three.js selection path for no-WASM and failed-WASM devices. */
-export function selectCrowdFallback(input: CrowdVisibilityInput): CrowdSelection {
+export function selectCrowdFallback(
+  input: CrowdVisibilityInput,
+  scratch = new CrowdFallbackBuffers(input.layout),
+): CrowdSelection {
   const { layout } = input;
+  if (scratch.layout !== layout) throw new Error("Crowd fallback buffers belong to another layout");
   const maxTiles = Math.min(layout.tileCount, limit(input.maxTiles));
   const maxInstances = limit(input.maxInstances);
-  if (!layout.tileCount || !maxTiles || !maxInstances) return emptySelection();
+  scratch.prepare(Math.min(maxInstances, layout.tileIndices.length));
+  if (!layout.tileCount || !maxTiles || !maxInstances) return scratch.selection(0);
 
-  const visible: { tile: number; distance: number }[] = [];
+  const selectedTiles = scratch.tiles;
+  const distances = scratch.distances;
+  // Insertion keeps the ordinary small camera budget bounded. A direct
+  // consumer may request every tile in a large valid layout; sorting that
+  // path avoids quadratic insertion work while preserving exact ties.
+  const sortVisible = maxTiles > 64;
+  let selectedCount = 0;
   for (let tile = 0; tile < layout.tileCount; tile += 1) {
     const offset = tile * 4;
     const x = layout.tiles[offset]!;
@@ -141,27 +192,51 @@ export function selectCrowdFallback(input: CrowdVisibilityInput): CrowdSelection
     const z = layout.tiles[offset + 2]!;
     const radius = layout.tiles[offset + 3]!;
     if (intersectsFrustum(input.frustumPlanes, x, y, z, radius)) {
-      visible.push({ tile, distance: tileDistance(layout, tile, input.camera) });
+      const distance = tileDistance(layout, tile, input.camera);
+      distances[tile] = distance;
+      if (sortVisible) {
+        selectedTiles[selectedCount++] = tile;
+        continue;
+      }
+      let slot = selectedCount;
+      while (slot > 0 && scratch.compareTiles(tile, selectedTiles[slot - 1]!) < 0) slot -= 1;
+      if (slot >= maxTiles) continue;
+      for (let cursor = Math.min(selectedCount, maxTiles - 1); cursor > slot; cursor -= 1) {
+        selectedTiles[cursor] = selectedTiles[cursor - 1]!;
+      }
+      selectedTiles[slot] = tile;
+      selectedCount = Math.min(selectedCount + 1, maxTiles);
     }
   }
-  visible.sort((a, b) => a.distance - b.distance || a.tile - b.tile);
-  const selectedCount = Math.min(maxTiles, visible.length || maxTiles);
+  if (sortVisible && selectedCount) {
+    selectedTiles.subarray(0, selectedCount).sort(scratch.compareTiles);
+    selectedCount = Math.min(selectedCount, maxTiles);
+  }
+  if (selectedCount === 0) {
+    selectedCount = maxTiles;
+    for (let tile = 0; tile < selectedCount; tile += 1) selectedTiles[tile] = tile;
+  }
   const perTile = Math.max(1, Math.ceil(maxInstances / selectedCount));
-  const indices = new Uint32Array(Math.min(maxInstances, layout.tileIndices.length));
-  const tiers = new Uint8Array(indices.length);
-  const counts = new Uint32Array(3);
+  const { indices, tiers, counts } = scratch;
+  let count = 0;
   const detailedPixels = finite(input.detailedPixels);
   const meshPixels = finite(input.meshPixels);
   const projectedScale = finite(input.projectedScale);
-  let count = 0;
+  let visitedReferences = 0;
 
-  for (let selectedIndex = 0; selectedIndex < selectedCount; selectedIndex += 1) {
-    const tile = visible.length ? visible[selectedIndex]!.tile : selectedIndex;
-    const start = layout.tileOffsets[tile]!;
-    const end = layout.tileOffsets[tile + 1]!;
+  for (let selected = 0; selected < selectedCount; selected += 1) {
+    const tile = selectedTiles[selected]!;
+    const start = Math.min(layout.tileIndices.length, layout.tileOffsets[tile]!);
+    const end = Math.min(layout.tileIndices.length, layout.tileOffsets[tile + 1]!);
     const stride = Math.max(1, Math.ceil((end - start) / perTile));
     for (let offset = start; offset < end; offset += stride) {
-      if (count >= maxInstances || count >= indices.length) break;
+      if (
+        count >= maxInstances ||
+        count >= indices.length ||
+        visitedReferences >= layout.tileIndices.length
+      )
+        break;
+      visitedReferences++;
       const seat = layout.tileIndices[offset]!;
       if (seat >= layout.positionCount) continue;
       const positionOffset = seat * 3;
@@ -179,14 +254,24 @@ export function selectCrowdFallback(input: CrowdVisibilityInput): CrowdSelection
     }
   }
 
-  return { indices: indices.subarray(0, count), tiers: tiers.subarray(0, count), counts };
+  return scratch.selection(count);
 }
 
 /** Rust packs a seat id in the high bits and its mesh tier in the low two bits. */
-export function decodeCrowdSelection(packed: Uint32Array): CrowdSelection {
-  const indices = new Uint32Array(packed.length);
-  const tiers = new Uint8Array(packed.length);
-  const counts = new Uint32Array(3);
+export function decodeCrowdSelection(
+  packed: Uint32Array,
+  reusable?: CrowdSelection | null,
+): CrowdSelection {
+  const selection =
+    reusable?.indices.length === packed.length
+      ? reusable
+      : {
+          indices: new Uint32Array(packed.length),
+          tiers: new Uint8Array(packed.length),
+          counts: new Uint32Array(3),
+        };
+  const { indices, tiers, counts } = selection;
+  counts.fill(0);
   for (let index = 0; index < packed.length; index += 1) {
     const value = packed[index]!;
     const tier = value & 0b11;
@@ -195,26 +280,8 @@ export function decodeCrowdSelection(packed: Uint32Array): CrowdSelection {
     tiers[index] = tier;
     counts[tier]! += 1;
   }
-  return { indices, tiers, counts };
+  return selection;
 }
-
-type CrowdVisibilityWasmModule = {
-  default: () => Promise<unknown>;
-  select_crowd: (
-    positions: Float64Array,
-    tiles: Float64Array,
-    tileOffsets: Uint32Array,
-    tileIndices: Uint32Array,
-    frustumPlanes: Float64Array,
-    camera: Float64Array,
-    projectedScale: number,
-    perspective: boolean,
-    maxTiles: number,
-    maxInstances: number,
-    detailedPixels: number,
-    meshPixels: number,
-  ) => Uint32Array;
-};
 
 export type CrowdVisibilityKernel = Readonly<{
   select: (input: CrowdVisibilityInput) => CrowdSelection;
@@ -232,8 +299,8 @@ export function loadCrowdVisibilityWasm(): Promise<CrowdVisibilityKernel | null>
     return Promise.resolve(null);
   return (wasmLoader ??= (async () => {
     try {
-      const module = (await import("./pkg/crowd_visibility_wasm")) as CrowdVisibilityWasmModule;
-      await module.default();
+      const module = await loadGameWasm(WASM_CAPABILITY.crowd | WASM_CAPABILITY.boundedCrowd);
+      if (!module) return null;
       const camera = new Float64Array(3);
       return {
         select(input) {

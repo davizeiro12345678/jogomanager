@@ -1,7 +1,11 @@
 import type { StripeEmbeddedCheckoutOptions } from "@stripe/stripe-js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { startEmbeddedCheckout, withPaymentTimeout } from "./embedded-checkout";
+import {
+  checkoutErrorMessage,
+  startEmbeddedCheckout,
+  withPaymentTimeout,
+} from "./embedded-checkout";
 
 const cleanups: Array<() => void> = [];
 beforeEach(() => vi.useFakeTimers());
@@ -47,7 +51,9 @@ describe("embedded payment lifecycle", () => {
     f.load.mockRejectedValue(new Error("Falha ao carregar Stripe.js"));
     f.start();
     await vi.advanceTimersByTimeAsync(0);
-    expect(f.error).toHaveBeenCalledWith("Falha ao carregar Stripe.js");
+    expect(f.error).toHaveBeenCalledWith(
+      "Não foi possível abrir o pagamento seguro. Tente novamente.",
+    );
     expect(f.fetchSecret).not.toHaveBeenCalled();
   });
 
@@ -56,7 +62,9 @@ describe("embedded payment lifecycle", () => {
     f.create.mockRejectedValue(new Error("A sessão de pagamento expirou"));
     f.start();
     await vi.advanceTimersByTimeAsync(0);
-    expect(f.error).toHaveBeenCalledWith("A sessão de pagamento expirou");
+    expect(f.error).toHaveBeenCalledWith(
+      "A sessão de pagamento expirou. Volte à loja para abrir uma nova tentativa.",
+    );
     expect(f.instance.mount).not.toHaveBeenCalled();
   });
 
@@ -144,5 +152,13 @@ describe("embedded payment lifecycle", () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(f.error).toHaveBeenCalledWith(expect.stringContaining("Entre novamente"));
     expect(f.create).not.toHaveBeenCalled();
+  });
+
+  it("does not reflect a provider diagnostic or secret into the payment interface", () => {
+    const message = checkoutErrorMessage(
+      new Error("Stripe trace=req_123 private token=do-not-show"),
+    );
+    expect(message).toBe("Não foi possível abrir o pagamento seguro. Tente novamente.");
+    expect(message).not.toContain("req_123");
   });
 });

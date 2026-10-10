@@ -1,11 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { consumeLastCapturedError } from "./error-capture";
-import {
-  getSilentErrorReports,
-  reportSilent,
-  resetSilentErrorReports,
-} from "./silent-errors";
+import { getSilentErrorReports, reportSilent, resetSilentErrorReports } from "./silent-errors";
 
 describe("reportSilent", () => {
   afterEach(() => {
@@ -50,9 +46,13 @@ describe("reportSilent", () => {
     expect(() => {
       reportSilent("fatal.operation", new Error("fatal"), { classification: "fatal" });
       reportSilent("degradation.operation", "degraded", { classification: "degradation" });
-      reportSilent("ignorable.operation", { reason: "cancelled" }, {
-        classification: "ignorable",
-      });
+      reportSilent(
+        "ignorable.operation",
+        { reason: "cancelled" },
+        {
+          classification: "ignorable",
+        },
+      );
     }).not.toThrow();
 
     expect(getSilentErrorReports()).toHaveLength(3);

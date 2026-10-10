@@ -75,3 +75,29 @@ it("keeps a shared uniform alive through LRU eviction until both rigs release it
   expect(dispose).toHaveBeenCalledTimes(1);
   texture.dispose();
 });
+
+it("pairs seeded leather, synthetic and knit detail maps with their physical finish", () => {
+  const look = lookFor("boot-finishes", "FW");
+  const kit: Kit = {
+    base: "#cc2028",
+    shorts: "#222222",
+    socks: "#222222",
+    detail: "#ffffff",
+    pattern: "solid",
+  };
+  const boots = [0, 9, 18].map(
+    (seed) =>
+      playerMaterials({ ...look, seed }, kit, null, "alta").boot as THREE.MeshPhysicalMaterial,
+  );
+  const [leather, synthetic, knit] = boots;
+  expect(knit!.roughness).toBeGreaterThan(leather!.roughness);
+  expect(leather!.roughness).toBeGreaterThan(synthetic!.roughness);
+  expect(knit!.clearcoat).toBeLessThan(leather!.clearcoat);
+  expect(leather!.clearcoat).toBeLessThan(synthetic!.clearcoat);
+  expect(boots.every((boot) => boot.metalness === 0)).toBe(true);
+  const set = playerMaterials(look, kit, null, "alta");
+  expect((set.jersey as THREE.MeshPhysicalMaterial).sheen).toBeLessThan(0.35);
+  expect((set.jerseyPlain as THREE.MeshPhysicalMaterial).sheen).toBe(
+    (set.jersey as THREE.MeshPhysicalMaterial).sheen,
+  );
+});

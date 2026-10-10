@@ -19,6 +19,58 @@ export interface FulfillmentSnapshot {
   contents: ProductEffect;
 }
 
+/** Authenticated checkouts freeze the same offer contract as guest intents.
+ * Never infer historical paid benefits from today's mutable catalog. */
+export async function getAuthenticatedCheckoutOffer(
+  userId: string,
+  sessionId: string,
+  env: StripeEnv,
+): Promise<{
+  productKey: string;
+  stripePriceId: string;
+  currency: string;
+  snapshot: FulfillmentSnapshot;
+}> {
+  const { data: offer, error } = await getStoreServiceSupabase()
+    .from("checkout_session_owners")
+    .select("product_key, price_cents, currency, stripe_price_id, contents_snapshot")
+    .eq("session_id", sessionId)
+    .eq("user_id", userId)
+    .eq("environment", env)
+    .maybeSingle();
+  if (error)
+    throw new Error("Não foi possível consultar a oferta da compra. O pagamento será repetido.");
+  const contents = parseStoreProductContents(offer?.contents_snapshot);
+  if (
+    !offer?.product_key ||
+    !offer.stripe_price_id ||
+    !offer.currency ||
+    !Number.isSafeInteger(offer.price_cents) ||
+    (offer.price_cents ?? -1) < 0 ||
+    !contents
+  ) {
+    throw new Error("Esta compra precisa de revisão da oferta registrada antes da entrega.");
+  }
+  return {
+    productKey: offer.product_key,
+    stripePriceId: offer.stripe_price_id,
+    currency: offer.currency,
+    snapshot: { priceCents: offer.price_cents!, contents },
+  };
+}
+
+export async function isPurchaseDelivered(userId: string, reference: string): Promise<boolean> {
+  const { data, error } = await getStoreServiceSupabase()
+    .from("user_purchases")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("reference", reference)
+    .eq("status", "completed")
+    .maybeSingle();
+  if (error) throw new Error("Não foi possível consultar a entrega da compra.");
+  return data !== null;
+}
+
 /**
  * Loads benefits from the same `store_products.contents` value used by the
  * server checkout validator. This deliberately avoids a second hard-coded
@@ -49,7 +101,7 @@ export async function recordPendingPurchase(
     },
     { onConflict: "reference", ignoreDuplicates: true },
   );
-  if (error) console.error("recordPendingPurchase falhou", error.message);
+  if (error) throw new Error("Não foi possível registrar a compra pendente.");
 }
 
 /** Registers a payment failure while retaining a completed purchase as final. */
@@ -60,7 +112,7 @@ export async function markPurchaseFailed(reference: string, message: string): Pr
     .update({ status: "failed", error: message.slice(0, 400) })
     .eq("reference", reference)
     .neq("status", "completed");
-  if (error) console.error("markPurchaseFailed falhou", error.message);
+  if (error) throw new Error("Não foi possível registrar a falha do pagamento.");
 }
 
 /**
@@ -73,15 +125,24 @@ export async function fulfillOneTimePurchase(
   productKey: string,
   reference: string,
   amountCents: number,
-  snapshot?: FulfillmentSnapshot,
+  snapshot: FulfillmentSnapshot,
+  paidAmountCents = amountCents,
 ): Promise<boolean> {
   const supabase = getStoreServiceSupabase();
-  const product = snapshot
-    ? null
-    : await getServerStoreProduct(supabase, productKey, { activeOnly: false });
-  const priceCents = snapshot?.priceCents ?? product!.priceCents;
-  const contents = parseStoreProductContents(snapshot?.contents ?? product!.contents);
-  if (!Number.isInteger(priceCents) || priceCents < 0 || amountCents !== priceCents) {
+  const priceCents = snapshot.priceCents;
+  const contents = parseStoreProductContents(snapshot.contents);
+  if (
+    !Number.isSafeInteger(paidAmountCents) ||
+    paidAmountCents < 0 ||
+    paidAmountCents > 2_147_483_647
+  )
+    throw new Error("O total do pagamento é inválido.");
+  if (
+    !Number.isSafeInteger(priceCents) ||
+    priceCents < 0 ||
+    !Number.isSafeInteger(amountCents) ||
+    amountCents !== priceCents
+  ) {
     await markPurchaseFailed(reference, "O valor pago não confere com o catálogo oficial.");
     throw new Error(`Unexpected checkout amount for ${productKey}`);
   }
@@ -94,7 +155,7 @@ export async function fulfillOneTimePurchase(
     _user_id: userId,
     _product_key: productKey,
     _reference: reference,
-    _amount_cents: amountCents,
+    _amount_cents: paidAmountCents,
     _coins: contents.coins,
     _scout_reports: contents.scoutReports,
     _training_boosts: contents.trainingBoosts,
@@ -104,10 +165,50 @@ export async function fulfillOneTimePurchase(
   if (data === true) {
     const { notifySlack } = await import("./slack.server");
     notifySlack(
-      `Nova compra entregue: ${productKey} — R$ ${(amountCents / 100).toFixed(2).replace(".", ",")}`,
+      `Nova compra entregue: ${productKey} — R$ ${(paidAmountCents / 100).toFixed(2).replace(".", ",")}`,
     );
   }
   return data === true;
+}
+
+export type PaymentReviewEvent = {
+  eventId: string;
+  reference: string;
+  type: "charge.refunded" | "payment_intent.payment_failed";
+  created: number;
+  refundedAmountCents?: number;
+};
+
+/** Durable event journal. Concurrent deliveries may both continue; the credit
+ * RPC and review RPC remain atomic. A failed delivery is never acknowledged. */
+export async function beginPaymentEvent(eventId: string, eventType: string): Promise<boolean> {
+  const { data, error } = await getStoreServiceSupabase().rpc("begin_payment_webhook_event", {
+    _event_id: eventId,
+    _event_type: eventType,
+  });
+  if (error) throw new Error("Não foi possível registrar o evento do pagamento.");
+  return data === true;
+}
+
+export async function finishPaymentEvent(eventId: string, succeeded: boolean): Promise<void> {
+  const { error } = await getStoreServiceSupabase().rpc("finish_payment_webhook_event", {
+    _event_id: eventId,
+    _succeeded: succeeded,
+  });
+  if (error) throw new Error("Não foi possível concluir o registro do pagamento.");
+}
+
+/** Refunds are reviewed without changing delivered benefits. The separate
+ * review record also survives a refund arriving before the purchase row. */
+export async function reconcilePaymentReview(event: PaymentReviewEvent): Promise<void> {
+  const { error } = await getStoreServiceSupabase().rpc("reconcile_purchase_payment_review", {
+    _event_id: event.eventId,
+    _reference: event.reference,
+    _event_type: event.type,
+    _event_created: event.created,
+    _refunded_amount_cents: event.refundedAmountCents ?? 0,
+  });
+  if (error) throw new Error("Não foi possível reconciliar o pagamento. O evento será repetido.");
 }
 
 export async function syncSubscriptionForUser(
@@ -147,23 +248,13 @@ export async function syncSubscriptionForUser(
   );
   if (subscriptionError) throw new Error(subscriptionError.message);
 
-  const active =
-    ["active", "trialing"].includes(subscription.status) &&
-    periodEnd &&
-    new Date(periodEnd * 1000) > new Date();
-  const canceledButValid =
-    subscription.status === "canceled" && periodEnd && new Date(periodEnd * 1000) > new Date();
-  const seasonPassUntil =
-    active || canceledButValid ? new Date(periodEnd * 1000).toISOString() : null;
-
-  const { error: walletError } = await supabase.from("user_wallet").upsert(
-    {
-      user_id: userId,
-      season_pass: !!seasonPassUntil,
-      season_pass_until: seasonPassUntil,
-    },
-    { onConflict: "user_id" },
-  );
+  // A customer can have overlapping subscriptions while Stripe delivers old
+  // events out of order. Recompute the wallet from every subscription inside
+  // one database function so an older cancellation cannot erase a newer pass.
+  const { error: walletError } = await supabase.rpc("reconcile_subscription_wallet", {
+    _user_id: userId,
+    _environment: env,
+  });
   if (walletError) throw new Error(walletError.message);
 }
 

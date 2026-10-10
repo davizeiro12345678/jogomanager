@@ -1,7 +1,13 @@
 import { CLUBS } from "./data/leagues";
 import { quickSimulate } from "./career";
 import { makeRng } from "./rng";
-import { profileFor, setAttrDeltas } from "./attributes";
+import { developedPlayer, profileFor, withDevelopmentBase } from "./attributes";
+import {
+  developmentResponse,
+  effectivePlayer,
+  limitedDevelopmentDelta,
+  withDevelopmentSeasonStart,
+} from "./player-development";
 import type { AttrDeltas, DetailedAttributes } from "./attributes";
 import type { CareerState, NewsItem, Player, Position, TrainingReport } from "./types";
 
@@ -166,9 +172,10 @@ function applyDetailedTrainingGain(
   player: Player,
   keys: readonly (keyof DetailedAttributes)[],
   response: number,
+  state: CareerState,
 ) {
   const existing = { ...(deltas[player.id] ?? {}) };
-  const profile = profileFor(player);
+  const profile = profileFor(player, { attrDeltas: deltas });
   const before = deltas[player.id] ?? {};
   let changed = false;
 
@@ -179,12 +186,23 @@ function applyDetailedTrainingGain(
     const maxDelta = Math.max(0, 99 - base);
     const next = Math.min(maxDelta, currentDelta + 0.12 * response * weight);
     if (next > currentDelta + 0.001) {
-      existing[key] = rounded(next, 1);
+      existing[key] = rounded(next, state.developmentRulesVersion === 2 ? 6 : 1);
       changed = true;
     }
   });
 
-  if (changed) deltas[player.id] = existing;
+  if (changed) {
+    if (state.developmentRulesVersion === 2) {
+      const changes = Object.fromEntries(
+        keys.map((key) => [key, (existing[key] ?? 0) - (before[key] ?? 0)]),
+      );
+      deltas[player.id] = limitedDevelopmentDelta(
+        player,
+        { ...state, attrDeltas: deltas },
+        changes,
+      );
+    } else deltas[player.id] = existing;
+  }
   return changed;
 }
 
@@ -196,7 +214,7 @@ export function runDrill(state: CareerState, drillId: string): CareerState {
 
   // Garante que a ficha em cache parte exatamente do save recebido. Sem isso,
   // abrir duas carreiras na mesma sessão poderia reutilizar deltas da anterior.
-  setAttrDeltas(state.attrDeltas ?? {});
+  state = withDevelopmentSeasonStart(state);
 
   const intensity = state.trainingIntensity ?? 1;
   const fatigue = drill.fatigue * (intensity === 0 ? 0.6 : intensity === 2 ? 1.4 : 1);
@@ -211,21 +229,30 @@ export function runDrill(state: CareerState, drillId: string): CareerState {
       players[id] = p;
       continue;
     }
-    const q: Player = { ...p };
+    const q: Player = { ...withDevelopmentBase(p, state.developmentRulesVersion === 2 ? 2 : 1) };
     const focused = drill.targets.includes(q.pos);
     const rnd = makeRng(`drill-${drillId}-${roundKey(state)}-${state.clubId}-${id}`);
     if (!q.injuryWeeks) {
       q.condition = Math.max(40, Math.min(100, q.condition - Math.round(fatigue)));
       q.morale = Math.max(25, Math.min(99, q.morale + drill.morale));
       const youthBonus = q.age <= 23 ? 1.6 : q.age <= 28 ? 1 : 0.5;
-      const profile = profileFor(q);
-      const response = trainingResponse(q, intensity, profile);
+      const profile = profileFor(q, state);
+      const response =
+        state.developmentRulesVersion === 2
+          ? developmentResponse(effectivePlayer(q, state), intensity, profile)
+          : trainingResponse(q, intensity, profile);
       const applied = focused && rnd() < growthChance * youthBonus * Math.min(1.22, response);
       if (applied) {
-        const detailedChanged = applyDetailedTrainingGain(attrDeltas, q, drill.attrKeys, response);
+        const detailedChanged = applyDetailedTrainingGain(
+          attrDeltas,
+          q,
+          drill.attrKeys,
+          response,
+          state,
+        );
         const current = q[drill.attr] as number;
         const cap = q.potential ?? Math.min(99, q.ovr + 6);
-        if (current < 99 && q.ovr <= cap) {
+        if (state.developmentRulesVersion !== 2 && current < 99 && q.ovr <= cap) {
           if (rnd() < 0.42 * Math.min(1.15, response))
             (q as unknown as Record<string, number>)[drill.attr] = Math.min(99, current + 1);
           if (rnd() < 0.22 * Math.min(1.12, response)) q.ovr = Math.min(cap, q.ovr + 1);
@@ -233,12 +260,11 @@ export function runDrill(state: CareerState, drillId: string): CareerState {
         if (detailedChanged) responders.push(q.name);
       }
     }
-    players[id] = q;
+    players[id] = developedPlayer(q, { ...state, attrDeltas });
   }
 
   // O perfil detalhado é cacheado; sincroniza o delta novo para a ficha aberta
   // refletir o treino sem precisar fechar e recarregar a carreira.
-  setAttrDeltas(attrDeltas);
   const report: TrainingReport = {
     id: `training-${drillId}-${roundKey(state)}`,
     season: state.season,

@@ -1,3 +1,5 @@
+import type { AthleteAppearanceV1 } from "./appearance";
+
 export type PlayerPosition = "GOL" | "ZAG" | "LAT" | "VOL" | "MEI" | "PON" | "ATA";
 export type BodyBuild = "leve" | "atletico" | "forte";
 export type AthletePersonality = "profissional" | "ambicioso" | "leal" | "temperamental";
@@ -75,7 +77,13 @@ export interface KeyMoment {
   id: string;
   minute: number;
   prompt: string;
-  options: { id: string; label: string; attr: string; risk: number; reward: "goal" | "assist" | "save" | "tackle" | "keep" }[];
+  options: {
+    id: string;
+    label: string;
+    attr: string;
+    risk: number;
+    reward: "goal" | "assist" | "save" | "tackle" | "keep";
+  }[];
 }
 
 export interface PlayerCareerState {
@@ -96,6 +104,8 @@ export interface PlayerCareerState {
   personality: AthletePersonality;
   origin: CareerOrigin;
   appearance: Appearance;
+  /** Additive visual contract. Absent only while a v1 save is being hydrated. */
+  appearanceV1?: AthleteAppearanceV1;
   shirtNumber: number;
   age: number;
   season: number;
@@ -145,5 +155,6 @@ export interface CreateAthleteInput {
   origin: CareerOrigin;
   clubId: string;
   appearance: Appearance;
+  appearanceV1?: AthleteAppearanceV1;
   shirtNumber: number;
 }

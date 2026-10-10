@@ -12,7 +12,6 @@ export function footballShorts(
   const positions: number[] = [];
   const uvs: number[] = [];
   const openingLeg: number[] = [];
-  const waistBand: number[] = [];
   const indices: number[] = [];
   const centers = p.hipW * 0.36;
   // The crotch closes between the legs, but its outer contour still has to
@@ -26,7 +25,6 @@ export function footballShorts(
     positions.push(x, y, z);
     uvs.push(u, (y - hem) / (top - hem));
     openingLeg.push(leg);
-    waistBand.push(Math.max(0, Math.min(1, (y - crotch) / (top - crotch))));
   };
   const stitch = (a: number, b: number, count: number) => {
     for (let i = 0; i < count; i++)
@@ -36,18 +34,25 @@ export function footballShorts(
   for (let row = 0; row <= rows; row++) {
     const t = row / rows;
     const split = t * t * (3 - 2 * t);
+    // Keep a full front/seat panel until the lower rise. Collapsing its centre
+    // from the waistband made a deep artificial cleft on both sides. Only
+    // depth changes here; branch endpoints and leg skinning stay identical.
+    const depthSplit = THREE.MathUtils.smoothstep(t, 0.42, 1);
     for (let i = 0; i <= radial * 2; i++) {
       const right = i > radial;
       const phase = ((right ? i - radial : i) / radial) * Math.PI * 2;
       const sign = right ? -1 : 1;
-      const xWaist = sign * Math.sin(phase / 2) * p.hipW * (0.62 + Math.sin(t * Math.PI) * 0.065);
-      const zWaist = sign * Math.cos(phase / 2) * p.chestD * (0.87 + Math.sin(t * Math.PI) * 0.08);
+      // Keep room over the seat without the inflated mid-pelvis bulge that
+      // made the front silhouette read as two cylindrical balloons. The
+      // branch and opening still use the seated quadriceps coverage envelope.
+      const xWaist = sign * Math.sin(phase / 2) * p.hipW * (0.62 + Math.sin(t * Math.PI) * 0.024);
+      const zWaist = sign * Math.cos(phase / 2) * p.chestD * (0.87 + Math.sin(t * Math.PI) * 0.032);
       const xLeg = sign * crotchRadius * (1 - Math.cos(phase));
       const zLeg = sign * Math.sin(phase) * (p.legR * 1.34 + 0.007);
       append(
         xWaist + (xLeg - xWaist) * split,
         top + (crotch - top) * t,
-        zWaist + (zLeg - zWaist) * split,
+        zWaist + (zLeg - zWaist) * depthSplit,
         i / (radial * 2),
       );
     }
@@ -61,11 +66,16 @@ export function footballShorts(
       const t = row / legRows;
       const y = crotch + (hem - crotch) * t;
       const center = crotchRadius + (centers - crotchRadius) * t;
-      const width = crotchRadius * (1 - t) + (p.legR * 1.2 + 0.007) * t;
-      const depth = p.legR * (1.34 - t * 0.05) + 0.007;
+      const width = crotchRadius * (1 - t) + (p.legR * 1.16 + 0.007) * t;
+      const depth = p.legR * (1.34 - t * 0.1) + 0.007;
       const start = positions.length / 3;
       for (let i = 0; i <= radial; i++) {
-        const phase = (i / radial) * Math.PI * 2;
+        // Meet the thigh's sin/cos angular grid at the opening. A 90-degree
+        // phase mismatch is harmless on dense rings, but six-sided extras
+        // put skin corners directly behind cloth edges and looked torn when
+        // seated. Blend from the crotch's authored grid without a new ring.
+        const phase =
+          (i / radial) * Math.PI * 2 + THREE.MathUtils.smoothstep(t, 0, 0.55) * Math.PI * 0.5;
         const hemRoll = Math.exp(-(((t - 0.97) / 0.07) ** 2)) * 0.0022;
         const panel = Math.cos(phase * 2) * Math.sin(Math.PI * t) * 0.001;
         const crease =
@@ -88,7 +98,6 @@ export function footballShorts(
   // Both openings cross the centre plane. Preserve their authored identity
   // until skinning, instead of assigning a femur from the vertex's x sign.
   geometry.setAttribute("openingLeg", new THREE.Float32BufferAttribute(openingLeg, 1));
-  geometry.setAttribute("waistBand", new THREE.Float32BufferAttribute(waistBand, 1));
   geometry.setIndex(indices);
   const color = new Float32Array(positions.length);
   const attributes = geometry.getAttribute("uv");
@@ -96,9 +105,7 @@ export function footballShorts(
     const v = attributes.getY(i);
     const waistband = Math.exp(-(((v - 0.965) / 0.027) ** 2)) * 0.13;
     const hemShade = Math.exp(-(((v - 0.015) / 0.025) ** 2)) * 0.12;
-    // Keep the panel cue broad. A high-frequency vertex pattern aliases against
-    // the repeated normal map and becomes moiré during the broadcast camera.
-    const panel = Math.sin(attributes.getX(i) * Math.PI) ** 2 * 0.018;
+    const panel = Math.exp(-((Math.cos(attributes.getX(i) * Math.PI * 4) / 0.07) ** 2)) * 0.055;
     color.set(
       [
         1 - waistband - hemShade - panel,

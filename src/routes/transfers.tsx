@@ -6,7 +6,14 @@ import { useMemo, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
-import { EmptyState, NoCareer, PrimaryButton, SkeletonRows } from "@/components/game/screen-kit";
+import {
+  EmptyState,
+  NoCareer,
+  PrimaryButton,
+  SkeletonRows,
+  SectionCard,
+  ScreenHeader,
+} from "@/components/game/screen-kit";
 import {
   AGENT_DESC,
   AGENT_LABEL,
@@ -20,6 +27,8 @@ import { acceptOffer, rejectOffer } from "@/game/career";
 import { CLUBS } from "@/game/data/leagues";
 import { ownsRealPlayer } from "@/game/player-identity";
 import { formatMoney, formatWage, wageBill } from "@/game/economy";
+import { playerForDisplay } from "@/game/player-development";
+import { safeMoney } from "@/game/financial-inputs";
 import {
   askingPrice,
   bidFor,
@@ -27,6 +36,7 @@ import {
   negotiate,
   sellToClub,
   signRealPlayer,
+  quoteRealSigning,
   toTarget,
   wageAsk,
   windowOpen,
@@ -65,7 +75,9 @@ function TransfersPage() {
 
   if (!career) return <NoCareer />;
 
-  const players = Object.values(career.players);
+  const players = Object.values(career.players)
+    .filter((p) => p.clubId === career.clubId)
+    .map((p) => playerForDisplay(p, career));
   const bill = wageBill(players);
   const open = windowOpen(career);
   const rows = (data?.rows ?? [])
@@ -119,9 +131,9 @@ function TransfersPage() {
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-        <section className="rounded-2xl border border-border/60 surface-card p-5">
+        <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="font-display text-2xl uppercase tracking-wide">Mercado da bola</h1>
+            <ScreenHeader title="Mercado da bola" />
             <span
               className={`rounded-full px-2.5 py-1 text-[10px] uppercase tracking-wider ${
                 open ? "bg-primary/20 text-primary" : "bg-destructive/20 text-destructive"
@@ -229,7 +241,7 @@ function TransfersPage() {
             ) : (
               rows.map((t) => {
                 const club = CLUBS[t.clubId];
-                const price = askingPrice(t);
+                const price = askingPrice(t, career);
                 return (
                   <div
                     key={t.id}
@@ -282,7 +294,7 @@ function TransfersPage() {
               Próxima
             </button>
           </div>
-        </section>
+        </SectionCard>
 
         <SellPanel career={career} update={update} />
       </div>
@@ -302,14 +314,17 @@ function TransfersPage() {
 type Career = NonNullable<ReturnType<typeof useCareer>["career"]>;
 
 function SellPanel({ career, update }: { career: Career; update: (s: Career) => void }) {
-  const players = Object.values(career.players).sort((a, b) => a.ovr - b.ovr);
+  const players = Object.values(career.players)
+    .filter((p) => p.clubId === career.clubId)
+    .map((p) => playerForDisplay(p, career))
+    .sort((a, b) => a.ovr - b.ovr);
   const buyers = Object.values(CLUBS)
     .filter((c) => c.id !== career.clubId)
     .sort((a, b) => b.strength - a.strength)
     .slice(0, 40);
 
   return (
-    <section className="rounded-2xl border border-border/60 surface-card p-5">
+    <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">
       <h2 className="font-display text-xl uppercase tracking-wide">Vender ou dispensar</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         A venda entra direto no caixa. Rescisão custa 20% do valor. Elenco mínimo: 16 atletas.
@@ -325,7 +340,9 @@ function SellPanel({ career, update }: { career: Career; update: (s: Career) => 
                   <span className="text-muted-foreground">{p.pos}</span> {p.name}
                   <span className="ml-2 font-display">{p.ovr}</span>
                 </span>
-                <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">{formatWage(p.wage)}</span>
+                <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                  {formatWage(p.wage)}
+                </span>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="text-[11px] text-muted-foreground">
@@ -348,7 +365,7 @@ function SellPanel({ career, update }: { career: Career; update: (s: Career) => 
           );
         })}
       </ul>
-    </section>
+    </SectionCard>
   );
 }
 
@@ -363,7 +380,7 @@ function NegotiationDialog({
   update: (s: Career) => void;
   onClose: () => void;
 }) {
-  const ask = askingPrice(target);
+  const ask = askingPrice(target, career);
   const [fee, setFee] = useState(ask);
   const [wage, setWage] = useState(wageAsk(target));
   const [loan, setLoan] = useState(false);
@@ -373,10 +390,11 @@ function NegotiationDialog({
   const [conv, setConv] = useState(() => agentConversation(target.id));
   const [opener] = useState(() => agentOpener(conv.agent, target.name, clubName(target.clubId)));
   const mood = moodFor(conv.heat);
-  const agentFee = Math.round(fee * (conv.agent.feePct / 100) * 10) / 10;
+  const agentFee = safeMoney(fee * (conv.agent.feePct / 100));
 
-  const cost = Math.round(((loan ? fee * 0.25 : fee) + agentFee) * 10) / 10;
-  const affordable = career.finances.budget >= cost;
+  const quote = quoteRealSigning(career, target, { fee, wage, loan, agentFee });
+  const cost = quote.upfrontCost;
+  const affordable = quote.affordable;
   const wageOk = wage >= wageAsk(target);
 
   function propose() {
@@ -503,6 +521,17 @@ function NegotiationDialog({
             <input type="checkbox" checked={loan} onChange={(e) => setLoan(e.target.checked)} />
             Empréstimo por uma temporada (paga 25% do valor e metade do salário)
           </label>
+        </div>
+
+        <div className="mt-3 rounded-lg border border-border/50 bg-background/40 p-3 text-xs text-muted-foreground">
+          <p>
+            Taxa, comissão e luvas:{" "}
+            <strong className="text-foreground">{formatMoney(cost, 3)}</strong>.
+          </p>
+          <p className="mt-1">
+            Reserva prevista para quatro semanas: {formatMoney(quote.reserveRequired, 3)}.
+          </p>
+          {quote.reason ? <p className="mt-1 text-amber-400">{quote.reason}</p> : null}
         </div>
 
         {log.length > 0 ? (

@@ -5,6 +5,7 @@ import { LayoutGrid, Play, Users, Volume2, VolumeX } from "lucide-react";
 import type { CareerState, Club } from "@/game/types";
 import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
+import { RealClubInfo } from "@/components/game/RealClubInfo";
 import { NoCareer } from "@/components/game/screen-kit";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { computeTable, nextFixture } from "@/game/season";
@@ -16,11 +17,15 @@ export const Route = createFileRoute("/pre-jogo")({
   head: () => ({
     meta: [
       { title: "Pré-jogo — Football Manager 3D" },
-      { name: "description", content: "Escalações, forma recente e narração antes do apito inicial." },
+      {
+        name: "description",
+        content: "Escalações, forma recente e narração antes do apito inicial.",
+      },
       { property: "og:title", content: "Pré-jogo — Football Manager 3D" },
       { property: "og:description", content: "Prepare o confronto como numa transmissão de TV." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "robots", content: "noindex, follow" },
     ],
   }),
   component: PreMatchPage,
@@ -59,7 +64,9 @@ function PreMatch({ career }: { career: CareerState }) {
       <GameShell career={career}>
         <div className="prematch-empty">
           <h1>Temporada encerrada</h1>
-          <Link to="/league" className="career-primary-button">Ver classificação</Link>
+          <Link to="/league" className="career-primary-button">
+            Ver classificação
+          </Link>
         </div>
       </GameShell>
     );
@@ -80,9 +87,22 @@ function PreMatch({ career }: { career: CareerState }) {
             {home.name} contra {away.name}
           </h1>
           <div className="prematch-versus">
-            <TeamBlock club={home} side="Mandante" pos={posOf(home.id)} form={formFor(career, home.id)} />
-            <div className="prematch-vs" aria-hidden="true">VS</div>
-            <TeamBlock club={away} side="Visitante" pos={posOf(away.id)} form={formFor(career, away.id)} delay />
+            <TeamBlock
+              club={home}
+              side="Mandante"
+              pos={posOf(home.id)}
+              form={formFor(career, home.id)}
+            />
+            <div className="prematch-vs" aria-hidden="true">
+              VS
+            </div>
+            <TeamBlock
+              club={away}
+              side="Visitante"
+              pos={posOf(away.id)}
+              form={formFor(career, away.id)}
+              delay
+            />
           </div>
           <StrengthBar home={home} away={away} />
         </header>
@@ -96,7 +116,9 @@ function PreMatch({ career }: { career: CareerState }) {
 
         <div className="prematch-grid">
           <section className="prematch-card" aria-labelledby="lineup-title">
-            <h2 id="lineup-title"><Users size={16} /> Seus titulares</h2>
+            <h2 id="lineup-title">
+              <Users size={16} /> Seus titulares
+            </h2>
             <ol className="prematch-lineup">
               {lineup.map((p) => {
                 const bad = p.injuryWeeks > 0 || p.suspended;
@@ -116,23 +138,43 @@ function PreMatch({ career }: { career: CareerState }) {
             <section className="prematch-card prematch-star" aria-labelledby="star-title">
               <h2 id="star-title">Craque do time</h2>
               <strong>{star.name}</strong>
-              <p>{star.pos} · {star.age} anos · nível {star.ovr}</p>
+              <p>
+                {star.pos} · {star.age} anos · nível {star.ovr}
+              </p>
               <p className="prematch-muted">{star.goals ?? 0} gols na temporada</p>
             </section>
           ) : null}
         </div>
 
         <div className="prematch-actions">
-          <Link to="/tactics" className="career-secondary-button"><LayoutGrid size={16} /> Ajustar táticas</Link>
-          <Link to="/squad" className="career-secondary-button"><Users size={16} /> Mudar escalação</Link>
-          <Link to="/match" className="career-primary-button prematch-go"><Play size={18} /> Entrar em campo</Link>
+          <Link to="/tactics" className="career-secondary-button">
+            <LayoutGrid size={16} /> Ajustar táticas
+          </Link>
+          <Link to="/squad" className="career-secondary-button">
+            <Users size={16} /> Mudar escalação
+          </Link>
+          <Link to="/match" className="career-primary-button prematch-go">
+            <Play size={18} /> Entrar em campo
+          </Link>
         </div>
       </section>
     </GameShell>
   );
 }
 
-function TeamBlock({ club, side, pos, form, delay }: { club: Club; side: string; pos: number; form: FormLetter[]; delay?: boolean }) {
+function TeamBlock({
+  club,
+  side,
+  pos,
+  form,
+  delay,
+}: {
+  club: Club;
+  side: string;
+  pos: number;
+  form: FormLetter[];
+  delay?: boolean;
+}) {
   return (
     <div className={`prematch-team${delay ? " is-delayed" : ""}`}>
       <Crest club={club} size={88} />
@@ -140,7 +182,15 @@ function TeamBlock({ club, side, pos, form, delay }: { club: Club; side: string;
       <h2>{club.name}</h2>
       <p className="prematch-muted">{pos > 0 ? `${pos}º na tabela` : "Sem jogos"}</p>
       <div className="prematch-form" aria-label={`Últimos jogos: ${form.join(", ") || "nenhum"}`}>
-        {form.length ? form.map((f, i) => <span key={i} data-r={f}>{f}</span>) : <span data-r="-">—</span>}
+        {form.length ? (
+          form.map((f, i) => (
+            <span key={i} data-r={f}>
+              {f}
+            </span>
+          ))
+        ) : (
+          <span data-r="-">—</span>
+        )}
       </div>
     </div>
   );
@@ -149,15 +199,30 @@ function TeamBlock({ club, side, pos, form, delay }: { club: Club; side: string;
 function StrengthBar({ home, away }: { home: Club; away: Club }) {
   const pct = Math.round((home.strength / Math.max(1, home.strength + away.strength)) * 100);
   return (
-    <div className="prematch-strength" aria-label={`Força: ${home.strength} contra ${away.strength}`}>
+    <div
+      className="prematch-strength"
+      aria-label={`Força: ${home.strength} contra ${away.strength}`}
+    >
       <span>{home.strength}</span>
-      <div><i style={{ width: `${pct}%` }} /></div>
+      <div>
+        <i style={{ width: `${pct}%` }} />
+      </div>
       <span>{away.strength}</span>
     </div>
   );
 }
 
-function Narration({ career, home, away, round }: { career: CareerState; home: Club; away: Club; round: number }) {
+function Narration({
+  career,
+  home,
+  away,
+  round,
+}: {
+  career: CareerState;
+  home: Club;
+  away: Club;
+  round: number;
+}) {
   const [muted, setMuted] = useState(false);
   const [status, setStatus] = useState<"loading" | "playing" | "captions">("loading");
   const audioRef = useRef<HTMLAudioElement | null>(null);

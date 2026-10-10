@@ -3,6 +3,8 @@ import type { PlayerAction } from "./animation";
 import type { Replay, ReplayFrame, ReplayPlayerMeta } from "./replay";
 import type { TeamSetup } from "./sim";
 import type { VersionedVisualData } from "./visual-context";
+import { validExecutionContract, type MatchExecutionContract } from "./match-execution-contract";
+import { validMatchTeam } from "./match-command-validation";
 
 export const REPLAY_FORMAT_V2 = 2;
 export const REPLAY_FORMAT_V3 = 3;
@@ -10,6 +12,7 @@ export const REPLAY_V3_MIN_REDUCTION = 0.2;
 const QUANTIZE = 100;
 
 export type StoredReplayV3 = {
+  execution?: MatchExecutionContract;
   version: typeof REPLAY_FORMAT_V3;
   id: string;
   createdAt: number;
@@ -57,7 +60,8 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
     const timeMs = Math.max(previousTimeMs, Math.round(frame.t * 1_000));
     timesMs[frameIndex] = timeMs - previousTimeMs;
     previousTimeMs = timeMs;
-    for (let axis = 0; axis < 3; axis += 1) ball[frameIndex * 3 + axis] = integer(frame.b[axis]! / 1);
+    for (let axis = 0; axis < 3; axis += 1)
+      ball[frameIndex * 3 + axis] = integer(frame.b[axis]! / 1);
     score[frameIndex * 2] = Math.max(0, Math.min(65_535, frame.hg));
     score[frameIndex * 2 + 1] = Math.max(0, Math.min(65_535, frame.ag));
     possession[frameIndex] = frame.poss === "away" ? 1 : 0;
@@ -74,6 +78,7 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
 
   return {
     version: REPLAY_FORMAT_V3,
+    ...(replay.execution ? { execution: { ...replay.execution } } : {}),
     id: replay.id,
     createdAt: replay.createdAt,
     title: replay.title,
@@ -133,6 +138,7 @@ function decodeV3(raw: StoredReplayV3): Replay {
     });
   }
   return {
+    ...(raw.execution ? { execution: { ...raw.execution } } : {}),
     id: raw.id,
     createdAt: raw.createdAt,
     title: raw.title,
@@ -146,6 +152,7 @@ function decodeV3(raw: StoredReplayV3): Replay {
 
 export function decodeReplay(raw: unknown): Replay {
   if (!raw || typeof raw !== "object") throw new TypeError("replay inválido");
+  validateReplayInput(raw);
   const candidate = raw as { version?: unknown };
   if (candidate.version === REPLAY_FORMAT_V3) return decodeV3(raw as StoredReplayV3);
   if (candidate.version === REPLAY_FORMAT_V2) {
@@ -153,6 +160,102 @@ export function decodeReplay(raw: unknown): Replay {
     return legacy;
   }
   return raw as Replay;
+}
+
+const MAX_REPLAY_FRAMES = 40_000;
+function validateReplayInput(raw: object): void {
+  const replay = raw as Record<string, unknown>;
+  const fail = () => {
+    throw new TypeError("Replay inválido ou incompatível.");
+  };
+  const finite = (v: unknown) => typeof v === "number" && Number.isFinite(v);
+  if (
+    typeof replay["id"] !== "string" ||
+    replay["id"].length > 256 ||
+    typeof replay["title"] !== "string" ||
+    replay["title"].length > 256 ||
+    !finite(replay["createdAt"]) ||
+    !validMatchTeam(replay["home"]) ||
+    !validMatchTeam(replay["away"]) ||
+    !Array.isArray(replay["meta"]) ||
+    replay["meta"].length < 1 ||
+    replay["meta"].length > 22 ||
+    !Array.isArray(replay["score"]) ||
+    replay["score"].length !== 2 ||
+    !replay["score"].every((v) => Number.isInteger(v) && v >= 0 && v <= 65535) ||
+    (replay["execution"] !== undefined && !validExecutionContract(replay["execution"]))
+  )
+    fail();
+  const meta = replay["meta"] as ReplayPlayerMeta[];
+  const ids = new Set<string>();
+  for (const player of meta) {
+    if (
+      !player ||
+      typeof player.id !== "string" ||
+      player.id.length > 160 ||
+      ids.has(player.id) ||
+      typeof player.name !== "string" ||
+      player.name.length > 240 ||
+      typeof player.pid !== "string" ||
+      player.pid.length > 160 ||
+      (player.side !== "home" && player.side !== "away") ||
+      !Number.isInteger(player.number)
+    )
+      fail();
+    ids.add(player.id);
+  }
+  if (replay["version"] === 3) {
+    const frames = replay["frames"] as StoredReplayV3["frames"] | undefined;
+    if (
+      !frames ||
+      !(frames.timesMs instanceof Uint32Array) ||
+      frames.timesMs.length > MAX_REPLAY_FRAMES
+    )
+      fail();
+    const f = frames!;
+    const count = f.timesMs.length;
+    if (
+      !(f.ball instanceof Int16Array) ||
+      f.ball.length !== count * 3 ||
+      !(f.positions instanceof Int16Array) ||
+      f.positions.length !== count * meta.length * 4 ||
+      !(f.actions instanceof Uint8Array) ||
+      f.actions.length !== count * meta.length ||
+      !(f.score instanceof Uint16Array) ||
+      f.score.length !== count * 2 ||
+      !(f.possession instanceof Uint8Array) ||
+      f.possession.length !== count ||
+      (f.visual !== undefined && (!Array.isArray(f.visual) || f.visual.length !== count))
+    )
+      fail();
+    return;
+  }
+  if (replay["version"] !== undefined && replay["version"] !== 2) fail();
+  const frames = replay["frames"];
+  if (!Array.isArray(frames) || frames.length > MAX_REPLAY_FRAMES) fail();
+  let previous = -1;
+  for (const frame of frames as ReplayFrame[]) {
+    if (
+      !frame ||
+      !finite(frame.t) ||
+      frame.t < previous ||
+      !Array.isArray(frame.b) ||
+      frame.b.length !== 3 ||
+      !frame.b.every(finite) ||
+      !Array.isArray(frame.p) ||
+      frame.p.length !== meta.length * 4 ||
+      !frame.p.every(finite) ||
+      !Array.isArray(frame.a) ||
+      frame.a.length !== meta.length ||
+      !Number.isInteger(frame.hg) ||
+      frame.hg < 0 ||
+      !Number.isInteger(frame.ag) ||
+      frame.ag < 0 ||
+      (frame.poss !== "home" && frame.poss !== "away")
+    )
+      fail();
+    previous = frame.t;
+  }
 }
 
 export function estimateReplayBytes(replay: Replay, stored: StoredReplayV3) {
@@ -177,7 +280,9 @@ export function estimateReplayBytes(replay: Replay, stored: StoredReplayV3) {
     score: stored.score,
     visual: stored.frames.visual,
   };
-  const v3Bytes = arrays.reduce((sum, value) => sum + value.byteLength, 0) + text.encode(JSON.stringify(envelope)).byteLength;
+  const v3Bytes =
+    arrays.reduce((sum, value) => sum + value.byteLength, 0) +
+    text.encode(JSON.stringify(envelope)).byteLength;
   return {
     frameCount: replay.frames.length,
     v2Bytes,

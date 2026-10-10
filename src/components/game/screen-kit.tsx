@@ -16,7 +16,16 @@
 // ============================================================================
 
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import {
+  Children,
+  isValidElement,
+  useId,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+} from "react";
+import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/provider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { GameShell } from "@/components/game/GameShell";
 
@@ -28,9 +37,10 @@ const TOUCH = "min-h-11";
  * e caminho para começar. Substitui os 18 blocos artesanais espalhados.
  */
 export function NoCareer({ hint }: { hint?: string }) {
+  const { t } = useT();
   return (
     <GameShell career={null}>
-      <main className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col items-center justify-center px-6 text-center">
+      <div className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col items-center justify-center px-6 text-center">
         <p
           aria-hidden="true"
           className="grid h-16 w-16 place-items-center rounded-2xl bg-primary/15 font-display text-3xl"
@@ -38,25 +48,22 @@ export function NoCareer({ hint }: { hint?: string }) {
           ⚽
         </p>
         <h1 className="mt-4 font-display text-2xl uppercase tracking-wide">
-          Nenhuma carreira ativa
+          {t("screen.noCareer")}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {hint ??
-            "Escolha um clube para montar o elenco, definir a escalação e começar a temporada."}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{hint ?? t("screen.noCareerHint")}</p>
         <Link
           to="/new"
           className={`mt-6 inline-flex ${TOUCH} items-center rounded-xl bg-primary px-6 font-display text-sm uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.02] motion-reduce:transform-none`}
         >
-          Começar carreira
+          {t("screen.startCareer")}
         </Link>
         <Link
           to="/partida-rapida"
           className={`mt-2 inline-flex ${TOUCH} items-center rounded-xl px-6 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline`}
         >
-          ou jogue uma partida rápida sem salvar
+          {t("screen.quickMatch")}
         </Link>
-      </main>
+      </div>
     </GameShell>
   );
 }
@@ -67,21 +74,42 @@ export function ScreenHeader({
   eyebrow,
   description,
   actions,
+  titleKey,
+  icon,
+  className,
+  id,
 }: {
-  title: string;
+  title?: ReactNode;
+  titleKey?: string;
+  icon?: ReactNode;
   eyebrow?: string;
   description?: string;
   actions?: ReactNode;
+  className?: string;
+  id?: string;
 }) {
+  const { t } = useT();
   return (
-    <header className="screen-heading flex flex-wrap items-end justify-between gap-4">
+    <header
+      className={cn("screen-heading flex flex-wrap items-end justify-between gap-4", className)}
+    >
       <div className="min-w-0">
         {eyebrow ? (
           <p className="font-display text-xs uppercase tracking-[0.25em] text-muted-foreground">
             {eyebrow}
           </p>
         ) : null}
-        <h1 className="mt-1 font-display text-2xl uppercase tracking-tight sm:text-3xl">{title}</h1>
+        <h1
+          id={id}
+          className="screen-title mt-1 flex items-center gap-3 font-display text-2xl tracking-tight sm:text-3xl"
+        >
+          {icon ? (
+            <span aria-hidden="true" className="screen-title-icon">
+              {icon}
+            </span>
+          ) : null}
+          {titleKey ? t(titleKey) : title}
+        </h1>
         {description ? (
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">{description}</p>
         ) : null}
@@ -96,17 +124,27 @@ export function SectionCard({
   title,
   children,
   className = "",
-}: {
+  ...props
+}: Omit<ComponentPropsWithoutRef<"section">, "title"> & {
   title?: string;
   children: ReactNode;
   className?: string;
 }) {
+  const heading = useId();
   return (
     <section
-      className={`game-section surface-card rounded-2xl border border-border/70 p-4 sm:p-6 ${className}`}
+      {...props}
+      aria-labelledby={props["aria-labelledby"] ?? (title ? heading : undefined)}
+      className={cn(
+        "game-section surface-card rounded-2xl border border-border/70 p-4 sm:p-6",
+        className,
+      )}
     >
       {title ? (
-        <h2 className="mb-3 font-display text-xs uppercase tracking-[0.25em] text-muted-foreground">
+        <h2
+          id={heading}
+          className="screen-section-title mb-4 font-display text-sm font-semibold tracking-wide"
+        >
           {title}
         </h2>
       ) : null}
@@ -148,7 +186,7 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center px-6 py-10 text-center">
+    <div className="screen-empty flex flex-col items-center px-6 py-10 text-center" role="status">
       <p aria-hidden="true" className="text-4xl">
         {icon}
       </p>
@@ -164,11 +202,11 @@ export function EmptyState({
  * técnico) mostra escondido num <details> em vez de assustar o jogador.
  */
 export function ErrorPanel({
-  title = "Algo saiu errado",
+  title,
   hint,
   detail,
   onRetry,
-  retryLabel = "Tentar de novo",
+  retryLabel,
 }: {
   title?: string;
   hint?: string;
@@ -176,6 +214,7 @@ export function ErrorPanel({
   onRetry?: () => void;
   retryLabel?: string;
 }) {
+  const { t } = useT();
   return (
     <div
       role="alert"
@@ -184,7 +223,7 @@ export function ErrorPanel({
       <p aria-hidden="true" className="text-4xl">
         ⚠️
       </p>
-      <p className="mt-3 font-display text-lg uppercase tracking-wide">{title}</p>
+      <p className="mt-3 font-display text-lg tracking-wide">{title ?? t("screen.error")}</p>
       {hint ? <p className="mt-1 max-w-sm text-sm text-muted-foreground">{hint}</p> : null}
       {onRetry ? (
         <button
@@ -192,7 +231,7 @@ export function ErrorPanel({
           onClick={onRetry}
           className={`mt-4 inline-flex ${TOUCH} items-center rounded-xl bg-primary px-6 font-display text-sm uppercase tracking-wider text-primary-foreground`}
         >
-          {retryLabel}
+          {retryLabel ?? t("common.retry")}
         </button>
       ) : null}
       {detail ? (
@@ -200,7 +239,7 @@ export function ErrorPanel({
           <summary
             className={`cursor-pointer ${TOUCH} inline-flex items-center underline-offset-4 hover:underline`}
           >
-            Detalhe técnico
+            {t("screen.technicalDetail")}
           </summary>
           <pre className="mt-2 max-w-full overflow-x-auto rounded-lg bg-muted/40 p-3">{detail}</pre>
         </details>
@@ -210,17 +249,13 @@ export function ErrorPanel({
 }
 
 /** Esqueleto de carregamento: linhas pulsantes que anunciam espera. */
-export function SkeletonRows({
-  rows = 4,
-  label = "Carregando",
-}: {
-  rows?: number;
-  label?: string;
-}) {
+export function SkeletonRows({ rows = 4, label }: { rows?: number; label?: string }) {
+  const { t } = useT();
+  const loadingLabel = label ?? t("screen.loading");
   return (
-    <div aria-busy="true" aria-label={label} className="space-y-2">
-      <p className="sr-only">{label}…</p>
-      {Array.from({ length: rows }, (_, i) => (
+    <div role="status" aria-busy="true" aria-label={loadingLabel} className="space-y-2">
+      <p className="sr-only">{loadingLabel}…</p>
+      {Array.from({ length: Math.max(1, Math.min(20, Math.floor(rows))) }, (_, i) => (
         <div
           key={i}
           aria-hidden="true"
@@ -238,18 +273,18 @@ export function SkeletonRows({
  */
 export function PrimaryButton({
   children,
-  onClick,
   type = "button",
-}: {
-  children: ReactNode;
-  onClick?: () => void;
-  type?: "button" | "submit";
-}) {
+  className,
+  ...props
+}: ComponentPropsWithoutRef<"button">) {
   return (
     <button
       type={type}
-      onClick={onClick}
-      className={`inline-flex ${TOUCH} items-center justify-center rounded-xl bg-primary px-6 font-display text-sm uppercase tracking-wider text-primary-foreground transition-transform hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-2 motion-reduce:transform-none`}
+      {...props}
+      className={cn(
+        `career-primary-button inline-flex ${TOUCH} items-center justify-center gap-2 rounded-xl bg-primary px-6 font-display text-sm font-semibold text-primary-foreground disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 motion-reduce:transform-none`,
+        className,
+      )}
     >
       {children}
     </button>
@@ -265,5 +300,65 @@ export function PrimaryLink({ to, children }: { to: string; children: ReactNode 
     >
       {children}
     </Link>
+  );
+}
+
+/** Radix owns keyboard navigation, focus, selected state and panel IDs. */
+export function ScreenTabs({
+  value,
+  onValueChange,
+  tabs,
+  children,
+  label,
+  className,
+}: {
+  value: string;
+  onValueChange: (value: string) => void;
+  tabs: readonly { value: string; label: ReactNode; disabled?: boolean }[];
+  children: ReactNode;
+  label: string;
+  className?: string;
+}) {
+  return (
+    <Tabs value={value} onValueChange={onValueChange} className={cn("screen-tabs", className)}>
+      <TabsList aria-label={label} className="screen-tabs-list">
+        {tabs.map((tab) => (
+          <TabsTrigger key={tab.value} value={tab.value} disabled={tab.disabled}>
+            {tab.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+      <TabsContent value={value} className="screen-tab-panel">
+        {children}
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+/** Keyboard users can scroll a wide table; its caption explains the content. */
+export function DataTable({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  const hasCaption = Children.toArray(children).some(
+    (child) => isValidElement(child) && child.type === "caption",
+  );
+  return (
+    <div
+      className={cn("screen-table-wrap", className)}
+      role="region"
+      aria-label={label}
+      tabIndex={0}
+    >
+      <table className="screen-data-table w-full text-sm">
+        {hasCaption ? null : <caption className="sr-only">{label}</caption>}
+        {children}
+      </table>
+    </div>
   );
 }

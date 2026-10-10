@@ -83,7 +83,7 @@ function puff(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, co
   ctx.restore();
 }
 
-function build(time: SkyTime, w = 2048, h = 1024) {
+function build(time: SkyTime, w = 1024, h = 512) {
   if (typeof document === "undefined") return null;
   const c = document.createElement("canvas");
   c.width = w;
@@ -106,7 +106,7 @@ function build(time: SkyTime, w = 2048, h = 1024) {
     const y = rand() * h * 0.55;
     const a = (0.25 + rand() * 0.75) * (1 - y / (h * 0.7));
     ctx.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`;
-    const r = rand() > 0.96 ? 1.8 : 0.9;
+    const r = (rand() > 0.96 ? 1.8 : 0.9) * (h / 1024);
     ctx.beginPath();
     ctx.arc(rand() * w, y, r, 0, Math.PI * 2);
     ctx.fill();
@@ -153,7 +153,7 @@ function build(time: SkyTime, w = 2048, h = 1024) {
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.anisotropy = 4;
+  tex.anisotropy = 1;
   return tex;
 }
 

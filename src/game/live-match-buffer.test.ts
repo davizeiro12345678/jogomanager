@@ -40,9 +40,9 @@ describe("live match transferable buffers", () => {
     const metadata = createLivePlayerMetadata(players);
     const encoded = createLivePlayerBuffer(players);
     expect(() => validateLivePlayerBuffer(encoded, players.length)).not.toThrow();
-    expect(() => validateLivePlayerBuffer({ ...encoded, states: new Float32Array(1) }, players.length)).toThrow(
-      /states/,
-    );
+    expect(() =>
+      validateLivePlayerBuffer({ ...encoded, states: new Float32Array(1) }, players.length),
+    ).toThrow(/states/);
 
     const target = players.map((player) => ({ ...player }));
     encoded.positions[0] = 12.5;

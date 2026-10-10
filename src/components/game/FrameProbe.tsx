@@ -1,10 +1,19 @@
-import { addAfterEffect, useThree } from "@react-three/fiber";
-import { useEffect } from "react";
-import { FrameMetrics, heapUsedBytes } from "@/game/frame-metrics";
-import { censusBudgetUse, censusFitsBudget, censusScene } from "@/game/scene-census";
+import { subscribeRenderedFrames } from "./graphics-probe";
+import { rendererMetadata } from "@/game/graphics-renderer-metadata";
 import { reportSilent } from "@/lib/silent-errors";
+import { useThree } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
+import { FrameMetrics, heapUsedBytes } from "@/game/frame-metrics";
+import { FrameRateWindow } from "@/game/frame-rate-window";
+import {
+  assessNativePerformance,
+  nativeMeasurementTiming,
+  nativeFrameInterval,
+} from "@/game/native-performance-contract";
+import { censusBudgetUse, censusFitsBudget, censusScene } from "@/game/scene-census";
 
 type GraphicsBenchmarkMetadata = {
+  tierBatch?: "instanced" | "merged" | "legacy";
   id: string;
   label: string;
   seed: string;
@@ -24,24 +33,6 @@ type GraphicsBenchmarkMetadata = {
   };
 };
 
-type BenchmarkRenderer = {
-  constructor?: { name?: string };
-  isWebGLRenderer?: boolean;
-  isWebGPURenderer?: boolean;
-  capabilities?: {
-    isWebGL2?: boolean;
-    maxTextureSize?: number;
-    getMaxAnisotropy?: () => number;
-  };
-  getContext?: () => {
-    VERSION?: number;
-    getParameter?: (parameter: number) => unknown;
-    getExtension?: (
-      name: string,
-    ) => { UNMASKED_RENDERER_WEBGL?: number; UNMASKED_VENDOR_WEBGL?: number } | null;
-  } | null;
-};
-
 type BenchmarkNavigator = Navigator & {
   deviceMemory?: number;
   userAgentData?: { mobile?: boolean; platform?: string };
@@ -55,45 +46,6 @@ function benchmarkMetadata(): GraphicsBenchmarkMetadata | null {
   return typeof candidate.id === "string" && typeof candidate.seed === "string"
     ? (candidate as GraphicsBenchmarkMetadata)
     : null;
-}
-
-function rendererMetadata(gl: unknown) {
-  const renderer = gl as BenchmarkRenderer;
-  const name = renderer.constructor?.name ?? "unknown";
-  const isWebGpu = renderer.isWebGPURenderer === true || /webgpu/i.test(name);
-  const isWebGl2 = !isWebGpu && (renderer.capabilities?.isWebGL2 === true || /webgl2/i.test(name));
-  let contextVersion: string | null = null;
-  let gpuRenderer: string | null = null;
-  let gpuVendor: string | null = null;
-  try {
-    const context = renderer.getContext?.();
-    if (context?.getParameter && typeof context.VERSION === "number") {
-      const value = context.getParameter(context.VERSION);
-      contextVersion = typeof value === "string" ? value : null;
-      const debug = context.getExtension?.("WEBGL_debug_renderer_info");
-      if (debug?.UNMASKED_RENDERER_WEBGL)
-        gpuRenderer = String(context.getParameter(debug.UNMASKED_RENDERER_WEBGL));
-      if (debug?.UNMASKED_VENDOR_WEBGL)
-        gpuVendor = String(context.getParameter(debug.UNMASKED_VENDOR_WEBGL));
-    }
-  } catch {
-    // WebGPU renderers and privacy-hardened browsers may not expose a WebGL context.
-  }
-  return {
-    kind: isWebGpu
-      ? "webgpu"
-      : isWebGl2
-        ? "webgl2"
-        : renderer.isWebGLRenderer
-          ? "webgl"
-          : "unknown",
-    renderer: name,
-    contextVersion,
-    gpuRenderer,
-    gpuVendor,
-    maxTextureSize: renderer.capabilities?.maxTextureSize ?? null,
-    maxAnisotropy: renderer.capabilities?.getMaxAnisotropy?.() ?? null,
-  };
 }
 
 function browserMetadata() {
@@ -123,7 +75,9 @@ function hardwareMetadata(renderer: ReturnType<typeof rendererMetadata>) {
 }
 
 /** Opt-in benchmark only: count ALL render passes, then reset once per frame. */
-export function FrameProbe() {
+export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: boolean }) {
+  const effective = useRef({ quality, adaptive });
+  effective.current = { quality, adaptive };
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
   // Telemetria opcional (com consentimento): 30 s de amostra após 10 s de partida.
@@ -132,13 +86,12 @@ export function FrameProbe() {
     const metrics = new FrameMetrics();
     const start = performance.now();
     let last = start;
-    let sent = false;
-    const stop = addAfterEffect(() => {
-      const now = performance.now();
+    const stop = subscribeRenderedFrames(gl, (frame) => {
+      const now = frame.now;
       if (!document.hidden && now - start > 10_000) metrics.add(now - last);
       last = now;
-      if (!sent && now - start > 40_000) {
-        sent = true;
+      if (now - start > 40_000) {
+        stop();
         const s = metrics.summary();
         void import("@/lib/telemetry-client")
           .then((m) => m.reportTechSample({ fps: s.fps, p95: s.p95 }))
@@ -153,13 +106,32 @@ export function FrameProbe() {
       }
     });
     return stop;
-  }, []);
+  }, [gl]);
   useEffect(() => {
     if (!location.pathname.includes("graphics-benchmark")) return;
-    const metrics = new FrameMetrics();
+    const meter = new FrameRateWindow();
+    return subscribeRenderedFrames(gl, (frame) => {
+      const sample = meter.sample(frame.now, document.hidden);
+      if (sample) window.dispatchEvent(new CustomEvent("graphics-live", { detail: sample }));
+    });
+  }, [gl]);
+  useEffect(() => {
+    if (!location.pathname.includes("graphics-benchmark")) return;
+    const timing = nativeMeasurementTiming(location.search);
+    const endMs = timing.warmupMs + timing.measurementMs;
+    const metrics = new FrameMetrics(90000);
     const start = performance.now();
     let last = start;
     let report = start;
+    let interruptions = document.hidden ? 1 : 0;
+    let coveredMs = 0;
+    let initialContract: string | null = null;
+    let contractChanged = false;
+    const onVisibility = () => {
+      if (document.hidden) interruptions++;
+      last = performance.now();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     let firstFrame: number | null = null;
     let longTasks = 0;
     let longTaskMs = 0;
@@ -168,8 +140,9 @@ export function FrameProbe() {
       maxDraws = 0,
       measured = 0;
     let finalReport = false;
-    const prior = gl.info.autoReset;
-    gl.info.autoReset = false;
+
+    const renderer = rendererMetadata(gl);
+    const browser = browserMetadata();
     let observer: PerformanceObserver | undefined;
     if (PerformanceObserver.supportedEntryTypes.includes("longtask")) {
       observer = new PerformanceObserver((list) => {
@@ -180,22 +153,32 @@ export function FrameProbe() {
       });
       observer.observe({ entryTypes: ["longtask"] });
     }
-    const stop = addAfterEffect(() => {
-      const now = performance.now();
+    const stop = subscribeRenderedFrames(gl, (frame) => {
+      const now = frame.now;
       if (finalReport) {
-        gl.info.reset();
         return;
       }
-      if (firstFrame === null && gl.info.render.calls > 0) firstFrame = now - start;
-      if (!document.hidden && now - start > 5000 && now - start <= 65000) {
-        metrics.add(now - last);
-        drawSum += gl.info.render.calls;
-        triangleSum += gl.info.render.triangles;
-        maxDraws = Math.max(maxDraws, gl.info.render.calls);
+      if (firstFrame === null && frame.draws > 0) firstFrame = now - start;
+      const currentContract = `${frame.width}:${frame.height}:${frame.dpr}:${effective.current.quality}:${effective.current.adaptive}:${benchmarkMetadata()?.camera}`;
+      if (initialContract === null) initialContract = currentContract;
+      else if (initialContract !== currentContract) contractChanged = true;
+      const interval = nativeFrameInterval(
+        last - start,
+        now - start,
+        timing.warmupMs,
+        timing.measurementMs,
+      );
+      if (!document.hidden && interval > 0) {
+        metrics.add(interval);
+        coveredMs += interval;
+        drawSum += frame.draws;
+        triangleSum += frame.triangles;
+        maxDraws = Math.max(maxDraws, frame.draws);
         measured++;
       }
       if (now - report >= 1000) {
         report = now;
+        const frameSummary = metrics.summary();
         // Censo por subsistema: atribui desenhos/triângulos a jogadores,
         // torcida, grama, props, estrutura, gol, bola e céu. Sem isso, um
         // total de 700 desenhos não diz o que consertar.
@@ -221,7 +204,10 @@ export function FrameProbe() {
               sources: actors.sources.length,
               draws: actors.draws,
               bones: actors.bones,
-              visibleSources: actors.sources.filter((source) => source.visible).length,
+              visibleSources: actors.sources.reduce(
+                (count, source) => count + Number(source.visible),
+                0,
+              ),
             });
           const batch = object.userData["staticBatch"] as
             | {
@@ -235,23 +221,54 @@ export function FrameProbe() {
               eligible: batch.eligible,
               merged: batch.sources.length,
               draws: batch.batches,
-              visibleSources: batch.sources.filter((source) => source.visible).length,
-              detachedSources: batch.sources.filter((source) => !source.parent).length,
+              visibleSources: batch.sources.reduce(
+                (count, source) => count + Number(source.visible),
+                0,
+              ),
+              detachedSources: batch.sources.reduce(
+                (count, source) => count + Number(!source.parent),
+                0,
+              ),
             });
         });
-        const renderer = rendererMetadata(gl);
         window.dispatchEvent(
           new CustomEvent("graphics-sample", {
             detail: {
-              ...metrics.summary(),
+              ...frameSummary,
               elapsed: (now - start) / 1000,
-              complete: now - start >= 65000,
+              complete: now - start >= endMs,
+              protocol: {
+                ...timing,
+                interruptions,
+                coveredMs,
+                contractChanged,
+                adaptive: effective.current.adaptive,
+                longTasksScope: "whole run including warmup",
+              },
+              acceptance: assessNativePerformance({
+                ...frameSummary,
+                ...timing,
+                complete: now - start >= endMs,
+                interruptions,
+                coveredMs,
+                contractChanged,
+                adaptive: effective.current.adaptive,
+                width: frame.width,
+                height: frame.height,
+                dpr: frame.dpr,
+                quality:
+                  effective.current.quality === benchmarkMetadata()?.quality
+                    ? effective.current.quality
+                    : "mismatch",
+                gpuRenderer: renderer.gpuRenderer,
+              }),
               draws: measured ? drawSum / measured : 0,
               maxDraws,
               triangles: measured ? triangleSum / measured : 0,
-              geometries: gl.info.memory.geometries,
-              textures: gl.info.memory.textures,
-              programs: gl.info.programs?.length ?? null,
+              heapUsedBytes: heapUsedBytes(performance),
+              geometries: frame.geometries,
+              textures: frame.textures,
+              programs: frame.programs,
               materials: census.materials,
               staticBatches,
               actorBatches,
@@ -282,12 +299,11 @@ export function FrameProbe() {
               firstFrameMs: firstFrame,
               longTasks: observer ? longTasks : null,
               longTaskMs: observer ? longTaskMs : null,
-              width: gl.domElement.width,
-              height: gl.domElement.height,
-              dpr: gl.getPixelRatio(),
-              heapUsedBytes: heapUsedBytes(performance),
+              width: frame.width,
+              height: frame.height,
+              dpr: frame.dpr,
               scenario: benchmarkMetadata(),
-              browser: browserMetadata(),
+              browser,
               hardware: hardwareMetadata(renderer),
               backend: {
                 kind: renderer.kind,
@@ -295,22 +311,22 @@ export function FrameProbe() {
                 contextVersion: renderer.contextVersion,
                 gpuRenderer: renderer.gpuRenderer,
                 gpuVendor: renderer.gpuVendor,
+                rendererClass: renderer.rendererClass,
               },
             },
           }),
         );
-        if (now - start >= 65000) {
+        if (now - start >= endMs) {
           finalReport = true;
           observer?.disconnect();
         }
       }
       last = now;
-      gl.info.reset();
     });
     return () => {
       stop();
+      document.removeEventListener("visibilitychange", onVisibility);
       observer?.disconnect();
-      gl.info.autoReset = prior;
     };
   }, [gl, scene]);
   return null;

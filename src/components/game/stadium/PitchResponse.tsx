@@ -8,7 +8,7 @@
 //  um desenho, não 64.
 //
 //  A malha é um anel de memória: quando as 64 vagas acabam, as mais antigas
-//  são reaproveitadas. Nenhum objeto é criado depois do primeiro quadro.
+//  são reaproveitadas. O histórico fica nos buffers da malha, sem cópia CPU.
 // ============================================================================
 
 import { useFrame } from "@react-three/fiber";
@@ -35,10 +35,6 @@ interface Mark {
   kind: number;
   /** tom: mais escuro = terra solta */
   dark: number;
-}
-
-function emptyMark(): Mark {
-  return { x: 0, z: 0, angle: 0, length: 0, width: 0, kind: SCUFF, dark: 0.5 };
 }
 
 /** Textura de arranhão: um borrão com borda irregular, sem simetria. */
@@ -89,7 +85,6 @@ export const PitchResponse = memo(function PitchResponse({
 }) {
   const budget = useRuntimeSceneBudget();
   const meshRef = useRef<THREE.InstancedMesh>(null);
-  const marks = useRef<Mark[]>(Array.from({ length: MAX_MARKS }, emptyMark));
   const cursor = useRef(0);
   const live = useRef(0);
   const last = useRef({ shots: 0, fouls: 0, x: 0, z: 0, rolled: 0 });
@@ -99,15 +94,16 @@ export const PitchResponse = memo(function PitchResponse({
   const texture = useMemo(() => scuffTexture(), []);
   useEffect(() => () => texture?.dispose(), [texture]);
 
-  const capacity =
+  const qualityCapacity =
     quality === "baixa" ? 0 : quality === "media" ? Math.round(MAX_MARKS * 0.5) : MAX_MARKS;
+  const capacity = Math.round(qualityCapacity * (budget.stage >= 6 ? 0.5 : 1));
 
   useEffect(() => {
     // troca de partida/qualidade: limpa o campo sem recriar a malha
-    marks.current = Array.from({ length: MAX_MARKS }, emptyMark);
     cursor.current = 0;
     live.current = 0;
-    last.current = { shots: 0, fouls: 0, x: 0, z: 0, rolled: 0 };
+    const previous = last.current;
+    previous.shots = previous.fouls = previous.x = previous.z = previous.rolled = 0;
     const mesh = meshRef.current;
     if (mesh) mesh.count = 0;
   }, [capacity]);
@@ -118,7 +114,6 @@ export const PitchResponse = memo(function PitchResponse({
     const index = cursor.current % capacity;
     cursor.current = (cursor.current + 1) % capacity;
     live.current = Math.min(capacity, live.current + 1);
-    marks.current[index] = mark;
 
     dummy.position.set(mark.x, 0.015 + index * 0.00002, mark.z);
     dummy.rotation.set(-Math.PI / 2, 0, mark.angle);
@@ -151,16 +146,16 @@ export const PitchResponse = memo(function PitchResponse({
     // finalização: leque de arranhões apontando para onde a bola foi
     if (shots > prev.shots) {
       const angle = Math.atan2(sim.ball.vz, sim.ball.vx);
-      for (let i = 0; i < 5; i++) {
-        const spread = (i - 2) * 0.16;
+      for (let i = 0; i < 2; i++) {
+        const spread = (i - 0.5) * 0.16;
         write({
           x: bx + Math.cos(angle + spread) * (0.3 + i * 0.12),
           z: bz + Math.sin(angle + spread) * (0.3 + i * 0.12),
           angle: -(angle + spread),
-          length: 0.9 + Math.random() * 0.9,
-          width: 0.5 + Math.random() * 0.4,
+          length: 0.3 + Math.random() * 0.35,
+          width: 0.1 + Math.random() * 0.12,
           kind: SCUFF,
-          dark: 0.78 + Math.random() * 0.1,
+          dark: 0.32 + Math.random() * 0.16,
         });
       }
     }
@@ -172,10 +167,10 @@ export const PitchResponse = memo(function PitchResponse({
           x: bx - 0.6 + Math.random() * 1.2,
           z: bz - 0.6 + Math.random() * 1.2,
           angle: Math.random() * Math.PI,
-          length: 1.4 + Math.random() * 1.1,
-          width: 0.8 + Math.random() * 0.5,
+          length: 0.75 + Math.random() * 0.6,
+          width: 0.18 + Math.random() * 0.16,
           kind: SCUFF,
-          dark: 0.72 + Math.random() * 0.1,
+          dark: 0.24 + Math.random() * 0.12,
         });
       }
     }
@@ -191,27 +186,29 @@ export const PitchResponse = memo(function PitchResponse({
             x: bx,
             z: bz,
             angle: -Math.atan2(sim.ball.vz, sim.ball.vx),
-            length: 1.1 + speed * 0.06,
-            width: 0.42,
+            length: Math.min(1.2, 0.4 + speed * 0.025),
+            width: 0.075,
             kind: TRAIL,
-            dark: 0.85 + Math.random() * 0.08,
+            dark: 0.4 + Math.random() * 0.1,
           });
         }
       }
     }
 
-    last.current = { shots, fouls, x: bx, z: bz, rolled: prev.rolled };
+    prev.shots = shots;
+    prev.fouls = fouls;
+    prev.x = bx;
+    prev.z = bz;
     void dt;
   });
 
-  const limit = Math.round(capacity * (budget.stage >= 6 ? 0.5 : 1));
-  if (!enabled || limit <= 0 || !texture) return null;
+  if (!enabled || capacity <= 0 || !texture) return null;
 
   return (
     <group ref={censusRef("grass")} name="pitch-response">
       <instancedMesh
         ref={meshRef}
-        args={[undefined, undefined, limit]}
+        args={[undefined, undefined, capacity]}
         frustumCulled={false}
         renderOrder={1}
       >
@@ -219,7 +216,7 @@ export const PitchResponse = memo(function PitchResponse({
         <meshBasicMaterial
           map={texture}
           transparent
-          opacity={0.28}
+          opacity={0.42}
           depthWrite={false}
           polygonOffset
           polygonOffsetFactor={-2}

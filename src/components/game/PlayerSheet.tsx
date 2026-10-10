@@ -3,8 +3,9 @@ import { useEffect, useRef } from "react";
 import { ATTR_LABELS, attrTone, groupsFor, PERSONALITY_DESC, profileFor } from "@/game/attributes";
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, formatWage } from "@/game/economy";
-import type { Player } from "@/game/types";
+import type { CareerState, Player } from "@/game/types";
 import { formAdjustment, POSITION_WEIGHTS, positionalOverall } from "@/game/overall";
+import { DEVELOPMENT_OVR_WEIGHTS, effectivePlayer } from "@/game/player-development";
 
 const CORE_LABELS = {
   pace: "Velocidade",
@@ -16,8 +17,9 @@ const CORE_LABELS = {
 
 /** Mostra como cada atributo pesa no overall desta posição. */
 function OverallBreakdown({ player }: { player: Player }) {
-  const weights = POSITION_WEIGHTS[player.pos];
-  const base = positionalOverall(player.pos, player);
+  const baseline = player.developmentBase?.rulesVersion === 2 ? player.developmentBase : undefined;
+  const weights = baseline ? DEVELOPMENT_OVR_WEIGHTS[player.pos] : POSITION_WEIGHTS[player.pos];
+  const base = baseline?.ovr ?? positionalOverall(player.pos, player);
   const form = formAdjustment(player.form ?? 60);
   const keys = (Object.keys(CORE_LABELS) as (keyof typeof CORE_LABELS)[]).filter(
     (k) => weights[k] > 0,
@@ -33,14 +35,17 @@ function OverallBreakdown({ player }: { player: Player }) {
             <span>
               {CORE_LABELS[k]}{" "}
               <span className="text-muted-foreground">
-                ({player[k]} × {Math.round(weights[k] * 100)}%)
+                ({(player[k] - (baseline?.core[k] ?? 0)).toFixed(1)} ×{" "}
+                {Math.round(weights[k] * 100)}%)
               </span>
             </span>
-            <span className="hud-num">+{(player[k] * weights[k]).toFixed(1)}</span>
+            <span className="hud-num">
+              {((player[k] - (baseline?.core[k] ?? 0)) * weights[k]).toFixed(1)}
+            </span>
           </li>
         ))}
         <li className="flex justify-between border-t border-border/50 pt-1">
-          <span>Base pela posição</span>
+          <span>{baseline ? "Overall inicial" : "Base pela posição"}</span>
           <span className="hud-num">{base}</span>
         </li>
         <li className="flex justify-between">
@@ -52,7 +57,7 @@ function OverallBreakdown({ player }: { player: Player }) {
         </li>
         <li className="flex justify-between text-muted-foreground">
           <span>Overall atual</span>
-          <span className="hud-num font-semibold text-primary">{player.ovr}</span>
+          <span className="hud-num font-semibold text-primary">{player.ovr.toFixed(1)}</span>
         </li>
       </ul>
     </section>
@@ -68,7 +73,16 @@ function Bar({ v }: { v: number }) {
 }
 
 /** Ficha completa do jogador: retrato, atributos, personalidade e carreira. */
-export function PlayerSheet({ player, onClose }: { player: Player; onClose: () => void }) {
+export function PlayerSheet({
+  player,
+  career,
+  onClose,
+}: {
+  player: Player;
+  career?: CareerState;
+  onClose: () => void;
+}) {
+  player = effectivePlayer(player, career);
   const dialogRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previousFocus = document.activeElement;
@@ -109,7 +123,7 @@ export function PlayerSheet({ player, onClose }: { player: Player; onClose: () =
       if (previousFocus instanceof HTMLElement) previousFocus.focus();
     };
   }, [onClose]);
-  const prof = profileFor(player);
+  const prof = profileFor(player, career);
   const club = CLUBS[player.clubId];
   const groups = groupsFor(player.pos);
 
@@ -144,7 +158,7 @@ export function PlayerSheet({ player, onClose }: { player: Player; onClose: () =
             </p>
           </div>
           <div className="text-right">
-            <p className="font-display text-3xl text-primary">{player.ovr}</p>
+            <p className="font-display text-3xl text-primary">{Math.round(player.ovr)}</p>
             <p className="text-[11px] uppercase text-muted-foreground">
               potencial {player.potential ?? player.ovr}
             </p>
@@ -206,8 +220,8 @@ export function PlayerSheet({ player, onClose }: { player: Player; onClose: () =
                   <li key={k} className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">{ATTR_LABELS[k]}</span>
                     <span className={attrTone(prof.attrs[k])}>
-                      {prof.attrs[k]}
-                      <Bar v={prof.attrs[k]} />
+                      {Math.round(prof.attrs[k])}
+                      <Bar v={Math.round(prof.attrs[k])} />
                     </span>
                   </li>
                 ))}

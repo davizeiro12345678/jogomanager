@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer } from "@/components/game/screen-kit";
+import { NoCareer, ScreenHeader, SectionCard, DataTable } from "@/components/game/screen-kit";
 import { formOf, potentialOf } from "@/game/events";
 import { useCareer } from "@/hooks/useCareer";
 import type { CareerState, Player } from "@/game/types";
@@ -64,12 +64,12 @@ function StatsPage() {
 
   return (
     <GameShell career={career}>
-      <h1 className="font-display text-2xl uppercase tracking-wide">Estatísticas</h1>
+      <ScreenHeader title="Estatísticas" />
 
       <MatchHistory career={career} />
 
       {selected.length === 2 ? (
-        <section className="mt-4 rounded-2xl border border-border/60 surface-card p-4">
+        <SectionCard className="mt-4 rounded-2xl border border-border/60 surface-card p-4">
           <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
             Comparação
           </h2>
@@ -103,11 +103,11 @@ function StatsPage() {
               {selected[0]!.name} vs {selected[1]!.name}
             </p>
           </div>
-        </section>
+        </SectionCard>
       ) : null}
 
-      <section className="mt-4 overflow-x-auto rounded-2xl border border-border/60 surface-card">
-        <table className="w-full text-sm">
+      <SectionCard className="mt-4 overflow-x-auto rounded-2xl border border-border/60 surface-card">
+        <DataTable label="Estatísticas dos jogadores" className="w-full text-sm">
           <thead>
             <tr className="border-b border-border/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
               <th className="p-3">Jogador</th>
@@ -136,7 +136,7 @@ function StatsPage() {
                 </td>
                 {COLUMNS.map((c) => (
                   <td key={c.key} className="p-3">
-                    {c.get(p)}
+                    {Math.round(c.get(p))}
                   </td>
                 ))}
                 <td className="p-3">
@@ -151,8 +151,8 @@ function StatsPage() {
               </tr>
             ))}
           </tbody>
-        </table>
-      </section>
+        </DataTable>
+      </SectionCard>
     </GameShell>
   );
 }
@@ -164,7 +164,7 @@ function MatchHistory({ career }: { career: CareerState }) {
   if (!log.length) return null;
 
   return (
-    <section className="mt-4 rounded-2xl border border-border/60 surface-card p-4">
+    <SectionCard className="mt-4 rounded-2xl border border-border/60 surface-card p-4">
       <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
         Partida a partida
       </h2>
@@ -225,6 +225,6 @@ function MatchHistory({ career }: { career: CareerState }) {
           );
         })}
       </ul>
-    </section>
+    </SectionCard>
   );
 }

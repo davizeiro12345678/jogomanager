@@ -25,6 +25,11 @@ import {
 import { LEAGUES, getLeague } from "@/game/data/leagues";
 import { initCareer } from "@/game/career";
 import {
+  createManagerProfile,
+  DEFAULT_MANAGER_ATTRIBUTES,
+  DEFAULT_MANAGER_LOOK,
+} from "@/game/manager-profile";
+import {
   discoverClubs,
   searchKey,
   type CareerChallenge,
@@ -37,12 +42,7 @@ import { startWorldForNewCareer } from "@/lib/world";
 import { Flag } from "@/components/game/Flag";
 import { ManagerPortrait, HAIR_COLORS } from "@/components/game/ManagerPortrait";
 import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loading";
-import type {
-  ManagerAttributes,
-  ManagerLook,
-  ManagerPersonality,
-  ManagerProfile,
-} from "@/game/types";
+import type { ManagerAttributes, ManagerLook, ManagerPersonality } from "@/game/types";
 import "@/components/game/career-create.css";
 
 const Cutscene = lazy(() =>
@@ -110,15 +110,14 @@ function NewCareer() {
   const [country, setCountry] = useState(LEAGUES[0]!.id);
   const [countryQuery, setCountryQuery] = useState("");
   const [look, setLook] = useState<ManagerLook>({
-    skin: 1,
-    hair: 1,
+    ...DEFAULT_MANAGER_LOOK,
     hairColor: HAIR_COLORS[0]!,
-    beard: 0,
-    outfit: 0,
   });
   const [personality, setPersonality] = useState<ManagerPersonality>("motivador");
   const [reputation, setReputation] = useState(3);
-  const [attrs, setAttrs] = useState<ManagerAttributes>(PRESETS[3]!.attrs);
+  const [attrs, setAttrs] = useState<ManagerAttributes>({
+    ...DEFAULT_MANAGER_ATTRIBUTES,
+  });
   const [leagueId, setLeagueId] = useState(LEAGUES[0]!.id);
   const [clubQuery, setClubQuery] = useState("");
   const query = useDeferredValue(clubQuery);
@@ -203,8 +202,8 @@ function NewCareer() {
     setLoading(true);
     setError("");
     const club = selected.club;
-    const profile: ManagerProfile = {
-      name: name.trim() || "Técnico",
+    const profile = createManagerProfile({
+      name,
       country,
       age,
       favClub: club.id,
@@ -212,8 +211,7 @@ function NewCareer() {
       personality,
       reputation,
       attrs,
-      approval: 55 + reputation * 4,
-    };
+    });
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       // A slow optional sports endpoint cannot trap a guest in the wizard.

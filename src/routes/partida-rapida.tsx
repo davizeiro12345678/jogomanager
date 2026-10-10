@@ -183,7 +183,10 @@ function QuickMatchPage() {
           >
             {t("quick.start")}
           </button>
-          <Link to="/" className="py-2 text-center text-xs text-muted-foreground underline sm:text-left">
+          <Link
+            to="/"
+            className="py-2 text-center text-xs text-muted-foreground underline sm:text-left"
+          >
             {t("quick.back")}
           </Link>
         </div>

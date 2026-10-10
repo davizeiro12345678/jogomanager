@@ -10,7 +10,15 @@ const PAGE = 1000;
 export const CATALOG_EVENT = "db-catalog-updated";
 
 type LeagueRow = [id: string, name: string, country: string, flag: string];
-type ClubRow = [id: string, league: string, name: string, short: string, p: string, s: string, str: number];
+type ClubRow = [
+  id: string,
+  league: string,
+  name: string,
+  short: string,
+  p: string,
+  s: string,
+  str: number,
+];
 type Cache = { at: number; leagues: LeagueRow[]; clubs: ClubRow[] };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -22,7 +30,14 @@ function apply(cache: Cache) {
   const added = new Set<string>();
   for (const [id, name, country, flag] of cache.leagues) {
     if (!byId.has(id)) {
-      const league: League = { id, name, country, flag: flag || "🏳️", clubs: [], catalogStatus: "sourced" };
+      const league: League = {
+        id,
+        name,
+        country,
+        flag: flag || "🏳️",
+        clubs: [],
+        catalogStatus: "sourced",
+      };
       LEAGUES.push(league);
       added.add(id);
       byId.set(id, league);
@@ -45,7 +60,8 @@ function apply(cache: Cache) {
     league.clubs.push(club);
   }
   // Leagues without any playable club would render empty lists.
-  for (let i = LEAGUES.length - 1; i >= 0; i--) if (added.has(LEAGUES[i]!.id) && LEAGUES[i]!.clubs.length < 2) LEAGUES.splice(i, 1);
+  for (let i = LEAGUES.length - 1; i >= 0; i--)
+    if (added.has(LEAGUES[i]!.id) && LEAGUES[i]!.clubs.length < 2) LEAGUES.splice(i, 1);
   merged = true;
 }
 
@@ -80,7 +96,15 @@ async function fetchAll(): Promise<Cache> {
     if (r.error) throw r.error;
     for (const c of r.data) {
       if (!c.competition_id || CLUBS[c.id]) continue;
-      clubs.push([c.id, c.competition_id, c.name, c.short_name, c.primary_color, c.secondary_color, c.strength]);
+      clubs.push([
+        c.id,
+        c.competition_id,
+        c.name,
+        c.short_name,
+        c.primary_color,
+        c.secondary_color,
+        c.strength,
+      ]);
     }
   }
   const known = new Set(LEAGUES.map((l) => l.id));

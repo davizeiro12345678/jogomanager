@@ -958,6 +958,9 @@ const ACTION_CLIP: Record<PlayerAction, ClipName> = {
 export interface SelectCtx {
   isGK: boolean;
   action: PlayerAction | null;
+  actionT?: number;
+  actionDur?: number;
+  actionSeed?: number;
   speed: number;
   hasBall: boolean;
   ballDist: number;
@@ -974,23 +977,32 @@ function pick<T>(list: T[], c: SelectCtx, every = 4): T {
   return list[i]!;
 }
 
+/** Keep a presentation variant for the whole action, even across a time
+ * bucket boundary. These optional fields do not change simulation state. */
+function pickAction<T>(list: T[], c: SelectCtx): T {
+  const elapsed =
+    c.actionDur !== undefined && c.actionT !== undefined ? Math.max(0, c.actionDur - c.actionT) : 0;
+  const event = c.actionSeed ?? Math.round((c.time - elapsed) * 30 + 1e-6);
+  let hash = Math.imul((c.seed | 0) ^ Math.imul(event | 0, 0x9e3779b1), 0x85ebca6b);
+  hash ^= hash >>> 13;
+  return list[(hash >>> 0) % list.length]!;
+}
+
 export function selectClip(c: SelectCtx): ClipName {
   // defesas variam entre a saída clássica e o mergulho do novo pacote: o
   // sorteio é lento, então cada defesa usa um clipe só do início ao fim
-  if (c.action === "save") return pick<ClipName>(["gkSaveLow", "gkDiveLow"], c, 1);
-  if (c.action === "saveHigh") return pick<ClipName>(["gkSaveHigh", "gkDiveHigh"], c, 1);
+  if (c.action === "save") return pickAction<ClipName>(["gkSaveLow", "gkDiveLow"], c);
+  if (c.action === "saveHigh") return pickAction<ClipName>(["gkSaveHigh", "gkDiveHigh"], c);
   if (c.action === "celebrate")
-    return pick<ClipName>(
+    return pickAction<ClipName>(
       ["celebrateArms", "celebrateArmsWide", "celebrateFistPump", "celebrateBadgeKiss"],
       c,
-      2.4,
     );
   if (c.action === "celebrateRun")
-    return pick<ClipName>(["celebrateRun", "celebrateSiuu", "celebrateSlideStop"], c, 2.4);
-  if (c.action === "kneeSlide")
-    return pick<ClipName>(["kneeSlide", "celebrateKneeSlide"], c, 2.4);
+    return pickAction<ClipName>(["celebrateRun", "celebrateSiuu", "celebrateSlideStop"], c);
+  if (c.action === "kneeSlide") return pickAction<ClipName>(["kneeSlide", "celebrateKneeSlide"], c);
   if (c.action === "hug")
-    return pick<ClipName>(["groupHug", "celebrateJumpHug", "celebrateTeamLine"], c, 2.4);
+    return pickAction<ClipName>(["groupHug", "celebrateJumpHug", "celebrateTeamLine"], c);
   if (c.action) return ACTION_CLIP[c.action];
 
   if (c.isGK) {

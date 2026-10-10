@@ -1,145 +1,260 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
-import { PublicLinks } from "@/components/PublicLinks";
+import { ArticleShell, Section } from "@/components/ArticleShell";
 import { Crest } from "@/components/game/Crest";
 import { getLeague } from "@/game/data/leagues";
+import { SERIE_D_IDS } from "@/game/data/serie-d";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/brasileirao";
-const TITLE = "Brasileirão: clubes e carreira | Pro Football Manager 3D";
+const TITLE = "Brasileirão no jogo: clubes e carreira | JogoManager";
 const DESC =
-  "Comande um clube do Brasileirão Série A ou Série B em um jogo de manager de futebol 3D e gratuito. Veja todos os times disponíveis e comece sua carreira.";
+  "Compare os clubes da Série A e B disponíveis no JogoManager. Veja o catálogo brasileiro, entenda o desafio inicial e prepare uma carreira no futebol nacional.";
 
 export const Route = createFileRoute("/brasileirao")({
-  head: () => {
-    return {
-      meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
-      links: canonical(PATH),
-      scripts: [
-        articleLd({ headline: "Brasileirão no jogo de manager", description: DESC, path: PATH }),
-        breadcrumbLd([
-          { name: "Início", path: "/" },
-          { name: "Brasileirão", path: PATH },
-        ]),
-      ],
-    };
-  },
+  head: () => ({
+    meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article", keywords: [] }),
+    links: canonical(PATH),
+    scripts: [
+      articleLd({
+        headline: "Brasileirão no jogo: clubes e carreira",
+        description: DESC,
+        path: PATH,
+      }),
+      breadcrumbLd([
+        { name: "Início", path: "/" },
+        { name: "Brasileirão", path: PATH },
+      ]),
+    ],
+  }),
   component: Page,
 });
 
+const SERIE_A = getLeague("bra");
+const SERIE_B = getLeague("bra2");
+const FEATURED_LEAGUES = [SERIE_A, SERIE_B];
+const SERIE_C = getLeague("bra3");
+const SERIE_D = SERIE_D_IDS.map((id) => getLeague(id));
+
+const FAQ = [
+  {
+    q: "Quais clubes do Brasileirão posso escolher?",
+    a: "A lista abaixo mostra os clubes da Série A e da Série B presentes no catálogo de carreira do jogo. A página de ligas reúne também as outras competições disponíveis.",
+  },
+  {
+    q: "A Série B sempre começa com menos orçamento?",
+    a: "Não use apenas a divisão para estimar o caixa. No jogo, o orçamento inicial considera a força atribuída ao clube e o perfil do treinador. Confira os valores e o objetivo gerados ao iniciar a carreira.",
+  },
+  {
+    q: "Uma equipe mais forte garante uma temporada tranquila?",
+    a: "Não. A força do clube influencia os parâmetros iniciais da carreira, mas escalação, disponibilidade dos jogadores, adversários e decisões ao longo da temporada continuam afetando os resultados.",
+  },
+  {
+    q: "O catálogo representa a tabela oficial atual?",
+    a: "Esta página descreve as equipes incluídas no jogo. Ela não é uma tabela ao vivo nem substitui o calendário e os participantes publicados pelos organizadores de cada competição.",
+  },
+] as const;
+
 function Page() {
-  const leagues = [getLeague("bra"), getLeague("bra2")];
+  const tierCount = 3 + SERIE_D.length;
+  const serieDClubCount = SERIE_D.reduce((total, league) => total + league.clubs.length, 0);
 
   return (
-    <div className="pitch-bg min-h-screen px-4 py-14">
-      <article className="mx-auto max-w-4xl">
-        <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">Brasil</p>
-        <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">
-          Brasileirão no jogo de manager
-        </h1>
-        <p className="mt-4 max-w-2xl text-muted-foreground">
-          Série A e Série B estão jogáveis por inteiro. Escolha o clube, monte o elenco, dispute o
-          campeonato ponto a ponto e acompanhe as partidas em 3D — de graça, no navegador.
+    <ArticleShell
+      kicker="Futebol brasileiro"
+      title="Brasileirão no jogo: escolha seu clube e planeje a temporada"
+      intro="Compare as equipes da Série A e da Série B no catálogo do Pro Football Manager 3D e escolha o tipo de carreira que quer construir. Além da lista de clubes, este guia explica como avaliar o desafio, ler os parâmetros iniciais e preparar o primeiro jogo sem presumir que uma divisão ou um escudo determine sozinho o orçamento e os resultados."
+      path={PATH}
+      readMinutes={8}
+      level="Iniciante"
+      updated="outubro de 2026"
+      toc={[
+        { id: "clubes", title: "Clubes da Série A e da Série B" },
+        { id: "piramide", title: "Outras divisões brasileiras no jogo" },
+        { id: "escolha", title: "Escolha o tipo de desafio" },
+        { id: "preparar", title: "Prepare as primeiras rodadas" },
+        { id: "continuar", title: "Guias para continuar o planejamento" },
+      ]}
+      faq={FAQ}
+    >
+      <Section id="clubes" title="Clubes da Série A e da Série B">
+        <p>
+          O catálogo do jogo reúne {SERIE_A.clubs.length} equipes na Série A e{" "}
+          {SERIE_B.clubs.length} na Série B. A ordem das listas identifica os clubes disponíveis;
+          ela não é classificação, previsão de desempenho ou uma tabela oficial da temporada.
         </p>
-
-        <div className="mt-10 space-y-10">
-          {leagues.map((l) => (
-            <section key={l.id}>
-              <h2 className="font-display text-2xl">{l.name}</h2>
+        <div className="grid gap-8">
+          {FEATURED_LEAGUES.map((league) => (
+            <section key={league.id} aria-labelledby={`league-${league.id}`}>
+              <h3 id={`league-${league.id}`} className="font-display text-xl">
+                {league.name}{" "}
+                <span className="text-sm text-muted-foreground">
+                  ({league.clubs.length} clubes)
+                </span>
+              </h3>
               <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {l.clubs.map((c) => (
+                {league.clubs.map((club) => (
                   <li
-                    key={c.id}
-                    className="flex items-center gap-3 rounded-xl border border-border/60 p-3"
+                    key={club.id}
+                    className="flex items-center gap-3 rounded-xl border border-border/60 surface-card p-3"
                   >
-                    <Crest club={c} size={32} detail="simple" />
-                    <span className="text-sm">{c.name}</span>
+                    <Crest club={club} size={32} detail="simple" />
+                    <span className="text-sm">{club.name}</span>
                   </li>
                 ))}
               </ul>
             </section>
           ))}
         </div>
+      </Section>
 
-        <h2 className="mt-12 font-display text-2xl">Qual clube escolher?</h2>
-        <p className="mt-3 text-muted-foreground">
-          Para a primeira carreira, um time de meio de tabela da Série A dá orçamento razoável e
-          cobrança justa. Quem quer dificuldade real começa na Série B e tenta o acesso: o orçamento
-          é curto e a diretoria exige resultado rápido.
+      <Section id="piramide" title="A carreira brasileira inclui mais divisões">
+        <p>
+          A pirâmide nacional do jogo também inclui a Série C, com {SERIE_C.clubs.length} clubes, e
+          a Série D organizada em {SERIE_D.length} grupos, com {serieDClubCount} equipes no total.
+          As divisões estão conectadas para que as campanhas possam avançar pela pirâmide conforme
+          as regras de movimentação da carreira.
         </p>
+        <p>
+          Esta página detalha os clubes de A e B, que concentram as duas listas principais do guia.
+          Consulte a página de{" "}
+          <Link to="/ligas-de-futebol" className="text-primary underline">
+            ligas e clubes disponíveis
+          </Link>{" "}
+          para ver as demais competições do catálogo e confirmar qual divisão pretende comandar. Os
+          participantes mostrados no jogo descrevem o catálogo, não uma tabela oficial atualizada em
+          tempo real.
+        </p>
+      </Section>
 
-        <section className="mt-10 space-y-4 text-sm leading-relaxed text-muted-foreground">
-          <h2 className="font-display text-2xl text-foreground">Prepare a primeira temporada</h2>
-          <p>
-            Escolher um clube é também escolher um projeto. Antes de contratar, examine o elenco
-            disponível, as posições com poucas opções e os compromissos da temporada. Um time com
-            bons titulares pode precisar de reservas para suportar a sequência de jogos. Já um grupo
-            jovem pede atenção ao desenvolvimento e à condição física. Use a primeira escalação como
-            diagnóstico: identifique quem pode cumprir cada função e quais setores exigem uma
-            solução no mercado. O nome ou a tradição do clube não substituem essa avaliação do grupo
-            que você vai comandar.
-          </p>
-          <p>
-            Acompanhe as expectativas da diretoria e o orçamento antes de definir sua prioridade.
-            Buscar uma campanha estável, disputar posições mais altas e construir um elenco para
-            temporadas futuras envolvem escolhas diferentes. Reserve parte dos recursos para
-            salários e imprevistos; gastar todo o orçamento em um reforço pode deixar outras
-            necessidades sem resposta. Ao avaliar uma proposta, considere a função do jogador, as
-            alternativas já presentes no clube e o impacto do contrato nas finanças. Uma contratação
-            útil resolve uma necessidade concreta do elenco.
-          </p>
-          <h2 className="font-display text-2xl text-foreground">
-            Escolha uma formação para o seu elenco
-          </h2>
-          <p>
-            Comece por um desenho que aproveite as características dos jogadores disponíveis.
-            Observe se há pontas, meias de criação, volantes e atacantes suficientes para executar o
-            plano. Uma formação pode parecer forte na prancheta e ainda exigir atletas que seu clube
-            não tem. Depois de escolher os titulares, confira quem pode entrar em cada posição.
-            Durante a partida, acompanhe os espaços deixados pelo time e a condição dos jogadores
-            antes de alterar a pressão, a mentalidade ou fazer substituições. Mudar muitas
-            instruções ao mesmo tempo dificulta entender o efeito de cada decisão.
-          </p>
-          <h2 className="font-display text-2xl text-foreground">Aprenda com as rodadas</h2>
-          <p>
-            Use a classificação, as estatísticas e os acontecimentos das partidas para revisar seu
-            planejamento. O placar é uma parte da análise: observe também como o time cria chances e
-            onde o adversário encontra espaço. Uma vitória não significa que todas as escolhas
-            funcionaram, assim como uma derrota isolada não exige abandonar a formação. Compare os
-            jogos seguintes e procure padrões antes de reorganizar o elenco. Ao avançar no
-            calendário, cuide do descanso e prepare alternativas para ausências, preservando uma
-            ideia de jogo que os jogadores possam executar.
-          </p>
-          <p>
-            Para aprofundar esse planejamento, consulte os{" "}
-            <Link to="/guias" className="text-primary hover:underline">
-              guias do treinador
-            </Link>
-            , as orientações de{" "}
-            <Link to="/taticas-e-formacoes" className="text-primary hover:underline">
-              táticas e formações
-            </Link>{" "}
-            e o guia de{" "}
-            <Link to="/gestao-financeira" className="text-primary hover:underline">
-              gestão financeira
-            </Link>
-            . Se ainda estiver conhecendo os controles, experimente uma partida rápida antes de
-            criar a carreira. A lista acima ajuda a encontrar o clube; esses guias ajudam a
-            organizar as decisões depois que você assume o comando.
-          </p>
-        </section>
-
-        <div className="mt-8">
-          <Link
-            to="/new"
-            className="rounded-lg bg-primary px-6 py-3 font-display text-sm uppercase tracking-widest text-primary-foreground"
-          >
-            Escolher meu clube
-          </Link>
+      <Section id="escolha" title="Escolha o desafio pelo elenco e pelos objetivos">
+        <p>
+          A divisão ajuda a localizar o tipo de competição, mas é uma referência incompleta para
+          escolher um projeto. Ao criar uma carreira, o jogo calcula o objetivo da diretoria a
+          partir da força atribuída ao clube e define o orçamento inicial considerando essa força e
+          o perfil do treinador. Por isso, não presuma que todo clube de uma divisão comece com a
+          mesma meta ou que um time da Série B tenha sempre um caixa menor que qualquer equipe da
+          Série A.
+        </p>
+        <div className="overflow-x-auto rounded-xl border border-border">
+          <table className="w-full text-left text-sm">
+            <caption className="sr-only">
+              Perguntas para escolher um clube na carreira brasileira
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col" className="p-3">
+                  O que você procura
+                </th>
+                <th scope="col" className="p-3">
+                  O que conferir antes de começar
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-t border-border">
+                <th scope="row" className="p-3 align-top">
+                  Disputar uma campanha exigente
+                </th>
+                <td className="p-3 text-muted-foreground">
+                  Leia o objetivo da diretoria e compare-o com o elenco e os próximos adversários.
+                </td>
+              </tr>
+              <tr className="border-t border-border">
+                <th scope="row" className="p-3 align-top">
+                  Construir o time aos poucos
+                </th>
+                <td className="p-3 text-muted-foreground">
+                  Procure posições com poucas alternativas e planeje contratações que resolvam uma
+                  lacuna real.
+                </td>
+              </tr>
+              <tr className="border-t border-border">
+                <th scope="row" className="p-3 align-top">
+                  Levar um clube por várias divisões
+                </th>
+                <td className="p-3 text-muted-foreground">
+                  Comece em uma divisão inferior e avalie a campanha temporada a temporada; promoção
+                  e rebaixamento fazem parte da pirâmide do jogo.
+                </td>
+              </tr>
+              <tr className="border-t border-border">
+                <th scope="row" className="p-3 align-top">
+                  Experimentar antes de se comprometer
+                </th>
+                <td className="p-3 text-muted-foreground">
+                  Jogue uma partida rápida para conhecer controles e ritmo, depois compare com a
+                  rotina de uma carreira.
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+        <p>
+          O elenco e o valor inicial de cada carreira são dados do simulador. Eles não representam
+          automaticamente uma projeção de folha, uma recomendação de mercado ou a situação
+          financeira de um clube real.
+        </p>
+      </Section>
 
-        <PublicLinks exclude={PATH} />
-      </article>
-    </div>
+      <Section id="preparar" title="Prepare as primeiras rodadas">
+        <ol className="list-decimal space-y-3 pl-5">
+          <li>
+            <strong>Confira o objetivo e o caixa inicial.</strong> Guarde esses dados para comparar
+            suas decisões com as condições da carreira que você escolheu.
+          </li>
+          <li>
+            <strong>Revise o elenco antes de contratar.</strong> Veja quem pode cumprir cada
+            posição, quem está indisponível e onde falta uma alternativa para o banco.
+          </li>
+          <li>
+            <strong>Escolha uma formação que seu grupo consegue preencher.</strong> O jogo oferece
+            4-3-3, 4-4-2, 3-5-2 e 4-2-3-1; compare as funções exigidas com os jogadores disponíveis.
+          </li>
+          <li>
+            <strong>Analise a partida após o apito final.</strong> Além do placar, observe chutes,
+            chances e espaços cedidos antes de mudar a tática para a rodada seguinte.
+          </li>
+          <li>
+            <strong>Planeje as negociações.</strong> Considere taxa, comissão, luvas, salário e a
+            reserva financeira antes de confirmar uma contratação.
+          </li>
+        </ol>
+        <p>
+          Esse roteiro cria uma referência para suas decisões sem prometer vitória por escolher um
+          clube ou uma formação específica. Conforme a temporada avança, anote o problema que quer
+          corrigir e altere um aspecto por vez para entender o efeito no time.
+        </p>
+      </Section>
+
+      <Section id="continuar" title="Continue o planejamento com guias práticos">
+        <ul className="list-disc space-y-2 pl-5">
+          <li>
+            <Link to="/guias" className="text-primary underline">
+              Guia de carreira de manager
+            </Link>
+            : escolha um plano, organize a primeira escalação e estruture a rotina entre rodadas.
+          </li>
+          <li>
+            <Link to="/taticas-e-formacoes" className="text-primary underline">
+              Táticas e formações
+            </Link>
+            : compare as quatro formações e aprenda a observar os controles que o jogo oferece.
+          </li>
+          <li>
+            <Link to="/planejamento-de-elenco" className="text-primary underline">
+              Scouting e planejamento do elenco
+            </Link>
+            : interprete relatórios e calcule os custos de uma transferência.
+          </li>
+          <li>
+            <Link to="/analise-de-partida-de-futebol" className="text-primary underline">
+              Análise de partida
+            </Link>
+            : transforme estatísticas em uma pergunta tática para o próximo jogo.
+          </li>
+        </ul>
+      </Section>
+    </ArticleShell>
   );
 }

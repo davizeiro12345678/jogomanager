@@ -7,10 +7,16 @@ import {
 } from "@/lib/stripe.server";
 import {
   fulfillOneTimePurchase,
+  beginPaymentEvent,
+  finishPaymentEvent,
+  reconcilePaymentReview,
+  getAuthenticatedCheckoutOffer,
+  isPurchaseDelivered,
   markPurchaseFailed,
   recordPendingPurchase,
   syncSubscription,
 } from "@/lib/fulfillment.server";
+import type Stripe from "stripe";
 import { markGuestCheckoutFailed, markGuestCheckoutPaid } from "@/lib/guest-checkout.functions";
 import { deliverClaimedGuestPurchase } from "@/lib/guest-checkout-delivery.server";
 
@@ -68,50 +74,67 @@ async function resolvePurchase(sessionId: string, env: StripeEnv) {
     expand: ["line_items.data.price"],
   });
   const lineItem = full.line_items?.data?.[0];
+  if (
+    full.mode !== "payment" ||
+    full.currency !== "brl" ||
+    full.line_items?.data.length !== 1 ||
+    full.line_items.has_more ||
+    lineItem?.quantity !== 1
+  ) {
+    throw new Error("Unexpected checkout commercial offer");
+  }
   const price = lineItem?.price;
-  const stripeProductKey =
-    price?.lookup_key ||
-    (price?.metadata?.["lovable_external_id"] as string | undefined) ||
-    price?.id;
-  const productKey =
-    full.metadata?.["productKey"] ||
-    (stripeProductKey === "season_pass_monthly" ? "season_pass" : stripeProductKey);
+  const userId = full.metadata?.["userId"];
+  if (!userId) throw new Error("Checkout has no account owner");
+  const offer = await getAuthenticatedCheckoutOffer(userId, sessionId, env);
+  if (
+    price?.id !== offer.stripePriceId ||
+    full.currency?.toUpperCase() !== offer.currency.toUpperCase() ||
+    lineItem.amount_subtotal !== offer.snapshot.priceCents
+  )
+    throw new Error("Checkout does not match its registered offer");
+  const productKey = offer.productKey;
   // Validate against the list price before Stripe discounts (sales/promo codes);
   // Stripe already verified the customer paid the discounted total.
-  const amount =
-    lineItem?.amount_subtotal ?? full.amount_subtotal ?? lineItem?.amount_total ?? full.amount_total ?? 0;
-  return { productKey, amount, session: full };
+  const amount = lineItem?.amount_subtotal ?? full.amount_subtotal ?? 0;
+  const paidAmount = full.amount_total ?? amount;
+  return { productKey, amount, paidAmount, session: full, snapshot: offer.snapshot };
 }
 
 async function fulfillSession(sessionId: string, userId: string, env: StripeEnv) {
-  const { productKey, amount } = await resolvePurchase(sessionId, env);
+  // Already delivered legacy sessions need no catalog reconstruction.
+  if (await isPurchaseDelivered(userId, sessionId)) return;
+  const { productKey, amount, paidAmount, session, snapshot } = await resolvePurchase(
+    sessionId,
+    env,
+  );
+  if (
+    session.metadata?.["userId"] !== userId ||
+    !["paid", "no_payment_required"].includes(session.payment_status)
+  )
+    throw new Error("Checkout payment is not settled for this account");
   if (!productKey) {
     await markPurchaseFailed(sessionId, "Item da compra não identificado");
     throw new Error(`No product key on session ${sessionId}`);
   }
-  await recordPendingPurchase(userId, productKey, sessionId, amount);
-  await fulfillOneTimePurchase(userId, productKey, sessionId, amount);
+  await recordPendingPurchase(userId, productKey, sessionId, paidAmount);
+  await fulfillOneTimePurchase(userId, productKey, sessionId, amount, snapshot, paidAmount);
 }
 
-async function handleWebhook(req: Request, env: StripeEnv) {
-  const event = await verifyWebhook(req, env);
-
+async function handleWebhook(event: Stripe.Event, env: StripeEnv) {
   switch (event.type) {
     case "customer.subscription.created":
-    case "customer.subscription.updated": {
-      const subscription = event.data.object;
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted": {
+      const subscription = await createStripeClient(env).subscriptions.retrieve(
+        event.data.object.id,
+      );
       if (isUnclaimedGuestSubscription(subscription)) {
         // The claim flow adds `userId` to the Stripe subscription before the
         // next reconciliation. Until then there is no wallet to update.
         break;
       }
       await syncSubscription(subscription, env);
-      break;
-    }
-    case "customer.subscription.deleted": {
-      const subscription = event.data.object;
-      if (isUnclaimedGuestSubscription(subscription)) break;
-      await syncSubscription({ ...subscription, status: "canceled" }, env);
       break;
     }
     case "checkout.session.completed": {
@@ -121,18 +144,17 @@ async function handleWebhook(req: Request, env: StripeEnv) {
       }
       const userId = session.metadata?.["userId"];
       if (!userId) {
-        console.error("No userId in checkout session metadata");
-        return;
+        throw new Error("No userId in checkout session metadata");
       }
       if (session.mode !== "payment") {
         // Assinaturas são tratadas pelos eventos customer.subscription.*.
         break;
       }
-      if (session.payment_status === "unpaid") {
+      if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
         // Boleto/PIX com confirmação lenta: registra pendente e espera.
-        const { productKey, amount } = await resolvePurchase(session.id, env);
+        const { productKey, paidAmount } = await resolvePurchase(session.id, env);
         if (productKey) {
-          await recordPendingPurchase(userId, productKey, session.id, amount);
+          await recordPendingPurchase(userId, productKey, session.id, paidAmount);
         }
         return;
       }
@@ -146,12 +168,45 @@ async function handleWebhook(req: Request, env: StripeEnv) {
       }
       const userId = session.metadata?.["userId"];
       if (!userId) {
-        console.error("No userId in async payment session metadata");
-        return;
+        throw new Error("No userId in async payment session metadata");
       }
       if (session.mode === "payment") {
         await fulfillSession(session.id, userId, env);
       }
+      break;
+    }
+
+    case "charge.refunded":
+    case "payment_intent.payment_failed": {
+      const object = event.data.object;
+      const charge = event.type === "charge.refunded" ? (object as Stripe.Charge) : null;
+      const paymentIntent = charge
+        ? typeof charge.payment_intent === "string"
+          ? charge.payment_intent
+          : charge.payment_intent?.id
+        : object.id;
+      if (!paymentIntent) throw new Error("Payment review has no payment intent");
+      const sessions = await createStripeClient(env).checkout.sessions.list({
+        payment_intent: paymentIntent,
+        limit: 100,
+      });
+      // A checkout-bound intent must resolve from Stripe, never event metadata.
+      // No sessions means a payment created outside this application's checkout.
+      for (const session of sessions.data) {
+        const intentId = guestCheckoutIntentId(session);
+        if (event.type === "payment_intent.payment_failed" && intentId) {
+          await markGuestCheckoutFailed(intentId, session.id, env);
+        }
+        await reconcilePaymentReview({
+          eventId: event.id,
+          reference: session.id,
+          type: event.type,
+          created: event.created,
+          refundedAmountCents: charge?.amount_refunded ?? 0,
+        });
+      }
+      if (sessions.has_more)
+        throw new Error("Payment review needs additional checkout reconciliation");
       break;
     }
     case "checkout.session.async_payment_failed": {
@@ -180,8 +235,10 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
     handlers: {
       POST: async ({ request }) => {
         const rawEnv = new URL(request.url).searchParams.get("env");
+        let event: Stripe.Event;
+        let env: StripeEnv;
         try {
-          const env = getConfiguredStripeEnvironment();
+          env = getConfiguredStripeEnvironment();
           // Lovable configures Stripe endpoints with ?env=sandbox or ?env=live.
           // Keep that URL contract, but bind it to the trusted deployment
           // setting before choosing a Stripe key or webhook secret.
@@ -189,11 +246,28 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
             console.error("Webhook environment does not match this deployment:", rawEnv);
             return new Response("Webhook environment mismatch", { status: 400 });
           }
-          await handleWebhook(request, env);
+          event = await verifyWebhook(request, env);
+        } catch (e) {
+          console.error("Webhook verification failed:", e);
+          return new Response("Webhook error", { status: 400 });
+        }
+        try {
+          if (await beginPaymentEvent(event.id, event.type)) {
+            await handleWebhook(event, env);
+            await finishPaymentEvent(event.id, true);
+          }
           return Response.json({ received: true });
         } catch (e) {
-          console.error("Webhook error:", e);
-          return new Response("Webhook error", { status: 400 });
+          console.error("Verified webhook processing failed:", e);
+          try {
+            await finishPaymentEvent(event.id, false);
+          } catch (journalError) {
+            console.error("Webhook retry journal failed:", journalError);
+          }
+          return new Response("Payment processing will be retried", {
+            status: 503,
+            headers: { "Retry-After": "30" },
+          });
         }
       },
     },

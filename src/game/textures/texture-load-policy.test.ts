@@ -1,6 +1,7 @@
 import { expect, it, vi } from "vitest";
 import {
   canRequestTexture,
+  needsProceduralTextureFallback,
   scheduleTextureRetry,
   textureFailureAfter,
   textureHttpStatus,
@@ -19,15 +20,20 @@ it("backs off temporary errors and bounds recovery attempts", () => {
   const first = textureFailureAfter(undefined, 1_000, 503);
   expect(canRequestTexture(first, 30_999)).toBe(false);
   expect(canRequestTexture(first, 31_000)).toBe(true);
+  expect(needsProceduralTextureFallback(first)).toBe(false);
   const second = textureFailureAfter(first, 31_000);
   expect(canRequestTexture(second, 90_999)).toBe(false);
   expect(canRequestTexture(second, 91_000)).toBe(true);
   const final = textureFailureAfter(second, 91_000, 503);
   expect(canRequestTexture(final, 10_000_000)).toBe(false);
+  expect(needsProceduralTextureFallback(final)).toBe(true);
+  expect(needsProceduralTextureFallback(textureFailureAfter(undefined, 1_000, 404))).toBe(true);
 });
 
 it("recognizes FileLoader HTTP errors and tolerates network exceptions", () => {
   expect(textureHttpStatus({ response: { status: 404 } })).toBe(404);
+  expect(textureHttpStatus({ target: { status: 403 } })).toBe(403);
+  expect(textureHttpStatus({ currentTarget: { status: 410 } })).toBe(410);
   expect(textureHttpStatus(new Error("offline"))).toBeUndefined();
   expect(textureHttpStatus(null)).toBeUndefined();
 });

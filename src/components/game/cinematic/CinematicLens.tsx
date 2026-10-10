@@ -8,6 +8,7 @@ import {
   ChromaticAberration,
   DepthOfField,
   Noise,
+  SMAA,
 } from "@react-three/postprocessing";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
@@ -41,7 +42,6 @@ export default function CinematicLens({
   if (quality === "baixa") return null;
   return (
     <EffectComposer
-      // Key só por qualidade: trocar a cada fala remontava o compositor e piscava preto/branco.
       key={quality}
       enableNormalPass={false}
       multisampling={0}
@@ -90,6 +90,7 @@ export default function CinematicLens({
       ) : (
         <></>
       )}
+      <SMAA />
     </EffectComposer>
   );
 }

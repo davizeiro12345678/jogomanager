@@ -1,15 +1,21 @@
-/** Leave cores for rendering and the match simulation while decoding GPU textures. */
+import {
+  devicePresentationWorkerBudget,
+  presentationWorkerBudget,
+} from "./presentation-worker-budget";
+
+/** Keep KTX2 within the global presentation worker budget. */
 export function textureDecodeWorkers(
   cores: number | undefined,
   memoryGb: number | undefined,
 ): number {
-  const available = Number.isFinite(cores) ? Math.max(1, Math.floor(cores ?? 2)) : 2;
-  if (available <= 4 || (memoryGb !== undefined && memoryGb <= 3)) return 1;
-  return Math.min(4, available - 3);
+  return presentationWorkerBudget(cores, memoryGb).textures;
+}
+
+/** Legacy name for the single bounded background geometry lane. */
+export function presentationWorkerCount(cores: number | undefined): number {
+  return presentationWorkerBudget(cores, undefined).geometry;
 }
 
 export function deviceTextureDecodeWorkers(): number {
-  if (typeof navigator === "undefined") return 1;
-  const memoryGb = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-  return textureDecodeWorkers(navigator.hardwareConcurrency, memoryGb);
+  return devicePresentationWorkerBudget().textures;
 }

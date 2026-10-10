@@ -5,6 +5,7 @@ import { benchmarkTeam } from "./graphics-fixture";
 import { CAMERA_OPTIONS, type CameraMode } from "../src/game/camera-modes";
 import { WorkerMatchView } from "../src/game/live-match";
 import { DEFAULT_VISUAL } from "../src/game/visual-settings";
+import { nativeMeasurementTiming } from "../src/game/native-performance-contract";
 import {
   resolveGraphicsBenchmark,
   type GraphicsBenchmarkMetadata,
@@ -15,6 +16,7 @@ import {
 const settingsKey = "manager3d.visual.v3";
 const benchmark = resolveGraphicsBenchmark(location.search);
 const rendererQuality: Quality = benchmark.quality === "cinema" ? "alta" : benchmark.quality;
+const measurementTiming = nativeMeasurementTiming(location.search);
 
 type BenchmarkWindow = Window & {
   __PFM_GRAPHICS_BENCHMARK__?: GraphicsBenchmarkMetadata;
@@ -44,7 +46,7 @@ function Benchmark() {
     null,
   );
   const [sample, setSample] = useState<Record<string, unknown>>({
-    status: "Aquecendo 5 s; medindo 60 s",
+    status: `Aquecendo ${measurementTiming.warmupMs / 1000} s; medindo ${measurementTiming.measurementMs / 1000} s`,
   });
   const [mode, setMode] = useState<CameraMode>(benchmark.camera);
   const [run, setRun] = useState(0);

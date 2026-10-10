@@ -4,13 +4,18 @@ import type { CareerState } from "@/game/types";
 import { z } from "zod";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { initCareer } from "@/game/career";
+import { assertUntrustedJson, normalizePublicText, hasVisibleText } from "./untrusted-json";
 
 const CareerInput = z.object({
   state: z
     .object({
       leagueId: z.string().min(1).max(80),
       clubId: z.string().min(1).max(80),
-      managerName: z.string().min(1).max(80),
+      managerName: z
+        .string()
+        .transform(normalizePublicText)
+        .pipe(z.string().min(1).max(80))
+        .refine(hasVisibleText),
       season: z.number().int().min(1).max(100),
       round: z.number().int().min(1).max(1000),
       fixtures: z.array(z.unknown()).max(5000),
@@ -73,7 +78,10 @@ export const loadCareer = createServerFn({ method: "GET" })
 
 export const saveCareer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => CareerInput.parse(input))
+  .validator((input: unknown) => {
+    assertUntrustedJson(input);
+    return CareerInput.parse(input);
+  })
   .handler(async ({ data, context }) => {
     const incoming = data.state as unknown as CareerState;
     // Malformed nested JSON is an unverified personal save, never an attested result.

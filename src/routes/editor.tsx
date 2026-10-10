@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/game/screen-kit";
 // ============================================================================
 //  /editor
 //  Modo editor e customização: elencos, clubes, competições e
@@ -147,7 +148,7 @@ function EditorPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="font-display text-3xl uppercase tracking-wide">Editor e customização</h1>
+      <ScreenHeader title="Editor e customização" />
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
         Edite elencos, clubes e competições do jogo. Tudo fica salvo no seu navegador e é aplicado
         automaticamente, sem precisar de login.

@@ -28,6 +28,7 @@ export function ArticleShell({
   updated,
   toc,
   faq,
+  actions,
   children,
 }: {
   kicker: string;
@@ -44,6 +45,8 @@ export function ArticleShell({
   toc?: readonly GuideTocItem[];
   /** Perguntas frequentes específicas do guia. */
   faq?: readonly GuideFaq[];
+  /** Route-specific calls to action for articles about a non-manager mode. */
+  actions?: ReactNode;
   children: ReactNode;
 }) {
   const facts = [
@@ -108,20 +111,22 @@ export function ArticleShell({
           </section>
         )}
 
-        <div className="mt-12 flex flex-wrap gap-3">
-          <Link
-            to="/new"
-            className="rounded-lg bg-primary px-6 py-3 font-display text-sm uppercase tracking-widest text-primary-foreground transition hover:brightness-110"
-          >
-            Começar carreira
-          </Link>
-          <Link
-            to="/partida-rapida"
-            className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest transition hover:bg-secondary"
-          >
-            Jogar partida rápida
-          </Link>
-        </div>
+        {actions ?? (
+          <div className="mt-12 flex flex-wrap gap-3">
+            <Link
+              to="/new"
+              className="rounded-lg bg-primary px-6 py-3 font-display text-sm uppercase tracking-widest text-primary-foreground transition hover:brightness-110"
+            >
+              Começar carreira
+            </Link>
+            <Link
+              to="/partida-rapida"
+              className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest transition hover:bg-secondary"
+            >
+              Jogar partida rápida
+            </Link>
+          </div>
+        )}
 
         <CommunityInvite compact />
         <PublicLinks exclude={path} />

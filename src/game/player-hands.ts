@@ -6,9 +6,10 @@ export type FingerIndex = 0 | 1 | 2 | 3;
 export type HandJoint =
   `finger${HandSide}${FingerIndex}` | `fingerTip${HandSide}${FingerIndex}` | `thumb${HandSide}`;
 
-export const FINGER_LENGTHS = [0.64, 0.84, 0.78, 0.56] as const;
-export const FINGER_CENTERS_Y = [1.695, 1.79, 1.755, 1.63] as const;
-export const fingerX = (index: number, radius: number) => (index - 1.5) * radius * 0.36;
+export const FINGER_LENGTHS = [0.84, 1.09, 1.02, 0.76] as const;
+export const FINGER_CENTERS_Y = [1.795, 1.915, 1.875, 1.73] as const;
+export const fingerX = (index: number, radius: number, side = 1) =>
+  side * (index - 1.5) * radius * 0.36;
 
 interface HandBoneSpec {
   joint: HandJoint;
@@ -30,7 +31,7 @@ export function handBoneSpecs(radius: number): HandBoneSpec[] {
       specs.push({
         joint: `finger${side}${index}`,
         parent: `hand${side}`,
-        offset: [fingerX(index, radius), -radius * 1.29, radius * 0.05],
+        offset: [fingerX(index, radius, sign), -radius * 1.29, radius * 0.05],
       });
       specs.push({
         joint: `fingerTip${side}${index}`,
@@ -57,13 +58,16 @@ export interface HandPose {
   deviation?: number;
 }
 
+export type HandMotionPose = HandPose & { pronation: number; deviation: number };
+
 /** Cosmetic gestures stay independent of possession, ball physics and saves. */
 export function handPoseAt(
   action: PlayerAction | null,
   progress: number,
   speed: number,
   side?: HandSide,
-): HandPose & { pronation: number; deviation: number } {
+  output?: HandMotionPose,
+): HandMotionPose {
   const u = clamp(progress, 0, 1);
   const effort = clamp(speed / 8, 0, 1);
   let grip = 0.16 + effort * 0.28;
@@ -156,7 +160,13 @@ export function handPoseAt(
     spread = 0.012;
     wrist = (side === "L" ? 1 : -1) * 0.035;
   }
-  return { grip, spread, wrist, pronation, deviation };
+  const pose = output ?? { grip: 0, spread: 0, wrist: 0, pronation: 0, deviation: 0 };
+  pose.grip = grip;
+  pose.spread = spread;
+  pose.wrist = wrist;
+  pose.pronation = pronation;
+  pose.deviation = deviation;
+  return pose;
 }
 
 interface PoseableBone {
@@ -181,7 +191,7 @@ export function applyHandPose(
       const curl = clamp(pose.grip + index * 0.025, 0, 0.94);
       base.rotation.x += (-curl * 1.08 - base.rotation.x) * k;
       tip.rotation.x += (-curl * 1.25 - tip.rotation.x) * k;
-      base.rotation.z += ((index - 1.5) * pose.spread - base.rotation.z) * k;
+      base.rotation.z += (sign * (index - 1.5) * pose.spread - base.rotation.z) * k;
     }
     const thumb = bones[`thumb${side}`];
     thumb.rotation.x += (-pose.grip * 0.55 - thumb.rotation.x) * k;

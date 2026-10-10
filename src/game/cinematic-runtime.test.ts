@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import {
+  cinematicHairMotionDriveAt,
   cinematicDelta,
   cinematicDetail,
   cinematicAutoQualityOnDecline,
@@ -8,6 +9,8 @@ import {
   cinematicAutoQualityOnIncline,
   cinematicInitialQuality,
   cinematicGpuQuality,
+  cinematicPresentationBudget,
+  CinematicPressureController,
 } from "./cinematic-performance";
 import { cinematicActorPose, cinematicIdleAt, cinematicLook } from "./cinematic-actor";
 import { proportionsFor } from "./player-model";
@@ -18,14 +21,26 @@ import { CUTSCENES } from "@/content/cutscenes";
 import { batchStaticStadium } from "./static-stadium-batch";
 
 describe("cinematic runtime", () => {
-  it("uses the actual integrated GPU to avoid costly startup effects", () => {
+  it("distinguishes an integrated physical GPU from software rendering", () => {
     expect(cinematicGpuQuality("media", "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics, D3D11)")).toBe(
-      "baixa",
+      "media",
     );
-    expect(cinematicGpuQuality("media", "Intel(R) UHD Graphics 620")).toBe("baixa");
+    expect(cinematicGpuQuality("media", "Intel(R) UHD Graphics 620")).toBe("media");
     expect(cinematicGpuQuality("media", "ANGLE (Google, SwiftShader Device)")).toBe("baixa");
     expect(cinematicGpuQuality("media", "NVIDIA GeForce RTX 4060")).toBe("media");
     expect(cinematicGpuQuality("baixa", "NVIDIA GeForce RTX 4060")).toBe("baixa");
+  });
+  it("keeps portrait anatomy while sustained pressure drops effects then pixels", () => {
+    const controller = new CinematicPressureController();
+    expect(controller.sample(20, 50)).toBe(0);
+    expect(controller.sample(20, 50)).toBe(1);
+    expect(cinematicPresentationBudget("alta", 1).lens).toBe("media");
+    for (let index = 0; index < 20; index++) controller.sample(20, 50);
+    const budget = cinematicPresentationBudget("alta", controller.stage);
+    expect(budget.lens).toBe("off");
+    expect(budget.resolutionScale).toBeLessThan(1);
+    expect(budget.actorQuality).toBe("alta");
+    expect(controller.sample(Number.NaN, 0)).toBe(4);
   });
   it("starts auto balanced on CPU-rich devices and honours manual quality", () => {
     expect(cinematicInitialQuality("alta", "auto")).toBe("media");
@@ -72,6 +87,36 @@ describe("cinematic runtime", () => {
     expect(cinematicDetail("alta", true).portrait).toBe(true);
     expect(cinematicDetail("media", false).portrait).toBe(false);
     expect(cinematicDetail("media", true).radial).toBe(12);
+  });
+  it("drives secondary hair from the close-up actor's gait and head turns", () => {
+    const moving = cinematicHairMotionDriveAt({
+      time: 1.25,
+      seed: 12,
+      dt: 1 / 60,
+      moving: true,
+      hipPitch: 0.16,
+      hipYaw: -0.08,
+      headYaw: 0.35,
+      style: "ponytail",
+    });
+    expect(moving.speed).toBeGreaterThan(0);
+    expect(moving.accelerationLean).not.toBe(0);
+    expect(moving.turnRate).not.toBe(0);
+    expect(moving.style).toBe("ponytail");
+
+    const resting = cinematicHairMotionDriveAt({
+      time: 8,
+      seed: 12,
+      dt: 1 / 60,
+      moving: false,
+      hipPitch: 0,
+      hipYaw: 0,
+      headYaw: 0,
+      style: "ponytail",
+    });
+    expect(resting.speed).toBe(0);
+    expect(resting.accelerationLean).toBe(0);
+    expect(resting.turnRate).toBe(0);
   });
   it("plants the soles of seated actors across different leg proportions", () => {
     for (let seed = 1; seed < 12; seed++) {

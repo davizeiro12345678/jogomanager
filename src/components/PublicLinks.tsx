@@ -1,23 +1,20 @@
 import { Link } from "@tanstack/react-router";
 
 export const PUBLIC_PAGES = [
-  { to: "/jogo-de-manager-de-futebol", label: "Jogo de manager de futebol grátis" },
-  { to: "/soccer-manager-online", label: "Soccer manager online" },
-  { to: "/como-ser-tecnico-de-futebol", label: "Como ser técnico de futebol" },
+  { to: "/", label: "JogoManager" },
+  { to: "/guias", label: "Guia de carreira" },
   { to: "/taticas-e-formacoes", label: "Táticas e formações" },
+  { to: "/analise-de-partida-de-futebol", label: "Análise de partida" },
+  { to: "/modo-carreira-de-jogador", label: "Carreira de jogador" },
   { to: "/brasileirao", label: "Brasileirão no jogo" },
+  { to: "/planejamento-de-elenco", label: "Scouting e planejamento do elenco" },
   { to: "/mercado-de-transferencias", label: "Mercado de transferências" },
   { to: "/tabelas", label: "Tabelas das ligas reais" },
   { to: "/ligas-de-futebol", label: "Ligas disponíveis" },
-  { to: "/guias", label: "Guias" },
-  { to: "/dicas-de-gestao", label: "Dicas de gestão" },
-  { to: "/melhores-formacoes", label: "Melhores formações" },
-  { to: "/guia-de-scouting", label: "Guia de scouting" },
   { to: "/regras", label: "Regras do futebol" },
-  { to: "/gestao-financeira", label: "Gestão financeira" },
   { to: "/glossario-do-futebol", label: "Glossário do futebol" },
   { to: "/jogar-offline", label: "Como jogar offline" },
-  { to: "/comparativo-jogos-manager", label: "Comparativo de jogos" },
+  { to: "/comparativo-jogos-manager", label: "Como avaliar um manager" },
   { to: "/perguntas-frequentes", label: "Perguntas frequentes" },
   { to: "/produtos", label: "Pacotes e passe de temporada" },
   { to: "/sobre", label: "Sobre o jogo" },
@@ -28,14 +25,48 @@ export const PUBLIC_PAGES = [
   { to: "/termos", label: "Termos de uso" },
 ] as const;
 
+// Offer useful next steps instead of repeating every public URL on every article.
+const RELATED_PAGES: Record<string, readonly string[]> = {
+  "/taticas-e-formacoes": [
+    "/guias",
+    "/planejamento-de-elenco",
+    "/analise-de-partida-de-futebol",
+    "/glossario-do-futebol",
+  ],
+  "/guias": [
+    "/taticas-e-formacoes",
+    "/planejamento-de-elenco",
+    "/analise-de-partida-de-futebol",
+    "/modo-carreira-de-jogador",
+    "/jogar-offline",
+    "/ligas-de-futebol",
+  ],
+  "/planejamento-de-elenco": ["/guias", "/taticas-e-formacoes", "/brasileirao"],
+  "/analise-de-partida-de-futebol": ["/guias", "/taticas-e-formacoes", "/planejamento-de-elenco"],
+  "/modo-carreira-de-jogador": ["/guias", "/jogar-offline", "/comparativo-jogos-manager"],
+  "/brasileirao": ["/ligas-de-futebol", "/regras"],
+  "/ligas-de-futebol": ["/brasileirao", "/regras"],
+  "/regras": ["/glossario-do-futebol", "/taticas-e-formacoes"],
+  "/glossario-do-futebol": ["/regras", "/taticas-e-formacoes"],
+  "/jogar-offline": ["/perguntas-frequentes", "/contato"],
+  "/comparativo-jogos-manager": ["/sobre", "/jogar-offline", "/produtos"],
+};
+
+function relatedPublicPages(path?: string) {
+  const destinations = RELATED_PAGES[path ?? ""] ?? ["/sobre", "/perguntas-frequentes", "/contato"];
+  return PUBLIC_PAGES.filter(
+    (page) => page.to !== path && (page.to === "/guias" || destinations.includes(page.to)),
+  );
+}
+
 export function PublicLinks({ exclude }: { exclude?: string }) {
   return (
-    <nav aria-label="Páginas do site" className="mt-14 border-t border-border/60 pt-8">
+    <nav aria-label="Leituras relacionadas" className="mt-14 border-t border-border/60 pt-8">
       <h2 className="font-display text-sm uppercase tracking-[0.3em] text-primary">
-        Explore o site
+        Continue por aqui
       </h2>
       <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-        {PUBLIC_PAGES.filter((p) => p.to !== exclude).map((p) => (
+        {relatedPublicPages(exclude).map((p) => (
           <li key={p.to}>
             <Link to={p.to} className="hover:text-primary">
               {p.label}
