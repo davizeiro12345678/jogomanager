@@ -1,8 +1,15 @@
+import {
+  ScreenHeader,
+  EmptyState,
+  ErrorPanel,
+  SkeletonRows,
+  StatStrip,
+} from "@/components/game/screen-kit";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect } from "react";
-import { Coins, Clock, CheckCircle2, AlertTriangle, ShoppingBag } from "lucide-react";
+import { Clock, CheckCircle2, AlertTriangle } from "lucide-react";
 
 import { GameShell } from "@/components/game/GameShell";
 import { useCareer } from "@/hooks/useCareer";
@@ -12,7 +19,6 @@ import { track } from "@/lib/analytics";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { withPaymentTimeout } from "@/lib/embedded-checkout";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/compras")({
   ssr: false,
@@ -100,6 +106,13 @@ function PurchaseLine({ purchase }: { purchase: PurchaseRow }) {
         </p>
         <p className="text-xs text-muted-foreground">{when(purchase.createdAt)}</p>
         {purchase.error ? <p className="mt-1 text-xs text-destructive">{purchase.error}</p> : null}
+        {purchase.paymentReview === "refund_review" ? (
+          <p className="mt-2 max-w-lg text-xs text-muted-foreground">
+            Reembolso registrado para revisão
+            {purchase.refundedAmountCents ? `: ${money(purchase.refundedAmountCents)}` : ""}. Os
+            benefícios já entregues permanecem na sua conta.
+          </p>
+        ) : null}
       </div>
       <div className="flex items-center gap-3">
         <span className="font-display text-sm">{money(purchase.amountCents)}</span>
@@ -131,7 +144,7 @@ function ComprasPage() {
   return (
     <GameShell career={career}>
       <div className="mx-auto max-w-3xl px-4 py-6">
-        <h1 className="font-display text-2xl uppercase tracking-wide">Minhas compras</h1>
+        <ScreenHeader title="Minhas compras" />
         <p className="mt-1 text-sm text-muted-foreground">
           Tudo o que você comprou, o que já foi entregue e o que ainda está sendo confirmado.
         </p>
@@ -150,46 +163,27 @@ function ComprasPage() {
             </Link>
           </div>
         ) : query.isLoading || signedIn === null ? (
-          <div className="mt-6 space-y-3">
-            <Skeleton className="h-24 w-full rounded-2xl" />
-            <Skeleton className="h-16 w-full rounded-xl" />
-            <Skeleton className="h-16 w-full rounded-xl" />
+          <div className="mt-6">
+            <SkeletonRows rows={4} label="Carregando compras" />
           </div>
         ) : query.isError ? (
-          <div className="mt-6 rounded-2xl border border-destructive/40 surface-card p-6">
-            <p className="text-sm text-destructive">
-              Não foi possível carregar suas compras agora.
-            </p>
-            <Button className="mt-3" onClick={() => void query.refetch()}>
-              Tentar de novo
-            </Button>
+          <div className="mt-6">
+            <ErrorPanel
+              hint="Não foi possível carregar suas compras agora."
+              onRetry={() => void query.refetch()}
+            />
           </div>
         ) : (
           <>
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-2xl border border-border/60 surface-card p-4">
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Total gasto
-                </p>
-                <p className="font-display text-xl">{money(data?.totalSpentCents ?? 0)}</p>
-              </div>
-              <div className="rounded-2xl border border-border/60 surface-card p-4">
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Compras</p>
-                <p className="font-display text-xl">{data?.completedCount ?? 0}</p>
-              </div>
-              <div className="rounded-2xl border border-border/60 surface-card p-4">
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Pendentes
-                </p>
-                <p className="font-display text-xl">{data?.pendingCount ?? 0}</p>
-              </div>
-              <div className="rounded-2xl border border-border/60 surface-card p-4">
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Saldo</p>
-                <p className="flex items-center gap-1 font-display text-xl">
-                  <Coins size={16} className="text-primary" />
-                  {data?.coins ?? 0}
-                </p>
-              </div>
+            <div className="mt-6">
+              <StatStrip
+                stats={[
+                  { label: "Total gasto", value: money(data?.totalSpentCents ?? 0) },
+                  { label: "Compras entregues", value: String(data?.completedCount ?? 0) },
+                  { label: "Pendentes", value: String(data?.pendingCount ?? 0) },
+                  { label: "Saldo de moedas", value: String(data?.coins ?? 0) },
+                ]}
+              />
             </div>
 
             {data?.seasonPass ? (
@@ -213,16 +207,15 @@ function ComprasPage() {
                 ))}
               </ul>
             ) : (
-              <div className="mt-3 rounded-2xl border border-border/60 surface-card p-6 text-center">
-                <ShoppingBag className="mx-auto mb-2 text-muted-foreground" size={24} />
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma compra avulsa neste histórico. Os pacotes ajudam o clube sem mudar o
-                  resultado das partidas.
-                </p>
-                <Button asChild className="mt-4">
-                  <Link to="/loja">Ver a loja</Link>
-                </Button>
-              </div>
+              <EmptyState
+                title="Nenhuma compra neste histórico"
+                hint="Veja os pacotes e cosméticos disponíveis para seu clube."
+                action={
+                  <Button asChild>
+                    <Link to="/loja">Ver a loja</Link>
+                  </Button>
+                }
+              />
             )}
           </>
         )}

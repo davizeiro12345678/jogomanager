@@ -10,6 +10,16 @@ import { resolveRuntimeSceneBudget } from "@/game/runtime-scene-budget";
 import { censusRef } from "@/game/scene-census";
 import { broadcastInterest, ShotHold } from "@/game/broadcast-interest";
 import { StaticBatch } from "@/components/game/stadium/StaticBatch";
+import { Puddles } from "@/components/game/stadium/Puddles";
+import { stadiumBackgroundMaterial } from "@/game/stadium-background-material";
+import {
+  stadiumRoofStructure,
+  stadiumAisleCenters,
+  stadiumSeatFront,
+  STADIUM_AISLE_WIDTH,
+} from "@/game/stadium-structure";
+import { stadiumTierInstances, type StadiumTierInstance } from "@/game/stadium-tier-instances";
+import { bakeStadiumTierGeometry } from "@/game/stadium-tier-baked";
 import { GoalNetPanel } from "@/components/game/stadium/GoalNet";
 import { footballTextures } from "@/components/game/stadium/textures/ball";
 import { BallResponse } from "@/game/ball-response";
@@ -18,23 +28,27 @@ import { createGrassBladeMaterial } from "@/game/grass-material";
 import { createPitchSurfaceMaterial } from "@/game/pitch-material";
 import { ArenaArchitecture } from "@/components/game/stadium/ArenaArchitecture";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { FrameMetrics } from "@/game/frame-metrics";
 import { Environment, Lightformer, AdaptiveEvents, Trail } from "@react-three/drei";
 import { easing } from "maath";
-import { createNoise2D } from "simplex-noise";
 import type React from "react";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { FrameProbe } from "@/components/game/FrameProbe";
-import { PerfPanel } from "@/components/game/PerfPanel";
-import { reportSilent } from "@/lib/silent-errors";
+import { Ktx2CanvasAssets } from "./Ktx2CanvasAssets";
+import { FirstMatchFrame } from "@/components/game/FirstMatchFrame";
+import { subscribeRenderedFrames } from "./graphics-probe";
+import { rendererMetadata } from "@/game/graphics-renderer-metadata";
+import { CanvasLifecycle } from "./CanvasLifecycle";
+import { onTurfDetailReady } from "./stadium/textures/turf-detail";
 import { GraphicsBoundary } from "@/components/game/GraphicsBoundary";
 import { MatchPlayers } from "@/components/game/players/MatchPlayers";
 import { OfficialRig } from "@/components/game/players/OfficialRig";
 import { CrowdLod } from "@/components/game/stadium/CrowdLod";
 import { PostFX } from "@/components/game/post/LazyPostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
-import { adTexture } from "@/components/game/stadium/textures/ads";
+import { adTexture, retainAdTexture } from "@/components/game/stadium/textures/ads";
 import {
   concreteAlbedo,
   concreteRoughness,
@@ -43,12 +57,14 @@ import {
 import {
   grassAlbedo,
   grassNormal,
+  grassMicroRoughness,
   grassRoughness,
+  retainGrassMaps,
   type MowPattern,
 } from "@/components/game/stadium/textures/grass";
 
 import { LINES_H, LINES_W, pitchLinesTexture } from "@/components/game/stadium/textures/lines";
-import { pitchWearTexture, wearRoughness } from "@/components/game/stadium/textures/wear";
+import { pitchWearTexture } from "@/components/game/stadium/textures/wear";
 import { skyTexture } from "@/components/game/stadium/textures/sky";
 import { lightGlowTexture } from "@/components/game/stadium/textures/light-glow";
 import {
@@ -60,6 +76,7 @@ import { StadiumProps } from "@/components/game/stadium/Props";
 
 import { dprFor, higherQuality, lowerQuality } from "@/game/device";
 import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import { standCameraPosition } from "@/game/stand-camera";
 import { kitFor, gkKitFor, skinFor, hairFor, colorClash, type Kit } from "@/game/kits";
 import { Atmosphere } from "@/components/game/stadium/Atmosphere";
 import { AmbientLife } from "@/components/game/stadium/AmbientLife";
@@ -72,27 +89,26 @@ import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
 import { GradeLut } from "@/components/game/post/GradeLut";
 import type { GradeWeather } from "@/game/graphics/grade";
 import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
+import { captureGoalFocus, type GoalFocus, type GoalFocusRef } from "@/game/goal-choreography";
 import { matchLook, type TimeOfDay, type Weather } from "@/game/matchday";
+import { matchLighting } from "@/game/match-lighting";
 import { useResolvedVisual, useVisual } from "@/game/visual-settings";
-import { initKtx2, ktx2, requestKtx2, useKtx2Revision } from "@/game/textures/ktx2";
+import {
+  ktx2,
+  needsKtx2ProceduralFallback,
+  requestKtx2,
+  useKtx2Revision,
+} from "@/game/textures/ktx2";
 
 export type { CameraMode } from "@/game/camera-modes";
 export type Quality = "alta" | "media" | "baixa";
 const SHADOW_SETTINGS = { type: THREE.PCFShadowMap };
-
-const SKY: Record<TimeOfDay, string> = {
-  dia: "#8fbfe8",
-  entardecer: "#4a3630",
-  noite: "#060a10",
-};
 
 /**
  * A física visual pode enriquecer o voo, o quique e o contato da bola sem
  * participar da simulação canônica. Replays antigos e o caminho sem Rapier
  * continuam apresentando a própria bola da partida.
  */
-const FPS_RING = 180 * 60;
-
 function presentationBall(sim: SimView) {
   return sim.visualBall ?? sim.ball;
 }
@@ -136,6 +152,7 @@ function GrassField({ sim, quality, webgl2 }: { sim: SimView; quality: Quality; 
       pressure={pressure}
       material={mat}
       density={vis.grassDensity * budget.grassDensity}
+      capacityDensity={vis.grassDensity * resolveRuntimeSceneBudget(budget.tier).grassDensity}
       maxVisibleChunks={budget.grassChunks}
     />
   );
@@ -145,11 +162,14 @@ function GrassField({ sim, quality, webgl2 }: { sim: SimView; quality: Quality; 
  * pela bola e pelos jogadores, que desbotam com o tempo.
  */
 function PitchMarks({ sim }: { sim: SimView }) {
-  const COUNT = 90;
+  // Marcas devem recompensar um close de carrinho ou arrancada. No plano TV,
+  // um histórico longo de discos escuros passava a ler como manchas de lama.
+  const COUNT = 64;
   const ref = useRef<THREE.InstancedMesh>(null);
   const slots = useRef(Array.from({ length: COUNT }, () => ({ x: 0, z: 0, life: 0, s: 1, r: 0 })));
   const next = useRef(0);
   const timer = useRef(0);
+  const initialized = useRef(false);
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
   useFrame((_, rawDt) => {
@@ -158,39 +178,47 @@ function PitchMarks({ sim }: { sim: SimView }) {
     const dt = Math.min(rawDt, 0.05);
     timer.current += dt;
 
-    // deixa marcas onde os jogadores mais rápidos pisam
-    if (timer.current > 0.12) {
+    // Só uma arrancada real imprime a grama. O rastro fica curto e desaparece
+    // antes de tornar a leitura tática do campo irregular.
+    if (timer.current > 0.16) {
       timer.current = 0;
       for (const p of sim.players) {
         const sp = Math.hypot(p.vx, p.vz);
-        if (sp < 0.55) continue;
+        if (sp < 4.4) continue;
         const slot = slots.current[next.current % COUNT]!;
         next.current += 1;
         slot.x = p.x;
         slot.z = p.z;
         slot.life = 1;
-        slot.s = 0.18 + Math.min(0.25, sp * 0.15);
+        slot.s = 0.22 + Math.min(0.36, (sp - 4.4) * 0.13);
         slot.r = Math.atan2(p.vx, p.vz);
       }
     }
 
+    let dirty = false;
+    let active = false;
     for (let i = 0; i < COUNT; i++) {
       const s = slots.current[i]!;
-      if (s.life > 0) s.life = Math.max(0, s.life - dt * 0.4);
+      if (initialized.current && s.life <= 0) continue;
+      if (s.life > 0) s.life = Math.max(0, s.life - dt * 0.28);
+      active ||= s.life > 0;
       dummy.position.set(s.x, 0.012, s.z);
       dummy.rotation.set(-Math.PI / 2, 0, -s.r);
-      const k = s.life > 0 ? s.s : 0.0001;
+      const k = s.life > 0 ? s.s * Math.sqrt(s.life) : 0;
       dummy.scale.set(k * 0.5, k, 1);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
+      dirty = true;
     }
-    mesh.instanceMatrix.needsUpdate = true;
+    initialized.current = true;
+    mesh.visible = active;
+    if (dirty) mesh.instanceMatrix.needsUpdate = true;
   });
 
   return (
     <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, COUNT]}>
-      <circleGeometry args={[0.5, 8]} />
-      <meshBasicMaterial color="#0d3a1f" transparent opacity={0.08} depthWrite={false} />
+      <circleGeometry args={[0.5, 10]} />
+      <meshBasicMaterial color="#1b5a31" transparent opacity={0.095} depthWrite={false} />
     </instancedMesh>
   );
 }
@@ -222,26 +250,38 @@ function Pitch({
   const tex = useMemo(() => {
     // A newly decoded map invalidates the procedural fallback.
     void textureRevision;
-    return (
-      (compressed &&
-      (mow === "checker" || mow === "stripes" || mow === "diagonal" || mow === "wide")
+    const compressedMap =
+      compressed && (mow === "checker" || mow === "stripes" || mow === "diagonal" || mow === "wide")
         ? ktx2(grassVariant)
-        : null) ?? grassAlbedo(mow)
+        : null;
+    // The 1024px procedural pitch is a main-thread startup spike. The solid
+    // material remains readable while an immutable KTX2 request is live.
+    return (
+      compressedMap ??
+      (!compressed || needsKtx2ProceduralFallback(grassVariant) ? grassAlbedo(mow) : null)
     );
   }, [mow, compressed, grassVariant, textureRevision]);
   const rough = useMemo(() => {
     void textureRevision;
-    return (compressed ? ktx2("grassRough") : null) ?? grassRoughness(mow);
+    const compressedMap = compressed ? ktx2("grassRough") : null;
+    return (
+      compressedMap ??
+      (!compressed || needsKtx2ProceduralFallback("grassRough") ? grassRoughness(mow) : null)
+    );
   }, [mow, compressed, textureRevision]);
+  useEffect(() => retainGrassMaps(tex, rough), [tex, rough]);
   // Keep broad relief out of the field normals; it reads as cool blue blotches
   // from the high broadcast camera. The fine procedural blade detail remains.
   const norm = useMemo(() => (quality === "baixa" ? null : grassNormal(mow)), [quality, mow]);
+  const microRoughness = useMemo(
+    () => (quality === "alta" ? grassMicroRoughness() : null),
+    [quality],
+  );
   const normalScale = useMemo(
-    () => new THREE.Vector2(quality === "alta" ? 0.18 : 0.12, quality === "alta" ? 0.18 : 0.12),
+    () => new THREE.Vector2(quality === "alta" ? 0.42 : 0.28, quality === "alta" ? 0.42 : 0.28),
     [quality],
   );
   const wear = useMemo(() => (quality === "baixa" ? null : pitchWearTexture()), [quality]);
-  const wearRough = useMemo(() => (quality === "alta" ? wearRoughness() : null), [quality]);
 
   // Tom e desgaste do gramado escolhidos em /visual (global ou por clube).
   const vis = useResolvedVisual(sim.home.clubId);
@@ -249,13 +289,16 @@ function Pitch({
     const k = 1 - vis.grassTint * 0.35; // >1 clareia, <1 escurece
     return new THREE.Color(k, k, k);
   }, [vis.grassTint]);
-  const wearOpacity = 0.1 + vis.grassWear * 0.48;
+  // A textura de desgaste mantém fibras e zonas de uso, mas nunca deve virar
+  // uma camada de lama em uma partida seca vista da transmissão.
+  const wearOpacity = 0.018 + vis.grassWear * 0.17;
   const markings = useMemo(pitchLinesTexture, []);
   const surface = useMemo(
     () =>
       createPitchSurfaceMaterial({
         albedo: tex,
-        roughness: wearRough ?? rough,
+        roughness: rough,
+        microRoughness,
         normal: norm,
         normalScale,
         markings,
@@ -268,8 +311,8 @@ function Pitch({
       }),
     [
       tex,
-      wearRough,
       rough,
+      microRoughness,
       norm,
       normalScale,
       markings,
@@ -327,57 +370,10 @@ function Pitch({
       ) : null}
       {quality !== "baixa" && <GrassField sim={sim} quality={quality} webgl2={webgl2} />}
       {quality !== "baixa" && <PitchMarks sim={sim} />}
-      {quality !== "baixa" && wet > 0.75 ? <Puddles wet={wet} /> : null}
+      {quality !== "baixa" && wet > 0.72 ? <Puddles wet={wet} /> : null}
       <Goal side={1} quality={quality} sim={sim} />
       <Goal side={-1} quality={quality} sim={sim} />
       <CornerFlags sim={sim} webgl2={webgl2} />
-    </group>
-  );
-}
-
-/** Poças espelhadas no gramado encharcado, sempre nos mesmos pontos. */
-function Puddles({ wet }: { wet: number }) {
-  const spots = useMemo(() => {
-    const out: { x: number; z: number; rx: number; rz: number }[] = [];
-    let s = 0x9e37;
-    const r = () => {
-      s = (s * 1103515245 + 12345) & 0x7fffffff;
-      return s / 0x7fffffff;
-    };
-    for (let i = 0; i < 6; i++) {
-      out.push({
-        x: (r() * 2 - 1) * FIELD_X * 0.95,
-        z: (r() * 2 - 1) * FIELD_Z * 0.95,
-        rx: 0.5 + r() * 1.1,
-        rz: 0.35 + r() * 0.7,
-      });
-    }
-    return out;
-  }, []);
-  return (
-    <group>
-      {spots.map((p, i) => (
-        <mesh
-          key={i}
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[p.x, 0.014, p.z]}
-          scale={[p.rx, p.rz, 1]}
-          renderOrder={3}
-        >
-          <circleGeometry args={[1, 20]} />
-          <meshPhysicalMaterial
-            color="#123b2a"
-            roughness={0.06}
-            metalness={0.1}
-            clearcoat={1}
-            clearcoatRoughness={0.05}
-            transparent
-            opacity={0.1 + wet * 0.12}
-            depthWrite={false}
-            envMapIntensity={1.6}
-          />
-        </mesh>
-      ))}
     </group>
   );
 }
@@ -407,89 +403,54 @@ function Weather({
       (quality === "alta" ? (rain ? 2600 : 1500) : rain ? 1100 : 700) * partScale * density,
     ),
   );
-  const material = useRef<THREE.ShaderMaterial>(null);
-  const geometry = useMemo(() => {
-    const base = rain ? new THREE.PlaneGeometry(0.03, 0.85) : new THREE.CircleGeometry(0.05, 5);
-    const offsets = new Float32Array(count * 3);
-    const speeds = new Float32Array(count);
-    const phases = new Float32Array(count);
-    // Stable seeded distribution prevents hydration/re-entry changes and lets
-    // the GPU animate every particle without a matrix upload each frame.
-    let seed = count * 2654435761;
-    const random = () => {
-      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-      return seed / 4294967296;
-    };
-    for (let i = 0; i < count; i++) {
-      offsets[i * 3] = (random() * 2 - 1) * (FIELD_X + 26);
-      offsets[i * 3 + 1] = random() * 36;
-      offsets[i * 3 + 2] = (random() * 2 - 1) * (FIELD_Z + 24);
-      speeds[i] = 0.6 + random() * 0.9;
-      phases[i] = random() * Math.PI * 2;
-    }
-    base.setAttribute("aOffset", new THREE.InstancedBufferAttribute(offsets, 3));
-    base.setAttribute("aSpeed", new THREE.InstancedBufferAttribute(speeds, 1));
-    base.setAttribute("aPhase", new THREE.InstancedBufferAttribute(phases, 1));
-    return base;
-  }, [count, rain]);
-  const uniforms = useMemo(
-    () => ({
-      uTime: { value: 0 },
-      uWind: { value: wind },
-      uRain: { value: rain ? 1 : 0 },
-      uColor: { value: new THREE.Color(rain ? "#cfe6ff" : "#ffffff") },
-      uOpacity: { value: rain ? 0.35 : 0.8 },
-    }),
-    [rain, wind],
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const drops = useMemo(
+    () =>
+      Array.from({ length: count }, () => ({
+        x: (Math.random() * 2 - 1) * (FIELD_X + 26),
+        y: Math.random() * 34,
+        z: (Math.random() * 2 - 1) * (FIELD_Z + 24),
+        s: 0.6 + Math.random() * 0.9,
+        p: Math.random() * 6.28,
+      })),
+    [count],
   );
-  useEffect(() => () => geometry.dispose(), [geometry]);
-  useFrame(({ clock }) => {
-    if (!material.current) return;
-    material.current.uniforms["uTime"]!.value = clock.elapsedTime;
-    material.current.uniforms["uWind"]!.value = wind;
+
+  useFrame((_, rawDt) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const dt = Math.min(rawDt, 0.05);
+    const fall = rain ? 34 : 2.4;
+    for (let i = 0; i < drops.length; i++) {
+      const d = drops[i]!;
+      d.y -= fall * dt * d.s;
+      d.x += wind * dt * (rain ? 5 : 1.6);
+      if (!rain) d.z += Math.sin(d.p + d.y * 0.4) * dt * 0.9;
+      if (d.y < 0) {
+        d.y = 30 + Math.random() * 6;
+        d.x = (Math.random() * 2 - 1) * (FIELD_X + 26);
+        d.z = (Math.random() * 2 - 1) * (FIELD_Z + 24);
+      }
+      dummy.position.set(d.x, d.y, d.z);
+      dummy.rotation.set(0, 0, rain ? wind * 0.28 : 0);
+      dummy.scale.set(1, rain ? 1 : 0.5, 1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
   });
 
   if (!rain && !snow) return null;
 
   return (
-    <instancedMesh frustumCulled={false} args={[geometry, undefined, count]}>
-      <shaderMaterial
-        ref={material}
-        uniforms={uniforms}
+    <instancedMesh ref={ref} frustumCulled={false} args={[undefined, undefined, count]}>
+      {rain ? <planeGeometry args={[0.03, 0.85]} /> : <circleGeometry args={[0.05, 5]} />}
+      <meshBasicMaterial
+        color={rain ? "#cfe6ff" : "#ffffff"}
         transparent
+        opacity={rain ? 0.35 : 0.8}
         depthWrite={false}
-        vertexShader={/* glsl */ `
-          attribute vec3 aOffset;
-          attribute float aSpeed;
-          attribute float aPhase;
-          uniform float uTime;
-          uniform float uWind;
-          uniform float uRain;
-          void main() {
-            float fall = mix(2.4, 34.0, uRain);
-            float cycle = 36.0;
-            vec3 world = position;
-            if (uRain > 0.5) {
-              float tilt = uWind * 0.28;
-              mat2 rotation = mat2(cos(tilt), -sin(tilt), sin(tilt), cos(tilt));
-              world.xy = rotation * world.xy;
-            } else {
-              world.y *= 0.5;
-            }
-            float spanX = ${(FIELD_X + 26) * 2}.0;
-            world.x += mod(aOffset.x + uWind * uTime * mix(1.6, 5.0, uRain) + spanX, spanX) - spanX * 0.5;
-            world.y += mod(aOffset.y - uTime * fall * aSpeed + cycle * 64.0, cycle);
-            world.z += aOffset.z + (1.0 - uRain) * sin(aPhase + world.y * 0.4 + uTime) * 0.42;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(world, 1.0);
-          }
-        `}
-        fragmentShader={/* glsl */ `
-          uniform vec3 uColor;
-          uniform float uOpacity;
-          void main() {
-            gl_FragColor = vec4(uColor, uOpacity);
-          }
-        `}
       />
     </instancedMesh>
   );
@@ -664,8 +625,6 @@ function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: Sim
   );
 }
 
-const windNoise = createNoise2D(() => 0.4242);
-
 function CornerFlags({ sim, webgl2 }: { sim: SimView; webgl2: boolean }) {
   const ref = useRef<THREE.Group>(null);
   const uTime = useRef({ value: 0 });
@@ -699,8 +658,8 @@ function CornerFlags({ sim, webgl2 }: { sim: SimView; webgl2: boolean }) {
   useEffect(() => () => cloth.dispose(), [cloth]);
   useFrame(({ clock }) => {
     uTime.current.value = clock.elapsedTime;
-    // rajadas orgânicas: 1 amostra de ruído por quadro (custo desprezível)
-    const gust = 0.8 + 0.35 * windNoise(clock.elapsedTime * 0.45, 0);
+    const gust =
+      0.75 + 0.25 * Math.sin(clock.elapsedTime * 0.9) + 0.12 * Math.sin(clock.elapsedTime * 2.7);
     const wind = sim.wind?.strength01 ?? 0.25;
     uAmp.current.value = (0.015 + wind * 0.2) * gust;
     const g = ref.current;
@@ -746,6 +705,7 @@ function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: stri
     [homeColor, awayColor, key],
   );
   const matA = useRef<THREE.MeshStandardMaterial>(null);
+  useEffect(() => retainAdTexture(tex), [tex]);
   const matB = useRef<THREE.MeshStandardMaterial>(null);
   const len = (FIELD_X + 8) * 2;
 
@@ -764,12 +724,19 @@ function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: stri
     t.offset.x = 0.5;
     return t;
   }, [tex]);
+  useEffect(
+    () => () => {
+      texA?.dispose();
+      texB?.dispose();
+    },
+    [texA, texB],
+  );
 
-  useFrame((_, delta) => {
+  useFrame(({ clock }, delta) => {
     if (texA) texA.offset.x = (texA.offset.x + delta * 0.05) % 1;
     if (texB) texB.offset.x = (texB.offset.x - delta * 0.05 + 1) % 1;
     // leve cintilar do painel
-    const flick = 0.5 + Math.random() * 0.06;
+    const flick = 0.53 + Math.sin(clock.elapsedTime * 2.4) * 0.012;
     if (matA.current) matA.current.emissiveIntensity = flick;
     if (matB.current) matB.current.emissiveIntensity = flick;
   });
@@ -1031,10 +998,18 @@ function useConcrete(color = "#6d747b", repeat = 6, high = false) {
   const textureRevision = useKtx2Revision();
   const material = useMemo(() => {
     void textureRevision;
-    const map = (high ? ktx2("concreteAlbedo") : null) ?? concreteAlbedo();
-    const rough = (high ? ktx2("concreteRough") : null) ?? concreteRoughness();
+    const compressedMap = high ? ktx2("concreteAlbedo") : null;
+    const compressedRough = high ? ktx2("concreteRough") : null;
+    const map =
+      compressedMap ??
+      (!high || needsKtx2ProceduralFallback("concreteAlbedo") ? concreteAlbedo() : null);
+    const rough =
+      compressedRough ??
+      (!high || needsKtx2ProceduralFallback("concreteRough") ? concreteRoughness() : null);
     const m = new THREE.MeshStandardMaterial({
-      color,
+      // Albedo already contains concrete pigmentation. Multiplying it by a
+      // second dark grey crushed all panel detail, especially on the stairs.
+      color: map ? new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.82) : color,
       roughness: 0.96,
       metalness: 0.02,
     });
@@ -1063,6 +1038,79 @@ function useConcrete(color = "#6d747b", repeat = 6, high = false) {
   return material;
 }
 
+/** Three meshes replace the former tiers' hidden source hierarchy. Instances
+ * are immutable after layout; bounds are computed once for camera culling. */
+function TierInstances({
+  geometry,
+  material,
+  placements,
+  receiveShadow = false,
+  batching,
+}: {
+  geometry: THREE.BufferGeometry;
+  material: THREE.Material;
+  placements: StadiumTierInstance[];
+  receiveShadow?: boolean;
+  batching: "instanced" | "merged" | "legacy";
+}) {
+  const baked = useMemo(
+    () => (batching === "merged" ? bakeStadiumTierGeometry(geometry, placements) : null),
+    [batching, geometry, placements],
+  );
+  useEffect(() => () => baked?.dispose(), [baked]);
+  const ref = useRef<THREE.InstancedMesh>(null);
+  useEffect(() => {
+    const mesh = ref.current;
+    return () => mesh?.dispose();
+  }, [geometry, material, placements.length]);
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const transform = new THREE.Object3D();
+    placements.forEach((placement, index) => {
+      transform.position.fromArray(placement.position);
+      transform.scale.fromArray(placement.scale);
+      transform.rotation.set(0, placement.rotationY, 0);
+      transform.updateMatrix();
+      mesh.setMatrixAt(index, transform.matrix);
+    });
+    mesh.count = placements.length;
+    mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingBox();
+    mesh.computeBoundingSphere();
+  }, [geometry, material, placements]);
+  if (batching === "merged")
+    return (
+      <mesh geometry={baked!} material={material} receiveShadow={receiveShadow} dispose={null} />
+    );
+  if (batching === "legacy")
+    return (
+      <group>
+        {placements.map((placement, index) => (
+          <mesh
+            key={index}
+            geometry={geometry}
+            material={material}
+            position={placement.position}
+            scale={placement.scale}
+            rotation={[0, placement.rotationY, 0]}
+            receiveShadow={receiveShadow}
+            dispose={null}
+          />
+        ))}
+      </group>
+    );
+  return (
+    <instancedMesh
+      ref={ref}
+      args={[geometry, material, Math.max(1, placements.length)]}
+      receiveShadow={receiveShadow}
+      dispose={null}
+    />
+  );
+}
+
 function Tiers({
   rings,
   homeColor,
@@ -1074,108 +1122,120 @@ function Tiers({
   awayColor: string;
   high: boolean;
 }) {
-  const steps: React.ReactElement[] = [];
+  const sceneTier = useRuntimeSceneBudget().tier;
+  const physical =
+    sceneTier === "cinema" ||
+    (typeof location !== "undefined" &&
+      location.pathname.endsWith("/graphics-benchmark.html") &&
+      new URLSearchParams(location.search).get("backgroundLighting") === "legacy");
+  // Constrained profiles share the immutable placements without mounting and
+  // baking hundreds of authoring meshes. High/cinema keep their existing path.
+  const requestedBatch =
+    typeof location !== "undefined" && location.pathname.includes("graphics-benchmark")
+      ? new URLSearchParams(location.search).get("tierBatch")
+      : null;
+  const batching =
+    requestedBatch === "instanced" || requestedBatch === "merged" || requestedBatch === "legacy"
+      ? requestedBatch
+      : sceneTier === "baixa" || sceneTier === "media"
+        ? "instanced"
+        : "legacy";
   const lenX = FIELD_X * 2 + 30;
   const lenZ = FIELD_Z * 2 + 34;
-  const concrete = useConcrete("#5f666d", 10, high);
+  const physicalConcrete = useConcrete("#5f666d", 10, high);
+  const concrete = useMemo(
+    () => (physical ? physicalConcrete : stadiumBackgroundMaterial(physicalConcrete)),
+    [physical, physicalConcrete],
+  );
+  useEffect(
+    () => () => {
+      if (concrete !== physicalConcrete) concrete.dispose();
+    },
+    [concrete, physicalConcrete],
+  );
+  const chairFront = useMemo(
+    () => stadiumSeatFront(lenX, 1.2, stadiumAisleCenters(FIELD_X)),
+    [lenX],
+  );
+  useEffect(() => () => chairFront.dispose(), [chairFront]);
 
   const seatMat = useMemo(() => {
     const t = seatsTexture(homeColor, awayColor);
-    const m = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.82 });
+    const m = physical
+      ? new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.82 })
+      : new THREE.MeshLambertMaterial({ color: "#ffffff" });
     if (t) {
       const c = t.clone();
       c.needsUpdate = true;
-      // Cada degrau já representa uma fileira. Repetir as doze fileiras da
-      // textura em 1,2 m criava listras escuras e moiré à distância.
-      c.repeat.set(14, 0.12);
+      // A dedicated single-row atlas gives ~55cm chairs on this 1.2m riser.
+      // Its horizontal repeat is derived from metres, never from tier count.
+      c.repeat.set(lenX / (8 * 0.55), 1);
       m.map = c;
     } else {
       m.color = new THREE.Color(homeColor);
     }
     return m;
-  }, [homeColor, awayColor]);
+  }, [homeColor, awayColor, lenX, physical]);
   const seatMatSide = useMemo(() => {
     const c = seatMat.clone();
     if (c.map) {
       const t = c.map.clone();
       t.needsUpdate = true;
-      t.repeat.set(10, 0.12);
+      t.repeat.set(lenZ / (8 * 0.55), 1);
       c.map = t;
     }
     return c;
-  }, [seatMat]);
+  }, [seatMat, lenZ]);
+  useEffect(
+    () => () => {
+      seatMat.map?.dispose();
+      seatMatSide.map?.dispose();
+      seatMat.dispose();
+      seatMatSide.dispose();
+    },
+    [seatMat, seatMatSide],
+  );
 
-  for (let r = 0; r < rings; r++) {
-    const y = 2.0 + r * 1.45;
-    for (const z of [-1, 1]) {
-      steps.push(
-        <mesh
-          key={`sz${r}${z}`}
-          position={[0, y - 0.72, z * (FIELD_Z + 7 + r * 1.5)]}
-          receiveShadow
-          material={concrete}
-        >
-          <boxGeometry args={[lenX, 1.45, 1.5]} />
-        </mesh>,
-      );
-      // faixa de cadeiras na frente do degrau
-      steps.push(
-        <mesh
-          key={`cz${r}${z}`}
-          position={[0, y - 0.6, z * (FIELD_Z + 7 + r * 1.5 - 0.78)]}
-          rotation={[0, z > 0 ? Math.PI : 0, 0]}
-          material={seatMat}
-        >
-          <planeGeometry args={[lenX, 1.2]} />
-        </mesh>,
-      );
-    }
-    for (const x of [-1, 1]) {
-      steps.push(
-        <mesh
-          key={`sx${r}${x}`}
-          position={[x * (FIELD_X + 10 + r * 1.5), y - 0.72, 0]}
-          receiveShadow
-          material={concrete}
-        >
-          <boxGeometry args={[1.5, 1.45, lenZ]} />
-        </mesh>,
-      );
-      steps.push(
-        <mesh
-          key={`cx${r}${x}`}
-          position={[x * (FIELD_X + 10 + r * 1.5 - 0.78), y - 0.6, 0]}
-          rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}
-          material={seatMatSide}
-        >
-          <planeGeometry args={[lenZ, 1.2]} />
-        </mesh>,
-      );
-    }
-  }
+  const placements = useMemo(() => stadiumTierInstances(rings, FIELD_X, FIELD_Z), [rings]);
+  const concreteGeometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
+  const endGeometry = useMemo(() => new THREE.PlaneGeometry(lenZ, 1.2), [lenZ]);
+  useEffect(
+    () => () => {
+      concreteGeometry.dispose();
+      endGeometry.dispose();
+    },
+    [concreteGeometry, endGeometry],
+  );
 
-  // corrimãos verticais separando os setores (sem invadir o campo)
-  const stairs: React.ReactElement[] = [];
-  for (let i = -3; i <= 3; i++) {
-    for (const z of [-1, 1]) {
-      stairs.push(
-        <mesh
-          key={`v${i}${z}`}
-          position={[i * 24, 2.0 + (rings * 1.45) / 2, z * (FIELD_Z + 8 + (rings * 1.5) / 2)]}
-          rotation={[z > 0 ? -0.76 : 0.76, 0, 0]}
-          material={concrete}
-        >
-          <boxGeometry args={[1.1, 0.1, rings * 1.9]} />
-        </mesh>,
-      );
-    }
-  }
-
-  return (
-    <StaticBatch signature={`tiers:${rings}:${homeColor}:${awayColor}`}>
-      {steps}
-      {stairs}
+  const buckets = (
+    <>
+      <TierInstances
+        geometry={concreteGeometry}
+        material={concrete}
+        placements={placements.concrete}
+        receiveShadow
+        batching={batching}
+      />
+      <TierInstances
+        geometry={chairFront}
+        material={seatMat}
+        placements={placements.longitudinalSeats}
+        batching={batching}
+      />
+      <TierInstances
+        geometry={endGeometry}
+        material={seatMatSide}
+        placements={placements.endSeats}
+        batching={batching}
+      />
+    </>
+  );
+  return batching === "legacy" ? (
+    <StaticBatch signature={`tiers:${rings}:${concrete.uuid}:${seatMat.uuid}:${seatMatSide.uuid}`}>
+      {buckets}
     </StaticBatch>
+  ) : (
+    <group>{buckets}</group>
   );
 }
 
@@ -1183,41 +1243,13 @@ function Roof({ rings }: { rings: number }) {
   const outer = 9 + rings * 1.5;
   const depth = 12;
   const height = 2.0 + rings * 1.45 + 7;
-  const trusses: React.ReactElement[] = [];
-  for (let i = -6; i <= 6; i++) {
-    for (const z of [-1, 1]) {
-      trusses.push(
-        <mesh key={`tz${i}${z}`} position={[i * 13, height - 2.2, z * (FIELD_Z + outer)]}>
-          <boxGeometry args={[0.5, 4.4, 0.5]} />
-          <meshStandardMaterial color="#5a6672" roughness={0.7} metalness={0.35} />
-        </mesh>,
-      );
-      // diagonal de contraventamento
-      trusses.push(
-        <mesh
-          key={`dz${i}${z}`}
-          position={[i * 13 + 6.5, height - 1.2, z * (FIELD_Z + outer)]}
-          rotation={[0, 0, 0.9]}
-        >
-          <boxGeometry args={[0.22, 12, 0.22]} />
-          <meshStandardMaterial color="#6b7783" roughness={0.6} metalness={0.4} />
-        </mesh>,
-      );
-    }
-  }
-  for (let i = -4; i <= 4; i++) {
-    for (const x of [-1, 1]) {
-      trusses.push(
-        <mesh key={`tx${i}${x}`} position={[x * (FIELD_X + outer), height - 2.2, i * 14]}>
-          <boxGeometry args={[0.5, 4.4, 0.5]} />
-          <meshStandardMaterial color="#5a6672" roughness={0.7} metalness={0.35} />
-        </mesh>,
-      );
-    }
-  }
+  const structure = useMemo(() => stadiumRoofStructure(rings, FIELD_X, FIELD_Z), [rings]);
+  useEffect(() => () => structure.dispose(), [structure]);
   return (
     <StaticBatch signature={`roof:${rings}`}>
-      {trusses}
+      <mesh geometry={structure}>
+        <meshStandardMaterial color="#5a6672" roughness={0.7} metalness={0.35} />
+      </mesh>
       {[-1, 1].map((z) => (
         <group key={`rz${z}`}>
           <mesh position={[0, height, z * (FIELD_Z + outer + depth / 2 - 2)]}>
@@ -1438,6 +1470,13 @@ function CrowdBackdrop({
     [height],
   );
   const endGeometry = useMemo(() => crowdBackdropGeometry(FIELD_Z * 2 + 18, height), [height]);
+  useEffect(
+    () => () => {
+      longitudinalGeometry.dispose();
+      endGeometry.dispose();
+    },
+    [longitudinalGeometry, endGeometry],
+  );
   if (!texture) return null;
   const y = 1.9 + height * 0.5;
   // Os degraus finais são volumes opacos. A massa de silhuetas fica alguns
@@ -1560,7 +1599,12 @@ function Stands({
       for (let i = 0; i < density; i++) {
         const t = i / density;
         const px = -FIELD_X - 10 + t * (FIELD_X * 2 + 20);
-        if ([-36, 0, 36].some((aisle) => Math.abs(px - aisle) < 0.88)) continue;
+        if (
+          stadiumAisleCenters(FIELD_X).some(
+            (aisle) => Math.abs(px - aisle) < STADIUM_AISLE_WIDTH / 2 + 0.45,
+          )
+        )
+          continue;
         const sector = Math.floor(t * SECTORS);
         for (const zSide of [-1, 1]) {
           positions.push(
@@ -1961,6 +2005,8 @@ type ShotContext = {
   nearGoal: number; // 0..1 proximidade da grande área
   holder: SimPlayer | null;
   heading: number;
+  focusX: number | null;
+  focusZ: number | null;
 };
 
 function framingFor(id: ShotId, c: ShotContext, t: number): Framing {
@@ -2033,8 +2079,8 @@ function framingFor(id: ShotId, c: ShotContext, t: number): Framing {
         fov: 34,
       };
     case "playercam": {
-      const focusX = holder?.x ?? bx;
-      const focusZ = holder?.z ?? bz;
+      const focusX = c.focusX ?? holder?.x ?? bx;
+      const focusZ = c.focusZ ?? holder?.z ?? bz;
       const forwardX = Math.sin(heading);
       const forwardZ = Math.cos(heading);
       return {
@@ -2069,10 +2115,11 @@ function framingFor(id: ShotId, c: ShotContext, t: number): Framing {
       };
     case "stand": {
       const side = bz >= 0 ? 1 : -1;
+      const eye = standCameraPosition(FIELD_Z, side);
       return {
         px: bx * 0.58,
-        py: 13.5,
-        pz: side * (FIELD_Z + 20),
+        py: eye.y,
+        pz: eye.z,
         lx: bx * 0.72,
         ly: 1,
         lz: bz * 0.78,
@@ -2150,10 +2197,12 @@ function Rig({
   sim,
   mode,
   goalPulse,
+  goalFocus,
 }: {
   sim: SimView;
   mode: CameraMode;
   goalPulse: React.MutableRefObject<number>;
+  goalFocus: GoalFocusRef;
 }) {
   const pos = useMemo(() => new THREE.Vector3(), []);
   const look = useMemo(() => new THREE.Vector3(), []);
@@ -2169,11 +2218,16 @@ function Rig({
     s.cut = Math.max(0, s.cut - dt);
 
     const visualBall = presentationBall(sim);
+    const pulse = goalPulse.current;
+    const focus = pulse > 0.05 ? goalFocus.current : null;
+    const goalHero = focus
+      ? (sim.players.find((player) => player.id === focus.scorerId) ?? null)
+      : null;
     const speed = Math.hypot(visualBall.vx, visualBall.vz);
     const interest = broadcastInterest(sim);
     const lead = interest.lead / 0.18;
-    const rawX = visualBall.x + visualBall.vx * 0.18 * lead;
-    const rawZ = visualBall.z + visualBall.vz * 0.18 * lead;
+    const rawX = focus?.x ?? visualBall.x + visualBall.vx * 0.18 * lead;
+    const rawZ = focus?.z ?? visualBall.z + visualBall.vz * 0.18 * lead;
     // zona morta: só move o alvo quando a bola sai de um raio pequeno
     const dead = 0.9;
     const dx = rawX - anchor.x;
@@ -2185,13 +2239,12 @@ function Rig({
       anchor.y += dz * k;
     }
 
-    const pulse = goalPulse.current;
-    const attackDir = sim.possession === "home" ? 1 : -1;
+    const attackDir = focus ? (focus.side === "home" ? 1 : -1) : sim.possession === "home" ? 1 : -1;
     const nearGoal = Math.min(
       1,
       Math.max(0, (Math.abs(anchor.x) - FIELD_X * 0.45) / (FIELD_X * 0.55)),
     );
-    const holder = sim.players.find((player) => player.id === sim.ball.holder) ?? null;
+    const holder = goalHero ?? sim.players.find((player) => player.id === sim.ball.holder) ?? null;
     const holderSpeed = holder ? Math.hypot(holder.vx, holder.vz) : 0;
     const heading =
       holder && holderSpeed > 0.3
@@ -2207,6 +2260,8 @@ function Rig({
       nearGoal,
       holder,
       heading,
+      focusX: focus?.x ?? null,
+      focusZ: focus?.z ?? null,
     };
 
     const manual = mode !== "broadcast" ? MANUAL_SHOT[mode] : undefined;
@@ -2260,7 +2315,13 @@ function Rig({
     } else {
       want = "wide";
     }
-    const selected = hold.current.update(want, dt, SHOT_MIN_TIME[s.shot], Boolean(manual));
+    const goalCut = !manual && pulse > 0.88;
+    const selected = hold.current.update(
+      want,
+      dt,
+      SHOT_MIN_TIME[s.shot],
+      Boolean(manual) || goalCut,
+    );
     if (selected !== s.shot) {
       s.prev = s.shot;
       s.shot = selected;
@@ -2312,8 +2373,35 @@ function Rig({
 /* --------------------------------------------------------- pós-processamento */
 
 /** Céu com degradê, nuvens volumosas, estrelas e sol/lua; gira bem devagar. */
-function SkyDome({ time }: { time: TimeOfDay }) {
+function SkyDome({ time, weather }: { time: TimeOfDay; weather: Weather }) {
   const tex = useMemo(() => skyTexture(time), [time]);
+  const material = useMemo(() => {
+    const surface = new THREE.MeshBasicMaterial({
+      map: tex,
+      side: THREE.BackSide,
+      depthWrite: false,
+      fog: false,
+    });
+    if (weather === "chuva" || weather === "neve") {
+      // Keep the cached cloud detail but close the blue sky and the solar halo
+      // under active precipitation. One existing sky draw, no extra overlay.
+      const overcast = new THREE.Color(matchLighting(time, weather, false).sky);
+      surface.customProgramCacheKey = () => "stadium-overcast-sky-v1";
+      surface.onBeforeCompile = (shader) => {
+        shader.uniforms["skyOvercastColor"] = { value: overcast };
+        shader.fragmentShader = shader.fragmentShader
+          .replace("#include <common>", "#include <common>\nuniform vec3 skyOvercastColor;")
+          .replace(
+            "#include <map_fragment>",
+            `#include <map_fragment>
+            float skyLuminance = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+            diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(skyLuminance), skyOvercastColor, 0.58), 0.88);`,
+          );
+      };
+    }
+    return surface;
+  }, [tex, time, weather]);
+  useEffect(() => () => material.dispose(), [material]);
   const ref = useRef<THREE.Mesh>(null);
   useFrame((_, dt) => {
     if (ref.current) ref.current.rotation.y += dt * 0.0035;
@@ -2322,7 +2410,7 @@ function SkyDome({ time }: { time: TimeOfDay }) {
   return (
     <mesh ref={ref} scale={[-1, 1, 1]} userData={{ census: "sky" }}>
       <sphereGeometry args={[420, 48, 28]} />
-      <meshBasicMaterial map={tex} side={THREE.BackSide} depthWrite={false} fog={false} />
+      <primitive object={material} attach="material" />
     </mesh>
   );
 }
@@ -2481,86 +2569,69 @@ function FpsMeter({
   backend: GpuBackend;
   quality: Quality;
 }) {
-  // Buffers fixos reutilizados: zero alocação por quadro ou por segundo.
-  const ring = useRef(new Float32Array(FPS_RING));
-  const sortScratch = useRef(new Float32Array(FPS_RING));
-  const ringState = useRef({ head: 0, size: 0, secondCount: 0, lastPersist: 0 });
-  const acc = useRef(0);
-  const warmup = useRef(2);
-
+  const frameTimes = useMemo(() => new FrameMetrics(180 * 60), []);
+  const gl = useThree((state) => state.gl);
+  const sampleCallback = useRef(onSample);
+  sampleCallback.current = onSample;
   useEffect(() => {
-    ringState.current.head = 0;
-    ringState.current.size = 0;
-    ringState.current.secondCount = 0;
-    acc.current = 0;
-    warmup.current = 2;
-  }, [quality, backend]);
-
-  useFrame((state, dt) => {
-    if (document.hidden || dt <= 0 || dt > 0.25) return;
-    const rs = ringState.current;
-    acc.current += dt;
-    rs.secondCount += 1;
-    if (acc.current < 1) {
-      ring.current[rs.head] = dt * 1000;
-      rs.head = (rs.head + 1) % FPS_RING;
-      if (rs.size < FPS_RING) rs.size += 1;
-      return;
-    }
-    if (warmup.current > 0) {
-      warmup.current -= 1;
-      acc.current = 0;
-      rs.secondCount = 0;
-      rs.head = 0;
-      rs.size = 0;
-      return;
-    }
-    const fps = rs.secondCount / acc.current;
-    acc.current = 0;
-    rs.secondCount = 0;
-    const n = rs.size;
-    const sorted = sortScratch.current.subarray(0, n);
-    sorted.set(ring.current.subarray(0, n));
-    sorted.sort();
-    let sum = 0;
-    for (let i = 0; i < n; i += 1) sum += sorted[i] ?? 0;
-    const meanMs = sum / Math.max(1, n);
-    const p95FrameMs = (n ? sorted[Math.min(n - 1, Math.floor(n * 0.95))] : meanMs) ?? meanMs;
-    const p99FrameMs = (n ? sorted[Math.min(n - 1, Math.floor(n * 0.99))] : meanMs) ?? meanMs;
-    const info = state.gl.info;
-    const canvas = state.gl.domElement;
-    const memory = performance as Performance & { memory?: { usedJSHeapSize: number } };
-    const sample = {
-      fps,
-      avg: 1000 / Math.max(1, meanMs),
-      p95FrameMs,
-      onePercentLow: 1000 / Math.max(1, p99FrameMs),
-      frameMs: meanMs,
-      backend,
-      quality,
-      width: canvas.width,
-      height: canvas.height,
-      triangles: info.render.triangles,
-      drawCalls: info.render.calls,
-      memoryMb: memory.memory ? Math.round(memory.memory.usedJSHeapSize / 1_048_576) : null,
-      measuredAt: new Date().toISOString(),
-    };
-    onSample(sample);
-    const now = performance.now();
-    if (now - rs.lastPersist < 10_000) return;
-    rs.lastPersist = now;
-    try {
-      localStorage.setItem("manager3d.performance.latest", JSON.stringify(sample));
-    } catch (error) {
-      reportSilent("storage.preference", error, {
-        classification: "ignorable",
-        feature: "frame-sample",
-        phase: "write",
-        dedupeKey: "frame-sample-write",
-      });
-      // Medição continua visível quando o armazenamento está indisponível.
-    }
-  });
+    frameTimes.reset();
+    let last = 0,
+      reportAt = 0,
+      started = 0,
+      frames = 0;
+    return subscribeRenderedFrames(gl, (frame) => {
+      if (document.hidden) {
+        last = started = reportAt = frames = 0;
+        return;
+      }
+      if (!last) {
+        last = started = reportAt = frame.now;
+        return;
+      }
+      const deltaMs = frame.now - last;
+      last = frame.now;
+      if (frame.now - started < 2000) {
+        reportAt = frame.now;
+        return;
+      }
+      frameTimes.add(deltaMs);
+      frames += 1;
+      if (frame.now - reportAt < 1000) return;
+      const fps = (frames * 1000) / (frame.now - reportAt);
+      reportAt = frame.now;
+      frames = 0;
+      const metrics = frameTimes.summary();
+      const meanMs = metrics.meanMs;
+      const memory = performance as Performance & { memory?: { usedJSHeapSize: number } };
+      const sample = {
+        fps,
+        avg: 1000 / Math.max(1, meanMs),
+        p95FrameMs: metrics.p95,
+        p99FrameMs: metrics.p99,
+        onePercentLow: metrics.onePercentLow,
+        frameMs: meanMs,
+        backend,
+        rendererBackend: rendererMetadata(gl).kind,
+        quality,
+        width: frame.width,
+        height: frame.height,
+        pixelRatio: frame.dpr,
+        triangles: frame.triangles,
+        drawCalls: frame.draws,
+        geometries: frame.geometries,
+        textures: frame.textures,
+        programs: frame.programs,
+        memoryMb: memory.memory ? Math.round(memory.memory.usedJSHeapSize / 1_048_576) : null,
+        measuredAt: new Date().toISOString(),
+      };
+      sampleCallback.current(sample);
+      try {
+        localStorage.setItem("manager3d.performance.latest", JSON.stringify(sample));
+      } catch {
+        // Medição continua visível quando o armazenamento está indisponível.
+      }
+    });
+  }, [gl, quality, backend, frameTimes]);
 
   return null;
 }
@@ -2569,6 +2640,7 @@ type FpsSample = {
   fps: number;
   avg: number;
   p95FrameMs: number;
+  p99FrameMs: number;
   onePercentLow: number;
   frameMs: number;
   backend: GpuBackend;
@@ -2590,6 +2662,7 @@ function Scene({
   backend,
   postIntensity,
   supporters,
+  adaptive,
 }: {
   sim: SimView;
   mode: CameraMode;
@@ -2599,6 +2672,7 @@ function Scene({
   backend: GpuBackend;
   postIntensity: number;
   supporters?: SupporterMatchday | undefined;
+  adaptive: boolean;
 }) {
   useFrame(() => {
     const interpolated = sim as SimView & { renderTick?: (now?: number) => void };
@@ -2612,7 +2686,8 @@ function Scene({
   const postOn = useVisual().postFx && backend === "webgl2";
 
   const goalPulse = useRef(0);
-  const lastGoals = useRef(0);
+  const lastGoals = useRef(sim.stats.home.goals + sim.stats.away.goals);
+  const goalFocus = useRef<GoalFocus | null>(null);
   const [replay, setReplay] = useState(false);
   const [moment, setMoment] = useState<"match" | "replay" | "drama">("match");
   const momentRef = useRef<"match" | "replay" | "drama">("match");
@@ -2622,8 +2697,12 @@ function Scene({
     if (total !== lastGoals.current) {
       lastGoals.current = total;
       goalPulse.current = 1;
+      goalFocus.current = captureGoalFocus(sim, total);
     }
-    if (goalPulse.current > 0) goalPulse.current = Math.max(0, goalPulse.current - dt * 0.22);
+    if (goalPulse.current > 0) {
+      goalPulse.current = Math.max(0, goalPulse.current - dt * 0.22);
+      if (goalPulse.current <= 0.01) goalFocus.current = null;
+    }
     const r = goalPulse.current > 0.55;
 
     const m = goalPulse.current > 0.82 ? "drama" : r ? "replay" : "match";
@@ -2644,25 +2723,17 @@ function Scene({
     [sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash],
   );
 
-  const sun = time === "dia" ? 1.72 : time === "entardecer" ? 1.5 : 1.18;
-  const sunColor = time === "entardecer" ? "#ffc79a" : time === "dia" ? "#fff6e0" : "#bcd8ff";
+  const lighting = matchLighting(time, look.weather, quality === "baixa");
+  const sunColor = lighting.keyColor;
   const visualBall = presentationBall(sim);
 
   return (
     <>
-      <color attach="background" args={[SKY[time]]} />
+      <color attach="background" args={[lighting.sky]} />
       {/* Profundidade por horário: de noite a névoa fecha antes e dá volume às luzes */}
-      <fog
-        attach="fog"
-        args={[
-          SKY[time],
-          time === "noite" ? 80 : time === "entardecer" ? 95 : 120,
-          time === "noite" ? 230 : time === "entardecer" ? 270 : 330,
-        ]}
-      />
+      <fog attach="fog" args={[lighting.sky, lighting.fogNear, lighting.fogFar]} />
       <AdaptiveEvents />
-      <FrameProbe />
-      <PerfPanel />
+      <FrameProbe quality={quality} adaptive={adaptive} />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
       {quality !== "baixa" ? (
@@ -2670,9 +2741,15 @@ function Scene({
           resolution={Math.round((quality === "alta" ? 384 : 192) * budget.textureScale)}
           frames={1}
         >
-          <color attach="background" args={[SKY[time]]} />
+          <color attach="background" args={[lighting.sky]} />
           <Lightformer
-            intensity={time === "dia" ? (quality === "alta" ? 2.1 : 1.75) : 1.45}
+            intensity={
+              quality === "media" &&
+              time === "dia" &&
+              (look.weather === "seco" || look.weather === "molhado")
+                ? 1.75
+                : lighting.environmentKey
+            }
             color={sunColor}
             position={[0, 24, 0]}
             rotation={[Math.PI / 2, 0, 0]}
@@ -2694,22 +2771,32 @@ function Scene({
           />
           <Lightformer
             intensity={0.8}
-            color={time === "entardecer" ? "#ff9b5c" : "#8fd8ff"}
+            color={
+              time === "entardecer" && look.weather !== "chuva" && look.weather !== "neve"
+                ? "#ff9b5c"
+                : "#d5e3ef"
+            }
             position={[0, 6, -40]}
             scale={[60, 8, 1]}
           />
         </Environment>
       ) : null}
 
-      <ambientLight intensity={time === "dia" ? 0.1 : 0.075} />
+      {/* The low profile has no IBL cube. Compensate with existing lights,
+          keeping kit/grass readable without allocating environment targets. */}
+      <ambientLight
+        intensity={
+          quality === "baixa" ? (time === "dia" ? 0.32 : 0.22) : time === "dia" ? 0.1 : 0.075
+        }
+      />
       <hemisphereLight
-        intensity={time === "dia" ? 0.34 : time === "entardecer" ? 0.3 : 0.22}
-        groundColor={time === "noite" ? "#08131a" : "#102c1d"}
-        color={time === "entardecer" ? "#ffe0c6" : time === "noite" ? "#a9c9ef" : "#d9edff"}
+        intensity={lighting.hemiIntensity}
+        groundColor={lighting.groundColor}
+        color={lighting.hemiColor}
       />
       <directionalLight
-        position={[50, 80, 40]}
-        intensity={sun * 1.08}
+        position={lighting.keyPosition}
+        intensity={lighting.keyIntensity}
         color={sunColor}
         castShadow={shadows && budget.shadows}
         shadow-mapSize={
@@ -2731,8 +2818,8 @@ function Scene({
       />
       <directionalLight
         position={[-55, 48, -35]}
-        intensity={time === "noite" ? 0.72 : 0.36}
-        color={time === "entardecer" ? "#b9c9ff" : "#bcd8ff"}
+        intensity={lighting.fillIntensity}
+        color={time === "entardecer" ? "#c9d2ee" : "#e5ecf2"}
       />
       {/* Contraluz de transmissão: recorta a silhueta dos atletas contra o gramado. */}
       <directionalLight
@@ -2741,7 +2828,11 @@ function Scene({
           (time === "entardecer" ? 0.58 : time === "noite" ? 0.34 : 0.3) *
           (quality === "alta" ? 1 : 0.82)
         }
-        color={time === "entardecer" ? "#ff9b62" : "#91c9ff"}
+        color={
+          time === "entardecer" && look.weather !== "chuva" && look.weather !== "neve"
+            ? "#ff9b62"
+            : "#d5e3ef"
+        }
       />
       <directionalLight
         position={[0, 14, 52]}
@@ -2749,7 +2840,7 @@ function Scene({
         color={time === "entardecer" ? "#ffd2a8" : "#cfe6ff"}
       />
 
-      <SkyDome time={time} />
+      <SkyDome time={time} weather={look.weather} />
       <Pitch
         quality={quality}
         sim={sim}
@@ -2819,6 +2910,7 @@ function Scene({
           homeKit={homeKit}
           awayKit={awayKit}
           goalPulse={goalPulse}
+          goalFocus={goalFocus}
           quality={quality}
           mode={mode}
           replay={replay}
@@ -2826,7 +2918,7 @@ function Scene({
         />
       </MatchSurfaceProvider>
       <GoalFx goalPulse={goalPulse} quality={quality} density={budget.goalFxDensity} />
-      <Rig sim={sim} mode={mode} goalPulse={goalPulse} />
+      <Rig sim={sim} mode={mode} goalPulse={goalPulse} goalFocus={goalFocus} />
       <PostFX
         grading={
           postOn
@@ -2877,11 +2969,9 @@ function surfaceWeather(weather: Weather): SurfaceWeatherName {
 }
 
 function CompressedTextures({ enabled }: { enabled: boolean }) {
-  const gl = useThree((state) => state.gl);
-  useEffect(() => {
-    if (enabled) initKtx2(gl as THREE.WebGLRenderer | import("three/webgpu").WebGPURenderer);
-  }, [enabled, gl]);
-  return null;
+  const invalidate = useThree((state) => state.invalidate);
+  useEffect(() => onTurfDetailReady(() => invalidate()), [invalidate]);
+  return <Ktx2CanvasAssets enabled={enabled} />;
 }
 
 /** Finish a camera transition in demand mode, then release the GPU while paused. */
@@ -2915,6 +3005,7 @@ function Stadium3DImpl({
   pixelRatio,
   supporters,
   paused = false,
+  onFirstFrame,
 }: {
   sim: SimView;
   mode: CameraMode;
@@ -2922,8 +3013,10 @@ function Stadium3DImpl({
   pixelRatio?: number;
   paused?: boolean;
   supporters?: SupporterMatchday | undefined;
+  onFirstFrame?: (() => void) | undefined;
 }) {
   const vis = useResolvedVisual(sim.home.clubId);
+  const startedAt = useRef(performance.now());
   // Escolha do jogador em /visual manda; "auto" segue a detecção do aparelho.
   // Cinema usa a geometria alta e amplia seletivamente resolução/efeitos sem
   // duplicar toda a árvore 3D nem quebrar configurações antigas.
@@ -3092,6 +3185,13 @@ function Stadium3DImpl({
             );
           }}
         >
+          <CanvasLifecycle onStatus={(status) => setRendererReady(status === "ready")} />
+          <FirstMatchFrame
+            startedAt={startedAt.current}
+            quality={quality}
+            backend={backend}
+            onFirstFrame={onFirstFrame}
+          />
           <PausedCameraFrames paused={paused} visible={visible} mode={mode} />
           <CompressedTextures enabled={quality === "alta"} />
           <RuntimeBudget
@@ -3111,6 +3211,7 @@ function Stadium3DImpl({
                 backend={backend}
                 postIntensity={vis.postIntensity * (vis.quality === "cinema" ? 1.12 : 1)}
                 supporters={supporters}
+                adaptive={vis.adaptive}
               />
             </RuntimeSceneBudgetContext.Provider>
           </QualityPressure.Provider>

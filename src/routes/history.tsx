@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer } from "@/components/game/screen-kit";
+import { NoCareer, SectionCard, ScreenHeader, DataTable } from "@/components/game/screen-kit";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
 import { useCareer } from "@/hooks/useCareer";
@@ -43,8 +43,8 @@ function HistoryPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <ClubHeritagePanel clubId={career.clubId} />
         <ClubHonoursPanel clubId={career.clubId} />
-        <section className="rounded-2xl border border-border/60 surface-card p-5">
-          <h1 className="font-display text-2xl uppercase tracking-wide">Troféus do treinador</h1>
+        <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">
+          <ScreenHeader title="Troféus do treinador" />
           {career.trophies.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
               Nenhum título ainda. Vença a liga para levantar o primeiro troféu!
@@ -67,16 +67,16 @@ function HistoryPage() {
               ))}
             </ul>
           )}
-        </section>
+        </SectionCard>
 
-        <section className="rounded-2xl border border-border/60 surface-card p-5">
+        <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-2xl uppercase tracking-wide">Temporadas</h2>
           {career.history.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
               Complete a primeira temporada para registrar seu retrospecto.
             </p>
           ) : (
-            <table className="mt-3 w-full text-sm">
+            <DataTable label="Dados de history" className="mt-3 w-full text-sm">
               <thead className="text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="p-2 text-left">Temp</th>
@@ -111,9 +111,9 @@ function HistoryPage() {
                   );
                 })}
               </tbody>
-            </table>
+            </DataTable>
           )}
-        </section>
+        </SectionCard>
       </div>
     </GameShell>
   );

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { OwnedTextureCache } from "@/game/owned-texture-cache";
 
 /**
  * Placas de LED da beira do campo: faixa longa com vários anúncios, brilho
@@ -28,7 +29,9 @@ function paintLogos(
   panel: number,
   h: number,
 ) {
-  const token = import.meta.env["VITE_LOVABLE_CONNECTOR_LOGO_DEV_API_KEY"];
+  const token =
+    import.meta.env["VITE_LOGO_DEV_API_KEY"] ||
+    import.meta.env["VITE_LOVABLE_CONNECTOR_LOGO_DEV_API_KEY"];
   if (!token) return;
   domains.slice(0, SPONSORS.length).forEach((domain, i) => {
     const clean = domain
@@ -109,10 +112,10 @@ function build(primary: string, secondary: string, sponsors: string[]) {
   return tex;
 }
 
-const cache = new Map<string, THREE.Texture | null>();
+const cache = new OwnedTextureCache<string>(1);
+export const retainAdTexture = (texture: THREE.Texture | null) => cache.retain(texture);
 
 export function adTexture(primary: string, secondary: string, sponsors: string[] = []) {
   const key = `${primary}|${secondary}|${sponsors.join(",")}`;
-  if (!cache.has(key)) cache.set(key, build(primary, secondary, sponsors));
-  return cache.get(key) ?? null;
+  return cache.get(key, () => build(primary, secondary, sponsors));
 }

@@ -73,9 +73,9 @@ export function getConfiguredStripeEnvironment(): StripeEnv {
   const isPreviewBuild = import.meta.env.DEV;
   return resolveConfiguredStripeEnvironment({
     deploymentEnvironment: isPreviewBuild ? undefined : process.env["PAYMENTS_ENVIRONMENT"],
-    clientToken: process.env["VITE_PAYMENTS_CLIENT_TOKEN"] ?? import.meta.env["VITE_PAYMENTS_CLIENT_TOKEN"],
-    liveApiKeyConfigured:
-      !isPreviewBuild && Boolean(process.env["STRIPE_LIVE_API_KEY"]?.trim()),
+    clientToken:
+      process.env["VITE_PAYMENTS_CLIENT_TOKEN"] ?? import.meta.env["VITE_PAYMENTS_CLIENT_TOKEN"],
+    liveApiKeyConfigured: !isPreviewBuild && Boolean(process.env["STRIPE_LIVE_API_KEY"]?.trim()),
   });
 }
 
@@ -156,7 +156,30 @@ export function getStripeErrorMessage(error: unknown): string {
 
 export async function verifyWebhook(req: Request, env: StripeEnv): Promise<Stripe.Event> {
   const signature = req.headers.get("stripe-signature");
-  const body = await req.text();
+  const maxBytes = 1_048_576;
+  if (Number(req.headers.get("content-length") ?? 0) > maxBytes)
+    throw new Error("Webhook body too large");
+  if (!signature || signature.length > 4096 || !req.body)
+    throw new Error("Missing signature or body");
+  const reader = req.body.getReader();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  let bytes = 0;
+  let body = "";
+  try {
+    for (;;) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > maxBytes) {
+        await reader.cancel();
+        throw new Error("Webhook body too large");
+      }
+      body += decoder.decode(chunk.value, { stream: true });
+    }
+    body += decoder.decode();
+  } finally {
+    reader.releaseLock();
+  }
   const secret =
     env === "sandbox"
       ? getEnv("PAYMENTS_SANDBOX_WEBHOOK_SECRET")
@@ -174,7 +197,13 @@ export async function verifyWebhook(req: Request, env: StripeEnv): Promise<Strip
     if (key === "v1" && value) v1Signatures.push(value);
   }
 
-  if (!timestamp || v1Signatures.length === 0) {
+  if (
+    !timestamp ||
+    !/^\d{1,16}$/.test(timestamp) ||
+    !Number.isSafeInteger(Number(timestamp)) ||
+    v1Signatures.length === 0 ||
+    v1Signatures.some((value) => !/^[a-f0-9]{64}$/.test(value))
+  ) {
     throw new Error("Invalid signature format");
   }
 
@@ -197,9 +226,31 @@ export async function verifyWebhook(req: Request, env: StripeEnv): Promise<Strip
   );
   const expected = Buffer.from(new Uint8Array(signed)).toString("hex");
 
-  if (!v1Signatures.includes(expected)) {
+  const matchesSignature = v1Signatures.some((candidate) => {
+    let difference = 0;
+    for (let index = 0; index < expected.length; index++)
+      difference |= expected.charCodeAt(index) ^ candidate.charCodeAt(index);
+    return difference === 0;
+  });
+  if (!matchesSignature) {
     throw new Error("Invalid webhook signature");
   }
 
-  return JSON.parse(body) as Stripe.Event;
+  const event = JSON.parse(body) as Stripe.Event;
+  if (
+    !event ||
+    event.object !== "event" ||
+    typeof event.id !== "string" ||
+    !/^evt_[A-Za-z0-9_]{1,116}$/.test(event.id) ||
+    typeof event.type !== "string" ||
+    event.type.length > 100 ||
+    !Number.isSafeInteger(event.created) ||
+    event.created < 0 ||
+    event.livemode !== (env === "live") ||
+    !event.data?.object ||
+    typeof event.data.object !== "object"
+  ) {
+    throw new Error("Invalid webhook event or environment");
+  }
+  return event;
 }

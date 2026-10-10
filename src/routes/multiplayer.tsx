@@ -1,3 +1,4 @@
+import { SectionCard, ScreenHeader } from "@/components/game/screen-kit";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Copy, LogOut, Play, RefreshCw, Send, Swords, Users, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -9,6 +10,7 @@ import { detectQuality } from "@/game/device";
 import { WorkerMatchView } from "@/game/live-match";
 import { buildTeamSetup } from "@/game/quickMatch";
 import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
+import { getLiveRoomConnectionState } from "@/game/multiplayer-connection";
 import { useOnline } from "@/hooks/useOnline";
 import { useSignedIn } from "@/hooks/useCareer";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,7 +42,7 @@ function MultiplayerPage() {
   }, [signedIn]);
 
   const refresh = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || !online) return;
     const [{ data: rooms }, { data: mine }] = await Promise.all([
       supabase
         .from("match_rooms")
@@ -72,7 +74,7 @@ function MultiplayerPage() {
       }),
     );
     setRoom((cur) => cur ?? active ?? null);
-  }, [userId]);
+  }, [online, userId]);
 
   useEffect(() => {
     void refresh().catch((error) => {
@@ -89,7 +91,16 @@ function MultiplayerPage() {
   // Atualização em tempo real da sala atual.
   useEffect(() => {
     const roomId = room?.id;
-    if (!roomId) return;
+    if (!roomId || !online) return;
+    let disposed = false;
+    const revalidateRoom = async () => {
+      const { data } = await supabase
+        .from("match_rooms")
+        .select("*")
+        .eq("id", roomId)
+        .maybeSingle();
+      if (!disposed && data) setRoom(data as unknown as Room);
+    };
     const channel = supabase
       .channel(`room-${roomId}`)
       .on(
@@ -99,19 +110,14 @@ function MultiplayerPage() {
       )
       .subscribe();
     // Reconexão automática: revalida a sala periodicamente.
-    const timer = window.setInterval(async () => {
-      const { data } = await supabase
-        .from("match_rooms")
-        .select("*")
-        .eq("id", roomId)
-        .maybeSingle();
-      if (data) setRoom(data as unknown as Room);
-    }, 8000);
+    void revalidateRoom();
+    const timer = window.setInterval(() => void revalidateRoom(), 8000);
     return () => {
+      disposed = true;
       void supabase.removeChannel(channel);
       window.clearInterval(timer);
     };
-  }, [room?.id]);
+  }, [online, room?.id]);
 
   async function createRoom() {
     if (!userId) return setError("Entre na conta novamente para criar uma sala.");
@@ -186,7 +192,11 @@ function MultiplayerPage() {
       };
     });
     if (!result.ok) {
-      setError("Não foi possível encerrar a sala. Tente novamente.");
+      setError(
+        result.reason === "settling"
+          ? "O resultado já está sendo confirmado pelo servidor. Aguarde alguns instantes."
+          : "Não foi possível encerrar a sala. Tente novamente.",
+      );
       return;
     }
     setRoom(null);
@@ -209,6 +219,19 @@ function MultiplayerPage() {
     );
   }
 
+  if (room && room.status === "live" && room.guest_club) {
+    return (
+      <LiveRoom
+        room={room}
+        isHost={room.host_id === userId}
+        online={online}
+        onExit={() => {
+          void leave();
+        }}
+      />
+    );
+  }
+
   if (!online) {
     return (
       <Shell>
@@ -220,18 +243,6 @@ function MultiplayerPage() {
           Jogar uma partida rápida
         </Link>
       </Shell>
-    );
-  }
-
-  if (room && room.status === "live" && room.guest_club) {
-    return (
-      <LiveRoom
-        room={room}
-        isHost={room.host_id === userId}
-        onExit={() => {
-          void leave();
-        }}
-      />
     );
   }
 
@@ -258,9 +269,10 @@ function MultiplayerPage() {
             </button>
             <button
               onClick={() => void leave()}
+              disabled={room.status === "settling"}
               className="ml-auto flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
             >
-              <LogOut size={12} /> Sair da sala
+              <LogOut size={12} /> {room.status === "settling" ? "Confirmando" : "Sair da sala"}
             </button>
           </div>
 
@@ -269,9 +281,14 @@ function MultiplayerPage() {
             <SideCard title="Visitante" clubId={room.guest_club} ready={!!room.guest_club} />
           </div>
 
-          {room.host_id === userId ? (
+          {room.status === "settling" ? (
+            <p className="mt-5 text-sm text-muted-foreground" aria-live="polite">
+              O servidor está confirmando o resultado com o replay oficial. A sala será atualizada
+              automaticamente.
+            </p>
+          ) : room.host_id === userId ? (
             <button
-              disabled={!room.guest_club || busy}
+              disabled={!room.guest_club || busy || room.status !== "ready"}
               onClick={async () => {
                 setBusy(true);
                 const { startMatchRoom } = await import("@/lib/multiplayer.functions");
@@ -307,7 +324,7 @@ function MultiplayerPage() {
         </section>
       ) : (
         <>
-          <section className="rounded-2xl border border-border/60 surface-card p-5">
+          <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">
             <h2 className="font-display text-sm uppercase tracking-[0.25em] text-muted-foreground">
               Escolha seu clube
             </h2>
@@ -365,9 +382,9 @@ function MultiplayerPage() {
                 Entrar pelo código
               </button>
             </div>
-          </section>
+          </SectionCard>
 
-          <section className="mt-6 rounded-2xl border border-border/60 surface-card p-5">
+          <SectionCard className="mt-6 rounded-2xl border border-border/60 surface-card p-5">
             <div className="flex items-center gap-2">
               <Users size={16} className="text-muted-foreground" />
               <h2 className="font-display text-sm uppercase tracking-[0.25em] text-muted-foreground">
@@ -406,10 +423,10 @@ function MultiplayerPage() {
                 ))}
               </ul>
             )}
-          </section>
+          </SectionCard>
 
           {history.length > 0 && (
-            <section className="mt-6 rounded-2xl border border-border/60 surface-card p-5">
+            <SectionCard className="mt-6 rounded-2xl border border-border/60 surface-card p-5">
               <h2 className="font-display text-sm uppercase tracking-[0.25em] text-muted-foreground">
                 Histórico de confrontos
               </h2>
@@ -428,7 +445,7 @@ function MultiplayerPage() {
                   );
                 })}
               </ul>
-            </section>
+            </SectionCard>
           )}
         </>
       )}
@@ -440,9 +457,13 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="pitch-bg min-h-[100dvh] px-4 py-10">
       <div className="mx-auto max-w-4xl">
-        <h1 className="flex items-center gap-2 font-display text-4xl uppercase tracking-wide">
-          <Swords className="text-primary" /> Multiplayer 1x1
-        </h1>
+        <ScreenHeader
+          title={
+            <>
+              <Swords className="text-primary" /> Multiplayer 1x1
+            </>
+          }
+        />
         <p className="mt-1 text-sm text-muted-foreground">
           Crie uma sala, mande o código e joguem a mesma partida ao vivo, cada um no seu aparelho.
         </p>
@@ -555,7 +576,17 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string | null })
  * Each browser renders a deterministic presentation seeded by the room ID.
  * The server keeps the outcome seed private and publishes the replayed score.
  */
-function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExit: () => void }) {
+function LiveRoom({
+  room,
+  isHost,
+  online,
+  onExit,
+}: {
+  room: Room;
+  isHost: boolean;
+  online: boolean;
+  onExit: () => void;
+}) {
   const setups = useMemo(
     () => ({
       home: buildTeamSetup(room.host_club),
@@ -572,6 +603,9 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
   const authoritativeResult = useRef(false);
   const controllerRef = useRef<LiveMatchController | null>(null);
   const publishRetry = useRef<number | null>(null);
+  const onlineRef = useRef(online);
+  const connection = getLiveRoomConnectionState(online);
+  onlineRef.current = online;
 
   useEffect(() => {
     const controller = createLiveMatchController({
@@ -597,7 +631,8 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
       },
     });
     controllerRef.current = controller;
-    const onVisibility = () => controller.pause(document.hidden);
+    controller.pause(document.hidden || !onlineRef.current);
+    const onVisibility = () => controller.pause(document.hidden || !onlineRef.current);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
@@ -607,7 +642,7 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
   }, [setups, sim]);
 
   useEffect(() => {
-    if (!isHost || !snap.finished || published.current) return;
+    if (!online || !isHost || !snap.finished || published.current) return;
     let disposed = false;
     let attempts = 0;
     const publish = async () => {
@@ -640,8 +675,17 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
         window.clearTimeout(publishRetry.current);
         publishRetry.current = null;
       }
+      // A request may still be resolving while the browser goes offline. Let a
+      // fresh effect retry after reconnection; the server-side settling claim
+      // remains the single authority if the earlier request also reaches it.
+      published.current = false;
     };
-  }, [snap.finished, isHost, room.id]);
+  }, [online, snap.finished, isHost, room.id]);
+
+  useEffect(() => {
+    if (authoritativeResult.current) return;
+    controllerRef.current?.pause(connection.pausePresentation || document.hidden);
+  }, [connection.pausePresentation]);
 
   useEffect(() => {
     if (room.status !== "done") return;
@@ -686,6 +730,21 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
           </span>
         </div>
       </div>
+      {connection.notice ? (
+        <div
+          role="status"
+          aria-live="assertive"
+          className="absolute inset-0 z-30 grid place-items-center bg-background/85 px-5 text-center backdrop-blur-sm"
+        >
+          <div className="max-w-sm rounded-2xl border border-amber-400/30 bg-black/70 p-6 shadow-2xl">
+            <WifiOff className="mx-auto mb-3 text-amber-300" size={28} aria-hidden="true" />
+            <h2 className="font-display text-lg uppercase tracking-wide text-white">
+              {connection.notice.title}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-white/70">{connection.notice.detail}</p>
+          </div>
+        </div>
+      ) : null}
       <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl">
         <button
           onClick={() =>
@@ -699,9 +758,10 @@ function LiveRoom({ room, isHost, onExit }: { room: Room; isHost: boolean; onExi
         </button>
         <button
           onClick={onExit}
-          className="rounded-full bg-white/15 px-4 py-1.5 font-display text-xs uppercase tracking-wide text-white"
+          disabled={!online}
+          className="rounded-full bg-white/15 px-4 py-1.5 font-display text-xs uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {snap.finished ? "Encerrar" : "Abandonar"}
+          {!online ? "Reconectando" : snap.finished ? "Encerrar" : "Abandonar"}
         </button>
       </div>
     </main>

@@ -4,156 +4,229 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guias";
-const TITLE = "Tutorial e dicas para vencer no manager de futebol | Pro Football Manager 3D";
+const TITLE = "Guia de manager de futebol: como começar | JogoManager";
 const DESC =
-  "Dicas práticas para vencer desde a 1ª rodada: escolha do clube, escalação, tática, salários, treino e como agradar a diretoria e a torcida.";
+  "Comece uma carreira no Pro Football Manager 3D com um plano claro: escolha o clube, monte a escalação, ajuste as táticas e organize as decisões entre rodadas.";
 
 export const Route = createFileRoute("/guias")({
   head: () => ({
-    meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
+    meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article", keywords: [] }),
     links: canonical(PATH),
     scripts: [
-      articleLd({ headline: "Guias de manager de futebol", description: DESC, path: PATH }),
+      articleLd({
+        headline: "Guia de manager de futebol: como começar",
+        description: DESC,
+        path: PATH,
+      }),
       breadcrumbLd([
         { name: "Início", path: "/" },
-        { name: "Guias", path: PATH },
+        { name: "Guia do treinador", path: PATH },
       ]),
     ],
   }),
   component: GuidesPage,
 });
 
-const GUIDES = [
-  {
-    id: "primeiro-clube",
-    title: "Como escolher seu primeiro clube",
-    body: "Times com força acima de 85 cobram título imediato; entre 70 e 78 você tem paciência da diretoria para construir um projeto. Se é sua primeira carreira, comece num clube de meio de tabela do Brasileirão: o orçamento é razoável e a cobrança é justa.",
-    extra: "Regra prática: quanto maior o clube, menor a margem de erro nas dez primeiras rodadas.",
-  },
-  {
-    id: "escalacao",
-    title: "Escalação: o básico que ganha jogo",
-    body: "Nunca escale jogador com condição abaixo de 70 — ele cai de rendimento no segundo tempo. Respeite as posições: um atacante improvisado na zaga custa gols. Deixe pelo menos um goleiro e dois defensores no banco.",
-    extra: "Confira a condição física antes de cada rodada, não só antes dos clássicos.",
-  },
-  {
-    id: "tatica",
-    title: "Tática: mentalidade, pressão e ritmo",
-    body: "Contra times mais fortes, use bloco baixo e mentalidade defensiva; contra times inferiores, pressão alta e mentalidade ofensiva. O ritmo alto cansa mais rápido: use no início e recue no segundo tempo para segurar o resultado.",
-    extra: "Ajustar a tática no intervalo vale mais que trocar três jogadores de uma vez.",
-  },
-  {
-    id: "dinheiro",
-    title: "Dinheiro: salários antes de contratações",
-    body: "Cada contratação soma salário semanal. Antes de comprar, veja quanto sobra do orçamento depois da folha e do custo da comissão técnica. Renovar contrato de quem está prestes a acabar é mais barato que substituir o jogador.",
-    extra: "Folha acima de 65% da receita é o começo de qualquer crise financeira no jogo.",
-  },
-  {
-    id: "treino",
-    title: "Treino e lesões",
-    body: "Treino de intensidade alta melhora atributos, mas aumenta o risco de lesão e a fadiga acumulada. Alterne semanas de foco físico com semanas de recuperação, especialmente perto de clássicos.",
-    extra: "Elenco curto e treino forte na mesma temporada é a receita mais rápida de desastre.",
-  },
-  {
-    id: "diretoria",
-    title: "Diretoria e torcida",
-    body: "A pressão sobe com derrotas seguidas e com a distância do objetivo da temporada. Sequências de vitórias e bom desempenho em clássicos recuperam a aprovação rápido — e evitam a demissão.",
-    extra: "Cumprir a meta da temporada libera orçamento maior na janela seguinte.",
-  },
-] as const;
-
 const FAQ = [
   {
-    q: "Preciso instalar alguma coisa para jogar?",
-    a: "Não. O jogo roda direto no navegador, no computador ou no celular, e a carreira fica salva para você continuar depois.",
+    q: "Qual é a melhor formação para começar?",
+    a: "Não existe uma formação que funcione para todos os clubes. Escolha entre as quatro opções do jogo olhando primeiro para as posições e os jogadores que você já tem.",
   },
   {
-    q: "Qual clube é o melhor para começar?",
-    a: "Um clube de meio de tabela, com força entre 70 e 78. Ele tem orçamento para reforços e a diretoria não cobra título logo na primeira temporada.",
+    q: "O que revisar entre uma rodada e outra?",
+    a: "Confira condição física, lesões, suspensões, moral, alternativas no banco, relatório da partida e situação financeira antes de confirmar a próxima decisão.",
   },
   {
-    q: "Dá para simular a partida em vez de assistir?",
-    a: "Sim. Você pode acompanhar o jogo em 3D, acelerar a simulação ou pular direto para o resultado.",
+    q: "Preciso contratar logo no começo?",
+    a: "Não. Primeiro identifique uma lacuna real na escalação e no banco. O guia de elenco explica como avaliar olheiros, custo inicial e salário semanal antes de negociar.",
   },
   {
-    q: "Em quanto tempo consigo subir de divisão?",
-    a: "Com elenco bem montado e tática coerente, o acesso costuma vir entre a primeira e a terceira temporada.",
+    q: "Uma vitória prova que a tática está certa?",
+    a: "Não por si só. Leia também como as chances foram criadas e concedidas, e compare mais de uma partida antes de mudar ou confirmar o plano.",
   },
 ] as const;
 
 function GuidesPage() {
   return (
     <ArticleShell
-      kicker="Guias"
-      title="Guias de manager de futebol"
-      intro="Tudo que você precisa para comandar um clube: escolha do time, escalação, tática, finanças e relação com a diretoria. Depois de ler, é só assumir um clube e jogar direto no navegador."
+      kicker="Guia prático"
+      title="Comece sua carreira de manager com um plano claro"
+      intro="Este guia percorre o fluxo de uma carreira no Pro Football Manager 3D: escolher um desafio, entender o elenco inicial, preparar o primeiro jogo e rever as decisões a cada rodada. As orientações usam os controles e informações que existem no jogo, sem prometer resultados automáticos."
       path={PATH}
-      readMinutes={7}
+      readMinutes={9}
       level="Iniciante"
       updated="outubro de 2026"
-      toc={GUIDES.map((g) => ({ id: g.id, title: g.title }))}
+      toc={[
+        { id: "escolha-clube", title: "Escolha um desafio que combine com você" },
+        { id: "diagnostico", title: "Faça um diagnóstico antes de escalar" },
+        { id: "plano-jogo", title: "Monte um plano de jogo executável" },
+        { id: "entre-rodadas", title: "Use uma rotina entre as rodadas" },
+        { id: "decisoes", title: "Corrija um problema por vez" },
+        { id: "primeiras-rodadas", title: "Checklist das primeiras rodadas" },
+        { id: "modo-jogador", title: "Prefere acompanhar um atleta?" },
+      ]}
       faq={FAQ}
     >
-      <Section id="primeiros-passos" title="Seu roteiro para as primeiras rodadas">
+      <Section id="escolha-clube" title="Escolha um desafio que combine com você">
+        <p>
+          Antes de assumir um clube, pense no tipo de temporada que quer jogar. Um elenco forte
+          permite disputar objetivos imediatos; um time com menos recursos pede mais cuidado com
+          prioridades, reservas e evolução ao longo do calendário. Não escolha apenas pelo nome do
+          clube: confira a competição, o elenco disponível, o orçamento inicial e o objetivo da
+          diretoria.
+        </p>
+        <p>
+          Defina uma meta de trabalho que você possa acompanhar, como fortalecer uma posição com
+          poucas opções ou aprender a ajustar a equipe durante as partidas. Essa meta ajuda a
+          decidir o que merece atenção primeiro e evita trocar jogadores, formação e instruções ao
+          mesmo tempo.
+        </p>
+        <p>
+          Quando estiver pronto para assumir, comece uma carreira em{" "}
+          <Link to="/new" className="text-primary underline">
+            escolher clube
+          </Link>
+          . Se ainda estiver conhecendo a apresentação das partidas, teste antes uma{" "}
+          <Link to="/partida-rapida" className="text-primary underline">
+            partida rápida
+          </Link>
+          .
+        </p>
+      </Section>
+
+      <Section id="diagnostico" title="Faça um diagnóstico antes de escalar">
+        <p>
+          Comece pela formação do elenco, não por uma lista de contratações. Separe titulares e
+          alternativas por posição, confira quem está lesionado ou suspenso e observe condição
+          física e moral. Isso mostra se o problema está na qualidade de uma função, na falta de
+          cobertura ou apenas na disponibilidade para a próxima partida.
+        </p>
+        <ul className="list-disc space-y-2 pl-5">
+          <li>
+            <strong>Olhe a função:</strong> compare os jogadores que podem cumprir o papel pedido
+            pela formação, em vez de escolher apenas pelo overall.
+          </li>
+          <li>
+            <strong>Confira as alternativas:</strong> veja quem pode substituir cada titular sem
+            desmontar outra posição.
+          </li>
+          <li>
+            <strong>Leia a disponibilidade:</strong> condição, lesões e suspensões ajudam a decidir
+            quem começa e quem fica no banco.
+          </li>
+          <li>
+            <strong>Registre uma necessidade concreta:</strong> por exemplo, falta de cobertura para
+            um lateral ou pouca criação no meio. Essa hipótese vai orientar o plano e o mercado.
+          </li>
+        </ul>
+        <p>
+          Um diagnóstico simples também dá um ponto de comparação. Depois de algumas rodadas, revise
+          se a lacuna continua aparecendo ou se foi causada por uma lesão temporária ou por uma
+          escolha tática.
+        </p>
+      </Section>
+
+      <Section id="plano-jogo" title="Monte um plano de jogo que o elenco consiga executar">
+        <p>
+          O jogo oferece quatro esquemas: 4-3-3, 4-4-2, 3-5-2 e 4-2-3-1. Cada um pede uma
+          distribuição diferente de funções. Escolha a estrutura que aproveita os jogadores
+          disponíveis e confira se há substitutos para as posições mais exigentes do seu plano.
+        </p>
+        <p>
+          Depois, ajuste mentalidade, pressão, amplitude e ritmo. Faça uma pergunta antes de cada
+          mudança: que comportamento quero alterar? Se a equipe não encontra o atacante, observe as
+          opções de apoio; se concede espaço pelos lados, confira a cobertura daquele setor. Uma
+          alteração por vez facilita perceber o que mudou.
+        </p>
+        <p>
+          No intervalo e após a partida, use o relatório e as estatísticas para conferir se a
+          leitura inicial fez sentido. Não use só o placar como diagnóstico: uma vitória pode
+          esconder um problema recorrente, e uma derrota isolada pode não justificar abandonar um
+          plano que está criando boas chances.
+        </p>
+        <p>
+          Para comparar as opções com mais detalhe, consulte o guia de{" "}
+          <Link to="/taticas-e-formacoes" className="text-primary underline">
+            táticas e formações
+          </Link>
+          .
+        </p>
+      </Section>
+
+      <Section id="entre-rodadas" title="Use uma rotina entre as rodadas">
+        <p>
+          Uma rotina curta evita que decisões urgentes sejam tomadas sem contexto. Depois de cada
+          jogo, revise disponibilidade e desempenho; antes do próximo, confirme escalação, banco,
+          foco de treino e caixa. À medida que a temporada avança, observe se os mesmos problemas
+          aparecem em partidas diferentes.
+        </p>
         <ol className="list-decimal space-y-2 pl-5">
-          <li>Escolha um clube e leia o objetivo da diretoria antes de mexer no elenco.</li>
+          <li>Leia o resultado, os eventos e as estatísticas da última partida.</li>
+          <li>Confira lesões, suspensões, condição física e moral do grupo.</li>
+          <li>Reveja o foco de treino de acordo com a necessidade observada.</li>
           <li>
-            Monte uma formação simples, confira a condição física e deixe alternativas no banco.
+            Prepare titulares e banco para o próximo adversário e para as posições disponíveis.
           </li>
-          <li>
-            Jogue a primeira rodada com o mesmo plano e observe onde o time cria e concede chances.
-          </li>
-          <li>
-            Revise uma decisão por vez: formação, pressão ou substituições. Compare o efeito nos
-            próximos jogos.
-          </li>
-          <li>
-            Antes de contratar, confira folha salarial, contratos e a reserva para o restante da
-            temporada.
-          </li>
+          <li>Confira orçamento, folha semanal e compromissos antes de assumir novos custos.</li>
         </ol>
+        <p>
+          Treino, condição e moral são informações diferentes. Use os relatórios da carreira para
+          acompanhar o que mudou e evite interpretar um único indicador como garantia de desempenho
+          em campo.
+        </p>
       </Section>
-      <Section title="Aprofunde a decisão que está tomando agora">
-        <div className="grid gap-3 sm:grid-cols-2">
-          {[
-            {
-              to: "/taticas-e-formacoes",
-              title: "Táticas e formações",
-              detail: "Entenda o papel de cada setor e escolha um esquema para o seu elenco.",
-            },
-            {
-              to: "/guia-de-scouting",
-              title: "Scouting",
-              detail: "Compare atletas por função, potencial e custo antes de negociar.",
-            },
-            {
-              to: "/gestao-financeira",
-              title: "Finanças",
-              detail: "Organize salários e transferências para sustentar o projeto.",
-            },
-            {
-              to: "/jogar-offline",
-              title: "Progresso e backup",
-              detail: "Conheça o uso offline e mantenha uma cópia da sua carreira.",
-            },
-          ].map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className="rounded-lg border border-border/60 p-4 transition hover:border-primary"
-            >
-              <span className="block font-display text-base text-primary">{item.title} →</span>
-              <span className="mt-2 block text-sm">{item.detail}</span>
-            </Link>
-          ))}
-        </div>
+
+      <Section id="decisoes" title="Corrija um problema por vez">
+        <p>
+          Quando a equipe atravessa uma sequência ruim, liste o que você observou antes de agir:
+          chances concedidas por um setor, falta de apoio ao ataque, jogadores indisponíveis ou
+          custo de elenco difícil de sustentar. Escolha a causa mais provável, faça uma mudança
+          relacionada a ela e compare com as partidas seguintes.
+        </p>
+        <p>
+          Nem todo problema pede uma contratação. Uma lesão pode pedir rotação; pouca cobertura no
+          banco pode pedir reforço; uma equipe que não progride pode pedir ajuste de amplitude ou
+          ritmo. Se a lacuna for estrutural, use os relatórios de scouting e compare o custo total
+          antes de negociar no{" "}
+          <Link to="/planejamento-de-elenco" className="text-primary underline">
+            guia de planejamento do elenco
+          </Link>
+          .
+        </p>
       </Section>
-      {GUIDES.map((g) => (
-        <Section key={g.id} id={g.id} title={g.title}>
-          <p>{g.body}</p>
-          <p className="text-foreground/80">{g.extra}</p>
-        </Section>
-      ))}
+
+      <Section id="primeiras-rodadas" title="Checklist das primeiras rodadas">
+        <ul className="list-disc space-y-2 pl-5">
+          <li>Li o objetivo da diretoria e conheço o orçamento do clube.</li>
+          <li>Sei quais posições têm titular e alternativa disponíveis.</li>
+          <li>Escolhi uma formação compatível com as funções do elenco.</li>
+          <li>Tenho uma hipótese específica para testar na próxima partida.</li>
+          <li>Revisei condição, lesões, suspensões, moral e banco antes de avançar.</li>
+          <li>
+            Se pretendo contratar, comparei a necessidade com o custo inicial e a folha semanal.
+          </li>
+        </ul>
+        <p>
+          Se quiser entender como a carreira pode continuar sem conexão, veja as instruções sobre
+          jogar{" "}
+          <Link to="/jogar-offline" className="text-primary underline">
+            offline e manter seus dados
+          </Link>
+          .
+        </p>
+      </Section>
+
+      <Section id="modo-jogador" title="Prefere acompanhar a trajetória de um atleta?">
+        <p>
+          A carreira de treinador acompanha as decisões do clube inteiro. Se a sua ideia é criar um
+          jogador, escolher a posição, treinar semana a semana e decidir lances importantes, conheça
+          o modo de{" "}
+          <Link to="/modo-carreira-de-jogador" className="text-primary underline">
+            carreira de jogador de futebol
+          </Link>
+          . Os dois modos guardam trajetórias separadas.
+        </p>
+      </Section>
     </ArticleShell>
   );
 }

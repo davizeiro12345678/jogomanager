@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer } from "@/components/game/screen-kit";
+import { NoCareer, SectionCard, ScreenHeader } from "@/components/game/screen-kit";
 import { resign, takeJob, upgradeStaff } from "@/game/career";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { formatMoney } from "@/game/economy";
@@ -54,8 +54,8 @@ function BoardPage() {
   return (
     <GameShell career={career}>
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-border/60 surface-card p-5">
-          <h1 className="font-display text-2xl uppercase tracking-wide">Sala da diretoria</h1>
+        <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">
+          <ScreenHeader title="Sala da diretoria" />
           <p className="mt-1 text-sm text-muted-foreground">
             {club.name} espera terminar em {career.objective}º ou melhor.
           </p>
@@ -90,9 +90,9 @@ function BoardPage() {
               Você está sem clube. Escolha um convite abaixo para voltar a trabalhar.
             </p>
           )}
-        </section>
+        </SectionCard>
 
-        <section className="rounded-2xl border border-border/60 surface-card p-5">
+        <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-xl uppercase tracking-wide">Comissão técnica</h2>
           <p className="text-xs text-muted-foreground">
             Custo semanal: {formatMoney(staffBill(career))}
@@ -117,9 +117,9 @@ function BoardPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </SectionCard>
 
-        <section className="rounded-2xl border border-border/60 surface-card p-5 lg:col-span-2">
+        <SectionCard className="rounded-2xl border border-border/60 surface-card p-5 lg:col-span-2">
           <h2 className="font-display text-xl uppercase tracking-wide">
             Clubes interessados em você
           </h2>
@@ -156,9 +156,9 @@ function BoardPage() {
               })}
             </ul>
           )}
-        </section>
+        </SectionCard>
 
-        <section className="rounded-2xl border border-border/60 surface-card p-5 lg:col-span-2">
+        <SectionCard className="rounded-2xl border border-border/60 surface-card p-5 lg:col-span-2">
           <h2 className="font-display text-xl uppercase tracking-wide">Carreira do treinador</h2>
           <ul className="mt-3 space-y-2 text-sm">
             {career.managerHistory.map((h, i) => {
@@ -189,7 +189,7 @@ function BoardPage() {
               </ul>
             </div>
           ) : null}
-        </section>
+        </SectionCard>
       </div>
     </GameShell>
   );

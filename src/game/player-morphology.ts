@@ -19,6 +19,10 @@ export interface FaceMorphology {
   noseDeviation: number;
   cheekAsymmetry: number;
   mouthTilt: number;
+  /** Macro silhouette variation is shared by scalp and facial landmarks. */
+  cranialDepth: number;
+  chinWidth: number;
+  chinProjection: number;
 }
 
 const faces = new Map<number, Readonly<FaceMorphology>>();
@@ -48,6 +52,8 @@ export function faceMorphology(seed: number): Readonly<FaceMorphology> {
   if (existing) return existing;
   const rng = makeLookRng(seed ^ 0x6a09e667);
   const range = (lo: number, hi: number) => lo + (hi - lo) * rng();
+  const silhouetteRng = makeLookRng(seed ^ 0xbb67ae85);
+  const silhouetteRange = (lo: number, hi: number) => lo + (hi - lo) * silhouetteRng();
   const face = Object.freeze({
     jaw: range(0.94, 1.09),
     cheek: range(0.96, 1.055),
@@ -56,7 +62,7 @@ export function faceMorphology(seed: number): Readonly<FaceMorphology> {
     noseProjection: range(0.14, 0.205),
     eyeSpacing: range(0.33, 0.38),
     eyeWidth: range(0.154, 0.178),
-    eyeOpening: range(0.105, 0.13),
+    eyeOpening: range(0.095, 0.112),
     mouthWidth: range(0.235, 0.285),
     lipVolume: range(0.018, 0.029),
     hairline: range(-0.015, 0.055),
@@ -67,6 +73,9 @@ export function faceMorphology(seed: number): Readonly<FaceMorphology> {
     noseDeviation: range(-0.012, 0.012),
     cheekAsymmetry: range(-0.045, 0.045),
     mouthTilt: range(-0.018, 0.018),
+    cranialDepth: silhouetteRange(0.945, 1.065),
+    chinWidth: silhouetteRange(0.9, 1.12),
+    chinProjection: silhouetteRange(0.88, 1.15),
   });
   if (faces.size >= 256) faces.delete(faces.keys().next().value!);
   faces.set(seed, face);

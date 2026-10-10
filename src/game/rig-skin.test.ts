@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 
 import { buildRigBody, countRigBody, type RigBodyContext } from "./rig-body";
@@ -14,6 +14,7 @@ import { playerMaterials, type PlayerMaterials } from "./player-materials";
 import { gaitPoseAt } from "./gait-kinematics";
 import { clampPoseAnatomy, solveGroundContact } from "./ground-contact";
 import { eyelidRotationFor } from "./facial-animation";
+import { sharedDetailMaterial } from "./rig-materials";
 
 const KIT = {
   base: "#0a8f3c",
@@ -68,6 +69,62 @@ function vertices(geometry: THREE.BufferGeometry): number[] {
 }
 
 describe("rig skin", () => {
+  it("keeps the jersey neckline attached to the collar when the shoulders rise", () => {
+    const ctx = context();
+    const skin = buildRigSkin(ctx, ROOT);
+    const rootOffset = new THREE.Vector3(...ROOT);
+    const neckline = new THREE.Vector3(0, ctx.P.chestLen, 0)
+      .applyMatrix4(rigRestMatrix(skin, "chest"))
+      .sub(rootOffset);
+    const probes: { mesh: THREE.SkinnedMesh; vertex: number; rest: THREE.Vector3 }[] = [];
+    for (const group of skin.groups.filter((item) => item.materialKey === "jersey")) {
+      const mesh = new THREE.SkinnedMesh(group.geometry, group.material);
+      mesh.skeleton = skin.skeleton;
+      mesh.bindMatrix.copy(skin.bindMatrix);
+      mesh.bindMatrixInverse.copy(skin.bindMatrix).invert();
+      const positions = group.geometry.getAttribute("position");
+      for (let vertex = 0; vertex < positions.count; vertex += 1) {
+        const rest = new THREE.Vector3().fromBufferAttribute(positions, vertex);
+        if (
+          Math.abs(rest.y - neckline.y) > 0.004 ||
+          Math.abs(rest.x) > ctx.P.neckR * 1.6 ||
+          Math.abs(rest.z) > ctx.P.neckR * 1.6
+        )
+          continue;
+        probes.push({ mesh, vertex, rest });
+      }
+    }
+    expect(probes.length).toBeGreaterThan(12);
+    update(skin, () => {
+      skin.boneOf.clavL.rotation.z = 0.6;
+      skin.boneOf.clavR.rotation.z = -0.6;
+    });
+    for (const probe of probes) {
+      const posed = probe.rest.clone();
+      probe.mesh.applyBoneTransform(probe.vertex, posed);
+      expect(
+        posed.distanceTo(probe.rest),
+        "the collar seam must not follow a raised shoulder",
+      ).toBeLessThan(0.00001);
+    }
+    skin.dispose();
+  });
+  it("leases detail materials before another rig can evict them and releases each resource once", () => {
+    const skin = buildRigSkin(context(), ROOT);
+    const detail = skin.groups.find((group) => !group.materialKey)!;
+    expect(detail).toBeTruthy();
+    const materialDisposed = vi.spyOn(detail.material, "dispose");
+    const geometryDisposed = vi.spyOn(detail.geometry, "dispose");
+    const skeletonDisposed = vi.spyOn(skin.skeleton, "dispose");
+    for (let i = 0; i < 70; i++)
+      sharedDetailMaterial(`skin-test-${i}`, () => new THREE.MeshStandardMaterial());
+    expect(materialDisposed).not.toHaveBeenCalled();
+    skin.dispose();
+    skin.dispose();
+    expect(materialDisposed).toHaveBeenCalledTimes(1);
+    expect(geometryDisposed).toHaveBeenCalledTimes(1);
+    expect(skeletonDisposed).toHaveBeenCalledTimes(1);
+  });
   it("rebinds surface materials without replacing geometry or the skeleton", () => {
     const ctx = context();
     const skin = buildRigSkin(ctx, ROOT);
@@ -128,6 +185,18 @@ describe("rig skin", () => {
     expect(attributes(cinema)).toEqual(attributes(original));
     original.dispose();
     cinema.dispose();
+  });
+
+  it("skins loose close-up hair to its own lightweight motion bone", () => {
+    const base = lookFor("moving-locks", "MF", false);
+    const look = { ...base, hairStyle: "ponytail" as const };
+    const mats = playerMaterials(look, KIT, null, "alta");
+    const skin = buildRigSkin(context({ look, mats }), ROOT);
+    const hairBone = skin.boneOf.hairMotion;
+    expect(MESH_OWNER.hairSecondary).toBe("hairMotion");
+    expect(hairBone.parent).toBe(skin.boneOf.face);
+    expect(skin.groups.some((group) => group.bone === skin.bones.indexOf(hairBone))).toBe(true);
+    skin.dispose();
   });
   it("plants the final sole using the actual Three skeleton after root and pelvis lean", () => {
     const ctx = context();
@@ -214,7 +283,7 @@ describe("rig skin", () => {
     const skin = buildRigSkin(context(), ROOT);
     const eyelids = ["eyelidUpperL", "eyelidLowerL", "eyelidUpperR", "eyelidLowerR"];
 
-    expect(skin.bones).toHaveLength(63);
+    expect(skin.bones).toHaveLength(64);
     expect(skin.bones.map((bone) => bone.name)).not.toContain("blink");
     expect(
       Object.keys(MESH_OWNER)

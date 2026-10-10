@@ -156,7 +156,9 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
   const subscriptionActive = isSubscriptionActive(subscriptionQuery.data);
   const isGuest = signedIn === false;
   const isSessionLoading = signedIn === null;
-  const products = productsQuery.data ?? [];
+  // Competitive legacy offers cannot reach checkout; keep the same policy
+  // visible in the shop so players are not invited into a rejected purchase.
+  const products = (productsQuery.data ?? []).filter((p) => p.kind === "cosmetic" && p.coins === 0);
 
   // Destaca o pacote de moedas com mais moedas por real, para o jogador
   // comparar sem fazer conta de cabeça.

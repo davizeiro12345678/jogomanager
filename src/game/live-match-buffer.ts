@@ -101,7 +101,7 @@ export type LivePlayerBufferPacket = {
 export type LiveEventDelta = {
   fromSeq: number;
   toSeq: number;
-  added: readonly LiveSnapshot["events"][number][];
+  added: readonly NonNullable<LiveSnapshot["events"]>[number][];
 };
 
 export type LiveSnapshotPacket = Omit<LiveSnapshot, "players" | "events"> & {
@@ -121,7 +121,7 @@ export function actionCode(action: PlayerAction | null): number {
 }
 
 export function actionFromCode(code: number): PlayerAction | null {
-  return code > 0 && Number.isInteger(code) ? ACTION_NAMES[code - 1] ?? null : null;
+  return code > 0 && Number.isInteger(code) ? (ACTION_NAMES[code - 1] ?? null) : null;
 }
 
 export function createLivePlayerMetadata(players: readonly SimPlayer[]): LivePlayerMeta[] {
@@ -292,11 +292,15 @@ export function applyLivePlayerBuffer(
   return players;
 }
 
-export function transferablesForSnapshot(packet: Pick<LiveSnapshotPacket, "players">): ArrayBuffer[] {
+export function transferablesForSnapshot(
+  packet: Pick<LiveSnapshotPacket, "players">,
+): ArrayBuffer[] {
   return [packet.players.positions, packet.players.velocities, packet.players.states];
 }
 
-export function recycleSnapshot(packet: Pick<LiveSnapshotPacket, "players">): RecycledSnapshotBuffers {
+export function recycleSnapshot(
+  packet: Pick<LiveSnapshotPacket, "players">,
+): RecycledSnapshotBuffers {
   return {
     positions: packet.players.positions,
     velocities: packet.players.velocities,
@@ -334,7 +338,15 @@ export function createSnapshotBufferPool(maxSlots = 3) {
 export function isLiveSnapshotPacket(value: unknown): value is LiveSnapshotPacket {
   if (!value || typeof value !== "object") return false;
   const packet = value as Partial<LiveSnapshotPacket>;
-  return packet.type === "snapshot" && typeof packet.rosterVersion === "number" && !!packet.players;
+  return (
+    packet.type === "snapshot" &&
+    typeof packet.rosterVersion === "number" &&
+    !!packet.players &&
+    !Array.isArray(packet.players) &&
+    packet.players.positions instanceof ArrayBuffer &&
+    packet.players.velocities instanceof ArrayBuffer &&
+    packet.players.states instanceof ArrayBuffer
+  );
 }
 
 export function livePlayerBufferFromPacket(packet: LiveSnapshotPacket): LivePlayerBuffer {

@@ -13,9 +13,8 @@
 //     WebGPU experimental os feixes saem, mas o resto continua — nada quebra.
 // ============================================================================
 
-import { useDisposable } from "../useDisposable";
 import { useFrame } from "@react-three/fiber";
-import { memo, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import { censusRef } from "@/game/scene-census";
@@ -86,7 +85,7 @@ function useBeamMaterial(
   haze: number,
   seed: number,
 ) {
-  return useDisposable(() => {
+  return useMemo(() => {
     const material = new THREE.ShaderMaterial({
       vertexShader: BEAM_VERT,
       fragmentShader: BEAM_FRAG,
@@ -165,7 +164,9 @@ function Beam({
   radius: number;
 }) {
   const material = useBeamMaterial(color, TOWER_Y, radius, haze, seed);
-  const geometry = useDisposable(() => new THREE.ConeGeometry(radius, TOWER_Y, 14, 1, true), [radius]);
+  const geometry = useMemo(() => new THREE.ConeGeometry(radius, TOWER_Y, 14, 1, true), [radius]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => () => material.dispose(), [material]);
   useFrame((state) => {
     material.uniforms["uTime"]!.value = state.clock.elapsedTime;
     const u = material.uniforms["uIntensity"]!;
@@ -174,6 +175,7 @@ function Beam({
   });
   return (
     <mesh
+      dispose={null}
       geometry={geometry}
       material={material}
       position={[position[0], TOWER_Y / 2, position[1]]}
@@ -250,12 +252,11 @@ function DustMotes({
     return { positions, speeds };
   }, [count]);
 
-  const geometry = useDisposable(() => {
+  const geometry = useMemo(() => {
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     return g;
   }, [positions]);
-
   useFrame((state, dt) => {
     const mesh = points.current;
     if (!mesh) return;

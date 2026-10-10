@@ -1,7 +1,9 @@
+import { ScreenHeader, SectionCard } from "@/components/game/screen-kit";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
+import { ManagerPortrait, HAIR_COLORS } from "@/components/game/ManagerPortrait";
 import {
   Chips,
   CREST_EMBLEMS,
@@ -12,6 +14,12 @@ import {
 } from "@/components/game/CrestBuilder";
 import { initCareer } from "@/game/career";
 import { LEAGUES } from "@/game/data/leagues";
+import {
+  createManagerProfile,
+  DEFAULT_MANAGER_ATTRIBUTES,
+  DEFAULT_MANAGER_LOOK,
+} from "@/game/manager-profile";
+import type { ManagerAttributes, ManagerLook, ManagerPersonality } from "@/game/types";
 import type { RoofKind, ChantKind } from "@/game/customStyle";
 import { useCareer } from "@/hooks/useCareer";
 import { startWorldForNewCareer } from "@/lib/world";
@@ -68,7 +76,23 @@ const CHANTS: { id: ChantKind; label: string }[] = [
   { id: "epico", label: "Épica — hino arrepiante antes do apito" },
   { id: "silencioso", label: "Reservada — só explode no gol" },
 ];
-const STEPS = ["Identidade", "Escudo", "Uniforme", "Estádio", "Torcida"];
+const STEPS = ["Treinador e identidade", "Escudo", "Uniforme", "Estádio", "Torcida e revisão"];
+
+const MANAGER_PERSONALITY_LABELS: Record<ManagerPersonality, string> = {
+  calmo: "Calmo",
+  motivador: "Motivador",
+  durao: "Durão",
+  tatico: "Tático",
+  jovem: "Jovem promessa",
+};
+
+const MANAGER_ATTRIBUTE_LABELS: { key: keyof ManagerAttributes; label: string }[] = [
+  { key: "attack", label: "Ataque" },
+  { key: "defense", label: "Defesa" },
+  { key: "market", label: "Mercado" },
+  { key: "squad", label: "Elenco" },
+  { key: "media", label: "Imprensa" },
+];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -156,6 +180,13 @@ function NewClubPage() {
   const { update } = useCareer();
   const [step, setStep] = useState(0);
   const [manager, setManager] = useState("");
+  const [managerAge, setManagerAge] = useState(38);
+  const [managerLook, setManagerLook] = useState<ManagerLook>({ ...DEFAULT_MANAGER_LOOK });
+  const [managerPersonality, setManagerPersonality] = useState<ManagerPersonality>("motivador");
+  const [managerReputation, setManagerReputation] = useState(3);
+  const [managerAttrs, setManagerAttrs] = useState<ManagerAttributes>({
+    ...DEFAULT_MANAGER_ATTRIBUTES,
+  });
   const [club, setClub] = useState<MyClub>(() => ({ ...DEFAULT_MY_CLUB, id: "my-clube" }));
 
   const set = <K extends keyof MyClub>(k: K, v: MyClub[K]) => setClub((c) => ({ ...c, [k]: v }));
@@ -294,16 +325,26 @@ function NewClubPage() {
 
   function finish() {
     const finalClub = normalized();
+    const profile = createManagerProfile({
+      name: manager,
+      country: finalClub.leagueId,
+      age: managerAge,
+      favClub: finalClub.id,
+      look: managerLook,
+      personality: managerPersonality,
+      reputation: managerReputation,
+      attrs: managerAttrs,
+    });
     // Clube criado vive na campanha nova, sem mexer nos outros saves.
     startWorldForNewCareer(finalClub.id);
     writeMyClub(finalClub);
-    update(initCareer(finalClub.leagueId, finalClub.id, manager.trim() || "Técnico"));
+    update(initCareer(finalClub.leagueId, finalClub.id, profile.name, profile));
     navigate({ to: "/club" });
   }
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="font-display text-2xl uppercase tracking-wide">Crie o seu clube</h1>
+      <ScreenHeader title="Crie o seu clube" />
       <p className="mt-1 text-sm text-muted-foreground">
         Funde um time do zero e coloque ele para brigar em uma liga real.
       </p>
@@ -368,17 +409,169 @@ function NewClubPage() {
       </ol>
 
       <div className="mt-6 grid gap-6 md:grid-cols-[1fr_260px]">
-        <section className="space-y-4 rounded-2xl border border-border/60 surface-card p-4">
+        <SectionCard className="space-y-4 rounded-2xl border border-border/60 surface-card p-4">
           {step === 0 && (
             <>
-              <Field label="Seu nome (treinador)">
-                <input
-                  className={inputClass}
-                  value={manager}
-                  onChange={(e) => setManager(e.target.value)}
-                  placeholder="Ex.: Marina Torres"
-                />
-              </Field>
+              <section className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                    Seu treinador
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Este mesmo perfil aparece na carreira, no retrato e nas cenas — não é um nome
+                    descartável do clube.
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Seu nome (treinador)">
+                    <input
+                      className={inputClass}
+                      value={manager}
+                      maxLength={48}
+                      onChange={(e) => setManager(e.target.value)}
+                      placeholder="Ex.: Marina Torres"
+                    />
+                  </Field>
+                  <Field label={`Idade: ${managerAge} anos`}>
+                    <input
+                      type="range"
+                      min={20}
+                      max={75}
+                      value={managerAge}
+                      onChange={(e) => setManagerAge(Number(e.target.value))}
+                      className="w-full accent-primary"
+                    />
+                  </Field>
+                  <Field label="Personalidade">
+                    <select
+                      className={inputClass}
+                      value={managerPersonality}
+                      onChange={(e) => setManagerPersonality(e.target.value as ManagerPersonality)}
+                    >
+                      {(Object.keys(MANAGER_PERSONALITY_LABELS) as ManagerPersonality[]).map(
+                        (personality) => (
+                          <option key={personality} value={personality}>
+                            {MANAGER_PERSONALITY_LABELS[personality]}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </Field>
+                  <Field label={`Reputação: ${managerReputation} de 5`}>
+                    <input
+                      type="range"
+                      min={1}
+                      max={5}
+                      value={managerReputation}
+                      onChange={(e) => setManagerReputation(Number(e.target.value))}
+                      className="w-full accent-primary"
+                    />
+                  </Field>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Tom de pele">
+                    <select
+                      className={inputClass}
+                      value={managerLook.skin}
+                      onChange={(e) =>
+                        setManagerLook((look) => ({ ...look, skin: Number(e.target.value) }))
+                      }
+                    >
+                      {[0, 1, 2, 3, 4, 5].map((skin) => (
+                        <option key={skin} value={skin}>
+                          Tom {skin + 1}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Cabelo">
+                    <select
+                      className={inputClass}
+                      value={managerLook.hair}
+                      onChange={(e) =>
+                        setManagerLook((look) => ({ ...look, hair: Number(e.target.value) }))
+                      }
+                    >
+                      {[
+                        "Careca",
+                        "Curto",
+                        "Volumoso",
+                        "Longo",
+                        "Ondulado",
+                        "Coque",
+                        "Repartido",
+                      ].map((label, hair) => (
+                        <option key={label} value={hair}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Cor do cabelo">
+                    <select
+                      className={inputClass}
+                      value={managerLook.hairColor}
+                      onChange={(e) =>
+                        setManagerLook((look) => ({ ...look, hairColor: e.target.value }))
+                      }
+                    >
+                      {HAIR_COLORS.map((color) => (
+                        <option key={color} value={color}>
+                          {color}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Barba">
+                    <select
+                      className={inputClass}
+                      value={managerLook.beard}
+                      onChange={(e) =>
+                        setManagerLook((look) => ({ ...look, beard: Number(e.target.value) }))
+                      }
+                    >
+                      {["Sem barba", "Bigode", "Curta", "Completa", "Por fazer"].map(
+                        (label, beard) => (
+                          <option key={label} value={beard}>
+                            {label}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </Field>
+                  <Field label="Vestuário">
+                    <select
+                      className={inputClass}
+                      value={managerLook.outfit}
+                      onChange={(e) =>
+                        setManagerLook((look) => ({ ...look, outfit: Number(e.target.value) }))
+                      }
+                    >
+                      {["Terno", "Agasalho", "Casual"].map((label, outfit) => (
+                        <option key={label} value={outfit}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-5">
+                  {MANAGER_ATTRIBUTE_LABELS.map(({ key, label }) => (
+                    <Field key={key} label={`${label}: ${managerAttrs[key]}`}>
+                      <input
+                        type="range"
+                        min={1}
+                        max={10}
+                        value={managerAttrs[key]}
+                        onChange={(e) =>
+                          setManagerAttrs((attrs) => ({ ...attrs, [key]: Number(e.target.value) }))
+                        }
+                        className="w-full accent-primary"
+                      />
+                    </Field>
+                  ))}
+                </div>
+              </section>
               <Field label="Nome do clube">
                 <input
                   className={inputClass}
@@ -613,6 +806,15 @@ function NewClubPage() {
                   />
                 </Field>
               </div>
+              <div className="rounded-xl border border-border/60 bg-background/50 p-3 text-sm">
+                <p className="font-semibold">Revisão antes de fundar</p>
+                <p className="mt-1 text-muted-foreground">
+                  {manager.trim() || "Técnico"},{" "}
+                  {MANAGER_PERSONALITY_LABELS[managerPersonality].toLowerCase()} de reputação{" "}
+                  {managerReputation}, vai assumir {club.name || "seu clube"} na{" "}
+                  {LEAGUES.find((league) => league.id === club.leagueId)?.name ?? "liga escolhida"}.
+                </p>
+              </div>
             </>
           )}
 
@@ -644,7 +846,7 @@ function NewClubPage() {
               </button>
             )}
           </div>
-        </section>
+        </SectionCard>
 
         <aside className="space-y-4 rounded-2xl border border-border/60 surface-card p-4 text-center">
           <Crest club={preview} size={96} detail="full" />
@@ -658,6 +860,13 @@ function NewClubPage() {
           </div>
           <div className="flex justify-center">
             <KitPreview club={club} />
+          </div>
+          <div className="border-t border-border/60 pt-3">
+            <ManagerPortrait look={managerLook} size={82} accent={club.primary} />
+            <p className="mt-2 text-xs font-semibold">{manager.trim() || "Seu treinador"}</p>
+            <p className="text-xs text-muted-foreground">
+              {MANAGER_PERSONALITY_LABELS[managerPersonality]} · {managerReputation}★
+            </p>
           </div>
           <p className="text-xs text-muted-foreground">
             {club.stadium.name} · {club.stadium.capacity.toLocaleString("pt-BR")} lugares

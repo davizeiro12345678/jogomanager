@@ -6,6 +6,7 @@ import type { QualityLevel } from "@/game/device";
 import type { CinematicSet } from "@/game/cinematic-blocking";
 import { cinematicSurface } from "./cinematic-surfaces";
 import { useCinematicFrame } from "./cinematic-runtime";
+import { useCinematicArtwork } from "./cinematic-artwork";
 
 type DressingProps = {
   kind: CinematicSet;
@@ -75,8 +76,17 @@ function LockerDressing({ primary, secondary, art, quality }: DressingProps) {
   const medical = art === "medical";
   const gym = art === "gym";
   const dressing = art === "dressing";
+  const artwork = useCinematicArtwork(
+    medical ? "medical" : gym ? "gym" : "locker",
+    primary,
+    secondary,
+  );
   return (
     <group>
+      <mesh position={[0, 3.64, -4.23]}>
+        <planeGeometry args={[8, 1.25]} />
+        <meshStandardMaterial map={artwork} roughness={0.82} />
+      </mesh>
       {/* Boots, bags and bottles give the foreground a lived-in matchday story. */}
       {[-2.55, -1.72, 1.72, 2.55].map((x, index) => (
         <group key={x} position={[x, 0, 1.25]} rotation-y={(index % 2 ? 1 : -1) * 0.16}>
@@ -136,22 +146,6 @@ function LockerDressing({ primary, secondary, art, quality }: DressingProps) {
           {/* A restrained club strip and TV unit anchor the pre-match talk in a
               real occasion instead of a generic locker close-up. Both are
               static, so CinematicSetBatch folds them into the room budget. */}
-          <group position={[0, 3.22, -3.62]}>
-            <mesh>
-              <boxGeometry args={[12.5, 0.24, 0.045]} />
-              <meshStandardMaterial color={primary} roughness={0.62} metalness={0.08} />
-            </mesh>
-            {[-4.4, -1.45, 1.45, 4.4].map((x, index) => (
-              <mesh key={x} position={[x, 0, 0.03]}>
-                <boxGeometry args={[1.18, 0.1, 0.012]} />
-                <meshStandardMaterial
-                  color={index % 2 ? secondary : "#e7edf0"}
-                  roughness={0.56}
-                  metalness={0.18}
-                />
-              </mesh>
-            ))}
-          </group>
           <ClubTvCamera primary={primary} secondary={secondary} quality={quality} />
         </>
       )}
@@ -214,23 +208,19 @@ function ClubTvCamera({
 }
 
 function TunnelDressing({ primary, secondary, quality }: DressingProps) {
+  const artwork = useCinematicArtwork("tunnel", primary, secondary);
   return (
     <group>
       {/* Repeated structural signs sell the length of the tunnel without a texture download. */}
-      {[-1.3, -4.3, -7.3, -10.3].map((z, index) => (
+      {[-1.3, -4.3, -7.3, -10.3].map((z) => (
         <group key={z} position={[0, 2.67, z]}>
           <mesh>
             <boxGeometry args={[2.18, 0.36, 0.035]} />
             <meshStandardMaterial color="#16242c" roughness={0.7} metalness={0.22} />
           </mesh>
           <mesh position={[0, 0, 0.022]}>
-            <boxGeometry args={[1.52, 0.07, 0.012]} />
-            <meshStandardMaterial
-              color={index % 2 ? primary : secondary}
-              emissive={index % 2 ? primary : secondary}
-              emissiveIntensity={0.28}
-              roughness={0.48}
-            />
+            <planeGeometry args={[2.05, 0.31]} />
+            <meshStandardMaterial map={artwork} roughness={0.78} />
           </mesh>
         </group>
       ))}
@@ -286,6 +276,7 @@ function PressCamera({ x, z, angle = 0 }: { x: number; z: number; angle?: number
 }
 
 function PressDressing({ primary, secondary, quality }: DressingProps) {
+  const artwork = useCinematicArtwork("press", primary, secondary);
   return (
     <group>
       <PressCamera x={-4.85} z={1.18} angle={0.22} />
@@ -295,7 +286,7 @@ function PressDressing({ primary, secondary, quality }: DressingProps) {
         <group key={x} position={[x, 0, -3.72]}>
           <mesh position={[0, 1.4, 0]}>
             <boxGeometry args={[1.15, 1.7, 0.035]} />
-            <meshStandardMaterial color="#1a2630" roughness={0.82} />
+            <meshStandardMaterial map={artwork} roughness={0.82} />
           </mesh>
           <mesh position={[0, 1.75, 0.024]}>
             <boxGeometry args={[0.74, 0.12, 0.012]} />
@@ -321,6 +312,7 @@ function PitchDressing({ primary, secondary, art, quality }: DressingProps) {
   const training = art === "training";
   return (
     <group>
+      <StadiumCanopy kind="pitch" primary={primary} />
       <GoalNet />
       {[-10.6, 10.6].map((x) => (
         <group key={x} position={[x, 0, -4.6]}>
@@ -366,20 +358,17 @@ function PitchDressing({ primary, secondary, art, quality }: DressingProps) {
 }
 
 function StandsDressing({ primary, secondary, quality }: DressingProps) {
+  const artwork = useCinematicArtwork("stands", primary, secondary);
   return (
     <group>
+      <StadiumCanopy kind="stands" primary={primary} />
       <mesh position={[0, 5.75, -14.32]}>
         <boxGeometry args={[6.1, 2.15, 0.18]} />
         <meshStandardMaterial color="#182832" metalness={0.36} roughness={0.48} />
       </mesh>
       <mesh position={[0, 5.75, -14.2]}>
         <planeGeometry args={[5.6, 1.62]} />
-        <meshStandardMaterial
-          color={primary}
-          emissive={primary}
-          emissiveIntensity={0.07}
-          roughness={0.58}
-        />
+        <meshStandardMaterial map={artwork} roughness={0.58} />
       </mesh>
       <mesh position={[0, 4.58, -14.08]}>
         <boxGeometry args={[4.72, 0.11, 0.024]} />
@@ -411,15 +400,31 @@ function StandsDressing({ primary, secondary, quality }: DressingProps) {
 
 function OfficeDressing({ primary, secondary, art, quality }: DressingProps) {
   const board = art === "board" || art === "transfer";
+  const artwork = useCinematicArtwork("office", primary, secondary);
   return (
     <group>
-      {/* Real paperwork, a desk lamp and books create layers around the negotiation. */}
+      {/* A low desk blotter separates the printed papers from the wood grain.
+          It stays below the business folio and outside every actor mark. */}
+      <mesh position={[0.02, 0.806, -1.37]}>
+        <boxGeometry args={[2.8, 0.009, 1.1]} />
+        <meshStandardMaterial color="#20313c" roughness={0.85} />
+      </mesh>
+      <mesh position={[0.02, 0.812, -0.865]}>
+        <boxGeometry args={[2.65, 0.003, 0.014]} />
+        <meshStandardMaterial color="#ac9370" roughness={0.85} />
+      </mesh>
+      {/* The main folio owns the right-hand signing area; loose scouting
+          notes occupy the left side so sheets never intersect. */}
       {[
-        [-0.78, -1.02, -0.16],
-        [-0.24, -1.05, 0.11],
-        [0.4, -0.97, -0.07],
+        [-0.91, -1.58, -0.08],
+        [-0.82, -1.54, -0.04],
+        [-0.35, -1.02, 0.07],
       ].map(([x, z, rotation], index) => (
-        <mesh key={index} position={[x!, 0.815, z!]} rotation={[-Math.PI / 2, 0, rotation!]}>
+        <mesh
+          key={index}
+          position={[x!, 0.819 + index * 0.002, z!]}
+          rotation={[-Math.PI / 2, 0, rotation!]}
+        >
           <planeGeometry args={[0.42, 0.28]} />
           <meshStandardMaterial color={index === 1 ? "#edf0e7" : "#d6c29a"} roughness={0.92} />
         </mesh>
@@ -457,17 +462,15 @@ function OfficeDressing({ primary, secondary, art, quality }: DressingProps) {
         </mesh>
       </group>
       {board && (
-        <group position={[5.2, 2.15, -3.78]}>
+        <group position={[-6.84, 2.45, -0.8]} rotation-y={Math.PI / 2}>
           <mesh>
-            <boxGeometry args={[2.7, 1.62, 0.04]} />
-            <meshStandardMaterial color="#1c3035" roughness={0.8} />
+            <boxGeometry args={[2.78, 1.7, 0.055]} />
+            <meshStandardMaterial color="#ac9370" roughness={0.85} />
           </mesh>
-          {[-0.75, 0, 0.75].map((x) => (
-            <mesh key={x} position={[x, 0, 0.026]}>
-              <circleGeometry args={[0.12, 12]} />
-              <meshStandardMaterial color={x === 0 ? primary : secondary} roughness={0.56} />
-            </mesh>
-          ))}
+          <mesh position={[0, 0, 0.032]}>
+            <planeGeometry args={[2.7, 1.62]} />
+            <meshStandardMaterial map={artwork} roughness={0.82} />
+          </mesh>
         </group>
       )}
       <StatusLight position={[-2.36, 1.39, -1.78]} color="#ffd38d" phase={0.4} />
@@ -476,8 +479,13 @@ function OfficeDressing({ primary, secondary, art, quality }: DressingProps) {
 }
 
 function ArrivalDressing({ primary, secondary, quality }: DressingProps) {
+  const artwork = useCinematicArtwork("arrival", primary, secondary);
   return (
     <group>
+      <mesh position={[0, 4.76, -11.28]}>
+        <planeGeometry args={[10, 1.32]} />
+        <meshStandardMaterial map={artwork} roughness={0.82} />
+      </mesh>
       {[-4.5, -1.5, 1.5, 4.5].map((x, index) => (
         <group key={x} position={[x, 0, 4.15]}>
           <mesh position={[0, 0.32, 0]}>
@@ -509,6 +517,42 @@ function ArrivalDressing({ primary, secondary, quality }: DressingProps) {
       {quality !== "baixa" && (
         <StatusLight position={[-5.17, 1.3, 3.84]} color="#3d87ff" phase={1.3} />
       )}
+    </group>
+  );
+}
+
+/** Structural depth rather than more crowd actors. Opaque steel shares the
+ * existing terrace batch; no shadows, lights or transparent roof layers. */
+function StadiumCanopy({ kind, primary }: { kind: "pitch" | "stands"; primary: string }) {
+  const z = kind === "pitch" ? -24.4 : -16;
+  const y = kind === "pitch" ? 7.2 : 9.3;
+  const width = kind === "pitch" ? 33 : 37;
+  return (
+    <group position={[0, y, z]}>
+      <mesh position={[0, 0.1, 0]} receiveShadow>
+        <boxGeometry args={[width + 1, 0.2, 6.6]} />
+        <meshStandardMaterial color="#394e60" roughness={0.92} />
+      </mesh>
+      <mesh position={[0, -0.19, 3.25]} receiveShadow>
+        <boxGeometry args={[width + 1, 0.42, 0.15]} />
+        <meshStandardMaterial color={primary} roughness={0.92} />
+      </mesh>
+      {[-0.43, -0.21, 0, 0.21, 0.43].map((fraction) => (
+        <group key={fraction} position={[fraction * width, 0, 0]}>
+          <mesh position={[0, -0.5, 0]} receiveShadow>
+            <boxGeometry args={[0.1, 0.12, 6.4]} />
+            <meshStandardMaterial color="#a1b0b8" roughness={0.92} />
+          </mesh>
+          <mesh position={[0, -y / 2, -2.5]} receiveShadow>
+            <boxGeometry args={[0.22, y, 0.22]} />
+            <meshStandardMaterial color="#627787" roughness={0.92} />
+          </mesh>
+          <mesh position={[0, -0.95, 0.15]} rotation-x={-0.22} receiveShadow>
+            <boxGeometry args={[0.075, 0.075, 5.9]} />
+            <meshStandardMaterial color="#859aa6" roughness={0.92} />
+          </mesh>
+        </group>
+      ))}
     </group>
   );
 }

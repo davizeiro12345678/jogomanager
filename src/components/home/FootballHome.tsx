@@ -36,7 +36,7 @@ const SYSTEMS = [
     title: "Um time vai além de onze nomes.",
     text: "Observe a condição dos atletas, desenvolva os jovens e negocie reforços que fazem sentido para o seu clube.",
     detail: "Scouting · treino · contratos · vestiário",
-    to: "/guia-de-scouting",
+    to: "/planejamento-de-elenco",
   },
   {
     id: "career",
@@ -215,6 +215,7 @@ export function FootballHome() {
         </Link>
         <nav aria-label="Navegação principal" className="home-desktop-nav">
           <a href="#modos">Modos de jogo</a>
+          <Link to="/carreiras">Minhas carreiras</Link>
           <Link to="/guias">Guias</Link>
           <DiscordLink>Comunidade</DiscordLink>
           <Link to="/auth">Entrar</Link>
@@ -238,6 +239,9 @@ export function FootballHome() {
             <a href="#modos" onClick={() => setMenu(false)}>
               Modos de jogo
             </a>
+            <Link to="/carreiras" onClick={() => setMenu(false)}>
+              Minhas carreiras
+            </Link>
             <Link to="/guias" onClick={() => setMenu(false)}>
               Guias do treinador
             </Link>

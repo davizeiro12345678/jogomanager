@@ -56,7 +56,7 @@ describe("MatchSim Rapier authority contract", () => {
     });
   });
 
-  it("keeps fast-forward on the deterministic compatibility path and rebaseable", () => {
+  it("keeps the selected authority during fast-forward and remains rebaseable", () => {
     const sim = createSim("rapier-skip-contract");
     let steps = 0;
     let resets = 0;
@@ -73,7 +73,7 @@ describe("MatchSim Rapier authority contract", () => {
 
     sim.setBallPhysicsAuthority(authority);
     sim.step(0.4, 1, false);
-    expect(steps).toBe(0);
+    expect(steps).toBe(1);
 
     sim.synchronizeBallPhysics();
     expect(resets).toBe(2);

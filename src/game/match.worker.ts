@@ -1,9 +1,5 @@
 /// <reference lib="webworker" />
-import {
-  resultMatch,
-  snapshotMatchPacket,
-  type LiveWorkerRequest,
-} from "./live-match";
+import { resultMatch, snapshotMatch, type LiveWorkerRequest } from "./live-match";
 import {
   LIVE_MATCH_CLOCK_SCALE,
   MATCH_SIMULATION_STEP,
@@ -11,7 +7,7 @@ import {
   MAX_LIVE_MOTION_SCALE,
   MatchSim,
 } from "./sim";
-import type { BallPhysicsAuthority } from "./rapier-ball-authority";
+
 import type { RapierVisualPhysics } from "./rapier-ball-visual";
 import {
   LIVE_MATCH_WORKER_TELEMETRY_MARK,
@@ -21,9 +17,11 @@ import {
   markLiveWorkerSnapshot,
 } from "./snapshot-telemetry";
 import { visualBallFromCanonical, type VisualBallState } from "./visual-ball";
-import { loadPassLaneKernel } from "./wasm/match-perception";
-import { serializeWorkerError } from "./worker-error";
-import { createSnapshotBufferPool } from "./live-match-buffer";
+import { initializeMatchExecution } from "./match-execution";
+import { LiveSnapshotEncoder } from "./live-transport";
+import { reportSilent } from "../lib/report-silent";
+import { SequentialWorkerQueue } from "./sequential-worker-queue";
+import { validMatchCommand } from "./match-command-validation";
 
 let live: MatchSim | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -37,20 +35,38 @@ let skipToken = 0;
 let visualPhysics: RapierVisualPhysics | null = null;
 let visualPhysicsReady: Promise<RapierVisualPhysics | null> | null = null;
 let visualPhysicsGeneration = 0;
-let ballAuthority: BallPhysicsAuthority | null = null;
+
 let liveEpoch = 0;
 let latestVisualBall: VisualBallState | undefined;
-let commandQueue: Promise<void> = Promise.resolve();
+// Reenviar o histórico completo a cada 100 ms era trabalho de clone e GC que
+// não melhora animação nem HUD. As posições continuam no mesmo ritmo; o feed
+// só segue quando a simulação cria um evento novo.
+let lastPublishedEventSeq = -1;
+const commandQueue = new SequentialWorkerQueue();
+let transport: LiveSnapshotEncoder | null = null;
+let checkpointSeq = 0;
+let checkpointAt = 0;
+let recoveryDirty = true;
+let recoveryTicks: Array<[number, number]> = [];
+
+function recoveryState() {
+  if (!live || !transport) return undefined;
+  if (recoveryDirty || performance.now() - checkpointAt >= 2000) {
+    const checkpoint = live.checkpoint();
+    checkpointSeq++;
+    checkpointAt = performance.now();
+    recoveryDirty = false;
+    recoveryTicks = [];
+    post({ id: commandId, ok: true, type: "recovery", checkpoint, checkpointSeq });
+  }
+  return { checkpointSeq, ticks: recoveryTicks.map((tick) => [...tick] as [number, number]) };
+}
 const snapshotTelemetry = isLiveTelemetryWorker((self as unknown as { name?: unknown }).name)
   ? createSnapshotTelemetryTracker()
   : null;
 let telemetryMarkCount = 0;
-let lastProtocolErrorKey = "";
-const snapshotPool = createSnapshotBufferPool(3);
-let rosterVersion = 1;
-let publishedRosterVersion = 0;
 
-function post(message: unknown, transfer: Transferable[] = []) {
+function post(message: unknown) {
   if (snapshotTelemetry && isLiveSnapshotResponse(message)) {
     const measurement = snapshotTelemetry.sample(message.snapshot, performance.now());
     // Mantém uma janela curta no User Timing do Worker para não acumular uma
@@ -63,22 +79,8 @@ function post(message: unknown, transfer: Transferable[] = []) {
     markLiveWorkerSnapshot(measurement);
     telemetryMarkCount += 1;
   }
-  self.postMessage(message, transfer);
+  self.postMessage(message);
 }
-
-function publishWorkerError(event: ErrorEvent | MessageEvent | PromiseRejectionEvent) {
-  const payload = serializeWorkerError(event);
-  const key = `${commandId}:${payload.kind}:${payload.message}`;
-  if (key === lastProtocolErrorKey) return;
-  lastProtocolErrorKey = key;
-  post({ id: commandId, ok: false, type: "worker-error", error: payload });
-}
-
-self.addEventListener("error", (event) => publishWorkerError(event as ErrorEvent));
-self.addEventListener("messageerror", (event) => publishWorkerError(event as MessageEvent));
-self.addEventListener("unhandledrejection", (event) =>
-  publishWorkerError(event as PromiseRejectionEvent),
-);
 
 function stopTimer() {
   if (timer) clearInterval(timer);
@@ -115,37 +117,9 @@ function getVisualPhysics() {
 
 async function attachVisualFallback(target: MatchSim, epoch: number) {
   const physics = await getVisualPhysics();
-  if (!physics || target !== live || epoch !== liveEpoch || ballAuthority) return;
+  if (!physics || target !== live || epoch !== liveEpoch || target.hasBallPhysicsAuthority())
+    return;
   resetVisualPhysicsToCanonical();
-}
-
-async function attachBallAuthority(target: MatchSim, epoch: number) {
-  let authority: BallPhysicsAuthority | null;
-  try {
-    // O import fica dentro do Worker: o WASM não entra no bundle da UI nem
-    // bloqueia o primeiro snapshot de uma partida.
-    const { createRapierBallAuthority } = await import("./rapier-ball-authority");
-    authority = await createRapierBallAuthority();
-  } catch {
-    authority = null;
-  }
-
-  if (!authority) {
-    void attachVisualFallback(target, epoch);
-    return;
-  }
-  if (target !== live || epoch !== liveEpoch) {
-    authority.dispose();
-    return;
-  }
-  target.setBallPhysicsAuthority(authority);
-  if (!target.hasBallPhysicsAuthority()) {
-    authority.dispose();
-    void attachVisualFallback(target, epoch);
-    return;
-  }
-  ballAuthority = authority;
-  latestVisualBall = visualBallFromCanonical(target.physicsBallState());
 }
 
 function resetVisualPhysicsToCanonical() {
@@ -154,7 +128,7 @@ function resetVisualPhysicsToCanonical() {
     return;
   }
   const canonical = live.physicsBallState();
-  if (ballAuthority && live.hasBallPhysicsAuthority()) {
+  if (live.hasBallPhysicsAuthority()) {
     latestVisualBall = visualBallFromCanonical(canonical);
     return;
   }
@@ -168,20 +142,29 @@ function resetVisualPhysicsToCanonical() {
 
 function publishSnapshot() {
   if (!live) return;
+  if (transport) {
+    const recovery = recoveryState();
+    const snapshot = transport.encode({
+      ...snapshotMatch(live, sequence + 1, latestVisualBall),
+      ...(recovery ? { recovery } : {}),
+    });
+    if (!snapshot) return;
+    sequence++;
+    if (snapshotTelemetry) snapshotTelemetry.sample(snapshot, performance.now());
+    self.postMessage({ id: commandId, ok: true, type: "packedSnapshot", snapshot }, [
+      snapshot.frame.buffer,
+    ]);
+    return;
+  }
   sequence += 1;
-  const snapshot = snapshotMatchPacket(live, sequence, {
-    pool: snapshotPool,
-    rosterVersion,
-    includeMetadata: publishedRosterVersion !== rosterVersion,
-    ...(latestVisualBall ? { visualBall: latestVisualBall } : {}),
-  });
-  publishedRosterVersion = rosterVersion;
+  const includeEvents = live.lastEventId !== lastPublishedEventSeq;
+  if (includeEvents) lastPublishedEventSeq = live.lastEventId;
   post({
     id: commandId,
     ok: true,
     type: "snapshot",
-    snapshot,
-  }, [snapshot.players.positions, snapshot.players.velocities, snapshot.players.states]);
+    snapshot: snapshotMatch(live, sequence, latestVisualBall, includeEvents),
+  });
 }
 
 function publishFinished() {
@@ -201,13 +184,15 @@ function advanceLive(spatialDt: number, clockDt: number) {
   if (!live || live.finished) return;
   const before = live.physicsBallState();
   live.step(spatialDt, clockDt);
+  if (transport) recoveryTicks.push([spatialDt, clockDt]);
   const after = live.physicsBallState();
-  if (ballAuthority && live.hasBallPhysicsAuthority()) {
+  if (live.hasBallPhysicsAuthority()) {
     latestVisualBall = visualBallFromCanonical(after);
     return;
   }
-  if (ballAuthority) {
-    ballAuthority = null;
+  if (live.hasBallPhysicsAuthority()) {
+    recoveryDirty = true;
+
     void attachVisualFallback(live, liveEpoch);
   }
   if (!visualPhysics) {
@@ -235,8 +220,8 @@ function tick() {
   accumulator = Math.min(accumulator + elapsed, fixed * 5);
   while (accumulator >= fixed && !live.finished) {
     accumulator -= fixed;
-    const motionScale = Math.min(speed, MAX_LIVE_MOTION_SCALE);
-    advanceLive(fixed * motionScale, (LIVE_MATCH_CLOCK_SCALE * speed) / motionScale);
+    for (let step = 0; step < speed && !live.finished; step++)
+      advanceLive(fixed, LIVE_MATCH_CLOCK_SCALE);
   }
   if (live.finished) publishFinished();
   else publishSnapshot();
@@ -249,8 +234,13 @@ function ensureTimer() {
 async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive" }>) {
   stopTimer();
   live?.dispose();
-  ballAuthority = null;
+  live = null;
+  transport = null;
+  recoveryTicks = [];
+
   clearVisualPhysics();
+  // Freeze the backend before the first step so loading timing cannot change
+  // the seeded pass decisions halfway through a match.
   live = new MatchSim(message.home, message.away, message.seed, {
     knockout: message.knockout,
     weather: message.weather,
@@ -258,35 +248,62 @@ async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive"
   paused = false;
   speed = 1;
   sequence = 0;
-  rosterVersion = 1;
-  publishedRosterVersion = 0;
+  lastPublishedEventSeq = -1;
   const target = live;
   const epoch = ++liveEpoch;
-  // A partida começa imediatamente; Rapier se conecta quando o WASM estiver
-  // pronto e o fallback visual só é criado se essa inicialização falhar.
-  void attachBallAuthority(target, epoch);
-  void loadPassLaneKernel().then((kernel) => {
-    if (kernel && live === target && liveEpoch === epoch) target.setPassLaneKernel(kernel);
-  });
+  transport = message.compact ? new LiveSnapshotEncoder(epoch) : null;
+  checkpointSeq = 0;
+  checkpointAt = 0;
+  recoveryDirty = true;
+  recoveryTicks = [];
+  await initializeMatchExecution(target);
+  if (target !== live || epoch !== liveEpoch) {
+    target.dispose();
+    return;
+  }
+  if (target.hasBallPhysicsAuthority()) {
+    latestVisualBall = visualBallFromCanonical(target.physicsBallState());
+  } else void attachVisualFallback(target, epoch);
   publishSnapshot();
   ensureTimer();
   post({ id: message.id, ok: true, type: "ready" });
 }
 
 async function handleMessage(message: LiveWorkerRequest) {
+  // Admission can precede execution by optional WASM initialization. Expired
+  // controls are refused before changing the match or its recovery journal.
+  if ("expiresAt" in message && Date.now() >= message.expiresAt) {
+    post({ id: message.id, ok: true, type: "command", result: false });
+    return;
+  }
+  if (message.type === "recycleLive") {
+    transport?.recycle(message.session, message.slot, message.buffer);
+    return;
+  }
+  if (message.type === "resyncLive") {
+    transport?.resync();
+    publishSnapshot();
+    return;
+  }
   commandId = message.id;
+  if (message.type !== "startLive") recoveryDirty = true;
   if (message.type === "startLive") {
     await startLive(message);
     return;
   }
   if (message.type === "pauseLive") {
     paused = message.paused;
+    lastTick = 0;
+    // Não deixe um intervalo acordar o Worker a cada 100 ms enquanto a
+    // partida está pausada. Retomamos o mesmo ciclo ao receber o comando de
+    // continuar; isso reduz CPU ociosa sem alterar o estado da simulação.
     if (paused) stopTimer();
     else ensureTimer();
     post({ id: message.id, ok: true, type: "command" });
     return;
   }
   if (message.type === "speedLive") {
+    if (!Number.isFinite(message.speed)) throw new Error("Velocidade de simulação inválida");
     speed = Math.max(1, Math.min(8, message.speed));
     post({ id: message.id, ok: true, type: "command" });
     return;
@@ -295,6 +312,7 @@ async function handleMessage(message: LiveWorkerRequest) {
     const setup = message.side === "home" ? live.home : live.away;
     setup.tactics = { ...message.tactics };
     publishSnapshot();
+    post({ id: message.id, ok: true, type: "command", result: true });
     return;
   }
   if (message.type === "talkLive" && live) {
@@ -305,20 +323,9 @@ async function handleMessage(message: LiveWorkerRequest) {
   }
   if (message.type === "substituteLive" && live) {
     const changed = live.substitute(message.side, message.outPid, message.incoming);
-    if (changed) {
-      rosterVersion += 1;
-      resetVisualPhysicsToCanonical();
-    }
+    if (changed) resetVisualPhysicsToCanonical();
     publishSnapshot();
     post({ id: message.id, ok: true, type: "command", result: changed });
-    return;
-  }
-  if (message.type === "recycle") {
-    snapshotPool.release({
-      positions: new Float32Array(message.positions),
-      velocities: new Float32Array(message.velocities),
-      states: new Float32Array(message.states),
-    });
     return;
   }
   if (message.type === "skipLive" && live) {
@@ -331,8 +338,10 @@ async function handleMessage(message: LiveWorkerRequest) {
       const end = Math.min(guard + 320, MATCH_SIMULATION_TICK_LIMIT);
       // Keep live time/chance creation when skipping; large spatial steps
       // previously changed duels and played six times as much physical action.
-      while (!live.finished && guard++ < end)
-        live.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE, false);
+      while (!live.finished && guard < end) {
+        advanceLive(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
+        guard++;
+      }
       if (live.finished || guard >= MATCH_SIMULATION_TICK_LIMIT) {
         live.synchronizeBallPhysics();
         resetVisualPhysicsToCanonical();
@@ -349,7 +358,9 @@ async function handleMessage(message: LiveWorkerRequest) {
     liveEpoch += 1;
     live?.dispose();
     live = null;
-    ballAuthority = null;
+    transport = null;
+    recoveryTicks = [];
+
     stopTimer();
     clearVisualPhysics();
     post({ id: message.id, ok: true, type: "command" });
@@ -360,37 +371,86 @@ async function handleMessage(message: LiveWorkerRequest) {
       knockout: message.knockout,
       weather: message.weather,
     });
-    let guard = 0;
-    while (!sim.finished && guard++ < MATCH_SIMULATION_TICK_LIMIT)
-      sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
-    post({ id: message.id, ok: true, result: resultMatch(sim, 1) });
+    try {
+      await initializeMatchExecution(sim);
+      let guard = 0;
+      while (!sim.finished && guard++ < MATCH_SIMULATION_TICK_LIMIT)
+        sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
+      post({ id: message.id, ok: true, result: resultMatch(sim, 1) });
+    } finally {
+      sim.dispose();
+    }
     return;
   }
   if (message.type === "advance") {
     const { advanceRound } = await import("./career");
-    const career = advanceRound(message.career, message.result, message.performances);
+    const career = advanceRound(
+      message.career,
+      message.result,
+      message.performances,
+      "Liga",
+      message.evaluatedAt,
+    );
     post({ id: message.id, ok: true, result: career });
     return;
   }
   if (message.type === "autoSeason") {
     const { autoSeason } = await import("./autoplay");
-    post({ id: message.id, ok: true, result: autoSeason(message.career, message.maxWeeks) });
+    post({
+      id: message.id,
+      ok: true,
+      result: autoSeason(message.career, message.maxWeeks, message.evaluatedAt),
+    });
     return;
   }
   throw new Error("Comando de simulação inválido");
 }
 
-self.onmessage = (event: MessageEvent<LiveWorkerRequest>) => {
+self.onmessage = (event: MessageEvent<unknown>) => {
   const message = event.data;
+  if (!validMatchCommand(message)) {
+    const candidateId = (message as { id?: unknown } | null)?.id;
+    const id =
+      typeof candidateId === "number" && Number.isSafeInteger(candidateId) && candidateId >= 0
+        ? candidateId
+        : 0;
+    post({ id, ok: false, code: "invalid-command", error: "Comando de simulação inválido" });
+    return;
+  }
+  // Recycling is session-checked and never advances state. It must not wait
+  // behind optional compilation or a long sequential career command.
+  if (message.type === "recycleLive") {
+    if (
+      message.buffer instanceof ArrayBuffer &&
+      Number.isSafeInteger(message.slot) &&
+      Number.isSafeInteger(message.session)
+    )
+      transport?.recycle(message.session, message.slot, message.buffer);
+    return;
+  }
   // `startLive` aguarda o WASM. A fila evita que pause, velocidade ou troca
   // de atleta ultrapassem essa inicialização e produzam snapshots fora de ordem.
-  commandQueue = commandQueue
-    .then(() => handleMessage(message))
-    .catch((error) => {
+  const accepted = commandQueue.enqueue(
+    () => handleMessage(message),
+    (error) => {
+      reportSilent("match-worker", error, {
+        class: "degradation",
+        code: "command-failed",
+        phase: message.type,
+      });
       post({
         id: message.id,
         ok: false,
-        error: error instanceof Error ? error.message : String(error),
+        code: "command-failed",
+        error: "Não foi possível executar o comando de simulação. Tente novamente.",
       });
+    },
+  );
+  if (!accepted)
+    post({
+      id: message.id,
+      ok: false,
+      code: "queue-full",
+      error: "Fila de simulação cheia. Aguarde o comando atual.",
     });
 };

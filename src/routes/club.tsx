@@ -2,7 +2,7 @@ import { gamePageHead } from "@/lib/game-page-metadata";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer as NoCareerScreen } from "@/components/game/screen-kit";
+import { NoCareer as NoCareerScreen, ScreenHeader } from "@/components/game/screen-kit";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney, formatWage, wageBill } from "@/game/economy";
@@ -61,9 +61,7 @@ function ClubHub() {
           <div className="flex items-center gap-4">
             <Crest club={club} size={64} />
             <div>
-              <h1 className="font-display text-4xl uppercase leading-none tracking-wide">
-                {club.name}
-              </h1>
+              <ScreenHeader title={<>{club.name}</>} />
               <p className="text-sm text-muted-foreground">
                 {pos}º lugar · {row?.pts ?? 0} pts · {row?.p ?? 0} jogos · objetivo:{" "}
                 {career.objective}º ou melhor

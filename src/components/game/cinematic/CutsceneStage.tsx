@@ -1401,6 +1401,7 @@ export function CutsceneStage({
               <LazyCinematicStage
                 key={`${data.id}:${stageAttempt}`}
                 art={data.art}
+                business={data.business}
                 primary={accent}
                 secondary={accent2}
                 beat={i}

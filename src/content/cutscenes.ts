@@ -91,6 +91,13 @@ export interface Cutscene {
   mood?: SceneMood;
   /** cena híbrida: encenação com câmera em 3D real sobre as camadas ilustradas */
   hybrid?: boolean;
+  /** Presentation only; deal transactions remain owned by the career host. */
+  business?: {
+    kind: "transfer" | "sponsor";
+    stage: "negotiation" | "signing" | "presentation";
+    clubName: string;
+    subjectName: string;
+  };
   lines: CutsceneLine[];
 }
 

@@ -16,15 +16,15 @@ const DECISIONS = [
   },
   {
     title: "Contrate com um plano",
-    text: "Compare posição, idade, contrato e custo. Um reforço precisa caber no elenco e na folha salarial.",
-    to: "/guia-de-scouting",
-    cta: "Aprender a observar jogadores",
+    text: "Leia os relatórios dos olheiros e compare posição, potencial, taxa, luvas e salário semanal antes de negociar.",
+    to: "/planejamento-de-elenco",
+    cta: "Planejar scouting e contratações",
   },
   {
     title: "Construa uma carreira",
-    text: "Acompanhe orçamento, metas da diretoria e resultados da temporada. Exporte uma cópia da carreira antes de grandes alterações.",
-    to: "/gestao-financeira",
-    cta: "Organizar as finanças",
+    text: "Acompanhe orçamento, metas da diretoria e resultados. Revise projeções antes de assumir custos recorrentes.",
+    to: "/guias",
+    cta: "Ver a rotina de carreira",
   },
 ] as const;
 const FAQ = [

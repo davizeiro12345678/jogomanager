@@ -3,6 +3,15 @@ import { poolForLeague } from "./data/names";
 import { valueFor, wageFor } from "./economy";
 import { makeRng } from "./rng";
 import type { CareerState, Player, Position } from "./types";
+import { quoteContract, roundMoney } from "./economy-contracts";
+import { developedPlayer, withDevelopmentBase } from "./attributes";
+import { validPlayerSkills } from "./player-rating-inputs";
+import {
+  finiteAmount,
+  financeLedgerFor,
+  financialChange,
+  validFinancialState,
+} from "./financial-inputs";
 
 export interface MarketEntry {
   key: string;
@@ -28,7 +37,11 @@ const j = (v: number, rnd: () => number) =>
   Math.max(35, Math.min(99, Math.round(v + (rnd() * 10 - 5))));
 
 /** Gera o mercado da rodada de forma determinística. */
-export function generateMarket(seed: string, count = 12): MarketEntry[] {
+export function generateMarket(
+  seed: string,
+  count = 12,
+  economyRulesVersion?: 1 | 2,
+): MarketEntry[] {
   const rnd = makeRng(`market-${seed}`);
   const entries: MarketEntry[] = [];
   const used = new Set<string>();
@@ -47,7 +60,7 @@ export function generateMarket(seed: string, count = 12): MarketEntry[] {
     const pos = POSITIONS[Math.floor(rnd() * POSITIONS.length)]!;
     const age = 17 + Math.floor(rnd() * 18);
     const ovr = 58 + Math.floor(rnd() * 30);
-    const value = valueFor(ovr, age);
+    const value = valueFor(ovr, age, { economyRulesVersion });
     entries.push({
       key: `${seed}-${i}`,
       name,
@@ -59,7 +72,7 @@ export function generateMarket(seed: string, count = 12): MarketEntry[] {
       passing: j(ovr, rnd),
       defending: j(ovr, rnd),
       physical: j(ovr, rnd),
-      price: Math.round(value * (1.15 + rnd() * 0.6) * 10) / 10,
+      price: roundMoney(value * (1.15 + rnd() * 0.6)),
       wage: Math.round(wageFor(ovr) * (1 + rnd() * 0.3)),
       fromLeague: league.name,
     });
@@ -68,56 +81,86 @@ export function generateMarket(seed: string, count = 12): MarketEntry[] {
   return entries.sort((a, b) => b.ovr - a.ovr);
 }
 
-function nextNumber(players: Record<string, Player>): number {
-  const used = new Set(Object.values(players).map((p) => p.number));
+function nextNumber(players: Record<string, Player>, clubId: string): number {
+  const used = new Set(
+    Object.values(players)
+      .filter((p) => p.clubId === clubId)
+      .map((p) => p.number),
+  );
   let n = 1;
   while (used.has(n)) n++;
   return n;
 }
 
+export function quoteSigning(state: CareerState, entry: MarketEntry) {
+  return quoteContract(state, entry.price, entry.wage, roundMoney(entry.price * 0.03));
+}
+
 export function signPlayer(state: CareerState, entry: MarketEntry): CareerState {
-  if (state.finances.budget < entry.price) return state;
+  if (!validPlayerSkills(entry) || !entry.key || !entry.name.trim()) return state;
+  if (
+    !Number.isFinite(entry.price) ||
+    entry.price < 0 ||
+    !Number.isFinite(entry.wage) ||
+    entry.wage < 0
+  )
+    return state;
+  const quote = quoteSigning(state, entry);
+  if (!quote.affordable) return state;
   const id = `free-${entry.key}`;
   if (state.players[id]) return state;
 
-  const player: Player = {
-    id,
-    clubId: state.clubId,
-    name: entry.name,
-    pos: entry.pos,
-    age: entry.age,
-    number: nextNumber(state.players),
-    ovr: entry.ovr,
-    pace: entry.pace,
-    shooting: entry.shooting,
-    passing: entry.passing,
-    defending: entry.defending,
-    physical: entry.physical,
-    condition: 85,
-    morale: 75,
-    goals: 0,
-    assists: 0,
-    apps: 0,
-    wage: entry.wage,
-    value: valueFor(entry.ovr, entry.age),
-    yellows: 0,
-    suspended: false,
-    injuryWeeks: 0,
-  };
+  const finances = financialChange(state, 0, quote.upfrontCost);
+  if (!finances) return state;
+  const player: Player = withDevelopmentBase(
+    {
+      id,
+      clubId: state.clubId,
+      name: entry.name,
+      pos: entry.pos,
+      age: entry.age,
+      number: nextNumber(state.players, state.clubId),
+      ovr: entry.ovr,
+      pace: entry.pace,
+      shooting: entry.shooting,
+      passing: entry.passing,
+      defending: entry.defending,
+      physical: entry.physical,
+      condition: 85,
+      morale: 75,
+      goals: 0,
+      assists: 0,
+      apps: 0,
+      wage: entry.wage,
+      value: valueFor(entry.ovr, entry.age, { economyRulesVersion: state.economyRulesVersion }),
+      yellows: 0,
+      suspended: false,
+      injuryWeeks: 0,
+    },
+    state.developmentRulesVersion === 2 ? 2 : 1,
+  );
 
   return {
     ...state,
-    players: { ...state.players, [id]: player },
+    players: { ...state.players, [id]: developedPlayer(player, state) },
     bench: [...state.bench, id],
     records: {
       ...(state.records ?? {}),
       biggestSigning: Math.max(state.records?.biggestSigning ?? 0, entry.price),
     },
-    finances: {
-      ...state.finances,
-      budget: Math.round((state.finances.budget - entry.price) * 10) / 10,
-      spent: Math.round((state.finances.spent + entry.price) * 10) / 10,
-    },
+    finances,
+    financeLedger: [
+      {
+        id: `signing-${state.clubId}-${state.season}-${id}`,
+        season: state.season,
+        round: state.round,
+        kind: "mercado" as const,
+        label: `Contratação de ${entry.name}, comissão e luvas`,
+        income: 0,
+        expense: quote.upfrontCost,
+      },
+      ...financeLedgerFor(state),
+    ].slice(0, 96),
     news: [
       {
         id: `sign-${id}`,
@@ -133,25 +176,38 @@ export function signPlayer(state: CareerState, entry: MarketEntry): CareerState 
 }
 
 export function releasePlayer(state: CareerState, playerId: string): CareerState {
+  if (!validFinancialState(state)) return state;
   const player = state.players[playerId];
-  if (!player) return state;
-  if (Object.keys(state.players).length <= 16) return state;
-
-  const players = { ...state.players };
-  delete players[playerId];
+  if (!player || player.clubId !== state.clubId) return state;
+  if (Object.values(state.players).filter((p) => p.clubId === state.clubId).length <= 16)
+    return state;
 
   // compensação de rescisão: 20% do valor
-  const fee = Math.round(player.value * 0.2 * 10) / 10;
+  if (!finiteAmount(player.value)) return state;
+  const fee = roundMoney(player.value * 0.2);
+  const finances = financialChange(state, 0, fee);
+  if (!finances || finances.budget < 0) return state;
+  const players = { ...state.players };
+  delete players[playerId];
 
   return {
     ...state,
     players,
     lineup: state.lineup.filter((id) => id !== playerId),
     bench: state.bench.filter((id) => id !== playerId),
-    finances: {
-      ...state.finances,
-      budget: Math.round((state.finances.budget - fee) * 10) / 10,
-    },
+    finances,
+    financeLedger: [
+      {
+        id: `release-${state.clubId}-${state.season}-${state.round}-${playerId}`,
+        season: state.season,
+        round: state.round,
+        kind: "mercado" as const,
+        label: `Rescisão de ${player.name}`,
+        income: 0,
+        expense: fee,
+      },
+      ...financeLedgerFor(state),
+    ].slice(0, 96),
     news: [
       {
         id: `release-${playerId}-${state.round}`,

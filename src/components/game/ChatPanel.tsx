@@ -8,6 +8,7 @@ import { containsProfanity, PROFANITY_BLOCKED_MESSAGE } from "@/lib/moderation";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { EmptyState, ErrorPanel, SkeletonRows } from "./screen-kit";
 
 interface ChatMessage {
   id: string;
@@ -60,6 +61,8 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
   const signedIn = useSignedIn();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [refresh, setRefresh] = useState(0);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -79,20 +82,21 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
     if (!signedIn) return;
     let alive = true;
     setLoading(true);
+    setLoadError(false);
     void supabase
       .from("chat_messages")
       .select("id, user_id, display_name, body, hidden, created_at")
       .eq("hidden", false)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(200)
       .then(({ data, error }) => {
         if (!alive) return;
         if (error) {
-          toast.error("Não foi possível carregar o chat.");
+          setLoadError(true);
           setLoading(false);
           return;
         }
-        setMessages((data ?? []) as ChatMessage[]);
+        setMessages(((data ?? []) as ChatMessage[]).reverse());
         setLoading(false);
       });
 
@@ -104,7 +108,9 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
         (payload) => {
           const row = payload.new as ChatMessage;
           if (row.hidden) return;
-          setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+          setMessages((prev) =>
+            prev.some((m) => m.id === row.id) ? prev : [...prev, row].slice(-200),
+          );
         },
       )
       .subscribe();
@@ -113,7 +119,7 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
       alive = false;
       void supabase.removeChannel(channel);
     };
-  }, [signedIn]);
+  }, [signedIn, refresh]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -177,7 +183,7 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
   }, []);
 
   if (signedIn === null) {
-    return <p className="p-4 text-sm text-muted-foreground">Carregando…</p>;
+    return <SkeletonRows rows={3} />;
   }
 
   if (!signedIn) {
@@ -201,11 +207,17 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border/60 surface-card p-4">
         {loading ? (
-          <p className="text-sm text-muted-foreground">Carregando mensagens…</p>
+          <SkeletonRows label="Carregando mensagens" />
+        ) : loadError ? (
+          <ErrorPanel
+            hint="Não foi possível carregar o chat."
+            onRetry={() => setRefresh((value) => value + 1)}
+          />
         ) : visibleMessages.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Nenhuma mensagem ainda. Seja o primeiro a cumprimentar a galera!
-          </p>
+          <EmptyState
+            title="A conversa começa aqui"
+            hint="Escreva uma mensagem para cumprimentar os treinadores."
+          />
         ) : (
           <ul className="flex flex-col gap-3">
             {visibleMessages.map((m) => (

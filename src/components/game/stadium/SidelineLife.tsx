@@ -15,6 +15,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import { censusRef } from "@/game/scene-census";
+import { SidelineFlashBatch } from "@/game/sideline-flash-batch";
 import { FIELD_X, FIELD_Z } from "@/game/sim";
 
 type FigureOpts = {
@@ -198,7 +199,7 @@ export const SidelineLife = memo(function SidelineLife({
       })),
     [],
   );
-  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const flashBatch = useMemo(() => new SidelineFlashBatch(6), []);
   useFrame((_, rawDt) => {
     const mesh = flashes.current;
     if (!mesh) return;
@@ -212,12 +213,8 @@ export const SidelineLife = memo(function SidelineLife({
         f.heat = 1;
       }
       f.heat = Math.max(0, f.heat - dt * 9);
-      dummy.position.set(f.x, 1.0, f.z);
-      dummy.scale.setScalar(Math.max(0.0001, f.heat * 1.6));
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
     }
-    mesh.instanceMatrix.needsUpdate = true;
+    flashBatch.paint(mesh, flashState);
   });
 
   return (
@@ -230,7 +227,12 @@ export const SidelineLife = memo(function SidelineLife({
         <planeGeometry args={[0.52, 0.65]} />
         <meshBasicMaterial map={board} toneMapped={false} />
       </mesh>
-      <instancedMesh ref={flashes} args={[undefined, undefined, 6]} frustumCulled={false}>
+      <instancedMesh
+        ref={flashes}
+        args={[undefined, undefined, 6]}
+        frustumCulled={false}
+        visible={false}
+      >
         <sphereGeometry args={[0.22, 8, 8]} />
         <meshBasicMaterial
           color="#ffffff"

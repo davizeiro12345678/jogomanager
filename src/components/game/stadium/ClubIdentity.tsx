@@ -5,7 +5,6 @@
 //  reais do clube; o tremular é vértice a vértice no useFrame (sem shader).
 // ============================================================================
 
-import { useDisposable } from "../useDisposable";
 import { memo, useMemo, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
@@ -99,7 +98,7 @@ export const TifoBanner = memo(function TifoBanner({
   position?: [number, number, number];
 }) {
   const mesh = useRef<THREE.Mesh>(null);
-  const tex = useDisposable(() => tifoTexture(club), [club]);
+  const tex = useMemo(() => tifoTexture(club), [club]);
   useWave(mesh, 0.16, 2.2, width);
   return (
     <group position={position}>
@@ -129,7 +128,7 @@ export const ClubFlag = memo(function ClubFlag({
   scale?: number;
 }) {
   const mesh = useRef<THREE.Mesh>(null);
-  const tex = useDisposable(() => {
+  const tex = useMemo(() => {
     const cv = document.createElement("canvas");
     cv.width = 256;
     cv.height = 160;

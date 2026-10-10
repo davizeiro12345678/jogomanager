@@ -50,7 +50,7 @@ describe("adult player anatomy", () => {
         expect(m.wristHeight).toBeGreaterThan(p.hipY - p.thigh * 0.6);
         // LOD head and the detailed skull use the same neck and crown.
         const headCenter =
-          p.hipY + p.hipH * 0.5 + p.spineLen + p.chestLen + p.neckLen + p.headR * 0.82;
+          p.hipY + p.hipH * 0.5 + p.spineLen + p.chestLen + p.neckLen + p.headR * 0.66;
         expect(headCenter + p.headH * 0.5).toBeCloseTo(m.height, 6);
       }
     }
@@ -63,7 +63,7 @@ describe("adult player anatomy", () => {
     const m = anatomyMeasurements(p);
     expect(strong.girth).toBeLessThanOrEqual(1.1);
     expect(m.shoulderWidth / m.height).toBeLessThan(0.32);
-    expect(p.hipW * 2 / m.height).toBeLessThan(0.3);
+    expect((p.hipW * 2) / m.height).toBeLessThan(0.3);
     expect(p.armR / p.headR).toBeLessThan(0.7);
   });
 

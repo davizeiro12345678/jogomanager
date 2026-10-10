@@ -38,11 +38,18 @@ describe("live visual-ball snapshots", () => {
     const full = snapshotMatch(sim, 1);
     const sparse = snapshotMatch(sim, 2, undefined, false);
 
-    expect(sparse.events).toEqual([]);
+    expect(sparse.events).toBeUndefined();
     expect(sparse.eventSeq).toBe(full.eventSeq);
     view.apply(full);
     view.apply(sparse);
     expect(view.events).toEqual(full.events);
+    // A sparse packet announces a newer sequence but supplies no history.
+    // The subsequent full packet must still be applied at that sequence.
+    view.apply({ ...sparse, seq: 3, eventSeq: full.eventSeq + 1 });
+    const recovered = { ...full, seq: 4, eventSeq: full.eventSeq + 1, events: [...full.events!] };
+    view.apply(recovered);
+    expect(view.eventSeq).toBe(recovered.eventSeq);
+    expect(view.events).toEqual(recovered.events);
   });
 
   it("interpolates the visual pose when present and falls back to the canonical ball when absent", () => {

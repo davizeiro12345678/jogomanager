@@ -3,9 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { PlayerSheet } from "@/components/game/PlayerSheet";
+import { playerForDisplay } from "@/game/player-development";
 
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer } from "@/components/game/screen-kit";
+import { NoCareer, ScreenHeader, DataTable, SectionCard } from "@/components/game/screen-kit";
 import {
   HudBar,
   HudCard,
@@ -71,7 +72,9 @@ function SquadPage() {
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
   if (!career) return <NoCareer />;
 
-  const players = Object.values(career.players).filter((p) => p.clubId === career.clubId);
+  const players = Object.values(career.players)
+    .filter((p) => p.clubId === career.clubId)
+    .map((p) => playerForDisplay(p, career));
   const slots = FORMATIONS[career.tactics.formation];
   const lineup = career.lineup.map((id) => career.players[id]).filter(Boolean) as Player[];
   const reserves = players.filter((p) => !career.lineup.includes(p.id));
@@ -119,7 +122,7 @@ function SquadPage() {
     <GameShell career={career}>
       <div className="screen-heading flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">Elenco</h1>
+          <ScreenHeader title="Elenco" />
           <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
             {players.length} jogadores · Formação {career.tactics.formation}
           </p>
@@ -259,7 +262,7 @@ function SquadPage() {
             tabIndex={0}
             aria-label="Tabela do elenco; role para ver todas as colunas"
           >
-            <table className="w-full text-sm">
+            <DataTable label="Jogadores do elenco" className="w-full text-sm">
               <caption className="sr-only">Jogadores titulares e reservas do clube</caption>
               <thead className="sticky top-0 z-10 bg-card/95 text-[10px] uppercase tracking-wider text-muted-foreground backdrop-blur">
                 <tr>
@@ -385,11 +388,11 @@ function SquadPage() {
                   );
                 })}
               </tbody>
-            </table>
+            </DataTable>
           </div>
         </HudCard>
       </div>
-      {sheet ? <PlayerSheet player={sheet} onClose={() => setSheet(null)} /> : null}
+      {sheet ? <PlayerSheet player={sheet} career={career} onClose={() => setSheet(null)} /> : null}
     </GameShell>
   );
 }
@@ -419,7 +422,7 @@ function DressingRoom({ career, update }: { career: Career; update: (s: Career) 
   }
 
   return (
-    <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
+    <SectionCard className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="font-display text-xl uppercase tracking-wide">Vestiário</h2>
         <span
@@ -515,6 +518,6 @@ function DressingRoom({ career, update }: { career: Career; update: (s: Career) 
           </ul>
         </div>
       ) : null}
-    </section>
+    </SectionCard>
   );
 }

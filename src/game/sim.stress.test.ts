@@ -9,7 +9,7 @@ import {
 } from "./sim";
 
 describe("MatchSim stress", () => {
-  it("finishes 200 seeded matches inside the worker guard without a frozen loose ball", () => {
+  it("finishes 200 seeded matches and reproduces each result inside the worker guard", () => {
     for (let index = 0; index < 200; index += 1) {
       const sim = new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), `stress-${index}`);
       let guard = 0;
@@ -29,6 +29,20 @@ describe("MatchSim stress", () => {
       }
       expect(sim.finished, `seed stress-${index}`).toBe(true);
       expect(guard, `seed stress-${index}`).toBeLessThanOrEqual(MATCH_SIMULATION_TICK_LIMIT);
+
+      // Replay independently, with the same sequential authoritative step.
+      // Distinct seeds finishing is not evidence that their results reproduce.
+      const replay = new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), `stress-${index}`);
+      let replayGuard = 0;
+      while (!replay.finished && replayGuard++ < MATCH_SIMULATION_TICK_LIMIT) {
+        replay.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
+      }
+      expect(replay.finished, `replay stress-${index}`).toBe(true);
+      expect(replayGuard, `replay steps stress-${index}`).toBe(guard);
+      expect(replay.stats, `stats stress-${index}`).toEqual(sim.stats);
+      expect(replay.scorers, `scorers stress-${index}`).toEqual(sim.scorers);
+      expect(replay.shotMap, `shots stress-${index}`).toEqual(sim.shotMap);
+      expect(replay.events, `events stress-${index}`).toEqual(sim.events);
     }
-  }, 300_000);
+  }, 600_000);
 });

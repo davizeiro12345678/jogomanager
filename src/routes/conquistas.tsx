@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer } from "@/components/game/screen-kit";
+import { NoCareer, SectionCard, ScreenHeader } from "@/components/game/screen-kit";
 import { ACHIEVEMENTS, careerMilestones, type AchievementTier } from "@/game/achievements";
 import { syncAchievements } from "@/lib/achievements.functions";
 import { useCareer, useSignedIn } from "@/hooks/useCareer";
@@ -91,8 +91,8 @@ function ConquistasPage() {
   return (
     <GameShell career={career}>
       <div className="space-y-4">
-        <section className="rounded-2xl border border-border/60 surface-card p-5">
-          <h1 className="font-display text-2xl uppercase tracking-wide">Conquistas</h1>
+        <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">
+          <ScreenHeader title="Conquistas" />
           <p className="mt-1 text-sm text-muted-foreground">
             {unlockedCount} de {total} conquistas desbloqueadas.
           </p>
@@ -112,9 +112,9 @@ function ConquistasPage() {
               </span>
             ))}
           </div>
-        </section>
+        </SectionCard>
 
-        <section className="rounded-2xl border border-border/60 surface-card p-5">
+        <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-xl uppercase tracking-wide">Carreira do treinador</h2>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Clubes" value={String(clubsCoached)} />
@@ -122,9 +122,9 @@ function ConquistasPage() {
             <Stat label="Títulos" value={String(titles)} />
             <Stat label="Aproveitamento" value={`${winRate}%`} />
           </div>
-        </section>
+        </SectionCard>
 
-        <section className="rounded-2xl border border-border/60 surface-card p-5">
+        <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-xl uppercase tracking-wide">Marcos</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             O quanto falta para o próximo degrau da carreira.
@@ -152,7 +152,7 @@ function ConquistasPage() {
               );
             })}
           </div>
-        </section>
+        </SectionCard>
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {ACHIEVEMENTS.map((a) => {

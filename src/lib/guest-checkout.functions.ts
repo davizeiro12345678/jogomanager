@@ -25,6 +25,7 @@ import {
   type StoreProductContents,
 } from "@/lib/store-products.server";
 import { classifyGuestCheckoutSession } from "@/lib/guest-checkout-state";
+import { persistGuestCheckoutIntentIfAllowed } from "@/lib/guest-checkout-policy.server";
 import { resolveOrCreateCustomer } from "@/utils/payments.functions";
 import { assertGuestCheckoutEnabled } from "@/lib/payments-config.server";
 
@@ -407,7 +408,9 @@ export const startGuestCheckout = createServerFn({ method: "POST" })
       const email = normalizeGuestEmail(data.email);
       const emailHash = await hashGuestEmail(email);
       const product = await getServerStoreProduct(getServiceSupabase(), data.productKey);
-      const intent = await createIntent(environment, emailHash, product);
+      const intent = await persistGuestCheckoutIntentIfAllowed(product, () =>
+        createIntent(environment, emailHash, product),
+      );
       return await openStripeSession(intent, email, product, environment);
     } catch (error) {
       return { error: getStripeErrorMessage(error) };
@@ -590,11 +593,19 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
       }
 
       if (session.mode === "payment") {
-        await recordPendingPurchase(context.userId, intent.product_key, session.id, amount);
-        await fulfillOneTimePurchase(context.userId, intent.product_key, session.id, amount, {
-          priceCents: intent.amount_cents,
-          contents: snapshotContents,
-        });
+        const paidAmount = session.amount_total ?? amount;
+        await recordPendingPurchase(context.userId, intent.product_key, session.id, paidAmount);
+        await fulfillOneTimePurchase(
+          context.userId,
+          intent.product_key,
+          session.id,
+          amount,
+          {
+            priceCents: intent.amount_cents,
+            contents: snapshotContents,
+          },
+          paidAmount,
+        );
       } else {
         const subscriptionId =
           typeof session.subscription === "string"

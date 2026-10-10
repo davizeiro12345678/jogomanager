@@ -15,7 +15,13 @@
 //  clube em sequência, replay de várias partidas).
 // ============================================================================
 
-import { kitTexture, kitTextureStats, type Kit, type KitDetail } from "@/game/kits";
+import {
+  kitTexture,
+  kitTextureStats,
+  trimKitTextureCache,
+  type Kit,
+  type KitDetail,
+} from "@/game/kits";
 
 export type { KitDetail };
 
@@ -57,7 +63,7 @@ export interface KitBudget {
   entries: number;
   bytes: number;
   heroBytes: number;
-  /** limite adotado para a partida (192 MB em alta, 64 MB no resto) */
+  /** Active owners are protected; keep only a small warm atlas cache. */
   limitBytes: number;
   overBudget: boolean;
 }
@@ -67,7 +73,7 @@ const MB = 1024 * 1024;
 /** Orçamento de textura de camisa por qualidade. */
 export function kitBudget(quality: "alta" | "media" | "baixa" = "media"): KitBudget {
   const stats = kitTextureStats();
-  const limitBytes = (quality === "alta" ? 192 : 64) * MB;
+  const limitBytes = (quality === "alta" ? 16 : 8) * MB;
   return { ...stats, limitBytes, overBudget: stats.bytes > limitBytes };
 }
 
@@ -85,10 +91,5 @@ export function formatKitBudget(budget: KitBudget): string {
  * decide se quer forçar um novo frame depois da poda.
  */
 export function trimKitTextures(limitBytes = 128 * MB): number {
-  const stats = kitTextureStats();
-  if (stats.bytes <= limitBytes) return 0;
-  // A poda real acontece no próprio `kits.ts` (dono do cache); aqui só
-  // sinalizamos a pressão para quem estiver ouvindo (HUD/benchmark).
-  void stats;
-  return 0;
+  return trimKitTextureCache(limitBytes);
 }

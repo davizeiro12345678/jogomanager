@@ -8,9 +8,7 @@
 //  e faz um travelling contínuo dentro da fala.
 // ============================================================================
 
-import { useDisposable } from "./useDisposable";
 import { Environment, Lightformer, RoundedBox } from "@react-three/drei";
-import { PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
   lazy,
@@ -25,7 +23,7 @@ import {
 } from "react";
 import * as THREE from "three";
 
-import type { SceneArt, Speaker } from "@/content/cutscenes";
+import type { Cutscene, SceneArt, Speaker } from "@/content/cutscenes";
 import type { LineLight, ShotSize } from "@/game/cutscene-director";
 import type { Cast } from "@/game/cast";
 import type { ManagerLook } from "@/game/types";
@@ -38,6 +36,7 @@ import {
   type CinematicCameraTransitionInput,
 } from "@/game/cinematic-camera-transition";
 import { cinematicShotFor } from "@/game/cinematic-shot";
+import { cinematicBusinessShot } from "@/game/cinematic-business-shot";
 import { cinematicDrillFor } from "@/game/cinematic-action";
 import {
   cinematicReactionReady,
@@ -59,10 +58,14 @@ import { CinematicFrameProbe } from "./cinematic/CinematicFrameProbe";
 import { useCinematicFrame, useCinematicRuntime } from "./cinematic/cinematic-runtime";
 import { CinematicSetBatch, type CinematicBatchSnapshot } from "./cinematic/CinematicSetBatch";
 import { GraphicsBoundary } from "./GraphicsBoundary";
+import { Ktx2CanvasAssets } from "./Ktx2CanvasAssets";
+import { useDisposable } from "./useDisposable";
 import { HangingShirt, TacticsBoard, ClubTrophy } from "./cinematic/CinematicSetDetails";
 import { CinematicSetFinish } from "./cinematic/CinematicSetFinish";
 import { CinematicStoryDressing } from "./cinematic/CinematicStoryDressing";
+import { CinematicBusinessDressing } from "./cinematic/CinematicBusinessDressing";
 import { CinematicMotivatedLight } from "./cinematic/CinematicMotivatedLight";
+import { useCinematicArtwork } from "./cinematic/cinematic-artwork";
 import {
   cinematicBackdrop,
   cinematicSurface,
@@ -70,15 +73,14 @@ import {
 } from "./cinematic/cinematic-surfaces";
 
 import {
-  cinematicAutoQualityOnDecline,
-  cinematicAutoQualityOnFallback,
-  cinematicAutoQualityOnIncline,
+  cinematicPresentationBudget,
+  CinematicPressureController,
   cinematicGpuQuality,
   cinematicInitialQuality,
 } from "@/game/cinematic-performance";
 const CinematicLens = lazy(() => import("./cinematic/CinematicLens"));
-import { detectQuality, dprFor, type QualityLevel } from "@/game/device";
-import { Button } from "@/components/ui/button";
+import { detectQuality, type QualityLevel } from "@/game/device";
+import { useT } from "@/i18n/provider";
 
 type SetKind = CinematicSet;
 
@@ -143,6 +145,7 @@ function CelebrationRain() {
 
 /** Disparos de flash dos fotógrafos na coletiva (rajadas aleatórias). */
 function PressFlashes() {
+  const runtime = useCinematicRuntime();
   const ref = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const state = useMemo(
@@ -152,6 +155,11 @@ function PressFlashes() {
   useCinematicFrame((_, rawDt) => {
     const mesh = ref.current;
     if (!mesh) return;
+    if (runtime.reduced) {
+      mesh.visible = false;
+      return;
+    }
+    mesh.visible = true;
     const dt = Math.min(rawDt, 0.05);
     for (let i = 0; i < state.length; i++) {
       const f = state[i]!;
@@ -357,13 +365,7 @@ function Tunnel({
   secondary: string;
   speaker: Speaker | null;
 }) {
-  const glow = useRef<THREE.Mesh>(null);
-  useCinematicFrame((time) => {
-    if (glow.current) {
-      const m = glow.current.material as THREE.MeshBasicMaterial;
-      m.opacity = 0.82 + Math.sin(time * 1.4) * 0.12;
-    }
-  });
+  const vista = useCinematicArtwork("stadium", primary, secondary, "tunnel");
   return (
     <group>
       <mesh receiveShadow rotation-x={-Math.PI / 2}>
@@ -421,9 +423,9 @@ function Tunnel({
         />
       ))}
       {/* boca do túnel */}
-      <mesh ref={glow} position={[0, 1.9, -12]}>
+      <mesh position={[0, 1.9, -12]}>
         <planeGeometry args={[6.6, 3.8]} />
-        <meshBasicMaterial color="#e6fff0" transparent opacity={0.9} toneMapped={false} />
+        <meshBasicMaterial map={vista} color="#e6fff0" toneMapped={false} />
       </mesh>
       <pointLight position={[0, 2, -11]} intensity={26} distance={22} color="#eafff2" />
       <TunnelDust />
@@ -525,6 +527,7 @@ function PitchEntry({
   festive: boolean;
   training?: boolean;
 }) {
+  const artwork = useCinematicArtwork("pitch", primary, secondary);
   return (
     <group>
       {Array.from({ length: 14 }).map((_, i) => (
@@ -574,7 +577,7 @@ function PitchEntry({
       ))}
       <mesh position={[0, 1.3, -21.52]} receiveShadow>
         <boxGeometry args={[33, 1.1, 0.08]} />
-        <meshStandardMaterial color={secondary} roughness={0.85} />
+        <meshStandardMaterial map={artwork} roughness={0.85} />
       </mesh>
       <CinematicCrowd
         secondary={secondary}
@@ -626,6 +629,7 @@ function PitchEntry({
 }
 
 function Stands({ primary, secondary }: { primary: string; secondary: string }) {
+  const artwork = useCinematicArtwork("stands", primary, secondary);
   return (
     <group>
       <mesh receiveShadow rotation-x={-Math.PI / 2}>
@@ -670,7 +674,8 @@ function Stands({ primary, secondary }: { primary: string; secondary: string }) 
         <mesh key={x} position={[x, 3.4 + (i % 2) * 0.5, -9]} rotation-z={(hash(i) - 0.5) * 0.12}>
           <planeGeometry args={[3.4, 2]} />
           <meshStandardMaterial
-            color={i % 2 ? primary : secondary}
+            map={artwork}
+            color={i % 2 ? "#ffffff" : "#e5e7dc"}
             roughness={0.8}
             side={THREE.DoubleSide}
           />
@@ -695,6 +700,7 @@ function Office({
   secondary: string;
   speaker: Speaker | null;
 }) {
+  const vista = useCinematicArtwork("stadium", primary, secondary);
   return (
     <group>
       <mesh receiveShadow rotation-x={-Math.PI / 2}>
@@ -722,7 +728,7 @@ function Office({
       {/* janela com estádio ao fundo */}
       <mesh position={[4.4, 2.2, -3.86]}>
         <planeGeometry args={[4.6, 2.6]} />
-        <meshBasicMaterial color="#9ab7cc" />
+        <meshBasicMaterial map={vista} color="#d4e3eb" />
       </mesh>
       {/* mesa e cadeiras */}
       <mesh position={[0, 0.74, -1.4]} castShadow receiveShadow>
@@ -787,9 +793,11 @@ function BusArrival({
   speaker: Speaker | null;
 }) {
   const beacon = useRef<THREE.PointLight>(null);
+  const runtime = useCinematicRuntime();
   useCinematicFrame((time) => {
     // Sinalizador prático junto à grade: permanece localizado e não lava a câmera.
-    if (beacon.current) beacon.current.intensity = Math.sin(time * 6) > 0 ? 2.8 : 0.35;
+    if (beacon.current)
+      beacon.current.intensity = runtime.reduced ? 1.1 : Math.sin(time * 6) > 0 ? 2.8 : 0.35;
   });
   return (
     <group>
@@ -941,6 +949,7 @@ function BusArrival({
 
 /** Editing cuts establish geography before a face; cameras never fly through actors. */
 function Director({
+  business,
   kind,
   art,
   beat,
@@ -952,6 +961,7 @@ function Director({
   speaker = null,
   festive = false,
 }: {
+  business?: Cutscene["business"];
   kind: SetKind;
   art?: SceneArt;
   beat: number;
@@ -967,8 +977,21 @@ function Director({
   const position = useMemo(() => new THREE.Vector3(), []);
   const target = useMemo(() => new THREE.Vector3(), []);
   const lastFraming = useRef<CinematicCameraTransitionInput | null>(null);
+  const lastCue = useRef<string | undefined>(undefined);
+  const lastAspect = useRef(0);
   useFrame(({ camera }) => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
+    // Pausing audio must not accidentally trigger the end-of-line reaction cut.
+    // A new dialogue cue still composes its first frame for static inspection.
+    if (
+      runtime.stopped &&
+      lastFraming.current &&
+      lastCue.current === runtime.cue?.id &&
+      lastAspect.current === camera.aspect
+    )
+      return;
+    lastCue.current = runtime.cue?.id;
+    lastAspect.current = camera.aspect;
     const { time, lineTime } = runtime.clock;
     const opening = beat === 0 && lineTime < 1.45 && !runtime.reduced;
     const drill = cinematicDrillFor(runtime.cue?.id.split(":")[0]);
@@ -988,18 +1011,21 @@ function Director({
     const stagedActor = reaction ? listenerActor : speakingActor;
     const subject = stagedActor?.role ?? null;
     const shotSize = reaction ? "medio" : size;
-    const shot = cinematicShotFor(
-      kind,
-      subject,
-      shotSize,
-      camera.aspect,
-      festive,
-      opening,
-      art,
-      beat,
-      time,
-      drill,
-    );
+    const insert = subject === null ? cinematicBusinessShot(business, camera.aspect) : null;
+    const shot =
+      insert ??
+      cinematicShotFor(
+        kind,
+        subject,
+        shotSize,
+        camera.aspect,
+        festive,
+        opening,
+        art,
+        beat,
+        time,
+        drill,
+      );
     position.fromArray(shot.position);
     target.fromArray(shot.target);
     const framing: CinematicCameraTransitionInput = {
@@ -1068,6 +1094,8 @@ const LINE_TINT: Record<LineLight, { sky: string; rim: string; amb: number }> = 
 };
 
 function Stage({
+  business,
+  language,
   kind,
   art,
   beat,
@@ -1086,6 +1114,8 @@ function Stage({
   enhanced = true,
   onBatch,
 }: {
+  business?: Cutscene["business"];
+  language?: string | undefined;
   kind: SetKind;
   art: SceneArt;
   beat: number;
@@ -1104,6 +1134,7 @@ function Stage({
   enhanced?: boolean;
   onBatch?: ((snapshot: CinematicBatchSnapshot) => void) | undefined;
 }) {
+  const { t } = useT();
   const base = mood === "good" ? "#fff3e1" : mood === "bad" ? "#d8e3fa" : "#eef2f7";
   const tint = LINE_TINT[light];
   const warm = light === "neutra" ? base : tint.sky;
@@ -1170,6 +1201,7 @@ function Stage({
         </Environment>
       )}
       <Director
+        business={business}
         kind={kind}
         art={art}
         beat={beat}
@@ -1183,8 +1215,20 @@ function Stage({
       />
       <CinematicAtmosphere kind={kind} art={art} mood={mood} quality={quality} />
       <CinematicPortraitLight />
-      <CinematicSetBatch key={`${art}-${kind}-${quality}`} onReady={onBatch}>
+      <CinematicSetBatch
+        key={`${art}-${kind}-${primary}-${secondary}-${quality}-${t("cinemaStudio.title")}`}
+        onReady={onBatch}
+      >
         {art !== "medical" && art !== "gym" && <CinematicSetFinish kind={kind} primary={primary} />}
+        {business ? (
+          <CinematicBusinessDressing
+            business={business}
+            primary={primary}
+            secondary={secondary}
+            quality={quality}
+            language={language ?? "pt-BR"}
+          />
+        ) : null}
         <CinematicStoryDressing
           kind={kind}
           art={art}
@@ -1255,6 +1299,8 @@ function Stage({
 }
 
 export const CinematicStage3D = memo(function CinematicStage3D({
+  business,
+  language,
   art,
   primary,
   secondary,
@@ -1281,6 +1327,8 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   voiceClockRef,
   voicePlayingRef,
 }: {
+  business?: Cutscene["business"];
+  language?: string | undefined;
   art: SceneArt;
   primary: string;
   secondary: string;
@@ -1316,12 +1364,23 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   const [quality, setQuality] = useState<QualityLevel>(() =>
     cinematicInitialQuality(initialQuality, qualityMode),
   );
+  const pressure = useRef(new CinematicPressureController());
+  const [pressureStage, setPressureStage] = useState(0);
+  const presentation = cinematicPresentationBudget(quality, pressureStage);
+  const samplePerformance = useCallback(
+    (fps: number, p95: number) => {
+      if (qualityMode === "auto") setPressureStage(pressure.current.sample(fps, p95));
+    },
+    [qualityMode],
+  );
   const previousQualityMode = useRef(qualityMode);
   const rendererName = useRef<string | undefined>(undefined);
   const contextListenerCleanup = useRef<(() => void) | null>(null);
   useEffect(() => {
     if (previousQualityMode.current === qualityMode) return;
     previousQualityMode.current = qualityMode;
+    pressure.current = new CinematicPressureController();
+    setPressureStage(0);
     const next = cinematicInitialQuality(initialQuality, qualityMode);
     setQuality(
       qualityMode === "auto" && rendererName.current
@@ -1339,7 +1398,13 @@ export const CinematicStage3D = memo(function CinematicStage3D({
     onReady?.();
   }, [onReady]);
   const enhancedAllowed =
-    ready && !paused && !reduced && !hidden && quality !== "baixa" && !contextLost;
+    ready &&
+    !paused &&
+    !reduced &&
+    !hidden &&
+    presentation.lens !== "off" &&
+    quality !== "baixa" &&
+    !contextLost;
   const showEnhanced = enhanced && enhancedAllowed;
   useEffect(() => {
     if (!enhancedAllowed) {
@@ -1371,6 +1436,8 @@ export const CinematicStage3D = memo(function CinematicStage3D({
     [],
   );
   const retryContext = useCallback(() => {
+    pressure.current = new CinematicPressureController();
+    setPressureStage(0);
     setReady(false);
     setEnhanced(false);
     setContextLost(false);
@@ -1382,28 +1449,34 @@ export const CinematicStage3D = memo(function CinematicStage3D({
       className="absolute inset-0"
       data-cinematic-set={kind}
       data-cinematic-quality={quality}
+      data-cinematic-pressure={pressureStage}
     >
       <GraphicsBoundary
         fallback={
-          <Button
+          <button
             type="button"
-            variant="ghost"
             onClick={onUnavailable}
-            className="absolute inset-0 z-10 h-auto rounded-none bg-background p-8 text-foreground"
+            className="absolute inset-0 z-10 bg-background p-8 text-white"
           >
             A cena 3D não carregou. Abrir cena ilustrada.
-          </Button>
+          </button>
         }
       >
         {webglAvailable && !contextLost ? (
           <Canvas
             key={canvasGeneration}
             frameloop={paused || reduced || hidden ? "demand" : "always"}
-            shadows={initialQuality === "baixa" ? false : { type: THREE.PCFShadowMap }}
-            dpr={dprFor(quality)}
+            shadows={quality === "baixa" ? false : { type: THREE.PCFShadowMap }}
+            dpr={
+              quality === "alta"
+                ? [0.9 * presentation.resolutionScale, 1.25 * presentation.resolutionScale]
+                : quality === "media"
+                  ? [0.75 * presentation.resolutionScale, presentation.resolutionScale]
+                  : 0.7 * presentation.resolutionScale
+            }
             camera={{ position: [0, 2.2, 6.5], fov: 42, near: 0.05, far: 90 }}
             gl={{
-              antialias: initialQuality !== "baixa",
+              antialias: quality !== "baixa",
               powerPreference: "high-performance",
               stencil: false,
             }}
@@ -1427,7 +1500,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
               gl.toneMappingExposure = 1.05;
               gl.outputColorSpace = THREE.SRGBColorSpace;
               gl.shadowMap.type = THREE.PCFShadowMap;
-              gl.info.autoReset = false;
+
               const context = gl.getContext();
               const debug = context.getExtension("WEBGL_debug_renderer_info");
               if (debug) {
@@ -1440,23 +1513,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
               }
             }}
           >
-            {qualityMode === "auto" && !paused && !reduced && !hidden ? (
-              <PerformanceMonitor
-                // Drei counts high and low samples as flips. A high-refresh scene
-                // must never hit a generic fallback merely because it is healthy.
-                // Limite de trocas evita oscilação de qualidade, que recompila
-                // shaders e piscava a tela em preto/branco.
-                flipflops={3}
-                bounds={(refreshRate) => (refreshRate > 100 ? [60, 120] : [24, 45])}
-                iterations={3}
-                threshold={0.8}
-                onIncline={() => setQuality((current) => cinematicAutoQualityOnIncline(current))}
-                onDecline={() => setQuality((current) => cinematicAutoQualityOnDecline(current))}
-                onFallback={({ fps }) =>
-                  setQuality((current) => cinematicAutoQualityOnFallback(current, fps))
-                }
-              />
-            ) : null}
+            <Ktx2CanvasAssets enabled={quality !== "baixa"} />
             <CinematicRuntime
               quality={quality}
               look={look}
@@ -1475,8 +1532,11 @@ export const CinematicStage3D = memo(function CinematicStage3D({
                 stopped={paused || reduced || hidden}
                 onVisible={onVisible}
                 onReady={stageReady}
+                onSample={samplePerformance}
               />
               <Stage
+                business={business}
+                language={language}
                 kind={kind}
                 art={art}
                 beat={beat}
@@ -1498,7 +1558,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
               {showEnhanced ? (
                 <Suspense fallback={null}>
                   <CinematicLens
-                    quality={quality}
+                    quality={presentation.lens === "off" ? "baixa" : presentation.lens}
                     intensity={intensity}
                     climax={climax}
                     mood={mood}
@@ -1508,16 +1568,15 @@ export const CinematicStage3D = memo(function CinematicStage3D({
             </CinematicRuntime>
           </Canvas>
         ) : (
-          <Button
+          <button
             type="button"
-            variant="ghost"
             onClick={contextLost ? retryContext : onUnavailable}
-            className="absolute inset-0 z-10 h-auto rounded-none bg-background p-8 text-foreground"
+            className="absolute inset-0 z-10 bg-background p-8 text-white"
           >
             {contextLost
               ? "A cena 3D perdeu o contexto. Tentar novamente."
               : "O 3D está indisponível neste navegador. Abrir cena ilustrada."}
-          </Button>
+          </button>
         )}
       </GraphicsBoundary>
     </div>

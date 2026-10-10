@@ -4,7 +4,7 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { CREATOR } from "@/content/changelog";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 import { CommunityInvite } from "@/components/CommunityInvite";
-import { CLUBS, LEAGUES } from "@/game/data/leagues";
+import { BUNDLED_LEAGUES } from "@/game/data/leagues";
 
 const PATH = "/sobre";
 const TITLE = "Sobre o jogo | Pro Football Manager 3D";
@@ -53,9 +53,20 @@ const BLOCKS = [
   },
 ];
 
+const PUBLIC_CLUB_COUNT = new Set(
+  BUNDLED_LEAGUES.flatMap((league) =>
+    league.clubs
+      .filter((club) => {
+        const name = club.name.trim().toLocaleLowerCase("pt-BR");
+        return name.length > 0 && name !== "clube";
+      })
+      .map((club) => club.id),
+  ),
+).size;
+
 const FACTS = [
-  { label: "Ligas e copas", value: String(LEAGUES.length) },
-  { label: "Clubes", value: String(Object.keys(CLUBS).length) },
+  { label: "Competições", value: String(BUNDLED_LEAGUES.length) },
+  { label: "Clubes identificados", value: String(PUBLIC_CLUB_COUNT) },
   { label: "Idiomas", value: "39" },
   { label: "Preço", value: "Grátis" },
 ];

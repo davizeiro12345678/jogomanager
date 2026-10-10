@@ -3,13 +3,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer } from "@/components/game/screen-kit";
+import { NoCareer, ScreenHeader } from "@/components/game/screen-kit";
 import { HudCard, HudChip, HudStat, SparkBars, Sparkline } from "@/components/ui/hud";
 
 import { FORMATIONS, MENTALITIES, PRESSING, TEMPOS, WIDTHS } from "@/game/formations";
 import { pickLineup } from "@/game/career";
 import { useCareer } from "@/hooks/useCareer";
 import type { FormationKey, Player, Tactics } from "@/game/types";
+import { playerForDisplay } from "@/game/player-development";
 
 const FORMATION_KEYS: FormationKey[] = ["4-3-3", "4-4-2", "3-5-2", "4-2-3-1"];
 
@@ -62,11 +63,17 @@ function TacticsPage() {
 
   const t = career.tactics;
   const slots = FORMATIONS[t.formation];
-  const lineup = career.lineup.map((id) => career.players[id]);
+  const lineup = career.lineup.map((id) =>
+    career.players[id] ? playerForDisplay(career.players[id]!, career) : undefined,
+  );
 
   function setFormation(formation: FormationKey) {
     if (!career) return;
-    const { lineup: l, bench } = pickLineup(Object.values(career.players), formation);
+    const { lineup: l, bench } = pickLineup(
+      Object.values(career.players).filter((p) => p.clubId === career.clubId),
+      formation,
+      career,
+    );
     update({ ...career, tactics: { ...career.tactics, formation }, lineup: l, bench });
   }
 
@@ -134,9 +141,7 @@ function TacticsPage() {
             Para trocar jogadores usando o teclado: selecione um jogador com Espaço ou Enter, depois
             selecione outro para realizar a troca.
           </p>
-          <h1 className="font-display text-3xl uppercase tracking-wide sm:text-4xl">
-            Plano de jogo
-          </h1>
+          <ScreenHeader title="Plano de jogo" />
           <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
             Arraste um jogador sobre outro para trocar — no celular, toque nos dois.
           </p>

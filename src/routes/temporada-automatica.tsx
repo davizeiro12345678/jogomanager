@@ -4,7 +4,7 @@ import { FastForward, Play, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer } from "@/components/game/screen-kit";
+import { NoCareer, ScreenHeader } from "@/components/game/screen-kit";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
 import { type AutoWeek } from "@/game/autoplay";
@@ -99,8 +99,8 @@ function AutoSeasonPage() {
 
   return (
     <GameShell career={career}>
-      <header className="rounded-2xl border border-border/60 surface-card p-5">
-        <h1 className="font-display text-2xl uppercase tracking-wide">Temporada automática</h1>
+      <div className="rounded-2xl border border-border/60 surface-card p-5">
+        <ScreenHeader title="Temporada automática" />
         <p className="mt-1 text-sm text-muted-foreground">
           O computador escala o time, joga as partidas e devolve o resumo. Você continua no comando
           entre uma rodada e outra.
@@ -136,7 +136,7 @@ function AutoSeasonPage() {
             {played} jogos · {wins} vitórias · {draws} empates · {played - wins - draws} derrotas
           </p>
         ) : null}
-      </header>
+      </div>
 
       <section className="mt-4 grid gap-3 sm:grid-cols-2">
         {weeks.map((w, i) => {

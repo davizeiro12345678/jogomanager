@@ -11,10 +11,12 @@ describe("loadWithRetry", () => {
       .mockResolvedValue("stage");
     const sleeps: number[] = [];
 
-    await expect(loadWithRetry(importer, (ms) => {
-      sleeps.push(ms);
-      return Promise.resolve();
-    })).resolves.toBe("stage");
+    await expect(
+      loadWithRetry(importer, (ms) => {
+        sleeps.push(ms);
+        return Promise.resolve();
+      }),
+    ).resolves.toBe("stage");
 
     expect(importer).toHaveBeenCalledTimes(3);
     expect(sleeps).toEqual([250, 750]);
@@ -25,10 +27,12 @@ describe("loadWithRetry", () => {
     const importer = vi.fn<() => Promise<string>>().mockRejectedValue(failure);
     const sleeps: number[] = [];
 
-    await expect(loadWithRetry(importer, (ms) => {
-      sleeps.push(ms);
-      return Promise.resolve();
-    })).rejects.toBe(failure);
+    await expect(
+      loadWithRetry(importer, (ms) => {
+        sleeps.push(ms);
+        return Promise.resolve();
+      }),
+    ).rejects.toBe(failure);
 
     expect(importer).toHaveBeenCalledTimes(4);
     expect(sleeps).toEqual([250, 750, 2000]);

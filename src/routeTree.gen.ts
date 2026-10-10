@@ -10,12 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AnaliseDePartidaDeFutebolRouteImport } from './routes/analise-de-partida-de-futebol'
 import { Route as AssistenteRouteImport } from './routes/assistente'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BoardRouteImport } from './routes/board'
 import { Route as BrasileiraoRouteImport } from './routes/brasileirao'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as CarreiraRouteImport } from './routes/carreira'
+import { Route as CarreirasRouteImport } from './routes/carreiras'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ClubRouteImport } from './routes/club'
 import { Route as ColetivaRouteImport } from './routes/coletiva'
@@ -45,12 +47,14 @@ import { Route as MatchRouteImport } from './routes/match'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as MelhoresFormacoesRouteImport } from './routes/melhores-formacoes'
 import { Route as MercadoDeTransferenciasRouteImport } from './routes/mercado-de-transferencias'
+import { Route as ModoCarreiraDeJogadorRouteImport } from './routes/modo-carreira-de-jogador'
 import { Route as MultiplayerRouteImport } from './routes/multiplayer'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as PartidaRapidaRouteImport } from './routes/partida-rapida'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as PerguntasFrequentesRouteImport } from './routes/perguntas-frequentes'
+import { Route as PlanejamentoDeElencoRouteImport } from './routes/planejamento-de-elenco'
 import { Route as PreJogoRouteImport } from './routes/pre-jogo'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ProdutosRouteImport } from './routes/produtos'
@@ -91,6 +95,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnaliseDePartidaDeFutebolRoute =
+  AnaliseDePartidaDeFutebolRouteImport.update({
+    id: '/analise-de-partida-de-futebol',
+    path: '/analise-de-partida-de-futebol',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AssistenteRoute = AssistenteRouteImport.update({
   id: '/assistente',
   path: '/assistente',
@@ -119,6 +129,11 @@ const CadastroRoute = CadastroRouteImport.update({
 const CarreiraRoute = CarreiraRouteImport.update({
   id: '/carreira',
   path: '/carreira',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CarreirasRoute = CarreirasRouteImport.update({
+  id: '/carreiras',
+  path: '/carreiras',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChatRoute = ChatRouteImport.update({
@@ -266,6 +281,11 @@ const MercadoDeTransferenciasRoute = MercadoDeTransferenciasRouteImport.update({
   path: '/mercado-de-transferencias',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ModoCarreiraDeJogadorRoute = ModoCarreiraDeJogadorRouteImport.update({
+  id: '/modo-carreira-de-jogador',
+  path: '/modo-carreira-de-jogador',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MultiplayerRoute = MultiplayerRouteImport.update({
   id: '/multiplayer',
   path: '/multiplayer',
@@ -294,6 +314,11 @@ const PerfilRoute = PerfilRouteImport.update({
 const PerguntasFrequentesRoute = PerguntasFrequentesRouteImport.update({
   id: '/perguntas-frequentes',
   path: '/perguntas-frequentes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlanejamentoDeElencoRoute = PlanejamentoDeElencoRouteImport.update({
+  id: '/planejamento-de-elenco',
+  path: '/planejamento-de-elenco',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PreJogoRoute = PreJogoRouteImport.update({
@@ -472,12 +497,14 @@ const LovableEmailTransactionalPreviewRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analise-de-partida-de-futebol': typeof AnaliseDePartidaDeFutebolRoute
   '/assistente': typeof AssistenteRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
   '/brasileirao': typeof BrasileiraoRoute
   '/cadastro': typeof CadastroRoute
   '/carreira': typeof CarreiraRoute
+  '/carreiras': typeof CarreirasRoute
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/coletiva': typeof ColetivaRoute
@@ -507,12 +534,14 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
+  '/modo-carreira-de-jogador': typeof ModoCarreiraDeJogadorRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
   '/news': typeof NewsRoute
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perfil': typeof PerfilRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
+  '/planejamento-de-elenco': typeof PlanejamentoDeElencoRoute
   '/pre-jogo': typeof PreJogoRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
@@ -550,12 +579,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analise-de-partida-de-futebol': typeof AnaliseDePartidaDeFutebolRoute
   '/assistente': typeof AssistenteRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
   '/brasileirao': typeof BrasileiraoRoute
   '/cadastro': typeof CadastroRoute
   '/carreira': typeof CarreiraRoute
+  '/carreiras': typeof CarreirasRoute
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/coletiva': typeof ColetivaRoute
@@ -585,12 +616,14 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
+  '/modo-carreira-de-jogador': typeof ModoCarreiraDeJogadorRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
   '/news': typeof NewsRoute
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perfil': typeof PerfilRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
+  '/planejamento-de-elenco': typeof PlanejamentoDeElencoRoute
   '/pre-jogo': typeof PreJogoRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
@@ -629,12 +662,14 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analise-de-partida-de-futebol': typeof AnaliseDePartidaDeFutebolRoute
   '/assistente': typeof AssistenteRoute
   '/auth': typeof AuthRoute
   '/board': typeof BoardRoute
   '/brasileirao': typeof BrasileiraoRoute
   '/cadastro': typeof CadastroRoute
   '/carreira': typeof CarreiraRoute
+  '/carreiras': typeof CarreirasRoute
   '/chat': typeof ChatRoute
   '/club': typeof ClubRoute
   '/coletiva': typeof ColetivaRoute
@@ -664,12 +699,14 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
+  '/modo-carreira-de-jogador': typeof ModoCarreiraDeJogadorRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
   '/news': typeof NewsRoute
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perfil': typeof PerfilRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
+  '/planejamento-de-elenco': typeof PlanejamentoDeElencoRoute
   '/pre-jogo': typeof PreJogoRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
@@ -709,12 +746,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/analise-de-partida-de-futebol'
     | '/assistente'
     | '/auth'
     | '/board'
     | '/brasileirao'
     | '/cadastro'
     | '/carreira'
+    | '/carreiras'
     | '/chat'
     | '/club'
     | '/coletiva'
@@ -744,12 +783,14 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/melhores-formacoes'
     | '/mercado-de-transferencias'
+    | '/modo-carreira-de-jogador'
     | '/multiplayer'
     | '/new'
     | '/news'
     | '/partida-rapida'
     | '/perfil'
     | '/perguntas-frequentes'
+    | '/planejamento-de-elenco'
     | '/pre-jogo'
     | '/privacidade'
     | '/produtos'
@@ -787,12 +828,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/analise-de-partida-de-futebol'
     | '/assistente'
     | '/auth'
     | '/board'
     | '/brasileirao'
     | '/cadastro'
     | '/carreira'
+    | '/carreiras'
     | '/chat'
     | '/club'
     | '/coletiva'
@@ -822,12 +865,14 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/melhores-formacoes'
     | '/mercado-de-transferencias'
+    | '/modo-carreira-de-jogador'
     | '/multiplayer'
     | '/new'
     | '/news'
     | '/partida-rapida'
     | '/perfil'
     | '/perguntas-frequentes'
+    | '/planejamento-de-elenco'
     | '/pre-jogo'
     | '/privacidade'
     | '/produtos'
@@ -865,12 +910,14 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/analise-de-partida-de-futebol'
     | '/assistente'
     | '/auth'
     | '/board'
     | '/brasileirao'
     | '/cadastro'
     | '/carreira'
+    | '/carreiras'
     | '/chat'
     | '/club'
     | '/coletiva'
@@ -900,12 +947,14 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/melhores-formacoes'
     | '/mercado-de-transferencias'
+    | '/modo-carreira-de-jogador'
     | '/multiplayer'
     | '/new'
     | '/news'
     | '/partida-rapida'
     | '/perfil'
     | '/perguntas-frequentes'
+    | '/planejamento-de-elenco'
     | '/pre-jogo'
     | '/privacidade'
     | '/produtos'
@@ -944,12 +993,14 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnaliseDePartidaDeFutebolRoute: typeof AnaliseDePartidaDeFutebolRoute
   AssistenteRoute: typeof AssistenteRoute
   AuthRoute: typeof AuthRoute
   BoardRoute: typeof BoardRoute
   BrasileiraoRoute: typeof BrasileiraoRoute
   CadastroRoute: typeof CadastroRoute
   CarreiraRoute: typeof CarreiraRoute
+  CarreirasRoute: typeof CarreirasRoute
   ChatRoute: typeof ChatRoute
   ClubRoute: typeof ClubRoute
   ColetivaRoute: typeof ColetivaRoute
@@ -979,12 +1030,14 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   MelhoresFormacoesRoute: typeof MelhoresFormacoesRoute
   MercadoDeTransferenciasRoute: typeof MercadoDeTransferenciasRoute
+  ModoCarreiraDeJogadorRoute: typeof ModoCarreiraDeJogadorRoute
   MultiplayerRoute: typeof MultiplayerRoute
   NewRoute: typeof NewRoute
   NewsRoute: typeof NewsRoute
   PartidaRapidaRoute: typeof PartidaRapidaRoute
   PerfilRoute: typeof PerfilRoute
   PerguntasFrequentesRoute: typeof PerguntasFrequentesRoute
+  PlanejamentoDeElencoRoute: typeof PlanejamentoDeElencoRoute
   PreJogoRoute: typeof PreJogoRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ProdutosRoute: typeof ProdutosRoute
@@ -1030,6 +1083,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analise-de-partida-de-futebol': {
+      id: '/analise-de-partida-de-futebol'
+      path: '/analise-de-partida-de-futebol'
+      fullPath: '/analise-de-partida-de-futebol'
+      preLoaderRoute: typeof AnaliseDePartidaDeFutebolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/assistente': {
       id: '/assistente'
       path: '/assistente'
@@ -1070,6 +1130,13 @@ declare module '@tanstack/react-router' {
       path: '/carreira'
       fullPath: '/carreira'
       preLoaderRoute: typeof CarreiraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/carreiras': {
+      id: '/carreiras'
+      path: '/carreiras'
+      fullPath: '/carreiras'
+      preLoaderRoute: typeof CarreirasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chat': {
@@ -1275,6 +1342,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MercadoDeTransferenciasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/modo-carreira-de-jogador': {
+      id: '/modo-carreira-de-jogador'
+      path: '/modo-carreira-de-jogador'
+      fullPath: '/modo-carreira-de-jogador'
+      preLoaderRoute: typeof ModoCarreiraDeJogadorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/multiplayer': {
       id: '/multiplayer'
       path: '/multiplayer'
@@ -1315,6 +1389,13 @@ declare module '@tanstack/react-router' {
       path: '/perguntas-frequentes'
       fullPath: '/perguntas-frequentes'
       preLoaderRoute: typeof PerguntasFrequentesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/planejamento-de-elenco': {
+      id: '/planejamento-de-elenco'
+      path: '/planejamento-de-elenco'
+      fullPath: '/planejamento-de-elenco'
+      preLoaderRoute: typeof PlanejamentoDeElencoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pre-jogo': {
@@ -1560,12 +1641,14 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnaliseDePartidaDeFutebolRoute: AnaliseDePartidaDeFutebolRoute,
   AssistenteRoute: AssistenteRoute,
   AuthRoute: AuthRoute,
   BoardRoute: BoardRoute,
   BrasileiraoRoute: BrasileiraoRoute,
   CadastroRoute: CadastroRoute,
   CarreiraRoute: CarreiraRoute,
+  CarreirasRoute: CarreirasRoute,
   ChatRoute: ChatRoute,
   ClubRoute: ClubRoute,
   ColetivaRoute: ColetivaRoute,
@@ -1595,12 +1678,14 @@ const rootRouteChildren: RootRouteChildren = {
   McpRoute: McpRoute,
   MelhoresFormacoesRoute: MelhoresFormacoesRoute,
   MercadoDeTransferenciasRoute: MercadoDeTransferenciasRoute,
+  ModoCarreiraDeJogadorRoute: ModoCarreiraDeJogadorRoute,
   MultiplayerRoute: MultiplayerRoute,
   NewRoute: NewRoute,
   NewsRoute: NewsRoute,
   PartidaRapidaRoute: PartidaRapidaRoute,
   PerfilRoute: PerfilRoute,
   PerguntasFrequentesRoute: PerguntasFrequentesRoute,
+  PlanejamentoDeElencoRoute: PlanejamentoDeElencoRoute,
   PreJogoRoute: PreJogoRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ProdutosRoute: ProdutosRoute,

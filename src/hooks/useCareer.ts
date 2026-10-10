@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { migrateCareer } from "@/game/career";
 import { recordWorldTransition, withCareerWorld } from "@/game/career-world";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { loadCareer, saveCareer, deleteCareer } from "@/lib/career.functions";
 import {
   clearLocalCareer,
@@ -15,6 +15,7 @@ import {
   queueSync,
   readOutbox,
   saveLocalCareer,
+  type LocalOwnerId,
 } from "@/lib/offline/store";
 import type { CareerState } from "@/game/types";
 
@@ -24,58 +25,57 @@ export type SyncState = "local" | "syncing" | "synced" | "pending" | "offline";
 
 /** Tracks whether a Supabase session exists. `null` while unknown. */
 export function useSignedIn() {
-  const [signedIn, setSignedIn] = useState<boolean | null>(null);
-  useEffect(() => {
-    let alive = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (alive) setSignedIn(!!data.session);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
-        setSignedIn(!!session);
-      }
-    });
-    return () => {
-      alive = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-  return signedIn;
+  const userId = useAuthUserId();
+  return userId === undefined ? null : userId !== null;
 }
 
 /**
  * Persistência da carreira que funciona com ou sem conta e com ou sem internet.
  *
- * - Sempre grava primeiro no aparelho (IndexedDB + espelho no localStorage).
- * - Com conta e conexão, envia para a nuvem.
- * - Sem conexão, guarda na fila e envia sozinho quando a internet voltar.
+ * Each account gets a distinct query, local save, snapshot and outbox. A guest
+ * save is deliberately not imported into an authenticated account: ownership
+ * has to be confirmed by an explicit import flow, never inferred from a shared
+ * browser profile.
  */
 export function useCareer() {
   const qc = useQueryClient();
-  const signedIn = useSignedIn();
+  const userId = useAuthUserId();
+  const signedIn = userId === undefined ? null : userId !== null;
+  const owner: LocalOwnerId = userId ?? null;
+  const scope = userId ?? "guest";
+  const currentOwner = useRef<string | null | undefined>(userId);
+  // Updating the ref during render closes the small gap before effects run when
+  // a sign-in/sign-out swaps the active account.
+  currentOwner.current = userId;
+  const isCurrentOwner = useCallback(
+    (candidate: LocalOwnerId) =>
+      currentOwner.current !== undefined && currentOwner.current === candidate,
+    [],
+  );
+
   const load = useServerFn(loadCareer);
   const save = useServerFn(saveCareer);
   const wipe = useServerFn(deleteCareer);
   const [sync, setSync] = useState<SyncState>("local");
-  const flushing = useRef(false);
+  const flushingScope = useRef<string | null>(null);
 
   const query = useQuery({
-    queryKey: [...CAREER_KEY, signedIn],
-    enabled: signedIn !== null,
+    queryKey: [...CAREER_KEY, scope],
+    enabled: userId !== undefined,
     queryFn: async (): Promise<{ career: CareerState | null; sync: SyncState }> => {
-      const local = await loadLocalCareer();
+      const local = await loadLocalCareer(owner);
       // Migration is in memory only: rewriting the save here would bump its
       // timestamp and let a stale local copy beat newer cloud progress.
       const repairLocal = async (raw: CareerState) => migrateCareer(raw);
-      if (!signedIn) return { career: local ? await repairLocal(local) : null, sync: "local" };
-      if (!isOnline()) {
-        return { career: local ? await repairLocal(local) : null, sync: "offline" };
-      }
+      if (!isCurrentOwner(owner)) return { career: null, sync: "local" };
+      if (!userId) return { career: local ? await repairLocal(local) : null, sync: "local" };
+      if (!isOnline()) return { career: local ? await repairLocal(local) : null, sync: "offline" };
 
       let cloud: CareerState | null = null;
       let cloudAt = 0;
       try {
         const raw = await load();
+        if (!isCurrentOwner(owner)) return { career: null, sync: "local" };
         if (raw) {
           cloud = raw.state as CareerState;
           cloudAt = raw.updatedAt ? Date.parse(raw.updatedAt) : 0;
@@ -84,27 +84,35 @@ export function useCareer() {
         return { career: local ? await repairLocal(local) : null, sync: "offline" };
       }
 
-      const localAt = await localSavedAt();
+      const localAt = await localSavedAt(owner);
+      if (!isCurrentOwner(owner)) return { career: null, sync: "local" };
       // Conflito resolvido por data: a versão mais recente vence.
       if (local && (!cloud || localAt > cloudAt)) {
         const migrated = await repairLocal(local);
         try {
+          if (!isCurrentOwner(owner)) return { career: null, sync: "local" };
           await save({ data: { state: migrated } });
           return { career: migrated, sync: "synced" };
         } catch {
-          await queueSync(migrated);
+          await queueSync(migrated, owner);
           return { career: migrated, sync: "pending" };
         }
       }
       if (cloud) {
         const migrated = await repairLocal(cloud);
-        await saveLocalCareer(migrated, "nuvem");
+        if (isCurrentOwner(owner)) await saveLocalCareer(migrated, "nuvem", owner);
         return { career: migrated, sync: "synced" };
       }
       return { career: null, sync: "local" };
     },
     staleTime: 30_000,
   });
+
+  // Clear the previous account's status immediately. Query data is separately
+  // keyed, but an old pending label must not appear during the identity switch.
+  useEffect(() => {
+    setSync("local");
+  }, [scope]);
 
   // O estado de sincronização só é aplicado depois da montagem: alterá-lo
   // dentro do queryFn atualizava um componente ainda não montado.
@@ -113,48 +121,62 @@ export function useCareer() {
     if (querySync) setSync(querySync);
   }, [querySync]);
 
+  const setSyncForOwner = useCallback(
+    (candidate: LocalOwnerId, next: SyncState) => {
+      if (isCurrentOwner(candidate)) setSync(next);
+    },
+    [isCurrentOwner],
+  );
+
   const mutation = useMutation({
     mutationFn: async (state: CareerState) => {
-      await saveLocalCareer(state);
-      if (!signedIn) {
-        setSync("local");
+      const mutationOwner = owner;
+      const mutationUser = userId;
+      await saveLocalCareer(state, "auto", mutationOwner);
+      if (!isCurrentOwner(mutationOwner)) return { ok: true, stale: true };
+      if (!mutationUser) {
+        setSyncForOwner(mutationOwner, "local");
         return { ok: true };
       }
       if (!isOnline()) {
-        await queueSync(state);
-        setSync("offline");
+        await queueSync(state, mutationOwner);
+        setSyncForOwner(mutationOwner, "offline");
         return { ok: true };
       }
-      setSync("syncing");
+      setSyncForOwner(mutationOwner, "syncing");
       try {
         await save({ data: { state } });
-        await clearOutbox();
-        setSync("synced");
+        if (!isCurrentOwner(mutationOwner)) return { ok: true, stale: true };
+        await clearOutbox(mutationOwner);
+        setSyncForOwner(mutationOwner, "synced");
       } catch {
-        await queueSync(state);
-        setSync("pending");
+        await queueSync(state, mutationOwner);
+        setSyncForOwner(mutationOwner, "pending");
       }
       return { ok: true };
     },
   });
 
-  // Envia a fila assim que a conexão volta.
+  // Envia a fila assim que a conexão volta, sem deixar uma conta drenar a fila
+  // persistida de outra durante uma troca de sessão.
   const flush = useCallback(async () => {
-    if (!signedIn || flushing.current || !isOnline()) return;
-    const entry = await readOutbox();
-    if (!entry) return;
-    flushing.current = true;
-    setSync("syncing");
+    const flushOwner = owner;
+    if (!userId || flushingScope.current === scope || !isOnline()) return;
+    const entry = await readOutbox(flushOwner);
+    if (!entry || !isCurrentOwner(flushOwner)) return;
+    flushingScope.current = scope;
+    setSyncForOwner(flushOwner, "syncing");
     try {
       await save({ data: { state: migrateCareer(entry.state) } });
-      await clearOutbox();
-      setSync("synced");
+      if (!isCurrentOwner(flushOwner)) return;
+      await clearOutbox(flushOwner);
+      setSyncForOwner(flushOwner, "synced");
     } catch {
-      setSync("pending");
+      setSyncForOwner(flushOwner, "pending");
     } finally {
-      flushing.current = false;
+      if (flushingScope.current === scope) flushingScope.current = null;
     }
-  }, [signedIn, save]);
+  }, [isCurrentOwner, owner, save, scope, setSyncForOwner, userId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -175,35 +197,39 @@ export function useCareer() {
     (next: CareerState) => {
       const old = qc.getQueryData<{ career: CareerState | null; sync: SyncState }>([
         ...CAREER_KEY,
-        signedIn,
+        scope,
       ]);
       const prepared = old?.career
         ? recordWorldTransition(old.career, next)
         : withCareerWorld(next);
-      qc.setQueryData([...CAREER_KEY, signedIn], { career: prepared, sync: old?.sync ?? "local" });
+      qc.setQueryData([...CAREER_KEY, scope], { career: prepared, sync: old?.sync ?? "local" });
       mutate(prepared);
     },
-    [qc, mutate, signedIn],
+    [qc, mutate, scope],
   );
 
   const reset = useCallback(async () => {
-    await clearLocalCareer();
-    if (signedIn && isOnline()) {
+    const resetOwner = owner;
+    const resetUser = userId;
+    await clearLocalCareer(resetOwner);
+    if (resetUser && isOnline() && isCurrentOwner(resetOwner)) {
       try {
         await wipe();
       } catch {
         /* offline: a carreira local já foi apagada */
       }
     }
-    qc.setQueryData([...CAREER_KEY, signedIn], (old: { sync: SyncState } | undefined) => ({
-      career: null,
-      sync: old?.sync ?? "local",
-    }));
-  }, [qc, wipe, signedIn]);
+    if (isCurrentOwner(resetOwner)) {
+      qc.setQueryData([...CAREER_KEY, scope], (old: { sync: SyncState } | undefined) => ({
+        career: null,
+        sync: old?.sync ?? "local",
+      }));
+    }
+  }, [isCurrentOwner, owner, qc, scope, userId, wipe]);
 
   return {
     career: (query.data?.career ?? null) as CareerState | null,
-    isLoading: signedIn === null || query.isLoading,
+    isLoading: userId === undefined || query.isLoading,
     saving: mutation.isPending,
     signedIn,
     sync,

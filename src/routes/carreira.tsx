@@ -8,7 +8,7 @@ import { useMemo, useRef, useState } from "react";
 import { Clapperboard, Sparkles } from "lucide-react";
 
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer } from "@/components/game/screen-kit";
+import { NoCareer, ScreenHeader, SectionCard } from "@/components/game/screen-kit";
 import { Crest } from "@/components/game/Crest";
 import { Cutscene } from "@/components/game/Cutscene";
 import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loading";
@@ -218,11 +218,11 @@ function CoachCareerPage() {
         />
       ) : null}
 
-      <header className="rounded-2xl border border-border/60 surface-card p-5">
+      <div className="rounded-2xl border border-border/60 surface-card p-5">
         <div className="flex items-center gap-3">
           {club ? <Crest club={club} size={44} detail="simple" /> : null}
           <div className="min-w-0 flex-1">
-            <h1 className="font-display text-2xl uppercase tracking-wide">Carreira de treinador</h1>
+            <ScreenHeader title="Carreira de treinador" />
             <p className="text-sm text-muted-foreground">
               Temporada {career.season} · Rodada {career.round} · {club?.name ?? career.clubId}
             </p>
@@ -247,14 +247,14 @@ function CoachCareerPage() {
         <p className="mt-3 text-xs uppercase tracking-widest text-muted-foreground">
           Caixa: € {career.finances.budget.toFixed(1)}M · Objetivo: {career.objective}º lugar
         </p>
-      </header>
+      </div>
 
       <div inert={busy || undefined}>
         <CareerWorldPanel career={career} update={update} />
       </div>
 
       {gallery ? (
-        <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
+        <SectionCard className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Galeria de cenas</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             {seen.size} de {SCENE_LIST.length} cenas vistas nesta carreira. Reassistir não altera o
@@ -283,7 +283,7 @@ function CoachCareerPage() {
               );
             })}
           </div>
-        </section>
+        </SectionCard>
       ) : null}
 
       <section className="mt-4">

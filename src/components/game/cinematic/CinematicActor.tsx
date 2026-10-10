@@ -3,7 +3,11 @@ import { createPortal } from "@react-three/fiber";
 import * as THREE from "three";
 import type { Speaker } from "@/content/cutscenes";
 import { cinematicActorPose, cinematicIdleAt, cinematicLook } from "@/game/cinematic-actor";
-import { cinematicDetail } from "@/game/cinematic-performance";
+import { cinematicDetail, cinematicHairMotionDriveAt } from "@/game/cinematic-performance";
+import {
+  advanceAthleteHairMotion,
+  createAthleteHairMotionState,
+} from "@/game/athlete-secondary-motion";
 import { compactCinematicSkin } from "@/game/cinematic-skin";
 import { cinematicGestureAt } from "@/game/cinematic-cue";
 import { cinematicExpressionAt, CinematicGaze } from "@/game/cinematic-expression";
@@ -108,6 +112,10 @@ export function CinematicActor({
   // does not spend the visual budget intended for the camera subject.
   const narrativeSubject = Boolean(role || acting || holdingTrophy || entrance || clipboard);
   const detail = cinematicDetail(runtime.quality, narrativeSubject);
+  const looseHairStyle =
+    look.hairStyle === "ponytail" || look.hairStyle === "dreads" || look.hairStyle === "braids"
+      ? look.hairStyle
+      : "none";
   // Close-up dialogue exposes pores, fabric, hair direction and boot grain.
   // A cutscene normally has one or two narrative subjects, so their physical
   // material pass can start at the balanced tier while extras remain on the
@@ -166,6 +174,7 @@ export function CinematicActor({
   const current = useRef(emptyPose());
   const first = useRef(true);
   const listening = useRef(new CinematicGaze());
+  const hairMotion = useRef(createAthleteHairMotionState());
   useLayoutEffect(() => {
     first.current = true;
   }, [skin]);
@@ -271,9 +280,13 @@ export function CinematicActor({
     b.hips.rotation.set(c.hipPitch, c.hipYaw, c.hipRoll);
     b.spine.rotation.set(c.spine, -c.hipYaw * 0.45, -c.hipRoll * 0.35);
     b.chest.rotation.set(c.chest + p.posture, -c.hipYaw * 0.55, -c.hipRoll * 0.2);
-    b.neck.rotation.set(c.headPitch * 0.45, (c.headYaw + listeningYaw) * 0.55, 0);
+    b.neck.rotation.set(
+      (c.headPitch + expression.headPitch) * 0.45,
+      (c.headYaw + listeningYaw) * 0.55,
+      0,
+    );
     b.face.rotation.set(
-      c.headPitch * 0.55,
+      (c.headPitch + expression.headPitch) * 0.55,
       (c.headYaw + listeningYaw) * 0.45,
       (!acting && idle.kind === "tilt" ? idle.weight * 0.085 : 0) + expression.headRoll,
     );
@@ -364,6 +377,34 @@ export function CinematicActor({
     }
     // Wrist pose must be final before distributing pronation into the ulna.
     updateRigCorrectives(b);
+    if (detail.portrait && looseHairStyle !== "none") {
+      advanceAthleteHairMotion(
+        hairMotion.current,
+        cinematicHairMotionDriveAt({
+          time,
+          seed,
+          dt,
+          moving: arriving || pose === "walk",
+          hipPitch: c.hipPitch + c.spine,
+          hipYaw: c.hipYaw + c.chest,
+          headYaw: c.headYaw + listeningYaw,
+          style: looseHairStyle,
+        }),
+      );
+      b.hairMotion.rotation.set(
+        hairMotion.current.pitch,
+        hairMotion.current.yaw,
+        hairMotion.current.roll,
+      );
+    } else {
+      hairMotion.current.pitch = 0;
+      hairMotion.current.yaw = 0;
+      hairMotion.current.roll = 0;
+      hairMotion.current.pitchVelocity = 0;
+      hairMotion.current.yawVelocity = 0;
+      hairMotion.current.rollVelocity = 0;
+      b.hairMotion.rotation.set(0, 0, 0);
+    }
     cloth.update(dt, {
       x: c.hipRoll * 2,
       z: arriving ? 3 / 4.8 : pose === "walk" ? 1.3 : 0,

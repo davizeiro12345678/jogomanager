@@ -14,6 +14,8 @@ describe("MatchSim", () => {
   it("carries profile physique through worker snapshots and substitutes", () => {
     const home = buildTeamSetup("fla");
     const away = buildTeamSetup("pal");
+    const incoming = { ...home.bench![0]!, number: 99 };
+    home.bench = home.bench!.map((p) => (p.id === incoming.id ? incoming : p));
     const sim = new MatchSim(home, away, "physique-snapshot");
     const player = sim.players.find((p) => p.side === "home")!;
     const original = home.players.find((p) => p.id === player.pid)!;
@@ -22,7 +24,6 @@ describe("MatchSim", () => {
     const view = new WorkerMatchView(home, away);
     view.apply(snapshotMatch(sim, 1));
     expect(view.players.find((p) => p.id === player.id)?.heightCm).toBe(player.heightCm);
-    const incoming = { ...original, id: "replacement-physique", name: "Replacement", number: 99 };
     expect(sim.substitute("home", player.pid, incoming)).toBe(true);
     const replacement = sim.players.find((p) => p.pid === incoming.id)!;
     expect(replacement.heightCm).toBe(profileFor(incoming).height);

@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/game/screen-kit";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { Download, Upload } from "lucide-react";
@@ -15,7 +16,6 @@ import { ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
 import { AdMetricsPanel } from "@/features/ads/AdMetricsPanel";
 import { SidebarAd } from "@/features/ads/AdZones";
 import { exportCareerFile, importCareerFile } from "@/game/contracts/career-transfer";
-import { saveLocalCareer } from "@/lib/offline/store";
 import { Button } from "@/components/ui/button";
 import { ActivityRanking } from "@/features/activity/ActivityRanking";
 import { PasskeySettings } from "@/components/PasskeySettings";
@@ -61,7 +61,7 @@ function Perfil() {
     return (
       <div className="flex min-h-screen items-center justify-center px-6">
         <div className="surface-card w-full max-w-md p-8 text-center">
-          <h1 className="font-display text-2xl uppercase tracking-wide">Perfil vazio</h1>
+          <ScreenHeader title="Perfil vazio" />
           <p className="mt-2 text-sm text-muted-foreground">
             Crie um treinador para começar a somar jogos, títulos e conquistas.
           </p>
@@ -105,10 +105,10 @@ function Perfil() {
         <GuestCloudPrompt next="/perfil" compact />
       </div>
 
-      <header className="surface-card flex flex-col items-center gap-5 p-6 sm:flex-row sm:items-end">
+      <div className="surface-card flex flex-col items-center gap-5 p-6 sm:flex-row sm:items-end">
         <ManagerPortrait look={manager?.look ?? FALLBACK_LOOK} size={96} />
         <div className="min-w-0 flex-1 text-center sm:text-left">
-          <h1 className="font-display text-3xl uppercase tracking-wide">{career.managerName}</h1>
+          <ScreenHeader title={<>{career.managerName}</>} />
           <p className="mt-1 text-sm text-muted-foreground">
             {club ? club.name : "Sem clube"} · Temporada {career.season} · Rodada {career.round}
           </p>
@@ -120,7 +120,7 @@ function Perfil() {
           </div>
         </div>
         {club ? <Crest club={club} size={64} /> : null}
-      </header>
+      </div>
 
       {signedIn && <PasskeySettings />}
 
@@ -327,7 +327,6 @@ function Perfil() {
                 if (!file) return;
                 try {
                   const imported = importCareerFile(await file.text());
-                  await saveLocalCareer(imported, "importação");
                   update(imported);
                   setTransferStatus("Carreira importada e salva neste aparelho.");
                 } catch (error) {
