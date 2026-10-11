@@ -754,7 +754,9 @@ export async function runApiFootballImport(opts: {
       return await importPredictions(opts.offset, opts.limit, deadline);
     if (opts.phase === "odds") return await importOdds(opts.offset, deadline);
     if (opts.phase === "countries")
-      return await importSimple("countries", "/countries", "country", (r) => String((r as { name?: unknown }).name ?? ""));
+      return await importSimple("countries", "/countries", "country", (r) =>
+        String((r as { name?: unknown }).name ?? ""),
+      );
     if (opts.phase === "timezones")
       return await importSimple("timezones", "/timezone", "timezone", (r) => String(r));
     if (opts.phase === "venues") return await importVenues(opts.offset, opts.limit, deadline);
