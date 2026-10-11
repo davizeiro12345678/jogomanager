@@ -17,24 +17,22 @@ interface RecoveryEmailProps {
 }
 
 export const RecoveryEmail = ({ siteName, confirmationUrl }: RecoveryEmailProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="pt-BR" dir="ltr">
     <Head>
       <style>{darkModeCss}</style>
     </Head>
-    <Preview>Reset your password for {siteName}</Preview>
+    <Preview>Redefina sua senha do {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Reset your password</Heading>
+        <Heading style={h1}>Redefinir sua senha</Heading>
         <Text style={text}>
-          We received a request to reset your password for {siteName}. Click the button below to
-          choose a new password.
+          Recebemos um pedido para redefinir a senha da sua conta no {siteName}. Toque no botão abaixo para escolher uma nova senha. O link vale por pouco tempo.
         </Text>
         <Button className="dm-btn" style={button} href={confirmationUrl}>
-          Reset Password
+          Escolher nova senha
         </Button>
         <Text style={footer}>
-          If you didn't request a password reset, you can safely ignore this email. Your password
-          will not be changed.
+          Não pediu isso? Ignore este e-mail: sua senha continua a mesma. Nunca pedimos sua senha por e-mail.
         </Text>
       </Container>
     </Body>
