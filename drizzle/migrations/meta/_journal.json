@@ -218,6 +218,13 @@
       "when": 1791506528969,
       "tag": "0030_lock_user_achievements_writes",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791738847564,
+      "tag": "0031_harden_functions_indexes_rls",
+      "breakpoints": true
     }
   ]
 }
