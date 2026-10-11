@@ -1,3 +1,4 @@
+import { StickyPlayCta } from "@/components/StickyPlayCta";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicLinks } from "@/components/PublicLinks";
 import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
@@ -44,6 +45,7 @@ function TablesIndex() {
         </ul>
         <PublicLinks exclude={PATH} />
       </div>
+      <StickyPlayCta />
     </main>
   );
 }

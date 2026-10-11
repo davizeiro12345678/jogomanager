@@ -84,7 +84,7 @@ function Page() {
             Criar minha carreira
           </Link>
           <Link
-            to="/taticas-e-formacoes"
+            to="/melhores-formacoes"
             className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest"
           >
             Estudar táticas

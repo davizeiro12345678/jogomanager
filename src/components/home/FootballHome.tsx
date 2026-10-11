@@ -28,7 +28,7 @@ const SYSTEMS = [
     title: "O plano é seu. O campo responde.",
     text: "Ajuste as linhas, encontre espaço e mude a pressão durante o jogo. Uma substituição pode mudar a sua tarde.",
     detail: "Formação · mentalidade · pressão · substituições",
-    to: "/taticas-e-formacoes",
+    to: "/melhores-formacoes",
   },
   {
     id: "squad",

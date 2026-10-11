@@ -53,7 +53,7 @@ function Page() {
             Começar carreira
           </Link>
           <Link
-            to="/ligas-de-futebol"
+            to="/tabelas"
             className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest"
           >
             Ver as ligas
@@ -95,7 +95,7 @@ function Page() {
             passo a passo para novos treinadores
           </Link>{" "}
           e depois estude as{" "}
-          <Link to="/taticas-e-formacoes" className="text-primary underline">
+          <Link to="/melhores-formacoes" className="text-primary underline">
             táticas e formações
           </Link>
           .

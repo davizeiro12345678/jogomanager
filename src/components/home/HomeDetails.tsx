@@ -11,7 +11,7 @@ const DECISIONS = [
   {
     title: "Dê uma identidade ao time",
     text: "Escolha formação, mentalidade e pressão. Observe o adversário e ajuste o plano durante a partida.",
-    to: "/taticas-e-formacoes",
+    to: "/melhores-formacoes",
     cta: "Entender as táticas",
   },
   {
@@ -23,7 +23,7 @@ const DECISIONS = [
   {
     title: "Construa uma carreira",
     text: "Acompanhe orçamento, metas da diretoria e resultados da temporada. Exporte uma cópia da carreira antes de grandes alterações.",
-    to: "/gestao-financeira",
+    to: "/dicas-de-gestao",
     cta: "Organizar as finanças",
   },
 ] as const;

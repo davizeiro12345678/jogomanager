@@ -117,7 +117,7 @@ function GuidesPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           {[
             {
-              to: "/taticas-e-formacoes",
+              to: "/melhores-formacoes",
               title: "Táticas e formações",
               detail: "Entenda o papel de cada setor e escolha um esquema para o seu elenco.",
             },
@@ -127,7 +127,7 @@ function GuidesPage() {
               detail: "Compare atletas por função, potencial e custo antes de negociar.",
             },
             {
-              to: "/gestao-financeira",
+              to: "/dicas-de-gestao",
               title: "Finanças",
               detail: "Organize salários e transferências para sustentar o projeto.",
             },
