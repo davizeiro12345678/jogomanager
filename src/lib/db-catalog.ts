@@ -74,26 +74,37 @@ function readCache(): Cache | null {
   }
 }
 
+type ClubSelect = {
+  id: string;
+  competition_id: string | null;
+  name: string;
+  short_name: string;
+  primary_color: string;
+  secondary_color: string;
+  strength: number;
+};
+
 async function fetchAll(): Promise<Cache> {
   const { data: comps, error } = await supabase.from("competitions").select("id,name,country,flag");
   if (error) throw error;
-  const { count, error: countError } = await supabase
-    .from("clubs")
-    .select("id", { count: "exact", head: true });
-  if (countError) throw countError;
-  const pages = Math.ceil((count ?? 0) / PAGE);
-  const results = await Promise.all(
-    Array.from({ length: pages }, (_, i) =>
-      supabase
-        .from("clubs")
-        .select("id,competition_id,name,short_name,primary_color,secondary_color,strength")
-        .order("id")
-        .range(i * PAGE, i * PAGE + PAGE - 1),
-    ),
-  );
+  // Keyset pages walk the primary key once; OFFSET pages rescan every earlier row.
+  const results: { data: ClubSelect[] }[] = [];
+  let after = "";
+  for (;;) {
+    const r = await supabase
+      .from("clubs")
+      .select("id,competition_id,name,short_name,primary_color,secondary_color,strength")
+      .not("competition_id", "is", null)
+      .gt("id", after)
+      .order("id")
+      .limit(PAGE);
+    if (r.error) throw r.error;
+    results.push({ data: r.data });
+    if (r.data.length < PAGE) break;
+    after = r.data[r.data.length - 1]!.id;
+  }
   const clubs: ClubRow[] = [];
   for (const r of results) {
-    if (r.error) throw r.error;
     for (const c of r.data) {
       if (!c.competition_id || CLUBS[c.id]) continue;
       clubs.push([
