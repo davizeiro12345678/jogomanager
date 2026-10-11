@@ -58,14 +58,13 @@ function OfflinePage() {
           mais recente (outro aparelho), você escolhe qual manter.
         </p>
       </Section>
-      <Section id="o-que-funciona" title="O que funciona sem internet e o que precisa de conexão">
+      <Section id="checklist" title="Checklist antes de ficar sem sinal">
         <ul className="list-disc space-y-2 pl-5">
-          <li><strong className="text-foreground">Funciona offline</strong>: carreira de treinador, partidas contra o computador, táticas, treinos, mercado contra clubes controlados pelo jogo e temporada automática.</li>
-          <li><strong className="text-foreground">Precisa de internet</strong>: multiplayer, chat, ranking, compras na loja, sincronizar o save na nuvem e baixar elencos atualizados.</li>
+          <li>Abra o jogo uma vez com internet e entre na carreira: assim escudos, camisas e elencos ficam guardados no aparelho.</li>
+          <li>Visite as telas que vai usar (elenco, táticas, mercado) para que fiquem disponíveis offline.</li>
+          <li>Se tiver conta, confirme o selo “sincronizado” no topo antes de sair — garante uma cópia na nuvem.</li>
+          <li>Em viagens longas, use o modo de gráficos mais leve para economizar bateria.</li>
         </ul>
-        <p>
-          Ao voltar a ficar online, o jogo sincroniza a carreira na sua conta automaticamente, se você estiver logado.
-        </p>
       </Section>
       <Section id="seguranca" title="Não perca seu progresso">
         <p>
