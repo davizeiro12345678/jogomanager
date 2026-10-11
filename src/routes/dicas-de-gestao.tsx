@@ -62,6 +62,8 @@ function TipsPage() {
         { id: "contratos", title: "Contratos e valorização" },
         { id: "vestiario", title: "Vestiário e moral" },
         { id: "caixa", title: "Caixa e metas da diretoria" },
+        { id: "folha", title: "Folha salarial e orçamento" },
+        { id: "vender", title: "Receitas e quando vender um titular" },
         { id: "dados-gestao", title: "O que fazer em cada liga" },
       ]}
       faq={FAQ}
@@ -106,6 +108,22 @@ function TipsPage() {
           Não gaste todo o orçamento na primeira janela: guarde reserva para repor lesões no meio da temporada. Cumpra
           a meta da diretoria antes de sonhar com título; sobreviver ao primeiro ano é o que libera orçamento no
           segundo. Uma oferta muito acima do valor por um titular pode pagar dois reforços.
+        </p>
+      </Section>
+      <Section id="folha" title="Folha salarial e orçamento">
+        <p>
+          Mantenha a folha entre 50% e 65% da receita. Acima disso, qualquer eliminação precoce em copa vira prejuízo. O maior
+          salário do elenco não deve passar de duas vezes e meia a média dos titulares. Divida a verba de transferências em
+          três: metade para o reforço principal, um terço para a posição mais carente e o restante como reserva para lesões na
+          segunda metade da temporada.
+        </p>
+      </Section>
+      <Section id="vender" title="Receitas e quando vender um titular">
+        <p>
+          Bilheteria cresce com boas campanhas e ingressos bem precificados; premiação de copa é o bônus mais rápido para clube
+          pequeno; venda de jovem formado em casa é lucro quase integral. Venda um titular quando a proposta passa de 1,5 vez o
+          valor de mercado, quando ele tem 30+ anos ou quando existe substituto pronto na base. Fora disso, segure — reconstruir
+          o ataque custa mais do que o caixa recebido.
         </p>
       </Section>
       <LeagueDataInsights leagues={leagues} mode="gestao" />
