@@ -71,3 +71,8 @@
 - [ ] Integrar um atleta 3D Hero personalizado à criação e ao painel antes de escalar para 22 jogadores.
 - [ ] Validar rosto, cabelo, corpo e uniforme no celular e no desktop sem regressões de compilação.
 - [x] Configurar e-mails do app em notify.jogomanager.com (aguardando DNS)
+
+## Pedido 2026-10-11
+- [ ] Escudos e fotos oficiais faltantes via API-Football (rodando em segundo plano; só correspondência exata de nome e país)
+- [x] Guias de gestão e scouting reescritos com dados reais de 12 ligas
+- [x] Página inicial com números reais atualizados; varredura SEO sem erros

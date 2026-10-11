@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { LEAGUE_LABELS } from "@/lib/league-labels";
 
 /** Public, read-only projections of imported API-Football data (no private fields). */
 
@@ -194,8 +195,8 @@ export const getLeagueDigests = createServerFn({ method: "GET" }).handler(
         const over = [...lowerHalf].sort((a, b) => b.goalsDiff - a.goalsDiff)[0];
         out.push({
           slug: lg.slug,
-          name: raw.league.name,
-          country: raw.league.country,
+          name: LEAGUE_LABELS[lg.slug]?.name ?? raw.league.name,
+          country: LEAGUE_LABELS[lg.slug]?.country ?? raw.league.country,
           season: raw.league.season,
           teams: table.length,
           goalsPerGame: goals / games,
