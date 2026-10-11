@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router";
+import { getRouteApi, Link } from "@tanstack/react-router";
+import { HomeLeaguePulse } from "@/components/home/HomeLeaguePulse";
 import { useEffect, useState } from "react";
 import {
   ArrowDown,
