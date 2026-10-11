@@ -1,14 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { ArticleShell, Section } from "@/components/ArticleShell";
+import { LeagueDataInsights } from "@/components/LeagueDataInsights";
+import { getLeagueDigests } from "@/lib/real-football.functions";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guia-de-scouting";
 const TITLE = "Guia de scouting: como achar jogadores bons e baratos | Pro Football Manager 3D";
 const DESC =
-  "Aprenda a contratar como um olheiro: leia potencial x nota atual, escolha a idade certa, reforce as carências do elenco e reconheça os 4 sinais de um jogador barato.";
+  "Contrate como um olheiro: potencial x nota atual, idade certa, carências do elenco e onde achar jogadores baratos em 12 ligas reais, com dados de defesa, saldo e lesões.";
 
 export const Route = createFileRoute("/guia-de-scouting")({
+  loader: async () => ({ leagues: await getLeagueDigests().catch(() => []) }),
   head: () => ({
     meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
     links: canonical(PATH),
@@ -24,21 +27,23 @@ export const Route = createFileRoute("/guia-de-scouting")({
 });
 
 function ScoutingPage() {
+  const { leagues } = Route.useLoaderData();
   return (
     <ArticleShell
       kicker="Scouting"
       title="Guia de scouting: encontrar craques antes dos rivais"
       intro="Um clube pequeno não vence comprando pronto: vence comprando cedo. Este guia mostra como ler um relatório de olheiro e onde procurar."
       path={PATH}
-      readMinutes={5}
+      readMinutes={9}
       level="Intermediário"
-      updated="setembro de 2026"
+      updated="outubro de 2026"
       toc={[
         { id: "potencial", title: "Potencial vale mais que nota atual" },
         { id: "idade", title: "A janela de idade" },
         { id: "carencia", title: "Contrate por carência, não por vitrine" },
         { id: "sinais", title: "Sinais de bom negócio" },
         { id: "erros", title: "Erros clássicos de olheiro" },
+        { id: "dados-scouting", title: "Onde procurar em cada liga" },
       ]}
       faq={[
         {
@@ -88,6 +93,20 @@ function ScoutingPage() {
           em cima da estreia.
         </p>
       </Section>
+      <Section id="metodo" title="6. Um método em quatro passos">
+        <p>
+          Primeiro, liste as posições com menos de dois jogadores. Segundo, olhe os clubes da metade de baixo da tabela
+          com saldo de gols melhor que a posição: são elencos melhores que o momento e costumam vender abaixo do valor.
+          Terceiro, filtre por idade conforme a meta da temporada. Quarto, confira lesões recentes antes de pagar.
+        </p>
+      </Section>
+      <LeagueDataInsights leagues={leagues} mode="scouting" />
+      <p className="mt-8">
+        Depois de contratar, organize o elenco com as{" "}
+        <Link to="/dicas-de-gestao" className="text-primary underline">dicas de gestão por liga</Link>{" "}
+        e acompanhe as{" "}
+        <Link to="/tabelas" className="text-primary underline">tabelas atualizadas</Link>.
+      </p>
     </ArticleShell>
   );
 }
