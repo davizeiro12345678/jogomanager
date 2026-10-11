@@ -41,6 +41,8 @@ export type LeagueTable = {
   updatedAt: string;
   groups: StandingRow[][];
   injuries: { player: string; team: string; type: string; reason: string }[];
+  scorers: TopPlayer[];
+  assisters: TopPlayer[];
 };
 
 type RawStanding = {
@@ -105,6 +107,16 @@ export const getLeagueTable = createServerFn({ method: "GET" })
         type: p.player?.type ?? "",
         reason: p.player?.reason ?? "",
       }));
+    const { data: tops } = await db
+      .from("api_football_data")
+      .select("ref, payload")
+      .eq("kind", "top_stats")
+      .in("ref", [`scorers_${lg.id}_2026`, `assists_${lg.id}_2026`]);
+    const pick = (prefix: string) =>
+      ((tops ?? []).find((t) => t.ref.startsWith(prefix))?.payload as unknown as RawTop[] | null ?? [])
+        .slice(0, 10)
+        .map(toTop)
+        .filter((t): t is TopPlayer => t !== null);
     return {
       id: lg.id,
       slug: lg.slug,
@@ -115,8 +127,47 @@ export const getLeagueTable = createServerFn({ method: "GET" })
       updatedAt: row.updated_at,
       groups: raw.league.standings.map(clean),
       injuries,
+      scorers: pick("scorers_"),
+      assisters: pick("assists_"),
     };
   });
+
+export type TopPlayer = {
+  name: string;
+  age: number | null;
+  nationality: string | null;
+  photo: string | null;
+  team: string;
+  apps: number;
+  minutes: number;
+  goals: number;
+  assists: number;
+  rating: number | null;
+};
+type RawTop = {
+  player?: { name?: string; age?: number; nationality?: string; photo?: string };
+  statistics?: {
+    team?: { name?: string };
+    games?: { appearences?: number; minutes?: number; rating?: string | null };
+    goals?: { total?: number | null; assists?: number | null };
+  }[];
+};
+function toTop(r: RawTop): TopPlayer | null {
+  const s = r.statistics?.[0];
+  if (!r.player?.name || !s) return null;
+  return {
+    name: r.player.name,
+    age: r.player.age ?? null,
+    nationality: r.player.nationality ?? null,
+    photo: r.player.photo ?? null,
+    team: s.team?.name ?? "",
+    apps: s.games?.appearences ?? 0,
+    minutes: s.games?.minutes ?? 0,
+    goals: s.goals?.total ?? 0,
+    assists: s.goals?.assists ?? 0,
+    rating: s.games?.rating ? Number(Number(s.games.rating).toFixed(2)) : null,
+  };
+}
 
 export type ClubReal = {
   coach: { name: string; age: number | null; nationality: string | null; photo: string | null } | null;
