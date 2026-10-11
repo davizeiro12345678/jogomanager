@@ -8,5 +8,5 @@
 - [x] Menu iniciar: painel "Agora nas ligas" com líderes reais
 - [x] Cenas 3D: cor e luz conforme o clima da cena (boa/má notícia)
 - [x] Painel do clube: últimas transferências reais
-- [ ] Reescrever glossário, FAQ, mercado, offline e comparativo com mais profundidade
-- [ ] Tela "Novo treinador": aguardando o usuário dizer o que mudar
+- [x] Glossário, FAQ, mercado, offline e comparativo ampliados
+- [x] Cartão do treinador e retrato redesenhados; e-mails em português com nome oficial

@@ -62,9 +62,6 @@ export function ManagerPortrait({ look, size = 96, accent, className }: ManagerP
         <rect x="0" y="0" width="100" height="100" fill={`url(#mp-bg-${h})`} />
 
         {/* ombros / roupa */}
-        {/* stadium floodlight bokeh */}
-        <circle cx="18" cy="16" r="5" fill="#fff8d6" opacity="0.08" />
-        <circle cx="84" cy="20" r="7" fill="#fff8d6" opacity="0.06" />
         <path d="M12 100 C16 78 32 70 50 70 C68 70 84 78 88 100 Z" fill={outfit.body} />
         <path d="M12 100 C16 78 32 70 50 70 C68 70 84 78 88 100 Z" fill="url(#mp-cloth-shade)" />
         <path d="M42 70 L50 86 L58 70 L52 68 L48 68 Z" fill={outfit.collar} />
