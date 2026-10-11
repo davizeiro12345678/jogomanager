@@ -86,6 +86,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
+      // Título e descrição padrão: páginas com head() próprio os sobrescrevem;
+      // estes servem de fallback seguro para qualquer rota sem metadados.
+      { title: "Pro Football Manager 3D: jogo de técnico de futebol grátis em 3D" },
+      {
+        name: "description",
+        content:
+          "Assuma um clube real, contrate no mercado, monte a tática e veja seu time jogar em 3D. Grátis no navegador, no PC e no celular, com tabelas e elencos atualizados.",
+      },
       {
         name: "google-site-verification",
         content: "N3Z9611b9SUqfFw2Y7W4VXRU1IQF5XiqC8MoOnaq-4U",
