@@ -232,6 +232,13 @@
       "when": 1791743983906,
       "tag": "0032_perf_indexes_api_football_events",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791744067077,
+      "tag": "0033_perf_events_status_idx",
+      "breakpoints": true
     }
   ]
 }
