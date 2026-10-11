@@ -225,6 +225,13 @@
       "when": 1791738847564,
       "tag": "0031_harden_functions_indexes_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791743983906,
+      "tag": "0032_perf_indexes_api_football_events",
+      "breakpoints": true
     }
   ]
 }
