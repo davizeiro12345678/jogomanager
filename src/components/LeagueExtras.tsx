@@ -155,7 +155,7 @@ export function Faq({ items }: { items: { q: string; a: string }[] }) {
   );
 }
 
-export function MidCta({ team, name }: { team?: string; name: string }) {
+export function MidCta({ team, name }: { team?: string | undefined; name: string }) {
   return (
     <aside className="mt-10 rounded-xl border border-primary/40 bg-primary/10 p-5 sm:flex sm:items-center sm:justify-between">
       <p className="font-display text-lg">
