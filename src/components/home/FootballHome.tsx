@@ -292,15 +292,15 @@ export function FootballHome() {
           <dl className="home-hero-stats" aria-label="O jogo em números">
             <div>
               <dt>Clubes</dt>
-              <dd>4.500+</dd>
+              <dd>24 mil+</dd>
             </div>
             <div>
               <dt>Jogadores reais</dt>
-              <dd>26 mil</dd>
+              <dd>200 mil</dd>
             </div>
             <div>
               <dt>Ligas</dt>
-              <dd>600+</dd>
+              <dd>1.900</dd>
             </div>
           </dl>
           {resume ? (
