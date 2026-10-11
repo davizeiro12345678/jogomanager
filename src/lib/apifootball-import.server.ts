@@ -565,9 +565,9 @@ async function importSimple(
   phase: Phase,
   path: string,
   kind: string,
-  refOf: (r: Record<string, unknown>) => string,
+  refOf: (r: unknown) => string,
 ): Promise<AfImportResult> {
-  const list = await af<Record<string, unknown>>(path);
+  const list = await af<unknown>(path);
   const created = await saveRaw(
     kind,
     list.map((r) => ({ ref: refOf(r), payload: r })),
@@ -754,7 +754,7 @@ export async function runApiFootballImport(opts: {
       return await importPredictions(opts.offset, opts.limit, deadline);
     if (opts.phase === "odds") return await importOdds(opts.offset, deadline);
     if (opts.phase === "countries")
-      return await importSimple("countries", "/countries", "country", (r) => r.name);
+      return await importSimple("countries", "/countries", "country", (r) => String((r as { name?: unknown }).name ?? ""));
     if (opts.phase === "timezones")
       return await importSimple("timezones", "/timezone", "timezone", (r) => String(r));
     if (opts.phase === "venues") return await importVenues(opts.offset, opts.limit, deadline);
