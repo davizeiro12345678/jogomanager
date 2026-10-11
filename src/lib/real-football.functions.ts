@@ -148,3 +148,69 @@ export const getClubReal = createServerFn({ method: "GET" })
       injuries,
     };
   });
+
+export type LeagueDigest = {
+  slug: string;
+  name: string;
+  country: string;
+  season: number;
+  teams: number;
+  goalsPerGame: number;
+  homeWinPct: number;
+  drawPct: number;
+  awayWinPct: number;
+  leader: string;
+  leaderGap: number;
+  bestDefense: { team: string; against: number; played: number };
+  overPerformer: { team: string; rank: number; goalsDiff: number } | null;
+  injuries: number;
+};
+
+/** Compact, real per-league numbers used by the public guides. */
+export const getLeagueDigests = createServerFn({ method: "GET" }).handler(
+  async (): Promise<LeagueDigest[]> => {
+    const db = await admin();
+    const out: LeagueDigest[] = [];
+    await Promise.all(
+      FEATURED_LEAGUES.map(async (lg) => {
+        const [{ data: rows }, { count }] = await Promise.all([
+          db.from("api_football_data").select("payload").eq("kind", "standings")
+            .like("ref", `${lg.id}:%`).order("ref", { ascending: false }).limit(1),
+          db.from("api_football_data").select("ref", { count: "exact", head: true })
+            .eq("kind", "injury").eq("payload->league->>id", String(lg.id)),
+        ]);
+        const raw = (rows?.[0]?.payload as unknown as RawStanding[] | null)?.[0];
+        const table = raw?.league.standings[0];
+        if (!raw || !table || table.length < 6) return;
+        let hw = 0, d = 0, aw = 0, goals = 0;
+        for (const r of table) {
+          hw += r.home.win; aw += r.away.win; d += r.home.draw;
+          goals += r.home.goals.for + r.home.goals.against;
+        }
+        const games = hw + aw + d;
+        if (!games) return;
+        const defense = [...table].sort((a, b) => a.all.goals.against / Math.max(1, a.all.played) - b.all.goals.against / Math.max(1, b.all.played))[0]!;
+        const lowerHalf = table.slice(Math.ceil(table.length / 2));
+        const over = [...lowerHalf].sort((a, b) => b.goalsDiff - a.goalsDiff)[0];
+        out.push({
+          slug: lg.slug,
+          name: raw.league.name,
+          country: raw.league.country,
+          season: raw.league.season,
+          teams: table.length,
+          goalsPerGame: goals / games,
+          homeWinPct: (hw / games) * 100,
+          drawPct: (d / games) * 100,
+          awayWinPct: (aw / games) * 100,
+          leader: table[0]!.team.name,
+          leaderGap: table[0]!.points - table[1]!.points,
+          bestDefense: { team: defense.team.name, against: defense.all.goals.against, played: defense.all.played },
+          overPerformer: over ? { team: over.team.name, rank: over.rank, goalsDiff: over.goalsDiff } : null,
+          injuries: count ?? 0,
+        });
+      }),
+    );
+    const order = FEATURED_LEAGUES.map((l) => l.slug as string);
+    return out.sort((a, b) => order.indexOf(a.slug) - order.indexOf(b.slug));
+  },
+);
