@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { ArticleShell, Section, type GuideFaq, type GuideTocItem } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
@@ -89,9 +89,9 @@ function Page() {
       title="Mercado de transferências: como contratar bem"
       intro="Contratar é a decisão que mais muda uma temporada — e a que mais quebra carreiras. Sete regras que valem para qualquer clube, do interior à elite europeia."
       path={PATH}
-      readMinutes={7}
+      readMinutes={12}
       level="Intermediário"
-      updated="setembro de 2026"
+      updated="outubro de 2026"
       toc={TOC}
       faq={FAQ}
     >
@@ -100,6 +100,28 @@ function Page() {
           <p>{r.text}</p>
         </Section>
       ))}
+      <Section id="janela" title="Plano de janela em 4 etapas">
+        <ul className="list-disc space-y-2 pl-5">
+          <li><strong className="text-foreground">Diagnóstico (antes de abrir a janela)</strong>: liste as posições com menos de dois jogadores aptos e os titulares acima de 31 anos. É ali que nasce a lista de compras.</li>
+          <li><strong className="text-foreground">Lista curta</strong>: três alvos por posição, um caro, um médio e um jovem. Se o principal falhar, você não negocia desesperado no último dia.</li>
+          <li><strong className="text-foreground">Venda antes de comprar</strong>: um reserva caro vendido libera salário e verba ao mesmo tempo.</li>
+          <li><strong className="text-foreground">Reserva de emergência</strong>: guarde cerca de um sexto do orçamento para repor lesões na segunda metade da temporada.</li>
+        </ul>
+      </Section>
+      <Section id="erros" title="Cinco erros que quebram clubes no mercado">
+        <ul className="list-disc space-y-2 pl-5">
+          <li>Contratar pelo overall sem olhar a posição — um meia a mais não resolve a lateral vazia.</li>
+          <li>Dar salário de estrela a quem vai ser reserva; o vestiário cobra a conta.</li>
+          <li>Comprar três jogadores para a mesma vaga e deixar todos insatisfeitos.</li>
+          <li>Vender o artilheiro no meio da temporada sem substituto pronto.</li>
+          <li>Ignorar a idade: atacante de 33 anos perde valor a cada mês, jovem de 19 ganha.</li>
+        </ul>
+      </Section>
+      <Section id="mundo-real" title="O que o mercado real ensina">
+        <p>
+          Os grandes clubes alternam ciclos: compram jovens promissores, valorizam e vendem no pico para financiar a próxima geração. Nas <Link to="/tabelas" className="text-primary underline">páginas das ligas</Link> você encontra as promessas de até 23 anos que já estão entre os artilheiros e garçons — exatamente o perfil que vale mirar no modo carreira antes que o preço dispare.
+        </p>
+      </Section>
     </ArticleShell>
   );
 }

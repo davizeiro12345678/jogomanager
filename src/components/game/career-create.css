@@ -857,3 +857,73 @@
     transition: none !important;
   }
 }
+
+/* Coach card polish: broadcast-style identity plate with depth and clearer hierarchy. */
+.career-identity {
+  background: linear-gradient(180deg, #1a2e20 0%, #121f17 100%);
+  box-shadow: 0 24px 60px -30px #000000cc, inset 0 1px 0 #ffffff0d;
+}
+.career-portrait {
+  min-height: 240px;
+  border-bottom: 1px solid #b5ec7022;
+}
+.career-portrait svg {
+  filter: drop-shadow(0 14px 22px #000000aa);
+}
+.career-portrait > span {
+  font-size: 9px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #0b140e99;
+  border: 1px solid #b5ec7033;
+}
+.career-identity h2 {
+  font-size: 28px;
+}
+.career-personality {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #b5ec7014;
+  border: 1px solid #b5ec7033;
+  color: var(--career-accent);
+  font-weight: 600;
+}
+.career-stars svg {
+  width: 20px;
+  height: 20px;
+}
+@media (max-width: 640px) {
+  .career-steps button {
+    justify-content: center;
+    padding: 8px 6px;
+  }
+  .career-steps button:not([aria-current="step"]) b {
+    display: none;
+  }
+  .career-identity {
+    position: static;
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    align-items: center;
+  }
+  .career-portrait {
+    min-height: 170px;
+    border-bottom: 0;
+    border-right: 1px solid #b5ec7022;
+  }
+  .career-portrait svg {
+    width: 104px;
+    height: 104px;
+  }
+  .career-identity-copy {
+    text-align: left;
+    padding: 16px;
+  }
+  .career-identity-copy > p:not(.career-kicker),
+  .career-stars {
+    justify-content: flex-start;
+  }
+  .career-identity h2 {
+    font-size: 22px;
+  }
+}
