@@ -22,18 +22,29 @@ export function HomeLeaguePulse({ leagues }: { leagues: LeagueDigest[] }) {
               className="group flex items-center gap-3 rounded-xl border border-border/60 surface-card p-4 transition-colors hover:border-primary/60"
             >
               <span className="flex-1">
-                <span className="block text-xs uppercase tracking-widest text-primary">{l.name} · {l.country}</span>
-                <strong className="mt-1 block font-display text-lg text-foreground">{l.leader}</strong>
+                <span className="block text-xs uppercase tracking-widest text-primary">
+                  {l.name} · {l.country}
+                </span>
+                <strong className="mt-1 block font-display text-lg text-foreground">
+                  {l.leader}
+                </strong>
                 <span className="block text-xs text-muted-foreground">
-                  {l.leaderGap === 0 ? "Empate na ponta" : `${l.leaderGap} pts de vantagem`} · {l.goalsPerGame.toFixed(2)} gols/jogo
+                  {l.leaderGap === 0 ? "Empate na ponta" : `${l.leaderGap} pts de vantagem`} ·{" "}
+                  {l.goalsPerGame.toFixed(2)} gols/jogo
                 </span>
               </span>
-              <ChevronRight className="text-muted-foreground transition-transform group-hover:translate-x-1" size={18} />
+              <ChevronRight
+                className="text-muted-foreground transition-transform group-hover:translate-x-1"
+                size={18}
+              />
             </Link>
           </li>
         ))}
       </ul>
-      <Link to="/tabelas" className="mt-5 inline-flex items-center gap-1 text-sm text-primary underline-offset-4 hover:underline">
+      <Link
+        to="/tabelas"
+        className="mt-5 inline-flex items-center gap-1 text-sm text-primary underline-offset-4 hover:underline"
+      >
         Ver todas as tabelas <ChevronRight size={14} />
       </Link>
     </section>

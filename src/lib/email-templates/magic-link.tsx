@@ -26,14 +26,13 @@ export const MagicLinkEmail = ({ siteName, confirmationUrl }: MagicLinkEmailProp
       <Container style={container}>
         <Heading style={h1}>Seu link de acesso</Heading>
         <Text style={text}>
-          Toque no botão abaixo para entrar no {siteName}. O link expira em poucos minutos e só funciona uma vez.
+          Toque no botão abaixo para entrar no {siteName}. O link expira em poucos minutos e só
+          funciona uma vez.
         </Text>
         <Button className="dm-btn" style={button} href={confirmationUrl}>
           Entrar na minha conta
         </Button>
-        <Text style={footer}>
-          Não pediu este link? Pode ignorar este e-mail com segurança.
-        </Text>
+        <Text style={footer}>Não pediu este link? Pode ignorar este e-mail com segurança.</Text>
       </Container>
     </Body>
   </Html>

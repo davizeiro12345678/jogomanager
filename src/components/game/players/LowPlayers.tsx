@@ -559,7 +559,13 @@ export function LowPlayers({
           renderOrder={name === "shadow" ? 1 : 0}
         >
           {name === "shadow" ? (
-            <meshBasicMaterial map={softShadowTexture()} color="#050806" transparent opacity={0.32} depthWrite={false} />
+            <meshBasicMaterial
+              map={softShadowTexture()}
+              color="#050806"
+              transparent
+              opacity={0.32}
+              depthWrite={false}
+            />
           ) : (
             <meshStandardMaterial
               color="white"

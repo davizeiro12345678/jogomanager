@@ -150,8 +150,30 @@ function appearanceFor(athlete: AthleteHeroData): PlayerLook {
 }
 
 function AthletePortraitScene({ athlete }: { athlete: AthleteHeroData }) {
-  const fixture = useMemo(() => portraitFixture(athlete), [athlete.seed, athlete.clubId, athlete.nickname, athlete.position, athlete.shirtNumber, athlete.heightCm, athlete.weightKg]);
-  const appearance = useMemo(() => appearanceFor(athlete), [athlete.seed, athlete.position, athlete.shirtNumber, athlete.heightCm, athlete.weightKg, athlete.build, athlete.appearance]);
+  const fixture = useMemo(
+    () => portraitFixture(athlete),
+    [
+      athlete.seed,
+      athlete.clubId,
+      athlete.nickname,
+      athlete.position,
+      athlete.shirtNumber,
+      athlete.heightCm,
+      athlete.weightKg,
+    ],
+  );
+  const appearance = useMemo(
+    () => appearanceFor(athlete),
+    [
+      athlete.seed,
+      athlete.position,
+      athlete.shirtNumber,
+      athlete.heightCm,
+      athlete.weightKg,
+      athlete.build,
+      athlete.appearance,
+    ],
+  );
   const club = safeClub(athlete.clubId);
   const kit = useMemo(
     () => kitFor(club.id, club.primary, club.secondary),
@@ -180,13 +202,28 @@ function AthletePortraitScene({ athlete }: { athlete: AthleteHeroData }) {
       <directionalLight position={[2.8, 3.8, -2.5]} color="#8fc9ff" intensity={2.1} />
       <Environment frames={1} resolution={128}>
         <Lightformer position={[-2, 3, 4]} scale={[5, 4, 1]} intensity={1.5} color="#edf7ff" />
-        <Lightformer position={[3, 2, -1]} rotation-y={-Math.PI / 2} scale={[4, 3, 1]} intensity={1} color={club.primary} />
+        <Lightformer
+          position={[3, 2, -1]}
+          rotation-y={-Math.PI / 2}
+          scale={[4, 3, 1]}
+          intensity={1}
+          color={club.primary}
+        />
       </Environment>
       <mesh rotation-x={-Math.PI / 2} position-y={-0.008} receiveShadow>
         <circleGeometry args={[2.2, 64]} />
         <meshStandardMaterial color="#1c2b35" roughness={0.82} />
       </mesh>
-      <ContactShadows position={[0, 0.003, 0]} opacity={0.32} scale={3.2} blur={3.1} far={1.2} resolution={256} frames={1} color="#050b10" />
+      <ContactShadows
+        position={[0, 0.003, 0]}
+        opacity={0.32}
+        scale={3.2}
+        blur={3.1}
+        far={1.2}
+        resolution={256}
+        frames={1}
+        color="#050b10"
+      />
       <PlayerRig
         player={fixture.player}
         sim={fixture.view}
@@ -226,7 +263,9 @@ export function AthleteHero3D({ athlete, className }: AthleteHero3DProps) {
             gl.toneMapping = THREE.ACESFilmicToneMapping;
             gl.toneMappingExposure = 0.94;
           }}
-          fallback={<p className="athlete-preview-fallback">Prévia 3D indisponível neste aparelho.</p>}
+          fallback={
+            <p className="athlete-preview-fallback">Prévia 3D indisponível neste aparelho.</p>
+          }
         >
           <PortraitCamera />
           <AthletePortraitScene athlete={athlete} />

@@ -1,9 +1,5 @@
 /// <reference lib="webworker" />
-import {
-  resultMatch,
-  snapshotMatchPacket,
-  type LiveWorkerRequest,
-} from "./live-match";
+import { resultMatch, snapshotMatchPacket, type LiveWorkerRequest } from "./live-match";
 import {
   LIVE_MATCH_CLOCK_SCALE,
   MATCH_SIMULATION_STEP,
@@ -176,12 +172,15 @@ function publishSnapshot() {
     ...(latestVisualBall ? { visualBall: latestVisualBall } : {}),
   });
   publishedRosterVersion = rosterVersion;
-  post({
-    id: commandId,
-    ok: true,
-    type: "snapshot",
-    snapshot,
-  }, [snapshot.players.positions, snapshot.players.velocities, snapshot.players.states]);
+  post(
+    {
+      id: commandId,
+      ok: true,
+      type: "snapshot",
+      snapshot,
+    },
+    [snapshot.players.positions, snapshot.players.velocities, snapshot.players.states],
+  );
 }
 
 function publishFinished() {

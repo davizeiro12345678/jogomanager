@@ -322,7 +322,9 @@ export function HudRing({
           <p className="hud-num text-xl font-bold">
             <CountUp value={pct} />
           </p>
-          {label && <p className="hud-ring-label mt-1 truncate uppercase text-muted-foreground">{label}</p>}
+          {label && (
+            <p className="hud-ring-label mt-1 truncate uppercase text-muted-foreground">{label}</p>
+          )}
         </div>
       </div>
       {sub && (

@@ -51,7 +51,8 @@ export const SignupEmail = ({
           Confirmar e-mail
         </Button>
         <Text style={footer}>
-          Não criou esta conta? Pode ignorar este e-mail com segurança — nada será ativado. Nunca pedimos sua senha por e-mail.
+          Não criou esta conta? Pode ignorar este e-mail com segurança — nada será ativado. Nunca
+          pedimos sua senha por e-mail.
         </Text>
       </Container>
     </Body>

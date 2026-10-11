@@ -24,12 +24,30 @@ export const Route = createFileRoute("/perguntas-frequentes")({
 });
 
 const QA = [
-  ["O jogo é grátis mesmo?", "Sim. Carreira, partidas, táticas e mercado são grátis. A loja vende moedas, relatórios de olheiro, bônus de treino e temas visuais — nada disso é obrigatório para jogar ou vencer."],
-  ["Os clubes e jogadores são reais?", "Sim. São mais de 24 mil clubes, 200 mil jogadores e 1.900 ligas com dados reais de elencos, tabelas e estatísticas, atualizados periodicamente."],
-  ["Funciona no celular?", "Funciona no navegador do celular, tablet e PC. Em aparelhos mais simples, o jogo reduz os efeitos gráficos automaticamente para manter a partida fluida."],
-  ["Preciso criar conta?", "Não para começar. Sem conta, a carreira fica salva só neste navegador. Com conta (Google, Apple, Microsoft ou e-mail), o progresso vai para a nuvem e você continua em outro aparelho."],
-  ["Posso jogar contra amigos?", "Sim, no modo multiplayer: crie uma sala, envie o código e joguem a partida ao mesmo tempo, com o resultado calculado pelo servidor."],
-  ["As compras são seguras?", "O pagamento é processado pela Stripe; o jogo nunca vê os dados do seu cartão. O item comprado é entregue na sua conta assim que o pagamento é confirmado."],
+  [
+    "O jogo é grátis mesmo?",
+    "Sim. Carreira, partidas, táticas e mercado são grátis. A loja vende moedas, relatórios de olheiro, bônus de treino e temas visuais — nada disso é obrigatório para jogar ou vencer.",
+  ],
+  [
+    "Os clubes e jogadores são reais?",
+    "Sim. São mais de 24 mil clubes, 200 mil jogadores e 1.900 ligas com dados reais de elencos, tabelas e estatísticas, atualizados periodicamente.",
+  ],
+  [
+    "Funciona no celular?",
+    "Funciona no navegador do celular, tablet e PC. Em aparelhos mais simples, o jogo reduz os efeitos gráficos automaticamente para manter a partida fluida.",
+  ],
+  [
+    "Preciso criar conta?",
+    "Não para começar. Sem conta, a carreira fica salva só neste navegador. Com conta (Google, Apple, Microsoft ou e-mail), o progresso vai para a nuvem e você continua em outro aparelho.",
+  ],
+  [
+    "Posso jogar contra amigos?",
+    "Sim, no modo multiplayer: crie uma sala, envie o código e joguem a partida ao mesmo tempo, com o resultado calculado pelo servidor.",
+  ],
+  [
+    "As compras são seguras?",
+    "O pagamento é processado pela Stripe; o jogo nunca vê os dados do seu cartão. O item comprado é entregue na sua conta assim que o pagamento é confirmado.",
+  ],
   [
     "Como participo da comunidade?",
     "Use o convite do Discord disponível nesta página. Você pode trocar táticas, encontrar adversários e compartilhar sugestões sobre o jogo.",

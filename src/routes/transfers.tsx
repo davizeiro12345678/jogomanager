@@ -325,7 +325,9 @@ function SellPanel({ career, update }: { career: Career; update: (s: Career) => 
                   <span className="text-muted-foreground">{p.pos}</span> {p.name}
                   <span className="ml-2 font-display">{p.ovr}</span>
                 </span>
-                <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">{formatWage(p.wage)}</span>
+                <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                  {formatWage(p.wage)}
+                </span>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="text-[11px] text-muted-foreground">

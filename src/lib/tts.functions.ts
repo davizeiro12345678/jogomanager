@@ -12,11 +12,7 @@ import {
   type RemoteNarrationLang,
 } from "@/game/narration-lines";
 import { CUTSCENES } from "@/content/cutscenes";
-import {
-  FABI_VOICE_ID,
-  FELIPE_VOICE_ID,
-  MARIANNE_VOICE_ID,
-} from "@/game/narration-voice";
+import { FABI_VOICE_ID, FELIPE_VOICE_ID, MARIANNE_VOICE_ID } from "@/game/narration-voice";
 
 /** Each cutscene speaker gets a distinct realistic Brazilian voice. */
 function sceneVoice(who: string): string {
@@ -340,7 +336,13 @@ export const narratePrematch = createServerFn({ method: "POST" })
       language: "pt",
       models: narrationModels("scene"),
       continuity: {},
-      voiceSettings: { stability: 0.4, similarity_boost: 0.85, style: 0.7, use_speaker_boost: true, speed: 1.04 },
+      voiceSettings: {
+        stability: 0.4,
+        similarity_boost: 0.85,
+        style: 0.7,
+        use_speaker_boost: true,
+        speed: 1.04,
+      },
     });
     return audio ? { ok: true, audio } : { ok: false, reason: "error" };
   });

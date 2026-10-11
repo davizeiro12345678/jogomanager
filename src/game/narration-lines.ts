@@ -6,11 +6,7 @@
  */
 import { LANGS, resolveLang, type Lang } from "@/i18n/locale-catalog";
 import { MATCH_EVENT_MESSAGES } from "@/i18n/match-event-messages";
-import {
-  FABI_VOICE_ID,
-  FELIPE_VOICE_ID,
-  MARIANNE_VOICE_ID,
-} from "./narration-voice";
+import { FABI_VOICE_ID, FELIPE_VOICE_ID, MARIANNE_VOICE_ID } from "./narration-voice";
 
 export type NarrationEvent =
   | "goal"

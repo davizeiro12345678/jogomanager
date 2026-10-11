@@ -2,7 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { PlayerCareerState } from "@/game/player-career/types";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { deleteAthlete, listAthletes, readAthlete, writeAthlete } from "@/lib/player-career-store";
-import { deleteAthleteCloud, loadAthletesCloud, saveAthleteCloud } from "@/lib/player-career.functions";
+import {
+  deleteAthleteCloud,
+  loadAthletesCloud,
+  saveAthleteCloud,
+} from "@/lib/player-career.functions";
 
 /** Lista os 3 espaços de atleta. A nuvem só substitui o local se for mais nova. */
 export function useAthleteSlots() {
@@ -20,11 +24,16 @@ export function useAthleteSlots() {
         for (const row of rows) {
           const cloud = JSON.parse(row.state) as PlayerCareerState;
           const local = readAthlete(row.slot);
-          if (cloud?.version === 1 && (!local || cloud.updatedAt > local.updatedAt)) writeAthlete({ ...cloud, slot: row.slot as 1 | 2 | 3 });
+          if (cloud?.version === 1 && (!local || cloud.updatedAt > local.updatedAt))
+            writeAthlete({ ...cloud, slot: row.slot as 1 | 2 | 3 });
         }
         refresh();
       })
-      .catch(() => setError("Não foi possível buscar seus atletas na nuvem. Os salvos no aparelho continuam disponíveis."));
+      .catch(() =>
+        setError(
+          "Não foi possível buscar seus atletas na nuvem. Os salvos no aparelho continuam disponíveis.",
+        ),
+      );
   }, [userId, refresh]);
 
   const remove = useCallback(

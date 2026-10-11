@@ -217,7 +217,9 @@ function ClubHub() {
 
         <ClubHeritagePanel clubId={career.clubId} compact className="lg:col-span-2" />
         <ClubHonoursPanel clubId={career.clubId} />
-        <div className="mt-6"><RealClubInfo name={club.name} /></div>
+        <div className="mt-6">
+          <RealClubInfo name={club.name} />
+        </div>
       </div>
     </GameShell>
   );

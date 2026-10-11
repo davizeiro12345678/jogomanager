@@ -292,7 +292,6 @@ export function selectClipFromContext(ctx: ClipSelectionContext): {
     if (actionName.includes("trap")) {
       return { name: ctx.action, family: "ballControl" };
     }
-
   }
 
   // Se não tem ação, seleciona com base no movimento

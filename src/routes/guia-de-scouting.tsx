@@ -95,17 +95,23 @@ function ScoutingPage() {
       </Section>
       <Section id="metodo" title="6. Um método em quatro passos">
         <p>
-          Primeiro, liste as posições com menos de dois jogadores. Segundo, olhe os clubes da metade de baixo da tabela
-          com saldo de gols melhor que a posição: são elencos melhores que o momento e costumam vender abaixo do valor.
-          Terceiro, filtre por idade conforme a meta da temporada. Quarto, confira lesões recentes antes de pagar.
+          Primeiro, liste as posições com menos de dois jogadores. Segundo, olhe os clubes da metade
+          de baixo da tabela com saldo de gols melhor que a posição: são elencos melhores que o
+          momento e costumam vender abaixo do valor. Terceiro, filtre por idade conforme a meta da
+          temporada. Quarto, confira lesões recentes antes de pagar.
         </p>
       </Section>
       <LeagueDataInsights leagues={leagues} mode="scouting" />
       <p className="mt-8">
         Depois de contratar, organize o elenco com as{" "}
-        <Link to="/dicas-de-gestao" className="text-primary underline">dicas de gestão por liga</Link>{" "}
+        <Link to="/dicas-de-gestao" className="text-primary underline">
+          dicas de gestão por liga
+        </Link>{" "}
         e acompanhe as{" "}
-        <Link to="/tabelas" className="text-primary underline">tabelas atualizadas</Link>.
+        <Link to="/tabelas" className="text-primary underline">
+          tabelas atualizadas
+        </Link>
+        .
       </p>
     </ArticleShell>
   );

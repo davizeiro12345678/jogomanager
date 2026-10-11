@@ -165,7 +165,10 @@ function Beam({
   radius: number;
 }) {
   const material = useBeamMaterial(color, TOWER_Y, radius, haze, seed);
-  const geometry = useDisposable(() => new THREE.ConeGeometry(radius, TOWER_Y, 14, 1, true), [radius]);
+  const geometry = useDisposable(
+    () => new THREE.ConeGeometry(radius, TOWER_Y, 14, 1, true),
+    [radius],
+  );
   useFrame((state) => {
     material.uniforms["uTime"]!.value = state.clock.elapsedTime;
     const u = material.uniforms["uIntensity"]!;
