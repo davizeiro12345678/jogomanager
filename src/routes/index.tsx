@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FootballHome } from "@/components/home/FootballHome";
+import { getLeagueDigests } from "@/lib/real-football.functions";
 import { canonical, gameLd, websiteLd, seoMeta, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
 
 export const Route = createFileRoute("/")({
@@ -18,5 +19,7 @@ export const Route = createFileRoute("/")({
     links: canonical("/"),
     scripts: [websiteLd(), gameLd()],
   }),
+  // Real league leaders feed the home "pulse" section; failure must never block the home page.
+  loader: async () => ({ leagues: await getLeagueDigests().catch(() => []) }),
   component: FootballHome,
 });
