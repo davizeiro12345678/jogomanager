@@ -6,5 +6,5 @@
 - [x] Botão fixo "Jogar grátis" no celular nos guias e tabelas
 - [ ] Levar o melhor texto das páginas removidas para as que ficaram
 - [ ] Expandir guias, glossário, FAQ, mercado, offline, comparativo
-- [ ] Menu iniciar novo
+- [x] Menu iniciar: painel "Agora nas ligas" com líderes reais
 - [ ] Cenas 3D e painéis do jogo
