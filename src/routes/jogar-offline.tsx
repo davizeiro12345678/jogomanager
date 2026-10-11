@@ -60,15 +60,26 @@ function OfflinePage() {
       </Section>
       <Section id="checklist" title="Checklist antes de ficar sem sinal">
         <ul className="list-disc space-y-2 pl-5">
-          <li>Abra o jogo uma vez com internet e entre na carreira: assim escudos, camisas e elencos ficam guardados no aparelho.</li>
-          <li>Visite as telas que vai usar (elenco, táticas, mercado) para que fiquem disponíveis offline.</li>
-          <li>Se tiver conta, confirme o selo “sincronizado” no topo antes de sair — garante uma cópia na nuvem.</li>
+          <li>
+            Abra o jogo uma vez com internet e entre na carreira: assim escudos, camisas e elencos
+            ficam guardados no aparelho.
+          </li>
+          <li>
+            Visite as telas que vai usar (elenco, táticas, mercado) para que fiquem disponíveis
+            offline.
+          </li>
+          <li>
+            Se tiver conta, confirme o selo “sincronizado” no topo antes de sair — garante uma cópia
+            na nuvem.
+          </li>
           <li>Em viagens longas, use o modo de gráficos mais leve para economizar bateria.</li>
         </ul>
       </Section>
       <Section id="seguranca" title="Não perca seu progresso">
         <p>
-          Uma carreira de convidado fica só no navegador deste aparelho. Limpar os dados do navegador apaga o save. Para jogar com tranquilidade, entre na sua conta antes de ficar offline: assim existe uma cópia na nuvem para recuperar em outro aparelho.
+          Uma carreira de convidado fica só no navegador deste aparelho. Limpar os dados do
+          navegador apaga o save. Para jogar com tranquilidade, entre na sua conta antes de ficar
+          offline: assim existe uma cópia na nuvem para recuperar em outro aparelho.
         </p>
       </Section>
     </ArticleShell>

@@ -339,12 +339,15 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
             const recycled = apply(message.snapshot, "worker");
             if (recycled.length) {
               const [positions, velocities, states] = recycled;
-              send({
-                type: "recycle",
-                positions: positions!,
-                velocities: velocities!,
-                states: states!,
-              }, [positions!, velocities!, states!]);
+              send(
+                {
+                  type: "recycle",
+                  positions: positions!,
+                  velocities: velocities!,
+                  states: states!,
+                },
+                [positions!, velocities!, states!],
+              );
             }
           } catch (error) {
             reportSilent("worker.match.protocol", error, {
@@ -355,11 +358,12 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
             });
             if (!failureReported) {
               failureReported = true;
-              startFallback("O snapshot da partida não pôde ser aplicado; modo compatível ativado.");
+              startFallback(
+                "O snapshot da partida não pôde ser aplicado; modo compatível ativado.",
+              );
             }
           }
-        }
-        else if (message.type === "finished") apply(message.result, "worker");
+        } else if (message.type === "finished") apply(message.result, "worker");
       };
       liveWorker.onerror = (event) => {
         reportSilent("worker.match", event.error ?? event.message, {

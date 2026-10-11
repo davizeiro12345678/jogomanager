@@ -106,23 +106,56 @@ function GlossaryPage() {
       </dl>
       <Section id="na-pratica" title="Do termo à decisão: como usar o glossário na partida">
         <p>
-          Saber o nome de um conceito só ajuda quando você reconhece a situação em campo. Os termos acima se juntam em três decisões que você toma em quase toda partida:
+          Saber o nome de um conceito só ajuda quando você reconhece a situação em campo. Os termos
+          acima se juntam em três decisões que você toma em quase toda partida:
         </p>
         <ul className="list-disc space-y-2 pl-5">
-          <li><strong className="text-foreground">Onde recuperar a bola</strong> — bloco alto, pressão e linha defensiva. Contra zagueiros lentos, bloco alto rouba bolas perto do gol rival; contra atacantes rápidos, recue a linha para não oferecer espaço nas costas.</li>
-          <li><strong className="text-foreground">Como progredir</strong> — passe em profundidade, inversão de jogo e jogo apoiado. Se o adversário fecha o meio, abra o campo com os laterais; se ele sobe a linha, procure a bola longa.</li>
-          <li><strong className="text-foreground">Quanto arriscar</strong> — mentalidade, ritmo e condição física. Ritmo alto o jogo inteiro cobra o preço depois dos 70 minutos; guarde energia quando estiver ganhando.</li>
+          <li>
+            <strong className="text-foreground">Onde recuperar a bola</strong> — bloco alto, pressão
+            e linha defensiva. Contra zagueiros lentos, bloco alto rouba bolas perto do gol rival;
+            contra atacantes rápidos, recue a linha para não oferecer espaço nas costas.
+          </li>
+          <li>
+            <strong className="text-foreground">Como progredir</strong> — passe em profundidade,
+            inversão de jogo e jogo apoiado. Se o adversário fecha o meio, abra o campo com os
+            laterais; se ele sobe a linha, procure a bola longa.
+          </li>
+          <li>
+            <strong className="text-foreground">Quanto arriscar</strong> — mentalidade, ritmo e
+            condição física. Ritmo alto o jogo inteiro cobra o preço depois dos 70 minutos; guarde
+            energia quando estiver ganhando.
+          </li>
         </ul>
       </Section>
       <Section id="gestao" title="Termos de gestão que mais pesam na carreira">
         <ul className="list-disc space-y-2 pl-5">
-          <li><strong className="text-foreground">Folha salarial</strong>: o custo mensal do elenco. Acima de dois terços da receita, qualquer queda em copa vira prejuízo.</li>
-          <li><strong className="text-foreground">Valor de mercado</strong>: quanto o clube pediria hoje por um jogador. Sobe com idade jovem, boas notas e minutos jogados.</li>
-          <li><strong className="text-foreground">Potencial</strong>: o teto de evolução do atleta. Jovem com potencial alto e pouco jogo é o melhor investimento do mercado.</li>
-          <li><strong className="text-foreground">Moral</strong>: confiança do elenco. Sequência de vitórias acelera a evolução; reserva insatisfeito derruba o vestiário.</li>
+          <li>
+            <strong className="text-foreground">Folha salarial</strong>: o custo mensal do elenco.
+            Acima de dois terços da receita, qualquer queda em copa vira prejuízo.
+          </li>
+          <li>
+            <strong className="text-foreground">Valor de mercado</strong>: quanto o clube pediria
+            hoje por um jogador. Sobe com idade jovem, boas notas e minutos jogados.
+          </li>
+          <li>
+            <strong className="text-foreground">Potencial</strong>: o teto de evolução do atleta.
+            Jovem com potencial alto e pouco jogo é o melhor investimento do mercado.
+          </li>
+          <li>
+            <strong className="text-foreground">Moral</strong>: confiança do elenco. Sequência de
+            vitórias acelera a evolução; reserva insatisfeito derruba o vestiário.
+          </li>
         </ul>
         <p>
-          Para ver esses conceitos com números reais, compare as <Link to="/tabelas" className="text-primary underline">tabelas das ligas</Link> e o <Link to="/guia-de-scouting" className="text-primary underline">guia de scouting</Link>.
+          Para ver esses conceitos com números reais, compare as{" "}
+          <Link to="/tabelas" className="text-primary underline">
+            tabelas das ligas
+          </Link>{" "}
+          e o{" "}
+          <Link to="/guia-de-scouting" className="text-primary underline">
+            guia de scouting
+          </Link>
+          .
         </p>
       </Section>
     </ArticleShell>

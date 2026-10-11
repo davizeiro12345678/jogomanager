@@ -361,10 +361,7 @@ export async function deleteReplay(id: string) {
   if (typeof window === "undefined") return;
   try {
     const list = await listReplays();
-    await set(
-      KEY,
-      list.filter((r) => r.id !== id).map(encodeReplay),
-    );
+    await set(KEY, list.filter((r) => r.id !== id).map(encodeReplay));
   } catch (error) {
     reportSilent("replay.storage", error, {
       classification: "degradation",

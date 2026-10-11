@@ -26,13 +26,15 @@ export const RecoveryEmail = ({ siteName, confirmationUrl }: RecoveryEmailProps)
       <Container style={container}>
         <Heading style={h1}>Redefinir sua senha</Heading>
         <Text style={text}>
-          Recebemos um pedido para redefinir a senha da sua conta no {siteName}. Toque no botão abaixo para escolher uma nova senha. O link vale por pouco tempo.
+          Recebemos um pedido para redefinir a senha da sua conta no {siteName}. Toque no botão
+          abaixo para escolher uma nova senha. O link vale por pouco tempo.
         </Text>
         <Button className="dm-btn" style={button} href={confirmationUrl}>
           Escolher nova senha
         </Button>
         <Text style={footer}>
-          Não pediu isso? Ignore este e-mail: sua senha continua a mesma. Nunca pedimos sua senha por e-mail.
+          Não pediu isso? Ignore este e-mail: sua senha continua a mesma. Nunca pedimos sua senha
+          por e-mail.
         </Text>
       </Container>
     </Body>

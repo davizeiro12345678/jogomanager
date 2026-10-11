@@ -16,7 +16,11 @@ export const Route = createFileRoute("/dicas-de-gestao")({
     meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
     links: canonical(PATH),
     scripts: [
-      articleLd({ headline: "Dicas de gestão do clube com dados reais", description: DESC, path: PATH }),
+      articleLd({
+        headline: "Dicas de gestão do clube com dados reais",
+        description: DESC,
+        path: PATH,
+      }),
       breadcrumbLd([
         { name: "Início", path: "/" },
         { name: "Dicas de gestão", path: PATH },
@@ -70,60 +74,65 @@ function TipsPage() {
     >
       <Section id="elenco" title="Elenco: tamanho e equilíbrio">
         <p>
-          Comece contando jogadores por posição, não somando notas. O mínimo saudável é dois por posição; três só onde
-          a função cansa mais, como laterais e volantes. Um elenco entre 22 e 26 atletas aguenta lesões sem estourar a
-          folha salarial.
+          Comece contando jogadores por posição, não somando notas. O mínimo saudável é dois por
+          posição; três só onde a função cansa mais, como laterais e volantes. Um elenco entre 22 e
+          26 atletas aguenta lesões sem estourar a folha salarial.
         </p>
         <p>
-          Contrate pela carência. Um lateral 74 rende mais que um atacante 80 quando você já tem três atacantes. Jovens
-          de 18 a 21 anos com potencial alto valorizam rápido: dê minutos a eles contra adversários mais fracos.
+          Contrate pela carência. Um lateral 74 rende mais que um atacante 80 quando você já tem
+          três atacantes. Jovens de 18 a 21 anos com potencial alto valorizam rápido: dê minutos a
+          eles contra adversários mais fracos.
         </p>
       </Section>
       <Section id="mando" title="Mando de campo e rodízio">
         <p>
-          Nas ligas reais desta página, os mandantes vencem bem mais que os visitantes. Por isso o rodízio
-          inteligente usa o calendário: força máxima em casa e mais rodízio fora, principalmente em semanas com dois
-          jogos.
+          Nas ligas reais desta página, os mandantes vencem bem mais que os visitantes. Por isso o
+          rodízio inteligente usa o calendário: força máxima em casa e mais rodízio fora,
+          principalmente em semanas com dois jogos.
         </p>
         <p>
-          Onde a taxa de empates é alta, um ponto fora de casa vale muito. Leve no banco um atacante de área para os
-          últimos 20 minutos de jogos travados, em vez de um meia criativo.
+          Onde a taxa de empates é alta, um ponto fora de casa vale muito. Leve no banco um atacante
+          de área para os últimos 20 minutos de jogos travados, em vez de um meia criativo.
         </p>
       </Section>
       <Section id="contratos" title="Contratos e valorização">
         <p>
-          Renove com dois anos de antecedência: no último ano o jogador exige muito mais ou sai de graça. Venda quem
-          passou dos 30 com valor de mercado alto, porque é o pico do lucro. Ao renovar um titular, suba a cláusula de
-          rescisão.
+          Renove com dois anos de antecedência: no último ano o jogador exige muito mais ou sai de
+          graça. Venda quem passou dos 30 com valor de mercado alto, porque é o pico do lucro. Ao
+          renovar um titular, suba a cláusula de rescisão.
         </p>
       </Section>
       <Section id="vestiario" title="Vestiário e moral">
         <p>
-          Moral baixa derruba o rendimento em campo. Dê minutos a quem está insatisfeito antes de ele pedir para sair.
-          Uma comissão técnica boa acelera a recuperação de lesões e costuma render mais que um reserva caro.
+          Moral baixa derruba o rendimento em campo. Dê minutos a quem está insatisfeito antes de
+          ele pedir para sair. Uma comissão técnica boa acelera a recuperação de lesões e costuma
+          render mais que um reserva caro.
         </p>
       </Section>
       <Section id="caixa" title="Caixa e metas da diretoria">
         <p>
-          Não gaste todo o orçamento na primeira janela: guarde reserva para repor lesões no meio da temporada. Cumpra
-          a meta da diretoria antes de sonhar com título; sobreviver ao primeiro ano é o que libera orçamento no
-          segundo. Uma oferta muito acima do valor por um titular pode pagar dois reforços.
+          Não gaste todo o orçamento na primeira janela: guarde reserva para repor lesões no meio da
+          temporada. Cumpra a meta da diretoria antes de sonhar com título; sobreviver ao primeiro
+          ano é o que libera orçamento no segundo. Uma oferta muito acima do valor por um titular
+          pode pagar dois reforços.
         </p>
       </Section>
       <Section id="folha" title="Folha salarial e orçamento">
         <p>
-          Mantenha a folha entre 50% e 65% da receita. Acima disso, qualquer eliminação precoce em copa vira prejuízo. O maior
-          salário do elenco não deve passar de duas vezes e meia a média dos titulares. Divida a verba de transferências em
-          três: metade para o reforço principal, um terço para a posição mais carente e o restante como reserva para lesões na
-          segunda metade da temporada.
+          Mantenha a folha entre 50% e 65% da receita. Acima disso, qualquer eliminação precoce em
+          copa vira prejuízo. O maior salário do elenco não deve passar de duas vezes e meia a média
+          dos titulares. Divida a verba de transferências em três: metade para o reforço principal,
+          um terço para a posição mais carente e o restante como reserva para lesões na segunda
+          metade da temporada.
         </p>
       </Section>
       <Section id="vender" title="Receitas e quando vender um titular">
         <p>
-          Bilheteria cresce com boas campanhas e ingressos bem precificados; premiação de copa é o bônus mais rápido para clube
-          pequeno; venda de jovem formado em casa é lucro quase integral. Venda um titular quando a proposta passa de 1,5 vez o
-          valor de mercado, quando ele tem 30+ anos ou quando existe substituto pronto na base. Fora disso, segure — reconstruir
-          o ataque custa mais do que o caixa recebido.
+          Bilheteria cresce com boas campanhas e ingressos bem precificados; premiação de copa é o
+          bônus mais rápido para clube pequeno; venda de jovem formado em casa é lucro quase
+          integral. Venda um titular quando a proposta passa de 1,5 vez o valor de mercado, quando
+          ele tem 30+ anos ou quando existe substituto pronto na base. Fora disso, segure —
+          reconstruir o ataque custa mais do que o caixa recebido.
         </p>
       </Section>
       <LeagueDataInsights leagues={leagues} mode="gestao" />

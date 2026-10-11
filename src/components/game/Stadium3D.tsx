@@ -458,7 +458,8 @@ function Weather({
         uniforms={uniforms}
         transparent
         depthWrite={false}
-        vertexShader={/* glsl */ `
+        vertexShader={
+          /* glsl */ `
           attribute vec3 aOffset;
           attribute float aSpeed;
           attribute float aPhase;
@@ -482,14 +483,17 @@ function Weather({
             world.z += aOffset.z + (1.0 - uRain) * sin(aPhase + world.y * 0.4 + uTime) * 0.42;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(world, 1.0);
           }
-        `}
-        fragmentShader={/* glsl */ `
+        `
+        }
+        fragmentShader={
+          /* glsl */ `
           uniform vec3 uColor;
           uniform float uOpacity;
           void main() {
             gl_FragColor = vec4(uColor, uOpacity);
           }
-        `}
+        `
+        }
       />
     </instancedMesh>
   );

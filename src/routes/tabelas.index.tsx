@@ -13,7 +13,12 @@ export const Route = createFileRoute("/tabelas/")({
   head: () => ({
     meta: seoMeta({ title: TITLE, description: DESC, path: PATH }),
     links: canonical(PATH),
-    scripts: [breadcrumbLd([{ name: "Início", path: "/" }, { name: "Tabelas", path: PATH }])],
+    scripts: [
+      breadcrumbLd([
+        { name: "Início", path: "/" },
+        { name: "Tabelas", path: PATH },
+      ]),
+    ],
   }),
   component: TablesIndex,
 });
@@ -23,10 +28,12 @@ function TablesIndex() {
     <main className="pitch-bg min-h-screen px-4 py-14">
       <div className="mx-auto max-w-5xl">
         <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">Futebol real</p>
-        <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">Tabelas das principais ligas</h1>
+        <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">
+          Tabelas das principais ligas
+        </h1>
         <p className="mt-4 max-w-2xl text-muted-foreground">
-          Cada página traz a classificação da temporada atual, quem rende melhor em casa e fora,
-          o melhor ataque, a defesa mais sólida, a forma das últimas cinco rodadas e os jogadores
+          Cada página traz a classificação da temporada atual, quem rende melhor em casa e fora, o
+          melhor ataque, a defesa mais sólida, a forma das últimas cinco rodadas e os jogadores
           lesionados. Use essas informações para escolher o clube da sua carreira de técnico.
         </p>
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

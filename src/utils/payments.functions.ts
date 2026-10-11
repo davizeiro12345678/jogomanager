@@ -44,15 +44,23 @@ export async function resolveOrCreateCustomer(
 
 // Fixed allowlist: request headers (Origin/Referer/forwarded host) are caller-controlled.
 const APP_HOSTS = new Set([
-  "jogomanager.com", "futmanager.xyz", "footballcarrer.fun", "football-manager.app",
-  "soccer-manager.fun", "futebolmanager.xyz", "soccermanagement.fun",
+  "jogomanager.com",
+  "futmanager.xyz",
+  "footballcarrer.fun",
+  "football-manager.app",
+  "soccer-manager.fun",
+  "futebolmanager.xyz",
+  "soccermanagement.fun",
 ]);
 function isApprovedAppOrigin(url: URL) {
   if (url.hostname === "localhost") return true;
   if (url.protocol !== "https:" || url.port) return false;
   const host = url.hostname.replace(/^www\./, "");
-  return APP_HOSTS.has(host) || /^[a-z0-9-]+\.lovable\.app$/.test(url.hostname)
-    || /^[a-z0-9-]+\.lovableproject\.com$/.test(url.hostname);
+  return (
+    APP_HOSTS.has(host) ||
+    /^[a-z0-9-]+\.lovable\.app$/.test(url.hostname) ||
+    /^[a-z0-9-]+\.lovableproject\.com$/.test(url.hostname)
+  );
 }
 
 export const createCheckoutSession = createServerFn({ method: "POST" })

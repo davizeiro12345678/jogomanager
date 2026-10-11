@@ -1,7 +1,16 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { PublicLinks } from "@/components/PublicLinks";
 import { StickyPlayCta } from "@/components/StickyPlayCta";
-import { Faq, HomeAway, leagueFaq, MidCta, OtherLeagues, Prospects, TopPlayers, Zones } from "@/components/LeagueExtras";
+import {
+  Faq,
+  HomeAway,
+  leagueFaq,
+  MidCta,
+  OtherLeagues,
+  Prospects,
+  TopPlayers,
+  Zones,
+} from "@/components/LeagueExtras";
 import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 import { LEAGUE_LABELS } from "@/lib/league-labels";
 import { getLeagueTable, type LeagueTable, type StandingRow } from "@/lib/real-football.functions";
@@ -32,14 +41,20 @@ export const Route = createFileRoute("/tabelas/$slug")({
           { name: label.name, path },
         ]),
         ...(faq.length
-          ? [{
-              type: "application/ld+json",
-              children: JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "FAQPage",
-                mainEntity: faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-              }),
-            }]
+          ? [
+              {
+                type: "application/ld+json",
+                children: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "FAQPage",
+                  mainEntity: faq.map((f) => ({
+                    "@type": "Question",
+                    name: f.q,
+                    acceptedAnswer: { "@type": "Answer", text: f.a },
+                  })),
+                }),
+              },
+            ]
           : []),
       ],
     };
@@ -47,14 +62,18 @@ export const Route = createFileRoute("/tabelas/$slug")({
   notFoundComponent: () => (
     <main className="pitch-bg min-h-screen px-4 py-20 text-center">
       <h1 className="font-display text-3xl">Liga não encontrada</h1>
-      <Link to="/tabelas" className="mt-6 inline-block text-primary underline">Ver todas as tabelas</Link>
+      <Link to="/tabelas" className="mt-6 inline-block text-primary underline">
+        Ver todas as tabelas
+      </Link>
     </main>
   ),
   errorComponent: () => (
     <main className="pitch-bg min-h-screen px-4 py-20 text-center">
       <h1 className="font-display text-3xl">Não foi possível carregar a tabela</h1>
       <p className="mt-3 text-muted-foreground">Tente novamente em alguns instantes.</p>
-      <Link to="/tabelas" className="mt-6 inline-block text-primary underline">Voltar às tabelas</Link>
+      <Link to="/tabelas" className="mt-6 inline-block text-primary underline">
+        Voltar às tabelas
+      </Link>
     </main>
   ),
   component: LeaguePage,
@@ -81,40 +100,59 @@ function Insights({ rows, name }: { rows: StandingRow[]; name: string }) {
   const totalPlayed = rows.reduce((n, r) => n + r.all.played, 0) / 2;
   return (
     <section className="mt-10 space-y-4 text-muted-foreground" aria-labelledby="analise">
-      <h2 id="analise" className="font-display text-2xl text-foreground">Análise da temporada</h2>
+      <h2 id="analise" className="font-display text-2xl text-foreground">
+        Análise da temporada
+      </h2>
       <p>
-        <strong className="text-foreground">{leader.team.name}</strong> lidera a {name} com {leader.points} pontos em{" "}
-        {leader.all.played} jogos, {gap === 0 ? `empatado em pontos com ${second.team.name}` : `${gap} ${gap === 1 ? "ponto" : "pontos"} à frente de ${second.team.name}`}.
-        {totalPlayed > 0 && ` A média do campeonato é de ${(totalGoals / totalPlayed).toFixed(2)} gols por partida.`}
+        <strong className="text-foreground">{leader.team.name}</strong> lidera a {name} com{" "}
+        {leader.points} pontos em {leader.all.played} jogos,{" "}
+        {gap === 0
+          ? `empatado em pontos com ${second.team.name}`
+          : `${gap} ${gap === 1 ? "ponto" : "pontos"} à frente de ${second.team.name}`}
+        .
+        {totalPlayed > 0 &&
+          ` A média do campeonato é de ${(totalGoals / totalPlayed).toFixed(2)} gols por partida.`}
       </p>
       <ul className="grid gap-3 sm:grid-cols-2">
         <li className="rounded-lg border border-border/60 surface-card p-4">
           <span className="text-xs uppercase tracking-widest text-primary">Melhor ataque</span>
-          <p className="mt-1 text-foreground">{attack.team.name} — {attack.all.goals.for} gols</p>
+          <p className="mt-1 text-foreground">
+            {attack.team.name} — {attack.all.goals.for} gols
+          </p>
         </li>
         <li className="rounded-lg border border-border/60 surface-card p-4">
           <span className="text-xs uppercase tracking-widest text-primary">Defesa mais sólida</span>
-          <p className="mt-1 text-foreground">{defense.team.name} — {defense.all.goals.against} gols sofridos</p>
+          <p className="mt-1 text-foreground">
+            {defense.team.name} — {defense.all.goals.against} gols sofridos
+          </p>
         </li>
         <li className="rounded-lg border border-border/60 surface-card p-4">
           <span className="text-xs uppercase tracking-widest text-primary">Mais forte em casa</span>
-          <p className="mt-1 text-foreground">{home.team.name} — {home.home.win}V {home.home.draw}E {home.home.lose}D</p>
+          <p className="mt-1 text-foreground">
+            {home.team.name} — {home.home.win}V {home.home.draw}E {home.home.lose}D
+          </p>
         </li>
         <li className="rounded-lg border border-border/60 surface-card p-4">
           <span className="text-xs uppercase tracking-widest text-primary">Melhor visitante</span>
-          <p className="mt-1 text-foreground">{away.team.name} — {away.away.win}V {away.away.draw}E {away.away.lose}D</p>
+          <p className="mt-1 text-foreground">
+            {away.team.name} — {away.away.win}V {away.away.draw}E {away.away.lose}D
+          </p>
         </li>
       </ul>
       <p>
-        Em melhor fase nas últimas cinco rodadas está <strong className="text-foreground">{hot.team.name}</strong>{" "}
-        ({formPts(hot.form)} de 15 pontos possíveis). No jogo, um time em boa fase costuma ter moral alta — vale a pena
+        Em melhor fase nas últimas cinco rodadas está{" "}
+        <strong className="text-foreground">{hot.team.name}</strong> ({formPts(hot.form)} de 15
+        pontos possíveis). No jogo, um time em boa fase costuma ter moral alta — vale a pena
         reforçar o meio-campo para manter a sequência.
       </p>
-      <h3 className="pt-2 font-display text-lg text-foreground">Que clube escolher na sua carreira?</h3>
+      <h3 className="pt-2 font-display text-lg text-foreground">
+        Que clube escolher na sua carreira?
+      </h3>
       <p>
-        Quer pressão por título desde a primeira rodada? Assuma {leader.team.name}. Prefere um desafio de reconstrução?
-        Clubes da metade de baixo da tabela, como {rows[rows.length - 3]?.team.name}, exigem mercado esperto e paciência da
-        diretoria — e rendem as campanhas mais marcantes.
+        Quer pressão por título desde a primeira rodada? Assuma {leader.team.name}. Prefere um
+        desafio de reconstrução? Clubes da metade de baixo da tabela, como{" "}
+        {rows[rows.length - 3]?.team.name}, exigem mercado esperto e paciência da diretoria — e
+        rendem as campanhas mais marcantes.
       </p>
     </section>
   );
@@ -126,10 +164,17 @@ function Table({ rows }: { rows: StandingRow[] }) {
       <table className="w-full min-w-[640px] text-sm">
         <thead className="bg-secondary/60 text-left text-xs uppercase tracking-widest text-muted-foreground">
           <tr>
-            <th className="p-2">#</th><th className="p-2">Clube</th><th className="p-2 text-right">P</th>
-            <th className="p-2 text-right">J</th><th className="p-2 text-right">V</th><th className="p-2 text-right">E</th>
-            <th className="p-2 text-right">D</th><th className="p-2 text-right">GP</th><th className="p-2 text-right">GC</th>
-            <th className="p-2 text-right">SG</th><th className="p-2">Forma</th>
+            <th className="p-2">#</th>
+            <th className="p-2">Clube</th>
+            <th className="p-2 text-right">P</th>
+            <th className="p-2 text-right">J</th>
+            <th className="p-2 text-right">V</th>
+            <th className="p-2 text-right">E</th>
+            <th className="p-2 text-right">D</th>
+            <th className="p-2 text-right">GP</th>
+            <th className="p-2 text-right">GC</th>
+            <th className="p-2 text-right">SG</th>
+            <th className="p-2">Forma</th>
           </tr>
         </thead>
         <tbody>
@@ -138,7 +183,14 @@ function Table({ rows }: { rows: StandingRow[] }) {
               <td className="p-2">{r.rank}</td>
               <td className="p-2">
                 <span className="flex items-center gap-2">
-                  <img src={r.team.logo} alt="" width={20} height={20} loading="lazy" className="h-5 w-5 object-contain" />
+                  <img
+                    src={r.team.logo}
+                    alt=""
+                    width={20}
+                    height={20}
+                    loading="lazy"
+                    className="h-5 w-5 object-contain"
+                  />
                   {r.team.name}
                 </span>
               </td>
@@ -150,7 +202,9 @@ function Table({ rows }: { rows: StandingRow[] }) {
               <td className="p-2 text-right">{r.all.goals.for}</td>
               <td className="p-2 text-right">{r.all.goals.against}</td>
               <td className="p-2 text-right">{r.goalsDiff}</td>
-              <td className="p-2 font-mono text-xs">{(r.form ?? "").replace(/W/g, "V").replace(/D/g, "E").replace(/L/g, "D")}</td>
+              <td className="p-2 font-mono text-xs">
+                {(r.form ?? "").replace(/W/g, "V").replace(/D/g, "E").replace(/L/g, "D")}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -160,26 +214,48 @@ function Table({ rows }: { rows: StandingRow[] }) {
 }
 
 function LeaguePage() {
-  const { table, label } = Route.useLoaderData() as { table: LeagueTable | null; label: { name: string; country: string } };
+  const { table, label } = Route.useLoaderData() as {
+    table: LeagueTable | null;
+    label: { name: string; country: string };
+  };
   const { slug } = Route.useParams();
   const rows = table?.groups[0] ?? [];
   return (
     <main className="pitch-bg min-h-screen px-4 pb-28 pt-14 sm:pb-14">
       <article className="mx-auto max-w-5xl">
-        <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">{label.country}</p>
+        <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">
+          {label.country}
+        </p>
         <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">
-          Tabela da {label.name}{table ? ` ${table.season}` : ""}
+          Tabela da {label.name}
+          {table ? ` ${table.season}` : ""}
         </h1>
         {!table ? (
-          <p className="mt-6 text-muted-foreground">A classificação desta liga ainda está sendo atualizada. Volte em breve.</p>
+          <p className="mt-6 text-muted-foreground">
+            A classificação desta liga ainda está sendo atualizada. Volte em breve.
+          </p>
         ) : (
           <>
             <p className="mt-4 text-sm text-muted-foreground">
-              Atualizado em {new Date(table.updatedAt).toLocaleDateString("pt-BR")}. V = vitória, E = empate, D = derrota.
+              Atualizado em {new Date(table.updatedAt).toLocaleDateString("pt-BR")}. V = vitória, E
+              = empate, D = derrota.
             </p>
             <nav aria-label="Nesta página" className="mt-4 flex flex-wrap gap-3 text-sm">
-              {[["analise", "Análise"], ["artilharia", "Artilharia"], ["promessas", "Promessas"], ["casa-fora", "Casa x fora"], ["desfalques", "Desfalques"], ["faq", "Perguntas"]].map(([id, t]) => (
-                <a key={id} href={`#${id}`} className="text-primary underline-offset-4 hover:underline">{t}</a>
+              {[
+                ["analise", "Análise"],
+                ["artilharia", "Artilharia"],
+                ["promessas", "Promessas"],
+                ["casa-fora", "Casa x fora"],
+                ["desfalques", "Desfalques"],
+                ["faq", "Perguntas"],
+              ].map(([id, t]) => (
+                <a
+                  key={id}
+                  href={`#${id}`}
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {t}
+                </a>
               ))}
             </nav>
             {table.groups.map((g, i) => (
@@ -195,12 +271,20 @@ function LeaguePage() {
             <Zones rows={rows} />
             {table.injuries.length > 0 && (
               <section className="mt-10" aria-labelledby="desfalques">
-                <h2 id="desfalques" className="font-display text-2xl">Desfalques recentes</h2>
+                <h2 id="desfalques" className="font-display text-2xl">
+                  Desfalques recentes
+                </h2>
                 <ul className="mt-4 grid gap-2 sm:grid-cols-2">
                   {table.injuries.map((i) => (
-                    <li key={i.player} className="rounded-lg border border-border/60 surface-card p-3 text-sm">
-                      <strong>{i.player}</strong> <span className="text-muted-foreground">· {i.team}</span>
-                      <span className="block text-xs text-muted-foreground">{i.reason || i.type}</span>
+                    <li
+                      key={i.player}
+                      className="rounded-lg border border-border/60 surface-card p-3 text-sm"
+                    >
+                      <strong>{i.player}</strong>{" "}
+                      <span className="text-muted-foreground">· {i.team}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {i.reason || i.type}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -210,10 +294,16 @@ function LeaguePage() {
           </>
         )}
         <div className="mt-12 flex flex-wrap gap-3">
-          <Link to="/new" className="rounded-lg bg-primary px-6 py-3 font-display text-sm uppercase tracking-widest text-primary-foreground hover:brightness-110">
+          <Link
+            to="/new"
+            className="rounded-lg bg-primary px-6 py-3 font-display text-sm uppercase tracking-widest text-primary-foreground hover:brightness-110"
+          >
             Comandar um clube desta liga
           </Link>
-          <Link to="/guia-de-scouting" className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest hover:bg-secondary">
+          <Link
+            to="/guia-de-scouting"
+            className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest hover:bg-secondary"
+          >
             Guia de scouting
           </Link>
         </div>

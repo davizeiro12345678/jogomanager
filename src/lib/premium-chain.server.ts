@@ -5,13 +5,7 @@ import type { Database, Json } from "@/integrations/supabase/types";
 type Admin = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 type MediaRow = Database["public"]["Tables"]["official_media"]["Insert"];
 export type PremiumPhase =
-  | "leagues"
-  | "teams"
-  | "kits"
-  | "players"
-  | "schedule"
-  | "events"
-  | "details";
+  "leagues" | "teams" | "kits" | "players" | "schedule" | "events" | "details";
 
 const MEDIA: Record<string, readonly [string, string][]> = {
   league: [

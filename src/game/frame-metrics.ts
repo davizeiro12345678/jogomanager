@@ -3,7 +3,9 @@ export type PerformanceWithMemory = Performance & {
   memory?: { usedJSHeapSize?: number };
 };
 
-export function heapUsedBytes(source: PerformanceWithMemory | { memory?: { usedJSHeapSize?: number } } = performance) {
+export function heapUsedBytes(
+  source: PerformanceWithMemory | { memory?: { usedJSHeapSize?: number } } = performance,
+) {
   const value = source.memory?.usedJSHeapSize;
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }

@@ -371,10 +371,7 @@ export class WorkerMatchView implements MatchRuntime {
     if (packet) {
       const delta = packet.eventDelta;
       if (delta && delta.fromSeq === this.eventSeq) {
-        this.events = [
-          ...this.events,
-          ...delta.added.map((event) => ({ ...event })),
-        ].slice(-80);
+        this.events = [...this.events, ...delta.added.map((event) => ({ ...event }))].slice(-80);
       }
     } else if (next.eventSeq !== this.eventSeq) {
       const objectSnapshot = next as LiveSnapshot | LiveResult;

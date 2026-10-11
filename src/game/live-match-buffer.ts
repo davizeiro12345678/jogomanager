@@ -121,7 +121,7 @@ export function actionCode(action: PlayerAction | null): number {
 }
 
 export function actionFromCode(code: number): PlayerAction | null {
-  return code > 0 && Number.isInteger(code) ? ACTION_NAMES[code - 1] ?? null : null;
+  return code > 0 && Number.isInteger(code) ? (ACTION_NAMES[code - 1] ?? null) : null;
 }
 
 export function createLivePlayerMetadata(players: readonly SimPlayer[]): LivePlayerMeta[] {
@@ -292,11 +292,15 @@ export function applyLivePlayerBuffer(
   return players;
 }
 
-export function transferablesForSnapshot(packet: Pick<LiveSnapshotPacket, "players">): ArrayBuffer[] {
+export function transferablesForSnapshot(
+  packet: Pick<LiveSnapshotPacket, "players">,
+): ArrayBuffer[] {
   return [packet.players.positions, packet.players.velocities, packet.players.states];
 }
 
-export function recycleSnapshot(packet: Pick<LiveSnapshotPacket, "players">): RecycledSnapshotBuffers {
+export function recycleSnapshot(
+  packet: Pick<LiveSnapshotPacket, "players">,
+): RecycledSnapshotBuffers {
   return {
     positions: packet.players.positions,
     velocities: packet.players.velocities,

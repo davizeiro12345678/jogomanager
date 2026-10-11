@@ -26,9 +26,27 @@ export type StandingRow = {
   goalsDiff: number;
   form: string | null;
   description: string | null;
-  all: { played: number; win: number; draw: number; lose: number; goals: { for: number; against: number } };
-  home: { played: number; win: number; draw: number; lose: number; goals: { for: number; against: number } };
-  away: { played: number; win: number; draw: number; lose: number; goals: { for: number; against: number } };
+  all: {
+    played: number;
+    win: number;
+    draw: number;
+    lose: number;
+    goals: { for: number; against: number };
+  };
+  home: {
+    played: number;
+    win: number;
+    draw: number;
+    lose: number;
+    goals: { for: number; against: number };
+  };
+  away: {
+    played: number;
+    win: number;
+    draw: number;
+    lose: number;
+    goals: { for: number; against: number };
+  };
 };
 
 export type LeagueTable = {
@@ -46,7 +64,14 @@ export type LeagueTable = {
 };
 
 type RawStanding = {
-  league: { id: number; name: string; country: string; season: number; logo: string; standings: StandingRow[][] };
+  league: {
+    id: number;
+    name: string;
+    country: string;
+    season: number;
+    logo: string;
+    standings: StandingRow[][];
+  };
 };
 type RawInjury = {
   player?: { name?: string; type?: string; reason?: string };
@@ -113,7 +138,10 @@ export const getLeagueTable = createServerFn({ method: "GET" })
       .eq("kind", "top_stats")
       .in("ref", [`scorers_${lg.id}_2026`, `assists_${lg.id}_2026`]);
     const pick = (prefix: string) =>
-      ((tops ?? []).find((t) => t.ref.startsWith(prefix))?.payload as unknown as RawTop[] | null ?? [])
+      (
+        ((tops ?? []).find((t) => t.ref.startsWith(prefix))?.payload as unknown as
+          RawTop[] | null) ?? []
+      )
         .slice(0, 10)
         .map(toTop)
         .filter((t): t is TopPlayer => t !== null);
@@ -170,14 +198,32 @@ function toTop(r: RawTop): TopPlayer | null {
 }
 
 export type ClubReal = {
-  coach: { name: string; age: number | null; nationality: string | null; photo: string | null } | null;
+  coach: {
+    name: string;
+    age: number | null;
+    nationality: string | null;
+    photo: string | null;
+  } | null;
   injuries: { player: string; type: string; reason: string }[];
-  transfers: { player: string; date: string; type: string; direction: "in" | "out"; other: string }[];
+  transfers: {
+    player: string;
+    date: string;
+    type: string;
+    direction: "in" | "out";
+    other: string;
+  }[];
 };
 
 type RawTransfer = {
   player?: { name?: string };
-  transfers?: { date?: string; type?: string; teams?: { in?: { id?: number | null; name?: string }; out?: { id?: number | null; name?: string } } }[];
+  transfers?: {
+    date?: string;
+    type?: string;
+    teams?: {
+      in?: { id?: number | null; name?: string };
+      out?: { id?: number | null; name?: string };
+    };
+  }[];
 };
 
 export const getClubReal = createServerFn({ method: "GET" })
@@ -185,31 +231,59 @@ export const getClubReal = createServerFn({ method: "GET" })
   .handler(async ({ data }): Promise<ClubReal> => {
     const db = await admin();
     const [coachRes, injRes] = await Promise.all([
-      db.from("api_football_data").select("payload").eq("kind", "coach")
-        .eq("payload->team->>name", data.name).limit(1),
-      db.from("api_football_data").select("payload").eq("kind", "injury")
-        .eq("payload->team->>name", data.name).order("updated_at", { ascending: false }).limit(20),
+      db
+        .from("api_football_data")
+        .select("payload")
+        .eq("kind", "coach")
+        .eq("payload->team->>name", data.name)
+        .limit(1),
+      db
+        .from("api_football_data")
+        .select("payload")
+        .eq("kind", "injury")
+        .eq("payload->team->>name", data.name)
+        .order("updated_at", { ascending: false })
+        .limit(20),
     ]);
     const c = coachRes.data?.[0]?.payload as
-      | { name?: string; age?: number; nationality?: string; photo?: string }
-      | undefined;
+      { name?: string; age?: number; nationality?: string; photo?: string } | undefined;
     const seen = new Set<string>();
     const injuries = (injRes.data ?? [])
       .map((i) => i.payload as unknown as RawInjury)
       .filter((p) => p.player?.name && !seen.has(p.player.name) && seen.add(p.player.name))
       .slice(0, 8)
-      .map((p) => ({ player: p.player!.name!, type: p.player?.type ?? "", reason: p.player?.reason ?? "" }));
-    const { data: team } = await db.from("official_teams").select("source_id").eq("name", data.name).like("source_id", "af:%").limit(1);
+      .map((p) => ({
+        player: p.player!.name!,
+        type: p.player?.type ?? "",
+        reason: p.player?.reason ?? "",
+      }));
+    const { data: team } = await db
+      .from("official_teams")
+      .select("source_id")
+      .eq("name", data.name)
+      .like("source_id", "af:%")
+      .limit(1);
     const teamId = Number(team?.[0]?.source_id.slice(3));
     const transfers: ClubReal["transfers"] = [];
     if (teamId) {
-      const { data: tr } = await db.from("api_football_data").select("payload").eq("kind", "transfer").eq("ref", String(teamId)).limit(1);
+      const { data: tr } = await db
+        .from("api_football_data")
+        .select("payload")
+        .eq("kind", "transfer")
+        .eq("ref", String(teamId))
+        .limit(1);
       for (const entry of (tr?.[0]?.payload as unknown as RawTransfer[] | null) ?? []) {
         for (const t of entry.transfers ?? []) {
           if (!entry.player?.name || !t.date) continue;
           const isIn = t.teams?.in?.id === teamId;
           const other = isIn ? t.teams?.out?.name : t.teams?.in?.name;
-          transfers.push({ player: entry.player.name, date: t.date, type: t.type ?? "", direction: isIn ? "in" : "out", other: other ?? "" });
+          transfers.push({
+            player: entry.player.name,
+            date: t.date,
+            type: t.type ?? "",
+            direction: isIn ? "in" : "out",
+            other: other ?? "",
+          });
         }
       }
       transfers.sort((a, b) => b.date.localeCompare(a.date));
@@ -218,7 +292,12 @@ export const getClubReal = createServerFn({ method: "GET" })
     return {
       transfers,
       coach: c?.name
-        ? { name: c.name, age: c.age ?? null, nationality: c.nationality ?? null, photo: c.photo ?? null }
+        ? {
+            name: c.name,
+            age: c.age ?? null,
+            nationality: c.nationality ?? null,
+            photo: c.photo ?? null,
+          }
         : null,
       injuries,
     };
@@ -249,22 +328,39 @@ export const getLeagueDigests = createServerFn({ method: "GET" }).handler(
     await Promise.all(
       FEATURED_LEAGUES.map(async (lg) => {
         const [{ data: rows }, { count }] = await Promise.all([
-          db.from("api_football_data").select("payload").eq("kind", "standings")
-            .like("ref", `${lg.id}:%`).order("ref", { ascending: false }).limit(1),
-          db.from("api_football_data").select("ref", { count: "exact", head: true })
-            .eq("kind", "injury").eq("payload->league->>id", String(lg.id)),
+          db
+            .from("api_football_data")
+            .select("payload")
+            .eq("kind", "standings")
+            .like("ref", `${lg.id}:%`)
+            .order("ref", { ascending: false })
+            .limit(1),
+          db
+            .from("api_football_data")
+            .select("ref", { count: "exact", head: true })
+            .eq("kind", "injury")
+            .eq("payload->league->>id", String(lg.id)),
         ]);
         const raw = (rows?.[0]?.payload as unknown as RawStanding[] | null)?.[0];
         const table = raw?.league.standings[0];
         if (!raw || !table || table.length < 6) return;
-        let hw = 0, d = 0, aw = 0, goals = 0;
+        let hw = 0,
+          d = 0,
+          aw = 0,
+          goals = 0;
         for (const r of table) {
-          hw += r.home.win; aw += r.away.win; d += r.home.draw;
+          hw += r.home.win;
+          aw += r.away.win;
+          d += r.home.draw;
           goals += r.home.goals.for + r.home.goals.against;
         }
         const games = hw + aw + d;
         if (!games) return;
-        const defense = [...table].sort((a, b) => a.all.goals.against / Math.max(1, a.all.played) - b.all.goals.against / Math.max(1, b.all.played))[0]!;
+        const defense = [...table].sort(
+          (a, b) =>
+            a.all.goals.against / Math.max(1, a.all.played) -
+            b.all.goals.against / Math.max(1, b.all.played),
+        )[0]!;
         const lowerHalf = table.slice(Math.ceil(table.length / 2));
         const over = [...lowerHalf].sort((a, b) => b.goalsDiff - a.goalsDiff)[0];
         out.push({
@@ -279,8 +375,14 @@ export const getLeagueDigests = createServerFn({ method: "GET" }).handler(
           awayWinPct: (aw / games) * 100,
           leader: table[0]!.team.name,
           leaderGap: table[0]!.points - table[1]!.points,
-          bestDefense: { team: defense.team.name, against: defense.all.goals.against, played: defense.all.played },
-          overPerformer: over ? { team: over.team.name, rank: over.rank, goalsDiff: over.goalsDiff } : null,
+          bestDefense: {
+            team: defense.team.name,
+            against: defense.all.goals.against,
+            played: defense.all.played,
+          },
+          overPerformer: over
+            ? { team: over.team.name, rank: over.rank, goalsDiff: over.goalsDiff }
+            : null,
           injuries: count ?? 0,
         });
       }),

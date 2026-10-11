@@ -73,9 +73,9 @@ export function getConfiguredStripeEnvironment(): StripeEnv {
   const isPreviewBuild = import.meta.env.DEV;
   return resolveConfiguredStripeEnvironment({
     deploymentEnvironment: isPreviewBuild ? undefined : process.env["PAYMENTS_ENVIRONMENT"],
-    clientToken: process.env["VITE_PAYMENTS_CLIENT_TOKEN"] ?? import.meta.env["VITE_PAYMENTS_CLIENT_TOKEN"],
-    liveApiKeyConfigured:
-      !isPreviewBuild && Boolean(process.env["STRIPE_LIVE_API_KEY"]?.trim()),
+    clientToken:
+      process.env["VITE_PAYMENTS_CLIENT_TOKEN"] ?? import.meta.env["VITE_PAYMENTS_CLIENT_TOKEN"],
+    liveApiKeyConfigured: !isPreviewBuild && Boolean(process.env["STRIPE_LIVE_API_KEY"]?.trim()),
   });
 }
 

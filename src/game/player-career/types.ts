@@ -75,7 +75,13 @@ export interface KeyMoment {
   id: string;
   minute: number;
   prompt: string;
-  options: { id: string; label: string; attr: string; risk: number; reward: "goal" | "assist" | "save" | "tackle" | "keep" }[];
+  options: {
+    id: string;
+    label: string;
+    attr: string;
+    risk: number;
+    reward: "goal" | "assist" | "save" | "tackle" | "keep";
+  }[];
 }
 
 export interface PlayerCareerState {

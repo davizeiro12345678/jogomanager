@@ -837,13 +837,7 @@ export function buildSculptedFace(
     // does not need to duplicate the head silhouette in the shadow map.
     hair.push(
       rigPart(
-        sculptedHair(
-          P,
-          look,
-          hi,
-          hi && portrait ? { columns: 72, rows: 36 } : undefined,
-          portrait,
-        ),
+        sculptedHair(P, look, hi, hi && portrait ? { columns: 72, rows: 36 } : undefined, portrait),
         mats.hair,
       ),
     );

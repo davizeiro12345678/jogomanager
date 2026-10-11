@@ -74,8 +74,14 @@ export function ManagerPortrait({ look, size = 96, accent, className }: ManagerP
         {/* pescoço e cabeça */}
         <rect x="43" y="58" width="14" height="14" rx="6" fill={skin} />
         <rect x="43" y="62" width="14" height="5" fill="#000000" opacity="0.18" />
-        <path d="M31 40 C31 24 69 24 69 40 L68 50 C66 61 58 66 50 66 C42 66 34 61 32 50 Z" fill={skin} />
-        <path d="M31 40 C31 24 69 24 69 40 L68 50 C66 61 58 66 50 66 C42 66 34 61 32 50 Z" fill="url(#mp-face-shade)" />
+        <path
+          d="M31 40 C31 24 69 24 69 40 L68 50 C66 61 58 66 50 66 C42 66 34 61 32 50 Z"
+          fill={skin}
+        />
+        <path
+          d="M31 40 C31 24 69 24 69 40 L68 50 C66 61 58 66 50 66 C42 66 34 61 32 50 Z"
+          fill="url(#mp-face-shade)"
+        />
         {/* orelhas */}
         <ellipse cx="31" cy="45" rx="3.4" ry="5" fill={skin} />
         <ellipse cx="69" cy="45" rx="3.4" ry="5" fill={skin} />
@@ -103,8 +109,20 @@ export function ManagerPortrait({ look, size = 96, accent, className }: ManagerP
         )}
 
         {/* sobrancelhas e olhos */}
-        <path d="M38.5 41 Q43 38.6 47.5 40.4" stroke={hair} strokeWidth="1.9" fill="none" strokeLinecap="round" />
-        <path d="M52.5 40.4 Q57 38.6 61.5 41" stroke={hair} strokeWidth="1.9" fill="none" strokeLinecap="round" />
+        <path
+          d="M38.5 41 Q43 38.6 47.5 40.4"
+          stroke={hair}
+          strokeWidth="1.9"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <path
+          d="M52.5 40.4 Q57 38.6 61.5 41"
+          stroke={hair}
+          strokeWidth="1.9"
+          fill="none"
+          strokeLinecap="round"
+        />
         <ellipse cx="43" cy="45.2" rx="2.9" ry="2.1" fill="#f6f3ee" />
         <ellipse cx="57" cy="45.2" rx="2.9" ry="2.1" fill="#f6f3ee" />
         <circle cx="43.2" cy="45.3" r="1.5" fill="#4a3424" />
@@ -113,11 +131,30 @@ export function ManagerPortrait({ look, size = 96, accent, className }: ManagerP
         <circle cx="57.2" cy="45.3" r="0.7" fill="#0d0d0d" />
         <circle cx="43.8" cy="44.7" r="0.45" fill="#ffffff" />
         <circle cx="57.8" cy="44.7" r="0.45" fill="#ffffff" />
-        <path d="M40 43.6 Q43 42.4 46 43.6" stroke="#000000" strokeOpacity="0.25" strokeWidth="0.6" fill="none" />
-        <path d="M54 43.6 Q57 42.4 60 43.6" stroke="#000000" strokeOpacity="0.25" strokeWidth="0.6" fill="none" />
+        <path
+          d="M40 43.6 Q43 42.4 46 43.6"
+          stroke="#000000"
+          strokeOpacity="0.25"
+          strokeWidth="0.6"
+          fill="none"
+        />
+        <path
+          d="M54 43.6 Q57 42.4 60 43.6"
+          stroke="#000000"
+          strokeOpacity="0.25"
+          strokeWidth="0.6"
+          fill="none"
+        />
 
         {/* nariz e boca */}
-        <path d="M50.5 45 Q52.5 51 51.5 52.5 Q50 53.4 48 52.6" stroke="#000000" strokeOpacity="0.22" strokeWidth="1" fill="none" strokeLinecap="round" />
+        <path
+          d="M50.5 45 Q52.5 51 51.5 52.5 Q50 53.4 48 52.6"
+          stroke="#000000"
+          strokeOpacity="0.22"
+          strokeWidth="1"
+          fill="none"
+          strokeLinecap="round"
+        />
         <ellipse cx="38" cy="52" rx="3.5" ry="2" fill="#c0504d" opacity="0.08" />
         <ellipse cx="62" cy="52" rx="3.5" ry="2" fill="#c0504d" opacity="0.08" />
         <path

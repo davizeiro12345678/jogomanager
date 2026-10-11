@@ -57,7 +57,8 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
     const timeMs = Math.max(previousTimeMs, Math.round(frame.t * 1_000));
     timesMs[frameIndex] = timeMs - previousTimeMs;
     previousTimeMs = timeMs;
-    for (let axis = 0; axis < 3; axis += 1) ball[frameIndex * 3 + axis] = integer(frame.b[axis]! / 1);
+    for (let axis = 0; axis < 3; axis += 1)
+      ball[frameIndex * 3 + axis] = integer(frame.b[axis]! / 1);
     score[frameIndex * 2] = Math.max(0, Math.min(65_535, frame.hg));
     score[frameIndex * 2 + 1] = Math.max(0, Math.min(65_535, frame.ag));
     possession[frameIndex] = frame.poss === "away" ? 1 : 0;
@@ -177,7 +178,9 @@ export function estimateReplayBytes(replay: Replay, stored: StoredReplayV3) {
     score: stored.score,
     visual: stored.frames.visual,
   };
-  const v3Bytes = arrays.reduce((sum, value) => sum + value.byteLength, 0) + text.encode(JSON.stringify(envelope)).byteLength;
+  const v3Bytes =
+    arrays.reduce((sum, value) => sum + value.byteLength, 0) +
+    text.encode(JSON.stringify(envelope)).byteLength;
   return {
     frameCount: replay.frames.length,
     v2Bytes,

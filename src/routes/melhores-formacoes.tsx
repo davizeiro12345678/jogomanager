@@ -95,18 +95,32 @@ function FormationsPage() {
           mentalidade e a marcação antes de mexer nos nomes.
         </p>
       </Section>
-          <Section id="ajustes" title="Os três ajustes que mais mudam o jogo">
+      <Section id="ajustes" title="Os três ajustes que mais mudam o jogo">
         <ul className="list-disc space-y-2 pl-5">
-          <li><strong className="text-foreground">Mentalidade</strong> define quantos jogadores sobem no ataque. Ofensiva cria mais chances e concede mais contra-ataques.</li>
-          <li><strong className="text-foreground">Altura da linha</strong> decide onde você recupera a bola. Linha alta contra time lento, linha baixa contra atacante veloz.</li>
-          <li><strong className="text-foreground">Ritmo</strong> acelera as jogadas e a fadiga. Ritmo alto o jogo inteiro derruba a condição física no último terço da partida.</li>
+          <li>
+            <strong className="text-foreground">Mentalidade</strong> define quantos jogadores sobem
+            no ataque. Ofensiva cria mais chances e concede mais contra-ataques.
+          </li>
+          <li>
+            <strong className="text-foreground">Altura da linha</strong> decide onde você recupera a
+            bola. Linha alta contra time lento, linha baixa contra atacante veloz.
+          </li>
+          <li>
+            <strong className="text-foreground">Ritmo</strong> acelera as jogadas e a fadiga. Ritmo
+            alto o jogo inteiro derruba a condição física no último terço da partida.
+          </li>
         </ul>
       </Section>
       <Section id="intervalo" title="O que mexer no intervalo">
         <p>
-          Perdendo em casa: suba a mentalidade um nível e a linha também — não os dois ao mesmo tempo se o adversário tem
-          velocidade. Ganhando fora: baixe o ritmo, recue a linha e guarde uma substituição para os últimos quinze minutos.
-          Para ver em quais ligas o mandante mais vence, consulte as <Link to="/tabelas" className="text-primary underline">tabelas reais</Link>.
+          Perdendo em casa: suba a mentalidade um nível e a linha também — não os dois ao mesmo
+          tempo se o adversário tem velocidade. Ganhando fora: baixe o ritmo, recue a linha e guarde
+          uma substituição para os últimos quinze minutos. Para ver em quais ligas o mandante mais
+          vence, consulte as{" "}
+          <Link to="/tabelas" className="text-primary underline">
+            tabelas reais
+          </Link>
+          .
         </p>
       </Section>
     </ArticleShell>

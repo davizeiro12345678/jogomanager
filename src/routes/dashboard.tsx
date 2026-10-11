@@ -125,13 +125,13 @@ function TrainerDashboard({ career }: { career: CareerState }) {
         <div className="trainer-heading-club">
           <Crest club={club} size={56} />
           <div>
-          <p className="trainer-eyebrow">Sua central de decisões</p>
-          <h1>Painel do treinador</h1>
-          <p>
-            {fixture
-              ? `Prepare o ${club.name} para o próximo desafio.`
-              : `Veja o balanço da temporada do ${club.name}.`}
-          </p>
+            <p className="trainer-eyebrow">Sua central de decisões</p>
+            <h1>Painel do treinador</h1>
+            <p>
+              {fixture
+                ? `Prepare o ${club.name} para o próximo desafio.`
+                : `Veja o balanço da temporada do ${club.name}.`}
+            </p>
           </div>
         </div>
         <Link to="/league" className="trainer-league-link">
