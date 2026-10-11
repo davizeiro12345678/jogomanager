@@ -89,8 +89,9 @@ export function useCareer() {
       if (local && (!cloud || localAt > cloudAt)) {
         const migrated = await repairLocal(local);
         try {
-          await save({ data: { state: migrated } });
-          return { career: migrated, sync: "synced" };
+          const res = await save({ data: { state: migrated } });
+          // A newer timestamp is not newer progress: keep the cloud career.
+          if (!res.stale) return { career: migrated, sync: "synced" };
         } catch {
           await queueSync(migrated);
           return { career: migrated, sync: "pending" };
@@ -127,9 +128,11 @@ export function useCareer() {
       }
       setSync("syncing");
       try {
-        await save({ data: { state } });
+        const res = await save({ data: { state } });
         await clearOutbox();
         setSync("synced");
+        // The cloud has newer progress: reload it instead of keeping the old copy.
+        if (res.stale) void qc.invalidateQueries({ queryKey: CAREER_KEY });
       } catch {
         await queueSync(state);
         setSync("pending");
@@ -146,9 +149,10 @@ export function useCareer() {
     flushing.current = true;
     setSync("syncing");
     try {
-      await save({ data: { state: migrateCareer(entry.state) } });
+      const res = await save({ data: { state: migrateCareer(entry.state) } });
       await clearOutbox();
       setSync("synced");
+      if (res.stale) void qc.invalidateQueries({ queryKey: CAREER_KEY });
     } catch {
       setSync("pending");
     } finally {
