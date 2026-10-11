@@ -186,7 +186,7 @@ async function importTeams(
   const done = await pool(leagues ?? [], 4, deadline, async (lg) => {
     if (!lg.current_season) return;
     const id = lg.source_id.slice(3);
-    let teams: AfTeam[] = [];
+    let teams: AfTeam[];
     try {
       teams = await af<AfTeam>(`/teams?league=${id}&season=${lg.current_season}`);
     } catch (e) {
@@ -297,7 +297,7 @@ async function importSquads(
 
   let created = 0;
   const done = await pool(teams ?? [], 4, deadline, async (t) => {
-    let squad: AfSquad[] = [];
+    let squad: AfSquad[];
     try {
       squad = await af<AfSquad>(`/players/squads?team=${t.source_id.slice(3)}`);
     } catch (e) {
@@ -565,9 +565,9 @@ async function importSimple(
   phase: Phase,
   path: string,
   kind: string,
-  refOf: (r: any) => string,
+  refOf: (r: Record<string, unknown>) => string,
 ): Promise<AfImportResult> {
-  const list = await af<any>(path);
+  const list = await af<Record<string, unknown>>(path);
   const created = await saveRaw(
     kind,
     list.map((r) => ({ ref: refOf(r), payload: r })),
