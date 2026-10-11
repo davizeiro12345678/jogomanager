@@ -1,5 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { PublicLinks } from "@/components/PublicLinks";
+import { StickyPlayCta } from "@/components/StickyPlayCta";
+import { Faq, HomeAway, leagueFaq, MidCta, OtherLeagues, Prospects, TopPlayers, Zones } from "@/components/LeagueExtras";
 import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 import { LEAGUE_LABELS } from "@/lib/league-labels";
 import { getLeagueTable, type LeagueTable, type StandingRow } from "@/lib/real-football.functions";
@@ -12,11 +14,14 @@ export const Route = createFileRoute("/tabelas/$slug")({
   },
   head: ({ params, loaderData }) => {
     const label = loaderData?.label ?? { name: "Liga", country: "" };
-    const season = loaderData?.table?.season;
-    const leader = loaderData?.table?.groups[0]?.[0]?.team.name;
+    const table = loaderData?.table;
+    const season = table?.season;
+    const leader = table?.groups[0]?.[0]?.team.name;
+    const scorer = table?.scorers[0];
     const path = `/tabelas/${params.slug}`;
-    const title = `Tabela ${label.name}${season ? ` ${season}` : ""}: classificação, forma e desfalques`;
-    const description = `Classificação completa da ${label.name} (${label.country})${leader ? `, liderada por ${leader}` : ""}: desempenho em casa e fora, melhor ataque e defesa, forma recente e lesionados.`;
+    const title = `Tabela ${label.name}${season ? ` ${season}` : ""}: classificação, artilharia e análise`;
+    const description = `Classificação da ${label.name} (${label.country})${leader ? ` com ${leader} na liderança` : ""}${scorer ? `, artilharia (${scorer.name}, ${scorer.goals} gols)` : ""}, promessas, casa x fora e desfalques.`;
+    const faq = table ? leagueFaq(table, label.name) : [];
     return {
       meta: seoMeta({ title, description, path, type: "article" }),
       links: canonical(path),
@@ -26,6 +31,16 @@ export const Route = createFileRoute("/tabelas/$slug")({
           { name: "Tabelas", path: "/tabelas" },
           { name: label.name, path },
         ]),
+        ...(faq.length
+          ? [{
+              type: "application/ld+json",
+              children: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                mainEntity: faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+              }),
+            }]
+          : []),
       ],
     };
   },
@@ -146,8 +161,10 @@ function Table({ rows }: { rows: StandingRow[] }) {
 
 function LeaguePage() {
   const { table, label } = Route.useLoaderData() as { table: LeagueTable | null; label: { name: string; country: string } };
+  const { slug } = Route.useParams();
+  const rows = table?.groups[0] ?? [];
   return (
-    <main className="pitch-bg min-h-screen px-4 py-14">
+    <main className="pitch-bg min-h-screen px-4 pb-28 pt-14 sm:pb-14">
       <article className="mx-auto max-w-5xl">
         <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">{label.country}</p>
         <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">
@@ -160,12 +177,22 @@ function LeaguePage() {
             <p className="mt-4 text-sm text-muted-foreground">
               Atualizado em {new Date(table.updatedAt).toLocaleDateString("pt-BR")}. V = vitória, E = empate, D = derrota.
             </p>
+            <nav aria-label="Nesta página" className="mt-4 flex flex-wrap gap-3 text-sm">
+              {[["analise", "Análise"], ["artilharia", "Artilharia"], ["promessas", "Promessas"], ["casa-fora", "Casa x fora"], ["desfalques", "Desfalques"], ["faq", "Perguntas"]].map(([id, t]) => (
+                <a key={id} href={`#${id}`} className="text-primary underline-offset-4 hover:underline">{t}</a>
+              ))}
+            </nav>
             {table.groups.map((g, i) => (
               <div key={i}>
                 <Table rows={g} />
                 {i === 0 && <Insights rows={g} name={label.name} />}
               </div>
             ))}
+            <MidCta team={rows[0]?.team.name} name={label.name} />
+            <TopPlayers table={table} />
+            <Prospects table={table} />
+            <HomeAway rows={rows} />
+            <Zones rows={rows} />
             {table.injuries.length > 0 && (
               <section className="mt-10" aria-labelledby="desfalques">
                 <h2 id="desfalques" className="font-display text-2xl">Desfalques recentes</h2>
@@ -179,18 +206,21 @@ function LeaguePage() {
                 </ul>
               </section>
             )}
+            <Faq items={leagueFaq(table, label.name)} />
           </>
         )}
         <div className="mt-12 flex flex-wrap gap-3">
           <Link to="/new" className="rounded-lg bg-primary px-6 py-3 font-display text-sm uppercase tracking-widest text-primary-foreground hover:brightness-110">
             Comandar um clube desta liga
           </Link>
-          <Link to="/tabelas" className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest hover:bg-secondary">
-            Outras tabelas
+          <Link to="/guia-de-scouting" className="rounded-lg border border-border px-6 py-3 font-display text-sm uppercase tracking-widest hover:bg-secondary">
+            Guia de scouting
           </Link>
         </div>
+        <OtherLeagues current={slug} />
         <PublicLinks />
       </article>
+      <StickyPlayCta label={`Treinar na ${label.name}`} />
     </main>
   );
 }
