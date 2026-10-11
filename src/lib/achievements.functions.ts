@@ -28,10 +28,11 @@ export const syncAchievements = createServerFn({ method: "POST" })
     let earned: string[];
     try {
       const saved = career.state as unknown as CareerState;
-      if (!verifyCareerProgress(saved)) return { ok: true, unlocked: [] as string[] };
-      // Even a valid initial save may contain arbitrary ancillary fields.
-      // Award only from a canonical server-created career, never the payload.
-      earned = evaluateAchievements(initCareer(saved.leagueId, saved.clubId, saved.managerName));
+      // verified_progress is set only by the server for a canonical start or
+      // an attested continuation of it. Client-claimed unlocks are ignored.
+      earned = verifyCareerProgress(saved)
+        ? evaluateAchievements(initCareer(saved.leagueId, saved.clubId, saved.managerName))
+        : evaluateAchievements({ ...saved, achievements: [] });
     } catch {
       return { ok: true, unlocked: [] as string[] };
     }
