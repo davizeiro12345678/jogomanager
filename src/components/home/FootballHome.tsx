@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router";
+import { getRouteApi, Link } from "@tanstack/react-router";
+import { HomeLeaguePulse } from "@/components/home/HomeLeaguePulse";
 import { useEffect, useState } from "react";
 import {
   ArrowDown,
@@ -157,6 +158,7 @@ function TacticalPreview() {
 }
 
 export function FootballHome() {
+  const { leagues } = getRouteApi("/").useLoaderData();
   const [menu, setMenu] = useState(false);
   const [system, setSystem] = useState(0);
   const [resume, setResume] = useState<{ club: string; season: number; round: number } | null>(
@@ -338,6 +340,7 @@ export function FootballHome() {
         </span>
       </div>
       <div className="home-body">
+        <HomeLeaguePulse leagues={leagues} />
         <section id="modos" className="home-section" aria-labelledby="home-modes-title">
           <div className="home-section-heading">
             <div>
