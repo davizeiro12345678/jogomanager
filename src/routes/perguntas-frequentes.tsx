@@ -29,7 +29,6 @@ const QA = [
   ["Funciona no celular?", "Funciona no navegador do celular, tablet e PC. Em aparelhos mais simples, o jogo reduz os efeitos gráficos automaticamente para manter a partida fluida."],
   ["Preciso criar conta?", "Não para começar. Sem conta, a carreira fica salva só neste navegador. Com conta (Google, Apple, Microsoft ou e-mail), o progresso vai para a nuvem e você continua em outro aparelho."],
   ["Posso jogar contra amigos?", "Sim, no modo multiplayer: crie uma sala, envie o código e joguem a partida ao mesmo tempo, com o resultado calculado pelo servidor."],
-  ["Quanto tempo dura uma temporada?", "Depende do ritmo: simulando as partidas, uma temporada leva cerca de meia hora; assistindo aos jogos em 3D, algumas horas."],
   ["As compras são seguras?", "O pagamento é processado pela Stripe; o jogo nunca vê os dados do seu cartão. O item comprado é entregue na sua conta assim que o pagamento é confirmado."],
   [
     "Como participo da comunidade?",
