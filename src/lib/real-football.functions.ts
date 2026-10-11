@@ -172,6 +172,12 @@ function toTop(r: RawTop): TopPlayer | null {
 export type ClubReal = {
   coach: { name: string; age: number | null; nationality: string | null; photo: string | null } | null;
   injuries: { player: string; type: string; reason: string }[];
+  transfers: { player: string; date: string; type: string; direction: "in" | "out"; other: string }[];
+};
+
+type RawTransfer = {
+  player?: { name?: string };
+  transfers?: { date?: string; type?: string; teams?: { in?: { id?: number | null; name?: string }; out?: { id?: number | null; name?: string } } }[];
 };
 
 export const getClubReal = createServerFn({ method: "GET" })
@@ -193,7 +199,24 @@ export const getClubReal = createServerFn({ method: "GET" })
       .filter((p) => p.player?.name && !seen.has(p.player.name) && seen.add(p.player.name))
       .slice(0, 8)
       .map((p) => ({ player: p.player!.name!, type: p.player?.type ?? "", reason: p.player?.reason ?? "" }));
+    const { data: team } = await db.from("official_teams").select("source_id").eq("name", data.name).like("source_id", "af:%").limit(1);
+    const teamId = Number(team?.[0]?.source_id.slice(3));
+    const transfers: ClubReal["transfers"] = [];
+    if (teamId) {
+      const { data: tr } = await db.from("api_football_data").select("payload").eq("kind", "transfer").eq("ref", String(teamId)).limit(1);
+      for (const entry of (tr?.[0]?.payload as unknown as RawTransfer[] | null) ?? []) {
+        for (const t of entry.transfers ?? []) {
+          if (!entry.player?.name || !t.date) continue;
+          const isIn = t.teams?.in?.id === teamId;
+          const other = isIn ? t.teams?.out?.name : t.teams?.in?.name;
+          transfers.push({ player: entry.player.name, date: t.date, type: t.type ?? "", direction: isIn ? "in" : "out", other: other ?? "" });
+        }
+      }
+      transfers.sort((a, b) => b.date.localeCompare(a.date));
+      transfers.splice(8);
+    }
     return {
+      transfers,
       coach: c?.name
         ? { name: c.name, age: c.age ?? null, nationality: c.nationality ?? null, photo: c.photo ?? null }
         : null,
