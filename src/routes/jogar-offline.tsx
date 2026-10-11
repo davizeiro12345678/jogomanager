@@ -58,6 +58,30 @@ function OfflinePage() {
           mais recente (outro aparelho), você escolhe qual manter.
         </p>
       </Section>
+      <Section id="instalar" title="Como instalar o jogo como aplicativo">
+        <ul className="list-disc space-y-2 pl-5">
+          <li><strong className="text-foreground">Android (Chrome)</strong>: abra o site, toque no menu de três pontos e escolha “Instalar app” ou “Adicionar à tela inicial”.</li>
+          <li><strong className="text-foreground">iPhone (Safari)</strong>: toque em Compartilhar e depois em “Adicionar à Tela de Início”.</li>
+          <li><strong className="text-foreground">PC (Chrome ou Edge)</strong>: clique no ícone de instalar na barra de endereço.</li>
+        </ul>
+        <p>
+          Depois de instalado, o jogo abre em tela cheia e guarda os arquivos necessários no aparelho para funcionar sem internet.
+        </p>
+      </Section>
+      <Section id="o-que-funciona" title="O que funciona sem internet e o que precisa de conexão">
+        <ul className="list-disc space-y-2 pl-5">
+          <li><strong className="text-foreground">Funciona offline</strong>: carreira de treinador, partidas contra o computador, táticas, treinos, mercado contra clubes controlados pelo jogo e temporada automática.</li>
+          <li><strong className="text-foreground">Precisa de internet</strong>: multiplayer, chat, ranking, compras na loja, sincronizar o save na nuvem e baixar elencos atualizados.</li>
+        </ul>
+        <p>
+          Ao voltar a ficar online, o jogo sincroniza a carreira na sua conta automaticamente, se você estiver logado.
+        </p>
+      </Section>
+      <Section id="seguranca" title="Não perca seu progresso">
+        <p>
+          Uma carreira de convidado fica só no navegador deste aparelho. Limpar os dados do navegador apaga o save. Para jogar com tranquilidade, entre na sua conta antes de ficar offline: assim existe uma cópia na nuvem para recuperar em outro aparelho.
+        </p>
+      </Section>
     </ArticleShell>
   );
 }
