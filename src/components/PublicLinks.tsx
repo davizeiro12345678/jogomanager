@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 
 export const PUBLIC_PAGES = [
   { to: "/jogo-de-manager-de-futebol", label: "Jogo de manager de futebol grátis" },
-  { to: "/como-ser-tecnico-de-futebol", label: "Como ser técnico de futebol" },
   { to: "/mercado-de-transferencias", label: "Mercado de transferências" },
   { to: "/tabelas", label: "Tabelas das ligas reais" },
   { to: "/guias", label: "Guias" },
