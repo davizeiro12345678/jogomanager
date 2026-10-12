@@ -6,9 +6,9 @@ import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 import { CommunityInvite } from "@/components/CommunityInvite";
 
 const PATH = "/contato";
-const TITLE = "Contato e suporte · Pro Football Manager 3D";
+const TITLE = "Suporte e Contato | Pro Football Manager 3D";
 const DESC =
-  "Fale com a equipe do Pro Football Manager 3D: suporte de compras, problemas de carreira, denúncias no chat, pedidos de privacidade e sugestões de clubes e ligas.";
+  "Precisa de ajuda com compras, carreira ou sua conta? Consulte os canais de suporte do Pro Football Manager 3D e saiba como relatar problemas.";
 
 export const Route = createFileRoute("/contato")({
   head: () => ({
