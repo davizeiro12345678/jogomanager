@@ -4,9 +4,9 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/melhores-formacoes";
-const TITLE = "4-3-3, 4-2-3-1 ou 3-5-2? Qual formação vence com o seu elenco | Pro Football Manager 3D";
+const TITLE = "Melhores Formações de Futebol | Guia 4-3-3 e 4-2-3-1";
 const DESC =
-  "Quando cada esquema domina, o perfil de jogador que ele exige, como pressionar, defender a vantagem e virar jogos — testado no gramado 3D do jogo.";
+  "Compare 4-3-3, 4-2-3-1, 4-4-2 e 3-5-2: pontos fortes, limitações e ajustes para escolher a tática do seu elenco no manager de futebol.";
 
 export const Route = createFileRoute("/melhores-formacoes")({
   head: () => ({
@@ -58,19 +58,22 @@ function FormationsPage() {
       title="Melhores formações e quando usar cada uma"
       intro="Não existe formação perfeita — existe a formação certa para o seu elenco e para o adversário da rodada. Veja o que cada esquema entrega e o que ele cobra."
       path={PATH}
-      readMinutes={5}
+      readMinutes={12}
       level="Iniciante"
-      updated="setembro de 2026"
+      updated="outubro de 2026"
       toc={[
         ...FORMATIONS.map((f) => ({ id: f.name, title: f.name })),
         { id: "escolher", title: "Como escolher na prática" },
         { id: "ajustes", title: "Os três ajustes que mais mudam o jogo" },
         { id: "intervalo", title: "O que mexer no intervalo" },
+        { id: "diagnostico", title: "Diagnóstico tático" },
+        { id: "exemplos", title: "Três cenários de jogo" },
+        { id: "comparar", title: "Como testar mudanças" },
       ]}
       faq={[
         {
           q: "Qual formação é a mais segura para um elenco fraco?",
-          a: "5-3-2 fora de casa e 4-4-2 em casa: as duas mantêm duas linhas compactas e reduzem as chances do adversário.",
+          a: "Esquemas com cobertura defensiva podem ajudar, mas compare os jogadores disponíveis e teste a organização antes de decidir. Nenhuma formação garante menos chances ao rival.",
         },
         {
           q: "Devo copiar a formação do time adversário?",
@@ -98,16 +101,16 @@ function FormationsPage() {
       <Section id="ajustes" title="Os três ajustes que mais mudam o jogo">
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            <strong className="text-foreground">Mentalidade</strong> define quantos jogadores sobem
-            no ataque. Ofensiva cria mais chances e concede mais contra-ataques.
+            <strong className="text-foreground">Mentalidade</strong> orienta a postura geral do time.
+            Uma opção mais ofensiva pode aumentar a presença no ataque, mas exige atenção aos espaços deixados para trás.
           </li>
           <li>
-            <strong className="text-foreground">Altura da linha</strong> decide onde você recupera a
-            bola. Linha alta contra time lento, linha baixa contra atacante veloz.
+            <strong className="text-foreground">Altura da linha</strong> influencia o espaço atrás
+            da defesa. Linha alta pode pressionar mais à frente, mas permite ataques às costas dos zagueiros.
           </li>
           <li>
-            <strong className="text-foreground">Ritmo</strong> acelera as jogadas e a fadiga. Ritmo
-            alto o jogo inteiro derruba a condição física no último terço da partida.
+            <strong className="text-foreground">Ritmo</strong> muda a velocidade pretendida das ações.
+            Acompanhe a condição física e evite presumir que acelerar sempre produzirá mais chances.
           </li>
         </ul>
       </Section>
@@ -121,6 +124,60 @@ function FormationsPage() {
             tabelas reais
           </Link>
           .
+        </p>
+      </Section>
+
+      <Section id="diagnostico" title="Diagnóstico: o que observar antes de trocar de esquema">
+        <p>
+          Repare em quatro perguntas: o adversário chega pela lateral ou pelo centro? Seus
+          volantes conseguem proteger a entrada da área? Seus atacantes recebem a bola
+          em condições de finalizar? A equipe consegue recuperar a posse sem abrir espaços?
+        </p>
+        <p>
+          Uma formação desenha posições de partida, mas a qualidade do plano depende de
+          quem ocupa cada função. Um 4-3-3 com pontas que retornam para marcar pode
+          oferecer equilíbrio diferente de um 4-3-3 que mantém os três atacantes adiantados.
+          Por isso, evite comparar apenas os números da formação.
+        </p>
+      </Section>
+      <Section id="exemplos" title="Três cenários táticos para estudar">
+        <h3 className="font-display text-base text-foreground">Cenário A: pontas velozes, meio-campo limitado</h3>
+        <p>
+          No 4-3-3, a equipe pode explorar profundidade pelos lados, mas precisa proteger
+          o setor central. Se o adversário acumula jogadores por dentro, experimente apoio
+          adicional de um volante ou um ajuste da pressão, sem trocar tudo de uma só vez.
+        </p>
+        <h3 className="font-display text-base text-foreground">Cenário B: dois volantes fortes e um armador</h3>
+        <p>
+          O 4-2-3-1 permite distribuir responsabilidade defensiva na frente dos zagueiros
+          e deixar um meia mais livre para organizar. Analise se o centroavante está
+          isolado e se os extremos conseguem participar da criação.
+        </p>
+        <h3 className="font-display text-base text-foreground">Cenário C: vantagem pequena no fim da partida</h3>
+        <p>
+          Recuar a linha pode proteger a área, mas também entregar o meio-campo ao rival.
+          Antes de trocar para cinco defensores, observe o perfil dos substitutos, o
+          desgaste físico e de onde vêm as oportunidades do adversário.
+        </p>
+        <p>
+          Esses exemplos ensinam raciocínio tático: os resultados específicos precisam ser
+          testados na sua versão do simulador.
+        </p>
+      </Section>
+      <Section id="comparar" title="Como testar se uma mudança tática realmente funcionou">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>Comece com uma formação que aproveite os melhores jogadores nas posições naturais.</li>
+          <li>Observe duas ou três partidas, levando em conta a força dos adversários.</li>
+          <li>Altere uma variável: formação, mentalidade, linha ou substituições.</li>
+          <li>Compare oportunidades criadas, espaços defensivos e desgaste dos atletas.</li>
+          <li>Evite concluir que uma tática é superior com base em apenas uma vitória ou derrota.</li>
+        </ol>
+        <p>
+          Para construir o elenco adequado ao seu plano, use o
+          <Link to="/guia-de-scouting" className="text-primary underline"> guia de scouting</Link>
+          e organize as contratações com o
+          <Link to="/mercado-de-transferencias" className="text-primary underline">
+          guia de transferências</Link>.
         </p>
       </Section>
     </ArticleShell>
