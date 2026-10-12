@@ -6,9 +6,9 @@ import { getLeagueDigests } from "@/lib/real-football.functions";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/dicas-de-gestao";
-const TITLE = "Dicas de gestão do clube com dados reais de 12 ligas | Pro Football Manager 3D";
+const TITLE = "Gestão de clube com números de 12 ligas: mando, empates, folha e caixa | Pro Football Manager 3D";
 const DESC =
-  "Como montar elenco, rodar titulares e administrar o caixa no manager de futebol, com números reais de mando de campo, empates e gols de 12 ligas.";
+  "Quanto vale o mando de campo, quando rodar titulares, quanto da receita pode ir para salários: decisões de diretoria baseadas em dados reais de 12 campeonatos.";
 
 export const Route = createFileRoute("/dicas-de-gestao")({
   loader: async () => ({ leagues: await getLeagueDigests().catch(() => []) }),
