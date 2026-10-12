@@ -89,7 +89,7 @@ function Page() {
         <h2 className="mt-12 font-display text-2xl">Próximos passos</h2>
         <p className="mt-3 text-muted-foreground">
           Se é sua primeira carreira, comece pelo{" "}
-          <Link to="/como-ser-tecnico-de-futebol" className="text-primary underline">
+          <Link to="/guias" className="text-primary underline">
             passo a passo para novos treinadores
           </Link>{" "}
           e depois estude as{" "}
