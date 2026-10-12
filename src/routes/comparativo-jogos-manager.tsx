@@ -4,9 +4,9 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/comparativo-jogos-manager";
-const TITLE = "Comparativo de jogos de manager | Pro Football Manager 3D";
+const TITLE = "Pro Football Manager 3D x outros managers: dados, 3D, preço e celular | Pro Football Manager 3D";
 const DESC =
-  "Comparativo honesto entre jogos de manager de futebol: o que o Pro Football Manager 3D faz diferente, com partidas em 3D, clubes reais e jogo grátis no navegador.";
+  "Comparação lado a lado: profundidade de base de dados, partida 3D, custo, offline, plataformas e progressão de carreira — sem promessas exageradas.";
 
 export const Route = createFileRoute("/comparativo-jogos-manager")({
   head: () => ({

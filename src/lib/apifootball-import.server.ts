@@ -334,10 +334,19 @@ async function importSquads(
           sync_status: "synced",
         };
       });
-    if (!rows.length) return;
-    const r = await db.from("players").insert(rows).select("id");
-    if (r.error) console.error("players", r.error.message);
-    created += r.data?.length ?? 0;
+    // Squads can list one athlete twice, and a parallel page may insert him first;
+    // dedupe locally, then fall back to per-row inserts so one clash never drops a squad.
+    const unique = [...new Map(rows.map((r) => [r.source_id, r])).values()];
+    if (!unique.length) return;
+    const r = await db.from("players").insert(unique).select("id");
+    if (!r.error) {
+      created += r.data?.length ?? 0;
+      return;
+    }
+    for (const row of unique) {
+      const one = await db.from("players").insert(row).select("id");
+      if (!one.error) created += 1;
+    }
   });
   const fetched = teams?.length ?? 0;
   return {

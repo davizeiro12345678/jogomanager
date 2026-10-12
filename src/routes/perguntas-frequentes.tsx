@@ -5,9 +5,9 @@ import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 import { CommunityInvite } from "@/components/CommunityInvite";
 
 const PATH = "/perguntas-frequentes";
-const TITLE = "Perguntas frequentes | Pro Football Manager 3D";
+const TITLE = "É grátis, roda no celular, salva offline? 30 respostas sobre o manager 3D | Pro Football Manager 3D";
 const DESC =
-  "Perguntas frequentes sobre o Pro Football Manager 3D: é grátis? Precisa instalar? Funciona no celular? Todas as respostas.";
+  "Custo zero sem pay-to-win, save local + nuvem, partidas 3D em celulares modestos, clubes reais de 1.900 ligas: as respostas diretas antes da sua primeira temporada.";
 
 export const Route = createFileRoute("/perguntas-frequentes")({
   head: () => ({

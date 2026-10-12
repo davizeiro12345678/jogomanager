@@ -6,9 +6,9 @@ import { getLeagueDigests } from "@/lib/real-football.functions";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guia-de-scouting";
-const TITLE = "Guia de scouting: como achar jogadores bons e baratos | Pro Football Manager 3D";
+const TITLE = "Scouting com dados reais: como achar craques baratos antes dos rivais | Pro Football Manager 3D";
 const DESC =
-  "Contrate como um olheiro: potencial x nota atual, idade certa, carências do elenco e onde achar jogadores baratos em 12 ligas reais, com dados de defesa, saldo e lesões.";
+  "Potencial x nota atual, curva de idade, carência por setor e ligas subvalorizadas: o método de olheiro aplicado a 200 mil atletas de 12 ligas reais.";
 
 export const Route = createFileRoute("/guia-de-scouting")({
   loader: async () => ({ leagues: await getLeagueDigests().catch(() => []) }),

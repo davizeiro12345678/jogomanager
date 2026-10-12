@@ -4,9 +4,9 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/melhores-formacoes";
-const TITLE = "Melhores formações de futebol | Pro Football Manager 3D";
+const TITLE = "4-3-3, 4-2-3-1 ou 3-5-2? Qual formação vence com o seu elenco | Pro Football Manager 3D";
 const DESC =
-  "As melhores formações do futebol explicadas: 4-3-3, 4-4-2, 3-5-2 e quando usar cada uma para vencer no jogo de manager.";
+  "Quando cada esquema domina, o perfil de jogador que ele exige, como pressionar, defender a vantagem e virar jogos — testado no gramado 3D do jogo.";
 
 export const Route = createFileRoute("/melhores-formacoes")({
   head: () => ({

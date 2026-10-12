@@ -4,9 +4,9 @@ import { ArticleShell, Section, type GuideFaq, type GuideTocItem } from "@/compo
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/mercado-de-transferencias";
-const TITLE = "Guia de transferências | Pro Football Manager 3D";
+const TITLE = "Mercado de transferências: compre barato, venda no pico e não quebre o caixa | Pro Football Manager 3D";
 const DESC =
-  "Como contratar bem no mercado de transferências: orçamento, salários, contratos e o momento certo de comprar e vender jogadores.";
+  "Janela, folha salarial, duração de contrato, cláusula e revenda: o método para contratar em 200 mil atletas reais sem estourar o orçamento da diretoria.";
 
 export const Route = createFileRoute("/mercado-de-transferencias")({
   head: () => ({
