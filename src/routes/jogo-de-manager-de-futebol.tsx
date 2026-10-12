@@ -5,9 +5,9 @@ import { LEAGUES } from "@/game/data/leagues";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/jogo-de-manager-de-futebol";
-const TITLE = "Manager de futebol 3D grátis com 25 mil clubes reais e partidas ao vivo | Pro Football Manager 3D";
+const TITLE = "Jogo de Manager de Futebol 3D | Pro Football Manager 3D";
 const DESC =
-  "Escolha entre 25 mil clubes reais, contrate entre 200 mil atletas, defina a tática e veja cada lance em 3D no navegador — sem instalar e sem pagar para vencer.";
+  "Jogue como técnico de futebol: escolha um clube, faça contratações, organize a tática e assista aos jogos em 3D. Grátis e direto no navegador.";
 
 export const Route = createFileRoute("/jogo-de-manager-de-futebol")({
   head: () => ({
