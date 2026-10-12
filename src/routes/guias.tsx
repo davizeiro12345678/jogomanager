@@ -4,9 +4,9 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guias";
-const TITLE = "Central de guias: tática, mercado, scouting e gestão para vencer temporadas | Pro Football Manager 3D";
+const TITLE = "Guias de Manager de Futebol 3D | Táticas e Scouting";
 const DESC =
-  "Roteiros práticos da escolha do clube ao título: escalação, formação, contratações, treino, finanças e relação com diretoria e torcida, com dados de ligas reais.";
+  "Aprenda táticas, scouting, contratações, finanças e gestão de elenco com os guias do Pro Football Manager 3D. Comece sua carreira no navegador.";
 
 export const Route = createFileRoute("/guias")({
   head: () => ({
