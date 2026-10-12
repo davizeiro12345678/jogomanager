@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { PublicLinks } from "@/components/PublicLinks";
+import { DiscordLink } from "@/components/CommunityInvite";
 import { CHANGELOG, CREATOR } from "@/content/changelog";
 import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
@@ -43,6 +44,31 @@ function Page() {
             {CREATOR.youtubeLabel}
           </a>
         </p>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-border/60 surface-card p-5">
+        <h2 className="font-display text-xl uppercase">Fale com o criador</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Para sugestões, dúvidas sobre desenvolvimento ou colaborações, utilize os canais oficiais.
+          Pedidos sobre compras ou dados de conta devem ir para o suporte, sem divulgar
+          informações privadas em canais públicos.
+        </p>
+        <dl className="mt-4 space-y-4 text-sm">
+          <div>
+            <dt className="font-medium">E-mail principal</dt>
+            <dd><a href="mailto:davizeiro10.jogos@gmail.com" className="break-all text-primary underline underline-offset-4">davizeiro10.jogos@gmail.com</a></dd>
+          </div>
+          <div>
+            <dt className="font-medium">E-mail secundário</dt>
+            <dd><a href="mailto:davithomazini779@gmail.com" className="break-all text-primary underline underline-offset-4">davithomazini779@gmail.com</a></dd>
+          </div>
+        </dl>
+        <div className="mt-5 flex flex-wrap items-center gap-4">
+          <DiscordLink>Comunidade no Discord</DiscordLink>
+          <Link to="/contato" className="text-sm text-primary underline underline-offset-4">
+            Contato e suporte
+          </Link>
+        </div>
       </section>
 
       <h2 className="mt-12 font-display text-2xl uppercase tracking-wide">Novidades</h2>
