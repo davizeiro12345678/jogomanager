@@ -5,9 +5,9 @@ import { CHANGELOG, CREATOR } from "@/content/changelog";
 import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/criador";
-const TITLE = "Criador e novidades do jogo | Pro Football Manager 3D";
+const TITLE = "Criador do Pro Football Manager 3D | Novidades";
 const DESC =
-  "Conheça quem criou o Pro Football Manager 3D e acompanhe as novidades e atualizações mais recentes do jogo de manager de futebol online.";
+  "Conheça o criador do Pro Football Manager 3D, veja as atualizações do jogo e acompanhe o desenvolvimento do manager de futebol 3D no navegador.";
 
 export const Route = createFileRoute("/criador")({
   head: () => ({
