@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { PublicLinks } from "@/components/PublicLinks";
-import { LEAGUES } from "@/game/data/leagues";
+
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/jogo-de-manager-de-futebol";
@@ -29,8 +29,6 @@ export const Route = createFileRoute("/jogo-de-manager-de-futebol")({
 });
 
 function Page() {
-  const clubs = LEAGUES.reduce((n, l) => n + l.clubs.length, 0);
-
   return (
     <div className="pitch-bg min-h-screen px-4 py-14">
       <article className="mx-auto max-w-3xl">
@@ -41,8 +39,8 @@ function Page() {
         <p className="mt-4 text-muted-foreground">
           O Pro Football Manager 3D roda direto no navegador: você assume o comando de um clube,
           decide contratações, escala o time, escolhe a tática e assiste aos 90 minutos com
-          jogadores em 3D. São {LEAGUES.length} campeonatos e {clubs} clubes disponíveis, e você
-          pode começar sem criar conta.
+          jogadores em 3D. Conheça os clubes e campeonatos disponíveis no modo carreira; as opções
+          variam conforme o modo e os dados integrados. Você pode começar sem criar conta.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
