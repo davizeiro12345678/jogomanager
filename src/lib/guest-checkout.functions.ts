@@ -178,8 +178,8 @@ async function inspectExistingGuestCheckoutSession(
   if (session.metadata?.["guestCheckoutIntentId"] !== intent.id) {
     throw new Error("A sessão existente não corresponde à compra visitante.");
   }
+  // Payment is recorded only by the signed webhook, never from this lookup.
   const disposition = classifyGuestCheckoutSession(session.status, session.payment_status);
-  if (disposition === "paid") await markIntentPaid(intent.id, session.id);
   return disposition;
 }
 
@@ -476,9 +476,10 @@ export const getGuestCheckoutStatus = createServerFn({ method: "POST" })
         return { status: "invalid", message: "A sessão não corresponde à compra visitante." };
       }
       const disposition = classifyGuestCheckoutSession(session.status, session.payment_status);
+      // Only the signed Stripe webhook may record payment; until then the
+      // intent stays pending so claims cannot trigger delivery.
       if (disposition === "paid") {
-        await markIntentPaid(intent.id, session.id);
-        return { status: "paid", intentId: intent.id };
+        return { status: "pending", intentId: intent.id };
       }
       if (disposition === "settling") {
         return { status: "pending", intentId: intent.id };
