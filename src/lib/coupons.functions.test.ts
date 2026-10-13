@@ -69,6 +69,7 @@ describe("coupon redemption boundary", () => {
     ["sold_out", "Este cupom já atingiu o limite de usos."],
     ["used", "Você já usou este cupom."],
     ["login", "Entre na sua conta para usar cupons."],
+    ["not_eligible", "Este cupom é exclusivo para destinatários autorizados."],
   ])("shows the safe message when the database rejects a coupon as %s", async (reason, message) => {
     rpc.mockResolvedValue({ data: { ok: false, reason }, error: null });
 

@@ -12,6 +12,7 @@ const REASONS: Record<string, string> = {
   expired: "Este cupom não está valendo agora.",
   sold_out: "Este cupom já atingiu o limite de usos.",
   used: "Você já usou este cupom.",
+  not_eligible: "Este cupom é exclusivo para destinatários autorizados.",
   login: "Entre na sua conta para usar cupons.",
 };
 
