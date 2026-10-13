@@ -20,7 +20,7 @@ export async function initFirebase(): Promise<FirebaseApp | null> {
       storageBucket: "sscxz-2ee8d.firebasestorage.app",
       messagingSenderId: "122832770297",
       appId: "1:122832770297:web:e2f9bc68cca1b1f873be28",
-      measurementId: measurementId || undefined,
+      ...(measurementId ? { measurementId } : {}),
     });
     const { getAnalytics, isSupported } = await import("firebase/analytics");
     if (measurementId && (await isSupported())) getAnalytics(app);
