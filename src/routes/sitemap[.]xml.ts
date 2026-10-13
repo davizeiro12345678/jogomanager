@@ -30,7 +30,6 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/tabelas/liga-argentina", changefreq: "daily", priority: "0.8" },
           { path: "/tabelas/mls", changefreq: "daily", priority: "0.8" },
           { path: "/tabelas/liga-mx", changefreq: "daily", priority: "0.8" },
-          { path: "/como-ser-tecnico-de-futebol", changefreq: "weekly", priority: "0.8" },
           { path: "/mercado-de-transferencias", changefreq: "weekly", priority: "0.8" },
           { path: "/guias", changefreq: "weekly", priority: "0.8" },
           { path: "/dicas-de-gestao", changefreq: "weekly", priority: "0.8" },
