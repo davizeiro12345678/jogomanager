@@ -6,9 +6,13 @@ import { toast } from "sonner";
 import { redeemCoupon } from "@/lib/coupons.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useT } from "@/i18n/provider";
+import { commerceText, type CommerceKey } from "@/i18n/commerce-messages";
 
 /** Campo de cupom: o servidor valida e credita, uma vez por conta. */
 export function CouponRedeem({ onRedeemed }: { onRedeemed: () => void }) {
+  const { lang } = useT();
+  const commerce = (key: CommerceKey) => commerceText(lang, key);
   const redeem = useServerFn(redeemCoupon);
   const [code, setCode] = useState("");
   const [isBusy, setIsBusy] = useState(false);
@@ -24,15 +28,15 @@ export function CouponRedeem({ onRedeemed }: { onRedeemed: () => void }) {
         return;
       }
       const parts = [
-        r.coins && `${r.coins} moedas`,
-        r.scoutReports && `${r.scoutReports} relatórios`,
-        r.trainingBoosts && `${r.trainingBoosts} treinos`,
+        r.coins && `${r.coins} ${commerce("coupon.coins")}`,
+        r.scoutReports && `${r.scoutReports} ${commerce("coupon.reports")}`,
+        r.trainingBoosts && `${r.trainingBoosts} ${commerce("coupon.training")}`,
       ].filter(Boolean);
       toast.success(`${r.description}: ${parts.join(", ")}`);
       setCode("");
       onRedeemed();
     } catch {
-      toast.error("Não foi possível resgatar agora. Tente de novo.");
+      toast.error(commerce("coupon.error"));
     } finally {
       setIsBusy(false);
     }
@@ -45,19 +49,19 @@ export function CouponRedeem({ onRedeemed }: { onRedeemed: () => void }) {
     >
       <Ticket className="text-primary" size={18} aria-hidden />
       <label htmlFor="coupon-code" className="font-display text-sm uppercase tracking-wide">
-        Cupom
+        {commerce("coupon.label")}
       </label>
       <Input
         id="coupon-code"
         value={code}
         onChange={(e) => setCode(e.target.value.toUpperCase())}
-        placeholder="Ex.: BEMVINDO"
+        placeholder={commerce("coupon.example")}
         maxLength={24}
         autoComplete="off"
         className="h-9 min-w-0 flex-1 uppercase"
       />
       <Button type="submit" size="sm" disabled={isBusy || code.trim().length < 3}>
-        {isBusy ? "Resgatando…" : "Resgatar"}
+        {isBusy ? commerce("coupon.redeeming") : commerce("coupon.redeem")}
       </Button>
     </form>
   );
