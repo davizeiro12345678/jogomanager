@@ -19,6 +19,13 @@ export const Route = createFileRoute("/api/public/sync-football")({
         const url = new URL(request.url);
         const scope = url.searchParams.get("scope") ?? "clubs";
         if (scope === "apifootball") {
+          // Fail closed before loading the importer or touching external quotas.
+          if (process.env["APIFOOTBALL_IMPORT_ENABLED"] !== "true") {
+            return Response.json(
+              { ok: false, stoppedReason: "paused", message: "API-Football import paused until explicit activation" },
+              { status: 503, headers: { "Cache-Control": "no-store" } },
+            );
+          }
           const p = url.searchParams.get("phase");
           const allowed = [
             "leagues",

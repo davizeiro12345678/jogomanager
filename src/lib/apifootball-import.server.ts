@@ -4,6 +4,7 @@
 // never collide with the other provider's ids.
 
 import type { TablesInsert } from "@/integrations/supabase/types";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 const BASE = "https://v3.football.api-sports.io";
 const SOURCE = "api-football";
@@ -40,17 +41,37 @@ async function admin() {
   return supabaseAdmin;
 }
 
-let lastRemaining: number | null = null;
-async function af<T>(path: string, attempt = 0): Promise<T[]> {
+// Isolated budget for each request; do not share quotas between concurrent users.
+type ImportBudget = { deadline: number; requestsLeft: number; quota: number | null };
+const importBudget = new AsyncLocalStorage<ImportBudget>();
+const remainingQuota = () => importBudget.getStore()?.quota ?? null;
+async function budgetedFetch(path: string): Promise<Response> {
+  const budget = importBudget.getStore();
+  if (!budget) throw new Error("API-Football import must run in a bounded job");
+  if (Date.now() >= budget.deadline) throw new Error("API-Football job deadline exceeded");
+  if (budget.requestsLeft <= 0) throw new Error("API-Football request cap reached; resume later");
+  if (budget.quota !== null && budget.quota <= 2)
+    throw new Error("API-Football provider quota nearly exhausted; resume after reset");
   const key = process.env["APIFOOTBALL_API_KEY"];
-  if (!key) throw new Error("APIFOOTBALL_API_KEY missing");
-  const res = await fetch(`${BASE}${path}`, { headers: { "x-apisports-key": key } });
-  const rem = res.headers.get("x-ratelimit-requests-remaining");
-  if (rem) lastRemaining = Number(rem);
+  if (!key) throw new Error("API-Football API key is not configured");
+  budget.requestsLeft--;
+  const timeout = Math.max(100, Math.min(8000, budget.deadline - Date.now()));
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { "x-apisports-key": key },
+    signal: AbortSignal.timeout(timeout),
+  });
+  const rawQuota = res.headers.get("x-ratelimit-requests-remaining");
+  if (rawQuota !== null && Number.isFinite(Number(rawQuota)))
+    budget.quota = Number(rawQuota);
+  return res;
+}
+async function af<T>(path: string, attempt = 0): Promise<T[]> {
+  const res = await budgetedFetch(path);
   const text = await res.text();
   // Per-minute cap: back off and retry instead of silently skipping the item.
-  if ((res.status === 429 || text.includes('"rateLimit"')) && attempt < 10) {
-    await new Promise((r) => setTimeout(r, 4_000 + attempt * 1_000));
+  if ((res.status === 429 || text.includes('"rateLimit"')) && attempt < 2) {
+    const wait = Math.min(2500, 500 + attempt * 1000);
+    await new Promise((r) => setTimeout(r, wait));
     return af<T>(path, attempt + 1);
   }
   if (!res.ok) throw new Error(`API-Football ${res.status}: ${text.slice(0, 300)}`);
@@ -80,19 +101,25 @@ function mapPos(p?: string) {
 async function pool<T>(items: T[], n: number, deadline: number, fn: (t: T) => Promise<void>) {
   let i = 0;
   let done = 0;
+  const failures: unknown[] = [];
   await Promise.all(
-    Array.from({ length: n }, async () => {
+    Array.from({ length: Math.min(n, 2) }, async () => {
       while (i < items.length && Date.now() < deadline) {
         const item = items[i++]!;
         try {
           await fn(item);
         } catch (e) {
+          failures.push(e);
           console.error("af item failed", e);
         }
         done++;
       }
     }),
   );
+  if (failures.length) {
+    const first = failures[0];
+    throw new Error(`API-Football batch failed (${failures.length} items): ${first instanceof Error ? first.message : String(first)}`);
+  }
   return done;
 }
 
@@ -102,9 +129,10 @@ type AfLeague = {
   seasons: { year: number; current: boolean }[];
 };
 
-async function importLeagues(): Promise<AfImportResult> {
+async function importLeagues(offset: number, limit: number): Promise<AfImportResult> {
   const db = await admin();
-  const rows = await af<AfLeague>("/leagues");
+  const all = await af<AfLeague>("/leagues");
+  const rows = all.slice(offset, offset + limit);
   let created = 0;
   for (let k = 0; k < rows.length; k += 200) {
     const chunk = rows.slice(k, k + 200);
@@ -150,8 +178,8 @@ async function importLeagues(): Promise<AfImportResult> {
     processed: rows.length,
     created,
     linked: rows.length,
-    nextOffset: null,
-    remainingQuota: lastRemaining,
+    nextOffset: offset + rows.length < all.length ? offset + rows.length : null,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -264,7 +292,7 @@ async function importTeams(
     created,
     linked,
     nextOffset: fetched < limit && done === fetched ? null : offset + done,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -356,7 +384,7 @@ async function importSquads(
     created,
     linked: 0,
     nextOffset: fetched < limit && done === fetched ? null : offset + done,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -425,7 +453,7 @@ async function perLeague(
     created,
     linked: 0,
     nextOffset: leagues.length < limit && done === leagues.length ? null : offset + done,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -468,24 +496,20 @@ async function pagedAll<T>(path: string, maxPages: number) {
   const out: T[] = [];
   for (let page = 1; page <= maxPages; page++) {
     const sep = path.includes("?") ? "&" : "?";
-    const key = process.env["APIFOOTBALL_API_KEY"]!;
     let body: { response?: T[]; paging?: { total: number } } | null = null;
-    for (let tries = 0; tries < 12; tries++) {
-      const res = await fetch(`${BASE}${path}${sep}page=${page}`, {
-        headers: { "x-apisports-key": key },
-      });
-      const rem = res.headers.get("x-ratelimit-requests-remaining");
-      if (rem) lastRemaining = Number(rem);
+    for (let tries = 0; tries < 2; tries++) {
+      const res = await budgetedFetch(`${path}${sep}page=${page}`);
       const text = await res.text();
       if (res.status === 429 || text.includes('"rateLimit"')) {
-        await new Promise((r) => setTimeout(r, 4000 + tries * 1000));
+        if (tries === 1) throw new Error("API-Football rate limit reached; resume later");
+        await new Promise((r) => setTimeout(r, 1000));
         continue;
       }
-      if (!res.ok) break;
+      if (!res.ok) throw new Error(`API-Football HTTP ${res.status}`);
       body = JSON.parse(text);
       break;
     }
-    if (!body) break;
+    if (!body) throw new Error("API-Football page unavailable; do not skip cursor");
     out.push(...(body.response ?? []));
     if (!body.paging || page >= body.paging.total) break;
   }
@@ -543,7 +567,7 @@ async function importPredictions(
     created,
     linked: 0,
     nextOffset: ids.length < limit && done === ids.length ? null : offset + done,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -565,7 +589,7 @@ async function importOdds(offset: number, deadline: number): Promise<AfImportRes
     created,
     linked: 0,
     nextOffset: offset < 6 ? offset + 1 : null,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -588,7 +612,7 @@ async function importSimple(
     created,
     linked: 0,
     nextOffset: null,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -613,7 +637,7 @@ async function importVenues(
     created,
     linked: 0,
     nextOffset: countries.length < limit && done === countries.length ? null : offset + done,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -651,7 +675,7 @@ async function perTeam(
     created,
     linked: 0,
     nextOffset: teams.length < limit && done === teams.length ? null : offset + done,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -680,13 +704,7 @@ async function teamStatsFor(team: string, league: string | null) {
   if (!league) return 0;
   const season = await seasonOf(league);
   if (!season) return 0;
-  const key = process.env["APIFOOTBALL_API_KEY"]!;
-  const res = await fetch(
-    `${BASE}/teams/statistics?team=${team}&league=${league}&season=${season}`,
-    { headers: { "x-apisports-key": key } },
-  );
-  const rem = res.headers.get("x-ratelimit-requests-remaining");
-  if (rem) lastRemaining = Number(rem);
+  const res = await budgetedFetch(`/teams/statistics?team=${team}&league=${league}&season=${season}`);
   if (!res.ok) return 0;
   const body = (await res.json()) as { response?: unknown };
   return body.response && !Array.isArray(body.response)
@@ -739,7 +757,7 @@ async function importDetails(
     created,
     linked: 0,
     nextOffset: ids.length < limit && doneIds === ids.length ? null : offset + doneIds,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -749,9 +767,14 @@ export async function runApiFootballImport(opts: {
   limit: number;
   budgetMs: number;
 }): Promise<AfImportResult> {
-  const deadline = Date.now() + opts.budgetMs;
+  const deadline = Date.now() + Math.min(25_000, opts.budgetMs);
+  if (process.env["APIFOOTBALL_IMPORT_ENABLED"] !== "true") {
+    return { ok: false, phase: opts.phase, processed: 0, created: 0, linked: 0,
+      nextOffset: opts.offset, error: "API-Football automatic imports are paused until explicitly enabled" };
+  }
+  return await importBudget.run({ deadline, requestsLeft: 24, quota: null }, async () => {
   try {
-    if (opts.phase === "leagues") return await importLeagues();
+    if (opts.phase === "leagues") return await importLeagues(opts.offset, Math.min(10, opts.limit));
     if (opts.phase === "teams") return await importTeams(opts.offset, opts.limit, deadline);
     if (opts.phase === "fixtures")
       return await perLeague("fixtures", opts.offset, opts.limit, deadline, fixturesFor);
@@ -788,4 +811,5 @@ export async function runApiFootballImport(opts: {
       error: e instanceof Error ? e.message : String(e),
     };
   }
+  });
 }
