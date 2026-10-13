@@ -1,0 +1,42 @@
+name: One-time npm lockfile repair
+on:
+  push:
+    branches:
+      - fix/sync-npm-lockfile-20261013
+    paths:
+      - .github/workflows/repair-npm-lockfile-20261013.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/sync-npm-lockfile-20261013
+          persist-credentials: true
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Regenerate lockfile from package.json
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Validate clean installation
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Commit regenerated lockfile and remove this temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/repair-npm-lockfile-20261013.yml
+          git add package-lock.json
+          git diff --cached --check
+          git commit -m "fix: sync Firebase dependencies in npm lockfile"
+          git push origin HEAD:fix/sync-npm-lockfile-20261013
