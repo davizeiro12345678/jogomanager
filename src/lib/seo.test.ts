@@ -51,4 +51,49 @@ describe("page metadata", () => {
     expect(JSON.parse(article.children).headline).toBe(name);
     expect(JSON.parse(breadcrumbs.children).itemListElement[0].name).toBe(name);
   });
+  it("publishes distinct guide identities, social previews and article breadcrumbs", () => {
+    const guides = [
+      {
+        title: "Guia de Scouting: Como Encontrar Jogadores Bons e Baratos",
+        path: "/guia-de-scouting",
+        description: "Como avaliar jovens promessas e reforços baratos.",
+      },
+      {
+        title: "Melhores Formações de Futebol | Guia 4-3-3 e 4-2-3-1",
+        path: "/melhores-formacoes",
+        description: "Compare formações e escolha uma estratégia.",
+      },
+    ];
+    const titles = guides.map(({ title }) => title);
+    expect(new Set(titles).size).toBe(guides.length);
+
+    for (const guide of guides) {
+      const meta = seoMeta({ ...guide, type: "article" });
+      expect(meta.find((tag) => tag["title"])?.title).toBe(guide.title);
+      expect(meta.find((tag) => tag["property"] === "og:title")?.content).toBe(guide.title);
+      expect(meta.find((tag) => tag["property"] === "og:description")?.content).toBe(
+        guide.description,
+      );
+      expect(meta.find((tag) => tag["property"] === "og:type")?.content).toBe("article");
+      expect(canonical(guide.path)[0]?.href).toBe(`${SITE_URL}${guide.path}`);
+
+      const article = JSON.parse(articleLd({
+        headline: guide.title,
+        description: guide.description,
+        path: guide.path,
+      }).children);
+      expect(article["@type"]).toBe("Article");
+      expect(article.mainEntityOfPage["@id"]).toBe(`${SITE_URL}${guide.path}`);
+
+      const breadcrumb = JSON.parse(breadcrumbLd([
+        { name: "Início", path: "/" },
+        { name: "Guias", path: "/guias" },
+        { name: "Artigo", path: guide.path },
+      ]).children);
+      expect(breadcrumb["@type"]).toBe("BreadcrumbList");
+      expect(breadcrumb.itemListElement).toHaveLength(3);
+      expect(breadcrumb.itemListElement[2].item).toBe(`${SITE_URL}${guide.path}`);
+    }
+  });
+
 });
