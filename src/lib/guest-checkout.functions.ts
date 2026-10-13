@@ -293,7 +293,6 @@ async function openStripeSession(
     const current = await stripe.checkout.sessions.retrieve(intent.stripe_session_id);
     const disposition = classifyGuestCheckoutSession(current.status, current.payment_status);
     if (disposition === "paid") {
-      await markIntentPaid(intent.id, current.id);
       return { error: "Esta compra já foi paga. Use o link de e-mail para receber o item." };
     }
     if (disposition === "open" && current.client_secret) {
