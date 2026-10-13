@@ -50,5 +50,28 @@ export function continuesVerifiedCareer(prev: CareerState, next: CareerState, el
     if (!Number.isInteger(r.hg) || !Number.isInteger(r.ag) || r.hg < 0 || r.ag < 0 || r.hg > 20 || r.ag > 20)
       return false;
   }
+  // Value-bearing fields must be structurally consistent, not caller-invented:
+  // every result must correspond to a real scheduled fixture of a completed
+  // round, with no duplicates, and trophies/history must stay coherent.
+  if (Array.isArray(next.fixtures) && next.fixtures.length > 0) {
+    const scheduled = new Set<string>();
+    for (const f of next.fixtures) {
+      if (f && typeof f.round === "number") scheduled.add(`${f.round}:${f.home}:${f.away}`);
+    }
+    const seen = new Set<string>();
+    for (const r of next.results) {
+      const key = `${r.round}:${r.home}:${r.away}`;
+      if (!scheduled.has(key)) return false; // result for a match that was never scheduled
+      if (seen.has(key)) return false; // duplicated fixture result
+      seen.add(key);
+      if (r.round >= next.round) return false; // result for a round not yet played
+    }
+  }
+  if (Array.isArray(next.trophies)) {
+    // Trophies only exist after a completed season; they can never exceed
+    // the number of finished seasons plus the competitions of the current one.
+    const maxTrophies = next.history.length * 4 + 4;
+    if (next.trophies.length > maxTrophies) return false;
+  }
   return true;
 }
