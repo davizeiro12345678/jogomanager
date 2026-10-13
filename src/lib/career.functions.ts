@@ -93,12 +93,11 @@ export const saveCareer = createServerFn({ method: "POST" })
       /* malformed stored save: allow replacement */
     }
     // Malformed nested JSON is an unverified personal save, never an attested result.
+    // Match scores and logs are produced on the client and cannot be replayed
+    // here, so only a canonical, unplayed start is ever attested.
     let verified: boolean;
     try {
-      const elapsed = stored?.updated_at ? Date.now() - Date.parse(stored.updated_at) : 0;
-      verified =
-        verifyCareerProgress(incoming) ||
-        (!!prev && !!stored?.verified_progress && continuesVerifiedCareer(prev, incoming, elapsed));
+      verified = verifyCareerProgress(incoming);
     } catch {
       verified = false;
     }
