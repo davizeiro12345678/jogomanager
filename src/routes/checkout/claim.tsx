@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { claimGuestCheckout } from "@/lib/guest-checkout.functions";
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/checkout/claim")({
 
 function ClaimGuestCheckout() {
   const { lang } = useT();
-  const commerce = (key: CommerceKey) => commerceText(lang, key);
+  const commerce = useCallback((key: CommerceKey) => commerceText(lang, key), [lang]);
   const { intent, session_id: sessionId } = Route.useSearch();
   const claim = useServerFn(claimGuestCheckout);
   const [status, setStatus] = useState<"loading" | "delivered" | "pending" | "error">("loading");
@@ -80,7 +80,7 @@ function ClaimGuestCheckout() {
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, [claim, intent, sessionId, lang]);
+  }, [claim, intent, sessionId, commerce]);
 
   return (
     <main className="pitch-bg grid min-h-screen place-items-center px-4 py-10">
