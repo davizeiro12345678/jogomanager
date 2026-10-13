@@ -5,7 +5,7 @@ export const PUBLIC_PAGES = [
   { to: "/mercado-de-transferencias", label: "Mercado de transferências" },
   { to: "/tabelas", label: "Tabelas das ligas reais" },
   { to: "/guias", label: "Guias" },
-  { to: "/dicas-de-gestao", label: "Dicas de gestão" },
+  { to: "/dicas-de-gestao", label: "Temporada e finanças" },
   { to: "/melhores-formacoes", label: "Melhores formações" },
   { to: "/guia-de-scouting", label: "Guia de scouting" },
   { to: "/regras", label: "Regras do futebol" },

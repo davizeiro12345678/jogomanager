@@ -3,36 +3,36 @@ import type { LeagueDigest } from "@/lib/real-football.functions";
 
 const pct = (n: number) => `${Math.round(n)}%`;
 
-/** Advice derived only from each league's real numbers; no invented facts. */
+/** Imported statistics provide context, not causal rules for the simulation. */
 function gestaoAdvice(l: LeagueDigest) {
   const tips: string[] = [];
   if (l.homeWinPct >= 46)
     tips.push(
-      `mandantes vencem ${pct(l.homeWinPct)} dos jogos: escale força máxima em casa e poupe titulares fora`,
+      `mandantes vencem ${pct(l.homeWinPct)} dos jogos registrados; compare o mando com a força dos rivais antes de planejar o rodízio`,
     );
   else if (l.awayWinPct >= 32)
     tips.push(
-      `visitantes vencem ${pct(l.awayWinPct)} das vezes: jogar fora não é desculpa para recuar, mantenha a linha alta`,
+      `visitantes vencem ${pct(l.awayWinPct)} dos jogos registrados; o mando sozinho não determina a altura da linha defensiva`,
     );
   if (l.drawPct >= 28)
     tips.push(
-      `${pct(l.drawPct)} de empates: um ponto fora vale ouro, e o banco precisa de um atacante para virar jogos travados`,
+      `${pct(l.drawPct)} de empates nos registros; avalie o valor de um ponto conforme a classificação e a meta da sua carreira`,
     );
   if (l.goalsPerGame >= 2.9)
     tips.push(
-      `média de ${l.goalsPerGame.toFixed(2)} gols por jogo: invista em zagueiros rápidos, porque a liga pune defesa lenta`,
+      `média de ${l.goalsPerGame.toFixed(2)} gols por jogo; observe criação e proteção defensiva sem atribuir a média a um único perfil de jogador`,
     );
   else if (l.goalsPerGame <= 2.4)
     tips.push(
-      `só ${l.goalsPerGame.toFixed(2)} gols por jogo: cada gol decide, então bola parada e um centroavante finalizador valem mais que posse`,
+      `média de ${l.goalsPerGame.toFixed(2)} gols por jogo; esse dado não mede isoladamente a qualidade da posse ou da finalização`,
     );
   if (l.injuries >= 150)
     tips.push(
-      `${l.injuries} lesões registradas: elenco de 25 é o mínimo para atravessar a temporada`,
+      `${l.injuries} registros de lesão na cobertura disponível; confira período e abrangência antes de comparar ligas ou definir o tamanho do elenco`,
     );
   if (!tips.length)
     tips.push(
-      `liga equilibrada (${pct(l.homeWinPct)} casa, ${pct(l.drawPct)} empates): consistência rende mais que apostas táticas`,
+      `${pct(l.homeWinPct)} de vitórias em casa e ${pct(l.drawPct)} de empates na amostra; use os percentuais como contexto para observar seus próximos adversários`,
     );
   return tips;
 }
@@ -40,15 +40,15 @@ function gestaoAdvice(l: LeagueDigest) {
 function scoutingAdvice(l: LeagueDigest) {
   const tips: string[] = [];
   tips.push(
-    `${l.bestDefense.team} sofreu ${l.bestDefense.against} gols em ${l.bestDefense.played} jogos — a defesa mais sólida; seus zagueiros reservas são alvos seguros`,
+    `${l.bestDefense.team} sofreu ${l.bestDefense.against} gols em ${l.bestDefense.played} jogos nos dados disponíveis; avalie os atletas individualmente, pois o desempenho coletivo não garante a qualidade dos reservas`,
   );
   if (l.overPerformer && l.overPerformer.goalsDiff >= 0)
     tips.push(
-      `${l.overPerformer.team} está em ${l.overPerformer.rank}º, mas tem saldo ${l.overPerformer.goalsDiff >= 0 ? "+" : ""}${l.overPerformer.goalsDiff}: elenco melhor que a posição, ótimo lugar para comprar barato`,
+      `${l.overPerformer.team} está em ${l.overPerformer.rank}º com saldo +${l.overPerformer.goalsDiff}; compare adversários e minutos dos candidatos antes de inferir qualidade ou preço`,
     );
   else if (l.overPerformer)
     tips.push(
-      `na metade de baixo, ${l.overPerformer.team} (${l.overPerformer.rank}º) tem o melhor saldo: clube sob pressão costuma vender titulares abaixo do valor`,
+      `${l.overPerformer.team} ocupa o ${l.overPerformer.rank}º lugar com saldo ${l.overPerformer.goalsDiff}; a posição na tabela não confirma disponibilidade nem desconto no mercado`,
     );
   if (l.injuries >= 100)
     tips.push(
@@ -72,17 +72,18 @@ export function LeagueDataInsights({
     <section aria-labelledby={`dados-${mode}`} className="mt-10 space-y-5">
       <h2 id={`dados-${mode}`} className="font-display text-2xl text-foreground">
         {mode === "gestao"
-          ? "Como cada liga real muda a sua gestão"
-          : "Onde procurar reforços em cada liga real"}
+          ? "Contexto das ligas reais para estudar a gestão"
+          : "Contexto das ligas reais para observar jogadores"}
       </h2>
       <p>
-        Números das temporadas atuais de {leagues.length} ligas, tirados das tabelas oficiais. Em
-        média os mandantes vencem {pct(homeAvg)} dos jogos. A liga mais aberta é a {goalsTop.name} (
-        {goalsTop.goalsPerGame.toFixed(2)} gols por jogo) e a mais fechada é a {goalsLow.name} (
-        {goalsLow.goalsPerGame.toFixed(2)}).{" "}
+        Indicadores importados de {leagues.length} ligas nas temporadas informadas abaixo. A média
+        simples dos percentuais de vitórias dos mandantes é {pct(homeAvg)}; cada liga tem o mesmo
+        peso, independentemente do número de partidas. A maior média de gols nesta amostra é da{" "}
+        {goalsTop.name} ({goalsTop.goalsPerGame.toFixed(2)} gols por jogo) e a menor é da{" "}
+        {goalsLow.name} ({goalsLow.goalsPerGame.toFixed(2)}).{" "}
         {mode === "gestao"
-          ? "Isso muda a forma de montar o elenco: abaixo está o que fazer em cada uma."
-          : "Esses números mostram onde há bons jogadores escondidos em clubes que estão mal na tabela."}
+          ? "Use esses dados para formular perguntas; sua temporada simulada tem resultados próprios."
+          : "Os indicadores ajudam a organizar observações, mas não confirmam potencial, preço ou disponibilidade no modo carreira."}
       </p>
       <div className="overflow-x-auto rounded-xl border border-border/60">
         <table className="w-full min-w-[560px] text-sm">

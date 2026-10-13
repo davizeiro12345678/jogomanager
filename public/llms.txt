@@ -11,16 +11,15 @@ Site oficial e endereço canônico: https://jogomanager.com
 - [Página inicial](https://jogomanager.com/): apresentação do JogoManager e acesso à partida.
 - [Jogo de manager de futebol](https://jogomanager.com/jogo-de-manager-de-futebol): como funcionam a carreira, a simulação e os modos de jogo.
 - [Sobre a plataforma](https://jogomanager.com/sobre): história, recursos e informações institucionais.
-- [Ligas de futebol](https://jogomanager.com/ligas-de-futebol): cobertura esportiva apresentada pelo projeto.
 - [Tabelas reais](https://jogomanager.com/tabelas): resultados e classificação; esses dados são distintos da temporada simulada no jogo.
 
 ## Guias originais
 
 - [Guias e primeiros passos como treinador](https://jogomanager.com/guias): escolha do clube, escalação, tática, planejamento, orçamento e prevenção de perda de saves.
-- [Melhores formações](https://jogomanager.com/melhores-formacoes): comparação de 4-3-3, 4-2-3-1, 4-4-2, 3-5-2 e outros esquemas.
+- [Melhores formações](https://jogomanager.com/melhores-formacoes): comparação de 4-3-3, 4-2-3-1, 4-4-2 e 3-5-2.
 - [Guia de scouting](https://jogomanager.com/guia-de-scouting): comparação de jogadores por função, desempenho, custo e potencial.
 - [Mercado de transferências](https://jogomanager.com/mercado-de-transferencias): como analisar contratos e prioridades de investimento.
-- [Gestão da temporada](https://jogomanager.com/dicas-de-gestao): rodízio, planejamento da temporada, objetivos e contexto dos resultados.
+- [Gestão da temporada](https://jogomanager.com/dicas-de-gestao): calendário, rodízio, orçamento, reserva de caixa, objetivos e contexto dos resultados.
 - [Regras do futebol](https://jogomanager.com/regras): conceitos das regras esportivas.
 - [Glossário do futebol](https://jogomanager.com/glossario-do-futebol): definições para iniciantes.
 

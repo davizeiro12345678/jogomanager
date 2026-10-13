@@ -165,17 +165,23 @@ function Page() {
           Perguntas frequentes sobre o jogo
         </h1>
         <p className="mt-4 text-muted-foreground">
-          Entenda como começar, escolher o clube, acompanhar partidas em 3D, proteger o
-          progresso da carreira e resolver problemas. As respostas explicam o que verificar;
-          a disponibilidade de cada recurso pode variar com a versão e o modo de jogo.
+          Entenda como começar, escolher o clube, acompanhar partidas em 3D, proteger o progresso da
+          carreira e resolver problemas. As respostas explicam o que verificar; a disponibilidade de
+          cada recurso pode variar com a versão e o modo de jogo.
         </p>
 
-        <nav aria-label="Navegar por assuntos" className="mt-8 rounded-xl border border-border/60 surface-card p-5">
+        <nav
+          aria-label="Navegar por assuntos"
+          className="mt-8 rounded-xl border border-border/60 surface-card p-5"
+        >
           <h2 className="font-display text-lg">Encontre o assunto</h2>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {GROUPS.map((group) => (
               <li key={group.id}>
-                <a href={`#${group.id}`} className="text-sm text-primary underline underline-offset-4">
+                <a
+                  href={`#${group.id}`}
+                  className="text-sm text-primary underline underline-offset-4"
+                >
                   {group.title}
                 </a>
               </li>
@@ -204,15 +210,26 @@ function Page() {
             temporada, siga os passos do guia completo e compare as principais formações.
           </p>
           <div className="mt-3 flex flex-wrap gap-4 text-sm">
-            <Link className="text-primary underline" to="/guias">Guias do treinador</Link>
-            <Link className="text-primary underline" to="/melhores-formacoes">Táticas e formações</Link>
-            <Link className="text-primary underline" to="/jogar-offline">Salvamento offline</Link>
-            <Link className="text-primary underline" to="/contato">Contato e suporte</Link>
+            <Link className="text-primary underline" to="/guias">
+              Guias do treinador
+            </Link>
+            <Link className="text-primary underline" to="/melhores-formacoes">
+              Táticas e formações
+            </Link>
+            <Link className="text-primary underline" to="/jogar-offline">
+              Salvamento offline
+            </Link>
+            <Link className="text-primary underline" to="/contato">
+              Contato e suporte
+            </Link>
           </div>
         </section>
 
         <div className="mt-10">
-          <Link to="/new" className="inline-flex rounded-lg bg-primary px-6 py-3 font-display text-sm uppercase tracking-widest text-primary-foreground">
+          <Link
+            to="/new"
+            className="inline-flex rounded-lg bg-primary px-6 py-3 font-display text-sm uppercase tracking-widest text-primary-foreground"
+          >
             Começar a jogar
           </Link>
         </div>

@@ -76,7 +76,12 @@ function ContatoPage() {
 
         <section className="surface-card mt-6 rounded-xl border border-primary/30 p-5">
           <h2 className="font-display text-xl uppercase">Contatos oficiais e comunidade</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Para problemas com carreira, compras ou privacidade, dê preferência ao e-mail principal. Se não receber resposta ou tiver uma questão relacionada ao desenvolvimento, utilize o contato secundário. O Discord é um espaço comunitário, não um canal privado para dados de conta.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Para problemas com carreira, compras ou privacidade, dê preferência ao e-mail principal.
+            Se não receber resposta ou tiver uma questão relacionada ao desenvolvimento, utilize o
+            contato secundário. O Discord é um espaço comunitário, não um canal privado para dados
+            de conta.
+          </p>
           <div className="mt-3 flex flex-wrap gap-3 text-sm">
             <a
               href="mailto:davizeiro10.jogos@gmail.com"
@@ -101,10 +106,14 @@ function ContatoPage() {
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <DiscordLink>Acessar servidor oficial do Discord</DiscordLink>
-            <p className="text-xs text-muted-foreground">Comunidade para táticas, dúvidas gerais, novidades e sugestões. O convite oficial abre em outra aba.</p>
+            <p className="text-xs text-muted-foreground">
+              Comunidade para táticas, dúvidas gerais, novidades e sugestões. O convite oficial abre
+              em outra aba.
+            </p>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Nunca envie senha, códigos de autenticação, dados completos de cartão ou comprovantes com informações pessoais por e-mail, WhatsApp ou Discord.
+            Nunca envie senha, códigos de autenticação, dados completos de cartão ou comprovantes
+            com informações pessoais por e-mail, WhatsApp ou Discord.
           </p>
         </section>
 
@@ -136,8 +145,9 @@ function ContatoPage() {
         </div>
 
         <p className="mt-8 text-sm text-muted-foreground">
-          O prazo de resposta depende do volume de solicitações. Nunca pedimos senha, código de verificação
-          ou dados completos do cartão. Desconfie de qualquer solicitação desse tipo em nome do jogo.
+          O prazo de resposta depende do volume de solicitações. Nunca pedimos senha, código de
+          verificação ou dados completos do cartão. Desconfie de qualquer solicitação desse tipo em
+          nome do jogo.
         </p>
 
         <PublicLinks exclude={PATH} />
