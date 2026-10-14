@@ -18,6 +18,42 @@ export const Route = createFileRoute("/api/public/sync-football")({
         }
         const url = new URL(request.url);
         const scope = url.searchParams.get("scope") ?? "clubs";
+        // An authenticated cron call processes a single DB-leased phase.
+        // Paused phases are never claimed, and no API call is made without credentials.
+        if (scope === "apifootball-managed") {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const claim = await supabaseAdmin.rpc("claim_api_football_import_phase");
+          if (claim.error) return Response.json({ ok: false, error: "Job claim failed" }, { status: 500 });
+          const lease = claim.data?.[0];
+          if (!lease)
+            return Response.json(
+              { ok: true, scheduled: false, reason: "No queued API-Football phases" },
+              { headers: { "cache-control": "no-store" } },
+            );
+          const { runApiFootballImport } = await import("@/lib/apifootball-import.server");
+          // Phase values are constrained by the database CHECK constraint.
+          const phase = lease.out_phase as import("@/lib/apifootball-import.server").Phase;
+          const result = await runApiFootballImport({
+            phase,
+            offset: lease.out_offset,
+            limit: lease.out_limit,
+            budgetMs: 50_000,
+          });
+          const finish = await supabaseAdmin.rpc("complete_api_football_import_phase", {
+            p_phase: lease.out_phase,
+            p_token: lease.out_token,
+            p_processed: result.processed,
+            p_next_offset: result.nextOffset,
+            p_error: result.ok ? null : (result.error ?? "Unknown import failure"),
+          });
+          if (finish.error || finish.data !== true) {
+            return Response.json({ ok: false, error: "Job completion conflict" }, { status: 409 });
+          }
+          return Response.json(
+            { ...result, scheduled: true },
+            { status: result.ok ? 200 : 503, headers: { "cache-control": "no-store" } },
+          );
+        }
         if (scope === "apifootball") {
           const p = url.searchParams.get("phase");
           const allowed = [
