@@ -1682,6 +1682,8 @@ export type Database = {
           graphics_preset: string | null
           id: string
           load_time_ms: number | null
+          measurement_origin: string
+          user_id: string | null
         }
         Insert: {
           app_version?: string | null
@@ -1694,6 +1696,8 @@ export type Database = {
           graphics_preset?: string | null
           id?: string
           load_time_ms?: number | null
+          measurement_origin?: string
+          user_id?: string | null
         }
         Update: {
           app_version?: string | null
@@ -1706,6 +1710,8 @@ export type Database = {
           graphics_preset?: string | null
           id?: string
           load_time_ms?: number | null
+          measurement_origin?: string
+          user_id?: string | null
         }
         Relationships: []
       }
