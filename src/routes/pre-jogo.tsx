@@ -5,7 +5,6 @@ import { LayoutGrid, Play, Users, Volume2, VolumeX } from "lucide-react";
 import type { CareerState, Club } from "@/game/types";
 import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
-import { RealClubInfo } from "@/components/game/RealClubInfo";
 import { NoCareer } from "@/components/game/screen-kit";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { computeTable, nextFixture } from "@/game/season";
