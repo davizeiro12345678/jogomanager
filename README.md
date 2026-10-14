@@ -2,11 +2,13 @@
 
 [![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/davizeiro12345678/jogomanager?utm_source=badge)
 
-faça um jogo de futebol mega realista 3d onde vc e o manager
+Jogo brasileiro de gerenciamento de futebol no navegador, com carreira de treinador, gestão de clubes, táticas e visualização de partidas em 3D conforme a compatibilidade do dispositivo.
 
-This project was built with [Lovable](https://lovable.dev).
+**Site oficial e endereço canônico:** https://jogomanager.com
 
-**Live app**: https://stadium-stewards.lovable.app
+**Desenvolvimento:** [Lovable](https://lovable.dev/projects/f0dcad90-231c-4ef4-bd1b-b199f3902fb1) · [Repositório de código](https://github.com/davizeiro12345678/jogomanager)
+
+O site publicado pode não refletir imediatamente a branch principal: integração de código, publicação do deploy e atualização de cache na CDN são etapas distintas. Compare sempre `/llms.txt`, `/robots.txt` e `/sitemap.xml` no domínio canônico com a revisão de código efetivamente implantada.
 
 ## Pagamentos
 
@@ -32,8 +34,33 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+git clone https://github.com/davizeiro12345678/jogomanager.git
+cd jogomanager
+npm ci
 npm run dev
 ```
+
+## Qualidade, segurança e documentação pública
+
+A definição de CI está em `.github/workflows/quality.yml`. Antes de publicar mudanças, execute:
+
+```sh
+npm ci
+npm run lint
+npm exec -- tsc --noEmit --pretty false
+npm test
+PFM_LOCAL_VERIFY=1 npm run build
+npm run wasm:test
+npm run graphics:build
+npm audit --omit=dev --audit-level=high
+```
+
+Os testes Rust/WASM e Lighthouse precisam das ferramentas e do ambiente descritos no workflow. Não considere testes que não rodaram como aprovados.
+
+O índice de páginas públicas fica em `public/llms.txt` e deve referenciar apenas URLs canônicas com rotas efetivamente publicadas. Depois do deploy, verifique a versão servida no domínio oficial:
+
+```sh
+node scripts/verify-public-discovery.mjs --live
+```
+
+Esse comando compara o conteúdo no repositório com a versão pública, confere o tipo de resposta e repete a consulta com URL única para ajudar a distinguir cache desatualizado de deploy ainda não publicado. A verificação não publica automaticamente nem apaga caches. Se detectar divergência, confira a revisão implantada e só então invalide a URL pública afetada na CDN.
