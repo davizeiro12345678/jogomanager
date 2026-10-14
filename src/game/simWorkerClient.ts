@@ -259,7 +259,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
   const tacticsRequests = new Map<number, { side: Side; tactics: Tactics; pending: boolean }>();
   const snapshotTelemetry = options.telemetry ? createSnapshotTelemetryTracker() : null;
   const decoder = new LiveSnapshotDecoder();
-  let consecutiveDecodeFailures = 0;
+  const consecutiveDecodeFailures = 0;
   let recoveryBytes = 0;
 
   const apply = (
