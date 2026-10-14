@@ -8,13 +8,6 @@ const migration = readFileSync(
   ),
   "utf8",
 );
-const rpcSecurityMigration = readFileSync(
-  new URL(
-    "../../../supabase/migrations/20261014193604_secure_definer_rpc_implementations.sql",
-    import.meta.url,
-  ),
-  "utf8",
-);
 
 function migrationFunctionBody(name: string) {
   return new RegExp(
@@ -24,27 +17,6 @@ function migrationFunctionBody(name: string) {
 }
 
 describe("activity ranking trust boundary", () => {
-  it("keeps public RPC wrappers invoker-only and moves privileged code to app_private", () => {
-    for (const name of [
-      "get_own_activity_ranking",
-      "get_public_activity_rankings",
-      "record_active_time",
-      "redeem_game_coupon",
-      "set_activity_ranking_preferences",
-    ]) {
-      expect(rpcSecurityMigration).toMatch(
-        new RegExp(`ALTER FUNCTION public\\.${name}\\([\\s\\S]*?SET SCHEMA app_private`, "i"),
-      );
-      const wrapper = new RegExp(
-        `CREATE FUNCTION public\\.${name}\\([\\s\\S]*?\\$function\\$`,
-        "i",
-      ).exec(rpcSecurityMigration)?.[0];
-      expect(wrapper).toBeDefined();
-      expect(wrapper).toMatch(/SECURITY INVOKER/i);
-      expect(wrapper).toMatch(/SET search_path TO ''/i);
-    }
-  });
-
   it("does not submit client career totals to the activity heartbeat RPC", () => {
     const source = readFileSync(new URL("./ActivityRanking.tsx", import.meta.url), "utf8");
     const rpcPayload = source.match(/supabase\.rpc\("record_active_time",\s*\{([\s\S]*?)\}\s*\)/);

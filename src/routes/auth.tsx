@@ -343,7 +343,7 @@ function AuthPage() {
               size="lg"
               variant="outline"
               onClick={async () => {
-                await supabase.auth.signOut();
+                await (await import("@/lib/logout")).signOutAndCleanDevice();
                 setSignedInAs(null);
               }}
             >
