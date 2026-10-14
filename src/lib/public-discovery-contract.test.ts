@@ -23,10 +23,12 @@ describe("public site discovery contract", () => {
     expect(llms).toMatch(/^# JogoManager\b/);
     expect(llms).toMatch(/\n> /);
     expect(llms).not.toMatch(/futebolmanager\.xyz/i);
-    const hrefs = [...llms.matchAll(/\]\((https:\/\/jogomanager\.com(?:\/[^)]*)?)\)/g)]
-      .map((match) => new URL(match[1]).pathname);
+    const hrefs = [...llms.matchAll(/\]\((https:\/\/jogomanager\.com(?:\/[^)]*)?)\)/g)].map(
+      (match) => new URL(match[1]).pathname,
+    );
     expect(hrefs.length).toBeGreaterThan(10);
-    for (const path of hrefs) expect(paths.has(path), `Missing canonical sitemap route: ${path}`).toBe(true);
+    for (const path of hrefs)
+      expect(paths.has(path), `Missing canonical sitemap route: ${path}`).toBe(true);
     expect(llms).not.toMatch(/\]\(https?:\/\/localhost/i);
   });
 
