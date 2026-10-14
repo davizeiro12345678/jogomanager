@@ -23,7 +23,8 @@ export const Route = createFileRoute("/api/public/sync-football")({
         if (scope === "apifootball-managed") {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const claim = await supabaseAdmin.rpc("claim_api_football_import_phase");
-          if (claim.error) return Response.json({ ok: false, error: "Job claim failed" }, { status: 500 });
+          if (claim.error)
+            return Response.json({ ok: false, error: "Job claim failed" }, { status: 500 });
           const lease = claim.data?.[0];
           if (!lease)
             return Response.json(
