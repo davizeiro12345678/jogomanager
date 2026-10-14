@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sceneVoice, voiceWithin, SCENE_VOICE_WAIT_MS } from "./cutscene-voice";
+import { NARRATION_VOICE_REVISION } from "./narration-voice";
 import { readVoiceCache, writeVoiceCache } from "./audio-cache";
 import { NARRATION_VOICE_REVISION } from "./narration-voice";
 
