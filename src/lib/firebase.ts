@@ -4,7 +4,9 @@ import type { FirebaseApp } from "firebase/app";
 let app: FirebaseApp | null = null;
 let analyticsStarted = false;
 
-export async function initFirebase(opts: { analytics?: boolean } = {}): Promise<FirebaseApp | null> {
+export async function initFirebase(
+  opts: { analytics?: boolean } = {},
+): Promise<FirebaseApp | null> {
   if (typeof window === "undefined") return null;
   try {
     const { getFirebaseWebConfig } = await import("./firebase-config.functions");
