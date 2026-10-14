@@ -23,6 +23,7 @@ import {
 import { classifyGuestCheckoutSession } from "@/lib/guest-checkout-state";
 import { resolveOrCreateCustomer } from "@/utils/payments.functions";
 import { assertGuestCheckoutEnabled } from "@/lib/payments-config.server";
+import { verifiedAccount } from "@/lib/verified-identity.server";
 
 // Stripe requires at least 30 minutes from receipt. Keep a margin so request
 // transit cannot make an otherwise valid embedded session intermittently fail.
@@ -505,7 +506,16 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }): Promise<ClaimGuestCheckoutResult> => {
     try {
-      const email = normalizeGuestEmail(context.claims?.email);
+      const account = await verifiedAccount(context.supabase, context.userId);
+      if (!account) {
+        return {
+          status: "error",
+          message: "Confirme seu endereço de e-mail antes de receber a compra.",
+        };
+      }
+      // Never bind a paid intent to an address copied from unsigned input,
+      // mutable user_metadata or a stale token claim.
+      const email = normalizeGuestEmail(account.email);
       const emailHash = await hashGuestEmail(email);
       const environment = getConfiguredStripeEnvironment();
       const intent = await readIntent(data.intentId);
