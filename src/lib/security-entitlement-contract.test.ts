@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migration = readFileSync(
-  new URL("../../supabase/migrations/20261014210100_verified_coupon_entitlements.sql", import.meta.url),
+  new URL(
+    "../../supabase/migrations/20261014210100_verified_coupon_entitlements.sql",
+    import.meta.url,
+  ),
   "utf8",
 );
 const guestClaim = readFileSync(new URL("./guest-checkout.functions.ts", import.meta.url), "utf8");
