@@ -2,11 +2,13 @@
 
 [![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/davizeiro12345678/jogomanager?utm_source=badge)
 
-faça um jogo de futebol mega realista 3d onde vc e o manager
+Jogo de gerenciamento de futebol para navegador, com carreira de treinador, táticas, elencos e visualização de partidas em 3D. A disponibilidade de recursos pode variar conforme dispositivo, conta e serviços online.
 
 This project was built with [Lovable](https://lovable.dev).
 
-**Live app**: https://stadium-stewards.lovable.app
+**Site oficial e URL canônica:** https://jogomanager.com
+
+> **Publicação:** o conteúdo do GitHub/Lovable não comprova, por si só, a versão servida pelo domínio público. Após publicar, execute `node scripts/check-live-llms.mjs` e confira o deploy e eventuais caches da CDN.
 
 ## Pagamentos
 
@@ -19,7 +21,7 @@ divergências falham fechadas. O checkout visitante também exige a feature flag
 do ambiente e, quando `GUEST_CHECKOUT_ENVIRONMENT` estiver definida, ela deve
 corresponder ao ambiente de pagamentos do deploy.
 
-## Build with Lovable
+## Desenvolvimento com Lovable
 
 Continue developing this project in the [Lovable editor](https://lovable.dev/projects/f0dcad90-231c-4ef4-bd1b-b199f3902fb1).
 
@@ -32,8 +34,8 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+git clone https://github.com/davizeiro12345678/jogomanager.git
+cd jogomanager
+npm ci
 npm run dev
 ```
