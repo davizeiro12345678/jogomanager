@@ -1,0 +1,49 @@
+name: Refresh security dependency locks
+
+on:
+  push:
+    branches: [fix/security-hardening-importer-20261014]
+    paths:
+      - package.json
+      - .github/workflows/security-lockfile-reconcile.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: security-lock-reconcile
+  cancel-in-progress: false
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Re-resolve patched dependency tree without lifecycle scripts
+        run: npm install --package-lock-only --ignore-scripts --no-audit
+      - name: Verify clean npm installation
+        run: npm ci --ignore-scripts --no-audit
+      - uses: oven-sh/setup-bun@v2
+      - name: Sync the Bun lockfile without package scripts
+        run: bun install --lockfile-only --ignore-scripts
+      - name: Restrict generated changes to lockfiles
+        run: |
+          git add -- package-lock.json bun.lock
+          git diff --cached --stat
+          git diff --cached --check
+      - name: Commit generated locks to this security branch only
+        run: |
+          if git diff --cached --quiet; then
+            echo "No lockfile updates needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(lock): regenerate patched dependency locks"
+          git push origin "HEAD:refs/heads/fix/security-hardening-importer-20261014"
