@@ -24,7 +24,7 @@ describe("public site discovery contract", () => {
     expect(llms).toMatch(/\n> /);
     expect(llms).not.toMatch(/futebolmanager\.xyz/i);
     const hrefs = [...llms.matchAll(/\]\((https:\/\/jogomanager\.com(?:\/[^)]*)?)\)/g)].map(
-      (match) => new URL(match[1]).pathname,
+      (match) => new URL(match[1]!).pathname,
     );
     expect(hrefs.length).toBeGreaterThan(10);
     for (const path of hrefs)
