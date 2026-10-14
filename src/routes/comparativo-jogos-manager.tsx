@@ -4,7 +4,8 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/comparativo-jogos-manager";
-const TITLE = "Pro Football Manager 3D x outros managers: dados, 3D, preço e celular | Pro Football Manager 3D";
+const TITLE =
+  "Pro Football Manager 3D x outros managers: dados, 3D, preço e celular | Pro Football Manager 3D";
 const DESC =
   "Comparação lado a lado: profundidade de base de dados, partida 3D, custo, offline, plataformas e progressão de carreira — sem promessas exageradas.";
 

@@ -39,5 +39,6 @@ const report = {
 };
 
 const destination = process.argv[2];
-if (destination) fs.writeFileSync(path.resolve(root, destination), `${JSON.stringify(report, null, 2)}\n`);
+if (destination)
+  fs.writeFileSync(path.resolve(root, destination), `${JSON.stringify(report, null, 2)}\n`);
 else console.log(JSON.stringify(report, null, 2));

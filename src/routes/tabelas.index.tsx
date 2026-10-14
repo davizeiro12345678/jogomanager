@@ -5,7 +5,8 @@ import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 import { LEAGUE_LABELS } from "@/lib/league-labels";
 
 const PATH = "/tabelas";
-const TITLE = "Classificação ao vivo de 12 ligas: Brasileirão, Premier, La Liga e mais | Pro Football Manager 3D";
+const TITLE =
+  "Classificação ao vivo de 12 ligas: Brasileirão, Premier, La Liga e mais | Pro Football Manager 3D";
 const DESC =
   "Tabela, artilharia, assistências, forma recente, casa x fora e desfalques de 12 campeonatos — e o mesmo clube pronto para você comandar em 3D.";
 

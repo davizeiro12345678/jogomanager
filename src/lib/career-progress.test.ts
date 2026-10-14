@@ -3,7 +3,16 @@ import type { CareerState } from "@/game/types";
 import { continuesVerifiedCareer, isStaleSave } from "./career-progress";
 
 const base = (over: Partial<CareerState> = {}) =>
-  ({ leagueId: "l", clubId: "c", managerName: "m", season: 1, round: 1, results: [], history: [], ...over }) as unknown as CareerState;
+  ({
+    leagueId: "l",
+    clubId: "c",
+    managerName: "m",
+    season: 1,
+    round: 1,
+    results: [],
+    history: [],
+    ...over,
+  }) as unknown as CareerState;
 const r = (round: number) => ({ round, home: "c", away: "x", hg: 2, ag: 1 });
 
 describe("career progress", () => {
@@ -17,7 +26,13 @@ describe("career progress", () => {
   });
   it("rejects rewritten history and impossible speed", () => {
     const prev = base({ round: 2, results: [r(1)] });
-    expect(continuesVerifiedCareer(prev, base({ round: 3, results: [{ ...r(1), hg: 9 }, r(2)] }), 60_000)).toBe(false);
+    expect(
+      continuesVerifiedCareer(
+        prev,
+        base({ round: 3, results: [{ ...r(1), hg: 9 }, r(2)] }),
+        60_000,
+      ),
+    ).toBe(false);
     expect(continuesVerifiedCareer(base(), base({ round: 30 }), 1_000)).toBe(false);
   });
 });
