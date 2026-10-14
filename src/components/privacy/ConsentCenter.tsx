@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Download, Lock, ShieldCheck, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { FirebasePushControl } from "./FirebasePushControl";
 import { Switch } from "@/components/ui/switch";
 import {
   clearLocalData,
@@ -149,6 +150,7 @@ export function ConsentCenter() {
           <Trash2 className="mr-1.5 h-4 w-4" aria-hidden /> Apagar dados deste navegador
         </Button>
       </div>
+      <FirebasePushControl />
       <p className="mt-3 text-xs text-muted-foreground" role="status" aria-live="polite">
         {message ??
           (state.decidedAt
