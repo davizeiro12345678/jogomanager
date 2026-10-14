@@ -123,8 +123,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
-      // Resumo do site para assistentes de IA (padrão llms.txt)
-      { rel: "llms", type: "text/plain", href: "/llms.txt" },
+      // Resumo do site para assistentes de IA (proposta llms.txt)
+      { rel: "describedby", type: "text/plain", href: "/llms.txt" },
     ],
     scripts: [{ children: ENABLE_FONTS }],
   }),
