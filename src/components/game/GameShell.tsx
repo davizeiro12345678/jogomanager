@@ -320,7 +320,7 @@ export function GameShell({
                 {signedIn ? (
                   <DropdownMenuItem
                     onSelect={async () => {
-                      await supabase.auth.signOut();
+                      await (await import("@/lib/logout")).signOutAndCleanDevice();
                       void navigate({ to: "/" });
                     }}
                   >
