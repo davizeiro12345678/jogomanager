@@ -25,9 +25,13 @@ describe("llms.txt and canonical publication contract", () => {
     expect(llms).toMatch(/\n> .+/);
     expect(llms).toContain("\n## Conheça o jogo\n");
     const indexed = new Set(
-      [...sitemapSource.matchAll(/path: "([^"]+)"/g)].map((match) => match[1]),
+      [...sitemapSource.matchAll(/path: "([^"]+)"/g)].flatMap((match) =>
+        match[1] ? [match[1]] : [],
+      ),
     );
-    const links = [...llms.matchAll(/\]\((https:\/\/[^)]+)\)/g)].map((match) => match[1]);
+    const links = [...llms.matchAll(/\]\((https:\/\/[^)]+)\)/g)].flatMap((match) =>
+      match[1] ? [match[1]] : [],
+    );
     expect(links.length).toBeGreaterThan(10);
     for (const link of links) {
       const url = new URL(link);
