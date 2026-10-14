@@ -3,7 +3,7 @@ name: Quality gates
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, codex/mega-update-2026-10-09]
   workflow_dispatch:
 
 permissions:
