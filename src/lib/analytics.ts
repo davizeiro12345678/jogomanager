@@ -21,6 +21,7 @@ export async function initAnalytics(): Promise<PostHog | null> {
   const { readConsent } = await import("./consent");
   if (!readConsent().analytics) return null;
   initGoogleAnalytics();
+  void import("./firebase").then((m) => m.initFirebase({ analytics: true }));
   if (client) return client;
   const token = import.meta.env["VITE_LOVABLE_CONNECTOR_POSTHOG_API_KEY"];
   if (!token || starting) return null;

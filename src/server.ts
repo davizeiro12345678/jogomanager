@@ -2,7 +2,6 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { CSP_NONCE_HEADER, createCspNonce, secureResponse } from "./lib/security-headers";
 import { publicPageRedirect } from "./lib/public-page-redirects";
 
 type ServerEntry = {
@@ -48,7 +47,8 @@ function isH3SwallowedErrorBody(body: string): boolean {
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
-    const nonce = createCspNonce();
+    const redirect = publicPageRedirect(request);
+    if (redirect) return redirect;
     try {
       const redirect = publicPageRedirect(request);
       if (redirect) return secureResponse(redirect, request, nonce);

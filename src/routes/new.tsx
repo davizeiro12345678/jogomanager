@@ -102,7 +102,7 @@ const CHALLENGES: { id: CareerChallenge; label: string }[] = [
 
 function NewCareer() {
   const navigate = useNavigate();
-  const { career, update } = useCareer();
+  const { career, update, reset } = useCareer();
   const [step, setStep] = useState(0);
   const [furthest, setFurthest] = useState(0);
   const [name, setName] = useState("Técnico");
@@ -221,6 +221,10 @@ function NewCareer() {
           timer = setTimeout(resolve, 8000);
         }),
       ]);
+      if (!mounted.current) return;
+      // Replacing must delete the stored career first; otherwise the server
+      // treats the fresh season-1 save as stale and restores the old one.
+      if (career && replace) await reset();
       if (!mounted.current) return;
       startWorldForNewCareer(club.id);
       update(initCareer(selected.league.id, club.id, profile.name, profile));

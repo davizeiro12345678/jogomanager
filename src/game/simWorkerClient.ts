@@ -505,10 +505,18 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
           const packet = message.snapshot;
           const current = liveWorker;
           try {
-            const state = decoder.decode(packet);
-            if (state) {
-              consecutiveDecodeFailures = 0;
-              apply(state, "worker", packet);
+            const recycled = apply(message.snapshot, "worker");
+            if (recycled.length) {
+              const [positions, velocities, states] = recycled;
+              send(
+                {
+                  type: "recycle",
+                  positions: positions!,
+                  velocities: velocities!,
+                  states: states!,
+                },
+                [positions!, velocities!, states!],
+              );
             }
           } catch (error) {
             reportSilent("live-transport", error, {
@@ -516,45 +524,14 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
               code: "decode-frame",
               sequence: packet.seq,
             });
-            consecutiveDecodeFailures++;
-            if (consecutiveDecodeFailures >= 3) {
-              startFallback("Falha persistente de transporte; recuperando a partida localmente.");
-            } else {
-              try {
-                current?.postMessage({ id: command, type: "resyncLive" });
-              } catch (resyncError) {
-                reportSilent("live-transport", resyncError, {
-                  class: "degradation",
-                  code: "resync-failed",
-                });
-                startFallback(
-                  "Não foi possível sincronizar o Worker; recuperando a partida localmente.",
-                );
-              }
-            }
-          } finally {
-            try {
-              if (current && current === liveWorker && packet.frame.buffer.byteLength)
-                current.postMessage(
-                  {
-                    id: command,
-                    type: "recycleLive",
-                    session: packet.session,
-                    slot: packet.slot,
-                    buffer: packet.frame.buffer,
-                  },
-                  [packet.frame.buffer],
-                );
-            } catch (error) {
-              reportSilent("live-transport", error, {
-                class: "degradation",
-                code: "recycle-frame",
-              });
-              startFallback("Falha de transporte; recuperação local ativada.");
+            if (!failureReported) {
+              failureReported = true;
+              startFallback(
+                "O snapshot da partida não pôde ser aplicado; modo compatível ativado.",
+              );
             }
           }
-        } else if (message.type === "snapshot") apply(message.snapshot, "worker");
-        else if (message.type === "finished") apply(message.result, "worker");
+        } else if (message.type === "finished") apply(message.result, "worker");
       };
       liveWorker.onerror = (event) => {
         reportSilent("match-worker", event.error ?? event.message, {

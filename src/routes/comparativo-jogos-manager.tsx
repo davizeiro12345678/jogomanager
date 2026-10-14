@@ -4,9 +4,10 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/comparativo-jogos-manager";
-const TITLE = "Como escolher um jogo de manager de futebol";
+const TITLE =
+  "Pro Football Manager 3D x outros managers: dados, 3D, preço e celular | Pro Football Manager 3D";
 const DESC =
-  "Compare simulação, carreira, partidas, modo offline, multiplayer, celular e custos para escolher um jogo de manager de futebol. Veja onde o Pro Football Manager 3D se encaixa.";
+  "Comparação lado a lado: profundidade de base de dados, partida 3D, custo, offline, plataformas e progressão de carreira — sem promessas exageradas.";
 
 export const Route = createFileRoute("/comparativo-jogos-manager")({
   head: () => ({
@@ -215,6 +216,59 @@ function ComparePage() {
             jogo offline
           </Link>
           .
+        </p>
+      </Section>
+      <Section id="perfil" title="Qual tipo de jogo de manager combina com você">
+        <ul className="list-disc space-y-2 pl-5">
+          <li>
+            <strong className="text-foreground">Quer profundidade total e tem horas livres</strong>:
+            simuladores de PC pagos e completos, com banco de dados enorme e partidas em 2D/3D
+            simples.
+          </li>
+          <li>
+            <strong className="text-foreground">Quer jogar no celular em sessões curtas</strong>:
+            jogos de navegador e apps gratuitos, com partidas rápidas e progresso salvo na nuvem.
+          </li>
+          <li>
+            <strong className="text-foreground">
+              Quer ver o time jogar em 3D sem instalar nada
+            </strong>
+            : é o foco do Pro Football Manager 3D — clubes e elencos reais, carreira completa e
+            partida em 3D no navegador.
+          </li>
+        </ul>
+      </Section>
+      <Section id="criterios" title="Critérios para comparar de forma justa">
+        <ul className="list-disc space-y-2 pl-5">
+          <li>
+            <strong className="text-foreground">Preço</strong>: grátis, compra única ou assinatura
+            anual.
+          </li>
+          <li>
+            <strong className="text-foreground">Plataforma</strong>: PC, console, celular ou
+            navegador; precisa instalar?
+          </li>
+          <li>
+            <strong className="text-foreground">Dados</strong>: clubes e jogadores reais ou
+            genéricos, e com que frequência são atualizados.
+          </li>
+          <li>
+            <strong className="text-foreground">Partida</strong>: texto, 2D ou 3D; dá para intervir
+            durante o jogo?
+          </li>
+          <li>
+            <strong className="text-foreground">Tempo por temporada</strong>: horas de dedicação até
+            fechar um ano de carreira.
+          </li>
+        </ul>
+      </Section>
+      <Section id="honesto" title="Onde o Pro Football Manager 3D ainda fica atrás">
+        <p>
+          Simuladores pagos de PC trazem mais camadas de gestão — staff detalhado, base com dezenas
+          de categorias e negociações longas. Aqui a escolha foi outra: decisões rápidas, partida em
+          3D e funcionar em qualquer navegador, inclusive em celulares médios. Se você quer gerir
+          cada detalhe por centenas de horas, um simulador de PC tende a servir melhor; se quer
+          começar em segundos e ver o resultado em campo, este é o caminho.
         </p>
       </Section>
     </ArticleShell>

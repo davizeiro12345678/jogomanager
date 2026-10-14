@@ -82,8 +82,15 @@ export default function CinematicLens({
       ) : (
         <></>
       )}
-      <HueSaturation saturation={mood === "bad" ? -0.07 : -0.025} />
-      <BrightnessContrast brightness={0.012} contrast={climax ? 0.07 : 0.045} />
+      {/* Mood grade: warm and lively for good news, cool and muted for bad, neutral otherwise. */}
+      <HueSaturation
+        hue={mood === "good" ? 0.018 : mood === "bad" ? -0.035 : 0}
+        saturation={mood === "good" ? 0.06 : mood === "bad" ? -0.1 : -0.025}
+      />
+      <BrightnessContrast
+        brightness={mood === "good" ? 0.022 : mood === "bad" ? -0.006 : 0.012}
+        contrast={climax ? 0.08 : mood === "bad" ? 0.06 : 0.045}
+      />
       <Vignette offset={climax ? 0.18 : 0.22} darkness={climax ? 0.31 : 0.24} />
       {quality === "alta" ? (
         <Noise opacity={mood === "bad" ? 0.028 : 0.018} blendFunction={BlendFunction.OVERLAY} />

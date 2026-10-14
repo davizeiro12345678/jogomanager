@@ -1,40 +1,53 @@
-# Pro Football Manager 3D
+# JogoManager — Pro Football Manager 3D
 
-> Jogo de manager de futebol online e gratuito, jogado no navegador. O treinador
-> escolhe um clube real, monta o elenco, define a tática e assiste aos 90 minutos
-> em 3D, com narração ao vivo. Em português do Brasil, sem instalação e sem
-> obrigação de pagar.
+> Jogo brasileiro de gerenciamento de futebol para navegador. Na carreira de
+> treinador, o jogador administra um clube, organiza elenco e tática e acompanha
+> partidas em 3D. É possível começar gratuitamente sem instalar o jogo.
 
-Site oficial: https://futebolmanager.xyz
+Site oficial e endereço canônico: https://jogomanager.com
 
-## Páginas principais
+Este arquivo é um índice das páginas públicas. O código integrado ao repositório
+não garante que todas as mudanças já estejam implantadas: considere a versão
+efetivamente acessível em cada página e as condições atuais de serviço.
 
-- [Início](https://futebolmanager.xyz/): visão geral do jogo e início rápido de carreira.
-- [Jogo de manager de futebol](https://futebolmanager.xyz/jogo-de-manager-de-futebol): o que é o jogo e como começar.
-- [Soccer manager online](https://futebolmanager.xyz/soccer-manager-online): versão em inglês do mesmo conceito.
-- [Ligas de futebol](https://futebolmanager.xyz/ligas-de-futebol): ligas e copas disponíveis.
-- [Brasileirão](https://futebolmanager.xyz/brasileirao): campeonato brasileiro dentro do jogo.
-- [Táticas e formações](https://futebolmanager.xyz/taticas-e-formacoes): esquemas e quando usar cada um.
-- [Melhores formações](https://futebolmanager.xyz/melhores-formacoes): comparação prática de formações.
-- [Mercado de transferências](https://futebolmanager.xyz/mercado-de-transferencias): contratações, salários e negociação.
-- [Guia de scouting](https://futebolmanager.xyz/guia-de-scouting): como avaliar jogadores e potencial.
-- [Gestão financeira](https://futebolmanager.xyz/gestao-financeira): orçamento, folha salarial e receitas.
-- [Guias](https://futebolmanager.xyz/guias) e [Dicas de gestão](https://futebolmanager.xyz/dicas-de-gestao): material para iniciantes.
-- [Glossário do futebol](https://futebolmanager.xyz/glossario-do-futebol): termos usados no jogo.
-- [Perguntas frequentes](https://futebolmanager.xyz/perguntas-frequentes): dúvidas comuns.
-- [Jogar offline](https://futebolmanager.xyz/jogar-offline): instalar como aplicativo.
-- [Pacotes e passe de temporada](https://futebolmanager.xyz/produtos): itens opcionais da loja.
+## Conheça o jogo
 
-## Sobre e políticas
+- [Página inicial](https://jogomanager.com/): apresentação do JogoManager e acesso à partida.
+- [Jogo de manager de futebol](https://jogomanager.com/jogo-de-manager-de-futebol): como funcionam a carreira, a simulação e os modos de jogo.
+- [Sobre a plataforma](https://jogomanager.com/sobre): história, recursos e informações institucionais.
+- [Tabelas reais](https://jogomanager.com/tabelas): resultados e classificação; esses dados são distintos da temporada simulada no jogo.
 
-- [Sobre o jogo](https://futebolmanager.xyz/sobre)
-- [Sobre o criador](https://futebolmanager.xyz/criador)
-- [Contato](https://futebolmanager.xyz/contato)
-- [Política de privacidade](https://futebolmanager.xyz/privacidade)
-- [Termos de uso](https://futebolmanager.xyz/termos)
+## Guias originais
 
-## Observações
+- [Guias e primeiros passos como treinador](https://jogomanager.com/guias): escolha do clube, escalação, tática, planejamento, orçamento e prevenção de perda de saves.
+- [Melhores formações](https://jogomanager.com/melhores-formacoes): comparação de 4-3-3, 4-2-3-1, 4-4-2 e 3-5-2.
+- [Guia de scouting](https://jogomanager.com/guia-de-scouting): comparação de jogadores por função, desempenho, custo e potencial.
+- [Mercado de transferências](https://jogomanager.com/mercado-de-transferencias): como analisar contratos e prioridades de investimento.
+- [Gestão da temporada](https://jogomanager.com/dicas-de-gestao): calendário, rodízio, orçamento, reserva de caixa, objetivos e contexto dos resultados.
+- [Regras do futebol](https://jogomanager.com/regras): conceitos das regras esportivas.
+- [Glossário do futebol](https://jogomanager.com/glossario-do-futebol): definições para iniciantes.
 
-- Conteúdo em português do Brasil; a interface do jogo suporta dezenas de idiomas.
-- Nomes de clubes e jogadores reais são usados apenas como referência esportiva pública.
-- As compras da loja são cosméticas ou de conveniência e não alteram o resultado das partidas.
+## Ajuda e transparência
+
+- [Perguntas frequentes](https://jogomanager.com/perguntas-frequentes): acesso gratuito, progresso, dados de clubes, multiplayer e compras.
+- [Jogar offline e fazer backup](https://jogomanager.com/jogar-offline): possibilidades e cuidados com saves locais.
+- [Produtos opcionais](https://jogomanager.com/produtos): preços, itens e condições apresentados na loja.
+- [Criador e novidades](https://jogomanager.com/criador): autoria, atualizações e contatos.
+- [Contato e suporte](https://jogomanager.com/contato): canais oficiais para ajuda.
+- [Política de privacidade](https://jogomanager.com/privacidade)
+- [Termos de uso](https://jogomanager.com/termos)
+
+Contato principal: davizeiro10.jogos@gmail.com
+Contato secundário: davithomazini779@gmail.com
+Comunidade oficial: https://discord.gg/6az4ssQQck
+
+## Notas de interpretação
+
+- Quantidade de registros de clubes, jogadores e competições importados não
+  significa disponibilidade integral ou seleção em todos os modos de jogo.
+- Os dados esportivos externos podem variar de cobertura e atualização. Estatísticas históricas, dados oficiais e resultados da carreira simulada são conjuntos diferentes.
+- Guias explicam opções e critérios, não prometem resultados fixos de partidas.
+- Algumas funções dependem de conexão ou de uma conta autenticada; confira as
+  condições na interface antes de contar com salvamento entre dispositivos.
+- Este arquivo orienta a descoberta de páginas oficiais, mas não substitui
+  a leitura do conteúdo original nem os arquivos sitemap.xml e robots.txt.

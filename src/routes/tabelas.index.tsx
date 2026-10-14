@@ -1,18 +1,25 @@
+import { StickyPlayCta } from "@/components/StickyPlayCta";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicLinks } from "@/components/PublicLinks";
 import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 import { LEAGUE_LABELS } from "@/lib/league-labels";
 
 const PATH = "/tabelas";
-const TITLE = "Tabelas de classificação atualizadas: Brasileirão, Premier League e mais";
+const TITLE =
+  "Classificação ao vivo de 12 ligas: Brasileirão, Premier, La Liga e mais | Pro Football Manager 3D";
 const DESC =
-  "Classificação, campanha em casa e fora, forma recente e desfalques das principais ligas do mundo — e o mesmo clube pronto para você comandar no jogo.";
+  "Tabela, artilharia, assistências, forma recente, casa x fora e desfalques de 12 campeonatos — e o mesmo clube pronto para você comandar em 3D.";
 
 export const Route = createFileRoute("/tabelas/")({
   head: () => ({
     meta: seoMeta({ title: TITLE, description: DESC, path: PATH }),
     links: canonical(PATH),
-    scripts: [breadcrumbLd([{ name: "Início", path: "/" }, { name: "Tabelas", path: PATH }])],
+    scripts: [
+      breadcrumbLd([
+        { name: "Início", path: "/" },
+        { name: "Tabelas", path: PATH },
+      ]),
+    ],
   }),
   component: TablesIndex,
 });
@@ -22,10 +29,12 @@ function TablesIndex() {
     <main className="pitch-bg min-h-screen px-4 py-14">
       <div className="mx-auto max-w-5xl">
         <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">Futebol real</p>
-        <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">Tabelas das principais ligas</h1>
+        <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">
+          Tabelas das principais ligas
+        </h1>
         <p className="mt-4 max-w-2xl text-muted-foreground">
-          Cada página traz a classificação da temporada atual, quem rende melhor em casa e fora,
-          o melhor ataque, a defesa mais sólida, a forma das últimas cinco rodadas e os jogadores
+          Cada página traz a classificação da temporada atual, quem rende melhor em casa e fora, o
+          melhor ataque, a defesa mais sólida, a forma das últimas cinco rodadas e os jogadores
           lesionados. Use essas informações para escolher o clube da sua carreira de técnico.
         </p>
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -44,6 +53,7 @@ function TablesIndex() {
         </ul>
         <PublicLinks exclude={PATH} />
       </div>
+      <StickyPlayCta />
     </main>
   );
 }

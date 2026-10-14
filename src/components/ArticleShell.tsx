@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { PublicLinks } from "@/components/PublicLinks";
 import { CommunityInvite } from "@/components/CommunityInvite";
+import { StickyPlayCta } from "@/components/StickyPlayCta";
 
 export interface GuideFaq {
   q: string;
@@ -56,7 +57,7 @@ export function ArticleShell({
   ].filter((f): f is string => Boolean(f));
 
   return (
-    <main className="pitch-bg min-h-screen px-4 py-14">
+    <main className="pitch-bg min-h-screen px-4 pb-28 pt-14 sm:pb-14">
       <article className="mx-auto max-w-3xl">
         <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">{kicker}</p>
         <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">{title}</h1>
@@ -131,6 +132,7 @@ export function ArticleShell({
         <CommunityInvite compact />
         <PublicLinks exclude={path} />
       </article>
+      <StickyPlayCta />
     </main>
   );
 }

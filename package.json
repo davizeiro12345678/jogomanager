@@ -26,6 +26,9 @@
   },
   "overrides": {
     "@dimforge/rapier3d-compat": "0.21.0",
+    "@grpc/grpc-js": "1.14.6",
+    "@modelcontextprotocol/sdk": "1.31.0",
+    "esbuild": "0.28.1",
     "rolldown": "1.2.1"
   },
   "dependencies": {
@@ -89,6 +92,7 @@
     "date-fns": "^4.4.0",
     "detect-gpu": "^5.0.70",
     "embla-carousel-react": "^8.6.0",
+    "firebase": "^13.0.0",
     "gsap": "^3.15.0",
     "idb-keyval": "^6.3.0",
     "input-otp": "^1.5.0",

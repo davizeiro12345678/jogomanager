@@ -52,19 +52,19 @@ export const Route = createFileRoute("/jogador/novo")({
   component: CreateAthletePage,
 });
 
-const HAIR_STYLES: { id: AthleteAppearanceV1["hairStyle"]; label: string }[] = [
-  { id: "buzz", label: "Raspado" },
-  { id: "short", label: "Curto" },
-  { id: "medium", label: "Médio" },
-  { id: "curly", label: "Cacheado" },
-  { id: "afro", label: "Black" },
-  { id: "mohawk", label: "Moicano" },
-  { id: "bun", label: "Coque" },
-  { id: "ponytail", label: "Rabo de cavalo" },
-  { id: "dreads", label: "Dreads" },
-  { id: "braids", label: "Tranças" },
-  { id: "headband", label: "Com faixa" },
-  { id: "bald", label: "Sem cabelo" },
+const SKINS = ["#f4d3b5", "#e2b48c", "#c68a5d", "#a0673f", "#7a4a2a", "#4e2e1a"];
+const HAIR_COLORS = ["#1b1410", "#4a2f1d", "#8a5a2b", "#d8b46a", "#b5b5b5"];
+const HAIR_STYLES = [
+  "Raspado",
+  "Degradê",
+  "Curto",
+  "Cacheado",
+  "Black",
+  "Tranças",
+  "Coque",
+  "Moicano",
+  "Ondulado",
+  "Longo",
 ];
 const NATIONS = [
   "Brasil",
@@ -134,38 +134,21 @@ function CreateAthletePage() {
     return league.clubs;
   }, [league, origin, name, leagueId]);
   const club = clubPool.find((c) => c.id === clubId) ?? clubPool[0];
-  const legacyAppearance = useMemo(
-    () => legacyAppearanceFromAthleteAppearance(appearanceV1),
-    [appearanceV1],
-  );
-  const weightKg = Math.round(
-    (heightCm - 100) * (build === "forte" ? 0.98 : build === "leve" ? 0.82 : 0.9),
-  );
   const previewAthlete = useMemo(
     () => ({
-      seed: `preview-${name || "novo"}-${appearanceV1.skinTone}-${appearanceV1.hairStyle}-${appearanceV1.hairColor}-${appearanceV1.beardStyle}`,
+      seed: `preview-${name || "novo"}-${skin}-${hair}-${hairColor}-${beard}`,
       nickname: nickname || name.split(" ")[0] || "ATLETA",
       clubId: club?.id ?? "fla",
       position,
       shirtNumber: shirt,
       heightCm,
-      weightKg,
+      weightKg: Math.round(
+        (heightCm - 100) * (build === "forte" ? 0.98 : build === "leve" ? 0.82 : 0.9),
+      ),
       build,
-      appearance: legacyAppearance,
-      appearanceV1,
+      appearance: { skin, hair, hairColor, beard, boots: 0 },
     }),
-    [
-      name,
-      nickname,
-      club?.id,
-      position,
-      shirt,
-      heightCm,
-      weightKg,
-      build,
-      legacyAppearance,
-      appearanceV1,
-    ],
+    [name, nickname, club?.id, position, shirt, heightCm, build, skin, hair, hairColor, beard],
   );
 
   const submit = () => {
@@ -184,8 +167,7 @@ function CreateAthletePage() {
       personality,
       origin,
       clubId: club.id,
-      appearance: legacyAppearance,
-      appearanceV1,
+      appearance: { skin, hair, hairColor, beard, boots: 0 },
       shirtNumber: shirt,
     });
     commit(state);
@@ -285,13 +267,7 @@ function CreateAthletePage() {
                   type="button"
                   className="athlete-chip"
                   aria-pressed={build === b}
-                  onClick={() => {
-                    setBuild(b);
-                    setAppearanceV1((current) => ({
-                      ...current,
-                      bodyType: BODY_TYPE_FOR_BUILD[b],
-                    }));
-                  }}
+                  onClick={() => setBuild(b)}
                 >
                   {b === "leve" ? "Leve e rápido" : b === "forte" ? "Forte" : "Atlético"}
                 </button>
@@ -359,10 +335,7 @@ function CreateAthletePage() {
               ))}
             </div>
           </section>
-          <section
-            className={`athlete-card athlete-form${studioOpen ? " athlete-studio-card" : ""}`}
-            aria-label="Aparência"
-          >
+          <section className="athlete-card athlete-form" aria-label="Aparência">
             <div className="athlete-section-heading">
               <div>
                 <p className="athlete-eyebrow">Modelo Hero</p>
@@ -370,68 +343,31 @@ function CreateAthletePage() {
               </div>
               <span className="athlete-quality-badge">Alta qualidade</span>
             </div>
-            {studioOpen ? (
-              <>
-                <div className="flex items-center justify-between gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setStudioOpen(false)}
-                  >
-                    Voltar à prévia Hero
-                  </Button>
-                  <span className="athlete-meta">Alterações ficam no perfil antes de iniciar.</span>
-                </div>
-                <PlayerStudio
-                  clubId={club?.id ?? "fla"}
-                  position={RIG_POSITION_FOR_CAREER[position]}
-                  heightCm={heightCm}
-                  weightKg={weightKg}
-                  value={appearanceV1}
-                  onChange={setAppearanceV1}
-                />
-              </>
-            ) : (
-              <>
-                <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
-                <Button type="button" variant="outline" onClick={() => setStudioOpen(true)}>
-                  Abrir ajustes detalhados no Player Studio
-                </Button>
-              </>
-            )}
+            <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
             <div className="athlete-field">
               <span>Tom de pele</span>
               <div className="athlete-chips">
-                {ATHLETE_SKIN_TONES.map((color, skinTone) => (
+                {SKINS.map((c, i) => (
                   <Button
-                    key={color}
+                    key={c}
                     type="button"
                     variant="outline"
                     size="icon"
                     className="athlete-swatch"
-                    aria-label={`Tom ${skinTone + 1}`}
-                    aria-pressed={appearanceV1.skinTone === skinTone}
-                    style={{ background: color }}
-                    onClick={() => setAppearanceV1((current) => ({ ...current, skinTone }))}
+                    aria-label={`Tom ${i + 1}`}
+                    aria-pressed={skin === i}
+                    style={{ background: c }}
+                    onClick={() => setSkin(i)}
                   />
                 ))}
               </div>
             </div>
             <label className="athlete-field">
               <span>Cabelo</span>
-              <select
-                value={appearanceV1.hairStyle}
-                onChange={(e) =>
-                  setAppearanceV1((current) => ({
-                    ...current,
-                    hairStyle: e.target.value as AthleteAppearanceV1["hairStyle"],
-                  }))
-                }
-              >
-                {HAIR_STYLES.map((style) => (
-                  <option key={style.id} value={style.id}>
-                    {style.label}
+              <select value={hair} onChange={(e) => setHair(Number(e.target.value))}>
+                {HAIR_STYLES.map((h, i) => (
+                  <option key={h} value={i}>
+                    {h}
                   </option>
                 ))}
               </select>
@@ -439,63 +375,29 @@ function CreateAthletePage() {
             <div className="athlete-field">
               <span>Cor do cabelo</span>
               <div className="athlete-chips">
-                {ATHLETE_HAIR_COLORS.map((color, hairColor) => (
+                {HAIR_COLORS.map((c, i) => (
                   <Button
-                    key={color}
+                    key={c}
                     type="button"
                     variant="outline"
                     size="icon"
                     className="athlete-swatch"
-                    aria-label={`Cor ${hairColor + 1}`}
-                    aria-pressed={appearanceV1.hairColor === hairColor}
-                    style={{ background: color }}
-                    onClick={() => setAppearanceV1((current) => ({ ...current, hairColor }))}
+                    aria-label={`Cor ${i + 1}`}
+                    aria-pressed={hairColor === i}
+                    style={{ background: c }}
+                    onClick={() => setHairColor(i)}
                   />
                 ))}
               </div>
             </div>
             <label className="athlete-field">
               <span>Barba</span>
-              <select
-                value={appearanceV1.beardStyle}
-                onChange={(e) =>
-                  setAppearanceV1((current) => ({
-                    ...current,
-                    beardStyle: e.target.value as AthleteAppearanceV1["beardStyle"],
-                  }))
-                }
-              >
-                {[
-                  { id: "none", label: "Sem barba" },
-                  { id: "stubble", label: "Rala" },
-                  { id: "goatee", label: "Cavanhaque" },
-                  { id: "full", label: "Cheia" },
-                  { id: "moustache", label: "Bigode" },
-                ].map((style) => (
-                  <option key={style.id} value={style.id}>
-                    {style.label}
+              <select value={beard} onChange={(e) => setBeard(Number(e.target.value))}>
+                {["Sem barba", "Rala", "Média", "Cheia"].map((b, i) => (
+                  <option key={b} value={i}>
+                    {b}
                   </option>
                 ))}
-              </select>
-            </label>
-            <label className="athlete-field">
-              <span>Chuteira</span>
-              <select
-                value={appearanceV1.bootVariant}
-                onChange={(e) =>
-                  setAppearanceV1((current) => ({
-                    ...current,
-                    bootVariant: Number(e.target.value),
-                  }))
-                }
-              >
-                {["Preta", "Branca", "Vermelha", "Verde", "Amarela", "Azul"].map(
-                  (label, bootVariant) => (
-                    <option key={label} value={bootVariant}>
-                      {label}
-                    </option>
-                  ),
-                )}
               </select>
             </label>
             <label className="athlete-field">

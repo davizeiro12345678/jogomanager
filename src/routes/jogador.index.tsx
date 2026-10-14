@@ -38,21 +38,21 @@ function AthleteHub() {
       <div className="athlete-wrap">
         <div className="athlete-top">
           <Button asChild variant="ghost" size="sm">
-            <Link to="/carreiras">
-              <ArrowLeft className="size-4" /> Minhas carreiras
+            <Link to="/">
+              <ArrowLeft className="size-4" /> Início
             </Link>
           </Button>
           <span className="athlete-meta">
             {signedIn ? "Salvo no aparelho e na sua conta" : "Salvo neste aparelho"}
           </span>
         </div>
-        <div>
-          <ScreenHeader title="Carreira de jogador" />
+        <header>
+          <h1 className="text-3xl font-bold">Carreira de jogador</h1>
           <p className="athlete-meta">
             Você é o atleta. Treine, conquiste a vaga, negocie contratos e chegue à seleção. Até 3
             atletas.
           </p>
-        </div>
+        </header>
         {error && (
           <p className="athlete-card athlete-meta" role="alert">
             {error}

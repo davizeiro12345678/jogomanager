@@ -10,11 +10,40 @@ import {
 import { LANGS, RTL_LANGS, resolveLang, type Lang } from "./locale-catalog";
 import { translateBootstrap } from "./bootstrap-messages";
 import { reportSilent } from "@/lib/silent-errors";
+import { useLocation } from "@tanstack/react-router";
 export { LANGS, LANG_NAMES, RTL_LANGS, type Lang } from "./locale-catalog";
 // Preserve the synchronous, complete translation API for direct consumers.
 // Production UI consumes useT; its optional language pack stays a dynamic import.
 
 const STORAGE_KEY = "pfm3d.lang";
+// These public landing pages currently contain Portuguese editorial content
+// even when a visitor selects English for the game interface.
+const PORTUGUESE_EDITORIAL_PATHS = new Set([
+  "/",
+  "/jogo-de-manager-de-futebol",
+  "/guias",
+  "/melhores-formacoes",
+  "/guia-de-scouting",
+  "/dicas-de-gestao",
+  "/gestao-financeira",
+  "/como-ser-tecnico-de-futebol",
+  "/mercado-de-transferencias",
+  "/regras",
+  "/glossario-do-futebol",
+  "/comparativo-jogos-manager",
+  "/jogar-offline",
+  "/ligas-de-futebol",
+  "/perguntas-frequentes",
+  "/sobre",
+  "/criador",
+  "/contato",
+  "/privacidade",
+  "/termos",
+]);
+const isPortugueseEditorialRoute = (pathname: string) =>
+  PORTUGUESE_EDITORIAL_PATHS.has(pathname) ||
+  pathname === "/tabelas" ||
+  pathname.startsWith("/tabelas/");
 
 function detect(): Lang {
   if (typeof window === "undefined") return "pt-BR";
@@ -53,6 +82,7 @@ const I18nContext = createContext<I18nValue>({
 });
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("pt-BR");
+  const pathname = useLocation({ select: (location) => location.pathname });
   const [loadedTranslator, setLoadedTranslator] = useState<Translator | null>(null);
   useEffect(() => {
     setLangState(detect());
@@ -92,9 +122,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
   const dir: "ltr" | "rtl" = RTL_LANGS.has(lang) ? "rtl" : "ltr";
   useEffect(() => {
-    document.documentElement.lang = lang;
-    document.documentElement.dir = dir;
-  }, [lang, dir]);
+    const isEditorial = isPortugueseEditorialRoute(pathname);
+    document.documentElement.lang = isEditorial ? "pt-BR" : lang;
+    document.documentElement.dir = isEditorial ? "ltr" : dir;
+  }, [lang, dir, pathname]);
   const value = useMemo<I18nValue>(
     () => ({
       lang,

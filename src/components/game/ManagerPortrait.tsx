@@ -40,9 +40,20 @@ export function ManagerPortrait({ look, size = 96, accent, className }: ManagerP
         <clipPath id={`mp-clip-${h}-${b}-${look.skin}`}>
           <circle cx="50" cy="50" r="47" />
         </clipPath>
-        <linearGradient id={`mp-bg-${h}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#16202b" />
-          <stop offset="100%" stopColor="#0b1118" />
+        <radialGradient id={`mp-bg-${h}`} cx="50%" cy="18%" r="85%">
+          <stop offset="0%" stopColor="#2c4a36" />
+          <stop offset="55%" stopColor="#14202a" />
+          <stop offset="100%" stopColor="#080d12" />
+        </radialGradient>
+        {/* Soft key light from top-left gives the face volume instead of a flat disc. */}
+        <radialGradient id="mp-face-shade" cx="38%" cy="32%" r="75%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
+          <stop offset="60%" stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="100%" stopColor="#000000" stopOpacity="0.28" />
+        </radialGradient>
+        <linearGradient id="mp-cloth-shade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#000000" stopOpacity="0.35" />
         </linearGradient>
       </defs>
 
@@ -52,12 +63,25 @@ export function ManagerPortrait({ look, size = 96, accent, className }: ManagerP
 
         {/* ombros / roupa */}
         <path d="M12 100 C16 78 32 70 50 70 C68 70 84 78 88 100 Z" fill={outfit.body} />
-        <path d="M42 70 L50 84 L58 70 L52 68 L48 68 Z" fill={outfit.collar} />
-        <rect x="46" y="70" width="8" height="30" fill={ring} opacity="0.7" />
+        <path d="M12 100 C16 78 32 70 50 70 C68 70 84 78 88 100 Z" fill="url(#mp-cloth-shade)" />
+        <path d="M42 70 L50 86 L58 70 L52 68 L48 68 Z" fill={outfit.collar} />
+        <path d="M48.5 74 L51.5 74 L53 92 L50 96 L47 92 Z" fill={ring} opacity="0.85" />
+        {/* lapels */}
+        <path d="M36 73 L44 71 L50 88 Z" fill="#000000" opacity="0.22" />
+        <path d="M64 73 L56 71 L50 88 Z" fill="#000000" opacity="0.22" />
+        <circle cx="66" cy="82" r="1.6" fill={ring} opacity="0.9" />
 
         {/* pescoço e cabeça */}
         <rect x="43" y="58" width="14" height="14" rx="6" fill={skin} />
-        <ellipse cx="50" cy="43" rx="19" ry="22" fill={skin} />
+        <rect x="43" y="62" width="14" height="5" fill="#000000" opacity="0.18" />
+        <path
+          d="M31 40 C31 24 69 24 69 40 L68 50 C66 61 58 66 50 66 C42 66 34 61 32 50 Z"
+          fill={skin}
+        />
+        <path
+          d="M31 40 C31 24 69 24 69 40 L68 50 C66 61 58 66 50 66 C42 66 34 61 32 50 Z"
+          fill="url(#mp-face-shade)"
+        />
         {/* orelhas */}
         <ellipse cx="31" cy="45" rx="3.4" ry="5" fill={skin} />
         <ellipse cx="69" cy="45" rx="3.4" ry="5" fill={skin} />
@@ -85,15 +109,54 @@ export function ManagerPortrait({ look, size = 96, accent, className }: ManagerP
         )}
 
         {/* sobrancelhas e olhos */}
-        <rect x="39" y="40" width="8" height="2" rx="1" fill={hair} />
-        <rect x="53" y="40" width="8" height="2" rx="1" fill={hair} />
-        <ellipse cx="43" cy="45" rx="2.6" ry="2.9" fill="#fff" />
-        <ellipse cx="57" cy="45" rx="2.6" ry="2.9" fill="#fff" />
-        <circle cx="43" cy="45.4" r="1.4" fill="#20303f" />
-        <circle cx="57" cy="45.4" r="1.4" fill="#20303f" />
+        <path
+          d="M38.5 41 Q43 38.6 47.5 40.4"
+          stroke={hair}
+          strokeWidth="1.9"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <path
+          d="M52.5 40.4 Q57 38.6 61.5 41"
+          stroke={hair}
+          strokeWidth="1.9"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <ellipse cx="43" cy="45.2" rx="2.9" ry="2.1" fill="#f6f3ee" />
+        <ellipse cx="57" cy="45.2" rx="2.9" ry="2.1" fill="#f6f3ee" />
+        <circle cx="43.2" cy="45.3" r="1.5" fill="#4a3424" />
+        <circle cx="57.2" cy="45.3" r="1.5" fill="#4a3424" />
+        <circle cx="43.2" cy="45.3" r="0.7" fill="#0d0d0d" />
+        <circle cx="57.2" cy="45.3" r="0.7" fill="#0d0d0d" />
+        <circle cx="43.8" cy="44.7" r="0.45" fill="#ffffff" />
+        <circle cx="57.8" cy="44.7" r="0.45" fill="#ffffff" />
+        <path
+          d="M40 43.6 Q43 42.4 46 43.6"
+          stroke="#000000"
+          strokeOpacity="0.25"
+          strokeWidth="0.6"
+          fill="none"
+        />
+        <path
+          d="M54 43.6 Q57 42.4 60 43.6"
+          stroke="#000000"
+          strokeOpacity="0.25"
+          strokeWidth="0.6"
+          fill="none"
+        />
 
         {/* nariz e boca */}
-        <path d="M50 46 L48 52 L52 52 Z" fill="#00000022" />
+        <path
+          d="M50.5 45 Q52.5 51 51.5 52.5 Q50 53.4 48 52.6"
+          stroke="#000000"
+          strokeOpacity="0.22"
+          strokeWidth="1"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <ellipse cx="38" cy="52" rx="3.5" ry="2" fill="#c0504d" opacity="0.08" />
+        <ellipse cx="62" cy="52" rx="3.5" ry="2" fill="#c0504d" opacity="0.08" />
         <path
           d="M45 57 Q50 60 55 57"
           stroke="#00000055"

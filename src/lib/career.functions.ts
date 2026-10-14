@@ -4,7 +4,7 @@ import type { CareerState } from "@/game/types";
 import { z } from "zod";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { initCareer } from "@/game/career";
-import { assertUntrustedJson, normalizePublicText, hasVisibleText } from "./untrusted-json";
+import { continuesVerifiedCareer, isStaleSave } from "@/lib/career-progress";
 
 const CareerInput = z.object({
   state: z
@@ -84,14 +84,30 @@ export const saveCareer = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const incoming = data.state as unknown as CareerState;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: stored } = await supabaseAdmin
+      .from("careers")
+      .select("state, updated_at, verified_progress")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    const prev = stored?.state as unknown as CareerState | undefined;
+    // An older device/tab must never overwrite newer progress of the same career.
+    try {
+      if (prev && isStaleSave(prev, incoming)) {
+        return { ok: false as const, stale: true, verifiedProgress: stored!.verified_progress };
+      }
+    } catch {
+      /* malformed stored save: allow replacement */
+    }
     // Malformed nested JSON is an unverified personal save, never an attested result.
+    // Match scores and logs are produced on the client and cannot be replayed
+    // here, so only a canonical, unplayed start is ever attested.
     let verified: boolean;
     try {
       verified = verifyCareerProgress(incoming);
     } catch {
       verified = false;
     }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("careers").upsert(
       {
         user_id: context.userId,
@@ -101,7 +117,7 @@ export const saveCareer = createServerFn({ method: "POST" })
       { onConflict: "user_id" },
     );
     if (error) throw new Error("Não foi possível salvar a carreira.");
-    return { ok: true, verifiedProgress: verified };
+    return { ok: true as const, stale: false, verifiedProgress: verified };
   });
 
 export const deleteCareer = createServerFn({ method: "POST" })

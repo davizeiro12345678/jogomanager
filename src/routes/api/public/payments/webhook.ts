@@ -96,9 +96,13 @@ async function resolvePurchase(sessionId: string, env: StripeEnv) {
   const productKey = offer.productKey;
   // Validate against the list price before Stripe discounts (sales/promo codes);
   // Stripe already verified the customer paid the discounted total.
-  const amount = lineItem?.amount_subtotal ?? full.amount_subtotal ?? 0;
-  const paidAmount = full.amount_total ?? amount;
-  return { productKey, amount, paidAmount, session: full, snapshot: offer.snapshot };
+  const amount =
+    lineItem?.amount_subtotal ??
+    full.amount_subtotal ??
+    lineItem?.amount_total ??
+    full.amount_total ??
+    0;
+  return { productKey, amount, session: full };
 }
 
 async function fulfillSession(sessionId: string, userId: string, env: StripeEnv) {

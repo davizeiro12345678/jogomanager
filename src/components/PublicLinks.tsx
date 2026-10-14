@@ -1,16 +1,13 @@
 import { Link } from "@tanstack/react-router";
 
 export const PUBLIC_PAGES = [
-  { to: "/", label: "JogoManager" },
-  { to: "/guias", label: "Guia de carreira" },
-  { to: "/taticas-e-formacoes", label: "Táticas e formações" },
-  { to: "/analise-de-partida-de-futebol", label: "Análise de partida" },
-  { to: "/modo-carreira-de-jogador", label: "Carreira de jogador" },
-  { to: "/brasileirao", label: "Brasileirão no jogo" },
-  { to: "/planejamento-de-elenco", label: "Scouting e planejamento do elenco" },
+  { to: "/jogo-de-manager-de-futebol", label: "Jogo de manager de futebol grátis" },
   { to: "/mercado-de-transferencias", label: "Mercado de transferências" },
   { to: "/tabelas", label: "Tabelas das ligas reais" },
-  { to: "/ligas-de-futebol", label: "Ligas disponíveis" },
+  { to: "/guias", label: "Guias" },
+  { to: "/dicas-de-gestao", label: "Temporada e finanças" },
+  { to: "/melhores-formacoes", label: "Melhores formações" },
+  { to: "/guia-de-scouting", label: "Guia de scouting" },
   { to: "/regras", label: "Regras do futebol" },
   { to: "/glossario-do-futebol", label: "Glossário do futebol" },
   { to: "/jogar-offline", label: "Como jogar offline" },

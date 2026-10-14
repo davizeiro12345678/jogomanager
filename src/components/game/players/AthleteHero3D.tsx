@@ -140,7 +140,6 @@ function AthletePortraitScene({ athlete }: { athlete: AthleteHeroData }) {
       athlete.weightKg,
       athlete.build,
       athlete.appearance,
-      athlete.appearanceV1,
     ],
   );
   const club = safeClub(athlete.clubId);

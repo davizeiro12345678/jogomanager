@@ -10,6 +10,7 @@ import { NoCareer } from "@/components/game/screen-kit";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { computeTable, nextFixture } from "@/game/season";
 import { useCareer } from "@/hooks/useCareer";
+import { RealClubInfo } from "@/components/game/RealClubInfo";
 import "@/components/game/prematch.css";
 
 export const Route = createFileRoute("/pre-jogo")({

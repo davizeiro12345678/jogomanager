@@ -16,7 +16,7 @@ export const Route = createFileRoute("/sitemap.xml")({
         const BASE_URL = baseUrlFor(request);
         const entries: SitemapEntry[] = [
           { path: "/", changefreq: "weekly", priority: "1.0" },
-          { path: "/ligas-de-futebol", changefreq: "weekly", priority: "0.9" },
+          { path: "/jogo-de-manager-de-futebol", changefreq: "weekly", priority: "0.9" },
           { path: "/tabelas", changefreq: "daily", priority: "0.9" },
           { path: "/tabelas/brasileirao-serie-a", changefreq: "daily", priority: "0.8" },
           { path: "/tabelas/brasileirao-serie-b", changefreq: "daily", priority: "0.8" },
@@ -30,8 +30,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/tabelas/liga-argentina", changefreq: "daily", priority: "0.8" },
           { path: "/tabelas/mls", changefreq: "daily", priority: "0.8" },
           { path: "/tabelas/liga-mx", changefreq: "daily", priority: "0.8" },
-          { path: "/brasileirao", changefreq: "weekly", priority: "0.9" },
-          { path: "/taticas-e-formacoes", changefreq: "weekly", priority: "0.8" },
+          { path: "/mercado-de-transferencias", changefreq: "weekly", priority: "0.8" },
           { path: "/guias", changefreq: "weekly", priority: "0.8" },
           { path: "/planejamento-de-elenco", changefreq: "weekly", priority: "0.8" },
           { path: "/analise-de-partida-de-futebol", changefreq: "weekly", priority: "0.8" },

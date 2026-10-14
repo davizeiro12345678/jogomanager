@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router";
+import { getRouteApi, Link } from "@tanstack/react-router";
+import { HomeLeaguePulse } from "@/components/home/HomeLeaguePulse";
 import { useEffect, useState } from "react";
 import {
   ArrowDown,
@@ -28,7 +29,7 @@ const SYSTEMS = [
     title: "O plano é seu. O campo responde.",
     text: "Ajuste as linhas, encontre espaço e mude a pressão durante o jogo. Uma substituição pode mudar a sua tarde.",
     detail: "Formação · mentalidade · pressão · substituições",
-    to: "/taticas-e-formacoes",
+    to: "/melhores-formacoes",
   },
   {
     id: "squad",
@@ -157,6 +158,7 @@ function TacticalPreview() {
 }
 
 export function FootballHome() {
+  const { leagues } = getRouteApi("/").useLoaderData();
   const [menu, setMenu] = useState(false);
   const [system, setSystem] = useState(0);
   const [resume, setResume] = useState<{ club: string; season: number; round: number } | null>(
@@ -296,15 +298,15 @@ export function FootballHome() {
           <dl className="home-hero-stats" aria-label="O jogo em números">
             <div>
               <dt>Clubes</dt>
-              <dd>4.500+</dd>
+              <dd>24 mil+</dd>
             </div>
             <div>
               <dt>Jogadores reais</dt>
-              <dd>26 mil</dd>
+              <dd>200 mil</dd>
             </div>
             <div>
               <dt>Ligas</dt>
-              <dd>600+</dd>
+              <dd>1.900</dd>
             </div>
           </dl>
           {resume ? (
@@ -342,6 +344,7 @@ export function FootballHome() {
         </span>
       </div>
       <div className="home-body">
+        <HomeLeaguePulse leagues={leagues} />
         <section id="modos" className="home-section" aria-labelledby="home-modes-title">
           <div className="home-section-heading">
             <div>

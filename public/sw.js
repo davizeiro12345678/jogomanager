@@ -169,3 +169,42 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+/**
+ * FCM data messages are displayed using the existing offline worker. Never
+ * navigate to a URL outside this origin, even when push data is malformed.
+ * The server must authenticate who may send notifications to a device token.
+ */
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data?.json() ?? {};
+  } catch {
+    payload = {};
+  }
+  const details = payload.notification ?? payload.data ?? {};
+  const title = String(details.title ?? "Pro Football Manager 3D").slice(0, 90);
+  const body = String(details.body ?? "Você tem uma nova atualização no jogo.").slice(0, 220);
+  let target = "/";
+  try {
+    const candidate = new URL(details.url ?? "/", self.location.origin);
+    if (candidate.origin === self.location.origin) target = candidate.pathname;
+  } catch {
+    // Invalid or external notification links always return to the home page.
+  }
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { target },
+      tag: String(details.eventId ?? "pfm3d").slice(0, 70),
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const destination = event.notification.data?.target ?? "/";
+  event.waitUntil(self.clients.openWindow(destination));
+});

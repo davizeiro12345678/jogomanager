@@ -90,9 +90,9 @@ export function useCareer() {
       if (local && (!cloud || localAt > cloudAt)) {
         const migrated = await repairLocal(local);
         try {
-          if (!isCurrentOwner(owner)) return { career: null, sync: "local" };
-          await save({ data: { state: migrated } });
-          return { career: migrated, sync: "synced" };
+          const res = await save({ data: { state: migrated } });
+          // A newer timestamp is not newer progress: keep the cloud career.
+          if (!res.stale) return { career: migrated, sync: "synced" };
         } catch {
           await queueSync(migrated, owner);
           return { career: migrated, sync: "pending" };
@@ -145,10 +145,11 @@ export function useCareer() {
       }
       setSyncForOwner(mutationOwner, "syncing");
       try {
-        await save({ data: { state } });
-        if (!isCurrentOwner(mutationOwner)) return { ok: true, stale: true };
-        await clearOutbox(mutationOwner);
-        setSyncForOwner(mutationOwner, "synced");
+        const res = await save({ data: { state } });
+        await clearOutbox();
+        setSync("synced");
+        // The cloud has newer progress: reload it instead of keeping the old copy.
+        if (res.stale) void qc.invalidateQueries({ queryKey: CAREER_KEY });
       } catch {
         await queueSync(state, mutationOwner);
         setSyncForOwner(mutationOwner, "pending");
@@ -167,10 +168,10 @@ export function useCareer() {
     flushingScope.current = scope;
     setSyncForOwner(flushOwner, "syncing");
     try {
-      await save({ data: { state: migrateCareer(entry.state) } });
-      if (!isCurrentOwner(flushOwner)) return;
-      await clearOutbox(flushOwner);
-      setSyncForOwner(flushOwner, "synced");
+      const res = await save({ data: { state: migrateCareer(entry.state) } });
+      await clearOutbox();
+      setSync("synced");
+      if (res.stale) void qc.invalidateQueries({ queryKey: CAREER_KEY });
     } catch {
       setSyncForOwner(flushOwner, "pending");
     } finally {

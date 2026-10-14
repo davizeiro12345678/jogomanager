@@ -21,3 +21,4 @@
 - Send Slack notifications only from server code via `src/lib/slack.server.ts`, fire-and-forget; a Slack outage must never block purchases or matches.
 - Preserve deterministic player identity while concentrating body mass in anatomical surfaces rather than uniformly scaling the whole rig; this keeps football silhouettes athletic across LODs.
 - Validate new athlete rendering in an isolated career portrait before promoting it to match squads; this protects the 22-player frame budget.
+- Career cloud saves are rejected when they carry less progress than the stored save of the same career, and attestation extends only through append-only, time-plausible continuations; this stops stale devices overwriting progress while keeping achievements server-decided.
