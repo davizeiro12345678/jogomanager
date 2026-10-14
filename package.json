@@ -26,14 +26,20 @@
   },
   "overrides": {
     "@dimforge/rapier3d-compat": "0.21.0",
-    "rolldown": "1.2.1"
+    "@grpc/grpc-js": "^1.13.6",
+    "rolldown": "1.2.1",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "esbuild": "^0.28.1",
+    "@lovable.dev/mcp-js": {
+      "esbuild": "^0.28.1"
+    }
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.21.0",
     "@hookform/resolvers": "^5.9.1",
     "@lovable.dev/cloud-auth-js": "^1.2.1",
     "@lovable.dev/email-js": "^0.3.1",
-    "@lovable.dev/mcp-js": "3.0.5",
+    "@lovable.dev/mcp-js": "3.0.6",
     "@lovable.dev/webhooks-js": "^0.0.3",
     "@radix-ui/react-accordion": "^1.2.21",
     "@radix-ui/react-alert-dialog": "^1.1.24",
@@ -153,7 +159,7 @@
     "vite": "^8.3.3",
     "vite-imagetools": "^12.0.1",
     "vitest": "^5.0.3",
-    "wrangler": "4.147.0"
+    "wrangler": "4.150.0"
   },
   "pnpm": {
     "overrides": {

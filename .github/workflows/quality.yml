@@ -30,6 +30,7 @@ jobs:
       # The stress suite has its own performance budget and runs in a separate
       # scheduled job once a stable CI baseline is recorded.
       - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1
+      - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs
       - run: PFM_LOCAL_VERIFY=1 npm run build
 
   game-assets:

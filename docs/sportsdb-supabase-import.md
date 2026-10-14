@@ -16,12 +16,12 @@ Na checagem de 4 de outubro de 2026 às 00:45 UTC, o endpoint configurado ainda 
 
 Às 22:43 UTC (19:43 em Brasília), o banco caiu de **307.940.499 bytes** para **80.833.683 bytes**, uma redução de **227.106.816 bytes (73,7%)**.
 
-| Item | Antes | Depois |
-| --- | ---: | ---: |
-| `sportsdb_records` | 177.405.952 bytes, 147.735 registros | removida |
-| `sportsdb_archives` | 57.303.040 bytes, com 22.271 payloads JSON | 7.569.408 bytes, ledger sem payload |
-| Banco inteiro | 307.940.499 bytes | 80.833.683 bytes |
-| Arquivo bruto na Cloudflare R2 | — | 22.273 objetos; 110.252.133 bytes no snapshot |
+| Item                           |                                      Antes |                                        Depois |
+| ------------------------------ | -----------------------------------------: | --------------------------------------------: |
+| `sportsdb_records`             |       177.405.952 bytes, 147.735 registros |                                      removida |
+| `sportsdb_archives`            | 57.303.040 bytes, com 22.271 payloads JSON |           7.569.408 bytes, ledger sem payload |
+| Banco inteiro                  |                          307.940.499 bytes |                              80.833.683 bytes |
+| Arquivo bruto na Cloudflare R2 |                                          — | 22.273 objetos; 110.252.133 bytes no snapshot |
 
 O R2 tinha orçamento configurado de 2.500.000.000 bytes nesse snapshot. O histórico de arquivos no Supabase preservou 22.271 itens como concluídos, sem itens pendentes, em retry ou com falha.
 
@@ -30,16 +30,16 @@ O R2 tinha orçamento configurado de 2.500.000.000 bytes nesse snapshot. O hist�
 Depois da migração, a função Edge `sportsdb-bridge` ficou ativa na versão 6. O cron `sportsdb-supabase-import` foi reativado e executa a cada minuto. A resposta registrada às 22:44 UTC foi HTTP 200: `status=ok`, 11 páginas, 1 arquivo processado e `source_complete=false`. O estado consultado às 22:47 UTC mostrava o importador habilitado, sem erro; todos os cursores locais estavam atualizados até o snapshot da origem.
 
 | Catálogo normalizado | Registros |
-| --- | ---: |
-| Ligas | 692 |
-| Equipes | 10.631 |
-| Jogadores | 42.913 |
-| Temporadas | 4.026 |
-| Equipamentos | 8.657 |
-| Estádios | 1.916 |
-| Partidas | 42.636 |
-| Detalhes de partidas | 0 |
-| Referências de mídia | 98.837 |
+| -------------------- | --------: |
+| Ligas                |       692 |
+| Equipes              |    10.631 |
+| Jogadores            |    42.913 |
+| Temporadas           |     4.026 |
+| Equipamentos         |     8.657 |
+| Estádios             |     1.916 |
+| Partidas             |    42.636 |
+| Detalhes de partidas |         0 |
+| Referências de mídia |    98.837 |
 
 A origem ainda reporta a fase `teams` incompleta. Por isso, a coleta automática continua, mas a importação inteira **ainda não está certificada como completa**. Um cursor local estar atualizado significa apenas que ele alcançou o snapshot publicado pela origem.
 
@@ -53,3 +53,11 @@ A origem ainda reporta a fase `teams` incompleta. Por isso, a coleta automática
 - `node scripts/sportsdb-import-preview.mjs` abre o painel local somente de leitura. Se `http://127.0.0.1:4339` já estiver ativo, reutilize o servidor existente.
 
 O limite de segurança configurado para a importação no Supabase continua em 471.859.200 bytes (450 MiB). A ponte preserva os IDs de origem e faz upsert dos registros canônicos, sem substituir dados personalizados dos clubes e saves do jogo.
+
+## Limites e estado do importador TheSportsDB
+
+O Worker Cloudflare `sportsdb-importer` usa a chave `THESPORTSDB_API_KEY` e agora registra cada tentativa em D1 antes de chamar a origem. O limite global é de **450 chamadas por janela móvel de um minuto** e **75.000 em 24 horas**. Respostas HTTP 429/503 respeitam `Retry-After` e pausam o cron; falhas não avançam o cursor de equipes. A lista de ligas é atualizada uma vez por dia, em vez de ser buscada a cada ciclo.
+
+`GET /api/status` informa `importer.status` (`active`, `paused` ou `stalled`), motivo e horário de retomada, cursor, uso atual das cotas e último sucesso. Assim, `active` significa que há resposta bem-sucedida e avanço recente, não apenas que o cron está habilitado. A ponte Supabase→Cloudflare continua sendo outro fluxo, com cron próprio a cada minuto.
+
+O ledger é inicializado de forma conservadora a partir dos logs das últimas 24 horas, contando até três tentativas por execução antiga. A credencial da API fica apenas no binding secreto do Worker; nunca use uma chave literal na URL.
