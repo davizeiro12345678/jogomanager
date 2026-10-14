@@ -558,6 +558,35 @@ export type Database = {
         }
         Relationships: []
       }
+      coupon_eligible_users: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_eligible_users_code_fkey"
+            columns: ["code"]
+            isOneToOne: false
+            referencedRelation: "game_coupons"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       coupon_redemptions: {
         Row: {
           code: string
