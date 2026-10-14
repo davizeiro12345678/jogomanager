@@ -13,7 +13,9 @@ const normalize = (value) => value.replace(/\r\n/g, "\n").trimEnd();
 const hash = (value) => createHash("sha256").update(value).digest("hex").slice(0, 16);
 
 async function verify() {
-  const expected = normalize(await readFile(new URL("../public/llms.txt", import.meta.url), "utf8"));
+  const expected = normalize(
+    await readFile(new URL("../public/llms.txt", import.meta.url), "utf8"),
+  );
   const response = await fetch(target, {
     method: "GET",
     cache: "no-store",
@@ -26,19 +28,25 @@ async function verify() {
   const isText = /^text\/plain\b/i.test(type);
   const isCanonical = response.url === target;
   const same = actual === expected;
-  console.log(JSON.stringify({
-    url: response.url,
-    status: response.status,
-    contentType: type,
-    deployedSha256Prefix: hash(actual),
-    repositorySha256Prefix: hash(expected),
-    matchesRepository: same,
-    canonicalUrl: isCanonical,
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        url: response.url,
+        status: response.status,
+        contentType: type,
+        deployedSha256Prefix: hash(actual),
+        repositorySha256Prefix: hash(expected),
+        matchesRepository: same,
+        canonicalUrl: isCanonical,
+      },
+      null,
+      2,
+    ),
+  );
   if (!response.ok || !isCanonical || !isText || !same) {
     throw new Error(
       "Production llms.txt differs from the repository or has invalid HTTP metadata. " +
-      "Verify the deployed commit and Cloudflare cache; redeploy before a targeted cache purge."
+        "Verify the deployed commit and Cloudflare cache; redeploy before a targeted cache purge.",
     );
   }
 }
