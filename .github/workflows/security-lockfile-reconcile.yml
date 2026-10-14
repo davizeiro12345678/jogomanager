@@ -2,7 +2,7 @@ name: Refresh security dependency locks
 
 on:
   push:
-    branches: [fix/security-hardening-importer-20261014]
+    branches: [fix/security-hardening-importer-20261014, fix/security-integrated-main-20261014]
     paths:
       - package.json
       - .github/workflows/security-lockfile-reconcile.yml
@@ -46,4 +46,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "chore(lock): regenerate patched dependency locks"
-          git push origin "HEAD:refs/heads/fix/security-hardening-importer-20261014"
+          git push origin "HEAD:refs/heads/${GITHUB_REF_NAME}"
