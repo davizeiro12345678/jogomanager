@@ -365,7 +365,8 @@ async function importSquads(
     for (const row of unique) {
       const one = await db.from("players").insert(row).select("id");
       if (!one.error) created += 1;
-      else if (one.error.code !== "23505") throw new Error(`Squad insert failed: ${one.error.message}`);
+      else if (one.error.code !== "23505")
+        throw new Error(`Squad insert failed: ${one.error.message}`);
     }
   });
   const fetched = teams?.length ?? 0;
