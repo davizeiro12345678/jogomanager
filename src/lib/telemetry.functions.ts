@@ -1,6 +1,6 @@
 /**
  * Optional client performance samples are self-reported and never authoritative
- * Lighthouse/Core Web Vitals or benchmark data. No PII and no service-role writes.
+ * Lighthouse/Core Web Vitals or benchmark data. Account IDs are retained for\n * abuse control; no names, emails or saves are collected. No privileged writes.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
