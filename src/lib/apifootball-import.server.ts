@@ -324,7 +324,7 @@ async function importSquads(
     }
     const players = (squad[0]?.players ?? []).filter((p) => p && p.id && p.name);
     if (!players.length) return;
-    const { data: have } = await db
+    const { data: have, error: haveError } = await db
       .from("players")
       .select("source_id")
       .eq("source", SOURCE)
@@ -332,6 +332,7 @@ async function importSquads(
         "source_id",
         players.map((p) => String(p.id)),
       );
+    if (haveError) throw new Error(`Squad lookup failed: ${haveError.message}`);
     const seen = new Set((have ?? []).map((p) => p.source_id));
     const rows = players
       .filter((p) => p.name && !seen.has(String(p.id)))
@@ -364,6 +365,7 @@ async function importSquads(
     for (const row of unique) {
       const one = await db.from("players").insert(row).select("id");
       if (!one.error) created += 1;
+      else if (one.error.code !== "23505") throw new Error(`Squad insert failed: ${one.error.message}`);
     }
   });
   const fetched = teams?.length ?? 0;
