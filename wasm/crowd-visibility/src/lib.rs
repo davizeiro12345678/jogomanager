@@ -1,7 +1,7 @@
 mod crowd;
 mod match_perception;
-mod turf_detail;
 mod rig_section;
+mod turf_detail;
 
 pub use crowd::{select_crowd, CrowdSelector};
 
