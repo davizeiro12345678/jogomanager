@@ -37,6 +37,12 @@ Contato principal: davizeiro10.jogos@gmail.com
 Contato secundário: davithomazini779@gmail.com
 Comunidade oficial: https://discord.gg/6az4ssQQck
 
+## Identidade e publicação
+
+- O único endereço canônico do projeto é https://jogomanager.com.
+- Páginas, serviços e dados podem mudar entre versões; o conteúdo público do site é a referência para disponibilidade de recursos.
+- Conteúdo em preview ou no repositório não confirma publicação no domínio oficial. Verifique o deploy ativo antes de anunciar funcionalidades.
+
 ## Notas de interpretação
 
 - Quantidade de registros de clubes, jogadores e competições importados não
