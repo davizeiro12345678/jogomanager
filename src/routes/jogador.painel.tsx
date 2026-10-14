@@ -222,25 +222,6 @@ function Panel({
                     );
                   })}
                 </div>
-              ))}
-              <div>
-                <h2 className="font-bold mb-2">Características</h2>
-                <div className="athlete-chips">
-                  {TRAITS.map((t) => (
-                    <span
-                      key={t.key}
-                      className="athlete-chip"
-                      aria-pressed={state.traits.includes(t.key)}
-                      title={t.hint}
-                      style={{ opacity: state.traits.includes(t.key) ? 1 : 0.45 }}
-                    >
-                      {t.label}
-                    </span>
-                  ))}
-                </div>
-                <p className="athlete-meta mt-2">
-                  Características apagadas ainda não foram conquistadas.
-                </p>
               </div>
             ))}
             <div>
