@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sceneVoice, voiceWithin, SCENE_VOICE_WAIT_MS } from "./cutscene-voice";
 import { readVoiceCache, writeVoiceCache } from "./audio-cache";
+import { NARRATION_VOICE_REVISION } from "./narration-voice";
 
 vi.mock("./audio-cache", () => ({ readVoiceCache: vi.fn(), writeVoiceCache: vi.fn() }));
 
@@ -45,7 +46,9 @@ describe("optional cutscene voice", () => {
     const loader = vi.fn().mockResolvedValue("licensed-host-audio");
     expect(await sceneVoice(loader, "arrival", 0, "arrival.line.001")).toBe("licensed-host-audio");
     expect(loader).toHaveBeenCalledWith("arrival", 0);
-    expect(readVoiceCache).toHaveBeenCalledWith("roberta-v4-1|scene|arrival|id:arrival.line.001");
+    expect(readVoiceCache).toHaveBeenCalledWith(
+      `${NARRATION_VOICE_REVISION}|scene|arrival|id:arrival.line.001`,
+    );
   });
   it("expires hung transport requests so a later attempt can recover", async () => {
     const loader = vi

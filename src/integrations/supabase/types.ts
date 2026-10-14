@@ -1864,6 +1864,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      reserve_api_football_quota: {
+        Args: never
+        Returns: boolean
+      }
+      complete_api_football_import_phase: {
+        Args: {
+          p_phase: string
+          p_token: string
+          p_processed: number
+          p_next_offset: number | null
+          p_error?: string | null
+        }
+        Returns: boolean
+      }
+      claim_api_football_import_phase: {
+        Args: never
+        Returns: {
+          out_phase: string
+          out_offset: number
+          out_limit: number
+          out_token: string
+        }[]
+      }
       activate_training_boost: {
         Args: { _user_id: string }
         Returns: {

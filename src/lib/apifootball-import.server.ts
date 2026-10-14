@@ -41,10 +41,24 @@ async function admin() {
 }
 
 let lastRemaining: number | null = null;
-async function af<T>(path: string, attempt = 0): Promise<T[]> {
+
+/** Every outbound API-Football request reserves a global database quota token. */
+async function guardedFootballFetch(path: string): Promise<Response> {
   const key = process.env["APIFOOTBALL_API_KEY"];
-  if (!key) throw new Error("APIFOOTBALL_API_KEY missing");
-  const res = await fetch(`${BASE}${path}`, { headers: { "x-apisports-key": key } });
+  if (!key) throw new Error("API-Football server credential is not configured");
+  const db = await admin();
+  const quota = await db.rpc("reserve_api_football_quota");
+  if (quota.error || quota.data !== true) {
+    throw new Error(`API-Football quota blocked: ${quota.error?.message ?? "no token"}`);
+  }
+  return fetch(`${BASE}${path}`, {
+    headers: { "x-apisports-key": key },
+    signal: AbortSignal.timeout(20_000),
+  });
+}
+
+async function af<T>(path: string, attempt = 0): Promise<T[]> {
+  const res = await guardedFootballFetch(path);
   const rem = res.headers.get("x-ratelimit-requests-remaining");
   if (rem) lastRemaining = Number(rem);
   const text = await res.text();
@@ -80,6 +94,7 @@ function mapPos(p?: string) {
 async function pool<T>(items: T[], n: number, deadline: number, fn: (t: T) => Promise<void>) {
   let i = 0;
   let done = 0;
+  let failures = 0;
   await Promise.all(
     Array.from({ length: n }, async () => {
       while (i < items.length && Date.now() < deadline) {
@@ -87,12 +102,15 @@ async function pool<T>(items: T[], n: number, deadline: number, fn: (t: T) => Pr
         try {
           await fn(item);
         } catch (e) {
+          failures += 1;
           console.error("af item failed", e);
         }
         done++;
       }
     }),
   );
+  if (failures)
+    throw new Error(`API-Football batch had ${failures} failed items; cursor not advanced`);
   return done;
 }
 
@@ -191,7 +209,7 @@ async function importTeams(
       teams = await af<AfTeam>(`/teams?league=${id}&season=${lg.current_season}`);
     } catch (e) {
       console.error("teams", id, e);
-      return;
+      throw e;
     }
     if (!teams.length) return;
     const country = teams[0]!.team.country;
@@ -250,11 +268,11 @@ async function importTeams(
         .from("clubs")
         .upsert(newClubs, { onConflict: "id", ignoreDuplicates: true })
         .select("id");
-      if (r.error) console.error("clubs", r.error.message);
+      if (r.error) throw new Error(r.error.message);
       created += r.data?.length ?? 0;
     }
     const m = await db.from("official_teams").upsert(maps, { onConflict: "source_id" });
-    if (m.error) console.error("map", m.error.message);
+    if (m.error) throw new Error(m.error.message);
   });
   const fetched = leagues?.length ?? 0;
   return {
@@ -302,11 +320,11 @@ async function importSquads(
       squad = await af<AfSquad>(`/players/squads?team=${t.source_id.slice(3)}`);
     } catch (e) {
       console.error("squad", t.source_id, e);
-      return;
+      throw e;
     }
     const players = (squad[0]?.players ?? []).filter((p) => p && p.id && p.name);
     if (!players.length) return;
-    const { data: have } = await db
+    const { data: have, error: haveError } = await db
       .from("players")
       .select("source_id")
       .eq("source", SOURCE)
@@ -314,6 +332,7 @@ async function importSquads(
         "source_id",
         players.map((p) => String(p.id)),
       );
+    if (haveError) throw new Error(`Squad lookup failed: ${haveError.message}`);
     const seen = new Set((have ?? []).map((p) => p.source_id));
     const rows = players
       .filter((p) => p.name && !seen.has(String(p.id)))
@@ -346,6 +365,7 @@ async function importSquads(
     for (const row of unique) {
       const one = await db.from("players").insert(row).select("id");
       if (!one.error) created += 1;
+      else if (one.error.code !== "23505") throw new Error(`Squad insert failed: ${one.error.message}`);
     }
   });
   const fetched = teams?.length ?? 0;
@@ -398,8 +418,8 @@ async function saveRaw(kind: string, rows: { ref: string; payload: unknown }[]) 
       updated_at: new Date().toISOString(),
     }));
     const { error } = await db.from("api_football_data").upsert(chunk, { onConflict: "kind,ref" });
-    if (error) console.error("raw", kind, error.message);
-    else n += chunk.length;
+    if (error) throw new Error(error.message);
+    n += chunk.length;
   }
   return n;
 }
@@ -453,8 +473,8 @@ async function fixturesFor(id: string, season: string) {
     const { error } = await db
       .from("official_events")
       .upsert(rows.slice(k, k + 500), { onConflict: "source_id" });
-    if (error) console.error("fixtures", error.message);
-    else n += Math.min(500, rows.length - k);
+    if (error) throw new Error(error.message);
+    n += Math.min(500, rows.length - k);
   }
   return n;
 }
@@ -468,12 +488,9 @@ async function pagedAll<T>(path: string, maxPages: number) {
   const out: T[] = [];
   for (let page = 1; page <= maxPages; page++) {
     const sep = path.includes("?") ? "&" : "?";
-    const key = process.env["APIFOOTBALL_API_KEY"]!;
     let body: { response?: T[]; paging?: { total: number } } | null = null;
     for (let tries = 0; tries < 12; tries++) {
-      const res = await fetch(`${BASE}${path}${sep}page=${page}`, {
-        headers: { "x-apisports-key": key },
-      });
+      const res = await guardedFootballFetch(`${path}${sep}page=${page}`);
       const rem = res.headers.get("x-ratelimit-requests-remaining");
       if (rem) lastRemaining = Number(rem);
       const text = await res.text();
@@ -481,11 +498,11 @@ async function pagedAll<T>(path: string, maxPages: number) {
         await new Promise((r) => setTimeout(r, 4000 + tries * 1000));
         continue;
       }
-      if (!res.ok) break;
+      if (!res.ok) throw new Error(`API-Football paging returned HTTP ${res.status}`);
       body = JSON.parse(text);
       break;
     }
-    if (!body) break;
+    if (!body) throw new Error("API-Football paginated request exhausted its retry budget");
     out.push(...(body.response ?? []));
     if (!body.paging || page >= body.paging.total) break;
   }
@@ -680,14 +697,12 @@ async function teamStatsFor(team: string, league: string | null) {
   if (!league) return 0;
   const season = await seasonOf(league);
   if (!season) return 0;
-  const key = process.env["APIFOOTBALL_API_KEY"]!;
-  const res = await fetch(
-    `${BASE}/teams/statistics?team=${team}&league=${league}&season=${season}`,
-    { headers: { "x-apisports-key": key } },
+  const res = await guardedFootballFetch(
+    `/teams/statistics?team=${team}&league=${league}&season=${season}`,
   );
   const rem = res.headers.get("x-ratelimit-requests-remaining");
   if (rem) lastRemaining = Number(rem);
-  if (!res.ok) return 0;
+  if (!res.ok) throw new Error(`API-Football team stats returned HTTP ${res.status}`);
   const body = (await res.json()) as { response?: unknown };
   return body.response && !Array.isArray(body.response)
     ? saveRaw("team_stats", [{ ref: `${team}:${league}:${season}`, payload: body.response }])
