@@ -21,8 +21,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   getRequestMock.mockReturnValue({
     headers: {
-      get: (header: string) =>
-        header === "authorization" ? "Bearer valid.jwt.signature" : null,
+      get: (header: string) => (header === "authorization" ? "Bearer valid.jwt.signature" : null),
     },
   });
 });
