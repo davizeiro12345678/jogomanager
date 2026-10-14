@@ -15,7 +15,7 @@ describe("verified email and reward authorization contracts", () => {
   it("requires verified mailbox ownership and an explicit coupon allocation", () => {
     expect(migration).toContain("email_confirmed_at IS NOT NULL");
     expect(migration).toContain("public.coupon_eligible_users");
-    expect(migration).toContain("AND e.user_id = _uid");
+    expect(migration).toContain("WHERE e.user_id = _uid");
     expect(migration).toContain("active = false");
     expect(migration).toContain("ON CONFLICT DO NOTHING");
     expect(migration).toContain("FOR UPDATE");
