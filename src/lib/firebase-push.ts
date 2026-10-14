@@ -25,7 +25,10 @@ export async function enableFirebaseNotifications(): Promise<PushResult> {
   }
   const config = await getFirebaseWebConfig();
   if (!config.apiKey || !config.vapidPublicKey) {
-    return { enabled: false, message: "As chaves públicas do Firebase ainda não foram configuradas." };
+    return {
+      enabled: false,
+      message: "As chaves públicas do Firebase ainda não foram configuradas.",
+    };
   }
   if (Notification.permission !== "granted") {
     const permission = await Notification.requestPermission();
@@ -47,10 +50,12 @@ export async function enableFirebaseNotifications(): Promise<PushResult> {
   });
   if (!token) return { enabled: false, message: "Não foi possível gerar um token de mensagens." };
 
-  const { error } = await supabase.from("push_subscriptions").upsert(
-    { user_id: identity.user.id, token, updated_at: new Date().toISOString() },
-    { onConflict: "token" },
-  );
+  const { error } = await supabase
+    .from("push_subscriptions")
+    .upsert(
+      { user_id: identity.user.id, token, updated_at: new Date().toISOString() },
+      { onConflict: "token" },
+    );
   if (error) return { enabled: false, message: "Não foi possível salvar a inscrição." };
   window.localStorage.setItem(DEVICE_TOKEN_KEY, token);
   return { enabled: true, message: "Notificações ativadas neste dispositivo." };
