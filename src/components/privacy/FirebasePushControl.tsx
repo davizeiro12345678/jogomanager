@@ -70,12 +70,22 @@ export function FirebasePushControl() {
   return (
     <div className="mt-4 rounded-lg border border-border/60 p-3">
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="outline" size="sm" disabled={!configured || !signedIn || busy} onClick={() => void change()}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!configured || !signedIn || busy}
+          onClick={() => void change()}
+        >
           {enabled ? <BellOff className="mr-1.5 h-4 w-4" /> : <Bell className="mr-1.5 h-4 w-4" />}
           {enabled ? "Desativar avisos neste aparelho" : "Ativar avisos neste aparelho"}
         </Button>
         <span className="text-xs text-muted-foreground">
-          {!configured ? "Firebase Push ainda não configurado" : !signedIn ? "Entre na conta para habilitar" : "Opcional e revogável"}
+          {!configured
+            ? "Firebase Push ainda não configurado"
+            : !signedIn
+              ? "Entre na conta para habilitar"
+              : "Opcional e revogável"}
         </span>
       </div>
       {message ? <p className="mt-2 text-xs text-muted-foreground" role="status">{message}</p> : null}
