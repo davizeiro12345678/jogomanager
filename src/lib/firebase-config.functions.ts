@@ -13,9 +13,7 @@ export const getFirebaseWebConfig = createServerFn({ method: "GET" }).handler(as
     process.env["FIREBASE_STORAGE_BUCKET"] ?? "sscxz-2ee8d.firebasestorage.app"
   ).trim(),
   messagingSenderId: (process.env["FIREBASE_MESSAGING_SENDER_ID"] ?? "122832770297").trim(),
-  appId: (
-    process.env["FIREBASE_WEB_APP_ID"] ?? "1:122832770297:web:e2f9bc68cca1b1f873be28"
-  ).trim(),
+  appId: (process.env["FIREBASE_WEB_APP_ID"] ?? "1:122832770297:web:e2f9bc68cca1b1f873be28").trim(),
   vapidPublicKey: (process.env["FIREBASE_WEB_PUSH_VAPID_PUBLIC_KEY"] ?? "").trim(),
   measurementId: (
     process.env["FIREBASE_MEASUREMENT_ID"] ??
