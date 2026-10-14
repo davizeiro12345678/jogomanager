@@ -2,12 +2,66 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { PlayerCareerState } from "@/game/player-career/types";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
-import { deleteAthlete, listAthletes, readAthlete, writeAthlete } from "@/lib/player-career-store";
+import {
+  ATHLETE_SLOTS,
+  acknowledgeQueuedAthleteSync,
+  athleteIsOnline,
+  deferQueuedAthleteSync,
+  deleteAthlete,
+  dueQueuedAthleteSync,
+  hasQueuedAthleteSync,
+  isAthleteSlot,
+  listAthleteSyncQueue,
+  listAthletes,
+  queueAthleteDelete,
+  queueAthleteSave,
+  readAthlete,
+  readAthleteEnvelope,
+  writeAthlete,
+} from "@/lib/player-career-store";
 import {
   deleteAthleteCloud,
   loadAthletesCloud,
   saveAthleteCloud,
 } from "@/lib/player-career.functions";
+
+const ATHLETE_SYNC_POLL_MS = 30_000;
+const ATHLETE_SYNC_DEBOUNCE_MS = 1_500;
+
+type AthleteFlushResult = { pending: boolean; failed: boolean };
+const pendingFlushes = new Map<string, Promise<AthleteFlushResult>>();
+
+/** Serialize flushes for each signed-in account; failed entries remain in the durable outbox. */
+function flushAthleteSync(owner: string): Promise<AthleteFlushResult> {
+  const inFlight = pendingFlushes.get(owner);
+  if (inFlight) return inFlight;
+
+  const flush = (async (): Promise<AthleteFlushResult> => {
+    if (!athleteIsOnline()) {
+      return { pending: listAthleteSyncQueue(owner).entries.length > 0, failed: false };
+    }
+    let failed = false;
+    for (const entry of dueQueuedAthleteSync(owner)) {
+      try {
+        if (entry.operation === "save") {
+          if (!entry.state) throw new Error("Missing athlete save state");
+          await saveAthleteCloud({ data: { slot: entry.slot, state: entry.state } });
+        } else {
+          await deleteAthleteCloud({ data: { slot: entry.slot } });
+        }
+        acknowledgeQueuedAthleteSync(entry.operationId, owner);
+      } catch {
+        deferQueuedAthleteSync(entry.operationId, owner);
+        failed = true;
+      }
+    }
+    return { pending: listAthleteSyncQueue(owner).entries.length > 0, failed };
+  })();
+
+  pendingFlushes.set(owner, flush);
+  void flush.finally(() => pendingFlushes.delete(owner));
+  return flush;
+}
 
 /** Lista os 3 espaços de atleta. A nuvem só substitui o local se for mais nova. */
 export function useAthleteSlots() {
@@ -38,24 +92,6 @@ export function useAthleteSlots() {
     refresh(owner);
     if (!userId) return;
 
-    const syncPending = () => {
-      void flushAthleteSync(userId)
-        .then((result) => {
-          if (!disposed && currentUser.current === userId && result.failed) {
-            setError(
-              "A nuvem está indisponível. As alterações continuam guardadas neste aparelho e serão reenviadas.",
-            );
-          }
-        })
-        .catch(() => {
-          if (!disposed && currentUser.current === userId) {
-            setError(
-              "A nuvem está indisponível. As alterações continuam guardadas neste aparelho e serão reenviadas.",
-            );
-          }
-        });
-    };
-
     void loadAthletesCloud()
       .then((rows) => {
         if (disposed || epoch.current !== currentEpoch || currentUser.current !== userId) return;
@@ -63,9 +99,12 @@ export function useAthleteSlots() {
 
         for (const row of rows) {
           const cloud = JSON.parse(row.state) as PlayerCareerState;
-          const local = readAthlete(row.slot);
-          if (cloud?.version === 1 && (!local || cloud.updatedAt > local.updatedAt))
-            writeAthlete({ ...cloud, slot: row.slot as 1 | 2 | 3 });
+          if (!isAthleteSlot(row.slot)) continue;
+          remoteSlots.add(row.slot);
+          const local = readAthlete(row.slot, userId);
+          if (cloud?.version === 1 && (!local || cloud.updatedAt > local.updatedAt)) {
+            writeAthlete({ ...cloud, slot: row.slot }, userId);
+          }
         }
 
         // A local account save missing from the response is also queued, never silently discarded.
@@ -75,13 +114,19 @@ export function useAthleteSlots() {
           if (envelope) void queueAthleteSave(envelope, userId);
         }
         refresh(userId);
+        void flushAthleteSync(userId);
       })
-      .catch(() =>
-        setError(
-          "Não foi possível buscar seus atletas na nuvem. Os salvos no aparelho continuam disponíveis.",
-        ),
-      );
-  }, [userId, refresh]);
+      .catch(() => {
+        if (!disposed && currentUser.current === userId) {
+          setError(
+            "Não foi possível buscar seus atletas na nuvem. Os salvos no aparelho continuam disponíveis.",
+          );
+        }
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [userId, owner, refresh]);
 
   const remove = useCallback(
     async (slot: number) => {
