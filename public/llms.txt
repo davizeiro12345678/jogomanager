@@ -6,6 +6,10 @@
 
 Site oficial e endereço canônico: https://jogomanager.com
 
+Este arquivo é um índice das páginas públicas. O código integrado ao repositório
+não garante que todas as mudanças já estejam implantadas: considere a versão
+efetivamente acessível em cada página e as condições atuais de serviço.
+
 ## Conheça o jogo
 
 - [Página inicial](https://jogomanager.com/): apresentação do JogoManager e acesso à partida.
@@ -41,7 +45,7 @@ Comunidade oficial: https://discord.gg/6az4ssQQck
 
 - Quantidade de registros de clubes, jogadores e competições importados não
   significa disponibilidade integral ou seleção em todos os modos de jogo.
-- Os dados esportivos externos podem variar de cobertura e atualização.
+- Os dados esportivos externos podem variar de cobertura e atualização. Estatísticas históricas, dados oficiais e resultados da carreira simulada são conjuntos diferentes.
 - Guias explicam opções e critérios, não prometem resultados fixos de partidas.
 - Algumas funções dependem de conexão ou de uma conta autenticada; confira as
   condições na interface antes de contar com salvamento entre dispositivos.
