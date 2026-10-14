@@ -9,7 +9,10 @@ vi.mock("@tanstack/react-start/server", () => ({
 
 import { verifiedAccount } from "./verified-identity.server";
 
-type AuthResult = { data: { user: { id: string; email: string; email_confirmed_at: string | null } | null }; error: null };
+type AuthResult = {
+  data: { user: { id: string; email: string; email_confirmed_at: string | null } | null };
+  error: null;
+};
 const getUser = vi.fn<(token: string) => Promise<AuthResult>>();
 const client = { auth: { getUser } } as unknown as SupabaseClient<Database>;
 const uid = "9ab8df4e-456f-4afa-b8ec-f62a902e0210";
@@ -17,7 +20,10 @@ const uid = "9ab8df4e-456f-4afa-b8ec-f62a902e0210";
 beforeEach(() => {
   vi.resetAllMocks();
   getRequestMock.mockReturnValue({
-    headers: { get: (header: string) => (header === "authorization" ? "Bearer valid.jwt.signature" : null) },
+    headers: {
+      get: (header: string) =>
+        header === "authorization" ? "Bearer valid.jwt.signature" : null,
+    },
   });
 });
 
@@ -38,7 +44,13 @@ describe("verified account boundary", () => {
 
   it("rejects a valid token belonging to another user", async () => {
     getUser.mockResolvedValue({
-      data: { user: { id: "other-user", email: "someone@example.com", email_confirmed_at: "2026-10-14T00:00:00Z" } },
+      data: {
+        user: {
+          id: "other-user",
+          email: "someone@example.com",
+          email_confirmed_at: "2026-10-14T00:00:00Z",
+        },
+      },
       error: null,
     });
     await expect(verifiedAccount(client, uid)).resolves.toBeNull();
