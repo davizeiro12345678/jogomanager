@@ -1868,6 +1868,16 @@ export type Database = {
         Args: never
         Returns: boolean
       }
+      complete_api_football_import_phase: {
+        Args: {
+          p_phase: string
+          p_token: string
+          p_processed: number
+          p_next_offset: number | null
+          p_error?: string | null
+        }
+        Returns: boolean
+      }
       claim_api_football_import_phase: {
         Args: never
         Returns: {
