@@ -88,7 +88,11 @@ export function FirebasePushControl() {
               : "Opcional e revogável"}
         </span>
       </div>
-      {message ? <p className="mt-2 text-xs text-muted-foreground" role="status">{message}</p> : null}
+      {message ? (
+        <p className="mt-2 text-xs text-muted-foreground" role="status">
+          {message}
+        </p>
+      ) : null}
     </div>
   );
 }
