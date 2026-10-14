@@ -5,7 +5,12 @@ import path from "node:path";
 export default defineConfig({
   cacheDir: "node_modules/.vite-benchmark",
   plugins: [react(), tailwindcss()],
-  resolve: { alias: { "@": path.resolve(import.meta.dirname, "../src") } },
+  resolve: {
+    alias: {
+      "@/lib/telemetry-client": path.resolve(import.meta.dirname, "graphics-telemetry-stub.ts"),
+      "@": path.resolve(import.meta.dirname, "../src"),
+    },
+  },
   server: { host: "127.0.0.1", port: 4193, strictPort: true },
   build: {
     outDir: "dist-benchmark",

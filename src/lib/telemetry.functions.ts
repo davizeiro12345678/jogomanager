@@ -1,9 +1,11 @@
 /**
- * Telemetria técnica Zero PII: só números de desempenho e dados do navegador.
- * Nunca recebe nome, e-mail, texto digitado, chat nem dados do save.
+ * Optional client performance samples are self-reported and never authoritative
+ * Lighthouse/Core Web Vitals or benchmark data. Account IDs are retained for\n * abuse control; no names, emails or saves are collected. No privileged writes.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { verifiedAccount } from "./verified-identity.server";
 
 const schema = z
   .object({
@@ -22,10 +24,18 @@ const schema = z
   .strict();
 
 export const sendTechTelemetry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: unknown) => schema.parse(data))
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("tech_telemetry").insert({
+  .handler(async ({ data, context }) => {
+    // A JWT with an unverified email must not qualify for telemetry submission.
+    // Supabase checks the actual Auth user and email confirmation independently.
+    const user = await verifiedAccount(context.supabase, context.userId);
+    if (!user) return { ok: false, reason: "verification_required" as const };
+
+    // Scoped JWT client, never supabaseAdmin/service_role: the RLS policy
+    // permits only an own, explicitly untrusted sample once per UTC hour.
+    const { error } = await context.supabase.from("tech_telemetry").insert({
+      user_id: user.id,
       fps_avg: data.fpsAvg,
       frame_time_p95_ms: data.frameTimeP95Ms,
       browser: data.browser,
@@ -35,5 +45,7 @@ export const sendTechTelemetry = createServerFn({ method: "POST" })
       error_code: data.errorCode,
       app_version: data.appVersion,
     });
-    return { ok: true };
+    if (error?.code === "23505") return { ok: false, reason: "rate_limited" as const };
+    if (error) return { ok: false, reason: "unavailable" as const };
+    return { ok: true, origin: "client_unverified" as const };
   });
