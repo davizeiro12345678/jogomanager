@@ -17,6 +17,7 @@ export default tseslint.config(
       "wasm/**/target/**",
       "src/game/wasm/pkg/**",
       "src/integrations/supabase/types.ts",
+      "src/integrations/supabase/previewAuthStorage.ts",
       // Generated third-party WASM loader; keep vendor formatting out of lint.
       "public/basis/basis_transcoder.js",
     ],
