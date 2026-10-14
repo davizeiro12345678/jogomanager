@@ -3,7 +3,10 @@ import type { CareerState } from "@/game/types";
 /** Minimum real time per simulated round; faster progress cannot be attested. */
 const MIN_MS_PER_ROUND = 15_000;
 
-type ProgressShape = Pick<CareerState, "leagueId" | "clubId" | "managerName" | "season" | "round" | "results">;
+type ProgressShape = Pick<
+  CareerState,
+  "leagueId" | "clubId" | "managerName" | "season" | "round" | "results"
+>;
 
 export function sameCareer(a: ProgressShape, b: ProgressShape): boolean {
   return a.leagueId === b.leagueId && a.clubId === b.clubId && a.managerName === b.managerName;
@@ -19,14 +22,19 @@ export function isStaleSave(stored: ProgressShape, next: ProgressShape): boolean
   return sameCareer(stored, next) && progressScore(next) < progressScore(stored);
 }
 
-const resultKey = (r: CareerState["results"][number]) => `${r.round}:${r.home}:${r.away}:${r.hg}:${r.ag}`;
+const resultKey = (r: CareerState["results"][number]) =>
+  `${r.round}:${r.home}:${r.away}:${r.hg}:${r.ag}`;
 
 /**
  * Extends attestation from a verified save to its legitimate continuation:
  * same identity, append-only results within a season, one season at a time,
  * and progress no faster than real time allows.
  */
-export function continuesVerifiedCareer(prev: CareerState, next: CareerState, elapsedMs: number): boolean {
+export function continuesVerifiedCareer(
+  prev: CareerState,
+  next: CareerState,
+  elapsedMs: number,
+): boolean {
   if (!sameCareer(prev, next)) return false;
   if (!Array.isArray(next.results) || !Array.isArray(next.history)) return false;
   const roundsAdvanced =
@@ -47,7 +55,14 @@ export function continuesVerifiedCareer(prev: CareerState, next: CareerState, el
     return false;
   }
   for (const r of next.results) {
-    if (!Number.isInteger(r.hg) || !Number.isInteger(r.ag) || r.hg < 0 || r.ag < 0 || r.hg > 20 || r.ag > 20)
+    if (
+      !Number.isInteger(r.hg) ||
+      !Number.isInteger(r.ag) ||
+      r.hg < 0 ||
+      r.ag < 0 ||
+      r.hg > 20 ||
+      r.ag > 20
+    )
       return false;
   }
   // Value-bearing fields must be structurally consistent, not caller-invented:

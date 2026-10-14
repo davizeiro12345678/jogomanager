@@ -269,9 +269,6 @@ export function FootballHome() {
             FUTEBOL. DECISÕES. HISTÓRIAS.
           </p>
           <h1 id="home-title">
-            <span className="home-hero-product">
-              Jogo de manager de futebol 3D grátis no navegador
-            </span>
             SEU CLUBE.
             <br />
             <em>SUA HISTÓRIA.</em>

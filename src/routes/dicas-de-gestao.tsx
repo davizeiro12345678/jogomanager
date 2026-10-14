@@ -23,7 +23,6 @@ export const Route = createFileRoute("/dicas-de-gestao")({
       }),
       breadcrumbLd([
         { name: "Início", path: "/" },
-        { name: "Guias", path: "/guias" },
         { name: "Gestão da temporada", path: PATH },
       ]),
     ],

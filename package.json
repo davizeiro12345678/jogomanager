@@ -26,6 +26,7 @@
   },
   "overrides": {
     "@dimforge/rapier3d-compat": "0.21.0",
+    "@grpc/grpc-js": "^1.13.6",
     "rolldown": "1.2.1"
   },
   "dependencies": {

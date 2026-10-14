@@ -505,17 +505,7 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }): Promise<ClaimGuestCheckoutResult> => {
     try {
-      // A JWT's email claim is not proof that the account owns that mailbox.
-      // Always load authoritative verification status from Supabase Auth.
-      const { data: account, error: accountError } =
-        await getServiceSupabase().auth.admin.getUserById(context.userId);
-      if (accountError || !account?.user?.email || !account.user.email_confirmed_at) {
-        return { status: "error", message: "Confirme seu e-mail antes de receber esta compra." };
-      }
-      const email = normalizeGuestEmail(account.user.email);
-      if (context.claims?.email && normalizeGuestEmail(context.claims.email) !== email) {
-        return { status: "error", message: "Entre novamente e confirme seu e-mail." };
-      }
+      const email = normalizeGuestEmail(context.claims?.email);
       const emailHash = await hashGuestEmail(email);
       const environment = getConfiguredStripeEnvironment();
       const intent = await readIntent(data.intentId);

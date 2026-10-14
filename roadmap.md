@@ -10,3 +10,14 @@
 - [x] Painel do clube: últimas transferências reais
 - [x] Glossário, FAQ, mercado, offline e comparativo ampliados
 - [x] Cartão do treinador e retrato redesenhados; e-mails em português com nome oficial
+
+## Manutenção 2026-10-14
+- [ ] Push Firebase: tokens + envio server-side (falta config web push no conector)
+- [ ] Baseline real: lint, audit, tsc, test, build, wasm, bench
+- [ ] Corrigir lint e vulnerabilidades altas
+- [ ] /llms.txt e divergências SEO/publicado
+- [ ] Reimportação API-Football durável (checkpoint/lease)
+- [ ] Pagamentos sandbox smoke tests
+- [ ] Resend boas-vindas idempotente (alias pfm3d-welcome-ptbr), sem envio real
+- [ ] Reexecutar gates
+- [ ] Modularização Stadium3D/sim.ts

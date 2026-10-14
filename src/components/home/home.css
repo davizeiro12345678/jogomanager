@@ -173,18 +173,6 @@
   line-height: 1.04;
   margin: 20px 0 24px;
 }
-.home-hero h1 .home-hero-product {
-  display: block;
-  max-width: 610px;
-  margin-bottom: 12px;
-  color: #d0e3d2;
-  font-family: sans-serif;
-  font-size: clamp(14px, 1.7vw, 20px);
-  font-weight: 600;
-  letter-spacing: 0.015em;
-  line-height: 1.4;
-  text-transform: none;
-}
 .home-hero h1 em {
   font-style: normal;
   color: var(--home-lime);

@@ -4,7 +4,8 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/glossario-do-futebol";
-const TITLE = "Glossário tático: xG, pressão pós-perda, terceiro homem e 80 termos | Pro Football Manager 3D";
+const TITLE =
+  "Glossário tático: xG, pressão pós-perda, terceiro homem e 80 termos | Pro Football Manager 3D";
 const DESC =
   "De bloco baixo a meia-entrelinhas e fair play financeiro: cada termo de tática e gestão explicado com exemplo prático e onde ele muda o resultado no jogo.";
 

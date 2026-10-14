@@ -6,9 +6,9 @@ import { getLeagueDigests } from "@/lib/real-football.functions";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guia-de-scouting";
-const TITLE = "Guia de Scouting: Como Encontrar Jogadores Bons e Baratos";
+const TITLE = "Scouting no Manager de Futebol | Guia de Contratações";
 const DESC =
-  "Descubra como avaliar jovens promessas e reforços baratos: potencial, idade, minutos jogados, posição e custo. Guia de olheiros no manager de futebol 3D.";
+  "Aprenda a comparar potencial, desempenho, custo e posição antes de contratar. Guia prático de scouting para sua carreira no Pro Football Manager 3D.";
 
 export const Route = createFileRoute("/guia-de-scouting")({
   loader: async () => ({ leagues: await getLeagueDigests().catch(() => []) }),
@@ -19,7 +19,6 @@ export const Route = createFileRoute("/guia-de-scouting")({
       articleLd({ headline: "Guia de scouting", description: DESC, path: PATH }),
       breadcrumbLd([
         { name: "Início", path: "/" },
-        { name: "Guias", path: "/guias" },
         { name: "Guia de scouting", path: PATH },
       ]),
     ],

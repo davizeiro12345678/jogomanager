@@ -1,13 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { claimGuestCheckout } from "@/lib/guest-checkout.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { useT } from "@/i18n/provider";
-import { commerceText, type CommerceKey } from "@/i18n/commerce-messages";
 
 function validIntent(value: unknown): value is string {
   return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(value);
@@ -28,8 +26,6 @@ export const Route = createFileRoute("/checkout/claim")({
 });
 
 function ClaimGuestCheckout() {
-  const { lang } = useT();
-  const commerce = useCallback((key: CommerceKey) => commerceText(lang, key), [lang]);
   const { intent, session_id: sessionId } = Route.useSearch();
   const claim = useServerFn(claimGuestCheckout);
   const [status, setStatus] = useState<"loading" | "delivered" | "pending" | "error">("loading");
@@ -38,7 +34,7 @@ function ClaimGuestCheckout() {
   useEffect(() => {
     if (!intent || !sessionId) {
       setStatus("error");
-      setMessage(commerce("claim.incomplete"));
+      setMessage("O link da compra está incompleto.");
       return;
     }
     let mounted = true;
@@ -48,7 +44,7 @@ function ClaimGuestCheckout() {
       if (!data.session) {
         if (mounted) {
           setStatus("error");
-          setMessage(commerce("claim.login"));
+          setMessage("Abra o link de e-mail novamente para entrar e receber sua compra.");
         }
         return;
       }
@@ -67,7 +63,7 @@ function ClaimGuestCheckout() {
       } catch {
         if (mounted) {
           setStatus("error");
-          setMessage(commerce("claim.failed"));
+          setMessage("Não foi possível vincular esta compra agora.");
         }
       }
     };
@@ -80,7 +76,7 @@ function ClaimGuestCheckout() {
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, [claim, intent, sessionId, commerce]);
+  }, [claim, intent, sessionId]);
 
   return (
     <main className="pitch-bg grid min-h-screen place-items-center px-4 py-10">
@@ -88,41 +84,41 @@ function ClaimGuestCheckout() {
         {status === "loading" ? (
           <>
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-            <h1 className="mt-4 font-display text-2xl uppercase">{commerce("claim.loading")}</h1>
+            <h1 className="mt-4 font-display text-2xl uppercase">Vinculando sua compra</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              {commerce("claim.checking")}
+              Estamos conferindo o pagamento e sua conta.
             </p>
           </>
         ) : null}
         {status === "delivered" ? (
           <>
             <CheckCircle2 className="mx-auto h-10 w-10 text-primary" />
-            <h1 className="mt-4 font-display text-2xl uppercase">{commerce("claim.delivered")}</h1>
+            <h1 className="mt-4 font-display text-2xl uppercase">Item entregue</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              {commerce("claim.deliveredDetail")}
+              Sua compra agora está vinculada a esta conta e aparece na carreira.
             </p>
           </>
         ) : null}
         {status === "pending" ? (
           <>
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-            <h1 className="mt-4 font-display text-2xl uppercase">{commerce("claim.pending")}</h1>
+            <h1 className="mt-4 font-display text-2xl uppercase">Quase pronto</h1>
             <p className="mt-2 text-sm text-muted-foreground">{message}</p>
           </>
         ) : null}
         {status === "error" ? (
           <>
             <XCircle className="mx-auto h-10 w-10 text-destructive" />
-            <h1 className="mt-4 font-display text-2xl uppercase">{commerce("claim.error")}</h1>
+            <h1 className="mt-4 font-display text-2xl uppercase">Não foi possível entregar</h1>
             <p className="mt-2 text-sm text-muted-foreground">{message}</p>
           </>
         ) : null}
         <div className="mt-7 flex flex-col gap-2">
           <Button asChild>
-            <Link to="/loja">{commerce("claim.store")}</Link>
+            <Link to="/loja">Abrir minha loja</Link>
           </Button>
           <Button asChild variant="ghost">
-            <Link to="/compras">{commerce("claim.purchases")}</Link>
+            <Link to="/compras">Ver minhas compras</Link>
           </Button>
         </div>
       </section>

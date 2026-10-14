@@ -16,7 +16,6 @@ export const Route = createFileRoute("/melhores-formacoes")({
       articleLd({ headline: "Melhores formações de futebol", description: DESC, path: PATH }),
       breadcrumbLd([
         { name: "Início", path: "/" },
-        { name: "Guias", path: "/guias" },
         { name: "Melhores formações", path: PATH },
       ]),
     ],

@@ -1,10 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
-/**
- * Firebase WEB config is public, but a general server GOOGLE_API_KEY is NOT.
- * Use only the dedicated browser SDK key; never expose secret Google APIs here.
- */
+/** A configuração web do Firebase é pública; só é guardada como segredo por conveniência. */
 export const getFirebaseWebConfig = createServerFn({ method: "GET" }).handler(async () => ({
-  apiKey: (process.env["FIREBASE_WEB_API_KEY"] ?? "AIzaSyBgaknQ5e7aBH9wClm8QCzstrYM_O7pUB8").trim(),
-  measurementId: (process.env["FIREBASE_MEASUREMENT_ID"] ?? "G-GEBKR68PLW").trim(),
+  apiKey: (process.env["GOOGLE_API_KEY"] ?? "").trim(),
+  measurementId: (process.env["GOOGLE_ANALYTICS_MEASUREMENT_ID"] ?? "").trim(),
 }));
