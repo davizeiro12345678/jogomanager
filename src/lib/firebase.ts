@@ -1,29 +1,44 @@
-/**
- * Firebase (app + Analytics). Só roda no navegador, depois do consentimento.
- */
+/** Firebase app is opt-in. Analytics is initialized only after analytics consent. */
 import type { FirebaseApp } from "firebase/app";
 
 let app: FirebaseApp | null = null;
+let analyticsStarted = false;
 
-export async function initFirebase(): Promise<FirebaseApp | null> {
+export async function initFirebase(opts: { analytics?: boolean } = {}): Promise<FirebaseApp | null> {
   if (typeof window === "undefined") return null;
-  if (app) return app;
   try {
     const { getFirebaseWebConfig } = await import("./firebase-config.functions");
-    const { apiKey, measurementId } = await getFirebaseWebConfig();
-    if (!apiKey) return null;
-    const { initializeApp } = await import("firebase/app");
-    app = initializeApp({
-      apiKey,
-      authDomain: "sscxz-2ee8d.firebaseapp.com",
-      projectId: "sscxz-2ee8d",
-      storageBucket: "sscxz-2ee8d.firebasestorage.app",
-      messagingSenderId: "122832770297",
-      appId: "1:122832770297:web:e2f9bc68cca1b1f873be28",
-      ...(measurementId ? { measurementId } : {}),
-    });
-    const { getAnalytics, isSupported } = await import("firebase/analytics");
-    if (measurementId && (await isSupported())) getAnalytics(app);
+    const config = await getFirebaseWebConfig();
+    if (!config.apiKey || !config.projectId || !config.appId) return null;
+
+    if (!app) {
+      const { getApps, initializeApp } = await import("firebase/app");
+      app =
+        getApps().find((existing) => existing.name === "pfm3d") ??
+        initializeApp(
+          {
+            apiKey: config.apiKey,
+            authDomain: config.authDomain,
+            projectId: config.projectId,
+            storageBucket: config.storageBucket,
+            messagingSenderId: config.messagingSenderId,
+            appId: config.appId,
+            ...(config.measurementId ? { measurementId: config.measurementId } : {}),
+          },
+          "pfm3d",
+        );
+    }
+    if (opts.analytics && !analyticsStarted && config.measurementId) {
+      try {
+        const { getAnalytics, isSupported } = await import("firebase/analytics");
+        if (await isSupported()) {
+          getAnalytics(app);
+          analyticsStarted = true;
+        }
+      } catch {
+        // Unsupported analytics must not prevent the app or push permissions.
+      }
+    }
     return app;
   } catch {
     return null;
