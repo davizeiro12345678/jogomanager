@@ -13,6 +13,8 @@ const REASONS: Record<string, string> = {
   sold_out: "Este cupom já atingiu o limite de usos.",
   used: "Você já usou este cupom.",
   login: "Entre na sua conta para usar cupons.",
+  verify_email: "Confirme seu e-mail para resgatar cupons.",
+  not_eligible: "Este cupom não foi autorizado para sua conta.",
 };
 
 /** Resgate atômico no banco: uma vez por conta, recompensa creditada na carteira. */
