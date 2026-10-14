@@ -109,7 +109,8 @@ async function pool<T>(items: T[], n: number, deadline: number, fn: (t: T) => Pr
       }
     }),
   );
-  if (failures) throw new Error(`API-Football batch had ${failures} failed items; cursor not advanced`);
+  if (failures)
+    throw new Error(`API-Football batch had ${failures} failed items; cursor not advanced`);
   return done;
 }
 
