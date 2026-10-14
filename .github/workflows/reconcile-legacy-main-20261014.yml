@@ -1,0 +1,81 @@
+name: Reconcile legacy PR with current main
+
+on:
+  push:
+    branches:
+      - codex/mega-update-2026-10-09
+    paths:
+      - .github/workflows/reconcile-legacy-main-20261014.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: reconcile-legacy-main-20261014
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/mega-update-2026-10-09
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Merge main conservatively into the legacy branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-ff --no-commit -X theirs origin/main || true
+          : > /tmp/conflicts-resolved.txt
+          while IFS= read -r -d '' f; do
+            printf '%s\n' "$f" >> /tmp/conflicts-resolved.txt
+            if git cat-file -e "origin/main:$f" 2>/dev/null; then
+              git checkout origin/main -- "$f"
+            else
+              git rm -f -- "$f"
+            fi
+          done < <(git diff --name-only --diff-filter=U -z)
+          # Keep the current audited dependency tree and all public security controls.
+          critical=(
+            package.json
+            package-lock.json
+            bun.lock
+            .github/workflows/quality.yml
+            public/sw.js
+            src/integrations/supabase/types.ts
+            src/lib/apifootball-import.server.ts
+            src/lib/firebase-config.functions.ts
+            src/lib/firebase-push.ts
+            src/lib/firebase.ts
+            src/lib/logout.ts
+            src/routes/api/public/sync-football.ts
+            src/components/privacy/ConsentCenter.tsx
+            src/components/privacy/FirebasePushControl.tsx
+          )
+          for f in "${critical[@]}"; do
+            if git cat-file -e "origin/main:$f" 2>/dev/null; then
+              git checkout origin/main -- "$f"
+            fi
+          done
+          git rm -f -- .github/workflows/reconcile-legacy-main-20261014.yml
+          git add -A
+          if [[ -n "$(git diff --name-only --diff-filter=U)" ]]; then
+            echo "::error::Some merge conflicts remain"; exit 1
+          fi
+          git diff --cached --check
+          echo "Resolved conflict paths (current main wins on overlapping hunks):"
+          cat /tmp/conflicts-resolved.txt
+          echo "Files changed relative to main:"
+          git diff --stat origin/main
+          if ! git diff --cached --quiet; then
+            git commit -m "merge: reconcile mega-update branch with main conservatively"
+          else
+            git commit --allow-empty -m "merge: bring current main into mega-update branch"
+          fi
+          git push origin HEAD:codex/mega-update-2026-10-09
