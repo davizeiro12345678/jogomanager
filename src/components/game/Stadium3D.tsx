@@ -46,7 +46,7 @@ import {
 import { Stands } from "./stadium/StadiumStructure";
 import { presentationBall } from "./stadium/stadium-ball";
 import { Pitch } from "./stadium/StadiumTurf";
-import { Weather } from "./stadium/StadiumWeather";
+import { Weather as WeatherParticles } from "./stadium/StadiumWeather";
 
 import { AdBoards } from "./stadium/StadiumAds";
 import { Scoreboard } from "./stadium/StadiumScoreboard";
@@ -758,7 +758,7 @@ function Scene({
       {/* Arranhões de chute, escorregões e rastro da bola: 1 desenho no total */}
       <PitchResponse sim={sim} quality={quality} />
       {quality !== "baixa" ? (
-        <Weather
+        <WeatherParticles
           weather={look.weather}
           wind={look.wind}
           quality={quality}

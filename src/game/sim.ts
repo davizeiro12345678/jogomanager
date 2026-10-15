@@ -13,6 +13,7 @@ import {
 } from "./match-execution-contract";
 import { PassLaneBuffers } from "./wasm/pass-lane-buffers";
 import { MatchVisualContextComputer } from "./sim-visual-context";
+import type { PlayerAction } from "./animation";
 import { calculatePlayerRatings } from "./sim-ratings";
 import { makeRng } from "./rng";
 import { physiqueFor } from "./player-physique";

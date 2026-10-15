@@ -4,7 +4,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { useRuntimeSceneBudget } from "../RuntimeBudget";
+import { useQualityPressure, useRuntimeSceneBudget } from "../RuntimeBudget";
 import { StaticBatch } from "./StaticBatch";
 import { stadiumBackgroundMaterial } from "@/game/stadium-background-material";
 import {
@@ -24,6 +24,7 @@ import type { SimView } from "@/game/sim-contracts";
 import type { Quality } from "../Stadium3D";
 import type { SupporterMatchday } from "@/game/career-world-types";
 import { CrowdLod } from "./CrowdLod";
+import { ArenaArchitecture } from "./ArenaArchitecture";
 
 function useConcrete(color = "#6d747b", repeat = 6, high = false) {
   const textureRevision = useKtx2Revision();

@@ -13,7 +13,7 @@ import type { FaceMorphology } from "@/game/player-morphology";
 export interface FacialPresentation {
   speed: number;
   tired: number;
-  previewAt?: number;
+  previewAt?: number | undefined;
   t: number;
   lookSeed: number;
   seed: number;
