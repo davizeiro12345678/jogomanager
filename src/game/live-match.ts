@@ -376,16 +376,11 @@ export class WorkerMatchView implements MatchRuntime {
     Object.assign(this.wind, next.wind);
     this.refName = next.refName;
     this.possession = next.possession;
-    this.stats = cloneStats(next.stats);
-    if (packet) {
-      const delta = packet.eventDelta;
-      if (delta && delta.fromSeq === this.eventSeq) {
-        this.events = [...this.events, ...delta.added.map((event) => ({ ...event }))].slice(-80);
-      }
-    } else if (next.eventSeq !== this.eventSeq) {
-      const objectSnapshot = next as LiveSnapshot | LiveResult;
-      this.events = objectSnapshot.events.map((event) => ({ ...event }));
+    this.stats = { home: { ...next.stats.home }, away: { ...next.stats.away } };
+    if (next.eventSeq !== this.eventSeq && next.events) {
+      this.events = next.events.map((event) => ({ ...event }));
     }
+    this.eventSeq = next.eventSeq;
     this.finished = next.finished;
     Object.assign(this.subsUsed, next.subsUsed);
     if ("ratings" in next) {
