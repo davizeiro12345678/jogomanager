@@ -69,13 +69,10 @@ import { CinematicSetBatch, type CinematicBatchSnapshot } from "./cinematic/Cine
 import { GraphicsBoundary } from "./GraphicsBoundary";
 import { Ktx2CanvasAssets } from "./Ktx2CanvasAssets";
 
-
 import { CinematicSetFinish } from "./cinematic/CinematicSetFinish";
 import { CinematicStoryDressing } from "./cinematic/CinematicStoryDressing";
 import { CinematicBusinessDressing } from "./cinematic/CinematicBusinessDressing";
 import { CinematicMotivatedLight } from "./cinematic/CinematicMotivatedLight";
-
-
 
 import {
   cinematicPresentationBudget,
@@ -88,8 +85,6 @@ import { detectQuality, type QualityLevel } from "@/game/device";
 import { useT } from "@/i18n/provider";
 
 type SetKind = CinematicSet;
-
-/* ------------------------------------------------------------- figurantes */
 
 /* ----------------------------------------------------------- direção 3D */
 
