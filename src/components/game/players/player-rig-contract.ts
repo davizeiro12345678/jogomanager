@@ -12,7 +12,7 @@ import type { RigSkin } from "@/game/rig-skin";
  * do clipe é reescalada pela velocidade real do atleta, de modo que o pé de
  * apoio acompanhe o deslocamento no gramado em vez de patinar.
  */
-const GAIT_SPEED: Record<string, number> = {
+export const GAIT_SPEED: Record<string, number> = {
   walk: 1.6,
   stroll: 1.3,
   walkTalk: 1.5,
