@@ -49,7 +49,7 @@ function downloadAthlete(state: PlayerCareerState) {
 function AthleteHub() {
   const userId = useAuthUserId();
   const owner = userId ?? null;
-  const { slots, error, remove, signedIn } = useAthleteSlots();
+  const { slots, error, remove, restore, signedIn } = useAthleteSlots();
   return (
     <main className="athlete-shell">
       <div className="athlete-wrap">
@@ -99,9 +99,21 @@ function AthleteHub() {
                   >
                     <p className="athlete-meta">Espaço {slot} vazio</p>
                     {backup && (
-                      <Button variant="outline" onClick={() => downloadAthlete(backup)}>
-                        Baixar backup anterior
-                      </Button>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" onClick={() => downloadAthlete(backup)}>
+                          Baixar backup anterior
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            if (window.confirm("Restaurar este atleta a partir do backup local?")) {
+                              restore(slot);
+                            }
+                          }}
+                        >
+                          Restaurar backup
+                        </Button>
+                      </div>
                     )}
                     <Button asChild size="lg">
                       <Link to="/jogador/novo" search={{ slot }}>
