@@ -24,7 +24,7 @@ describe("cutscene controls", () => {
     expect(markup).toContain("Vamos para");
     expect(markup).toContain("Concordar");
     expect(markup).toContain("Apoie o capitão");
-    expect(markup).toContain("disabled=\"\"");
+    expect(markup).toContain('disabled=""');
   });
 
   it("renders settings from controlled values and locks captions for choices", () => {
@@ -50,6 +50,6 @@ describe("cutscene controls", () => {
     expect(markup).toContain("Desligar voz");
     expect(markup).toContain("Som ambiente");
     expect(markup).toContain("Cena ilustrada");
-    expect(markup).toContain("disabled=\"\"");
+    expect(markup).toContain('disabled=""');
   });
 });
