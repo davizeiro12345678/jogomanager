@@ -2822,5 +2822,4 @@ export class MatchSim {
   generateVisualContext(): VersionedVisualData {
     return this.#visualContextComputer.compute(this.players, this.ball, this.time, this.matchSeed);
   }
-
 }
