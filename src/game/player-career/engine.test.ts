@@ -8,6 +8,7 @@ import {
   negotiateOffer,
   overall,
   seasonLength,
+  trainingOutlook,
 } from "./engine";
 
 const clubId = Object.keys(CLUBS)[0]!;
@@ -79,6 +80,17 @@ describe("carreira de jogador", () => {
         ),
       ),
     ).toBe(true);
+  });
+
+  it("projeta energia e risco do mesmo modo que a simulação", () => {
+    const tired = { ...make(), energy: 15 };
+    expect(trainingOutlook(tired, "pesado")).toMatchObject({
+      energyAfter: 10,
+      injuryRisk: 0.07,
+    });
+    expect(trainingOutlook(tired, "leve").energyAfter).toBe(27);
+    expect(trainingOutlook({ ...tired, injury: { label: "Lesão", weeksLeft: 2 } }, "pesado")
+      .injuryRisk).toBe(0);
   });
 
   it("evolui ao longo de temporadas e envelhece", () => {
