@@ -43,7 +43,9 @@ function AthleteHub() {
             </Link>
           </Button>
           <span className="athlete-meta">
-            {signedIn ? "Conta conectada · verifique o status de sincronização de cada atleta" : "Carreiras salvas neste aparelho"}
+            {signedIn
+              ? "Conta conectada · verifique o status de sincronização de cada atleta"
+              : "Carreiras salvas neste aparelho"}
           </span>
         </div>
         <header>
@@ -53,7 +55,11 @@ function AthleteHub() {
             atletas.
           </p>
           <p className="athlete-meta mt-3">
-            Prefere comandar todo o clube? <Link to="/new" className="underline underline-offset-4">Iniciar carreira de treinador</Link>.
+            Prefere comandar todo o clube?{" "}
+            <Link to="/new" className="underline underline-offset-4">
+              Iniciar carreira de treinador
+            </Link>
+            .
           </p>
         </header>
         {error && (
