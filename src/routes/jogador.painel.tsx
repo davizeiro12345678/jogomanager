@@ -43,7 +43,10 @@ import "@/components/game/athlete.css";
 
 export const Route = createFileRoute("/jogador/painel")({
   ssr: false,
-  validateSearch: z.object({ slot: z.number().int().min(1).max(3).catch(1) }),
+  validateSearch: z.object({
+    slot: z.number().int().min(1).max(3).catch(1),
+    tab: z.enum(["semana", "atributos", "selecao", "contrato", "noticias", "historico"]).optional(),
+  }),
   head: () => ({
     meta: [
       { title: "Painel do atleta — Football Manager 3D" },
@@ -77,7 +80,7 @@ const TABS: { id: Tab; label: string }[] = [
 const money = (n: number) => `R$ ${Math.round(n).toLocaleString("pt-BR")}`;
 
 function AthletePanelPage() {
-  const { slot } = Route.useSearch();
+  const { slot, tab } = Route.useSearch();
   const { state, commit, syncError } = useAthlete(slot);
   if (state === undefined)
     return (
@@ -98,19 +101,21 @@ function AthletePanelPage() {
         </div>
       </main>
     );
-  return <Panel state={state} commit={commit} syncError={syncError} />;
+  return <Panel state={state} commit={commit} syncError={syncError} initialTab={tab} />;
 }
 
 function Panel({
   state,
   commit,
   syncError,
+  initialTab,
 }: {
   state: PlayerCareerState;
   commit: (s: PlayerCareerState) => void;
   syncError: boolean;
+  initialTab?: Tab;
 }) {
-  const [tab, setTab] = useState<Tab>(state.retired ? "historico" : "semana");
+  const [tab, setTab] = useState<Tab>(initialTab ?? (state.retired ? "historico" : "semana"));
   const [showPlayerModel, setShowPlayerModel] = useState(false);
   const club = CLUBS[state.clubId];
   const ovr = overall(state);
