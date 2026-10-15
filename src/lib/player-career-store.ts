@@ -11,6 +11,8 @@ const ENVELOPE_KEY = (slot: AthleteSlot, owner: LocalOwnerId | undefined = null)
   `manager3d.athlete.envelope.v1.${localOwnerScope(owner)}.${slot}`;
 const BACKUP_KEY = (slot: AthleteSlot, owner: LocalOwnerId | undefined = null) =>
   `manager3d.athlete.backup.v1.${localOwnerScope(owner)}.${slot}`;
+const CONFLICT_BACKUP_KEY = (slot: AthleteSlot, owner: LocalOwnerId | undefined = null) =>
+  `manager3d.athlete.conflict-backup.v1.${localOwnerScope(owner)}.${slot}`;
 const INDEX_KEY = (owner: LocalOwnerId | undefined = null) =>
   `manager3d.athlete.index.v1.${localOwnerScope(owner)}`;
 const OUTBOX_KEY = (owner: LocalOwnerId | undefined = null) =>
@@ -419,6 +421,23 @@ export function readAthleteBackup(
   owner: LocalOwnerId | undefined = null,
 ): PlayerCareerState | null {
   return hydrateAthlete(parseJson(getStorageValue(BACKUP_KEY(slot, owner))));
+}
+
+/** Independent backup retained when the user deliberately chooses the cloud copy. */
+export function readAthleteConflictBackup(
+  slot: AthleteSlot,
+  owner: LocalOwnerId | undefined = null,
+): PlayerCareerState | null {
+  return hydrateAthlete(parseJson(getStorageValue(CONFLICT_BACKUP_KEY(slot, owner))));
+}
+
+/** Never replace a divergent local career until a durable recovery copy exists. */
+export function archiveAthleteConflictBackup(
+  slot: AthleteSlot,
+  owner: LocalOwnerId | undefined = null,
+): boolean {
+  const current = readAthlete(slot, owner);
+  return current ? setStorageValue(CONFLICT_BACKUP_KEY(slot, owner), current) : true;
 }
 
 export function deleteAthlete(
