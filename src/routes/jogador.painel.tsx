@@ -144,17 +144,30 @@ function Panel({
             </Link>
           </Button>
           {syncError && (
-            <span className="athlete-meta">Sincronização pendente: confira a conexão e mantenha uma cópia local</span>
+            <span className="athlete-meta">
+              Sincronização pendente: confira a conexão e mantenha uma cópia local
+            </span>
           )}
         </div>
         <section className="athlete-card athlete-hero">
           {showPlayerModel ? (
-            <Suspense fallback={<div className="athlete-hero-model grid place-items-center" role="status">Preparando atleta 3D…</div>}>
+            <Suspense
+              fallback={
+                <div className="athlete-hero-model grid place-items-center" role="status">
+                  Preparando atleta 3D…
+                </div>
+              }
+            >
               <AthleteHero3D athlete={heroAthlete} className="athlete-hero-model" />
             </Suspense>
           ) : (
             <div className="athlete-hero-model grid place-items-center">
-              <Button variant="outline" type="button" onClick={() => setShowPlayerModel(true)} aria-label={`Abrir modelo 3D de ${state.nickname}`}>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => setShowPlayerModel(true)}
+                aria-label={`Abrir modelo 3D de ${state.nickname}`}
+              >
                 Ver atleta em 3D
               </Button>
             </div>
@@ -207,90 +220,114 @@ function Panel({
             {state.injury.weeksLeft} semana(s) fora
           </p>
         )}
-        <div className="athlete-tabs" role="tablist" aria-label="Áreas da carreira de jogador" onKeyDown={(event) => {
-          if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
-          event.preventDefault();
-          const current = TABS.findIndex((item) => item.id === tab);
-          const next = event.key === "Home" ? 0 : event.key === "End" ? TABS.length - 1
-            : (current + (event.key === "ArrowRight" ? 1 : -1) + TABS.length) % TABS.length;
-          setTab(TABS[next]!.id);
-          event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
-        }}>
+        <div
+          className="athlete-tabs"
+          role="tablist"
+          aria-label="Áreas da carreira de jogador"
+          onKeyDown={(event) => {
+            if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+            const current = TABS.findIndex((item) => item.id === tab);
+            const next =
+              event.key === "Home"
+                ? 0
+                : event.key === "End"
+                  ? TABS.length - 1
+                  : (current + (event.key === "ArrowRight" ? 1 : -1) + TABS.length) % TABS.length;
+            setTab(TABS[next]!.id);
+            event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+          }}
+        >
           {TABS.map((t) => (
-            <button key={t.id} id={`athlete-tab-${t.id}`} type="button" role="tab" aria-controls="athlete-active-panel" tabIndex={tab === t.id ? 0 : -1} aria-selected={tab === t.id} onClick={() => setTab(t.id)}>
+            <button
+              key={t.id}
+              id={`athlete-tab-${t.id}`}
+              type="button"
+              role="tab"
+              aria-controls="athlete-active-panel"
+              tabIndex={tab === t.id ? 0 : -1}
+              aria-selected={tab === t.id}
+              onClick={() => setTab(t.id)}
+            >
               {t.label}
               {t.id === "contrato" && state.offers.length ? ` (${state.offers.length})` : ""}
             </button>
           ))}
         </div>
-        <div id="athlete-active-panel" role="tabpanel" tabIndex={0} aria-labelledby={`athlete-tab-${tab}`} className="min-w-0">
-        {tab === "semana" && <WeekTab state={state} commit={commit} />}
-        {tab === "atributos" && (
-          <section className="athlete-card grid gap-4">
-            {groups.map((g) => (
-              <div key={g}>
-                <h2 className="font-bold mb-2">
-                  {GROUP_LABEL[g]} <span className="athlete-meta">· média {groupAvg(g)}</span>
-                </h2>
-                <div className="athlete-attrs">
-                  {ATTRIBUTES.filter((a) => a.group === g).map((a) => {
-                    const v = Math.round(state.attrs[a.key] ?? 0);
-                    const key = keyAttributes(state.position).slice(0, 5).includes(a.key);
-                    return (
-                      <div key={a.key} className="athlete-attr">
-                        <span>
-                          {a.label}
-                          {key ? " ★" : ""}
-                        </span>
-                        <b className={v >= 75 ? "hi" : v < 45 ? "lo" : ""}>{v}</b>
-                      </div>
-                    );
-                  })}
+        <div
+          id="athlete-active-panel"
+          role="tabpanel"
+          tabIndex={0}
+          aria-labelledby={`athlete-tab-${tab}`}
+          className="min-w-0"
+        >
+          {tab === "semana" && <WeekTab state={state} commit={commit} />}
+          {tab === "atributos" && (
+            <section className="athlete-card grid gap-4">
+              {groups.map((g) => (
+                <div key={g}>
+                  <h2 className="font-bold mb-2">
+                    {GROUP_LABEL[g]} <span className="athlete-meta">· média {groupAvg(g)}</span>
+                  </h2>
+                  <div className="athlete-attrs">
+                    {ATTRIBUTES.filter((a) => a.group === g).map((a) => {
+                      const v = Math.round(state.attrs[a.key] ?? 0);
+                      const key = keyAttributes(state.position).slice(0, 5).includes(a.key);
+                      return (
+                        <div key={a.key} className="athlete-attr">
+                          <span>
+                            {a.label}
+                            {key ? " ★" : ""}
+                          </span>
+                          <b className={v >= 75 ? "hi" : v < 45 ? "lo" : ""}>{v}</b>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
-            <div>
-              <h2 className="font-bold mb-2">Características</h2>
-              <div className="athlete-chips">
-                {TRAITS.map((t) => (
-                  <span
-                    key={t.key}
-                    className="athlete-chip"
-                    aria-pressed={state.traits.includes(t.key)}
-                    title={t.hint}
-                    style={{ opacity: state.traits.includes(t.key) ? 1 : 0.45 }}
-                  >
-                    {t.label}
-                  </span>
-                ))}
-              </div>
-              <p className="athlete-meta mt-2">
-                Características apagadas ainda não foram conquistadas.
-              </p>
-            </div>
-          </section>
-        )}
-        {tab === "selecao" && <NationalTeamTab state={state} />}
-        {tab === "contrato" && <ContractTab state={state} commit={commit} />}
-        {tab === "noticias" && (
-          <section className="athlete-card">
-            {state.news.length ? (
-              <ul className="athlete-news">
-                {state.news.map((n) => (
-                  <li key={n.id} data-tone={n.tone}>
-                    <span className="athlete-meta">
-                      T{n.season} · S{n.week} —{" "}
+              ))}
+              <div>
+                <h2 className="font-bold mb-2">Características</h2>
+                <div className="athlete-chips">
+                  {TRAITS.map((t) => (
+                    <span
+                      key={t.key}
+                      className="athlete-chip"
+                      aria-pressed={state.traits.includes(t.key)}
+                      title={t.hint}
+                      style={{ opacity: state.traits.includes(t.key) ? 1 : 0.45 }}
+                    >
+                      {t.label}
                     </span>
-                    {n.title}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="athlete-meta">Nenhuma notícia ainda. Jogue a primeira semana.</p>
-            )}
-          </section>
-        )}
-        {tab === "historico" && <HistoryTab state={state} />}
+                  ))}
+                </div>
+                <p className="athlete-meta mt-2">
+                  Características apagadas ainda não foram conquistadas.
+                </p>
+              </div>
+            </section>
+          )}
+          {tab === "selecao" && <NationalTeamTab state={state} />}
+          {tab === "contrato" && <ContractTab state={state} commit={commit} />}
+          {tab === "noticias" && (
+            <section className="athlete-card">
+              {state.news.length ? (
+                <ul className="athlete-news">
+                  {state.news.map((n) => (
+                    <li key={n.id} data-tone={n.tone}>
+                      <span className="athlete-meta">
+                        T{n.season} · S{n.week} —{" "}
+                      </span>
+                      {n.title}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="athlete-meta">Nenhuma notícia ainda. Jogue a primeira semana.</p>
+              )}
+            </section>
+          )}
+          {tab === "historico" && <HistoryTab state={state} />}
         </div>
       </div>
     </main>
@@ -614,7 +651,9 @@ function ContractTab({
                   {o.loan ? "Empréstimo" : "Contrato"} de {o.years} temporada(s) · {money(o.salary)}
                   /semana
                 </p>
-                <p className="athlete-meta">Contrapropostas utilizadas: {o.negotiationRounds ?? 0}/{MAX_OFFER_NEGOTIATIONS}</p>
+                <p className="athlete-meta">
+                  Contrapropostas utilizadas: {o.negotiationRounds ?? 0}/{MAX_OFFER_NEGOTIATIONS}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   <Button size="sm" onClick={() => commit(acceptOffer(state, o.id))}>
                     Aceitar
