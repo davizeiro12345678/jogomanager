@@ -20,7 +20,12 @@ const wasmAssets = [];
 for (const name of await readdir(assets)) {
   if (name.endsWith(".wasm")) {
     const data = await readFile(path.join(assets, name));
-    wasmAssets.push({ name, bytes: data.length, gzipBytes: gzipSync(data, { level: 9 }).length, brotliBytes: brotliBytes(data) });
+    wasmAssets.push({
+      name,
+      bytes: data.length,
+      gzipBytes: gzipSync(data, { level: 9 }).length,
+      brotliBytes: brotliBytes(data),
+    });
   }
   if (!name.endsWith(".js")) continue;
   const data = await readFile(path.join(assets, name));
