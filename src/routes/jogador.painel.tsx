@@ -113,7 +113,7 @@ function Panel({
   state: PlayerCareerState;
   commit: (s: PlayerCareerState) => void;
   syncError: boolean;
-  initialTab?: Tab;
+  initialTab?: Tab | undefined;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? (state.retired ? "historico" : "semana"));
   const [showPlayerModel, setShowPlayerModel] = useState(false);
