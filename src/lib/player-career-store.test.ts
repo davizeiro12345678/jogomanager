@@ -4,6 +4,7 @@ import { CLUBS } from "@/game/data/leagues";
 import { createAthlete } from "@/game/player-career/engine";
 import {
   acknowledgeAthleteSync,
+  archiveAthleteConflictBackup,
   applyAthleteIndexEntry,
   athleteEnvelopeStorageKey,
   athleteIndexStorageKey,
@@ -16,6 +17,7 @@ import {
   deleteAthlete,
   readAthleteBackup,
   readAthleteCloudRevision,
+  readAthleteConflictBackup,
   recordAthleteCloudRevision,
   dueAthleteSyncEntries,
   enqueueAthleteSync,
@@ -79,6 +81,21 @@ describe("athlete local owner boundary", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("retains an independent per-owner recovery backup when the user chooses the cloud", () => {
+    const local = athlete(1, "Alice");
+    writeAthlete(local, "alice-id");
+    expect(archiveAthleteConflictBackup(1, "alice-id")).toBe(true);
+    const remote = athlete(1, "Bruno");
+    writeAthlete(remote, "alice-id");
+    expect(readAthlete(1, "alice-id")?.name).toBe("Bruno");
+    expect(readAthleteConflictBackup(1, "alice-id")).toMatchObject({
+      seed: local.seed,
+      name: "Alice",
+    });
+    expect(readAthleteConflictBackup(1, "bruno-id")).toBeNull();
+    expect(readAthleteConflictBackup(1)).toBeNull();
   });
 
   it("does not reveal an athlete from one account to another account or a visitor", () => {
