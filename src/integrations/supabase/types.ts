@@ -1236,8 +1236,10 @@ export type Database = {
       player_careers: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
           slot: number
+          sync_revision: number
           state: Json
           updated_at: string
           user_id: string
@@ -1245,8 +1247,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           slot: number
+          sync_revision?: number
           state: Json
           updated_at?: string
           user_id: string
@@ -1254,8 +1258,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           slot?: number
+          sync_revision?: number
           state?: Json
           updated_at?: string
           user_id?: string
@@ -1924,6 +1930,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      mutate_player_career: {
+        Args: {
+          p_slot: number
+          p_expected_revision: number
+          p_operation: string
+          p_state?: Json | null
+        }
+        Returns: {
+          status: string
+          new_revision: number
+        }[]
+      }
       activate_training_boost: {
         Args: { _user_id: string }
         Returns: {
