@@ -9,10 +9,7 @@ export function calculatePlayerRatings(
 ): PlayerRating[] {
   const all = [...players, ...subsOut];
   return all.map((p) => {
-    const mins = Math.max(
-      1,
-      p.minutes + (subsOut.includes(p) ? 0 : minute - p.onSince),
-    );
+    const mins = Math.max(1, p.minutes + (subsOut.includes(p) ? 0 : minute - p.onSince));
     const scored = stats[p.side].goals;
     const conceded = stats[p.side === "home" ? "away" : "home"].goals;
     let r = 6.1;
