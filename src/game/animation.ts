@@ -999,7 +999,7 @@ export function selectClip(c: SelectCtx): ClipName {
       c,
     );
   if (c.action === "celebrateRun")
-    return pick<ClipName>(["celebrateRun", "celebrateSiuu", "celebrateSlideStop"], c, 2.4);
+    return pickAction<ClipName>(["celebrateRun", "celebrateSiuu", "celebrateSlideStop"], c);
   if (c.action === "kneeSlide") return pick<ClipName>(["kneeSlide", "celebrateKneeSlide"], c, 2.4);
   if (c.action === "hug")
     return pickAction<ClipName>(["groupHug", "celebrateJumpHug", "celebrateTeamLine"], c);
