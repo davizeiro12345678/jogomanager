@@ -28,9 +28,7 @@ export function readAthleteCloudRevision(slot: AthleteSlot, owner: LocalOwnerId)
     slots?: Record<string, unknown>;
   } | null;
   const revision = value?.slots?.[slot];
-  return typeof revision === "number" &&
-    Number.isSafeInteger(revision) &&
-    revision >= 0
+  return typeof revision === "number" && Number.isSafeInteger(revision) && revision >= 0
     ? revision
     : null;
 }
@@ -53,7 +51,6 @@ export function recordAthleteCloudRevision(
     slots: { ...(previous?.slots ?? {}), [slot]: revision },
   });
 }
-
 
 export const ATHLETE_ENVELOPE_VERSION = 1 as const;
 export const ATHLETE_INDEX_VERSION = 1 as const;
@@ -452,10 +449,7 @@ export function listAthletes(owner: LocalOwnerId | undefined = null): (PlayerCar
 }
 
 /** A local deletion must never be mistaken for an unused space during cloud hydration. */
-export function hasAthleteLocalDeletion(
-  slot: AthleteSlot,
-  owner: LocalOwnerId | undefined = null,
-) {
+export function hasAthleteLocalDeletion(slot: AthleteSlot, owner: LocalOwnerId | undefined = null) {
   return readIndex(owner).slots[slot]?.kind === "deleted";
 }
 
