@@ -70,7 +70,17 @@ import type {
 import { FIELD_X, FIELD_Z, GOAL_Z } from "./sim-rules";
 export { FIELD_X, FIELD_Z, GOAL_Z };
 import { emptyStats } from "./sim-contracts";
-import type { Side, TeamTalkKind, SimPlayer, ShotRecord, PlayerRating, TeamSetup, MatchStats, Scorer, MatchCheckpoint } from "./sim-contracts";
+import type {
+  Side,
+  TeamTalkKind,
+  SimPlayer,
+  ShotRecord,
+  PlayerRating,
+  TeamSetup,
+  MatchStats,
+  Scorer,
+  MatchCheckpoint,
+} from "./sim-contracts";
 export * from "./sim-contracts";
 
 const CHECKPOINT_EXTERNAL = new Set(["rnd", "passLaneKernel", "ballPhysics"]);
@@ -2847,12 +2857,7 @@ export class MatchSim {
 
   /** Pure presentation context; never mutates the canonical match state. */
   generateVisualContext(): VersionedVisualData {
-    return this.#visualContextComputer.compute(
-      this.players,
-      this.ball,
-      this.time,
-      this.matchSeed,
-    );
+    return this.#visualContextComputer.compute(this.players, this.ball, this.time, this.matchSeed);
   }
 
 }
