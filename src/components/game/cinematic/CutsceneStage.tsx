@@ -14,14 +14,7 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  Volume2,
-  VolumeX,
-  Pause,
-  Play,
-  ChevronRight,
-  SlidersHorizontal,
-} from "lucide-react";
+import { Volume2, VolumeX, Pause, Play, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { createPortal } from "react-dom";
 
 /** enquadramentos alternados: cada fala reposiciona levemente a câmera */
