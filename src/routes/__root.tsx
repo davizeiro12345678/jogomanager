@@ -149,6 +149,20 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+// SEO/editorial pages must not download the full league and squad catalogue.
+// On navigation into gameplay we still initialize it immediately.
+const CONTENT_ONLY_PATHS = new Set([
+  "/",
+  "/guias",
+  "/guia-de-scouting",
+  "/melhores-formacoes",
+  "/dicas-de-gestao",
+  "/perguntas-frequentes",
+  "/privacidade",
+  "/termos",
+  "/contato",
+]);
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useLocation({ select: (location) => location.pathname });
@@ -157,7 +171,7 @@ function RootComponent() {
   useEffect(() => {
     // The public home needs no catalogue. Restore the campaign on entry to the
     // rest of the app, rather than downloading every club after first paint.
-    if (pathname === "/" || worldReady.current) return;
+    if (CONTENT_ONLY_PATHS.has(pathname) || worldReady.current) return;
     worldReady.current = true;
     void import("../lib/world")
       .then((m) => m.applyWorld())
