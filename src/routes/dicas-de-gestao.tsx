@@ -20,9 +20,12 @@ export const Route = createFileRoute("/dicas-de-gestao")({
         headline: "Como planejar a temporada de um clube",
         description: DESC,
         path: PATH,
+        datePublished: "2026-09-18",
+        dateModified: "2026-10-13",
       }),
       breadcrumbLd([
         { name: "Início", path: "/" },
+        { name: "Guias", path: "/guias" },
         { name: "Gestão da temporada", path: PATH },
       ]),
     ],
@@ -60,7 +63,7 @@ function TipsPage() {
       path={PATH}
       readMinutes={20}
       level="Intermediário"
-      updated="outubro de 2026"
+      updated="13 de outubro de 2026"
       toc={[
         { id: "diagnostico", title: "Diagnóstico no início da temporada" },
         { id: "calendario", title: "Calendário e prioridades" },

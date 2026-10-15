@@ -6,9 +6,9 @@ import { getLeagueDigests } from "@/lib/real-football.functions";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/guia-de-scouting";
-const TITLE = "Scouting no Manager de Futebol | Guia de Contratações";
+const TITLE = "Guia de Scouting: Como Avaliar e Contratar Jogadores";
 const DESC =
-  "Aprenda a comparar potencial, desempenho, custo e posição antes de contratar. Guia prático de scouting para sua carreira no Pro Football Manager 3D.";
+  "Aprenda a avaliar potencial, estatísticas, salários e custos antes de contratar. Um guia de scouting com critérios práticos para encontrar reforços no manager 3D.";
 
 export const Route = createFileRoute("/guia-de-scouting")({
   loader: async () => ({ leagues: await getLeagueDigests().catch(() => []) }),
@@ -16,9 +16,16 @@ export const Route = createFileRoute("/guia-de-scouting")({
     meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
     links: canonical(PATH),
     scripts: [
-      articleLd({ headline: "Guia de scouting", description: DESC, path: PATH }),
+      articleLd({
+        headline: "Guia de scouting: encontrar craques antes dos rivais",
+        description: DESC,
+        path: PATH,
+        datePublished: "2026-09-18",
+        dateModified: "2026-10-13",
+      }),
       breadcrumbLd([
         { name: "Início", path: "/" },
+        { name: "Guias", path: "/guias" },
         { name: "Guia de scouting", path: PATH },
       ]),
     ],
@@ -36,7 +43,7 @@ function ScoutingPage() {
       path={PATH}
       readMinutes={17}
       level="Intermediário"
-      updated="outubro de 2026"
+      updated="13 de outubro de 2026"
       toc={[
         { id: "potencial", title: "Potencial vale mais que nota atual" },
         { id: "idade", title: "A janela de idade" },

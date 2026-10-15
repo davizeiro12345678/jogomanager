@@ -533,13 +533,17 @@ function LiveMatch({
 
   return (
     <div className="match-interface relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
-      <Stadium3D
-        sim={sim}
-        mode={camera}
-        quality={quality}
-        supporters={supporters}
-        paused={paused || introActive || ceremonyActive || halfHeld || done}
-      />
+      {introActive || ceremonyActive ? (
+        <div className="absolute inset-0 bg-[#070b12]" aria-hidden="true" />
+      ) : (
+        <Stadium3D
+          sim={sim}
+          mode={camera}
+          quality={quality}
+          supporters={supporters}
+          paused={paused || halfHeld || done}
+        />
+      )}
       <div className="match-fps pointer-events-none absolute right-3 top-3 z-20">
         <FpsPanel quality={quality} detail={{ Câmera: camera, Velocidade: speed }} />
       </div>

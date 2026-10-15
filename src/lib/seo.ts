@@ -90,7 +90,14 @@ export function breadcrumbLd(items: { name: string; path: string }[]) {
   });
 }
 
-export function articleLd(opts: { headline: string; description: string; path: string }) {
+export function articleLd(opts: {
+  headline: string;
+  description: string;
+  path: string;
+  /** Publication and revision dates must come from actual editorial history. */
+  datePublished?: string;
+  dateModified?: string;
+}) {
   return structuredData({
     "@context": "https://schema.org",
     "@type": "Article",
@@ -98,6 +105,8 @@ export function articleLd(opts: { headline: string; description: string; path: s
     url: pageUrl(opts.path),
     description: opts.description,
     inLanguage: "pt-BR",
+    ...(opts.datePublished ? { datePublished: opts.datePublished } : {}),
+    ...(opts.dateModified ? { dateModified: opts.dateModified } : {}),
     image: OG_IMAGE,
     mainEntityOfPage: { "@type": "WebPage", "@id": pageUrl(opts.path) },
     author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },

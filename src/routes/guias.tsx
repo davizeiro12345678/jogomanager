@@ -13,7 +13,13 @@ export const Route = createFileRoute("/guias")({
     meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
     links: canonical(PATH),
     scripts: [
-      articleLd({ headline: "Guias de manager de futebol", description: DESC, path: PATH }),
+      articleLd({
+        headline: "Guias de manager de futebol",
+        description: DESC,
+        path: PATH,
+        datePublished: "2026-09-18",
+        dateModified: "2026-10-13",
+      }),
       breadcrumbLd([
         { name: "Início", path: "/" },
         { name: "Guias", path: PATH },
@@ -94,7 +100,7 @@ function GuidesPage() {
       path={PATH}
       readMinutes={16}
       level="Iniciante"
-      updated="outubro de 2026"
+      updated="13 de outubro de 2026"
       toc={[
         { id: "primeiros-passos", title: "Primeiras rodadas" },
         ...GUIDES.map((g) => ({ id: g.id, title: g.title })),

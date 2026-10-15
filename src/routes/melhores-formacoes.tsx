@@ -13,9 +13,16 @@ export const Route = createFileRoute("/melhores-formacoes")({
     meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
     links: canonical(PATH),
     scripts: [
-      articleLd({ headline: "Melhores formações de futebol", description: DESC, path: PATH }),
+      articleLd({
+        headline: "Melhores formações de futebol",
+        description: DESC,
+        path: PATH,
+        datePublished: "2026-09-18",
+        dateModified: "2026-10-13",
+      }),
       breadcrumbLd([
         { name: "Início", path: "/" },
+        { name: "Guias", path: "/guias" },
         { name: "Melhores formações", path: PATH },
       ]),
     ],
@@ -55,7 +62,7 @@ function FormationsPage() {
       path={PATH}
       readMinutes={16}
       level="Iniciante"
-      updated="outubro de 2026"
+      updated="13 de outubro de 2026"
       toc={[
         ...FORMATIONS.map((f) => ({ id: f.name, title: f.name })),
         { id: "escolher", title: "Como escolher na prática" },

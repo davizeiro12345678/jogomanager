@@ -118,7 +118,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       // Fontes carregadas sem bloquear a primeira pintura: entram como "print"
       // e o script abaixo as libera assim que o navegador as baixa.
-      { rel: "preload", as: "style", href: GOOGLE_FONTS },
+      // Avoid high-priority font CSS competing with the LCP image on mobile.
       { rel: "stylesheet", href: GOOGLE_FONTS, media: "print", id: "google-fonts" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
