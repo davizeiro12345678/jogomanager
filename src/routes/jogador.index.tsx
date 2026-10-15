@@ -7,6 +7,9 @@ import { CLUBS } from "@/game/data/leagues";
 import { POSITION_LABEL } from "@/game/player-career/attributes";
 import { overall } from "@/game/player-career/engine";
 import { useAthleteSlots } from "@/hooks/useAthlete";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
+import { readAthleteBackup } from "@/lib/player-career-store";
+import type { PlayerCareerState } from "@/game/player-career/types";
 import "@/components/game/athlete.css";
 
 export const Route = createFileRoute("/jogador/")({
@@ -31,7 +34,21 @@ export const Route = createFileRoute("/jogador/")({
   component: AthleteHub,
 });
 
+function downloadAthlete(state: PlayerCareerState) {
+  const text = JSON.stringify(state, null, 2);
+  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `carreira-jogador-${state.slot}-${state.season}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function AthleteHub() {
+  const userId = useAuthUserId();
+  const owner = userId ?? null;
   const { slots, error, remove, signedIn } = useAthleteSlots();
   return (
     <main className="athlete-shell">
@@ -73,6 +90,7 @@ function AthleteHub() {
           <div className="athlete-slots">
             {slots.map((s, i) => {
               const slot = (i + 1) as 1 | 2 | 3;
+              const backup = readAthleteBackup(slot, owner);
               if (!s)
                 return (
                   <div
@@ -80,6 +98,11 @@ function AthleteHub() {
                     className="athlete-card grid gap-3 place-items-center text-center py-8"
                   >
                     <p className="athlete-meta">Espaço {slot} vazio</p>
+                    {backup && (
+                      <Button variant="outline" onClick={() => downloadAthlete(backup)}>
+                        Baixar backup anterior
+                      </Button>
+                    )}
                     <Button asChild size="lg">
                       <Link to="/jogador/novo" search={{ slot }}>
                         <Plus className="size-4" /> Criar atleta
@@ -112,7 +135,7 @@ function AthleteHub() {
                   <p className="athlete-meta">
                     {s.retired ? "Aposentado" : `Temporada ${s.season} · semana ${s.week}`}
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button asChild className="flex-1">
                       <Link to="/jogador/painel" search={{ slot }}>
                         {s.retired ? "Ver legado" : "Continuar"}
@@ -120,10 +143,17 @@ function AthleteHub() {
                     </Button>
                     <Button
                       variant="outline"
+                      size="sm"
+                      onClick={() => downloadAthlete(s)}
+                    >
+                      Exportar JSON
+                    </Button>
+                    <Button
+                      variant="outline"
                       size="icon"
                       aria-label={`Excluir ${s.nickname}`}
                       onClick={() => {
-                        if (window.confirm(`Excluir ${s.nickname}? Não dá para desfazer.`))
+                        if (window.confirm(`Excluir ${s.nickname}? Um backup local será guardado e poderá ser baixado neste aparelho.`))
                           void remove(slot);
                       }}
                     >
