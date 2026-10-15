@@ -136,7 +136,7 @@ function Panel({
   syncError: boolean;
   syncConflict: boolean;
   resolveWithCloud: () => Promise<boolean>;
-  initialTab?: Tab;
+  initialTab?: Tab | undefined;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? (state.retired ? "historico" : "semana"));
   const [showPlayerModel, setShowPlayerModel] = useState(false);
