@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CLUBS } from "@/game/data/leagues";
-import { advanceWeek, careerTotals, createAthlete, overall, seasonLength } from "./engine";
+import { advanceWeek, careerTotals, createAthlete, negotiateOffer, overall, seasonLength } from "./engine";
 
 const clubId = Object.keys(CLUBS)[0]!;
 const make = () =>
@@ -29,6 +29,28 @@ describe("carreira de jogador", () => {
     const a = advanceWeek(make(), { focus: ["tecnico", "fisico"], intensity: "normal" }, 1);
     const b = advanceWeek(make(), { focus: ["tecnico", "fisico"], intensity: "normal" }, 1);
     expect(a).toEqual(b);
+  });
+
+
+  it("limita a negociação de contrato a uma contraproposta sem perder o determinismo", () => {
+    const original = make();
+    const newClubId = Object.keys(CLUBS).find((id) => id !== original.clubId)!;
+    original.offers = [{ id: "test-offer", clubId: newClubId, salary: 2000, years: 3, loan: false }];
+    const a = negotiateOffer(original, "test-offer", 2000);
+    const b = negotiateOffer(original, "test-offer", 2000);
+    expect(a).toEqual(b);
+    // O save original não muda enquanto uma negociação está sendo calculada.
+    expect(original.offers[0]?.negotiationRounds).toBeUndefined();
+    if (a.accepted) {
+      expect(a.state.offers[0]?.salary).toBe(2300);
+      expect(a.state.offers[0]?.negotiationRounds).toBe(1);
+      expect(a.state.updatedAt).toBe(2000);
+      const again = negotiateOffer(a.state, "test-offer", 3000);
+      expect(again.accepted).toBe(false);
+      expect(again.state).toEqual(a.state);
+    } else {
+      expect(a.state.offers).toHaveLength(0);
+    }
   });
 
   it("evolui ao longo de temporadas e envelhece", () => {
