@@ -40,7 +40,13 @@ export const saveAthleteCloud = createServerFn({ method: "POST" })
   .validator((input: unknown) => AthleteMutationSchema.parse(input))
   .handler(async ({ data, context }) => {
     if (JSON.stringify(data.state).length > 400_000) throw new Error("Save grande demais.");
-    return mutateAthleteCloud(context.supabase, data.slot, data.expectedRevision, "save", data.state);
+    return mutateAthleteCloud(
+      context.supabase,
+      data.slot,
+      data.expectedRevision,
+      "save",
+      data.state,
+    );
   });
 
 export const loadAthletesCloud = createServerFn({ method: "GET" })
