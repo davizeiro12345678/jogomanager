@@ -116,9 +116,10 @@ function CreateAthletePage() {
       defaultAthleteAppearance(`new-athlete-${slotId}`, "FW", "normal"),
     ),
   );
-  const { skin, hair, hairColor, beard } =
-    legacyAppearanceFromAthleteAppearance(appearanceV1);
-  const updateLegacyAppearance = (patch: Partial<ReturnType<typeof legacyAppearanceFromAthleteAppearance>>) => {
+  const { skin, hair, hairColor, beard } = legacyAppearanceFromAthleteAppearance(appearanceV1);
+  const updateLegacyAppearance = (
+    patch: Partial<ReturnType<typeof legacyAppearanceFromAthleteAppearance>>,
+  ) => {
     setAppearanceV1((previous) =>
       athleteAppearanceFromLegacy(
         { ...legacyAppearanceFromAthleteAppearance(previous), ...patch },
