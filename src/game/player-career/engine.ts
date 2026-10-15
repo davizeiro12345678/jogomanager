@@ -54,6 +54,21 @@ export const TRAINING_INJURY: Record<TrainingIntensity, number> = {
   pesado: 0.035,
 };
 
+/** Projeção exata de energia e risco do treino usada tanto no motor quanto no painel. */
+export function trainingOutlook(state: PlayerCareerState, intensity: TrainingIntensity) {
+  const energyAfter = clamp(state.energy - TRAINING_ENERGY[intensity] + 18, 10, 100);
+  const injuryRisk = state.injury
+    ? 0
+    : clamp(
+        TRAINING_INJURY[intensity] *
+          (energyAfter < 40 ? 2 : 1) *
+          (state.traits.includes("vidro") ? 1.6 : 1),
+        0,
+        1,
+      );
+  return { energyAfter, injuryRisk };
+}
+
 export function overall(state: PlayerCareerState): number {
   return overallFor(state.attrs, state.position);
 }
@@ -600,14 +615,9 @@ function applyTraining(state: PlayerCareerState, plan: WeekPlan, rnd: () => numb
     const delta = gain * growthRoom * ageFactor * personality * (0.6 + rnd() * 0.8);
     state.attrs[def.key] = round1(clamp((state.attrs[def.key] ?? 40) + delta, 1, 99));
   }
-  state.energy = clamp(state.energy - TRAINING_ENERGY[plan.intensity] + 18, 10, 100);
-  if (
-    !state.injury &&
-    rnd() <
-      TRAINING_INJURY[plan.intensity] *
-        (state.energy < 40 ? 2 : 1) *
-        (state.traits.includes("vidro") ? 1.6 : 1)
-  ) {
+  const outlook = trainingOutlook(state, plan.intensity);
+  state.energy = outlook.energyAfter;
+  if (!state.injury && rnd() < outlook.injuryRisk) {
     const kinds = [
       { label: "Estiramento na coxa", weeks: 2 },
       { label: "Entorse no tornozelo", weeks: 3 },
