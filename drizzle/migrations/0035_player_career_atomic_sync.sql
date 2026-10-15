@@ -29,14 +29,15 @@ BEGIN
   IF auth.role() <> 'authenticated' OR v_user IS NULL THEN
     RAISE EXCEPTION 'not authenticated' USING ERRCODE = '28000';
   END IF;
-  IF p_slot NOT BETWEEN 1 AND 3 OR p_expected_revision < 0
-     OR p_expected_revision IS NULL OR p_operation NOT IN ('save', 'delete') THEN
+  IF p_slot IS NULL OR p_slot NOT BETWEEN 1 AND 3
+     OR p_expected_revision IS NULL OR p_expected_revision < 0
+     OR p_operation IS NULL OR p_operation NOT IN ('save', 'delete') THEN
     RAISE EXCEPTION 'invalid mutation';
   END IF;
   IF p_operation = 'save' AND (
     p_state IS NULL OR jsonb_typeof(p_state) <> 'object'
     OR p_state->>'version' <> '1'
-    OR (p_state->>'slot')::integer IS DISTINCT FROM p_slot
+    OR p_state->>'slot' IS DISTINCT FROM p_slot::text
     OR octet_length(p_state::text) > 400000
   ) THEN
     RAISE EXCEPTION 'invalid athlete save';
