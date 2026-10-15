@@ -7,24 +7,12 @@ import {
 } from "@/components/game/RuntimeBudget";
 import { GRAPHICS_PROFILES } from "@/game/contracts/graphics-profile";
 import { resolveRuntimeSceneBudget } from "@/game/runtime-scene-budget";
-import { censusRef } from "@/game/scene-census";
+
 import { broadcastInterest, ShotHold } from "@/game/broadcast-interest";
-
-
-
-
-
-
-
-import { footballTextures } from "@/components/game/stadium/textures/ball";
-import { BallResponse } from "@/game/ball-response";
-
-
-
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { FrameMetrics } from "@/game/frame-metrics";
-import { Environment, Lightformer, AdaptiveEvents, Trail } from "@react-three/drei";
+import { Environment, Lightformer, AdaptiveEvents } from "@react-three/drei";
 import { easing } from "maath";
 import type React from "react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
@@ -44,19 +32,12 @@ import { OfficialRig } from "@/components/game/players/OfficialRig";
 import { PostFX } from "@/components/game/post/LazyPostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
 
-
-
-
-
-
 import { skyTexture } from "@/components/game/stadium/textures/sky";
-
 
 import { StadiumProps } from "@/components/game/stadium/Props";
 import { Ball } from "./stadium/StadiumBall";
 import {
   type ShotId,
-  type Framing,
   type ShotContext,
   framingFor,
   MANUAL_SHOT,
@@ -73,7 +54,7 @@ import { Floodlights } from "./stadium/StadiumFloodlights";
 
 import { dprFor } from "@/game/device";
 import { cameraOption, type CameraMode } from "@/game/camera-modes";
-import { standCameraPosition } from "@/game/stand-camera";
+
 import { kitFor, colorClash } from "@/game/kits";
 import { Atmosphere } from "@/components/game/stadium/Atmosphere";
 import { AmbientLife } from "@/components/game/stadium/AmbientLife";
@@ -85,12 +66,11 @@ import { PitchResponse } from "@/components/game/stadium/PitchResponse";
 import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
 
 import type { GradeWeather } from "@/game/graphics/grade";
-import { FIELD_X, FIELD_Z, type SimView, type SimPlayer } from "@/game/sim";
+import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
 import { captureGoalFocus, type GoalFocus, type GoalFocusRef } from "@/game/goal-choreography";
 import { matchLook, type TimeOfDay, type Weather } from "@/game/matchday";
 import { matchLighting } from "@/game/match-lighting";
 import { useResolvedVisual, useVisual } from "@/game/visual-settings";
-
 
 export type { CameraMode } from "@/game/camera-modes";
 export type Quality = "alta" | "media" | "baixa";
