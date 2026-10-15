@@ -1038,11 +1038,7 @@ export function buildSculptedFace(
           P,
           look,
           hi,
-          hi
-            ? portrait
-              ? { columns: 96, rows: 72 }
-              : { columns: 36, rows: 24 }
-            : undefined,
+          hi ? (portrait ? { columns: 96, rows: 72 } : { columns: 36, rows: 24 }) : undefined,
         ),
         mats.hair,
       ),
