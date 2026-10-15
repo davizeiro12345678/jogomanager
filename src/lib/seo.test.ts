@@ -43,6 +43,21 @@ describe("page metadata", () => {
     expect(game.publisher["@id"]).toBe(site["@graph"][1]["@id"]);
     expect(game.aggregateRating).toBeUndefined();
   });
+  it("preserves verifiable article publication and update dates for search", () => {
+    const article = JSON.parse(
+      articleLd({
+        headline: "Guia de scouting",
+        description: "Como avaliar jogadores",
+        path: "/guia-de-scouting",
+        datePublished: "2026-09-18",
+        dateModified: "2026-10-13",
+      }).children,
+    );
+    expect(article.datePublished).toBe("2026-09-18");
+    expect(article.dateModified).toBe("2026-10-13");
+    expect(article.mainEntityOfPage["@id"]).toBe(`${SITE_URL}/guia-de-scouting`);
+  });
+
   it("keeps user-supplied article and breadcrumb names inside JSON-LD", () => {
     const name = '</script><script>alert("x")</script>';
     const article = articleLd({ headline: name, description: name, path: "/guia" });
