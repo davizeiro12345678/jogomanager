@@ -106,9 +106,9 @@ describe("outer response protection", () => {
   });
   it("consolidates retired URLs before SSR, preserving the safe method boundary", async () => {
     for (const [path, target] of [
-      ["/jogo-de-manager-de-futebol", "/"],
-      ["/soccer-manager-online/", "/"],
-      ["/melhores-formacoes", "/taticas-e-formacoes"],
+      ["/gestao-financeira", "/dicas-de-gestao"],
+      ["/soccer-manager-online/", "/jogo-de-manager-de-futebol"],
+      ["/taticas-e-formacoes", "/melhores-formacoes"],
     ]) {
       const response = await server.fetch(
         new Request(`https://jogomanager.com${path}?utm_source=fixture`),
@@ -116,12 +116,12 @@ describe("outer response protection", () => {
         {},
       );
       expect(response.status).toBe(301);
-      expect(response.headers.get("location")).toBe(target);
+      expect(response.headers.get("location")).toBe(`${target}?utm_source=fixture`);
       expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     }
     expect(
       publicPageRedirect(
-        new Request("https://jogomanager.com/melhores-formacoes", { method: "POST" }),
+        new Request("https://jogomanager.com/taticas-e-formacoes", { method: "POST" }),
       ),
     ).toBeUndefined();
     expect(publicPageRedirect(new Request("https://jogomanager.com/constructor"))).toBeUndefined();
