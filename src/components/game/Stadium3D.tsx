@@ -66,7 +66,8 @@ import { PitchResponse } from "@/components/game/stadium/PitchResponse";
 import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
 
 import type { GradeWeather } from "@/game/graphics/grade";
-import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
+import type { SimView } from "@/game/sim-contracts";
 import { captureGoalFocus, type GoalFocus, type GoalFocusRef } from "@/game/goal-choreography";
 import { matchLook, type TimeOfDay, type Weather } from "@/game/matchday";
 import { matchLighting } from "@/game/match-lighting";
