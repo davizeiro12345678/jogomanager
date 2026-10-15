@@ -1,35 +1,52 @@
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  AthleteDeleteSchema,
+  AthleteMutationResult,
+  AthleteMutationSchema,
+} from "@/lib/player-career-schema";
 
-const SaveInput = z.object({
-  slot: z.number().int().min(1).max(3),
-  state: z
-    .object({
-      version: z.literal(1),
-      name: z.string().min(1).max(40),
-      clubId: z.string().min(1).max(80),
-    })
-    .passthrough(),
-});
+type AthleteMutation = { status: "applied" | "conflict"; revision: number };
 
-/** Saves de atleta são pessoais e nunca contam como progresso oficial. */
+/** A revision is assigned by PostgreSQL, never by a browser clock or a local save. */
+async function mutateAthleteCloud(
+  supabase: SupabaseClient<Database>,
+  slot: number,
+  expectedRevision: number,
+  operation: "save" | "delete",
+  state: unknown,
+): Promise<AthleteMutation> {
+  // The authenticated client is scoped by requireSupabaseAuth. SQL owns CAS and RLS.
+  const { data, error } = await supabase.rpc("mutate_player_career", {
+    p_slot: slot,
+    p_expected_revision: expectedRevision,
+    p_operation: operation,
+    p_state: state as Json | null,
+  });
+  if (error) {
+    throw new Error(
+      "Não foi possível sincronizar: verifique se a migração de saves está instalada.",
+    );
+  }
+  const result = AthleteMutationResult.parse(data)[0]!;
+  return { status: result.status, revision: result.new_revision };
+}
+
+/** Saves pessoais nunca são prova de títulos, coins ou conquistas oficiais. */
 export const saveAthleteCloud = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => SaveInput.parse(input))
+  .validator((input: unknown) => AthleteMutationSchema.parse(input))
   .handler(async ({ data, context }) => {
     if (JSON.stringify(data.state).length > 400_000) throw new Error("Save grande demais.");
-    const { error } = await context.supabase.from("player_careers").upsert(
-      {
-        user_id: context.userId,
-        slot: data.slot,
-        state: data.state as never,
-        verified_progress: false,
-      },
-      { onConflict: "user_id,slot" },
+    return mutateAthleteCloud(
+      context.supabase,
+      data.slot,
+      data.expectedRevision,
+      "save",
+      data.state,
     );
-    if (error) throw new Error("Não foi possível salvar o atleta na nuvem.");
-    return { ok: true };
   });
 
 export const loadAthletesCloud = createServerFn({ method: "GET" })
@@ -37,25 +54,22 @@ export const loadAthletesCloud = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("player_careers")
-      .select("slot, state, updated_at")
+      .select("slot, state, updated_at, sync_revision, deleted_at")
       .eq("user_id", context.userId);
     if (error) throw new Error("Não foi possível carregar seus atletas.");
-    return (data ?? []).map((r) => ({
-      slot: r.slot as number,
-      state: JSON.stringify(r.state),
-      updatedAt: r.updated_at as string,
+    return (data ?? []).map((row) => ({
+      slot: row.slot as number,
+      state: JSON.stringify(row.state),
+      revision: row.sync_revision as number,
+      deleted: Boolean(row.deleted_at),
+      updatedAt: row.updated_at as string,
     }));
   });
 
+/** Deletar cria um tombstone, para que um dispositivo offline não reviva um atleta apagado. */
 export const deleteAthleteCloud = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => z.object({ slot: z.number().int().min(1).max(3) }).parse(input))
-  .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("player_careers")
-      .delete()
-      .eq("user_id", context.userId)
-      .eq("slot", data.slot);
-    if (error) throw new Error("Não foi possível excluir o atleta.");
-    return { ok: true };
-  });
+  .validator((input: unknown) => AthleteDeleteSchema.parse(input))
+  .handler(async ({ data, context }) =>
+    mutateAthleteCloud(context.supabase, data.slot, data.expectedRevision, "delete", null),
+  );

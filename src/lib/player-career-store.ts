@@ -9,6 +9,8 @@ const COMPAT_KEY = (slot: AthleteSlot, owner: LocalOwnerId | undefined = null) =
   `manager3d.athlete.v2.${localOwnerScope(owner)}.${slot}`;
 const ENVELOPE_KEY = (slot: AthleteSlot, owner: LocalOwnerId | undefined = null) =>
   `manager3d.athlete.envelope.v1.${localOwnerScope(owner)}.${slot}`;
+const BACKUP_KEY = (slot: AthleteSlot, owner: LocalOwnerId | undefined = null) =>
+  `manager3d.athlete.backup.v1.${localOwnerScope(owner)}.${slot}`;
 const INDEX_KEY = (owner: LocalOwnerId | undefined = null) =>
   `manager3d.athlete.index.v1.${localOwnerScope(owner)}`;
 const OUTBOX_KEY = (owner: LocalOwnerId | undefined = null) =>
@@ -16,6 +18,39 @@ const OUTBOX_KEY = (owner: LocalOwnerId | undefined = null) =>
 
 export const ATHLETE_SLOTS = [1, 2, 3] as const;
 export type AthleteSlot = (typeof ATHLETE_SLOTS)[number];
+/** Last *server-acknowledged* revision, never the revision inside a local save. */
+const CLOUD_REVISION_KEY = (owner: LocalOwnerId) =>
+  `manager3d.athlete.cloud-revisions.v1.${localOwnerScope(owner)}`;
+
+export function readAthleteCloudRevision(slot: AthleteSlot, owner: LocalOwnerId): number | null {
+  if (!owner) return null;
+  const value = parseJson(getStorageValue(CLOUD_REVISION_KEY(owner))) as {
+    slots?: Record<string, unknown>;
+  } | null;
+  const revision = value?.slots?.[slot];
+  return typeof revision === "number" && Number.isSafeInteger(revision) && revision >= 0
+    ? revision
+    : null;
+}
+
+export function recordAthleteCloudRevision(
+  slot: AthleteSlot,
+  revision: number,
+  owner: LocalOwnerId,
+): boolean {
+  if (!owner || !Number.isSafeInteger(revision) || revision < 0) return false;
+  const key = CLOUD_REVISION_KEY(owner);
+  const previous = parseJson(getStorageValue(key)) as {
+    slots?: Record<string, unknown>;
+  } | null;
+  const known = readAthleteCloudRevision(slot, owner);
+  // An old tab cannot reduce the last server-acknowledged revision.
+  if (known !== null && revision < known) return false;
+  return setStorageValue(key, {
+    version: 1,
+    slots: { ...(previous?.slots ?? {}), [slot]: revision },
+  });
+}
 
 export const ATHLETE_ENVELOPE_VERSION = 1 as const;
 export const ATHLETE_INDEX_VERSION = 1 as const;
@@ -379,11 +414,21 @@ export function writeAthlete(
 }
 
 /** Deletions receive a revisioned tombstone so stale cloud data cannot revive them. */
+export function readAthleteBackup(
+  slot: AthleteSlot,
+  owner: LocalOwnerId | undefined = null,
+): PlayerCareerState | null {
+  return hydrateAthlete(parseJson(getStorageValue(BACKUP_KEY(slot, owner))));
+}
+
 export function deleteAthlete(
   slot: number,
   owner: LocalOwnerId | undefined = null,
 ): AthleteDeleteTombstone | null {
   if (!isBrowser() || !isAthleteSlot(slot)) return null;
+  const original = readAthleteEnvelope(slot, owner);
+  // Prevent silent local loss even when the cloud delete collides with another device.
+  if (original && !setStorageValue(BACKUP_KEY(slot, owner), original.state)) return null;
   const index = readIndex(owner);
   const tombstone: AthleteDeleteTombstone = {
     kind: "deleted",
@@ -401,6 +446,11 @@ export function deleteAthlete(
 
 export function listAthletes(owner: LocalOwnerId | undefined = null): (PlayerCareerState | null)[] {
   return ATHLETE_SLOTS.map((slot) => readAthlete(slot, owner));
+}
+
+/** A local deletion must never be mistaken for an unused space during cloud hydration. */
+export function hasAthleteLocalDeletion(slot: AthleteSlot, owner: LocalOwnerId | undefined = null) {
+  return readIndex(owner).slots[slot]?.kind === "deleted";
 }
 
 /** Current raw mirror key, retained for older tabs and compatibility tests. */
