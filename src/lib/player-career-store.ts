@@ -16,6 +16,42 @@ const OUTBOX_KEY = (owner: LocalOwnerId | undefined = null) =>
 
 export const ATHLETE_SLOTS = [1, 2, 3] as const;
 export type AthleteSlot = (typeof ATHLETE_SLOTS)[number];
+/** Last *server-acknowledged* revision, never the revision inside a local save. */
+const CLOUD_REVISION_KEY = (owner: LocalOwnerId) =>
+  `manager3d.athlete.cloud-revisions.v1.${localOwnerScope(owner)}`;
+
+export function readAthleteCloudRevision(slot: AthleteSlot, owner: LocalOwnerId): number | null {
+  if (!owner) return null;
+  const value = parseJson(getStorageValue(CLOUD_REVISION_KEY(owner))) as {
+    slots?: Record<string, unknown>;
+  } | null;
+  const revision = value?.slots?.[slot];
+  return typeof revision === "number" &&
+    Number.isSafeInteger(revision) &&
+    revision >= 0
+    ? revision
+    : null;
+}
+
+export function recordAthleteCloudRevision(
+  slot: AthleteSlot,
+  revision: number,
+  owner: LocalOwnerId,
+): boolean {
+  if (!owner || !Number.isSafeInteger(revision) || revision < 0) return false;
+  const key = CLOUD_REVISION_KEY(owner);
+  const previous = parseJson(getStorageValue(key)) as {
+    slots?: Record<string, unknown>;
+  } | null;
+  const known = readAthleteCloudRevision(slot, owner);
+  // An old tab cannot reduce the last server-acknowledged revision.
+  if (known !== null && revision < known) return false;
+  return setStorageValue(key, {
+    version: 1,
+    slots: { ...(previous?.slots ?? {}), [slot]: revision },
+  });
+}
+
 
 export const ATHLETE_ENVELOPE_VERSION = 1 as const;
 export const ATHLETE_INDEX_VERSION = 1 as const;
