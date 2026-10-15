@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from "node:fs";
+import { isMatchRouteEntry } from "./bundle-report-comparison.mjs";
 
 const [, , baselinePath, candidatePath] = process.argv;
 if (!baselinePath || !candidatePath) {
@@ -10,7 +11,8 @@ const keys = [
   ["Página inicial", (entry) => entry.surface === "home"],
   ["Nova carreira", (entry) => entry.surface === "new"],
   ["Partida rápida", (entry) => entry.name.startsWith("partida-rapida-")],
-  ["Match 3D", (entry) => entry.name.startsWith("match-")],
+  ["Match 3D", isMatchRouteEntry],
+  ["Palco cinematográfico", (entry) => entry.name.startsWith("CinematicStage3D-")],
   ["Editor", (entry) => entry.name.startsWith("editor-")],
   ["Simulação Worker", (entry) => entry.name.startsWith("match.worker-")],
 ];

@@ -10,6 +10,16 @@ const brotliBytes = (data) =>
   }).length;
 import { init, parse } from "es-module-lexer";
 
+const cinematicSetChunkPrefixes = [
+  { set: "locker", prefix: "LockerRoom-" },
+  { set: "tunnel", prefix: "Tunnel-" },
+  { set: "press", prefix: "PressRoom-" },
+  { set: "pitch", prefix: "PitchEntry-" },
+  { set: "stands", prefix: "Stands-" },
+  { set: "office", prefix: "Office-" },
+  { set: "arrival", prefix: "BusArrival-" },
+];
+
 // Measures emitted code, following only static imports. Dynamic imports stay
 // separate so a smaller entry cannot hide an equally large startup dependency.
 const [label = "current", assetsArg = ".output/public/assets"] = process.argv.slice(2);
@@ -64,10 +74,25 @@ const closure = (entry) => {
 };
 const root = chunks.find((c) => c.dynamicImports.some((name) => name.startsWith("dashboard-")));
 const rootDependencies = root ? closure(root.name) : [];
+const cinematicStageChunk = chunks.find((chunk) => chunk.name.startsWith("CinematicStage3D-"));
+const cinematicStageDependencies = cinematicStageChunk ? closure(cinematicStageChunk.name) : [];
+const cinematicStageDynamicDependencies = cinematicStageChunk
+  ? cinematicStageChunk.dynamicImports
+  : [];
+const cinematicSetChunks = cinematicSetChunkPrefixes.map(({ set, prefix }) => {
+  const chunk = chunks.find((candidate) => candidate.name.startsWith(prefix));
+  return {
+    set,
+    name: chunk?.name ?? null,
+    bytes: chunk?.bytes ?? null,
+    gzipBytes: chunk?.gzipBytes ?? null,
+    brotliBytes: chunk?.brotliBytes ?? null,
+  };
+});
 const entries = chunks
   .filter(
     (c) =>
-      /^(?:client-|index-|new-|dashboard-|editor-|match-|partida-rapida-|match\.worker-)/.test(
+      /^(?:client-|index-|new-|dashboard-|editor-|match-|partida-rapida-|match\.worker-|CinematicStage3D-)/.test(
         c.name,
       ) || c.surface === "home",
   )
@@ -101,6 +126,22 @@ const entries = chunks
       startupDependencies,
     };
   });
+const cinematicStage = entries.find((entry) => entry.name.startsWith("CinematicStage3D-"));
+const validateCinematicStageSplitting = () => {
+  if (!cinematicStage)
+    throw new Error("Cinematic stage must be reported with its static startup closure");
+  const expectedSetNames = cinematicSetChunkPrefixes.map(({ prefix }) => prefix);
+  const missingCinematicSets = cinematicSetChunks.filter(
+    (chunk) => !chunk.name || !cinematicStageDynamicDependencies.includes(chunk.name),
+  );
+  const staticCinematicSets = cinematicStage.dependencies.filter((name) =>
+    expectedSetNames.some((prefix) => name.startsWith(prefix)),
+  );
+  if (missingCinematicSets.length || staticCinematicSets.length)
+    throw new Error(
+      `Cinematic environments must emit as on-demand chunks outside the stage static closure (missing: ${missingCinematicSets.map((chunk) => chunk.set).join(", ") || "none"}; static: ${staticCinematicSets.join(", ") || "none"})`,
+    );
+};
 const report = {
   label,
   generatedAt: new Date().toISOString(),
@@ -109,6 +150,14 @@ const report = {
   totalGzipBytes: chunks.reduce((sum, c) => sum + c.gzipBytes, 0),
   totalBrotliBytes: chunks.reduce((sum, c) => sum + c.brotliBytes, 0),
   wasmAssets,
+  cinematicStage: cinematicStageChunk
+    ? {
+        name: cinematicStageChunk.name,
+        staticDependencies: cinematicStageDependencies,
+        dynamicDependencies: cinematicStageDynamicDependencies,
+      }
+    : null,
+  cinematicSetChunks,
   entries,
   chunks: chunks.sort((a, b) => b.bytes - a.bytes),
 };
@@ -141,6 +190,7 @@ if (process.argv.includes("--check")) {
   const crowdWasm = wasmAssets.find((c) => c.name.startsWith("crowd_visibility_wasm_bg-"));
   if (!crowdWasm || crowdWasm.bytes > 96_000)
     throw new Error("Crowd Rust kernel must remain an external WASM asset below 96 KB");
+  validateCinematicStageSplitting();
   const forbidden =
     /^(?:three\.|react-three-|Stadium3D-|PostFX-|rapier-|QuickLive-|crowd_visibility_wasm-)/;
   if (
@@ -173,6 +223,7 @@ if (process.argv.includes("--check")) {
   )
     throw new Error("New career wizard must load the 3D stage on demand");
 }
+if (process.argv.includes("--check-cinematic")) validateCinematicStageSplitting();
 const output = path.resolve("verification/bundle-2026-10-01", `${label}.json`);
 await mkdir(path.dirname(output), { recursive: true });
 await writeFile(output, JSON.stringify(report, null, 2) + "\n");
