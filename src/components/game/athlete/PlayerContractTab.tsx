@@ -2,7 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
-import { acceptOffer, declineOffer, MAX_OFFER_NEGOTIATIONS, negotiateOffer, retire } from "@/game/player-career/engine";
+import {
+  acceptOffer,
+  declineOffer,
+  MAX_OFFER_NEGOTIATIONS,
+  negotiateOffer,
+  retire,
+} from "@/game/player-career/engine";
 import type { PlayerCareerState } from "@/game/player-career/types";
 
 const money = (n: number) => `R$ ${Math.round(n).toLocaleString("pt-BR")}`;
