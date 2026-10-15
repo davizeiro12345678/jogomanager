@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /** Persisted athlete JSON is untrusted, even when supplied by an authenticated account. */
 const short = z.string().max(80);
-const integer = z.number().int().nonnegative().safe();
+const integer = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const percent = z.number().finite().min(0).max(100);
 const line = z
   .object({
