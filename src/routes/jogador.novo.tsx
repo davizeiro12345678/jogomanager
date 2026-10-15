@@ -99,7 +99,7 @@ const PERSONALITIES: { id: AthletePersonality; label: string; hint: string }[] =
 function CreateAthletePage() {
   const { slot } = Route.useSearch();
   const navigate = useNavigate();
-  const { commit } = useAthlete(slot);
+  const { state: existingAthlete, commit } = useAthlete(slot);
   const slotId = slot as 1 | 2 | 3;
   const [name, setName] = useState("");
   const [nickname, setNickname] = useState("");
@@ -170,6 +170,10 @@ function CreateAthletePage() {
   );
 
   const submit = () => {
+    if (existingAthlete === undefined)
+      return setError("Aguarde carregar o espaço antes de criar o atleta.");
+    if (existingAthlete)
+      return setError("Este espaço já possui uma carreira. Escolha um espaço vazio no arquivo.");
     if (name.trim().length < 2) return setError("Digite o nome do atleta (pelo menos 2 letras).");
     if (!club) return setError("Escolha um clube.");
     const state = createAthlete({
@@ -191,6 +195,26 @@ function CreateAthletePage() {
     commit(state);
     void navigate({ to: "/jogador/painel", search: { slot } });
   };
+
+  if (existingAthlete !== null) {
+    return (
+      <main className="athlete-shell">
+        <div className="athlete-wrap athlete-card grid gap-3">
+          <h1 className="text-2xl font-bold">
+            {existingAthlete === undefined ? "Verificando espaço…" : "Espaço já ocupado"}
+          </h1>
+          <p className="athlete-meta">
+            {existingAthlete === undefined
+              ? "Aguarde a leitura dos seus salvamentos."
+              : `O atleta ${existingAthlete.nickname} já utiliza o espaço ${slot}. A criação de outra carreira aqui poderia substituir o progresso salvo.`}
+          </p>
+          <Button asChild variant="outline">
+            <Link to="/jogador">Voltar para minhas carreiras</Link>
+          </Button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="athlete-shell" style={{ ["--club" as string]: club?.primary }}>
