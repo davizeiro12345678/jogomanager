@@ -27,51 +27,42 @@ function athlete() {
   );
 }
 
+function accepted(state: unknown, slot = 1, expectedRevision = 0) {
+  return AthleteMutationSchema.safeParse({ slot, expectedRevision, state }).success;
+}
+
 describe("contrato de save de atleta", () => {
   it("aceita um save de verdade e a revisão do servidor", () => {
-    expect(AthleteMutationSchema.safeParse({
-      slot: 1,
-      expectedRevision: 0,
-      state: athlete(),
-    }).success).toBe(true);
-    expect(
-      AthleteMutationResult.parse([{ status: "applied", new_revision: 1 }]),
-    ).toEqual([{ status: "applied", new_revision: 1 }]);
+    expect(accepted(athlete())).toBe(true);
+    expect(AthleteMutationResult.parse([{ status: "applied", new_revision: 1 }])).toEqual([
+      { status: "applied", new_revision: 1 },
+    ]);
   });
 
   it("rejeita mudanças de slot e tipos adulterados no JSON", () => {
     const valid = athlete();
-    expect(AthleteMutationSchema.safeParse({
-      slot: 2,
-      expectedRevision: 0,
-      state: valid,
-    }).success).toBe(false);
-    expect(AthleteMutationSchema.safeParse({
-      slot: 1,
-      expectedRevision: 0,
-      state: { ...valid, attrs: { ...valid.attrs, finalizacao: "999" } },
-    }).success).toBe(false);
+    expect(accepted(valid, 2)).toBe(false);
+    const attrs = { ...valid.attrs, finalizacao: "999" };
+    expect(accepted({ ...valid, attrs })).toBe(false);
   });
 
-  it("rejeita revisões manipuladas, ofertas impossíveis e payloads enormes", () => {
+  it("rejeita revisões e ofertas adulteradas", () => {
     const valid = athlete();
-    expect(AthleteMutationSchema.safeParse({
-      slot: 1,
-      expectedRevision: -1,
-      state: valid,
-    }).success).toBe(false);
-    expect(AthleteMutationSchema.safeParse({
-      slot: 1,
-      expectedRevision: 0,
-      state: {
-        ...valid,
-        offers: [{ id: "x", clubId, salary: 1000, years: 2, loan: false, negotiationRounds: 99 }],
-      },
-    }).success).toBe(false);
-    expect(AthleteMutationSchema.safeParse({
-      slot: 1,
-      expectedRevision: 0,
-      state: { ...valid, news: Array(200).fill({ id: "x", season: 1, week: 1, title: "x", tone: "good" }) },
-    }).success).toBe(false);
+    expect(accepted(valid, 1, -1)).toBe(false);
+    const offer = {
+      id: "x",
+      clubId,
+      salary: 1000,
+      years: 2,
+      loan: false,
+      negotiationRounds: 99,
+    };
+    expect(accepted({ ...valid, offers: [offer] })).toBe(false);
+  });
+
+  it("impõe limite de tamanho aos eventos persistidos", () => {
+    const valid = athlete();
+    const item = { id: "x", season: 1, week: 1, title: "x", tone: "good" };
+    expect(accepted({ ...valid, news: Array(200).fill(item) })).toBe(false);
   });
 });
