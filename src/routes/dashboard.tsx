@@ -129,7 +129,9 @@ function TrainerDashboard({ career }: { career: CareerState }) {
                 ? `Prepare o ${club.name} para o próximo desafio.`
                 : `Veja o balanço da temporada do ${club.name}.`}
             </p>
-            <Link to="/jogador" className="inline-flex text-sm underline underline-offset-4 mt-2">Alternar para carreira de jogador</Link>
+            <Link to="/jogador" className="inline-flex text-sm underline underline-offset-4 mt-2">
+              Alternar para carreira de jogador
+            </Link>
           </div>
         </div>
         <Link to="/league" className="trainer-league-link">
