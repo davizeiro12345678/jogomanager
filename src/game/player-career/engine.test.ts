@@ -94,6 +94,21 @@ describe("carreira de jogador", () => {
     ).toBe(0);
   });
 
+  it("impede evolução de atributos enquanto o atleta recupera uma lesão", () => {
+    const player = make();
+    player.energy = 30;
+    player.injury = { label: "Estiramento", weeksLeft: 3 };
+    const previousAttrs = structuredClone(player.attrs);
+    expect(trainingOutlook(player, "pesado")).toMatchObject({
+      energyAfter: 48,
+      injuryRisk: 0,
+    });
+    const next = advanceWeek(player, { focus: ["tecnico"], intensity: "pesado" }, 10);
+    expect(next.attrs).toEqual(previousAttrs);
+    expect(next.injury?.weeksLeft).toBe(2);
+    expect(next.energy).toBeGreaterThan(player.energy);
+  });
+
   it("evolui ao longo de temporadas e envelhece", () => {
     let s = make();
     const start = overall(s);
