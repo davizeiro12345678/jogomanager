@@ -57,7 +57,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 function AthletePanelPage() {
   const { slot } = Route.useSearch();
-  const { state, commit, syncError } = useAthlete(slot);
+  const { state, commit, syncError, syncConflict } = useAthlete(slot);
   if (state === undefined)
     return (
       <main className="athlete-shell">
@@ -77,17 +77,19 @@ function AthletePanelPage() {
         </div>
       </main>
     );
-  return <Panel state={state} commit={commit} syncError={syncError} />;
+  return <Panel state={state} commit={commit} syncError={syncError} syncConflict={syncConflict} />;
 }
 
 function Panel({
   state,
   commit,
   syncError,
+  syncConflict,
 }: {
   state: PlayerCareerState;
   commit: (s: PlayerCareerState) => void;
   syncError: boolean;
+  syncConflict: boolean;
 }) {
   const [tab, setTab] = useState<Tab>(state.retired ? "historico" : "semana");
   const [showPlayerModel, setShowPlayerModel] = useState(false);
@@ -124,8 +126,10 @@ function Panel({
             </Link>
           </Button>
           {syncError && (
-            <span className="athlete-meta">
-              Sincronização pendente: confira a conexão e mantenha uma cópia local
+            <span className="athlete-meta" role={syncConflict ? "alert" : "status"}>
+              {syncConflict
+                ? "Conflito entre dispositivos: sua versão local foi preservada; exporte o save no arquivo de atletas."
+                : "Sincronização pendente: confira a conexão e mantenha uma cópia local"}
             </span>
           )}
         </div>
