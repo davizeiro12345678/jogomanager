@@ -192,7 +192,8 @@ function Panel({
                       !window.confirm(
                         "Usar a versão atual da nuvem? Será baixado um JSON do seu progresso local e mantido um backup no aparelho antes da substituição.",
                       )
-                    ) return;
+                    )
+                      return;
                     downloadAthlete(state, "backup-antes-de-usar-nuvem");
                     const resolved = await resolveWithCloud();
                     setResolutionMessage(
