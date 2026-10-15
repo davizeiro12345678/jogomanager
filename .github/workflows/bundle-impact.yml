@@ -1,0 +1,73 @@
+name: Compare initial JavaScript bundles
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "scripts/bundle-report.mjs"
+      - "scripts/compare-bundle-reports.mjs"
+      - "vite.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/bundle-impact.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bundle-impact-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bundle:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout candidate with complete base history
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Preserve uniform Brotli analyzer
+        run: cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
+      - name: Build baseline from PR base SHA
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git checkout --detach "$BASE_SHA"
+          npm ci
+          rm -rf .output
+          PFM_LOCAL_VERIFY=1 npm run build
+          cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs
+          node scripts/bundle-report.mjs baseline .output/public/assets
+          cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
+          git restore scripts/bundle-report.mjs
+      - name: Build proposed commit on the same runner
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git checkout --detach "$HEAD_SHA"
+          npm ci
+          rm -rf .output
+          PFM_LOCAL_VERIFY=1 npm run build
+          node scripts/bundle-report.mjs candidate .output/public/assets
+          cp "$RUNNER_TEMP/baseline.json" verification/bundle-2026-10-01/baseline.json
+          node scripts/compare-bundle-reports.mjs             verification/bundle-2026-10-01/baseline.json             verification/bundle-2026-10-01/candidate.json
+      - name: Upload reproducible comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-before-after
+          path: |
+            bundle-impact.md
+            bundle-impact.json
+            verification/bundle-2026-10-01/baseline.json
+            verification/bundle-2026-10-01/candidate.json
+          if-no-files-found: warn
