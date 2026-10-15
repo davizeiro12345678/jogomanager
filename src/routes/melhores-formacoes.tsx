@@ -9,9 +9,18 @@ const DESC =
   "Compare 4-3-3, 4-2-3-1, 4-4-2 e 3-5-2: pontos fortes, limitações e ajustes para escolher a tática do seu elenco no manager de futebol.";
 
 export const Route = createFileRoute("/melhores-formacoes")({
-  beforeLoad: () => {
-    throw redirect({ to: "/taticas-e-formacoes", statusCode: 301, replace: true });
-  },
+  head: () => ({
+    meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
+    links: canonical(PATH),
+    scripts: [
+      articleLd({ headline: "Melhores formações de futebol", description: DESC, path: PATH }),
+      breadcrumbLd([
+        { name: "Início", path: "/" },
+        { name: "Melhores formações", path: PATH },
+      ]),
+    ],
+  }),
+  component: FormationsPage,
 });
 
 const FORMATIONS = [
