@@ -933,11 +933,7 @@ export function negotiateOffer(
   now = Date.now(),
 ): { state: PlayerCareerState; accepted: boolean } {
   const offer = prev.offers.find((o) => o.id === offerId);
-  if (
-    !offer ||
-    prev.retired ||
-    (offer.negotiationRounds ?? 0) >= MAX_OFFER_NEGOTIATIONS
-  )
+  if (!offer || prev.retired || (offer.negotiationRounds ?? 0) >= MAX_OFFER_NEGOTIATIONS)
     return { state: prev, accepted: false };
 
   const state = structuredClone(prev);
