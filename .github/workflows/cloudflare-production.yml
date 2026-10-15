@@ -1,0 +1,62 @@
+name: Publish JogoManager to Cloudflare
+
+on:
+  workflow_run:
+    workflows: ["Quality gates"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jogomanager-cloudflare-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # A successful PR workflow is not authority to publish. Only a successful
+    # quality gate on the production branch may trigger a Wrangler deployment.
+    if: >-
+      ${{
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.conclusion == 'success'
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Verify production credentials are connected
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing CLOUDFLARE_API_TOKEN secret"; exit 1; }
+          test -n "$VITE_SUPABASE_URL" || { echo "Missing VITE_SUPABASE_URL secret"; exit 1; }
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo "Missing VITE_SUPABASE_PUBLISHABLE_KEY secret"; exit 1; }
+      - run: npm ci
+      - name: Build and publish Worker with Wrangler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
+          CLOUDFLARE_SITE_ZONE: jogomanager.com
+          SITE_URL: https://jogomanager.com
+          VITE_AUTH_MODE: supabase
+          PAYMENTS_ENVIRONMENT: live
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: npm run cloudflare:deploy
+      - name: Verify production HTTP health
+        run: |
+          curl --fail --retry 4 --retry-all-errors --retry-delay 3 --max-time 30 --silent --show-error https://jogomanager.com/api/health
+          curl --fail --retry 4 --retry-all-errors --retry-delay 3 --max-time 30 --silent --show-error -o /dev/null https://jogomanager.com/
