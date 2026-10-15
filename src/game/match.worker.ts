@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { resultMatch, snapshotMatchPacket, type LiveWorkerRequest } from "./live-match";
+import { resultMatch, snapshotMatch, type LiveWorkerRequest } from "./live-match";
 import {
   LIVE_MATCH_CLOCK_SCALE,
   MATCH_SIMULATION_STEP,
@@ -157,22 +157,12 @@ function publishSnapshot() {
     return;
   }
   sequence += 1;
-  const snapshot = snapshotMatchPacket(live, sequence, {
-    pool: snapshotPool,
-    rosterVersion,
-    includeMetadata: publishedRosterVersion !== rosterVersion,
-    ...(latestVisualBall ? { visualBall: latestVisualBall } : {}),
-  });
-  publishedRosterVersion = rosterVersion;
-  post(
-    {
-      id: commandId,
-      ok: true,
-      type: "snapshot",
-      snapshot,
-    },
-    [snapshot.players.positions, snapshot.players.velocities, snapshot.players.states],
-  );
+  // Non-compact clients receive a plain snapshot; the optional event feed
+  // only crosses the worker boundary when it changes.
+  const includeEvents = live.lastEventId !== lastPublishedEventSeq;
+  const snapshot = snapshotMatch(live, sequence, latestVisualBall, includeEvents);
+  lastPublishedEventSeq = live.lastEventId;
+  post({ id: commandId, ok: true, type: "snapshot", snapshot });
 }
 
 function publishFinished() {
