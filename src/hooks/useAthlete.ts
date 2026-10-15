@@ -4,6 +4,7 @@ import type { PlayerCareerState } from "@/game/player-career/types";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
 import {
   ATHLETE_SLOTS,
+  archiveAthleteConflictBackup,
   acknowledgeQueuedAthleteSync,
   athleteIsOnline,
   deferQueuedAthleteSync,
@@ -395,7 +396,8 @@ export function useAthlete(slot: number) {
         .then((result) => {
           if (!disposed && currentUser.current === userId)
             setSyncError(result.pending || result.failed);
-          if (!disposed && currentUser.current === userId) setSyncConflict(result.conflict);
+          if (!disposed && currentUser.current === userId)
+            setSyncConflict((previous) => previous || result.conflict);
         })
         .catch(() => {
           if (!disposed && currentUser.current === userId) setSyncError(true);
@@ -425,7 +427,6 @@ export function useAthlete(slot: number) {
       }
 
       setSyncError(true);
-      setSyncConflict(false);
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => {
         if (currentUser.current !== commitUser) return;
@@ -433,7 +434,7 @@ export function useAthlete(slot: number) {
           .then((result) => {
             if (currentUser.current === commitUser) {
               setSyncError(result.pending || result.failed);
-              setSyncConflict(result.conflict);
+              setSyncConflict((previous) => previous || result.conflict);
             }
           })
           .catch(() => {
@@ -444,5 +445,73 @@ export function useAthlete(slot: number) {
     [owner, userId],
   );
 
-  return { state, commit, syncError, syncConflict, signedIn: !!userId };
+  const resolveWithCloud = useCallback(async (): Promise<boolean> => {
+    if (!userId || !isAthleteSlot(slot) || currentUser.current !== userId) return false;
+    try {
+      // Wait for an in-flight write, then obtain a fresh cloud version.
+      await pendingFlushes.get(userId);
+      const rows = await loadAthletesCloud();
+      if (currentUser.current !== userId) return false;
+      const remote = rows.find((row) => row.slot === slot);
+      if (!remote) {
+        setSyncError(true);
+        return false;
+      }
+      const previousRevision = readAthleteCloudRevision(slot, userId);
+      if (previousRevision !== null && remote.revision < previousRevision) {
+        setSyncError(true);
+        return false;
+      }
+      let hydrated: PlayerCareerState | null = null;
+      if (!remote.deleted) {
+        try {
+          hydrated = hydrateAthlete(JSON.parse(remote.state));
+        } catch {
+          setSyncError(true);
+          return false;
+        }
+        if (!hydrated || hydrated.slot !== slot) {
+          setSyncError(true);
+          return false;
+        }
+      }
+
+      // First persist a private recovery copy: never lose the discarded local version.
+      if (!archiveAthleteConflictBackup(slot, userId)) {
+        setSyncError(true);
+        return false;
+      }
+      const queued = hasQueuedAthleteSync(slot, userId);
+      if (queued && !acknowledgeQueuedAthleteSync(queued.operationId, userId)) {
+        setSyncError(true);
+        return false;
+      }
+      if (remote.deleted) {
+        if (readAthlete(slot, userId) && !deleteAthlete(slot, userId)) {
+          setSyncError(true);
+          return false;
+        }
+        setState(null);
+      } else if (hydrated) {
+        const envelope = writeAthlete(hydrated, userId);
+        if (!envelope) {
+          setSyncError(true);
+          return false;
+        }
+        setState(envelope.state);
+      }
+      if (!recordAthleteCloudRevision(slot, remote.revision, userId)) {
+        setSyncError(true);
+        return false;
+      }
+      setSyncConflict(false);
+      setSyncError(false);
+      return true;
+    } catch {
+      setSyncError(true);
+      return false;
+    }
+  }, [slot, userId]);
+
+  return { state, commit, syncError, syncConflict, resolveWithCloud, signedIn: !!userId };
 }
