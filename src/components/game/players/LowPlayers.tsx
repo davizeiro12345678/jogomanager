@@ -2,6 +2,7 @@ import { useFrame } from "@react-three/fiber";
 import { createElement, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { MutableRefObject } from "react";
 import * as THREE from "three";
+import { softShadowTexture } from "./soft-shadow";
 import { emptyPose, getClip, mixPose, selectClip, type ClipName } from "@/game/animation";
 import { gaitPoseAt, locomotionWeight } from "@/game/gait-kinematics";
 import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
