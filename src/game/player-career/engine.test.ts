@@ -69,9 +69,9 @@ describe("carreira de jogador", () => {
     expect(buildMoments(goalkeeper)).toEqual(chances);
     expect(chances.length).toBeGreaterThanOrEqual(3);
     expect(chances.length).toBeLessThanOrEqual(4);
-    expect(chances.every((moment) => moment.options.every((choice) => choice.attr !== "carrinho"))).toBe(
-      true,
-    );
+    expect(
+      chances.every((moment) => moment.options.every((choice) => choice.attr !== "carrinho")),
+    ).toBe(true);
     expect(
       chances.every((moment) =>
         moment.options.some(
@@ -89,8 +89,9 @@ describe("carreira de jogador", () => {
       injuryRisk: 0.07,
     });
     expect(trainingOutlook(tired, "leve").energyAfter).toBe(27);
-    expect(trainingOutlook({ ...tired, injury: { label: "Lesão", weeksLeft: 2 } }, "pesado")
-      .injuryRisk).toBe(0);
+    expect(
+      trainingOutlook({ ...tired, injury: { label: "Lesão", weeksLeft: 2 } }, "pesado").injuryRisk,
+    ).toBe(0);
   });
 
   it("evolui ao longo de temporadas e envelhece", () => {
