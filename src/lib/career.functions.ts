@@ -6,10 +6,14 @@ import { CLUBS, getLeague } from "@/game/data/leagues";
 import { initCareer } from "@/game/career";
 import { continuesVerifiedCareer, isStaleSave } from "@/lib/career-progress";
 
-// Normalize user-visible manager names without mutating their meaning.
+// Normalize manager names without changing their visible meaning.
 const normalizePublicText = (value: string) =>
-  value.normalize("NFKC").replace(/[\\u0000-\\u001f\\u007f]/g, "").replace(/\\s+/g, " ").trim();
-const hasVisibleText = (value: string) => /[\\p{L}\\p{N}]/u.test(value);
+  value
+    .normalize("NFKC")
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+const hasVisibleText = (value: string) => /[\p{L}\p{N}]/u.test(value);
 
 // Career JSON is untrusted even for authenticated users: bound its size and
 // depth and reject dangerous object keys before the Zod schema passes it on.
