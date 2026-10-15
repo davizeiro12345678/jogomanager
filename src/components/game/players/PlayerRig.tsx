@@ -36,7 +36,6 @@ import {
 import { kitBudget, kitTextureFor, trimKitTextures } from "@/game/graphics/kit-atlas";
 import { retainKitTexture } from "@/game/kits";
 import { useMatchSurface } from "@/game/graphics/surface-context";
-import type { Kit } from "@/game/kits";
 import {
   detailTextureNames,
   playerMaterials,
@@ -54,7 +53,6 @@ import {
   shade,
   type LodLevel,
 } from "@/game/player-model";
-import type { SimView } from "@/game/sim";
 import {
   emptyActionContext,
   emptyContactContext,
