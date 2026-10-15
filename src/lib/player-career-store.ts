@@ -9,6 +9,8 @@ const COMPAT_KEY = (slot: AthleteSlot, owner: LocalOwnerId | undefined = null) =
   `manager3d.athlete.v2.${localOwnerScope(owner)}.${slot}`;
 const ENVELOPE_KEY = (slot: AthleteSlot, owner: LocalOwnerId | undefined = null) =>
   `manager3d.athlete.envelope.v1.${localOwnerScope(owner)}.${slot}`;
+const BACKUP_KEY = (slot: AthleteSlot, owner: LocalOwnerId | undefined = null) =>
+  `manager3d.athlete.backup.v1.${localOwnerScope(owner)}.${slot}`;
 const INDEX_KEY = (owner: LocalOwnerId | undefined = null) =>
   `manager3d.athlete.index.v1.${localOwnerScope(owner)}`;
 const OUTBOX_KEY = (owner: LocalOwnerId | undefined = null) =>
@@ -415,11 +417,21 @@ export function writeAthlete(
 }
 
 /** Deletions receive a revisioned tombstone so stale cloud data cannot revive them. */
+export function readAthleteBackup(
+  slot: AthleteSlot,
+  owner: LocalOwnerId | undefined = null,
+): PlayerCareerState | null {
+  return hydrateAthlete(parseJson(getStorageValue(BACKUP_KEY(slot, owner))));
+}
+
 export function deleteAthlete(
   slot: number,
   owner: LocalOwnerId | undefined = null,
 ): AthleteDeleteTombstone | null {
   if (!isBrowser() || !isAthleteSlot(slot)) return null;
+  const original = readAthleteEnvelope(slot, owner);
+  // Prevent silent local loss even when the cloud delete collides with another device.
+  if (original && !setStorageValue(BACKUP_KEY(slot, owner), original.state)) return null;
   const index = readIndex(owner);
   const tombstone: AthleteDeleteTombstone = {
     kind: "deleted",
