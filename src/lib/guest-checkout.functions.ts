@@ -21,9 +21,9 @@ import {
   type StoreProductContents,
 } from "@/lib/store-products.server";
 import { classifyGuestCheckoutSession } from "@/lib/guest-checkout-state";
-import { persistGuestCheckoutIntentIfAllowed } from "@/lib/guest-checkout-policy.server";
 import { resolveOrCreateCustomer } from "@/utils/payments.functions";
 import { assertGuestCheckoutEnabled } from "@/lib/payments-config.server";
+import { verifiedAccount } from "@/lib/verified-identity.server";
 
 // Stripe requires at least 30 minutes from receipt. Keep a margin so request
 // transit cannot make an otherwise valid embedded session intermittently fail.
@@ -403,9 +403,7 @@ export const startGuestCheckout = createServerFn({ method: "POST" })
       const email = normalizeGuestEmail(data.email);
       const emailHash = await hashGuestEmail(email);
       const product = await getServerStoreProduct(getServiceSupabase(), data.productKey);
-      const intent = await persistGuestCheckoutIntentIfAllowed(product, () =>
-        createIntent(environment, emailHash, product),
-      );
+      const intent = await createIntent(environment, emailHash, product);
       return await openStripeSession(intent, email, product, environment);
     } catch (error) {
       return { error: getStripeErrorMessage(error) };
@@ -508,7 +506,16 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }): Promise<ClaimGuestCheckoutResult> => {
     try {
-      const email = normalizeGuestEmail(context.claims?.email);
+      const account = await verifiedAccount(context.supabase, context.userId);
+      if (!account) {
+        return {
+          status: "error",
+          message: "Confirme seu endereço de e-mail antes de receber a compra.",
+        };
+      }
+      // Never bind a paid intent to an address copied from unsigned input,
+      // mutable user_metadata or a stale token claim.
+      const email = normalizeGuestEmail(account.email);
       const emailHash = await hashGuestEmail(email);
       const environment = getConfiguredStripeEnvironment();
       const intent = await readIntent(data.intentId);
