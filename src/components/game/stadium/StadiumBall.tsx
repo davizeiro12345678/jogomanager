@@ -6,7 +6,6 @@ import * as THREE from "three";
 import { censusRef } from "@/game/scene-census";
 import { footballTextures } from "./textures/ball";
 import { BallResponse } from "@/game/ball-response";
-import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 import type { SimView } from "@/game/sim-contracts";
 import type { Quality } from "../Stadium3D";
 import { presentationBall } from "./stadium-ball";
