@@ -22,7 +22,10 @@ const difference = (base, current) =>
 const rows = [];
 function add(label, base, current) {
   rows.push({
-    label, before: base, after: current, reductionPercent: difference(base, current),
+    label,
+    before: base,
+    after: current,
+    reductionPercent: difference(base, current),
   });
 }
 add("JS emitido total (inclui lazy)", before.totalBytes, after.totalBytes);
@@ -42,8 +45,10 @@ const md = [
   "",
   "| Métrica | Antes | Depois | Redução |",
   "|---|---:|---:|---:|",
-  ...rows.map(({ label, before: b, after: a, reductionPercent: pct }) =>
-    `| ${label} | ${format(b)} | ${format(a)} | ${pct} |`),
+  ...rows.map(
+    ({ label, before: b, after: a, reductionPercent: pct }) =>
+      `| ${label} | ${format(b)} | ${format(a)} | ${pct} |`,
+  ),
   "",
   "Brotli Q6 é estimativa offline; o navegador só recebe essa compressão se o CDN responder com Content-Encoding: br.",
   "",
