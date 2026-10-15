@@ -258,36 +258,21 @@ export type Database = {
       }
       checkout_session_owners: {
         Row: {
-          contents_snapshot: Json | null
           created_at: string
-          currency: string | null
           environment: string
-          price_cents: number | null
-          product_key: string | null
           session_id: string
-          stripe_price_id: string | null
           user_id: string
         }
         Insert: {
-          contents_snapshot?: Json | null
           created_at?: string
-          currency?: string | null
           environment: string
-          price_cents?: number | null
-          product_key?: string | null
           session_id: string
-          stripe_price_id?: string | null
           user_id: string
         }
         Update: {
-          contents_snapshot?: Json | null
           created_at?: string
-          currency?: string | null
           environment?: string
-          price_cents?: number | null
-          product_key?: string | null
           session_id?: string
-          stripe_price_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1841,60 +1826,6 @@ export type Database = {
         }
         Relationships: []
       }
-      payment_webhook_events: {
-        Row: {
-          attempts: number
-          created_at: string
-          event_id: string
-          event_type: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          attempts?: number
-          created_at?: string
-          event_id: string
-          event_type: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          attempts?: number
-          created_at?: string
-          event_id?: string
-          event_type?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      purchase_payment_reviews: {
-        Row: {
-          event_created: number
-          event_id: string
-          reference: string
-          refunded_amount_cents: number
-          review_status: string
-          updated_at: string
-        }
-        Insert: {
-          event_created: number
-          event_id: string
-          reference: string
-          refunded_amount_cents?: number
-          review_status: string
-          updated_at?: string
-        }
-        Update: {
-          event_created?: number
-          event_id?: string
-          reference?: string
-          refunded_amount_cents?: number
-          review_status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       user_purchases: {
         Row: {
           amount_cents: number
@@ -1993,57 +1924,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      begin_payment_webhook_event: {
-        Args: { _event_id: string; _event_type: string }
-        Returns: boolean
-      }
-      finish_payment_webhook_event: {
-        Args: { _event_id: string; _succeeded: boolean }
-        Returns: undefined
-      }
-      reconcile_purchase_payment_review: {
-        Args: {
-          _event_id: string
-          _reference: string
-          _event_type: string
-          _event_created: number
-          _refunded_amount_cents?: number
-        }
-        Returns: undefined
-      }
-      reconcile_subscription_wallet: {
-        Args: { _user_id: string; _environment: string }
-        Returns: boolean
-      }
-      reserve_api_football_quota: {
-        Args: never
-        Returns: boolean
-      }
-      complete_api_football_import_phase: {
-        Args: {
-          p_phase: string
-          p_token: string
-          p_processed: number
-          p_next_offset: number | null
-          p_error?: string | null
-        }
-        Returns: boolean
-      }
-      claim_api_football_import_phase: {
-        Args: never
-        Returns: {
-          out_phase: string
-          out_offset: number
-          out_limit: number
-          out_token: string
-        }[]
-      }
       activate_training_boost: {
         Args: { _user_id: string }
         Returns: {
           training_boosts: number
           training_until: string
         }[]
+      }
+      claim_api_football_import_phase: {
+        Args: never
+        Returns: {
+          out_limit: number
+          out_offset: number
+          out_phase: string
+          out_token: string
+        }[]
+      }
+      complete_api_football_import_phase: {
+        Args: {
+          p_error?: string
+          p_next_offset: number
+          p_phase: string
+          p_processed: number
+          p_token: string
+        }
+        Returns: boolean
       }
       consume_wallet_item: {
         Args: { _detail?: string; _item: string; _user_id: string }
@@ -2110,6 +2015,7 @@ export type Database = {
         Args: { _cents: number; _kind: string }
         Returns: boolean
       }
+      reserve_api_football_quota: { Args: never; Returns: boolean }
       reserve_guest_checkout_attempt: {
         Args: { _email_hash: string }
         Returns: boolean
