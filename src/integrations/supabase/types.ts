@@ -116,6 +116,60 @@ export type Database = {
         }
         Relationships: []
       }
+      api_football_import_progress: {
+        Row: {
+          batch_size: number
+          error_message: string | null
+          lease_token: string | null
+          lease_until: string | null
+          next_offset: number
+          phase: string
+          status: string
+          total_processed: number
+          updated_at: string
+        }
+        Insert: {
+          batch_size?: number
+          error_message?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          next_offset?: number
+          phase: string
+          status?: string
+          total_processed?: number
+          updated_at?: string
+        }
+        Update: {
+          batch_size?: number
+          error_message?: string | null
+          lease_token?: string | null
+          lease_until?: string | null
+          next_offset?: number
+          phase?: string
+          status?: string
+          total_processed?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      api_football_quota_usage: {
+        Row: {
+          request_count: number
+          window_start: string
+          window_type: string
+        }
+        Insert: {
+          request_count?: number
+          window_start: string
+          window_type: string
+        }
+        Update: {
+          request_count?: number
+          window_start?: string
+          window_type?: string
+        }
+        Relationships: []
+      }
       careers: {
         Row: {
           created_at: string
@@ -1900,6 +1954,25 @@ export type Database = {
           training_until: string
         }[]
       }
+      claim_api_football_import_phase: {
+        Args: never
+        Returns: {
+          out_limit: number
+          out_offset: number
+          out_phase: string
+          out_token: string
+        }[]
+      }
+      complete_api_football_import_phase: {
+        Args: {
+          p_error?: string
+          p_next_offset: number
+          p_phase: string
+          p_processed: number
+          p_token: string
+        }
+        Returns: boolean
+      }
       consume_wallet_item: {
         Args: { _detail?: string; _item: string; _user_id: string }
         Returns: {
@@ -1965,6 +2038,7 @@ export type Database = {
         Args: { _cents: number; _kind: string }
         Returns: boolean
       }
+      reserve_api_football_quota: { Args: never; Returns: boolean }
       reserve_guest_checkout_attempt: {
         Args: { _email_hash: string }
         Returns: boolean
