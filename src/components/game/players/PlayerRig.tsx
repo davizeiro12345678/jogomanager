@@ -26,26 +26,13 @@ import {
   type ClipName,
   type Pose,
 } from "@/game/animation";
-import { expressionFor } from "@/game/animation-extra3";
-import {
-  ballGazePitch,
-  eyelidRotationFor,
-  emptyFacialPose,
-  facialPoseAt,
-} from "@/game/facial-animation";
+import { ballGazePitch, emptyFacialPose } from "@/game/facial-animation";
 import { kitBudget, kitTextureFor, trimKitTextures } from "@/game/graphics/kit-atlas";
 import { retainKitTexture } from "@/game/kits";
 import { useMatchSurface } from "@/game/graphics/surface-context";
-import type { Kit } from "@/game/kits";
-import {
-  detailTextureNames,
-  playerMaterials,
-  retainPlayerMaterials,
-} from "@/game/player-materials";
-import { onKtx2Ready, requestKtx2 } from "@/game/textures/ktx2";
+import { onKtx2Ready } from "@/game/textures/ktx2";
 import { visualDataFor } from "@/game/visual-frame-cache";
 import { useVisual } from "@/game/visual-settings";
-import { matchRigSegments } from "@/game/match-rig-detail";
 import {
   lodForDistance,
   lookFor,
@@ -53,9 +40,7 @@ import {
   proportionsFor,
   shade,
   type LodLevel,
-  type PlayerLook,
 } from "@/game/player-model";
-import { type SimView, type SimPlayer } from "@/game/sim";
 import {
   emptyActionContext,
   emptyContactContext,
@@ -66,25 +51,15 @@ import {
   type DominantFoot,
 } from "@/game/visual-context";
 import { solveFullIK } from "@/game/ik-solver";
-import {
-  buildRigSkin,
-  rebindRigSkinMaterials,
-  type RigJoint,
-  type RigSkin,
-  type RigSkinLod,
-} from "@/game/rig-skin";
+import { type RigJoint, type RigSkin, type RigSkinLod } from "@/game/rig-skin";
 import { spineRollForAction, updateRigCorrectives } from "@/game/rig-correctives";
 import { faceMorphology } from "@/game/player-morphology";
-import { AthleteCloth, type ClothMotion } from "@/game/athlete-cloth";
+import type { ClothMotion } from "@/game/athlete-cloth";
 import { censusRef } from "@/game/scene-census";
 import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
 import { gaitPoseAt, locomotionWeight } from "@/game/gait-kinematics";
 import { visualMotionFor } from "@/game/visual-motion";
-import {
-  GOAL_PRESENTATION_SECONDS,
-  goalPresentationFor,
-  type GoalFocusRef,
-} from "@/game/goal-choreography";
+import { GOAL_PRESENTATION_SECONDS, goalPresentationFor } from "@/game/goal-choreography";
 import {
   footballSupportFor,
   refineFootballAction,
@@ -99,60 +74,10 @@ import {
 } from "@/game/athlete-secondary-motion";
 import { retainRigGeometryPreparation } from "@/game/rig-geometry-worker-client";
 
-/**
- * Velocidade (m/s) para a qual cada ciclo de passada foi desenhado. A cadência
- * do clipe é reescalada pela velocidade real do atleta, de modo que o pé de
- * apoio acompanhe o deslocamento no gramado em vez de patinar.
- */
-const GAIT_SPEED: Record<string, number> = {
-  walk: 1.6,
-  stroll: 1.3,
-  walkTalk: 1.5,
-  tired: 1.5,
-  exhaustedWalk: 1.2,
-  limp: 1.1,
-  skipStep: 2.2,
-  jog: 3.4,
-  joggingBack: 3.0,
-  runRelaxed: 4.6,
-  checkShoulder: 4.4,
-  run: 5.5,
-  curveRunLeft: 5.8,
-  curveRunRight: 5.8,
-  sprint: 7.6,
-  sprintFlatOut: 8.2,
-  sprintEasing: 6.6,
-  recoverySprint: 8.0,
-};
-
-export type Quality = "alta" | "media" | "baixa";
-
-/* -------------------------------------------------------------------------- */
-
-interface RigProps {
-  player: SimPlayer;
-  sim: SimView;
-  kit: Kit;
-  goalPulse: React.MutableRefObject<number>;
-  goalFocus?: GoalFocusRef | undefined;
-  quality: Quality;
-  paused?: boolean;
-  respectVisualSettings?: boolean;
-  /** Optional studio sampling; ordinary match playback always uses its clock. */
-  previewAt?: number | undefined;
-  /** Studio-only presentation override; never changes the simulation/save. */
-  lookOverride?: PlayerLook | undefined;
-  previewClip?: ClipName | undefined;
-  /** Dense face topology is reserved for the isolated portrait preview. */
-  portrait?: boolean;
-  /** Match-only topology LOD; materials and animation retain the selected quality. */
-  denseGeometry?: boolean;
-  /** Stable match topology avoids rebuilding meshes on a broadcast camera cut. */
-  matchTopology?: boolean;
-  clothPhysics?: boolean;
-  /** Inspection cameras follow actual posed bones, never simulation positions. */
-  onPoseReady?: ((skin: RigSkin) => void) | undefined;
-}
+import { GAIT_SPEED, type RigProps, type Quality } from "./player-rig-contract";
+import { applyRigFacialPresentation } from "./player-rig-face";
+import { usePlayerRigMeshes } from "./player-rig-meshes";
+export type { Quality } from "./player-rig-contract";
 
 export const PlayerRig = memo(function PlayerRig({
   player,
@@ -739,74 +664,30 @@ export const PlayerRig = memo(function PlayerRig({
         -rightHandPose.pronation - (action ? 0 : 0.06 * Math.sin(motion.phase)),
         -rightHandPose.deviation - 0.025,
       );
-    // ---- rosto: expressão do clipe + esforço (só no LOD 0, onde há rosto)
+    // Face and eyelids are evaluated only for the closest, detailed rig.
     if (lod === 0) {
-      const effort = Math.min(1, speed / 7);
-      const expr = expressionFor(clipName.current, effort, tired);
-      const facePose = facialPoseAt(
-        previewAt !== undefined ? ctx.t : sim.time,
-        look.seed,
-        expr,
+      applyRigFacialPresentation({
+        speed,
+        tired,
+        previewAt,
+        t: previewAt !== undefined ? ctx.t : sim.time,
+        lookSeed: look.seed,
+        seed,
+        clip: clipName.current,
         gaze,
         gazePitch,
-        effort,
-        facialBuffer.current,
-      );
-      const faceResponse = previewAt !== undefined ? 1 : 1 - Math.exp(-18 * adt);
-      const celebrating = /celebrat|fist|victory|applaud|hug/i.test(clipName.current);
-      const protesting = /protest|argue|complain/i.test(clipName.current);
-      // The head bone carries the large tracking pose.  A much smaller facial
-      // layer adds breathing, concentration and reaction tension without
-      // changing the skeleton, simulation state or any draw budget.
-      const faceBone = skin.boneOf.face;
-      const facialBreath = Math.sin(
-        (previewAt !== undefined ? ctx.t : sim.time) * (2.1 + effort) + seed,
-      );
-      const facePitch =
-        tired * 0.018 + effort * 0.006 + (protesting ? -0.01 : 0) + facialBreath * 0.0035;
-      const faceYaw = gaze * (celebrating ? 0.024 : 0.012) + facialBreath * 0.002;
-      const faceRoll = (celebrating ? -0.008 : protesting ? 0.008 : 0) + facialBreath * 0.0025;
-      faceBone.rotation.x += (facePitch - faceBone.rotation.x) * faceResponse;
-      faceBone.rotation.y += (faceYaw - faceBone.rotation.y) * faceResponse;
-      faceBone.rotation.z += (faceRoll - faceBone.rotation.z) * faceResponse;
-      const browLift =
-        P.headR * (celebrating ? 0.035 : protesting ? -0.012 : -effort * 0.01 - tired * 0.006);
-      const browTilt = celebrating ? -0.035 : protesting ? 0.12 : effort * 0.06;
-      for (const side of ["L", "R"] as const) {
-        const brow = side === "L" ? skin.boneOf.browL : skin.boneOf.browR;
-        const response = previewAt !== undefined ? 1 : 1 - Math.exp(-12 * adt);
-        const sideSign = side === "L" ? 1 : -1;
-        brow.position.y +=
-          (P.headR * (0.31 + facialShape.browAsymmetry * sideSign) + browLift - brow.position.y) *
-          response;
-        brow.rotation.z += ((side === "L" ? 1 : -1) * browTilt - brow.rotation.z) * response;
-      }
-      // Jaw, orbital hinges and saccades share the match clock and freeze with the pose.
-      if (jawRef.current) {
-        const vocalTension = celebrating ? 0.035 : protesting ? 0.024 : effort * 0.008;
-        jawRef.current.rotation.x +=
-          (Math.min(0.33, facePose.jaw + vocalTension) - jawRef.current.rotation.x) * faceResponse;
-      }
-      if (eyesRef.current) {
-        eyesRef.current.position.x +=
-          (facePose.eyeX * P.headR * 0.055 - eyesRef.current.position.x) * faceResponse;
-        eyesRef.current.position.y +=
-          (facePose.eyeY * P.headR * 0.045 - eyesRef.current.position.y) * faceResponse;
-        // The eye group is still a single bone, but a few degrees around the
-        // face centre lets the iris, pupil and new catchlight scan together.
-        eyesRef.current.rotation.y +=
-          (facePose.eyeX * 0.028 - eyesRef.current.rotation.y) * faceResponse;
-        eyesRef.current.rotation.x +=
-          (-facePose.eyeY * 0.02 - eyesRef.current.rotation.x) * faceResponse;
-      }
-      const exertionSquint = Math.min(0.1, effort * 0.045 + (protesting ? 0.025 : 0));
-      const lidClosure = Math.min(1, facePose.lidClosure + exertionSquint);
-      const upperLidRotation = eyelidRotationFor(lidClosure, true);
-      const lowerLidRotation = eyelidRotationFor(lidClosure, false);
-      for (const lid of [eyelidUpperLRef.current, eyelidUpperRRef.current])
-        if (lid) lid.rotation.x += (upperLidRotation - lid.rotation.x) * faceResponse;
-      for (const lid of [eyelidLowerLRef.current, eyelidLowerRRef.current])
-        if (lid) lid.rotation.x += (lowerLidRotation - lid.rotation.x) * faceResponse;
+        adt,
+        skin,
+        P,
+        facialShape,
+        facialBuffer: facialBuffer.current,
+        jaw: jawRef.current,
+        eyes: eyesRef.current,
+        upperLeft: eyelidUpperLRef.current,
+        upperRight: eyelidUpperRRef.current,
+        lowerLeft: eyelidLowerLRef.current,
+        lowerRight: eyelidLowerRRef.current,
+      });
     }
 
     if (legLRef.current) legLRef.current.rotation.set(c.legLPitch, 0, c.legLRoll);
@@ -849,110 +730,28 @@ export const PlayerRig = memo(function PlayerRig({
     }
   });
 
-  /* ------------------------------------------------------------ materiais */
-
-  // A qualidade baixa usava a mesma malha de 14 segmentos da alta nos 22
-  // jogadores. Ajustar a geometria ao nível global reduz muito o trabalho da
-  // GPU sem alterar silhueta, materiais ou animações.
-  const segs = matchRigSegments(quality, portrait || denseGeometry, !portrait && matchTopology);
-
-  // Materiais compartilhados entre jogadores com a mesma combinação de
-  // uniforme/aparência: derruba o número de programas de shader e de objetos
-  // de material de ~200 para poucas dezenas numa partida.
-  useEffect(() => {
-    if (quality !== "alta") return;
-    requestKtx2(detailTextureNames(look, kit));
-  }, [quality, kit, look]);
-  const mats = useMemo(
-    () => playerMaterials(look, kit, tex ?? null, quality, surface),
-    [look, kit, tex, quality, surface],
-  );
-  useLayoutEffect(() => retainPlayerMaterials(mats), [mats]);
-
-  // Corpo em SkinnedMesh: um desenho por grupo de material (~18) em vez de um
-  // por peça mesclada (~53). A matriz de bind é a posição do atleta, porque
-  // ossos e malhas são filhos do mesmo grupo raiz. Reconstruído só quando
-  // aparência ou qualidade mudam.
-  const skin = useMemo<RigSkin>(
-    () =>
-      buildRigSkin(
-        {
-          P,
-          look,
-          segs: { radial: segs.radial, cap: segs.cap },
-          hi,
-          portrait,
-          mats,
-          jerseyInk,
-          handR: look.gloves ? P.handR * 1.25 : P.handR,
-          handMat: look.gloves ? mats.glove : mats.skin,
-        },
-        [player.x, 0, player.z],
-      ),
-    // `player.x/z` ficam de propósito: a matriz de bind defasada é compensada
-    // pelo three.js a cada quadro, e incluí-los aqui reconstruiria as 18 malhas
-    // do atleta a cada movimento.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [P, look, kit, segs.radial, segs.cap, hi, portrait, jerseyInk],
-  );
-  useEffect(() => () => skin.dispose(), [skin]);
-  const cloth = useMemo(
-    () => new AthleteCloth(skin, P, hi && clothPhysics),
-    [skin, P, hi, clothPhysics],
-  );
-  useLayoutEffect(() => {
-    painted.current = false;
-    lodState.current = null;
-    castState.current = null;
-    // The first sample sets the articulated lids at their open rest pose.
-    for (const joint of ["eyelidUpperL", "eyelidLowerL", "eyelidUpperR", "eyelidLowerR"] as const)
-      skin.boneOf[joint].rotation.x = 0;
-  }, [skin, look.seed]);
-
-  // As malhas são criadas fora do JSX para carregar esqueleto, esfera de
-  // culling generosa (a pose animada sai da pose de bind) e o estado de LOD.
-  const drawMeshes = useMemo(() => {
-    nearMeshes.current = [];
-    bootMeshes.current = [];
-    skinnedMeshes.current = [];
-    return skin.groups.map((group, index) => {
-      const mesh = new THREE.SkinnedMesh(group.geometry, group.material);
-      // The portrait camera can sit beside an overhead glove, far outside
-      // that detail bucket's rest-pose bounds. The single inspected athlete
-      // stays visible; ordinary match players retain frustum culling.
-      mesh.frustumCulled = !portrait;
-      // Sem esqueleto e matriz de bind a malha não deforma (e apareceria
-      // deslocada). `bindMatrixInverse` é mantido pelo three.js a cada quadro.
-      mesh.skeleton = skin.skeleton;
-      mesh.bindMatrix.copy(skin.bindMatrix);
-      mesh.bindMatrixInverse.copy(skin.bindMatrix).invert();
-      // Só o corpo projetа sombra. Rosto, dedos e travas são pequenos demais
-      // para aparecer no mapa de sombras e custariam uma segunda passagem de
-      // desenho por atleta — 6 grupos a menos por herói.
-      mesh.castShadow = shadows && group.castShadow && group.lod === "core";
-      mesh.receiveShadow = false;
-      mesh.name = `rig-${group.lod}`;
-      // esfera local folgada: evita o recálculo caro (e animado) do three.js
-      const sphere = group.geometry.boundingSphere;
-      if (sphere) mesh.boundingSphere = sphere.clone();
-      if (group.lod === "near") nearMeshes.current.push(mesh);
-      if (group.lod === "boot") bootMeshes.current.push(mesh);
-      skinnedMeshes.current.push(mesh);
-      return createElement("primitive", { key: `${group.material.uuid}-${index}`, object: mesh });
-    });
-  }, [skin, shadows, portrait]);
-
-  // Material maps/surface steps change far more often than body geometry.
-  // Rebind their stable slots in place and keep the mesh and skeleton objects.
-  useLayoutEffect(() => {
-    rebindRigSkinMaterials(skin, skinnedMeshes.current, mats);
-  }, [skin, mats, drawMeshes]);
-  useLayoutEffect(() => {
-    for (const mesh of skinnedMeshes.current) {
-      cloth.bind(mesh);
-      if (!hi || !clothPhysics) mesh.morphTargetInfluences?.fill(0);
-    }
-  }, [skin, cloth, drawMeshes, hi, clothPhysics]);
+  const { skin, cloth, drawMeshes } = usePlayerRigMeshes({
+    quality,
+    portrait,
+    denseGeometry,
+    matchTopology,
+    look,
+    kit,
+    tex,
+    surface,
+    hi,
+    P,
+    jerseyInk,
+    player,
+    shadows,
+    clothPhysics,
+    painted,
+    lodState,
+    castState,
+    nearMeshes,
+    bootMeshes,
+    skinnedMeshes,
+  });
 
   // Junta -> osso. `createElement` (e não JSX) de propósito: o plugin de
   // desenvolvimento injeta atributos de origem no JSX e o R3F não aceita isso

@@ -43,9 +43,14 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
   const bottom = rings[0]!;
   const span = Math.max(0.001, rings[(rows - 1) * 4]! - bottom);
   let cursor = 0;
+  // Write to the owned typed buffer directly. Allocating a temporary five-
+  // element array for every 3D vertex creates unnecessary GC pressure.
   const write = (x: number, y: number, z: number, u: number, v: number) => {
-    output.set([x, y, z, u, v], cursor);
-    cursor += 5;
+    output[cursor++] = x;
+    output[cursor++] = y;
+    output[cursor++] = z;
+    output[cursor++] = u;
+    output[cursor++] = v;
   };
   for (let row = 0; row < rows; row++) {
     const offset = row * 4;

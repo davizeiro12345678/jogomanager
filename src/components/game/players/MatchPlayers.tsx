@@ -1,5 +1,5 @@
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { CameraMode } from "@/game/camera-modes";
 import { GRAPHICS_PROFILES } from "@/game/contracts/graphics-profile";
@@ -11,7 +11,7 @@ import type { RuntimeSceneBudget } from "@/game/runtime-scene-budget";
 import type { SimView } from "@/game/sim";
 import { goalPresentationFor, type GoalFocusRef } from "@/game/goal-choreography";
 import { gkKitFor, type Kit } from "@/game/kits";
-import { PlayerRig } from "./PlayerRig";
+import { reportSilent } from "@/lib/silent-errors";
 import { LowPlayers } from "./LowPlayers";
 
 /** Full articulated geometry is mounted only for visible, nearby athletes.
@@ -21,6 +21,8 @@ import { LowPlayers } from "./LowPlayers";
  * é conhecido (`HERO_MESH_COST`) e o teto de desenhos do tier também, então a
  * quantidade é derivada do que sobrou depois dos subsistemos medidos. Subir
  * heróis sem essa conta foi o que estourou o orçamento de Alta no passado. */
+const NO_DETAILED_RIGS: ReadonlySet<string> = new Set();
+
 export function MatchPlayers({
   sim,
   homeKit,
@@ -44,6 +46,27 @@ export function MatchPlayers({
 }) {
   const [near, setNear] = useState<ReadonlySet<string>>(new Set());
   const [dense, setDense] = useState<ReadonlySet<string>>(new Set());
+  // Do not fetch the articulated geometry, skinning, IK, textures and clips
+  // until the match camera has actually selected its first visible hero.
+  const [DetailedRig, setDetailedRig] = useState<
+    (typeof import("./PlayerRig"))["PlayerRig"] | null
+  >(null);
+  useEffect(() => {
+    if (quality === "baixa" || near.size === 0 || DetailedRig) return;
+    let mounted = true;
+    void import("./PlayerRig")
+      .then(({ PlayerRig }) => {
+        if (mounted) setDetailedRig(() => PlayerRig);
+      })
+      .catch((error: unknown) => {
+        // Instanced players continue to render if a lazy chunk is unavailable.
+        reportSilent("match.player-rig.chunk", error, { classification: "degradation" });
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [DetailedRig, near.size, quality]);
+
   const legacyTopology = useMemo(
     () =>
       typeof location !== "undefined" &&
@@ -201,32 +224,33 @@ export function MatchPlayers({
         awayGkKit={awayGkKit}
         goalPulse={goalPulse}
         goalFocus={goalFocus}
-        excluded={near}
+        excluded={DetailedRig ? near : NO_DETAILED_RIGS}
         simplified
       />
-      {sim.players
-        .filter((player) => !player.sentOff && quality !== "baixa" && near.has(player.id))
-        .map((player) => (
-          <PlayerRig
-            key={player.id}
-            player={player}
-            sim={sim}
-            kit={
-              player.pos === "GK"
-                ? player.side === "home"
-                  ? homeGkKit
-                  : awayGkKit
-                : player.side === "home"
-                  ? homeKit
-                  : awayKit
-            }
-            goalPulse={goalPulse}
-            goalFocus={goalFocus}
-            quality={quality}
-            denseGeometry={legacyTopology || dense.has(player.id)}
-            matchTopology={!legacyTopology}
-          />
-        ))}
+      {DetailedRig &&
+        sim.players
+          .filter((player) => !player.sentOff && quality !== "baixa" && near.has(player.id))
+          .map((player) => (
+            <DetailedRig
+              key={player.id}
+              player={player}
+              sim={sim}
+              kit={
+                player.pos === "GK"
+                  ? player.side === "home"
+                    ? homeGkKit
+                    : awayGkKit
+                  : player.side === "home"
+                    ? homeKit
+                    : awayKit
+              }
+              goalPulse={goalPulse}
+              goalFocus={goalFocus}
+              quality={quality}
+              denseGeometry={legacyTopology || dense.has(player.id)}
+              matchTopology={!legacyTopology}
+            />
+          ))}
     </>
   );
 }
