@@ -2,7 +2,11 @@
 import type React from "react";
 import { createElement, useEffect, useLayoutEffect, useMemo } from "react";
 import * as THREE from "three";
-import { detailTextureNames, playerMaterials, retainPlayerMaterials } from "@/game/player-materials";
+import {
+  detailTextureNames,
+  playerMaterials,
+  retainPlayerMaterials,
+} from "@/game/player-materials";
 import { requestKtx2 } from "@/game/textures/ktx2";
 import { matchRigSegments } from "@/game/match-rig-detail";
 import { buildRigSkin, rebindRigSkinMaterials, type RigSkin } from "@/game/rig-skin";
