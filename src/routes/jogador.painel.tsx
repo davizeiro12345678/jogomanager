@@ -24,6 +24,7 @@ import {
   careerTotals,
   declineOffer,
   negotiateOffer,
+  MAX_OFFER_NEGOTIATIONS,
   opponentFor,
   overall,
   prepareMoments,
@@ -613,6 +614,7 @@ function ContractTab({
                   {o.loan ? "Empréstimo" : "Contrato"} de {o.years} temporada(s) · {money(o.salary)}
                   /semana
                 </p>
+                <p className="athlete-meta">Contrapropostas utilizadas: {o.negotiationRounds ?? 0}/{MAX_OFFER_NEGOTIATIONS}</p>
                 <div className="flex flex-wrap gap-2">
                   <Button size="sm" onClick={() => commit(acceptOffer(state, o.id))}>
                     Aceitar
@@ -620,6 +622,7 @@ function ContractTab({
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={(o.negotiationRounds ?? 0) >= MAX_OFFER_NEGOTIATIONS}
                     onClick={() => {
                       const r = negotiateOffer(state, o.id);
                       commit(r.state);
