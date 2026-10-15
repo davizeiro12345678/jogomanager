@@ -49,7 +49,7 @@ export function MatchPlayers({
   // Do not fetch the articulated geometry, skinning, IK, textures and clips
   // until the match camera has actually selected its first visible hero.
   const [DetailedRig, setDetailedRig] = useState<
-    typeof import("./PlayerRig")["PlayerRig"] | null
+    (typeof import("./PlayerRig"))["PlayerRig"] | null
   >(null);
   useEffect(() => {
     if (quality === "baixa" || near.size === 0 || DetailedRig) return;
@@ -227,29 +227,30 @@ export function MatchPlayers({
         excluded={DetailedRig ? near : NO_DETAILED_RIGS}
         simplified
       />
-      {DetailedRig && sim.players
-        .filter((player) => !player.sentOff && quality !== "baixa" && near.has(player.id))
-        .map((player) => (
-          <DetailedRig
-            key={player.id}
-            player={player}
-            sim={sim}
-            kit={
-              player.pos === "GK"
-                ? player.side === "home"
-                  ? homeGkKit
-                  : awayGkKit
-                : player.side === "home"
-                  ? homeKit
-                  : awayKit
-            }
-            goalPulse={goalPulse}
-            goalFocus={goalFocus}
-            quality={quality}
-            denseGeometry={legacyTopology || dense.has(player.id)}
-            matchTopology={!legacyTopology}
-          />
-        ))}
+      {DetailedRig &&
+        sim.players
+          .filter((player) => !player.sentOff && quality !== "baixa" && near.has(player.id))
+          .map((player) => (
+            <DetailedRig
+              key={player.id}
+              player={player}
+              sim={sim}
+              kit={
+                player.pos === "GK"
+                  ? player.side === "home"
+                    ? homeGkKit
+                    : awayGkKit
+                  : player.side === "home"
+                    ? homeKit
+                    : awayKit
+              }
+              goalPulse={goalPulse}
+              goalFocus={goalFocus}
+              quality={quality}
+              denseGeometry={legacyTopology || dense.has(player.id)}
+              matchTopology={!legacyTopology}
+            />
+          ))}
     </>
   );
 }
