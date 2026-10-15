@@ -451,7 +451,7 @@ function Weather({
         transparent
         opacity={rain ? 0.35 : 0.8}
         depthWrite={false}
-            />
+      />
     </instancedMesh>
   );
 }
