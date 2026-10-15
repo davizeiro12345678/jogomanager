@@ -1,6 +1,6 @@
 # Design: Modularização de cutscenes, PlayerRig e geometria WASM
 
-**Status:** proposta para revisão do usuário
+**Status:** desenho e plano aprovados; implementação em andamento
 **PR de referência:** #39, branch `perf/cinematic-rig-wasm-modules-20261015`, head verificado `38980cb`
 
 ## Objetivo

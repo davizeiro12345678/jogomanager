@@ -253,7 +253,9 @@ function Stage({
             training={art === "training"}
           />
         ) : null}
-        {kind === "stands" ? <Stands primary={primary} secondary={secondary} /> : null}
+        {kind === "stands" ? (
+          <Stands primary={primary} secondary={secondary} speaker={residentSpeaker} />
+        ) : null}
         {kind === "office" ? (
           <Office primary={primary} secondary={secondary} speaker={residentSpeaker} />
         ) : null}
