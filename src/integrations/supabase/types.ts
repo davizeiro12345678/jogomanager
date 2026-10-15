@@ -258,21 +258,36 @@ export type Database = {
       }
       checkout_session_owners: {
         Row: {
+          contents_snapshot: Json | null
           created_at: string
+          currency: string | null
           environment: string
+          price_cents: number | null
+          product_key: string | null
           session_id: string
+          stripe_price_id: string | null
           user_id: string
         }
         Insert: {
+          contents_snapshot?: Json | null
           created_at?: string
+          currency?: string | null
           environment: string
+          price_cents?: number | null
+          product_key?: string | null
           session_id: string
+          stripe_price_id?: string | null
           user_id: string
         }
         Update: {
+          contents_snapshot?: Json | null
           created_at?: string
+          currency?: string | null
           environment?: string
+          price_cents?: number | null
+          product_key?: string | null
           session_id?: string
+          stripe_price_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1832,6 +1847,33 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_payment_reviews: {
+        Row: {
+          event_created: number
+          event_id: string
+          reference: string
+          refunded_amount_cents: number
+          review_status: string
+          updated_at: string
+        }
+        Insert: {
+          event_created: number
+          event_id: string
+          reference: string
+          refunded_amount_cents?: number
+          review_status: string
+          updated_at?: string
+        }
+        Update: {
+          event_created?: number
+          event_id?: string
+          reference?: string
+          refunded_amount_cents?: number
+          review_status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_purchases: {
         Row: {
           amount_cents: number
@@ -1930,6 +1972,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      begin_payment_webhook_event: {
+        Args: { _event_id: string; _event_type: string }
+        Returns: boolean
+      }
+      finish_payment_webhook_event: {
+        Args: { _event_id: string; _succeeded: boolean }
+        Returns: undefined
+      }
+      reconcile_purchase_payment_review: {
+        Args: {
+          _event_id: string
+          _reference: string
+          _event_type: string
+          _event_created: number
+          _refunded_amount_cents?: number
+        }
+        Returns: undefined
+      }
+      reconcile_subscription_wallet: {
+        Args: { _user_id: string; _environment: string }
+        Returns: boolean
+      }
       mutate_player_career: {
         Args: {
           p_slot: number
