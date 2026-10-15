@@ -135,6 +135,8 @@ function CreateAthletePage() {
   const setHairColor = (value: number) => updateLegacyAppearance({ hairColor: value });
   const setBeard = (value: number) => updateLegacyAppearance({ beard: value });
   const [studioOpen, setStudioOpen] = useState(false);
+  const [step, setStep] = useState(0);
+  const [furthest, setFurthest] = useState(0);
   const [shirt, setShirt] = useState(9);
   const [error, setError] = useState<string | null>(null);
 
@@ -169,6 +171,20 @@ function CreateAthletePage() {
     [name, nickname, club?.id, position, shirt, heightCm, build, skin, hair, hairColor, beard],
   );
 
+  const nextStep = () => {
+    if (step === 0 && name.trim().length < 2) {
+      setError("Informe o nome completo antes de continuar.");
+      return;
+    }
+    if (step === 1 && !club) {
+      setError("Selecione um clube para começar a carreira.");
+      return;
+    }
+    setError(null);
+    setStep((current) => Math.min(2, current + 1));
+    setFurthest((current) => Math.max(current, Math.min(2, step + 1)));
+  };
+
   const submit = () => {
     if (existingAthlete === undefined)
       return setError("Aguarde carregar o espaço antes de criar o atleta.");
@@ -190,6 +206,7 @@ function CreateAthletePage() {
       origin,
       clubId: club.id,
       appearance: { skin, hair, hairColor, beard, boots: 0 },
+      appearanceV1,
       shirtNumber: shirt,
     });
     commit(state);
@@ -227,8 +244,25 @@ function CreateAthletePage() {
           </Button>
         </div>
         <ScreenHeader title="Criar atleta" />
-        <div className="athlete-grid">
-          <section className="athlete-card athlete-form" aria-label="Dados do atleta">
+        <p className="athlete-meta">
+          Três etapas: defina quem você é, escolha sua trajetória e revise o uniforme. Você pode voltar sem perder suas escolhas.
+        </p>
+        <nav className="athlete-creation-steps" aria-label="Etapas de criação">
+          {["Identidade e posição", "Trajetória e clube", "Visual e revisão"].map((label, index) => (
+            <button
+              key={label}
+              type="button"
+              aria-current={step === index ? "step" : undefined}
+              disabled={index > furthest}
+              onClick={() => { setStep(index); setError(null); }}
+            >
+              <strong>{index + 1}. {label}</strong>
+              <small>{index === step ? "Etapa atual" : index < step ? "Concluída" : "Próxima etapa"}</small>
+            </button>
+          ))}
+        </nav>
+        <div className="athlete-grid athlete-creation-grid">
+          <section className="athlete-card athlete-form" aria-label="Identidade e posição" hidden={step !== 0}>
             <h2 className="text-lg font-bold">Identidade</h2>
             <label className="athlete-field">
               <span>Nome completo</span>
@@ -315,6 +349,8 @@ function CreateAthletePage() {
                 </button>
               ))}
             </div>
+          </section>
+          <section className="athlete-card athlete-form" aria-label="Trajetória e clube" hidden={step !== 1}>
             <h2 className="text-lg font-bold">Personalidade</h2>
             <div className="athlete-chips" role="group" aria-label="Personalidade">
               {PERSONALITIES.map((p) => (
@@ -377,7 +413,8 @@ function CreateAthletePage() {
               ))}
             </div>
           </section>
-          <section className="athlete-card athlete-form" aria-label="Aparência">
+          {step === 2 && (
+          <section className="athlete-card athlete-form" aria-label="Visual e revisão">
             <div className="athlete-section-heading">
               <div>
                 <p className="athlete-eyebrow">Modelo Hero</p>
@@ -460,17 +497,28 @@ function CreateAthletePage() {
                 onChange={(e) => setShirt(Math.max(1, Math.min(99, Number(e.target.value) || 1)))}
               />
             </label>
-            {error && (
-              <p role="alert" className="text-destructive text-sm">
-                {error}
+            <div className="athlete-creation-review">
+              <h3 className="font-bold">Confira antes de entrar em campo</h3>
+              <p>{name || "Nome não informado"} · {POSITION_LABEL[position]} · {nation} · {heightCm} cm</p>
+              <p>{club?.name ?? "Clube não escolhido"} · {ORIGINS.find((item) => item.id === origin)?.label} · Camisa {shirt}</p>
+              <p className="athlete-meta">
+                Personalidade: {PERSONALITIES.find((item) => item.id === personality)?.label}.
+                A carreira ocupará apenas o espaço {slot}; nenhum outro save será substituído.
               </p>
-            )}
+            </div>
           </section>
+          )}
         </div>
+        {error && <p role="alert" className="text-destructive text-sm athlete-card">{error}</p>}
       </div>
       <div className="athlete-sticky">
-        <Button size="lg" onClick={submit}>
-          Começar carreira
+        {step > 0 && (
+          <Button variant="outline" size="lg" onClick={() => { setStep(step - 1); setError(null); }}>
+            Etapa anterior
+          </Button>
+        )}
+        <Button size="lg" onClick={step === 2 ? submit : nextStep}>
+          {step === 2 ? "Confirmar e começar carreira" : "Continuar"}
         </Button>
       </div>
     </main>
