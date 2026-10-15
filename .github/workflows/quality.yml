@@ -81,6 +81,25 @@ jobs:
           uploadArtifacts: true
           temporaryPublicStorage: false
 
+
+  lighthouse-mobile:
+    name: Lighthouse mobile multi-page audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: PFM_LOCAL_VERIFY=1 npm run build
+      - uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: .lighthouserc.mobile.cjs
+          uploadArtifacts: true
+          temporaryPublicStorage: false
+
   dependency-audit:
     name: Production dependency audit
     runs-on: ubuntu-latest
