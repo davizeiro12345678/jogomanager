@@ -1,3 +1,4 @@
+import { seasonObjectiveSummary } from "./objectives";
 import { CLUBS, getLeague, LEAGUES } from "@/game/data/leagues";
 import type { Club } from "@/game/types";
 import { ATTRIBUTES, ageGrowth, attrLabel, keyAttributes, overallFor } from "./attributes";
@@ -963,6 +964,18 @@ export function declineOffer(prev: PlayerCareerState, offerId: string): PlayerCa
 
 // ---------- fim de temporada ----------
 function endSeason(state: PlayerCareerState, rnd: () => number) {
+  // A avaliação é anual, não semanal: nenhum prêmio pode ser recebido duas
+  // vezes por reconexão ou por repetir uma renderização da interface.
+  const summary = seasonObjectiveSummary(state, seasonLength(state));
+  const missed = summary.total - summary.completed;
+  state.trust = clamp(state.trust + summary.completed * 2 - missed, 0, 100);
+  state.morale = clamp(state.morale + summary.completed * 2 - missed * 2, 0, 100);
+  state.reputation = clamp(state.reputation + Math.max(0, summary.completed - 1), 0, 100);
+  pushNews(
+    state,
+    `Metas da temporada ${state.season}: ${summary.completed}/${summary.total} concluídas. ${summary.completed === summary.total ? "O clube reconhece sua evolução." : "O treinador vai cobrar evolução no próximo ano."}`,
+    summary.completed === summary.total ? "good" : summary.completed === 0 ? "bad" : "neutral",
+  );
   const line = state.current;
   const avg = line.apps ? line.ratingSum / line.apps : 0;
   if (line.goals >= 10 && !state.traits.includes("finalizador")) state.traits.push("finalizador");
