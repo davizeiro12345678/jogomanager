@@ -20,7 +20,11 @@ import * as THREE from "three";
 import { FOOTBALL_BOOT_PROFILE, bootCrossSectionAt } from "./boot-profile";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { rigSectionData } from "./rig-geometry-worker-client";
-import { rigSectionIndices } from "./rig-section-kernel";
+import {
+  rigSectionIndices,
+  rigSectionVertexCount,
+  type RigSectionInput,
+} from "./rig-section-kernel";
 
 /** Transformação local de uma peça dentro da junta. */
 export interface RigTransform {
@@ -188,6 +192,15 @@ export function anatomicalSection(
   // is accepted, the same flat input can be warmed in the bounded worker and
   // reused here without changing topology, UVs or the first rendered frame.
   const packed = rigSectionData(packedInput);
+  return rigSectionGeometry(packedInput, packed);
+}
+
+export function rigSectionGeometry(
+  input: RigSectionInput,
+  packed: Float32Array,
+): THREE.BufferGeometry {
+  if (!(packed instanceof Float32Array) || packed.length !== rigSectionVertexCount(input) * 5)
+    throw new RangeError("Invalid rig section output");
   const positions = new Float32Array((packed.length / 5) * 3);
   const uvs = new Float32Array((packed.length / 5) * 2);
   for (let vertex = 0; vertex < packed.length / 5; vertex++) {
@@ -198,12 +211,12 @@ export function anatomicalSection(
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
-  geometry.setIndex(new THREE.BufferAttribute(rigSectionIndices(packedInput), 1));
+  geometry.setIndex(new THREE.BufferAttribute(rigSectionIndices(input), 1));
   // Preserve only the side seam pairs; cap vertices keep their hard rim
   // normals. Later anatomy/cloth sculpting must smooth these same pairs again.
-  geometry.userData["surfaceSeams"] = rings.map((_, row) => [
-    row * (radial + 1),
-    row * (radial + 1) + radial,
+  geometry.userData["surfaceSeams"] = Array.from({ length: input.rings.length / 4 }, (_, row) => [
+    row * (input.radial + 1),
+    row * (input.radial + 1) + input.radial,
   ]);
   refreshSurfaceNormals(geometry);
   return geometry;
