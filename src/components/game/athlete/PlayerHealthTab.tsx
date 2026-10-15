@@ -45,8 +45,8 @@ export function PlayerHealthTab({ state }: { state: PlayerCareerState }) {
           })}
         </div>
         <p className="athlete-meta mt-3">
-          Escolha o treino efetivo na aba Semana. Treinar pesado oferece mais evolução
-          potencial, mas exige atenção à recuperação.
+          Escolha o treino efetivo na aba Semana. Treinar pesado oferece mais evolução potencial,
+          mas exige atenção à recuperação.
         </p>
       </section>
     </div>

@@ -45,13 +45,15 @@ export function PlayerCalendarTab({ state }: { state: PlayerCareerState }) {
                 <div className="flex flex-wrap justify-between gap-2">
                   <strong>Semana {match.week}</strong>
                   <span>
-                    {match.home ? "Casa" : "Fora"} · {CLUBS[match.opponentId]?.name ?? match.opponentId}
+                    {match.home ? "Casa" : "Fora"} ·{" "}
+                    {CLUBS[match.opponentId]?.name ?? match.opponentId}
                   </span>
                 </div>
                 <p className="athlete-meta mt-1">
                   {match.goalsFor} × {match.goalsAgainst} · {match.minutes} minutos
                   {" · "}Nota {match.rating?.toFixed(1) ?? "—"}
-                  {" · "}{match.goals} gols · {match.assists} assistências
+                  {" · "}
+                  {match.goals} gols · {match.assists} assistências
                 </p>
               </li>
             ))}
