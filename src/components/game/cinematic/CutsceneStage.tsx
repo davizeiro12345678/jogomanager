@@ -20,8 +20,6 @@ import {
   Pause,
   Play,
   ChevronRight,
-  Eye,
-  EyeOff,
   SlidersHorizontal,
 } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -51,6 +49,7 @@ import type { QualityLevel } from "@/game/device";
 import type { CinematicManner } from "@/game/cinematic-actor";
 import { LazyCinematicStage, preloadCinematicStage } from "./cinematic-loading";
 import { CutsceneLoadFallback } from "./CutsceneLoadFallback";
+import { CutsceneDialogue } from "./CutsceneDialogue";
 import { GraphicsBoundary } from "../GraphicsBoundary";
 import { Button } from "@/components/ui/button";
 import { audioBlobUrl } from "@/game/audio-cache";
@@ -112,6 +111,9 @@ interface Props {
 // not need to parse the many SVG illustrations at startup.
 const Backdrop = lazy(() =>
   import("./CutsceneBackdrop").then(({ Backdrop }) => ({ default: Backdrop })),
+);
+const CutsceneSettings = lazy(() =>
+  import("./CutsceneSettings").then(({ CutsceneSettings }) => ({ default: CutsceneSettings })),
 );
 
 /* ------------------------------------------------------------- runtime */
@@ -860,105 +862,41 @@ export function CutsceneStage({
       </header>
       <div className="cutscene-bottom">
         {(captions || pendingChoice) && (
-          <section key={i} className="cutscene-dialogue" aria-label="Diálogo da cena">
-            {speaker ? <p className="cutscene-speaker">{speaker}</p> : null}
-            <button
-              type="button"
-              onClick={next}
-              aria-label={typed < full.length ? "Mostrar fala completa" : "Continuar diálogo"}
-              className="block w-full text-left text-base leading-relaxed text-white sm:text-lg"
-            >
-              {full.slice(0, typed)}
-              {typed < full.length && (
-                <span aria-hidden className="opacity-40">
-                  ▍
-                </span>
-              )}
-            </button>
-            <p className="sr-only" aria-live="polite">
-              {speaker ? `${speaker}: ` : ""}
-              {full}
-            </p>
-            {line.choices && (
-              <div className="cutscene-choices" role="group" aria-label="Escolha sua resposta">
-                {line.choices.map((choice, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => choose(index)}
-                    disabled={chosen !== null}
-                    aria-pressed={chosen === index}
-                    className="cutscene-choice"
-                  >
-                    <span className="block font-semibold">{choice.label}</span>
-                    {choice.hint ? (
-                      <span className="mt-1 block text-xs text-white/60">{choice.hint}</span>
-                    ) : null}
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
+          <CutsceneDialogue
+            key={i}
+            speaker={speaker}
+            fullText={full}
+            visibleText={full.slice(0, typed)}
+            choices={line.choices}
+            selectedChoice={chosen}
+            choiceLocked={chosen !== null}
+            onAdvance={next}
+            onChoose={choose}
+          />
         )}
         {pendingChoice && (
           <p className="cutscene-decision">Sua resposta muda o rumo da conversa.</p>
         )}
         {settingsOpen && (
-          <div
-            id="cutscene-settings"
-            className="cutscene-settings"
-            role="group"
-            aria-label="Preferências da cena"
-          >
-            <button
-              type="button"
-              aria-pressed={captions}
-              disabled={pendingChoice}
-              onClick={() => setCaptions((value) => !value)}
-              className="cutscene-control px-3 text-xs"
-            >
-              {captions ? <Eye size={17} /> : <EyeOff size={17} />}
-              {captions ? "Ocultar legendas" : "Mostrar legendas"}
-            </button>
-            {narrate && (
-              <button
-                type="button"
-                aria-pressed={voiceEnabled}
-                onClick={() => setVoiceEnabled((value) => !value)}
-                className="cutscene-control px-3 text-xs"
-              >
-                {voiceEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
-                {voiceEnabled ? "Desligar voz" : "Ligar voz"}
-              </button>
-            )}
-            <button
-              type="button"
-              aria-pressed={ambientEnabled}
-              onClick={toggleAmbience}
-              className="cutscene-control px-3 text-xs"
-            >
-              {ambientEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
-              Som ambiente
-            </button>
-            <button
-              type="button"
-              aria-pressed={automatic}
-              onClick={() => setAutomatic((value) => !value)}
-              className="cutscene-control px-3 text-xs"
-            >
-              Automático
-            </button>
-            <button
-              type="button"
-              onClick={() => {
+          <Suspense fallback={null}>
+            <CutsceneSettings
+              captions={captions}
+              pendingChoice={pendingChoice}
+              onToggleCaptions={() => setCaptions((value) => !value)}
+              narrate={narrate}
+              voiceEnabled={voiceEnabled}
+              onToggleVoice={() => setVoiceEnabled((value) => !value)}
+              ambientEnabled={ambientEnabled}
+              onToggleAmbience={toggleAmbience}
+              automatic={automatic}
+              onToggleAutomatic={() => setAutomatic((value) => !value)}
+              mode={mode}
+              onToggleMode={() => {
                 setMode((value) => (value === "3d" ? "2d" : "3d"));
                 setSettingsOpen(false);
               }}
-              className="cutscene-control px-3 text-xs"
-            >
-              {mode === "3d" ? "Cena ilustrada" : "Ver palco 3D"}
-            </button>
-          </div>
+            />
+          </Suspense>
         )}
         <div className="cutscene-progress" aria-hidden="true">
           {lines.map((_, index) => (

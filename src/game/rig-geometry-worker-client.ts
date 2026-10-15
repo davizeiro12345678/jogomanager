@@ -24,7 +24,19 @@ export class RigGeometryWorkerClient {
   private disposed = false;
   private sequence = 0;
   private starting = false;
-  readonly stats = { requests: 0, completed: 0, dropped: 0, timeouts: 0, retainedBytes: 0 };
+  private workerRoundTripStartedAt: number | null = null;
+  readonly stats = {
+    requests: 0,
+    completed: 0,
+    dropped: 0,
+    timeouts: 0,
+    retainedBytes: 0,
+    laneWaitMs: 0,
+    workerRoundTripMs: 0,
+    responseValidationMs: 0,
+    inputBytes: 0,
+    outputBytes: 0,
+  };
   constructor(
     private readonly create = () =>
       new Worker(new URL("./rig-geometry.worker.ts", import.meta.url), { type: "module" }),
@@ -36,6 +48,10 @@ export class RigGeometryWorkerClient {
     return new Promise((resolve) => {
       const job = { request: { ...batch, id: ++this.sequence }, resolve };
       this.stats.requests++;
+      this.stats.inputBytes += batch.sections.reduce(
+        (total, section) => total + section.input.rings.byteLength,
+        0,
+      );
       if (this.pending) {
         this.pending.resolve(null);
         this.stats.dropped++;
@@ -49,7 +65,9 @@ export class RigGeometryWorkerClient {
     if (!this.worker) {
       this.starting = true;
       try {
+        const laneWaitStartedAt = performance.now();
         this.release = await this.reserve(this.abort.signal);
+        this.stats.laneWaitMs += Math.max(0, performance.now() - laneWaitStartedAt);
         if (!this.release || this.disposed) {
           this.release?.();
           this.release = null;
@@ -62,20 +80,40 @@ export class RigGeometryWorkerClient {
         this.worker.onmessage = ({ data }) => {
           const job = this.active;
           if (!job || data?.id !== job.request.id) return;
+          if (this.workerRoundTripStartedAt !== null) {
+            this.stats.workerRoundTripMs += Math.max(
+              0,
+              performance.now() - this.workerRoundTripStartedAt,
+            );
+            this.workerRoundTripStartedAt = null;
+          }
           clearTimeout(this.timer);
           this.timer = undefined;
           this.active = null;
+          const validationStartedAt = performance.now();
+          if (Array.isArray(data.sections))
+            this.stats.outputBytes += data.sections.reduce(
+              (total: number, section: { packed?: unknown }) =>
+                total + (section.packed instanceof ArrayBuffer ? section.packed.byteLength : 0),
+              0,
+            );
           const valid =
             Array.isArray(data.sections) &&
             data.sections.length === job.request.sections.length &&
+            Number.isSafeInteger(data.retainedBytes) &&
+            data.retainedBytes >= 0 &&
+            data.retainedBytes <= 8 * 1024 * 1024 &&
+            typeof data.degraded === "boolean" &&
             data.sections.every(
               (s: GeometryBatchResult["sections"][number], i: number) =>
                 s.part === job.request.sections[i]!.part &&
+                (s.backend === "rust" || s.backend === "typescript") &&
                 s.packed instanceof ArrayBuffer &&
                 s.packed.byteLength ===
                   rigSectionVertexCount(job.request.sections[i]!.input) * 20 &&
                 new Float32Array(s.packed).every(Number.isFinite),
             );
+          this.stats.responseValidationMs += Math.max(0, performance.now() - validationStartedAt);
           if (valid) {
             this.stats.completed++;
             this.stats.retainedBytes = Math.min(
@@ -101,6 +139,7 @@ export class RigGeometryWorkerClient {
       this.dispose();
     }, this.deadlineMs);
     try {
+      this.workerRoundTripStartedAt = performance.now();
       this.worker!.postMessage(this.active.request);
     } catch {
       this.dispose();
@@ -113,6 +152,7 @@ export class RigGeometryWorkerClient {
     clearTimeout(this.timer);
     this.worker?.terminate();
     this.worker = null;
+    this.workerRoundTripStartedAt = null;
     this.release?.();
     this.release = null;
     this.active?.resolve(null);

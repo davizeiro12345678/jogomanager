@@ -12,10 +12,12 @@ import { Environment, Lightformer } from "@react-three/drei";
 import { CinematicDirector as Director } from "./CinematicDirector";
 import { Canvas } from "@react-three/fiber";
 import {
+  Component,
   lazy,
   memo,
   startTransition,
   Suspense,
+  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -25,15 +27,6 @@ import {
 import * as THREE from "three";
 
 import type { Cutscene, SceneArt, Speaker } from "@/content/cutscenes";
-import {
-  LockerRoom,
-  Tunnel,
-  PressRoom,
-  PitchEntry,
-  Stands,
-  Office,
-  BusArrival,
-} from "./CinematicLocationSets";
 import type { LineLight, ShotSize } from "@/game/cutscene-director";
 import type { Cast } from "@/game/cast";
 import type { ManagerLook } from "@/game/types";
@@ -63,6 +56,7 @@ import { CinematicSetFinish } from "./cinematic/CinematicSetFinish";
 import { CinematicStoryDressing } from "./cinematic/CinematicStoryDressing";
 import { CinematicBusinessDressing } from "./cinematic/CinematicBusinessDressing";
 import { CinematicMotivatedLight } from "./cinematic/CinematicMotivatedLight";
+import { resolveCinematicSetLoader } from "./cinematic/sets/registry";
 
 import {
   cinematicPresentationBudget,
@@ -75,6 +69,25 @@ import { detectQuality, type QualityLevel } from "@/game/device";
 import { useT } from "@/i18n/provider";
 
 type SetKind = CinematicSet;
+
+class CinematicSetErrorBoundary extends Component<
+  { children: ReactNode; onUnavailable: () => void },
+  { failed: boolean }
+> {
+  override state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  override componentDidCatch() {
+    this.props.onUnavailable();
+  }
+
+  override render() {
+    return this.state.failed ? <group /> : this.props.children;
+  }
+}
 
 /** Editing cuts establish geography before a face; cameras never fly through actors. */
 /** Luz da fala vinda da direção: o humor pinta o cenário a cada fala. */
@@ -106,6 +119,7 @@ function Stage({
   festive = false,
   enhanced = true,
   onBatch,
+  onUnavailable,
 }: {
   business?: Cutscene["business"];
   language?: string | undefined;
@@ -126,8 +140,16 @@ function Stage({
   festive?: boolean;
   enhanced?: boolean;
   onBatch?: ((snapshot: CinematicBatchSnapshot) => void) | undefined;
+  onUnavailable?: (() => void) | undefined;
 }) {
   const { t } = useT();
+  const SelectedSet = useMemo(() => {
+    const loader = resolveCinematicSetLoader(kind);
+    return loader ? lazy(loader) : null;
+  }, [kind]);
+  useEffect(() => {
+    if (!SelectedSet) onUnavailable?.();
+  }, [SelectedSet, onUnavailable]);
   const base = mood === "good" ? "#fff3e1" : mood === "bad" ? "#d8e3fa" : "#eef2f7";
   const tint = LINE_TINT[light];
   const warm = light === "neutra" ? base : tint.sky;
@@ -137,6 +159,19 @@ function Stage({
   // speaker receives one semantic overlay, shared by the camera resolver.
   const stagedActor = cinematicStageActorFor(art, speaker, festive);
   const residentSpeaker = stagedActor?.presence === "resident" ? stagedActor.role : null;
+  const setScene = SelectedSet ? (
+    <Suspense fallback={<group />}>
+      <SelectedSet
+        primary={primary}
+        secondary={secondary}
+        speaker={residentSpeaker}
+        festive={festive}
+        training={art === "training"}
+      />
+    </Suspense>
+  ) : (
+    <group />
+  );
   return (
     <>
       <color
@@ -235,31 +270,14 @@ function Stage({
             primary={primary}
             speaker={residentSpeaker}
           />
-        ) : kind === "locker" ? (
-          <LockerRoom primary={primary} secondary={secondary} speaker={residentSpeaker} />
         ) : null}
-        {kind === "tunnel" ? (
-          <Tunnel primary={primary} secondary={secondary} speaker={residentSpeaker} />
-        ) : null}
-        {kind === "press" ? (
-          <PressRoom primary={primary} secondary={secondary} speaker={residentSpeaker} />
-        ) : null}
-        {kind === "pitch" ? (
-          <PitchEntry
-            primary={primary}
-            secondary={secondary}
-            speaker={residentSpeaker}
-            festive={festive}
-            training={art === "training"}
-          />
-        ) : null}
-        {kind === "stands" ? <Stands primary={primary} secondary={secondary} /> : null}
-        {kind === "office" ? (
-          <Office primary={primary} secondary={secondary} speaker={residentSpeaker} />
-        ) : null}
-        {kind === "arrival" ? (
-          <BusArrival primary={primary} secondary={secondary} speaker={residentSpeaker} />
-        ) : null}
+        {onUnavailable ? (
+          <CinematicSetErrorBoundary key={kind} onUnavailable={onUnavailable}>
+            {setScene}
+          </CinematicSetErrorBoundary>
+        ) : (
+          setScene
+        )}
         {stagedActor?.presence === "overlay" ? (
           <Figure
             key={`speaker-${art}-${stagedActor.role}`}
@@ -547,6 +565,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
                 festive={(art === "trophy" || art === "celebration") && mood === "good"}
                 onBatch={onBatch}
                 enhanced={showEnhanced}
+                onUnavailable={onUnavailable}
               />
               {showEnhanced ? (
                 <Suspense fallback={null}>
