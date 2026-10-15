@@ -80,6 +80,13 @@ jobs:
           configPath: .lighthouserc.cjs
           uploadArtifacts: true
           temporaryPublicStorage: false
+      - name: Record raw, Gzip and Brotli bundle sizes
+        run: npm run bundle:report
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundle-compression-report
+          path: verification/bundle-2026-10-01/current.json
+          if-no-files-found: error
 
   dependency-audit:
     name: Production dependency audit
