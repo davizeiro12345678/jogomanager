@@ -102,7 +102,13 @@ async function resolvePurchase(sessionId: string, env: StripeEnv) {
     lineItem?.amount_total ??
     full.amount_total ??
     0;
-  return { productKey, amount, session: full };
+  return {
+    productKey,
+    amount,
+    paidAmount: full.amount_total ?? 0,
+    snapshot: offer.snapshot,
+    session: full,
+  };
 }
 
 async function fulfillSession(sessionId: string, userId: string, env: StripeEnv) {
