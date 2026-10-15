@@ -13,6 +13,10 @@ import {
   createAthleteSaveEnvelope,
   createAthleteSaveSyncEntry,
   deferAthleteSync,
+  deleteAthlete,
+  readAthleteBackup,
+  readAthleteCloudRevision,
+  recordAthleteCloudRevision,
   dueAthleteSyncEntries,
   enqueueAthleteSync,
   listAthletes,
@@ -129,6 +133,40 @@ describe("athlete local owner boundary", () => {
       hairColor: legacy.appearance.hairColor,
       bootVariant: legacy.appearance.boots,
     });
+  });
+});
+
+describe("athlete cloud revisions and recoverable deletion", () => {
+  beforeEach(() => {
+    storage = new MemoryStorage();
+    vi.stubGlobal("window", { localStorage: storage });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps server revisions separate from local save revisions", () => {
+    writeAthlete(athlete(1, "Alice"), "alice");
+    expect(readAthleteCloudRevision(1, "alice")).toBeNull();
+    expect(recordAthleteCloudRevision(1, 3, "alice")).toBe(true);
+    writeAthlete(athlete(1, "Alice"), "alice");
+    expect(readAthleteCloudRevision(1, "alice")).toBe(3);
+    expect(recordAthleteCloudRevision(1, 2, "alice")).toBe(false);
+    expect(readAthleteCloudRevision(1, "alice")).toBe(3);
+    expect(readAthleteCloudRevision(1, "bruno")).toBeNull();
+  });
+
+  it("preserves a downloadable copy when an athlete is deleted locally", () => {
+    const original = athlete(2, "Alice");
+    writeAthlete(original, "alice");
+    expect(deleteAthlete(2, "alice")).toMatchObject({ kind: "deleted", slot: 2 });
+    expect(readAthlete(2, "alice")).toBeNull();
+    expect(readAthleteBackup(2, "alice")).toMatchObject({
+      seed: original.seed,
+      name: original.name,
+    });
+    expect(readAthleteBackup(2, "bruno")).toBeNull();
   });
 });
 
