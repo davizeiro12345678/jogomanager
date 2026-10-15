@@ -527,7 +527,8 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
             });
             startFallback("O snapshot da partida não pôde ser aplicado; modo compatível ativado.");
           }
-        } else if (message.type === "finished") apply(message.result, "worker");
+        } else if (message.type === "snapshot") apply(message.snapshot, "worker");
+        else if (message.type === "finished") apply(message.result, "worker");
       };
       liveWorker.onerror = (event) => {
         reportSilent("match-worker", event.error ?? event.message, {
