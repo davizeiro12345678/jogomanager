@@ -9,9 +9,22 @@ const DESC =
   "Compare função, salário, preço e reposição antes de contratar ou vender. Guia de transferências com exemplos de custo total e planejamento de orçamento.";
 
 export const Route = createFileRoute("/mercado-de-transferencias")({
-  beforeLoad: () => {
-    throw redirect({ to: "/planejamento-de-elenco", statusCode: 301, replace: true });
-  },
+  head: () => ({
+    meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
+    links: canonical(PATH),
+    scripts: [
+      articleLd({
+        headline: "Mercado de transferências: como contratar bem",
+        description: DESC,
+        path: PATH,
+      }),
+      breadcrumbLd([
+        { name: "Início", path: "/" },
+        { name: "Mercado de transferências", path: PATH },
+      ]),
+    ],
+  }),
+  component: Page,
 });
 
 const RULES = [
