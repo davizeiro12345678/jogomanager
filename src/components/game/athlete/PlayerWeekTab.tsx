@@ -67,11 +67,17 @@ export function WeekTab({
           <h2 className="font-bold">
             Treino da semana <span className="athlete-meta">(escolha 2 áreas)</span>
           </h2>
+          {state.injury && (
+            <p className="athlete-meta mt-2" role="status">
+              Treinos suspensos durante a recuperação; avance a semana para continuar o tratamento.
+            </p>
+          )}
           <div className="athlete-chips mt-2">
             {options.map((g) => (
               <button
                 key={g}
                 type="button"
+                disabled={Boolean(state.injury)}
                 className="athlete-chip"
                 aria-pressed={focus.includes(g)}
                 onClick={() => toggle(g)}
@@ -85,6 +91,7 @@ export function WeekTab({
               <button
                 key={i}
                 type="button"
+                disabled={Boolean(state.injury)}
                 className="athlete-chip"
                 aria-pressed={intensity === i}
                 onClick={() => setIntensity(i)}
