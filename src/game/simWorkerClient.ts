@@ -525,9 +525,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
               code: "decode-frame",
               sequence: packet.seq,
             });
-            startFallback(
-              "O snapshot da partida não pôde ser aplicado; modo compatível ativado.",
-            );
+            startFallback("O snapshot da partida não pôde ser aplicado; modo compatível ativado.");
           }
         } else if (message.type === "finished") apply(message.result, "worker");
       };
