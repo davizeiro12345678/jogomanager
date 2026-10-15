@@ -23,13 +23,35 @@ import { useAthlete } from "@/hooks/useAthlete";
 import { downloadAthlete } from "@/lib/player-career-export";
 import { seasonObjectives } from "@/game/player-career/objectives";
 import { Bar } from "@/components/game/athlete/PlayerStats";
-import { NationalTeamTab } from "@/components/game/athlete/PlayerNationalTab";
 import { WeekTab } from "@/components/game/athlete/PlayerWeekTab";
-import { ContractTab } from "@/components/game/athlete/PlayerContractTab";
-import { HistoryTab } from "@/components/game/athlete/PlayerHistoryTab";
-import { PlayerCalendarTab } from "@/components/game/athlete/PlayerCalendarTab";
-import { PlayerHealthTab } from "@/components/game/athlete/PlayerHealthTab";
 import "@/components/game/athlete.css";
+
+// Non-default panels load only when selected, instead of adding all their UI to the weekly startup.
+const PlayerCalendarTab = lazy(() =>
+  import("@/components/game/athlete/PlayerCalendarTab").then((module) => ({
+    default: module.PlayerCalendarTab,
+  })),
+);
+const PlayerHealthTab = lazy(() =>
+  import("@/components/game/athlete/PlayerHealthTab").then((module) => ({
+    default: module.PlayerHealthTab,
+  })),
+);
+const NationalTeamTab = lazy(() =>
+  import("@/components/game/athlete/PlayerNationalTab").then((module) => ({
+    default: module.NationalTeamTab,
+  })),
+);
+const ContractTab = lazy(() =>
+  import("@/components/game/athlete/PlayerContractTab").then((module) => ({
+    default: module.ContractTab,
+  })),
+);
+const HistoryTab = lazy(() =>
+  import("@/components/game/athlete/PlayerHistoryTab").then((module) => ({
+    default: module.HistoryTab,
+  })),
+);
 
 export const Route = createFileRoute("/jogador/painel")({
   ssr: false,
@@ -382,6 +404,13 @@ function Panel({
           aria-labelledby={`athlete-tab-${tab}`}
           className="min-w-0"
         >
+          <Suspense
+            fallback={
+              <section className="athlete-card" role="status" aria-live="polite">
+                Carregando o painel selecionado…
+              </section>
+            }
+          >
           {tab === "semana" && <WeekTab state={state} commit={commit} />}
           {tab === "calendario" && <PlayerCalendarTab state={state} />}
           {tab === "saude" && <PlayerHealthTab state={state} />}
@@ -451,6 +480,7 @@ function Panel({
             </section>
           )}
           {tab === "historico" && <HistoryTab state={state} />}
+          </Suspense>
         </div>
       </div>
     </main>
