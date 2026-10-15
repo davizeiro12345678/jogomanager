@@ -328,6 +328,66 @@ export function useAthlete(slot: number) {
   }, [owner, slot, userId]);
 
   useEffect(() => {
+    if (!userId || !isAthleteSlot(slot)) return;
+    let disposed = false;
+    void loadAthletesCloud()
+      .then((rows) => {
+        if (disposed || currentUser.current !== userId) return;
+        const row = rows.find((item) => item.slot === slot);
+        const local = readAthlete(slot, userId);
+        const pending = hasQueuedAthleteSync(slot, userId);
+        if (!row) {
+          if (readAthleteCloudRevision(slot, userId) === null) {
+            recordAthleteCloudRevision(slot, 0, userId);
+          }
+          if (local && !pending) {
+            const envelope = readAthleteEnvelope(slot, userId);
+            if (envelope) queueAthleteSave(envelope, userId);
+          }
+          return;
+        }
+        if (pending) {
+          if (readAthleteCloudRevision(slot, userId) === null) setSyncConflict(true);
+          return;
+        }
+        if (row.deleted) {
+          if (local) setSyncConflict(true);
+          else recordAthleteCloudRevision(slot, row.revision, userId);
+          return;
+        }
+        let remote: unknown;
+        try {
+          remote = JSON.parse(row.state);
+        } catch {
+          setSyncError(true);
+          return;
+        }
+        const cloud = hydrateAthlete(remote);
+        if (!cloud || cloud.slot !== slot) {
+          setSyncError(true);
+          return;
+        }
+        if (!local && !hasAthleteLocalDeletion(slot, userId)) {
+          if (writeAthlete(cloud, userId)) {
+            recordAthleteCloudRevision(slot, row.revision, userId);
+            setState(cloud);
+          } else setSyncError(true);
+        } else if (local && JSON.stringify(local) === JSON.stringify(cloud)) {
+          recordAthleteCloudRevision(slot, row.revision, userId);
+        } else {
+          setSyncConflict(true);
+          setSyncError(true);
+        }
+      })
+      .catch(() => {
+        if (!disposed && currentUser.current === userId) setSyncError(true);
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [slot, userId]);
+
+  useEffect(() => {
     if (!userId) return;
     let disposed = false;
     const syncPending = () => {
