@@ -1,12 +1,15 @@
 import { ScreenHeader } from "@/components/game/screen-kit";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/game/Crest";
-import { AthleteHero3D } from "@/components/game/players/AthleteHero3D";
-import PlayerStudio from "@/components/game/players/PlayerStudio";
+const AthleteHero3D = lazy(() =>
+  import("@/components/game/players/AthleteHero3D").then((module) => ({
+    default: module.AthleteHero3D,
+  })),
+);
 import { LEAGUES } from "@/game/data/leagues";
 import { POSITION_LABEL } from "@/game/player-career/attributes";
 import {
@@ -96,7 +99,7 @@ const PERSONALITIES: { id: AthletePersonality; label: string; hint: string }[] =
 function CreateAthletePage() {
   const { slot } = Route.useSearch();
   const navigate = useNavigate();
-  const { commit } = useAthlete(slot);
+  const { state: existingAthlete, commit } = useAthlete(slot);
   const slotId = slot as 1 | 2 | 3;
   const [name, setName] = useState("");
   const [nickname, setNickname] = useState("");
@@ -132,6 +135,8 @@ function CreateAthletePage() {
   const setHairColor = (value: number) => updateLegacyAppearance({ hairColor: value });
   const setBeard = (value: number) => updateLegacyAppearance({ beard: value });
   const [studioOpen, setStudioOpen] = useState(false);
+  const [step, setStep] = useState(0);
+  const [furthest, setFurthest] = useState(0);
   const [shirt, setShirt] = useState(9);
   const [error, setError] = useState<string | null>(null);
 
@@ -166,7 +171,25 @@ function CreateAthletePage() {
     [name, nickname, club?.id, position, shirt, heightCm, build, skin, hair, hairColor, beard],
   );
 
+  const nextStep = () => {
+    if (step === 0 && name.trim().length < 2) {
+      setError("Informe o nome completo antes de continuar.");
+      return;
+    }
+    if (step === 1 && !club) {
+      setError("Selecione um clube para começar a carreira.");
+      return;
+    }
+    setError(null);
+    setStep((current) => Math.min(2, current + 1));
+    setFurthest((current) => Math.max(current, Math.min(2, step + 1)));
+  };
+
   const submit = () => {
+    if (existingAthlete === undefined)
+      return setError("Aguarde carregar o espaço antes de criar o atleta.");
+    if (existingAthlete)
+      return setError("Este espaço já possui uma carreira. Escolha um espaço vazio no arquivo.");
     if (name.trim().length < 2) return setError("Digite o nome do atleta (pelo menos 2 letras).");
     if (!club) return setError("Escolha um clube.");
     const state = createAthlete({
@@ -183,11 +206,32 @@ function CreateAthletePage() {
       origin,
       clubId: club.id,
       appearance: { skin, hair, hairColor, beard, boots: 0 },
+      appearanceV1,
       shirtNumber: shirt,
     });
     commit(state);
     void navigate({ to: "/jogador/painel", search: { slot } });
   };
+
+  if (existingAthlete !== null) {
+    return (
+      <main className="athlete-shell">
+        <div className="athlete-wrap athlete-card grid gap-3">
+          <h1 className="text-2xl font-bold">
+            {existingAthlete === undefined ? "Verificando espaço…" : "Espaço já ocupado"}
+          </h1>
+          <p className="athlete-meta">
+            {existingAthlete === undefined
+              ? "Aguarde a leitura dos seus salvamentos."
+              : `O atleta ${existingAthlete.nickname} já utiliza o espaço ${slot}. A criação de outra carreira aqui poderia substituir o progresso salvo.`}
+          </p>
+          <Button asChild variant="outline">
+            <Link to="/jogador">Voltar para minhas carreiras</Link>
+          </Button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="athlete-shell" style={{ ["--club" as string]: club?.primary }}>
@@ -200,8 +244,25 @@ function CreateAthletePage() {
           </Button>
         </div>
         <ScreenHeader title="Criar atleta" />
-        <div className="athlete-grid">
-          <section className="athlete-card athlete-form" aria-label="Dados do atleta">
+        <p className="athlete-meta">
+          Três etapas: defina quem você é, escolha sua trajetória e revise o uniforme. Você pode voltar sem perder suas escolhas.
+        </p>
+        <nav className="athlete-creation-steps" aria-label="Etapas de criação">
+          {["Identidade e posição", "Trajetória e clube", "Visual e revisão"].map((label, index) => (
+            <button
+              key={label}
+              type="button"
+              aria-current={step === index ? "step" : undefined}
+              disabled={index > furthest}
+              onClick={() => { setStep(index); setError(null); }}
+            >
+              <strong>{index + 1}. {label}</strong>
+              <small>{index === step ? "Etapa atual" : index < step ? "Concluída" : "Próxima etapa"}</small>
+            </button>
+          ))}
+        </nav>
+        <div className="athlete-grid athlete-creation-grid">
+          <section className="athlete-card athlete-form" aria-label="Identidade e posição" hidden={step !== 0}>
             <h2 className="text-lg font-bold">Identidade</h2>
             <label className="athlete-field">
               <span>Nome completo</span>
@@ -288,6 +349,8 @@ function CreateAthletePage() {
                 </button>
               ))}
             </div>
+          </section>
+          <section className="athlete-card athlete-form" aria-label="Trajetória e clube" hidden={step !== 1}>
             <h2 className="text-lg font-bold">Personalidade</h2>
             <div className="athlete-chips" role="group" aria-label="Personalidade">
               {PERSONALITIES.map((p) => (
@@ -350,7 +413,8 @@ function CreateAthletePage() {
               ))}
             </div>
           </section>
-          <section className="athlete-card athlete-form" aria-label="Aparência">
+          {step === 2 && (
+          <section className="athlete-card athlete-form" aria-label="Visual e revisão">
             <div className="athlete-section-heading">
               <div>
                 <p className="athlete-eyebrow">Modelo Hero</p>
@@ -358,7 +422,15 @@ function CreateAthletePage() {
               </div>
               <span className="athlete-quality-badge">Alta qualidade</span>
             </div>
-            <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
+            <Suspense
+              fallback={
+                <div className="athlete-3d-preview grid place-items-center" role="status">
+                  Preparando visualização 3D…
+                </div>
+              }
+            >
+              <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
+            </Suspense>
             <div className="athlete-field">
               <span>Tom de pele</span>
               <div className="athlete-chips">
@@ -425,17 +497,28 @@ function CreateAthletePage() {
                 onChange={(e) => setShirt(Math.max(1, Math.min(99, Number(e.target.value) || 1)))}
               />
             </label>
-            {error && (
-              <p role="alert" className="text-destructive text-sm">
-                {error}
+            <div className="athlete-creation-review">
+              <h3 className="font-bold">Confira antes de entrar em campo</h3>
+              <p>{name || "Nome não informado"} · {POSITION_LABEL[position]} · {nation} · {heightCm} cm</p>
+              <p>{club?.name ?? "Clube não escolhido"} · {ORIGINS.find((item) => item.id === origin)?.label} · Camisa {shirt}</p>
+              <p className="athlete-meta">
+                Personalidade: {PERSONALITIES.find((item) => item.id === personality)?.label}.
+                A carreira ocupará apenas o espaço {slot}; nenhum outro save será substituído.
               </p>
-            )}
+            </div>
           </section>
+          )}
         </div>
+        {error && <p role="alert" className="text-destructive text-sm athlete-card">{error}</p>}
       </div>
       <div className="athlete-sticky">
-        <Button size="lg" onClick={submit}>
-          Começar carreira
+        {step > 0 && (
+          <Button variant="outline" size="lg" onClick={() => { setStep(step - 1); setError(null); }}>
+            Etapa anterior
+          </Button>
+        )}
+        <Button size="lg" onClick={step === 2 ? submit : nextStep}>
+          {step === 2 ? "Confirmar e começar carreira" : "Continuar"}
         </Button>
       </div>
     </main>

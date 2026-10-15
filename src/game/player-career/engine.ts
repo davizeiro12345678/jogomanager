@@ -1,3 +1,4 @@
+import { seasonObjectiveSummary } from "./objectives";
 import { CLUBS, getLeague, LEAGUES } from "@/game/data/leagues";
 import type { Club } from "@/game/types";
 import { ATTRIBUTES, ageGrowth, attrLabel, keyAttributes, overallFor } from "./attributes";
@@ -53,6 +54,21 @@ export const TRAINING_INJURY: Record<TrainingIntensity, number> = {
   normal: 0.012,
   pesado: 0.035,
 };
+
+/** Projeção exata de energia e risco do treino usada tanto no motor quanto no painel. */
+export function trainingOutlook(state: PlayerCareerState, intensity: TrainingIntensity) {
+  const energyAfter = clamp(state.energy - TRAINING_ENERGY[intensity] + 18, 10, 100);
+  const injuryRisk = state.injury
+    ? 0
+    : clamp(
+        TRAINING_INJURY[intensity] *
+          (energyAfter < 40 ? 2 : 1) *
+          (state.traits.includes("vidro") ? 1.6 : 1),
+        0,
+        1,
+      );
+  return { energyAfter, injuryRisk };
+}
 
 export function overall(state: PlayerCareerState): number {
   return overallFor(state.attrs, state.position);
@@ -230,6 +246,58 @@ const MOMENTS: Record<"ataque" | "meio" | "defesa" | "gol", Omit<KeyMoment, "id"
         { id: "driblar", label: "Driblar o goleiro", attr: "drible", risk: 0.55, reward: "goal" },
       ],
     },
+    {
+      prompt: "A bola sobra na pequena área após cruzamento rasteiro.",
+      options: [
+        {
+          id: "primeira",
+          label: "Finalizar de primeira",
+          attr: "finalizacao",
+          risk: 0.48,
+          reward: "goal",
+        },
+        {
+          id: "dominar",
+          label: "Dominar antes de chutar",
+          attr: "dominio",
+          risk: 0.36,
+          reward: "goal",
+        },
+        {
+          id: "rolar",
+          label: "Rolar para um colega livre",
+          attr: "decisao",
+          risk: 0.22,
+          reward: "assist",
+        },
+      ],
+    },
+    {
+      prompt: "Você vence o lateral perto da linha de fundo e observa a área.",
+      options: [
+        {
+          id: "cruzar",
+          label: "Cruzar com precisão",
+          attr: "cruzamento",
+          risk: 0.35,
+          reward: "assist",
+        },
+        {
+          id: "cortar",
+          label: "Cortar para dentro e finalizar",
+          attr: "drible",
+          risk: 0.54,
+          reward: "goal",
+        },
+        {
+          id: "voltar",
+          label: "Voltar a bola para construir",
+          attr: "passe_curto",
+          risk: 0.12,
+          reward: "keep",
+        },
+      ],
+    },
   ],
   meio: [
     {
@@ -257,6 +325,58 @@ const MOMENTS: Record<"ataque" | "meio" | "defesa" | "gol", Omit<KeyMoment, "id"
       options: [
         { id: "direto", label: "Bater direto", attr: "bola_parada", risk: 0.65, reward: "goal" },
         { id: "cruzar", label: "Cruzar na área", attr: "cruzamento", risk: 0.4, reward: "assist" },
+      ],
+    },
+    {
+      prompt: "A saída de bola está pressionada por dois adversários.",
+      options: [
+        {
+          id: "triangular",
+          label: "Tabelar para escapar da pressão",
+          attr: "passe_curto",
+          risk: 0.24,
+          reward: "keep",
+        },
+        {
+          id: "inverter",
+          label: "Inverter o jogo em profundidade",
+          attr: "passe_longo",
+          risk: 0.42,
+          reward: "assist",
+        },
+        {
+          id: "proteger",
+          label: "Proteger a bola e esperar",
+          attr: "compostura",
+          risk: 0.16,
+          reward: "keep",
+        },
+      ],
+    },
+    {
+      prompt: "Um rebote chega livre na meia-lua, com companheiros infiltrando.",
+      options: [
+        {
+          id: "longa",
+          label: "Arriscar de fora da área",
+          attr: "chute_longe",
+          risk: 0.56,
+          reward: "goal",
+        },
+        {
+          id: "enfiar",
+          label: "Enfiar a bola na área",
+          attr: "visao",
+          risk: 0.31,
+          reward: "assist",
+        },
+        {
+          id: "circular",
+          label: "Circular a posse com segurança",
+          attr: "decisao",
+          risk: 0.12,
+          reward: "keep",
+        },
       ],
     },
   ],
@@ -294,6 +414,58 @@ const MOMENTS: Record<"ataque" | "meio" | "defesa" | "gol", Omit<KeyMoment, "id"
         },
       ],
     },
+    {
+      prompt: "O ponta rival prepara um cruzamento perigoso na sua lateral.",
+      options: [
+        {
+          id: "pressionar",
+          label: "Fechar o espaço imediatamente",
+          attr: "marcacao",
+          risk: 0.3,
+          reward: "tackle",
+        },
+        {
+          id: "bloquear",
+          label: "Antecipar a trajetória do cruzamento",
+          attr: "interceptacao",
+          risk: 0.33,
+          reward: "tackle",
+        },
+        {
+          id: "esperar",
+          label: "Conter até a cobertura chegar",
+          attr: "posicionamento",
+          risk: 0.16,
+          reward: "keep",
+        },
+      ],
+    },
+    {
+      prompt: "Um lançamento nas costas da defesa exige reação rápida.",
+      options: [
+        {
+          id: "correr",
+          label: "Disputar a corrida e desarmar",
+          attr: "velocidade",
+          risk: 0.44,
+          reward: "tackle",
+        },
+        {
+          id: "cobrir",
+          label: "Cortar a linha do passe",
+          attr: "interceptacao",
+          risk: 0.29,
+          reward: "tackle",
+        },
+        {
+          id: "orientar",
+          label: "Recuar e fechar o corredor",
+          attr: "decisao",
+          risk: 0.18,
+          reward: "keep",
+        },
+      ],
+    },
   ],
   gol: [
     {
@@ -310,11 +482,89 @@ const MOMENTS: Record<"ataque" | "meio" | "defesa" | "gol", Omit<KeyMoment, "id"
         { id: "esperar", label: "Esperar na linha", attr: "reflexo", risk: 0.5, reward: "save" },
       ],
     },
+    {
+      prompt: "Escanteio fechado: a bola vem na direção da pequena área.",
+      options: [
+        {
+          id: "segurar",
+          label: "Sair e segurar o cruzamento",
+          attr: "jogo_aereo",
+          risk: 0.36,
+          reward: "save",
+        },
+        {
+          id: "socar",
+          label: "Socar a bola para longe",
+          attr: "saida_gol",
+          risk: 0.28,
+          reward: "save",
+        },
+        {
+          id: "linha",
+          label: "Ficar na linha e reagir",
+          attr: "reflexo",
+          risk: 0.46,
+          reward: "save",
+        },
+      ],
+    },
+    {
+      prompt: "Pênalti para o adversário: você estuda o cobrador.",
+      options: [
+        {
+          id: "esquerda",
+          label: "Apostar no canto esquerdo",
+          attr: "elasticidade",
+          risk: 0.59,
+          reward: "save",
+        },
+        {
+          id: "direita",
+          label: "Apostar no canto direito",
+          attr: "reflexo",
+          risk: 0.59,
+          reward: "save",
+        },
+        {
+          id: "esperar",
+          label: "Esperar o último instante",
+          attr: "compostura",
+          risk: 0.52,
+          reward: "save",
+        },
+      ],
+    },
+    {
+      prompt: "Com a bola dominada após uma defesa, o time pede reposição rápida.",
+      options: [
+        {
+          id: "lancar",
+          label: "Lançar um contra-ataque longo",
+          attr: "reposicao",
+          risk: 0.42,
+          reward: "assist",
+        },
+        {
+          id: "curto",
+          label: "Repor curto nos zagueiros",
+          attr: "passe_curto",
+          risk: 0.12,
+          reward: "keep",
+        },
+        {
+          id: "segurar",
+          label: "Aguardar os companheiros se organizarem",
+          attr: "decisao",
+          risk: 0.08,
+          reward: "keep",
+        },
+      ],
+    },
   ],
 };
 
 function zoneFor(position: PlayerPosition): (keyof typeof MOMENTS)[] {
-  if (position === "GOL") return ["gol", "gol", "defesa"];
+  if (position === "GOL") return ["gol"];
   if (position === "ZAG") return ["defesa", "defesa", "meio"];
   if (position === "LAT" || position === "VOL") return ["defesa", "meio", "ataque"];
   if (position === "MEI") return ["meio", "meio", "ataque"];
@@ -366,14 +616,9 @@ function applyTraining(state: PlayerCareerState, plan: WeekPlan, rnd: () => numb
     const delta = gain * growthRoom * ageFactor * personality * (0.6 + rnd() * 0.8);
     state.attrs[def.key] = round1(clamp((state.attrs[def.key] ?? 40) + delta, 1, 99));
   }
-  state.energy = clamp(state.energy - TRAINING_ENERGY[plan.intensity] + 18, 10, 100);
-  if (
-    !state.injury &&
-    rnd() <
-      TRAINING_INJURY[plan.intensity] *
-        (state.energy < 40 ? 2 : 1) *
-        (state.traits.includes("vidro") ? 1.6 : 1)
-  ) {
+  const outlook = trainingOutlook(state, plan.intensity);
+  state.energy = outlook.energyAfter;
+  if (!state.injury && rnd() < outlook.injuryRisk) {
     const kinds = [
       { label: "Estiramento na coxa", weeks: 2 },
       { label: "Entorse no tornozelo", weeks: 3 },
@@ -680,24 +925,33 @@ export function acceptOffer(
   return state;
 }
 
+/** Cada oferta admite apenas uma contraproposta. Limite aplicado no motor, não só no botão. */
+export const MAX_OFFER_NEGOTIATIONS = 1;
+
 export function negotiateOffer(
   prev: PlayerCareerState,
   offerId: string,
+  now = Date.now(),
 ): { state: PlayerCareerState; accepted: boolean } {
+  const offer = prev.offers.find((o) => o.id === offerId);
+  if (!offer || prev.retired || (offer.negotiationRounds ?? 0) >= MAX_OFFER_NEGOTIATIONS)
+    return { state: prev, accepted: false };
+
   const state = structuredClone(prev);
-  const offer = state.offers.find((o) => o.id === offerId);
-  if (!offer) return { state, accepted: false };
-  const rnd = rngFrom(`${state.seed}|n|${offerId}|${offer.salary}`);
+  const pendingOffer = state.offers.find((o) => o.id === offerId)!;
+  const rnd = rngFrom(`${state.seed}|n|${offerId}|${pendingOffer.salary}`);
   const accepted = rnd() < 0.45 + state.reputation / 200;
-  if (accepted) offer.salary = Math.round(offer.salary * 1.15);
+  pendingOffer.negotiationRounds = 1;
+  if (accepted) pendingOffer.salary = Math.round(pendingOffer.salary * 1.15);
   else state.offers = state.offers.filter((o) => o.id !== offerId);
   pushNews(
     state,
     accepted
       ? `Clube aceita melhorar a proposta para ${state.nickname}.`
-      : `Negociação esfria: ${CLUBS[offer.clubId]?.short ?? "clube"} desiste.`,
+      : `Negociação esfria: ${CLUBS[pendingOffer.clubId]?.short ?? "clube"} desiste.`,
     accepted ? "good" : "bad",
   );
+  state.updatedAt = now;
   return { state, accepted };
 }
 
@@ -710,6 +964,18 @@ export function declineOffer(prev: PlayerCareerState, offerId: string): PlayerCa
 
 // ---------- fim de temporada ----------
 function endSeason(state: PlayerCareerState, rnd: () => number) {
+  // A avaliação é anual, não semanal: nenhum prêmio pode ser recebido duas
+  // vezes por reconexão ou por repetir uma renderização da interface.
+  const summary = seasonObjectiveSummary(state, seasonLength(state));
+  const missed = summary.total - summary.completed;
+  state.trust = clamp(state.trust + summary.completed * 2 - missed, 0, 100);
+  state.morale = clamp(state.morale + summary.completed * 2 - missed * 2, 0, 100);
+  state.reputation = clamp(state.reputation + Math.max(0, summary.completed - 1), 0, 100);
+  pushNews(
+    state,
+    `Metas da temporada ${state.season}: ${summary.completed}/${summary.total} concluídas. ${summary.completed === summary.total ? "O clube reconhece sua evolução." : "O treinador vai cobrar evolução no próximo ano."}`,
+    summary.completed === summary.total ? "good" : summary.completed === 0 ? "bad" : "neutral",
+  );
   const line = state.current;
   const avg = line.apps ? line.ratingSum / line.apps : 0;
   if (line.goals >= 10 && !state.traits.includes("finalizador")) state.traits.push("finalizador");

@@ -71,6 +71,8 @@ export interface Offer {
   salary: number;
   years: number;
   loan: boolean;
+  /** Saves anteriores não possuem este campo; tratá-los como zero tentativas. */
+  negotiationRounds?: number;
 }
 
 export interface KeyMoment {

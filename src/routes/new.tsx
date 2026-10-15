@@ -259,6 +259,13 @@ function NewCareer() {
             <p className="career-kicker">UM NOVO CAPÍTULO</p>
             <h1>Novo treinador</h1>
             <p>O próximo clube vai conhecer o seu nome.</p>
+            <p className="mt-3 text-sm">
+              Quer viver a carreira dentro de campo?{" "}
+              <Link to="/jogador" className="underline underline-offset-4">
+                Criar carreira de jogador
+              </Link>
+              .
+            </p>
           </div>
           <span className="career-save-note">
             <Shield size={16} />

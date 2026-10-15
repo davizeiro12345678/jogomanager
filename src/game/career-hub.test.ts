@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { summarizeAthleteCareer, summarizeCoachCareer } from "./career-hub";
+import { nextAthleteDecision, summarizeAthleteCareer, summarizeCoachCareer } from "./career-hub";
 import type { PlayerCareerState } from "./player-career/types";
 
 describe("career hub summaries", () => {
@@ -59,6 +59,24 @@ describe("career hub summaries", () => {
       week: 7,
       retired: true,
     });
+  });
+
+  it("prioritiza lesão, ofertas e fadiga sem tocar no save", () => {
+    const career = {
+      nickname: "Alex", retired: false, week: 5, season: 2,
+      injury: null, offers: [], energy: 75,
+    } as unknown as PlayerCareerState;
+    const previous = structuredClone(career);
+    expect(nextAthleteDecision(career).tab).toBe("semana");
+    expect(career).toEqual(previous);
+    career.energy = 22;
+    expect(nextAthleteDecision(career).title).toBe("Recuperar a energia");
+    career.offers = [{ id: "x", clubId: "clube", salary: 1000, years: 2, loan: false }];
+    expect(nextAthleteDecision(career).tab).toBe("contrato");
+    career.injury = { label: "Distensão", weeksLeft: 2 };
+    expect(nextAthleteDecision(career).title).toBe("Priorizar recuperação");
+    career.retired = true;
+    expect(nextAthleteDecision(career).tab).toBe("historico");
   });
 
   it("does not manufacture a card when there is no coach career", () => {

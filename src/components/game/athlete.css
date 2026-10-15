@@ -736,3 +736,36 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Carreira: um quadro de metas útil tanto no celular quanto no desktop. */
+.athlete-objectives { display: grid; gap: 1rem; }
+.athlete-objectives-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.athlete-objectives-score { flex: none; font: 700 1.4rem/1 "Space Grotesk", system-ui; color: var(--foreground); }
+.athlete-objectives-list { display: grid; gap: .75rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.athlete-objective { padding: 1rem; display: grid; align-content: start; gap: .55rem; border: 1px solid var(--border); border-radius: 10px; background: var(--background); min-width: 0; }
+.athlete-objective-title { display: grid; gap: .25rem; }
+.athlete-objective-title span { font-size: .8rem; color: var(--muted-foreground); }
+.athlete-objective[data-complete="true"] { border-color: color-mix(in oklab, var(--primary) 65%, var(--border)); }
+.athlete-objective[data-complete="true"] .athlete-objective-title span { color: var(--primary); }
+.athlete-objective-track { height: .45rem; border-radius: 1rem; background: var(--muted); overflow: hidden; }
+.athlete-objective-track span { display: block; height: 100%; background: var(--club, var(--primary)); border-radius: inherit; }
+.athlete-objective-impact { font-size: .8rem; line-height: 1.45; color: var(--foreground); }
+.athlete-creation-grid { grid-template-columns: minmax(0, 1fr); }
+.athlete-form[hidden] { display: none; }
+.athlete-creation-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+.athlete-creation-steps button { text-align: left; padding: .7rem .8rem; border: 1px solid var(--border); border-radius: .5rem; background: var(--card); color: var(--muted-foreground); min-height: 48px; }
+.athlete-creation-steps button[aria-current="step"] { border-color: var(--club, var(--primary)); color: var(--foreground); }
+.athlete-creation-steps button:disabled { opacity: .6; cursor: not-allowed; }
+.athlete-creation-steps button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.athlete-creation-steps strong { display: block; font-size: .9rem; }
+.athlete-creation-steps small { font-size: .75rem; }
+.athlete-creation-review { display: grid; gap: .5rem; border-top: 1px solid var(--border); margin-top: .5rem; padding-top: 1rem; }
+.athlete-creation-review p { overflow-wrap: anywhere; }
+.career-hub-priority { border-inline-start: 4px solid var(--club, var(--primary)); display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.career-hub-priority > div { display: grid; gap: .4rem; min-width: 0; }
+@media (max-width: 48rem) {
+  .athlete-objectives-list { grid-template-columns: minmax(0, 1fr); }
+  .athlete-creation-steps small { display: none; }
+  .career-hub-priority { align-items: stretch; flex-direction: column; }
+  .career-hub-priority .career-hub-card-actions { align-self: stretch; }
+}

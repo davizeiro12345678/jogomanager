@@ -1,4 +1,3 @@
-import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loading";
 import { gamePageHead } from "@/lib/game-page-metadata";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
@@ -58,8 +57,6 @@ function Dashboard() {
 }
 
 function TrainerDashboard({ career }: { career: CareerState }) {
-  // aquece o motor das cenas antes do clique em "Jogar"
-  useCinematicPreload();
   const club = CLUBS[career.clubId]!;
   const fixture = nextFixture(career);
   const atHome = fixture ? fixture.home === career.clubId : false;
@@ -132,6 +129,9 @@ function TrainerDashboard({ career }: { career: CareerState }) {
                 ? `Prepare o ${club.name} para o próximo desafio.`
                 : `Veja o balanço da temporada do ${club.name}.`}
             </p>
+            <Link to="/jogador" className="inline-flex text-sm underline underline-offset-4 mt-2">
+              Alternar para carreira de jogador
+            </Link>
           </div>
         </div>
         <Link to="/league" className="trainer-league-link">

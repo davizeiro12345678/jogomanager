@@ -85,3 +85,24 @@ export function summarizeAthleteCareer(
     accent: club.accent,
   };
 }
+
+/** Uma recomendação por vez, derivada do save; nunca dispara gravações. */
+export function nextAthleteDecision(athlete: PlayerCareerState) {
+  if (athlete.retired) {
+    return { title: "Rever legado", detail: "Veja as conquistas e estatísticas finais da carreira.", tab: "historico" as const };
+  }
+  if (athlete.injury) {
+    return { title: "Priorizar recuperação", detail: `${athlete.injury.weeksLeft} semana(s) de lesão: escolha carga leve e acompanhe o retorno.`, tab: "semana" as const };
+  }
+  if (athlete.offers.length > 0) {
+    return { title: "Decidir seu futuro", detail: `${athlete.offers.length} proposta(s) aguardam análise. Compare os salários e as oportunidades antes de avançar.`, tab: "contrato" as const };
+  }
+  if (athlete.energy < 40) {
+    return { title: "Recuperar a energia", detail: `Energia em ${Math.round(athlete.energy)}%. Reduza a intensidade para evitar lesões.`, tab: "semana" as const };
+  }
+  return {
+    title: "Preparar a próxima rodada",
+    detail: `Temporada ${athlete.season}, semana ${athlete.week}. Ajuste o treino para conquistar espaço e cumprir suas metas.`,
+    tab: "semana" as const,
+  };
+}
