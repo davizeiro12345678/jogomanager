@@ -7,12 +7,24 @@ import { Puddles } from "./Puddles";
 import { GrassChunks } from "./GrassChunks";
 import { createGrassBladeMaterial } from "@/game/grass-material";
 import { createPitchSurfaceMaterial } from "@/game/pitch-material";
-import { grassAlbedo, grassNormal, grassMicroRoughness, grassRoughness, retainGrassMaps, type MowPattern } from "./textures/grass";
+import {
+  grassAlbedo,
+  grassNormal,
+  grassMicroRoughness,
+  grassRoughness,
+  retainGrassMaps,
+  type MowPattern,
+} from "./textures/grass";
 import { LINES_H, LINES_W, pitchLinesTexture } from "./textures/lines";
 import { pitchWearTexture } from "./textures/wear";
 import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 import { useResolvedVisual, useVisual } from "@/game/visual-settings";
-import { ktx2, needsKtx2ProceduralFallback, requestKtx2, useKtx2Revision } from "@/game/textures/ktx2";
+import {
+  ktx2,
+  needsKtx2ProceduralFallback,
+  requestKtx2,
+  useKtx2Revision,
+} from "@/game/textures/ktx2";
 import type { SimView } from "@/game/sim-contracts";
 import type { Quality } from "../Stadium3D";
 import { presentationBall } from "./stadium-ball";
@@ -23,7 +35,15 @@ function useBladeMaterial(color: string, webgl2: boolean) {
   return { mat: data.material, uniforms: data.uniforms };
 }
 
-export function GrassField({ sim, quality, webgl2 }: { sim: SimView; quality: Quality; webgl2: boolean }) {
+export function GrassField({
+  sim,
+  quality,
+  webgl2,
+}: {
+  sim: SimView;
+  quality: Quality;
+  webgl2: boolean;
+}) {
   const vis = useVisual();
   const pressure = useQualityPressure();
   const budget = useRuntimeSceneBudget();
