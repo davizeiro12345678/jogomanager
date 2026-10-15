@@ -1,9 +1,4 @@
-import {
-  Volume2,
-  VolumeX,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { Volume2, VolumeX, Eye, EyeOff } from "lucide-react";
 
 interface CutsceneSettingsProps {
   captions: boolean;
@@ -79,11 +74,7 @@ export function CutsceneSettings({
       >
         Automático
       </button>
-      <button
-        type="button"
-        onClick={onToggleMode}
-        className="cutscene-control px-3 text-xs"
-      >
+      <button type="button" onClick={onToggleMode} className="cutscene-control px-3 text-xs">
         {mode === "3d" ? "Cena ilustrada" : "Ver palco 3D"}
       </button>
     </div>

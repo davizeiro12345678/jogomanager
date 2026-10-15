@@ -27,7 +27,9 @@ export function CutsceneDialogue({
       <button
         type="button"
         onClick={onAdvance}
-        aria-label={visibleText.length < fullText.length ? "Mostrar fala completa" : "Continuar diálogo"}
+        aria-label={
+          visibleText.length < fullText.length ? "Mostrar fala completa" : "Continuar diálogo"
+        }
         className="block w-full text-left text-base leading-relaxed text-white sm:text-lg"
       >
         {visibleText}
