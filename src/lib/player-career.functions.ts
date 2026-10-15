@@ -26,7 +26,9 @@ async function mutateAthleteCloud(
     p_state: state as Json | null,
   });
   if (error) {
-    throw new Error("Não foi possível sincronizar: verifique se a migração de saves está instalada.");
+    throw new Error(
+      "Não foi possível sincronizar: verifique se a migração de saves está instalada.",
+    );
   }
   const result = AthleteMutationResult.parse(data)[0]!;
   return { status: result.status, revision: result.new_revision };
@@ -37,15 +39,8 @@ export const saveAthleteCloud = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => AthleteMutationSchema.parse(input))
   .handler(async ({ data, context }) => {
-    if (JSON.stringify(data.state).length > 400_000)
-      throw new Error("Save grande demais.");
-    return mutateAthleteCloud(
-      context.supabase,
-      data.slot,
-      data.expectedRevision,
-      "save",
-      data.state,
-    );
+    if (JSON.stringify(data.state).length > 400_000) throw new Error("Save grande demais.");
+    return mutateAthleteCloud(context.supabase, data.slot, data.expectedRevision, "save", data.state);
   });
 
 export const loadAthletesCloud = createServerFn({ method: "GET" })
