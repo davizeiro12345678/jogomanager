@@ -1,11 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { ScreenTabs, SkeletonRows } from "@/components/game/screen-kit";
 import { z } from "zod";
 import { ArrowLeft, Flag, HeartPulse, ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/game/Crest";
-import { AthleteHero3D } from "@/components/game/players/AthleteHero3D";
+const AthleteHero3D = lazy(() =>
+  import("@/components/game/players/AthleteHero3D").then((module) => ({
+    default: module.AthleteHero3D,
+  })),
+);
 import { CLUBS } from "@/game/data/leagues";
 import {
   ATTRIBUTES,
@@ -105,6 +109,7 @@ function Panel({
   syncError: boolean;
 }) {
   const [tab, setTab] = useState<Tab>(state.retired ? "historico" : "semana");
+  const [showPlayerModel, setShowPlayerModel] = useState(false);
   const club = CLUBS[state.clubId];
   const ovr = overall(state);
   const groups: AttributeGroup[] =
@@ -138,11 +143,21 @@ function Panel({
             </Link>
           </Button>
           {syncError && (
-            <span className="athlete-meta">Sem conexão com a nuvem — salvo no aparelho</span>
+            <span className="athlete-meta">Sincronização pendente: confira a conexão e mantenha uma cópia local</span>
           )}
         </div>
         <section className="athlete-card athlete-hero">
-          <AthleteHero3D athlete={heroAthlete} className="athlete-hero-model" />
+          {showPlayerModel ? (
+            <Suspense fallback={<div className="athlete-hero-model grid place-items-center" role="status">Preparando atleta 3D…</div>}>
+              <AthleteHero3D athlete={heroAthlete} className="athlete-hero-model" />
+            </Suspense>
+          ) : (
+            <div className="athlete-hero-model grid place-items-center">
+              <Button variant="outline" type="button" onClick={() => setShowPlayerModel(true)} aria-label={`Abrir modelo 3D de ${state.nickname}`}>
+                Ver atleta em 3D
+              </Button>
+            </div>
+          )}
           <div className="athlete-hero-copy min-w-0">
             <div className="athlete-hero-badges">
               <span className="athlete-quality-badge">
@@ -191,14 +206,23 @@ function Panel({
             {state.injury.weeksLeft} semana(s) fora
           </p>
         )}
-        <div className="athlete-tabs" role="tablist">
+        <div className="athlete-tabs" role="tablist" aria-label="Áreas da carreira de jogador" onKeyDown={(event) => {
+          if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
+          event.preventDefault();
+          const current = TABS.findIndex((item) => item.id === tab);
+          const next = event.key === "Home" ? 0 : event.key === "End" ? TABS.length - 1
+            : (current + (event.key === "ArrowRight" ? 1 : -1) + TABS.length) % TABS.length;
+          setTab(TABS[next]!.id);
+          event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+        }}>
           {TABS.map((t) => (
-            <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>
+            <button key={t.id} id={`athlete-tab-${t.id}`} type="button" role="tab" aria-controls="athlete-active-panel" tabIndex={tab === t.id ? 0 : -1} aria-selected={tab === t.id} onClick={() => setTab(t.id)}>
               {t.label}
               {t.id === "contrato" && state.offers.length ? ` (${state.offers.length})` : ""}
             </button>
           ))}
         </div>
+        <div id="athlete-active-panel" role="tabpanel" tabIndex={0} aria-labelledby={`athlete-tab-${tab}`} className="min-w-0">
         {tab === "semana" && <WeekTab state={state} commit={commit} />}
         {tab === "atributos" && (
           <section className="athlete-card grid gap-4">
@@ -266,6 +290,7 @@ function Panel({
           </section>
         )}
         {tab === "historico" && <HistoryTab state={state} />}
+        </div>
       </div>
     </main>
   );
