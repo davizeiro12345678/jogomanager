@@ -47,9 +47,20 @@ export const LazyCinematicStage = lazy(() =>
 export function useCinematicPreload(enabled = true) {
   useEffect(() => {
     if (!enabled) return;
-    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } })
-      .connection;
-    if (connection?.saveData) return;
+    const connection = (
+      navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }
+    ).connection;
+    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+    // Cold page navigation must win over optional cinematic prefetch on
+    // metered/slow connections and memory-constrained phones.
+    if (
+      connection?.saveData ||
+      connection?.effectiveType === "slow-2g" ||
+      connection?.effectiveType === "2g" ||
+      connection?.effectiveType === "3g" ||
+      (typeof memory === "number" && memory <= 2)
+    )
+      return;
     const preload = () => {
       if (!document.hidden) void preloadCinematicStage().catch(() => undefined);
     };

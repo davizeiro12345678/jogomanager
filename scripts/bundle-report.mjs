@@ -54,8 +54,9 @@ const rootDependencies = root ? closure(root.name) : [];
 const entries = chunks
   .filter(
     (c) =>
-      /^(?:client-|index-|new-|dashboard-|match-|partida-rapida-|match\.worker-)/.test(c.name) ||
-      c.surface === "home",
+      /^(?:client-|index-|new-|dashboard-|editor-|match-|partida-rapida-|match\.worker-)/.test(
+        c.name,
+      ) || c.surface === "home",
   )
   .map((c) => {
     const dependencies = closure(c.name);
@@ -96,6 +97,18 @@ if (process.argv.includes("--check")) {
   const quick = entries.find((e) => e.name.startsWith("partida-rapida-"));
   const home = entries.find((e) => e.surface === "home");
   const newCareer = entries.find((e) => e.surface === "new");
+  const editor = entries.find((e) => e.name.startsWith("editor-"));
+  const match = entries.find((e) => e.name.startsWith("match-"));
+  const matchReport = chunks.find((c) => c.name.startsWith("MatchReport-"));
+  const deferredEditorTabs = /^(?:roster-|clubs-|competitions-|import-export-)/;
+  if (
+    !editor ||
+    editor.staticBytes > 500_000 ||
+    editor.dependencies.some((name) => deferredEditorTabs.test(name))
+  )
+    throw new Error("Editor must keep its heavy tabs split from the route startup chunk");
+  if (!match || !matchReport || match.dependencies.includes(matchReport.name))
+    throw new Error("Match report must remain an on-demand chunk until the match finishes");
   const physics = chunks.find(
     (c) => c.name.startsWith("rapier-") && !c.name.startsWith("rapier-ball-"),
   );

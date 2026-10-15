@@ -70,6 +70,10 @@ export function detectQualityByGpu(): Promise<QualityLevel> {
   gpuTier = (async () => {
     const fallback = detectQuality();
     if (typeof navigator === "undefined") return fallback;
+    // A narrow touch-screen has already selected the minimum safe preset.
+    // Avoid allocating a second WebGL context just to run GPU detection while
+    // the first match frame is competing for scarce mobile CPU/GPU time.
+    if (fallback === "baixa" && isCoarsePointer()) return fallback;
     try {
       const { getGPUTier } = await import("detect-gpu");
       const tier = await getGPUTier({ failIfMajorPerformanceCaveat: false });
