@@ -152,20 +152,24 @@ export function useAthleteSlots() {
           if (pending) {
             // Never update the CAS baseline while a local offline mutation is waiting.
             if (readAthleteCloudRevision(row.slot, userId) === null) {
-              setError("Há uma carreira offline pendente e outra versão na nuvem. O progresso local foi preservado; resolva o conflito antes de sincronizar.");
+              setError(
+                "Há uma carreira offline pendente e outra versão na nuvem. O progresso local foi preservado; resolva o conflito antes de sincronizar.",
+              );
             }
             continue;
           }
           if (row.deleted) {
             if (local || locallyDeleted) {
-              setError("Carreira excluída na nuvem. O arquivo local não foi alterado automaticamente.");
+              setError(
+                "Carreira excluída na nuvem. O arquivo local não foi alterado automaticamente.",
+              );
             } else {
               recordAthleteCloudRevision(row.slot, row.revision, userId);
             }
             continue;
           }
 
-          let parsed: unknown = null;
+          let parsed: unknown;
           try {
             parsed = JSON.parse(row.state);
           } catch {
@@ -187,7 +191,9 @@ export function useAthleteSlots() {
           } else if (local && JSON.stringify(local) === JSON.stringify(cloud)) {
             recordAthleteCloudRevision(row.slot, row.revision, userId);
           } else {
-            setError("A carreira local e a versão da nuvem são diferentes. Nenhuma delas foi sobrescrita. Exporte a cópia local antes de resolver o conflito.");
+            setError(
+              "A carreira local e a versão da nuvem são diferentes. Nenhuma delas foi sobrescrita. Exporte a cópia local antes de resolver o conflito.",
+            );
           }
         }
 
