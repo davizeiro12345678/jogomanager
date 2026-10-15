@@ -64,6 +64,20 @@ BEGIN
       sync_revision = sync_revision + 1,
       verified_progress = false
     WHERE user_id = v_user AND slot = p_slot AND sync_revision = p_expected_revision
+      AND (
+        p_operation = 'delete'
+        OR deleted_at IS NOT NULL
+        OR (
+          state->>'seed' = p_state->>'seed'
+          AND (
+            (p_state->>'season')::integer > (state->>'season')::integer
+            OR (
+              (p_state->>'season')::integer = (state->>'season')::integer
+              AND (p_state->>'week')::integer >= (state->>'week')::integer
+            )
+          )
+        )
+      )
     RETURNING sync_revision INTO v_revision;
   END IF;
 
