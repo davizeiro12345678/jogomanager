@@ -8,8 +8,8 @@ import { POSITION_LABEL } from "@/game/player-career/attributes";
 import { overall } from "@/game/player-career/engine";
 import { useAthleteSlots } from "@/hooks/useAthlete";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
-import { readAthleteBackup } from "@/lib/player-career-store";
-import type { PlayerCareerState } from "@/game/player-career/types";
+import { readAthleteBackup, readAthleteConflictBackup } from "@/lib/player-career-store";
+import { downloadAthlete } from "@/lib/player-career-export";
 import "@/components/game/athlete.css";
 
 export const Route = createFileRoute("/jogador/")({
@@ -33,18 +33,6 @@ export const Route = createFileRoute("/jogador/")({
   }),
   component: AthleteHub,
 });
-
-function downloadAthlete(state: PlayerCareerState) {
-  const text = JSON.stringify(state, null, 2);
-  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `carreira-jogador-${state.slot}-${state.season}.json`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
 
 function AthleteHub() {
   const userId = useAuthUserId();
@@ -91,6 +79,7 @@ function AthleteHub() {
             {slots.map((s, i) => {
               const slot = (i + 1) as 1 | 2 | 3;
               const backup = readAthleteBackup(slot, owner);
+              const conflictBackup = readAthleteConflictBackup(slot, owner);
               if (!s)
                 return (
                   <div
@@ -98,6 +87,14 @@ function AthleteHub() {
                     className="athlete-card grid gap-3 place-items-center text-center py-8"
                   >
                     <p className="athlete-meta">Espaço {slot} vazio</p>
+                    {conflictBackup && (
+                      <Button
+                        variant="outline"
+                        onClick={() => downloadAthlete(conflictBackup, "backup-conflito-nuvem")}
+                      >
+                        Baixar versão anterior em conflito
+                      </Button>
+                    )}
                     {backup && (
                       <div className="flex flex-wrap gap-2">
                         <Button variant="outline" onClick={() => downloadAthlete(backup)}>
@@ -147,6 +144,15 @@ function AthleteHub() {
                   <p className="athlete-meta">
                     {s.retired ? "Aposentado" : `Temporada ${s.season} · semana ${s.week}`}
                   </p>
+                  {conflictBackup && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => downloadAthlete(conflictBackup, "backup-conflito-nuvem")}
+                    >
+                      Exportar versão local anterior
+                    </Button>
+                  )}
                   <div className="flex flex-wrap gap-2">
                     <Button asChild className="flex-1">
                       <Link to="/jogador/painel" search={{ slot }}>
