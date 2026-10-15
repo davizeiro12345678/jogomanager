@@ -1,4 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   AthleteDeleteSchema,
@@ -10,25 +12,19 @@ type AthleteMutation = { status: "applied" | "conflict"; revision: number };
 
 /** A revision is assigned by PostgreSQL, never by a browser clock or a local save. */
 async function mutateAthleteCloud(
-  supabase: unknown,
+  supabase: SupabaseClient<Database>,
   slot: number,
   expectedRevision: number,
   operation: "save" | "delete",
   state: unknown,
 ): Promise<AthleteMutation> {
   // The authenticated client is scoped by requireSupabaseAuth. SQL owns CAS and RLS.
-  const client = supabase as {
-    rpc: (name: never, args: never) => Promise<{ data: unknown; error: { message: string } | null }>;
-  };
-  const { data, error } = await client.rpc(
-    "mutate_player_career" as never,
-    {
-      p_slot: slot,
-      p_expected_revision: expectedRevision,
-      p_operation: operation,
-      p_state: state,
-    } as never,
-  );
+  const { data, error } = await supabase.rpc("mutate_player_career", {
+    p_slot: slot,
+    p_expected_revision: expectedRevision,
+    p_operation: operation,
+    p_state: state as Json | null,
+  });
   if (error) {
     throw new Error("Não foi possível sincronizar: verifique se a migração de saves está instalada.");
   }
