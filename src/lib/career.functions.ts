@@ -10,7 +10,7 @@ import { continuesVerifiedCareer, isStaleSave } from "@/lib/career-progress";
 function normalizePublicText(value: string): string {
   return value
     .normalize("NFKC")
-    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\ufeff]/g, " ")
+    .replace(/[\p{Cc}\p{Cf}]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
