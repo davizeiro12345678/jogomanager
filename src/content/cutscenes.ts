@@ -23,7 +23,6 @@ export const CUTSCENES: Record<string, Cutscene> = {
   ...choicesScenes,
 };
 
-
 /** Sequência imersiva antes do apito inicial. */
 export const PREMATCH_SCENE_IDS = [
   "prematch-locker",
