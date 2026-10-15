@@ -6,6 +6,41 @@ import { CLUBS, getLeague } from "@/game/data/leagues";
 import { initCareer } from "@/game/career";
 import { continuesVerifiedCareer, isStaleSave } from "@/lib/career-progress";
 
+/** Canonicalize public-facing player names before validation. */
+function normalizePublicText(value: string): string {
+  return value
+    .normalize("NFKC")
+    .replace(/[\p{Cc}\p{Cf}]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasVisibleText(value: string): boolean {
+  return /[\p{L}\p{N}]/u.test(value);
+}
+
+/** Reject unsafe, oversized or excessively nested client JSON before coercion. */
+function assertUntrustedJson(value: unknown): void {
+  const visited = new WeakSet<object>();
+  let nodes = 0;
+  const walk = (current: unknown, depth: number): void => {
+    if (++nodes > 100_000 || depth > 64) throw new Error("Save excede os limites permitidos.");
+    if (typeof current === "number" && !Number.isFinite(current)) {
+      throw new Error("Número inválido no save.");
+    }
+    if (typeof current !== "object" || current === null) return;
+    if (visited.has(current)) throw new Error("Save com referências circulares ou repetidas.");
+    visited.add(current);
+    for (const [key, item] of Object.entries(current)) {
+      if (key === "__proto__" || key === "prototype" || key === "constructor") {
+        throw new Error("Campo inseguro no save.");
+      }
+      walk(item, depth + 1);
+    }
+  };
+  walk(value, 0);
+}
+
 const CareerInput = z.object({
   state: z
     .object({
