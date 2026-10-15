@@ -6,7 +6,9 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/game/Crest";
 const AthleteHero3D = lazy(() =>
-  import("@/components/game/players/AthleteHero3D").then((module) => ({ default: module.AthleteHero3D })),
+  import("@/components/game/players/AthleteHero3D").then((module) => ({
+    default: module.AthleteHero3D,
+  })),
 );
 import { LEAGUES } from "@/game/data/leagues";
 import { POSITION_LABEL } from "@/game/player-career/attributes";
@@ -359,7 +361,13 @@ function CreateAthletePage() {
               </div>
               <span className="athlete-quality-badge">Alta qualidade</span>
             </div>
-            <Suspense fallback={<div className="athlete-3d-preview grid place-items-center" role="status">Preparando visualização 3D…</div>}>
+            <Suspense
+              fallback={
+                <div className="athlete-3d-preview grid place-items-center" role="status">
+                  Preparando visualização 3D…
+                </div>
+              }
+            >
               <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
             </Suspense>
             <div className="athlete-field">
