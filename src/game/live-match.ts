@@ -377,8 +377,9 @@ export class WorkerMatchView implements MatchRuntime {
     this.refName = next.refName;
     this.possession = next.possession;
     this.stats = { home: { ...next.stats.home }, away: { ...next.stats.away } };
-    if (next.eventSeq !== this.eventSeq && next.events) {
+    if (next.events && (!this.hasEventSnapshot || next.eventSeq !== this.eventSeq)) {
       this.events = next.events.map((event) => ({ ...event }));
+      this.hasEventSnapshot = true;
     }
     this.eventSeq = next.eventSeq;
     this.finished = next.finished;

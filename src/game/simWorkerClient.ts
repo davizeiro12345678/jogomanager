@@ -259,7 +259,6 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
   const tacticsRequests = new Map<number, { side: Side; tactics: Tactics; pending: boolean }>();
   const snapshotTelemetry = options.telemetry ? createSnapshotTelemetryTracker() : null;
   const decoder = new LiveSnapshotDecoder();
-  const consecutiveDecodeFailures = 0;
   let recoveryBytes = 0;
 
   const apply = (
@@ -505,17 +504,19 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
           const packet = message.snapshot;
           const current = liveWorker;
           try {
-            const recycled = apply(message.snapshot, "worker");
-            if (recycled.length) {
-              const [positions, velocities, states] = recycled;
-              send(
+            const decoded = decoder.decode(packet);
+            if (decoded) apply(decoded, "worker", packet);
+            // Return the exact transferable frame buffer, avoiding clone cost.
+            if (current && liveWorker === current) {
+              current.postMessage(
                 {
-                  type: "recycle",
-                  positions: positions!,
-                  velocities: velocities!,
-                  states: states!,
+                  id: ++command,
+                  type: "recycleLive",
+                  session: packet.session,
+                  slot: packet.slot,
+                  buffer: packet.frame.buffer,
                 },
-                [positions!, velocities!, states!],
+                [packet.frame.buffer],
               );
             }
           } catch (error) {
@@ -524,14 +525,10 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
               code: "decode-frame",
               sequence: packet.seq,
             });
-            if (!failureReported) {
-              failureReported = true;
-              startFallback(
-                "O snapshot da partida não pôde ser aplicado; modo compatível ativado.",
-              );
-            }
+            startFallback("O snapshot da partida não pôde ser aplicado; modo compatível ativado.");
           }
-        } else if (message.type === "finished") apply(message.result, "worker");
+        } else if (message.type === "snapshot") apply(message.snapshot, "worker");
+        else if (message.type === "finished") apply(message.result, "worker");
       };
       liveWorker.onerror = (event) => {
         reportSilent("match-worker", event.error ?? event.message, {

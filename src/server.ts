@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { publicPageRedirect } from "./lib/public-page-redirects";
+import { CSP_NONCE_HEADER, createCspNonce, secureResponse } from "./lib/security-headers";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -47,18 +48,32 @@ function isH3SwallowedErrorBody(body: string): boolean {
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
-    const redirect = publicPageRedirect(request);
-    if (redirect) return redirect;
+    // Rebuild from public fields: a cross-realm Request may not be cloneable.
+    // Never trust a client-provided CSP nonce.
+    const headers = new Headers(request.headers);
+    const nonce = createCspNonce();
+    headers.set(CSP_NONCE_HEADER, nonce);
+    const init: RequestInit & { duplex?: "half" } = { method: request.method, headers };
+    if (request.method !== "GET" && request.method !== "HEAD" && request.body) {
+      init.body = request.body;
+      init.duplex = "half";
+    }
+    const verifiedRequest = new Request(request.url, init);
+    const protect = (response: Response) => secureResponse(response, verifiedRequest, nonce);
+    const redirect = publicPageRedirect(verifiedRequest);
+    if (redirect) return protect(redirect);
     try {
       const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const response = await handler.fetch(verifiedRequest, env, ctx);
+      return protect(await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
-      return new Response(renderErrorPage(), {
-        status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
-      });
+      return protect(
+        new Response(renderErrorPage(), {
+          status: 500,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        }),
+      );
     }
   },
 };
