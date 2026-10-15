@@ -45,7 +45,7 @@ jobs:
           # Use the same lockfile-matched build plugin for both commits. The
           # current main package.json requested a version absent from its lock.
           # This normalizes ONLY the build tooling, not application sources.
-          node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync("package.json","utf8")); const lock=JSON.parse(fs.readFileSync("package-lock.json","utf8")); p.devDependencies["@lovable.dev/vite-tanstack-config"]=lock.packages[""].devDependencies["@lovable.dev/vite-tanstack-config"]; fs.writeFileSync("package.json",JSON.stringify(p,null,2)+"\\n");'
+          node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync("package.json","utf8")); const lock=JSON.parse(fs.readFileSync("package-lock.json","utf8")); p.devDependencies["@lovable.dev/vite-tanstack-config"]=lock.packages[""].devDependencies["@lovable.dev/vite-tanstack-config"]; fs.writeFileSync("package.json",JSON.stringify(p,null,2)+"\n");'
           npm ci
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
