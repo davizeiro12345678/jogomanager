@@ -1,12 +1,12 @@
 import { readdir, readFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { gzipSync, brotliCompressSync, constants as zlibConstants } from "node:zlib";
+import { init, parse } from "es-module-lexer";
 
 const brotliBytes = (data) =>
   brotliCompressSync(data, {
     params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 11 },
   }).length;
-import { init, parse } from "es-module-lexer";
 
 // Measures emitted code, following only static imports. Dynamic imports stay
 // separate so a smaller entry cannot hide an equally large startup dependency.
