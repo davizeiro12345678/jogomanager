@@ -439,6 +439,14 @@ export function listAthletes(owner: LocalOwnerId | undefined = null): (PlayerCar
   return ATHLETE_SLOTS.map((slot) => readAthlete(slot, owner));
 }
 
+/** A local deletion must never be mistaken for an unused space during cloud hydration. */
+export function hasAthleteLocalDeletion(
+  slot: AthleteSlot,
+  owner: LocalOwnerId | undefined = null,
+) {
+  return readIndex(owner).slots[slot]?.kind === "deleted";
+}
+
 /** Current raw mirror key, retained for older tabs and compatibility tests. */
 export function athleteStorageKey(slot: number, owner: LocalOwnerId | undefined = null) {
   return isAthleteSlot(slot)
