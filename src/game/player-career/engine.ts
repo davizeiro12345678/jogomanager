@@ -57,6 +57,9 @@ export const TRAINING_INJURY: Record<TrainingIntensity, number> = {
 
 /** Projeção exata de energia e risco do treino usada tanto no motor quanto no painel. */
 export function trainingOutlook(state: PlayerCareerState, intensity: TrainingIntensity) {
+  if (state.injury) {
+    return { energyAfter: clamp(state.energy + 18, 10, 100), injuryRisk: 0 };
+  }
   const energyAfter = clamp(state.energy - TRAINING_ENERGY[intensity] + 18, 10, 100);
   const injuryRisk = state.injury
     ? 0
@@ -605,6 +608,10 @@ export interface WeekPlan {
 }
 
 function applyTraining(state: PlayerCareerState, plan: WeekPlan, rnd: () => number) {
+  if (state.injury) {
+    state.energy = trainingOutlook(state, plan.intensity).energyAfter;
+    return;
+  }
   const gain = TRAINING_GAIN[plan.intensity];
   const growthRoom = clamp((state.potential - overall(state)) / 20, 0.15, 1.4);
   const ageFactor = state.age <= 21 ? 1.3 : state.age <= 26 ? 1 : state.age <= 30 ? 0.55 : 0.25;
