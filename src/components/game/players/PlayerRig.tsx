@@ -26,12 +26,9 @@ import {
   type ClipName,
   type Pose,
 } from "@/game/animation";
-import { expressionFor } from "@/game/animation-extra3";
 import {
   ballGazePitch,
-  eyelidRotationFor,
   emptyFacialPose,
-  facialPoseAt,
 } from "@/game/facial-animation";
 import { kitBudget, kitTextureFor, trimKitTextures } from "@/game/graphics/kit-atlas";
 import { retainKitTexture } from "@/game/kits";
@@ -96,6 +93,7 @@ import {
 import { retainRigGeometryPreparation } from "@/game/rig-geometry-worker-client";
 
 import { GAIT_SPEED, type RigProps, type Quality } from "./player-rig-contract";
+import { applyRigFacialPresentation } from "./player-rig-face";
 export type { Quality } from "./player-rig-contract";
 
 export const PlayerRig = memo(function PlayerRig({
@@ -683,74 +681,30 @@ export const PlayerRig = memo(function PlayerRig({
         -rightHandPose.pronation - (action ? 0 : 0.06 * Math.sin(motion.phase)),
         -rightHandPose.deviation - 0.025,
       );
-    // ---- rosto: expressão do clipe + esforço (só no LOD 0, onde há rosto)
+    // Face and eyelids are evaluated only for the closest, detailed rig.
     if (lod === 0) {
-      const effort = Math.min(1, speed / 7);
-      const expr = expressionFor(clipName.current, effort, tired);
-      const facePose = facialPoseAt(
-        previewAt !== undefined ? ctx.t : sim.time,
-        look.seed,
-        expr,
+      applyRigFacialPresentation({
+        speed,
+        tired,
+        previewAt,
+        t: previewAt !== undefined ? ctx.t : sim.time,
+        lookSeed: look.seed,
+        seed,
+        clip: clipName.current,
         gaze,
         gazePitch,
-        effort,
-        facialBuffer.current,
-      );
-      const faceResponse = previewAt !== undefined ? 1 : 1 - Math.exp(-18 * adt);
-      const celebrating = /celebrat|fist|victory|applaud|hug/i.test(clipName.current);
-      const protesting = /protest|argue|complain/i.test(clipName.current);
-      // The head bone carries the large tracking pose.  A much smaller facial
-      // layer adds breathing, concentration and reaction tension without
-      // changing the skeleton, simulation state or any draw budget.
-      const faceBone = skin.boneOf.face;
-      const facialBreath = Math.sin(
-        (previewAt !== undefined ? ctx.t : sim.time) * (2.1 + effort) + seed,
-      );
-      const facePitch =
-        tired * 0.018 + effort * 0.006 + (protesting ? -0.01 : 0) + facialBreath * 0.0035;
-      const faceYaw = gaze * (celebrating ? 0.024 : 0.012) + facialBreath * 0.002;
-      const faceRoll = (celebrating ? -0.008 : protesting ? 0.008 : 0) + facialBreath * 0.0025;
-      faceBone.rotation.x += (facePitch - faceBone.rotation.x) * faceResponse;
-      faceBone.rotation.y += (faceYaw - faceBone.rotation.y) * faceResponse;
-      faceBone.rotation.z += (faceRoll - faceBone.rotation.z) * faceResponse;
-      const browLift =
-        P.headR * (celebrating ? 0.035 : protesting ? -0.012 : -effort * 0.01 - tired * 0.006);
-      const browTilt = celebrating ? -0.035 : protesting ? 0.12 : effort * 0.06;
-      for (const side of ["L", "R"] as const) {
-        const brow = side === "L" ? skin.boneOf.browL : skin.boneOf.browR;
-        const response = previewAt !== undefined ? 1 : 1 - Math.exp(-12 * adt);
-        const sideSign = side === "L" ? 1 : -1;
-        brow.position.y +=
-          (P.headR * (0.31 + facialShape.browAsymmetry * sideSign) + browLift - brow.position.y) *
-          response;
-        brow.rotation.z += ((side === "L" ? 1 : -1) * browTilt - brow.rotation.z) * response;
-      }
-      // Jaw, orbital hinges and saccades share the match clock and freeze with the pose.
-      if (jawRef.current) {
-        const vocalTension = celebrating ? 0.035 : protesting ? 0.024 : effort * 0.008;
-        jawRef.current.rotation.x +=
-          (Math.min(0.33, facePose.jaw + vocalTension) - jawRef.current.rotation.x) * faceResponse;
-      }
-      if (eyesRef.current) {
-        eyesRef.current.position.x +=
-          (facePose.eyeX * P.headR * 0.055 - eyesRef.current.position.x) * faceResponse;
-        eyesRef.current.position.y +=
-          (facePose.eyeY * P.headR * 0.045 - eyesRef.current.position.y) * faceResponse;
-        // The eye group is still a single bone, but a few degrees around the
-        // face centre lets the iris, pupil and new catchlight scan together.
-        eyesRef.current.rotation.y +=
-          (facePose.eyeX * 0.028 - eyesRef.current.rotation.y) * faceResponse;
-        eyesRef.current.rotation.x +=
-          (-facePose.eyeY * 0.02 - eyesRef.current.rotation.x) * faceResponse;
-      }
-      const exertionSquint = Math.min(0.1, effort * 0.045 + (protesting ? 0.025 : 0));
-      const lidClosure = Math.min(1, facePose.lidClosure + exertionSquint);
-      const upperLidRotation = eyelidRotationFor(lidClosure, true);
-      const lowerLidRotation = eyelidRotationFor(lidClosure, false);
-      for (const lid of [eyelidUpperLRef.current, eyelidUpperRRef.current])
-        if (lid) lid.rotation.x += (upperLidRotation - lid.rotation.x) * faceResponse;
-      for (const lid of [eyelidLowerLRef.current, eyelidLowerRRef.current])
-        if (lid) lid.rotation.x += (lowerLidRotation - lid.rotation.x) * faceResponse;
+        adt,
+        skin,
+        P,
+        facialShape,
+        facialBuffer: facialBuffer.current,
+        jaw: jawRef.current,
+        eyes: eyesRef.current,
+        upperLeft: eyelidUpperLRef.current,
+        upperRight: eyelidUpperRRef.current,
+        lowerLeft: eyelidLowerLRef.current,
+        lowerRight: eyelidLowerRRef.current,
+      });
     }
 
     if (legLRef.current) legLRef.current.rotation.set(c.legLPitch, 0, c.legLRoll);
