@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CLUBS } from "@/game/data/leagues";
-import { advanceWeek, careerTotals, createAthlete, negotiateOffer, overall, seasonLength } from "./engine";
+import { advanceWeek, buildMoments, careerTotals, createAthlete, negotiateOffer, overall, seasonLength } from "./engine";
 
 const clubId = Object.keys(CLUBS)[0]!;
 const make = () =>
@@ -51,6 +51,16 @@ describe("carreira de jogador", () => {
     } else {
       expect(a.state.offers).toHaveLength(0);
     }
+  });
+
+  it("oferece lances variados por posição sem exigir carrinho do goleiro", () => {
+    const goalkeeper = { ...make(), position: "GOL" as const, week: 8 };
+    const chances = buildMoments(goalkeeper);
+    expect(buildMoments(goalkeeper)).toEqual(chances);
+    expect(chances.length).toBeGreaterThanOrEqual(3);
+    expect(chances.length).toBeLessThanOrEqual(4);
+    expect(chances.every((moment) => moment.options.every((choice) => choice.attr !== "carrinho"))).toBe(true);
+    expect(chances.every((moment) => moment.options.some((choice) => choice.reward === "save" || choice.reward === "keep" || choice.reward === "assist"))).toBe(true);
   });
 
   it("evolui ao longo de temporadas e envelhece", () => {
