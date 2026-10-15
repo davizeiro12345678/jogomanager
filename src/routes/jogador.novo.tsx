@@ -1,12 +1,13 @@
 import { ScreenHeader } from "@/components/game/screen-kit";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/game/Crest";
-import { AthleteHero3D } from "@/components/game/players/AthleteHero3D";
-import PlayerStudio from "@/components/game/players/PlayerStudio";
+const AthleteHero3D = lazy(() =>
+  import("@/components/game/players/AthleteHero3D").then((module) => ({ default: module.AthleteHero3D })),
+);
 import { LEAGUES } from "@/game/data/leagues";
 import { POSITION_LABEL } from "@/game/player-career/attributes";
 import {
@@ -358,7 +359,9 @@ function CreateAthletePage() {
               </div>
               <span className="athlete-quality-badge">Alta qualidade</span>
             </div>
-            <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
+            <Suspense fallback={<div className="athlete-3d-preview grid place-items-center" role="status">Preparando visualização 3D…</div>}>
+              <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
+            </Suspense>
             <div className="athlete-field">
               <span>Tom de pele</span>
               <div className="athlete-chips">
