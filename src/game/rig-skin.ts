@@ -28,6 +28,7 @@ import { CORRECTIVE_DRIVERS, type CorrectiveJoint, type TwistJoint } from "./rig
 import type { PlayerMaterials } from "./player-materials";
 import type { Proportions } from "./player-model";
 import { eyelidPivot } from "./player-sculpt";
+import { retainSharedDetailMaterials } from "./rig-materials";
 
 /** Junta animada → osso. Os nomes batem com os refs de `PlayerRig`. */
 export type RigJoint =
@@ -39,6 +40,7 @@ export type RigJoint =
   | "chest"
   | "neck"
   | "face"
+  | "hairMotion"
   | "eyes"
   | "jaw"
   | "browL"
@@ -136,8 +138,10 @@ function jointSpecs(P: Proportions, handRadius: number, seed: number): JointSpec
     { joint: "spine", parent: "hips", offset: [0, P.hipH * 0.5, 0] },
     { joint: "chest", parent: "spine", offset: [0, P.spineLen, 0] },
     { joint: "neck", parent: "chest", offset: [0, P.chestLen, 0] },
-    // O pivô facial coloca o centro do crânio no alto do pescoço.
-    { joint: "face", parent: "neck", offset: [0, P.neckLen + P.headR * 0.82, 0] },
+    // O crânio encaixa dentro do trapézio e da base cervical. O antigo pivô
+    // deixava uma faixa de céu entre a gola e o queixo no retrato frontal.
+    { joint: "face", parent: "neck", offset: [0, P.neckLen + P.headR * 0.66, 0] },
+    { joint: "hairMotion", parent: "face", offset: [0, 0, 0] },
     // olhos: mesmo pivô do rosto; a animação só translada (movimento
     // conjugado — os dois olhos sempre juntos, como no olho real)
     { joint: "eyes", parent: "face", offset: [0, 0, 0] },
@@ -201,6 +205,7 @@ export const MESH_OWNER: Record<Exclude<keyof RigBody, "all">, RigJoint> = {
   neck: "neck",
   head: "face",
   hair: "face",
+  hairSecondary: "hairMotion",
   face: "face",
   eyes: "eyes",
   jaw: "jaw",
@@ -235,6 +240,7 @@ const MESH_LOD: Record<Exclude<keyof RigBody, "all">, RigSkinLod> = {
   neck: "core",
   head: "core",
   hair: "core",
+  hairSecondary: "near",
   face: "near",
   eyes: "near",
   jaw: "near",
@@ -470,6 +476,12 @@ export function buildRigSkin(
   for (const mesh of body.all) mesh.geometry.dispose();
 
   const all = groups.slice();
+  // Acquire immediately: creating the next athlete can evict an earlier
+  // athlete's cache entry before React commits all of the match's rigs.
+  const releaseDetails = retainSharedDetailMaterials(
+    all.filter((group) => !group.materialKey).map((group) => group.material),
+  );
+  let disposed = false;
   return {
     root: boneOf.hips,
     bindMatrix,
@@ -479,8 +491,11 @@ export function buildRigSkin(
     all,
     boneOf,
     dispose() {
+      if (disposed) return;
+      disposed = true;
       for (const group of all) group.geometry.dispose();
       skeleton.dispose();
+      releaseDetails();
     },
   };
 }
@@ -701,7 +716,10 @@ function addSkinning(
       const side = part === "handDetailL" ? "L" : "R";
       const finger = Math.max(
         0,
-        Math.min(3, Math.round(positions.getX(i) / (ctx.handR * 0.36) + 1.5)),
+        Math.min(
+          3,
+          Math.round(((side === "L" ? 1 : -1) * positions.getX(i)) / (ctx.handR * 0.36) + 1.5),
+        ),
       ) as 0 | 1 | 2 | 3;
       const knuckleY = -ctx.handR * 1.29;
       const tipY = knuckleY - ctx.handR * (0.25 + FINGER_LENGTHS[finger] * 0.32);
@@ -728,9 +746,8 @@ function addSkinning(
   geometry.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
   geometry.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeight, 4));
   geometry.deleteAttribute("openingLeg");
-  // `waistBand` is authoring metadata for the shorts surface. It must not
-  // cross the material/lod merge boundary: sibling rig parts do not carry it
-  // and BufferGeometryUtils correctly rejects mismatched attribute layouts.
+  // Authoring metadata is consumed above. Every sibling surface must expose
+  // the same attribute layout before the material/LOD geometry merge.
   geometry.deleteAttribute("waistBand");
 }
 

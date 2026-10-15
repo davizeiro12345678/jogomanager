@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { createNoise2D } from "simplex-noise";
+import { turfDetailTextures, retainTurfDetail } from "./turf-detail";
+import { OwnedTextureCache } from "@/game/owned-texture-cache";
 
 /**
  * Texturas procedurais determinísticas do gramado.
@@ -263,7 +265,7 @@ function buildAlbedo(pattern: MowPattern = "checker", size = 1024) {
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.anisotropy = 16;
+  tex.anisotropy = 4;
   tex.generateMipmaps = true;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   return tex;
@@ -271,38 +273,9 @@ function buildAlbedo(pattern: MowPattern = "checker", size = 1024) {
 
 /* ----------------------------------------------------------------- relevo */
 
-function buildNormal(_pattern: MowPattern = "checker", size = 512) {
-  const made = canvas(size);
-  if (!made) return null;
-  const { c, ctx } = made;
-  const rand = rng(0x5eed02);
-  ctx.fillStyle = "#8080ff";
-  ctx.fillRect(0, 0, size, size);
-
-  // Fine blade variation keeps the turf textured without broad, blue-looking
-  // patches when the normal map repeats across the full pitch.
-  // lâminas
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 9000; i++) {
-    const x = rand() * size;
-    const y = rand() * size;
-    ctx.strokeStyle = `rgba(${(116 + rand() * 24) | 0},${(116 + rand() * 24) | 0},255,0.22)`;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + (rand() - 0.5) * 2, y - 2 - rand() * 5);
-    ctx.stroke();
-  }
-
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(6, 4);
-  tex.anisotropy = 8;
-  return tex;
-}
-
 /* ------------------------------------------------------------- rugosidade */
 
-function buildRoughness(pattern: MowPattern = "checker", size = 512) {
+function buildRoughness(pattern: MowPattern = "checker", size = 256) {
   const spec = MOW[pattern];
   const made = canvas(size);
   if (!made) return null;
@@ -330,27 +303,38 @@ function buildRoughness(pattern: MowPattern = "checker", size = 512) {
 
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.anisotropy = 8;
+  tex.anisotropy = 1;
   return tex;
 }
 
 /* ---------------------------------------------------------------- cache */
 
-const _albedo = new Map<MowPattern, THREE.Texture | null>();
-const _normal = new Map<MowPattern, THREE.Texture | null>();
-const _rough = new Map<MowPattern, THREE.Texture | null>();
+const _albedo = new OwnedTextureCache<MowPattern>(1);
+const _rough = new OwnedTextureCache<MowPattern>(1);
 
-export function grassAlbedo(pattern: MowPattern = "checker") {
-  if (!_albedo.has(pattern)) _albedo.set(pattern, buildAlbedo(pattern));
-  return _albedo.get(pattern) ?? null;
+export function retainGrassMaps(albedo: THREE.Texture | null, roughness: THREE.Texture | null) {
+  const releaseAlbedo = _albedo.retain(albedo);
+  const releaseRoughness = _rough.retain(roughness);
+  const releaseDetail = retainTurfDetail();
+  return () => {
+    releaseAlbedo();
+    releaseRoughness();
+    releaseDetail();
+  };
 }
 
-export function grassNormal(pattern: MowPattern = "checker") {
-  if (!_normal.has(pattern)) _normal.set(pattern, buildNormal(pattern));
-  return _normal.get(pattern) ?? null;
+export function grassAlbedo(pattern: MowPattern = "checker") {
+  return _albedo.get(pattern, () => buildAlbedo(pattern));
+}
+
+export function grassNormal(_pattern: MowPattern = "checker") {
+  return turfDetailTextures().normal;
+}
+
+export function grassMicroRoughness() {
+  return turfDetailTextures().roughness;
 }
 
 export function grassRoughness(pattern: MowPattern = "checker") {
-  if (!_rough.has(pattern)) _rough.set(pattern, buildRoughness(pattern));
-  return _rough.get(pattern) ?? null;
+  return _rough.get(pattern, () => buildRoughness(pattern));
 }

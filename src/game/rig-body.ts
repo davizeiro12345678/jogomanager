@@ -33,19 +33,23 @@ import {
   anatomicalFinger,
   anatomicalNail,
   tailoredSleeve,
+  shoulderSleeve,
   anatomicalSection,
   neckSurface,
   palmSurface,
   athleticTorsoSurface,
+  tailoredJerseySurface,
   clothSurface,
   fittedLimbCover,
   forearmTattooSurface,
   footballBoot,
+  footballBootUpperY,
   mergeRigParts,
   rigPart,
   type RigMesh,
   type RigPart,
 } from "./rig-geometry";
+import { withRigGeometryContext } from "./rig-geometry-worker-client";
 
 /** Segmentação por qualidade, como no rig original. */
 export interface RigSegments {
@@ -73,11 +77,8 @@ export interface RigBodyContext {
   handMat: THREE.Material;
 }
 
-/** Maps torso rings to centered front/back atlas panels instead of stretching
- * either decal around half of the athlete. */
+/** Continuous atlas wrap: front 0.25, back 0.75, one seam on the +x side. */
 export function shirtPanelU(x: number, z: number): number {
-  // Continuous wrap: front centre 0.25, back centre 0.75, u falls as x rises so the
-  // back print reads left-to-right; the single seam sits on the +x side, away from prints.
   const u = 0.25 - Math.atan2(x, z) / (Math.PI * 2);
   return u - Math.floor(u);
 }
@@ -90,6 +91,7 @@ export interface RigBody {
   neck: RigMesh[];
   head: RigMesh[];
   hair: RigMesh[];
+  hairSecondary: RigMesh[];
   face: RigMesh[];
   eyes: RigMesh[];
   jaw: RigMesh[];
@@ -175,8 +177,9 @@ function garmentTopstitch(geometry: THREE.BufferGeometry, value: number) {
 }
 
 /** Constrói o corpo completo. Devolve malhas já mescladas por junta. */
-export function buildRigBody(ctx: RigBodyContext): RigBody {
+function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
   const { P, look, segs, hi, mats, handR, handMat } = ctx;
+  const portrait = ctx.portrait ?? true;
   const skin = mats.skin;
   const jersey = mats.jersey;
   const jerseyPlain = mats.jerseyPlain;
@@ -193,14 +196,9 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     const positions = geometry.getAttribute("position");
     const uv = geometry.getAttribute("uv");
     for (let i = 0; i < uv.count; i++) {
-      const x = positions.getX(i);
-      const z = positions.getZ(i);
-      // Reserve separate atlas halves for front and back. Side vertices stay
-      // close to the edge of their owning panel, preventing sponsor/number
-      // ink from stretching around the ribs during animated torso bends.
       uv.setXY(
         i,
-        shirtPanelU(x, z),
+        shirtPanelU(positions.getX(i), positions.getZ(i)),
         Math.max(0, Math.min(1, (positions.getY(i) + offset - torsoBottom) / torsoHeight)),
       );
     }
@@ -254,10 +252,13 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
         rigPart(
           withOpeningLeg(
             ellipticalGarmentRing(
-              P.legR * 1.21 + 0.002,
-              P.legR * 1.29 + 0.002,
+              // The tube's inner edge meets the authored shell. The old
+              // radii sat inside the thigh near the opening and alternated
+              // cloth/skin triangles once the femur rotated into a seat.
+              P.legR * 1.16 + 0.007 + 0.0022 + shortsHemTube,
+              P.legR * 1.24 + 0.007 + 0.0022 + shortsHemTube,
               shortsHemTube,
-              Math.max(10, segs.radial),
+              segs.radial,
               hi ? 5 : 4,
             ),
             side,
@@ -305,39 +306,43 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     rigPart(
       shirtUv(
         clothSurface(
-          athleticTorsoSurface(
-            anatomicalSection(
-              [
-                { y: -P.hipH * 0.12, width: P.hipW * 0.56, depth: P.chestD * 0.82 },
-                { y: P.spineLen * 0.4, width: P.chestW * 0.69, depth: P.chestD * 0.87 },
-                { y: P.spineLen * 1.06, width: P.chestW * 0.94, depth: P.chestD * 0.99 },
-                {
-                  y: P.spineLen + P.chestLen * 0.4,
-                  width: P.chestW * 1.04,
-                  depth: P.chestD * 1.03,
-                },
-                {
-                  y: P.spineLen + P.chestLen * 0.8,
-                  width: P.shoulderW * 0.65,
-                  depth: P.chestD * 0.91,
-                },
-                {
-                  y: P.spineLen + P.chestLen * 0.9,
-                  width: P.shoulderW * 0.49,
-                  depth: P.chestD * 0.77,
-                },
-                {
-                  y: P.spineLen + P.chestLen * 0.95,
-                  width: P.shoulderW * 0.32,
-                  depth: P.chestD * 0.59,
-                },
-                { y: P.spineLen + P.chestLen, width: P.neckR * 1.55, depth: P.neckR * 1.35 },
-              ],
-              Math.max(12, segs.radial + (hi ? 8 : 4)),
-              0.94,
+          tailoredJerseySurface(
+            athleticTorsoSurface(
+              anatomicalSection(
+                [
+                  { y: -P.hipH * 0.12, width: P.hipW * 0.59, depth: P.chestD * 0.85 },
+                  { y: P.spineLen * 0.4, width: P.chestW * 0.73, depth: P.chestD * 0.9 },
+                  { y: P.spineLen * 1.06, width: P.chestW * 0.98, depth: P.chestD * 1.025 },
+                  {
+                    y: P.spineLen + P.chestLen * 0.4,
+                    width: P.chestW * 1.015,
+                    depth: P.chestD * 1.025,
+                  },
+                  {
+                    y: P.spineLen + P.chestLen * 0.73,
+                    width: P.shoulderW * 0.54,
+                    depth: P.chestD * 0.885,
+                  },
+                  {
+                    y: P.spineLen + P.chestLen * 0.87,
+                    width: P.shoulderW * 0.4,
+                    depth: P.chestD * 0.715,
+                  },
+                  {
+                    y: P.spineLen + P.chestLen * 0.96,
+                    width: P.shoulderW * 0.265,
+                    depth: P.chestD * 0.54,
+                  },
+                  { y: P.spineLen + P.chestLen, width: P.neckR * 1.39, depth: P.neckR * 1.21 },
+                ],
+                Math.max(12, segs.radial + (hi ? 8 : 4)),
+                0.94,
+                "bottom",
+              ),
+              P.chestW,
+              torsoHeight,
             ),
             P.chestW,
-            torsoHeight,
           ),
           0.003,
         ),
@@ -390,14 +395,17 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
   const chest: RigPart[] = [
     // gola
     rigPart(
-      new THREE.TorusGeometry(
-        P.neckR * (look.collar === "polo" ? 1.62 : 1.5),
-        P.neckR * (look.collar === "polo" ? 0.14 : 0.085),
+      ellipticalGarmentRing(
+        P.neckR * (look.collar === "polo" ? 1.46 : 1.42),
+        P.neckR * 1.23,
+        P.neckR * (look.collar === "polo" ? 0.08 : 0.048),
+        hi ? Math.max(24, segs.radial + 12) : 14,
         6,
-        14,
       ),
       trim,
-      { position: [0, P.chestLen * 0.98, 0], rotation: [Math.PI / 2, 0, 0] },
+      // The closed top of the shirt must not cut through the torus. Its
+      // former negative inset exposed alternating black facets in close-up.
+      { position: [0, P.chestLen + P.neckR * (look.collar === "polo" ? 0.105 : 0.075), 0] },
     ),
   ];
   if (look.collar === "v") {
@@ -491,7 +499,8 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
       neckSurface(
         anatomicalSection(
           [
-            { y: 0, width: P.neckR * 1.19, depth: P.neckR * 0.98 },
+            { y: -P.neckLen * 0.12, width: P.neckR * 1.3, depth: P.neckR * 1.12 },
+            { y: P.neckLen * 0.16, width: P.neckR * 1.11, depth: P.neckR * 0.98 },
             { y: P.neckLen * 0.65, width: P.neckR * 0.87, depth: P.neckR * 0.82 },
             { y: P.neckLen * 1.25, width: P.neckR * 0.93, depth: P.neckR * 0.86 },
           ],
@@ -508,9 +517,10 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
 
   /* --------------------------------------------------------------- rosto */
 
-  const sculpt = buildSculptedFace(P, look, mats, hi, ctx.portrait ?? true);
+  const sculpt = buildSculptedFace(P, look, mats, hi, portrait ?? true);
   const { head, face, eyes, jaw, eyelidUpperL, eyelidLowerL, eyelidUpperR, eyelidLowerR } = sculpt;
   const hairParts = sculpt.hair;
+  const hairSecondaryParts = sculpt.hairSecondary;
 
   /* --------------------------------------------------------- braços/pernas */
 
@@ -557,7 +567,7 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
       rigPart(
         look.sleeves === "short"
           ? fittedLimbCover("upperArm", P.upperArm, P.armR, segs.radial, 0.44, 0, 1)
-          : tailoredSleeve(P.upperArm, P.armR, segs.radial),
+          : tailoredSleeve(P.upperArm, P.armR, segs.radial, side),
         sleeveMat,
         undefined,
         cast,
@@ -566,19 +576,7 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     if (look.sleeves === "short")
       arm.push(
         rigPart(
-          clothSurface(
-            anatomicalSection(
-              [
-                { y: -P.upperArm * 0.48, width: P.armR * 1.1, depth: P.armR * 1.1 },
-                { y: -P.upperArm * 0.26, width: P.armR * 1.11, depth: P.armR * 1.09 },
-                { y: -P.upperArm * 0.06, width: P.armR * 1.06, depth: P.armR * 1.02 },
-                { y: P.upperArm * 0.015, width: P.armR * 0.7, depth: P.armR * 0.68 },
-                { y: P.upperArm * 0.035, width: P.armR * 0.24, depth: P.armR * 0.24 },
-              ],
-              segs.radial,
-            ),
-            0.001,
-          ),
+          clothSurface(shoulderSleeve(P.upperArm, P.armR, segs.radial, side), 0.001),
           jerseyPlain,
           undefined,
           cast,
@@ -722,25 +720,43 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     // articulated fingers. Reuse the tapered phalanx and its normal detail;
     // it stays inside the existing thumb joint/material draw.
     thumb.push(
-      rigPart(anatomicalFinger(handR * 0.195, handR * 0.62), handMat, thumbTransform, cast),
+      rigPart(
+        anatomicalFinger(handR * 0.195, handR * 0.62, portrait ? 4 : 2),
+        handMat,
+        thumbTransform,
+        cast,
+      ),
     );
     if (hi && !look.gloves)
       thumb.push(
-        rigPart(anatomicalNail(handR * 0.195, handR * 0.62), handMat, thumbTransform, cast),
+        rigPart(
+          anatomicalNail(handR * 0.195, handR * 0.62, portrait ? 16 : 8),
+          handMat,
+          thumbTransform,
+          cast,
+        ),
       );
     for (let i = 0; i < 4; i++) {
       handDetail.push(
-        rigPart(anatomicalFinger(handR * 0.15, handR * FINGER_LENGTHS[i]!), handMat, {
-          position: [fingerX(i, handR), -handR * FINGER_CENTERS_Y[i]!, handR * 0.05],
-          rotation: [0.28, 0, (i - 1.5) * 0.035],
-        }),
+        rigPart(
+          anatomicalFinger(handR * 0.15, handR * FINGER_LENGTHS[i]!, portrait ? 4 : 2),
+          handMat,
+          {
+            position: [fingerX(i, handR, side), -handR * FINGER_CENTERS_Y[i]!, handR * 0.05],
+            rotation: [0.28, 0, side * (i - 1.5) * 0.035],
+          },
+        ),
       );
       if (hi && !look.gloves)
         handDetail.push(
-          rigPart(anatomicalNail(handR * 0.15, handR * FINGER_LENGTHS[i]!), handMat, {
-            position: [fingerX(i, handR), -handR * FINGER_CENTERS_Y[i]!, handR * 0.05],
-            rotation: [0.28, 0, (i - 1.5) * 0.035],
-          }),
+          rigPart(
+            anatomicalNail(handR * 0.15, handR * FINGER_LENGTHS[i]!, portrait ? 16 : 8),
+            handMat,
+            {
+              position: [fingerX(i, handR, side), -handR * FINGER_CENTERS_Y[i]!, handR * 0.05],
+              rotation: [0.28, 0, side * (i - 1.5) * 0.035],
+            },
+          ),
         );
     }
 
@@ -834,6 +850,8 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     }
 
     /* The boot is one sculpted last rather than three spheres and a box. */
+    const upperPoint = (x: number, z: number, lift = P.footH * 0.017) =>
+      new THREE.Vector3(x, footballBootUpperY(P.footLen, P.footH, x, z, side) + lift, z);
     ankle.push(
       rigPart(
         new THREE.SphereGeometry(P.legR * 0.45, segs.radial, 10),
@@ -841,7 +859,12 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
         { position: [0, P.footH * 0.06, 0], scale: [1, 0.62, 1.05] },
         cast,
       ),
-      rigPart(footballBoot(P.footLen, P.footH, segs.radial), boot, undefined, cast),
+      rigPart(
+        footballBoot(P.footLen, P.footH, segs.radial, false, undefined, side),
+        boot,
+        undefined,
+        cast,
+      ),
       rigPart(footballBoot(P.footLen, P.footH, segs.radial, true), sole, undefined, cast),
     );
     if (hi) {
@@ -853,7 +876,11 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
           new THREE.CapsuleGeometry(P.footH * 0.14, P.footLen * 0.22, 2, 6),
           boot,
           {
-            position: [0, -P.footH * 0.105, P.footLen * 0.16],
+            position: [
+              0,
+              footballBootUpperY(P.footLen, P.footH, 0, P.footLen * 0.16, side) - P.footH * 0.03,
+              P.footLen * 0.16,
+            ],
             rotation: [Math.PI / 2, 0, 0],
             scale: [1, 0.72, 1],
           },
@@ -870,22 +897,39 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
               new THREE.Vector3(P.footH * 0.37, -P.footH * 0.17, -P.footLen * 0.245),
               new THREE.Vector3(P.footH * 0.31, -P.footH * 0.37, -P.footLen * 0.2),
             ]),
-            8,
+            portrait ? 8 : 4,
             Math.max(P.footH * 0.019, 0.001),
-            4,
+            portrait ? 4 : 3,
             false,
           ),
           bootAccent,
         ),
       );
     }
-    for (const bootSide of [-1, 1])
-      ankle.push(
-        rigPart(new THREE.CapsuleGeometry(P.footH * 0.032, P.footLen * 0.28, 2, 5), bootAccent, {
-          position: [bootSide * P.footH * 0.58, -P.footH * 0.43, P.footLen * 0.15],
-          rotation: [Math.PI / 2, 0, bootSide * 0.3],
-        }),
-      );
+    for (const bootSide of [-1, 1]) {
+      const panel = new THREE.BufferGeometry();
+      const positions: number[] = [],
+        uv: number[] = [],
+        index: number[] = [];
+      for (let row = 0; row <= 4; row++) {
+        const z = P.footLen * (0.03 + row * 0.065);
+        for (const edge of [-1, 1]) {
+          const x = P.footH * (bootSide * (0.46 + row * 0.012) + edge * 0.018);
+          const point = upperPoint(x, z, P.footH * 0.01);
+          positions.push(point.x, point.y, point.z);
+          uv.push((edge + 1) / 2, row / 4);
+        }
+        if (row < 4) {
+          const a = row * 2;
+          index.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+        }
+      }
+      panel.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      panel.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+      panel.setIndex(index);
+      panel.computeVertexNormals();
+      ankle.push(rigPart(panel, bootAccent));
+    }
 
     /*
       Cadarços entram na malha de acabamento da chuteira (mesmo material, mesma
@@ -894,18 +938,17 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     */
     for (let i = 0; i < 5; i += 1) {
       const laceZ = P.footLen * (0.055 + i * 0.067);
-      const laceY = -P.footH * (0.025 + i * 0.034);
       ankle.push(
         rigPart(
           new THREE.TubeGeometry(
             new THREE.CatmullRomCurve3([
-              new THREE.Vector3(-P.footH * 0.25, laceY - P.footH * 0.04, laceZ),
-              new THREE.Vector3(0, laceY + P.footH * 0.025, laceZ + P.footLen * 0.012),
-              new THREE.Vector3(P.footH * 0.25, laceY - P.footH * 0.04, laceZ),
+              upperPoint(-P.footH * 0.25, laceZ),
+              upperPoint(0, laceZ + P.footLen * 0.012, P.footH * 0.036),
+              upperPoint(P.footH * 0.25, laceZ),
             ]),
-            8,
+            portrait ? 8 : 4,
             P.footH * 0.022,
-            4,
+            portrait ? 4 : 3,
             false,
           ),
           bootAccent,
@@ -919,13 +962,13 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
       rigPart(
         new THREE.TubeGeometry(
           new THREE.CatmullRomCurve3([
-            new THREE.Vector3(-P.footH * 0.31, -P.footH * 0.11, P.footLen * 0.39),
-            new THREE.Vector3(0, -P.footH * 0.02, P.footLen * 0.47),
-            new THREE.Vector3(P.footH * 0.31, -P.footH * 0.11, P.footLen * 0.39),
+            upperPoint(-P.footH * 0.31, P.footLen * 0.39),
+            upperPoint(0, P.footLen * 0.47),
+            upperPoint(P.footH * 0.31, P.footLen * 0.39),
           ]),
-          8,
+          portrait ? 8 : 4,
           P.footH * 0.015,
-          4,
+          portrait ? 4 : 3,
           false,
         ),
         bootAccent,
@@ -958,6 +1001,7 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     // barba e cabelo estão na mesma junta rígida e usam o mesmo material:
     // uma malha só para os dois.
     hair: mergeRigParts(hairParts),
+    hairSecondary: mergeRigParts(hairSecondaryParts),
     face: mergeRigParts(face),
     eyes: mergeRigParts(eyes),
     jaw: mergeRigParts(jaw),
@@ -1005,6 +1049,24 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
   const all: RigMesh[] = [];
   for (const meshes of Object.values(merged)) all.push(...meshes);
   return { ...merged, all };
+}
+
+/**
+ * The presentation worker may warm only the exact sections requested by this
+ * deterministic identity/style/LOD tuple. Until its full-flow benchmark passes
+ * the release gate, this wrapper remains a zero-behaviour synchronous call.
+ */
+export function buildRigBody(ctx: RigBodyContext): RigBody {
+  const lod = ctx.hi ? 0 : ctx.segs.radial >= 8 ? 1 : 2;
+  const style = [
+    ctx.trousers ? "trousers" : "shorts",
+    ctx.staffStyle ?? "athlete",
+    ctx.look.hairStyle,
+    ctx.look.gloves ? "gloves" : "hands",
+  ].join(":");
+  return withRigGeometryContext(String(ctx.look.seed), style, lod, () =>
+    buildRigBodyUnprepared(ctx),
+  );
 }
 
 /** Malhas visíveis no LOD 0 (todas) — usado no teste de orçamento. */

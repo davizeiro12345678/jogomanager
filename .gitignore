@@ -41,3 +41,6 @@ dist-benchmark
 
 # artefato de typecheck incremental
 tsconfig.tsbuildinfo
+
+# Local Rust compiler output; the reviewed WASM package is tracked separately.
+/wasm/crowd-visibility/target/

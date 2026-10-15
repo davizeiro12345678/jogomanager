@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer } from "@/components/game/screen-kit";
+import { NoCareer, ScreenHeader, SectionCard } from "@/components/game/screen-kit";
 import { useCareer } from "@/hooks/useCareer";
 import { CLUBS, LEAGUES, getLeague } from "@/game/data/leagues";
 import { ATTR_LABELS } from "@/game/attributes";
@@ -16,6 +16,7 @@ import {
   runDrill,
 } from "@/game/training-drills";
 import type { TrainingFocus } from "@/game/types";
+import { playerForDisplay } from "@/game/player-development";
 
 export const Route = createFileRoute("/training")({
   ssr: false,
@@ -53,7 +54,9 @@ function TrainingPage() {
   const doneFriendly = friendlyDoneThisRound(career);
   const lastFriendlies = (career.friendlies ?? []).slice(0, 4);
 
-  const players = Object.values(career.players);
+  const players = Object.values(career.players)
+    .filter((p) => p.clubId === career.clubId)
+    .map((p) => playerForDisplay(p, career));
   const avgCond = players.reduce((s, p) => s + p.condition, 0) / Math.max(1, players.length);
   const avgMorale = players.reduce((s, p) => s + p.morale, 0) / Math.max(1, players.length);
   const intensity = career.trainingIntensity ?? 1;
@@ -65,13 +68,13 @@ function TrainingPage() {
 
   return (
     <GameShell career={career}>
-      <h1 className="font-display text-3xl uppercase tracking-wide">Treino da semana</h1>
+      <ScreenHeader title="Treino da semana" />
       <p className="mt-1 text-sm text-muted-foreground">
         O que você escolhe aqui vale para cada rodada até você mudar.
       </p>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-border/60 surface-card p-5">
+        <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Foco</h2>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {FOCUS.map((f) => (
@@ -89,9 +92,9 @@ function TrainingPage() {
               </button>
             ))}
           </div>
-        </section>
+        </SectionCard>
 
-        <section className="rounded-2xl border border-border/60 surface-card p-5">
+        <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Intensidade</h2>
           <div className="mt-3 space-y-2">
             {INTENSITY.map((i) => (
@@ -114,10 +117,10 @@ function TrainingPage() {
             <Gauge label="Condição média" value={avgCond} />
             <Gauge label="Moral média" value={avgMorale} />
           </div>
-        </section>
+        </SectionCard>
       </div>
 
-      <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
+      <SectionCard className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
         <h2 className="font-display text-lg uppercase tracking-wide">Exercícios táticos</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Um exercício por rodada. Ele cansa o elenco, mas desenvolve o atributo treinado.
@@ -156,9 +159,9 @@ function TrainingPage() {
             );
           })}
         </div>
-      </section>
+      </SectionCard>
 
-      <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
+      <SectionCard className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
         <h2 className="font-display text-lg uppercase tracking-wide">Resposta individual</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Cada sessão considera idade, condição, potencial e personalidade. A evolução detalhada é
@@ -187,9 +190,9 @@ function TrainingPage() {
             Aplique o primeiro exercício da rodada para ver a resposta do grupo.
           </p>
         )}
-      </section>
+      </SectionCard>
 
-      <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
+      <SectionCard className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
         <h2 className="font-display text-lg uppercase tracking-wide">Amistoso</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Um amistoso por rodada contra qualquer clube real. Vale moral e ritmo de jogo, e cansa
@@ -257,9 +260,9 @@ function TrainingPage() {
             ))}
           </ul>
         )}
-      </section>
+      </SectionCard>
 
-      <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
+      <SectionCard className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
         <h2 className="font-display text-lg uppercase tracking-wide">Promessas em evolução</h2>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {youngsters.map((p) => (
@@ -285,7 +288,7 @@ function TrainingPage() {
             <p className="text-sm text-muted-foreground">Nenhum jogador com 23 anos ou menos.</p>
           ) : null}
         </div>
-      </section>
+      </SectionCard>
     </GameShell>
   );
 }

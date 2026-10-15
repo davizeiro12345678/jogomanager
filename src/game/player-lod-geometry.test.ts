@@ -7,6 +7,21 @@ const triangles = (geometry: THREE.BufferGeometry) =>
   (geometry.index?.count ?? geometry.getAttribute("position").count) / 3;
 
 describe("distant player geometry", () => {
+  it("reduces distant anatomy buffers without changing the full studio geometry", () => {
+    const full = createLowPlayerGeometries();
+    const compact = createLowPlayerGeometries(true);
+    let fullTriangles = 0,
+      compactTriangles = 0;
+    for (const name of Object.keys(full)) {
+      fullTriangles += triangles(full[name]!);
+      compactTriangles += triangles(compact[name]!);
+      const position = compact[name]!.getAttribute("position");
+      expect(Array.from(position.array).every(Number.isFinite)).toBe(true);
+      full[name]!.dispose();
+      compact[name]!.dispose();
+    }
+    expect(compactTriangles).toBeLessThan(fullTriangles * 0.8);
+  });
   it("keeps the whole team below 58,000 triangles even with the largest hair and socks", () => {
     const geometries = createLowPlayerGeometries();
     const hair = Math.max(

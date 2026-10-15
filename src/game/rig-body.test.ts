@@ -5,6 +5,8 @@ import { buildRigBody, countRigBody, type RigBodyContext } from "./rig-body";
 import { lookFor, proportionsFor } from "./player-model";
 import { playerMaterials } from "./player-materials";
 import { resetSharedDetailMaterials } from "./rig-materials";
+import { segmentsFor } from "./player-model";
+import { matchRigSegments } from "./match-rig-detail";
 
 const KIT = {
   base: "#0a8f3c",
@@ -47,6 +49,77 @@ function hasFiniteGeometry(mesh: { geometry: THREE.BufferGeometry }): boolean {
 }
 
 describe("rig body", () => {
+  it("fits the shirt opening outside the neck base without interpenetrating skin", () => {
+    const ctx = context();
+    const body = buildRigBody(ctx);
+    const shirt = body.spine.find((mesh) => mesh.material === ctx.mats.jersey)!;
+    const positions = shirt.geometry.getAttribute("position");
+    shirt.geometry.computeBoundingBox();
+    const top = shirt.geometry.boundingBox!.max.y;
+    let openingVertices = 0;
+    for (let vertex = 0; vertex < positions.count; vertex += 1) {
+      if (Math.abs(positions.getY(vertex) - top) > 0.00001) continue;
+      openingVertices += 1;
+      const clearance = Math.hypot(
+        positions.getX(vertex) / (ctx.P.neckR * 1.3),
+        positions.getZ(vertex) / (ctx.P.neckR * 1.12),
+      );
+      expect(
+        clearance,
+        "the shirt opening must surround rather than cut into the neck",
+      ).toBeGreaterThan(1.015);
+    }
+    expect(openingVertices).toBeGreaterThan(12);
+    body.all.forEach((mesh) => mesh.geometry.dispose());
+  });
+  it("leaves an open neckline rather than closing the shirt through the neck", () => {
+    const ctx = context();
+    const body = buildRigBody(ctx);
+    const shirt = body.spine.find((mesh) => mesh.material === ctx.mats.jersey)!;
+    const positions = shirt.geometry.getAttribute("position");
+    const index = shirt.geometry.getIndex();
+    shirt.geometry.computeBoundingBox();
+    const top = shirt.geometry.boundingBox!.max.y;
+    let capTriangles = 0;
+    const count = index?.count ?? positions.count;
+    for (let triangle = 0; triangle < count; triangle += 3) {
+      const vertices = [0, 1, 2].map((offset) =>
+        index ? index.getX(triangle + offset) : triangle + offset,
+      );
+      if (vertices.every((vertex) => Math.abs(positions.getY(vertex) - top) < 0.00001))
+        capTriangles += 1;
+    }
+    expect(capTriangles, "a solid shirt cap intersects the neck and exposes dark facets").toBe(0);
+    body.all.forEach((mesh) => mesh.geometry.dispose());
+  });
+  it("keeps the crew collar out of the closed shirt cap instead of exposing alternating facets", () => {
+    const ctx = context();
+    ctx.look = { ...ctx.look, collar: "crew" };
+    const body = buildRigBody(ctx);
+    const shirt = body.spine.find((mesh) => mesh.material === ctx.mats.jersey)!;
+    const collar = body.chest.find((mesh) => mesh.material === ctx.mats.trim)!;
+    shirt.geometry.computeBoundingBox();
+    collar.geometry.computeBoundingBox();
+    // These meshes have different joint-local origins; compare both in spine space.
+    const shirtTop = shirt.geometry.boundingBox!.max.y;
+    const collarBottom = ctx.P.spineLen + collar.geometry.boundingBox!.min.y;
+    expect(collarBottom - shirtTop).toBeGreaterThanOrEqual(0.0005);
+    expect(collarBottom - shirtTop).toBeLessThan(0.012);
+    body.all.forEach((mesh) => mesh.geometry.dispose());
+  });
+  it("bounds broadcast topology while retaining high quality materials and anatomy", () => {
+    const dense = buildRigBody(context({ segs: matchRigSegments("alta", true), portrait: false }));
+    const match = buildRigBody(context({ segs: matchRigSegments("alta", false), portrait: false }));
+    const vertices = (body: ReturnType<typeof buildRigBody>) =>
+      body.all.reduce((sum, mesh) => sum + mesh.geometry.getAttribute("position").count, 0);
+    expect(vertices(match)).toBeLessThan(vertices(dense) * 0.45);
+    expect(countRigBody(match)).toBe(countRigBody(dense));
+    for (const mesh of match.all) {
+      expect(hasFiniteGeometry(mesh)).toBe(true);
+      expect(dense.all.some((source) => source.material === mesh.material)).toBe(true);
+    }
+    for (const body of [dense, match]) body.all.forEach((mesh) => mesh.geometry.dispose());
+  });
   it("keeps a full articulated rig well under the per-hero draw budget", () => {
     const body = buildRigBody(context());
     // ~117 malhas antes do merge por junta. Teto 56: 53 da base + 3 de
@@ -126,6 +199,46 @@ describe("rig body", () => {
     // widens the articulated draw budget.
     expect(countRigBody(high)).toBeLessThanOrEqual(56);
     expect(countRigBody(low)).toBeLessThanOrEqual(56);
+  });
+
+  it("doubles hero body triangle density while retaining the light distant LOD", () => {
+    const hero = buildRigBody(context({ segs: segmentsFor(0), portrait: false }));
+    const previousHero = buildRigBody(context({ segs: { radial: 16, cap: 4 }, portrait: false }));
+    const triangles = (body: ReturnType<typeof buildRigBody>) =>
+      body.all.reduce(
+        (sum, mesh) =>
+          sum +
+          (mesh.geometry.getIndex()?.count ?? mesh.geometry.getAttribute("position").count) / 3,
+        0,
+      );
+    expect(triangles(hero)).toBeGreaterThanOrEqual(triangles(previousHero) * 2);
+    expect(segmentsFor(1).radial).toBe(8);
+    expect(segmentsFor(2).radial).toBe(6);
+    previousHero.all.forEach((mesh) => mesh.geometry.dispose());
+    hero.all.forEach((mesh) => mesh.geometry.dispose());
+  });
+
+  it("reserves dense scalp geometry for the close athlete without adding another draw", () => {
+    const look = {
+      ...lookFor("dense-scalp", "MF", false),
+      hairStyle: "short",
+      beard: "none",
+    } as never;
+    const body = buildRigBody(context({ look, hi: true, portrait: true }));
+    const matchBody = buildRigBody(context({ look, hi: true, portrait: false }));
+    const scalpVertices = body.hair.reduce(
+      (sum, mesh) => sum + mesh.geometry.getAttribute("position").count,
+      0,
+    );
+    const matchVertices = matchBody.hair.reduce(
+      (sum, mesh) => sum + mesh.geometry.getAttribute("position").count,
+      0,
+    );
+    expect(scalpVertices).toBeGreaterThan(matchVertices * 1.5);
+    expect(scalpVertices).toBeLessThanOrEqual(11_000);
+    expect(countRigBody(body)).toBeLessThanOrEqual(56);
+    body.all.forEach((mesh) => mesh.geometry.dispose());
+    matchBody.all.forEach((mesh) => mesh.geometry.dispose());
   });
 
   it("shows a short-sleeve compression layer without spending extra rig draws", () => {

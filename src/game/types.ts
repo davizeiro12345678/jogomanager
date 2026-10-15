@@ -26,6 +26,11 @@ export type Personality =
   "líder" | "profissional" | "ambicioso" | "temperamental" | "caseiro" | "determinado";
 
 export interface Player {
+  /** Immutable initial skill/profile snapshot. Renames and birthdays never regenerate it. */
+  developmentBase?: import("./player-development").DevelopmentBase | undefined;
+  /** Explicit projection of career attrDeltas for match snapshots; never added twice. */
+  developmentDelta?: import("./attributes").AttrDelta | undefined;
+  detailedAttributes?: import("./attributes").DetailedAttributes | undefined;
   id: string;
   clubId: string;
   name: string;
@@ -51,7 +56,7 @@ export interface Player {
   suspended: boolean;
   injuryWeeks: number;
   /** teto de evolução (atributo oculto) */
-  potential?: number;
+  potential?: number | undefined;
   personality?: Personality;
   /** forma recente 0-100 */
   form?: number;
@@ -207,6 +212,20 @@ export interface TransferOffer {
   expiresRound: number;
 }
 
+/** Optional commercial agreement; personal save data cannot attest an online payout. */
+export interface SponsorContract {
+  id: string;
+  name: string;
+  startsSeason: number;
+  startsRound: number;
+  endsSeason: number;
+  endsRound: number;
+  weeklyBase: number;
+  winBonus: number;
+  signingBonus: number;
+  objectiveTop: number;
+}
+
 export interface JobOffer {
   id: string;
   clubId: string;
@@ -240,6 +259,11 @@ export interface ScoutReport {
 }
 
 export interface CareerState {
+  /** Missing version preserves the rules of an existing personal save. */
+  economyRulesVersion?: 1 | 2 | undefined;
+  developmentRulesVersion?: 1 | 2 | undefined;
+  /** Effective OVR at season start, used to constrain only future development. */
+  developmentSeasonStart?: { season: number; ratings: Record<string, number> } | undefined;
   /** Persistent local career identity, relationships and football memories. */
   world?: import("./career-world-types").CareerWorld;
   version: 3;
@@ -275,6 +299,8 @@ export interface CareerState {
   operatingPlan?: OperatingPlan;
   /** razão agregada de receitas e despesas, idempotente por rodada */
   financeLedger?: FinanceLedgerEntry[];
+  /** Durable monotonic settlement cursor survives bounded ledger truncation. */
+  financeSettledThrough?: { clubId: string; season: number; round: number } | undefined;
   /** satisfação da diretoria, 0-100 */
   approval: number;
   /** posição-alvo definida pela diretoria */
@@ -291,6 +317,7 @@ export interface CareerState {
   staff: Staff;
   /** receita de patrocínio por rodada (M€) */
   sponsor: number;
+  sponsorContract?: SponsorContract;
   /** preço médio do ingresso (€) */
   ticketPrice: number;
   /** capacidade do estádio */

@@ -362,7 +362,7 @@ export function proportionsFor(look: PlayerLook): Proportions {
   // below the pelvis; include that offset before normalizing the skeleton.
   const rawHipY = rawThigh + rawShin + rawFootH * 0.84 + rawHipH * 0.4;
   const rawRigHeight =
-    rawHipY + rawHipH * 0.5 + rawSpineLen + rawChestLen + rawNeckLen + rawHeadR * (0.82 + 1.14);
+    rawHipY + rawHipH * 0.5 + rawSpineLen + rawChestLen + rawNeckLen + rawHeadR * (0.66 + 1.14);
   const metricScale = (1.8 * h) / rawRigHeight;
   const thigh = rawThigh * metricScale;
   const shin = rawShin * metricScale;
@@ -387,7 +387,7 @@ export function proportionsFor(look: PlayerLook): Proportions {
     chestD: 0.116 * frameScale * (look.bodyType === "strong" ? 1.04 : 1),
     shoulderW: 0.35 * build.shoulder * frameScale,
     neckLen: rawNeckLen * metricScale,
-    neckR: 0.048 * g * (look.role === "DF" || look.role === "GK" ? 1.06 : 1) * metricScale,
+    neckR: 0.056 * g * (look.role === "DF" || look.role === "GK" ? 1.06 : 1) * metricScale,
     headR,
     headH: headR * 2.28,
     headW: headR * faceWide * 0.87,
@@ -399,7 +399,7 @@ export function proportionsFor(look: PlayerLook): Proportions {
     armR: 0.058 * frameScale,
     armSpan,
     posture,
-    handR: 0.052 * Math.sqrt(g) * metricScale,
+    handR: 0.057 * Math.sqrt(g) * metricScale,
     thigh,
     shin,
     legR: 0.071 * frameScale,
@@ -423,7 +423,7 @@ export interface LowDetailBodyShape {
 
 /** Measurements from the assembled skeleton, in metres, without hair. */
 export function anatomyMeasurements(p: Proportions) {
-  const height = p.hipY + p.hipH * 0.5 + p.spineLen + p.chestLen + p.neckLen + p.headR * 1.96;
+  const height = p.hipY + p.hipH * 0.5 + p.spineLen + p.chestLen + p.neckLen + p.headR * 1.8;
   const shoulderHeight = p.hipY + p.hipH * 0.5 + p.spineLen + p.chestLen * 0.84;
   return {
     height,
@@ -456,7 +456,7 @@ export function lowDetailBodyFor(p: Proportions): LowDetailBodyShape {
     torsoDepth: p.chestD * 2,
     torsoCenterY: p.hipY + (torsoTop + torsoBottom) * 0.5,
     neckCenterY: neckBase + p.neckLen * 0.5,
-    headCenterY: neckBase + p.neckLen + p.headR * 0.82,
+    headCenterY: neckBase + p.neckLen + p.headR * 0.66,
     hairCenterY: neckBase + p.neckLen + p.headR * 0.98,
   };
 }
@@ -509,7 +509,9 @@ export function segmentsFor(lod: LodLevel): {
   torso: number;
   head: number;
 } {
-  if (lod === 0) return { radial: 16, cap: 4, torso: 20, head: 24 };
+  // Dense anatomy is reserved by matchRigSegments for the isolated portrait.
+  // Broadcast squads use a stable, bounded topology across camera cuts.
+  if (lod === 0) return { radial: 80, cap: 12, torso: 96, head: 64 };
   if (lod === 1) return { radial: 8, cap: 3, torso: 10, head: 10 };
   return { radial: 6, cap: 2, torso: 7, head: 7 };
 }

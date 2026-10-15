@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { assertCheckoutProductNonPayToWin } from "@/lib/entitlement-contract";
 
 /**
  * Dados comerciais que somente o servidor pode transformar em uma sessão de
@@ -69,7 +70,12 @@ export function assertStoreProductKey(value: unknown): asserts value is string {
 }
 
 function nonNegativeInteger(value: unknown): number | null {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
+  return typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0 &&
+    value <= 2_147_483_647
+    ? value
+    : null;
 }
 
 /** Public function so the DB-backed contents contract can be unit tested. */
@@ -85,6 +91,7 @@ export function parseStoreProductContents(value: unknown): StoreProductContents 
     scoutReports === null ||
     trainingBoosts === null ||
     !Array.isArray(rawThemes) ||
+    rawThemes.length > 100 ||
     rawThemes.some((theme) => typeof theme !== "string" || theme.length > 80)
   ) {
     return null;
@@ -154,6 +161,9 @@ export async function resolveValidatedStripePrice(
   stripe: Stripe,
   product: ServerStoreProduct,
 ): Promise<Stripe.Price> {
+  // This is the shared, last server gate before either authenticated or guest
+  // checkout queries Stripe. It is deliberately before any provider request.
+  assertCheckoutProductNonPayToWin(product);
   const prices = await stripe.prices.list({
     lookup_keys: [product.stripeLookupKey],
     active: true,

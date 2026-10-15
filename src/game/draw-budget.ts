@@ -19,11 +19,13 @@ import { GRAPHICS_PROFILES, type GraphicsTier } from "./contracts/graphics-profi
  * — materiais compartilhados, contra ~53 malhas da versão mesclada por junta
  * e ~117 do rig original. Só os grupos "core" entram no mapa de sombras.
  * O pior caso medido em 128 variantes de porte, cabelo, manga e acessórios
- * custa 34 desenhos, incluindo a passagem de sombras (player-sculpt.test.ts).
+ * custa 35 desenhos, incluindo a passagem de sombras (player-sculpt.test.ts).
  * Nas LODs distantes os grupos de detalhe ficam ocultos, e o custo real é
  * menor — usamos o pior caso para o allocador nunca prometer demais.
  */
-export const HERO_MESH_COST = 34;
+// Maximum measured with goalkeeper gloves, polo collar, hair and accessories,
+// including core shadow passes. Keep the allocator conservative for that case.
+export const HERO_MESH_COST = 35;
 
 /** Margem de segurança: não encosta no teto do tier. */
 export const BUDGET_HEADROOM = 0.95;

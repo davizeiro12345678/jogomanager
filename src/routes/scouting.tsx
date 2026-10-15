@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { Crest } from "@/components/game/Crest";
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer } from "@/components/game/screen-kit";
+import { NoCareer, ScreenHeader } from "@/components/game/screen-kit";
 import { runScouting } from "@/game/career";
 import { CLUBS } from "@/game/data/leagues";
 import { formatMoney } from "@/game/economy";
@@ -42,7 +42,7 @@ function ScoutingPage() {
   return (
     <GameShell career={career}>
       <div className="flex items-center gap-3">
-        <h1 className="font-display text-2xl uppercase tracking-wide">Olheiros</h1>
+        <ScreenHeader title="Olheiros" />
         <span className="text-xs text-muted-foreground">
           Departamento nível {career.staff.olheiro}/5
         </span>

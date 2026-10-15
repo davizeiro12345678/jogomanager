@@ -6,10 +6,16 @@ const root = path.resolve(import.meta.dirname, "..");
 const cache =
   process.env["PFM_WASM_PACK_CACHE"] || path.join(root, "wasm/crowd-visibility/target/wasm-pack");
 await mkdir(cache, { recursive: true });
+// wasm-pack otherwise downloads Binaryen on demand. The desktop verification
+// environment is intentionally able to build offline, so retain Rust release
+// optimisation and skip only the optional post-pass when Binaryen is absent.
+// CI machines that provide wasm-opt continue to use the extra optimisation.
+const hasWasmOpt = spawnSync("wasm-opt", ["--version"], { stdio: "ignore" }).status === 0;
 const result = spawnSync(
   "wasm-pack",
   [
     "build",
+    ...(hasWasmOpt ? [] : ["--no-opt"]),
     "wasm/crowd-visibility",
     "--target",
     "web",

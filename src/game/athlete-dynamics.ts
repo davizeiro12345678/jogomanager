@@ -19,6 +19,12 @@ const mass = (p: AthleteBody) => (Number.isFinite(p.weightKg) ? clamp(p.weightKg
 // a bounded fallback below.
 const MAX_LIVE_ATHLETE_SUBSTEPS = 11;
 const liveRemainder = new WeakMap<AthleteBody, number>();
+export const athleteRemainder = (body: AthleteBody) => liveRemainder.get(body) ?? 0;
+export function restoreAthleteRemainder(body: AthleteBody, remainder: number) {
+  if (!Number.isFinite(remainder) || remainder < 0 || remainder >= HIGH_FIDELITY_PHYSICS_STEP)
+    throw new Error("Invalid athlete integration remainder");
+  liveRemainder.set(body, remainder);
+}
 
 /** Bounded acceleration, stopping distance and continuous coasting. Substeps
  * keep a coarse fast-forward tick consistent with the live match clock. */

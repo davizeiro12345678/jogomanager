@@ -1,7 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
-import { EmptyState, NoCareer, PrimaryLink } from "@/components/game/screen-kit";
+import {
+  EmptyState,
+  NoCareer,
+  PrimaryLink,
+  SectionCard,
+  ScreenHeader,
+} from "@/components/game/screen-kit";
 import { NativeSponsoredCard } from "@/features/ads/AdZones";
 import { useCareer } from "@/hooks/useCareer";
 import type { NewsKind } from "@/game/types";
@@ -50,8 +56,8 @@ function NewsPage() {
 
   return (
     <GameShell career={career}>
-      <section className="mx-auto max-w-3xl rounded-2xl border border-border/60 surface-card p-5">
-        <h1 className="font-display text-2xl uppercase tracking-wide">Central de notícias</h1>
+      <SectionCard className="mx-auto max-w-3xl rounded-2xl border border-border/60 surface-card p-5">
+        <ScreenHeader title="Central de notícias" />
         {career.news.length === 0 ? (
           <EmptyState
             icon="📰"
@@ -87,7 +93,7 @@ function NewsPage() {
             })}
           </ul>
         )}
-      </section>
+      </SectionCard>
     </GameShell>
   );
 }

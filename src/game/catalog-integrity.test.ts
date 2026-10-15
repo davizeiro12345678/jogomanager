@@ -89,7 +89,9 @@ describe("catalog composition and full squads", () => {
     };
     const migrated = migrateCareer(old);
     expect(Object.keys(migrated.players)).toHaveLength(26);
-    for (const [id, p] of Object.entries(old.players)) expect(migrated.players[id]).toEqual(p);
+    for (const [id, p] of Object.entries(old.players))
+      expect(migrated.players[id]).toMatchObject(p);
+    expect(migrateCareer(migrated).players).toEqual(migrated.players);
     const sold = Object.keys(migrated.players).at(-1)!;
     const players = { ...migrated.players };
     delete players[sold];

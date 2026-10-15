@@ -5,7 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer } from "@/components/game/screen-kit";
+import { NoCareer, SectionCard, ScreenHeader } from "@/components/game/screen-kit";
 import { CLUBS } from "@/game/data/leagues";
 import { computeTable, nextFixture } from "@/game/season";
 import { useCareer } from "@/hooks/useCareer";
@@ -121,7 +121,7 @@ function ToolCard({
   children?: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-border/60 surface-card p-4">
+    <SectionCard className="rounded-2xl border border-border/60 surface-card p-4">
       <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
         {title}
       </h2>
@@ -151,7 +151,7 @@ function ToolCard({
           {result}
         </p>
       ) : null}
-    </section>
+    </SectionCard>
   );
 }
 
@@ -320,7 +320,7 @@ function AssistenteContent({ career }: { career: CareerState }) {
 
   return (
     <div className="space-y-4">
-      <h1 className="font-display text-2xl uppercase tracking-wide">Assistente de IA</h1>
+      <ScreenHeader title="Assistente de IA" />
       <p className="text-sm text-muted-foreground">
         Ferramentas com inteligência artificial para ajudar na gestão do {club?.name ?? "clube"}.
       </p>
@@ -384,7 +384,7 @@ function AssistenteContent({ career }: { career: CareerState }) {
         </ToolCard>
       </div>
 
-      <section className="rounded-2xl border border-border/60 surface-card p-4">
+      <SectionCard className="rounded-2xl border border-border/60 surface-card p-4">
         <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
           Coletiva de imprensa
         </h2>
@@ -425,9 +425,9 @@ function AssistenteContent({ career }: { career: CareerState }) {
             {coletivaTool.result}
           </p>
         ) : null}
-      </section>
+      </SectionCard>
 
-      <section className="rounded-2xl border border-border/60 surface-card p-4">
+      <SectionCard className="rounded-2xl border border-border/60 surface-card p-4">
         <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground">
           Chat com o assistente
         </h2>
@@ -473,7 +473,7 @@ function AssistenteContent({ career }: { career: CareerState }) {
             Enviar
           </button>
         </div>
-      </section>
+      </SectionCard>
     </div>
   );
 }

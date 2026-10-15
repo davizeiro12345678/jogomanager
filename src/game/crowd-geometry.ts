@@ -5,7 +5,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
  * instance jerseys. Arms, shoes and a scarf share the same single draw. */
 export function supporterGeometry(detailed: boolean): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
-  const radial = detailed ? 7 : 4;
+  const radial = detailed ? 8 : 4;
   const part = (
     geometry: THREE.BufferGeometry,
     region: number,
@@ -35,9 +35,37 @@ export function supporterGeometry(detailed: boolean): THREE.BufferGeometry {
     geometry.setAttribute("crowdLimb", new THREE.Float32BufferAttribute(motion, 2));
     parts.push(geometry);
   };
-  part(new THREE.CylinderGeometry(0.205, 0.155, 0.55, radial, 1, !detailed), 0, 0, 0.03);
+  // A fitted torso has a waist, ribcage, shoulders and neckline. The medium
+  // tier retains its original 60-triangle cap for the bulk of the grandstand.
+  const torso = detailed
+    ? new THREE.LatheGeometry(
+        [
+          new THREE.Vector2(0.155, -0.275),
+          new THREE.Vector2(0.153, -0.2),
+          new THREE.Vector2(0.169, -0.04),
+          new THREE.Vector2(0.193, 0.13),
+          new THREE.Vector2(0.207, 0.22),
+          new THREE.Vector2(0.17, 0.275),
+          new THREE.Vector2(0.065, 0.3),
+        ],
+        radial,
+      )
+    : new THREE.CylinderGeometry(0.205, 0.155, 0.55, radial, 1, true);
+  if (detailed) torso.scale(1, 1, 0.65);
+  part(torso, 0, 0, 0.03);
   const head = new THREE.SphereGeometry(0.145, radial, detailed ? 5 : 3);
   head.scale(0.91, 1.13, 0.93);
+  if (detailed) {
+    const p = head.getAttribute("position");
+    for (let i = 0; i < p.count; i++) {
+      const y = p.getY(i) / 0.164,
+        z = p.getZ(i);
+      // Flatten the temples and taper an adult jaw instead of a round bead.
+      p.setX(i, p.getX(i) * (y < -0.15 ? 0.8 + (y + 1) * 0.17 : 1));
+      if (z > 0) p.setZ(i, z + 0.012 * Math.exp(-(((y + 0.4) / 0.28) ** 2)));
+    }
+    head.computeVertexNormals();
+  }
   part(head, 1, 0, 0.48, 0.015);
   if (detailed) {
     part(
@@ -48,6 +76,17 @@ export function supporterGeometry(detailed: boolean): THREE.BufferGeometry {
       0.006,
     );
     part(new THREE.BoxGeometry(0.38, 0.065, 0.32), 4, 0, 0.265, 0.01);
+    const nose = new THREE.SphereGeometry(0.022, 5, 3);
+    nose.scale(0.65, 1.2, 1.5);
+    part(nose, 1, 0, 0.477, 0.147);
+    for (const side of [-1, 1]) {
+      const ear = new THREE.SphereGeometry(0.025, 5, 3);
+      ear.scale(0.5, 1.15, 0.8);
+      part(ear, 1, side * 0.132, 0.475, 0.005);
+      const eye = new THREE.SphereGeometry(0.009, 4, 3);
+      eye.scale(1, 0.55, 0.4);
+      part(eye, 3, side * 0.052, 0.515, 0.124);
+    }
   }
   for (const side of [-1, 1]) {
     part(

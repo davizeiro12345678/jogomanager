@@ -1,5 +1,17 @@
 import { FORMATIONS } from "./formations";
-import { evaluatePassLanesFallback, type PassLaneKernel } from "./wasm/match-perception";
+import {
+  evaluatePassLanesFallback,
+  evaluatePassLanesIntoFallback,
+  MAX_PASS_LANE_PLAYERS,
+  type PassLaneKernel,
+  type PassLaneIntoKernel,
+} from "./wasm/match-perception";
+import {
+  MATCH_EXECUTION_REVISION,
+  validExecutionContract,
+  type MatchExecutionContract,
+} from "./match-execution-contract";
+import { PassLaneBuffers } from "./wasm/pass-lane-buffers";
 import { makeRng } from "./rng";
 import { physiqueFor } from "./player-physique";
 import { matchAttributes } from "./match-readiness";
@@ -37,8 +49,14 @@ import {
   xgForShot,
 } from "./sim-rules";
 import { pitchCondition, windFor, type WindVector } from "./ball-climate";
-import { advanceAthlete, athleteContact } from "./athlete-dynamics";
+import {
+  advanceAthlete,
+  athleteContact,
+  athleteRemainder,
+  restoreAthleteRemainder,
+} from "./athlete-dynamics";
 import type { PlayerAction } from "./animation";
+import { HIGH_FIDELITY_PHYSICS_STEP } from "./physics-quality";
 import type { MatchEventLog, Player, Tactics } from "./types";
 import {
   type ActionContext,
@@ -58,6 +76,7 @@ import {
 import type { CanonicalBallPhysicsState, VisualBallState } from "./visual-ball";
 import type {
   BallPhysicsAuthority,
+  BallPhysicsCheckpoint,
   RapierBallHolder,
   RapierBallState,
 } from "./rapier-ball-authority";
@@ -263,11 +282,144 @@ export interface SimView {
   generateVisualContext?(): VersionedVisualData;
 }
 
+export interface MatchCheckpoint {
+  version: 1 | 2;
+  execution?: MatchExecutionContract;
+  seed: string;
+  rng: number;
+  state: Record<string, unknown>;
+  physics: BallPhysicsCheckpoint | null;
+  perception: "compat" | "wasm";
+  athleteRemainders: number[];
+}
+const CHECKPOINT_EXTERNAL = new Set(["rnd", "passLaneKernel", "ballPhysics"]);
+
+function clampFinite(value: number, lower: number, upper: number, fallback: number): number {
+  if (!Number.isFinite(value)) value = fallback;
+  return value <= lower ? lower : value >= upper ? upper : value;
+}
+
 export class MatchSim {
+  // Native private fields are excluded from checkpoint enumeration and saves.
+  readonly #passLaneReceivers = new PassLaneBuffers();
+  readonly #passLaneDefenders = new PassLaneBuffers();
+  readonly #passLaneOutput = new Float64Array(MAX_PASS_LANE_PLAYERS * 3);
+  #passLaneIntoKernel: PassLaneIntoKernel | null = evaluatePassLanesIntoFallback;
+  #perceptionBackend: "compat" | "wasm" = "compat";
+  #execution: MatchExecutionContract | null = null;
+  #physicsFault = false;
   private passLaneKernel: PassLaneKernel = evaluatePassLanesFallback;
 
   setPassLaneKernel(kernel: PassLaneKernel) {
+    if (this.#execution) throw new Error("Match execution is already fixed");
     this.passLaneKernel = kernel;
+    this.#passLaneIntoKernel = null;
+    this.#perceptionBackend = kernel === evaluatePassLanesFallback ? "compat" : "wasm";
+  }
+
+  setPassLaneIntoKernel(kernel: PassLaneIntoKernel, backend: "compat" | "wasm") {
+    if (this.#execution) throw new Error("Match execution is already fixed");
+    this.#passLaneIntoKernel = kernel;
+    this.#perceptionBackend = backend;
+  }
+
+  executionContract(): MatchExecutionContract {
+    if (this.#execution) return { ...this.#execution };
+    return {
+      revision: MATCH_EXECUTION_REVISION,
+      physics: this.ballPhysics ? "rapier" : "compat",
+      perception: this.#perceptionBackend,
+    };
+  }
+
+  /** Internal recovery snapshot, never a career save or authority attestation. */
+  checkpoint(): MatchCheckpoint {
+    if (this.#physicsFault) throw new Error("Physics recovery is required");
+    const state: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(this))
+      if (!CHECKPOINT_EXTERNAL.has(key)) state[key] = value;
+    if (this.ballPhysics && !this.ballPhysics.checkpoint)
+      throw new Error("Physics backend cannot checkpoint");
+    return {
+      version: 2,
+      execution: this.executionContract(),
+      seed: this.matchSeed,
+      rng: this.rnd.state(),
+      state: structuredClone(state),
+      physics: this.ballPhysics?.checkpoint?.() ?? null,
+      athleteRemainders: this.players.map(athleteRemainder),
+      perception: this.#perceptionBackend,
+    };
+  }
+
+  restoreCheckpoint(checkpoint: MatchCheckpoint, authority?: BallPhysicsAuthority): void {
+    if (
+      !checkpoint ||
+      !checkpoint.state ||
+      (checkpoint.version !== 1 && checkpoint.version !== 2) ||
+      (checkpoint.version === 2 &&
+        (!validExecutionContract(checkpoint.execution) ||
+          checkpoint.execution.physics !== (checkpoint.physics ? "rapier" : "compat") ||
+          checkpoint.execution.perception !== checkpoint.perception)) ||
+      checkpoint.seed !== this.matchSeed ||
+      typeof checkpoint.state["time"] !== "number" ||
+      !Number.isFinite(checkpoint.state["time"]) ||
+      checkpoint.state["time"] < 0 ||
+      !Array.isArray(checkpoint.state["players"]) ||
+      checkpoint.state["players"].length > 22 ||
+      !Number.isInteger(checkpoint.rng) ||
+      checkpoint.rng < 1 ||
+      checkpoint.rng > 0xffffffff ||
+      !["compat", "wasm"].includes(checkpoint.perception)
+    )
+      throw new Error("Invalid match checkpoint");
+    const keys = Object.keys(this).filter((key) => !CHECKPOINT_EXTERNAL.has(key));
+    if (
+      keys.length !== Object.keys(checkpoint.state).length ||
+      keys.some((key) => !Object.hasOwn(checkpoint.state, key))
+    )
+      throw new Error("Checkpoint schema mismatch");
+    if (checkpoint.physics && !authority?.restore)
+      throw new Error("Physics checkpoint requires matching backend");
+    // Validate the complete integration journal before changing PRNG, state or
+    // releasing live physics. Previously a bad remainder left a half-restored match.
+    if (
+      !Array.isArray(checkpoint.athleteRemainders) ||
+      checkpoint.athleteRemainders.length !== checkpoint.state["players"].length ||
+      Array.from(checkpoint.athleteRemainders).some(
+        (value) => !Number.isFinite(value) || value < 0 || value >= HIGH_FIDELITY_PHYSICS_STEP,
+      )
+    )
+      throw new Error("Invalid athlete checkpoint");
+    const players = checkpoint.state["players"] as SimPlayer[];
+    if (
+      Array.from(players).some(
+        (p) =>
+          !p ||
+          typeof p.id !== "string" ||
+          ![p.x, p.z, p.vx, p.vz, p.stamina].every(Number.isFinite),
+      )
+    )
+      throw new Error("Invalid player checkpoint");
+    const state = structuredClone(checkpoint.state);
+    // A fresh recovery backend must restore successfully before committing state.
+    if (checkpoint.physics) authority!.restore!(checkpoint.physics);
+    this.rnd.restore(checkpoint.rng);
+    if (this.ballPhysics !== authority) this.ballPhysics?.dispose();
+    Object.assign(this, state);
+    this.players.forEach((player, index) =>
+      restoreAthleteRemainder(player, checkpoint.athleteRemainders[index]!),
+    );
+    this.ballPhysics = authority ?? null;
+    this.#execution =
+      checkpoint.version === 2
+        ? { ...checkpoint.execution! }
+        : {
+            revision: MATCH_EXECUTION_REVISION,
+            physics: checkpoint.physics ? "rapier" : "compat",
+            perception: checkpoint.perception,
+          };
+    this.#physicsFault = false;
   }
   time = 0; // segundos de jogo
   players: SimPlayer[] = [];
@@ -291,11 +443,10 @@ export class MatchSim {
   private mentalityCache: Record<Side, number> | null = null;
   /** Reused every tick to avoid allocating/sorting temporary chase arrays. */
   private chaseIds = new Set<string>();
-  private readonly markTargets: Record<Side, SimPlayer[]> = { home: [], away: [] };
   finished = false;
   lastEventId = 0;
   private decisionTimer = 0;
-  private rnd: () => number;
+  private rnd: ReturnType<typeof makeRng>;
   private restartTimer = 0;
   /** tempo com a bola solta, usado para destravar a jogada */
   private looseTime = 0;
@@ -424,6 +575,7 @@ export class MatchSim {
   /** Liga ou desliga a autoridade física sem acoplar MatchSim ao WASM. */
   setBallPhysicsAuthority(authority: BallPhysicsAuthority | null) {
     if (this.ballPhysics === authority) return;
+    if (this.#execution) throw new Error("Match execution is already fixed");
     this.ballPhysics?.dispose();
     this.ballPhysics = authority;
     authority?.setCondition?.(this.weather, this.wind);
@@ -446,6 +598,10 @@ export class MatchSim {
     } catch {
       physics.dispose();
       if (this.ballPhysics === physics) this.ballPhysics = null;
+      if (this.#execution) {
+        this.#physicsFault = true;
+        throw new Error("Physics recovery is required");
+      }
     }
   }
 
@@ -503,11 +659,10 @@ export class MatchSim {
       this.applyMutableBallPhysicsState(state);
       return true;
     } catch {
-      // WASM é um aprimoramento da trajetória. Uma falha não pode interromper
-      // uma carreira, então este tick segue pela integração compatível abaixo.
       physics.dispose();
       if (this.ballPhysics === physics) this.ballPhysics = null;
-      return false;
+      this.#physicsFault = true;
+      throw new Error("Physics recovery is required");
     }
   }
 
@@ -564,12 +719,28 @@ export class MatchSim {
    * Devolve falso quando o jogador que sai não está em campo.
    */
   substitute(side: Side, outPid: string, incoming: Player, reason?: string): boolean {
+    if (this.finished || (side !== "home" && side !== "away") || this.subsUsed[side] >= 5)
+      return false;
+    const setup = this.setup(side);
+    if (!incoming || incoming.clubId !== setup.clubId) return false;
+    // A command chooses a registered reserve; it cannot supply replacement
+    // attributes, revive a dismissed slot or return a previously used athlete.
+    const registered = setup.bench?.find((player) => player.id === incoming.id);
+    if (
+      !registered ||
+      registered.clubId !== setup.clubId ||
+      registered.suspended ||
+      registered.injuryWeeks > 0 ||
+      this.players.some((player) => player.pid === incoming.id) ||
+      this.subsOut.some((player) => player.pid === incoming.id)
+    )
+      return false;
     const idx = this.players.findIndex((p) => p.side === side && p.pid === outPid);
     if (idx < 0) return false;
     const out = this.players[idx]!;
+    if (out.sentOff) return false;
+    incoming = registered;
     const physique = physiqueFor(incoming);
-    out.minutes += this.minute() - out.onSince;
-    this.subsOut.push(out);
     const fresh: SimPlayer = {
       ...out,
       id: `${side}-${incoming.id}`,
@@ -601,6 +772,9 @@ export class MatchSim {
       pensMissed: 0,
       xg: 0,
     };
+    out.minutes += this.minute() - out.onSince;
+    this.subsOut.push(out);
+    setup.bench = setup.bench!.filter((player) => player.id !== incoming.id);
     if (this.ball.holder === out.id) this.ball.holder = fresh.id;
     this.players[idx] = fresh;
     this.synchronizeBallPhysics();
@@ -1131,8 +1305,7 @@ export class MatchSim {
     if (pick && (!userManaged || pick.reason === "lesão")) {
       const incoming = setupBench.find((b) => b.id === pick.inId);
       if (incoming && this.subsUsed[side] < 5) {
-        // reserva usado sai do banco para não entrar duas vezes
-        this.setup(side).bench = setupBench.filter((b) => b.id !== pick.inId);
+        // The successful substitution consumes its reserve atomically.
         this.substitute(side, pick.outPid, incoming, pick.reason);
       }
     }
@@ -1654,8 +1827,10 @@ export class MatchSim {
     return { opp: best, dist: Math.sqrt(bestD2) };
   }
 
-  step(dt: number, clockScale = 1, useBallPhysics = true) {
+  step(dt: number, clockScale = 1, _legacyUseBallPhysics = true) {
     if (this.finished) return;
+    if (this.#physicsFault) throw new Error("Physics recovery is required");
+    this.#execution ??= this.executionContract();
     // intervalo e pausa da prorrogação: relógio parado, cena respira
     if (this.phase === "half" || this.phase === "etBreak") {
       this.freezeT -= dt;
@@ -1695,7 +1870,7 @@ export class MatchSim {
     this.moveOffBall(dt);
     this.separate();
     this.drainStamina(clockDt);
-    this.moveBall(dt, useBallPhysics);
+    this.moveBall(dt);
     this.sanitize();
 
     const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
@@ -1779,45 +1954,34 @@ export class MatchSim {
     const bx = this.ball.x;
     const bz = this.ball.z;
     const chase = this.chasers();
+    // The holder is skipped below, so its position stays fixed throughout this pass.
+    const holder = this.ball.holder
+      ? this.players.find((q) => q.id === this.ball.holder)
+      : undefined;
 
     // Urgência pelo placar e pelo relógio: quem está perdendo no fim empurra a
     // equipe para a frente; quem está ganhando recua e segura o resultado.
     const remaining = Math.max(0, 90 - this.time / 60);
     const lateGame = remaining < 15;
     const goalDiff = this.stats.home.goals - this.stats.away.goals;
-    let homeUrgency = 0;
-    let awayUrgency = 0;
-    if (lateGame) {
-      const urgencyScale = Math.min(1, (15 - remaining) / 15);
-      if (goalDiff < 0) {
-        homeUrgency = urgencyScale * (goalDiff <= -2 ? 1 : 0.8);
-        awayUrgency = -urgencyScale * 0.6;
-      } else if (goalDiff > 0) {
-        homeUrgency = -urgencyScale * 0.6;
-        awayUrgency = urgencyScale * (goalDiff >= 2 ? 1 : 0.8);
-      }
-    }
+    const urgency = (side: Side) => {
+      if (!lateGame) return 0;
+      const diff = side === "home" ? goalDiff : -goalDiff;
+      if (diff < 0) return Math.min(1, (15 - remaining) / 15) * (diff <= -2 ? 1 : 0.8);
+      if (diff > 0) return -Math.min(1, (15 - remaining) / 15) * 0.6;
+      return 0;
+    };
 
     // Linha defensiva conjunta: a referência é o zagueiro mais recuado do lado
     // sem a bola, o que permite subir junto e armar impedimento.
-    let homeLineX = FIELD_X;
-    let awayLineX = -FIELD_X;
-    const homeMarkTargets = this.markTargets.home;
-    const awayMarkTargets = this.markTargets.away;
-    homeMarkTargets.length = 0;
-    awayMarkTargets.length = 0;
+    const lineX: Record<Side, number> = { home: FIELD_X, away: -FIELD_X };
     for (const q of this.players) {
       if (q.pos === "GK" || q.sentOff) continue;
       if (q.side === "home") {
-        if (q.x < homeLineX) homeLineX = q.x;
-        homeMarkTargets.push(q);
-      } else {
-        if (q.x > awayLineX) awayLineX = q.x;
-        awayMarkTargets.push(q);
-      }
+        if (q.x < lineX.home) lineX.home = q.x;
+      } else if (q.x > lineX.away) lineX.away = q.x;
     }
 
-    const holder = this.players.find((player) => player.id === this.ball.holder);
     for (const p of this.players) {
       if (p.sentOff) continue;
       if (p.id === this.ball.holder) continue;
@@ -1878,14 +2042,14 @@ export class MatchSim {
         // cada um seguir a bola por conta própria — é isso que cria a linha reta
         // e permite a armadilha de impedimento.
         if (p.pos === "DF") {
-          const line = p.side === "home" ? homeLineX : awayLineX;
+          const line = lineX[p.side];
           const trap = setup.tactics.pressing >= 3 && Math.abs(bx - line) > 14 ? dir * 3.5 : 0;
           tx = tx * 0.35 + (line + trap) * 0.65;
           // marcação por zona: cobre o adversário mais perigoso da sua faixa
           let markZ: number | null = null;
           let best = 9;
-          const targets = p.side === "home" ? awayMarkTargets : homeMarkTargets;
-          for (const q of targets) {
+          for (const q of this.players) {
+            if (q.side === p.side || q.pos === "GK" || q.sentOff) continue;
             const gap = Math.abs(q.z - tz);
             if (gap < best && Math.abs(q.x - tx) < 16) {
               best = gap;
@@ -1901,14 +2065,14 @@ export class MatchSim {
           sprint = (surge ? 1.3 : 1.15) * (0.82 + p.stamina / 550);
         }
         // perdendo no fim: a equipe inteira sobe para pressionar
-        tx += (p.side === "home" ? homeUrgency : awayUrgency) * 7 * dir;
+        tx += urgency(p.side) * 7 * dir;
       } else {
         // Movimento sem bola de verdade, em vez de balanço aleatório:
         // atacante ataca as costas da linha, ponta corta para dentro,
         // lateral faz a sobreposição e o meia oferece o apoio de recuo.
         const ahead = holder ? (holder.x - p.x) * dir : 0;
         if (p.pos === "FW") {
-          const backline = p.side === "home" ? awayLineX : homeLineX;
+          const backline = lineX[p.side === "home" ? "away" : "home"];
           tx = tx * 0.4 + (backline + dir * 1.2) * 0.6;
           tz += (p.number % 2 === 0 ? 1 : -1) * 3.2;
         } else if (p.pos === "MF") {
@@ -1925,7 +2089,7 @@ export class MatchSim {
           sprint = 1.2;
         }
         tz += Math.sin(this.time * 0.4 + p.number) * 0.9;
-        tx += (p.side === "home" ? homeUrgency : awayUrgency) * 5 * dir;
+        tx += urgency(p.side) * 5 * dir;
       }
 
       tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, tx));
@@ -1958,11 +2122,14 @@ export class MatchSim {
     const R = 0.85; // raio do corpo
     const list = this.players;
     for (let i = 0; i < list.length; i++) {
+      const a = list[i]!;
       for (let j = i + 1; j < list.length; j++) {
-        const a = list[i]!;
         const b = list[j]!;
         let dx = b.x - a.x;
         let dz = b.z - a.z;
+        // Resolve contacts in the original order; only reject provably distant pairs.
+        // NaN must reach the original recovery path instead of being hidden by the rejection.
+        if ((dx > 1.7 || dx < -1.7) && !Number.isNaN(dz)) continue;
         const d2 = dx * dx + dz * dz;
         if (d2 > 2.89) continue; // (0.85 * 2)^2
         let d = Math.sqrt(d2);
@@ -2006,22 +2173,21 @@ export class MatchSim {
 
   /** blindagem contra NaN/Infinity vindos de dados ruins */
   private sanitize() {
-    const fix = (v: number, fallback: number) => (Number.isFinite(v) ? v : fallback);
     for (const p of this.players) {
-      p.x = Math.max(-FIELD_X - 1, Math.min(FIELD_X + 1, fix(p.x, 0)));
-      p.z = Math.max(-FIELD_Z - 1, Math.min(FIELD_Z + 1, fix(p.z, 0)));
-      p.vx = Math.max(-14, Math.min(14, fix(p.vx, 0)));
-      p.vz = Math.max(-14, Math.min(14, fix(p.vz, 0)));
-      p.stamina = Math.max(0, Math.min(100, fix(p.stamina, 70)));
+      p.x = clampFinite(p.x, -FIELD_X - 1, FIELD_X + 1, 0);
+      p.z = clampFinite(p.z, -FIELD_Z - 1, FIELD_Z + 1, 0);
+      p.vx = clampFinite(p.vx, -14, 14, 0);
+      p.vz = clampFinite(p.vz, -14, 14, 0);
+      p.stamina = clampFinite(p.stamina, 0, 100, 70);
     }
     const b = this.ball;
-    b.x = Math.max(-FIELD_X - 2, Math.min(FIELD_X + 2, fix(b.x, 0)));
-    b.z = Math.max(-FIELD_Z - 2, Math.min(FIELD_Z + 2, fix(b.z, 0)));
-    b.vx = Math.max(-45, Math.min(45, fix(b.vx, 0)));
-    b.vz = Math.max(-45, Math.min(45, fix(b.vz, 0)));
-    b.height = Math.max(0.1, Math.min(12, fix(b.height, 0.12)));
-    this.ballVy = Math.max(-30, Math.min(30, fix(this.ballVy, 0)));
-    this.ballSpin = Math.max(-12, Math.min(12, fix(this.ballSpin, 0)));
+    b.x = clampFinite(b.x, -FIELD_X - 2, FIELD_X + 2, 0);
+    b.z = clampFinite(b.z, -FIELD_Z - 2, FIELD_Z + 2, 0);
+    b.vx = clampFinite(b.vx, -45, 45, 0);
+    b.vz = clampFinite(b.vz, -45, 45, 0);
+    b.height = clampFinite(b.height, 0.1, 12, 0.12);
+    this.ballVy = clampFinite(this.ballVy, -30, 30, 0);
+    this.ballSpin = clampFinite(this.ballSpin, -12, 12, 0);
   }
 
   private moveBall(dt: number, useBallPhysics = true) {
@@ -2645,36 +2811,42 @@ export class MatchSim {
       return;
     }
 
-    const mates: SimPlayer[] = [];
-    const defenders: SimPlayer[] = [];
-    for (const player of this.players) {
-      if (player.sentOff) continue;
-      if (player.side === holder.side) {
-        if (player.id !== holder.id) mates.push(player);
-      } else defenders.push(player);
-    }
+    const mates = this.players.filter(
+      (p) => p.side === holder.side && p.id !== holder.id && !p.sentOff,
+    );
     let best: SimPlayer | null = null;
     let bestScore = -Infinity;
-    const pack = (players: SimPlayer[]) => {
-      const values = new Float64Array(players.length * 4);
-      for (let index = 0; index < players.length; index += 1) {
-        const player = players[index]!;
-        const offset = index * 4;
-        values[offset] = player.x;
-        values[offset + 1] = player.z;
-        values[offset + 2] = player.vx;
-        values[offset + 3] = player.vz;
-      }
-      return values;
-    };
-    const receiverData = pack(mates);
-    const defenderData = pack(defenders);
+    const defenders = this.players.filter((p) => p.side !== holder.side && !p.sentOff);
+    const receiversBuffer = this.#passLaneReceivers.pack(mates);
+    const defendersBuffer = this.#passLaneDefenders.pack(defenders);
     let lanes: Float64Array;
     try {
-      lanes = this.passLaneKernel(holder.x, holder.z, receiverData, defenderData);
+      if (this.#passLaneIntoKernel) {
+        const written = this.#passLaneIntoKernel(
+          holder.x,
+          holder.z,
+          receiversBuffer,
+          defendersBuffer,
+          this.#passLaneOutput,
+        );
+        if (written !== mates.length * 3) throw new Error("Invalid perception output");
+        lanes = this.#passLaneOutput;
+      } else lanes = this.passLaneKernel(holder.x, holder.z, receiversBuffer, defendersBuffer);
+      for (let index = 0; index < mates.length * 3; index++)
+        if (!Number.isFinite(lanes[index])) throw new Error("Invalid perception value");
     } catch {
       this.passLaneKernel = evaluatePassLanesFallback;
-      lanes = this.passLaneKernel(holder.x, holder.z, receiverData, defenderData);
+      this.#passLaneIntoKernel = evaluatePassLanesIntoFallback;
+      // The fallback has proven numerical parity with the selected perception
+      // revision. Keep the recorded contract stable across a recoverable trap.
+      evaluatePassLanesIntoFallback(
+        holder.x,
+        holder.z,
+        receiversBuffer,
+        defendersBuffer,
+        this.#passLaneOutput,
+      );
+      lanes = this.#passLaneOutput;
     }
     for (const [index, m] of mates.entries()) {
       const dist = lanes[index * 3]!;

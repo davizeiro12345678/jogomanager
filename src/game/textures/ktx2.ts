@@ -17,8 +17,12 @@ import * as THREE from "three";
 import { useSyncExternalStore } from "react";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { deviceTextureDecodeWorkers } from "@/game/device-workload";
+import { BoundedWorkQueue } from "@/game/bounded-work-queue";
+import { gpuTexturePolicy, prepareGpuTexture } from "./gpu-texture-policy";
+import { TextureRendererOwners } from "./texture-owners";
 import {
   canRequestTexture,
+  needsProceduralTextureFallback,
   scheduleTextureRetry,
   textureFailureAfter,
   textureHttpStatus,
@@ -178,11 +182,30 @@ const pending = new Set<TextureName>();
 const failures = new Map<TextureName, TextureFailure>();
 const retryTimers = new Map<TextureName, () => void>();
 let loader: KTX2Loader | null = null;
+let loadQueue: BoundedWorkQueue | null = null;
 let started = false;
 let generation = 0;
-let anisotropy = 8;
-const listeners = new Set<() => void>();
+let policy = gpuTexturePolicy();
+type TextureRenderer = THREE.WebGLRenderer | import("three/webgpu").WebGPURenderer;
+const owners = new TextureRendererOwners<TextureRenderer>();
+const supportProfiles = new WeakMap<object, string>();
+let decoderProfile: string | undefined;
+let unavailable = false;
+export const gpuTextureStats = {
+  residentBytes: 0,
+  residentTextures: 0,
+  droppedMips: 0,
+  rejectedUncompressed: 0,
+  rejectedOverBudget: 0,
+};
+const listeners = new Set<(reset?: boolean) => void>();
 let revision = 0;
+let disposing = false;
+
+function notifyKtx2Change(reset = false) {
+  revision += 1;
+  for (const fn of listeners) fn(reset);
+}
 /** Re-render only when a compressed asset arrives; no per-frame checks. */
 export function useKtx2Revision(): number {
   return useSyncExternalStore(
@@ -193,19 +216,30 @@ export function useKtx2Revision(): number {
 }
 
 /** avisa quem depende das texturas (o cache de materiais) que elas chegaram */
-export function onKtx2Ready(fn: () => void): () => void {
+export function onKtx2Ready(fn: (reset?: boolean) => void): () => void {
   listeners.add(fn);
   return () => listeners.delete(fn);
 }
 
 /** textura já disponível, ou null enquanto o download não terminou */
 export function ktx2(name: TextureName): THREE.Texture | null {
-  return loaded.get(name) ?? null;
+  if (!owners.compatible) return null;
+  const texture = loaded.get(name);
+  if (!texture && !disposing) requestKtx2([name]);
+  return texture ?? null;
+}
+
+/**
+ * True only after a compressed request cannot recover on this device. Callers
+ * use it to defer expensive canvas fallback generation while KTX2 is loading.
+ */
+export function needsKtx2ProceduralFallback(name: TextureName): boolean {
+  return unavailable || !owners.compatible || needsProceduralTextureFallback(failures.get(name));
 }
 
 /** Only fetch new high-quality variants that are actually visible in this match. */
 export function requestKtx2(names: readonly TextureName[]): void {
-  if (!loader) {
+  if (!loader || !owners.compatible) {
     for (const name of names) pending.add(name);
     return;
   }
@@ -222,41 +256,72 @@ export function requestKtx2(names: readonly TextureName[]): void {
     const src = SOURCES[name];
     const activeLoader = loader;
     const activeGeneration = generation;
-    activeLoader.load(
-      src.url,
-      (tex) => {
-        if (activeGeneration !== generation || loader !== activeLoader) {
-          tex.dispose();
-          return;
-        }
-        retryTimers.get(name)?.();
-        retryTimers.delete(name);
-        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-        tex.repeat.set(src.repeat, src.repeat);
-        tex.anisotropy = anisotropy;
-        tex.colorSpace = src.color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-        tex.needsUpdate = true;
-        loaded.set(name, tex);
-        failures.delete(name);
-        revision += 1;
-        for (const fn of listeners) fn();
-      },
-      undefined,
-      (error) => {
-        if (activeGeneration !== generation || loader !== activeLoader) return;
-        const failure = textureFailureAfter(
-          failures.get(name),
-          Date.now(),
-          textureHttpStatus(error),
-        );
-        failures.set(name, failure);
-        requested.delete(name);
-        const cancel = scheduleTextureRetry(failure, Date.now(), () => {
-          retryTimers.delete(name);
-          if (!loaded.has(name)) requestKtx2([name]);
-        });
-        if (cancel) retryTimers.set(name, cancel);
-      },
+    loadQueue?.enqueue(
+      name,
+      () =>
+        new Promise<void>((resolve) => {
+          if (activeGeneration !== generation || loader !== activeLoader) {
+            resolve();
+            return;
+          }
+          activeLoader.load(
+            src.url,
+            (tex) => {
+              resolve();
+              if (activeGeneration !== generation || loader !== activeLoader) {
+                tex.dispose();
+                return;
+              }
+              retryTimers.get(name)?.();
+              retryTimers.delete(name);
+              const prepared = prepareGpuTexture(tex, Boolean(src.color), policy);
+              if (
+                !prepared.compressed ||
+                gpuTextureStats.residentBytes + prepared.bytes > policy.residentBudget
+              ) {
+                if (!prepared.compressed) gpuTextureStats.rejectedUncompressed += 1;
+                else gpuTextureStats.rejectedOverBudget += 1;
+                tex.dispose();
+                requested.delete(name);
+                failures.set(name, {
+                  attempts: 3,
+                  retryAt: Number.POSITIVE_INFINITY,
+                  permanent: true,
+                });
+                notifyKtx2Change();
+                return;
+              }
+              tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+              tex.repeat.set(src.repeat, src.repeat);
+              tex.colorSpace = src.color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+              tex.needsUpdate = true;
+              loaded.set(name, tex);
+              gpuTextureStats.residentBytes += prepared.bytes;
+              gpuTextureStats.residentTextures = loaded.size;
+              gpuTextureStats.droppedMips += prepared.droppedMips;
+              failures.delete(name);
+              notifyKtx2Change();
+            },
+            undefined,
+            (error) => {
+              resolve();
+              if (activeGeneration !== generation || loader !== activeLoader) return;
+              const failure = textureFailureAfter(
+                failures.get(name),
+                Date.now(),
+                textureHttpStatus(error),
+              );
+              failures.set(name, failure);
+              notifyKtx2Change();
+              requested.delete(name);
+              const cancel = scheduleTextureRetry(failure, Date.now(), () => {
+                retryTimers.delete(name);
+                if (!loaded.has(name)) requestKtx2([name]);
+              });
+              if (cancel) retryTimers.set(name, cancel);
+            },
+          );
+        }),
     );
   }
 }
@@ -269,53 +334,96 @@ export function initKtx2(
   renderer: THREE.WebGLRenderer | import("three/webgpu").WebGPURenderer,
 ): void {
   if (started || typeof window === "undefined") return;
+  // Reserve two temporary shared-WASM lanes during stadium preparation.
+  const decodeWorkers = Math.min(2, deviceTextureDecodeWorkers());
+  if (decodeWorkers === 0) {
+    unavailable = true;
+    notifyKtx2Change();
+    return;
+  }
   started = true;
+  decoderProfile = supportProfiles.get(renderer);
+  loadQueue = new BoundedWorkQueue(decodeWorkers);
 
   loader = new KTX2Loader()
     .setTranscoderPath("/basis/")
-    .setWorkerLimit(deviceTextureDecodeWorkers())
+    .setWorkerLimit(decodeWorkers)
     .detectSupport(renderer);
-  anisotropy =
-    renderer instanceof THREE.WebGLRenderer
-      ? Math.min(8, renderer.capabilities.getMaxAnisotropy())
-      : 8;
-  requestKtx2([
-    "fiberNormal",
-    "fiberRough",
-    "skinNormal",
-    "sweatNormal",
-    "sweatMask",
-    "hairNormal",
-    "hairRough",
-    "bootNormal",
-    "bootRough",
-    "shinNormal",
-    "shinRough",
-    "sockNormal",
-    "grassAlbedo",
-    "grassNormal",
-    "grassRough",
-    "concreteAlbedo",
-    "concreteRough",
-    "netMask",
-  ]);
+  policy = gpuTexturePolicy(
+    (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
+    renderer instanceof THREE.WebGLRenderer ? renderer.capabilities.getMaxAnisotropy() : 4,
+  );
   requestKtx2([...pending]);
   pending.clear();
+}
+
+/** Keep shared textures alive while a scene uses them; release after the last scene leaves. */
+export function retainKtx2(
+  renderer: THREE.WebGLRenderer | import("three/webgpu").WebGPURenderer,
+): () => void {
+  // Every Canvas detects its own supported formats, including cold studio
+  // access and a replacement renderer after context recovery. The shared
+  // decoder still owns only one bounded worker pool.
+  let profile = supportProfiles.get(renderer);
+  if (profile === undefined) {
+    const detector = new KTX2Loader().detectSupport(renderer);
+    profile =
+      JSON.stringify(
+        (detector as KTX2Loader & { workerConfig?: Record<string, boolean> }).workerConfig,
+      ) ?? "unknown";
+    detector.dispose();
+    supportProfiles.set(renderer, profile);
+  }
+  const compatibleBefore = owners.compatible;
+  const releaseOwner = owners.acquire(renderer, profile);
+  if (started && owners.compatible && decoderProfile !== profile) disposeKtx2();
+  initKtx2(renderer);
+  if (compatibleBefore !== owners.compatible) notifyKtx2Change();
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    const previous = owners.compatible;
+    releaseOwner();
+    if (previous !== owners.compatible) {
+      const remainingRenderer = owners.firstRenderer;
+      if (remainingRenderer && owners.profile !== decoderProfile) {
+        disposeKtx2();
+        initKtx2(remainingRenderer);
+      }
+      notifyKtx2Change();
+      requestKtx2([...pending]);
+      pending.clear();
+    }
+    queueMicrotask(() => {
+      if (owners.count === 0) disposeKtx2();
+    });
+  };
 }
 
 /** libera tudo (troca de cena / descarte do renderer) */
 export function disposeKtx2(): void {
   generation += 1;
+  loadQueue?.clear();
+  loadQueue = null;
   for (const cancel of retryTimers.values()) cancel();
   retryTimers.clear();
   for (const tex of loaded.values()) tex.dispose();
   loaded.clear();
+  gpuTextureStats.residentBytes = 0;
+  gpuTextureStats.residentTextures = 0;
   requested.clear();
   pending.clear();
   loader?.dispose();
   failures.clear();
   loader = null;
   started = false;
-  revision += 1;
-  for (const fn of listeners) fn();
+  decoderProfile = undefined;
+  unavailable = false;
+  disposing = true;
+  try {
+    notifyKtx2Change(true);
+  } finally {
+    disposing = false;
+  }
 }

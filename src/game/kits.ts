@@ -123,6 +123,49 @@ export function colorClash(a: string, b: string) {
 }
 
 const cache = new Map<string, THREE.CanvasTexture>();
+const kitBytes = new Map<string, number>();
+const users = new WeakMap<THREE.CanvasTexture, number>();
+const MB = 1024 * 1024;
+const DEFAULT_CACHE_LIMIT = 16 * MB;
+
+function touchCachedKit(key: string, texture: THREE.CanvasTexture) {
+  cache.delete(key);
+  cache.set(key, texture);
+}
+
+/**
+ * A live rig keeps its atlas protected during LRU trimming. Once it leaves the
+ * scene, its texture becomes eligible for disposal on the next memory pass.
+ */
+export function retainKitTexture(texture: THREE.CanvasTexture | null): () => void {
+  if (!texture) return () => undefined;
+  users.set(texture, (users.get(texture) ?? 0) + 1);
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    users.set(texture, Math.max(0, (users.get(texture) ?? 1) - 1));
+    trimKitTextureCache();
+  };
+}
+
+/** Releases least-recently-used atlases that are no longer attached to a rig. */
+export function trimKitTextureCache(limitBytes = DEFAULT_CACHE_LIMIT): number {
+  let bytes = 0;
+  for (const value of kitBytes.values()) bytes += value;
+  let removed = 0;
+  for (const [key, texture] of cache) {
+    if (bytes <= limitBytes) break;
+    if ((users.get(texture) ?? 0) > 0) continue;
+    const size = kitBytes.get(key) ?? 0;
+    cache.delete(key);
+    kitBytes.delete(key);
+    texture.dispose();
+    bytes -= size;
+    removed += 1;
+  }
+  return removed;
+}
 
 /** Ruído fino de tecido — tira o aspecto de plástico liso. */
 function fabricNoise(ctx: CanvasRenderingContext2D, size: number, seed: number) {
@@ -193,7 +236,6 @@ function drawCrest(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: num
 export type KitDetail = "hero" | "squad";
 
 /** bytes aproximados por textura, para o relatório de orçamento de textura. */
-const kitBytes = new Map<string, number>();
 
 export function kitTexture(
   kit: Kit,
@@ -204,7 +246,10 @@ export function kitTexture(
   if (typeof document === "undefined") return null;
   const key = `${detail}|${kit.base}|${kit.detail}|${kit.pattern}|${number}|${detail === "hero" ? (name ?? "") : ""}`;
   const hit = cache.get(key);
-  if (hit) return hit;
+  if (hit) {
+    touchCachedKit(key, hit);
+    return hit;
+  }
 
   const size = detail === "hero" ? 512 : 128;
   const s = size / 256; // fator sobre o desenho original

@@ -6,6 +6,7 @@ import {
   censusDraws,
   censusFitsBudget,
   censusScene,
+  createNonHeroDrawCounter,
   formatCensus,
   tagCensus,
 } from "./scene-census";
@@ -30,6 +31,64 @@ function instanced(count: number): THREE.InstancedMesh {
 }
 
 describe("scene census", () => {
+  it("matches non-hero draw and shadow budgets without reading material or geometry", () => {
+    const scene = new THREE.Scene();
+    const heroes = new THREE.Group();
+    tagCensus(heroes, "player");
+    heroes.add(mesh(1, true));
+    const nested = mesh(1, true);
+    tagCensus(nested, "props");
+    heroes.add(nested);
+    const low = mesh(1, true);
+    tagCensus(low, "playerLow");
+    const hidden = new THREE.Group();
+    hidden.visible = false;
+    hidden.add(mesh(1, true));
+    scene.add(heroes, low, hidden, instanced(0));
+    const full = censusScene(scene);
+    const expected =
+      full.total.draws +
+      full.total.shadowCasters -
+      full.buckets.player.draws -
+      full.buckets.player.shadowCasters;
+    const counter = createNonHeroDrawCounter();
+    expect(counter(scene)).toBe(expected);
+    Object.defineProperty(low, "geometry", {
+      get: () => {
+        throw new Error("expensive geometry accessed");
+      },
+    });
+    Object.defineProperty(low, "material", {
+      get: () => {
+        throw new Error("expensive material accessed");
+      },
+    });
+    expect(counter(scene)).toBe(expected);
+    low.visible = false;
+    expect(counter(scene)).toBe(expected - 2);
+    expect(counter(new THREE.Scene())).toBe(0);
+  });
+  it("estimates unique visible geometry and texture memory without multiplying shared assets", () => {
+    const scene = new THREE.Scene();
+    const geometry = new THREE.BoxGeometry();
+    const texture = new THREE.DataTexture(new Uint8Array(4 * 4 * 4), 4, 4);
+    const material = new THREE.MeshBasicMaterial({ map: texture });
+    const first = new THREE.Mesh(geometry, material);
+    const second = new THREE.Mesh(geometry, material);
+    tagCensus(first, "props");
+    tagCensus(second, "props");
+    scene.add(first, second);
+
+    const geometryBytes = Object.values(geometry.attributes).reduce(
+      (sum, attribute) => sum + attribute.array.byteLength,
+      geometry.index?.array.byteLength ?? 0,
+    );
+    const census = censusScene(scene);
+    expect(census.total.geometryBytes).toBe(geometryBytes);
+    expect(census.total.textureBytes).toBe(4 * 4 * 4);
+    expect(census.total.draws).toBe(2);
+  });
+
   it("classifies renderables by the nearest tagged ancestor", () => {
     const scene = new THREE.Scene();
     const players = new THREE.Group();

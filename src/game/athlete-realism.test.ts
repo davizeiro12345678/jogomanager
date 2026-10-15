@@ -159,7 +159,8 @@ describe("anatomical surface and cinematic performance regressions", () => {
       if (probe.chin) expect(p.distanceTo(probe.point)).toBeGreaterThan(0.002);
       else expect(p.distanceTo(probe.point)).toBeLessThan(1e-6);
     }
-    expect(skin.bones.length).toBe(63);
+    expect(skin.bones.length).toBe(64);
+    expect(skin.boneOf.hairMotion.parent).toBe(skin.boneOf.face);
     expect(skin.groups.length).toBeLessThanOrEqual(24);
     skin.dispose();
   });

@@ -109,6 +109,11 @@ export function buildAttrs(p: Player, rnd: () => number): DetailedAttributes {
 
 /** Mesma identidade física da ficha completa, sem carregar históricos ou o catálogo. */
 export function physiqueFor(player: Player): { height: number; weight: number } {
+  if (player.developmentBase?.profile)
+    return {
+      height: player.developmentBase.profile.height,
+      weight: player.developmentBase.profile.weight,
+    };
   const rnd = makeRng(`profile-${player.id}-${player.name}`);
   buildAttrs(player, rnd);
   // O pé dominante consome uma ou duas amostras antes das medidas na ficha.

@@ -2,7 +2,7 @@ import { gamePageHead } from "@/lib/game-page-metadata";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { GameShell } from "@/components/game/GameShell";
-import { NoCareer } from "@/components/game/screen-kit";
+import { NoCareer, ScreenHeader } from "@/components/game/screen-kit";
 import { CompetitionRules } from "@/components/game/CompetitionRules";
 import { LeagueStandings } from "@/components/game/LeagueStandings";
 import { HudCard, HudChip, HudStat, SparkBars, Sparkline, toneFor } from "@/components/ui/hud";
@@ -63,9 +63,13 @@ function LeaguePage() {
     <GameShell career={career}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="flex items-center gap-2 font-display text-3xl uppercase tracking-wide sm:text-4xl">
-            <Flag league={league.id} country={league.country} size={28} /> {league.name}
-          </h1>
+          <ScreenHeader
+            title={
+              <>
+                <Flag league={league.id} country={league.country} size={28} /> {league.name}
+              </>
+            }
+          />
           <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
             {calendarYear(career)} · Temporada {career.season} · Rodada {career.round}
           </p>

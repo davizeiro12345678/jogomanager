@@ -182,6 +182,22 @@ export function remapPlayerReferences(
     ...(input.brokenPromises !== undefined ? { brokenPromises: list(input.brokenPromises) } : {}),
     ...(input.rejectedOffers !== undefined ? { rejectedOffers: list(input.rejectedOffers) } : {}),
     ...(input.attrDeltas !== undefined ? { attrDeltas: remapRecord(input.attrDeltas) } : {}),
+    ...(input.developmentSeasonStart
+      ? {
+          developmentSeasonStart: {
+            season: input.developmentSeasonStart.season,
+            ratings: Object.entries(input.developmentSeasonStart.ratings ?? {}).reduce<
+              Record<string, number>
+            >((ratings, [id, value]) => {
+              if (!Number.isFinite(value)) return ratings;
+              const canonical = map(id);
+              // A merged identity must not receive a fresh growth allowance midway through a season.
+              ratings[canonical] = Math.min(ratings[canonical] ?? value, value);
+              return ratings;
+            }, {}),
+          },
+        }
+      : {}),
     ...(input.matchLog !== undefined ? { matchLog } : {}),
     ...(world ? { world } : {}),
   };

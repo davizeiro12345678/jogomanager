@@ -1,4 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { GameShell } from "@/components/game/GameShell";
+import { ScreenHeader, SectionCard } from "@/components/game/screen-kit";
+import { useCareer } from "@/hooks/useCareer";
 
 import { ChatPanel } from "@/components/game/ChatPanel";
 
@@ -30,17 +33,15 @@ export const Route = createFileRoute("/chat")({
 });
 
 function ChatPage() {
+  const { career } = useCareer();
   return (
-    <div className="pitch-bg flex min-h-screen flex-col px-4 py-6">
+    <GameShell career={career}>
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col">
-        <div className="mb-4">
-          <Link to="/dashboard" className="text-xs uppercase tracking-widest text-primary">
-            ← Painel
-          </Link>
-          <h1 className="font-display text-2xl uppercase tracking-wide">Chat global</h1>
-        </div>
-        <ChatPanel next="/chat" />
+        <ScreenHeader title="Chat global" description="Converse com a comunidade de treinadores." />
+        <SectionCard className="mt-5 flex min-h-[28rem] flex-1 flex-col">
+          <ChatPanel next="/chat" />
+        </SectionCard>
       </div>
-    </div>
+    </GameShell>
   );
 }

@@ -38,6 +38,10 @@ export interface CensusEntry {
   triangles: number;
   /** malhas que projetam sombra (segunda passada de desenho) */
   shadowCasters: number;
+  /** bytes dos buffers de geometria únicos e visíveis */
+  geometryBytes: number;
+  /** estimativa de bytes de textura únicos e visíveis */
+  textureBytes: number;
 }
 
 export interface SceneCensus {
@@ -62,7 +66,7 @@ const BUCKETS: CensusBucket[] = [
 ];
 
 function emptyEntry(): CensusEntry {
-  return { meshes: 0, draws: 0, triangles: 0, shadowCasters: 0 };
+  return { meshes: 0, draws: 0, triangles: 0, shadowCasters: 0, geometryBytes: 0, textureBytes: 0 };
 }
 
 function emptyCensus(): SceneCensus {
@@ -90,6 +94,36 @@ function isCensusBucket(value: unknown): value is CensusBucket {
   return typeof value === "string" && (BUCKETS as string[]).includes(value);
 }
 
+/** Hot LOD budgeting needs draw counts, not a texture/geometry inventory.
+ * Create once per scene consumer; its traversal reads no material or buffers.
+ * Count empty instances exactly as censusScene does to preserve the budget. */
+export function createNonHeroDrawCounter(): (scene: THREE.Object3D) => number {
+  let draws = 0;
+  const visit = (object: THREE.Object3D, inherited: CensusBucket): void => {
+    if (!object.visible) return;
+    const own = object.userData["census"];
+    const bucket = isCensusBucket(own) ? own : inherited;
+    const renderable = object as THREE.Object3D & {
+      isMesh?: boolean;
+      isPoints?: boolean;
+      isLine?: boolean;
+      isSprite?: boolean;
+    };
+    if (
+      bucket !== "player" &&
+      (renderable.isMesh || renderable.isPoints || renderable.isLine || renderable.isSprite)
+    ) {
+      draws += object.castShadow ? 2 : 1;
+    }
+    for (const child of object.children) visit(child, bucket);
+  };
+  return (scene) => {
+    draws = 0;
+    visit(scene, "other");
+    return draws;
+  };
+}
+
 /** Instâncias vivas de um `InstancedMesh` (0 quando está vazio). */
 function instanceCount(mesh: THREE.InstancedMesh): number {
   const count = mesh.count;
@@ -104,6 +138,76 @@ function trianglesOf(geometry: THREE.BufferGeometry | undefined, instances: numb
   return Math.floor(vertices / 3) * instances;
 }
 
+function geometryBufferBytes(geometry: THREE.BufferGeometry): number {
+  const buffers = new Set<ArrayBufferLike>();
+  const add = (attribute: unknown) => {
+    if (!attribute || typeof attribute !== "object") return;
+    const value = attribute as {
+      array?: ArrayBufferView;
+      data?: { array?: ArrayBufferView };
+    };
+    const array = value.array ?? value.data?.array;
+    if (array?.buffer) buffers.add(array.buffer);
+  };
+  for (const attribute of Object.values(geometry.attributes)) add(attribute);
+  for (const attributes of Object.values(geometry.morphAttributes))
+    for (const attribute of attributes ?? []) add(attribute);
+  add(geometry.index);
+  let bytes = 0;
+  for (const buffer of buffers) bytes += buffer.byteLength;
+  return bytes;
+}
+
+const MATERIAL_TEXTURE_KEYS = [
+  "alphaMap",
+  "aoMap",
+  "bumpMap",
+  "clearcoatMap",
+  "clearcoatNormalMap",
+  "clearcoatRoughnessMap",
+  "displacementMap",
+  "emissiveMap",
+  "envMap",
+  "gradientMap",
+  "lightMap",
+  "map",
+  "matcap",
+  "metalnessMap",
+  "normalMap",
+  "roughnessMap",
+  "sheenColorMap",
+  "sheenRoughnessMap",
+  "specularColorMap",
+  "specularIntensityMap",
+  "specularMap",
+  "transmissionMap",
+  "thicknessMap",
+  "iridescenceMap",
+  "iridescenceThicknessMap",
+  "anisotropyMap",
+] as const;
+
+function textureMemoryBytes(texture: THREE.Texture): number {
+  const mips = (texture as THREE.Texture & { mipmaps?: { data?: ArrayBufferView }[] }).mipmaps;
+  if (mips?.length) return mips.reduce((sum, level) => sum + (level.data?.byteLength ?? 0), 0);
+  const image = texture.image as
+    | {
+        data?: ArrayBufferView;
+        width?: number;
+        height?: number;
+        videoWidth?: number;
+        videoHeight?: number;
+      }
+    | undefined;
+  if (image?.data?.byteLength) return image.data.byteLength;
+  const width = image?.width ?? image?.videoWidth ?? 0;
+  const height = image?.height ?? image?.videoHeight ?? 0;
+  if (width <= 0 || height <= 0) return 0;
+  // Browser color/depth format and driver tiling are device-specific. RGBA8
+  // with a full mip chain is a conservative, comparable estimate.
+  return Math.ceil(width * height * 4 * (texture.generateMipmaps ? 4 / 3 : 1));
+}
+
 /**
  * Percorre a cena e soma custo por subsistema. Malhas invisíveis são
  * ignoradas; um `InstancedMesh` conta como 1 desenho e N triângulos.
@@ -111,6 +215,8 @@ function trianglesOf(geometry: THREE.BufferGeometry | undefined, instances: numb
 export function censusScene(scene: THREE.Object3D): SceneCensus {
   const census = emptyCensus();
   const materials = new Set<string>();
+  const geometries = new Set<THREE.BufferGeometry>();
+  const textures = new Set<THREE.Texture>();
 
   const visit = (object: THREE.Object3D, inherited: CensusBucket) => {
     if (!object.visible) return;
@@ -135,10 +241,27 @@ export function censusScene(scene: THREE.Object3D): SceneCensus {
       entry.draws += 1;
       entry.triangles += trianglesOf(mesh.geometry, instances);
       if (mesh.castShadow) entry.shadowCasters += 1;
+      if (mesh.geometry && !geometries.has(mesh.geometry)) {
+        geometries.add(mesh.geometry);
+        entry.geometryBytes += geometryBufferBytes(mesh.geometry);
+      }
       const material = mesh.material;
       if (material) {
         for (const item of Array.isArray(material) ? material : [material]) {
-          if (item?.uuid) materials.add(item.uuid);
+          if (!item) continue;
+          if (item.uuid) materials.add(item.uuid);
+          const candidate = item as THREE.Material & Record<string, unknown>;
+          for (const key of MATERIAL_TEXTURE_KEYS) {
+            const map = candidate[key];
+            if (
+              map &&
+              (map as { isTexture?: boolean }).isTexture &&
+              !textures.has(map as THREE.Texture)
+            ) {
+              textures.add(map as THREE.Texture);
+              entry.textureBytes += textureMemoryBytes(map as THREE.Texture);
+            }
+          }
         }
       }
     }
@@ -154,6 +277,8 @@ export function censusScene(scene: THREE.Object3D): SceneCensus {
     census.total.draws += entry.draws;
     census.total.triangles += entry.triangles;
     census.total.shadowCasters += entry.shadowCasters;
+    census.total.geometryBytes += entry.geometryBytes;
+    census.total.textureBytes += entry.textureBytes;
   }
   census.materials = materials.size;
   return census;

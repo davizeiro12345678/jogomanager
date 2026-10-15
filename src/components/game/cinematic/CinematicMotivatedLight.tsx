@@ -5,15 +5,15 @@ import type { SceneArt } from "@/content/cutscenes";
 import type { LineLight } from "@/game/cutscene-director";
 import type { QualityLevel } from "@/game/device";
 import type { CinematicSet } from "@/game/cinematic-blocking";
-import { useCinematicFrame } from "./cinematic-runtime";
+import { useCinematicFrame, useCinematicRuntime } from "./cinematic-runtime";
 
 const PLACEMENT: Record<
   CinematicSet,
   { position: [number, number, number]; distance: number; intensity: number }
 > = {
-  locker: { position: [0, 2.85, 1.25], distance: 10, intensity: 2.3 },
+  locker: { position: [-1.4, 3.62, -1.4], distance: 10, intensity: 4.2 },
   tunnel: { position: [0, 2.42, -8.6], distance: 15, intensity: 3.6 },
-  press: { position: [0, 2.35, -1.9], distance: 11, intensity: 2.7 },
+  press: { position: [-2.2, 3.65, -1.4], distance: 11, intensity: 3.8 },
   pitch: { position: [-8.2, 5.2, -6.2], distance: 23, intensity: 4.5 },
   stands: { position: [0, 6.4, -7.8], distance: 22, intensity: 3.8 },
   office: { position: [-2.38, 1.5, -1.72], distance: 7, intensity: 2.15 },
@@ -43,6 +43,9 @@ export function CinematicMotivatedLight({
   quality: QualityLevel;
 }) {
   const source = useRef<THREE.PointLight>(null);
+  const spill = useRef<THREE.PointLight>(null);
+  const runtime = useCinematicRuntime();
+  const first = useRef(true);
   const setup = PLACEMENT[kind];
   const color = useMemo(() => {
     if (art === "medical") return "#9ad7cf";
@@ -50,11 +53,16 @@ export function CinematicMotivatedLight({
     if (mood === "bad" && light === "neutra") return "#a8c5ff";
     return COLOR_BY_LINE[light];
   }, [art, kind, light, mood]);
-  useCinematicFrame((time) => {
+  const targetColor = useMemo(() => new THREE.Color(color), [color]);
+  useCinematicFrame((_, dt) => {
     if (!source.current) return;
-    const rhythm =
-      kind === "press" ? Math.max(0, Math.sin(time * 3.1)) * 0.14 : Math.sin(time * 1.35) * 0.035;
-    source.current.intensity = setup.intensity * (1 + rhythm);
+    // Practical fixtures hold steady. Mood changes settle like exposure, while
+    // photographer flashes remain driven by their own visible sources.
+    const blend = first.current || runtime.reduced ? 1 : 1 - Math.exp(-3.6 * dt);
+    first.current = false;
+    source.current.color.lerp(targetColor, blend);
+    // The locker strip is a neutral practical. Dramatic dialogue can tint
+    // the accent, but should not turn every white fixture pink or blue.
   });
   if (quality === "baixa") return null;
   return (
@@ -62,15 +70,16 @@ export function CinematicMotivatedLight({
       <pointLight
         ref={source}
         position={setup.position}
-        color={color}
+        color="#fff1dc"
         intensity={setup.intensity}
         distance={setup.distance}
         decay={2}
       />
       {kind === "locker" && art === "dressing" ? (
         <pointLight
+          ref={spill}
           position={[4.6, 2.08, -3.18]}
-          color={color}
+          color="#fff0dc"
           intensity={1.05}
           distance={6.8}
           decay={2}

@@ -9,6 +9,13 @@ import { CLUBS } from "./data/leagues";
 import { makeRng } from "./rng";
 import { buildAttrs } from "./player-physique";
 import type { Personality, Player, Position } from "./types";
+import {
+  effectivePlayer,
+  limitedDevelopmentDelta,
+  type AttributeSource,
+} from "./player-development";
+import type { CareerState } from "./types";
+import { normalizedPlayerRatings, ratingValue } from "./player-rating-inputs";
 
 export interface DetailedAttributes {
   // técnico
@@ -312,13 +319,17 @@ const ALL_KEYS = Object.keys(ATTR_LABELS) as (keyof DetailedAttributes)[];
  * Uma temporada de evolução: jovens crescem até o potencial, veteranos perdem
  * físico e ganham cabeça. O sorteio é determinístico por jogador e temporada.
  */
-export function evolveSeason(players: Player[], season: number, current: AttrDeltas): AttrDeltas {
-  setAttrDeltas(current);
+export function evolveSeason(
+  players: Player[],
+  season: number,
+  current: AttrDeltas,
+  preciseDeltas = false,
+): AttrDeltas {
   const out: AttrDeltas = { ...current };
   for (const p of players) {
     const rnd = makeRng(`evo-${p.id}-${season}`);
     // Ficha já evoluída: a base "limpa" é ela menos o que já foi acumulado.
-    const evolved = profileFor(p).attrs;
+    const evolved = profileFor(p, { attrDeltas: current }).attrs;
     const delta: AttrDelta = { ...(current[p.id] ?? {}) };
     const potential = Math.max(p.ovr, p.potential ?? p.ovr);
     const room = Math.max(0, potential - p.ovr);
@@ -352,7 +363,8 @@ export function evolveSeason(players: Player[], season: number, current: AttrDel
       // O resultado final nunca sai da faixa 20..99 do atributo.
       const base = evolved[k] - (current[p.id]?.[k] ?? 0);
       const clamped = Math.max(20 - base, Math.min(99 - base, raw));
-      const rounded = Math.round(clamped * 10) / 10;
+      const precision = preciseDeltas ? 1e6 : 10;
+      const rounded = Math.round(clamped * precision) / precision;
       if (rounded !== 0) delta[k] = rounded;
       else delete delta[k];
     }
@@ -432,7 +444,10 @@ function buildSpells(p: Player, rnd: () => number): ClubSpell[] {
 }
 
 /** Ficha completa do jogador — determinística e em cache. */
-export function profileFor(p: Player): PlayerProfile {
+function baseProfileFor(p: Player, stableIdentity = false): PlayerProfile {
+  p = normalizedPlayerRatings(p);
+  // Imported/custom records retain their existing deterministic identity when frozen.
+  const seedPlayer = stableIdentity ? { ...p, name: "" } : p;
   const cacheKey = JSON.stringify([
     p.id,
     p.name,
@@ -446,11 +461,12 @@ export function profileFor(p: Player): PlayerProfile {
     p.passing,
     p.defending,
     p.physical,
+    stableIdentity,
   ]);
   const hit = cache.get(cacheKey);
   if (hit) return hit;
-  const rnd = makeRng(`profile-${p.id}-${p.name}`);
-  const attrs = buildAttrs(p, rnd);
+  const rnd = makeRng(stableIdentity ? `profile-id-${p.id}` : `profile-${p.id}-${p.name}`);
+  const attrs = buildAttrs(seedPlayer, rnd);
   const tall = p.pos === "GK" ? 8 : p.pos === "DF" ? 4 : 0;
   const profile: PlayerProfile = {
     attrs,
@@ -462,16 +478,118 @@ export function profileFor(p: Player): PlayerProfile {
     spells: buildSpells(p, rnd),
     rapport: Math.round(45 + rnd() * 45),
   };
-  const d = deltas[p.id];
-  if (d) {
-    for (const [k, v] of Object.entries(d)) {
-      const key = k as keyof DetailedAttributes;
-      if (Object.hasOwn(attrs, key) && Number.isFinite(v)) attrs[key] = clamp(attrs[key] + v);
-    }
-  }
   if (cache.size > 2048) cache.clear();
   cache.set(cacheKey, profile);
   return profile;
+}
+
+/** Freeze an initial identity once. Legacy saves keep their existing main ratings and profile. */
+export function withDevelopmentBase(p: Player, rulesVersion: 1 | 2): Player {
+  const base = p.developmentBase;
+  if (
+    base &&
+    (base.rulesVersion === 1 || base.rulesVersion === 2) &&
+    Number.isFinite(base.ovr) &&
+    base.ovr >= 20 &&
+    base.ovr <= 99 &&
+    base.core &&
+    ["pace", "shooting", "passing", "defending", "physical"].every((key) =>
+      Number.isFinite(base.core[key as keyof typeof base.core]),
+    ) &&
+    base.profile?.attrs &&
+    ALL_KEYS.every(
+      (key) =>
+        Number.isFinite(base.profile.attrs[key]) &&
+        base.profile.attrs[key] >= 20 &&
+        base.profile.attrs[key] <= 99,
+    ) &&
+    Array.isArray(base.profile.traits) &&
+    Array.isArray(base.profile.spells) &&
+    Number.isFinite(base.profile.height) &&
+    Number.isFinite(base.profile.weight)
+  )
+    return p;
+  const stable = rulesVersion === 2 && p.rosterSource !== "imported" && p.rosterSource !== "custom";
+  const generated = baseProfileFor(p, stable);
+  const attrs = { ...generated.attrs };
+  // Explicit imported/custom technical data takes precedence over generation.
+  for (const key of ALL_KEYS)
+    if (Number.isFinite(p.detailedAttributes?.[key]))
+      attrs[key] = ratingValue(p.detailedAttributes![key]);
+  return {
+    ...p,
+    developmentBase: {
+      rulesVersion,
+      ovr: p.ovr,
+      core: {
+        pace: p.pace,
+        shooting: p.shooting,
+        passing: p.passing,
+        defending: p.defending,
+        physical: p.physical,
+      },
+      profile: {
+        ...generated,
+        attrs,
+        traits: [...generated.traits],
+        spells: generated.spells.map((spell) => ({ ...spell })),
+      },
+    },
+  };
+}
+
+/** Explicit source prevents one opened career from changing another career's players. */
+export function profileFor(p: Player, source?: AttributeSource): PlayerProfile {
+  const initial = p.developmentBase?.profile ?? baseProfileFor(p);
+  const attrs = { ...initial.attrs };
+  const delta = source ? source.attrDeltas?.[p.id] : p.developmentDelta;
+  for (const key of ALL_KEYS) {
+    const move = delta?.[key];
+    if (typeof move === "number" && Number.isFinite(move))
+      attrs[key] =
+        p.developmentBase?.rulesVersion === 2
+          ? ratingValue(attrs[key] + move)
+          : clamp(attrs[key] + move);
+    else if (!p.developmentBase && Number.isFinite(p.detailedAttributes?.[key]))
+      attrs[key] = ratingValue(p.detailedAttributes![key]);
+  }
+  return {
+    ...initial,
+    attrs,
+    personality: p.personality ?? initial.personality,
+    traits: [...initial.traits],
+    spells: initial.spells.map((spell) => ({ ...spell })),
+  };
+}
+
+/** Match and UI projection. The saved base and source deltas remain authoritative. */
+export function developedPlayer(p: Player, source?: AttributeSource): Player {
+  const effective = effectivePlayer(p, source);
+  return {
+    ...effective,
+    developmentDelta: {
+      ...(source ? (source.attrDeltas?.[p.id] ?? {}) : (p.developmentDelta ?? {})),
+    },
+    detailedAttributes: profileFor(p, source).attrs,
+  };
+}
+
+export function evolveSeasonV2(players: Player[], state: CareerState): AttrDeltas {
+  const closingPlayers = players.map((p) => ({ ...p, age: state.players[p.id]?.age ?? p.age }));
+  const proposed = evolveSeason(
+    closingPlayers.map((p) => effectivePlayer(p, state)),
+    state.season,
+    state.attrDeltas ?? {},
+    true,
+  );
+  const out: AttrDeltas = { ...(state.attrDeltas ?? {}) };
+  for (const p of closingPlayers) {
+    const changes: AttrDelta = {};
+    for (const key of ALL_KEYS)
+      changes[key] = (proposed[p.id]?.[key] ?? 0) - (state.attrDeltas?.[p.id]?.[key] ?? 0);
+    out[p.id] = limitedDevelopmentDelta(p, state, changes);
+  }
+  return out;
 }
 
 export function groupsFor(pos: Position): AttributeGroup[] {

@@ -4,16 +4,20 @@ import { ArticleShell, Section } from "@/components/ArticleShell";
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 
 const PATH = "/regras";
-const TITLE = "Regras do futebol explicadas | Pro Football Manager 3D";
+const TITLE = "Regras do futebol e a simulação do jogo | JogoManager";
 const DESC =
-  "As regras do futebol em linguagem simples — tempo de jogo, impedimento, faltas, cartões, pênaltis, substituições e VAR — e como cada uma delas é aplicada dentro das partidas em 3D do jogo.";
+  "Entenda impedimento, faltas, cartões, pênaltis e substituições. Veja o que o JogoManager simula e consulte a IFAB para a regra oficial do futebol.";
 
 export const Route = createFileRoute("/regras")({
   head: () => ({
     meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
     links: canonical(PATH),
     scripts: [
-      articleLd({ headline: "Regras do futebol", description: DESC, path: PATH }),
+      articleLd({
+        headline: "Regras do futebol e a simulação do jogo",
+        description: DESC,
+        path: PATH,
+      }),
       breadcrumbLd([
         { name: "Início", path: "/" },
         { name: "Regras", path: PATH },
@@ -27,110 +31,114 @@ function RulesPage() {
   return (
     <ArticleShell
       kicker="Regras"
-      title="Regras do futebol e como elas valem dentro do jogo"
-      intro="Tempo, impedimento, faltas, cartões, pênaltis e substituições explicados sem juridiquês — e como o simulador aplica cada regra durante os 90 minutos em 3D."
+      title="Regras do futebol: conceitos básicos e o que a simulação mostra"
+      intro="Este guia resume situações comuns de uma partida e separa o que aparece no JogoManager da aplicação completa das Leis do Jogo. A simulação simplifica decisões de arbitragem; para uma regra oficial ou atualizada, consulte a IFAB."
       path={PATH}
-      readMinutes={7}
+      readMinutes={8}
       level="Iniciante"
-      updated="setembro de 2026"
+      updated="outubro de 2026"
       toc={[
         { id: "tempo", title: "Tempo de jogo e acréscimos" },
         { id: "impedimento", title: "Impedimento" },
         { id: "faltas", title: "Faltas e bolas paradas" },
         { id: "cartoes", title: "Cartões e expulsões" },
         { id: "penaltis", title: "Pênaltis" },
-        { id: "substituicoes", title: "Substituições e lesões" },
-        { id: "classificacao", title: "Pontos, saldo e classificação" },
-        { id: "var", title: "Arbitragem e VAR" },
+        { id: "substituicoes", title: "Substituições" },
+        { id: "limites", title: "O que a simulação não substitui" },
       ]}
       faq={[
         {
           q: "O jogo segue as regras oficiais da IFAB?",
-          a: "Sim, nas regras que afetam o resultado: dois tempos de 45 minutos, impedimento, faltas, cartões, pênaltis, substituições e critérios de classificação. Detalhes burocráticos de arbitragem não são simulados.",
+          a: "O jogo modela situações como impedimentos, faltas, cartões e substituições, mas não reproduz integralmente as Leis do Jogo nem todos os procedimentos de arbitragem. Consulte a IFAB para uma decisão oficial.",
         },
         {
           q: "Quantas substituições posso fazer?",
-          a: "Cinco por partida, como no futebol atual. Uma vez trocado, o jogador não volta na mesma partida.",
+          a: "A interface da partida permite até cinco substituições. Depois de usar as cinco, o controle fica indisponível.",
         },
         {
           q: "Como funcionam os cartões ao longo da temporada?",
-          a: "Cartão vermelho tira o jogador da partida e o suspende da próxima. Amarelos acumulam durante o campeonato e geram suspensão automática.",
+          a: "Na simulação, dois amarelos na partida resultam em expulsão. Amarelos também contam na carreira e podem gerar suspensão conforme os limites do jogo.",
         },
         {
-          q: "O empate é decidido no critério de desempate?",
-          a: "Na liga, sim: pontos, depois vitórias, depois saldo de gols e gols marcados. Em mata-mata, a partida vai para prorrogação e pênaltis.",
+          q: "O jogo tem VAR?",
+          a: "Não. A simulação atual não apresenta revisão de lances por VAR. Os eventos e o placar mostram as decisões produzidas pelo modelo da partida.",
         },
       ]}
     >
       <Section id="tempo" title="1. Tempo de jogo e acréscimos">
         <p>
-          A partida tem dois tempos de 45 minutos e intervalo. O árbitro acrescenta o tempo perdido
-          com gols, substituições, lesões e atendimentos. No jogo, o relógio corre de forma contínua
-          e o acréscimo aparece no placar, então uma decisão tomada aos 88 ainda dá tempo de mudar o
-          resultado.
+          A partida é dividida em dois tempos com intervalo. O relógio do jogo também pode mostrar
+          acréscimos; por isso, acompanhe o tempo exibido antes de decidir se acelera, pausa ou
+          encerra a partida.
         </p>
       </Section>
       <Section id="impedimento" title="2. Impedimento">
         <p>
-          Um atacante está impedido quando, no momento em que o companheiro toca a bola, ele está
-          mais perto da linha de fundo adversária do que o penúltimo defensor. Não há impedimento em
-          lateral, escanteio ou tiro de meta, nem quando o jogador está no próprio campo.
+          A posição de impedimento é avaliada no momento em que um companheiro toca ou joga a bola:
+          estar adiantado, por si só, não basta; o jogador também precisa participar ativamente do
+          lance segundo a regra. A definição completa inclui situações e exceções que não cabem em
+          uma única frase.
         </p>
         <p>
-          Na simulação, a linha defensiva do time adversário sobe e desce em conjunto. Se você pedir
-          marcação alta, seu adversário rasga as costas da defesa com mais frequência; se pedir
-          linha baixa, cai o número de impedimentos e sobe o número de finalizações de fora.
+          O simulador registra lances de impedimento a partir do posicionamento e do passe. Use os
+          eventos como leitura do jogo, sem assumir que a simulação cobre cada interpretação de
+          arbitragem prevista nas Leis do Jogo.
         </p>
       </Section>
       <Section id="faltas" title="3. Faltas e bolas paradas">
         <p>
-          Carrinho por trás, empurrão, segurar o adversário e jogar a mão na bola são faltas. A
-          cobrança é direta quando o contato é claro e indireta em infrações técnicas. Perto da
-          área, a falta vira uma das melhores chances de gol do jogo.
+          Contato ilegal, mão na bola e outras infrações podem gerar uma falta e uma bola parada. A
+          decisão concreta depende da situação e da avaliação do árbitro; o simulador representa
+          esse tipo de evento de forma simplificada.
         </p>
         <p>
-          Escanteios, laterais e faltas na entrada da área são simulados com base na altura, no
-          cabeceio e na qualidade de cobrança dos seus jogadores — por isso um zagueiro alto muda o
-          rendimento em bola parada.
+          Escanteios também aparecem nas estatísticas da partida. Leia o evento e a situação antes
+          de atribuir o resultado a um único atributo do jogador.
         </p>
       </Section>
       <Section id="cartoes" title="4. Cartões e expulsões">
         <p>
-          O amarelo pune falta dura, reclamação e perda de tempo. O vermelho vem por falta violenta,
-          impedir gol claro com a mão ou dois amarelos. Com um jogador a menos, o time recua, perde
-          posse e leva mais chutes.
+          O amarelo registra uma advertência; dois amarelos para o mesmo jogador na partida podem
+          resultar em expulsão. A carreira também acompanha cartões acumulados para aplicar as
+          suspensões previstas no próprio jogo.
         </p>
         <p>
-          Uma tática muito agressiva aumenta o número de faltas e, com isso, o risco de expulsão.
-          Esse é o custo real de pedir marcação forte o jogo inteiro.
+          Confira quem recebeu cartão antes de avançar a rodada e prepare uma alternativa para a
+          posição caso o atleta fique suspenso.
         </p>
       </Section>
       <Section id="penaltis" title="5. Pênaltis">
         <p>
-          Falta dentro da área ou mão na bola dentro da área é pênalti. O cobrador escolhido depende
-          da sua escalação: finalização e frieza pesam na conversão, e o goleiro adversário tem
-          chance real de defesa.
+          Uma infração punível dentro da área pode levar a uma cobrança de pênalti segundo as Leis
+          do Jogo. A simulação inclui cobranças e defesas, mas não cobre todas as circunstâncias e
+          procedimentos possíveis de uma partida oficial.
         </p>
       </Section>
-      <Section id="substituicoes" title="6. Substituições e lesões">
+      <Section id="substituicoes" title="6. Substituições">
         <p>
-          São cinco substituições por partida. Trocar cedo um jogador desgastado evita lesão; trocar
-          tarde custa rendimento nos minutos finais. Lesões durante o jogo forçam uma substituição e
-          tiram o atleta das próximas rodadas conforme a gravidade.
+          A tela da partida permite usar até cinco substituições e mostra quantas ainda restam.
+          Avalie a função do jogador que sai e a posição de quem entra para não deixar uma lacuna na
+          escalação. As regras de substituição em competições oficiais podem depender do regulamento
+          da competição.
         </p>
       </Section>
-      <Section id="classificacao" title="7. Pontos, saldo e classificação">
+      <Section id="limites" title="A simulação não substitui o regulamento oficial">
         <p>
-          Vitória vale 3 pontos, empate 1 e derrota nenhum. Em caso de igualdade, a ordem é número
-          de vitórias, saldo de gols e gols marcados. As últimas colocações caem para a divisão de
-          baixo e as primeiras sobem ou vão para competições continentais.
+          O JogoManager é um jogo de gestão e simulação. Ele simplifica a arbitragem e não usa VAR
+          para rever lances. Uma partida oficial também segue o regulamento da competição, que pode
+          definir detalhes adicionais para substituições, desempates, prorrogação e pênaltis.
         </p>
-      </Section>
-      <Section id="var" title="8. Arbitragem e VAR">
         <p>
-          O árbitro decide em campo e pode ser chamado a revisar gol, pênalti, expulsão e erro de
-          identidade. No jogo, isso aparece como lances marcantes revistos antes da validação do
-          gol: o placar só muda depois da confirmação.
+          Para estudar a regra completa, consulte a publicação atual das{" "}
+          <a
+            href="https://www.theifab.com/laws-of-the-game-documents/"
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary underline"
+          >
+            Leis do Jogo da IFAB
+          </a>
+          . A página oficial oferece edições em vários idiomas, incluindo português brasileiro.
         </p>
       </Section>
     </ArticleShell>

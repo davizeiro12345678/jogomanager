@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/game/screen-kit";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/jogador/")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "robots", content: "noindex, follow" },
     ],
   }),
   component: AthleteHub,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { applyHandPose, handPoseAt } from "./player-hands";
+import { applyHandPose, handPoseAt, handBoneSpecs } from "./player-hands";
 import { buildRigSkin } from "./rig-skin";
 import { lookFor, proportionsFor } from "./player-model";
 import { playerMaterials } from "./player-materials";
@@ -19,6 +19,40 @@ const kit: Kit = {
 };
 
 describe("articulated athlete hands and shoulders", () => {
+  it("mirrors index-to-little-finger landmarks and spread around the opposed thumbs", () => {
+    const specs = handBoneSpecs(0.04);
+    for (const index of [0, 1, 2, 3] as const) {
+      const left = specs.find((bone) => bone.joint === `fingerL${index}`)!;
+      const right = specs.find((bone) => bone.joint === `fingerR${index}`)!;
+      expect(left.offset[0]).toBeCloseTo(-right.offset[0], 8);
+      expect(left.offset[1]).toBe(right.offset[1]);
+    }
+    const look = lookFor("mirror-hand-anatomy", "MF");
+    const P = proportionsFor(look);
+    const mats = playerMaterials(look, kit, null, "alta");
+    const skin = buildRigSkin(
+      {
+        P,
+        look,
+        mats,
+        hi: true,
+        portrait: false,
+        segs: { radial: 16, cap: 4 },
+        jerseyInk: "#fff",
+        handR: P.handR,
+        handMat: mats.skin,
+      },
+      [0, 0, 0],
+    );
+    applyHandPose(skin.boneOf, { grip: 0.1, spread: 0.13, wrist: 0 }, 0.25);
+    for (const index of [0, 1, 2, 3] as const) {
+      const left = skin.boneOf[`fingerL${index}`],
+        right = skin.boneOf[`fingerR${index}`];
+      expect(left.position.x).toBeCloseTo(-right.position.x, 8);
+      expect(left.rotation.z).toBeCloseTo(-right.rotation.z, 8);
+    }
+    skin.dispose();
+  });
   it.each(["MF", "GK"])(
     "curls the actual %s finger vertices while keeping the palm anchored",
     (role) => {

@@ -17,6 +17,33 @@ import { skinAlbedo } from "./player-morphology";
 
 const MAX_ENTRIES = 64;
 const cache = new Map<string, THREE.Material>();
+const users = new WeakMap<THREE.Material, number>();
+const retired = new WeakSet<THREE.Material>();
+
+function retireSharedMaterial(material: THREE.Material) {
+  if ((users.get(material) ?? 0) > 0) retired.add(material);
+  else disposeSharedMaterial(material);
+}
+
+/** A rig may outlive an LRU entry (studio edits and substitutions). Keep its
+ * detail maps alive until its last mounted owner releases them. */
+export function retainSharedDetailMaterials(materials: Iterable<THREE.Material>): () => void {
+  const unique = new Set(materials);
+  for (const material of unique) users.set(material, (users.get(material) ?? 0) + 1);
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    for (const material of unique) {
+      const count = Math.max(0, (users.get(material) ?? 1) - 1);
+      users.set(material, count);
+      if (count === 0 && retired.has(material)) {
+        retired.delete(material);
+        disposeSharedMaterial(material);
+      }
+    }
+  };
+}
 
 function disposeSharedMaterial(material: THREE.Material) {
   material.dispose();
@@ -43,7 +70,7 @@ export function sharedDetailMaterial(key: string, make: () => THREE.Material): T
     if (oldest) {
       const victim = cache.get(oldest);
       cache.delete(oldest);
-      if (victim) disposeSharedMaterial(victim);
+      if (victim) retireSharedMaterial(victim);
     }
   }
   return material;
@@ -51,7 +78,7 @@ export function sharedDetailMaterial(key: string, make: () => THREE.Material): T
 
 /** Esvazia o cache (usado em teste para isolar os casos). */
 export function resetSharedDetailMaterials(): void {
-  for (const material of cache.values()) disposeSharedMaterial(material);
+  for (const material of cache.values()) retireSharedMaterial(material);
   cache.clear();
 }
 
@@ -68,25 +95,30 @@ export function eyeWhiteMaterial(hi = false): THREE.Material {
     hi
       ? new THREE.MeshPhysicalMaterial({
           color: "#c9c3b8",
-          roughness: 0.3,
-          clearcoat: 0.35,
-          clearcoatRoughness: 0.08,
+          vertexColors: true,
+          roughness: 0.5,
+          clearcoat: 0.12,
+          clearcoatRoughness: 0.18,
           ior: 1.376,
         })
-      : new THREE.MeshStandardMaterial({ color: "#c9c3b8", roughness: 0.38 }),
+      : new THREE.MeshStandardMaterial({ color: "#b8b2a9", vertexColors: true, roughness: 0.52 }),
+  );
+}
+
+/** The shell and its edge tint must use the same linear albedo. Mixing the
+ * saved skin colour into one and the corrected render colour into the other
+ * left a pale yellow strip around dark beards in portrait lighting. */
+export function beardAlbedo(skin: string, hair: string, style: string): THREE.Color {
+  return new THREE.Color(skinAlbedo(skin)).lerp(
+    new THREE.Color(hair),
+    style === "stubble" ? 0.3 : 0.7,
   );
 }
 
 /** Stubble stays close to the skin; full beards retain a warm skin transition. */
 export function beardMaterial(skin: string, hair: string, style: string): THREE.Material {
   return sharedDetailMaterial(`beard:${skin}:${hair}:${style}`, () => {
-    const tone = new THREE.Color(skinAlbedo(skin)).lerp(
-      new THREE.Color(hair),
-      // Pull a full beard slightly back toward the underlying skin. A nearly
-      // pure hair tone turned dark beards into a continuous painted mask in
-      // portrait light instead of leaving a believable warm transition.
-      style === "stubble" ? 0.3 : 0.7,
-    );
+    const tone = beardAlbedo(skin, hair, style);
     const map = beardFiberColor("#" + tone.getHexString());
     return new THREE.MeshStandardMaterial({
       color: map ? "#ffffff" : tone,
@@ -98,7 +130,10 @@ export function beardMaterial(skin: string, hair: string, style: string): THREE.
       // edge rather than layering an almost opaque dark shell over the jaw.
       alphaTest: style === "stubble" ? 0.04 : 0.075,
       transparent: true,
-      opacity: style === "stubble" ? 0.65 : 0.88,
+      // Keep full facial hair dense enough to read on the broadcast camera,
+      // while letting the sculpted cheek and jaw planes remain visible in a
+      // close portrait instead of forming an opaque mask.
+      opacity: style === "stubble" ? 0.62 : 0.8,
       depthWrite: false,
       alphaToCoverage: true,
       normalMap: hairStrandNormal(),
@@ -122,10 +157,13 @@ export function irisMaterial(color: string, hi = false): THREE.Material {
     `iris:${color}:${hi}`,
     () =>
       new (hi ? THREE.MeshPhysicalMaterial : THREE.MeshStandardMaterial)({
-        color: irisColor(color) ? "#ffffff" : color,
+        // Tint the procedural atlas down so green and blue eyes preserve
+        // their identity without glowing against the sclera in the portrait
+        // light rig.
+        color: irisColor(color) ? "#8f8f8f" : new THREE.Color(color).multiplyScalar(0.56),
         map: irisColor(color),
-        roughness: hi ? 0.25 : 0.36,
-        ...(hi ? { clearcoat: 0.8, clearcoatRoughness: 0.08, ior: 1.376 } : {}),
+        roughness: hi ? 0.42 : 0.48,
+        ...(hi ? { clearcoat: 0.3, clearcoatRoughness: 0.16, ior: 1.376 } : {}),
       }),
   );
 }

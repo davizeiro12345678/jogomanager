@@ -517,7 +517,7 @@ function TrainerDashboard({ career }: { career: CareerState }) {
                       </span>
                     </div>
                   </div>
-                  <span className="hud-num text-sm font-bold">{p.ovr}</span>
+                  <span className="hud-num text-sm font-bold">{Math.round(p.ovr)}</span>
                 </li>
               ))}
             </ul>

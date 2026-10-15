@@ -14,6 +14,14 @@ export const ESTIMATED_COST_CENTS: Record<BudgetKind, number> = {
 };
 
 /**
+ * A missing accounting decision must never turn into an unbounded provider
+ * charge. Keeping this pure also makes the policy explicit in tests.
+ */
+export function budgetReservationAccepted(data: unknown, failed: boolean): boolean {
+  return !failed && data === true;
+}
+
+/**
  * Reserva o custo de um pedido. Devolve false quando o teto do mês já foi
  * atingido — nesse caso o chamador deve recusar o pedido sem chamar o provedor.
  */
@@ -29,12 +37,11 @@ export async function reserveAiBudget(
     });
     if (error) {
       console.error("reserve_ai_budget falhou", error.message);
-      // Falha de contabilidade não pode derrubar o jogo: segue e registra.
-      return true;
+      return false;
     }
-    return data === true;
+    return budgetReservationAccepted(data, false);
   } catch (err) {
     console.error("reserve_ai_budget indisponível", err);
-    return true;
+    return false;
   }
 }

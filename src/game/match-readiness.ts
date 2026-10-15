@@ -1,10 +1,13 @@
 import { bounded, teamDay } from "./match-probability";
 import { makeRng } from "./rng";
 import type { Player } from "./types";
-import { buildAttrs } from "./player-physique";
+import { profileFor } from "./attributes";
+import { effectivePlayer, type AttributeSource } from "./player-development";
+import { normalizedPlayerRatings } from "./player-rating-inputs";
 
 /** Select fit starters without turning recent results into permanent overall changes. */
-export function selectionRating(p: Player): number {
+export function selectionRating(p: Player, source?: AttributeSource): number {
+  p = normalizedPlayerRatings(effectivePlayer(p, source));
   return (
     p.ovr +
     (bounded(p.form, 60, 0, 100) - 60) * 0.035 -
@@ -13,9 +16,15 @@ export function selectionRating(p: Player): number {
 }
 
 /** Temporary match attributes; persisted ratings, imported records and development stay intact. */
-export function matchAttributes(p: Player, seed: string, side: "home" | "away") {
+export function matchAttributes(
+  p: Player,
+  seed: string,
+  side: "home" | "away",
+  source?: AttributeSource,
+) {
+  p = normalizedPlayerRatings(effectivePlayer(p, source));
   const rnd = makeRng(`player-day:${seed}:${side}:${p.id}`);
-  const detailed = buildAttrs(p, makeRng(`profile-${p.id}-${p.name}`));
+  const detailed = profileFor(p, source).attrs;
   const consistency =
     p.personality === "temperamental" ? 1.4 : p.personality === "profissional" ? 0.7 : 1;
   const regularity = Math.max(0.8, Math.min(1.2, 1 - (detailed.consistency - 65) * 0.005));

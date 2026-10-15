@@ -16,9 +16,9 @@ const DECISIONS = [
   },
   {
     title: "Contrate com um plano",
-    text: "Compare posição, idade, contrato e custo. Um reforço precisa caber no elenco e na folha salarial.",
-    to: "/guia-de-scouting",
-    cta: "Aprender a observar jogadores",
+    text: "Leia os relatórios dos olheiros e compare posição, potencial, taxa, luvas e salário semanal antes de negociar.",
+    to: "/planejamento-de-elenco",
+    cta: "Planejar scouting e contratações",
   },
   {
     title: "Construa uma carreira",

@@ -1,3 +1,4 @@
+import { ScreenHeader, SectionCard } from "@/components/game/screen-kit";
 import { gamePageHead } from "@/lib/game-page-metadata";
 /**
  * /visual — Ajustes visuais do jogo.
@@ -146,10 +147,10 @@ function VisualPage() {
 
   return (
     <GameShell career={career}>
-      <header className="rounded-2xl border border-border/60 surface-card p-5">
+      <div className="rounded-2xl border border-border/60 surface-card p-5">
         <div className="flex flex-wrap items-start gap-3">
           <div className="min-w-0 flex-1">
-            <h1 className="font-display text-2xl uppercase tracking-wide">Ajustes visuais</h1>
+            <ScreenHeader title="Ajustes visuais" />
             <p className="mt-1 text-sm text-muted-foreground">
               Deixe o jogo mais bonito ou mais leve. Tudo fica salvo neste aparelho e vale para
               todas as partidas.
@@ -159,7 +160,7 @@ function VisualPage() {
             <RotateCcw size={16} /> Restaurar
           </Button>
         </div>
-      </header>
+      </div>
       <Suspense
         fallback={
           <div
@@ -443,7 +444,7 @@ function VisualPage() {
       </section>
 
       {clubs.length ? (
-        <section className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
+        <SectionCard className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg uppercase tracking-wide">Corte por clube</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Cada estádio pode ter o seu desenho de grama nos jogos em casa.
@@ -488,7 +489,7 @@ function VisualPage() {
               );
             })}
           </div>
-        </section>
+        </SectionCard>
       ) : null}
     </GameShell>
   );

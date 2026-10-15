@@ -6,13 +6,13 @@ import * as THREE from "three";
 import { kitFor } from "@/game/kits";
 import { WorkerMatchView } from "@/game/live-match";
 import {
-  lookFor,
-  lookWithPhysique,
-  type BeardStyle,
-  type BodyType,
-  type HairStyle,
-  type PlayerLook,
-} from "@/game/player-model";
+  athleteAppearanceFromLegacy,
+  athleteLookForAppearance,
+  BODY_TYPE_FOR_BUILD,
+  defaultAthleteAppearance,
+  RIG_POSITION_FOR_CAREER,
+  type AthleteAppearanceV1,
+} from "@/game/player-career/appearance";
 import type { Appearance, BodyBuild, PlayerPosition } from "@/game/player-career/types";
 import { safeClub } from "@/game/squad";
 import type { SimPlayer, TeamSetup } from "@/game/sim";
@@ -29,42 +29,13 @@ interface AthleteHeroData {
   weightKg: number;
   build: BodyBuild;
   appearance: Appearance;
+  appearanceV1?: AthleteAppearanceV1 | undefined;
 }
 
 interface AthleteHero3DProps {
   athlete: AthleteHeroData;
   className?: string;
 }
-
-const SKIN_TONES = ["#f4d3b5", "#e2b48c", "#c68a5d", "#a0673f", "#7a4a2a", "#4e2e1a"];
-const HAIR_COLORS = ["#1b1410", "#4a2f1d", "#8a5a2b", "#d8b46a", "#b5b5b5"];
-const HAIR_STYLES: HairStyle[] = [
-  "buzz",
-  "short",
-  "short",
-  "curly",
-  "afro",
-  "braids",
-  "bun",
-  "mohawk",
-  "medium",
-  "ponytail",
-];
-const BEARDS: BeardStyle[] = ["none", "stubble", "goatee", "full"];
-const POSITION_TO_RIG: Record<PlayerPosition, string> = {
-  GOL: "GK",
-  ZAG: "DF",
-  LAT: "DF",
-  VOL: "MF",
-  MEI: "MF",
-  PON: "FW",
-  ATA: "FW",
-};
-const BUILD_TO_BODY: Record<BodyBuild, BodyType> = {
-  leve: "slim",
-  atletico: "normal",
-  forte: "strong",
-};
 
 function team(clubId: string): TeamSetup {
   const club = safeClub(clubId);
@@ -83,7 +54,7 @@ function portraitFixture(athlete: AthleteHeroData) {
   const home = team(athlete.clubId);
   const away = team(athlete.clubId === "pal" ? "fla" : "pal");
   const view = new WorkerMatchView(home, away);
-  const rigPosition = POSITION_TO_RIG[athlete.position];
+  const rigPosition = RIG_POSITION_FOR_CAREER[athlete.position];
   const player: SimPlayer = {
     id: `athlete-portrait-${athlete.seed}`,
     pid: athlete.seed,
@@ -131,22 +102,19 @@ function portraitFixture(athlete: AthleteHeroData) {
   return { view, player };
 }
 
-function appearanceFor(athlete: AthleteHeroData): PlayerLook {
-  const base = lookFor(athlete.seed, POSITION_TO_RIG[athlete.position], athlete.shirtNumber === 10);
-  const bodyType = BUILD_TO_BODY[athlete.build];
-  return lookWithPhysique(
-    {
-      ...base,
-      skin: SKIN_TONES[athlete.appearance.skin] ?? base.skin,
-      hairColor: HAIR_COLORS[athlete.appearance.hairColor] ?? base.hairColor,
-      hairStyle: HAIR_STYLES[athlete.appearance.hair] ?? base.hairStyle,
-      beard: BEARDS[athlete.appearance.beard] ?? base.beard,
-      bodyType,
-      girth: bodyType === "strong" ? 1.08 : bodyType === "slim" ? 0.92 : 1,
-      sleeves: "short",
-    },
-    { height: athlete.heightCm, weight: athlete.weightKg },
-  );
+function appearanceFor(athlete: AthleteHeroData) {
+  const role = RIG_POSITION_FOR_CAREER[athlete.position];
+  const fallback = defaultAthleteAppearance(athlete.seed, role, BODY_TYPE_FOR_BUILD[athlete.build]);
+  const appearance =
+    athlete.appearanceV1 ?? athleteAppearanceFromLegacy(athlete.appearance, fallback);
+  return athleteLookForAppearance({
+    seed: athlete.seed,
+    role,
+    captain: athlete.shirtNumber === 10,
+    appearance,
+    heightCm: athlete.heightCm,
+    weightKg: athlete.weightKg,
+  });
 }
 
 function AthletePortraitScene({ athlete }: { athlete: AthleteHeroData }) {

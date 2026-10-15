@@ -27,6 +27,16 @@ export function canRequestTexture(failure: TextureFailure | undefined, now: numb
   );
 }
 
+/**
+ * A procedural map is expensive to paint on the main thread. Keep its
+ * lightweight neutral replacement while a compressed asset can still arrive,
+ * and only pay for the procedural fallback after the request has exhausted
+ * every bounded retry.
+ */
+export function needsProceduralTextureFallback(failure: TextureFailure | undefined): boolean {
+  return Boolean(failure && !canRequestTexture(failure, Number.POSITIVE_INFINITY));
+}
+
 /** Schedules one bounded retry and returns a cleanup function for scene disposal. */
 export function scheduleTextureRetry(
   failure: TextureFailure,
@@ -40,8 +50,22 @@ export function scheduleTextureRetry(
 
 /** Three FileLoader's HTTP errors carry the failed Response. */
 export function textureHttpStatus(error: unknown): number | undefined {
-  if (!error || typeof error !== "object" || !("response" in error)) return undefined;
-  const response = error.response;
-  if (!response || typeof response !== "object" || !("status" in response)) return undefined;
-  return typeof response.status === "number" ? response.status : undefined;
+  if (!error || typeof error !== "object") return undefined;
+  // FileLoader can return a Response-like error, while browsers commonly
+  // surface the failed XMLHttpRequest as target/currentTarget of ProgressEvent.
+  // Treat both forms the same so immutable 404/403 assets immediately unlock
+  // the cached procedural fallback instead of wasting three delayed retries.
+  for (const key of ["response", "target", "currentTarget"] as const) {
+    const candidate = (error as { response?: unknown; target?: unknown; currentTarget?: unknown })[
+      key
+    ];
+    if (
+      candidate &&
+      typeof candidate === "object" &&
+      "status" in candidate &&
+      typeof candidate.status === "number"
+    )
+      return candidate.status;
+  }
+  return undefined;
 }

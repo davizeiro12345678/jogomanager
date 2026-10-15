@@ -48,6 +48,8 @@ export interface RapierBallHolder {
 }
 
 export interface RapierBallAuthorityOptions {
+  /** Optional benchmark observation, after solver execution. */
+  observeSubstep?: (solverMs: number, contacts: number) => void;
   fieldX?: number;
   fieldZ?: number;
 }
@@ -63,6 +65,18 @@ export interface BallPhysicsAuthority {
    */
   setCondition?: ((weather: WeatherKind, wind: { x: number; z: number }) => void) | undefined;
   dispose(): void;
+  checkpoint?(): BallPhysicsCheckpoint;
+  restore?(checkpoint: BallPhysicsCheckpoint): void;
+}
+
+export interface BallPhysicsCheckpoint {
+  world: Uint8Array;
+  body: number;
+  ballCollider: number;
+  pitchCollider: number | null;
+  wind: { x: number; z: number };
+  attached: boolean;
+  lastWritten: RapierBallState | null;
 }
 
 function finite(value: number, fallback = 0) {
@@ -113,16 +127,50 @@ type RapierCollider = ReturnType<RapierWorld["createCollider"]>;
 export class RapierBallAuthority implements BallPhysicsAuthority {
   readonly engine = "rapier-wasm" as const;
 
-  private readonly world: RapierWorld;
-  private readonly ballBody: RapierBody;
-  private readonly ballCollider: RapierCollider;
+  private world: RapierWorld;
+  private ballBody: RapierBody;
+  private ballCollider: RapierCollider;
   private pitchCollider: RapierCollider | null = null;
   private wind = { x: 0, z: 0 };
   private attached = false;
   private disposed = false;
   private lastWritten: RapierBallState | null = null;
 
-  constructor(private readonly options: Required<RapierBallAuthorityOptions>) {
+  checkpoint(): BallPhysicsCheckpoint {
+    return {
+      world: this.world.takeSnapshot(),
+      body: this.ballBody.handle,
+      ballCollider: this.ballCollider.handle,
+      pitchCollider: this.pitchCollider?.handle ?? null,
+      wind: { ...this.wind },
+      attached: this.attached,
+      lastWritten: this.lastWritten ? { ...this.lastWritten } : null,
+    };
+  }
+
+  restore(checkpoint: BallPhysicsCheckpoint): void {
+    const world = World.restoreSnapshot(checkpoint.world);
+    const body = world.getRigidBody(checkpoint.body);
+    const ball = world.getCollider(checkpoint.ballCollider);
+    const pitch =
+      checkpoint.pitchCollider === null ? null : world.getCollider(checkpoint.pitchCollider);
+    if (!body || !ball || (checkpoint.pitchCollider !== null && !pitch)) {
+      world.free();
+      throw new Error("Invalid physics checkpoint handles");
+    }
+    this.world.free();
+    this.world = world;
+    this.ballBody = body;
+    this.ballCollider = ball;
+    this.pitchCollider = pitch;
+    this.wind = { ...checkpoint.wind };
+    this.attached = checkpoint.attached;
+    this.lastWritten = checkpoint.lastWritten ? { ...checkpoint.lastWritten } : null;
+  }
+
+  constructor(
+    private readonly options: RapierBallAuthorityOptions & { fieldX: number; fieldZ: number },
+  ) {
     this.world = makeWorld();
     this.createPitchAndGoalColliders();
     this.ballBody = this.world.createRigidBody(
@@ -197,7 +245,18 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     for (let index = 0; index < count; index += 1) {
       this.world.timestep = substep;
       beforeStep?.(substep);
+      const started = this.options.observeSubstep ? performance.now() : 0;
       this.world.step();
+      if (this.options.observeSubstep) {
+        const solverMs = performance.now() - started;
+        let contacts = 0;
+        this.world.contactPairsWith(this.ballCollider, (other) => {
+          this.world.contactPair(this.ballCollider, other, (manifold) => {
+            contacts += manifold.numSolverContacts();
+          });
+        });
+        this.options.observeSubstep(solverMs, contacts);
+      }
     }
   }
 
@@ -333,6 +392,7 @@ export async function createRapierBallAuthority(
 ): Promise<RapierBallAuthority> {
   await initializeRapier();
   return new RapierBallAuthority({
+    ...(options.observeSubstep ? { observeSubstep: options.observeSubstep } : {}),
     fieldX: options.fieldX ?? DEFAULT_FIELD_X,
     fieldZ: options.fieldZ ?? DEFAULT_FIELD_Z,
   });

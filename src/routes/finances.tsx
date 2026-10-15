@@ -14,6 +14,7 @@ import {
 import { useCareer } from "@/hooks/useCareer";
 import { supporterClimate, supporterOccupancy, worldFor } from "@/game/career-world";
 import { computeTable } from "@/game/season";
+import { financialChange, financeLedgerFor } from "@/game/financial-inputs";
 
 export const Route = createFileRoute("/finances")({
   ssr: false,
@@ -36,15 +37,12 @@ function FinancesPage() {
     update({ ...career, ticketPrice: Math.max(15, Math.min(140, price)) });
 
   const expand = () => {
-    if (career.finances.budget < expansionCost) return;
+    const finances = financialChange(career, 0, expansionCost);
+    if (!finances || finances.budget < 0 || career.capacity + 5000 > 1_000_000) return;
     update({
       ...career,
       capacity: career.capacity + 5000,
-      finances: {
-        ...career.finances,
-        budget: Math.round((career.finances.budget - expansionCost) * 10) / 10,
-        spent: Math.round((career.finances.spent + expansionCost) * 10) / 10,
-      },
+      finances,
       financeLedger: [
         {
           id: `stadium-${career.season}-${career.round}-${career.capacity}`,
@@ -55,7 +53,7 @@ function FinancesPage() {
           income: 0,
           expense: expansionCost,
         },
-        ...(career.financeLedger ?? []),
+        ...financeLedgerFor(career),
       ].slice(0, 96),
       news: [
         {

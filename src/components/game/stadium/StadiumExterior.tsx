@@ -7,7 +7,6 @@
 //  ônibus (1 grupo) e torcedores (1 InstancedMesh).
 // ============================================================================
 
-import { useDisposable } from "../useDisposable";
 import { memo, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
@@ -124,7 +123,7 @@ export const StadiumExterior = memo(function StadiumExterior({
   club: ClubColors;
   night?: boolean;
 }) {
-  const shell = useDisposable(() => {
+  const shell = useMemo(() => {
     const geos: THREE.BufferGeometry[] = [];
     const put = (g: THREE.BufferGeometry, x: number, y: number, z: number, c: string) => {
       g.translate(x, y, z);
@@ -152,7 +151,7 @@ export const StadiumExterior = memo(function StadiumExterior({
     return mergeGeometries(geos, false)!;
   }, [club.primary, night]);
 
-  const pylons = useDisposable(() => {
+  const pylons = useMemo(() => {
     const geos: THREE.BufferGeometry[] = [];
     for (const [x, z] of [
       [-30, -38],
@@ -170,7 +169,7 @@ export const StadiumExterior = memo(function StadiumExterior({
     return mergeGeometries(geos, false)!;
   }, []);
 
-  const cloth = useDisposable(
+  const cloth = useMemo(
     () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 }),
     [],
   );

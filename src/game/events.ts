@@ -1,5 +1,7 @@
 import { CLUBS, getLeague, LEAGUES } from "./data/leagues";
 import { valueFor, wageFor } from "./economy";
+import { safeMoney } from "./financial-inputs";
+import { effectivePlayer } from "./player-development";
 import { makeRng } from "./rng";
 import { computeTable } from "./season";
 import { supporterOccupancy } from "./career-world";
@@ -32,9 +34,7 @@ export function staffBill(state: CareerState): number {
 /** receita de bilheteria por rodada em casa (M€) */
 export function gateIncome(state: CareerState): number {
   const fill = supporterOccupancy(state);
-  return (
-    Math.round((((state.capacity ?? 45000) * fill * state.ticketPrice) / 1_000_000) * 100) / 100
-  );
+  return safeMoney(((state.capacity ?? 45000) * fill * state.ticketPrice) / 1_000_000);
 }
 
 export function potentialOf(p: Player): number {
@@ -64,7 +64,10 @@ function rivalClubs(state: CareerState, rnd: () => number) {
 /** Gera propostas de outros clubes pelos seus jogadores. */
 export function generateOffers(state: CareerState, rnd: () => number): TransferOffer[] {
   const offers: TransferOffer[] = [];
-  const squad = Object.values(state.players).sort((a, b) => b.ovr - a.ovr);
+  const squad = Object.values(state.players)
+    .filter((p) => p.clubId === state.clubId)
+    .map((p) => effectivePlayer(p, state))
+    .sort((a, b) => b.ovr - a.ovr);
   const targets = squad.slice(0, 8);
   const suitors = rivalClubs(state, rnd);
 
@@ -73,13 +76,22 @@ export function generateOffers(state: CareerState, rnd: () => number): TransferO
     const suitorId = suitors[Math.floor(rnd() * suitors.length)];
     const suitor = suitorId ? CLUBS[suitorId] : undefined;
     if (!suitor) continue;
-    const value = p.value > 0 ? p.value : valueFor(p.ovr, p.age);
+    const value =
+      state.economyRulesVersion === 2
+        ? valueFor(p.ovr, p.age, {
+            economyRulesVersion: 2,
+            potential: p.potential,
+            contractYears: p.contractYears,
+          })
+        : p.value > 0
+          ? p.value
+          : valueFor(p.ovr, p.age);
     const mult = suitor.strength > p.ovr ? 1.05 + rnd() * 0.55 : 0.7 + rnd() * 0.4;
     offers.push({
       id: `off-${p.id}-${state.season}-${state.round}`,
       playerId: p.id,
       clubId: suitor.id,
-      amount: Math.round(value * mult * 10) / 10,
+      amount: safeMoney(value * mult),
       wage: Math.round(wageFor(p.ovr) * (1.1 + rnd() * 0.5)),
       season: state.season,
       round: state.round,

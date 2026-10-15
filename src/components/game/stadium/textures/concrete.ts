@@ -25,7 +25,7 @@ function make(size: number) {
   return { c, ctx };
 }
 
-function buildAlbedo(size = 1024) {
+function buildAlbedo(size = 512) {
   const made = make(size);
   if (!made) return null;
   const { c, ctx } = made;
@@ -87,7 +87,7 @@ function buildAlbedo(size = 1024) {
   return tex;
 }
 
-function buildRoughness(size = 512) {
+function buildRoughness(size = 256) {
   const made = make(size);
   if (!made) return null;
   const { c, ctx } = made;
@@ -105,96 +105,80 @@ function buildRoughness(size = 512) {
   return tex;
 }
 
-/**
- * Cadeiras: assentos com encosto arredondado, variação de tom por cadeira,
- * corredores entre setores, sujeira acumulada e algumas poltronas gastas.
- */
-function buildSeats(a: string, b: string, size = 1024) {
-  const made = make(size);
-  if (!made) return null;
-  const { c, ctx } = made;
+/** One row of moulded plastic seats at physical scale. The old twelve-row
+ * atlas was cropped on every riser, producing oversized dark bands. Real
+ * aisle cutouts live in the geometry; this tile must not invent extra aisles.
+ * Baked seat depth, hinges and tread shadows need no seat meshes or normals. */
+function buildSeats(a: string, b: string) {
+  if (typeof document === "undefined") return null;
+  const c = document.createElement("canvas");
+  c.width = 512;
+  c.height = 128;
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
   const rand = rng(0x5ea75);
-
-  // sombra do degrau por trás das cadeiras
-  const base = ctx.createLinearGradient(0, 0, 0, size);
-  base.addColorStop(0, "#171c21");
-  base.addColorStop(1, "#262d34");
-  ctx.fillStyle = base;
-  ctx.fillRect(0, 0, size, size);
-
-  const cols = 22;
-  const rows = 12;
-  const cw = size / cols;
-  const rh = size / rows;
-  const aisle = 7; // corredor a cada 7 colunas
-
-  for (let r = 0; r < rows; r++) {
-    // faixa de piso da fila
-    ctx.fillStyle = "rgba(10,13,16,0.55)";
-    ctx.fillRect(0, r * rh, size, rh * 0.16);
-
-    for (let i = 0; i < cols; i++) {
-      if (i % aisle === aisle - 1) continue; // corredor de acesso
-      const mosaic = (r + Math.floor(i / 2)) % 5 === 0;
-      const x = i * cw + cw * 0.12;
-      const y = r * rh + rh * 0.2;
-      const w = cw * 0.76;
-      const h = rh * 0.56;
-
-      ctx.save();
-      ctx.globalAlpha = 0.82 + rand() * 0.18;
-      ctx.fillStyle = mosaic ? b : a;
-      // encosto arredondado
-      const rad = Math.min(w, h) * 0.35;
-      ctx.beginPath();
-      ctx.moveTo(x, y + h);
-      ctx.lineTo(x, y + rad);
-      ctx.quadraticCurveTo(x, y, x + rad, y);
-      ctx.lineTo(x + w - rad, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
-      ctx.lineTo(x + w, y + h);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-
-      // brilho de plástico no topo do encosto
-      const gl = ctx.createLinearGradient(0, y, 0, y + h);
-      gl.addColorStop(0, "rgba(255,255,255,0.20)");
-      gl.addColorStop(0.4, "rgba(255,255,255,0.03)");
-      gl.addColorStop(1, "rgba(0,0,0,0.16)");
-      ctx.fillStyle = gl;
-      ctx.fillRect(x, y, w, h);
-
-      // vinco do assento e sombra sob a cadeira
-      ctx.fillStyle = "rgba(0,0,0,0.32)";
-      ctx.fillRect(x, y + h * 0.72, w, h * 0.16);
-      ctx.fillStyle = "rgba(0,0,0,0.24)";
-      ctx.fillRect(x - cw * 0.04, y + h, w + cw * 0.08, rh * 0.08);
-
-      // poltrona gasta / faltando
-      if (rand() > 0.965) {
-        ctx.fillStyle = "rgba(18,22,26,0.75)";
-        ctx.fillRect(x, y, w, h);
-      }
-    }
+  const width = 64;
+  const tread = ctx.createLinearGradient(0, 0, 0, c.height);
+  tread.addColorStop(0, "#31383d");
+  tread.addColorStop(0.35, "#41484b");
+  tread.addColorStop(1, "#242a2d");
+  ctx.fillStyle = tread;
+  ctx.fillRect(0, 0, c.width, c.height);
+  for (let seat = 0; seat < 8; seat++) {
+    const x = seat * width + 7;
+    const w = width - 14;
+    // All colour variation is deterministic; club colours retain identity.
+    ctx.fillStyle = "rgba(8,12,14,0.52)";
+    ctx.fillRect(x - 3, 16, w + 6, 95);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x, 77);
+    ctx.lineTo(x, 24);
+    ctx.quadraticCurveTo(x, 12, x + 12, 12);
+    ctx.lineTo(x + w - 12, 12);
+    ctx.quadraticCurveTo(x + w, 12, x + w, 24);
+    ctx.lineTo(x + w, 77);
+    ctx.closePath();
+    ctx.clip();
+    ctx.fillStyle = seat === 2 || seat === 6 ? b : a;
+    ctx.fillRect(x, 12, w, 65);
+    const shell = ctx.createLinearGradient(x, 0, x + w, 0);
+    shell.addColorStop(0, "rgba(0,0,0,0.29)");
+    shell.addColorStop(0.18, "rgba(255,255,255,0.09)");
+    shell.addColorStop(0.52, "rgba(255,255,255,0.015)");
+    shell.addColorStop(1, "rgba(0,0,0,0.24)");
+    ctx.fillStyle = shell;
+    ctx.fillRect(x, 12, w, 65);
+    const fade = ctx.createLinearGradient(0, 12, 0, 77);
+    fade.addColorStop(0, "rgba(255,255,255,0.16)");
+    fade.addColorStop(0.17, "rgba(255,255,255,0)");
+    fade.addColorStop(1, "rgba(0,0,0,0.28)");
+    ctx.fillStyle = fade;
+    ctx.fillRect(x, 12, w, 65);
+    ctx.fillStyle = `rgba(50,44,35,${0.025 + rand() * 0.07})`;
+    ctx.fillRect(x, 12, w, 65);
+    ctx.restore();
+    // Two hinges and a folded seat pan, painted into the same opaque tile.
+    ctx.fillStyle = "#24292b";
+    ctx.fillRect(x + 3, 73, 5, 22);
+    ctx.fillRect(x + w - 8, 73, 5, 22);
+    ctx.fillStyle = seat === 2 || seat === 6 ? b : a;
+    ctx.fillRect(x + 2, 81, w - 4, 13);
+    ctx.fillStyle = "rgba(255,255,255,0.13)";
+    ctx.fillRect(x + 3, 81, w - 6, 2);
+    ctx.fillStyle = "rgba(0,0,0,0.32)";
+    ctx.fillRect(x + 2, 92, w - 4, 4);
+    ctx.fillStyle = "rgba(9,12,13,0.36)";
+    ctx.fillRect(x + 5, 103, w - 10, 4);
   }
-
-  // sujeira e desbotamento por manchas amplas
-  for (let i = 0; i < 90; i++) {
-    const r = size * (0.05 + rand() * 0.18);
-    const x = rand() * size;
-    const y = rand() * size;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, rand() > 0.5 ? "rgba(40,36,30,0.16)" : "rgba(230,232,235,0.08)");
-    g.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(x - r, y - r, r * 2, r * 2);
-  }
-
   const tex = new THREE.CanvasTexture(c);
+  tex.name = "stadium-seat-row";
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.anisotropy = 8;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.anisotropy = 4;
+  tex.generateMipmaps = true;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
   return tex;
 }
 

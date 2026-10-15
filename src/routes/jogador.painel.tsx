@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { ScreenTabs, SkeletonRows } from "@/components/game/screen-kit";
 import { z } from "zod";
 import { ArrowLeft, Flag, HeartPulse, ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ export const Route = createFileRoute("/jogador/painel")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, follow" },
     ],
   }),
   component: AthletePanelPage,
@@ -123,6 +125,7 @@ function Panel({
     weightKg: state.weightKg,
     build: state.build,
     appearance: state.appearance,
+    appearanceV1: state.appearanceV1,
   };
 
   return (

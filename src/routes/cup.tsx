@@ -1,3 +1,4 @@
+import { ScreenHeader, SectionCard, DataTable, NoCareer } from "@/components/game/screen-kit";
 import { gamePageHead } from "@/lib/game-page-metadata";
 import { createFileRoute } from "@tanstack/react-router";
 import { Trophy } from "lucide-react";
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/cup")({
 
 function CupPage() {
   const { career } = useCareer();
-  if (!career) return <Empty />;
+  if (!career) return <NoCareer hint="Comece uma carreira para disputar as copas." />;
   const country = getLeague(career.leagueId).country;
   const confed = countryRegulation(country).confederation;
   const cups = (career.cups ?? []).filter(
@@ -34,7 +35,7 @@ function CupPage() {
 
   return (
     <GameShell career={career}>
-      <h1 className="font-display text-2xl uppercase tracking-wide">Copas e torneios</h1>
+      <ScreenHeader title="Copas e torneios" />
       <p className="mt-1 text-sm text-muted-foreground">
         A posição na liga, os títulos de copa e os torneios regionais definem suas vagas. As
         competições continuam até a final mesmo após sua eliminação.
@@ -71,7 +72,7 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
   const stages = [...new Set(cup.ties.map((t) => t.round))].sort((a, b) => a - b);
 
   return (
-    <section className="rounded-2xl border border-border/60 surface-card p-5">
+    <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-display text-lg uppercase tracking-wide">{cup.name}</h2>
         <span
@@ -101,7 +102,7 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Grupo {g.label}
               </p>
-              <table className="mt-1.5 w-full text-sm">
+              <DataTable label="Dados de cup" className="mt-1.5 w-full text-sm">
                 <caption className="sr-only">Classificação do grupo {g.label}</caption>
                 <thead className="text-[11px] uppercase text-muted-foreground">
                   <tr>
@@ -138,7 +139,7 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </DataTable>
             </div>
           ))}
         </div>
@@ -160,7 +161,7 @@ function CupCard({ cup, clubId }: { cup: CupState; clubId: string }) {
           </div>
         ))}
       </div>
-    </section>
+    </SectionCard>
   );
 }
 
@@ -184,13 +185,5 @@ function TieRow({ tie, clubId }: { tie: CupTie; clubId: string }) {
       <span className="min-w-0 flex-1 truncate text-right">{away?.name ?? "A definir"}</span>
       {away ? <Crest club={away} size={18} detail="simple" /> : null}
     </li>
-  );
-}
-
-function Empty() {
-  return (
-    <GameShell career={null}>
-      <p className="text-sm text-muted-foreground">Comece uma carreira para disputar as copas.</p>
-    </GameShell>
   );
 }

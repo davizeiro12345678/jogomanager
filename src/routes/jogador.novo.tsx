@@ -1,3 +1,4 @@
+import { ScreenHeader } from "@/components/game/screen-kit";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { z } from "zod";
@@ -5,8 +6,19 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/game/Crest";
 import { AthleteHero3D } from "@/components/game/players/AthleteHero3D";
+import PlayerStudio from "@/components/game/players/PlayerStudio";
 import { LEAGUES } from "@/game/data/leagues";
 import { POSITION_LABEL } from "@/game/player-career/attributes";
+import {
+  ATHLETE_HAIR_COLORS,
+  ATHLETE_SKIN_TONES,
+  athleteAppearanceFromLegacy,
+  BODY_TYPE_FOR_BUILD,
+  defaultAthleteAppearance,
+  legacyAppearanceFromAthleteAppearance,
+  RIG_POSITION_FOR_CAREER,
+  type AthleteAppearanceV1,
+} from "@/game/player-career/appearance";
 import { createAthlete, rngFrom } from "@/game/player-career/engine";
 import type {
   AthletePersonality,
@@ -34,6 +46,7 @@ export const Route = createFileRoute("/jogador/novo")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, follow" },
     ],
   }),
   component: CreateAthletePage,
@@ -97,10 +110,27 @@ function CreateAthletePage() {
   const [origin, setOrigin] = useState<CareerOrigin>("base");
   const [leagueId, setLeagueId] = useState(LEAGUES[0]!.id);
   const [clubId, setClubId] = useState(LEAGUES[0]!.clubs[0]?.id ?? "");
-  const [skin, setSkin] = useState(2);
-  const [hair, setHair] = useState(1);
-  const [hairColor, setHairColor] = useState(0);
-  const [beard, setBeard] = useState(0);
+  const [appearanceV1, setAppearanceV1] = useState<AthleteAppearanceV1>(() =>
+    athleteAppearanceFromLegacy(
+      { skin: 2, hair: 1, hairColor: 0, beard: 0, boots: 0 },
+      defaultAthleteAppearance(`new-athlete-${slotId}`, "FW", "normal"),
+    ),
+  );
+  const { skin, hair, hairColor, beard } =
+    legacyAppearanceFromAthleteAppearance(appearanceV1);
+  const updateLegacyAppearance = (patch: Partial<ReturnType<typeof legacyAppearanceFromAthleteAppearance>>) => {
+    setAppearanceV1((previous) =>
+      athleteAppearanceFromLegacy(
+        { ...legacyAppearanceFromAthleteAppearance(previous), ...patch },
+        previous,
+      ),
+    );
+  };
+  const setSkin = (value: number) => updateLegacyAppearance({ skin: value });
+  const setHair = (value: number) => updateLegacyAppearance({ hair: value });
+  const setHairColor = (value: number) => updateLegacyAppearance({ hairColor: value });
+  const setBeard = (value: number) => updateLegacyAppearance({ beard: value });
+  const [studioOpen, setStudioOpen] = useState(false);
   const [shirt, setShirt] = useState(9);
   const [error, setError] = useState<string | null>(null);
 
@@ -168,7 +198,7 @@ function CreateAthletePage() {
             </Link>
           </Button>
         </div>
-        <h1 className="text-3xl font-bold">Criar atleta</h1>
+        <ScreenHeader title="Criar atleta" />
         <div className="athlete-grid">
           <section className="athlete-card athlete-form" aria-label="Dados do atleta">
             <h2 className="text-lg font-bold">Identidade</h2>

@@ -101,7 +101,7 @@ export type LivePlayerBufferPacket = {
 export type LiveEventDelta = {
   fromSeq: number;
   toSeq: number;
-  added: readonly LiveSnapshot["events"][number][];
+  added: readonly NonNullable<LiveSnapshot["events"]>[number][];
 };
 
 export type LiveSnapshotPacket = Omit<LiveSnapshot, "players" | "events"> & {
@@ -338,7 +338,15 @@ export function createSnapshotBufferPool(maxSlots = 3) {
 export function isLiveSnapshotPacket(value: unknown): value is LiveSnapshotPacket {
   if (!value || typeof value !== "object") return false;
   const packet = value as Partial<LiveSnapshotPacket>;
-  return packet.type === "snapshot" && typeof packet.rosterVersion === "number" && !!packet.players;
+  return (
+    packet.type === "snapshot" &&
+    typeof packet.rosterVersion === "number" &&
+    !!packet.players &&
+    !Array.isArray(packet.players) &&
+    packet.players.positions instanceof ArrayBuffer &&
+    packet.players.velocities instanceof ArrayBuffer &&
+    packet.players.states instanceof ArrayBuffer
+  );
 }
 
 export function livePlayerBufferFromPacket(packet: LiveSnapshotPacket): LivePlayerBuffer {

@@ -72,6 +72,19 @@ function establishingVariation(shot: CinematicShot, variant: number): CinematicS
   };
 }
 
+/** Masters establish the group and room, so a tall viewport needs to retain
+ * horizontal coverage. Widen the lens instead of retreating through the back
+ * wall. A 70-degree ceiling keeps the people at the sides from stretching;
+ * landscape cameras and the authored positions/targets stay exact. */
+function portraitMaster(shot: CinematicShot, aspect: number): CinematicShot {
+  if (!Number.isFinite(aspect) || aspect <= 0 || aspect >= 0.78) return shot;
+  const halfFov = (shot.fov * Math.PI) / 360;
+  return {
+    ...shot,
+    fov: Math.min(70, (Math.atan(Math.tan(halfFov) * (0.78 / aspect)) * 360) / Math.PI),
+  };
+}
+
 /** Fixed sides of the dialogue axis avoid crossing people, desks and walls.
  * Portrait framing backs up without putting the camera outside the room. */
 export function cinematicShotFor(
@@ -104,7 +117,7 @@ export function cinematicShotFor(
               framing: "establishing",
             } as CinematicShot)
           : ESTABLISHING[kind];
-    return establishingVariation(shot, variant);
+    return portraitMaster(establishingVariation(shot, variant), aspect);
   }
   const seated = kind === "locker" && speaker === "captain";
   const y = seated ? 1.06 : 1.59;

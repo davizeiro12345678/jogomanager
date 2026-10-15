@@ -128,5 +128,8 @@ export function cinematicExpressionAt(
         ? listenerBeat *
           (turn?.kind === "challenge" ? -0.008 : turn?.kind === "question" ? 0.01 : 0.006)
         : 0),
+    // A listener acknowledges the meaning of a beat through the neck, with a
+    // small held dip instead of continuous speech-like bobbing.
+    headPitch: acting ? 0 : acknowledgement * (0.014 + warmth * 0.026) * (1 - tension * 0.45),
   };
 }

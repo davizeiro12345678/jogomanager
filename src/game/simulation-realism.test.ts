@@ -154,7 +154,15 @@ describe("match conditions and probability", () => {
       players: Object.fromEntries(
         Object.values(state.players).map((p) => [
           p.id,
-          { ...p, ovr: p.ovr - 15, condition: 45, form: 25 },
+          {
+            ...p,
+            ovr: p.ovr - 15,
+            ...(p.developmentBase
+              ? { developmentBase: { ...p.developmentBase, ovr: p.developmentBase.ovr - 15 } }
+              : {}),
+            condition: 45,
+            form: 25,
+          },
         ]),
       ),
     };
@@ -188,7 +196,12 @@ describe("match conditions and probability", () => {
     expect(attrs).toEqual(matchAttributes(player, "readiness", "home"));
     expect(attrs.stamina).toBe(32);
     expect(player).toEqual(saved);
-    const sim = new MatchSim(buildTeamSetup("flu"), buildTeamSetup("bot"), "sub-fatigue");
+    const home = buildTeamSetup("flu");
+    home.bench = [...(home.bench ?? []).filter((p) => p.id !== player.id), player];
+    home.players = home.players.map((p) =>
+      p.id === player.id ? { ...p, id: "starting-keeper" } : p,
+    );
+    const sim = new MatchSim(home, buildTeamSetup("bot"), "sub-fatigue");
     expect(sim.substitute("home", sim.players[0]!.pid, player)).toBe(true);
     expect(sim.players.find((p) => p.pid === player.id)!.stamina).toBe(32);
   });

@@ -1,24 +1,106 @@
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { CROWD_MOTION_GLSL } from "@/game/crowd-motion";
 import { supporterGeometry } from "@/game/crowd-geometry";
+import { crowdLodMaterial } from "@/game/crowd-lod-material";
 
-import type { RuntimeSceneBudget } from "@/game/runtime-scene-budget";
+import { resolveRuntimeSceneBudget, type RuntimeSceneBudget } from "@/game/runtime-scene-budget";
 import { censusRef } from "@/game/scene-census";
 import {
+  CrowdFallbackBuffers,
   createCrowdVisibilityLayout,
-  loadCrowdVisibilityWasm,
   selectCrowdFallback,
-  type CrowdVisibilityKernel,
 } from "@/game/wasm/crowd-visibility";
+import { CrowdWorkerClient } from "@/game/wasm/crowd-worker-client";
+import { presentationWorkerCount } from "@/game/device-workload";
+import { prepareSharedSeatBuffers } from "@/game/wasm/shared-seat-transforms";
+import { acquirePresentationLanes } from "@/game/presentation-lanes";
 
 type CrowdData = { positions: THREE.Vector3[]; colors: THREE.Color[]; skins: THREE.Color[] };
 type CrowdTile = { indices: number[]; sphere: THREE.Sphere; distance: number };
+type CrowdSeatUpload = Readonly<{
+  matrices: Float32Array;
+  colors: Float32Array;
+  skins: Float32Array;
+  styles: Float32Array;
+}>;
 
 const TILE_SECTORS = 12;
 const TILE_RINGS = 3;
 const MAX_CROWD_INSTANCES = 5_120;
+
+function prepareSeatUpload(crowd: CrowdData): CrowdSeatUpload {
+  const matrices = new Float32Array(crowd.positions.length * 16);
+  const colors = new Float32Array(crowd.positions.length * 3);
+  const skins = new Float32Array(crowd.positions.length * 3);
+  const styles = new Float32Array(crowd.positions.length * 2);
+  const dummy = new THREE.Object3D();
+  for (let index = 0; index < crowd.positions.length; index += 1) {
+    const position = crowd.positions[index]!;
+    const height = 0.9 + (index % 7) * 0.025;
+    dummy.position.copy(position);
+    dummy.scale.set(height * (0.92 + (index % 3) * 0.06), height, height);
+    dummy.rotation.set(0, Math.atan2(-position.x, -position.z), 0);
+    dummy.updateMatrix();
+    matrices.set(dummy.matrix.elements, index * 16);
+    const color = crowd.colors[index]!;
+    const offset = index * 3;
+    colors[offset] = color.r;
+    colors[offset + 1] = color.g;
+    colors[offset + 2] = color.b;
+    const skin = crowd.skins[index]!;
+    skins[offset] = skin.r;
+    skins[offset + 1] = skin.g;
+    skins[offset + 2] = skin.b;
+    styles[index * 2] = (index % 13) / 12;
+    styles[index * 2 + 1] = (index % 11) / 10;
+  }
+  return { matrices, colors, skins, styles };
+}
+
+function copySeatAttribute(
+  target: Float32Array,
+  values: Float32Array,
+  width: number,
+  seat: number,
+  instance: number,
+) {
+  const targetOffset = instance * width;
+  const sourceOffset = seat * width;
+  for (let channel = 0; channel < width; channel += 1)
+    target[targetOffset + channel] = values[sourceOffset + channel]!;
+}
+
+function copySeatToInstance(
+  mesh: THREE.InstancedMesh,
+  seat: number,
+  instance: number,
+  source: CrowdSeatUpload,
+) {
+  copySeatAttribute(mesh.instanceMatrix.array as Float32Array, source.matrices, 16, seat, instance);
+  mesh.instanceColor ??= new THREE.InstancedBufferAttribute(
+    new Float32Array(mesh.instanceMatrix.count * 3),
+    3,
+  ).setUsage(THREE.DynamicDrawUsage);
+  copySeatAttribute(mesh.instanceColor.array as Float32Array, source.colors, 3, seat, instance);
+  copySeatAttribute(
+    (mesh.geometry.getAttribute("crowdSkin") as THREE.InstancedBufferAttribute)
+      .array as Float32Array,
+    source.skins,
+    3,
+    seat,
+    instance,
+  );
+  copySeatAttribute(
+    (mesh.geometry.getAttribute("crowdStyle") as THREE.InstancedBufferAttribute)
+      .array as Float32Array,
+    source.styles,
+    2,
+    seat,
+    instance,
+  );
+}
 
 function crowdCard() {
   if (typeof document === "undefined") return new THREE.Texture();
@@ -94,13 +176,27 @@ export function CrowdLod({
   pulse: React.MutableRefObject<number>;
   budget: Pick<
     RuntimeSceneBudget,
-    "crowdInstances" | "crowdVisibleTiles" | "crowdUpdateSeconds" | "stage"
+    "crowdInstances" | "crowdVisibleTiles" | "crowdUpdateSeconds" | "stage" | "tier"
   >;
   supporters?: import("@/game/career-world-types").SupporterMatchday | undefined;
   /** Native WebGPU keeps the same instance pools, without GLSL-only motion hooks. */
   webgl2?: boolean;
 }) {
+  const capacity = Math.min(
+    MAX_CROWD_INSTANCES,
+    resolveRuntimeSceneBudget(budget.tier).crowdInstances,
+  );
   const refs = useRef<(THREE.InstancedMesh | null)[]>([]);
+  const meshRefs = useMemo(
+    () =>
+      [0, 1, 2].map((tier) => (mesh: THREE.InstancedMesh | null) => {
+        const previous = refs.current[tier];
+        if (previous && previous !== mesh) previous.dispose();
+        refs.current[tier] = mesh;
+        mesh?.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      }),
+    [],
+  );
   const tiles = useMemo(() => buildTiles(crowd.positions), [crowd.positions]);
   const layout = useMemo(
     () =>
@@ -114,18 +210,53 @@ export function CrowdLod({
       ),
     [crowd.positions, tiles],
   );
-  const kernel = useRef<CrowdVisibilityKernel | null>(null);
+  const worker = useRef<CrowdWorkerClient | null>(null);
+  const fallbackBuffers = useMemo(() => new CrowdFallbackBuffers(layout), [layout]);
+  const hasSelection = useRef(false);
+  const [seatState, setSeatState] = useState<{ crowd: CrowdData; buffers: CrowdSeatUpload } | null>(
+    null,
+  );
+  const seatUpload = seatState?.crowd === crowd ? seatState.buffers : null;
+  useEffect(() => {
+    const controller = new AbortController();
+    setSeatState(null);
+    void prepareSharedSeatBuffers(crowd, controller.signal).then((buffers) => {
+      if (!controller.signal.aborted)
+        setSeatState({ crowd, buffers: buffers ?? prepareSeatUpload(crowd) });
+    });
+    return () => controller.abort();
+  }, [crowd]);
   const planes = useMemo(() => new Float64Array(24), []);
   useEffect(() => {
-    let active = true;
-    void loadCrowdVisibilityWasm().then((loaded) => {
-      if (active) kernel.current = loaded;
-    });
+    hasSelection.current = false;
+    const controller = new AbortController();
+    let release: (() => void) | null = null;
+    if (
+      seatUpload &&
+      typeof Worker !== "undefined" &&
+      presentationWorkerCount(navigator.hardwareConcurrency) > 0
+    ) {
+      void acquirePresentationLanes(1, controller.signal).then((lease) => {
+        release = lease;
+        if (!lease || controller.signal.aborted) {
+          lease?.();
+          return;
+        }
+        try {
+          worker.current = new CrowdWorkerClient(layout, lease);
+        } catch {
+          lease();
+          worker.current = null;
+        }
+      });
+    }
     return () => {
-      active = false;
-      kernel.current = null;
+      controller.abort();
+      worker.current?.dispose();
+      worker.current = null;
+      release?.();
     };
-  }, []);
+  }, [layout, seatUpload]);
   const data = useMemo(() => {
     const card = crowdCard();
     const uniforms = {
@@ -135,13 +266,11 @@ export function CrowdLod({
       agitation: { value: 0 },
     };
     const materials = [0, 1, 2].map((tier) => {
-      const material = new THREE.MeshStandardMaterial({
-        roughness: 0.93,
-        vertexColors: true,
-        flatShading: false,
-        side: THREE.DoubleSide,
-        ...(tier === 2 ? { map: card, alphaTest: 0.4, side: THREE.DoubleSide } : {}),
-      });
+      const legacy =
+        typeof location !== "undefined" &&
+        location.pathname.endsWith("/graphics-benchmark.html") &&
+        new URLSearchParams(location.search).get("crowdLighting") === "legacy";
+      const material = crowdLodMaterial(tier, card, legacy);
       if (webgl2)
         material.onBeforeCompile = (shader) => {
           shader.uniforms["crowdTime"] = uniforms.time;
@@ -217,11 +346,11 @@ export function CrowdLod({
       }
       geometry.setAttribute(
         "crowdSkin",
-        new THREE.InstancedBufferAttribute(new Float32Array(MAX_CROWD_INSTANCES * 3), 3),
+        new THREE.InstancedBufferAttribute(new Float32Array(capacity * 3), 3),
       );
       geometry.setAttribute(
         "crowdStyle",
-        new THREE.InstancedBufferAttribute(new Float32Array(MAX_CROWD_INSTANCES * 2), 2),
+        new THREE.InstancedBufferAttribute(new Float32Array(capacity * 2), 2),
       );
     });
     return {
@@ -229,19 +358,15 @@ export function CrowdLod({
       materials,
       card,
       uniforms,
-      dummy: new THREE.Object3D(),
       projection: new THREE.Matrix4(),
       frustum: new THREE.Frustum(),
       counts: [0, 0, 0],
-      seats: [0, 1, 2].map(() => new Int32Array(MAX_CROWD_INSTANCES).fill(-1)),
+      seats: [0, 1, 2].map(() => new Int32Array(capacity).fill(-1)),
+      changed: [false, false, false],
+      firstChanged: [0, 0, 0],
+      lastChanged: [0, 0, 0],
     };
-  }, [webgl2]);
-  const skinAttributes = data.geometries.map(
-    (geometry) => geometry.getAttribute("crowdSkin") as THREE.InstancedBufferAttribute,
-  );
-  const styleAttributes = data.geometries.map(
-    (geometry) => geometry.getAttribute("crowdStyle") as THREE.InstancedBufferAttribute,
-  );
+  }, [webgl2, capacity]);
   useEffect(
     () => () => {
       data.geometries.forEach((geometry) => geometry.dispose());
@@ -259,6 +384,7 @@ export function CrowdLod({
     elapsed.current = Number.POSITIVE_INFINITY;
   }, [crowd, data]);
   useFrame(({ camera, clock, size }, dt) => {
+    if (!seatUpload) return;
     data.uniforms.time.value = clock.elapsedTime;
     data.uniforms.pulse.value = pulse.current;
     data.uniforms.agitation.value =
@@ -273,7 +399,10 @@ export function CrowdLod({
     elapsed.current = 0;
 
     data.counts.fill(0);
-    const selectionChanged = [false, false, false];
+    const changed = data.changed;
+    changed.fill(false);
+    data.firstChanged.fill(capacity);
+    data.lastChanged.fill(0);
     if (budget.crowdInstances > 0) {
       camera.updateMatrixWorld();
       data.projection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
@@ -299,51 +428,56 @@ export function CrowdLod({
         projectedScale,
         perspective,
         maxTiles: budget.crowdVisibleTiles,
-        maxInstances: Math.min(MAX_CROWD_INSTANCES, budget.crowdInstances),
+        maxInstances: Math.min(capacity, budget.crowdInstances),
         detailedPixels,
         meshPixels,
       };
-      let selected;
-      try {
-        selected = kernel.current?.select(input) ?? selectCrowdFallback(input);
-      } catch {
-        // A failed optional kernel must never interrupt a live match.
-        kernel.current = null;
-        selected = selectCrowdFallback(input);
-      }
+      const client = worker.current;
+      let selected = client?.select(input);
+      // Retain the visible pool while the worker computes a new camera snapshot.
+      // Only the first frame or a failed worker uses the synchronous fallback.
+      if (!selected && client && !client.failed && hasSelection.current) return;
+      selected ??= selectCrowdFallback(input, fallbackBuffers);
+      hasSelection.current = true;
       for (let offset = 0; offset < selected.indices.length; offset += 1) {
         const index = selected.indices[offset]!;
-        const position = crowd.positions[index]!;
-        const tier: number = selected.tiers[offset]!;
+        const tier = selected.tiers[offset]!;
         const mesh = refs.current[tier];
-        if (!mesh || data.counts[tier]! >= MAX_CROWD_INSTANCES) continue;
+        if (!mesh || data.counts[tier]! >= capacity) continue;
         const instance = data.counts[tier]!++;
         if (data.seats[tier]![instance] === index) continue;
         data.seats[tier]![instance] = index;
-        selectionChanged[tier] = true;
-        data.dummy.position.copy(position);
-        const height = 0.9 + (index % 7) * 0.025;
-        data.dummy.scale.set(height * (0.92 + (index % 3) * 0.06), height, height);
-        data.dummy.rotation.set(0, Math.atan2(-position.x, -position.z), 0);
-        data.dummy.updateMatrix();
-        mesh.setMatrixAt(instance, data.dummy.matrix);
-        mesh.setColorAt(instance, crowd.colors[index]!);
-        const skin = crowd.skins[index]!;
-        skinAttributes[tier]!.setXYZ(instance, skin.r, skin.g, skin.b);
-        styleAttributes[tier]!.setXY(instance, (index % 13) / 12, (index % 11) / 10);
+        copySeatToInstance(mesh, index, instance, seatUpload);
+        changed[tier] = true;
+        data.firstChanged[tier] = Math.min(data.firstChanged[tier]!, instance);
+        data.lastChanged[tier] = instance + 1;
       }
     }
 
     refs.current.forEach((mesh, tier) => {
       if (!mesh) return;
       mesh.count = data.counts[tier]!;
-      // Matrices and colours are static until the visible seat selection
-      // changes. A stationary camera no longer uploads the crowd every tick.
-      if (selectionChanged[tier]) {
+      // Typed GPU attributes only upload when a different seat occupies an
+      // instance slot. No temporary selection strings are created per tick.
+      if (changed[tier]) {
+        const first = data.firstChanged[tier]!;
+        const count = data.lastChanged[tier]! - first;
+        mesh.instanceMatrix.addUpdateRange(first * 16, count * 16);
+        mesh.instanceColor?.addUpdateRange(first * 3, count * 3);
+        (mesh.geometry.getAttribute("crowdSkin") as THREE.InstancedBufferAttribute).addUpdateRange(
+          first * 3,
+          count * 3,
+        );
+        (mesh.geometry.getAttribute("crowdStyle") as THREE.InstancedBufferAttribute).addUpdateRange(
+          first * 2,
+          count * 2,
+        );
         mesh.instanceMatrix.needsUpdate = true;
         if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-        skinAttributes[tier]!.needsUpdate = true;
-        styleAttributes[tier]!.needsUpdate = true;
+        (mesh.geometry.getAttribute("crowdSkin") as THREE.InstancedBufferAttribute).needsUpdate =
+          true;
+        (mesh.geometry.getAttribute("crowdStyle") as THREE.InstancedBufferAttribute).needsUpdate =
+          true;
       }
       // Fixed pools intentionally skip computeBoundingSphere(), which was a
       // periodic CPU spike in the original global crowd pass.
@@ -356,10 +490,9 @@ export function CrowdLod({
       {data.geometries.map((geometry, tier) => (
         <instancedMesh
           key={tier}
-          ref={(mesh) => {
-            refs.current[tier] = mesh;
-          }}
-          args={[geometry, data.materials[tier], MAX_CROWD_INSTANCES]}
+          ref={meshRefs[tier]!}
+          args={[geometry, data.materials[tier], capacity]}
+          count={0}
           frustumCulled={false}
         />
       ))}

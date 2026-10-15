@@ -2,9 +2,15 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { normalizePublicText, hasVisibleText } from "./untrusted-json";
+import { containsProfanity, PROFANITY_BLOCKED_MESSAGE } from "./moderation";
 
 const SendMessageInput = z.object({
-  body: z.string().min(1).max(500),
+  body: z
+    .string()
+    .transform(normalizePublicText)
+    .pipe(z.string().min(1).max(500))
+    .refine(hasVisibleText),
 });
 
 export type SendMessageResult =
@@ -18,6 +24,7 @@ export const sendChatMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => SendMessageInput.parse(input))
   .handler(async ({ data, context }): Promise<SendMessageResult> => {
+    if (containsProfanity(data.body)) throw new Error(PROFANITY_BLOCKED_MESSAGE);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: id, error } = await supabaseAdmin.rpc("send_chat_message_for", {
       _user_id: context.userId,

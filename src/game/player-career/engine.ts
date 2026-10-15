@@ -133,6 +133,7 @@ export function createAthlete(input: CreateAthleteInput, now = Date.now()): Play
     personality: input.personality,
     origin: input.origin,
     appearance: input.appearance,
+    ...(input.appearanceV1 ? { appearanceV1: input.appearanceV1 } : {}),
     shirtNumber: input.shirtNumber,
     age: 17,
     season: 1,

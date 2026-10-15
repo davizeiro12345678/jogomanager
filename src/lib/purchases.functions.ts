@@ -10,6 +10,8 @@ export interface PurchaseRow {
   reference: string | null;
   error: string | null;
   createdAt: string;
+  paymentReview?: "payment_failed" | "refund_review" | null;
+  refundedAmountCents?: number;
 }
 
 export interface PurchasesSummary {
@@ -44,6 +46,19 @@ export const getPurchases = createServerFn({ method: "GET" })
       throw new Error("Não foi possível carregar suas compras agora.");
     }
 
+    const references = (rows ?? [])
+      .map((row) => row.reference)
+      .filter((reference): reference is string => reference !== null);
+    const reviews = references.length
+      ? await context.supabase
+          .from("purchase_payment_reviews")
+          .select("reference, review_status, refunded_amount_cents")
+          .in("reference", references)
+      : { data: [], error: null };
+    if (reviews.error) throw new Error("Não foi possível carregar a revisão dos pagamentos agora.");
+    const reviewByReference = new Map(
+      (reviews.data ?? []).map((review) => [review.reference, review]),
+    );
     const purchases: PurchaseRow[] = (rows ?? []).map((r) => ({
       id: r.id,
       productKey: r.product_key,
@@ -52,6 +67,13 @@ export const getPurchases = createServerFn({ method: "GET" })
       reference: r.reference ?? null,
       error: (r as { error: string | null }).error ?? null,
       createdAt: r.created_at,
+      paymentReview: r.reference
+        ? ((reviewByReference.get(r.reference)?.review_status as PurchaseRow["paymentReview"]) ??
+          null)
+        : null,
+      refundedAmountCents: r.reference
+        ? (reviewByReference.get(r.reference)?.refunded_amount_cents ?? 0)
+        : 0,
     }));
 
     return {

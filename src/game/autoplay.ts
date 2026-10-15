@@ -13,6 +13,7 @@ import {
 } from "@/game/career";
 import { makeRng } from "@/game/rng";
 import type { CareerState, Player } from "@/game/types";
+import { effectivePlayer } from "./player-development";
 
 export interface AutoWeek {
   kind: "match" | "bye";
@@ -51,7 +52,10 @@ export function buildPerformances(
   seed: string,
 ): MatchPerformance[] {
   const rnd = makeRng(seed);
-  const starters = state.lineup.map((id) => state.players[id]).filter(Boolean) as Player[];
+  const starters = state.lineup
+    .map((id) => state.players[id])
+    .filter(Boolean)
+    .map((p) => effectivePlayer(p!, state)) as Player[];
   if (!starters.length) return [];
 
   const perf = new Map<string, MatchPerformance>();
@@ -87,7 +91,10 @@ export function buildPerformances(
 }
 
 /** Simula a partida do usuário desta rodada e devolve o estado já avançado. */
-export function autoWeek(state: CareerState): AutoWeek | null {
+export function autoWeek(
+  state: CareerState,
+  evaluatedAt: number | string = Date.now(),
+): AutoWeek | null {
   const roundFixtures = state.fixtures.filter((f) => f.round === state.round);
   const scheduled = roundFixtures.find((f) => f.home === state.clubId || f.away === state.clubId);
   const fixture = state.fixtures.find(
@@ -98,7 +105,7 @@ export function autoWeek(state: CareerState): AutoWeek | null {
   );
   if (!fixture) {
     if (scheduled || !roundFixtures.length) return null;
-    const next = advanceRound(state, null, [], "Liga");
+    const next = advanceRound(state, null, [], "Liga", evaluatedAt);
     return {
       kind: "bye",
       round: state.round,
@@ -123,7 +130,7 @@ export function autoWeek(state: CareerState): AutoWeek | null {
   const ga = home ? ag : hg;
 
   const perf = buildPerformances(state, gf, `${seed}-perf`);
-  const next = advanceRound(state, { hg, ag }, perf, "Liga");
+  const next = advanceRound(state, { hg, ag }, perf, "Liga", evaluatedAt);
 
   const scorers = perf
     .filter((p) => p.goals > 0)
@@ -145,12 +152,13 @@ export function autoWeek(state: CareerState): AutoWeek | null {
 export function autoSeason(
   state: CareerState,
   maxWeeks = 60,
+  evaluatedAt: number | string = Date.now(),
 ): { weeks: AutoWeek[]; state: CareerState } {
   const weeks: AutoWeek[] = [];
   let cur = state;
   const startSeason = state.season;
   for (let i = 0; i < maxWeeks; i++) {
-    const w = autoWeek(cur);
+    const w = autoWeek(cur, evaluatedAt);
     if (!w) break;
     weeks.push(w);
     cur = w.state;

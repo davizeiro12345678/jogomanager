@@ -1,3 +1,11 @@
+import {
+  ScreenHeader,
+  SectionCard,
+  EmptyState,
+  ErrorPanel,
+  SkeletonRows,
+  PrimaryLink,
+} from "@/components/game/screen-kit";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -51,10 +59,24 @@ function ReplaysPage() {
   const { career } = useCareer();
   const [list, setList] = useState<Replay[] | null>(null);
   const [current, setCurrent] = useState<Replay | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
-    void listReplays().then(setList);
-  }, []);
+    let active = true;
+    setLoadError(false);
+    setList(null);
+    void listReplays()
+      .then((replays) => {
+        if (active) setList(replays);
+      })
+      .catch(() => {
+        if (active) setLoadError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [refresh]);
 
   const remove = useCallback(async (id: string) => {
     await deleteReplay(id);
@@ -64,22 +86,29 @@ function ReplaysPage() {
 
   const body = (
     <div className="space-y-4">
-      <header>
-        <h1 className="font-display text-2xl uppercase tracking-wide">Galeria de replays</h1>
+      <div>
+        <ScreenHeader title="Galeria de replays" />
         <p className="text-sm text-muted-foreground">
           As últimas 20 partidas ficam guardadas no aparelho. Reveja em 3D, troque a câmera e
           exporte o vídeo.
         </p>
-      </header>
+      </div>
 
       {current ? (
         <ReplayPlayer replay={current} onClose={() => setCurrent(null)} />
+      ) : loadError ? (
+        <ErrorPanel
+          hint="Não foi possível abrir os replays salvos neste aparelho."
+          onRetry={() => setRefresh((value) => value + 1)}
+        />
       ) : list === null ? (
-        <p className="text-sm text-muted-foreground">Carregando…</p>
+        <SkeletonRows />
       ) : list.length === 0 ? (
-        <p className="rounded-2xl border border-border/60 surface-card p-5 text-sm text-muted-foreground">
-          Nenhuma repetição ainda. Jogue uma partida e ela aparece aqui automaticamente.
-        </p>
+        <EmptyState
+          title="Nenhum replay salvo"
+          hint="Jogue uma partida e reveja seus lances aqui."
+          action={<PrimaryLink to="/partida-rapida">Jogar partida rápida</PrimaryLink>}
+        />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((r) => (
@@ -173,7 +202,7 @@ function ReplayPlayer({ replay, onClose }: { replay: Replay; onClose: () => void
   const dur = sim.duration || 1;
 
   return (
-    <section className="rounded-2xl border border-border/60 surface-card p-4">
+    <SectionCard className="rounded-2xl border border-border/60 surface-card p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="font-display text-lg uppercase tracking-wide">{replay.title}</h2>
         <button
@@ -250,6 +279,6 @@ function ReplayPlayer({ replay, onClose }: { replay: Replay; onClose: () => void
         aria-label="Linha do tempo"
         className="mt-2 w-full"
       />
-    </section>
+    </SectionCard>
   );
 }

@@ -1,3 +1,4 @@
+import { ScreenHeader, ScreenTabs } from "@/components/game/screen-kit";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
@@ -94,26 +95,13 @@ function CadastroPage() {
   return (
     <div className="pitch-bg min-h-screen px-4 py-10">
       <div className="mx-auto max-w-4xl">
-        <h1 className="font-display text-4xl uppercase tracking-wide">Meus dados</h1>
+        <ScreenHeader title="Meus dados" />
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           Personalize clubes com nome, cores e escudo próprios e cadastre jogadores com foto,
           posição, contrato e valor. Tudo isso é usado quando você começa uma nova carreira.
         </p>
 
-        <div className="mt-6 flex gap-2">
-          {(["clubes", "jogadores"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`rounded-lg border px-4 py-2 font-display text-sm uppercase tracking-wide transition ${
-                tab === t
-                  ? "border-primary bg-primary/15 text-foreground"
-                  : "border-border surface-card text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+        <div className="mt-6 flex justify-end">
           <Link
             to="/new"
             className="ml-auto rounded-lg border border-border surface-card px-4 py-2 font-display text-sm uppercase tracking-wide text-muted-foreground transition hover:text-foreground"
@@ -122,11 +110,21 @@ function CadastroPage() {
           </Link>
         </div>
 
-        {tab === "clubes" ? (
-          <ClubTab data={data} onChange={refresh} />
-        ) : (
-          <PlayerTab data={data} onChange={refresh} />
-        )}
+        <ScreenTabs
+          value={tab}
+          onValueChange={(value) => setTab(value as "clubes" | "jogadores")}
+          label="Dados personalizados"
+          tabs={[
+            { value: "clubes", label: "Clubes" },
+            { value: "jogadores", label: "Jogadores" },
+          ]}
+        >
+          {tab === "clubes" ? (
+            <ClubTab data={data} onChange={refresh} />
+          ) : (
+            <PlayerTab data={data} onChange={refresh} />
+          )}
+        </ScreenTabs>
       </div>
     </div>
   );

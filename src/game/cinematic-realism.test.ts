@@ -74,6 +74,9 @@ describe("cinematic physical performance", () => {
     const cold = cinematicExpressionAt(1.8, 21, false, 0.4, { ...cue, warmth: 0 }, 0.8);
     expect(warm.browLift).toBeGreaterThan(cold.browLift);
     expect(Math.abs(warm.browLift)).toBeLessThan(0.002);
+    expect(warm.headPitch).toBeGreaterThan(cold.headPitch);
+    expect(warm.headPitch).toBeLessThan(0.04);
+    expect(cinematicExpressionAt(1.8, 21, true, 0.4, cue, 0.8).headPitch).toBe(0);
   });
 
   it("leaves look room towards the dialogue partner without losing the face in portrait", () => {

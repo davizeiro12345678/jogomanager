@@ -8,6 +8,15 @@ import { valueFor, wageFor } from "./economy";
 import { makeRng } from "./rng";
 import type { CareerState, Player, Position } from "./types";
 import { ownsRealPlayer } from "./player-identity";
+import { developedPlayer, withDevelopmentBase } from "./attributes";
+import { effectivePlayer } from "./player-development";
+import { quoteContract, roundMoney, type SigningQuote } from "./economy-contracts";
+import {
+  finiteAmount,
+  financeLedgerFor,
+  financialChange,
+  validFinancialState,
+} from "./financial-inputs";
 
 export interface RealTarget {
   id: string;
@@ -61,11 +70,14 @@ export function toTarget(row: {
 }
 
 /** Preço pedido pelo clube dono (M€): valor de mercado + prêmio do clube. */
-export function askingPrice(t: RealTarget): number {
-  const base = valueFor(t.ovr, t.age);
+export function askingPrice(
+  t: RealTarget,
+  state?: Pick<CareerState, "economyRulesVersion">,
+): number {
+  const base = valueFor(t.ovr, t.age, { economyRulesVersion: state?.economyRulesVersion });
   const strength = CLUBS[t.clubId]?.strength ?? 70;
   const premium = 1.1 + Math.max(0, strength - 65) / 100;
-  return Math.round(base * premium * 10) / 10;
+  return roundMoney(base * premium);
 }
 
 /** Salário semanal exigido pelo jogador (k€). */
@@ -92,7 +104,9 @@ export function negotiate(
   offer: number,
   attempt: number,
 ): NegotiationResult {
-  const ask = askingPrice(t);
+  const ask = askingPrice(t, state);
+  if (!finiteAmount(offer) || !Number.isSafeInteger(attempt) || attempt < 0)
+    return { status: "rejected", message: "Proposta financeira inválida." };
   const skill = (state.manager?.attrs.market ?? 3) / 10; // 0..0.5
   const rnd = makeRng(`neg-${t.id}-${state.season}-${state.round}-${attempt}`);
   const tolerance = 0.9 - skill * 0.25 + rnd() * 0.06;
@@ -181,62 +195,109 @@ export interface SignOptions {
   agentName?: string;
 }
 
+export function quoteRealSigning(
+  state: CareerState,
+  target: RealTarget,
+  opts: SignOptions,
+): SigningQuote {
+  const fee = opts.loan ? roundMoney(opts.fee * 0.25) : opts.fee;
+  const wage = opts.loan ? Math.round(opts.wage * 0.5) : opts.wage;
+  const quote = quoteContract(state, fee, wage, opts.agentFee ?? 0);
+  if (!windowOpen(state)) {
+    return { ...quote, affordable: false, reason: "A janela de transferências está fechada." };
+  }
+  if (
+    ownsRealPlayer(state, target) ||
+    target.clubId === state.clubId ||
+    state.players[`real-${target.id}`]
+  ) {
+    return { ...quote, affordable: false, reason: "O jogador já pertence ao clube." };
+  }
+  if (![opts.fee, opts.wage, opts.agentFee ?? 0].every((v) => Number.isFinite(v) && v >= 0)) {
+    return { ...quote, affordable: false, reason: "Proposta financeira inválida." };
+  }
+  return quote;
+}
+
 /** Fecha a contratação: elenco, caixa, folha e notícia. */
 export function signRealPlayer(state: CareerState, t: RealTarget, opts: SignOptions): CareerState {
+  if (
+    !Number.isFinite(t.ovr) ||
+    t.ovr < 20 ||
+    t.ovr > 99 ||
+    !Number.isFinite(t.age) ||
+    t.age < 14 ||
+    t.age > 70 ||
+    !["GK", "DF", "MF", "FW"].includes(t.pos)
+  )
+    return state;
   if (ownsRealPlayer(state, t) || t.clubId === state.clubId) return state;
   if (![opts.fee, opts.wage, opts.agentFee ?? 0].every((v) => Number.isFinite(v) && v >= 0))
     return state;
-  const base = opts.loan ? Math.round(opts.fee * 0.25 * 10) / 10 : opts.fee;
-  const cost = Math.round((base + (opts.agentFee ?? 0)) * 10) / 10;
-  if (state.finances.budget < cost) return state;
+  const quote = quoteRealSigning(state, t, opts);
+  if (!quote.affordable) return state;
+  const cost = quote.upfrontCost;
   const id = `real-${t.id}`;
   if (state.players[id]) return state;
 
   const rnd = makeRng(`real-${t.id}`);
-  const player: Player = {
-    id,
-    clubId: state.clubId,
-    name: t.name,
-    pos: t.pos,
-    age: t.age,
-    number: nextNumber(state.players, t.number),
-    ovr: t.ovr,
-    ...attrs(t.pos, t.ovr, rnd),
-    condition: 88,
-    morale: 80,
-    goals: 0,
-    assists: 0,
-    apps: 0,
-    wage: opts.loan ? Math.round(opts.wage * 0.5) : opts.wage,
-    value: valueFor(t.ovr, t.age),
-    yellows: 0,
-    suspended: false,
-    injuryWeeks: 0,
-    rosterSource: "imported",
-    sourcePlayerId: t.id,
-    ...(t.source ? { sourceProvider: t.source } : {}),
-    ...(t.source_id ? { sourceExternalId: t.source_id } : {}),
-    ...(t.identity_aliases ? { sourceIdentityAliases: t.identity_aliases } : {}),
-    ...(t.birth_date ? { birthDate: t.birth_date } : {}),
-    contractYears: opts.loan ? 1 : 2 + Math.floor(rnd() * 4),
-    ...(t.nationality ? { nationality: t.nationality } : {}),
-    ...(t.photo ? { photo: t.photo } : {}),
-  };
+  const finances = financialChange(state, 0, cost);
+  if (!finances) return state;
+  const player: Player = withDevelopmentBase(
+    {
+      id,
+      clubId: state.clubId,
+      name: t.name,
+      pos: t.pos,
+      age: t.age,
+      number: nextNumber(state.players, t.number),
+      ovr: t.ovr,
+      ...attrs(t.pos, t.ovr, rnd),
+      condition: 88,
+      morale: 80,
+      goals: 0,
+      assists: 0,
+      apps: 0,
+      wage: quote.weeklyWage,
+      value: valueFor(t.ovr, t.age, { economyRulesVersion: state.economyRulesVersion }),
+      yellows: 0,
+      suspended: false,
+      injuryWeeks: 0,
+      rosterSource: "imported",
+      sourcePlayerId: t.id,
+      ...(t.source ? { sourceProvider: t.source } : {}),
+      ...(t.source_id ? { sourceExternalId: t.source_id } : {}),
+      ...(t.identity_aliases ? { sourceIdentityAliases: t.identity_aliases } : {}),
+      ...(t.birth_date ? { birthDate: t.birth_date } : {}),
+      contractYears: opts.loan ? 1 : 2 + Math.floor(rnd() * 4),
+      ...(t.nationality ? { nationality: t.nationality } : {}),
+      ...(t.photo ? { photo: t.photo } : {}),
+    },
+    state.developmentRulesVersion === 2 ? 2 : 1,
+  );
 
   return {
     ...state,
-    players: { ...state.players, [id]: player },
+    players: { ...state.players, [id]: developedPlayer(player, state) },
     bench: [...state.bench, id],
     transferredIn: [...new Set([...(state.transferredIn ?? []), t.id])],
     records: {
       ...(state.records ?? {}),
       biggestSigning: Math.max(state.records?.biggestSigning ?? 0, cost),
     },
-    finances: {
-      ...state.finances,
-      budget: Math.round((state.finances.budget - cost) * 10) / 10,
-      spent: Math.round((state.finances.spent + cost) * 10) / 10,
-    },
+    finances,
+    financeLedger: [
+      {
+        id: `signing-${state.clubId}-${state.season}-${t.id}`,
+        season: state.season,
+        round: state.round,
+        kind: "mercado" as const,
+        label: `${t.name}: ${opts.loan ? "empréstimo" : "contratação"}, comissão e luvas`,
+        income: 0,
+        expense: cost,
+      },
+      ...(state.financeLedger ?? []),
+    ].slice(0, 96),
     news: [
       {
         id: `real-sign-${t.id}-${state.round}`,
@@ -244,7 +305,7 @@ export function signRealPlayer(state: CareerState, t: RealTarget, opts: SignOpti
         round: state.round,
         kind: "mercado" as const,
         title: opts.loan ? `${t.name} chega por empréstimo` : `${t.name} é o novo reforço!`,
-        body: `${t.pos} de ${t.age} anos (OVR ${t.ovr}) vem do ${clubName(t.clubId)} por €${cost}M, salário de €${player.wage}k/semana.`,
+        body: `${t.pos} de ${t.age} anos (OVR ${t.ovr}) vem do ${clubName(t.clubId)} por €${quote.fee}M, comissão de €${quote.agentFee}M e luvas de €${quote.signingBonus}M. Salário de €${player.wage}k/semana.`,
       },
       ...state.news,
     ].slice(0, 60),
@@ -258,10 +319,18 @@ export function sellToClub(
   buyerId: string,
   fee: number,
 ): CareerState {
+  if (!validFinancialState(state)) return state;
   const player = state.players[playerId];
-  if (!player) return state;
-  if (Object.keys(state.players).length <= 16) return state;
+  if (!player || player.clubId !== state.clubId) return state;
+  if (!CLUBS[buyerId] || buyerId === state.clubId || !finiteAmount(fee)) return state;
+  if (
+    Object.values(state.players).filter((candidate) => candidate.clubId === state.clubId).length <=
+    16
+  )
+    return state;
 
+  const finances = financialChange(state, fee, 0);
+  if (!finances) return state;
   const players = { ...state.players };
   delete players[playerId];
 
@@ -270,11 +339,19 @@ export function sellToClub(
     players,
     lineup: state.lineup.filter((id) => id !== playerId),
     bench: state.bench.filter((id) => id !== playerId),
-    finances: {
-      ...state.finances,
-      budget: Math.round((state.finances.budget + fee) * 10) / 10,
-      income: Math.round((state.finances.income + fee) * 10) / 10,
-    },
+    finances,
+    financeLedger: [
+      {
+        id: `sale-${state.clubId}-${state.season}-${state.round}-${playerId}`,
+        season: state.season,
+        round: state.round,
+        kind: "mercado" as const,
+        label: `Venda de ${player.name} ao ${clubName(buyerId)}`,
+        income: roundMoney(fee),
+        expense: 0,
+      },
+      ...financeLedgerFor(state),
+    ].slice(0, 96),
     news: [
       {
         id: `sold-${playerId}-${state.round}`,
@@ -291,8 +368,17 @@ export function sellToClub(
 
 /** Melhor oferta que um clube real faria por um jogador do elenco. */
 export function bidFor(state: CareerState, player: Player, buyerId: string): number {
+  player = effectivePlayer(player, state);
   const strength = CLUBS[buyerId]?.strength ?? 70;
   const rnd = makeRng(`bid-${player.id}-${buyerId}-${state.round}`);
   const factor = 0.85 + (strength - 60) / 120 + rnd() * 0.25;
-  return Math.round(player.value * Math.max(0.6, factor) * 10) / 10;
+  const value =
+    state.economyRulesVersion === 2
+      ? valueFor(player.ovr, player.age, {
+          economyRulesVersion: 2,
+          potential: player.potential,
+          contractYears: player.contractYears,
+        })
+      : player.value;
+  return roundMoney(value * Math.max(0.6, factor));
 }

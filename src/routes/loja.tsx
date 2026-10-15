@@ -50,8 +50,8 @@ function LojaPage() {
           </Link>
           <h1 className="mt-2 font-display text-4xl uppercase tracking-wide sm:text-5xl">Loja</h1>
           <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
-            Moedas, relatórios de olheiros, impulsos de treino e cosméticos — nada aqui altera o
-            resultado das partidas.
+            Personalize a apresentação da sua carreira com cosméticos. Os itens disponíveis não
+            aumentam atributos, recursos de treino ou a força do time.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <span className="store-chip">

@@ -57,4 +57,29 @@ describe("server-managed multiplayer results", () => {
       "setSnap({ minute: room.minute, hg: homeGoals, ag: awayGoals, finished: true })",
     );
   });
+
+  it("keeps a live room mounted during a temporary browser disconnect", () => {
+    const liveRoom = routeSource.indexOf('if (room && room.status === "live" && room.guest_club)');
+    const offlineFallback = routeSource.indexOf("if (!online)");
+    expect(liveRoom).toBeGreaterThanOrEqual(0);
+    expect(liveRoom).toBeLessThan(offlineFallback);
+    expect(routeSource).toContain("online={online}");
+    expect(routeSource).toContain("controller.pause(document.hidden || !onlineRef.current)");
+    expect(routeSource).toContain("published.current = false;");
+  });
+
+  it("claims a single settling state before replaying and protects that claim from leave", () => {
+    const finish = functionsSource.slice(functionsSource.indexOf("export const finishMatchRoom"));
+    const claim = finish.indexOf('status: "settling"');
+    const replay = finish.indexOf("new MatchSim(");
+    expect(claim).toBeGreaterThanOrEqual(0);
+    expect(claim).toBeLessThan(replay);
+    expect(finish).toContain('.eq("status", "settling")');
+
+    const leave = functionsSource.slice(
+      functionsSource.indexOf("export const leaveMatchRoom"),
+      functionsSource.indexOf("export const finishMatchRoom"),
+    );
+    expect(leave).toContain('room.status === "settling"');
+  });
 });

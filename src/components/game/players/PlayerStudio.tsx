@@ -14,9 +14,16 @@ import {
   type BeardStyle,
   type BodyType,
 } from "@/game/player-model";
+import {
+  athleteLookForAppearance,
+  defaultAthleteAppearance,
+  normalizeAthleteAppearance,
+  type AthleteAppearanceV1,
+} from "@/game/player-career/appearance";
 import { getAnnotatedClip } from "@/game/register-animations";
 import { footballContactAt } from "@/game/motion-metadata";
 import { studioCameraFit } from "@/game/player-studio-camera";
+import { studioAppearanceRevision } from "@/game/player-studio-appearance";
 import {
   STUDIO_NEUTRAL_GAZE_BALL_Z,
   studioBallFocusDistanceFor,
@@ -26,6 +33,9 @@ import { safeClub } from "@/game/squad";
 import { cinematicOverlayActive, subscribeCinematicOverlay } from "@/game/cinematic-overlay";
 import type { SimPlayer, TeamSetup } from "@/game/sim";
 import { GraphicsBoundary } from "../GraphicsBoundary";
+import { Ktx2CanvasAssets } from "../Ktx2CanvasAssets";
+import { CanvasLifecycle } from "../CanvasLifecycle";
+import type { CanvasStatus } from "../canvas-lifecycle";
 import { PlayerRig } from "./PlayerRig";
 import { LowPlayers } from "./LowPlayers";
 import { Pause, Play, RotateCcw, Shuffle, Scan, UserRound, Sun, Activity } from "lucide-react";
@@ -48,6 +58,19 @@ interface StudioMovement {
   hasBall?: boolean;
 }
 type CameraCommand = { action: "left" | "right" | "in" | "out"; sequence: number } | null;
+
+/**
+ * `value` turns the appearance controls into a controlled editor. Existing
+ * studio callers may continue to omit it and keep their local preview state.
+ */
+export interface PlayerStudioProps {
+  clubId?: string;
+  position?: string;
+  heightCm?: number;
+  weightKg?: number;
+  value?: AthleteAppearanceV1;
+  onChange?: (value: AthleteAppearanceV1) => void;
+}
 
 const MOVEMENTS: StudioMovement[] = [
   { id: "idle", label: "Em pé", speed: 0, action: null },
@@ -260,6 +283,11 @@ function StudioScene({
     () => new Map([[preview.player.id, appearance]]),
     [preview, appearance],
   );
+  // R3F primitives own the Three.js scene object outside React's ordinary
+  // DOM lifecycle.  Appearance edits change the skinned geometry itself, so
+  // give the rig a semantic revision key and never leave an old hair/beard
+  // shell attached after a Studio select changes.
+  const appearanceRevision = useMemo(() => studioAppearanceRevision(appearance), [appearance]);
   // An idle inspection stays idle instead of randomly selecting a team
   // gesture from the match state machine. Actions still use their phases.
   const previewClip =
@@ -292,12 +320,19 @@ function StudioScene({
       ),
     [height, size.width, size.height, framing, overhead, groundAction],
   );
-  // The old whole-body fit left a larger safety border than the default
-  // studio needs. Tighten only the standing body view, retaining the wider
-  // envelopes for jumps, saves and compact screens.
+  // A real wide studio viewport left the hero visually small, with unused
+  // floor and side space. Preserve the camera-fit envelope for actions and
+  // narrow displays, but spend part of its standing-body safety margin on
+  // presence where width is available.
+  const bodyPresenceScale =
+    size.width / Math.max(1, size.height) >= 0.9
+      ? 0.89
+      : size.width / Math.max(1, size.height) >= 0.6
+        ? 0.92
+        : 0.96;
   const presentationDistance =
     framing === "body" && !overhead && !groundAction
-      ? cameraFit.distance * 0.96
+      ? cameraFit.distance * bodyPresenceScale
       : cameraFit.distance;
   const targetY =
     framing === "face"
@@ -507,6 +542,7 @@ function StudioScene({
       />
       {detail ? (
         <PlayerRig
+          key={appearanceRevision}
           player={preview.player}
           sim={preview.view}
           kit={preview.player.pos === "GK" ? keeperKit : kit}
@@ -550,10 +586,18 @@ function StudioScene({
   );
 }
 
-export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
+export default function PlayerStudio({
+  clubId = "fla",
+  position: positionValue,
+  heightCm: externalHeightCm,
+  weightKg: externalWeightKg,
+  value,
+  onChange,
+}: PlayerStudioProps) {
   const { t, dir, lang } = useT();
   const { reducedMotion } = useAccessibility();
-  const [position, setPosition] = useState("MF");
+  const [localPosition, setLocalPosition] = useState("MF");
+  const position = positionValue ?? localPosition;
   const [movementId, setMovementId] = useState("idle");
   const [variation, setVariation] = useState(1);
   const [light, setLight] = useState("dia");
@@ -573,12 +617,12 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
   const [hairStyle, setHairStyle] = useState<HairStyle | "original">("original");
   const [beard, setBeard] = useState<BeardStyle | "original">("original");
   const [physique, setPhysique] = useState<BodyType | "original">("original");
-  const [heightCm, setHeightCm] = useState<number | undefined>(undefined);
-  const [weightKg, setWeightKg] = useState<number | undefined>(undefined);
-  const [panel, setPanel] = useState("motion");
+  const [localHeightCm, setLocalHeightCm] = useState<number | undefined>(undefined);
+  const [localWeightKg, setLocalWeightKg] = useState<number | undefined>(undefined);
+  const [panel, setPanel] = useState(() => (value ? "look" : "motion"));
   const [viewReset, setViewReset] = useState(0);
   const [cameraCommand, setCameraCommand] = useState<CameraCommand>(null);
-  const [sceneStatus, setSceneStatus] = useState<"loading" | "ready">("loading");
+  const [sceneStatus, setSceneStatus] = useState<CanvasStatus>("loading");
   useEffect(() => {
     if (reducedMotion) setPaused(true);
   }, [reducedMotion]);
@@ -587,7 +631,32 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
     [clubId, position, variation],
   );
   const movement = MOVEMENTS.find((m) => m.id === movementId) ?? MOVEMENTS[0]!;
+  const fallbackAppearance = useMemo(
+    () => defaultAthleteAppearance(preview.player.id, position),
+    [preview.player.id, position],
+  );
+  const controlledAppearance = useMemo(
+    () => (value ? normalizeAthleteAppearance(value, fallbackAppearance) : null),
+    [value, fallbackAppearance],
+  );
+  const heightCm = externalHeightCm ?? localHeightCm;
+  const weightKg = externalWeightKg ?? localWeightKg;
+  const hasExternalMeasurements = externalHeightCm !== undefined || externalWeightKg !== undefined;
+  const updateControlledAppearance = (patch: Partial<Omit<AthleteAppearanceV1, "version">>) => {
+    if (!controlledAppearance || !onChange) return;
+    onChange(normalizeAthleteAppearance({ ...controlledAppearance, ...patch }, fallbackAppearance));
+  };
   const appearance = useMemo(() => {
+    if (controlledAppearance) {
+      return athleteLookForAppearance({
+        seed: preview.player.id,
+        role: position,
+        captain: true,
+        appearance: controlledAppearance,
+        heightCm,
+        weightKg,
+      });
+    }
     const look = lookFor(preview.player.id, position, true);
     return lookWithPhysique(
       {
@@ -607,7 +676,7 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
       },
       { height: heightCm, weight: weightKg },
     );
-  }, [preview, position, hairStyle, beard, physique, heightCm, weightKg]);
+  }, [preview, position, controlledAppearance, hairStyle, beard, physique, heightCm, weightKg]);
   const metadata = getAnnotatedClip(movement.id)?.metadata;
   const height = (appearance.height * 1.8).toFixed(2);
   const selectClass = "studio-select";
@@ -656,7 +725,6 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                 onCreated={({ gl }) => {
                   gl.toneMapping = THREE.ACESFilmicToneMapping;
                   gl.toneMappingExposure = 0.9;
-                  setSceneStatus("ready");
                 }}
                 fallback={
                   <p role="status" className="p-8 text-center">
@@ -664,6 +732,8 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                   </p>
                 }
               >
+                <CanvasLifecycle onStatus={setSceneStatus} />
+                <Ktx2CanvasAssets enabled={detail} />
                 <StudioScene
                   key={movementId}
                   preview={preview}
@@ -758,7 +828,8 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                   <select
                     aria-label={t("studio.position")}
                     value={position}
-                    onChange={(e) => setPosition(e.target.value)}
+                    disabled={positionValue !== undefined}
+                    onChange={(e) => setLocalPosition(e.target.value)}
                     className={selectClass}
                   >
                     <option value="MF">{t("studio.mf")}</option>
@@ -776,8 +847,11 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                       setMovementId(e.target.value);
                       setPaused(reducedMotion);
                       setPreviewAt(undefined);
-                      if (/^(save|diveLeft|diveRight|saveHigh|catch)$/.test(e.target.value))
-                        setPosition("GK");
+                      if (
+                        !positionValue &&
+                        /^(save|diveLeft|diveRight|saveHigh|catch)$/.test(e.target.value)
+                      )
+                        setLocalPosition("GK");
                     }}
                     className={selectClass}
                   >
@@ -813,8 +887,18 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                   Cabelo
                   <select
                     aria-label="Cabelo do atleta"
-                    value={hairStyle}
-                    onChange={(e) => setHairStyle(e.target.value as HairStyle | "original")}
+                    value={controlledAppearance?.hairStyle ?? hairStyle}
+                    disabled={value !== undefined && !onChange}
+                    onChange={(e) => {
+                      const next = e.target.value as HairStyle | "original";
+                      if (controlledAppearance) {
+                        updateControlledAppearance({
+                          hairStyle: next === "original" ? fallbackAppearance.hairStyle : next,
+                        });
+                      } else {
+                        setHairStyle(next);
+                      }
+                    }}
                     className={selectClass}
                   >
                     <option value="original">Original do atleta</option>
@@ -842,8 +926,18 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                   Barba
                   <select
                     aria-label="Barba do atleta"
-                    value={beard}
-                    onChange={(e) => setBeard(e.target.value as BeardStyle | "original")}
+                    value={controlledAppearance?.beardStyle ?? beard}
+                    disabled={value !== undefined && !onChange}
+                    onChange={(e) => {
+                      const next = e.target.value as BeardStyle | "original";
+                      if (controlledAppearance) {
+                        updateControlledAppearance({
+                          beardStyle: next === "original" ? fallbackAppearance.beardStyle : next,
+                        });
+                      } else {
+                        setBeard(next);
+                      }
+                    }}
                     className={selectClass}
                   >
                     <option value="original">Original do atleta</option>
@@ -858,10 +952,18 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                   Constituição física
                   <select
                     aria-label="Constituição física"
-                    value={physique}
+                    value={controlledAppearance?.bodyType ?? physique}
+                    disabled={value !== undefined && !onChange}
                     onChange={(e) => {
-                      setPhysique(e.target.value as BodyType | "original");
-                      setWeightKg(undefined);
+                      const next = e.target.value as BodyType | "original";
+                      if (controlledAppearance) {
+                        updateControlledAppearance({
+                          bodyType: next === "original" ? fallbackAppearance.bodyType : next,
+                        });
+                      } else {
+                        setPhysique(next);
+                        setLocalWeightKg(undefined);
+                      }
                     }}
                     className={selectClass}
                   >
@@ -869,52 +971,67 @@ export default function PlayerStudio({ clubId = "fla" }: { clubId?: string }) {
                     <option value="slim">Esguio</option>
                     <option value="normal">Atlético</option>
                     <option value="strong">Robusto</option>
+                    <option value="tall">Alto</option>
                   </select>
                 </label>
                 <button
                   type="button"
                   className="studio-button studio-wide"
                   onClick={() => {
-                    setHairStyle("original");
-                    setBeard("original");
-                    setPhysique("original");
-                    setHeightCm(undefined);
-                    setWeightKg(undefined);
+                    if (controlledAppearance) {
+                      onChange?.(fallbackAppearance);
+                    } else {
+                      setHairStyle("original");
+                      setBeard("original");
+                      setPhysique("original");
+                      setLocalHeightCm(undefined);
+                      setLocalWeightKg(undefined);
+                    }
                   }}
+                  disabled={value !== undefined && !onChange}
                 >
                   Restaurar aparência
                 </button>
-                <label className="studio-wide">
-                  Altura · {Math.round(appearance.height * 180)} cm
-                  <input
-                    type="range"
-                    aria-label={t("studio.height")}
-                    aria-valuetext={`${Math.round(appearance.height * 180)} cm`}
-                    className="studio-timeline"
-                    min={160}
-                    max={205}
-                    value={Math.round(appearance.height * 180)}
-                    onChange={(e) => setHeightCm(Number(e.target.value))}
-                  />
-                </label>
-                <label className="studio-wide">
-                  Peso ·{" "}
-                  {weightKg ?? Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)}{" "}
-                  kg
-                  <input
-                    type="range"
-                    aria-label={t("studio.weight")}
-                    aria-valuetext={`${weightKg ?? Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)} kg`}
-                    className="studio-timeline"
-                    min={55}
-                    max={110}
-                    value={
-                      weightKg ??
-                      Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)
-                    }
-                    onChange={(e) => setWeightKg(Number(e.target.value))}
-                  />
-                </label>
+                {hasExternalMeasurements ? (
+                  <p className="studio-hint studio-wide">
+                    Altura e peso acompanham os dados físicos definidos na criação.
+                  </p>
+                ) : (
+                  <>
+                    <label className="studio-wide">
+                      Altura · {Math.round(appearance.height * 180)} cm
+                      <input
+                        type="range"
+                        aria-label={t("studio.height")}
+                        aria-valuetext={`${Math.round(appearance.height * 180)} cm`}
+                        className="studio-timeline"
+                        min={160}
+                        max={205}
+                        value={Math.round(appearance.height * 180)}
+                        onChange={(e) => setLocalHeightCm(Number(e.target.value))}
+                      />
+                    </label>
+                    <label className="studio-wide">
+                      Peso ·{" "}
+                      {weightKg ??
+                        Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)}{" "}
+                      kg
+                      <input
+                        type="range"
+                        aria-label={t("studio.weight")}
+                        aria-valuetext={`${weightKg ?? Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)} kg`}
+                        className="studio-timeline"
+                        min={55}
+                        max={110}
+                        value={
+                          weightKg ??
+                          Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)
+                        }
+                        onChange={(e) => setLocalWeightKg(Number(e.target.value))}
+                      />
+                    </label>
+                  </>
+                )}
               </TabsContent>
             )}
             {panel === "scene" && (

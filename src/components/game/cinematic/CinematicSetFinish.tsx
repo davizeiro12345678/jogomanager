@@ -149,7 +149,14 @@ export function CinematicSetFinish({ kind, primary }: { kind: string; primary: s
             {/* Open compartments, padded back and an upper bag shelf. */}
             <mesh position={[0, 1.7, 0.02]}>
               <boxGeometry args={[1.22, 1.67, 0.035]} />
-              <meshStandardMaterial color="#101b23" roughness={0.9} />
+              <meshStandardMaterial
+                color="#273944"
+                map={cinematicSurface("wall")}
+                normalMap={cinematicSurface("wall", "normal")}
+                normalScale={[0.08, 0.08]}
+                roughnessMap={cinematicSurface("wall", "roughness")}
+                roughness={0.9}
+              />
             </mesh>
             <mesh position={[0, 2.57, 0.01]} receiveShadow>
               <boxGeometry args={[1.3, 0.045, 0.45]} />
@@ -197,6 +204,32 @@ export function CinematicSetFinish({ kind, primary }: { kind: string; primary: s
       )}
       {kind === "office" && (
         <group>
+          {/* Recessed desk apron gives the table weight while preserving room
+              for legs and the contract surface at y=0.80. */}
+          <mesh position={[0, 0.43, -0.96]}>
+            <boxGeometry args={[3.44, 0.55, 0.045]} />
+            <meshStandardMaterial color="#3c332d" roughness={0.85} />
+          </mesh>
+          <mesh position={[0, 0.67, -0.932]}>
+            <boxGeometry args={[3.3, 0.026, 0.012]} />
+            <meshStandardMaterial color="#ac9370" roughness={0.85} />
+          </mesh>
+          {/* The existing trophy cabinet receives solid shelf edges instead
+              of another room, light or transparent glass volume. */}
+          <group position={[-4.6, 0, -3.54]}>
+            {[-1.9, 1.9].map((x) => (
+              <mesh key={x} position={[x, 1.5, 0]}>
+                <boxGeometry args={[0.07, 3.02, 0.1]} />
+                <meshStandardMaterial color="#ac9370" roughness={0.85} />
+              </mesh>
+            ))}
+            {[0.065, 1.03, 1.975, 2.95].map((y) => (
+              <mesh key={y} position={[0, y, 0]}>
+                <boxGeometry args={[3.84, 0.055, 0.1]} />
+                <meshStandardMaterial color="#ac9370" roughness={0.85} />
+              </mesh>
+            ))}
+          </group>
           {/* Window mullions and a stadium silhouette replace a luminous blank panel. */}
           {[2.12, 4.4, 6.68].map((x) => (
             <mesh key={x} position={[x, 2.2, -3.81]} castShadow>
@@ -213,14 +246,14 @@ export function CinematicSetFinish({ kind, primary }: { kind: string; primary: s
           {Array.from({ length: 4 }, (_, i) => (
             <mesh key={i} position={[4.4, 1.05 + i * 0.16, -3.84]}>
               <boxGeometry args={[4.48, 0.1, 0.018]} />
-              <meshBasicMaterial color={i % 2 ? "#738a9a" : "#8093a0"} />
+              <meshStandardMaterial
+                color={i % 2 ? "#738a9a" : "#8093a0"}
+                metalness={0.45}
+                roughness={0.48}
+              />
             </mesh>
           ))}
-          <mesh position={[0.7, 0.81, -1.3]} rotation-x={-Math.PI / 2}>
-            <planeGeometry args={[0.38, 0.27]} />
-            <meshStandardMaterial color="#e5e3d8" roughness={0.9} />
-          </mesh>
-          <mesh position={[-0.45, 0.82, -1.45]}>
+          <mesh position={[-0.37, 0.825, -1.63]}>
             <boxGeometry args={[0.5, 0.055, 0.34]} />
             <meshStandardMaterial color="#18262f" roughness={0.85} />
           </mesh>
