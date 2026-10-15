@@ -51,11 +51,7 @@ import {
   type DominantFoot,
 } from "@/game/visual-context";
 import { solveFullIK } from "@/game/ik-solver";
-import {
-  type RigJoint,
-  type RigSkin,
-  type RigSkinLod,
-} from "@/game/rig-skin";
+import { type RigJoint, type RigSkin, type RigSkinLod } from "@/game/rig-skin";
 import { spineRollForAction, updateRigCorrectives } from "@/game/rig-correctives";
 import { faceMorphology } from "@/game/player-morphology";
 import type { ClothMotion } from "@/game/athlete-cloth";
