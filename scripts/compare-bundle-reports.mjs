@@ -25,7 +25,7 @@ function add(label, base, current) {
     label, before: base, after: current, reductionPercent: difference(base, current),
   });
 }
-add("JS emitido total (sem lazy)", before.totalBytes, after.totalBytes);
+add("JS emitido total (inclui lazy)", before.totalBytes, after.totalBytes);
 add("JS emitido total (gzip)", before.totalGzipBytes, after.totalGzipBytes);
 add("JS emitido total (Brotli Q6)", before.totalBrotliBytes, after.totalBrotliBytes);
 for (const [name, predicate] of keys) {
