@@ -680,24 +680,33 @@ export function acceptOffer(
   return state;
 }
 
+/** Cada oferta admite apenas uma contraproposta. Limite aplicado no motor, não só no botão. */
+export const MAX_OFFER_NEGOTIATIONS = 1;
+
 export function negotiateOffer(
   prev: PlayerCareerState,
   offerId: string,
+  now = Date.now(),
 ): { state: PlayerCareerState; accepted: boolean } {
+  const offer = prev.offers.find((o) => o.id === offerId);
+  if (!offer || prev.retired || (offer.negotiationRounds ?? 0) >= MAX_OFFER_NEGOTIATIONS)
+    return { state: prev, accepted: false };
+
   const state = structuredClone(prev);
-  const offer = state.offers.find((o) => o.id === offerId);
-  if (!offer) return { state, accepted: false };
-  const rnd = rngFrom(`${state.seed}|n|${offerId}|${offer.salary}`);
+  const pendingOffer = state.offers.find((o) => o.id === offerId)!;
+  const rnd = rngFrom(`${state.seed}|n|${offerId}|${pendingOffer.salary}`);
   const accepted = rnd() < 0.45 + state.reputation / 200;
-  if (accepted) offer.salary = Math.round(offer.salary * 1.15);
+  pendingOffer.negotiationRounds = 1;
+  if (accepted) pendingOffer.salary = Math.round(pendingOffer.salary * 1.15);
   else state.offers = state.offers.filter((o) => o.id !== offerId);
   pushNews(
     state,
     accepted
       ? `Clube aceita melhorar a proposta para ${state.nickname}.`
-      : `Negociação esfria: ${CLUBS[offer.clubId]?.short ?? "clube"} desiste.`,
+      : `Negociação esfria: ${CLUBS[pendingOffer.clubId]?.short ?? "clube"} desiste.`,
     accepted ? "good" : "bad",
   );
+  state.updatedAt = now;
   return { state, accepted };
 }
 
