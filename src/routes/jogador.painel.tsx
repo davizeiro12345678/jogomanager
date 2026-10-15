@@ -411,75 +411,75 @@ function Panel({
               </section>
             }
           >
-          {tab === "semana" && <WeekTab state={state} commit={commit} />}
-          {tab === "calendario" && <PlayerCalendarTab state={state} />}
-          {tab === "saude" && <PlayerHealthTab state={state} />}
-          {tab === "atributos" && (
-            <section className="athlete-card grid gap-4">
-              {groups.map((g) => (
-                <div key={g}>
-                  <h2 className="font-bold mb-2">
-                    {GROUP_LABEL[g]} <span className="athlete-meta">· média {groupAvg(g)}</span>
-                  </h2>
-                  <div className="athlete-attrs">
-                    {ATTRIBUTES.filter((a) => a.group === g).map((a) => {
-                      const v = Math.round(state.attrs[a.key] ?? 0);
-                      const key = keyAttributes(state.position).slice(0, 5).includes(a.key);
-                      return (
-                        <div key={a.key} className="athlete-attr">
-                          <span>
-                            {a.label}
-                            {key ? " ★" : ""}
-                          </span>
-                          <b className={v >= 75 ? "hi" : v < 45 ? "lo" : ""}>{v}</b>
-                        </div>
-                      );
-                    })}
+            {tab === "semana" && <WeekTab state={state} commit={commit} />}
+            {tab === "calendario" && <PlayerCalendarTab state={state} />}
+            {tab === "saude" && <PlayerHealthTab state={state} />}
+            {tab === "atributos" && (
+              <section className="athlete-card grid gap-4">
+                {groups.map((g) => (
+                  <div key={g}>
+                    <h2 className="font-bold mb-2">
+                      {GROUP_LABEL[g]} <span className="athlete-meta">· média {groupAvg(g)}</span>
+                    </h2>
+                    <div className="athlete-attrs">
+                      {ATTRIBUTES.filter((a) => a.group === g).map((a) => {
+                        const v = Math.round(state.attrs[a.key] ?? 0);
+                        const key = keyAttributes(state.position).slice(0, 5).includes(a.key);
+                        return (
+                          <div key={a.key} className="athlete-attr">
+                            <span>
+                              {a.label}
+                              {key ? " ★" : ""}
+                            </span>
+                            <b className={v >= 75 ? "hi" : v < 45 ? "lo" : ""}>{v}</b>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
-              <div>
-                <h2 className="font-bold mb-2">Características</h2>
-                <div className="athlete-chips">
-                  {TRAITS.map((t) => (
-                    <span
-                      key={t.key}
-                      className="athlete-chip"
-                      aria-pressed={state.traits.includes(t.key)}
-                      title={t.hint}
-                      style={{ opacity: state.traits.includes(t.key) ? 1 : 0.45 }}
-                    >
-                      {t.label}
-                    </span>
-                  ))}
-                </div>
-                <p className="athlete-meta mt-2">
-                  Características apagadas ainda não foram conquistadas.
-                </p>
-              </div>
-            </section>
-          )}
-          {tab === "selecao" && <NationalTeamTab state={state} />}
-          {tab === "contrato" && <ContractTab state={state} commit={commit} />}
-          {tab === "noticias" && (
-            <section className="athlete-card">
-              {state.news.length ? (
-                <ul className="athlete-news">
-                  {state.news.map((n) => (
-                    <li key={n.id} data-tone={n.tone}>
-                      <span className="athlete-meta">
-                        T{n.season} · S{n.week} —{" "}
+                ))}
+                <div>
+                  <h2 className="font-bold mb-2">Características</h2>
+                  <div className="athlete-chips">
+                    {TRAITS.map((t) => (
+                      <span
+                        key={t.key}
+                        className="athlete-chip"
+                        aria-pressed={state.traits.includes(t.key)}
+                        title={t.hint}
+                        style={{ opacity: state.traits.includes(t.key) ? 1 : 0.45 }}
+                      >
+                        {t.label}
                       </span>
-                      {n.title}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="athlete-meta">Nenhuma notícia ainda. Jogue a primeira semana.</p>
-              )}
-            </section>
-          )}
-          {tab === "historico" && <HistoryTab state={state} />}
+                    ))}
+                  </div>
+                  <p className="athlete-meta mt-2">
+                    Características apagadas ainda não foram conquistadas.
+                  </p>
+                </div>
+              </section>
+            )}
+            {tab === "selecao" && <NationalTeamTab state={state} />}
+            {tab === "contrato" && <ContractTab state={state} commit={commit} />}
+            {tab === "noticias" && (
+              <section className="athlete-card">
+                {state.news.length ? (
+                  <ul className="athlete-news">
+                    {state.news.map((n) => (
+                      <li key={n.id} data-tone={n.tone}>
+                        <span className="athlete-meta">
+                          T{n.season} · S{n.week} —{" "}
+                        </span>
+                        {n.title}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="athlete-meta">Nenhuma notícia ainda. Jogue a primeira semana.</p>
+                )}
+              </section>
+            )}
+            {tab === "historico" && <HistoryTab state={state} />}
           </Suspense>
         </div>
       </div>
