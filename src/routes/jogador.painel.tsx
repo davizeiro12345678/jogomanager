@@ -20,6 +20,7 @@ import {
 import { overall, seasonLength } from "@/game/player-career/engine";
 import type { AttributeGroup, PlayerCareerState } from "@/game/player-career/types";
 import { useAthlete } from "@/hooks/useAthlete";
+import { downloadAthlete } from "@/lib/player-career-export";
 import { seasonObjectives } from "@/game/player-career/objectives";
 import { Bar } from "@/components/game/athlete/PlayerStats";
 import { NationalTeamTab } from "@/components/game/athlete/PlayerNationalTab";
@@ -90,7 +91,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 function AthletePanelPage() {
   const { slot, tab } = Route.useSearch();
-  const { state, commit, syncError, syncConflict } = useAthlete(slot);
+  const { state, commit, syncError, syncConflict, resolveWithCloud } = useAthlete(slot);
   if (state === undefined)
     return (
       <main className="athlete-shell">
@@ -116,6 +117,7 @@ function AthletePanelPage() {
       commit={commit}
       syncError={syncError}
       syncConflict={syncConflict}
+      resolveWithCloud={resolveWithCloud}
       initialTab={tab}
     />
   );
@@ -126,16 +128,19 @@ function Panel({
   commit,
   syncError,
   syncConflict,
+  resolveWithCloud,
   initialTab,
 }: {
   state: PlayerCareerState;
   commit: (s: PlayerCareerState) => void;
   syncError: boolean;
   syncConflict: boolean;
+  resolveWithCloud: () => Promise<boolean>;
   initialTab?: Tab;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? (state.retired ? "historico" : "semana"));
   const [showPlayerModel, setShowPlayerModel] = useState(false);
+  const [resolutionMessage, setResolutionMessage] = useState<string | null>(null);
   const club = CLUBS[state.clubId];
   const ovr = overall(state);
   const objectives = seasonObjectives(state, seasonLength(state));
@@ -171,11 +176,41 @@ function Panel({
             </Link>
           </Button>
           {syncError && (
-            <span className="athlete-meta" role={syncConflict ? "alert" : "status"}>
-              {syncConflict
-                ? "Conflito entre dispositivos: seu progresso local foi preservado. Exporte o save no arquivo de atletas."
-                : "Sincronização pendente: confira a conexão e mantenha uma cópia local"}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="athlete-meta" role={syncConflict ? "alert" : "status"}>
+                {syncConflict
+                  ? "Conflito de saves: a versão local foi preservada e a nuvem não foi sobrescrita."
+                  : "Sincronização pendente: confira a conexão e mantenha uma cópia local"}
+              </span>
+              {syncConflict && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    if (
+                      !window.confirm(
+                        "Usar a versão atual da nuvem? Será baixado um JSON do seu progresso local e mantido um backup no aparelho antes da substituição.",
+                      )
+                    ) return;
+                    downloadAthlete(state, "backup-antes-de-usar-nuvem");
+                    const resolved = await resolveWithCloud();
+                    setResolutionMessage(
+                      resolved
+                        ? "Versão da nuvem carregada. Sua antiga carreira permanece no backup local."
+                        : "Não foi possível resolver o conflito; o progresso local permanece preservado.",
+                    );
+                  }}
+                >
+                  Usar versão da nuvem (com backup)
+                </Button>
+              )}
+            </div>
+          )}
+          {resolutionMessage && (
+            <p className="athlete-meta" role="status">
+              {resolutionMessage}
+            </p>
           )}
         </div>
         <section className="athlete-card athlete-hero">
