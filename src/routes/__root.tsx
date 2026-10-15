@@ -76,8 +76,10 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
   );
 }
 
+// Optional prevents late font swaps after first paint, avoiding text-induced CLS
+// on mobile routes without blocking the initial stylesheet and LCP.
 const GOOGLE_FONTS =
-  "https://fonts.googleapis.com/css2?family=Archivo+Black&family=Hind:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap";
+  "https://fonts.googleapis.com/css2?family=Archivo+Black&family=Hind:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=optional";
 
 /** Libera as fontes (carregadas como "print") sem bloquear a primeira pintura. */
 const ENABLE_FONTS = `(function(){var l=document.getElementById('google-fonts');if(!l)return;var go=function(){l.media='all'};if(l.sheet){go()}else{l.addEventListener('load',go);setTimeout(go,1500)}})();`;
