@@ -102,7 +102,11 @@ async function resolvePurchase(sessionId: string, env: StripeEnv) {
     lineItem?.amount_total ??
     full.amount_total ??
     0;
-  return { productKey, amount, session: full };
+  const paidAmount = full.amount_total;
+  if (paidAmount === null || !Number.isSafeInteger(paidAmount) || paidAmount < 0) {
+    throw new Error("Checkout has no valid settled amount");
+  }
+  return { productKey, amount, paidAmount, snapshot: offer.snapshot, session: full };
 }
 
 async function fulfillSession(sessionId: string, userId: string, env: StripeEnv) {
