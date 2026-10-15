@@ -19,6 +19,7 @@ import {
   queueAthleteSave,
   readAthlete,
   readAthleteEnvelope,
+  readAthleteBackup,
   readAthleteCloudRevision,
   recordAthleteCloudRevision,
   writeAthlete,
@@ -256,7 +257,34 @@ export function useAthleteSlots() {
     [owner, refresh, userId],
   );
 
-  return { slots, error, remove, signedIn: !!userId };
+  const restore = useCallback(
+    (slot: number) => {
+      if (userId === undefined || !isAthleteSlot(slot)) return;
+      const backup = readAthleteBackup(slot, owner);
+      if (!backup) {
+        setError("Não há backup local disponível neste espaço.");
+        return;
+      }
+      const envelope = writeAthlete(backup, owner);
+      if (!envelope) {
+        setError("O backup não pôde ser restaurado neste aparelho.");
+        return;
+      }
+      if (userId && !queueAthleteSave(envelope, userId)) {
+        setError("Backup restaurado localmente, mas a sincronização não pôde ser registrada.");
+      }
+      refresh(owner);
+      if (userId) {
+        void flushAthleteSync(userId).then((result) => {
+          if (currentUser.current === userId && result.conflict)
+            setError("Backup restaurado no aparelho. Há conflito com a nuvem; nada foi sobrescrito.");
+        });
+      }
+    },
+    [owner, refresh, userId],
+  );
+
+  return { slots, error, remove, restore, signedIn: !!userId };
 }
 
 export function useAthlete(slot: number) {
