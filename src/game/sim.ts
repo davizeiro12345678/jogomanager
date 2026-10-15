@@ -59,10 +59,9 @@ import {
 import { HIGH_FIDELITY_PHYSICS_STEP } from "./physics-quality";
 import type { Player, MatchEventLog } from "./types";
 import { type VersionedVisualData } from "./visual-context";
-import type { CanonicalBallPhysicsState, VisualBallState } from "./visual-ball";
+import type { CanonicalBallPhysicsState } from "./visual-ball";
 import type {
   BallPhysicsAuthority,
-  BallPhysicsCheckpoint,
   RapierBallHolder,
   RapierBallState,
 } from "./rapier-ball-authority";
