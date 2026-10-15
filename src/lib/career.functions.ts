@@ -6,11 +6,14 @@ import { CLUBS, getLeague } from "@/game/data/leagues";
 import { initCareer } from "@/game/career";
 import { continuesVerifiedCareer, isStaleSave } from "@/lib/career-progress";
 
-// Normalize manager names without changing their visible meaning.
+// Normalize manager names without letting control characters reach persisted data.
 const normalizePublicText = (value: string) =>
-  value
-    .normalize("NFKC")
-    .replace(/[\u0000-\u001f\u007f]/g, "")
+  [...value.normalize("NFKC")]
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      return code < 32 || code === 127 ? " " : char;
+    })
+    .join("")
     .replace(/\s+/g, " ")
     .trim();
 const hasVisibleText = (value: string) => /[\p{L}\p{N}]/u.test(value);
