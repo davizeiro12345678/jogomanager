@@ -21,6 +21,9 @@ export function RigidActorBatch({
     [signature],
   );
   useFrame(() => {
+    // A hidden tab receives no useful 3D frames. Re-sync latest actor poses
+    // on the first foreground frame instead of burning CPU in background.
+    if (typeof document !== "undefined" && document.hidden) return;
     if (!root.current) return;
     if (!batch.current) batch.current = batchRigidActors(root.current);
     else batch.current.sync();
