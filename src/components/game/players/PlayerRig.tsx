@@ -53,9 +53,8 @@ import {
   proportionsFor,
   shade,
   type LodLevel,
-  type PlayerLook,
 } from "@/game/player-model";
-import { type SimView, type SimPlayer } from "@/game/sim";
+import type { SimView } from "@/game/sim";
 import {
   emptyActionContext,
   emptyContactContext,
@@ -83,7 +82,6 @@ import { visualMotionFor } from "@/game/visual-motion";
 import {
   GOAL_PRESENTATION_SECONDS,
   goalPresentationFor,
-  type GoalFocusRef,
 } from "@/game/goal-choreography";
 import {
   footballSupportFor,
