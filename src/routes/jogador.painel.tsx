@@ -513,7 +513,9 @@ function WeekTab({
           <div className="grid gap-1 mt-3" aria-live="polite">
             <p className="athlete-meta">
               Energia após o treino: {Math.round(state.energy)}% → {Math.round(outlook.energyAfter)}%
-              {" · "}Risco estimado de lesão: {(outlook.injuryRisk * 100).toFixed(1)}%
+            </p>
+            <p className="athlete-meta">
+              Risco estimado de lesão: {(outlook.injuryRisk * 100).toFixed(1)}%
             </p>
             {outlook.energyAfter < 40 && (
               <p className="athlete-meta" role="status">
