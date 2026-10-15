@@ -26,10 +26,7 @@ import {
   type ClipName,
   type Pose,
 } from "@/game/animation";
-import {
-  ballGazePitch,
-  emptyFacialPose,
-} from "@/game/facial-animation";
+import { ballGazePitch, emptyFacialPose } from "@/game/facial-animation";
 import { kitBudget, kitTextureFor, trimKitTextures } from "@/game/graphics/kit-atlas";
 import { retainKitTexture } from "@/game/kits";
 import { useMatchSurface } from "@/game/graphics/surface-context";
@@ -66,10 +63,7 @@ import { censusRef } from "@/game/scene-census";
 import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
 import { gaitPoseAt, locomotionWeight } from "@/game/gait-kinematics";
 import { visualMotionFor } from "@/game/visual-motion";
-import {
-  GOAL_PRESENTATION_SECONDS,
-  goalPresentationFor,
-} from "@/game/goal-choreography";
+import { GOAL_PRESENTATION_SECONDS, goalPresentationFor } from "@/game/goal-choreography";
 import {
   footballSupportFor,
   refineFootballAction,
