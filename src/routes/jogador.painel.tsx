@@ -10,7 +10,7 @@ const AthleteHero3D = lazy(() =>
   })),
 );
 import { CLUBS } from "@/game/data/leagues";
-import { ATTRIBUTES, POSITION_LABEL, TRAITS, keyAttributes } from "@/game/player-career/attributes";
+import { ATTRIBUTES, GROUP_LABEL, POSITION_LABEL, TRAITS, keyAttributes } from "@/game/player-career/attributes";
 import { overall, seasonLength } from "@/game/player-career/engine";
 import type { AttributeGroup, PlayerCareerState } from "@/game/player-career/types";
 import { useAthlete } from "@/hooks/useAthlete";
