@@ -116,6 +116,20 @@ function CreateAthletePage() {
       defaultAthleteAppearance(`new-athlete-${slotId}`, "FW", "normal"),
     ),
   );
+  const { skin, hair, hairColor, beard } =
+    legacyAppearanceFromAthleteAppearance(appearanceV1);
+  const updateLegacyAppearance = (patch: Partial<ReturnType<typeof legacyAppearanceFromAthleteAppearance>>) => {
+    setAppearanceV1((previous) =>
+      athleteAppearanceFromLegacy(
+        { ...legacyAppearanceFromAthleteAppearance(previous), ...patch },
+        previous,
+      ),
+    );
+  };
+  const setSkin = (value: number) => updateLegacyAppearance({ skin: value });
+  const setHair = (value: number) => updateLegacyAppearance({ hair: value });
+  const setHairColor = (value: number) => updateLegacyAppearance({ hairColor: value });
+  const setBeard = (value: number) => updateLegacyAppearance({ beard: value });
   const [studioOpen, setStudioOpen] = useState(false);
   const [shirt, setShirt] = useState(9);
   const [error, setError] = useState<string | null>(null);
