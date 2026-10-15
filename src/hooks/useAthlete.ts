@@ -160,7 +160,8 @@ export function useAthleteSlots() {
             continue;
           }
           if (row.deleted) {
-            if (local || locallyDeleted) {
+            const knownRevision = readAthleteCloudRevision(row.slot, userId);
+            if (local || (locallyDeleted && knownRevision !== row.revision)) {
               setError(
                 "Carreira excluída na nuvem. O arquivo local não foi alterado automaticamente.",
               );
@@ -275,10 +276,19 @@ export function useAthleteSlots() {
       }
       refresh(owner);
       if (userId) {
-        void flushAthleteSync(userId).then((result) => {
-          if (currentUser.current === userId && result.conflict)
-            setError("Backup restaurado no aparelho. Há conflito com a nuvem; nada foi sobrescrito.");
-        });
+        void flushAthleteSync(userId)
+          .then((result) => {
+            if (currentUser.current === userId && result.conflict) {
+              setError(
+                "Backup restaurado no aparelho. Há conflito com a nuvem; nada foi sobrescrito.",
+              );
+            }
+          })
+          .catch(() => {
+            if (currentUser.current === userId) {
+              setError("Backup recuperado neste aparelho, mas a nuvem ainda está indisponível.");
+            }
+          });
       }
     },
     [owner, refresh, userId],
