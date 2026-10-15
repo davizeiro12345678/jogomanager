@@ -1,6 +1,11 @@
 import { readdir, readFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { gzipSync } from "node:zlib";
+import { gzipSync, brotliCompressSync, constants as zlibConstants } from "node:zlib";
+
+const brotliBytes = (data) =>
+  brotliCompressSync(data, {
+    params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 11 },
+  }).length;
 import { init, parse } from "es-module-lexer";
 
 // Measures emitted code, following only static imports. Dynamic imports stay
@@ -13,7 +18,12 @@ const wasmAssets = [];
 for (const name of await readdir(assets)) {
   if (name.endsWith(".wasm")) {
     const data = await readFile(path.join(assets, name));
-    wasmAssets.push({ name, bytes: data.length, gzipBytes: gzipSync(data, { level: 9 }).length });
+    wasmAssets.push({
+      name,
+      bytes: data.length,
+      gzipBytes: gzipSync(data, { level: 9 }).length,
+      brotliBytes: brotliBytes(data),
+    });
   }
   if (!name.endsWith(".js")) continue;
   const data = await readFile(path.join(assets, name));
@@ -23,6 +33,7 @@ for (const name of await readdir(assets)) {
     name,
     bytes: data.length,
     gzipBytes: gzipSync(data, { level: 9 }).length,
+    brotliBytes: brotliBytes(data),
     surface:
       source.includes("SEU CLUBE.") || source.includes("Você é o manager.")
         ? "home"
@@ -71,12 +82,18 @@ const entries = chunks
       surface: c.surface,
       bytes: c.bytes,
       gzipBytes: c.gzipBytes,
+      brotliBytes: c.brotliBytes,
       staticBytes: dependencies.reduce((sum, name) => sum + byName.get(name).bytes, 0),
       staticGzipBytes: dependencies.reduce((sum, name) => sum + byName.get(name).gzipBytes, 0),
+      staticBrotliBytes: dependencies.reduce((sum, name) => sum + byName.get(name).brotliBytes, 0),
       dependencies,
       startupBytes: startupDependencies.reduce((sum, name) => sum + byName.get(name).bytes, 0),
       startupGzipBytes: startupDependencies.reduce(
         (sum, name) => sum + byName.get(name).gzipBytes,
+        0,
+      ),
+      startupBrotliBytes: startupDependencies.reduce(
+        (sum, name) => sum + byName.get(name).brotliBytes,
         0,
       ),
       startupDependencies,
@@ -88,6 +105,7 @@ const report = {
   assets,
   totalBytes: chunks.reduce((sum, c) => sum + c.bytes, 0),
   totalGzipBytes: chunks.reduce((sum, c) => sum + c.gzipBytes, 0),
+  totalBrotliBytes: chunks.reduce((sum, c) => sum + c.brotliBytes, 0),
   wasmAssets,
   entries,
   chunks: chunks.sort((a, b) => b.bytes - a.bytes),
@@ -162,6 +180,7 @@ console.log(
       output,
       totalBytes: report.totalBytes,
       totalGzipBytes: report.totalGzipBytes,
+      totalBrotliBytes: report.totalBrotliBytes,
       entries,
       largest: report.chunks.slice(0, 10),
     },
