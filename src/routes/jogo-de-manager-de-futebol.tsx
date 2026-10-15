@@ -10,9 +10,22 @@ const DESC =
   "Jogue como técnico de futebol: escolha um clube, faça contratações, organize a tática e assista aos jogos em 3D. Grátis e direto no navegador.";
 
 export const Route = createFileRoute("/jogo-de-manager-de-futebol")({
-  beforeLoad: () => {
-    throw redirect({ to: "/", statusCode: 301, replace: true });
-  },
+  head: () => ({
+    meta: seoMeta({ title: TITLE, description: DESC, path: PATH, type: "article" }),
+    links: canonical(PATH),
+    scripts: [
+      articleLd({
+        headline: "Jogo de manager de futebol grátis online em 3D",
+        description: DESC,
+        path: PATH,
+      }),
+      breadcrumbLd([
+        { name: "Início", path: "/" },
+        { name: "Jogo de manager de futebol", path: PATH },
+      ]),
+    ],
+  }),
+  component: Page,
 });
 
 function Page() {
