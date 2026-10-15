@@ -141,11 +141,7 @@ function AthleteHub() {
                         {s.retired ? "Ver legado" : "Continuar"}
                       </Link>
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => downloadAthlete(s)}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => downloadAthlete(s)}>
                       Exportar JSON
                     </Button>
                     <Button
@@ -153,7 +149,11 @@ function AthleteHub() {
                       size="icon"
                       aria-label={`Excluir ${s.nickname}`}
                       onClick={() => {
-                        if (window.confirm(`Excluir ${s.nickname}? Um backup local será guardado e poderá ser baixado neste aparelho.`))
+                        if (
+                          window.confirm(
+                            `Excluir ${s.nickname}? Um backup local será guardado e poderá ser baixado neste aparelho.`,
+                          )
+                        )
                           void remove(slot);
                       }}
                     >
