@@ -30,7 +30,7 @@ import {
   prepareMoments,
   retire,
   seasonLength,
-  TRAINING_INJURY,
+  trainingOutlook,
 } from "@/game/player-career/engine";
 import type {
   AttributeGroup,
@@ -440,6 +440,7 @@ function WeekTab({
   );
   const [intensity, setIntensity] = useState<TrainingIntensity>("normal");
   const [choices, setChoices] = useState<Record<string, string>>({});
+  const outlook = trainingOutlook(state, intensity);
   if (state.retired)
     return (
       <p className="athlete-card athlete-meta">Carreira encerrada. Veja o legado em Histórico.</p>
@@ -504,10 +505,21 @@ function WeekTab({
                 {i[0]!.toUpperCase() + i.slice(1)}
                 <br />
                 <small className="athlete-meta">
-                  risco de lesão {(TRAINING_INJURY[i] * 100).toFixed(1)}%
+                  risco de lesão {(trainingOutlook(state, i).injuryRisk * 100).toFixed(1)}%
                 </small>
               </button>
             ))}
+          </div>
+          <div className="grid gap-1 mt-3" aria-live="polite">
+            <p className="athlete-meta">
+              Energia após o treino: {Math.round(state.energy)}% → {Math.round(outlook.energyAfter)}%
+              {" · "}Risco estimado de lesão: {(outlook.injuryRisk * 100).toFixed(1)}%
+            </p>
+            {outlook.energyAfter < 40 && (
+              <p className="athlete-meta" role="status">
+                Energia baixa: prefira treino leve ou recuperação antes de jogar.
+              </p>
+            )}
           </div>
         </div>
         <div className="grid gap-2">
