@@ -768,10 +768,15 @@ function AdBoards({ homeColor, awayColor }: { homeColor: string; awayColor: stri
     [texA, texB],
   );
 
+  const flickerClock = useRef(0);
   useFrame(({ clock }, delta) => {
     if (texA) texA.offset.x = (texA.offset.x + delta * 0.05) % 1;
     if (texB) texB.offset.x = (texB.offset.x - delta * 0.05 + 1) % 1;
-    // leve cintilar do painel
+    // The LED scroll remains smooth; emissive uniform changes only at 10 Hz.
+    // This removes redundant material writes on 60/120 FPS devices.
+    flickerClock.current += delta;
+    if (flickerClock.current < 0.1) return;
+    flickerClock.current %= 0.1;
     const flick = 0.53 + Math.sin(clock.elapsedTime * 2.4) * 0.012;
     if (matA.current) matA.current.emissiveIntensity = flick;
     if (matB.current) matB.current.emissiveIntensity = flick;
