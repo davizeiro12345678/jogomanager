@@ -3,8 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/game/Crest";
 import { CLUBS } from "@/game/data/leagues";
 import { GROUP_LABEL } from "@/game/player-career/attributes";
-import { advanceWeek, opponentFor, prepareMoments, trainingOutlook } from "@/game/player-career/engine";
-import type { AttributeGroup, PlayerCareerState, TrainingIntensity } from "@/game/player-career/types";
+import {
+  advanceWeek,
+  opponentFor,
+  prepareMoments,
+  trainingOutlook,
+} from "@/game/player-career/engine";
+import type {
+  AttributeGroup,
+  PlayerCareerState,
+  TrainingIntensity,
+} from "@/game/player-career/types";
 
 export function WeekTab({
   state,
