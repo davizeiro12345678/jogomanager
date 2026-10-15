@@ -16,6 +16,7 @@
 import { useFrame } from "@react-three/fiber";
 import { memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { useDisposable } from "../useDisposable";
 
 import { censusRef } from "@/game/scene-census";
 import { useRuntimeSceneBudget } from "@/components/game/RuntimeBudget";
