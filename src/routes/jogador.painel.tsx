@@ -511,9 +511,7 @@ function WeekTab({
             ))}
           </div>
           <div className="grid gap-1 mt-3" aria-live="polite">
-            <p className="athlete-meta">
-              Energia atual: {Math.round(state.energy)}%
-            </p>
+            <p className="athlete-meta">Energia atual: {Math.round(state.energy)}%</p>
             <p className="athlete-meta">
               Energia prevista após o treino: {Math.round(outlook.energyAfter)}%
             </p>
