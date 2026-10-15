@@ -19,6 +19,8 @@ import { NationalTeamTab } from "@/components/game/athlete/PlayerNationalTab";
 import { WeekTab } from "@/components/game/athlete/PlayerWeekTab";
 import { ContractTab } from "@/components/game/athlete/PlayerContractTab";
 import { HistoryTab } from "@/components/game/athlete/PlayerHistoryTab";
+import { PlayerCalendarTab } from "@/components/game/athlete/PlayerCalendarTab";
+import { PlayerHealthTab } from "@/components/game/athlete/PlayerHealthTab";
 import "@/components/game/athlete.css";
 
 export const Route = createFileRoute("/jogador/painel")({
@@ -45,9 +47,19 @@ export const Route = createFileRoute("/jogador/painel")({
   component: AthletePanelPage,
 });
 
-type Tab = "semana" | "atributos" | "selecao" | "contrato" | "noticias" | "historico";
+type Tab =
+  | "semana"
+  | "calendario"
+  | "saude"
+  | "atributos"
+  | "selecao"
+  | "contrato"
+  | "noticias"
+  | "historico";
 const TABS: { id: Tab; label: string }[] = [
   { id: "semana", label: "Semana" },
+  { id: "calendario", label: "Calendário" },
+  { id: "saude", label: "Saúde" },
   { id: "atributos", label: "Atributos" },
   { id: "selecao", label: "Seleção" },
   { id: "contrato", label: "Contrato e propostas" },
@@ -246,6 +258,8 @@ function Panel({
           className="min-w-0"
         >
           {tab === "semana" && <WeekTab state={state} commit={commit} />}
+          {tab === "calendario" && <PlayerCalendarTab state={state} />}
+          {tab === "saude" && <PlayerHealthTab state={state} />}
           {tab === "atributos" && (
             <section className="athlete-card grid gap-4">
               {groups.map((g) => (
