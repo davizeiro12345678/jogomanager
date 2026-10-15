@@ -110,17 +110,20 @@ function decodeV3(raw: StoredReplayV3): Replay {
   let timeMs = 0;
   for (let frameIndex = 0; frameIndex < times.length; frameIndex += 1) {
     timeMs += numeric(times, frameIndex);
-    const p: number[] = [];
-    const a: (PlayerAction | null)[] = [];
+    // V3 buffers are length-validated before decoding. Preallocate the exact
+    // player arrays and read typed buffers directly: avoid repeated push growth,
+    // optional indexed lookups and four helper calls per athlete per frame.
+    const p = new Array<number>(playerCount * 4);
+    const a = new Array<PlayerAction | null>(playerCount);
+    const frameBase = frameIndex * playerCount;
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
-      const offset = (frameIndex * playerCount + playerIndex) * 4;
-      p.push(
-        numeric(positions, offset) / QUANTIZE,
-        numeric(positions, offset + 1) / QUANTIZE,
-        numeric(positions, offset + 2) / QUANTIZE,
-        numeric(positions, offset + 3) / QUANTIZE,
-      );
-      a.push(actionFromCode(numeric(actions, frameIndex * playerCount + playerIndex)));
+      const source = (frameBase + playerIndex) * 4;
+      const target = playerIndex * 4;
+      p[target] = positions[source]! / QUANTIZE;
+      p[target + 1] = positions[source + 1]! / QUANTIZE;
+      p[target + 2] = positions[source + 2]! / QUANTIZE;
+      p[target + 3] = positions[source + 3]! / QUANTIZE;
+      a[playerIndex] = actionFromCode(actions[frameBase + playerIndex]!);
     }
     frames.push({
       t: timeMs / 1_000,
