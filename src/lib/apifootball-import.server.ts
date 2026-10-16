@@ -30,6 +30,7 @@ export type AfImportResult = {
   processed: number;
   created: number;
   linked: number;
+  skipped?: number;
   nextOffset: number | null;
   remainingQuota?: number | null;
   error?: string;
@@ -57,23 +58,54 @@ async function guardedFootballFetch(path: string): Promise<Response> {
   });
 }
 
-async function af<T>(path: string, attempt = 0): Promise<T[]> {
-  const res = await guardedFootballFetch(path);
-  const rem = res.headers.get("x-ratelimit-requests-remaining");
-  if (rem) lastRemaining = Number(rem);
-  const text = await res.text();
-  // Per-minute cap: back off and retry instead of silently skipping the item.
-  if ((res.status === 429 || text.includes('"rateLimit"')) && attempt < 10) {
-    await new Promise((r) => setTimeout(r, 4_000 + attempt * 1_000));
-    return af<T>(path, attempt + 1);
+/**
+ * Read and validate one API-Football response. A missing record (404) is not
+ * fatal to the surrounding batch; auth, schema and upstream errors are.
+ */
+type ApiFootballPage<T> = {
+  response: T[];
+  paging?: { current?: number; total?: number };
+};
+
+async function afPage<T>(path: string): Promise<ApiFootballPage<T>> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await guardedFootballFetch(path);
+    const rem = res.headers.get("x-ratelimit-requests-remaining");
+    if (rem !== null && Number.isFinite(Number(rem))) lastRemaining = Number(rem);
+    const text = await res.text();
+    const limited = res.status === 429 || /"rateLimit"/i.test(text);
+    if ((limited || res.status >= 500) && attempt < 2) {
+      const hint = Number(res.headers.get("retry-after"));
+      const delay =
+        Number.isFinite(hint) && hint > 0 ? Math.min(8_000, hint * 1_000) : 2_000 * (attempt + 1);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      continue;
+    }
+    if (res.status === 404) return { response: [] };
+    if (!res.ok) throw new Error(`API-Football HTTP ${res.status}: ${text.slice(0, 200)}`);
+    let body: {
+      response?: unknown;
+      errors?: unknown;
+      paging?: { current?: number; total?: number };
+    };
+    try {
+      body = JSON.parse(text) as typeof body;
+    } catch {
+      throw new Error("API-Football returned invalid JSON");
+    }
+    if (body.errors && typeof body.errors === "object" && Object.keys(body.errors).length > 0) {
+      throw new Error(`API-Football provider error: ${JSON.stringify(body.errors).slice(0, 200)}`);
+    }
+    if (!Array.isArray(body.response)) {
+      throw new Error("API-Football returned an unexpected response shape");
+    }
+    return { response: body.response as T[], ...(body.paging ? { paging: body.paging } : {}) };
   }
-  if (!res.ok) throw new Error(`API-Football ${res.status}: ${text.slice(0, 300)}`);
-  const body = JSON.parse(text) as { response?: T[]; errors?: unknown };
-  const errs = body.errors;
-  if (errs && !Array.isArray(errs) && Object.keys(errs).length) {
-    throw new Error(`API-Football: ${JSON.stringify(errs)}`);
-  }
-  return body.response ?? [];
+  throw new Error("API-Football retry limit exceeded");
+}
+
+async function af<T>(path: string): Promise<T[]> {
+  return (await afPage<T>(path)).response;
 }
 
 const norm = (s: string) =>
@@ -91,33 +123,43 @@ function mapPos(p?: string) {
   return "MF";
 }
 
-async function pool<T>(items: T[], n: number, deadline: number, fn: (t: T) => Promise<void>) {
+/**
+ * Missing data is a skip, not a failed batch. True failures preserve the
+ * checkpoint so the job can retry without silently losing an item.
+ */
+async function pool<T>(
+  items: T[],
+  n: number,
+  deadline: number,
+  fn: (t: T) => Promise<boolean | void>,
+): Promise<{ done: number; skipped: number }> {
   let i = 0;
   let done = 0;
-  let failures = 0;
+  let skipped = 0;
+  const failures: string[] = [];
   await Promise.all(
     Array.from({ length: n }, async () => {
       while (i < items.length && Date.now() < deadline) {
         const item = items[i++]!;
         try {
-          await fn(item);
+          if ((await fn(item)) === false) skipped++;
         } catch (e) {
-          failures += 1;
-          console.error("af item failed", e);
+          failures.push(e instanceof Error ? e.message : String(e));
         }
         done++;
       }
     }),
   );
-  if (failures)
-    throw new Error(`API-Football batch had ${failures} failed items; cursor not advanced`);
-  return done;
+  if (failures.length) {
+    throw new Error(`API-Football batch: ${failures.length} failed items; first: ${failures[0]}`);
+  }
+  return { done, skipped };
 }
 
 type AfLeague = {
   league: { id: number; name: string; type: string; logo: string };
   country: { name: string; flag: string | null };
-  seasons: { year: number; current: boolean }[];
+  seasons: { year: number; current: boolean; coverage?: Record<string, unknown> }[];
 };
 
 async function importLeagues(): Promise<AfImportResult> {
@@ -161,6 +203,26 @@ async function importLeagues(): Promise<AfImportResult> {
     });
     const up = await db.from("official_leagues").upsert(off, { onConflict: "source_id" });
     if (up.error) throw new Error(up.error.message);
+    const covered = chunk.flatMap((r) => {
+      const seasons = r.seasons ?? [];
+      const current = seasons.find((season) => season.current) ?? seasons[seasons.length - 1];
+      return current
+        ? [
+            {
+              league_source_id: `af:${r.league.id}`,
+              season: String(current.year),
+              coverage: (current.coverage ?? {}) as never,
+              updated_at: new Date().toISOString(),
+            },
+          ]
+        : [];
+    });
+    if (covered.length) {
+      const saved = await db
+        .from("api_football_season_coverage")
+        .upsert(covered, { onConflict: "league_source_id,season" });
+      if (saved.error) throw new Error(saved.error.message);
+    }
   }
   return {
     ok: true,
@@ -191,18 +253,16 @@ async function importTeams(
   deadline: number,
 ): Promise<AfImportResult> {
   const db = await admin();
-  const { data: leagues, error } = await db
-    .from("official_leagues")
-    .select("source_id, current_season, local_competition_id, country")
-    .like("source_id", "af:%")
-    .order("source_id")
-    .range(offset, offset + limit - 1);
+  const { data: leagues, error } = await db.rpc("list_api_football_league_targets", {
+    p_offset: offset,
+    p_limit: limit,
+  });
   if (error) throw new Error(error.message);
 
   let created = 0;
   let linked = 0;
-  const done = await pool(leagues ?? [], 4, deadline, async (lg) => {
-    if (!lg.current_season) return;
+  const batch = await pool(leagues ?? [], 4, deadline, async (lg) => {
+    if (!lg.current_season) return false;
     const id = lg.source_id.slice(3);
     let teams: AfTeam[];
     try {
@@ -211,7 +271,7 @@ async function importTeams(
       console.error("teams", id, e);
       throw e;
     }
-    if (!teams.length) return;
+    if (!teams.length) return false;
     const country = teams[0]!.team.country;
     const { data: existing } = await db
       .from("clubs")
@@ -273,15 +333,17 @@ async function importTeams(
     }
     const m = await db.from("official_teams").upsert(maps, { onConflict: "source_id" });
     if (m.error) throw new Error(m.error.message);
+    return true;
   });
   const fetched = leagues?.length ?? 0;
   return {
     ok: true,
     phase: "teams",
-    processed: done,
+    processed: batch.done,
     created,
     linked,
-    nextOffset: fetched < limit && done === fetched ? null : offset + done,
+    skipped: batch.skipped,
+    nextOffset: fetched < limit && batch.done === fetched ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
@@ -304,17 +366,15 @@ async function importSquads(
   deadline: number,
 ): Promise<AfImportResult> {
   const db = await admin();
-  const { data: teams, error } = await db
-    .from("official_teams")
-    .select("source_id, local_club_id")
-    .like("source_id", "af:%")
-    .not("local_club_id", "is", null)
-    .order("source_id")
-    .range(offset, offset + limit - 1);
+  const { data: teams, error } = await db.rpc("list_api_football_team_targets", {
+    p_offset: offset,
+    p_limit: limit,
+    p_squads_only: true,
+  });
   if (error) throw new Error(error.message);
 
   let created = 0;
-  const done = await pool(teams ?? [], 4, deadline, async (t) => {
+  const batch = await pool(teams ?? [], 4, deadline, async (t) => {
     let squad: AfSquad[];
     try {
       squad = await af<AfSquad>(`/players/squads?team=${t.source_id.slice(3)}`);
@@ -323,22 +383,13 @@ async function importSquads(
       throw e;
     }
     const players = (squad[0]?.players ?? []).filter((p) => p && p.id && p.name);
-    if (!players.length) return;
-    const { data: have, error: haveError } = await db
-      .from("players")
-      .select("source_id")
-      .eq("source", SOURCE)
-      .in(
-        "source_id",
-        players.map((p) => String(p.id)),
-      );
-    if (haveError) throw new Error(`Squad lookup failed: ${haveError.message}`);
-    const seen = new Set((have ?? []).map((p) => p.source_id));
+    if (!players.length) return false;
     const rows = players
-      .filter((p) => p.name && !seen.has(String(p.id)))
+      .filter((p) => p.name)
       .map((p) => {
         const age = p.age && p.age > 14 && p.age < 50 ? p.age : 24;
-        const overall = 55 + ((p.id * 7) % 15);
+        // Squads have no measured OVR: neutral placeholder, never fake an ID-based rating.
+        const overall = 55;
         return {
           club_id: t.local_club_id!,
           name: p.name.slice(0, 80),
@@ -347,36 +398,38 @@ async function importSquads(
           shirt_number: p.number && p.number > 0 && p.number < 100 ? p.number : null,
           overall,
           potential: Math.min(95, overall + (age && age < 23 ? 10 : 3)),
-          photo_url: p.photo,
+          photo_url: p.photo || null,
           source: SOURCE,
           source_id: String(p.id),
-          sync_status: "synced",
+          sync_status: "pending",
         };
       });
-    // Squads can list one athlete twice, and a parallel page may insert him first;
-    // dedupe locally, then fall back to per-row inserts so one clash never drops a squad.
+    // Squads may list the same athlete twice, or another worker may insert
+    // the player concurrently. Deduplicate before one conflict-safe upsert.
     const unique = [...new Map(rows.map((r) => [r.source_id, r])).values()];
-    if (!unique.length) return;
-    const r = await db.from("players").insert(unique).select("id");
-    if (!r.error) {
-      created += r.data?.length ?? 0;
-      return;
-    }
-    for (const row of unique) {
-      const one = await db.from("players").insert(row).select("id");
-      if (!one.error) created += 1;
-      else if (one.error.code !== "23505")
-        throw new Error(`Squad insert failed: ${one.error.message}`);
-    }
+    if (!unique.length) return false;
+    // One atomic statement per bounded squad; no N per-player retries.
+    // Existing records (including manually reviewed ratings) are preserved.
+    const r = await db
+      .from("players")
+      .upsert(unique, {
+        onConflict: "source,source_id",
+        ignoreDuplicates: true,
+      })
+      .select("id");
+    if (r.error) throw new Error(`Squad upsert failed: ${r.error.message}`);
+    created += r.data?.length ?? 0;
+    return true;
   });
   const fetched = teams?.length ?? 0;
   return {
     ok: true,
     phase: "squads",
-    processed: done,
+    processed: batch.done,
     created,
     linked: 0,
-    nextOffset: fetched < limit && done === fetched ? null : offset + done,
+    skipped: batch.skipped,
+    nextOffset: fetched < limit && batch.done === fetched ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
@@ -396,12 +449,10 @@ type AfFixture = {
 
 async function leaguePage(offset: number, limit: number) {
   const db = await admin();
-  const { data, error } = await db
-    .from("official_leagues")
-    .select("source_id, current_season")
-    .like("source_id", "af:%")
-    .order("source_id")
-    .range(offset, offset + limit - 1);
+  const { data, error } = await db.rpc("list_api_football_league_targets", {
+    p_offset: offset,
+    p_limit: limit,
+  });
   if (error) throw new Error(error.message);
   return data ?? [];
 }
@@ -425,6 +476,15 @@ async function saveRaw(kind: string, rows: { ref: string; payload: unknown }[]) 
   return n;
 }
 
+function sourceHasNoCoverage(coverage: unknown, phase: Phase): boolean {
+  if (!coverage || typeof coverage !== "object" || Array.isArray(coverage)) return false;
+  const c = coverage as Record<string, unknown>;
+  if (phase === "standings") return c["standings"] === false;
+  if (phase === "injuries") return c["injuries"] === false;
+  if (phase === "stats") return c["players"] === false;
+  return false;
+}
+
 async function perLeague(
   phase: Phase,
   offset: number,
@@ -435,17 +495,22 @@ async function perLeague(
   const leagues = await leaguePage(offset, limit);
   let created = 0;
   // Paginated phases (stats) stay sequential to respect the per-minute cap.
-  const done = await pool(leagues, phase === "stats" ? 2 : 4, deadline, async (lg) => {
-    if (!lg.current_season) return;
-    created += await fn(lg.source_id.slice(3), lg.current_season);
+  const batch = await pool(leagues, phase === "stats" ? 2 : 4, deadline, async (lg) => {
+    if (!lg.current_season || sourceHasNoCoverage(lg.coverage, phase)) return false;
+    const written = await fn(lg.source_id.slice(3), lg.current_season);
+    created += written;
+    if (written === 0) return false;
+    return true;
   });
   return {
     ok: true,
     phase,
-    processed: done,
+    processed: batch.done,
     created,
     linked: 0,
-    nextOffset: leagues.length < limit && done === leagues.length ? null : offset + done,
+    skipped: batch.skipped,
+    nextOffset:
+      leagues.length < limit && batch.done === leagues.length ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
@@ -453,22 +518,26 @@ async function perLeague(
 async function fixturesFor(id: string, season: string) {
   const db = await admin();
   const list = await af<AfFixture>(`/fixtures?league=${id}&season=${season}`);
-  const rows = list.map((f) => ({
-    source_id: `af:${f.fixture.id}`,
-    league_source_id: `af:${id}`,
-    season,
-    home_team_source_id: `af:${f.teams.home.id}`,
-    away_team_source_id: `af:${f.teams.away.id}`,
-    home_team_name: f.teams.home.name,
-    away_team_name: f.teams.away.name,
-    starts_at: f.fixture.date,
-    home_score: f.goals.home,
-    away_score: f.goals.away,
-    status: f.fixture.status.short,
-    venue_source_id: f.fixture.venue.id ? `af:${f.fixture.venue.id}` : null,
-    venue_name: f.fixture.venue.name,
-    updated_at: new Date().toISOString(),
-  }));
+  // API-Football can supply null venue/score objects for unplayed fixtures.
+  // One incomplete match must not abort a complete league-season import.
+  const rows = list
+    .filter((f) => f?.fixture?.id && f.fixture.date && f?.teams?.home?.id && f?.teams?.away?.id)
+    .map((f) => ({
+      source_id: `af:${f.fixture.id}`,
+      league_source_id: `af:${id}`,
+      season,
+      home_team_source_id: `af:${f.teams.home.id}`,
+      away_team_source_id: `af:${f.teams.away.id}`,
+      home_team_name: f.teams.home.name ?? "",
+      away_team_name: f.teams.away.name ?? "",
+      starts_at: f.fixture.date,
+      home_score: f.goals?.home ?? null,
+      away_score: f.goals?.away ?? null,
+      status: f.fixture.status?.short ?? "NS",
+      venue_source_id: f.fixture.venue?.id ? `af:${f.fixture.venue.id}` : null,
+      venue_name: f.fixture.venue?.name ?? null,
+      updated_at: new Date().toISOString(),
+    }));
   let n = 0;
   for (let k = 0; k < rows.length; k += 500) {
     const { error } = await db
@@ -489,25 +558,13 @@ async function pagedAll<T>(path: string, maxPages: number) {
   const out: T[] = [];
   for (let page = 1; page <= maxPages; page++) {
     const sep = path.includes("?") ? "&" : "?";
-    let body: { response?: T[]; paging?: { total: number } } | null = null;
-    for (let tries = 0; tries < 12; tries++) {
-      const res = await guardedFootballFetch(`${path}${sep}page=${page}`);
-      const rem = res.headers.get("x-ratelimit-requests-remaining");
-      if (rem) lastRemaining = Number(rem);
-      const text = await res.text();
-      if (res.status === 429 || text.includes('"rateLimit"')) {
-        await new Promise((r) => setTimeout(r, 4000 + tries * 1000));
-        continue;
-      }
-      if (!res.ok) throw new Error(`API-Football paging returned HTTP ${res.status}`);
-      body = JSON.parse(text);
-      break;
-    }
-    if (!body) throw new Error("API-Football paginated request exhausted its retry budget");
-    out.push(...(body.response ?? []));
-    if (!body.paging || page >= body.paging.total) break;
+    const body = await afPage<T>(`${path}${sep}page=${page}`);
+    out.push(...body.response);
+    const total = body.paging?.total ?? 1;
+    if (page >= total) return out;
   }
-  return out;
+  // Silent truncation makes a partially imported league look complete.
+  throw new Error(`API-Football pagination exceeded ${maxPages} pages: ${path}`);
 }
 
 type AfPlayerStat = {
@@ -520,12 +577,97 @@ type AfPlayerStat = {
   statistics: unknown[];
 };
 
-async function statsFor(id: string, season: string) {
-  const list = await pagedAll<AfPlayerStat>(`/players?league=${id}&season=${season}`, 200);
-  return saveRaw(
-    "player_stats",
-    list.map((p) => ({ ref: `${p.player.id}:${id}:${season}`, payload: p })),
-  );
+async function statsFor(id: string, season: string, deadline: number) {
+  const db = await admin();
+  const target = `af:${id}`;
+  const { data: checkpoint, error } = await db
+    .from("api_football_page_progress")
+    .select("next_page")
+    .eq("phase", "stats")
+    .eq("target_id", target)
+    .eq("season", season)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+
+  let page = checkpoint?.next_page ?? 1;
+  let written = 0;
+  let pages = 0;
+  // Four API pages at a time keeps the invocation within the short cron lease.
+  while (pages < 4 && Date.now() + 5_000 < deadline) {
+    if (page > 200) throw new Error(`Player statistics exceed 200 pages for ${target}`);
+    const response = await afPage<AfPlayerStat>(
+      `/players?league=${id}&season=${season}&page=${page}`,
+    );
+    const rows = response.response
+      .filter((p) => p.player?.id)
+      .map((p) => ({ ref: `${p.player.id}:${id}:${season}`, payload: p }));
+    written += await saveRaw("player_stats", rows);
+    const total = Math.max(1, response.paging?.total ?? 1);
+    if (page >= total) {
+      const removed = await db
+        .from("api_football_page_progress")
+        .delete()
+        .eq("phase", "stats")
+        .eq("target_id", target)
+        .eq("season", season);
+      if (removed.error) throw new Error(removed.error.message);
+      return { written, complete: true };
+    }
+    page++;
+    // Retried pages are upserts: safe even if a crash occurred between
+    // saving the payload and writing this checkpoint.
+    const saved = await db.from("api_football_page_progress").upsert(
+      {
+        phase: "stats",
+        target_id: target,
+        season,
+        next_page: page,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "phase,target_id,season" },
+    );
+    if (saved.error) throw new Error(saved.error.message);
+    pages++;
+  }
+  return { written, complete: false };
+}
+
+async function importStats(offset: number, deadline: number): Promise<AfImportResult> {
+  // Exactly one league per call: page progress and global target progress
+  // are separate checkpoints, so a partially fetched league never disappears.
+  const [league] = await leaguePage(offset, 1);
+  if (!league)
+    return {
+      ok: true,
+      phase: "stats",
+      processed: 0,
+      created: 0,
+      linked: 0,
+      nextOffset: null,
+      remainingQuota: lastRemaining,
+    };
+  if (!league.current_season || sourceHasNoCoverage(league.coverage, "stats"))
+    return {
+      ok: true,
+      phase: "stats",
+      processed: 1,
+      created: 0,
+      linked: 0,
+      skipped: 1,
+      nextOffset: offset + 1,
+      remainingQuota: lastRemaining,
+    };
+  const result = await statsFor(league.source_id.slice(3), league.current_season, deadline);
+  return {
+    ok: true,
+    phase: "stats",
+    processed: result.complete ? 1 : 0,
+    created: result.written,
+    linked: 0,
+    skipped: result.complete && result.written === 0 ? 1 : 0,
+    nextOffset: result.complete ? offset + 1 : offset,
+    remainingQuota: lastRemaining,
+  };
 }
 
 async function upcomingFixtureIds(days: number, offset: number, limit: number) {
@@ -550,17 +692,20 @@ async function importPredictions(
 ): Promise<AfImportResult> {
   const ids = await upcomingFixtureIds(7, offset, limit);
   let created = 0;
-  const done = await pool(ids, 4, deadline, async (fid) => {
+  const batch = await pool(ids, 4, deadline, async (fid) => {
     const r = await af<unknown>(`/predictions?fixture=${fid}`);
-    if (r.length) created += await saveRaw("prediction", [{ ref: fid, payload: r[0] }]);
+    if (!r.length) return false;
+    created += await saveRaw("prediction", [{ ref: fid, payload: r[0] }]);
+    return true;
   });
   return {
     ok: true,
     phase: "predictions",
-    processed: done,
+    processed: batch.done,
     created,
     linked: 0,
-    nextOffset: ids.length < limit && done === ids.length ? null : offset + done,
+    skipped: batch.skipped,
+    nextOffset: ids.length < limit && batch.done === ids.length ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
@@ -617,32 +762,35 @@ async function importVenues(
 ): Promise<AfImportResult> {
   const countries = (await af<{ name: string }>("/countries")).slice(offset, offset + limit);
   let created = 0;
-  const done = await pool(countries, 4, deadline, async (c) => {
+  const batch = await pool(countries, 4, deadline, async (c) => {
     const v = await af<{ id: number }>(`/venues?country=${encodeURIComponent(c.name)}`);
+    if (!v.length) return false;
     created += await saveRaw(
       "venue",
       v.map((r) => ({ ref: String(r.id), payload: r })),
     );
+    return true;
   });
   return {
     ok: true,
     phase: "venues",
-    processed: done,
+    processed: batch.done,
     created,
     linked: 0,
-    nextOffset: countries.length < limit && done === countries.length ? null : offset + done,
+    skipped: batch.skipped,
+    nextOffset:
+      countries.length < limit && batch.done === countries.length ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
 
 async function teamPage(offset: number, limit: number) {
   const db = await admin();
-  const { data, error } = await db
-    .from("official_teams")
-    .select("source_id, league_source_id")
-    .like("source_id", "af:%")
-    .order("source_id")
-    .range(offset, offset + limit - 1);
+  const { data, error } = await db.rpc("list_api_football_team_targets", {
+    p_offset: offset,
+    p_limit: limit,
+    p_squads_only: false,
+  });
   if (error) throw new Error(error.message);
   return data ?? [];
 }
@@ -656,19 +804,23 @@ async function perTeam(
 ): Promise<AfImportResult> {
   const teams = await teamPage(offset, limit);
   let created = 0;
-  const done = await pool(teams, 4, deadline, async (t) => {
-    created += await fn(
+  const batch = await pool(teams, 4, deadline, async (t) => {
+    const written = await fn(
       t.source_id.slice(3),
       t.league_source_id?.startsWith("af:") ? t.league_source_id.slice(3) : null,
     );
+    created += written;
+    if (written === 0) return false;
+    return true;
   });
   return {
     ok: true,
     phase,
-    processed: done,
+    processed: batch.done,
     created,
     linked: 0,
-    nextOffset: teams.length < limit && done === teams.length ? null : offset + done,
+    skipped: batch.skipped,
+    nextOffset: teams.length < limit && batch.done === teams.length ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
@@ -740,13 +892,18 @@ async function importDetails(
   for (let k = 0; k < ids.length; k += 20) batches.push(ids.slice(k, k + 20));
   let created = 0;
   let doneIds = 0;
-  await pool(batches, 4, deadline, async (b) => {
+  const batch = await pool(batches, 4, deadline, async (b) => {
     const r = await af<{ fixture: { id: number } }>(`/fixtures?ids=${b.join("-")}`);
+    if (!r.length) {
+      doneIds += b.length;
+      return false;
+    }
     created += await saveRaw(
       "fixture_detail",
       r.map((f) => ({ ref: String(f.fixture.id), payload: f })),
     );
     doneIds += b.length;
+    return true;
   });
   return {
     ok: true,
@@ -754,6 +911,7 @@ async function importDetails(
     processed: doneIds,
     created,
     linked: 0,
+    skipped: batch.skipped,
     nextOffset: ids.length < limit && doneIds === ids.length ? null : offset + doneIds,
     remainingQuota: lastRemaining,
   };
@@ -766,17 +924,18 @@ export async function runApiFootballImport(opts: {
   budgetMs: number;
 }): Promise<AfImportResult> {
   const deadline = Date.now() + opts.budgetMs;
+  // Match the service-side RPC page cap: otherwise a manual limit > 50
+  // would wrongly treat a partial page as the end of the catalog.
+  const limit = Math.max(1, Math.min(50, opts.limit));
   try {
     if (opts.phase === "leagues") return await importLeagues();
-    if (opts.phase === "teams") return await importTeams(opts.offset, opts.limit, deadline);
+    if (opts.phase === "teams") return await importTeams(opts.offset, limit, deadline);
     if (opts.phase === "fixtures")
-      return await perLeague("fixtures", opts.offset, opts.limit, deadline, fixturesFor);
+      return await perLeague("fixtures", opts.offset, limit, deadline, fixturesFor);
     if (opts.phase === "standings")
-      return await perLeague("standings", opts.offset, opts.limit, deadline, standingsFor);
-    if (opts.phase === "stats")
-      return await perLeague("stats", opts.offset, opts.limit, deadline, statsFor);
-    if (opts.phase === "predictions")
-      return await importPredictions(opts.offset, opts.limit, deadline);
+      return await perLeague("standings", opts.offset, limit, deadline, standingsFor);
+    if (opts.phase === "stats") return await importStats(opts.offset, deadline);
+    if (opts.phase === "predictions") return await importPredictions(opts.offset, limit, deadline);
     if (opts.phase === "odds") return await importOdds(opts.offset, deadline);
     if (opts.phase === "countries")
       return await importSimple("countries", "/countries", "country", (r) =>
@@ -784,15 +943,15 @@ export async function runApiFootballImport(opts: {
       );
     if (opts.phase === "timezones")
       return await importSimple("timezones", "/timezone", "timezone", (r) => String(r));
-    if (opts.phase === "venues") return await importVenues(opts.offset, opts.limit, deadline);
+    if (opts.phase === "venues") return await importVenues(opts.offset, limit, deadline);
     if (opts.phase === "coaches")
-      return await perTeam("coaches", opts.offset, opts.limit, deadline, coachesFor);
+      return await perTeam("coaches", opts.offset, limit, deadline, coachesFor);
     if (opts.phase === "teamstats")
-      return await perTeam("teamstats", opts.offset, opts.limit, deadline, teamStatsFor);
+      return await perTeam("teamstats", opts.offset, limit, deadline, teamStatsFor);
     if (opts.phase === "injuries")
-      return await perLeague("injuries", opts.offset, opts.limit, deadline, injuriesFor);
-    if (opts.phase === "details") return await importDetails(opts.offset, opts.limit, deadline);
-    return await importSquads(opts.offset, opts.limit, deadline);
+      return await perLeague("injuries", opts.offset, limit, deadline, injuriesFor);
+    if (opts.phase === "details") return await importDetails(opts.offset, limit, deadline);
+    return await importSquads(opts.offset, limit, deadline);
   } catch (e) {
     return {
       ok: false,
