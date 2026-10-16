@@ -1,13 +1,26 @@
 -- API-Football: prioritize real league-season targets server-side.
 -- These functions do not trigger imports; only service_role can request pages.
+CREATE TABLE IF NOT EXISTS public.api_football_season_coverage (
+  league_source_id text NOT NULL,
+  season text NOT NULL,
+  coverage jsonb NOT NULL DEFAULT '{}'::jsonb,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (league_source_id, season)
+);
+ALTER TABLE public.api_football_season_coverage ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.api_football_season_coverage FROM PUBLIC,anon,authenticated;
+GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE public.api_football_season_coverage TO service_role;
+
 CREATE OR REPLACE FUNCTION public.list_api_football_league_targets(
   p_offset integer, p_limit integer
 )
-RETURNS TABLE(source_id text, current_season text, local_competition_id text, country text)
+RETURNS TABLE(source_id text, current_season text, local_competition_id text, country text, coverage jsonb)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
-  SELECT l.source_id, l.current_season, l.local_competition_id, l.country
+  SELECT l.source_id, l.current_season, l.local_competition_id, l.country, c.coverage
   FROM public.official_leagues AS l
+  LEFT JOIN public.api_football_season_coverage AS c
+    ON c.league_source_id=l.source_id AND c.season=l.current_season
   WHERE l.source_id LIKE 'af:%'
   ORDER BY
     coalesce(array_position(ARRAY[
