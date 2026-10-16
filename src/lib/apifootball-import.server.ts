@@ -480,22 +480,26 @@ async function perLeague(
 async function fixturesFor(id: string, season: string) {
   const db = await admin();
   const list = await af<AfFixture>(`/fixtures?league=${id}&season=${season}`);
-  const rows = list.map((f) => ({
-    source_id: `af:${f.fixture.id}`,
-    league_source_id: `af:${id}`,
-    season,
-    home_team_source_id: `af:${f.teams.home.id}`,
-    away_team_source_id: `af:${f.teams.away.id}`,
-    home_team_name: f.teams.home.name,
-    away_team_name: f.teams.away.name,
-    starts_at: f.fixture.date,
-    home_score: f.goals.home,
-    away_score: f.goals.away,
-    status: f.fixture.status.short,
-    venue_source_id: f.fixture.venue.id ? `af:${f.fixture.venue.id}` : null,
-    venue_name: f.fixture.venue.name,
-    updated_at: new Date().toISOString(),
-  }));
+  // API-Football can supply null venue/score objects for unplayed fixtures.
+  // One incomplete match must not abort a complete league-season import.
+  const rows = list
+    .filter((f) => f?.fixture?.id && f.fixture.date && f?.teams?.home?.id && f?.teams?.away?.id)
+    .map((f) => ({
+      source_id: `af:${f.fixture.id}`,
+      league_source_id: `af:${id}`,
+      season,
+      home_team_source_id: `af:${f.teams.home.id}`,
+      away_team_source_id: `af:${f.teams.away.id}`,
+      home_team_name: f.teams.home.name ?? "",
+      away_team_name: f.teams.away.name ?? "",
+      starts_at: f.fixture.date,
+      home_score: f.goals?.home ?? null,
+      away_score: f.goals?.away ?? null,
+      status: f.fixture.status?.short ?? "NS",
+      venue_source_id: f.fixture.venue?.id ? `af:${f.fixture.venue.id}` : null,
+      venue_name: f.fixture.venue?.name ?? null,
+      updated_at: new Date().toISOString(),
+    }));
   let n = 0;
   for (let k = 0; k < rows.length; k += 500) {
     const { error } = await db
