@@ -85,3 +85,17 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.reserve_api_football_quota() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.reserve_api_football_quota() TO service_role;
+
+-- Long player-stat league imports resume at the last persisted API page.
+-- Each page is upserted before advancing this marker; retries are idempotent.
+CREATE TABLE IF NOT EXISTS public.api_football_page_progress (
+  phase text NOT NULL CHECK (phase IN ('stats')),
+  target_id text NOT NULL,
+  season text NOT NULL,
+  next_page integer NOT NULL DEFAULT 1 CHECK (next_page > 0),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (phase,target_id,season)
+);
+ALTER TABLE public.api_football_page_progress ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.api_football_page_progress FROM PUBLIC,anon,authenticated;
+GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE public.api_football_page_progress TO service_role;
