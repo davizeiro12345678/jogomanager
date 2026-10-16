@@ -101,11 +101,11 @@ function safePublicAsset(response, request) {
   const requested = new URL(request.url);
   const served = new URL(response.url || request.url);
   if (requested.origin !== self.location.origin || served.origin !== requested.origin || served.pathname !== requested.pathname) return false;
-  if (response.headers.has("set-cookie") || /\\bno-store\\b/i.test(response.headers.get("cache-control") || "")) return false;
+  if (response.headers.has("set-cookie") || /\bno-store\b/i.test(response.headers.get("cache-control") || "")) return false;
   const mime = (response.headers.get("content-type") || "").toLowerCase();
   if (mime.includes("text/html")) return false;
-  if (/\\.(?:js|mjs)$/i.test(requested.pathname) && !/(?:javascript|ecmascript)/.test(mime)) return false;
-  if (/\\.css$/i.test(requested.pathname) && !mime.includes("text/css")) return false;
+  if (/\.(?:js|mjs)$/i.test(requested.pathname) && !/(?:javascript|ecmascript)/.test(mime)) return false;
+  if (/\.css$/i.test(requested.pathname) && !mime.includes("text/css")) return false;
   return true;
 }
 
@@ -117,7 +117,7 @@ function safeOfflineHomepage(response, request) {
     served.origin === requested.origin && served.pathname === "/" &&
     (response.headers.get("content-type") || "").toLowerCase().includes("text/html") &&
     !response.headers.has("set-cookie") &&
-    !/\\b(?:no-store|private)\\b/i.test(response.headers.get("cache-control") || "");
+    !/\b(?:no-store|private)\b/i.test(response.headers.get("cache-control") || "");
 }
 
 self.addEventListener("fetch", (event) => {
