@@ -38,42 +38,68 @@ describe("API-Football high-yield importer", () => {
   });
 
   it("skips an empty squad without aborting or repeating the target", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => payload([])));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => payload([])),
+    );
     const result = await runApiFootballImport({
-      phase: "squads", offset: 0, limit: 1, budgetMs: 50_000,
+      phase: "squads",
+      offset: 0,
+      limit: 1,
+      budgetMs: 50_000,
     });
     expect(result).toMatchObject({
-      ok: true, processed: 1, skipped: 1, created: 0, nextOffset: 1,
+      ok: true,
+      processed: 1,
+      skipped: 1,
+      created: 0,
+      nextOffset: 1,
     });
     expect(db.from).not.toHaveBeenCalled();
   });
 
   it("writes a deduplicated squad in one conflict-safe upsert", async () => {
     const player = {
-      id: 42, name: "Test Player", age: 23, number: 7,
-      position: "Attacker", photo: "https://example.test/42.png",
+      id: 42,
+      name: "Test Player",
+      age: 23,
+      number: 7,
+      position: "Attacker",
+      photo: "https://example.test/42.png",
     };
-    vi.stubGlobal("fetch", vi.fn(async () => payload([
-      { team: { id: 33 }, players: [player, player] },
-    ])));
-    const upsert = vi.fn((_rows: unknown[], _options: Record<string, unknown>) => ({ select: async () => ({
-      data: [{ id: "created" }], error: null,
-    }) }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => payload([{ team: { id: 33 }, players: [player, player] }])),
+    );
+    const upsert = vi.fn((_rows: unknown[], _options: Record<string, unknown>) => ({
+      select: async () => ({
+        data: [{ id: "created" }],
+        error: null,
+      }),
+    }));
     db.from.mockImplementation((table: string) => {
       if (table === "players") return { upsert };
       throw new Error(`Unexpected table ${table}`);
     });
 
     const result = await runApiFootballImport({
-      phase: "squads", offset: 0, limit: 1, budgetMs: 50_000,
+      phase: "squads",
+      offset: 0,
+      limit: 1,
+      budgetMs: 50_000,
     });
     expect(result).toMatchObject({
-      ok: true, processed: 1, skipped: 0, created: 1, nextOffset: 1,
+      ok: true,
+      processed: 1,
+      skipped: 0,
+      created: 1,
+      nextOffset: 1,
     });
     expect(upsert).toHaveBeenCalledTimes(1);
     expect(upsert.mock.calls[0]?.[0]).toHaveLength(1);
     expect(upsert.mock.calls[0]?.[1]).toMatchObject({
-      onConflict: "source,source_id", ignoreDuplicates: true,
+      onConflict: "source,source_id",
+      ignoreDuplicates: true,
     });
   });
 });
