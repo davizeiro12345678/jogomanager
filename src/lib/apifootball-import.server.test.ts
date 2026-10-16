@@ -56,7 +56,7 @@ describe("API-Football high-yield importer", () => {
     vi.stubGlobal("fetch", vi.fn(async () => payload([
       { team: { id: 33 }, players: [player, player] },
     ])));
-    const upsert = vi.fn(() => ({ select: async () => ({
+    const upsert = vi.fn((_rows: unknown[], _options: Record<string, unknown>) => ({ select: async () => ({
       data: [{ id: "created" }], error: null,
     }) }));
     db.from.mockImplementation((table: string) => {
