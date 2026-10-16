@@ -119,6 +119,7 @@ export type Database = {
       api_football_import_progress: {
         Row: {
           batch_size: number
+          consecutive_failures: number
           error_message: string | null
           lease_token: string | null
           lease_until: string | null
@@ -130,6 +131,7 @@ export type Database = {
         }
         Insert: {
           batch_size?: number
+          consecutive_failures?: number
           error_message?: string | null
           lease_token?: string | null
           lease_until?: string | null
@@ -141,6 +143,7 @@ export type Database = {
         }
         Update: {
           batch_size?: number
+          consecutive_failures?: number
           error_message?: string | null
           lease_token?: string | null
           lease_until?: string | null
