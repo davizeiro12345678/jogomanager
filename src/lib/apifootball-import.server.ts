@@ -401,7 +401,7 @@ async function importSquads(
           photo_url: p.photo || null,
           source: SOURCE,
           source_id: String(p.id),
-          sync_status: "partial",
+          sync_status: "pending",
         };
       });
     // Squads may list the same athlete twice, or another worker may insert
