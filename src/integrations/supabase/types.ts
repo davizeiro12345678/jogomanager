@@ -152,6 +152,30 @@ export type Database = {
         }
         Relationships: []
       }
+      api_football_page_progress: {
+        Row: {
+          phase: string
+          target_id: string
+          season: string
+          next_page: number
+          updated_at: string
+        }
+        Insert: {
+          phase: string
+          target_id: string
+          season: string
+          next_page?: number
+          updated_at?: string
+        }
+        Update: {
+          phase?: string
+          target_id?: string
+          season?: string
+          next_page?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       api_football_quota_usage: {
         Row: {
           request_count: number
