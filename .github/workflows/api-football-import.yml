@@ -1,0 +1,30 @@
+name: API-Football importer regression
+
+on:
+  pull_request:
+    paths:
+      - 'src/lib/apifootball-import.server.ts'
+      - 'src/lib/apifootball-import.server.test.ts'
+      - 'src/integrations/supabase/types.ts'
+      - 'supabase/migrations/*api_football*.sql'
+      - '.github/workflows/api-football-import.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  importer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Check importer format
+        run: npm exec -- prettier --check src/lib/apifootball-import.server.ts src/lib/apifootball-import.server.test.ts src/integrations/supabase/types.ts
+      - name: Run isolated importer tests
+        run: npm exec -- vitest run src/lib/apifootball-import.server.test.ts --pool=forks --maxWorkers=1
