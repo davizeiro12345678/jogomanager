@@ -155,6 +155,27 @@ export type Database = {
         }
         Relationships: []
       }
+      api_football_season_coverage: {
+        Row: {
+          league_source_id: string
+          season: string
+          coverage: Json
+          updated_at: string
+        }
+        Insert: {
+          league_source_id: string
+          season: string
+          coverage?: Json
+          updated_at?: string
+        }
+        Update: {
+          league_source_id?: string
+          season?: string
+          coverage?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       api_football_page_progress: {
         Row: {
           phase: string
@@ -1958,6 +1979,7 @@ export type Database = {
           current_season: string | null
           local_competition_id: string | null
           country: string | null
+          coverage: Json | null
         }[]
       }
       list_api_football_team_targets: {
