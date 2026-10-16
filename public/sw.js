@@ -3,7 +3,7 @@
    - Documentos: rede primeiro, com a última versão em cache como reserva.
    - Assets (js/css/imagens/escudos): cache primeiro, atualizando em segundo plano.
    - Chamadas de API e do backend nunca são cacheadas. */
-const VERSION = "pfm3d-v9";
+const VERSION = "pfm3d-v10";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 const SPORTS_IMAGES = `${VERSION}-sports-images`;
@@ -41,7 +41,7 @@ async function cacheProgressively(urls) {
     try {
       const response = await fetch(request);
       const size = Number(response.headers.get("content-length") || 0);
-      if (response.ok && (size === 0 || size <= MAX_ASSET_BYTES)) {
+      if (safePublicAsset(response, request) && (size === 0 || size <= MAX_ASSET_BYTES)) {
         await cache.put(request, response);
       }
     } catch {
@@ -57,7 +57,7 @@ self.addEventListener("install", (event) => {
       .open(SHELL)
       .then((c) =>
         c.addAll([
-          OFFLINE_URL,
+          // Do not precache HTML: an Access/login/error response must never become the offline homepage.
           "/manifest.webmanifest",
           "/favicon.png",
           "/icon-192.png",
@@ -94,6 +94,32 @@ function isAsset(url) {
   );
 }
 
+// Cache only verified, same-origin asset bytes. Never cache HTML login pages,
+// Cloudflare Access redirects, or private/no-store responses as JavaScript.
+function safePublicAsset(response, request) {
+  if (!response || response.status !== 200 || response.redirected) return false;
+  const requested = new URL(request.url);
+  const served = new URL(response.url || request.url);
+  if (requested.origin !== self.location.origin || served.origin !== requested.origin || served.pathname !== requested.pathname) return false;
+  if (response.headers.has("set-cookie") || /\bno-store\b/i.test(response.headers.get("cache-control") || "")) return false;
+  const mime = (response.headers.get("content-type") || "").toLowerCase();
+  if (mime.includes("text/html")) return false;
+  if (/\.(?:js|mjs)$/i.test(requested.pathname) && !/(?:javascript|ecmascript)/.test(mime)) return false;
+  if (/\.css$/i.test(requested.pathname) && !mime.includes("text/css")) return false;
+  return true;
+}
+
+function safeOfflineHomepage(response, request) {
+  if (!response || response.status !== 200 || response.redirected) return false;
+  const requested = new URL(request.url);
+  const served = new URL(response.url || request.url);
+  return requested.origin === self.location.origin && requested.pathname === "/" &&
+    served.origin === requested.origin && served.pathname === "/" &&
+    (response.headers.get("content-type") || "").toLowerCase().includes("text/html") &&
+    !response.headers.has("set-cookie") &&
+    !/\b(?:no-store|private)\b/i.test(response.headers.get("cache-control") || "");
+}
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
@@ -117,8 +143,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(SHELL).then((c) => c.put(OFFLINE_URL, copy).catch(() => undefined));
+          if (safeOfflineHomepage(res, req)) {
+            const copy = res.clone();
+            caches.open(SHELL).then((c) => c.put(OFFLINE_URL, copy).catch(() => undefined));
+          }
           return res;
         })
         .catch(async () => (await caches.match(OFFLINE_URL)) ?? Response.error()),
@@ -146,7 +174,7 @@ self.addEventListener("fetch", (event) => {
             if (
               res &&
               res.status === 200 &&
-              (sameOrigin || res.type === "cors") &&
+              (sportsImage ? res.type === "cors" && !res.redirected : safePublicAsset(res, req)) &&
               size > 0 &&
               size <= MAX_ASSET_BYTES
             ) {
