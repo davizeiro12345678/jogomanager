@@ -935,8 +935,7 @@ export async function runApiFootballImport(opts: {
     if (opts.phase === "standings")
       return await perLeague("standings", opts.offset, limit, deadline, standingsFor);
     if (opts.phase === "stats") return await importStats(opts.offset, deadline);
-    if (opts.phase === "predictions")
-      return await importPredictions(opts.offset, limit, deadline);
+    if (opts.phase === "predictions") return await importPredictions(opts.offset, limit, deadline);
     if (opts.phase === "odds") return await importOdds(opts.offset, deadline);
     if (opts.phase === "countries")
       return await importSimple("countries", "/countries", "country", (r) =>
