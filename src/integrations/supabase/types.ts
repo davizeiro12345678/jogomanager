@@ -2008,7 +2008,7 @@ export type Database = {
       }
       complete_api_football_import_phase: {
         Args: {
-          p_error?: string
+          p_error?: string | null
           p_next_offset: number | null
           p_phase: string
           p_processed: number
