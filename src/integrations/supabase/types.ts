@@ -1924,6 +1924,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      list_api_football_league_targets: {
+        Args: { p_offset: number; p_limit: number }
+        Returns: {
+          source_id: string
+          current_season: string | null
+          local_competition_id: string | null
+          country: string | null
+        }[]
+      }
+      list_api_football_team_targets: {
+        Args: { p_offset: number; p_limit: number; p_squads_only?: boolean }
+        Returns: {
+          source_id: string
+          league_source_id: string | null
+          local_club_id: string | null
+        }[]
+      }
       activate_training_boost: {
         Args: { _user_id: string }
         Returns: {
