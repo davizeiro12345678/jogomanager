@@ -76,22 +76,24 @@ async function afPage<T>(path: string): Promise<ApiFootballPage<T>> {
     const limited = res.status === 429 || /"rateLimit"/i.test(text);
     if ((limited || res.status >= 500) && attempt < 2) {
       const hint = Number(res.headers.get("retry-after"));
-      const delay = Number.isFinite(hint) && hint > 0
-        ? Math.min(8_000, hint * 1_000)
-        : 2_000 * (attempt + 1);
+      const delay =
+        Number.isFinite(hint) && hint > 0 ? Math.min(8_000, hint * 1_000) : 2_000 * (attempt + 1);
       await new Promise((resolve) => setTimeout(resolve, delay));
       continue;
     }
     if (res.status === 404) return { response: [] };
     if (!res.ok) throw new Error(`API-Football HTTP ${res.status}: ${text.slice(0, 200)}`);
-    let body: { response?: unknown; errors?: unknown; paging?: {current?: number; total?: number} };
+    let body: {
+      response?: unknown;
+      errors?: unknown;
+      paging?: { current?: number; total?: number };
+    };
     try {
       body = JSON.parse(text) as typeof body;
     } catch {
       throw new Error("API-Football returned invalid JSON");
     }
-    if (body.errors && typeof body.errors === "object" &&
-        Object.keys(body.errors).length > 0) {
+    if (body.errors && typeof body.errors === "object" && Object.keys(body.errors).length > 0) {
       throw new Error(`API-Football provider error: ${JSON.stringify(body.errors).slice(0, 200)}`);
     }
     if (!Array.isArray(body.response)) {
@@ -396,16 +398,19 @@ async function importSquads(
           sync_status: "partial",
         };
       });
-    // Squads can list one athlete twice, and a parallel page may insert him first;
-    // dedupe locally, then fall back to per-row inserts so one clash never drops a squad.
+    // Squads may list the same athlete twice, or another worker may insert
+    // the player concurrently. Deduplicate before one conflict-safe upsert.
     const unique = [...new Map(rows.map((r) => [r.source_id, r])).values()];
     if (!unique.length) return false;
     // One atomic statement per bounded squad; no N per-player retries.
     // Existing records (including manually reviewed ratings) are preserved.
-    const r = await db.from("players").upsert(unique, {
-      onConflict: "source,source_id",
-      ignoreDuplicates: true,
-    }).select("id");
+    const r = await db
+      .from("players")
+      .upsert(unique, {
+        onConflict: "source,source_id",
+        ignoreDuplicates: true,
+      })
+      .select("id");
     if (r.error) throw new Error(`Squad upsert failed: ${r.error.message}`);
     created += r.data?.length ?? 0;
   });
@@ -566,9 +571,13 @@ type AfPlayerStat = {
 async function statsFor(id: string, season: string, deadline: number) {
   const db = await admin();
   const target = `af:${id}`;
-  const { data: checkpoint, error } = await db.from("api_football_page_progress")
-    .select("next_page").eq("phase", "stats").eq("target_id", target)
-    .eq("season", season).maybeSingle();
+  const { data: checkpoint, error } = await db
+    .from("api_football_page_progress")
+    .select("next_page")
+    .eq("phase", "stats")
+    .eq("target_id", target)
+    .eq("season", season)
+    .maybeSingle();
   if (error) throw new Error(error.message);
 
   let page = checkpoint?.next_page ?? 1;
@@ -586,18 +595,28 @@ async function statsFor(id: string, season: string, deadline: number) {
     written += await saveRaw("player_stats", rows);
     const total = Math.max(1, response.paging?.total ?? 1);
     if (page >= total) {
-      const removed = await db.from("api_football_page_progress").delete()
-        .eq("phase", "stats").eq("target_id", target).eq("season", season);
+      const removed = await db
+        .from("api_football_page_progress")
+        .delete()
+        .eq("phase", "stats")
+        .eq("target_id", target)
+        .eq("season", season);
       if (removed.error) throw new Error(removed.error.message);
       return { written, complete: true };
     }
     page++;
     // Retried pages are upserts: safe even if a crash occurred between
     // saving the payload and writing this checkpoint.
-    const saved = await db.from("api_football_page_progress").upsert({
-      phase: "stats", target_id: target, season, next_page: page,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "phase,target_id,season" });
+    const saved = await db.from("api_football_page_progress").upsert(
+      {
+        phase: "stats",
+        target_id: target,
+        season,
+        next_page: page,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "phase,target_id,season" },
+    );
     if (saved.error) throw new Error(saved.error.message);
     pages++;
   }
@@ -609,15 +628,34 @@ async function importStats(offset: number, deadline: number): Promise<AfImportRe
   // are separate checkpoints, so a partially fetched league never disappears.
   const [league] = await leaguePage(offset, 1);
   if (!league)
-    return { ok: true, phase: "stats", processed: 0, created: 0,
-      linked: 0, nextOffset: null, remainingQuota: lastRemaining };
+    return {
+      ok: true,
+      phase: "stats",
+      processed: 0,
+      created: 0,
+      linked: 0,
+      nextOffset: null,
+      remainingQuota: lastRemaining,
+    };
   if (!league.current_season || sourceHasNoCoverage(league.coverage, "stats"))
-    return { ok: true, phase: "stats", processed: 1, created: 0,
-      linked: 0, skipped: 1, nextOffset: offset + 1, remainingQuota: lastRemaining };
+    return {
+      ok: true,
+      phase: "stats",
+      processed: 1,
+      created: 0,
+      linked: 0,
+      skipped: 1,
+      nextOffset: offset + 1,
+      remainingQuota: lastRemaining,
+    };
   const result = await statsFor(league.source_id.slice(3), league.current_season, deadline);
   return {
-    ok: true, phase: "stats", processed: result.complete ? 1 : 0,
-    created: result.written, linked: 0, skipped: result.complete && result.written === 0 ? 1 : 0,
+    ok: true,
+    phase: "stats",
+    processed: result.complete ? 1 : 0,
+    created: result.written,
+    linked: 0,
+    skipped: result.complete && result.written === 0 ? 1 : 0,
     nextOffset: result.complete ? offset + 1 : offset,
     remainingQuota: lastRemaining,
   };
@@ -879,8 +917,7 @@ export async function runApiFootballImport(opts: {
       return await perLeague("fixtures", opts.offset, opts.limit, deadline, fixturesFor);
     if (opts.phase === "standings")
       return await perLeague("standings", opts.offset, opts.limit, deadline, standingsFor);
-    if (opts.phase === "stats")
-      return await importStats(opts.offset, deadline);
+    if (opts.phase === "stats") return await importStats(opts.offset, deadline);
     if (opts.phase === "predictions")
       return await importPredictions(opts.offset, opts.limit, deadline);
     if (opts.phase === "odds") return await importOdds(opts.offset, deadline);
