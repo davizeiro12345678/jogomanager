@@ -1,8 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { lazy, Suspense, useState } from "react";
-import { ScreenTabs, SkeletonRows } from "@/components/game/screen-kit";
 import { z } from "zod";
-import { ArrowLeft, Flag, HeartPulse, ShieldCheck, Sparkles, Trophy } from "lucide-react";
+import { ArrowLeft, Flag, HeartPulse, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/game/Crest";
 const AthleteHero3D = lazy(() =>
@@ -18,34 +17,58 @@ import {
   TRAITS,
   keyAttributes,
 } from "@/game/player-career/attributes";
-import {
-  acceptOffer,
-  advanceWeek,
-  careerTotals,
-  declineOffer,
-  negotiateOffer,
-  MAX_OFFER_NEGOTIATIONS,
-  opponentFor,
-  overall,
-  prepareMoments,
-  retire,
-  seasonLength,
-  trainingOutlook,
-} from "@/game/player-career/engine";
-import type {
-  AttributeGroup,
-  PlayerCareerState,
-  TrainingIntensity,
-} from "@/game/player-career/types";
+import { overall, seasonLength } from "@/game/player-career/engine";
+import type { AttributeGroup, PlayerCareerState } from "@/game/player-career/types";
 import { useAthlete } from "@/hooks/useAthlete";
+import { downloadAthlete } from "@/lib/player-career-export";
 import { seasonObjectives } from "@/game/player-career/objectives";
+import { Bar } from "@/components/game/athlete/PlayerStats";
+import { WeekTab } from "@/components/game/athlete/PlayerWeekTab";
 import "@/components/game/athlete.css";
+
+// Non-default panels load only when selected, instead of adding all their UI to the weekly startup.
+const PlayerCalendarTab = lazy(() =>
+  import("@/components/game/athlete/PlayerCalendarTab").then((module) => ({
+    default: module.PlayerCalendarTab,
+  })),
+);
+const PlayerHealthTab = lazy(() =>
+  import("@/components/game/athlete/PlayerHealthTab").then((module) => ({
+    default: module.PlayerHealthTab,
+  })),
+);
+const NationalTeamTab = lazy(() =>
+  import("@/components/game/athlete/PlayerNationalTab").then((module) => ({
+    default: module.NationalTeamTab,
+  })),
+);
+const ContractTab = lazy(() =>
+  import("@/components/game/athlete/PlayerContractTab").then((module) => ({
+    default: module.ContractTab,
+  })),
+);
+const HistoryTab = lazy(() =>
+  import("@/components/game/athlete/PlayerHistoryTab").then((module) => ({
+    default: module.HistoryTab,
+  })),
+);
 
 export const Route = createFileRoute("/jogador/painel")({
   ssr: false,
   validateSearch: z.object({
     slot: z.number().int().min(1).max(3).catch(1),
-    tab: z.enum(["semana", "atributos", "selecao", "contrato", "noticias", "historico"]).optional(),
+    tab: z
+      .enum([
+        "semana",
+        "calendario",
+        "saude",
+        "atributos",
+        "selecao",
+        "contrato",
+        "noticias",
+        "historico",
+      ])
+      .optional(),
   }),
   head: () => ({
     meta: [
@@ -68,20 +91,29 @@ export const Route = createFileRoute("/jogador/painel")({
   component: AthletePanelPage,
 });
 
-type Tab = "semana" | "atributos" | "selecao" | "contrato" | "noticias" | "historico";
+type Tab =
+  | "semana"
+  | "calendario"
+  | "saude"
+  | "atributos"
+  | "selecao"
+  | "contrato"
+  | "noticias"
+  | "historico";
 const TABS: { id: Tab; label: string }[] = [
   { id: "semana", label: "Semana" },
+  { id: "calendario", label: "Calendário" },
+  { id: "saude", label: "Saúde" },
   { id: "atributos", label: "Atributos" },
   { id: "selecao", label: "Seleção" },
   { id: "contrato", label: "Contrato e propostas" },
   { id: "noticias", label: "Notícias" },
   { id: "historico", label: "Histórico" },
 ];
-const money = (n: number) => `R$ ${Math.round(n).toLocaleString("pt-BR")}`;
 
 function AthletePanelPage() {
   const { slot, tab } = Route.useSearch();
-  const { state, commit, syncError } = useAthlete(slot);
+  const { state, commit, syncError, syncConflict, resolveWithCloud } = useAthlete(slot);
   if (state === undefined)
     return (
       <main className="athlete-shell">
@@ -101,22 +133,36 @@ function AthletePanelPage() {
         </div>
       </main>
     );
-  return <Panel state={state} commit={commit} syncError={syncError} initialTab={tab} />;
+  return (
+    <Panel
+      state={state}
+      commit={commit}
+      syncError={syncError}
+      syncConflict={syncConflict}
+      resolveWithCloud={resolveWithCloud}
+      initialTab={tab}
+    />
+  );
 }
 
 function Panel({
   state,
   commit,
   syncError,
+  syncConflict,
+  resolveWithCloud,
   initialTab,
 }: {
   state: PlayerCareerState;
   commit: (s: PlayerCareerState) => void;
   syncError: boolean;
+  syncConflict: boolean;
+  resolveWithCloud: () => Promise<boolean>;
   initialTab?: Tab | undefined;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? (state.retired ? "historico" : "semana"));
   const [showPlayerModel, setShowPlayerModel] = useState(false);
+  const [resolutionMessage, setResolutionMessage] = useState<string | null>(null);
   const club = CLUBS[state.clubId];
   const ovr = overall(state);
   const objectives = seasonObjectives(state, seasonLength(state));
@@ -152,9 +198,42 @@ function Panel({
             </Link>
           </Button>
           {syncError && (
-            <span className="athlete-meta">
-              Sincronização pendente: confira a conexão e mantenha uma cópia local
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="athlete-meta" role={syncConflict ? "alert" : "status"}>
+                {syncConflict
+                  ? "Conflito de saves: a versão local foi preservada e a nuvem não foi sobrescrita."
+                  : "Sincronização pendente: confira a conexão e mantenha uma cópia local"}
+              </span>
+              {syncConflict && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    if (
+                      !window.confirm(
+                        "Usar a versão atual da nuvem? Será baixado um JSON do seu progresso local e mantido um backup no aparelho antes da substituição.",
+                      )
+                    )
+                      return;
+                    downloadAthlete(state, "backup-antes-de-usar-nuvem");
+                    const resolved = await resolveWithCloud();
+                    setResolutionMessage(
+                      resolved
+                        ? "Versão da nuvem carregada. Sua antiga carreira permanece no backup local."
+                        : "Não foi possível resolver o conflito; o progresso local permanece preservado.",
+                    );
+                  }}
+                >
+                  Usar versão da nuvem (com backup)
+                </Button>
+              )}
+            </div>
+          )}
+          {resolutionMessage && (
+            <p className="athlete-meta" role="status">
+              {resolutionMessage}
+            </p>
           )}
         </div>
         <section className="athlete-card athlete-hero">
@@ -325,520 +404,85 @@ function Panel({
           aria-labelledby={`athlete-tab-${tab}`}
           className="min-w-0"
         >
-          {tab === "semana" && <WeekTab state={state} commit={commit} />}
-          {tab === "atributos" && (
-            <section className="athlete-card grid gap-4">
-              {groups.map((g) => (
-                <div key={g}>
-                  <h2 className="font-bold mb-2">
-                    {GROUP_LABEL[g]} <span className="athlete-meta">· média {groupAvg(g)}</span>
-                  </h2>
-                  <div className="athlete-attrs">
-                    {ATTRIBUTES.filter((a) => a.group === g).map((a) => {
-                      const v = Math.round(state.attrs[a.key] ?? 0);
-                      const key = keyAttributes(state.position).slice(0, 5).includes(a.key);
-                      return (
-                        <div key={a.key} className="athlete-attr">
-                          <span>
-                            {a.label}
-                            {key ? " ★" : ""}
-                          </span>
-                          <b className={v >= 75 ? "hi" : v < 45 ? "lo" : ""}>{v}</b>
-                        </div>
-                      );
-                    })}
+          <Suspense
+            fallback={
+              <section className="athlete-card" role="status" aria-live="polite">
+                Carregando o painel selecionado…
+              </section>
+            }
+          >
+            {tab === "semana" && <WeekTab state={state} commit={commit} />}
+            {tab === "calendario" && <PlayerCalendarTab state={state} />}
+            {tab === "saude" && <PlayerHealthTab state={state} />}
+            {tab === "atributos" && (
+              <section className="athlete-card grid gap-4">
+                {groups.map((g) => (
+                  <div key={g}>
+                    <h2 className="font-bold mb-2">
+                      {GROUP_LABEL[g]} <span className="athlete-meta">· média {groupAvg(g)}</span>
+                    </h2>
+                    <div className="athlete-attrs">
+                      {ATTRIBUTES.filter((a) => a.group === g).map((a) => {
+                        const v = Math.round(state.attrs[a.key] ?? 0);
+                        const key = keyAttributes(state.position).slice(0, 5).includes(a.key);
+                        return (
+                          <div key={a.key} className="athlete-attr">
+                            <span>
+                              {a.label}
+                              {key ? " ★" : ""}
+                            </span>
+                            <b className={v >= 75 ? "hi" : v < 45 ? "lo" : ""}>{v}</b>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
-              <div>
-                <h2 className="font-bold mb-2">Características</h2>
-                <div className="athlete-chips">
-                  {TRAITS.map((t) => (
-                    <span
-                      key={t.key}
-                      className="athlete-chip"
-                      aria-pressed={state.traits.includes(t.key)}
-                      title={t.hint}
-                      style={{ opacity: state.traits.includes(t.key) ? 1 : 0.45 }}
-                    >
-                      {t.label}
-                    </span>
-                  ))}
-                </div>
-                <p className="athlete-meta mt-2">
-                  Características apagadas ainda não foram conquistadas.
-                </p>
-              </div>
-            </section>
-          )}
-          {tab === "selecao" && <NationalTeamTab state={state} />}
-          {tab === "contrato" && <ContractTab state={state} commit={commit} />}
-          {tab === "noticias" && (
-            <section className="athlete-card">
-              {state.news.length ? (
-                <ul className="athlete-news">
-                  {state.news.map((n) => (
-                    <li key={n.id} data-tone={n.tone}>
-                      <span className="athlete-meta">
-                        T{n.season} · S{n.week} —{" "}
+                ))}
+                <div>
+                  <h2 className="font-bold mb-2">Características</h2>
+                  <div className="athlete-chips">
+                    {TRAITS.map((t) => (
+                      <span
+                        key={t.key}
+                        className="athlete-chip"
+                        aria-pressed={state.traits.includes(t.key)}
+                        title={t.hint}
+                        style={{ opacity: state.traits.includes(t.key) ? 1 : 0.45 }}
+                      >
+                        {t.label}
                       </span>
-                      {n.title}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="athlete-meta">Nenhuma notícia ainda. Jogue a primeira semana.</p>
-              )}
-            </section>
-          )}
-          {tab === "historico" && <HistoryTab state={state} />}
+                    ))}
+                  </div>
+                  <p className="athlete-meta mt-2">
+                    Características apagadas ainda não foram conquistadas.
+                  </p>
+                </div>
+              </section>
+            )}
+            {tab === "selecao" && <NationalTeamTab state={state} />}
+            {tab === "contrato" && <ContractTab state={state} commit={commit} />}
+            {tab === "noticias" && (
+              <section className="athlete-card">
+                {state.news.length ? (
+                  <ul className="athlete-news">
+                    {state.news.map((n) => (
+                      <li key={n.id} data-tone={n.tone}>
+                        <span className="athlete-meta">
+                          T{n.season} · S{n.week} —{" "}
+                        </span>
+                        {n.title}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="athlete-meta">Nenhuma notícia ainda. Jogue a primeira semana.</p>
+                )}
+              </section>
+            )}
+            {tab === "historico" && <HistoryTab state={state} />}
+          </Suspense>
         </div>
       </div>
     </main>
-  );
-}
-
-function NationalTeamTab({ state }: { state: PlayerCareerState }) {
-  const isInternational = state.nationalCaps > 0;
-  const reputationGap = Math.max(0, 36 - Math.round(state.reputation));
-  const formGap = Math.max(0, 71 - Math.round(state.form));
-  return (
-    <div className="athlete-grid athlete-national-grid">
-      <section className="athlete-card athlete-national-callup">
-        <div className="athlete-national-mark">
-          <Flag aria-hidden />
-        </div>
-        <div>
-          <p className="athlete-eyebrow">Carreira internacional</p>
-          <h2>{state.nation}</h2>
-          <p className="athlete-meta">
-            {isInternational
-              ? "Você já vestiu a camisa da seleção principal."
-              : "Seu desempenho está sendo acompanhado pela comissão técnica."}
-          </p>
-        </div>
-      </section>
-      <section className="athlete-card athlete-national-stats">
-        <Stat label="Jogos" value={state.nationalCaps} />
-        <Stat label="Gols" value={state.nationalGoals} />
-        <Stat label="Reputação" value={Math.round(state.reputation)} />
-      </section>
-      <section className="athlete-card athlete-selection-path">
-        <div className="athlete-section-heading">
-          <div>
-            <p className="athlete-eyebrow">Caminho da convocação</p>
-            <h2 className="font-bold">Status atual</h2>
-          </div>
-          <ShieldCheck aria-hidden />
-        </div>
-        <div className="athlete-selection-step" data-complete={state.reputation >= 36}>
-          <span>01</span>
-          <div>
-            <strong>Reconhecimento nacional</strong>
-            <p className="athlete-meta">
-              {reputationGap
-                ? `Faltam ${reputationGap} pontos de reputação.`
-                : "Patamar alcançado."}
-            </p>
-          </div>
-        </div>
-        <div className="athlete-selection-step" data-complete={state.form >= 71}>
-          <span>02</span>
-          <div>
-            <strong>Boa fase</strong>
-            <p className="athlete-meta">
-              {formGap ? `Eleve a forma em ${formGap} pontos.` : "Forma de convocação."}
-            </p>
-          </div>
-        </div>
-        <div className="athlete-selection-step" data-complete={isInternational}>
-          <span>03</span>
-          <div>
-            <strong>Convocação</strong>
-            <p className="athlete-meta">
-              {isInternational
-                ? `${state.nationalCaps} partida(s) pela seleção.`
-                : "Pode acontecer ao avançar uma semana em grande fase."}
-            </p>
-          </div>
-        </div>
-      </section>
-      <section className="athlete-card athlete-national-honours">
-        <Trophy aria-hidden />
-        <div>
-          <h2 className="font-bold">Legado internacional</h2>
-          <p className="athlete-meta">
-            {state.nationalGoals > 0
-              ? `${state.nationalGoals} gol(s) marcados pelo seu país.`
-              : "A primeira convocação abre a corrida por recordes e títulos."}
-          </p>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function Bar({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="athlete-bar">
-      <label>
-        <span>{label}</span>
-        <b>{Math.round(value)}</b>
-      </label>
-      <div className="athlete-track">
-        <span className="athlete-fill" style={{ width: `${Math.round(value)}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function WeekTab({
-  state,
-  commit,
-}: {
-  state: PlayerCareerState;
-  commit: (s: PlayerCareerState) => void;
-}) {
-  const [focus, setFocus] = useState<AttributeGroup[]>(
-    state.position === "GOL" ? ["goleiro", "mental"] : ["tecnico", "fisico"],
-  );
-  const [intensity, setIntensity] = useState<TrainingIntensity>("normal");
-  const [choices, setChoices] = useState<Record<string, string>>({});
-  const outlook = trainingOutlook(state, intensity);
-  if (state.retired)
-    return (
-      <p className="athlete-card athlete-meta">Carreira encerrada. Veja o legado em Histórico.</p>
-    );
-  const { club: opp, home } = opponentFor(state);
-  const moments = state.pendingMoment?.week === state.week ? state.pendingMoment.moments : null;
-  const options: AttributeGroup[] =
-    state.position === "GOL"
-      ? ["goleiro", "fisico", "mental", "tecnico"]
-      : ["tecnico", "fisico", "mental", "defensivo"];
-  const toggle = (g: AttributeGroup) =>
-    setFocus((f) => (f.includes(g) ? f.filter((x) => x !== g) : [...f.slice(-1), g]));
-  const play = () => {
-    commit(advanceWeek(state, { focus: focus.length ? focus : [options[0]!], intensity, choices }));
-    setChoices({});
-  };
-  const last = state.lastMatch;
-  const lastOpp = last ? CLUBS[last.opponentId] : undefined;
-  const myClub = CLUBS[state.clubId];
-
-  return (
-    <div className="athlete-grid">
-      <section className="athlete-card grid gap-4">
-        <div>
-          <h2 className="font-bold">Próximo jogo</h2>
-          <div className="athlete-score my-2">
-            {myClub && <Crest club={myClub} size={44} />}
-            <span className="athlete-meta">{home ? "casa" : "fora"}</span>
-            <span>×</span>
-            {opp && <Crest club={opp} size={44} />}
-          </div>
-          <p className="athlete-meta text-center">
-            {myClub?.short} × {opp?.name}
-          </p>
-        </div>
-        <div>
-          <h2 className="font-bold">
-            Treino da semana <span className="athlete-meta">(escolha 2 áreas)</span>
-          </h2>
-          <div className="athlete-chips mt-2">
-            {options.map((g) => (
-              <button
-                key={g}
-                type="button"
-                className="athlete-chip"
-                aria-pressed={focus.includes(g)}
-                onClick={() => toggle(g)}
-              >
-                {GROUP_LABEL[g]}
-              </button>
-            ))}
-          </div>
-          <div className="athlete-chips mt-2">
-            {(["leve", "normal", "pesado"] as TrainingIntensity[]).map((i) => (
-              <button
-                key={i}
-                type="button"
-                className="athlete-chip"
-                aria-pressed={intensity === i}
-                onClick={() => setIntensity(i)}
-              >
-                {i[0]!.toUpperCase() + i.slice(1)}
-                <br />
-                <small className="athlete-meta">
-                  risco de lesão {(trainingOutlook(state, i).injuryRisk * 100).toFixed(1)}%
-                </small>
-              </button>
-            ))}
-          </div>
-          <div className="grid gap-1 mt-3" aria-live="polite">
-            <p className="athlete-meta">Energia atual: {Math.round(state.energy)}%</p>
-            <p className="athlete-meta">
-              Energia prevista após o treino: {Math.round(outlook.energyAfter)}%
-            </p>
-            <p className="athlete-meta">
-              Risco estimado de lesão: {(outlook.injuryRisk * 100).toFixed(1)}%
-            </p>
-            {outlook.energyAfter < 40 && (
-              <p className="athlete-meta" role="status">
-                Energia baixa: prefira treino leve ou recuperação antes de jogar.
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="grid gap-2">
-          <h2 className="font-bold">Seus lances decisivos</h2>
-          {!moments ? (
-            <>
-              <p className="athlete-meta">
-                Decida você mesmo os momentos importantes do jogo, ou deixe a simulação decidir pelo
-                jeito mais seguro.
-              </p>
-              <Button variant="outline" onClick={() => commit(prepareMoments(state))}>
-                Decidir meus lances
-              </Button>
-            </>
-          ) : (
-            moments.map((m) => (
-              <div key={m.id} className="athlete-moment">
-                <strong>
-                  {m.minute}' — {m.prompt}
-                </strong>
-                <div className="athlete-chips">
-                  {m.options.map((o) => (
-                    <button
-                      key={o.id}
-                      type="button"
-                      className="athlete-chip"
-                      aria-pressed={choices[m.id] === o.id}
-                      onClick={() => setChoices((c) => ({ ...c, [m.id]: o.id }))}
-                    >
-                      {o.label}
-                      <br />
-                      <small className="athlete-meta">risco {Math.round(o.risk * 100)}%</small>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-      <section className="athlete-card athlete-report" aria-live="polite">
-        <h2 className="font-bold">Último jogo</h2>
-        {!last ? (
-          <p className="athlete-meta">Ainda não houve jogo. Escolha o treino e jogue a semana.</p>
-        ) : (
-          <>
-            <div className="athlete-score">
-              {myClub?.short} {last.goalsFor} × {last.goalsAgainst} {lastOpp?.short}
-            </div>
-            <p className="athlete-meta text-center">
-              {last.role === "titular"
-                ? "Titular"
-                : last.role === "reserva"
-                  ? "Reserva"
-                  : "Fora do jogo"}{" "}
-              · {last.minutes} min
-            </p>
-            {last.rating !== null && (
-              <div className="text-center">
-                <div className="athlete-rating">{last.rating.toFixed(1)}</div>
-                {last.motm && <p className="font-bold">Melhor em campo</p>}
-              </div>
-            )}
-            <p className="text-center">
-              {last.goals} gol(s) · {last.assists} assistência(s)
-            </p>
-            <ul className="athlete-news">
-              {last.reasons.map((r, i) => (
-                <li key={i}>{r}</li>
-              ))}
-            </ul>
-          </>
-        )}
-      </section>
-      <div className="athlete-sticky">
-        <Button size="lg" onClick={play}>
-          Jogar semana
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function ContractTab({
-  state,
-  commit,
-}: {
-  state: PlayerCareerState;
-  commit: (s: PlayerCareerState) => void;
-}) {
-  const [msg, setMsg] = useState<string | null>(null);
-  return (
-    <div className="athlete-grid">
-      <section className="athlete-card grid gap-2">
-        <h2 className="font-bold">Contrato atual</h2>
-        <p>{CLUBS[state.contract.clubId]?.name}</p>
-        <p className="athlete-meta">
-          Salário {money(state.contract.salary)}/semana · bônus por gol{" "}
-          {money(state.contract.goalBonus)}
-        </p>
-        <p className="athlete-meta">
-          Até a temporada {state.contract.untilSeason} · multa {money(state.contract.releaseClause)}
-        </p>
-        <p className="athlete-meta">
-          Patrimônio {money(state.money)} · {state.followers.toLocaleString("pt-BR")} seguidores ·
-          reputação {Math.round(state.reputation)}
-        </p>
-        {!state.retired && state.age >= 30 && (
-          <Button
-            variant="outline"
-            onClick={() => {
-              if (window.confirm("Encerrar a carreira agora?")) commit(retire(state));
-            }}
-          >
-            Anunciar aposentadoria
-          </Button>
-        )}
-      </section>
-      <section className="athlete-card grid gap-3">
-        <h2 className="font-bold">Propostas</h2>
-        {msg && (
-          <p role="status" className="athlete-meta">
-            {msg}
-          </p>
-        )}
-        {!state.offers.length ? (
-          <p className="athlete-meta">
-            Nenhuma proposta agora. A janela abre no meio e no fim da temporada.
-          </p>
-        ) : (
-          state.offers.map((o) => {
-            const c = CLUBS[o.clubId];
-            return (
-              <div key={o.id} className="athlete-moment">
-                <div className="flex items-center gap-2">
-                  {c && <Crest club={c} size={32} />}
-                  <strong>{c?.name ?? o.clubId}</strong>
-                  <span className="athlete-meta ml-auto">nível {c?.strength}</span>
-                </div>
-                <p className="athlete-meta">
-                  {o.loan ? "Empréstimo" : "Contrato"} de {o.years} temporada(s) · {money(o.salary)}
-                  /semana
-                </p>
-                <p className="athlete-meta">
-                  Contrapropostas utilizadas: {o.negotiationRounds ?? 0}/{MAX_OFFER_NEGOTIATIONS}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" onClick={() => commit(acceptOffer(state, o.id))}>
-                    Aceitar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={(o.negotiationRounds ?? 0) >= MAX_OFFER_NEGOTIATIONS}
-                    onClick={() => {
-                      const r = negotiateOffer(state, o.id);
-                      commit(r.state);
-                      setMsg(
-                        r.accepted
-                          ? "Proposta melhorada em 15%."
-                          : "O clube desistiu da negociação.",
-                      );
-                    }}
-                  >
-                    Pedir +15%
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => commit(declineOffer(state, o.id))}
-                  >
-                    Recusar
-                  </Button>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </section>
-    </div>
-  );
-}
-
-function HistoryTab({ state }: { state: PlayerCareerState }) {
-  const t = careerTotals(state);
-  const lines = [...state.history, ...(state.retired ? [] : [state.current])];
-  return (
-    <div className="grid gap-4">
-      <section className="athlete-card athlete-bars">
-        <Stat label="Jogos" value={t.apps} />
-        <Stat label="Gols" value={t.goals} />
-        <Stat label="Assist." value={t.assists} />
-        <Stat label="Nota média" value={t.avg ? t.avg.toFixed(2) : "—"} />
-        <Stat label="Seleção" value={`${state.nationalCaps} j / ${state.nationalGoals} g`} />
-      </section>
-      <section className="athlete-card athlete-scroll">
-        <h2 className="font-bold mb-2">Temporadas</h2>
-        <table className="athlete-table">
-          <thead>
-            <tr>
-              <th>Temp.</th>
-              <th>Idade</th>
-              <th>Clube</th>
-              <th>J</th>
-              <th>G</th>
-              <th>A</th>
-              <th>Nota</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((l, i) => (
-              <tr key={i}>
-                <td>{l.season}</td>
-                <td>{l.age}</td>
-                <td>{CLUBS[l.clubId]?.short ?? l.clubId}</td>
-                <td>{l.apps}</td>
-                <td>{l.goals}</td>
-                <td>{l.assists}</td>
-                <td>{l.apps ? (l.ratingSum / l.apps).toFixed(2) : "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-      <section className="athlete-card">
-        <h2 className="font-bold mb-2">Prêmios</h2>
-        {state.awards.length ? (
-          <ul className="athlete-news">
-            {state.awards.map((a, i) => (
-              <li key={i} data-tone="good">
-                {a}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="athlete-meta">Nenhum prêmio ainda.</p>
-        )}
-        {state.retired && (
-          <Button asChild className="mt-3">
-            <Link to="/new">Seguir como técnico</Link>
-          </Button>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="text-center">
-      <div className="text-2xl font-bold">{value}</div>
-      <div className="athlete-meta text-xs uppercase">{label}</div>
-    </div>
   );
 }

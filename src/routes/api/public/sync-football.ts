@@ -31,18 +31,29 @@ export const Route = createFileRoute("/api/public/sync-football")({
               { ok: true, scheduled: false, reason: "No queued API-Football phases" },
               { headers: { "cache-control": "no-store" } },
             );
+          const offset = lease.out_offset;
+          const token = lease.out_token;
+          if (
+            typeof offset !== "number" ||
+            !Number.isSafeInteger(offset) ||
+            offset < 0 ||
+            typeof token !== "string" ||
+            token.length < 1
+          ) {
+            return Response.json({ ok: false, error: "Invalid import lease" }, { status: 409 });
+          }
           const { runApiFootballImport } = await import("@/lib/apifootball-import.server");
           // Phase values are constrained by the database CHECK constraint.
           const phase = lease.out_phase as import("@/lib/apifootball-import.server").Phase;
           const result = await runApiFootballImport({
             phase,
-            offset: lease.out_offset,
+            offset,
             limit: lease.out_limit,
             budgetMs: 50_000,
           });
           const finish = await supabaseAdmin.rpc("complete_api_football_import_phase", {
             p_phase: lease.out_phase,
-            p_token: lease.out_token,
+            p_token: token,
             p_processed: result.processed,
             p_next_offset: result.nextOffset,
             p_error: result.ok ? null : (result.error ?? "Unknown import failure"),

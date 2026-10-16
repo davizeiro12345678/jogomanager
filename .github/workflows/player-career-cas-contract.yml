@@ -1,0 +1,28 @@
+name: Player career database contracts
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/sql/player-career-cas.sql"
+      - "drizzle/migrations/0035_player_career_atomic_sync.sql"
+      - ".github/workflows/player-career-cas-contract.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  cas:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test SQL migration contract
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/player-career-cas.sql

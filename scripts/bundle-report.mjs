@@ -92,7 +92,7 @@ const cinematicSetChunks = cinematicSetChunkPrefixes.map(({ set, prefix }) => {
 const entries = chunks
   .filter(
     (c) =>
-      /^(?:client-|index-|new-|dashboard-|editor-|match-|partida-rapida-|match\.worker-|CinematicStage3D-)/.test(
+      /^(?:client-|index-|new-|dashboard-|editor-|jogador\.painel-|jogador\.index-|match-|partida-rapida-|match\.worker-|CinematicStage3D-)/.test(
         c.name,
       ) || c.surface === "home",
   )
@@ -166,6 +166,7 @@ if (process.argv.includes("--check")) {
   const quick = entries.find((e) => e.name.startsWith("partida-rapida-"));
   const home = entries.find((e) => e.surface === "home");
   const newCareer = entries.find((e) => e.surface === "new");
+  const playerCareer = entries.find((e) => e.name.startsWith("jogador.painel-"));
   const editor = entries.find((e) => e.name.startsWith("editor-"));
   const match = entries.find((e) => e.name.startsWith("match-"));
   const matchReport = chunks.find((c) => c.name.startsWith("MatchReport-"));
@@ -222,6 +223,14 @@ if (process.argv.includes("--check")) {
     )
   )
     throw new Error("New career wizard must load the 3D stage on demand");
+  const deferredAthleteVisuals =
+    /^(?:AthleteHero3D-|PlayerCalendarTab-|PlayerHealthTab-|PlayerNationalTab-|PlayerContractTab-|PlayerHistoryTab-)/;
+  if (
+    !playerCareer ||
+    playerCareer.dependencies.some((name) => deferredAthleteVisuals.test(name))
+  ) {
+    throw new Error("Player career must load heavy 3D and secondary panels on demand");
+  }
 }
 if (process.argv.includes("--check-cinematic")) validateCinematicStageSplitting();
 const output = path.resolve("verification/bundle-2026-10-01", `${label}.json`);
