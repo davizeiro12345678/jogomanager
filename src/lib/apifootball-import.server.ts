@@ -206,15 +206,20 @@ async function importLeagues(): Promise<AfImportResult> {
     const covered = chunk.flatMap((r) => {
       const seasons = r.seasons ?? [];
       const current = seasons.find((season) => season.current) ?? seasons[seasons.length - 1];
-      return current ? [{
-        league_source_id: `af:${r.league.id}`,
-        season: String(current.year),
-        coverage: (current.coverage ?? {}) as never,
-        updated_at: new Date().toISOString(),
-      }] : [];
+      return current
+        ? [
+            {
+              league_source_id: `af:${r.league.id}`,
+              season: String(current.year),
+              coverage: (current.coverage ?? {}) as never,
+              updated_at: new Date().toISOString(),
+            },
+          ]
+        : [];
     });
     if (covered.length) {
-      const saved = await db.from("api_football_season_coverage")
+      const saved = await db
+        .from("api_football_season_coverage")
         .upsert(covered, { onConflict: "league_source_id,season" });
       if (saved.error) throw new Error(saved.error.message);
     }
@@ -501,7 +506,8 @@ async function perLeague(
     created,
     linked: 0,
     skipped: batch.skipped,
-    nextOffset: leagues.length < limit && batch.done === leagues.length ? null : offset + batch.done,
+    nextOffset:
+      leagues.length < limit && batch.done === leagues.length ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
@@ -767,7 +773,8 @@ async function importVenues(
     created,
     linked: 0,
     skipped: batch.skipped,
-    nextOffset: countries.length < limit && batch.done === countries.length ? null : offset + batch.done,
+    nextOffset:
+      countries.length < limit && batch.done === countries.length ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
