@@ -924,16 +924,19 @@ export async function runApiFootballImport(opts: {
   budgetMs: number;
 }): Promise<AfImportResult> {
   const deadline = Date.now() + opts.budgetMs;
+  // Match the service-side RPC page cap: otherwise a manual limit > 50
+  // would wrongly treat a partial page as the end of the catalog.
+  const limit = Math.max(1, Math.min(50, opts.limit));
   try {
     if (opts.phase === "leagues") return await importLeagues();
-    if (opts.phase === "teams") return await importTeams(opts.offset, opts.limit, deadline);
+    if (opts.phase === "teams") return await importTeams(opts.offset, limit, deadline);
     if (opts.phase === "fixtures")
-      return await perLeague("fixtures", opts.offset, opts.limit, deadline, fixturesFor);
+      return await perLeague("fixtures", opts.offset, limit, deadline, fixturesFor);
     if (opts.phase === "standings")
-      return await perLeague("standings", opts.offset, opts.limit, deadline, standingsFor);
+      return await perLeague("standings", opts.offset, limit, deadline, standingsFor);
     if (opts.phase === "stats") return await importStats(opts.offset, deadline);
     if (opts.phase === "predictions")
-      return await importPredictions(opts.offset, opts.limit, deadline);
+      return await importPredictions(opts.offset, limit, deadline);
     if (opts.phase === "odds") return await importOdds(opts.offset, deadline);
     if (opts.phase === "countries")
       return await importSimple("countries", "/countries", "country", (r) =>
@@ -941,15 +944,15 @@ export async function runApiFootballImport(opts: {
       );
     if (opts.phase === "timezones")
       return await importSimple("timezones", "/timezone", "timezone", (r) => String(r));
-    if (opts.phase === "venues") return await importVenues(opts.offset, opts.limit, deadline);
+    if (opts.phase === "venues") return await importVenues(opts.offset, limit, deadline);
     if (opts.phase === "coaches")
-      return await perTeam("coaches", opts.offset, opts.limit, deadline, coachesFor);
+      return await perTeam("coaches", opts.offset, limit, deadline, coachesFor);
     if (opts.phase === "teamstats")
-      return await perTeam("teamstats", opts.offset, opts.limit, deadline, teamStatsFor);
+      return await perTeam("teamstats", opts.offset, limit, deadline, teamStatsFor);
     if (opts.phase === "injuries")
-      return await perLeague("injuries", opts.offset, opts.limit, deadline, injuriesFor);
-    if (opts.phase === "details") return await importDetails(opts.offset, opts.limit, deadline);
-    return await importSquads(opts.offset, opts.limit, deadline);
+      return await perLeague("injuries", opts.offset, limit, deadline, injuriesFor);
+    if (opts.phase === "details") return await importDetails(opts.offset, limit, deadline);
+    return await importSquads(opts.offset, limit, deadline);
   } catch (e) {
     return {
       ok: false,
