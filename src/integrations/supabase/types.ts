@@ -119,7 +119,6 @@ export type Database = {
       api_football_import_progress: {
         Row: {
           batch_size: number
-          consecutive_failures: number
           error_message: string | null
           lease_token: string | null
           lease_until: string | null
@@ -131,7 +130,6 @@ export type Database = {
         }
         Insert: {
           batch_size?: number
-          consecutive_failures?: number
           error_message?: string | null
           lease_token?: string | null
           lease_until?: string | null
@@ -143,7 +141,6 @@ export type Database = {
         }
         Update: {
           batch_size?: number
-          consecutive_failures?: number
           error_message?: string | null
           lease_token?: string | null
           lease_until?: string | null
@@ -151,51 +148,6 @@ export type Database = {
           phase?: string
           status?: string
           total_processed?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      api_football_season_coverage: {
-        Row: {
-          league_source_id: string
-          season: string
-          coverage: Json
-          updated_at: string
-        }
-        Insert: {
-          league_source_id: string
-          season: string
-          coverage?: Json
-          updated_at?: string
-        }
-        Update: {
-          league_source_id?: string
-          season?: string
-          coverage?: Json
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      api_football_page_progress: {
-        Row: {
-          phase: string
-          target_id: string
-          season: string
-          next_page: number
-          updated_at: string
-        }
-        Insert: {
-          phase: string
-          target_id: string
-          season: string
-          next_page?: number
-          updated_at?: string
-        }
-        Update: {
-          phase?: string
-          target_id?: string
-          season?: string
-          next_page?: number
           updated_at?: string
         }
         Relationships: []
@@ -1972,24 +1924,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      list_api_football_league_targets: {
-        Args: { p_offset: number; p_limit: number }
-        Returns: {
-          source_id: string
-          current_season: string | null
-          local_competition_id: string | null
-          country: string | null
-          coverage: Json | null
-        }[]
-      }
-      list_api_football_team_targets: {
-        Args: { p_offset: number; p_limit: number; p_squads_only?: boolean }
-        Returns: {
-          source_id: string
-          league_source_id: string | null
-          local_club_id: string | null
-        }[]
-      }
       activate_training_boost: {
         Args: { _user_id: string }
         Returns: {
@@ -2008,8 +1942,8 @@ export type Database = {
       }
       complete_api_football_import_phase: {
         Args: {
-          p_error?: string | null
-          p_next_offset: number | null
+          p_error?: string
+          p_next_offset: number
           p_phase: string
           p_processed: number
           p_token: string
