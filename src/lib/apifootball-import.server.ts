@@ -157,7 +157,7 @@ async function pool<T>(
 type AfLeague = {
   league: { id: number; name: string; type: string; logo: string };
   country: { name: string; flag: string | null };
-  seasons: { year: number; current: boolean }[];
+  seasons: { year: number; current: boolean; coverage?: Record<string, unknown> }[];
 };
 
 async function importLeagues(): Promise<AfImportResult> {
@@ -201,6 +201,21 @@ async function importLeagues(): Promise<AfImportResult> {
     });
     const up = await db.from("official_leagues").upsert(off, { onConflict: "source_id" });
     if (up.error) throw new Error(up.error.message);
+    const covered = chunk.flatMap((r) => {
+      const seasons = r.seasons ?? [];
+      const current = seasons.find((season) => season.current) ?? seasons[seasons.length - 1];
+      return current ? [{
+        league_source_id: `af:${r.league.id}`,
+        season: String(current.year),
+        coverage: (current.coverage ?? {}) as never,
+        updated_at: new Date().toISOString(),
+      }] : [];
+    });
+    if (covered.length) {
+      const saved = await db.from("api_football_season_coverage")
+        .upsert(covered, { onConflict: "league_source_id,season" });
+      if (saved.error) throw new Error(saved.error.message);
+    }
   }
   return {
     ok: true,
@@ -449,6 +464,15 @@ async function saveRaw(kind: string, rows: { ref: string; payload: unknown }[]) 
   return n;
 }
 
+function sourceHasNoCoverage(coverage: unknown, phase: Phase): boolean {
+  if (!coverage || typeof coverage !== "object" || Array.isArray(coverage)) return false;
+  const c = coverage as Record<string, unknown>;
+  if (phase === "standings") return c["standings"] === false;
+  if (phase === "injuries") return c["injuries"] === false;
+  if (phase === "stats") return c["players"] === false;
+  return false;
+}
+
 async function perLeague(
   phase: Phase,
   offset: number,
@@ -460,7 +484,7 @@ async function perLeague(
   let created = 0;
   // Paginated phases (stats) stay sequential to respect the per-minute cap.
   const batch = await pool(leagues, phase === "stats" ? 2 : 4, deadline, async (lg) => {
-    if (!lg.current_season) return false;
+    if (!lg.current_season || sourceHasNoCoverage(lg.coverage, phase)) return false;
     const written = await fn(lg.source_id.slice(3), lg.current_season);
     created += written;
     if (written === 0) return false;
@@ -587,7 +611,7 @@ async function importStats(offset: number, deadline: number): Promise<AfImportRe
   if (!league)
     return { ok: true, phase: "stats", processed: 0, created: 0,
       linked: 0, nextOffset: null, remainingQuota: lastRemaining };
-  if (!league.current_season)
+  if (!league.current_season || sourceHasNoCoverage(league.coverage, "stats"))
     return { ok: true, phase: "stats", processed: 1, created: 0,
       linked: 0, skipped: 1, nextOffset: offset + 1, remainingQuota: lastRemaining };
   const result = await statsFor(league.source_id.slice(3), league.current_season, deadline);
