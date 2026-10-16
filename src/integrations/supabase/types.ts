@@ -119,7 +119,6 @@ export type Database = {
       api_football_import_progress: {
         Row: {
           batch_size: number
-          consecutive_failures: number
           error_message: string | null
           lease_token: string | null
           lease_until: string | null
@@ -131,7 +130,6 @@ export type Database = {
         }
         Insert: {
           batch_size?: number
-          consecutive_failures?: number
           error_message?: string | null
           lease_token?: string | null
           lease_until?: string | null
@@ -143,7 +141,6 @@ export type Database = {
         }
         Update: {
           batch_size?: number
-          consecutive_failures?: number
           error_message?: string | null
           lease_token?: string | null
           lease_until?: string | null
@@ -151,51 +148,6 @@ export type Database = {
           phase?: string
           status?: string
           total_processed?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      api_football_season_coverage: {
-        Row: {
-          league_source_id: string
-          season: string
-          coverage: Json
-          updated_at: string
-        }
-        Insert: {
-          league_source_id: string
-          season: string
-          coverage?: Json
-          updated_at?: string
-        }
-        Update: {
-          league_source_id?: string
-          season?: string
-          coverage?: Json
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      api_football_page_progress: {
-        Row: {
-          phase: string
-          target_id: string
-          season: string
-          next_page: number
-          updated_at: string
-        }
-        Insert: {
-          phase: string
-          target_id: string
-          season: string
-          next_page?: number
-          updated_at?: string
-        }
-        Update: {
-          phase?: string
-          target_id?: string
-          season?: string
-          next_page?: number
           updated_at?: string
         }
         Relationships: []
@@ -306,36 +258,21 @@ export type Database = {
       }
       checkout_session_owners: {
         Row: {
-          contents_snapshot: Json | null
           created_at: string
-          currency: string | null
           environment: string
-          price_cents: number | null
-          product_key: string | null
           session_id: string
-          stripe_price_id: string | null
           user_id: string
         }
         Insert: {
-          contents_snapshot?: Json | null
           created_at?: string
-          currency?: string | null
           environment: string
-          price_cents?: number | null
-          product_key?: string | null
           session_id: string
-          stripe_price_id?: string | null
           user_id: string
         }
         Update: {
-          contents_snapshot?: Json | null
           created_at?: string
-          currency?: string | null
           environment?: string
-          price_cents?: number | null
-          product_key?: string | null
           session_id?: string
-          stripe_price_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1299,10 +1236,8 @@ export type Database = {
       player_careers: {
         Row: {
           created_at: string
-          deleted_at: string | null
           id: string
           slot: number
-          sync_revision: number
           state: Json
           updated_at: string
           user_id: string
@@ -1310,10 +1245,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          deleted_at?: string | null
           id?: string
           slot: number
-          sync_revision?: number
           state: Json
           updated_at?: string
           user_id: string
@@ -1321,10 +1254,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          deleted_at?: string | null
           id?: string
           slot?: number
-          sync_revision?: number
           state?: Json
           updated_at?: string
           user_id?: string
@@ -1895,33 +1826,6 @@ export type Database = {
         }
         Relationships: []
       }
-      purchase_payment_reviews: {
-        Row: {
-          event_created: number
-          event_id: string
-          reference: string
-          refunded_amount_cents: number
-          review_status: string
-          updated_at: string
-        }
-        Insert: {
-          event_created: number
-          event_id: string
-          reference: string
-          refunded_amount_cents?: number
-          review_status: string
-          updated_at?: string
-        }
-        Update: {
-          event_created?: number
-          event_id?: string
-          reference?: string
-          refunded_amount_cents?: number
-          review_status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       user_purchases: {
         Row: {
           amount_cents: number
@@ -2020,58 +1924,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      list_api_football_league_targets: {
-        Args: { p_offset: number; p_limit: number }
-        Returns: {
-          source_id: string
-          current_season: string | null
-          local_competition_id: string | null
-          country: string | null
-          coverage: Json | null
-        }[]
-      }
-      list_api_football_team_targets: {
-        Args: { p_offset: number; p_limit: number; p_squads_only?: boolean }
-        Returns: {
-          source_id: string
-          league_source_id: string | null
-          local_club_id: string | null
-        }[]
-      }
-      begin_payment_webhook_event: {
-        Args: { _event_id: string; _event_type: string }
-        Returns: boolean
-      }
-      finish_payment_webhook_event: {
-        Args: { _event_id: string; _succeeded: boolean }
-        Returns: undefined
-      }
-      reconcile_purchase_payment_review: {
-        Args: {
-          _event_id: string
-          _reference: string
-          _event_type: string
-          _event_created: number
-          _refunded_amount_cents?: number
-        }
-        Returns: undefined
-      }
-      reconcile_subscription_wallet: {
-        Args: { _user_id: string; _environment: string }
-        Returns: boolean
-      }
-      mutate_player_career: {
-        Args: {
-          p_slot: number
-          p_expected_revision: number
-          p_operation: string
-          p_state?: Json | null
-        }
-        Returns: {
-          status: string
-          new_revision: number
-        }[]
-      }
       activate_training_boost: {
         Args: { _user_id: string }
         Returns: {
@@ -2090,8 +1942,8 @@ export type Database = {
       }
       complete_api_football_import_phase: {
         Args: {
-          p_error?: string | null
-          p_next_offset: number | null
+          p_error?: string
+          p_next_offset: number
           p_phase: string
           p_processed: number
           p_token: string
