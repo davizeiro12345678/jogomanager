@@ -62,7 +62,12 @@ async function guardedFootballFetch(path: string): Promise<Response> {
  * Read and validate one API-Football response. A missing record (404) is not
  * fatal to the surrounding batch; auth, schema and upstream errors are.
  */
-async function af<T>(path: string): Promise<T[]> {
+type ApiFootballPage<T> = {
+  response: T[];
+  paging?: { current?: number; total?: number };
+};
+
+async function afPage<T>(path: string): Promise<ApiFootballPage<T>> {
   for (let attempt = 0; attempt < 3; attempt++) {
     const res = await guardedFootballFetch(path);
     const rem = res.headers.get("x-ratelimit-requests-remaining");
@@ -77,9 +82,9 @@ async function af<T>(path: string): Promise<T[]> {
       await new Promise((resolve) => setTimeout(resolve, delay));
       continue;
     }
-    if (res.status === 404) return [];
+    if (res.status === 404) return { response: [] };
     if (!res.ok) throw new Error(`API-Football HTTP ${res.status}: ${text.slice(0, 200)}`);
-    let body: { response?: unknown; errors?: unknown };
+    let body: { response?: unknown; errors?: unknown; paging?: {current?: number; total?: number} };
     try {
       body = JSON.parse(text) as typeof body;
     } catch {
@@ -92,9 +97,13 @@ async function af<T>(path: string): Promise<T[]> {
     if (!Array.isArray(body.response)) {
       throw new Error("API-Football returned an unexpected response shape");
     }
-    return body.response as T[];
+    return { response: body.response as T[], ...(body.paging ? { paging: body.paging } : {}) };
   }
   throw new Error("API-Football retry limit exceeded");
+}
+
+async function af<T>(path: string): Promise<T[]> {
+  return (await afPage<T>(path)).response;
 }
 
 const norm = (s: string) =>
@@ -352,18 +361,8 @@ async function importSquads(
     }
     const players = (squad[0]?.players ?? []).filter((p) => p && p.id && p.name);
     if (!players.length) return false;
-    const { data: have, error: haveError } = await db
-      .from("players")
-      .select("source_id")
-      .eq("source", SOURCE)
-      .in(
-        "source_id",
-        players.map((p) => String(p.id)),
-      );
-    if (haveError) throw new Error(`Squad lookup failed: ${haveError.message}`);
-    const seen = new Set((have ?? []).map((p) => p.source_id));
     const rows = players
-      .filter((p) => p.name && !seen.has(String(p.id)))
+      .filter((p) => p.name)
       .map((p) => {
         const age = p.age && p.age > 14 && p.age < 50 ? p.age : 24;
         // Squads have no measured OVR: neutral placeholder, never fake an ID-based rating.
@@ -517,25 +516,13 @@ async function pagedAll<T>(path: string, maxPages: number) {
   const out: T[] = [];
   for (let page = 1; page <= maxPages; page++) {
     const sep = path.includes("?") ? "&" : "?";
-    let body: { response?: T[]; paging?: { total: number } } | null = null;
-    for (let tries = 0; tries < 12; tries++) {
-      const res = await guardedFootballFetch(`${path}${sep}page=${page}`);
-      const rem = res.headers.get("x-ratelimit-requests-remaining");
-      if (rem) lastRemaining = Number(rem);
-      const text = await res.text();
-      if (res.status === 429 || text.includes('"rateLimit"')) {
-        await new Promise((r) => setTimeout(r, 4000 + tries * 1000));
-        continue;
-      }
-      if (!res.ok) throw new Error(`API-Football paging returned HTTP ${res.status}`);
-      body = JSON.parse(text);
-      break;
-    }
-    if (!body) throw new Error("API-Football paginated request exhausted its retry budget");
-    out.push(...(body.response ?? []));
-    if (!body.paging || page >= body.paging.total) break;
+    const body = await afPage<T>(`${path}${sep}page=${page}`);
+    out.push(...body.response);
+    const total = body.paging?.total ?? 1;
+    if (page >= total) return out;
   }
-  return out;
+  // Silent truncation makes a partially imported league look complete.
+  throw new Error(`API-Football pagination exceeded ${maxPages} pages: ${path}`);
 }
 
 type AfPlayerStat = {
@@ -548,12 +535,64 @@ type AfPlayerStat = {
   statistics: unknown[];
 };
 
-async function statsFor(id: string, season: string) {
-  const list = await pagedAll<AfPlayerStat>(`/players?league=${id}&season=${season}`, 200);
-  return saveRaw(
-    "player_stats",
-    list.map((p) => ({ ref: `${p.player.id}:${id}:${season}`, payload: p })),
-  );
+async function statsFor(id: string, season: string, deadline: number) {
+  const db = await admin();
+  const target = `af:${id}`;
+  const { data: checkpoint, error } = await db.from("api_football_page_progress")
+    .select("next_page").eq("phase", "stats").eq("target_id", target)
+    .eq("season", season).maybeSingle();
+  if (error) throw new Error(error.message);
+
+  let page = checkpoint?.next_page ?? 1;
+  let written = 0;
+  let pages = 0;
+  // Four API pages at a time keeps the invocation within the short cron lease.
+  while (pages < 4 && Date.now() + 5_000 < deadline) {
+    if (page > 200) throw new Error(`Player statistics exceed 200 pages for ${target}`);
+    const response = await afPage<AfPlayerStat>(
+      `/players?league=${id}&season=${season}&page=${page}`,
+    );
+    const rows = response.response
+      .filter((p) => p.player?.id)
+      .map((p) => ({ ref: `${p.player.id}:${id}:${season}`, payload: p }));
+    written += await saveRaw("player_stats", rows);
+    const total = Math.max(1, response.paging?.total ?? 1);
+    if (page >= total) {
+      const removed = await db.from("api_football_page_progress").delete()
+        .eq("phase", "stats").eq("target_id", target).eq("season", season);
+      if (removed.error) throw new Error(removed.error.message);
+      return { written, complete: true };
+    }
+    page++;
+    // Retried pages are upserts: safe even if a crash occurred between
+    // saving the payload and writing this checkpoint.
+    const saved = await db.from("api_football_page_progress").upsert({
+      phase: "stats", target_id: target, season, next_page: page,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "phase,target_id,season" });
+    if (saved.error) throw new Error(saved.error.message);
+    pages++;
+  }
+  return { written, complete: false };
+}
+
+async function importStats(offset: number, deadline: number): Promise<AfImportResult> {
+  // Exactly one league per call: page progress and global target progress
+  // are separate checkpoints, so a partially fetched league never disappears.
+  const [league] = await leaguePage(offset, 1);
+  if (!league)
+    return { ok: true, phase: "stats", processed: 0, created: 0,
+      linked: 0, nextOffset: null, remainingQuota: lastRemaining };
+  if (!league.current_season)
+    return { ok: true, phase: "stats", processed: 1, created: 0,
+      linked: 0, skipped: 1, nextOffset: offset + 1, remainingQuota: lastRemaining };
+  const result = await statsFor(league.source_id.slice(3), league.current_season, deadline);
+  return {
+    ok: true, phase: "stats", processed: result.complete ? 1 : 0,
+    created: result.written, linked: 0, skipped: result.complete && result.written === 0 ? 1 : 0,
+    nextOffset: result.complete ? offset + 1 : offset,
+    remainingQuota: lastRemaining,
+  };
 }
 
 async function upcomingFixtureIds(days: number, offset: number, limit: number) {
@@ -578,17 +617,19 @@ async function importPredictions(
 ): Promise<AfImportResult> {
   const ids = await upcomingFixtureIds(7, offset, limit);
   let created = 0;
-  const done = await pool(ids, 4, deadline, async (fid) => {
+  const batch = await pool(ids, 4, deadline, async (fid) => {
     const r = await af<unknown>(`/predictions?fixture=${fid}`);
-    if (r.length) created += await saveRaw("prediction", [{ ref: fid, payload: r[0] }]);
+    if (!r.length) return false;
+    created += await saveRaw("prediction", [{ ref: fid, payload: r[0] }]);
   });
   return {
     ok: true,
     phase: "predictions",
-    processed: done,
+    processed: batch.done,
     created,
     linked: 0,
-    nextOffset: ids.length < limit && done === ids.length ? null : offset + done,
+    skipped: batch.skipped,
+    nextOffset: ids.length < limit && batch.done === ids.length ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
@@ -645,8 +686,9 @@ async function importVenues(
 ): Promise<AfImportResult> {
   const countries = (await af<{ name: string }>("/countries")).slice(offset, offset + limit);
   let created = 0;
-  const done = await pool(countries, 4, deadline, async (c) => {
+  const batch = await pool(countries, 4, deadline, async (c) => {
     const v = await af<{ id: number }>(`/venues?country=${encodeURIComponent(c.name)}`);
+    if (!v.length) return false;
     created += await saveRaw(
       "venue",
       v.map((r) => ({ ref: String(r.id), payload: r })),
@@ -655,10 +697,11 @@ async function importVenues(
   return {
     ok: true,
     phase: "venues",
-    processed: done,
+    processed: batch.done,
     created,
     linked: 0,
-    nextOffset: countries.length < limit && done === countries.length ? null : offset + done,
+    skipped: batch.skipped,
+    nextOffset: countries.length < limit && batch.done === countries.length ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
@@ -770,8 +813,12 @@ async function importDetails(
   for (let k = 0; k < ids.length; k += 20) batches.push(ids.slice(k, k + 20));
   let created = 0;
   let doneIds = 0;
-  await pool(batches, 4, deadline, async (b) => {
+  const batch = await pool(batches, 4, deadline, async (b) => {
     const r = await af<{ fixture: { id: number } }>(`/fixtures?ids=${b.join("-")}`);
+    if (!r.length) {
+      doneIds += b.length;
+      return false;
+    }
     created += await saveRaw(
       "fixture_detail",
       r.map((f) => ({ ref: String(f.fixture.id), payload: f })),
@@ -784,6 +831,7 @@ async function importDetails(
     processed: doneIds,
     created,
     linked: 0,
+    skipped: batch.skipped,
     nextOffset: ids.length < limit && doneIds === ids.length ? null : offset + doneIds,
     remainingQuota: lastRemaining,
   };
@@ -804,7 +852,7 @@ export async function runApiFootballImport(opts: {
     if (opts.phase === "standings")
       return await perLeague("standings", opts.offset, opts.limit, deadline, standingsFor);
     if (opts.phase === "stats")
-      return await perLeague("stats", opts.offset, opts.limit, deadline, statsFor);
+      return await importStats(opts.offset, deadline);
     if (opts.phase === "predictions")
       return await importPredictions(opts.offset, opts.limit, deadline);
     if (opts.phase === "odds") return await importOdds(opts.offset, deadline);
