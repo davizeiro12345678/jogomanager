@@ -811,6 +811,7 @@ async function perTeam(
     );
     created += written;
     if (written === 0) return false;
+    return true;
   });
   return {
     ok: true,
