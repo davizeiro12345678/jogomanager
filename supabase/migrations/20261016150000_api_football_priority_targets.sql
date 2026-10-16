@@ -1,5 +1,19 @@
 -- API-Football: prioritize real league-season targets server-side.
 -- These functions do not trigger imports; only service_role can request pages.
+-- Some installations already have this raw archive from Drizzle; a freshly
+-- provisioned Supabase environment may not. Keep it service-only either way.
+CREATE TABLE IF NOT EXISTS public.api_football_data (
+  kind text NOT NULL,
+  ref text NOT NULL,
+  payload jsonb NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (kind, ref)
+);
+ALTER TABLE public.api_football_data ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read football data" ON public.api_football_data;
+REVOKE ALL ON TABLE public.api_football_data FROM PUBLIC, anon, authenticated;
+GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE public.api_football_data TO service_role;
+
 CREATE TABLE IF NOT EXISTS public.api_football_season_coverage (
   league_source_id text NOT NULL,
   season text NOT NULL,
