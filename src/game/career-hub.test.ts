@@ -63,8 +63,13 @@ describe("career hub summaries", () => {
 
   it("prioritiza lesão, ofertas e fadiga sem tocar no save", () => {
     const career = {
-      nickname: "Alex", retired: false, week: 5, season: 2,
-      injury: null, offers: [], energy: 75,
+      nickname: "Alex",
+      retired: false,
+      week: 5,
+      season: 2,
+      injury: null,
+      offers: [],
+      energy: 75,
     } as unknown as PlayerCareerState;
     const previous = structuredClone(career);
     expect(nextAthleteDecision(career).tab).toBe("semana");

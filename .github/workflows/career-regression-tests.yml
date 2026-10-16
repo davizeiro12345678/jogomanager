@@ -1,0 +1,19 @@
+name: Verify career tests in isolation
+on:
+  push:
+    branches:
+      - fix/career-ci-format-types-20261015
+permissions:
+  contents: read
+jobs:
+  career:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Test player season goals, simulations, and career hub
+        run: npm exec -- vitest run src/game/player-career/objectives.test.ts src/game/player-career/engine.test.ts src/game/career-hub.test.ts --pool=forks --maxWorkers=1

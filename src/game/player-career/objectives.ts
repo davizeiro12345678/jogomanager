@@ -21,19 +21,14 @@ function isDefensive(position: PlayerPosition): boolean {
 }
 
 /** Nunca toma decisões por timestamp: salva e verifica apenas estatísticas do ano atual. */
-export function seasonObjectives(
-  state: PlayerCareerState,
-  seasonWeeks: number,
-): SeasonObjective[] {
+export function seasonObjectives(state: PlayerCareerState, seasonWeeks: number): SeasonObjective[] {
   const weeks = Math.max(10, Math.floor(seasonWeeks));
   const appsTarget = Math.min(12, Math.max(4, Math.round(weeks * 0.36)));
   const defensive = isDefensive(state.position);
   const impactTarget = defensive
     ? Math.min(8, Math.max(3, Math.round(weeks * 0.23)))
     : Math.min(7, Math.max(2, Math.round(weeks * 0.18)));
-  const impact = defensive
-    ? state.current.starts
-    : state.current.goals + state.current.assists;
+  const impact = defensive ? state.current.starts : state.current.goals + state.current.assists;
   const average = lineAverage(state);
   const ratingTarget = state.position === "GOL" ? 6.7 : defensive ? 6.75 : 6.9;
   const sampleReady = state.current.apps >= 4;
