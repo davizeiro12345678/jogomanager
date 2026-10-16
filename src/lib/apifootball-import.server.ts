@@ -333,6 +333,7 @@ async function importTeams(
     }
     const m = await db.from("official_teams").upsert(maps, { onConflict: "source_id" });
     if (m.error) throw new Error(m.error.message);
+    return true;
   });
   const fetched = leagues?.length ?? 0;
   return {
@@ -418,6 +419,7 @@ async function importSquads(
       .select("id");
     if (r.error) throw new Error(`Squad upsert failed: ${r.error.message}`);
     created += r.data?.length ?? 0;
+    return true;
   });
   const fetched = teams?.length ?? 0;
   return {
@@ -498,6 +500,7 @@ async function perLeague(
     const written = await fn(lg.source_id.slice(3), lg.current_season);
     created += written;
     if (written === 0) return false;
+    return true;
   });
   return {
     ok: true,
@@ -693,6 +696,7 @@ async function importPredictions(
     const r = await af<unknown>(`/predictions?fixture=${fid}`);
     if (!r.length) return false;
     created += await saveRaw("prediction", [{ ref: fid, payload: r[0] }]);
+    return true;
   });
   return {
     ok: true,
@@ -765,6 +769,7 @@ async function importVenues(
       "venue",
       v.map((r) => ({ ref: String(r.id), payload: r })),
     );
+    return true;
   });
   return {
     ok: true,
@@ -897,6 +902,7 @@ async function importDetails(
       r.map((f) => ({ ref: String(f.fixture.id), payload: f })),
     );
     doneIds += b.length;
+    return true;
   });
   return {
     ok: true,
