@@ -1,7 +1,11 @@
 import { Crest } from "@/components/game/Crest";
 import { ScreenHeader } from "@/components/game/screen-kit";
 import { CLUBS } from "@/game/data/leagues";
-import { nextAthleteDecision, summarizeAthleteCareer, summarizeCoachCareer } from "@/game/career-hub";
+import {
+  nextAthleteDecision,
+  summarizeAthleteCareer,
+  summarizeCoachCareer,
+} from "@/game/career-hub";
 import { ATHLETE_SLOTS } from "@/lib/player-career-store";
 import { useAthleteSlots } from "@/hooks/useAthlete";
 import { useCareer } from "@/hooks/useCareer";
@@ -37,7 +41,8 @@ export const Route = createFileRoute("/carreiras")({
 
 function syncLabel(sync: ReturnType<typeof useCareer>["sync"], signedIn: boolean | null) {
   if (signedIn === false) return { Icon: CloudOff, label: "Salvo neste aparelho" };
-  if (sync === "synced") return { Icon: Cloud, label: "Treinador sincronizado; confira cada atleta separadamente" };
+  if (sync === "synced")
+    return { Icon: Cloud, label: "Treinador sincronizado; confira cada atleta separadamente" };
   if (sync === "offline") return { Icon: CloudOff, label: "Sem conexão: salvo neste aparelho" };
   if (sync === "pending") return { Icon: CloudOff, label: "Alterações aguardando sincronização" };
   if (sync === "syncing") return { Icon: Cloud, label: "Sincronizando suas carreiras" };
@@ -52,7 +57,8 @@ function CareersHub() {
   const syncState = syncLabel(sync, signedIn);
   const SyncIcon = syncState.Icon;
   const ready = !isLoading && slots !== null;
-  const highlighted = slots?.find((item) => item && !item.retired) ?? slots?.find((item) => item) ?? null;
+  const highlighted =
+    slots?.find((item) => item && !item.retired) ?? slots?.find((item) => item) ?? null;
   const decision = highlighted ? nextAthleteDecision(highlighted) : null;
 
   return (
@@ -83,10 +89,17 @@ function CareersHub() {
             <div>
               <p className="career-hub-kicker">SUA PRÓXIMA DECISÃO</p>
               <h2 className="text-xl font-bold">
-                {decision ? `${highlighted?.nickname}: ${decision.title}` : coach ? "Voltar ao comando do clube" : "Escolher o primeiro desafio"}
+                {decision
+                  ? `${highlighted?.nickname}: ${decision.title}`
+                  : coach
+                    ? "Voltar ao comando do clube"
+                    : "Escolher o primeiro desafio"}
               </h2>
               <p className="athlete-meta">
-                {decision?.detail ?? (coach ? coach.status : "Escolha ser treinador ou jogador. As duas carreiras ficam em espaços independentes.")}
+                {decision?.detail ??
+                  (coach
+                    ? coach.status
+                    : "Escolha ser treinador ou jogador. As duas carreiras ficam em espaços independentes.")}
               </p>
             </div>
             <div className="career-hub-card-actions">
@@ -97,9 +110,17 @@ function CareersHub() {
                   </Link>
                 </Button>
               ) : coach ? (
-                <Button asChild><Link to={coach.active ? "/dashboard" : "/carreira"}>Retomar treinador <ArrowRight className="size-4" /></Link></Button>
+                <Button asChild>
+                  <Link to={coach.active ? "/dashboard" : "/carreira"}>
+                    Retomar treinador <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
               ) : (
-                <Button asChild><Link to="/new">Escolher carreira <ArrowRight className="size-4" /></Link></Button>
+                <Button asChild>
+                  <Link to="/new">
+                    Escolher carreira <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
               )}
             </div>
           </section>

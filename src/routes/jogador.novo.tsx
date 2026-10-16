@@ -245,24 +245,38 @@ function CreateAthletePage() {
         </div>
         <ScreenHeader title="Criar atleta" />
         <p className="athlete-meta">
-          Três etapas: defina quem você é, escolha sua trajetória e revise o uniforme. Você pode voltar sem perder suas escolhas.
+          Três etapas: defina quem você é, escolha sua trajetória e revise o uniforme. Você pode
+          voltar sem perder suas escolhas.
         </p>
         <nav className="athlete-creation-steps" aria-label="Etapas de criação">
-          {["Identidade e posição", "Trajetória e clube", "Visual e revisão"].map((label, index) => (
-            <button
-              key={label}
-              type="button"
-              aria-current={step === index ? "step" : undefined}
-              disabled={index > furthest}
-              onClick={() => { setStep(index); setError(null); }}
-            >
-              <strong>{index + 1}. {label}</strong>
-              <small>{index === step ? "Etapa atual" : index < step ? "Concluída" : "Próxima etapa"}</small>
-            </button>
-          ))}
+          {["Identidade e posição", "Trajetória e clube", "Visual e revisão"].map(
+            (label, index) => (
+              <button
+                key={label}
+                type="button"
+                aria-current={step === index ? "step" : undefined}
+                disabled={index > furthest}
+                onClick={() => {
+                  setStep(index);
+                  setError(null);
+                }}
+              >
+                <strong>
+                  {index + 1}. {label}
+                </strong>
+                <small>
+                  {index === step ? "Etapa atual" : index < step ? "Concluída" : "Próxima etapa"}
+                </small>
+              </button>
+            ),
+          )}
         </nav>
         <div className="athlete-grid athlete-creation-grid">
-          <section className="athlete-card athlete-form" aria-label="Identidade e posição" hidden={step !== 0}>
+          <section
+            className="athlete-card athlete-form"
+            aria-label="Identidade e posição"
+            hidden={step !== 0}
+          >
             <h2 className="text-lg font-bold">Identidade</h2>
             <label className="athlete-field">
               <span>Nome completo</span>
@@ -350,7 +364,11 @@ function CreateAthletePage() {
               ))}
             </div>
           </section>
-          <section className="athlete-card athlete-form" aria-label="Trajetória e clube" hidden={step !== 1}>
+          <section
+            className="athlete-card athlete-form"
+            aria-label="Trajetória e clube"
+            hidden={step !== 1}
+          >
             <h2 className="text-lg font-bold">Personalidade</h2>
             <div className="athlete-chips" role="group" aria-label="Personalidade">
               {PERSONALITIES.map((p) => (
@@ -414,106 +432,123 @@ function CreateAthletePage() {
             </div>
           </section>
           {step === 2 && (
-          <section className="athlete-card athlete-form" aria-label="Visual e revisão">
-            <div className="athlete-section-heading">
-              <div>
-                <p className="athlete-eyebrow">Modelo Hero</p>
-                <h2 className="text-lg font-bold">Aparência 3D</h2>
-              </div>
-              <span className="athlete-quality-badge">Alta qualidade</span>
-            </div>
-            <Suspense
-              fallback={
-                <div className="athlete-3d-preview grid place-items-center" role="status">
-                  Preparando visualização 3D…
+            <section className="athlete-card athlete-form" aria-label="Visual e revisão">
+              <div className="athlete-section-heading">
+                <div>
+                  <p className="athlete-eyebrow">Modelo Hero</p>
+                  <h2 className="text-lg font-bold">Aparência 3D</h2>
                 </div>
-              }
-            >
-              <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
-            </Suspense>
-            <div className="athlete-field">
-              <span>Tom de pele</span>
-              <div className="athlete-chips">
-                {SKINS.map((c, i) => (
-                  <Button
-                    key={c}
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="athlete-swatch"
-                    aria-label={`Tom ${i + 1}`}
-                    aria-pressed={skin === i}
-                    style={{ background: c }}
-                    onClick={() => setSkin(i)}
-                  />
-                ))}
+                <span className="athlete-quality-badge">Alta qualidade</span>
               </div>
-            </div>
-            <label className="athlete-field">
-              <span>Cabelo</span>
-              <select value={hair} onChange={(e) => setHair(Number(e.target.value))}>
-                {HAIR_STYLES.map((h, i) => (
-                  <option key={h} value={i}>
-                    {h}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="athlete-field">
-              <span>Cor do cabelo</span>
-              <div className="athlete-chips">
-                {HAIR_COLORS.map((c, i) => (
-                  <Button
-                    key={c}
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="athlete-swatch"
-                    aria-label={`Cor ${i + 1}`}
-                    aria-pressed={hairColor === i}
-                    style={{ background: c }}
-                    onClick={() => setHairColor(i)}
-                  />
-                ))}
+              <Suspense
+                fallback={
+                  <div className="athlete-3d-preview grid place-items-center" role="status">
+                    Preparando visualização 3D…
+                  </div>
+                }
+              >
+                <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
+              </Suspense>
+              <div className="athlete-field">
+                <span>Tom de pele</span>
+                <div className="athlete-chips">
+                  {SKINS.map((c, i) => (
+                    <Button
+                      key={c}
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="athlete-swatch"
+                      aria-label={`Tom ${i + 1}`}
+                      aria-pressed={skin === i}
+                      style={{ background: c }}
+                      onClick={() => setSkin(i)}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-            <label className="athlete-field">
-              <span>Barba</span>
-              <select value={beard} onChange={(e) => setBeard(Number(e.target.value))}>
-                {["Sem barba", "Rala", "Média", "Cheia"].map((b, i) => (
-                  <option key={b} value={i}>
-                    {b}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="athlete-field">
-              <span>Número da camisa</span>
-              <input
-                type="number"
-                min={1}
-                max={99}
-                value={shirt}
-                onChange={(e) => setShirt(Math.max(1, Math.min(99, Number(e.target.value) || 1)))}
-              />
-            </label>
-            <div className="athlete-creation-review">
-              <h3 className="font-bold">Confira antes de entrar em campo</h3>
-              <p>{name || "Nome não informado"} · {POSITION_LABEL[position]} · {nation} · {heightCm} cm</p>
-              <p>{club?.name ?? "Clube não escolhido"} · {ORIGINS.find((item) => item.id === origin)?.label} · Camisa {shirt}</p>
-              <p className="athlete-meta">
-                Personalidade: {PERSONALITIES.find((item) => item.id === personality)?.label}.
-                A carreira ocupará apenas o espaço {slot}; nenhum outro save será substituído.
-              </p>
-            </div>
-          </section>
+              <label className="athlete-field">
+                <span>Cabelo</span>
+                <select value={hair} onChange={(e) => setHair(Number(e.target.value))}>
+                  {HAIR_STYLES.map((h, i) => (
+                    <option key={h} value={i}>
+                      {h}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="athlete-field">
+                <span>Cor do cabelo</span>
+                <div className="athlete-chips">
+                  {HAIR_COLORS.map((c, i) => (
+                    <Button
+                      key={c}
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="athlete-swatch"
+                      aria-label={`Cor ${i + 1}`}
+                      aria-pressed={hairColor === i}
+                      style={{ background: c }}
+                      onClick={() => setHairColor(i)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <label className="athlete-field">
+                <span>Barba</span>
+                <select value={beard} onChange={(e) => setBeard(Number(e.target.value))}>
+                  {["Sem barba", "Rala", "Média", "Cheia"].map((b, i) => (
+                    <option key={b} value={i}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="athlete-field">
+                <span>Número da camisa</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={shirt}
+                  onChange={(e) => setShirt(Math.max(1, Math.min(99, Number(e.target.value) || 1)))}
+                />
+              </label>
+              <div className="athlete-creation-review">
+                <h3 className="font-bold">Confira antes de entrar em campo</h3>
+                <p>
+                  {name || "Nome não informado"} · {POSITION_LABEL[position]} · {nation} ·{" "}
+                  {heightCm} cm
+                </p>
+                <p>
+                  {club?.name ?? "Clube não escolhido"} ·{" "}
+                  {ORIGINS.find((item) => item.id === origin)?.label} · Camisa {shirt}
+                </p>
+                <p className="athlete-meta">
+                  Personalidade: {PERSONALITIES.find((item) => item.id === personality)?.label}. A
+                  carreira ocupará apenas o espaço {slot}; nenhum outro save será substituído.
+                </p>
+              </div>
+            </section>
           )}
         </div>
-        {error && <p role="alert" className="text-destructive text-sm athlete-card">{error}</p>}
+        {error && (
+          <p role="alert" className="text-destructive text-sm athlete-card">
+            {error}
+          </p>
+        )}
       </div>
       <div className="athlete-sticky">
         {step > 0 && (
-          <Button variant="outline" size="lg" onClick={() => { setStep(step - 1); setError(null); }}>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => {
+              setStep(step - 1);
+              setError(null);
+            }}
+          >
             Etapa anterior
           </Button>
         )}

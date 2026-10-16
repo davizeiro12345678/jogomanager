@@ -113,7 +113,7 @@ function Panel({
   state: PlayerCareerState;
   commit: (s: PlayerCareerState) => void;
   syncError: boolean;
-  initialTab?: Tab;
+  initialTab?: Tab | undefined;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? (state.retired ? "historico" : "semana"));
   const [showPlayerModel, setShowPlayerModel] = useState(false);
@@ -223,22 +223,35 @@ function Panel({
           <Bar label="Entrosamento" value={state.chemistry} />
         </section>
         {!state.retired && (
-          <section className="athlete-card athlete-objectives" aria-labelledby="career-goals-heading">
+          <section
+            className="athlete-card athlete-objectives"
+            aria-labelledby="career-goals-heading"
+          >
             <div className="athlete-objectives-heading">
               <div>
                 <p className="athlete-eyebrow">PLANO DA TEMPORADA</p>
-                <h2 id="career-goals-heading" className="text-xl font-bold">Seus objetivos e consequências</h2>
+                <h2 id="career-goals-heading" className="text-xl font-bold">
+                  Seus objetivos e consequências
+                </h2>
                 <p className="athlete-meta">
-                  ${finished} de ${objectives.length} metas cumpridas. Resultados são avaliados no fim da temporada e afetam moral, confiança e reputação.
+                  ${finished} de ${objectives.length} metas cumpridas. Resultados são avaliados no
+                  fim da temporada e afetam moral, confiança e reputação.
                 </p>
               </div>
-              <span className="athlete-objectives-score" aria-label={`${finished} de ${objectives.length} metas alcançadas`}>
+              <span
+                className="athlete-objectives-score"
+                aria-label={`${finished} de ${objectives.length} metas alcançadas`}
+              >
                 ${finished}/${objectives.length}
               </span>
             </div>
             <div className="athlete-objectives-list">
               {objectives.map((objective) => (
-                <article key={objective.id} className="athlete-objective" data-complete={objective.complete}>
+                <article
+                  key={objective.id}
+                  className="athlete-objective"
+                  data-complete={objective.complete}
+                >
                   <div className="athlete-objective-title">
                     <h3 className="font-bold">{objective.title}</h3>
                     <span>{objective.complete ? "Meta alcançada" : objective.display}</span>
@@ -252,7 +265,11 @@ function Panel({
                     aria-valuenow={Math.max(0, Math.min(objective.current, objective.target))}
                     aria-valuetext={objective.display}
                   >
-                    <span style={{ width: `${Math.min(100, Math.max(0, objective.current / objective.target * 100))}%` }} />
+                    <span
+                      style={{
+                        width: `${Math.min(100, Math.max(0, (objective.current / objective.target) * 100))}%`,
+                      }}
+                    />
                   </div>
                   <p className="athlete-meta">{objective.detail}</p>
                   <p className="athlete-objective-impact">{objective.consequence}</p>

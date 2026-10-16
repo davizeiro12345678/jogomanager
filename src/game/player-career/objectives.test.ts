@@ -5,22 +5,25 @@ import { seasonObjectives, seasonObjectiveSummary } from "./objectives";
 
 const clubId = Object.keys(CLUBS)[0]!;
 const make = (position: "GOL" | "ATA" = "ATA") =>
-  createAthlete({
-    slot: 1,
-    name: "Camila Santos",
-    nickname: "Camila",
-    nation: "Brasil",
-    hometown: "Vitória",
-    position,
-    foot: "direito",
-    heightCm: 178,
-    build: "atletico",
-    personality: "profissional",
-    origin: "base",
-    clubId,
-    appearance: { skin: 2, hair: 1, hairColor: 0, beard: 0, boots: 0 },
-    shirtNumber: 10,
-  }, 1000);
+  createAthlete(
+    {
+      slot: 1,
+      name: "Camila Santos",
+      nickname: "Camila",
+      nation: "Brasil",
+      hometown: "Vitória",
+      position,
+      foot: "direito",
+      heightCm: 178,
+      build: "atletico",
+      personality: "profissional",
+      origin: "base",
+      clubId,
+      appearance: { skin: 2, hair: 1, hairColor: 0, beard: 0, boots: 0 },
+      shirtNumber: 10,
+    },
+    1000,
+  );
 
 describe("objetivos da carreira de jogador", () => {
   it("diferencia papéis: goleiro é medido por titularidades, atacante por participações", () => {
