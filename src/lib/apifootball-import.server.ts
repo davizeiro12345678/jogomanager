@@ -30,6 +30,7 @@ export type AfImportResult = {
   processed: number;
   created: number;
   linked: number;
+  skipped?: number;
   nextOffset: number | null;
   remainingQuota?: number | null;
   error?: string;
@@ -57,23 +58,43 @@ async function guardedFootballFetch(path: string): Promise<Response> {
   });
 }
 
-async function af<T>(path: string, attempt = 0): Promise<T[]> {
-  const res = await guardedFootballFetch(path);
-  const rem = res.headers.get("x-ratelimit-requests-remaining");
-  if (rem) lastRemaining = Number(rem);
-  const text = await res.text();
-  // Per-minute cap: back off and retry instead of silently skipping the item.
-  if ((res.status === 429 || text.includes('"rateLimit"')) && attempt < 10) {
-    await new Promise((r) => setTimeout(r, 4_000 + attempt * 1_000));
-    return af<T>(path, attempt + 1);
+/**
+ * Read and validate one API-Football response. A missing record (404) is not
+ * fatal to the surrounding batch; auth, schema and upstream errors are.
+ */
+async function af<T>(path: string): Promise<T[]> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await guardedFootballFetch(path);
+    const rem = res.headers.get("x-ratelimit-requests-remaining");
+    if (rem !== null && Number.isFinite(Number(rem))) lastRemaining = Number(rem);
+    const text = await res.text();
+    const limited = res.status === 429 || /"rateLimit"/i.test(text);
+    if ((limited || res.status >= 500) && attempt < 2) {
+      const hint = Number(res.headers.get("retry-after"));
+      const delay = Number.isFinite(hint) && hint > 0
+        ? Math.min(8_000, hint * 1_000)
+        : 2_000 * (attempt + 1);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      continue;
+    }
+    if (res.status === 404) return [];
+    if (!res.ok) throw new Error(`API-Football HTTP ${res.status}: ${text.slice(0, 200)}`);
+    let body: { response?: unknown; errors?: unknown };
+    try {
+      body = JSON.parse(text) as typeof body;
+    } catch {
+      throw new Error("API-Football returned invalid JSON");
+    }
+    if (body.errors && typeof body.errors === "object" &&
+        Object.keys(body.errors).length > 0) {
+      throw new Error(`API-Football provider error: ${JSON.stringify(body.errors).slice(0, 200)}`);
+    }
+    if (!Array.isArray(body.response)) {
+      throw new Error("API-Football returned an unexpected response shape");
+    }
+    return body.response as T[];
   }
-  if (!res.ok) throw new Error(`API-Football ${res.status}: ${text.slice(0, 300)}`);
-  const body = JSON.parse(text) as { response?: T[]; errors?: unknown };
-  const errs = body.errors;
-  if (errs && !Array.isArray(errs) && Object.keys(errs).length) {
-    throw new Error(`API-Football: ${JSON.stringify(errs)}`);
-  }
-  return body.response ?? [];
+  throw new Error("API-Football retry limit exceeded");
 }
 
 const norm = (s: string) =>
@@ -91,27 +112,37 @@ function mapPos(p?: string) {
   return "MF";
 }
 
-async function pool<T>(items: T[], n: number, deadline: number, fn: (t: T) => Promise<void>) {
+/**
+ * Missing data is a skip, not a failed batch. True failures preserve the
+ * checkpoint so the job can retry without silently losing an item.
+ */
+async function pool<T>(
+  items: T[],
+  n: number,
+  deadline: number,
+  fn: (t: T) => Promise<boolean | void>,
+): Promise<{ done: number; skipped: number }> {
   let i = 0;
   let done = 0;
-  let failures = 0;
+  let skipped = 0;
+  const failures: string[] = [];
   await Promise.all(
     Array.from({ length: n }, async () => {
       while (i < items.length && Date.now() < deadline) {
         const item = items[i++]!;
         try {
-          await fn(item);
+          if ((await fn(item)) === false) skipped++;
         } catch (e) {
-          failures += 1;
-          console.error("af item failed", e);
+          failures.push(e instanceof Error ? e.message : String(e));
         }
         done++;
       }
     }),
   );
-  if (failures)
-    throw new Error(`API-Football batch had ${failures} failed items; cursor not advanced`);
-  return done;
+  if (failures.length) {
+    throw new Error(`API-Football batch: ${failures.length} failed items; first: ${failures[0]}`);
+  }
+  return { done, skipped };
 }
 
 type AfLeague = {
@@ -191,18 +222,16 @@ async function importTeams(
   deadline: number,
 ): Promise<AfImportResult> {
   const db = await admin();
-  const { data: leagues, error } = await db
-    .from("official_leagues")
-    .select("source_id, current_season, local_competition_id, country")
-    .like("source_id", "af:%")
-    .order("source_id")
-    .range(offset, offset + limit - 1);
+  const { data: leagues, error } = await db.rpc("list_api_football_league_targets", {
+    p_offset: offset,
+    p_limit: limit,
+  });
   if (error) throw new Error(error.message);
 
   let created = 0;
   let linked = 0;
-  const done = await pool(leagues ?? [], 4, deadline, async (lg) => {
-    if (!lg.current_season) return;
+  const batch = await pool(leagues ?? [], 4, deadline, async (lg) => {
+    if (!lg.current_season) return false;
     const id = lg.source_id.slice(3);
     let teams: AfTeam[];
     try {
@@ -211,7 +240,7 @@ async function importTeams(
       console.error("teams", id, e);
       throw e;
     }
-    if (!teams.length) return;
+    if (!teams.length) return false;
     const country = teams[0]!.team.country;
     const { data: existing } = await db
       .from("clubs")
@@ -278,10 +307,11 @@ async function importTeams(
   return {
     ok: true,
     phase: "teams",
-    processed: done,
+    processed: batch.done,
     created,
     linked,
-    nextOffset: fetched < limit && done === fetched ? null : offset + done,
+    skipped: batch.skipped,
+    nextOffset: fetched < limit && batch.done === fetched ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
@@ -304,17 +334,15 @@ async function importSquads(
   deadline: number,
 ): Promise<AfImportResult> {
   const db = await admin();
-  const { data: teams, error } = await db
-    .from("official_teams")
-    .select("source_id, local_club_id")
-    .like("source_id", "af:%")
-    .not("local_club_id", "is", null)
-    .order("source_id")
-    .range(offset, offset + limit - 1);
+  const { data: teams, error } = await db.rpc("list_api_football_team_targets", {
+    p_offset: offset,
+    p_limit: limit,
+    p_squads_only: true,
+  });
   if (error) throw new Error(error.message);
 
   let created = 0;
-  const done = await pool(teams ?? [], 4, deadline, async (t) => {
+  const batch = await pool(teams ?? [], 4, deadline, async (t) => {
     let squad: AfSquad[];
     try {
       squad = await af<AfSquad>(`/players/squads?team=${t.source_id.slice(3)}`);
@@ -323,7 +351,7 @@ async function importSquads(
       throw e;
     }
     const players = (squad[0]?.players ?? []).filter((p) => p && p.id && p.name);
-    if (!players.length) return;
+    if (!players.length) return false;
     const { data: have, error: haveError } = await db
       .from("players")
       .select("source_id")
@@ -338,7 +366,8 @@ async function importSquads(
       .filter((p) => p.name && !seen.has(String(p.id)))
       .map((p) => {
         const age = p.age && p.age > 14 && p.age < 50 ? p.age : 24;
-        const overall = 55 + ((p.id * 7) % 15);
+        // Squads have no measured OVR: neutral placeholder, never fake an ID-based rating.
+        const overall = 55;
         return {
           club_id: t.local_club_id!,
           name: p.name.slice(0, 80),
@@ -347,36 +376,34 @@ async function importSquads(
           shirt_number: p.number && p.number > 0 && p.number < 100 ? p.number : null,
           overall,
           potential: Math.min(95, overall + (age && age < 23 ? 10 : 3)),
-          photo_url: p.photo,
+          photo_url: p.photo || null,
           source: SOURCE,
           source_id: String(p.id),
-          sync_status: "synced",
+          sync_status: "partial",
         };
       });
     // Squads can list one athlete twice, and a parallel page may insert him first;
     // dedupe locally, then fall back to per-row inserts so one clash never drops a squad.
     const unique = [...new Map(rows.map((r) => [r.source_id, r])).values()];
-    if (!unique.length) return;
-    const r = await db.from("players").insert(unique).select("id");
-    if (!r.error) {
-      created += r.data?.length ?? 0;
-      return;
-    }
-    for (const row of unique) {
-      const one = await db.from("players").insert(row).select("id");
-      if (!one.error) created += 1;
-      else if (one.error.code !== "23505")
-        throw new Error(`Squad insert failed: ${one.error.message}`);
-    }
+    if (!unique.length) return false;
+    // One atomic statement per bounded squad; no N per-player retries.
+    // Existing records (including manually reviewed ratings) are preserved.
+    const r = await db.from("players").upsert(unique, {
+      onConflict: "source,source_id",
+      ignoreDuplicates: true,
+    }).select("id");
+    if (r.error) throw new Error(`Squad upsert failed: ${r.error.message}`);
+    created += r.data?.length ?? 0;
   });
   const fetched = teams?.length ?? 0;
   return {
     ok: true,
     phase: "squads",
-    processed: done,
+    processed: batch.done,
     created,
     linked: 0,
-    nextOffset: fetched < limit && done === fetched ? null : offset + done,
+    skipped: batch.skipped,
+    nextOffset: fetched < limit && batch.done === fetched ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
@@ -396,12 +423,10 @@ type AfFixture = {
 
 async function leaguePage(offset: number, limit: number) {
   const db = await admin();
-  const { data, error } = await db
-    .from("official_leagues")
-    .select("source_id, current_season")
-    .like("source_id", "af:%")
-    .order("source_id")
-    .range(offset, offset + limit - 1);
+  const { data, error } = await db.rpc("list_api_football_league_targets", {
+    p_offset: offset,
+    p_limit: limit,
+  });
   if (error) throw new Error(error.message);
   return data ?? [];
 }
@@ -435,17 +460,20 @@ async function perLeague(
   const leagues = await leaguePage(offset, limit);
   let created = 0;
   // Paginated phases (stats) stay sequential to respect the per-minute cap.
-  const done = await pool(leagues, phase === "stats" ? 2 : 4, deadline, async (lg) => {
-    if (!lg.current_season) return;
-    created += await fn(lg.source_id.slice(3), lg.current_season);
+  const batch = await pool(leagues, phase === "stats" ? 2 : 4, deadline, async (lg) => {
+    if (!lg.current_season) return false;
+    const written = await fn(lg.source_id.slice(3), lg.current_season);
+    created += written;
+    if (written === 0) return false;
   });
   return {
     ok: true,
     phase,
-    processed: done,
+    processed: batch.done,
     created,
     linked: 0,
-    nextOffset: leagues.length < limit && done === leagues.length ? null : offset + done,
+    skipped: batch.skipped,
+    nextOffset: leagues.length < limit && batch.done === leagues.length ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
@@ -637,12 +665,11 @@ async function importVenues(
 
 async function teamPage(offset: number, limit: number) {
   const db = await admin();
-  const { data, error } = await db
-    .from("official_teams")
-    .select("source_id, league_source_id")
-    .like("source_id", "af:%")
-    .order("source_id")
-    .range(offset, offset + limit - 1);
+  const { data, error } = await db.rpc("list_api_football_team_targets", {
+    p_offset: offset,
+    p_limit: limit,
+    p_squads_only: false,
+  });
   if (error) throw new Error(error.message);
   return data ?? [];
 }
@@ -656,19 +683,22 @@ async function perTeam(
 ): Promise<AfImportResult> {
   const teams = await teamPage(offset, limit);
   let created = 0;
-  const done = await pool(teams, 4, deadline, async (t) => {
-    created += await fn(
+  const batch = await pool(teams, 4, deadline, async (t) => {
+    const written = await fn(
       t.source_id.slice(3),
       t.league_source_id?.startsWith("af:") ? t.league_source_id.slice(3) : null,
     );
+    created += written;
+    if (written === 0) return false;
   });
   return {
     ok: true,
     phase,
-    processed: done,
+    processed: batch.done,
     created,
     linked: 0,
-    nextOffset: teams.length < limit && done === teams.length ? null : offset + done,
+    skipped: batch.skipped,
+    nextOffset: teams.length < limit && batch.done === teams.length ? null : offset + batch.done,
     remainingQuota: lastRemaining,
   };
 }
