@@ -1,5 +1,8 @@
 type Environment = Record<string, string | undefined>;
 
+// Replaced by Vite from the checked-out Git revision. It is not a mutable Worker variable.
+declare const __JOGOMANAGER_BUILD_COMMIT__: string | null;
+
 /** Check readiness without disclosing keys, URLs, provider responses or account data. */
 export async function checkBackendHealth(env: Environment, fetcher: typeof fetch = fetch) {
   const configured = Boolean(env["SUPABASE_URL"] && env["SUPABASE_PUBLISHABLE_KEY"]);
@@ -56,6 +59,10 @@ export async function checkBackendHealth(env: Environment, fetcher: typeof fetch
   const ready = configured && authReachable && serverCredentialsValid && databaseReachable;
   return {
     status: ready ? "ready" : "degraded",
+    release: {
+      commit:
+        typeof __JOGOMANAGER_BUILD_COMMIT__ === "undefined" ? null : __JOGOMANAGER_BUILD_COMMIT__,
+    },
     checks: {
       auth: authReachable,
       serverCredentials: serverCredentialsValid,

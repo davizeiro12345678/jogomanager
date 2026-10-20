@@ -7,24 +7,8 @@
  */
 import { useEffect, useRef, useState } from "react";
 
+import { Tone, toneClass } from "@/components/ui/hud-tone";
 import { cn } from "@/lib/utils";
-
-export type Tone = "good" | "warn" | "bad" | "neutral";
-
-export const toneClass: Record<Tone, string> = {
-  good: "tone-good",
-  warn: "tone-warn",
-  bad: "tone-bad",
-  neutral: "tone-neutral",
-};
-
-/** Converte um valor 0–100 em tom de desempenho. */
-export function toneFor(value: number, { good = 66, warn = 40 } = {}): Tone {
-  if (!Number.isFinite(value)) return "neutral";
-  if (value >= good) return "good";
-  if (value >= warn) return "warn";
-  return "bad";
-}
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false);

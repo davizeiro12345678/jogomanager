@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { FootballHome } from "@/components/home/FootballHome";
 import { getLeagueDigests } from "@/lib/real-football.functions";
 import { canonical, gameLd, websiteLd, seoMeta, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
+import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1080;1600&quality=52&as=srcset";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -16,10 +17,21 @@ export const Route = createFileRoute("/")({
       }),
       { name: "google-site-verification", content: "jQnHkMGkHJbJedGaIYWIRl14nynSHLVLLvHfzLfpTXg" },
     ],
-    links: canonical("/"),
+    links: [
+      ...canonical("/"),
+      {
+        rel: "preload",
+        as: "image",
+        type: "image/avif",
+        imageSrcSet: heroAvif,
+        imageSizes: "100vw",
+        fetchPriority: "high",
+      },
+    ],
     scripts: [websiteLd(), gameLd()],
   }),
-  // Real league leaders feed the home "pulse" section; failure must never block the home page.
-  loader: async () => ({ leagues: await getLeagueDigests().catch(() => []) }),
+  // The secondary league section streams independently; a slow backend must
+  // not hold the first byte, hero discovery or the primary navigation hostage.
+  loader: () => ({ leagues: getLeagueDigests().catch(() => []) }),
   component: FootballHome,
 });

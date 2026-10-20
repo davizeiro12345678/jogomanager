@@ -5,6 +5,7 @@
 import type { ManagerLook } from "@/game/types";
 
 const SKINS = ["#f2d4bb", "#e8bd97", "#d29a6e", "#b57748", "#8a5433", "#5c3721"];
+
 const OUTFITS = [
   { body: "#1b2432", collar: "#f4f4f5", accent: "#c8a24a" }, // terno
   { body: "#123d2c", collar: "#0f5132", accent: "#8bd6a6" }, // agasalho
@@ -188,13 +189,3 @@ export function ManagerPortrait({ look, size = 96, accent, className }: ManagerP
     </svg>
   );
 }
-
-export const HAIR_COLORS = [
-  "#2b2118",
-  "#131313",
-  "#6b4423",
-  "#b07d3a",
-  "#d8cdbd",
-  "#8c8c8c",
-  "#7a2f1d",
-];

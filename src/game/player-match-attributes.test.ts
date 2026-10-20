@@ -47,6 +47,31 @@ const imported: Player = {
 };
 
 describe("match attribute identity without profile history", () => {
+  it("refreshes a warmed projection after ratings, imports, deltas or frozen identity change", () => {
+    const input = { ...player, id: "warmed-match-projection" };
+    const expected = (value: Player, source?: AttributeSource) => {
+      const { consistency, technique, teamwork, anticipation } = profileFor(value, source).attrs;
+      return { consistency, technique, teamwork, anticipation };
+    };
+    expect(matchProfileAttributes(input)).toEqual(expected(input));
+    input.passing = 94;
+    input.shooting = 90;
+    expect(matchProfileAttributes(input)).toEqual(expected(input));
+    input.age = 30;
+    input.pos = "DF";
+    expect(matchProfileAttributes(input)).toEqual(expected(input));
+    input.developmentDelta = { technique: -8, teamwork: 3 };
+    expect(matchProfileAttributes(input)).toEqual(expected(input));
+    expect(matchProfileAttributes(input, {})).toEqual(expected(input, {}));
+    const frozen = withDevelopmentBase(input, 2);
+    frozen.developmentBase!.profile.attrs.technique = 95;
+    expect(matchProfileAttributes(frozen)).toEqual(expected(frozen));
+    // Consumers receive a projection, never a mutable reference to the cache.
+    const result = matchProfileAttributes(input);
+    result.technique = 20;
+    expect(matchProfileAttributes(input)).toEqual(expected(input));
+  });
+
   it("does not embed the club catalog in the compiled match-readiness dependency graph", async () => {
     const bundle = await rolldown({
       input: path.join(import.meta.dirname, "match-readiness.ts"),

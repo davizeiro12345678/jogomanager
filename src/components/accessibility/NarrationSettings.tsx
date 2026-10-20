@@ -1,5 +1,3 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Settings2, Volume2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,11 +7,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useT } from "@/i18n/provider";
-import { voicesForLanguage } from "@/game/speech-voices";
 import { Narrator } from "@/game/narrator";
+import { voicesForLanguage } from "@/game/speech-voices";
+import { useAccessibility } from "@/hooks/useAccessibility";
 import { useSignedIn } from "@/hooks/useCareer";
-import { useAccessibility } from "./AccessibilityProvider";
+import { useT } from "@/i18n/provider";
+import { Settings2, Volume2 } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { PreferenceToggle, ReadingPreferences } from "./AccessibilitySettings";
 import { LanguagePicker } from "./LanguagePicker";
 

@@ -1,34 +1,37 @@
-import { useEffect, useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import * as THREE from "three";
-import { useQualityPressure, useRuntimeSceneBudget } from "../RuntimeBudget";
-import { resolveRuntimeSceneBudget } from "@/game/runtime-scene-budget";
-import { Puddles } from "./Puddles";
-import { GrassChunks } from "./GrassChunks";
+import {
+  useQualityPressure,
+  useRuntimeSceneBudget,
+} from "@/components/game/runtime-budget-context";
 import { createGrassBladeMaterial } from "@/game/grass-material";
 import { createPitchSurfaceMaterial } from "@/game/pitch-material";
-import {
-  grassAlbedo,
-  grassNormal,
-  grassMicroRoughness,
-  grassRoughness,
-  retainGrassMaps,
-  type MowPattern,
-} from "./textures/grass";
-import { LINES_H, LINES_W, pitchLinesTexture } from "./textures/lines";
-import { pitchWearTexture } from "./textures/wear";
+import { resolveRuntimeSceneBudget } from "@/game/runtime-scene-budget";
+import type { SimView } from "@/game/sim-contracts";
 import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
-import { useResolvedVisual, useVisual } from "@/game/visual-settings";
 import {
   ktx2,
   needsKtx2ProceduralFallback,
   requestKtx2,
   useKtx2Revision,
 } from "@/game/textures/ktx2";
-import type { SimView } from "@/game/sim-contracts";
+import { useResolvedVisual, useVisual } from "@/game/visual-settings";
+import { useFrame } from "@react-three/fiber";
+import { useEffect, useMemo, useRef } from "react";
+import * as THREE from "three";
 import type { Quality } from "../Stadium3D";
+import { GrassChunks } from "./GrassChunks";
+import { Puddles } from "./Puddles";
 import { presentationBall } from "./stadium-ball";
-import { Goal, CornerFlags } from "./StadiumGoals";
+import { CornerFlags, Goal } from "./StadiumGoals";
+import {
+  grassAlbedo,
+  grassMicroRoughness,
+  grassNormal,
+  grassRoughness,
+  retainGrassMaps,
+  type MowPattern,
+} from "./textures/grass";
+import { LINES_H, LINES_W, pitchLinesTexture } from "./textures/lines";
+import { pitchWearTexture } from "./textures/wear";
 
 function useBladeMaterial(color: string, webgl2: boolean) {
   const data = useMemo(() => createGrassBladeMaterial(color, { webgl2 }), [color, webgl2]);

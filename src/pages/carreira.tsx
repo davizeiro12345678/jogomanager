@@ -1,0 +1,363 @@
+/**
+ * Carreira de treinador: cada semana você escolhe o foco do trabalho, vê o
+ * efeito no elenco e na diretoria, e a rodada é resolvida. Momentos marcantes
+ * abrem cenas 3D (treino, vestiário, sala de troféus, comissão técnica).
+ */
+
+import { useMemo, useRef, useState } from "react";
+
+import { Clapperboard, Sparkles } from "lucide-react";
+
+import { GameShell } from "@/components/game/GameShell";
+
+import { NoCareer, ScreenHeader, SectionCard } from "@/components/game/screen-kit";
+
+import { Crest } from "@/components/game/Crest";
+
+import { Cutscene } from "@/components/game/Cutscene";
+
+import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loading";
+
+import { CareerWorldPanel } from "@/components/game/CareerWorldPanel";
+
+import { CLUBS } from "@/game/data/leagues";
+
+import {
+  coachWeekAsync,
+  WEEK_ACTIONS,
+  type CoachWeek,
+  type WeekActionId,
+} from "@/game/season-mode";
+
+import { CUTSCENES, SCENE_LIST } from "@/content/cutscenes";
+
+import { castFor } from "@/game/cast";
+
+import { applyChoiceEffect } from "@/game/choice-effects";
+
+import { worldFor } from "@/game/career-world";
+
+import { prefersReducedMotion } from "@/game/device";
+
+import { useCareer } from "@/hooks/useCareer";
+
+import type { ManagerLook } from "@/game/types";
+
+const DEFAULT_LOOK: ManagerLook = {
+  skin: 2,
+  hair: 1,
+  hairColor: "#2b1d14",
+  beard: 0,
+  outfit: 0,
+};
+
+function Bar({ label, value, tone }: { label: string; value: number; tone: string }) {
+  return (
+    <div>
+      <div className="flex justify-between text-[11px] uppercase tracking-widest text-muted-foreground">
+        <span>{label}</span>
+        <span className="tabular-nums">{Math.round(value)}</span>
+      </div>
+      <div className="mt-1 h-2 overflow-hidden rounded-full bg-border/60">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${Math.max(2, Math.min(100, value))}%`, background: tone }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function CoachCareerPage() {
+  useCinematicPreload();
+  const { career, update } = useCareer();
+  const [weeks, setWeeks] = useState<CoachWeek[]>([]);
+  const [scene, setScene] = useState<string | null>(null);
+  const [gallery, setGallery] = useState(false);
+  const [preview, setPreview] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const running = useRef(false);
+  const [weekError, setWeekError] = useState("");
+  const calm = prefersReducedMotion();
+
+  const club = career ? CLUBS[career.clubId] : undefined;
+  const look = career?.manager?.look ?? DEFAULT_LOOK;
+
+  const squad = useMemo(() => {
+    if (!career) return { morale: 0, condition: 0, form: 0 };
+    const mine = Object.values(career.players).filter((p) => p.clubId === career.clubId);
+    if (!mine.length) return { morale: 0, condition: 0, form: 0 };
+    const avg = (fn: (p: (typeof mine)[number]) => number) =>
+      mine.reduce((s, p) => s + fn(p), 0) / mine.length;
+    return {
+      morale: avg((p) => p.morale),
+      condition: avg((p) => p.condition),
+      form: avg((p) => p.form ?? 60),
+    };
+  }, [career]);
+
+  const clubPlayers = useMemo(
+    () =>
+      career
+        ? Object.values(career.players).filter((player) => player.clubId === career.clubId)
+        : [],
+    [career],
+  );
+  // capitão: jogador de melhor média no elenco do clube da campanha
+  const captain = useMemo(
+    () =>
+      clubPlayers.length
+        ? clubPlayers.reduce(
+            (best, player) => (player.ovr > best.ovr ? player : best),
+            clubPlayers[0]!,
+          )
+        : undefined,
+    [clubPlayers],
+  );
+  const captainName = captain?.name;
+
+  const cast = useMemo(
+    () => (career ? castFor(career.clubId, career.season, career.managerName) : null),
+    [career],
+  );
+  const world = useMemo(() => (career ? worldFor(career) : null), [career]);
+  const choicePlayer = useMemo(() => {
+    if (!captain) return undefined;
+    if (scene === "unhappy-knock") {
+      const unsettled = clubPlayers
+        .filter((player) => player.unhappy || player.morale < 45)
+        .sort((a, b) => a.morale - b.morale || b.ovr - a.ovr)[0];
+      return unsettled ?? captain;
+    }
+    if (scene === "doctor-gamble") {
+      const injured = clubPlayers
+        .filter((player) => player.injuryWeeks > 0)
+        .sort((a, b) => b.ovr - a.ovr || b.injuryWeeks - a.injuryWeeks)[0];
+      return injured ?? captain;
+    }
+    return captain;
+  }, [captain, clubPlayers, scene]);
+  const choiceContext = useMemo(() => {
+    if (!captain || !choicePlayer || !world) return undefined;
+    const participant = (player: typeof choicePlayer) => ({
+      playerId: player.id,
+      relationship: world.relationships[player.id],
+      personality: player.personality,
+    });
+    return {
+      participants: {
+        captain: participant(scene === "unhappy-knock" ? choicePlayer : captain),
+        ...(scene === "agent-demands" ? { agent: participant(choicePlayer) } : {}),
+        ...(scene === "doctor-gamble" ? { doctor: participant(choicePlayer) } : {}),
+      },
+    };
+  }, [captain, choicePlayer, scene, world]);
+
+  if (!career) return <NoCareer />;
+
+  async function run(action: WeekActionId) {
+    if (!career || career.sacked || running.current) return;
+    running.current = true;
+    setBusy(true);
+    setWeekError("");
+    try {
+      const w = await coachWeekAsync(career, action);
+      if (!w) return;
+      setWeeks((cur) => [w, ...cur].slice(0, 40));
+      update(w.state);
+      setPreview(false);
+      if (w.scene && CUTSCENES[w.scene]) setScene(w.scene);
+    } catch {
+      setWeekError(
+        "Não foi possível concluir a semana. Sua carreira foi preservada; tente novamente.",
+      );
+    } finally {
+      running.current = false;
+      setBusy(false);
+    }
+  }
+
+  const seen = new Set(career.seenScenes ?? []);
+
+  return (
+    <GameShell career={career}>
+      {scene ? (
+        <Cutscene
+          scene={scene}
+          look={look}
+          cinematic
+          accent={club?.primary ?? "#0a8f3c"}
+          accent2={club?.secondary ?? "#0b1220"}
+          trophies={career.trophies.length}
+          club={club}
+          managerName={career.managerName}
+          captainName={
+            scene === "unhappy-knock" ? (choicePlayer?.name ?? captainName) : captainName
+          }
+          cast={cast ?? undefined}
+          manner={world?.identity}
+          choiceContext={choiceContext}
+          onEffect={
+            preview
+              ? undefined
+              : (effect, reaction) => update(applyChoiceEffect(career, effect, reaction))
+          }
+          onDone={() => setScene(null)}
+        />
+      ) : null}
+
+      <div className="rounded-2xl border border-border/60 surface-card p-5">
+        <div className="flex items-center gap-3">
+          {club ? <Crest club={club} size={44} detail="simple" /> : null}
+          <div className="min-w-0 flex-1">
+            <ScreenHeader title="Carreira de treinador" />
+            <p className="text-sm text-muted-foreground">
+              Temporada {career.season} · Rodada {career.round} · {club?.name ?? career.clubId}
+            </p>
+          </div>
+          <button
+            onClick={() => setGallery((g) => !g)}
+            className="inline-flex items-center gap-2 rounded-xl border border-border/60 px-3 py-2 text-sm"
+          >
+            <Clapperboard size={16} /> Cenas
+          </button>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <Bar label="Moral do elenco" value={squad.morale} tone="var(--color-primary)" />
+          <Bar label="Condição física" value={squad.condition} tone="#3b82f6" />
+          <Bar label="Forma recente" value={squad.form} tone="#f0a500" />
+          <Bar label="Diretoria" value={career.approval} tone="#22c55e" />
+          <Bar label="Torcida" value={career.fanApproval} tone="#a855f7" />
+          <Bar label="Pressão" value={career.pressure} tone="#ef4444" />
+        </div>
+
+        <p className="mt-3 text-xs uppercase tracking-widest text-muted-foreground">
+          Caixa: € {career.finances.budget.toFixed(1)}M · Objetivo: {career.objective}º lugar
+        </p>
+      </div>
+
+      <div inert={busy || undefined}>
+        <CareerWorldPanel career={career} update={update} />
+      </div>
+
+      {gallery ? (
+        <SectionCard className="mt-4 rounded-2xl border border-border/60 surface-card p-5">
+          <h2 className="font-display text-lg uppercase tracking-wide">Galeria de cenas</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {seen.size} de {SCENE_LIST.length} cenas vistas nesta carreira. Reassistir não altera o
+            save.
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {SCENE_LIST.map((s) => {
+              const unlocked = seen.has(s.id);
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    setPreview(true);
+                    setScene(s.id);
+                  }}
+                  className={`rounded-xl border p-3 text-left text-sm transition-colors ${
+                    unlocked
+                      ? "border-primary/40 bg-primary/10 hover:bg-primary/20"
+                      : "border-border/50 text-muted-foreground hover:bg-card"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Sparkles size={14} /> {s.title}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </SectionCard>
+      ) : null}
+
+      <section className="mt-4">
+        <h2 className="font-display text-lg uppercase tracking-wide">Trabalho da semana</h2>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {WEEK_ACTIONS.map((a) => (
+            <button
+              key={a.id}
+              disabled={busy || career.sacked}
+              onClick={() => run(a.id)}
+              className="rounded-2xl border border-border/60 surface-card p-4 text-left transition-transform hover:-translate-y-0.5 hover:border-primary/50"
+            >
+              <p className="font-display text-sm uppercase tracking-wide">{a.label}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{a.desc}</p>
+            </button>
+          ))}
+        </div>
+        {busy ? (
+          <p role="status" className="mt-3 text-sm text-primary">
+            Simulando a rodada e registrando a repercussão…
+          </p>
+        ) : null}
+        {weekError ? (
+          <p role="alert" className="mt-3 text-sm text-destructive">
+            {weekError}
+          </p>
+        ) : null}
+      </section>
+
+      <section className="mt-6 grid gap-3 sm:grid-cols-2">
+        {weeks.map((w, i) => {
+          const opp = CLUBS[w.opponentId];
+          const win = w.gf > w.ga;
+          const draw = w.gf === w.ga;
+          return (
+            <article
+              key={`${w.round}-${w.opponentId}-${i}`}
+              className={`rounded-2xl border p-4 ${calm ? "" : "animate-fade-in"} ${
+                win
+                  ? "border-emerald-500/40 bg-emerald-500/10"
+                  : draw
+                    ? "border-border/60 surface-card"
+                    : "border-destructive/40 bg-destructive/10"
+              }`}
+              style={calm ? undefined : { animationDelay: `${Math.min(i, 10) * 45}ms` }}
+            >
+              <div className="flex items-center gap-3">
+                {opp ? <Crest club={opp} size={30} detail="simple" /> : null}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{w.headline}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Rodada {w.round} · {WEEK_ACTIONS.find((a) => a.id === w.action)?.label}
+                  </p>
+                </div>
+                <span className="font-display text-2xl tabular-nums">
+                  {w.gf}–{w.ga}
+                </span>
+              </div>
+              {w.scorers.length ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  ⚽{" "}
+                  {w.scorers
+                    .map((s) => `${s.name}${s.goals > 1 ? ` (${s.goals})` : ""}`)
+                    .join(", ")}
+                </p>
+              ) : null}
+              {w.scene ? (
+                <button
+                  onClick={() => {
+                    setPreview(true);
+                    setScene(w.scene!);
+                  }}
+                  className="mt-2 text-xs text-primary underline-offset-2 hover:underline"
+                >
+                  Rever a cena
+                </button>
+              ) : null}
+            </article>
+          );
+        })}
+        {!weeks.length ? (
+          <p className="text-sm text-muted-foreground">
+            Escolha o trabalho da semana para começar a temporada.
+          </p>
+        ) : null}
+      </section>
+    </GameShell>
+  );
+}

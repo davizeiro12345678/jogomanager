@@ -23,7 +23,8 @@ const observed = vi.hoisted(() => ({
     vi.fn<(id: string) => Promise<{ data: AuthorizationDetails | null; error: Error | null }>>(),
 }));
 
-vi.mock("@tanstack/react-router", () => ({
+vi.mock("@tanstack/react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@tanstack/react-router")>()),
   createFileRoute: () => (options: RouteOptions) => {
     observed.route = options;
     return { options };

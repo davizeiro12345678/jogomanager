@@ -1,21 +1,21 @@
 /** Bound rendering-only resources for articulated player skins. */
-import type React from "react";
-import { createElement, useEffect, useLayoutEffect, useMemo } from "react";
-import * as THREE from "three";
+import { AthleteCloth } from "@/game/athlete-cloth";
+import { kitTextureFor } from "@/game/graphics/kit-atlas";
+import { useMatchSurface } from "@/game/graphics/surface-context-state";
+import type { Kit } from "@/game/kits";
+import { matchRigSegments } from "@/game/match-rig-detail";
 import {
   detailTextureNames,
   playerMaterials,
   retainPlayerMaterials,
 } from "@/game/player-materials";
-import { requestKtx2 } from "@/game/textures/ktx2";
-import { matchRigSegments } from "@/game/match-rig-detail";
+import type { LodLevel, PlayerLook, Proportions } from "@/game/player-model";
 import { buildRigSkin, rebindRigSkinMaterials, type RigSkin } from "@/game/rig-skin";
-import { AthleteCloth } from "@/game/athlete-cloth";
-import type { PlayerLook, Proportions, LodLevel } from "@/game/player-model";
 import type { SimPlayer } from "@/game/sim";
-import type { Kit } from "@/game/kits";
-import { kitTextureFor } from "@/game/graphics/kit-atlas";
-import { useMatchSurface } from "@/game/graphics/surface-context";
+import { requestKtx2 } from "@/game/textures/ktx2";
+import type React from "react";
+import { createElement, useEffect, useLayoutEffect, useMemo } from "react";
+import * as THREE from "three";
 import type { Quality } from "./player-rig-contract";
 
 interface RigMeshInputs {

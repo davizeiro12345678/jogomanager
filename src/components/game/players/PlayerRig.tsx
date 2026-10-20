@@ -19,24 +19,17 @@ import { createElement, memo, useEffect, useLayoutEffect, useMemo, useRef } from
 import * as THREE from "three";
 
 import { kitBudget, kitTextureFor, trimKitTextures } from "@/game/graphics/kit-atlas";
+import { useMatchSurface } from "@/game/graphics/surface-context-state";
 import { retainKitTexture } from "@/game/kits";
-import { useMatchSurface } from "@/game/graphics/surface-context";
+import { lookFor, lookWithPhysique, proportionsFor, type LodLevel } from "@/game/player-model";
+import { faceMorphology } from "@/game/player-morphology";
+import { retainRigGeometryPreparation } from "@/game/rig-geometry-worker-client";
+import { type RigJoint } from "@/game/rig-skin";
+import { censusRef } from "@/game/scene-census";
 import { onKtx2Ready } from "@/game/textures/ktx2";
 import { useVisual } from "@/game/visual-settings";
-import {
-  lodForDistance,
-  lookFor,
-  lookWithPhysique,
-  proportionsFor,
-  shade,
-  type LodLevel,
-} from "@/game/player-model";
-import { type RigJoint } from "@/game/rig-skin";
-import { faceMorphology } from "@/game/player-morphology";
-import { censusRef } from "@/game/scene-census";
-import { retainRigGeometryPreparation } from "@/game/rig-geometry-worker-client";
 
-import { type RigProps, type Quality } from "./player-rig-contract";
+import { type Quality, type RigProps } from "./player-rig-contract";
 import { usePlayerRigFrame, type PlayerRigBoneRefs } from "./player-rig-frame";
 import { usePlayerRigMeshes } from "./player-rig-meshes";
 import { softShadowTexture } from "./soft-shadow";

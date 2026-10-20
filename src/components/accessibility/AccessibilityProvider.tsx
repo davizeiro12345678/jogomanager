@@ -1,12 +1,6 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+
+import { Context } from "@/hooks/useAccessibility";
 import {
   ACCESSIBILITY_STORAGE_KEY,
   DEFAULT_ACCESSIBILITY,
@@ -14,18 +8,6 @@ import {
   type AccessibilityPreferences,
 } from "@/lib/accessibility-preferences";
 
-interface AccessibilityValue {
-  preferences: AccessibilityPreferences;
-  reducedMotion: boolean;
-  update: (patch: Partial<AccessibilityPreferences>) => void;
-  reset: () => void;
-}
-const Context = createContext<AccessibilityValue>({
-  preferences: { ...DEFAULT_ACCESSIBILITY },
-  reducedMotion: false,
-  update: () => undefined,
-  reset: () => undefined,
-});
 export function AccessibilityProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState<AccessibilityPreferences>({
     ...DEFAULT_ACCESSIBILITY,
@@ -85,7 +67,4 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     [preferences, reducedMotion, update, reset],
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
-}
-export function useAccessibility() {
-  return useContext(Context);
 }

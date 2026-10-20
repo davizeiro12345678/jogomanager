@@ -1,5 +1,5 @@
+import { buildArenaArchitecture } from "@/components/game/stadium/arena-architecture-builder";
 import { expect, it } from "vitest";
-import { buildArenaArchitecture } from "./ArenaArchitecture";
 it("keeps roof braces, concourse portals and railings within three material draws", () => {
   for (const rings of [4, 11, 16]) {
     const data = buildArenaArchitecture(rings, "#b22b42", true);

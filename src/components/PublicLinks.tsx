@@ -1,26 +1,5 @@
+import { PUBLIC_PAGES } from "@/lib/public-pages";
 import { Link } from "@tanstack/react-router";
-
-export const PUBLIC_PAGES = [
-  { to: "/jogo-de-manager-de-futebol", label: "Jogo de manager de futebol grátis" },
-  { to: "/mercado-de-transferencias", label: "Mercado de transferências" },
-  { to: "/tabelas", label: "Tabelas das ligas reais" },
-  { to: "/guias", label: "Guias" },
-  { to: "/dicas-de-gestao", label: "Temporada e finanças" },
-  { to: "/melhores-formacoes", label: "Melhores formações" },
-  { to: "/guia-de-scouting", label: "Guia de scouting" },
-  { to: "/regras", label: "Regras do futebol" },
-  { to: "/glossario-do-futebol", label: "Glossário do futebol" },
-  { to: "/jogar-offline", label: "Como jogar offline" },
-  { to: "/comparativo-jogos-manager", label: "Como avaliar um manager" },
-  { to: "/perguntas-frequentes", label: "Perguntas frequentes" },
-  { to: "/produtos", label: "Pacotes e passe de temporada" },
-  { to: "/sobre", label: "Sobre o jogo" },
-  { to: "/criador", label: "Sobre o criador" },
-  { to: "/contato", label: "Contato e suporte" },
-  { to: "/compartilhar", label: "Compartilhar o jogo" },
-  { to: "/privacidade", label: "Política de privacidade" },
-  { to: "/termos", label: "Termos de uso" },
-] as const;
 
 // Offer useful next steps instead of repeating every public URL on every article.
 const RELATED_PAGES: Record<string, readonly string[]> = {

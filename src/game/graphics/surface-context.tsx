@@ -11,7 +11,8 @@
 //  quando o DEGRAU muda (no máximo 3 × 3 × 2 combinações), nunca por segundo.
 // ============================================================================
 
-import { createContext, memo, useContext, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
+
 import type React from "react";
 
 import {
@@ -22,27 +23,13 @@ import {
   type SurfaceSteps,
   type SurfaceWeather,
 } from "@/game/graphics/player-surface";
+
+import {
+  DEFAULT_STEPS,
+  SurfaceContext,
+  SurfaceStateContext,
+} from "@/game/graphics/surface-context-state";
 import type { SimView } from "@/game/sim";
-
-const DEFAULT_STEPS: SurfaceSteps = { sweat: 0, dirt: 0, wet: 0 };
-
-const SurfaceContext = createContext<SurfaceSteps>(DEFAULT_STEPS);
-const SurfaceStateContext = createContext<SurfaceState>({
-  sweat: 0,
-  dirt: 0,
-  wet: 0,
-  fatigue: 0,
-});
-
-/** Degraus de superfície para entrar na chave do cache de materiais. */
-export function useMatchSurface(): SurfaceSteps {
-  return useContext(SurfaceContext);
-}
-
-/** Estado contínuo, para HUD e diagnóstico. */
-export function useMatchSurfaceState(): SurfaceState {
-  return useContext(SurfaceStateContext);
-}
 
 export const MatchSurfaceProvider = memo(function MatchSurfaceProvider({
   sim,

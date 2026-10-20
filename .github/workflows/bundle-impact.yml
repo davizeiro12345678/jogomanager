@@ -1,34 +1,43 @@
 name: Compare initial JavaScript bundles
 
 on:
-  pull_request:
-    paths:
-      - "src/**"
-      - "scripts/bundle-report.mjs"
-      - "scripts/compare-bundle-reports.mjs"
-      - "vite.config.ts"
-      - "package.json"
-      - "package-lock.json"
-      - ".github/workflows/bundle-impact.yml"
+  workflow_call:
+    inputs:
+      baseline_ref:
+        required: true
+        type: string
+      candidate_ref:
+        required: true
+        type: string
   workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: Baseline commit to compare on the same runner
+        default: main~1
+        required: true
+        type: string
+      candidate_ref:
+        description: Candidate commit
+        default: main
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: bundle-impact-${{ github.workflow }}-${{ github.ref }}
+  group: bundle-impact-${{ github.run_id }}-${{ github.run_attempt }}
   cancel-in-progress: true
 
 jobs:
   bundle:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - name: Checkout candidate with complete base history
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ inputs.candidate_ref }}
           fetch-depth: 0
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -39,7 +48,7 @@ jobs:
         run: cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
       - name: Build baseline from PR base SHA
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ inputs.baseline_ref }}
         run: |
           git checkout --detach "$BASE_SHA"
           # Use the same lockfile-matched build plugin for both commits. The
@@ -55,7 +64,7 @@ jobs:
           git restore scripts/bundle-report.mjs package.json
       - name: Build proposed commit on the same runner
         env:
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_SHA: ${{ inputs.candidate_ref }}
         run: |
           git checkout --detach "$HEAD_SHA"
           npm ci
@@ -63,7 +72,9 @@ jobs:
           PFM_LOCAL_VERIFY=1 npm run build
           node scripts/bundle-report.mjs candidate .output/public/assets
           cp "$RUNNER_TEMP/baseline.json" verification/bundle-2026-10-01/baseline.json
-          node scripts/compare-bundle-reports.mjs             verification/bundle-2026-10-01/baseline.json             verification/bundle-2026-10-01/candidate.json
+          node scripts/compare-bundle-reports.mjs \
+            verification/bundle-2026-10-01/baseline.json \
+            verification/bundle-2026-10-01/candidate.json --check
       - name: Upload reproducible comparison
         if: always()
         uses: actions/upload-artifact@v4
@@ -74,4 +85,4 @@ jobs:
             bundle-impact.json
             verification/bundle-2026-10-01/baseline.json
             verification/bundle-2026-10-01/candidate.json
-          if-no-files-found: warn
+          if-no-files-found: error

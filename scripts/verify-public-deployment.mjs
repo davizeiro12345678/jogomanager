@@ -6,7 +6,14 @@ const PUBLIC_CHECKS = [
   { url: "https://www.jogomanager.com/", type: "html", followCanonical: true },
 ];
 
-export async function verifyPublicDeployment({ fetchImpl = fetch, report = console.log } = {}) {
+export async function verifyPublicDeployment({
+  expectedSha,
+  fetchImpl = fetch,
+  report = console.log,
+} = {}) {
+  if (typeof expectedSha !== "string" || !/^[a-f0-9]{40}$/.test(expectedSha)) {
+    throw new Error("The expected commit must be a full 40-character lowercase Git SHA.");
+  }
   for (const { url, type, followCanonical } of PUBLIC_CHECKS) {
     const response = await fetchImpl(url, {
       redirect: followCanonical ? "follow" : "manual",
@@ -43,6 +50,15 @@ export async function verifyPublicDeployment({ fetchImpl = fetch, report = conso
       if (health.status !== "ready") {
         throw new Error(`${url}: backend health is not ready: ${health.status}`);
       }
+      const deployedSha = health.release?.commit;
+      if (typeof deployedSha !== "string" || !/^[a-f0-9]{40}$/.test(deployedSha)) {
+        throw new Error(`${url}: missing or invalid deployed commit identity`);
+      }
+      if (deployedSha !== expectedSha) {
+        throw new Error(
+          `${url}: deployed commit does not match ${expectedSha}; got ${deployedSha}`,
+        );
+      }
     } else if (!contentType.includes("text/html") || !/Pro Football Manager 3D/i.test(body)) {
       throw new Error(`${url}: expected public game HTML, got unexpected content`);
     }
@@ -52,7 +68,7 @@ export async function verifyPublicDeployment({ fetchImpl = fetch, report = conso
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
-    await verifyPublicDeployment();
+    await verifyPublicDeployment({ expectedSha: process.env["EXPECTED_COMMIT_SHA"] });
   } catch (error) {
     console.error(error instanceof Error ? error.message : "Public deployment verification failed");
     process.exitCode = 1;

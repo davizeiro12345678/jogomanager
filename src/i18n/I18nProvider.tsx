@@ -1,21 +1,19 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+
 import { LANGS, RTL_LANGS, resolveLang, type Lang } from "./locale-catalog";
+
 import { translateBootstrap } from "./bootstrap-messages";
+
 import { reportSilent } from "@/lib/silent-errors";
+
+import { I18nContext, I18nValue } from "@/i18n/context";
 import { useLocation } from "@tanstack/react-router";
-export { LANGS, LANG_NAMES, RTL_LANGS, type Lang } from "./locale-catalog";
+
 // Preserve the synchronous, complete translation API for direct consumers.
 // Production UI consumes useT; its optional language pack stays a dynamic import.
 
 const STORAGE_KEY = "pfm3d.lang";
+
 // These public landing pages currently contain Portuguese editorial content
 // even when a visitor selects English for the game interface.
 const PORTUGUESE_EDITORIAL_PATHS = new Set([
@@ -40,6 +38,7 @@ const PORTUGUESE_EDITORIAL_PATHS = new Set([
   "/privacidade",
   "/termos",
 ]);
+
 const isPortugueseEditorialRoute = (pathname: string) =>
   PORTUGUESE_EDITORIAL_PATHS.has(pathname) ||
   pathname === "/tabelas" ||
@@ -66,20 +65,8 @@ function detect(): Lang {
   return "pt-BR";
 }
 
-interface I18nValue {
-  lang: Lang;
-  setLang: (l: Lang) => void;
-  t: (key: string) => string;
-  dir: "ltr" | "rtl";
-}
-
 type Translator = typeof import("./messages").translate;
-const I18nContext = createContext<I18nValue>({
-  lang: "pt-BR",
-  setLang: () => undefined,
-  t: (key) => translateBootstrap("pt-BR", key),
-  dir: "ltr",
-});
+
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("pt-BR");
   const pathname = useLocation({ select: (location) => location.pathname });
@@ -136,7 +123,4 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     [lang, setLang, dir, loadedTranslator],
   );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
-}
-export function useT() {
-  return useContext(I18nContext);
 }

@@ -1,51 +1,63 @@
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import * as THREE from "three";
+import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CLIP_NAMES, type ClipName, type PlayerAction } from "@/game/animation";
-import { kitFor, gkKitFor } from "@/game/kits";
+import { cinematicOverlayActive, subscribeCinematicOverlay } from "@/game/cinematic-overlay";
+import { gkKitFor, kitFor } from "@/game/kits";
 import { WorkerMatchView } from "@/game/live-match";
-import {
-  lookFor,
-  lookWithPhysique,
-  type PlayerLook,
-  type HairStyle,
-  type BeardStyle,
-  type BodyType,
-} from "@/game/player-model";
+import { footballContactAt } from "@/game/motion-metadata";
 import {
   athleteLookForAppearance,
   defaultAthleteAppearance,
   normalizeAthleteAppearance,
   type AthleteAppearanceV1,
 } from "@/game/player-career/appearance";
-import { getAnnotatedClip } from "@/game/register-animations";
-import { footballContactAt } from "@/game/motion-metadata";
-import { studioCameraFit } from "@/game/player-studio-camera";
+import {
+  lookFor,
+  lookWithPhysique,
+  type BeardStyle,
+  type BodyType,
+  type HairStyle,
+  type PlayerLook,
+} from "@/game/player-model";
 import { studioAppearanceRevision } from "@/game/player-studio-appearance";
+import { studioCameraFit } from "@/game/player-studio-camera";
 import {
   STUDIO_NEUTRAL_GAZE_BALL_Z,
   studioBallFocusDistanceFor,
 } from "@/game/player-studio-presentation";
+import { getAnnotatedClip } from "@/game/register-animations";
 import type { RigSkin } from "@/game/rig-skin";
-import { safeClub } from "@/game/squad";
-import { cinematicOverlayActive, subscribeCinematicOverlay } from "@/game/cinematic-overlay";
 import type { SimPlayer, TeamSetup } from "@/game/sim";
+import { safeClub } from "@/game/squad";
+import { useAccessibility } from "@/hooks/useAccessibility";
+import { useT } from "@/i18n/provider";
+import { studioMovementLabel } from "@/i18n/studio-movement-messages";
+import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import {
+  Activity,
+  ArrowLeft,
+  ArrowRight,
+  Pause,
+  Play,
+  RotateCcw,
+  Scan,
+  Shuffle,
+  Sun,
+  UserRound,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import * as THREE from "three";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import { CanvasLifecycle } from "../CanvasLifecycle";
 import { GraphicsBoundary } from "../GraphicsBoundary";
 import { Ktx2CanvasAssets } from "../Ktx2CanvasAssets";
-import { CanvasLifecycle } from "../CanvasLifecycle";
 import type { CanvasStatus } from "../canvas-lifecycle";
-import { PlayerRig } from "./PlayerRig";
-import { LowPlayers } from "./LowPlayers";
-import { Pause, Play, RotateCcw, Shuffle, Scan, UserRound, Sun, Activity } from "lucide-react";
-import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut } from "lucide-react";
-import { useT } from "@/i18n/provider";
-import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
-import { useAccessibility } from "@/components/accessibility/AccessibilityProvider";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { studioMovementLabel } from "@/i18n/studio-movement-messages";
 import "../cinematic/studio.css";
+import { LowPlayers } from "./LowPlayers";
+import { PlayerRig } from "./PlayerRig";
 
 interface StudioMovement {
   id: string;
@@ -753,6 +765,29 @@ export default function PlayerStudio({
               </Canvas>
             </GraphicsBoundary>
           </div>
+          <div className="studio-keyboard-camera" role="group" aria-label={t("studio.frame")}>
+            {(
+              [
+                ["left", "studio.left", ArrowLeft],
+                ["right", "studio.right", ArrowRight],
+                ["in", "studio.zoomIn", ZoomIn],
+                ["out", "studio.zoomOut", ZoomOut],
+              ] as const
+            ).map(([action, key, Icon]) => (
+              <button
+                key={action}
+                type="button"
+                className="studio-button"
+                aria-label={t(key)}
+                title={t(key)}
+                onClick={() =>
+                  setCameraCommand((old) => ({ action, sequence: (old?.sequence ?? 0) + 1 }))
+                }
+              >
+                <Icon size={18} aria-hidden="true" />
+              </button>
+            ))}
+          </div>
           <div className="studio-view-actions">
             <button
               type="button"
@@ -782,29 +817,6 @@ export default function PlayerStudio({
             >
               {t(detail ? "studio.compare" : "studio.detailed")}
             </button>
-          </div>
-          <div className="studio-keyboard-camera" role="group" aria-label={t("studio.frame")}>
-            {(
-              [
-                ["left", "studio.left", ArrowLeft],
-                ["right", "studio.right", ArrowRight],
-                ["in", "studio.zoomIn", ZoomIn],
-                ["out", "studio.zoomOut", ZoomOut],
-              ] as const
-            ).map(([action, key, Icon]) => (
-              <button
-                key={action}
-                type="button"
-                className="studio-button"
-                aria-label={t(key)}
-                title={t(key)}
-                onClick={() =>
-                  setCameraCommand((old) => ({ action, sequence: (old?.sequence ?? 0) + 1 }))
-                }
-              >
-                <Icon size={18} aria-hidden="true" />
-              </button>
-            ))}
           </div>
         </div>
         <aside className="studio-panel" aria-label={t("studio.settings")}>
