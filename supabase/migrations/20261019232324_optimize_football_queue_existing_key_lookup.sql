@@ -1,3 +1,7 @@
+-- Explicit transaction for Supabase CLI replay.
+-- Recorded SQL: supabase/migration-archive/recorded/20261019232324_optimize_football_queue_existing_key_lookup.sql
+BEGIN;
+
 SET LOCAL lock_timeout = '2s';
 SET LOCAL statement_timeout = '15s';
 DO $fix$
@@ -20,3 +24,5 @@ BEGIN
   EXECUTE replace(original,anchor,replacement);
 END
 $fix$;
+
+COMMIT;

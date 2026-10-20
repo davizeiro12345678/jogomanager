@@ -1,0 +1,1 @@
+REVOKE ALL ON public.player_careers,public.push_subscriptions FROM PUBLIC,anon; NOTIFY pgrst,'reload schema';

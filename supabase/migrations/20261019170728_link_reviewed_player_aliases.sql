@@ -1,3 +1,7 @@
+-- Explicit transaction for Supabase CLI replay.
+-- Recorded SQL: supabase/migration-archive/recorded/20261019170728_link_reviewed_player_aliases.sql
+BEGIN;
+
 -- Hide only aliases with an existing, reviewed provider link and matching registration.
 SET LOCAL lock_timeout='3s';
 SET LOCAL statement_timeout='30s';
@@ -53,3 +57,5 @@ ALTER POLICY "Only athlete records are playable" ON public.players
 USING(source_kind='player' AND canonical_player_id IS NULL);
 COMMENT ON COLUMN public.players.canonical_player_id IS 'Reviewed provider alias. Original id retained; playable reads return canonical record only.';
 NOTIFY pgrst,'reload schema';
+
+COMMIT;

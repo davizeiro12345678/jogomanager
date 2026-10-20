@@ -1,3 +1,7 @@
+-- Explicit transaction for Supabase CLI replay.
+-- Recorded SQL: supabase/migration-archive/recorded/20261013190926_optimize_auth_uid_rls_initplans_oct_2026.sql
+BEGIN;
+
 -- Preservar a semantica RLS e calcular auth.uid() uma vez por comando.
 SET LOCAL lock_timeout = '5s';
 ALTER POLICY "Public can read opted in rankings" ON public."activity_rankings" USING ((opted_in OR ((select auth.uid()) = user_id)));
@@ -26,3 +30,5 @@ ALTER POLICY "own boost read" ON public."user_boosts" USING (((select auth.uid()
 ALTER POLICY "Users read own purchases" ON public."user_purchases" USING (((select auth.uid()) = user_id));
 ALTER POLICY "Users read own wallet" ON public."user_wallet" USING (((select auth.uid()) = user_id));
 ALTER POLICY "own item log read" ON public."wallet_item_log" USING (((select auth.uid()) = user_id));
+
+COMMIT;

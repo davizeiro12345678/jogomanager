@@ -1,3 +1,7 @@
+-- Explicit transaction for Supabase CLI replay.
+-- Recorded SQL: supabase/migration-archive/recorded/20261019234214_restrict_client_maintenance_privileges.sql
+BEGIN;
+
 SET LOCAL lock_timeout = '2s';
 SET LOCAL statement_timeout = '15s';
 REVOKE TRUNCATE, TRIGGER, REFERENCES, MAINTAIN ON TABLE public.player_careers, public.push_subscriptions FROM authenticated;
@@ -16,3 +20,5 @@ BEGIN
   RAISE EXCEPTION 'Push application privileges changed unexpectedly';
  END IF;
 END $verify$;
+
+COMMIT;

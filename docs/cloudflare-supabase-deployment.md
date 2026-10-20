@@ -14,6 +14,10 @@ A nova migração incremental `20261020101601_restore_missing_security_contracts
 
 O workflow **Quality gates** inclui um banco Supabase local descartável e o contrato `tests/sql/supabase-replay-contract.sql`. O teste verifica esquema, RLS, isolamento de usuários, idempotência de cupons, limites de telemetria, revisão de saves e RPC de resumo de ligas. As identidades sintéticas são criadas dentro de uma transação encerrada com `ROLLBACK`. A execução não usa credenciais de produção, `--linked` nem URL remota.
 
+A primeira execução nativa, com CLI 2.75.2 e PostgreSQL 17.6.1.079, identificou uma dependência adicional: `LOCK TABLE` exigia bloco de transação explícito (`25P01`). Doze migrações históricas que usam `LOCK TABLE` ou `SET LOCAL` receberam somente envelopes `BEGIN`/`COMMIT`; os 47 SQL originais foram preservados como bytes em `supabase/migration-archive/recorded`, com hashes separados de origem e replay. O guard compara a transformação exata e não permite alterações livres dos corpos históricos. Os demais arquivos mantêm sua forma original.
+
+O CLI registra a versão depois das statements do arquivo; nos arquivos com `COMMIT` explícito, esse registro ocorre depois do commit do DDL. Se houver interrupção entre essas etapas, conferir esquema e histórico antes de repetir a migração. O replay PGlite/PostgreSQL 18 é auxiliar e não substitui o gate nativo do PostgreSQL 17, pois o tratamento de transações implícitas no protocolo mudou entre essas versões.
+
 ```sh
 node scripts/verify-migration-history.mjs
 supabase db start

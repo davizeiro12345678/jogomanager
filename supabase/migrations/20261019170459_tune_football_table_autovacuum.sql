@@ -1,3 +1,7 @@
+-- Explicit transaction for Supabase CLI replay.
+-- Recorded SQL: supabase/migration-archive/recorded/20261019170459_tune_football_table_autovacuum.sql
+BEGIN;
+
 SET LOCAL lock_timeout='3s';
 -- Keep autovacuum enabled; tune only the three frequently refreshed football tables.
 -- Previous reloptions were NULL for all three (2026-10-19 read-only evidence).
@@ -22,3 +26,5 @@ ALTER TABLE public.api_football_data SET (
 -- Rollback, if the ingestion workload changes: ALTER TABLE <table> RESET
 -- (autovacuum_vacuum_scale_factor,autovacuum_vacuum_threshold,
 --  autovacuum_analyze_scale_factor,autovacuum_analyze_threshold);
+
+COMMIT;

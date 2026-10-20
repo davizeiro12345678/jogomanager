@@ -1,3 +1,7 @@
+-- Explicit transaction for Supabase CLI replay.
+-- Recorded SQL: supabase/migration-archive/recorded/20261019165541_classify_staff_and_guard_catalog_names.sql
+BEGIN;
+
 -- Authoritative provider-role classification; retain every player id and audit the change.
 SET LOCAL lock_timeout = '3s';
 SET LOCAL statement_timeout = '45s';
@@ -58,3 +62,5 @@ CHECK(name IS NOT NULL AND btrim(name)<>'' AND lower(btrim(name)) NOT IN('null',
 ALTER TABLE public.competitions VALIDATE CONSTRAINT competitions_valid_name_check;
 COMMENT ON COLUMN public.players.source_kind IS 'Provider role classification. Staff retains its id for save/reference compatibility and is excluded from playable catalog.';
 NOTIFY pgrst,'reload schema';
+
+COMMIT;

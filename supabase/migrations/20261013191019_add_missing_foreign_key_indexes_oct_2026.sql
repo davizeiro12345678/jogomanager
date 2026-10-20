@@ -1,3 +1,7 @@
+-- Explicit transaction for Supabase CLI replay.
+-- Recorded SQL: supabase/migration-archive/recorded/20261013191019_add_missing_foreign_key_indexes_oct_2026.sql
+BEGIN;
+
 SET LOCAL lock_timeout = '5s';
 SET LOCAL statement_timeout = '60s';
 CREATE INDEX IF NOT EXISTS "idx_chat_messages_user_id_fk_20261013" ON public."chat_messages" ("user_id");
@@ -12,3 +16,5 @@ CREATE INDEX IF NOT EXISTS "idx_player_season_stats_club_id_fk_20261013" ON publ
 CREATE INDEX IF NOT EXISTS "idx_player_season_stats_competition_id_fk_20261013" ON public."player_season_stats" ("competition_id");
 CREATE INDEX IF NOT EXISTS "idx_sportsdb_player_aliases_canonical_source_id_fk_20261013" ON public."sportsdb_player_aliases" ("canonical_source_id");
 CREATE INDEX IF NOT EXISTS "idx_user_blocks_blocked_id_fk_20261013" ON public."user_blocks" ("blocked_id");
+
+COMMIT;

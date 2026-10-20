@@ -1,3 +1,7 @@
+-- Explicit transaction for Supabase CLI replay.
+-- Recorded SQL: supabase/migration-archive/recorded/20261003224020_sportsdb_cloudflare_raw_archive.sql
+BEGIN;
+
 -- The raw SportsDB corpus is already retained in Cloudflare R2 by the source worker.
 -- Keep only normalized game catalog rows and compact archive job metadata in Postgres.
 SET LOCAL lock_timeout = '5s';
@@ -160,3 +164,5 @@ ALTER INDEX public.sportsdb_archives_compact_pending_idx RENAME TO sportsdb_arch
 
 DROP TABLE public.sportsdb_archives_payload_archive;
 DROP TABLE public.sportsdb_records;
+
+COMMIT;
