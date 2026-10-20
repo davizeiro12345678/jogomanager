@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const migration = await readFile(
   new URL(
-    "../../supabase/migrations/20261004135914_multiplayer_server_authority.sql",
+    "../../supabase/migrations/20261004161718_multiplayer_server_authority.sql",
     import.meta.url,
   ),
   "utf8",

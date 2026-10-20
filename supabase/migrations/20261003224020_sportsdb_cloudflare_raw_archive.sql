@@ -115,7 +115,7 @@ DECLARE saved integer; BEGIN
     'strFanart3','strFanart4','strThumb','strCutout','strRender','strEquipment') AND m.value LIKE 'https://%'
   ON CONFLICT (source,entity_type,source_id,kind) DO UPDATE SET url=excluded.url,updated_at=now();
   RETURN saved;
-  END $$;
+END $$;;
 
 CREATE OR REPLACE FUNCTION public.sportsdb_bridge_archive(p_owner uuid,p_key text,p_updated_at timestamptz,
   p_payload jsonb,p_rows jsonb) RETURNS integer
@@ -129,7 +129,7 @@ DECLARE saved integer; BEGIN
     status=CASE WHEN source_updated_at>p_updated_at THEN 'pending' ELSE 'done' END,
     attempts=0,last_error=NULL WHERE archive_key=p_key;
   RETURN saved;
-  END $$;
+END $$;;
 
 CREATE TABLE public.sportsdb_archives_compact (
   archive_key text PRIMARY KEY CHECK (archive_key LIKE 'sportsdb/v2/%' AND position('..' in archive_key) = 0),

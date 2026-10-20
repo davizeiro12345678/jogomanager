@@ -52,4 +52,3 @@ GRANT EXECUTE ON FUNCTION public.get_public_league_digest_source(integer[]) TO s
 
 COMMENT ON FUNCTION public.get_public_league_digest_source(integer[]) IS
   'Bounded read-only inputs for the trusted server league digest. At most 32 positive IDs; duplicate IDs are collapsed. Raw standings remain server-side; only sanitized digest fields are returned by the application.';
-

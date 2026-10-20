@@ -394,8 +394,11 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
                   },
                   {
                     y: P.spineLen + P.chestLen * 0.87,
-                    width: P.shoulderW * 0.4,
-                    depth: P.chestD * 0.715,
+                    // Carry the clavicle towards the sleeve before turning
+                    // into the neck. The former early taper left a visible
+                    // hollow beside a separate rounded deltoid cap.
+                    width: P.shoulderW * 0.475,
+                    depth: P.chestD * 0.76,
                   },
                   {
                     y: P.spineLen + P.chestLen * 0.96,

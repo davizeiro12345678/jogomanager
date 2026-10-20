@@ -1,0 +1,1 @@
+ALTER TABLE public.api_football_page_progress ADD COLUMN IF NOT EXISTS total_pages integer CHECK (total_pages > 0), ADD COLUMN IF NOT EXISTS completed_at timestamptz;

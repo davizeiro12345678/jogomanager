@@ -31,7 +31,28 @@ jobs:
       # scheduled job once a stable CI baseline is recorded.
       - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1
       - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs
+      - run: node --test scripts/verify-public-deployment.test.mjs
       - run: PFM_LOCAL_VERIFY=1 npm run build
+
+  database-replay:
+    name: Supabase migration replay and access contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify recorded migration history and preserved legacy files
+        run: node scripts/verify-migration-history.mjs
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.75.2
+      # These commands target the disposable local Docker database only.
+      # No access token, production password, --linked, or remote DB URL is used.
+      - name: Start local Supabase Postgres
+        run: supabase db start
+      - name: Replay the complete canonical migration history
+        run: supabase db reset --local --no-seed --yes
+      - name: Verify application schema, ownership, and grants
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/supabase-replay-contract.sql
 
   game-assets:
     name: 3D asset compression contract
@@ -80,7 +101,6 @@ jobs:
           configPath: .lighthouserc.cjs
           uploadArtifacts: true
           temporaryPublicStorage: false
-
 
   lighthouse-mobile:
     name: Lighthouse mobile multi-page audit
