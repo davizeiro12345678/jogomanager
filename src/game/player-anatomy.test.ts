@@ -74,6 +74,18 @@ describe("adult player anatomy", () => {
     expect(shirtPanelU(1, -0.001)).toBeGreaterThan(0.5);
   });
 
+  it("keeps lettering readable from the front and back instead of mirroring both panels", () => {
+    // A front camera sees world +x on screen-right; behind the player the
+    // camera's horizontal axis reverses. Both views must read atlas U left
+    // to right, while retaining the existing front/back panel centres.
+    expect(shirtPanelU(-1, 1)).toBeLessThan(shirtPanelU(1, 1));
+    expect(shirtPanelU(1, -1)).toBeLessThan(shirtPanelU(-1, -1));
+    expect(shirtPanelU(-1, 1)).toBeCloseTo(0.125, 6);
+    expect(shirtPanelU(1, 1)).toBeCloseTo(0.375, 6);
+    expect(shirtPanelU(1, -1)).toBeCloseTo(0.625, 6);
+    expect(shirtPanelU(-1, -1)).toBeCloseTo(0.875, 6);
+  });
+
   it("builds closed tapered limbs with finite, smooth seam normals", () => {
     for (const kind of ["upperArm", "forearm", "thigh", "calf"] satisfies LimbProfile[]) {
       const geometry = anatomicalLimb(kind, 0.4, 0.05, 12);

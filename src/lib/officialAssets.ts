@@ -8,7 +8,8 @@
 import type { OfficialAssets } from "./football.functions";
 import { reportSilent } from "./silent-errors";
 
-const CACHE_KEY = "manager3d.official.v1";
+// v1 could contain a Data API-truncated catalog. Fetch it completely once.
+const CACHE_KEY = "manager3d.official.v2";
 const PREF_KEY = "manager3d.officialLook";
 const TTL = 1000 * 60 * 60 * 24 * 7;
 
@@ -49,7 +50,20 @@ function readCache(): OfficialAssets | null {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as { at: number; data: OfficialAssets };
-    if (Date.now() - parsed.at > TTL) return null;
+    if (
+      !Number.isFinite(parsed.at) ||
+      Date.now() - parsed.at > TTL ||
+      !parsed.data ||
+      typeof parsed.data.crests !== "object" ||
+      !parsed.data.crests ||
+      Array.isArray(parsed.data.crests) ||
+      !Object.values(parsed.data.crests).every((value) => typeof value === "string") ||
+      typeof parsed.data.kits !== "object" ||
+      !parsed.data.kits ||
+      Array.isArray(parsed.data.kits) ||
+      !Object.values(parsed.data.kits).every((value) => typeof value === "string")
+    )
+      return null;
     return parsed.data;
   } catch (error) {
     reportSilent("assets.cache", error, {
@@ -72,6 +86,7 @@ export function loadOfficialAssets(): Promise<void> {
     cache = cached;
     loaded = true;
     listeners.forEach((l) => l());
+    return Promise.resolve();
   }
 
   // The local crest renderer and isolated graphics previews do not need to
@@ -102,7 +117,9 @@ export function loadOfficialAssets(): Promise<void> {
         phase: "load",
         dedupeKey: "official-assets-load",
       });
-      loaded = true;
+      // A failed request did not load a catalog. A later explicit load may
+      // recover; simultaneous callers still share the in-flight request.
+      loaded = false;
     })
     .finally(() => {
       inflight = null;

@@ -121,7 +121,7 @@ export function usePlayerRigMeshes({
     // The first sample sets the articulated lids at their open rest pose.
     for (const joint of ["eyelidUpperL", "eyelidLowerL", "eyelidUpperR", "eyelidLowerR"] as const)
       skin.boneOf[joint].rotation.x = 0;
-  }, [skin, look.seed]);
+  }, [skin, look.seed, painted, lodState, castState]);
 
   // As malhas são criadas fora do JSX para carregar esqueleto, esfera de
   // culling generosa (a pose animada sai da pose de bind) e o estado de LOD.
@@ -154,18 +154,18 @@ export function usePlayerRigMeshes({
       skinnedMeshes.current.push(mesh);
       return createElement("primitive", { key: `${group.material.uuid}-${index}`, object: mesh });
     });
-  }, [skin, shadows, portrait]);
+  }, [skin, shadows, portrait, nearMeshes, bootMeshes, skinnedMeshes]);
 
   // Material maps/surface steps change far more often than body geometry.
   // Rebind their stable slots in place and keep the mesh and skeleton objects.
   useLayoutEffect(() => {
     rebindRigSkinMaterials(skin, skinnedMeshes.current, mats);
-  }, [skin, mats, drawMeshes]);
+  }, [skin, mats, drawMeshes, skinnedMeshes]);
   useLayoutEffect(() => {
     for (const mesh of skinnedMeshes.current) {
       cloth.bind(mesh);
       if (!hi || !clothPhysics) mesh.morphTargetInfluences?.fill(0);
     }
-  }, [skin, cloth, drawMeshes, hi, clothPhysics]);
+  }, [skin, cloth, drawMeshes, hi, clothPhysics, skinnedMeshes]);
   return { skin, cloth, drawMeshes };
 }

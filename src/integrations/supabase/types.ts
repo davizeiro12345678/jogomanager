@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -119,6 +119,7 @@ export type Database = {
       api_football_import_progress: {
         Row: {
           batch_size: number
+          consecutive_failures: number
           error_message: string | null
           lease_token: string | null
           lease_until: string | null
@@ -130,6 +131,7 @@ export type Database = {
         }
         Insert: {
           batch_size?: number
+          consecutive_failures?: number
           error_message?: string | null
           lease_token?: string | null
           lease_until?: string | null
@@ -141,6 +143,7 @@ export type Database = {
         }
         Update: {
           batch_size?: number
+          consecutive_failures?: number
           error_message?: string | null
           lease_token?: string | null
           lease_until?: string | null
@@ -148,6 +151,36 @@ export type Database = {
           phase?: string
           status?: string
           total_processed?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      api_football_page_progress: {
+        Row: {
+          completed_at: string | null
+          next_page: number
+          phase: string
+          season: string
+          target_id: string
+          total_pages: number | null
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          next_page?: number
+          phase: string
+          season: string
+          target_id: string
+          total_pages?: number | null
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          next_page?: number
+          phase?: string
+          season?: string
+          target_id?: string
+          total_pages?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -167,6 +200,27 @@ export type Database = {
           request_count?: number
           window_start?: string
           window_type?: string
+        }
+        Relationships: []
+      }
+      api_football_season_coverage: {
+        Row: {
+          coverage: Json
+          league_source_id: string
+          season: string
+          updated_at: string
+        }
+        Insert: {
+          coverage?: Json
+          league_source_id: string
+          season: string
+          updated_at?: string
+        }
+        Update: {
+          coverage?: Json
+          league_source_id?: string
+          season?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -258,21 +312,36 @@ export type Database = {
       }
       checkout_session_owners: {
         Row: {
+          contents_snapshot: Json | null
           created_at: string
+          currency: string | null
           environment: string
+          price_cents: number | null
+          product_key: string | null
           session_id: string
+          stripe_price_id: string | null
           user_id: string
         }
         Insert: {
+          contents_snapshot?: Json | null
           created_at?: string
+          currency?: string | null
           environment: string
+          price_cents?: number | null
+          product_key?: string | null
           session_id: string
+          stripe_price_id?: string | null
           user_id: string
         }
         Update: {
+          contents_snapshot?: Json | null
           created_at?: string
+          currency?: string | null
           environment?: string
+          price_cents?: number | null
+          product_key?: string | null
           session_id?: string
+          stripe_price_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -670,6 +739,45 @@ export type Database = {
           },
         ]
       }
+      entitlement_ledger: {
+        Row: {
+          action: string
+          cosmetic_family: string | null
+          cosmetic_key: string | null
+          created_at: string
+          details: Json
+          id: string
+          idempotency_key: string
+          occurred_at: string
+          tier: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          cosmetic_family?: string | null
+          cosmetic_key?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          idempotency_key: string
+          occurred_at: string
+          tier?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          cosmetic_family?: string | null
+          cosmetic_key?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          idempotency_key?: string
+          occurred_at?: string
+          tier?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       game_coupons: {
         Row: {
           active: boolean
@@ -985,6 +1093,36 @@ export type Database = {
         }
         Relationships: []
       }
+      official_equipment: {
+        Row: {
+          image_url: string | null
+          kind: string | null
+          season: string | null
+          source_id: string
+          source_updated_at: string | null
+          team_source_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          image_url?: string | null
+          kind?: string | null
+          season?: string | null
+          source_id: string
+          source_updated_at?: string | null
+          team_source_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          image_url?: string | null
+          kind?: string | null
+          season?: string | null
+          source_id?: string
+          source_updated_at?: string | null
+          team_source_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       official_event_details: {
         Row: {
           detail_type: string
@@ -994,6 +1132,7 @@ export type Database = {
           payload: Json
           player_source_id: string | null
           source_id: string
+          source_updated_at: string | null
           team_source_id: string | null
           updated_at: string
         }
@@ -1005,6 +1144,7 @@ export type Database = {
           payload?: Json
           player_source_id?: string | null
           source_id: string
+          source_updated_at?: string | null
           team_source_id?: string | null
           updated_at?: string
         }
@@ -1016,6 +1156,7 @@ export type Database = {
           payload?: Json
           player_source_id?: string | null
           source_id?: string
+          source_updated_at?: string | null
           team_source_id?: string | null
           updated_at?: string
         }
@@ -1040,6 +1181,7 @@ export type Database = {
           league_source_id: string
           season: string
           source_id: string
+          source_updated_at: string | null
           starts_at: string | null
           status: string | null
           updated_at: string
@@ -1056,6 +1198,7 @@ export type Database = {
           league_source_id: string
           season: string
           source_id: string
+          source_updated_at?: string | null
           starts_at?: string | null
           status?: string | null
           updated_at?: string
@@ -1072,6 +1215,7 @@ export type Database = {
           league_source_id?: string
           season?: string
           source_id?: string
+          source_updated_at?: string | null
           starts_at?: string | null
           status?: string | null
           updated_at?: string
@@ -1087,6 +1231,7 @@ export type Database = {
           local_competition_id: string | null
           name: string
           source_id: string
+          source_updated_at: string | null
           sport: string
           updated_at: string
         }
@@ -1096,6 +1241,7 @@ export type Database = {
           local_competition_id?: string | null
           name: string
           source_id: string
+          source_updated_at?: string | null
           sport: string
           updated_at?: string
         }
@@ -1105,6 +1251,7 @@ export type Database = {
           local_competition_id?: string | null
           name?: string
           source_id?: string
+          source_updated_at?: string | null
           sport?: string
           updated_at?: string
         }
@@ -1122,26 +1269,98 @@ export type Database = {
         Row: {
           entity_type: string
           kind: string
+          parent_source_id: string
           source: string
           source_id: string
+          source_updated_at: string | null
           updated_at: string
           url: string
         }
         Insert: {
           entity_type: string
           kind: string
+          parent_source_id?: string
           source?: string
           source_id: string
+          source_updated_at?: string | null
           updated_at?: string
           url: string
         }
         Update: {
           entity_type?: string
           kind?: string
+          parent_source_id?: string
           source?: string
           source_id?: string
+          source_updated_at?: string | null
           updated_at?: string
           url?: string
+        }
+        Relationships: []
+      }
+      official_players: {
+        Row: {
+          birth_date: string | null
+          name: string
+          nationality: string | null
+          photo_url: string | null
+          position: string | null
+          source_id: string
+          source_updated_at: string | null
+          sport: string
+          team_source_id: string | null
+          team_source_is_explicit: boolean
+          team_source_priority: number
+          updated_at: string
+        }
+        Insert: {
+          birth_date?: string | null
+          name: string
+          nationality?: string | null
+          photo_url?: string | null
+          position?: string | null
+          source_id: string
+          source_updated_at?: string | null
+          sport?: string
+          team_source_id?: string | null
+          team_source_is_explicit?: boolean
+          team_source_priority?: number
+          updated_at?: string
+        }
+        Update: {
+          birth_date?: string | null
+          name?: string
+          nationality?: string | null
+          photo_url?: string | null
+          position?: string | null
+          source_id?: string
+          source_updated_at?: string | null
+          sport?: string
+          team_source_id?: string | null
+          team_source_is_explicit?: boolean
+          team_source_priority?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      official_seasons: {
+        Row: {
+          league_source_id: string
+          season: string
+          source_updated_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          league_source_id: string
+          season: string
+          source_updated_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          league_source_id?: string
+          season?: string
+          source_updated_at?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1151,6 +1370,8 @@ export type Database = {
           local_club_id: string | null
           name: string
           source_id: string
+          source_updated_at: string | null
+          sport: string
           updated_at: string
           venue_source_id: string | null
         }
@@ -1159,6 +1380,8 @@ export type Database = {
           local_club_id?: string | null
           name: string
           source_id: string
+          source_updated_at?: string | null
+          sport?: string
           updated_at?: string
           venue_source_id?: string | null
         }
@@ -1167,6 +1390,8 @@ export type Database = {
           local_club_id?: string | null
           name?: string
           source_id?: string
+          source_updated_at?: string | null
+          sport?: string
           updated_at?: string
           venue_source_id?: string | null
         }
@@ -1179,6 +1404,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      official_venues: {
+        Row: {
+          capacity: number | null
+          city: string | null
+          country: string | null
+          name: string
+          photo_url: string | null
+          source_id: string
+          source_updated_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          city?: string | null
+          country?: string | null
+          name: string
+          photo_url?: string | null
+          source_id: string
+          source_updated_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          city?: string | null
+          country?: string | null
+          name?: string
+          photo_url?: string | null
+          source_id?: string
+          source_updated_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_webhook_events: {
+        Row: {
+          attempts: number
+          created_at: string
+          event_id: string
+          event_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          event_id: string
+          event_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       player_career_clubs: {
         Row: {
@@ -1233,30 +1518,71 @@ export type Database = {
           },
         ]
       }
+      player_career_revisions: {
+        Row: {
+          created_at: string
+          operation: string
+          revision: number
+          slot: number
+          state: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          operation: string
+          revision: number
+          slot: number
+          state: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          operation?: string
+          revision?: number
+          slot?: number
+          state?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_career_revisions_user_id_slot_fkey"
+            columns: ["user_id", "slot"]
+            isOneToOne: false
+            referencedRelation: "player_careers"
+            referencedColumns: ["user_id", "slot"]
+          },
+        ]
+      }
       player_careers: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
           slot: number
           state: Json
+          sync_revision: number
           updated_at: string
           user_id: string
           verified_progress: boolean
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           slot: number
           state: Json
+          sync_revision?: number
           updated_at?: string
           user_id: string
           verified_progress?: boolean
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           slot?: number
           state?: Json
+          sync_revision?: number
           updated_at?: string
           user_id?: string
           verified_progress?: boolean
@@ -1441,6 +1767,7 @@ export type Database = {
         Row: {
           age: number
           birth_date: string | null
+          canonical_player_id: string | null
           club_id: string
           created_at: string
           data_version: number
@@ -1458,6 +1785,7 @@ export type Database = {
           shirt_number: number | null
           source: string | null
           source_id: string | null
+          source_kind: string
           source_updated_at: string | null
           sync_status: string
           updated_at: string
@@ -1465,6 +1793,7 @@ export type Database = {
         Insert: {
           age?: number
           birth_date?: string | null
+          canonical_player_id?: string | null
           club_id: string
           created_at?: string
           data_version?: number
@@ -1482,6 +1811,7 @@ export type Database = {
           shirt_number?: number | null
           source?: string | null
           source_id?: string | null
+          source_kind?: string
           source_updated_at?: string | null
           sync_status?: string
           updated_at?: string
@@ -1489,6 +1819,7 @@ export type Database = {
         Update: {
           age?: number
           birth_date?: string | null
+          canonical_player_id?: string | null
           club_id?: string
           created_at?: string
           data_version?: number
@@ -1506,11 +1837,19 @@ export type Database = {
           shirt_number?: number | null
           source?: string | null
           source_id?: string | null
+          source_kind?: string
           source_updated_at?: string | null
           sync_status?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "players_canonical_player_id_fkey"
+            columns: ["canonical_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "players_club_id_fkey"
             columns: ["club_id"]
@@ -1547,6 +1886,33 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_payment_reviews: {
+        Row: {
+          event_created: number
+          event_id: string
+          reference: string
+          refunded_amount_cents: number
+          review_status: string
+          updated_at: string
+        }
+        Insert: {
+          event_created: number
+          event_id: string
+          reference: string
+          refunded_amount_cents?: number
+          review_status: string
+          updated_at?: string
+        }
+        Update: {
+          event_created?: number
+          event_id?: string
+          reference?: string
+          refunded_amount_cents?: number
+          review_status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           created_at: string
@@ -1571,6 +1937,275 @@ export type Database = {
           topics?: string[]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      sportsdb_archives: {
+        Row: {
+          archive_key: string
+          attempts: number
+          hydrated_at: string | null
+          last_error: string | null
+          retry_at: string
+          source_updated_at: string
+          status: string
+        }
+        Insert: {
+          archive_key: string
+          attempts?: number
+          hydrated_at?: string | null
+          last_error?: string | null
+          retry_at?: string
+          source_updated_at: string
+          status?: string
+        }
+        Update: {
+          archive_key?: string
+          attempts?: number
+          hydrated_at?: string | null
+          last_error?: string | null
+          retry_at?: string
+          source_updated_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      sportsdb_bridge_control: {
+        Row: {
+          enabled: boolean
+          last_error: string | null
+          lease_owner: string | null
+          lease_until: string | null
+          max_database_bytes: number
+          singleton: boolean
+          source_complete: boolean
+          source_status: Json
+          status: string
+          token_sha256: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          last_error?: string | null
+          lease_owner?: string | null
+          lease_until?: string | null
+          max_database_bytes?: number
+          singleton?: boolean
+          source_complete?: boolean
+          source_status?: Json
+          status?: string
+          token_sha256: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          last_error?: string | null
+          lease_owner?: string | null
+          lease_until?: string | null
+          max_database_bytes?: number
+          singleton?: boolean
+          source_complete?: boolean
+          source_status?: Json
+          status?: string
+          token_sha256?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sportsdb_club_identity_aliases: {
+        Row: {
+          alias_id: string
+          canonical_id: string
+          created_at: string
+          reason: string
+        }
+        Insert: {
+          alias_id: string
+          canonical_id: string
+          created_at?: string
+          reason: string
+        }
+        Update: {
+          alias_id?: string
+          canonical_id?: string
+          created_at?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sportsdb_club_identity_aliases_alias_id_fkey"
+            columns: ["alias_id"]
+            isOneToOne: true
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sportsdb_club_identity_aliases_canonical_id_fkey"
+            columns: ["canonical_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sportsdb_competition_identity_aliases: {
+        Row: {
+          alias_id: string
+          canonical_id: string
+          created_at: string
+          reason: string
+        }
+        Insert: {
+          alias_id: string
+          canonical_id: string
+          created_at?: string
+          reason: string
+        }
+        Update: {
+          alias_id?: string
+          canonical_id?: string
+          created_at?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sportsdb_competition_identity_aliases_alias_id_fkey"
+            columns: ["alias_id"]
+            isOneToOne: true
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sportsdb_competition_identity_aliases_canonical_id_fkey"
+            columns: ["canonical_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sportsdb_data_corrections: {
+        Row: {
+          before_row: Json
+          correction_key: string
+          created_at: string
+          id: number
+          reason: string
+          source_id: string
+          table_name: string
+        }
+        Insert: {
+          before_row: Json
+          correction_key: string
+          created_at?: string
+          id?: never
+          reason: string
+          source_id: string
+          table_name: string
+        }
+        Update: {
+          before_row?: Json
+          correction_key?: string
+          created_at?: string
+          id?: never
+          reason?: string
+          source_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
+      sportsdb_import_cursors: {
+        Row: {
+          entity_type: string
+          fingerprint: string
+          last_serviced_at: string | null
+          next_offset: number
+          priority: number
+          source_total: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          entity_type: string
+          fingerprint: string
+          last_serviced_at?: string | null
+          next_offset?: number
+          priority: number
+          source_total?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          entity_type?: string
+          fingerprint?: string
+          last_serviced_at?: string | null
+          next_offset?: number
+          priority?: number
+          source_total?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sportsdb_player_aliases: {
+        Row: {
+          alias_source_id: string
+          canonical_source_id: string
+          created_at: string
+          original_record: Json
+          reason: string
+        }
+        Insert: {
+          alias_source_id: string
+          canonical_source_id: string
+          created_at?: string
+          original_record: Json
+          reason?: string
+        }
+        Update: {
+          alias_source_id?: string
+          canonical_source_id?: string
+          created_at?: string
+          original_record?: Json
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sportsdb_player_aliases_canonical_source_id_fkey"
+            columns: ["canonical_source_id"]
+            isOneToOne: false
+            referencedRelation: "official_players"
+            referencedColumns: ["source_id"]
+          },
+        ]
+      }
+      sportsdb_player_overrides: {
+        Row: {
+          birth_date_locked: boolean
+          birth_date_override: string | null
+          reason: string
+          source_id: string
+          team_source_id_locked: boolean
+          team_source_id_override: string | null
+          updated_at: string
+        }
+        Insert: {
+          birth_date_locked?: boolean
+          birth_date_override?: string | null
+          reason: string
+          source_id: string
+          team_source_id_locked?: boolean
+          team_source_id_override?: string | null
+          updated_at?: string
+        }
+        Update: {
+          birth_date_locked?: boolean
+          birth_date_override?: string | null
+          reason?: string
+          source_id?: string
+          team_source_id_locked?: boolean
+          team_source_id_override?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1769,6 +2404,27 @@ export type Database = {
         }
         Relationships: []
       }
+      tech_telemetry_rate_limits: {
+        Row: {
+          accepted: number
+          bucket: string
+          updated_at: string
+          window_started_at: string
+        }
+        Insert: {
+          accepted?: number
+          bucket: string
+          updated_at?: string
+          window_started_at: string
+        }
+        Update: {
+          accepted?: number
+          bucket?: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       user_achievements: {
         Row: {
           achievement_key: string
@@ -1825,6 +2481,92 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_cosmetic_grants: {
+        Row: {
+          cosmetic_family: string
+          cosmetic_key: string
+          created_at: string
+          id: string
+          permanent: boolean
+          source_reference: string
+          updated_at: string
+          user_id: string
+          valid_until: string | null
+        }
+        Insert: {
+          cosmetic_family: string
+          cosmetic_key: string
+          created_at?: string
+          id?: string
+          permanent?: boolean
+          source_reference: string
+          updated_at?: string
+          user_id: string
+          valid_until?: string | null
+        }
+        Update: {
+          cosmetic_family?: string
+          cosmetic_key?: string
+          created_at?: string
+          id?: string
+          permanent?: boolean
+          source_reference?: string
+          updated_at?: string
+          user_id?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
+      user_entitlements: {
+        Row: {
+          tier: string
+          updated_at: string
+          user_id: string
+          valid_until: string | null
+        }
+        Insert: {
+          tier?: string
+          updated_at?: string
+          user_id: string
+          valid_until?: string | null
+        }
+        Update: {
+          tier?: string
+          updated_at?: string
+          user_id?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
+      user_equipped_cosmetics: {
+        Row: {
+          cosmetic_family: string
+          cosmetic_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cosmetic_family: string
+          cosmetic_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cosmetic_family?: string
+          cosmetic_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_equipped_cosmetics_user_id_cosmetic_key_cosmetic_fami_fkey"
+            columns: ["user_id", "cosmetic_key", "cosmetic_family"]
+            isOneToOne: false
+            referencedRelation: "user_cosmetic_grants"
+            referencedColumns: ["user_id", "cosmetic_key", "cosmetic_family"]
+          },
+        ]
       }
       user_purchases: {
         Row: {
@@ -1931,6 +2673,10 @@ export type Database = {
           training_until: string
         }[]
       }
+      begin_payment_webhook_event: {
+        Args: { _event_id: string; _event_type: string }
+        Returns: boolean
+      }
       claim_api_football_import_phase: {
         Args: never
         Returns: {
@@ -1957,6 +2703,66 @@ export type Database = {
           training_boosts: number
         }[]
       }
+      finish_payment_webhook_event: {
+        Args: { _event_id: string; _succeeded: boolean }
+        Returns: undefined
+      }
+      football_queue_activate: {
+        Args: { p_enabled: boolean }
+        Returns: boolean
+      }
+      football_queue_cache: {
+        Args: { p_hash: string; p_path: string; p_text: string }
+        Returns: boolean
+      }
+      football_queue_cache_page: {
+        Args: { p_body: Json; p_lease: string; p_path: string }
+        Returns: undefined
+      }
+      football_queue_claim: { Args: never; Returns: Json }
+      football_queue_configure: {
+        Args: {
+          p_daily: number
+          p_key: string
+          p_minute: number
+          p_url: string
+        }
+        Returns: Json
+      }
+      football_queue_defer: {
+        Args: {
+          p_budget?: boolean
+          p_code: string
+          p_lease: string
+          p_path: string
+          p_wait: number
+        }
+        Returns: undefined
+      }
+      football_queue_finish: {
+        Args: {
+          p_children: Json
+          p_lease: string
+          p_path: string
+          p_received: number
+          p_remaining?: number
+          p_requests: number
+          p_writes: Json
+        }
+        Returns: Json
+      }
+      football_queue_reserve: { Args: never; Returns: undefined }
+      football_queue_reserve_job: {
+        Args: { p_lease: string; p_path: string }
+        Returns: undefined
+      }
+      football_queue_seed: { Args: { p_jobs: Json }; Returns: Json }
+      football_queue_settings: {
+        Args: { p_admin?: boolean; p_hash: string }
+        Returns: Json
+      }
+      football_queue_status: { Args: never; Returns: Json }
+      football_queue_window: { Args: { p_summary: Json }; Returns: undefined }
       fulfill_store_purchase: {
         Args: {
           _amount_cents: number
@@ -1995,8 +2801,69 @@ export type Database = {
           wins: number
         }[]
       }
+      get_public_league_digest_source: {
+        Args: { p_league_ids: number[] }
+        Returns: {
+          injury_count: number
+          league_id: number
+          payload: Json
+        }[]
+      }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
+        Returns: boolean
+      }
+      ingest_api_football: {
+        Args: {
+          p_action: string
+          p_payload: Json
+          p_run: string
+          p_token_hash: string
+        }
+        Returns: Json
+      }
+      list_api_football_league_targets: {
+        Args: { p_limit: number; p_offset: number }
+        Returns: {
+          country: string
+          coverage: Json
+          current_season: string
+          local_competition_id: string
+          source_id: string
+        }[]
+      }
+      list_api_football_team_targets: {
+        Args: { p_limit: number; p_offset: number; p_squads_only?: boolean }
+        Returns: {
+          league_source_id: string
+          local_club_id: string
+          source_id: string
+        }[]
+      }
+      mutate_player_career: {
+        Args: {
+          p_expected_revision: number
+          p_operation: string
+          p_slot: number
+          p_state?: Json
+        }
+        Returns: {
+          new_revision: number
+          status: string
+        }[]
+      }
+      reconcile_purchase_payment_review: {
+        Args: {
+          _event_created: number
+          _event_id: string
+          _event_type: string
+          _reference: string
+          _refunded_amount_cents?: number
+        }
+        Returns: undefined
+      }
+      reconcile_subscription_wallet: {
+        Args: { _environment: string; _user_id: string }
         Returns: boolean
       }
       record_active_time: {
@@ -2024,6 +2891,22 @@ export type Database = {
         Args: { _intent_id: string; _user_id: string }
         Returns: boolean
       }
+      reserve_tech_telemetry_slot: {
+        Args: { _bucket: string }
+        Returns: boolean
+      }
+      restore_lovable_batch: {
+        Args: {
+          p_batch: number
+          p_columns: string[]
+          p_hash: string
+          p_rows: Json
+          p_run: string
+          p_target: string
+          p_token_hash: string
+        }
+        Returns: Json
+      }
       send_chat_message_for: {
         Args: { _user_id: string; message_body: string }
         Returns: string
@@ -2039,6 +2922,72 @@ export type Database = {
           season_pass: boolean
         }[]
       }
+      sportsdb_bridge_acquire: { Args: never; Returns: string }
+      sportsdb_bridge_archive: {
+        Args: {
+          p_key: string
+          p_owner: string
+          p_payload: Json
+          p_rows: Json
+          p_updated_at: string
+        }
+        Returns: number
+      }
+      sportsdb_bridge_archive_catalog: {
+        Args: {
+          p_archives: Json
+          p_consumed: number
+          p_offset: number
+          p_owner: string
+          p_total: number
+        }
+        Returns: undefined
+      }
+      sportsdb_bridge_archive_error: {
+        Args: { p_error: string; p_key: string; p_owner: string }
+        Returns: undefined
+      }
+      sportsdb_bridge_authorize: { Args: { p_token: string }; Returns: boolean }
+      sportsdb_bridge_manifest: {
+        Args: {
+          p_manifest: Json
+          p_owner: string
+          p_source_complete: boolean
+          p_source_status: Json
+        }
+        Returns: undefined
+      }
+      sportsdb_bridge_page: {
+        Args: {
+          p_consumed: number
+          p_entity: string
+          p_offset: number
+          p_owner: string
+          p_rows: Json
+          p_total: number
+        }
+        Returns: number
+      }
+      sportsdb_bridge_release: {
+        Args: { p_error: string; p_owner: string }
+        Returns: undefined
+      }
+      sportsdb_bridge_timestamp: { Args: { p_value: string }; Returns: string }
+      sportsdb_bridge_work: { Args: { p_owner: string }; Returns: Json }
+      sportsdb_clean_text: { Args: { p_value: string }; Returns: string }
+      sportsdb_resolve_local_club: {
+        Args: { p_competition_id: string; p_name: string }
+        Returns: string
+      }
+      sportsdb_resolve_local_competition: {
+        Args: { p_country: string; p_name: string; p_source_id: string }
+        Returns: string
+      }
+      sportsdb_safe_birth_date: {
+        Args: { p_sport: string; p_value: string }
+        Returns: string
+      }
+      sportsdb_save_records: { Args: { p_rows: Json }; Returns: number }
       store_product_contents_valid: {
         Args: { _contents: Json }
         Returns: boolean

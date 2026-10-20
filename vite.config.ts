@@ -82,6 +82,24 @@ const projectConfig = defineConfig({
     },
   },
   vite: {
+    build: {
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              {
+                // Radix needs the small public API (flushSync/portals). Keeping it
+                // out of the hydration entry avoids pulling the router and its
+                // dependencies back into every lazily loaded UI route. The client
+                // renderer remains separate; this matches no react-dom/client file.
+                name: "react-dom-api",
+                test: /[\\/]node_modules[\\/]react-dom[\\/](?:index\.js|cjs[\\/]react-dom\.(?:production|development)\.js)(?:$|\?)/,
+              },
+            ],
+          },
+        },
+      },
+    },
     // Module workers retain dynamic import boundaries. IIFE output inlined
     // Rapier's WASM and season management into every match worker startup.
     worker: { format: "es", plugins: () => [rapierWasmAsset()] },
@@ -92,7 +110,10 @@ const projectConfig = defineConfig({
       allowedHosts: true,
       watch: { ignored: ["**/verification/**", "**/dist-benchmark/**", "**/.cloudflare/**"] },
     },
-    plugins: [...(enableMcpRouteGenerator ? [mcpPlugin()] : []), imagetools()],
+    // The authoritative fallback may run on the browser's main thread too.
+    // Externalize its identical binary there as well; the plugin explicitly
+    // excludes server environments so SSR retains the official initialization.
+    plugins: [...(enableMcpRouteGenerator ? [mcpPlugin()] : []), imagetools(), rapierWasmAsset()],
     resolve: {
       alias: {
         "entities/lib/decode.js": path.resolve(

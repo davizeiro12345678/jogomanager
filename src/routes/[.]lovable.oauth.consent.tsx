@@ -1,8 +1,6 @@
 import { createFileRoute, redirect, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { supabase } from "@/integrations/supabase/client";
-
 export const Route = createFileRoute("/.lovable/oauth/consent")({
   // Browser-only: the Supabase session lives in localStorage, absent on SSR.
   ssr: false,
@@ -28,6 +26,9 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   }),
   beforeLoad: async ({ search, location }) => {
     if (!search.authorization_id) throw new Error("Missing authorization_id");
+    // Route guards are part of the shared route tree; load the session SDK
+    // only when this browser-only consent route is actually entered.
+    const { supabase } = await import("@/integrations/supabase/client");
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
       const next = location.pathname + location.searchStr;
@@ -36,6 +37,7 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   },
   loader: async ({ location }) => {
     const authorizationId = new URLSearchParams(location.search).get("authorization_id")!;
+    const { supabase } = await import("@/integrations/supabase/client");
     const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
     if (error) throw error;
     const details = data as {
@@ -70,6 +72,7 @@ function Consent() {
 
   async function decide(approve: boolean) {
     setBusy(true);
+    const { supabase } = await import("@/integrations/supabase/client");
     const { data, error } = approve
       ? await supabase.auth.oauth.approveAuthorization(authorization_id)
       : await supabase.auth.oauth.denyAuthorization(authorization_id);

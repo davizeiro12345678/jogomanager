@@ -167,6 +167,10 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     () => sim.players.findIndex((candidate) => candidate.id === player.id),
     [sim.players, player.id],
   );
+  const fallbackContext = useMemo(
+    () => ({ action: emptyActionContext(), contact: emptyContactContext() }),
+    [],
+  );
   const dominantFoot: DominantFoot = getDominantFoot(player.pid);
   const isGK = player.pos === "GK";
   const looseHairStyle =
@@ -310,7 +314,8 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     g.position.z = goalPresentation?.rootZ ?? player.z;
     g.rotation.set(motion.leanX, facingYaw, motion.leanZ, "YXZ");
     accelerationLean.current = motion.accelerationLean;
-    if (hi && lod === 0 && looseHairStyle !== "none") {
+    const animateDetail = lod === 0 && visibleDetail;
+    if (hi && animateDetail && looseHairStyle !== "none") {
       advanceAthleteHairMotion(looseHair.current, {
         dt,
         speed: motion.speed,
@@ -363,7 +368,7 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
         ...(goalPresentation ? { actionSeed: goalPresentation.actionSeed } : {}),
         speed,
         hasBall: sim.ball.holder === player.id,
-        ballDist: Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z),
+        ballDist: ballDistance,
         stamina: player.stamina,
         defending: sim.possession !== player.side,
         stopped,
@@ -394,9 +399,9 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     // snapshot e reutilizado por todos os atletas, sem ficar obsoleto.
     const visualCtx = visualDataFor(sim);
     const actionContext: ActionContext =
-      visualCtx?.actionContexts[playerIndex] ?? emptyActionContext();
+      visualCtx?.actionContexts[playerIndex] ?? fallbackContext.action;
     const contactContext: ContactContext =
-      visualCtx?.contactContexts[playerIndex] ?? emptyContactContext();
+      visualCtx?.contactContexts[playerIndex] ?? fallbackContext.contact;
     if (visualCtx && lod === 0 && action && !goalPresentation) {
       const playerInfo = {
         x: player.x,
@@ -575,7 +580,7 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     if (foreRRef.current) foreRRef.current.rotation.x = c.elbowR;
     const leftHandPose = handPoseAt(action, u, speed, "L", handBuffers.L);
     const rightHandPose = handPoseAt(action, u, speed, "R", handBuffers.R);
-    if (lod === 0) {
+    if (animateDetail) {
       applyHandPose(skin.boneOf, leftHandPose, previewAt !== undefined ? 0.25 : adt, "L");
       applyHandPose(skin.boneOf, rightHandPose, previewAt !== undefined ? 0.25 : adt, "R");
     }
@@ -591,8 +596,9 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
         -rightHandPose.pronation - (action ? 0 : 0.06 * Math.sin(motion.phase)),
         -rightHandPose.deviation - 0.025,
       );
-    // Face and eyelids are evaluated only for the closest, detailed rig.
-    if (lod === 0) {
+    // Hidden near buckets do not need expressions, lids or finger motion.
+    // Core head tracking and palm/wrist poses continue at the same cadence.
+    if (animateDetail) {
       applyRigFacialPresentation({
         speed,
         tired,

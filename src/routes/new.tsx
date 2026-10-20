@@ -148,9 +148,11 @@ function NewCareer() {
       stepTitle.current?.focus();
     }
   }, [step]);
-  const [catalogVersion, setCatalogVersion] = useState(0);
+  const [catalog, setCatalog] = useState(() => [...LEAGUES]);
   useEffect(() => {
-    const bump = () => setCatalogVersion((v) => v + 1);
+    // The catalog hydrates the shared league list in place. Give React a new
+    // snapshot so memoized discovery depends on the data it actually reads.
+    const bump = () => setCatalog([...LEAGUES]);
     window.addEventListener(CATALOG_EVENT, bump);
     void loadDbCatalog().then(bump);
     return () => window.removeEventListener(CATALOG_EVENT, bump);
@@ -164,7 +166,7 @@ function NewCareer() {
   const spent = Object.values(attrs).reduce((a, b) => a + b, 0);
   const left = 30 - spent;
   const countryOptions = useMemo(() => {
-    const unique = [...new Map(LEAGUES.map((league) => [league.country, league])).values()];
+    const unique = [...new Map(catalog.map((league) => [league.country, league])).values()];
     return unique
       .filter((league) => searchKey(league.country).includes(searchKey(countryQuery)))
       .sort((a, b) =>
@@ -174,10 +176,10 @@ function NewCareer() {
             ? 1
             : a.country.localeCompare(b.country, "pt-BR"),
       );
-  }, [countryQuery, catalogVersion]);
+  }, [countryQuery, catalog]);
   const clubs = useMemo(
     () =>
-      discoverClubs(LEAGUES, {
+      discoverClubs(catalog, {
         query,
         leagueId,
         reputation,
@@ -185,7 +187,7 @@ function NewCareer() {
         availableOnly: available,
         scopeSearch,
       }),
-    [query, leagueId, reputation, challenge, available, scopeSearch, catalogVersion],
+    [query, leagueId, reputation, challenge, available, scopeSearch, catalog],
   );
   const selectionLocked = !!selected && selected.reputation > reputation;
   function go(next: number) {

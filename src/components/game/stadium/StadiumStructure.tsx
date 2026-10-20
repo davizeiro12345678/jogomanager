@@ -15,6 +15,7 @@ import {
 } from "@/game/stadium-structure";
 import { stadiumTierInstances, type StadiumTierInstance } from "@/game/stadium-tier-instances";
 import { bakeStadiumTierGeometry } from "@/game/stadium-tier-baked";
+import { censusRef } from "@/game/scene-census";
 import { concreteAlbedo, concreteRoughness, seatsTexture } from "./textures/concrete";
 import { bannerTexture, mosaicTexture } from "./textures/tifo";
 import { useVisual } from "@/game/visual-settings";
@@ -160,8 +161,9 @@ function Tiers({
     (typeof location !== "undefined" &&
       location.pathname.endsWith("/graphics-benchmark.html") &&
       new URLSearchParams(location.search).get("backgroundLighting") === "legacy");
-  // Constrained profiles share the immutable placements without mounting and
-  // baking hundreds of authoring meshes. High/cinema keep their existing path.
+  // Match profiles share immutable placements in three draws. A texture
+  // revision can otherwise expose 748 authoring meshes while a high-quality
+  // legacy batch settles again. Cinema keeps its separate existing path.
   const requestedBatch =
     typeof location !== "undefined" && location.pathname.includes("graphics-benchmark")
       ? new URLSearchParams(location.search).get("tierBatch")
@@ -169,9 +171,9 @@ function Tiers({
   const batching =
     requestedBatch === "instanced" || requestedBatch === "merged" || requestedBatch === "legacy"
       ? requestedBatch
-      : sceneTier === "baixa" || sceneTier === "media"
-        ? "instanced"
-        : "legacy";
+      : sceneTier === "cinema"
+        ? "legacy"
+        : "instanced";
   const lenX = FIELD_X * 2 + 30;
   const lenZ = FIELD_Z * 2 + 34;
   const physicalConcrete = useConcrete("#5f666d", 10, high);
@@ -267,7 +269,7 @@ function Tiers({
       {buckets}
     </StaticBatch>
   ) : (
-    <group>{buckets}</group>
+    <group ref={censusRef("static")}>{buckets}</group>
   );
 }
 

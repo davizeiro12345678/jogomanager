@@ -225,7 +225,7 @@ export function rigSectionGeometry(
 /** Sculpting recomputes normals; a split UV seam must remain visually smooth
  * after that pass. This uses authored pairs instead of welding vertices, so
  * cloth UVs and the separate normals on capped openings remain intact. */
-function refreshSurfaceNormals(geometry: THREE.BufferGeometry) {
+export function refreshSurfaceNormals(geometry: THREE.BufferGeometry) {
   geometry.computeVertexNormals();
   const pairs = geometry.userData["surfaceSeams"] as [number, number][] | undefined;
   if (!pairs) return;

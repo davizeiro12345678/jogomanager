@@ -57,6 +57,7 @@ type LowPlayersProps = {
   previewClip?: ClipName | undefined;
 };
 const MAX_PLAYERS = 22;
+const SIDES = [1, -1] as const;
 const SOCK_BATCHES = ["socksLow", "socksMid", "socksHigh"] as const;
 const SOCK_TOP = { socksLow: 0.62, socksMid: 0.38, socksHigh: 0.15 } as const;
 const BODY_BATCHES = ["torso", "hips", "head", ...LOW_HAIR_FAMILIES, "neck", "shadow"] as const;
@@ -110,6 +111,10 @@ export function LowPlayers({
   );
   const proportions = useMemo(() => looks.map(proportionsFor), [looks]);
   const shapes = useMemo(() => proportions.map(lowDetailBodyFor), [proportions]);
+  const dominantFeet = useMemo(
+    () => sim.players.map((player) => getDominantFoot(player.pid)),
+    [sim.players],
+  );
   const poseBlenders = useMemo(
     () => sim.players.map(() => new AthletePoseBlender()),
     [sim.players],
@@ -311,6 +316,7 @@ export function LowPlayers({
       );
       if (simplified && !visibility.frustum.intersectsSphere(visibility.bounds)) continue;
       const action = goalPresentation?.action ?? player.action;
+      const ballDistance = Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z);
       const motion = visualMotionFor(
         sim,
         player,
@@ -318,8 +324,7 @@ export function LowPlayers({
         look.seed,
         p.thigh + p.shin,
         clock.elapsedTime,
-        sim.possession !== player.side &&
-          Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z) < 12,
+        sim.possession !== player.side && ballDistance < 12,
       );
       const speed = motion.speed;
       const clip =
@@ -332,7 +337,7 @@ export function LowPlayers({
           ...(goalPresentation ? { actionSeed: goalPresentation.actionSeed } : {}),
           speed,
           hasBall: sim.ball.holder === player.id,
-          ballDist: Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z),
+          ballDist: ballDistance,
           stamina: player.stamina,
           defending: sim.possession !== player.side,
           stopped: speed < 0.35,
@@ -373,13 +378,8 @@ export function LowPlayers({
           authored,
         );
       const actionContext = visual?.actionContexts[index];
-      refineFootballAction(
-        authored,
-        action,
-        u,
-        p,
-        actionContext?.action ? actionContext.usedFoot : getDominantFoot(player.pid),
-      );
+      const usedFoot = actionContext?.action ? actionContext.usedFoot : dominantFeet[index]!;
+      refineFootballAction(authored, action, u, p, usedFoot);
       refineAthletePosture(authored, {
         time: clock.elapsedTime,
         phase: motion.phase,
@@ -399,12 +399,7 @@ export function LowPlayers({
           instant: paused || previewAt !== undefined,
         }),
       );
-      const actionSupport = footballSupportFor(
-        action,
-        u,
-        p.hipW,
-        actionContext?.action ? actionContext.usedFoot : getDominantFoot(player.pid),
-      );
+      const actionSupport = footballSupportFor(action, u, p.hipW, usedFoot);
       const shift =
         Math.max(-1, Math.min(1, pose.legRPitch - pose.legLPitch)) *
           0.045 *
@@ -503,22 +498,20 @@ export function LowPlayers({
       joint(head, neck, 0, p.neckLen + p.headR * 0.66, 0);
       draw("head", index, head, 0, 0, 0, p.headW * 2, p.headR * 2, p.headD * 2);
       const hairHeight = look.hairStyle === "afro" ? 1.13 : look.hairStyle === "buzz" ? 0.96 : 1;
-      for (const family of LOW_HAIR_FAMILIES) {
-        const hairScale =
-          look.hairStyle !== "bald" && lowHairFamily(look.hairStyle) === family ? 1 : 0;
+      if (look.hairStyle !== "bald") {
         draw(
-          family,
+          lowHairFamily(look.hairStyle),
           index,
           head,
           0,
           0,
           0,
-          p.headW * 2 * hairScale,
-          p.headR * 2 * hairHeight * look.hairVolume * hairScale,
-          p.headD * 2 * hairScale,
+          p.headW * 2,
+          p.headR * 2 * hairHeight * look.hairVolume,
+          p.headD * 2,
         );
       }
-      for (const side of [1, -1] as const) {
+      for (const side of SIDES) {
         const i = index * 2 + (side === 1 ? 0 : 1);
         const left = side === 1;
         const shoulder = shoulderPose(
@@ -590,20 +583,7 @@ export function LowPlayers({
             : look.sockHeight === "high"
               ? "socksHigh"
               : "socksMid";
-        for (const sockBatch of SOCK_BATCHES) {
-          const sockScale = sockBatch === selectedSock ? 1 : 0;
-          draw(
-            sockBatch,
-            i,
-            shin,
-            0,
-            0,
-            0,
-            p.legR * 2 * sockScale,
-            p.shin * sockScale,
-            p.legR * 2 * sockScale,
-          );
-        }
+        draw(selectedSock, i, shin, 0, 0, 0, p.legR * 2, p.shin, p.legR * 2);
         joint(ankle, shin, 0, -p.shin, 0, left ? pose.ankleL : pose.ankleR);
         draw("boots", i, ankle, 0, 0, 0, p.footH * 2, p.footH * 2, p.footLen);
       }
