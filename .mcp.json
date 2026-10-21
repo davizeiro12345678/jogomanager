@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "supabase-readonly": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=lguqnwvsfeefxamzeyos&read_only=true&features=database,docs,debugging,development"
+    },
+    "fastly": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "-p",
+        "@fastly/mcp",
+        "fastly-mcp"
+      ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
+    }
+  }
+}
