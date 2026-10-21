@@ -86,6 +86,18 @@ function AuthPage() {
   const brokeredOAuth = import.meta.env["VITE_AUTH_MODE"] !== "supabase-direct";
   const passkeysSupported = supportsPasskeys();
 
+  async function continueWithMfa() {
+    const { data, error: mfaError } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (mfaError) throw mfaError;
+    await navigate({
+      href:
+        data.nextLevel === "aal2" && data.currentLevel !== "aal2"
+          ? `/seguranca?next=${encodeURIComponent(destination)}`
+          : destination,
+    });
+  }
+
   useEffect(() => {
     let alive = true;
     const recovery =
@@ -141,7 +153,21 @@ function AuthPage() {
             );
           // Só redireciona sozinho ao voltar de um login (next na URL);
           // abrir /auth direto mostra a conta atual e permite trocar.
-          if (search.next) void navigate({ href: destination });
+          if (search.next) {
+            void supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data: level, error: mfaError }) => {
+              if (!alive) return;
+              if (mfaError) {
+                setError("Não foi possível validar o segundo fator. Tente novamente.");
+                return;
+              }
+              void navigate({
+                href:
+                  level.nextLevel === "aal2" && level.currentLevel !== "aal2"
+                    ? `/seguranca?next=${encodeURIComponent(destination)}`
+                    : destination,
+              });
+            });
+          }
           else setSignedInAs(data.session.user.email ?? "sua conta");
         }
       })
@@ -189,7 +215,7 @@ function AuthPage() {
           });
           if (result.error) throw result.error;
           if (!result.data.session) throw new Error("No verified session");
-          await navigate({ href: destination });
+          await continueWithMfa();
         } else {
           const submittedEmail = email.trim();
           const result = await supabase.auth.signInWithOtp({
@@ -237,7 +263,7 @@ function AuthPage() {
                 },
               });
         if (result.error) throw result.error;
-        if (result.data.session) await navigate({ href: destination });
+        if (result.data.session) await continueWithMfa();
         else {
           setConfirmationSent(true);
           setNotice(
@@ -265,7 +291,7 @@ function AuthPage() {
           redirect_uri: callback(),
         });
         if (result.error) throw result.error;
-        if (!result.redirected) await navigate({ href: destination });
+        if (!result.redirected) await continueWithMfa();
       } else {
         const result = await supabase.auth.signInWithOAuth({
           provider,
@@ -289,7 +315,7 @@ function AuthPage() {
       const result = await supabase.auth.signInWithPasskey();
       if (result.error) throw result.error;
       if (!result.data?.session) throw new Error("No passkey session");
-      await navigate({ href: destination });
+      await continueWithMfa();
     } catch (cause) {
       setError(passkeyErrorMessage(cause));
     } finally {
@@ -336,7 +362,7 @@ function AuthPage() {
           <h1 className="font-display text-2xl font-bold">Você já está conectado</h1>
           <p className="mt-2 text-sm text-muted-foreground">{signedInAs}</p>
           <div className="mt-6 grid gap-3">
-            <Button size="lg" onClick={() => void navigate({ href: destination })}>
+            <Button size="lg" onClick={() => void continueWithMfa()}>
               Continuar para o jogo
             </Button>
             <Button
