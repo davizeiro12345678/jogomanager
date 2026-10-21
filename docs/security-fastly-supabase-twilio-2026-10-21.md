@@ -9,6 +9,7 @@ Verificado em 21 de outubro de 2026. Esta nota distingue recursos configurados d
 - Domínio associado: `jogomanager.com`.
 - Origem HTTPS: `jogomanager-web.davizeiro10-jogos.workers.dev`.
 - Teste: https://slightly-apt-buffalo.global.ssl.fastly.net/api/health retornou HTTP 200, `ready`, com autenticação, credenciais de servidor e banco disponíveis.
+- Versão 2 ativa com o snippet `jogomanager-private-cache-bypass` em `vcl_recv`, prioridade 100. O cache só é permitido para GET/HEAD anônimos em `/assets/`; cookies, Authorization, escrita e demais caminhos usam pass. Código em `infra/fastly/private-cache-bypass.vcl`.
 - DDoS Protection está habilitado em modo Blocking. A mitigação de rede always-on aparece habilitada.
 - Next-Gen WAF, API Discovery, API Enforcement, Bot Management e Rate Limiting exigem contato comercial na conta. Não foram contratados ou ativados.
 - Certificado Let's Encrypt solicitado; assinatura `OCkxB28YH63DKnyNJfmZZw`, pendente de DNS.
@@ -43,3 +44,9 @@ A configuração de produção requer acesso seguro aos painéis e credenciais n
 6. Testar com número e destinatário autorizados e definir orçamento de envio antes de gerar tráfego cobrado.
 
 O conector Cloudflare falhou; o painel Cloudflare e o painel Supabase de autenticação abriram em tela de login. As permissões SQL do conector Supabase continuam funcionando.
+
+## Verificação adicional
+
+- Todas as 68 tabelas do esquema public estavam com RLS habilitada no levantamento.
+- O login Cloudflare por Google retornou: `Unable to sign in. Try again or use your email and password.` A sessão não foi autenticada; nenhuma alteração DNS foi feita.
+- O certificado solicitado recebeu a configuração padrão `HTTP/3 & TLS v1.3 + 0RTT (x.sni)`. Antes da entrada em produção, selecionar uma configuração sem 0RTT ou validar a rejeição de early data para operações não idempotentes. A emissão ainda depende do DNS.
