@@ -1,4 +1,5 @@
 import { Await, getRouteApi, Link } from "@tanstack/react-router";
+import { HomeLeaguePulse } from "@/components/home/HomeLeaguePulse";
 import { Suspense, lazy, useEffect, useState } from "react";
 import {
   ArrowDown,
@@ -20,12 +21,8 @@ import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1080;1600
 import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
 import "./home.css";
 
-// Below-the-fold content must not compete with the hero during initial JS hydration.
+// Defer lengthy editorial sections without creating an extra chunk for the tiny league pulse.
 const HomeDetails = lazy(() => import("./HomeDetails").then((m) => ({ default: m.HomeDetails })));
-const HomeLeaguePulse = lazy(() =>
-  import("@/components/home/HomeLeaguePulse").then((m) => ({ default: m.HomeLeaguePulse })),
-);
-
 const SYSTEMS = [
   {
     id: "tactics",
