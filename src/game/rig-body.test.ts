@@ -72,6 +72,39 @@ describe("rig body", () => {
     expect(openingVertices).toBeGreaterThan(12);
     body.all.forEach((mesh) => mesh.geometry.dispose());
   });
+  it("keeps cloth outside the entire lower neck, including the contour below the opening", () => {
+    const look = lookFor("studio-fla-MF-1", "MF", true);
+    const ctx = context({ look, P: proportionsFor(look), segs: segmentsFor(0) });
+    const body = buildRigBody(ctx);
+    const shirt = body.spine.find((mesh) => mesh.material === ctx.mats.jersey)!;
+    const neck = body.neck.find((mesh) => mesh.material === ctx.mats.skin)!;
+    const shirtMesh = new THREE.Mesh(shirt.geometry, ctx.mats.jersey);
+    const neckMesh = new THREE.Mesh(neck.geometry, ctx.mats.skin);
+    const openingY = ctx.P.spineLen + ctx.P.chestLen;
+    neckMesh.position.y = openingY;
+    neckMesh.updateMatrixWorld(true);
+    const ray = new THREE.Raycaster();
+    // Checking only the top ring missed a concave cloth contour that exposed
+    // skin immediately below it. Sample the full overlapping cervical height.
+    for (const depth of [0.1, 0.06, 0.02]) {
+      for (const angle of [0, Math.PI / 4, -Math.PI / 4, Math.PI / 2, Math.PI]) {
+        const direction = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle));
+        ray.set(
+          direction.clone().setY(openingY - ctx.P.neckLen * depth),
+          direction.clone().negate(),
+        );
+        const clothHit = ray.intersectObject(shirtMesh)[0];
+        const skinHit = ray.intersectObject(neckMesh)[0];
+        expect(clothHit).toBeTruthy();
+        expect(skinHit).toBeTruthy();
+        expect(
+          skinHit!.distance - clothHit!.distance,
+          `cloth clearance at neck depth ${depth} and angle ${angle}`,
+        ).toBeGreaterThan(0.0004);
+      }
+    }
+    body.all.forEach((mesh) => mesh.geometry.dispose());
+  });
   it("leaves an open neckline rather than closing the shirt through the neck", () => {
     const ctx = context();
     const body = buildRigBody(ctx);
@@ -92,7 +125,7 @@ describe("rig body", () => {
     expect(capTriangles, "a solid shirt cap intersects the neck and exposes dark facets").toBe(0);
     body.all.forEach((mesh) => mesh.geometry.dispose());
   });
-  it("keeps the crew collar out of the closed shirt cap instead of exposing alternating facets", () => {
+  it("sews the crew collar onto the open jersey neckline without a floating ring or neck cap", () => {
     const ctx = context();
     ctx.look = { ...ctx.look, collar: "crew" };
     const body = buildRigBody(ctx);
@@ -101,11 +134,54 @@ describe("rig body", () => {
     shirt.geometry.computeBoundingBox();
     collar.geometry.computeBoundingBox();
     // These meshes have different joint-local origins; compare both in spine space.
+    // The jersey is open at the neck: its trim must overlap that cloth, not
+    // float above a hypothetical closed cap as the earlier torus test required.
     const shirtTop = shirt.geometry.boundingBox!.max.y;
     const collarBottom = ctx.P.spineLen + collar.geometry.boundingBox!.min.y;
-    expect(collarBottom - shirtTop).toBeGreaterThanOrEqual(0.0005);
-    expect(collarBottom - shirtTop).toBeLessThan(0.012);
+    const collarTop = ctx.P.spineLen + collar.geometry.boundingBox!.max.y;
+    expect(shirtTop - collarBottom).toBeGreaterThan(0.004);
+    expect(shirtTop - collarBottom).toBeLessThan(0.016);
+    expect(Math.abs(collarTop - shirtTop)).toBeLessThan(0.001);
+
+    const shirtMesh = new THREE.Mesh(shirt.geometry, ctx.mats.jersey);
+    const collarMesh = new THREE.Mesh(collar.geometry, ctx.mats.trim);
+    collarMesh.position.y = ctx.P.spineLen;
+    collarMesh.updateMatrixWorld(true);
+    const ray = new THREE.Raycaster(
+      new THREE.Vector3(0, shirtTop - ctx.P.neckR * 0.09, 1),
+      new THREE.Vector3(0, 0, -1),
+    );
+    const shirtHit = ray.intersectObject(shirtMesh)[0];
+    const collarHit = ray.intersectObject(collarMesh)[0];
+    expect(shirtHit).toBeTruthy();
+    expect(collarHit).toBeTruthy();
+    expect(collarHit!.point.distanceTo(shirtHit!.point)).toBeLessThan(0.0015);
+    expect(collarHit!.point.z).toBeGreaterThan(shirtHit!.point.z);
+    ray.set(new THREE.Vector3(0, shirtTop + 0.1, 0), new THREE.Vector3(0, -1, 0));
+    expect(ray.intersectObject(collarMesh)).toHaveLength(0);
+
+    const previousTorusTriangles = Math.max(24, ctx.segs.radial + 12) * 6 * 2;
+    expect(collar.geometry.getIndex()!.count / 3).toBeLessThan(previousTorusTriangles);
     body.all.forEach((mesh) => mesh.geometry.dispose());
+  });
+  it("keeps polo folds on the cloth instead of crossing the neck opening", () => {
+    const ctx = context();
+    ctx.look = { ...ctx.look, collar: "polo" };
+    const body = buildRigBody(ctx);
+    const collar = body.chest.find((mesh) => mesh.material === ctx.mats.trim)!;
+    const mesh = new THREE.Mesh(collar.geometry, ctx.mats.trim);
+    const ray = new THREE.Raycaster();
+    for (const depth of [0.4, 0.6, 0.8]) {
+      ray.set(
+        new THREE.Vector3(0, ctx.P.chestLen + 0.1, ctx.P.neckR * depth),
+        new THREE.Vector3(0, -1, 0),
+      );
+      expect(
+        ray.intersectObject(mesh),
+        "polo trim must not pass through exposed neck skin",
+      ).toHaveLength(0);
+    }
+    body.all.forEach((part) => part.geometry.dispose());
   });
   it("bounds broadcast topology while retaining high quality materials and anatomy", () => {
     const dense = buildRigBody(context({ segs: matchRigSegments("alta", true), portrait: false }));

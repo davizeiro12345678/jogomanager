@@ -1,6 +1,40 @@
 # Publicação do JogoManager em Cloudflare e Supabase
 
-Estado de preparação e publicação: 2 de outubro de 2026.
+Registro original de preparação e publicação: 2 de outubro de 2026.
+
+## Reconciliação do push em 20 de outubro de 2026
+
+O check nativo **Supabase Preview** da PR55, no commit `5198a3897fd8995b2550d587640c5cb4aa03abf9`, falhou ao criar `players_source_identity_conflict_idx`: `column "source_id" does not exist` (`42703`). A pasta ativa continha uma sequência diferente da registrada no projeto de produção. A primeira migração efetivamente aplicada, `20261002165848_jogomanager_initial_backend`, já reunia os arquivos originais do Supabase e do Drizzle, mas não estava no Git. Corrigir apenas a coluna omitiria outras tabelas, políticas e funções necessárias.
+
+O histórico foi reconciliado com as **47 versões registradas em produção**, recuperadas por consulta somente de leitura. `supabase/migration-history.json` registra a proveniência e os hashes normalizados. Os 34 arquivos antigos sobrepostos foram preservados em `supabase/migration-archive/legacy`, fora da pasta que o Supabase executa; uma variante com diferenças apenas de formatação foi preservada separadamente. O gerador `scripts/supabase-bootstrap.mjs` agora concatena somente a sequência canônica, depois de verificar sua integridade. Ele não acrescenta o Drizzle uma segunda vez.
+
+A nova migração incremental `20261020101601_restore_missing_security_contracts.sql` recupera contratos que existiam no código, mas não nas definições aplicadas: e-mail confirmado e elegibilidade explícita para cupons, permissões estreitas do ranking público e envio de telemetria pelo próprio usuário, limitado a uma amostra por hora. O RPC público de cupons continua como wrapper `SECURITY INVOKER`; a implementação privilegiada permanece em `app_private`. Essa migração não apaga contas, carreiras ou telemetria e precisa ser aplicada como uma versão nova ao projeto existente. A reconciliação dos arquivos históricos não é motivo para executá-los novamente em produção.
+
+### Verificação obrigatória antes de publicar
+
+O workflow **Quality gates** inclui um banco Supabase local descartável e o contrato `tests/sql/supabase-replay-contract.sql`. O teste verifica esquema, RLS, isolamento de usuários, idempotência de cupons, limites de telemetria, revisão de saves e RPC de resumo de ligas. As identidades sintéticas são criadas dentro de uma transação encerrada com `ROLLBACK`. A execução não usa credenciais de produção, `--linked` nem URL remota.
+
+A primeira execução nativa, com CLI 2.75.2 e PostgreSQL 17.6.1.079, identificou uma dependência adicional: `LOCK TABLE` exigia bloco de transação explícito (`25P01`). Doze migrações históricas que usam `LOCK TABLE` ou `SET LOCAL` receberam somente envelopes `BEGIN`/`COMMIT`; os 47 SQL originais foram preservados como bytes em `supabase/migration-archive/recorded`, com hashes separados de origem e replay. O guard compara a transformação exata e não permite alterações livres dos corpos históricos. Os demais arquivos mantêm sua forma original.
+
+O CLI registra a versão depois das statements do arquivo; nos arquivos com `COMMIT` explícito, esse registro ocorre depois do commit do DDL. Se houver interrupção entre essas etapas, conferir esquema e histórico antes de repetir a migração. O replay PGlite/PostgreSQL 18 é auxiliar e não substitui o gate nativo do PostgreSQL 17, pois o tratamento de transações implícitas no protocolo mudou entre essas versões.
+
+```sh
+node scripts/verify-migration-history.mjs
+supabase db start
+supabase db reset --local --no-seed --yes
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/supabase-replay-contract.sql
+node --test scripts/verify-public-deployment.test.mjs
+```
+
+O reset acima é exclusivamente local. O preview antigo da PR55 já executou uma parte do histórico incorreto e precisa de reset/recriação gerenciada após a publicação da sequência correta. Antes disso, verificar que continua sendo a branch de desenvolvimento sem dados e sem usuários. Não executar esse procedimento no projeto principal. As opções e consequências estão na [documentação de recuperação de branches do Supabase](https://supabase.com/docs/guides/deployment/branching/troubleshooting).
+
+### Cloudflare: verificação corrigida e diagnóstico separado
+
+O verificador HTTP embutido no workflow tinha uma expressão regular com escapes inválidos, que causava `SyntaxError: Invalid regular expression flags` antes das requisições. Ele foi extraído para `scripts/verify-public-deployment.mjs` e coberto por testes. Depois do deploy, exige `/api/health` com HTTP 200 e estado `ready`, HTML público esperado no domínio principal e na variante `www`, e rejeita páginas ou redirecionamentos do Cloudflare Access. Os testes locais não comprovam, por si sós, a disponibilidade do site publicado.
+
+No mesmo commit, os checks nativos **Workers Builds: jogomanager-web** e **Workers Builds: stadium-stewards** falharam com duração de zero segundos, sem mensagem causal na resposta do GitHub. Essa falha depende dos logs dos respectivos builds no painel do Cloudflare; não deve ser atribuída à expressão regular sem essa evidência. O workflow de publicação do GitHub continua executando somente após **Quality gates** bem-sucedido em um push para `main`; ser ignorado em uma PR é o comportamento esperado. Não remover esse gate para esconder um erro do provedor.
+
+As seções seguintes preservam o registro de 2 de outubro. Quantidades, URLs verificadas e estados de configuração nelas descritos são históricos, não uma nova certificação do ambiente em 20 de outubro.
 
 ## Destinos
 
@@ -33,7 +67,7 @@ Uma transação remota criou dois usuários temporários sem senha, verificou a 
 
 `supabase/backend-access.sql` corrige permissões herdadas do Supabase: revogar apenas `PUBLIC` não remove concessões explícitas anteriores a `anon` e `authenticated`. As operações de concessão de compras, progresso e economia devem permanecer privadas. Saves pessoais enviados pelo navegador permanecem não confiáveis para conquistas duráveis.
 
-`node scripts/supabase-bootstrap.mjs` gera `.cloudflare/supabase-bootstrap.sql`. **Usar somente em um projeto novo e vazio**; o próprio SQL recusa tabelas, contas ou objetos existentes. Para um projeto já instalado, aplicar migrações incrementais.
+`node scripts/supabase-bootstrap.mjs` gera `.cloudflare/supabase-bootstrap.sql`. **Usar somente em um projeto novo e vazio**, com a conexão explicitamente selecionada e `psql -X -v ON_ERROR_STOP=1`. O guard inicial produz erro se encontrar tabelas, contas ou objetos; a opção `ON_ERROR_STOP` é obrigatória para impedir que o executor continue com os comandos seguintes. Para um projeto já instalado, aplicar somente migrações incrementais.
 
 `node scripts/export-supabase-catalog.mjs` gera lotes de catálogo com até 250 registros. Identidades originais são preservadas e `ON CONFLICT (id) DO NOTHING` evita sobrescrever registros já personalizados. Esse catálogo não representa a importação de todos os dados de um provedor esportivo externo.
 

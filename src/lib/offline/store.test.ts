@@ -7,12 +7,16 @@ const { indexed } = vi.hoisted(() => ({ indexed: new Map<string, unknown>() }));
 vi.mock("idb-keyval", () => ({
   get: vi.fn(async (key: string) => indexed.get(key)),
   set: vi.fn(async (key: string, value: unknown) => void indexed.set(key, value)),
+  update: vi.fn(async (key: string, updater: (value: unknown) => unknown) => {
+    indexed.set(key, updater(indexed.get(key)));
+  }),
   del: vi.fn(async (key: string) => void indexed.delete(key)),
   clear: vi.fn(async () => void indexed.clear()),
 }));
 
 import {
   LEGACY_KEY,
+  acknowledgeOutbox,
   clearOutbox,
   loadLocalCareer,
   queueSync,
@@ -86,5 +90,29 @@ describe("offline career owner boundary", () => {
     expect(readLocalCareer("new-account")).toBeNull();
     expect(await loadLocalCareer("new-account")).toBeNull();
     expect(await loadLocalCareer()).toEqual(guest);
+  });
+
+  it("acknowledges only the uploaded account's queued revision", async () => {
+    const alice = await queueSync(career("Alice"), "alice-id");
+    await queueSync(career("Bruno"), "bruno-id");
+    await queueSync(career("Guest"));
+    expect(await acknowledgeOutbox(alice, "alice-id")).toBe(true);
+    expect(await readOutbox("alice-id")).toBeNull();
+    expect(await readOutbox("bruno-id")).toMatchObject({ state: career("Bruno") });
+    expect(await readOutbox()).toMatchObject({ state: career("Guest") });
+  });
+
+  it("keeps a newer queued save when an older upload finishes in the same millisecond", async () => {
+    const now = vi.spyOn(Date, "now").mockReturnValue(123456789);
+    try {
+      const older = await queueSync(career("Round 1"), "alice-id");
+      const newer = await queueSync(career("Round 2"), "alice-id");
+      expect(await acknowledgeOutbox(older, "alice-id")).toBe(false);
+      expect(await readOutbox("alice-id")).toEqual(newer);
+      expect(await acknowledgeOutbox(newer, "alice-id")).toBe(true);
+      expect(await readOutbox("alice-id")).toBeNull();
+    } finally {
+      now.mockRestore();
+    }
   });
 });

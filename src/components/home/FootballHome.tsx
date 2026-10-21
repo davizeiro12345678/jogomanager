@@ -1,6 +1,6 @@
-import { getRouteApi, Link } from "@tanstack/react-router";
+import { Await, getRouteApi, Link } from "@tanstack/react-router";
 import { HomeLeaguePulse } from "@/components/home/HomeLeaguePulse";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import {
   ArrowDown,
   ArrowRight,
@@ -17,8 +17,8 @@ import {
 import { SiteFooter } from "@/components/SiteFooter";
 import { DiscordLink } from "@/components/CommunityInvite";
 import { HomeDetails } from "./HomeDetails";
-import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1600&quality=52&as=srcset";
-import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1600&quality=62&as=srcset";
+import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1080;1600&quality=52&as=srcset";
+import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1080;1600&quality=62&as=srcset";
 import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
 import "./home.css";
 
@@ -344,7 +344,9 @@ export function FootballHome() {
         </span>
       </div>
       <div className="home-body">
-        <HomeLeaguePulse leagues={leagues} />
+        <Suspense fallback={null}>
+          <Await promise={leagues}>{(resolved) => <HomeLeaguePulse leagues={resolved} />}</Await>
+        </Suspense>
         <section id="modos" className="home-section" aria-labelledby="home-modes-title">
           <div className="home-section-heading">
             <div>

@@ -1,0 +1,20 @@
+-- Explicit transaction for Supabase CLI replay.
+-- Recorded SQL: supabase/migration-archive/recorded/20261013191019_add_missing_foreign_key_indexes_oct_2026.sql
+BEGIN;
+
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '60s';
+CREATE INDEX IF NOT EXISTS "idx_chat_messages_user_id_fk_20261013" ON public."chat_messages" ("user_id");
+CREATE INDEX IF NOT EXISTS "idx_chat_reports_reporter_id_fk_20261013" ON public."chat_reports" ("reporter_id");
+CREATE INDEX IF NOT EXISTS "idx_clubs_stadium_id_fk_20261013" ON public."clubs" ("stadium_id");
+CREATE INDEX IF NOT EXISTS "idx_competition_seasons_champion_club_id_fk_20261013" ON public."competition_seasons" ("champion_club_id");
+CREATE INDEX IF NOT EXISTS "idx_competition_seasons_runner_up_club_id_fk_20261013" ON public."competition_seasons" ("runner_up_club_id");
+CREATE INDEX IF NOT EXISTS "idx_coupon_redemptions_code_fk_20261013" ON public."coupon_redemptions" ("code");
+CREATE INDEX IF NOT EXISTS "idx_guest_checkout_intents_claimed_by_user_id_fk_20261013" ON public."guest_checkout_intents" ("claimed_by_user_id");
+CREATE INDEX IF NOT EXISTS "idx_guest_checkout_intents_product_key_fk_20261013" ON public."guest_checkout_intents" ("product_key");
+CREATE INDEX IF NOT EXISTS "idx_player_season_stats_club_id_fk_20261013" ON public."player_season_stats" ("club_id");
+CREATE INDEX IF NOT EXISTS "idx_player_season_stats_competition_id_fk_20261013" ON public."player_season_stats" ("competition_id");
+CREATE INDEX IF NOT EXISTS "idx_sportsdb_player_aliases_canonical_source_id_fk_20261013" ON public."sportsdb_player_aliases" ("canonical_source_id");
+CREATE INDEX IF NOT EXISTS "idx_user_blocks_blocked_id_fk_20261013" ON public."user_blocks" ("blocked_id");
+
+COMMIT;

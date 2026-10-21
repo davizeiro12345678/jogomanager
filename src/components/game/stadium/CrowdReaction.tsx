@@ -17,37 +17,26 @@
 // ============================================================================
 
 import { useFrame } from "@react-three/fiber";
-import { createContext, memo, useContext, useEffect, useMemo, useRef, useState } from "react";
+
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+
 import type React from "react";
+
 import * as THREE from "three";
 
 import { censusRef } from "@/game/scene-census";
-import { useRuntimeSceneBudget } from "@/components/game/RuntimeBudget";
+
+import { useRuntimeSceneBudget } from "@/components/game/runtime-budget-context";
+
 import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
+
+import {
+  CrowdMood,
+  CrowdReactionContext,
+  CrowdReactionState,
+  EMPTY,
+} from "@/components/game/stadium/crowd-reaction-context";
 import type { SupporterMatchday } from "@/game/career-world-types";
-
-export type CrowdMood = "idle" | "buzz" | "chance" | "erupt" | "protest";
-
-export interface CrowdReactionState {
-  mood: CrowdMood;
-  /** 0 a 1, decai sozinho */
-  intensity: number;
-  /** lado que provocou a reação ("home" = a favor do mandante) */
-  side: "home" | "away";
-  /** minuto do último evento que gerou reação */
-  since: number;
-}
-
-const EMPTY: CrowdReactionState = { mood: "idle", intensity: 0, side: "home", since: 0 };
-
-/** Contexto para outros subsistemas (câmera, narração) lerem o clima da torcida. */
-export const CrowdReactionContext = createContext<React.MutableRefObject<CrowdReactionState>>({
-  current: EMPTY,
-});
-
-export function useCrowdReaction(): React.MutableRefObject<CrowdReactionState> {
-  return useContext(CrowdReactionContext);
-}
 
 /** Decaimento por segundo de cada humor. */
 const DECAY: Record<CrowdMood, number> = {

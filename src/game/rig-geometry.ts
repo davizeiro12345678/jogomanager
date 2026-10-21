@@ -225,7 +225,7 @@ export function rigSectionGeometry(
 /** Sculpting recomputes normals; a split UV seam must remain visually smooth
  * after that pass. This uses authored pairs instead of welding vertices, so
  * cloth UVs and the separate normals on capped openings remain intact. */
-function refreshSurfaceNormals(geometry: THREE.BufferGeometry) {
+export function refreshSurfaceNormals(geometry: THREE.BufferGeometry) {
   geometry.computeVertexNormals();
   const pairs = geometry.userData["surfaceSeams"] as [number, number][] | undefined;
   if (!pairs) return;
@@ -497,8 +497,8 @@ export function tailoredSleeve(length: number, radius: number, radial: number, s
         { y: -length * 0.55, width: radius * 0.99, depth: radius * 1.06 },
         { y: -length * 0.24, width: radius * 1.13, depth: radius * 1.1 },
         { y: -length * 0.025, width: radius * 1.08, depth: radius * 1.04 },
-        { y: length * 0.07, width: radius * 0.74, depth: radius * 0.69 },
-        { y: length * 0.11, width: radius * 0.12, depth: radius * 0.12 },
+        { y: length * 0.045, width: radius * 0.74, depth: radius * 0.69 },
+        { y: length * 0.07, width: radius * 0.12, depth: radius * 0.12 },
       ],
       radial,
       1,
@@ -509,8 +509,8 @@ export function tailoredSleeve(length: number, radius: number, radial: number, s
   // Cloth folds must not separate the elbow seam from the authored forearm.
   const position = geometry.getAttribute("position");
   for (let i = 0; i < position.count; i++) {
-    const cap = THREE.MathUtils.smoothstep(position.getY(i) / length, -0.25, 0.11);
-    position.setX(i, position.getX(i) - side * radius * 0.34 * cap);
+    const cap = THREE.MathUtils.smoothstep(position.getY(i) / length, -0.25, 0.07);
+    position.setX(i, position.getX(i) - side * radius * 1.55 * cap ** 3);
   }
   for (let i = 0; i <= radial; i++) {
     const angle = (i / radial) * Math.PI * 2;
@@ -542,15 +542,17 @@ export function shoulderSleeve(length: number, radius: number, radial: number, s
       { y: -length * 0.3, width: radius * 1.1, depth: radius * 1.09 },
       { y: -length * 0.11, width: radius * 1.04, depth: radius * 1.02 },
       { y: length * 0.01, width: radius * 0.88, depth: radius * 0.84 },
-      { y: length * 0.085, width: radius * 0.5, depth: radius * 0.45 },
-      { y: length * 0.11, width: radius * 0.12, depth: radius * 0.12 },
+      { y: length * 0.045, width: radius * 0.5, depth: radius * 0.45 },
+      { y: length * 0.07, width: radius * 0.12, depth: radius * 0.12 },
     ],
     radial,
   );
   const positions = geometry.getAttribute("position");
   for (let i = 0; i < positions.count; i++) {
-    const cap = THREE.MathUtils.smoothstep(positions.getY(i) / length, -0.22, 0.11);
-    positions.setX(i, positions.getX(i) - side * radius * 0.27 * cap);
+    // Bury the upper seam inside the torso instead of closing a rounded cap
+    // directly above the arm pivot. The cuff and skinning pivots stay fixed.
+    const cap = THREE.MathUtils.smoothstep(positions.getY(i) / length, -0.22, 0.07);
+    positions.setX(i, positions.getX(i) - side * radius * 1.55 * cap ** 3);
   }
   refreshSurfaceNormals(geometry);
   return geometry;

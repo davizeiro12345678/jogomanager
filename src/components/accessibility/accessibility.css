@@ -279,46 +279,6 @@ html[data-motion="reduced"] *::after {
   padding: 0.7rem 1rem;
   border-radius: 0.7rem;
 }
-.career-nav-item {
-  min-height: 44px;
-}
-.career-nav-item {
-  font-size: 0.925rem;
-}
-.career-nav-heading {
-  font-size: 0.75rem;
-}
-.career-current-page {
-  font-size: 0.875rem;
-}
-.career-season,
-.career-save-note,
-.career-sidebar-footer span:not(.career-manager-avatar) {
-  font-size: 0.8rem;
-}
-.career-bottom-nav span {
-  font-size: 0.75rem;
-  white-space: normal;
-  line-height: 1.3;
-}
-html[data-text-size="xlarge"] .career-content {
-  padding-block-end: 10rem;
-}
-.trainer-heading h1 {
-  font-size: clamp(1.65rem, 3vw, 2.3rem);
-}
-.trainer-quick-actions strong {
-  font-size: 0.9rem;
-}
-.trainer-quick-actions small {
-  font-size: 0.8rem;
-}
-.career-icon-button {
-  min-width: 44px;
-}
-.career-icon-button > span {
-  display: none;
-}
 .public-reading-controls {
   position: fixed;
   inset-inline-end: 1rem;
@@ -387,25 +347,6 @@ html[data-contrast="high"] .studio-select {
   border-inline-start: 1px solid var(--border);
   border-left: 0;
 }
-.career-mobile-search {
-  width: 100%;
-  min-height: 48px;
-  border: 1px solid var(--input);
-  border-radius: 0.6rem;
-  background: var(--card);
-  color: var(--foreground);
-  padding: 0.7rem;
-  margin-block: 1rem;
-  font: inherit;
-}
-[dir="rtl"] .career-current-page > svg,
-[dir="rtl"] .career-nav-link > svg:last-child {
-  transform: scaleX(-1);
-}
-[dir="rtl"] .career-sidebar {
-  border-inline-end: 1px solid var(--border);
-  border-left: 0;
-}
 @media (max-width: 600px) {
   .preferences-dialog {
     padding: 1.1rem;
@@ -416,5 +357,23 @@ html[data-contrast="high"] .studio-select {
   .preference-choices label {
     flex: 1 1 auto;
     justify-content: center;
+  }
+}
+
+/* Shared controls keep these protections before any career UI is requested. */
+@media (forced-colors: active) {
+  .studio-button {
+    border: 1px solid ButtonText;
+  }
+}
+.athlete-shell
+  :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  min-height: 44px;
+}
+@media (prefers-reduced-motion: reduce) {
+  [role="dialog"] * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }

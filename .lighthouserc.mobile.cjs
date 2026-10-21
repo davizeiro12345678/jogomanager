@@ -1,6 +1,6 @@
 /** Mobile audit for public shells. The live 3D scene needs a separate
  * reproducible logged-in GPU benchmark, not an anonymous /match Lighthouse score.
- * Keep this audit separate from the existing desktop CI while establishing a baseline.
+ * Every run must meet the critical mobile budgets before Quality gates can pass.
  */
 module.exports = {
   ci: {
@@ -30,12 +30,22 @@ module.exports = {
     },
     assert: {
       assertions: {
-        // 98/100 is a desired lab target, not a real-user CWV guarantee.
-        "categories:performance": ["warn", { minScore: 0.98 }],
-        "categories:accessibility": ["error", { minScore: 0.9 }],
-        "largest-contentful-paint": ["warn", { maxNumericValue: 2500 }],
-        "cumulative-layout-shift": ["warn", { maxNumericValue: 0.1 }],
-        "total-blocking-time": ["warn", { maxNumericValue: 200 }],
+        // A laboratory release gate, not a real-user CWV or GPU certification.
+        // LHCI defaults to optimistic aggregation, which can hide a failed run.
+        "categories:performance": ["error", { minScore: 0.98, aggregationMethod: "pessimistic" }],
+        "categories:accessibility": ["error", { minScore: 0.9, aggregationMethod: "pessimistic" }],
+        "largest-contentful-paint": [
+          "error",
+          { maxNumericValue: 2500, aggregationMethod: "pessimistic" },
+        ],
+        "cumulative-layout-shift": [
+          "error",
+          { maxNumericValue: 0.1, aggregationMethod: "pessimistic" },
+        ],
+        "total-blocking-time": [
+          "error",
+          { maxNumericValue: 200, aggregationMethod: "pessimistic" },
+        ],
       },
     },
     upload: { target: "filesystem", outputDir: ".lighthouseci-mobile" },

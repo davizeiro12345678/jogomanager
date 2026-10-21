@@ -1,5 +1,5 @@
 export const SOURCE_URL =
-  "https://stadium-stewards.davizeiro10-jogos.workers.dev/api/public/sportsdb";
+  "https://jogomanager-web.davizeiro10-jogos.workers.dev/api/public/sportsdb";
 export const PHASES = [
   "catalog",
   "leagues",

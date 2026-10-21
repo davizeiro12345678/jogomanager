@@ -6,7 +6,10 @@ import { readConsent, saveConsent } from "@/lib/consent";
  * Every route needs the banner but not the entire preferences editor. */
 /** Aviso discreto na primeira visita; some depois da escolha. */
 export function ConsentBanner() {
-  const [open, setOpen] = useState(false);
+  // First-time visitors receive the question in SSR instead of a new LCP-sized
+  // block after hydration. The head bootstrap hides it before first paint when
+  // this browser already has a decision; hydration still reads the same store.
+  const [open, setOpen] = useState(true);
   useEffect(() => {
     setOpen(readConsent().decidedAt === null);
     const close = () => setOpen(false);
@@ -17,7 +20,12 @@ export function ConsentBanner() {
   // ele cobria os botões do rodapé (ex.: "Jogar" na partida rápida) no celular.
   useEffect(() => {
     if (typeof document === "undefined") return;
-    if (!open) return;
+    if (!open) {
+      // React has now removed the prompt. The bootstrap is only for the first
+      // paint and must not hide a future prompt after a reset or remount.
+      document.getElementById("pfm-consent-bootstrap")?.remove();
+      return;
+    }
     const previous = document.body.style.paddingBottom;
     document.body.style.paddingBottom = "11rem";
     return () => {
@@ -31,6 +39,7 @@ export function ConsentBanner() {
   };
   return (
     <div
+      data-pfm-consent-banner
       role="dialog"
       aria-label="Privacidade"
       className="pointer-events-none fixed inset-x-3 bottom-3 z-40 mx-auto max-w-lg"

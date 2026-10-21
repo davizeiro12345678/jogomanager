@@ -1,3 +1,7 @@
+-- Explicit transaction for Supabase CLI replay.
+-- Recorded SQL: supabase/migration-archive/recorded/20261004003730_sportsdb_local_identity_links.sql
+BEGIN;
+
 -- Resolve SportsDB numeric IDs against the game's namespaced x/y IDs and
 -- preserve only exact, unambiguous club links.
 SET LOCAL lock_timeout = '5s';
@@ -229,3 +233,5 @@ BEGIN
     EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role',fn.name);
   END LOOP;
 END $$;
+
+COMMIT;

@@ -1,0 +1,1 @@
+BEGIN; SET LOCAL lock_timeout = '5s'; REVOKE USAGE ON SCHEMA graphql FROM anon, authenticated; COMMIT;

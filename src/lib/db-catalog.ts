@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { CLUBS, LEAGUES } from "@/game/data/leagues";
 import type { Club, League } from "@/game/types";
 
-const CACHE_KEY = "db-catalog-v1";
+// v1 could silently truncate competitions and clubs at the Data API row cap.
+const CACHE_KEY = "db-catalog-v2";
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const PAGE = 1000;
 export const CATALOG_EVENT = "db-catalog-updated";
@@ -22,7 +23,13 @@ type ClubRow = [
 type Cache = { at: number; leagues: LeagueRow[]; clubs: ClubRow[] };
 
 const HEX = /^#[0-9a-f]{6}$/i;
+// `apply` adds imported records to these globals. Capture the bundled IDs once
+// so a refresh never mistakes previously cached imports for bundled content
+// and drops them from the catalog persisted for the next offline visit.
+const bundledClubIds = new Set(Object.keys(CLUBS));
+const bundledLeagueIds = new Set(LEAGUES.map((league) => league.id));
 let merged = false;
+let refreshedAt = 0;
 let refreshing: Promise<void> | null = null;
 
 function apply(cache: Cache) {
@@ -63,12 +70,30 @@ function apply(cache: Cache) {
   for (let i = LEAGUES.length - 1; i >= 0; i--)
     if (added.has(LEAGUES[i]!.id) && LEAGUES[i]!.clubs.length < 2) LEAGUES.splice(i, 1);
   merged = true;
+  refreshedAt = cache.at;
 }
 
 function readCache(): Cache | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? (JSON.parse(raw) as Cache) : null;
+    if (!raw) return null;
+    const cache = JSON.parse(raw) as Cache;
+    return Number.isFinite(cache.at) &&
+      Array.isArray(cache.leagues) &&
+      cache.leagues.every(
+        (row) =>
+          Array.isArray(row) && row.length === 4 && row.every((value) => typeof value === "string"),
+      ) &&
+      Array.isArray(cache.clubs) &&
+      cache.clubs.every(
+        (row) =>
+          Array.isArray(row) &&
+          row.length === 7 &&
+          row.slice(0, 6).every((value) => typeof value === "string") &&
+          Number.isFinite(row[6]),
+      )
+      ? cache
+      : null;
   } catch {
     return null;
   }
@@ -85,42 +110,61 @@ type ClubSelect = {
 };
 
 async function fetchAll(): Promise<Cache> {
-  const { data: comps, error } = await supabase.from("competitions").select("id,name,country,flag");
-  if (error) throw error;
-  // Keyset pages walk the primary key once; OFFSET pages rescan every earlier row.
-  const results: { data: ClubSelect[] }[] = [];
-  let after = "";
-  for (;;) {
-    const r = await supabase
-      .from("clubs")
-      .select("id,competition_id,name,short_name,primary_color,secondary_color,strength")
-      .not("competition_id", "is", null)
-      .gt("id", after)
-      .order("id")
-      .limit(PAGE);
-    if (r.error) throw r.error;
-    results.push({ data: r.data });
-    if (r.data.length < PAGE) break;
-    after = r.data[r.data.length - 1]!.id;
-  }
-  const clubs: ClubRow[] = [];
-  for (const r of results) {
-    for (const c of r.data) {
-      if (!c.competition_id || CLUBS[c.id]) continue;
-      clubs.push([
-        c.id,
-        c.competition_id,
-        c.name,
-        c.short_name,
-        c.primary_color,
-        c.secondary_color,
-        c.strength,
-      ]);
+  // Only an empty page proves exhaustion: an operator may configure a row cap
+  // below PAGE. Independent competition/club keysets walk their primary keys.
+  async function pages<T extends { id: string }>(
+    read: (after: string | undefined) => PromiseLike<{ data: T[] | null; error: unknown }>,
+  ): Promise<T[]> {
+    const rows: T[] = [];
+    const cursors = new Set<string>();
+    let after: string | undefined;
+    for (let page = 0; page < 2_048; page++) {
+      const result = await read(after);
+      if (result.error || !result.data) throw new Error("Catálogo indisponível.");
+      if (result.data.length === 0) return rows;
+      const next = result.data.at(-1)!.id;
+      if (!next || cursors.has(next) || rows.length + result.data.length > 100_000)
+        throw new Error("Catálogo excedeu o limite seguro de paginação.");
+      rows.push(...result.data);
+      cursors.add(next);
+      after = next;
     }
+    throw new Error("Catálogo excedeu o limite seguro de paginação.");
   }
-  const known = new Set(LEAGUES.map((l) => l.id));
+  const [comps, fetchedClubs] = await Promise.all([
+    pages((after) => {
+      const query = supabase
+        .from("competitions")
+        .select("id,name,country,flag")
+        .order("id")
+        .limit(PAGE);
+      return after ? query.gt("id", after) : query;
+    }),
+    pages<ClubSelect>((after) => {
+      const query = supabase
+        .from("clubs")
+        .select("id,competition_id,name,short_name,primary_color,secondary_color,strength")
+        .not("competition_id", "is", null)
+        .order("id")
+        .limit(PAGE);
+      return after ? query.gt("id", after) : query;
+    }),
+  ]);
+  const clubs: ClubRow[] = [];
+  for (const c of fetchedClubs) {
+    if (!c.competition_id || bundledClubIds.has(c.id)) continue;
+    clubs.push([
+      c.id,
+      c.competition_id,
+      c.name,
+      c.short_name,
+      c.primary_color,
+      c.secondary_color,
+      c.strength,
+    ]);
+  }
   const leagues: LeagueRow[] = (comps ?? [])
-    .filter((c) => !known.has(c.id))
+    .filter((c) => !bundledLeagueIds.has(c.id))
     .map((c) => [c.id, c.name, c.country, c.flag ?? ""]);
   return { at: Date.now(), leagues, clubs };
 }
@@ -130,6 +174,7 @@ export function loadDbCatalog(): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
   const cache = readCache();
   if (cache && !merged) apply(cache);
+  if (merged && Date.now() - refreshedAt < CACHE_TTL_MS) return Promise.resolve();
   if (cache && Date.now() - cache.at < CACHE_TTL_MS) return Promise.resolve();
   refreshing ??= fetchAll()
     .then((fresh) => {

@@ -1,33 +1,33 @@
+import { RuntimeBudget } from "@/components/game/RuntimeBudget";
 import {
-  RuntimeBudget,
   QualityPressure,
   RuntimeSceneBudgetContext,
   useQualityPressure,
   useRuntimeSceneBudget,
-} from "@/components/game/RuntimeBudget";
+} from "@/components/game/runtime-budget-context";
 import { GRAPHICS_PROFILES } from "@/game/contracts/graphics-profile";
 import { resolveRuntimeSceneBudget } from "@/game/runtime-scene-budget";
 
 import { broadcastInterest, ShotHold } from "@/game/broadcast-interest";
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { FrameMetrics } from "@/game/frame-metrics";
-import { Environment, Lightformer, AdaptiveEvents } from "@react-three/drei";
+import { AdaptiveEvents, Environment, Lightformer } from "@react-three/drei";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { easing } from "maath";
 import type React from "react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
-import { FrameProbe } from "@/components/game/FrameProbe";
-import { Ktx2CanvasAssets } from "./Ktx2CanvasAssets";
 import { FirstMatchFrame } from "@/components/game/FirstMatchFrame";
-import { subscribeRenderedFrames } from "./graphics-probe";
-import { rendererMetadata } from "@/game/graphics-renderer-metadata";
-import { CanvasLifecycle } from "./CanvasLifecycle";
-import { onTurfDetailReady } from "./stadium/textures/turf-detail";
+import { FrameProbe } from "@/components/game/FrameProbe";
 import { GraphicsBoundary } from "@/components/game/GraphicsBoundary";
 import { MatchPlayers } from "@/components/game/players/MatchPlayers";
 import { OfficialRig } from "@/components/game/players/OfficialRig";
+import { rendererMetadata } from "@/game/graphics-renderer-metadata";
+import { CanvasLifecycle } from "./CanvasLifecycle";
+import { Ktx2CanvasAssets } from "./Ktx2CanvasAssets";
+import { subscribeRenderedFrames } from "./graphics-probe";
+import { onTurfDetailReady } from "./stadium/textures/turf-detail";
 
 import { PostFX } from "@/components/game/post/LazyPostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
@@ -37,40 +37,40 @@ import { skyTexture } from "@/components/game/stadium/textures/sky";
 import { StadiumProps } from "@/components/game/stadium/Props";
 import { Ball } from "./stadium/StadiumBall";
 import {
-  type ShotId,
-  type ShotContext,
   framingFor,
   MANUAL_SHOT,
   SHOT_MIN_TIME,
+  type ShotContext,
+  type ShotId,
 } from "./stadium/StadiumCameraFraming";
 import { Stands } from "./stadium/StadiumStructure";
-import { presentationBall } from "./stadium/stadium-ball";
 import { Pitch } from "./stadium/StadiumTurf";
 import { Weather as WeatherParticles } from "./stadium/StadiumWeather";
+import { presentationBall } from "./stadium/stadium-ball";
 
 import { AdBoards } from "./stadium/StadiumAds";
-import { Scoreboard } from "./stadium/StadiumScoreboard";
 import { Floodlights } from "./stadium/StadiumFloodlights";
+import { Scoreboard } from "./stadium/StadiumScoreboard";
 
-import { dprFor } from "@/game/device";
 import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import { dprFor } from "@/game/device";
 
-import { kitFor, colorClash } from "@/game/kits";
-import { Atmosphere } from "@/components/game/stadium/Atmosphere";
 import { AmbientLife } from "@/components/game/stadium/AmbientLife";
-import { CrowdReaction } from "@/components/game/stadium/CrowdReaction";
-import type { SupporterMatchday } from "@/game/career-world-types";
+import { Atmosphere } from "@/components/game/stadium/Atmosphere";
 import { BenchLife } from "@/components/game/stadium/BenchLife";
-import { SidelineLife } from "@/components/game/stadium/SidelineLife";
+import { CrowdReaction } from "@/components/game/stadium/CrowdReaction";
 import { PitchResponse } from "@/components/game/stadium/PitchResponse";
+import { SidelineLife } from "@/components/game/stadium/SidelineLife";
+import type { SupporterMatchday } from "@/game/career-world-types";
 import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { colorClash, kitFor } from "@/game/kits";
 
-import type { GradeWeather } from "@/game/graphics/grade";
-import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
-import type { SimView } from "@/game/sim-contracts";
 import { captureGoalFocus, type GoalFocus, type GoalFocusRef } from "@/game/goal-choreography";
-import { matchLook, type TimeOfDay, type Weather } from "@/game/matchday";
+import type { GradeWeather } from "@/game/graphics/grade";
 import { matchLighting } from "@/game/match-lighting";
+import { matchLook, type TimeOfDay, type Weather } from "@/game/matchday";
+import type { SimView } from "@/game/sim-contracts";
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 import { useResolvedVisual, useVisual } from "@/game/visual-settings";
 
 export type { CameraMode } from "@/game/camera-modes";

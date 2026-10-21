@@ -27,11 +27,123 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm exec -- tsc --noEmit --pretty false
-      # The stress suite has its own performance budget and runs in a separate
-      # scheduled job once a stable CI baseline is recorded.
+      # The complete deterministic stress suite runs in the required job below.
       - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1
       - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs
+      - run: node --test scripts/verify-public-deployment.test.mjs
+      - name: Verify Edge Function authentication and import contracts
+        run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs
+      - run: npm run test:performance-gates
       - run: PFM_LOCAL_VERIFY=1 npm run build
+      - run: npm run bundle:check
+
+  bundle-impact:
+    name: Critical startup bundle comparison
+    uses: ./.github/workflows/bundle-impact.yml
+    with:
+      baseline_ref: ${{ github.event.pull_request.base.sha || github.event.before || format('{0}^', github.sha) }}
+      candidate_ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+  simulation-stress:
+    name: Critical 200-match deterministic stress
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Execute all 200 seeds and their independent replays
+        run: npm run test:stress -- --reporter=default --reporter=json --outputFile=stress-results.json
+      - name: Require executed and passing stress assertions
+        run: node scripts/verify-stress-report.mjs stress-results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: simulation-stress-results
+          path: stress-results.json
+          if-no-files-found: error
+
+  match-setup-performance:
+    name: Critical same-runner MatchSim construction
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Checkout baseline in a separate directory
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || format('{0}^', github.sha) }}
+        run: git worktree add --detach .benchmark-base "$BASE_REF"
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Use identical installed dependencies for both revisions
+        run: ln -s "$GITHUB_WORKSPACE/node_modules" "$GITHUB_WORKSPACE/.benchmark-base/node_modules"
+      - name: Compare CPU in ABBA order and verify deterministic checkpoints
+        run: npm run perf:match-setup -- .benchmark-base . match-setup-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: match-setup-performance-results
+          path: match-setup-results
+          if-no-files-found: error
+
+  critical-performance:
+    name: Critical performance release gate
+    if: always()
+    needs:
+      [
+        verify,
+        bundle-impact,
+        simulation-stress,
+        match-setup-performance,
+        game-assets,
+        graphics-contract,
+        lighthouse,
+        lighthouse-mobile,
+      ]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every critical job to have passed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          node --input-type=module -e '
+            const jobs = JSON.parse(process.env.RESULTS);
+            const failed = Object.entries(jobs).filter(([, job]) => job.result !== "success");
+            if (failed.length) {
+              console.error("Critical performance gates did not pass:", failed.map(([name, job]) => `${name}: ${job.result}`).join(", "));
+              process.exit(1);
+            }
+          '
+
+  database-replay:
+    name: Supabase migration replay and access contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify recorded migration history and preserved legacy files
+        run: node scripts/verify-migration-history.mjs
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.75.2
+      # These commands target the disposable local Docker database only.
+      # No access token, production password, --linked, or remote DB URL is used.
+      - name: Start local Supabase Postgres
+        run: supabase db start
+      - name: Replay the complete canonical migration history
+        run: supabase db reset --local --no-seed --yes
+      - name: Verify application schema, ownership, and grants
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/supabase-replay-contract.sql
 
   game-assets:
     name: 3D asset compression contract
@@ -80,7 +192,6 @@ jobs:
           configPath: .lighthouserc.cjs
           uploadArtifacts: true
           temporaryPublicStorage: false
-
 
   lighthouse-mobile:
     name: Lighthouse mobile multi-page audit

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import { Narrator } from "@/game/narrator";
+import { useAccessibility } from "@/hooks/useAccessibility";
 import { useT } from "@/i18n/provider";
-import { useAccessibility } from "@/components/accessibility/AccessibilityProvider";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSignedIn } from "./useCareer";
 
 /** One narrator per match; preference updates never replay old sim events. */

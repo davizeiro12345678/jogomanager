@@ -5,17 +5,39 @@
 //     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { loadEnv, type ConfigEnv } from "vite";
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 import { imagetools } from "vite-imagetools";
 import { protectThreeSourceTags } from "./scripts/r3f-source-compat.ts";
 import { rapierWasmAsset } from "./scripts/rapier-wasm-asset.ts";
+import { resolveBuildCommit } from "./src/lib/release-identity.ts";
 
 // Load non-VITE_ env vars into process.env for server routes (email, webhooks).
 // These are NOT injected into the client bundle.
 const serverEnv = loadEnv(process.env["NODE_ENV"] ?? "development", process.cwd(), "");
 Object.assign(process.env, serverEnv);
+
+let gitCommit: string | null = null;
+let dirtyCheckout = false;
+try {
+  const revision = execFileSync("git", ["rev-parse", "HEAD"], {
+    cwd: import.meta.dirname,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  }).trim();
+  const changes = execFileSync("git", ["status", "--porcelain", "--untracked-files=normal"], {
+    cwd: import.meta.dirname,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  }).trim();
+  gitCommit = revision;
+  dirtyCheckout = changes.length > 0;
+} catch {
+  // Source archives may provide PFM_BUILD_SHA explicitly; unidentified local builds stay null.
+}
+const buildCommit = resolveBuildCommit(process.env["PFM_BUILD_SHA"], gitCommit, dirtyCheckout);
 
 // @lovable.dev/mcp-js currently compares Vite's slash-normalized `config.root`
 // with a native Windows path and rejects `src/routes` before the dev server can
@@ -82,6 +104,25 @@ const projectConfig = defineConfig({
     },
   },
   vite: {
+    define: { __JOGOMANAGER_BUILD_COMMIT__: JSON.stringify(buildCommit) },
+    build: {
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              {
+                // Radix needs the small public API (flushSync/portals). Keeping it
+                // out of the hydration entry avoids pulling the router and its
+                // dependencies back into every lazily loaded UI route. The client
+                // renderer remains separate; this matches no react-dom/client file.
+                name: "react-dom-api",
+                test: /[\\/]node_modules[\\/]react-dom[\\/](?:index\.js|cjs[\\/]react-dom\.(?:production|development)\.js)(?:$|\?)/,
+              },
+            ],
+          },
+        },
+      },
+    },
     // Module workers retain dynamic import boundaries. IIFE output inlined
     // Rapier's WASM and season management into every match worker startup.
     worker: { format: "es", plugins: () => [rapierWasmAsset()] },
@@ -92,7 +133,10 @@ const projectConfig = defineConfig({
       allowedHosts: true,
       watch: { ignored: ["**/verification/**", "**/dist-benchmark/**", "**/.cloudflare/**"] },
     },
-    plugins: [...(enableMcpRouteGenerator ? [mcpPlugin()] : []), imagetools()],
+    // The authoritative fallback may run on the browser's main thread too.
+    // Externalize its identical binary there as well; the plugin explicitly
+    // excludes server environments so SSR retains the official initialization.
+    plugins: [...(enableMcpRouteGenerator ? [mcpPlugin()] : []), imagetools(), rapierWasmAsset()],
     resolve: {
       alias: {
         "entities/lib/decode.js": path.resolve(

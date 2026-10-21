@@ -50,7 +50,12 @@ function team(clubId: string): TeamSetup {
   };
 }
 
-function portraitFixture(athlete: AthleteHeroData) {
+function portraitFixture(
+  athlete: Pick<
+    AthleteHeroData,
+    "seed" | "clubId" | "nickname" | "position" | "shirtNumber" | "heightCm" | "weightKg"
+  >,
+) {
   const home = team(athlete.clubId);
   const away = team(athlete.clubId === "pal" ? "fla" : "pal");
   const view = new WorkerMatchView(home, away);
@@ -118,28 +123,47 @@ function appearanceFor(athlete: AthleteHeroData) {
 }
 
 function AthletePortraitScene({ athlete }: { athlete: AthleteHeroData }) {
+  const {
+    seed,
+    clubId,
+    nickname,
+    position,
+    shirtNumber,
+    heightCm,
+    weightKg,
+    build,
+    appearance: legacyAppearance,
+    appearanceV1,
+  } = athlete;
   const fixture = useMemo(
-    () => portraitFixture(athlete),
-    [
-      athlete.seed,
-      athlete.clubId,
-      athlete.nickname,
-      athlete.position,
-      athlete.shirtNumber,
-      athlete.heightCm,
-      athlete.weightKg,
-    ],
+    () => portraitFixture({ seed, clubId, nickname, position, shirtNumber, heightCm, weightKg }),
+    [seed, clubId, nickname, position, shirtNumber, heightCm, weightKg],
   );
   const appearance = useMemo(
-    () => appearanceFor(athlete),
+    () =>
+      appearanceFor({
+        seed,
+        clubId,
+        nickname,
+        position,
+        shirtNumber,
+        heightCm,
+        weightKg,
+        build,
+        appearance: legacyAppearance,
+        appearanceV1,
+      }),
     [
-      athlete.seed,
-      athlete.position,
-      athlete.shirtNumber,
-      athlete.heightCm,
-      athlete.weightKg,
-      athlete.build,
-      athlete.appearance,
+      seed,
+      clubId,
+      nickname,
+      position,
+      shirtNumber,
+      heightCm,
+      weightKg,
+      build,
+      legacyAppearance,
+      appearanceV1,
     ],
   );
   const club = safeClub(athlete.clubId);

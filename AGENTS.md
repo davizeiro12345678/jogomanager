@@ -1,4 +1,5 @@
 <!-- LOVABLE:BEGIN -->
+
 > [!IMPORTANT]
 > This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
 > published git history — force pushing, or rebasing/amending/squashing commits
@@ -7,6 +8,7 @@
 >
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
+
 <!-- LOVABLE:END -->
 
 ## Game architecture
@@ -22,3 +24,12 @@
 - Preserve deterministic player identity while concentrating body mass in anatomical surfaces rather than uniformly scaling the whole rig; this keeps football silhouettes athletic across LODs.
 - Validate new athlete rendering in an isolated career portrait before promoting it to match squads; this protects the 22-player frame budget.
 - Career cloud saves are rejected when they carry less progress than the stored save of the same career, and attestation extends only through append-only, time-plausible continuations; this stops stale devices overwriting progress while keeping achievements server-decided.
+
+## Critical performance requirements
+
+- Performance budgets are mandatory release requirements of critical importance. A failed, missing, cancelled, or skipped required check is a release blocker. Do not turn assertions into warnings, raise limits, remove scenarios, or disable rules to make a release pass.
+- Preserve the `Quality gates` workflow and its `Critical performance release gate`, including the real 200-match stress suite, same-runner MatchSim comparison, startup bundle checks, graphics contracts, and desktop/mobile Lighthouse assertions. Database replay and the other Quality jobs must also pass before production publication.
+- Lint must pass with zero errors and zero warnings. Fix component/export boundaries instead of suppressing Fast Refresh diagnostics.
+- Performance comparisons must use identical fixtures, seeds, runtime, dependencies, viewport and measurement protocol. Keep baseline and candidate evidence and check deterministic state as well as timing. Never describe skipped tests, software-rendered browser timings, or structural graphics tests as physical-device FPS certification.
+- Production verification must compare the compile-time Git commit in `/api/health` with the exact approved release SHA, in addition to checking backend readiness and public access. Do not publish an obsolete revision after `main` has advanced.
+- See `docs/critical-performance.md` for the limits and evidence required to assess a change.

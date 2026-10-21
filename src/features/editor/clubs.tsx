@@ -1,21 +1,6 @@
-import { useMemo, useRef, useState } from "react";
 import { Crest } from "@/components/game/Crest";
-import {
-  Chips,
-  CREST_EMBLEMS,
-  CREST_PATTERNS,
-  CREST_SHAPES,
-  EMBLEM_LABEL,
-  KIT_PATTERNS,
-} from "@/components/game/CrestBuilder";
+import { Chips } from "@/components/game/CrestBuilder";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -24,9 +9,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  CREST_EMBLEMS,
+  CREST_PATTERNS,
+  CREST_SHAPES,
+  EMBLEM_LABEL,
+  KIT_PATTERNS,
+} from "@/game/crest-options";
 import { CLUBS, LEAGUES } from "@/game/data/leagues";
-import type { RoofKind, ChantKind } from "@/game/customStyle";
 import { removeClub, upsertClub, type ClubOverride, type CustomData } from "@/lib/customData";
+import { useMemo, useRef, useState } from "react";
 import { CHANTS, labelCls, readImage, ROOFS } from "./shared";
 
 /* =============================================================== CLUBES === */

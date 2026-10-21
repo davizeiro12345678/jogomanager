@@ -187,7 +187,9 @@ if (process.argv.includes("--check")) {
     physics.bytes > 180_000 ||
     !wasmAssets.some((c) => c.name.startsWith("rapier_wasm3d_bg-"))
   )
-    throw new Error("Physics bundle must keep WASM outside JavaScript");
+    throw new Error(
+      `Physics bundle must keep WASM outside JavaScript: ${physics ? `${physics.name} is ${physics.bytes} bytes` : "chunk missing"}, ${wasmAssets.some((asset) => asset.name.startsWith("rapier_wasm3d_bg-")) ? "external WASM present" : "external WASM missing"}`,
+    );
   const crowdWasm = wasmAssets.find((c) => c.name.startsWith("crowd_visibility_wasm_bg-"));
   if (!crowdWasm || crowdWasm.bytes > 96_000)
     throw new Error("Crowd Rust kernel must remain an external WASM asset below 96 KB");

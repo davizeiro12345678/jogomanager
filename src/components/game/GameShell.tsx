@@ -3,8 +3,9 @@ import {
   ArrowLeftRight,
   BarChart3,
   Briefcase,
-  Coins,
+  ChevronRight,
   Clapperboard,
+  Coins,
   Dumbbell,
   FastForward,
   Gauge,
@@ -18,41 +19,41 @@ import {
   Play,
   Receipt,
   Search,
+  Settings2,
   ShoppingBag,
   SlidersHorizontal,
   Sparkles,
   Swords,
   Table2,
   Trophy,
+  UserRound,
   Users,
   Wrench,
-  UserRound,
-  ChevronRight,
-  Settings2,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 
-import { OfflineBar, SyncBadge, useServiceWorker } from "@/components/OfflineBar";
+import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
+import { OfflineBar, SyncBadge } from "@/components/OfflineBar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { supabase } from "@/integrations/supabase/client";
-import { CLUBS } from "@/game/data/leagues";
-import { useClubTheme } from "@/game/theme";
-import { useCareer, useSignedIn } from "@/hooks/useCareer";
-import { useT } from "@/i18n/provider";
-import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
-import { CommandPalette } from "./CommandPalette";
-import { ShortcutsDialog } from "./ShortcutsDialog";
-import { Crest } from "./Crest";
-import type { CareerState } from "@/game/types";
-import { useActiveTimeTracking } from "@/features/activity/ActivityRanking";
-import { useDrag } from "@use-gesture/react";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { useActiveTimeTracking } from "@/features/activity/useActiveTimeTracking";
+import { CLUBS } from "@/game/data/leagues";
 import { nextFixture } from "@/game/season";
+import { useClubTheme } from "@/game/theme";
+import type { CareerState } from "@/game/types";
+import { useCareer, useSignedIn } from "@/hooks/useCareer";
+import { useServiceWorker } from "@/hooks/useServiceWorker";
+import { useT } from "@/i18n/provider";
+import { useDrag } from "@use-gesture/react";
+import { CommandPalette } from "./CommandPalette";
+import { Crest } from "./Crest";
+import { ShortcutsDialog } from "./ShortcutsDialog";
+import "./career-interface.css";
 
 const TABS: {
   to: string;

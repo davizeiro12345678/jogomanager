@@ -43,26 +43,62 @@
   background: #12212a;
   color: #e7edf2;
 }
-.studio-card { box-shadow: 0 20px 60px #0003; }
-.studio-button, .studio-select, .studio-tabs button {
-  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+.studio-card {
+  box-shadow: 0 20px 60px #0003;
+}
+.studio-button,
+.studio-select,
+.studio-tabs button {
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 .studio-card :where(button, select, input):focus-visible {
   outline: 3px solid #a5e8ff;
   outline-offset: 3px;
 }
-.studio-card :where(button, select):active { background: #2b4858; }
-.studio-viewport { isolation: isolate; }
-.studio-tabs button[data-state="active"] { background: #284b43; color: #d3f6e8; }
-.studio-panel { background: #101f2a; }
-.studio-panel label { line-height: 1.55; }
-.studio-phase-buttons { flex-wrap: wrap; }
-.studio-keyboard-camera { background: #10202bf2; padding: 6px; border: 1px solid #496575; border-radius: 12px; }
+.studio-card :where(button, select):active {
+  background: #2b4858;
+}
+.studio-viewport {
+  isolation: isolate;
+}
+.studio-tabs button[data-state="active"] {
+  background: #284b43;
+  color: #d3f6e8;
+}
+.studio-panel {
+  background: #101f2a;
+}
+.studio-panel label {
+  line-height: 1.55;
+}
+.studio-phase-buttons {
+  flex-wrap: wrap;
+}
+.studio-keyboard-camera {
+  background: #10202bf2;
+  padding: 6px;
+  border: 1px solid #496575;
+  border-radius: 12px;
+}
 @media (max-width: 40rem) {
-  .studio-viewport { height: clamp(24rem, 66dvh, 36rem); }
-  .studio-keyboard-camera { inset-block-start: 10px; inset-inline-end: 10px; gap: 4px; }
-  .studio-view-actions { gap: 8px; padding: 10px; }
-  .studio-view-actions button { flex: 1; }
+  .studio-viewport {
+    height: clamp(24rem, 66dvh, 36rem);
+  }
+  .studio-keyboard-camera {
+    inset-block-start: 10px;
+    inset-inline-end: 10px;
+    gap: 4px;
+  }
+  .studio-view-actions {
+    gap: 8px;
+    padding: 10px;
+  }
+  .studio-view-actions button {
+    flex: 1;
+  }
 }
 .studio-toolbar {
   display: flex;
@@ -411,6 +447,23 @@
   flex-wrap: wrap;
 }
 @media (max-width: 40rem) {
+  .studio-viewport {
+    grid-template-rows: minmax(0, 1fr) auto auto;
+  }
+  .studio-viewport > .studio-keyboard-camera {
+    position: static;
+    grid-row: 2;
+    max-width: none;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.6rem;
+    border: 0;
+    border-top: 1px solid #496575;
+    border-radius: 0;
+  }
+  .studio-view-actions {
+    grid-row: 3;
+  }
   .studio-toolbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;

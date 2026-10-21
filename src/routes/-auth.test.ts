@@ -19,6 +19,7 @@ vi.mock("@/integrations/supabase/passkey-auth", () => ({
 }));
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: object) => ({ options, useSearch: () => ({}) }),
+  getRouteApi: () => ({ useSearch: () => ({}) }),
   useNavigate: () => vi.fn(),
   Link: ({ children }: { children: React.ReactNode }) => createElement("a", null, children),
 }));

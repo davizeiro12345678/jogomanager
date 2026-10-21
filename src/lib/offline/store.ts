@@ -6,7 +6,7 @@
  * antigos, que não tinham dono, são tratados exclusivamente como visitante;
  * nunca são adotados silenciosamente por quem acabou de entrar na conta.
  */
-import { clear, del, get, set } from "idb-keyval";
+import { clear, del, get, set, update } from "idb-keyval";
 
 import type { CareerState } from "@/game/types";
 
@@ -33,6 +33,8 @@ export interface Snapshot {
 export interface OutboxEntry {
   at: number;
   state: CareerState;
+  /** Present on new entries; timestamps alone can collide between rapid saves. */
+  revision?: string;
 }
 
 const isBrowser = () => typeof window !== "undefined";
@@ -217,12 +219,17 @@ export async function wipeEverything() {
  * Fila de envio
  * ------------------------------------------------------------------ */
 
-export async function queueSync(state: CareerState, owner: LocalOwnerId | undefined = null) {
-  if (!isBrowser()) return;
+export async function queueSync(
+  state: CareerState,
+  owner: LocalOwnerId | undefined = null,
+): Promise<OutboxEntry | null> {
+  if (!isBrowser()) return null;
   try {
-    await set(idbKey(owner, "outbox"), { at: Date.now(), state } satisfies OutboxEntry);
+    const entry: OutboxEntry = { at: Date.now(), state, revision: crypto.randomUUID() };
+    await set(idbKey(owner, "outbox"), entry);
+    return entry;
   } catch {
-    /* ignore */
+    return null;
   }
 }
 
@@ -243,6 +250,32 @@ export async function clearOutbox(owner: LocalOwnerId | undefined = null) {
     await del(idbKey(owner, "outbox"));
   } catch {
     /* ignore */
+  }
+}
+
+/** A completed upload must not erase a save queued while the network was busy. */
+export async function acknowledgeOutbox(
+  uploaded: OutboxEntry | null,
+  owner: LocalOwnerId,
+): Promise<boolean> {
+  if (!isBrowser() || !uploaded) return false;
+  try {
+    let acknowledged = false;
+    // idb-keyval update reads and writes within one IndexedDB transaction, so
+    // another tab cannot queue a new revision between the comparison and clear.
+    await update<OutboxEntry | null>(idbKey(owner, "outbox"), (current) => {
+      const matches = current?.revision
+        ? current.revision === uploaded.revision
+        : !uploaded.revision && current?.at === uploaded.at;
+      if (!current || matches) {
+        acknowledged = true;
+        return null;
+      }
+      return current;
+    });
+    return acknowledged;
+  } catch {
+    return false;
   }
 }
 

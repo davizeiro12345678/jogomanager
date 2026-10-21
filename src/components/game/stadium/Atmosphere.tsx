@@ -14,14 +14,14 @@
 // ============================================================================
 
 import { useFrame } from "@react-three/fiber";
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useDisposable } from "../useDisposable";
 
-import { censusRef } from "@/game/scene-census";
-import { useRuntimeSceneBudget } from "@/components/game/RuntimeBudget";
-import { FIELD_X, FIELD_Z } from "@/game/sim";
+import { useRuntimeSceneBudget } from "@/components/game/runtime-budget-context";
 import type { Weather } from "@/game/matchday";
+import { censusRef } from "@/game/scene-census";
+import { FIELD_X, FIELD_Z } from "@/game/sim";
 
 export type AtmosQuality = "alta" | "media" | "baixa";
 export type AtmosTime = "dia" | "entardecer" | "noite";

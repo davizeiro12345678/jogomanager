@@ -1,6 +1,6 @@
-import * as React from "react";
+import { emailStyles } from "@/lib/email-templates/email-styles";
 import { Button, Text } from "@react-email/components";
-import { EmailShell, emailStyles } from "./email-shell";
+import { EmailShell } from "./email-shell";
 
 export interface CareerMilestoneEmailProps {
   name?: string;

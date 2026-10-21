@@ -11,6 +11,13 @@ export interface ConsentState {
 const KEY = "pfm-consent-v1";
 const DEFAULT: ConsentState = { analytics: false, telemetry: false, decidedAt: null };
 
+// Only visibility is bootstrapped. This never writes a decision or enables an
+// optional SDK. A separate style node avoids mutating React's hydrated markup;
+// the trusted head script carries its CSP nonce onto the generated style.
+// HeadContent replays scripts after hydration, when this parser-only rule must
+// stay removed so a later reset/remount can show the question normally.
+export const CONSENT_VISIBILITY_SCRIPT = `(function(){if(document.readyState!=="loading")return;try{var c=JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})||"null");if(c&&typeof c.decidedAt==="string"){var s=document.createElement("style");s.id="pfm-consent-bootstrap";s.nonce=document.currentScript?document.currentScript.nonce:"";s.textContent="[data-pfm-consent-banner]{display:none!important}";document.head.appendChild(s)}}catch{}})();`;
+
 export function readConsent(): ConsentState {
   if (typeof window === "undefined") return DEFAULT;
   try {

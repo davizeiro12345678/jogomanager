@@ -15,8 +15,8 @@ import { useFrame } from "@react-three/fiber";
 import { memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
+import { useRuntimeSceneBudget } from "@/components/game/runtime-budget-context";
 import { censusRef } from "@/game/scene-census";
-import { useRuntimeSceneBudget } from "@/components/game/RuntimeBudget";
 import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
 
 const MAX_MARKS = 64;

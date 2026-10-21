@@ -43,8 +43,16 @@ jobs:
           test -n "$VITE_SUPABASE_URL" || { echo "Missing VITE_SUPABASE_URL secret"; exit 1; }
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo "Missing VITE_SUPABASE_PUBLISHABLE_KEY secret"; exit 1; }
       - run: npm ci
+      - name: Refuse publication of a superseded main revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)"
+          test "$current_main" = "$EXPECTED_COMMIT_SHA" || { echo "Main advanced; this release is superseded."; exit 1; }
       - name: Build and publish Worker with Wrangler
         env:
+          PFM_BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
           CLOUDFLARE_SITE_ZONE: jogomanager.com
@@ -57,45 +65,6 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: npm run cloudflare:deploy
       - name: Verify production HTTP health and public access without Cloudflare login
-        run: |
-          # HTTP 302 to Cloudflare Access is not a successful public deployment.
-          node --input-type=module <<'NODE'
-          const checks = [
-            { url: "https://jogomanager.com/api/health", type: "json" },
-            { url: "https://jogomanager.com/", type: "html" },
-            { url: "https://www.jogomanager.com/", type: "html", followCanonical: true },
-          ];
-
-          for (const { url, type, followCanonical } of checks) {
-            const response = await fetch(url, {
-              redirect: followCanonical ? "follow" : "manual",
-              headers: { "cache-control": "no-cache" },
-              signal: AbortSignal.timeout(30000),
-            });
-            if (response.status !== 200) {
-              throw new Error(`${url}: expected HTTP 200 for anonymous visitors; got ${response.status} (Location: ${response.headers.get("location") || "none"})`);
-            }
-            if (/cloudflareaccess\\.com|\\/cdn-cgi\\/access\\//i.test(response.url)) {
-              throw new Error(`${url}: redirected to Cloudflare Access login`);
-            }
-            const body = await response.text();
-            if (/Cloudflare Access|\\/cdn-cgi\\/access\\/login|Log in to .*Cloudflare Workers/i.test(body)) {
-              throw new Error(`${url}: Cloudflare Access login page served instead of the public app`);
-            }
-            const contentType = response.headers.get("content-type") || "";
-            if (type === "json") {
-              if (!contentType.includes("application/json")) {
-                throw new Error(`${url}: expected JSON health, received ${contentType}`);
-              }
-              const health = JSON.parse(body);
-              if (health.status !== "ready") {
-                throw new Error(`${url}: backend health is not ready: ${health.status}`);
-              }
-            } else {
-              if (!contentType.includes("text/html") || !/Pro Football Manager 3D/i.test(body)) {
-                throw new Error(`${url}: expected public game HTML, got unexpected content`);
-              }
-            }
-            console.log(`PASS anonymous public access: ${url}`);
-          }
-          NODE
+        env:
+          EXPECTED_COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: node scripts/verify-public-deployment.mjs

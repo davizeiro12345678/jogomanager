@@ -1,3 +1,7 @@
+-- Explicit transaction for Supabase CLI replay.
+-- Recorded SQL: supabase/migration-archive/recorded/20261002202837_player_identity_and_sportsdb_aliases.sql
+BEGIN;
+
 -- Keep every source record privately; present one canonical player per verified identity.
 -- A full nullable unique index is discoverable by PostgREST's ON CONFLICT.
 CREATE UNIQUE INDEX players_source_identity_conflict_idx ON public.players(source,source_id);
@@ -71,3 +75,5 @@ REVOKE ALL ON FUNCTION public.sportsdb_canonical_player_identity() FROM PUBLIC,a
 GRANT EXECUTE ON FUNCTION public.sportsdb_canonical_player_identity() TO service_role;
 CREATE TRIGGER sportsdb_canonical_player_identity BEFORE INSERT ON public.official_players
 FOR EACH ROW EXECUTE FUNCTION public.sportsdb_canonical_player_identity();
+
+COMMIT;
