@@ -40,8 +40,10 @@ export async function deliverViaResend(message: ResendTransactionalMessage): Pro
     if (attempt === 1 || ![429, 500, 502, 503, 504].includes(response.status)) {
       throw new Error(`Transactional email failed (Resend HTTP ${response.status}).`);
     }
-    const raw = Number(response.headers.get("retry-after"));
-    const waitMs = Number.isFinite(raw) && raw >= 0 ? Math.min(raw * 1000, 2000) : 500;
+    const retryAfter = response.headers.get("retry-after");
+    const seconds = retryAfter === null ? Number.NaN : Number(retryAfter);
+    const waitMs =
+      Number.isFinite(seconds) && seconds >= 0 ? Math.min(seconds * 1000, 2000) : 500;
     await new Promise<void>((resolve) => setTimeout(resolve, waitMs));
   }
 }
