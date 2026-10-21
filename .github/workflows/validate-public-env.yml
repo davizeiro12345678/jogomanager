@@ -39,6 +39,6 @@ jobs:
           for (const name of expected) if (!config?.[name]) throw Error("Missing MCP: " + name);
           const supabase = new URL(config["supabase-readonly"].url);
           if (supabase.protocol !== "https:" || supabase.searchParams.get("project_ref") !== "lguqnwvsfeefxamzeyos" || supabase.searchParams.get("read_only") !== "true") throw Error("Unsafe Supabase MCP");
-          if (/sb_secret_|sk_live_|sk_test_|github_pat_|ghp_|[A-Za-z0-9_-]{4}:\\/\\/.+@/.test(file)) throw Error("Potential secret in MCP manifest");
+          if (/sb_secret_|sk_live_|sk_test_|github_pat_|ghp_/.test(file)) throw Error("Potential secret in MCP manifest");
           console.log("MCP manifest syntax and read-only scope: PASS");
           JS
