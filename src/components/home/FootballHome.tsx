@@ -1,6 +1,5 @@
 import { Await, getRouteApi, Link } from "@tanstack/react-router";
-import { HomeLeaguePulse } from "@/components/home/HomeLeaguePulse";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import {
   ArrowDown,
   ArrowRight,
@@ -16,11 +15,16 @@ import {
 } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { DiscordLink } from "@/components/CommunityInvite";
-import { HomeDetails } from "./HomeDetails";
 import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1080;1600&quality=52&as=srcset";
 import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1080;1600&quality=62&as=srcset";
 import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
 import "./home.css";
+
+// Below-the-fold content must not compete with the hero during initial JS hydration.
+const HomeDetails = lazy(() => import("./HomeDetails").then((m) => ({ default: m.HomeDetails })));
+const HomeLeaguePulse = lazy(() =>
+  import("@/components/home/HomeLeaguePulse").then((m) => ({ default: m.HomeLeaguePulse })),
+);
 
 const SYSTEMS = [
   {
@@ -481,7 +485,9 @@ export function FootballHome() {
           </Link>
         </section>
         <div className="home-guide-content">
-          <HomeDetails />
+          <Suspense fallback={null}>
+            <HomeDetails />
+          </Suspense>
         </div>
         <nav className="home-more-modes" aria-label="Outras formas de jogar">
           <span>Jogue do seu jeito</span>
