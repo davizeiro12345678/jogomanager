@@ -51,14 +51,10 @@ export default {
     // The duration only covers initial handler/response creation, not streamed body completion.
     const ssrStart = performance.now();
     const measured = (response: Response): Response => {
-      const headers = new Headers(response.headers);
       const durationMs = Math.max(0, performance.now() - ssrStart);
-      headers.append("server-timing", `app;dur=${durationMs.toFixed(1)}`);
-      return new Response(request.method === "HEAD" ? null : response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers,
-      });
+      // secureResponse already builds a fresh mutable response; no extra copy.
+      response.headers.append("server-timing", `app;dur=${durationMs.toFixed(1)}`);
+      return response;
     };
     // Rebuild from public fields: a cross-realm Request may not be cloneable.
     // Never trust a client-provided CSP nonce.
