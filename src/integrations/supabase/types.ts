@@ -2688,8 +2688,9 @@ export type Database = {
       }
       complete_api_football_import_phase: {
         Args: {
-          p_error?: string
-          p_next_offset: number
+          // PostgreSQL permits NULL: no error and no next offset mean completed.
+          p_error?: string | null
+          p_next_offset: number | null
           p_phase: string
           p_processed: number
           p_token: string
