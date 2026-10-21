@@ -1,10 +1,24 @@
 set local lock_timeout = '3s';
 set local statement_timeout = '30s';
 
--- Cover the account foreign key used by the existing Stripe integration.
-create index if not exists idx_managed_webhooks_account_id
-  on stripe._managed_webhooks (account_id);
+-- The Stripe schema is managed in production; fresh local CI lacks it.
+-- Only create this index if the Stripe integration is installed.
+DO $$
+BEGIN
+  IF to_regclass('stripe._managed_webhooks') IS NOT NULL THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_managed_webhooks_account_id ON stripe._managed_webhooks (account_id)';
+  END IF;
+END
+$$;
 
--- On-demand query diagnostics; no scheduled jobs or external transfers.
-create extension if not exists hypopg with schema extensions;
-create extension if not exists index_advisor with schema extensions;
+-- Optional query-diagnostic extensions may not ship in local Postgres.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'hypopg') THEN
+    CREATE EXTENSION IF NOT EXISTS hypopg WITH SCHEMA extensions;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'index_advisor') THEN
+    CREATE EXTENSION IF NOT EXISTS index_advisor WITH SCHEMA extensions;
+  END IF;
+END
+$$;
