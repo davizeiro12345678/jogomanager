@@ -76,7 +76,8 @@ function AccountSecurity() {
       try {
         await refresh();
       } catch {
-        if (active) setError("Não foi possível verificar os fatores de segurança. Tente novamente.");
+        if (active)
+          setError("Não foi possível verificar os fatores de segurança. Tente novamente.");
       } finally {
         if (active) setLoading(false);
       }
@@ -140,7 +141,9 @@ function AccountSecurity() {
       setQrCode(enroll.data.totp.qr_code);
       setTotpSecret(enroll.data.totp.secret);
       setPending({ factorId: enroll.data.id, challengeId: challenge.data.id, channel: "totp" });
-      setNotice("Configure o aplicativo autenticador e informe o código. Não compartilhe o segredo.");
+      setNotice(
+        "Configure o aplicativo autenticador e informe o código. Não compartilhe o segredo.",
+      );
     });
   }
 
@@ -151,9 +154,7 @@ function AccountSecurity() {
         return;
       }
       const challenge = await supabase.auth.mfa.challenge(
-        channel === "totp"
-          ? { factorId: factor.id }
-          : { factorId: factor.id, channel },
+        channel === "totp" ? { factorId: factor.id } : { factorId: factor.id, channel },
       );
       if (challenge.error) throw challenge.error;
       setPending({ factorId: factor.id, challengeId: challenge.data.id, channel });
@@ -193,7 +194,9 @@ function AccountSecurity() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-5 px-4 py-10">
       <div>
-        <Link to="/perfil" className="text-sm text-primary">← Voltar ao perfil</Link>
+        <Link to="/perfil" className="text-sm text-primary">
+          ← Voltar ao perfil
+        </Link>
         <h1 className="mt-3 font-display text-3xl font-bold">Segurança e recuperação da conta</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Configure uma segunda etapa de autenticação por SMS, WhatsApp ou aplicativo autenticador.
@@ -204,11 +207,21 @@ function AccountSecurity() {
       {!loading && !signedIn ? (
         <p>
           Entre na conta antes de configurar fatores de segurança.{" "}
-          <Link to="/auth" className="text-primary underline">Ir para o login</Link>
+          <Link to="/auth" className="text-primary underline">
+            Ir para o login
+          </Link>
         </p>
       ) : null}
-      {error ? <p role="alert" className="rounded-lg border border-destructive p-3 text-sm">{error}</p> : null}
-      {notice ? <p role="status" className="rounded-lg border p-3 text-sm">{notice}</p> : null}
+      {error ? (
+        <p role="alert" className="rounded-lg border border-destructive p-3 text-sm">
+          {error}
+        </p>
+      ) : null}
+      {notice ? (
+        <p role="status" className="rounded-lg border p-3 text-sm">
+          {notice}
+        </p>
+      ) : null}
       {signedIn ? (
         <>
           <section className="rounded-xl border border-border bg-card p-5">
@@ -226,22 +239,34 @@ function AccountSecurity() {
                 {verified.map((factor) => (
                   <div key={factor.id} className="rounded-lg border border-border p-3">
                     <p className="text-sm font-medium">
-                      {factor.friendly_name || (factor.factor_type === "totp" ? "Autenticador" : "Telefone")}
+                      {factor.friendly_name ||
+                        (factor.factor_type === "totp" ? "Autenticador" : "Telefone")}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {factor.factor_type === "phone" ? (
                         <>
-                          <Button size="sm" disabled={busy} onClick={() => void challengeExisting(factor, "sms")}>
+                          <Button
+                            size="sm"
+                            disabled={busy}
+                            onClick={() => void challengeExisting(factor, "sms")}
+                          >
                             Receber SMS
                           </Button>
-                          <Button size="sm" variant="outline" disabled={busy}
-                            onClick={() => void challengeExisting(factor, "whatsapp")}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={busy}
+                            onClick={() => void challengeExisting(factor, "whatsapp")}
+                          >
                             Receber no WhatsApp
                           </Button>
                         </>
                       ) : (
-                        <Button size="sm" disabled={busy}
-                          onClick={() => void challengeExisting(factor, "totp")}>
+                        <Button
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => void challengeExisting(factor, "totp")}
+                        >
                           Verificar código do aplicativo
                         </Button>
                       )}
@@ -251,7 +276,8 @@ function AccountSecurity() {
               </div>
             ) : (
               <p className="mt-3 text-sm text-muted-foreground">
-                Nenhum fator verificado. Antes de ativar MFA obrigatório, cadastre também um fator alternativo.
+                Nenhum fator verificado. Antes de ativar MFA obrigatório, cadastre também um fator
+                alternativo.
               </p>
             )}
             {currentLevel === "aal2" && next ? (
@@ -266,8 +292,13 @@ function AccountSecurity() {
               <label htmlFor="security-phone" className="mt-3 block text-sm font-medium">
                 Número internacional (E.164)
               </label>
-              <input id="security-phone" type="tel" inputMode="tel" autoComplete="tel"
-                value={phone} onChange={(event) => setPhone(event.target.value)}
+              <input
+                id="security-phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
                 placeholder="+5527999999999"
                 className="mt-1 min-h-11 w-full rounded-lg border border-input bg-background px-3"
               />
@@ -275,17 +306,24 @@ function AccountSecurity() {
                 <Button disabled={busy} onClick={() => void beginPhoneEnrollment("sms")}>
                   Cadastrar com SMS
                 </Button>
-                <Button variant="outline" disabled={busy}
-                  onClick={() => void beginPhoneEnrollment("whatsapp")}>
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => void beginPhoneEnrollment("whatsapp")}
+                >
                   Cadastrar com WhatsApp
                 </Button>
-                <Button variant="outline" disabled={busy} onClick={() => void beginTotpEnrollment()}>
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => void beginTotpEnrollment()}
+                >
                   Cadastrar aplicativo autenticador
                 </Button>
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
-                SMS e WhatsApp podem gerar custos. A verificação por telefone não funcionará enquanto
-                a Twilio não estiver configurada e liberada no projeto Supabase.
+                SMS e WhatsApp podem gerar custos. A verificação por telefone não funcionará
+                enquanto a Twilio não estiver configurada e liberada no projeto Supabase.
               </p>
             </section>
           ) : null}
@@ -294,8 +332,12 @@ function AccountSecurity() {
               <h2 className="text-lg font-semibold">Confirmar segundo fator</h2>
               {qrCode ? (
                 <div className="mt-3">
-                  <img src={qrCode} alt="QR code para cadastrar o aplicativo autenticador"
-                    width={180} height={180} />
+                  <img
+                    src={qrCode}
+                    alt="QR code para cadastrar o aplicativo autenticador"
+                    width={180}
+                    height={180}
+                  />
                   <p className="mt-2 break-all text-xs">
                     Código manual, mantenha em segredo: <code>{totpSecret}</code>
                   </p>
@@ -304,29 +346,41 @@ function AccountSecurity() {
               <label htmlFor="mfa-code" className="mt-3 block text-sm font-medium">
                 Código recebido {pending.channel === "totp" ? "no aplicativo" : "por mensagem"}
               </label>
-              <input id="mfa-code" autoComplete="one-time-code" inputMode="numeric"
-                value={code} onChange={(event) => setCode(event.target.value)}
-                maxLength={8} className="mt-1 min-h-11 w-full rounded-lg border border-input bg-background px-3" />
+              <input
+                id="mfa-code"
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+                maxLength={8}
+                className="mt-1 min-h-11 w-full rounded-lg border border-input bg-background px-3"
+              />
               <div className="mt-3 flex gap-2">
-                <Button disabled={busy || !CODE_PATTERN.test(code.trim())}
-                  onClick={() => void verifyCode()}>
+                <Button
+                  disabled={busy || !CODE_PATTERN.test(code.trim())}
+                  onClick={() => void verifyCode()}
+                >
                   Confirmar fator
                 </Button>
-                <Button variant="outline" disabled={busy} onClick={() => {
-                  setPending(null);
-                  setQrCode("");
-                  setTotpSecret("");
-                  setCode("");
-                }}>
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => {
+                    setPending(null);
+                    setQrCode("");
+                    setTotpSecret("");
+                    setCode("");
+                  }}
+                >
                   Cancelar
                 </Button>
               </div>
             </section>
           ) : null}
           <p className="text-sm text-muted-foreground">
-            Para recuperar o acesso com MFA, escolha outro fator já cadastrado.
-            Apenas redefinir a senha não substitui a verificação de um segundo fator.
-            Se todos os fatores forem perdidos, procure o suporte da conta.
+            Para recuperar o acesso com MFA, escolha outro fator já cadastrado. Apenas redefinir a
+            senha não substitui a verificação de um segundo fator. Se todos os fatores forem
+            perdidos, procure o suporte da conta.
           </p>
         </>
       ) : null}

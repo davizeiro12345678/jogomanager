@@ -87,8 +87,7 @@ function AuthPage() {
   const passkeysSupported = supportsPasskeys();
 
   async function continueWithMfa() {
-    const { data, error: mfaError } =
-      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    const { data, error: mfaError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     if (mfaError) throw mfaError;
     await navigate({
       href:
@@ -154,21 +153,22 @@ function AuthPage() {
           // Só redireciona sozinho ao voltar de um login (next na URL);
           // abrir /auth direto mostra a conta atual e permite trocar.
           if (search.next) {
-            void supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data: level, error: mfaError }) => {
-              if (!alive) return;
-              if (mfaError) {
-                setError("Não foi possível validar o segundo fator. Tente novamente.");
-                return;
-              }
-              void navigate({
-                href:
-                  level.nextLevel === "aal2" && level.currentLevel !== "aal2"
-                    ? `/seguranca?next=${encodeURIComponent(destination)}`
-                    : destination,
+            void supabase.auth.mfa
+              .getAuthenticatorAssuranceLevel()
+              .then(({ data: level, error: mfaError }) => {
+                if (!alive) return;
+                if (mfaError) {
+                  setError("Não foi possível validar o segundo fator. Tente novamente.");
+                  return;
+                }
+                void navigate({
+                  href:
+                    level.nextLevel === "aal2" && level.currentLevel !== "aal2"
+                      ? `/seguranca?next=${encodeURIComponent(destination)}`
+                      : destination,
+                });
               });
-            });
-          }
-          else setSignedInAs(data.session.user.email ?? "sua conta");
+          } else setSignedInAs(data.session.user.email ?? "sua conta");
         }
       })
       .catch(() => {
