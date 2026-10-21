@@ -51,7 +51,7 @@ describe("outer response protection", () => {
       headers: { "content-type": "text/html" },
     }));
     const response = await server.fetch(new Request("https://jogomanager.com/auth"), {}, {});
-    expect(response.headers.get("server-timing")).toMatch(/app;dur=\\d+(?:\\.\\d+)?/);
+    expect(response.headers.get("server-timing")).toMatch(/app;dur=\d+(?:\.\d+)?/);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("content-security-policy")).toContain("object-src 'none'");
   });
