@@ -42,8 +42,7 @@ export async function deliverViaResend(message: ResendTransactionalMessage): Pro
     }
     const retryAfter = response.headers.get("retry-after");
     const seconds = retryAfter === null ? Number.NaN : Number(retryAfter);
-    const waitMs =
-      Number.isFinite(seconds) && seconds >= 0 ? Math.min(seconds * 1000, 2000) : 500;
+    const waitMs = Number.isFinite(seconds) && seconds >= 0 ? Math.min(seconds * 1000, 2000) : 500;
     await new Promise<void>((resolve) => setTimeout(resolve, waitMs));
   }
 }
