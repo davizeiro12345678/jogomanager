@@ -4,6 +4,7 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { publicPageRedirect } from "./lib/public-page-redirects";
 import { CSP_NONCE_HEADER, createCspNonce, secureResponse } from "./lib/security-headers";
+import { fastlyOriginGate } from "./lib/fastly-origin-gate";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -60,6 +61,8 @@ export default {
     }
     const verifiedRequest = new Request(request.url, init);
     const protect = (response: Response) => secureResponse(response, verifiedRequest, nonce);
+    const originDenied = fastlyOriginGate(verifiedRequest, env);
+    if (originDenied) return protect(originDenied);
     const redirect = publicPageRedirect(verifiedRequest);
     if (redirect) return protect(redirect);
     try {
