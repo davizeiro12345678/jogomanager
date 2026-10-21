@@ -54,6 +54,7 @@ import { Route as NewRouteImport } from './routes/new'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as PartidaRapidaRouteImport } from './routes/partida-rapida'
 import { Route as PerfilRouteImport } from './routes/perfil'
+import { Route as SegurancaRouteImport } from './routes/seguranca'
 import { Route as PerguntasFrequentesRouteImport } from './routes/perguntas-frequentes'
 import { Route as PlanejamentoDeElencoRouteImport } from './routes/planejamento-de-elenco'
 import { Route as PreJogoRouteImport } from './routes/pre-jogo'
@@ -319,6 +320,11 @@ const PerfilRoute = PerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SegurancaRoute = SegurancaRouteImport.update({
+  id: '/seguranca',
+  path: '/seguranca',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PerguntasFrequentesRoute = PerguntasFrequentesRouteImport.update({
   id: '/perguntas-frequentes',
   path: '/perguntas-frequentes',
@@ -559,6 +565,7 @@ export interface FileRoutesByFullPath {
   '/news': typeof NewsRoute
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perfil': typeof PerfilRoute
+  '/seguranca': typeof SegurancaRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/planejamento-de-elenco': typeof PlanejamentoDeElencoRoute
   '/pre-jogo': typeof PreJogoRoute
@@ -644,6 +651,7 @@ export interface FileRoutesByTo {
   '/news': typeof NewsRoute
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perfil': typeof PerfilRoute
+  '/seguranca': typeof SegurancaRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/planejamento-de-elenco': typeof PlanejamentoDeElencoRoute
   '/pre-jogo': typeof PreJogoRoute
@@ -730,6 +738,7 @@ export interface FileRoutesById {
   '/news': typeof NewsRoute
   '/partida-rapida': typeof PartidaRapidaRoute
   '/perfil': typeof PerfilRoute
+  '/seguranca': typeof SegurancaRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
   '/planejamento-de-elenco': typeof PlanejamentoDeElencoRoute
   '/pre-jogo': typeof PreJogoRoute
@@ -817,6 +826,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/partida-rapida'
     | '/perfil'
+    | '/seguranca'
     | '/perguntas-frequentes'
     | '/planejamento-de-elenco'
     | '/pre-jogo'
@@ -902,6 +912,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/partida-rapida'
     | '/perfil'
+    | '/seguranca'
     | '/perguntas-frequentes'
     | '/planejamento-de-elenco'
     | '/pre-jogo'
@@ -987,6 +998,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/partida-rapida'
     | '/perfil'
+    | '/seguranca'
     | '/perguntas-frequentes'
     | '/planejamento-de-elenco'
     | '/pre-jogo'
@@ -1073,6 +1085,7 @@ export interface RootRouteChildren {
   NewsRoute: typeof NewsRoute
   PartidaRapidaRoute: typeof PartidaRapidaRoute
   PerfilRoute: typeof PerfilRoute
+  SegurancaRoute: typeof SegurancaRoute
   PerguntasFrequentesRoute: typeof PerguntasFrequentesRoute
   PlanejamentoDeElencoRoute: typeof PlanejamentoDeElencoRoute
   PreJogoRoute: typeof PreJogoRoute
@@ -1430,6 +1443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerfilRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/seguranca': {
+      id: '/seguranca'
+      path: '/seguranca'
+      fullPath: '/seguranca'
+      preLoaderRoute: typeof SegurancaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/perguntas-frequentes': {
       id: '/perguntas-frequentes'
       path: '/perguntas-frequentes'
@@ -1745,6 +1765,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewsRoute: NewsRoute,
   PartidaRapidaRoute: PartidaRapidaRoute,
   PerfilRoute: PerfilRoute,
+  SegurancaRoute: SegurancaRoute,
   PerguntasFrequentesRoute: PerguntasFrequentesRoute,
   PlanejamentoDeElencoRoute: PlanejamentoDeElencoRoute,
   PreJogoRoute: PreJogoRoute,
