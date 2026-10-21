@@ -1,0 +1,43 @@
+name: Temporary security PR formatting and dependency repair
+on:
+  push:
+    branches:
+      - security/fastly-origin-twilio-staging-20261021
+    paths:
+      - ".github/workflows/security-pr56-autofix.yml"
+permissions:
+  contents: write
+jobs:
+  fix-and-validate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Format added authentication screens
+        run: npx prettier --write src/routes/seguranca.tsx src/routes/auth.tsx src/routes/perfil.tsx src/lib/fastly-origin-gate.test.ts
+      - name: Update MCP dependency security patches and lockfile
+        run: |
+          npm pkg set "overrides.@modelcontextprotocol/sdk=1.32.1" "overrides.@modelcontextprotocol/server=2.3.0"
+          npm install --package-lock-only --ignore-scripts
+      - name: Verify lint, types and high severity advisories
+        run: |
+          npm ci --ignore-scripts
+          npm run lint
+          npx tsc --noEmit
+          npm audit --omit=dev --audit-level=high
+      - name: Commit only validated changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/seguranca.tsx src/routes/auth.tsx src/routes/perfil.tsx src/lib/fastly-origin-gate.test.ts package.json package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "fix(ci): format MFA flow and patch MCP dependency advisories"
+            git push origin HEAD:security/fastly-origin-twilio-staging-20261021
+          fi
