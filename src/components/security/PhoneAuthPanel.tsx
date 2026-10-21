@@ -60,9 +60,7 @@ export function PhoneAuthPanel({ destination }: { destination: string }) {
         "Se o número estiver vinculado a uma conta, o código será enviado pelo canal selecionado.",
       );
     } catch {
-      setNotice(
-        "Não foi possível concluir a verificação. Confira o número e tente novamente.",
-      );
+      setNotice("Não foi possível concluir a verificação. Confira o número e tente novamente.");
     } finally {
       setBusy(false);
     }
