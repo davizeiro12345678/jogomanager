@@ -60,14 +60,19 @@ export function PhoneAuthPanel({ destination }: { destination: string }) {
         "Se o número estiver vinculado a uma conta, o código será enviado pelo canal selecionado.",
       );
     } catch {
-      setNotice("Não foi possível concluir a verificação. Confira o número e tente novamente.");
+      setNotice(
+        "Não foi possível concluir a verificação. Confira o número e tente novamente.",
+      );
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <section aria-label="Entrar com telefone" className="mt-5 rounded-xl border border-border/60 p-4">
+    <section
+      aria-label="Entrar com telefone"
+      className="mt-5 rounded-xl border border-border/60 p-4"
+    >
       <h2 className="font-display text-lg font-semibold">Entrar com telefone</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Apenas contas com telefone previamente confirmado podem entrar por SMS ou WhatsApp.
