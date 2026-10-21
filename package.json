@@ -27,9 +27,10 @@
   "overrides": {
     "@dimforge/rapier3d-compat": "0.21.0",
     "@grpc/grpc-js": "1.14.6",
-    "@modelcontextprotocol/sdk": "1.31.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "esbuild": "0.28.1",
-    "rolldown": "1.2.1"
+    "rolldown": "1.2.1",
+    "@modelcontextprotocol/server": "2.3.0"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.21.0",
