@@ -3,11 +3,19 @@
 const ORIGIN = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const ALLOWED = new Set([
-  "email.sent", "email.delivered", "email.delivery_delayed",
-  "email.failed", "email.bounced", "email.complained", "email.suppressed",
+  "email.sent",
+  "email.delivered",
+  "email.delivery_delayed",
+  "email.failed",
+  "email.bounced",
+  "email.complained",
+  "email.suppressed",
 ]);
 const response = (status: number, body: string) =>
-  new Response(body, { status, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } });
+  new Response(body, {
+    status,
+    headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+  });
 
 async function rpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
   const res = await fetch(`${ORIGIN}/rest/v1/rpc/${name}`, {
@@ -21,7 +29,7 @@ async function rpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
     signal: AbortSignal.timeout(5000),
   });
   if (!res.ok) throw new Error(`Webhook storage unavailable: ${res.status}`);
-  return await res.json() as T;
+  return (await res.json()) as T;
 }
 
 Deno.serve(async (req: Request) => {
@@ -38,17 +46,22 @@ Deno.serve(async (req: Request) => {
     return response(400, "Webhook expired");
   const advertised = Number(req.headers.get("content-length") ?? "0");
   if (advertised > 131072) return response(413, "Payload too large");
-  let raw = "";
-  try {
-    raw = await req.text();
-    if (new TextEncoder().encode(raw).length > 131072) return response(413, "Payload too large");
-  } catch { return response(400, "Invalid body"); }
+  const raw = await req.text().catch(() => null);
+  if (raw === null) return response(400, "Invalid body");
+  if (new TextEncoder().encode(raw).length > 131072)
+    return response(413, "Payload too large");
   let verified = false;
   try {
     const secret = await rpc<string>("jm_resend_webhook_signing_key", {});
     if (!secret || !secret.startsWith("whsec_")) return response(503, "Webhook not configured");
     const keyBytes = Uint8Array.from(atob(secret.slice(6)), (c) => c.charCodeAt(0));
-    const key = await crypto.subtle.importKey("raw", keyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+    const key = await crypto.subtle.importKey(
+      "raw",
+      keyBytes,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"],
+    );
     const signedBody = new TextEncoder().encode(`${id}.${timestamp}.${raw}`);
     for (const value of signatures.split(/\s+/)) {
       if (!value.startsWith("v1,")) continue;
@@ -58,20 +71,30 @@ Deno.serve(async (req: Request) => {
           verified = true;
           break;
         }
-      } catch { /* Reject invalid signatures */ }
+      } catch {
+        /* Reject invalid signatures */
+      }
     }
   } catch {
     return response(503, "Webhook signing configuration unavailable");
   }
   if (!verified) return response(401, "Invalid signature");
   let event: { type?: string; data?: { email_id?: string } };
-  try { event = JSON.parse(raw); } catch { return response(400, "Invalid JSON"); }
+  try {
+    event = JSON.parse(raw);
+  } catch {
+    return response(400, "Invalid JSON");
+  }
   if (!event.type || !ALLOWED.has(event.type)) return response(200, "Event ignored");
   const emailId = typeof event.data?.email_id === "string" ? event.data.email_id : null;
   try {
     await rpc<boolean>("jm_store_resend_delivery_event", {
-      p_event_id: id, p_event_type: event.type, p_email_id: emailId,
+      p_event_id: id,
+      p_event_type: event.type,
+      p_email_id: emailId,
     });
-  } catch { return response(503, "Delivery event storage failed"); }
+  } catch {
+    return response(503, "Delivery event storage failed");
+  }
   return response(200, "OK");
 });
