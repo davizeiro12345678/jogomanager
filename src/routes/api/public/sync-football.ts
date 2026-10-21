@@ -38,7 +38,13 @@ export const Route = createFileRoute("/api/public/sync-football")({
             !Number.isSafeInteger(offset) ||
             offset < 0 ||
             typeof token !== "string" ||
-            token.length < 1
+            token.length < 1 ||
+            typeof lease.out_phase !== "string" ||
+            lease.out_phase.length < 1 ||
+            typeof lease.out_limit !== "number" ||
+            !Number.isSafeInteger(lease.out_limit) ||
+            lease.out_limit < 1 ||
+            lease.out_limit > 500
           ) {
             return Response.json({ ok: false, error: "Invalid import lease" }, { status: 409 });
           }
