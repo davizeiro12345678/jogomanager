@@ -46,6 +46,16 @@ describe("outer response protection", () => {
     expect(report).not.toContain("'unsafe-inline' https://js.stripe.com");
     expect(createCspNonce()).not.toBe(nonce);
   });
+  it("exposes initial SSR duration without weakening private cache protection", async () => {
+    deps.fetch.mockResolvedValue(new Response("<html></html>", {
+      headers: { "content-type": "text/html" },
+    }));
+    const response = await server.fetch(new Request("https://jogomanager.com/auth"), {}, {});
+    expect(response.headers.get("server-timing")).toMatch(/app;dur=\\d+(?:\\.\\d+)?/);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("content-security-policy")).toContain("object-src 'none'");
+  });
+
   it("rebuilds a cross-realm Request from public fields before SSR", async () => {
     deps.fetch.mockResolvedValue(new Response("ok", { headers: { "content-type": "text/html" } }));
     // h3/Vite may expose a Request-like object whose internal Undici state
