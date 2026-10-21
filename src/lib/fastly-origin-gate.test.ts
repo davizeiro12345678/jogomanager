@@ -8,7 +8,7 @@ import {
 const key = "a".repeat(64);
 function request(host: string, secret?: string): Request {
   return new Request(`https://${host}/api/health`, {
-    headers: secret ? { [FASTLY_ORIGIN_SECRET_HEADER]: secret } : undefined,
+    ...(secret ? { headers: { [FASTLY_ORIGIN_SECRET_HEADER]: secret } } : {}),
   });
 }
 
