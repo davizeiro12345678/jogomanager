@@ -2,7 +2,7 @@ import { ScreenHeader } from "@/components/game/screen-kit";
 
 import { Link } from "@tanstack/react-router";
 
-import { useRef, useState } from "react";
+import { lazy, Suspense, useRef, useState } from "react";
 
 import { Download, Upload } from "lucide-react";
 
@@ -37,6 +37,12 @@ import { Button } from "@/components/ui/button";
 import { ActivityRanking } from "@/features/activity/ActivityRanking";
 
 import { PasskeySettings } from "@/components/PasskeySettings";
+
+const PhoneMFASettings = lazy(() =>
+  import("@/components/security/PhoneMFASettings").then((module) => ({
+    default: module.PhoneMFASettings,
+  })),
+);
 
 const FALLBACK_LOOK = {
   skin: 0,
@@ -117,6 +123,11 @@ export function Perfil() {
       </div>
 
       {signedIn && <PasskeySettings />}
+      {signedIn && import.meta.env["VITE_PHONE_MFA_ENABLED"] === "true" && (
+        <Suspense fallback={null}>
+          <PhoneMFASettings />
+        </Suspense>
+      )}
 
       <div className="mt-5 grid items-start gap-4 hud-stagger md:grid-cols-2 lg:grid-cols-3">
         <HudCard title="Números da carreira" tone={winRate >= 50 ? "good" : "neutral"}>
