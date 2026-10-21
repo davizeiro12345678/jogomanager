@@ -1,0 +1,44 @@
+name: Public environment and MCP safety
+on:
+  pull_request:
+    paths:
+      - ".env"
+      - ".env.development"
+      - ".env.production"
+      - ".mcp.json"
+      - "scripts/validate-public-env.mjs"
+      - ".github/workflows/validate-public-env.yml"
+  push:
+    branches: [main]
+    paths:
+      - ".env"
+      - ".env.development"
+      - ".env.production"
+      - ".mcp.json"
+      - "scripts/validate-public-env.mjs"
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify env variables and reject server-side secrets
+        run: node scripts/validate-public-env.mjs
+      - name: Validate MCP manifest syntax, read-only Supabase and absent credentials
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync } from "node:fs";
+          const file = readFileSync(".mcp.json", "utf8");
+          const config = JSON.parse(file).mcpServers;
+          const expected = ["supabase-readonly", "fastly", "playwright", "context7"];
+          for (const name of expected) if (!config?.[name]) throw Error("Missing MCP: " + name);
+          const supabase = new URL(config["supabase-readonly"].url);
+          if (supabase.protocol !== "https:" || supabase.searchParams.get("project_ref") !== "lguqnwvsfeefxamzeyos" || supabase.searchParams.get("read_only") !== "true") throw Error("Unsafe Supabase MCP");
+          if (/sb_secret_|sk_live_|sk_test_|github_pat_|ghp_/.test(file)) throw Error("Potential secret in MCP manifest");
+          console.log("MCP manifest syntax and read-only scope: PASS");
+          JS
