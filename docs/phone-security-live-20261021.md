@@ -35,3 +35,26 @@ Prioridades antes da ativação: serviço Twilio Verify e remetente autorizado, 
 
 ## Core Web Vitals
 Uma execução Lighthouse do GitHub Actions não equivale aos dados RUM da Cloudflare. A suíte do GitHub em 21/10 executou 15 Lighthouse mobile em `127.0.0.1:4173`; passou no job, mas registrou avisos para meta de 98 pontos e LCP 2,5 s em cinco páginas. Não usar esses valores como métricas reais do site atrás da Cloudflare. A ligação Cloudflare da ferramenta falhou; `Web Analytics > Core Web Vitals` ou `Speed > Observatory` exige acesso à zona e fornece LCP/INP/CLS p75 reais. Um teste público PageSpeed Insights pode complementar, mas não substitui o RUM.
+
+
+### Medição pública em produção, 21/10/2026 (PageSpeed Insights)
+Relatório gerado com Lighthouse e CrUX pelo PageSpeed Insights, sem acesso privado à conta Cloudflare:
+https://pagespeed.web.dev/analysis/https-jogomanager-com/w8ltwldt6r?form_factor=mobile
+
+| Métrica | Celular | Desktop |
+|---|---:|---:|
+| Pontuação de laboratório | **61/100** | **98/100** |
+| FCP de laboratório | 6,0 s | 0,6 s |
+| LCP de laboratório | 7,4 s | 0,8 s |
+| CLS de laboratório | 0,051 | 0 |
+| TBT de laboratório | 0 ms | 0 ms |
+| Speed Index | não registrado | 1,3 s |
+| LCP de usuários móveis p75 (CrUX) | 4,9 s | sem dados de usuários suficientes |
+| INP de usuários móveis p75 (CrUX) | 449 ms | sem dados de usuários suficientes |
+| CLS de usuários móveis p75 (CrUX) | 0,02 | sem dados de usuários suficientes |
+| FCP de usuários móveis p75 (CrUX) | 4,7 s | sem dados de usuários suficientes |
+| TTFB de usuários móveis p75 (CrUX) | 2,0 s | sem dados de usuários suficientes |
+
+O site **não passou** em Core Web Vitals para celular (LCP e INP), apesar do CLS bom. Para desktop há excelente laboratório, **mas sem avaliação CrUX real por amostra insuficiente**. Pontuações podem mudar entre testes; não são uma avaliação atribuível isoladamente ao cache da Cloudflare. Para medir efeito da CDN, recolher RUM/Cache HIT Ratio/TTFB por período antes e depois, mantendo região e condições de teste comparáveis. No Lighthouse desktop houve indicação de erros de console e violações de CSP (Best Practices 92/100).
+
+Priorizar no celular: reduzir TTFB/SSR e peso das primeiras respostas, otimizar imagem herói/LCP (pré-carregamento controlado e dimensões explícitas), reduzir recursos críticos bloqueantes e evitar JavaScript 3D no carregamento inicial de páginas institucionais. Acompanhar separadamente o p75 real e Lighthouse sintético.
