@@ -24,8 +24,7 @@ export function PhoneMFASettings() {
     void supabase.auth.mfa.listFactors().then(({ data }) => {
       if (active && data?.phone?.length) {
         const enrolled = data.phone.find((item) => item.status === "verified");
-        if (enrolled)
-          setFactor({ id: enrolled.id, status: enrolled.status });
+        if (enrolled) setFactor({ id: enrolled.id, status: enrolled.status });
       }
     });
     return () => {
