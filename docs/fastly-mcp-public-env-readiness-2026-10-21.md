@@ -26,6 +26,19 @@ Para usar os servidores, abra este repositório em **um cliente MCP compatível*
 - Playwright: https://github.com/microsoft/playwright-mcp
 - Context7: https://github.com/upstash/context7
 
+### Codex: instalação real no computador do desenvolvedor
+
+A configuração `.mcp.json` é um manifesto portável, mas **não instala plugins no Codex automaticamente**. Seguindo a documentação oficial da Fastly, no terminal local autenticado do desenvolvedor:
+
+```bash
+codex plugin marketplace add https://github.com/fastly/fastly-agent-toolkit.git
+codex plugin add fastly-agent-toolkit@fastly-agent-toolkit
+codex plugin marketplace add https://github.com/fastly/mcp
+codex plugin add fastly-mcp@fastly-local
+```
+
+Depois autenticar com `fastly auth login` ou fornecer `FASTLY_API_TOKEN` por gerenciador de segredos do sistema, **jamais nos arquivos `.env` versionados**. Para começar, token só de leitura `global:read`. As alterações de serviço requerem token com permissões de escrita, e a autenticação e habilitação comercial do provedor ainda são pendentes. No Cloudflare o conector autenticado não respondeu nesta verificação; não houve alteração de DNS.
+
 ## Topologia Fastly e bloqueios
 
 O serviço CDN Fastly **já existe**: `bhEs3I9sbvxlCzr9kb0IBQ`, versão 2. Origem configurada: `jogomanager-web.davizeiro10-jogos.workers.dev`. Seu snippet em `infra/fastly/private-cache-bypass.vcl` só deixa GET/HEAD anônimo em `/assets/` optar pelo cache. Cookies, Authorization, APIs e demais rotas usam pass. DDoS Blocking e mitigação de rede constavam ativos no último levantamento.
