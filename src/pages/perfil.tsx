@@ -43,6 +43,11 @@ const PhoneMFASettings = lazy(() =>
     default: module.PhoneMFASettings,
   })),
 );
+const VerifiedPhoneSettings = lazy(() =>
+  import("@/components/security/VerifiedPhoneSettings").then((module) => ({
+    default: module.VerifiedPhoneSettings,
+  })),
+);
 
 const FALLBACK_LOOK = {
   skin: 0,
@@ -123,6 +128,11 @@ export function Perfil() {
       </div>
 
       {signedIn && <PasskeySettings />}
+      {signedIn && import.meta.env["VITE_PHONE_AUTH_ENABLED"] === "true" && (
+        <Suspense fallback={null}>
+          <VerifiedPhoneSettings />
+        </Suspense>
+      )}
       {signedIn && import.meta.env["VITE_PHONE_MFA_ENABLED"] === "true" && (
         <Suspense fallback={null}>
           <PhoneMFASettings />
