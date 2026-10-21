@@ -48,8 +48,7 @@ Deno.serve(async (req: Request) => {
   if (advertised > 131072) return response(413, "Payload too large");
   const raw = await req.text().catch(() => null);
   if (raw === null) return response(400, "Invalid body");
-  if (new TextEncoder().encode(raw).length > 131072)
-    return response(413, "Payload too large");
+  if (new TextEncoder().encode(raw).length > 131072) return response(413, "Payload too large");
   let verified = false;
   try {
     const secret = await rpc<string>("jm_resend_webhook_signing_key", {});
