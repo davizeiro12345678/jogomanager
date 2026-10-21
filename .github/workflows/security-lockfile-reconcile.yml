@@ -2,9 +2,14 @@ name: Refresh security dependency locks
 
 on:
   push:
-    branches: [fix/security-hardening-importer-20261014, fix/security-integrated-main-20261014]
+    branches:
+      - fix/security-hardening-importer-20261014
+      - fix/security-integrated-main-20261014
+      - dependabot/npm_and_yarn/npm_and_yarn-85619b0fa2
+      - perf/mobile-lcp-rls-20261021
     paths:
       - package.json
+      - package-lock.json
       - .github/workflows/security-lockfile-reconcile.yml
 
 permissions:
