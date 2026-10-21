@@ -33,7 +33,9 @@ Avisos de visibilidade GraphQL não demonstram, isoladamente, acesso às linhas 
 
 ## Twilio e autenticação
 
-Nenhum envio de SMS/WhatsApp, serviço Verify, alteração de MFA ou recuperação foi ativado nesta etapa. A revisão automática bloqueou o acesso ao painel redirecionado em `1console.twilio.com`, inclusive após a aprovação do usuário. Não foi contornado o bloqueio.
+O endereço `1console.twilio.com` foi confirmado por documentação oficial da Twilio (https://help.twilio.com/articles/360010793253), permitindo retomar o painel com nova evidência de legitimidade. A conta estava no onboarding; foram selecionados Messaging, Verification and identity e With code, e ativado o Limited trial, sem cartão ou upgrade pago.
+
+O painel confirmou teste de 30 dias, até cinco destinatários verificados no país da conta, 100 unidades SMS e 100 unidades WhatsApp de teste. Em Verify > Services, o painel exige upgrade para criar e gerenciar serviço Verify próprio. Fraud & Geo Permissions redirecionou à página de upgrade e adição de saldo. Nenhum serviço Verify próprio, Fraud Guard configurado, MFA do aplicativo ou recuperação foi ativado; nenhuma mensagem foi enviada. As cotas do teste não representam integração de produção com o JogoManager.
 
 A configuração de produção requer acesso seguro aos painéis e credenciais no armazenamento de segredos dos provedores, nunca no navegador do jogo ou no repositório. Antes de ativar:
 1. Configurar Twilio/Twilio Verify como provedor telefônico no Supabase.
