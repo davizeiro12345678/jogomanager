@@ -11,7 +11,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -37,6 +37,12 @@ import authHero from "@/assets/hero-stadium.jpg?format=webp&w=1024&quality=60&as
 import "@/components/auth-store.css";
 import { getRouteApi } from "@tanstack/react-router";
 const Route = getRouteApi("/auth");
+
+const PhoneAuthPanel = lazy(() =>
+  import("@/components/security/PhoneAuthPanel").then((module) => ({
+    default: module.PhoneAuthPanel,
+  })),
+);
 
 export function AuthPage() {
   const navigate = useNavigate();
@@ -667,6 +673,11 @@ export function AuthPage() {
             >
               Esqueci minha senha
             </Button>
+          )}
+          {mode === "in" && import.meta.env["VITE_PHONE_AUTH_ENABLED"] === "true" && (
+            <Suspense fallback={null}>
+              <PhoneAuthPanel destination={destination} />
+            </Suspense>
           )}
           {mode === "update" && notice ? (
             <Button asChild className="mt-4 w-full">
