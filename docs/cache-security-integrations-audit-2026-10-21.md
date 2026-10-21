@@ -84,3 +84,27 @@ PostHog acessível: projeto 603692, nome Default project. A taxonomia confirma a
 - https://posthog.com/docs/web-analytics/web-vitals
 
 Para completar CDN e segurança: restaurar o conector Cloudflare e um acesso administrativo autenticado ao Fastly; verificar TLS/DNS, franquias e configuração atual antes da ativação. Testar login, saves, checkout, webhooks e cache privado após mudanças. Só então comparar métricas antes/depois com dispositivo, região e janela equivalentes.
+
+
+## Atualização posterior: Fastly acessado e versão 3 ativada
+
+O painel Fastly foi acessado com autenticação do usuário nesta execução. As limitações de acesso Fastly descritas acima referem-se ao levantamento anterior.
+
+- Serviço existente: bhEs3I9sbvxlCzr9kb0IBQ, conta Onze Interactive.
+- Versão 2 clonada para a versão 3; a versão 3 foi ativada com sucesso, confirmado pelo painel.
+- Compressão alterada de Gzip only para Brotli com fallback gzip; configuração imediata para todas as versões.
+- Serve stale content on origin failure alterado de OFF para ON na versão 3.
+- HTTP/3 alterado de OFF para ON na versão 3. O uso depende de TLS disponível no domínio e suporte do cliente.
+- A regra existente de cache privado não foi modificada: somente GET/HEAD anônimos em /assets/ são elegíveis; cookies, Authorization e demais caminhos usam pass.
+- Origem HTTPS preservada: jogomanager-web.davizeiro10-jogos.workers.dev, porta 443.
+- Check cache executado para o domínio de teste em /api/health: 160 resultados retornados; as cinco linhas visíveis inspecionadas responderam HTTP 200 (2051–3336 ms), com TTL sem objeto armazenado. Não foi calculada estatística dos 160 resultados; os tempos não são Core Web Vitals ou uma comparação antes/depois.
+- O domínio jogomanager.com continua com Certificate not yet issued e aviso de domínio não ativado no certificado. Não foi alterado DNS nem declarado Fastly ativo para o tráfego principal.
+- Fastly Compute, na própria conta, apresentou Purchase Compute. Nenhuma contratação foi concluída, nenhum serviço Compute foi criado e nenhuma franquia foi presumida como habilitada para esta conta.
+- WebSockets apresentou Purchase WebSockets; não contratado.
+- Cache Reservation apresentou not available for trial; não ativado.
+- A consulta Cloudflare foi tentada novamente e retornou erro interno. Não foi possível resolver o DNS por esse conector.
+- Nenhum novo plano, add-on comercial, log externo ou produto de segurança pago foi contratado.
+
+Configuração ativa: https://manage.fastly.com/configure/services/bhEs3I9sbvxlCzr9kb0IBQ/versions/3/settings
+
+Benefícios esperados: menos bytes para respostas elegíveis a Brotli; negociação HTTP/3 para clientes compatíveis; uso de conteúdo já armazenado em falhas da origem. Benefício real para visitantes do domínio principal depende da emissão TLS e do roteamento; redução percentual de latência, bytes e Core Web Vitals ainda não medida.
