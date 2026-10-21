@@ -1,3 +1,7 @@
+-- Explicit transaction for Supabase CLI replay.
+-- Recorded SQL: supabase/migration-archive/recorded/20261004002003_sportsdb_integrity_repair.sql
+BEGIN;
+
 -- Repair SportsDB identity, age, media-grain, sport classification, and freshness.
 -- The raw source remains in Cloudflare/R2; every edited value is retained below.
 SET LOCAL lock_timeout = '5s';
@@ -744,3 +748,5 @@ BEGIN
     EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role',fn.name);
   END LOOP;
 END $$;
+
+COMMIT;

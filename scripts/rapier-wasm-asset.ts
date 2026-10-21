@@ -3,8 +3,8 @@ import path from "node:path";
 import type { Plugin } from "vite";
 
 // The pinned compat package embeds the exact binary it also ships as a file.
-// Keep its official bindings/init, but let workers fetch the immutable binary
-// without parsing a 2 MB string and decoding base64 on every cold match start.
+// Keep its official bindings/init, but let browsers and workers fetch the
+// immutable binary without parsing a large base64 string on each cold start.
 export function externalizeRapierWasm(code: string, wasm: Uint8Array, wasmUrl: string): string {
   const embedded = /[\w$]+\.toByteArray\("(AGFzbQ[A-Za-z0-9+/=]+)"\)\.buffer/g;
   const matches = [...code.matchAll(embedded)];
@@ -14,6 +14,17 @@ export function externalizeRapierWasm(code: string, wasm: Uint8Array, wasmUrl: s
     );
   }
   const match = matches[0]!;
+  // The package builds its default namespace by freezing a fresh local object.
+  // Named imports do not use that namespace, but an unannotated call keeps all
+  // its otherwise unused classes live. This standard PURE hint lets the
+  // bundler discard only the unused construction; default imports still get
+  // the complete, frozen official API. No class methods or bindings are cut.
+  const namespace = "Object.freeze({__proto__:null";
+  if (code.split(namespace).length !== 2) {
+    throw new Error(
+      "Rapier namespace changed: verify its construction before updating the adapter.",
+    );
+  }
   // This expression is inside the package's async-init generator. Its existing
   // outer yield still waits for wasm-bindgen initialization and propagates errors.
   return (
@@ -21,7 +32,7 @@ export function externalizeRapierWasm(code: string, wasm: Uint8Array, wasmUrl: s
     "(yield __pfmRapierWasm())" +
     code.slice(match.index! + match[0].length) +
     `\nasync function __pfmRapierWasm(){const response=await fetch(${wasmUrl});if(!response.ok)throw new Error("Rapier WASM failed: "+response.status);return response.arrayBuffer();}\n`
-  );
+  ).replace(namespace, `/* @__PURE__ */ ${namespace}`);
 }
 
 /**
@@ -34,11 +45,12 @@ export function isRapierCompatModule(id: string): boolean {
   return /\/@dimforge\/rapier3d-compat\/(?:dist\/)?rapier\.mjs$/.test(normalized);
 }
 
-/** Worker-build only: server physics and development retain the package API. */
+/** Browser builds only: server physics and development retain their original init. */
 export function rapierWasmAsset(): Plugin {
   return {
     name: "pfm-rapier-wasm-asset",
     apply: "build",
+    applyToEnvironment: (environment) => environment.config.consumer === "client",
     enforce: "pre",
     transform(code, id) {
       if (!isRapierCompatModule(id)) return null;

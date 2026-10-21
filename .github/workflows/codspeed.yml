@@ -19,7 +19,9 @@ concurrency:
 jobs:
   benchmarks:
     name: Run benchmarks
-    runs-on: ubuntu-latest
+    # The required same-runner comparison lives in Quality gates. Keep this
+    # additional instrumented history on a named image as well.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4

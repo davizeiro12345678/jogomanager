@@ -2716,8 +2716,7 @@ html[data-contrast="high"] .career-shell {
   --career-panel: var(--muted);
 }
 @media (forced-colors: active) {
-  .career-shell :where(a, button, input, select, textarea),
-  .studio-button {
+  .career-shell :where(a, button, input, select, textarea) {
     border: 1px solid ButtonText;
   }
   .career-nav-item[aria-current="page"] {
@@ -3175,8 +3174,6 @@ html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
   vertical-align: middle;
 }
 .career-shell
-  :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea),
-.athlete-shell
   :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
   min-height: 44px;
 }
@@ -3220,10 +3217,71 @@ html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
   .game-section,
   .screen-empty,
   .screen-table-wrap *,
-  [role="dialog"] *,
   .career-shell :is(button, a, input, select, textarea) {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Career-specific readability overrides follow the interface rules, preserving
+   their cascade without sending the career stylesheet to public entry pages. */
+.career-nav-item {
+  min-height: 44px;
+}
+.career-nav-item {
+  font-size: 0.925rem;
+}
+.career-nav-heading {
+  font-size: 0.75rem;
+}
+.career-current-page {
+  font-size: 0.875rem;
+}
+.career-season,
+.career-save-note,
+.career-sidebar-footer span:not(.career-manager-avatar) {
+  font-size: 0.8rem;
+}
+.career-bottom-nav span {
+  font-size: 0.75rem;
+  white-space: normal;
+  line-height: 1.3;
+}
+html[data-text-size="xlarge"] .career-content {
+  padding-block-end: 10rem;
+}
+.trainer-heading h1 {
+  font-size: clamp(1.65rem, 3vw, 2.3rem);
+}
+.trainer-quick-actions strong {
+  font-size: 0.9rem;
+}
+.trainer-quick-actions small {
+  font-size: 0.8rem;
+}
+.career-icon-button {
+  min-width: 44px;
+}
+.career-icon-button > span {
+  display: none;
+}
+.career-mobile-search {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--input);
+  border-radius: 0.6rem;
+  background: var(--card);
+  color: var(--foreground);
+  padding: 0.7rem;
+  margin-block: 1rem;
+  font: inherit;
+}
+[dir="rtl"] .career-current-page > svg,
+[dir="rtl"] .career-nav-link > svg:last-child {
+  transform: scaleX(-1);
+}
+[dir="rtl"] .career-sidebar {
+  border-inline-end: 1px solid var(--border);
+  border-left: 0;
 }

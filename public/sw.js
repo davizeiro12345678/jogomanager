@@ -3,7 +3,7 @@
    - Documentos: rede primeiro, com a última versão em cache como reserva.
    - Assets (js/css/imagens/escudos): cache primeiro, atualizando em segundo plano.
    - Chamadas de API e do backend nunca são cacheadas. */
-const VERSION = "pfm3d-v9";
+const VERSION = "pfm3d-v11";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 const SPORTS_IMAGES = `${VERSION}-sports-images`;
@@ -21,7 +21,97 @@ async function trimCache(name, maxEntries) {
 
 function canCache(requestUrl) {
   const url = new URL(requestUrl, self.location.origin);
-  return url.origin === self.location.origin && isAsset(url);
+  return url.origin === self.location.origin && !isPrivateRequest(url) && isAsset(url);
+}
+
+function isPrivateRequest(url) {
+  return (
+    /^\/(?:api(?:\/|$)|~oauth|auth(?:\/|$)|cadastro(?:\/|$)|checkout(?:\/|$)|mcp(?:\/|$)|_serverFn(?:\/|$)|lovable(?:\/|$))/.test(
+      url.pathname,
+    ) ||
+    url.hostname.endsWith("supabase.co") ||
+    url.hostname.includes("stripe")
+  );
+}
+
+function isPublicResponse(response, request) {
+  if (!response || response.status !== 200 || response.redirected) return false;
+  if (request.headers.has("authorization") || response.headers.has("set-cookie")) return false;
+  if (/\b(?:no-store|private)\b/i.test(response.headers.get("cache-control") || "")) return false;
+  const requested = new URL(request.url);
+  const served = new URL(response.url || request.url);
+  return (
+    served.origin === requested.origin &&
+    served.pathname === requested.pathname &&
+    served.search === requested.search
+  );
+}
+
+function safePublicAsset(response, request) {
+  if (!isPublicResponse(response, request)) return false;
+  const url = new URL(request.url);
+  if (
+    url.origin !== self.location.origin &&
+    (!isPublicSportsImage(url) || response.type !== "cors")
+  )
+    return false;
+  const mime = (response.headers.get("content-type") || "").toLowerCase().split(";")[0].trim();
+  if (!mime || mime === "text/html" || mime === "application/xhtml+xml") return false;
+  if (/\.(?:js|mjs)$/i.test(url.pathname))
+    return /^(?:text|application)\/(?:javascript|ecmascript)$/.test(mime);
+  if (/\.css$/i.test(url.pathname)) return mime === "text/css";
+  if (/\.(?:png|jpe?g|webp|svg|gif|avif|ico)$/i.test(url.pathname))
+    return mime.startsWith("image/");
+  if (/\.(?:json|webmanifest)$/i.test(url.pathname))
+    return mime === "application/json" || mime === "application/manifest+json";
+  if (/\.(?:ttf|woff2?)$/i.test(url.pathname))
+    return (
+      mime.startsWith("font/") ||
+      /^(?:application\/font-woff|application\/x-font-ttf|application\/octet-stream)$/.test(mime)
+    );
+  if (/\.ktx2$/i.test(url.pathname))
+    return mime === "image/ktx2" || mime === "application/octet-stream";
+  if (/\.wasm$/i.test(url.pathname))
+    return mime === "application/wasm" || mime === "application/octet-stream";
+  return true;
+}
+
+function safeOfflineHomepage(response, request) {
+  const url = new URL(request.url);
+  return (
+    isPublicResponse(response, request) &&
+    url.origin === self.location.origin &&
+    url.pathname === OFFLINE_URL &&
+    !url.search &&
+    (response.headers.get("content-type") || "").toLowerCase().split(";")[0].trim() === "text/html"
+  );
+}
+
+async function putBoundedAsset(cache, request, response) {
+  if (!safePublicAsset(response, request)) return;
+  const size = Number(response.headers.get("content-length") || 0);
+  if (size > MAX_ASSET_BYTES || size < 0 || !Number.isFinite(size)) return;
+  const copy = response.clone();
+  // Content-Length may describe compressed bytes. Always bound the decoded
+  // stream so a small transfer cannot retain a much larger resource in cache.
+  const reader = copy.body?.getReader();
+  if (!reader) return;
+  let total = 0;
+  const chunks = [];
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_ASSET_BYTES) {
+      void reader.cancel().catch(() => undefined);
+      return;
+    }
+    chunks.push(value);
+  }
+  const headers = new Headers(copy.headers);
+  headers.delete("content-encoding");
+  headers.set("content-length", String(total));
+  await cache.put(request, new Response(new Blob(chunks), { headers }));
 }
 
 function isPublicSportsImage(url) {
@@ -37,13 +127,12 @@ async function cacheProgressively(urls) {
   const cache = await caches.open(ASSETS);
   for (const value of urls.slice(0, 24)) {
     if (typeof value !== "string" || !canCache(value)) continue;
-    const request = new Request(value, { credentials: "same-origin" });
+    const request = new Request(new URL(value, self.location.origin), {
+      credentials: "same-origin",
+    });
     try {
       const response = await fetch(request);
-      const size = Number(response.headers.get("content-length") || 0);
-      if (response.ok && (size === 0 || size <= MAX_ASSET_BYTES)) {
-        await cache.put(request, response);
-      }
+      await putBoundedAsset(cache, request, response);
     } catch {
       // O recurso continua disponível pela rede quando a conexão voltar.
     }
@@ -51,19 +140,28 @@ async function cacheProgressively(urls) {
   await trimCache(ASSETS, MAX_ASSETS);
 }
 
+async function cachePublicHomepage() {
+  // The page installing a new worker is not controlled by it yet. Seed the
+  // offline shell now, without an account cookie, so first-session offline use
+  // still works after obsolete worker caches are removed during activation.
+  const request = new Request(new URL(OFFLINE_URL, self.location.origin), { credentials: "omit" });
+  const response = await fetch(request);
+  if (!safeOfflineHomepage(response, request)) return;
+  const cache = await caches.open(SHELL);
+  await cache.put(OFFLINE_URL, response);
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(SHELL)
-      .then((c) =>
-        c.addAll([
-          OFFLINE_URL,
-          "/manifest.webmanifest",
-          "/favicon.png",
-          "/icon-192.png",
-          "/fonts/BarlowCondensed-Bold.ttf",
-        ]),
-      )
+    Promise.all([
+      cacheProgressively([
+        `${self.location.origin}/manifest.webmanifest`,
+        `${self.location.origin}/favicon.png`,
+        `${self.location.origin}/icon-192.png`,
+        `${self.location.origin}/fonts/BarlowCondensed-Bold.ttf`,
+      ]),
+      cachePublicHomepage().catch(() => undefined),
+    ])
       .catch(() => undefined)
       .then(() => self.skipWaiting()),
   );
@@ -74,7 +172,11 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((k) => !k.startsWith(VERSION)).map((k) => caches.delete(k))),
+        Promise.all(
+          keys
+            .filter((k) => k.startsWith("pfm3d-") && !k.startsWith(`${VERSION}-`))
+            .map((k) => caches.delete(k)),
+        ),
       )
       .then(() => self.clients.claim()),
   );
@@ -87,7 +189,9 @@ self.addEventListener("message", (event) => {
 
 function isAsset(url) {
   return (
-    /\.(?:js|mjs|css|woff2?|png|jpe?g|webp|svg|gif|avif|ico|json|ktx2)$/i.test(url.pathname) ||
+    /\.(?:js|mjs|css|ttf|woff2?|png|jpe?g|webp|svg|gif|avif|ico|json|webmanifest|ktx2|wasm)$/i.test(
+      url.pathname,
+    ) ||
     url.pathname.startsWith("/_build/") ||
     url.pathname.startsWith("/assets/") ||
     url.pathname.startsWith("/__l5e/assets-v1/")
@@ -102,70 +206,62 @@ self.addEventListener("fetch", (event) => {
   const sameOrigin = url.origin === self.location.origin;
 
   // Nunca interceptar backend, pagamentos, autenticação ou APIs.
-  if (
-    url.pathname.startsWith("/api/") ||
-    url.pathname.startsWith("/~oauth") ||
-    url.pathname.startsWith("/auth") ||
-    url.pathname.startsWith("/_serverFn") ||
-    url.hostname.endsWith("supabase.co") ||
-    url.hostname.includes("stripe")
-  ) {
+  if (isPrivateRequest(url) || req.headers.has("authorization")) {
     return;
   }
 
   if (req.mode === "navigate") {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
+    const network = fetch(req);
+    event.waitUntil(
+      network
+        .then(async (res) => {
+          if (!safeOfflineHomepage(res, req)) return;
           const copy = res.clone();
-          caches.open(SHELL).then((c) => c.put(OFFLINE_URL, copy).catch(() => undefined));
-          return res;
+          const cache = await caches.open(SHELL);
+          await cache.put(OFFLINE_URL, copy);
         })
-        .catch(async () => (await caches.match(OFFLINE_URL)) ?? Response.error()),
+        .catch(() => undefined),
+    );
+    event.respondWith(
+      network.catch(
+        async () => (await (await caches.open(SHELL)).match(OFFLINE_URL)) ?? Response.error(),
+      ),
     );
     return;
   }
 
   if ((sameOrigin && isAsset(url)) || isPublicSportsImage(url)) {
     const sportsImage = isPublicSportsImage(url);
+    const cached = caches.open(sportsImage ? SPORTS_IMAGES : ASSETS).then(async (cache) => {
+      const hit = await cache.match(req);
+      // Fotos oficiais e arquivos versionados não mudam de conteúdo: evita
+      // uma requisição por imagem a cada visita. Demais assets revalidam.
+      if (
+        hit &&
+        (sportsImage ||
+          /\bimmutable\b/i.test(hit.headers.get("cache-control") || "") ||
+          url.pathname.startsWith("/__l5e/assets-v1/") ||
+          url.pathname.startsWith("/_build/"))
+      )
+        return { response: Promise.resolve(hit), maintenance: Promise.resolve() };
+      const network = fetch(req);
+      const maintenance = network
+        .then(async (res) => {
+          await putBoundedAsset(cache, req, res);
+          await trimCache(
+            sportsImage ? SPORTS_IMAGES : ASSETS,
+            sportsImage ? MAX_SPORTS_IMAGES : MAX_ASSETS,
+          );
+        })
+        .catch(() => undefined);
+      return {
+        response: hit ? Promise.resolve(hit) : network.catch(() => Response.error()),
+        maintenance,
+      };
+    });
+    event.waitUntil(cached.then((work) => work.maintenance).catch(() => undefined));
     event.respondWith(
-      caches.open(sportsImage ? SPORTS_IMAGES : ASSETS).then(async (cache) => {
-        const hit = await cache.match(req);
-        // Fotos oficiais e arquivos versionados não mudam de conteúdo: evita
-        // uma requisição por imagem a cada visita. Demais assets revalidam.
-        if (
-          hit &&
-          (sportsImage ||
-            url.pathname.startsWith("/__l5e/assets-v1/") ||
-            url.pathname.startsWith("/_build/"))
-        )
-          return hit;
-        const network = fetch(req)
-          .then((res) => {
-            const size = Number(res.headers.get("content-length") || 0);
-            if (
-              res &&
-              res.status === 200 &&
-              (sameOrigin || res.type === "cors") &&
-              size > 0 &&
-              size <= MAX_ASSET_BYTES
-            ) {
-              const copy = res.clone();
-              cache
-                .put(req, copy)
-                .then(() =>
-                  trimCache(
-                    sportsImage ? SPORTS_IMAGES : ASSETS,
-                    sportsImage ? MAX_SPORTS_IMAGES : MAX_ASSETS,
-                  ),
-                )
-                .catch(() => undefined);
-            }
-            return res;
-          })
-          .catch(() => hit);
-        return hit ?? network;
-      }),
+      cached.then((work) => work.response).catch(() => fetch(req).catch(() => Response.error())),
     );
   }
 });

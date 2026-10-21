@@ -18,7 +18,7 @@ function migrationFunctionBody(name: string) {
 
 describe("activity ranking trust boundary", () => {
   it("does not submit client career totals to the activity heartbeat RPC", () => {
-    const source = readFileSync(new URL("./ActivityRanking.tsx", import.meta.url), "utf8");
+    const source = readFileSync(new URL("./useActiveTimeTracking.ts", import.meta.url), "utf8");
     const rpcPayload = source.match(/supabase\.rpc\("record_active_time",\s*\{([\s\S]*?)\}\s*\)/);
 
     expect(rpcPayload).not.toBeNull();

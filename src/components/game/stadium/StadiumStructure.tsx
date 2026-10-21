@@ -1,30 +1,34 @@
 /** Stadium architecture, grandstands, crowds and signage.
  * Geometry and resource lifecycles are isolated from match broadcast logic.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import * as THREE from "three";
-import { useQualityPressure, useRuntimeSceneBudget } from "../RuntimeBudget";
-import { StaticBatch } from "./StaticBatch";
+import {
+  useQualityPressure,
+  useRuntimeSceneBudget,
+} from "@/components/game/runtime-budget-context";
+import type { SupporterMatchday } from "@/game/career-world-types";
+import { censusRef } from "@/game/scene-census";
+import type { SimView } from "@/game/sim-contracts";
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 import { stadiumBackgroundMaterial } from "@/game/stadium-background-material";
 import {
-  stadiumRoofStructure,
-  stadiumAisleCenters,
-  stadiumSeatFront,
   STADIUM_AISLE_WIDTH,
+  stadiumAisleCenters,
+  stadiumRoofStructure,
+  stadiumSeatFront,
 } from "@/game/stadium-structure";
-import { stadiumTierInstances, type StadiumTierInstance } from "@/game/stadium-tier-instances";
 import { bakeStadiumTierGeometry } from "@/game/stadium-tier-baked";
+import { stadiumTierInstances, type StadiumTierInstance } from "@/game/stadium-tier-instances";
+import { ktx2, needsKtx2ProceduralFallback, useKtx2Revision } from "@/game/textures/ktx2";
+import { useVisual } from "@/game/visual-settings";
+import { useFrame } from "@react-three/fiber";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import * as THREE from "three";
+import type { Quality } from "../Stadium3D";
+import { ArenaArchitecture } from "./ArenaArchitecture";
+import { CrowdLod } from "./CrowdLod";
+import { StaticBatch } from "./StaticBatch";
 import { concreteAlbedo, concreteRoughness, seatsTexture } from "./textures/concrete";
 import { bannerTexture, mosaicTexture } from "./textures/tifo";
-import { useVisual } from "@/game/visual-settings";
-import { ktx2, needsKtx2ProceduralFallback, useKtx2Revision } from "@/game/textures/ktx2";
-import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
-import type { SimView } from "@/game/sim-contracts";
-import type { Quality } from "../Stadium3D";
-import type { SupporterMatchday } from "@/game/career-world-types";
-import { CrowdLod } from "./CrowdLod";
-import { ArenaArchitecture } from "./ArenaArchitecture";
 
 function useConcrete(color = "#6d747b", repeat = 6, high = false) {
   const textureRevision = useKtx2Revision();
@@ -160,8 +164,9 @@ function Tiers({
     (typeof location !== "undefined" &&
       location.pathname.endsWith("/graphics-benchmark.html") &&
       new URLSearchParams(location.search).get("backgroundLighting") === "legacy");
-  // Constrained profiles share the immutable placements without mounting and
-  // baking hundreds of authoring meshes. High/cinema keep their existing path.
+  // Match profiles share immutable placements in three draws. A texture
+  // revision can otherwise expose 748 authoring meshes while a high-quality
+  // legacy batch settles again. Cinema keeps its separate existing path.
   const requestedBatch =
     typeof location !== "undefined" && location.pathname.includes("graphics-benchmark")
       ? new URLSearchParams(location.search).get("tierBatch")
@@ -169,9 +174,9 @@ function Tiers({
   const batching =
     requestedBatch === "instanced" || requestedBatch === "merged" || requestedBatch === "legacy"
       ? requestedBatch
-      : sceneTier === "baixa" || sceneTier === "media"
-        ? "instanced"
-        : "legacy";
+      : sceneTier === "cinema"
+        ? "legacy"
+        : "instanced";
   const lenX = FIELD_X * 2 + 30;
   const lenZ = FIELD_Z * 2 + 34;
   const physicalConcrete = useConcrete("#5f666d", 10, high);
@@ -267,7 +272,7 @@ function Tiers({
       {buckets}
     </StaticBatch>
   ) : (
-    <group>{buckets}</group>
+    <group ref={censusRef("static")}>{buckets}</group>
   );
 }
 

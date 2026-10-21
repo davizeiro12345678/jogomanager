@@ -1,12 +1,11 @@
 import { useMemo, useRef } from "react";
-import * as THREE from "three";
-import { useDisposable } from "../../useDisposable";
-import { useCinematicFrame, useCinematicRuntime } from "../cinematic-runtime";
 
-export function hash(seed: number) {
-  const s = Math.sin(seed * 127.1) * 43758.5453;
-  return s - Math.floor(s);
-}
+import * as THREE from "three";
+
+import { useDisposable } from "../../useDisposable";
+
+import { hash } from "@/components/game/cinematic/sets/hash";
+import { useCinematicFrame, useCinematicRuntime } from "../cinematic-runtime";
 
 export function CelebrationRain() {
   const COUNT = 130;

@@ -1,7 +1,7 @@
+import { hash } from "@/components/game/cinematic/sets/hash";
 import * as THREE from "three";
 import { CinematicCrowd } from "../CinematicCrowd";
 import { useCinematicArtwork } from "../cinematic-artwork";
-import { hash } from "./shared";
 import type { CinematicSetProps } from "./types";
 
 export function Stands({ primary, secondary }: CinematicSetProps) {

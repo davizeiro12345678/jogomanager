@@ -1,0 +1,22 @@
+/** Shared public paths stay outside UI modules so metadata keeps route components lazy. */
+export const ANALISE_DE_PARTIDA_DE_FUTEBOL_PATH = "/analise-de-partida-de-futebol";
+export const COMPARATIVO_JOGOS_MANAGER_PATH = "/comparativo-jogos-manager";
+export const CONTATO_PATH = "/contato";
+export const CRIADOR_PATH = "/criador";
+export const DICAS_DE_GESTAO_PATH = "/dicas-de-gestao";
+export const GLOSSARIO_DO_FUTEBOL_PATH = "/glossario-do-futebol";
+export const GUIA_DE_SCOUTING_PATH = "/guia-de-scouting";
+export const GUIAS_PATH = "/guias";
+export const JOGAR_OFFLINE_PATH = "/jogar-offline";
+export const JOGO_DE_MANAGER_DE_FUTEBOL_PATH = "/jogo-de-manager-de-futebol";
+export const MELHORES_FORMACOES_PATH = "/melhores-formacoes";
+export const MERCADO_DE_TRANSFERENCIAS_PATH = "/mercado-de-transferencias";
+export const MODO_CARREIRA_DE_JOGADOR_PATH = "/modo-carreira-de-jogador";
+export const PERGUNTAS_FREQUENTES_PATH = "/perguntas-frequentes";
+export const PLANEJAMENTO_DE_ELENCO_PATH = "/planejamento-de-elenco";
+export const PRIVACIDADE_PATH = "/privacidade";
+export const PRODUTOS_PATH = "/produtos";
+export const REGRAS_PATH = "/regras";
+export const SOBRE_PATH = "/sobre";
+export const TABELAS_INDEX_PATH = "/tabelas";
+export const TERMOS_PATH = "/termos";

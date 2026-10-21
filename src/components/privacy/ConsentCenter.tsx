@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
-import { Download, Lock, ShieldCheck, Trash2 } from "lucide-react";
+
+import { Download, ShieldCheck, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+
 import { FirebasePushControl } from "./FirebasePushControl";
+
 import { Switch } from "@/components/ui/switch";
+
+import { TRUST_BADGES } from "@/components/privacy/trust-badges";
 import {
   clearLocalData,
   exportLocalData,
@@ -11,16 +16,6 @@ import {
   saveConsent,
   type ConsentState,
 } from "@/lib/consent";
-
-export const TRUST_BADGES = [
-  { icon: Lock, label: "Conexão protegida por HTTPS/TLS" },
-  { icon: ShieldCheck, label: "Analytics opcional" },
-  { icon: ShieldCheck, label: "Telemetria opcional" },
-  { icon: ShieldCheck, label: "Exportação JSON" },
-  { icon: ShieldCheck, label: "Exclusão de dados" },
-  { icon: ShieldCheck, label: "Consentimento revogável" },
-  { icon: Lock, label: "Checkout seguro · Powered by Stripe" },
-];
 
 export function TrustBadges() {
   return (

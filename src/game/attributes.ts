@@ -16,6 +16,7 @@ import {
 } from "./player-development";
 import type { CareerState } from "./types";
 import { normalizedPlayerRatings, ratingValue } from "./player-rating-inputs";
+import { projectedAttribute } from "./player-match-attributes";
 
 export interface DetailedAttributes {
   // técnico
@@ -385,10 +386,6 @@ export function trainingGain(
   return { ...deltas, [playerId]: delta };
 }
 
-function clamp(v: number) {
-  return Math.max(20, Math.min(99, Math.round(v)));
-}
-
 function pickTraits(p: Player, a: DetailedAttributes, rnd: () => number): Trait[] {
   const out: Trait[] = [];
   const push = (t: Trait) => {
@@ -542,17 +539,7 @@ export function withDevelopmentBase(p: Player, rulesVersion: 1 | 2): Player {
 export function profileFor(p: Player, source?: AttributeSource): PlayerProfile {
   const initial = p.developmentBase?.profile ?? baseProfileFor(p);
   const attrs = { ...initial.attrs };
-  const delta = source ? source.attrDeltas?.[p.id] : p.developmentDelta;
-  for (const key of ALL_KEYS) {
-    const move = delta?.[key];
-    if (typeof move === "number" && Number.isFinite(move))
-      attrs[key] =
-        p.developmentBase?.rulesVersion === 2
-          ? ratingValue(attrs[key] + move)
-          : clamp(attrs[key] + move);
-    else if (!p.developmentBase && Number.isFinite(p.detailedAttributes?.[key]))
-      attrs[key] = ratingValue(p.detailedAttributes![key]);
-  }
+  for (const key of ALL_KEYS) attrs[key] = projectedAttribute(p, key, attrs[key], source);
   return {
     ...initial,
     attrs,

@@ -1,8 +1,8 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Accessibility, Type } from "lucide-react";
+import { useAccessibility } from "@/hooks/useAccessibility";
 import { useT } from "@/i18n/provider";
-import { useAccessibility } from "./AccessibilityProvider";
 import { reportSilent } from "@/lib/silent-errors";
+import { Accessibility, Type } from "lucide-react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 type DialogModule = typeof import("./AccessibilityDialog");
 let dialogPromise: Promise<DialogModule> | undefined;
 const loadAccessibilityDialog = () => {

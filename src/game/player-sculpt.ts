@@ -85,7 +85,13 @@ function fittedHairlineY(angle: number, face: ReturnType<typeof faceMorphology>,
     // exposes a forehead plane instead of forming a heavy close-up fringe.
     0.055 * front ** 3 +
     (0.925 + face.hairline) * front ** 1.72 +
-    0.078 * temples ** 5.5 * front -
+    0.078 * temples ** 5.5 * front +
+    // Hair turns above the ear and recedes at the temple. The previous
+    // frontal-to-nape interpolation made one dark diagonal slab cover the
+    // entire temporal plane, even for a short haircut. Preserve the seeded
+    // centre hairline while revealing this anatomical transition.
+    0.3 * temples ** 4 +
+    0.09 * temples ** 2 * front ** 0.7 -
     0.022 * Math.cos(angle * 3 + face.parting) +
     edgeNoise * front ** 3
   );
@@ -140,23 +146,24 @@ export function headPoint(P: HeadShape, y: number, angle: number, seed = 0) {
   const columella = 0.018 * gauss(noseX, y, 0, -0.33, f.noseWidth * 0.36, 0.07);
   const nose = noseBridge + noseTip + alar + nasalRoot + columella;
   const sockets =
-    -0.078 *
-    (gauss(x, y, f.eyeSpacing, 0.14, 0.215, 0.155) +
-      gauss(x, y, -f.eyeSpacing, 0.14, 0.215, 0.155));
+    -0.064 *
+    (gauss(x, y, f.eyeSpacing, 0.14, 0.225, 0.18) + gauss(x, y, -f.eyeSpacing, 0.14, 0.225, 0.18));
   const brows =
     0.05 *
     (gauss(x, y, f.eyeSpacing, 0.31, 0.24, 0.09) + gauss(x, y, -f.eyeSpacing, 0.31, 0.24, 0.09));
   const cheeks =
-    0.052 *
-    (gauss(x, y, 0.5, -0.11, 0.3, 0.2) * (1 + f.cheekAsymmetry) +
-      gauss(x, y, -0.5, -0.11, 0.3, 0.2) * (1 - f.cheekAsymmetry));
+    0.038 *
+    (gauss(x, y, 0.5, -0.14, 0.31, 0.25) * (1 + f.cheekAsymmetry) +
+      gauss(x, y, -0.5, -0.14, 0.31, 0.25) * (1 - f.cheekAsymmetry));
   const muzzle = 0.021 * gauss(x, y, 0, -0.49, 0.3, 0.13);
   const philtrum = -0.024 * gauss(x, y, 0, -0.365, 0.042, 0.065);
   const chin = 0.048 * f.chinProjection * gauss(x, y, 0, -0.85, 0.28 * f.chinWidth, 0.14);
-  const nasolabial = -0.022 * gauss(Math.abs(x), y, 0.305, -0.43, 0.058, 0.19);
+  const nasolabial = -0.014 * gauss(Math.abs(x), y, 0.305, -0.43, 0.072, 0.2);
   const lipFossa = -0.016 * gauss(x, y, 0, -0.66, 0.3, 0.06);
   const temples = -0.025 * gauss(Math.abs(x), y, 0.75, 0.28, 0.13, 0.25);
-  const lowerOrbit = -0.019 * gauss(Math.abs(x), y, f.eyeSpacing, -0.005, 0.2, 0.042);
+  // A broad transition from the orbital rim into the cheek avoids the
+  // continuous bright ridge created by a narrow, deep under-eye groove.
+  const lowerOrbit = -0.01 * gauss(Math.abs(x), y, f.eyeSpacing, -0.005, 0.21, 0.075);
   const jawAngle = 0.026 * gauss(Math.abs(x), y, 0.66, -0.7, 0.13, 0.15);
   const masseter = 0.018 * gauss(Math.abs(x), y, 0.64, -0.48, 0.16, 0.18);
   return new THREE.Vector3(
@@ -769,7 +776,13 @@ export function eyelidSurface(P: Proportions, side: number, seed: number, upper:
       // The attached lid starts in front of the recessed sclera, then rolls
       // back into the orbital tissue. It reads as skin volume instead of a
       // second painted outline around the eye.
-      faceSurfaceZ(P, x, y, seed) + P.headR * (0.028 + (1 - v) ** 2 * arch * 0.02),
+      faceSurfaceZ(P, x, y, seed) +
+        P.headR *
+          THREE.MathUtils.lerp(
+            0.011 + arch * (0.017 + (1 - v) ** 2 * 0.02),
+            0.0008,
+            THREE.MathUtils.smoothstep(v, 0.65, 1),
+          ),
     );
   });
   if (!upper) {
@@ -792,6 +805,9 @@ export function eyelidSurface(P: Proportions, side: number, seed: number, upper:
     color.set([1 - rim * 0.45 - crease, 1 - rim - crease, 1 - rim * 1.12 - crease], i * 3);
   }
   geometry.setAttribute("color", new THREE.BufferAttribute(color, 3));
+  // The attached eyelid is skin: sample the same pore scale and coordinates
+  // as the skull instead of stretching a whole skin atlas across each lid.
+  mapHeadSurfaceUv(geometry, P, seed);
   return geometry;
 }
 
@@ -810,7 +826,7 @@ export function eyelidPivot(P: Proportions, side: number, seed: number, upper: b
     (0.14 +
       side * f.eyeAsymmetry +
       (upper ? 1 : -1) * (eye.opening * (upper ? 0.46 : 0.5) + (upper ? 0.044 : 0.028)));
-  return new THREE.Vector3(x, y, faceSurfaceZ(P, x, y, seed) + P.headR * 0.028);
+  return new THREE.Vector3(x, y, faceSurfaceZ(P, x, y, seed) + P.headR * 0.0008);
 }
 
 function eyebrowSurface(P: Proportions, side: number, seed: number) {
@@ -903,7 +919,7 @@ export function buildSculptedFace(
     // The pupil also follows the local socket curvature. A flat disk whose
     // centre clears the dome can still disappear along one edge on a face
     // with a deeper socket or a broader nasal bridge.
-    const pupilGeometry = new THREE.CircleGeometry(R * 0.0145, hi ? 18 : 12);
+    const pupilGeometry = new THREE.CircleGeometry(R * 0.022, hi ? 18 : 12);
     const pupilPosition = pupilGeometry.getAttribute("position");
     for (let i = 0; i < pupilPosition.count; i++) {
       const px = pupilPosition.getX(i),

@@ -89,6 +89,7 @@ export function MatchPlayers({
     [],
   );
   const selection = useMemo(() => new HeroSelectionBuffer(), []);
+  const denseCandidates = useMemo(() => new Set<string>(), []);
   const countNonHeroDraws = useMemo(createNonHeroDrawCounter, []);
   const homeGkKit = useMemo(() => gkKitFor(sim.home.clubId), [sim.home.clubId]);
   const awayGkKit = useMemo(() => gkKitFor(sim.away.clubId), [sim.away.clubId]);
@@ -134,7 +135,7 @@ export function MatchPlayers({
     if (timer.current < 0.12) return;
     timer.current = 0;
     selection.reset();
-    const denseCandidates = new Set<string>();
+    denseCandidates.clear();
     const wideMode = mode === "tactical" || mode === "skycam" || mode === "fan";
     const maxDetailed =
       quality === "baixa" || wideMode
@@ -212,7 +213,7 @@ export function MatchPlayers({
           denseChanged = true;
           break;
         }
-    if (denseChanged) setDense(denseCandidates);
+    if (denseChanged) setDense(new Set(denseCandidates));
   });
   return (
     <>

@@ -46,10 +46,7 @@ describe("retired public pages", () => {
 
   it("keeps canonical discovery resources free of retired URLs", () => {
     const sitemap = readFileSync(new URL("../routes/sitemap[.]xml.ts", import.meta.url), "utf8");
-    const navigation = readFileSync(
-      new URL("../components/PublicLinks.tsx", import.meta.url),
-      "utf8",
-    );
+    const navigation = readFileSync(new URL("./public-pages.ts", import.meta.url), "utf8");
     const llms = readFileSync(new URL("../../public/llms.txt", import.meta.url), "utf8");
     const indexedPaths = [...sitemap.matchAll(/path: "([^"]+)"/g)].map((match) => match[1]);
     expect(new Set(indexedPaths).size).toBe(indexedPaths.length);
@@ -66,11 +63,7 @@ describe("retired public pages", () => {
 
   it("keeps the official contacts consistent", () => {
     const contacts = ["davizeiro10.jogos@gmail.com", "davithomazini779@gmail.com"];
-    for (const file of [
-      "../routes/contato.tsx",
-      "../routes/criador.tsx",
-      "../../public/llms.txt",
-    ]) {
+    for (const file of ["../pages/contato.tsx", "../pages/criador.tsx", "../../public/llms.txt"]) {
       const source = readFileSync(new URL(file, import.meta.url), "utf8");
       for (const email of contacts) expect(source).toContain(email);
     }

@@ -100,7 +100,7 @@ describe("untrusted telemetry ingestion security", () => {
   it("keeps the database restricted to untrusted self-owned hourly samples", () => {
     const migration = readFileSync(
       new URL(
-        "../../supabase/migrations/20261014210200_untrusted_telemetry_least_privilege.sql",
+        "../../supabase/migrations/20261020101601_restore_missing_security_contracts.sql",
         import.meta.url,
       ),
       "utf8",

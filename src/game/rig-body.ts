@@ -46,6 +46,7 @@ import {
   footballBootUpperY,
   mergeRigParts,
   rigPart,
+  refreshSurfaceNormals,
   type RigMesh,
   type RigPart,
 } from "./rig-geometry";
@@ -77,9 +78,10 @@ export interface RigBodyContext {
   handMat: THREE.Material;
 }
 
-/** Continuous atlas wrap: front 0.25, back 0.75, one seam on the +x side. */
+/** Continuous atlas wrap: front 0.25, back 0.75, one seam on the -x side.
+ * U increases toward screen-right when either panel faces the camera. */
 export function shirtPanelU(x: number, z: number): number {
-  const u = 0.25 - Math.atan2(x, z) / (Math.PI * 2);
+  const u = 0.25 + Math.atan2(x, z) / (Math.PI * 2);
   return u - Math.floor(u);
 }
 
@@ -141,6 +143,73 @@ function ellipticalGarmentRing(
   ring.rotateX(Math.PI / 2);
   ring.scale(1, 1, radiusZ / safeRadius);
   return ring;
+}
+
+/** A sewn collar follows the jersey's actual upper rows, including its
+ * elliptical shape and baked folds. The last strip turns over the open rim;
+ * it never caps the neck or adds a material/draw to the existing trim slot. */
+function fittedCollarBand(
+  shirt: THREE.BufferGeometry,
+  radial: number,
+  height: number,
+  spineOffset: number,
+  polo: boolean,
+) {
+  const source = shirt.getAttribute("position");
+  const seams = shirt.userData["surfaceSeams"] as readonly (readonly [number, number])[];
+  const rows = seams.map(([first]) => first);
+  const top = source.getY(rows[rows.length - 1]!);
+  const position: number[] = [];
+  const uv: number[] = [];
+  const indices: number[] = [];
+  const levels = [0, 0.55, 1, 1];
+  for (let ring = 0; ring < levels.length; ring++) {
+    for (let column = 0; column <= radial; column++) {
+      const angle = (column / radial) * Math.PI * 2;
+      // The two polo points fold down the shirt surface. A tilted box at
+      // this location crossed the open neck and exposed separate dark edges.
+      const flap = polo
+        ? Math.exp(-(((Math.abs(Math.sin(angle)) - 0.5) / 0.2) ** 2)) * Math.max(0, Math.cos(angle))
+        : 0;
+      const y = top - height * (1 + flap) * (1 - levels[ring]!);
+      let row = 0;
+      while (row < rows.length - 2 && source.getY(rows[row + 1]!) < y) row++;
+      const low = rows[row]!;
+      const high = rows[row + 1]!;
+      const t = THREE.MathUtils.clamp(
+        (y - source.getY(low)) / Math.max(1e-6, source.getY(high) - source.getY(low)),
+        0,
+        1,
+      );
+      const x = THREE.MathUtils.lerp(source.getX(low + column), source.getX(high + column), t);
+      const z = THREE.MathUtils.lerp(source.getZ(low + column), source.getZ(high + column), t);
+      const radius = Math.max(1e-6, Math.hypot(x, z));
+      const offset = ring === 3 ? -0.0004 : 0.00065;
+      position.push(
+        x + (x / radius) * offset,
+        y - spineOffset + (ring >= 2 ? 0.0005 : 0),
+        z + (z / radius) * offset,
+      );
+      uv.push(column / radial, ring / (levels.length - 1));
+    }
+  }
+  for (let row = 0; row < levels.length - 1; row++) {
+    for (let column = 0; column < radial; column++) {
+      const a = row * (radial + 1) + column;
+      const b = a + radial + 1;
+      indices.push(a, a + 1, b, a + 1, b + 1, b);
+    }
+  }
+  const band = new THREE.BufferGeometry();
+  band.setAttribute("position", new THREE.Float32BufferAttribute(position, 3));
+  band.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  band.setIndex(indices);
+  band.userData["surfaceSeams"] = levels.map((_, row) => [
+    row * (radial + 1),
+    row * (radial + 1) + radial,
+  ]);
+  refreshSurfaceNormals(band);
+  return band;
 }
 
 /**
@@ -325,13 +394,19 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
                   },
                   {
                     y: P.spineLen + P.chestLen * 0.87,
-                    width: P.shoulderW * 0.4,
-                    depth: P.chestD * 0.715,
+                    // Carry the clavicle towards the sleeve before turning
+                    // into the neck. The former early taper left a visible
+                    // hollow beside a separate rounded deltoid cap.
+                    width: P.shoulderW * 0.475,
+                    depth: P.chestD * 0.76,
                   },
                   {
                     y: P.spineLen + P.chestLen * 0.96,
-                    width: P.shoulderW * 0.265,
-                    depth: P.chestD * 0.54,
+                    // Keep the contour below the opening outside the cervical
+                    // base too; a depth based only on the chest made a groove
+                    // through which the neck could pass in close portraits.
+                    width: Math.max(P.shoulderW * 0.265, P.neckR * 1.4),
+                    depth: Math.max(P.chestD * 0.54, P.neckR * 1.23),
                   },
                   { y: P.spineLen + P.chestLen, width: P.neckR * 1.39, depth: P.neckR * 1.21 },
                 ],
@@ -395,17 +470,14 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
   const chest: RigPart[] = [
     // gola
     rigPart(
-      ellipticalGarmentRing(
-        P.neckR * (look.collar === "polo" ? 1.46 : 1.42),
-        P.neckR * 1.23,
-        P.neckR * (look.collar === "polo" ? 0.08 : 0.048),
-        hi ? Math.max(24, segs.radial + 12) : 14,
-        6,
+      fittedCollarBand(
+        spine[0]!.geometry,
+        Math.max(12, segs.radial + (hi ? 8 : 4)),
+        P.neckR * (look.collar === "polo" ? 0.25 : 0.18),
+        P.spineLen,
+        look.collar === "polo",
       ),
       trim,
-      // The closed top of the shirt must not cut through the torus. Its
-      // former negative inset exposed alternating black facets in close-up.
-      { position: [0, P.chestLen + P.neckR * (look.collar === "polo" ? 0.105 : 0.075), 0] },
     ),
   ];
   if (look.collar === "v") {
@@ -413,14 +485,6 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
       rigPart(new THREE.BoxGeometry(P.neckR * 1.1, P.neckR * 1.1, P.neckR * 0.16), trim, {
         position: [0, P.chestLen * 0.78, P.chestD * 0.5],
         rotation: [0, 0, Math.PI / 4],
-      }),
-    );
-  }
-  if (look.collar === "polo") {
-    chest.push(
-      rigPart(new THREE.BoxGeometry(P.neckR * 2.1, P.neckR * 0.9, P.neckR * 0.14), trim, {
-        position: [0, P.chestLen * 0.9, P.chestD * 0.46],
-        rotation: [-0.5, 0, 0],
       }),
     );
   }

@@ -57,6 +57,19 @@ npm audit --omit=dev --audit-level=high
 
 Os testes Rust/WASM e Lighthouse precisam das ferramentas e do ambiente descritos no workflow. Não considere testes que não rodaram como aprovados.
 
+### Estúdio visual e texturas
+
+Depois de `npm run graphics:build`, execute `npm run graphics:preview` e abra
+`http://127.0.0.1:4193/player-studio.html`. O servidor do estúdio encaminha somente
+`/__l5e/assets-v1/` para `https://jogomanager.com`, preservando os caminhos dos
+manifestos KTX2. Isso também funciona no desenvolvimento com
+`npm exec -- vite --config scripts/graphics-vite.config.ts`.
+
+Para usar os assets de outro preview Lovable, defina `LOVABLE_PREVIEW_HOST` com o
+hostname, sem protocolo. Em redes que exigem `HTTP_PROXY`/`HTTPS_PROXY`, inicie o
+Node 24 com `NODE_USE_ENV_PROXY=1`. O encaminhamento serve apenas arquivos públicos;
+cookies e cabeçalhos de autorização não são enviados à origem dos assets.
+
 O índice de páginas públicas fica em `public/llms.txt` e deve referenciar apenas URLs canônicas com rotas efetivamente publicadas. Depois do deploy, verifique a versão servida no domínio oficial:
 
 ```sh

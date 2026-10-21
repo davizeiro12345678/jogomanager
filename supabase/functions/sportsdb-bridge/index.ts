@@ -24,20 +24,46 @@ async function rpc(name: string, args: Record<string, unknown> = {}) {
   const body = await response.text();
   return body ? JSON.parse(body) : null;
 }
-async function source(params: Record<string, string>) {
+async function source(params: Record<string, string>, schedulerToken: string) {
+  const clientId = Deno.env.get("SPORTSDB_CF_ACCESS_CLIENT_ID")?.trim();
+  const clientSecret = Deno.env.get("SPORTSDB_CF_ACCESS_CLIENT_SECRET")?.trim();
+  if (Boolean(clientId) !== Boolean(clientSecret)) {
+    throw new Error("Both Cloudflare Access service-token secrets must be configured together");
+  }
   const url = new URL(SOURCE_URL);
   url.search = new URLSearchParams(params).toString();
-  const response = await fetch(url, {
-    headers: { accept: "application/json" },
-    signal: AbortSignal.timeout(12_000),
-  });
-  if (!response.ok) throw new Error(`Source HTTP ${response.status}`);
-  return response.json();
+  const headers: Record<string, string> = {
+    accept: "application/json",
+    authorization: `Bearer ${schedulerToken}`,
+  };
+  if (clientId && clientSecret) {
+    headers["CF-Access-Client-Id"] = clientId;
+    headers["CF-Access-Client-Secret"] = clientSecret;
+  }
+  const response = await fetch(url, { headers, signal: AbortSignal.timeout(12_000) });
+  const contentType = (response.headers.get("content-type") ?? "")
+    .split(";", 1)[0]
+    .trim()
+    .toLowerCase();
+  if (!response.ok)
+    throw new Error(`Source HTTP ${response.status} (${contentType || "unknown content type"})`);
+  if (contentType !== "application/json" && !contentType.endsWith("+json")) {
+    throw new Error(`Source returned non-JSON content (${contentType || "unknown content type"})`);
+  }
+  try {
+    return await response.json();
+  } catch {
+    throw new Error("Source returned invalid JSON");
+  }
 }
 
 Deno.serve(async (request) => {
   if (request.method !== "POST") return Response.json({ error: "POST required" }, { status: 405 });
   const token = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
+  if (new URL(request.url).pathname.endsWith("/authorize")) {
+    if (!token) return Response.json(false, { status: 401 });
+    return Response.json(Boolean(await rpc("sportsdb_bridge_authorize", { p_token: token })));
+  }
   // The gateway accepts this endpoint only after our own scheduler-token check.
   if (!token || !(await rpc("sportsdb_bridge_authorize", { p_token: token }))) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -49,7 +75,7 @@ Deno.serve(async (request) => {
     archives = 0,
     pagesSinceArchive = 0;
   try {
-    const status = await source({ status: "1", cb: String(Date.now()) });
+    const status = await source({ status: "1", cb: String(Date.now()) }, token);
     await rpc("sportsdb_bridge_manifest", {
       p_owner: owner,
       p_manifest: manifest(status),
@@ -69,6 +95,7 @@ Deno.serve(async (request) => {
           inventory
             ? { archives: "1", limit: "100", offset: String(task.next_offset) }
             : { entity: task.entity_type, limit: "100", offset: String(task.next_offset) },
+          token,
         );
         if (!data.rows?.length && task.next_offset < data.total)
           throw new Error("Source returned a premature empty page");
@@ -99,13 +126,13 @@ Deno.serve(async (request) => {
         await Promise.all(
           work.archives.map(async (task: { archive_key: string; source_updated_at: string }) => {
             try {
-              const data = await source({ archiveKey: task.archive_key });
+              const data = await source({ archiveKey: task.archive_key }, token);
               const rows = await archiveRecords(task.archive_key, data, task.source_updated_at);
               await rpc("sportsdb_bridge_archive", {
                 p_owner: owner,
                 p_key: task.archive_key,
                 p_updated_at: task.source_updated_at,
-                p_payload: data,
+                p_payload: null,
                 p_rows: rows,
               });
               archives++;
@@ -131,7 +158,6 @@ Deno.serve(async (request) => {
   } catch (error) {
     const message = String(error).slice(0, 300);
     await rpc("sportsdb_bridge_release", { p_owner: owner, p_error: message });
-    console.error("sportsdb-bridge sync failed", message);
-    return Response.json({ error: "sync_failed", pages, archives }, { status: 503 });
+    return Response.json({ error: message, pages, archives }, { status: 503 });
   }
 });

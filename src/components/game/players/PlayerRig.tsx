@@ -19,26 +19,20 @@ import { createElement, memo, useEffect, useLayoutEffect, useMemo, useRef } from
 import * as THREE from "three";
 
 import { kitBudget, kitTextureFor, trimKitTextures } from "@/game/graphics/kit-atlas";
+import { useMatchSurface } from "@/game/graphics/surface-context-state";
 import { retainKitTexture } from "@/game/kits";
-import { useMatchSurface } from "@/game/graphics/surface-context";
+import { lookFor, lookWithPhysique, proportionsFor, type LodLevel } from "@/game/player-model";
+import { faceMorphology } from "@/game/player-morphology";
+import { retainRigGeometryPreparation } from "@/game/rig-geometry-worker-client";
+import { type RigJoint } from "@/game/rig-skin";
+import { censusRef } from "@/game/scene-census";
 import { onKtx2Ready } from "@/game/textures/ktx2";
 import { useVisual } from "@/game/visual-settings";
-import {
-  lodForDistance,
-  lookFor,
-  lookWithPhysique,
-  proportionsFor,
-  shade,
-  type LodLevel,
-} from "@/game/player-model";
-import { type RigJoint } from "@/game/rig-skin";
-import { faceMorphology } from "@/game/player-morphology";
-import { censusRef } from "@/game/scene-census";
-import { retainRigGeometryPreparation } from "@/game/rig-geometry-worker-client";
 
-import { type RigProps, type Quality } from "./player-rig-contract";
+import { type Quality, type RigProps } from "./player-rig-contract";
 import { usePlayerRigFrame, type PlayerRigBoneRefs } from "./player-rig-frame";
 import { usePlayerRigMeshes } from "./player-rig-meshes";
+import { softShadowTexture } from "./soft-shadow";
 export type { Quality } from "./player-rig-contract";
 
 export const PlayerRig = memo(function PlayerRig({
@@ -120,6 +114,7 @@ export const PlayerRig = memo(function PlayerRig({
   // shadow-map silhouettes stay in the isolated portrait studio; in broadcast
   // views they read as broad cool blotches across the pitch.
   const shadows = quality === "alta" && portrait;
+  const contactShadow = useMemo(softShadowTexture, []);
   const invalidate = useThree((state) => state.invalidate);
   // Demand-rendered studio previews still display newly loaded maps while
   // paused. Match playback needs no React updates for texture streaming.
@@ -197,32 +192,35 @@ export const PlayerRig = memo(function PlayerRig({
   // num <primitive>.
   // Só as juntas que a animação escreve precisam de ref; as demais existem na
   // hierarquia para carregar a geometria dos grupos de LOD.
-  const boneRefs: PlayerRigBoneRefs = {
-    hips,
-    spine,
-    chest,
-    neck,
-    jaw: jawRef,
-    eyes: eyesRef,
-    eyelidUpperL: eyelidUpperLRef,
-    eyelidLowerL: eyelidLowerLRef,
-    eyelidUpperR: eyelidUpperRRef,
-    eyelidLowerR: eyelidLowerRRef,
-    clavL: clavLRef,
-    armL: armLRef,
-    foreL: foreLRef,
-    handL: handLRef,
-    clavR: clavRRef,
-    armR: armRRef,
-    foreR: foreRRef,
-    handR: handRRef,
-    legL: legLRef,
-    kneeL: kneeLRef,
-    ankleL: ankleLRef,
-    legR: legRRef,
-    kneeR: kneeRRef,
-    ankleR: ankleRRef,
-  };
+  const boneRefs = useMemo<PlayerRigBoneRefs>(
+    () => ({
+      hips,
+      spine,
+      chest,
+      neck,
+      jaw: jawRef,
+      eyes: eyesRef,
+      eyelidUpperL: eyelidUpperLRef,
+      eyelidLowerL: eyelidLowerLRef,
+      eyelidUpperR: eyelidUpperRRef,
+      eyelidLowerR: eyelidLowerRRef,
+      clavL: clavLRef,
+      armL: armLRef,
+      foreL: foreLRef,
+      handL: handLRef,
+      clavR: clavRRef,
+      armR: armRRef,
+      foreR: foreRRef,
+      handR: handRRef,
+      legL: legLRef,
+      kneeL: kneeLRef,
+      ankleL: ankleLRef,
+      legR: legRRef,
+      kneeR: kneeRRef,
+      ankleR: ankleRRef,
+    }),
+    [],
+  );
   /*
     A R3F só recebe o osso raiz: renderizar os 25 como irmãos achataria a
     hierarquia (o `add()` do three.js moveria cada osso para o grupo raiz). Os
@@ -235,7 +233,7 @@ export const PlayerRig = memo(function PlayerRig({
     return () => {
       for (const [, ref] of entries) ref.current = null;
     };
-  });
+  }, [skin, boneRefs]);
   usePlayerRigFrame({
     scene: {
       player,
@@ -288,7 +286,13 @@ export const PlayerRig = memo(function PlayerRig({
         position={[0, 0.015, 0]}
       >
         <circleGeometry args={[0.36, 16]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.3} depthWrite={false} />
+        <meshBasicMaterial
+          map={contactShadow}
+          color="#000000"
+          transparent
+          opacity={0.3}
+          depthWrite={false}
+        />
       </mesh>
 
       {/*

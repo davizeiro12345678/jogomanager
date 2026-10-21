@@ -1,67 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { CareerState } from "@/game/types";
-import { z } from "zod";
+import { parseCareerOwner, parseCareerSaveRequest } from "./career-input";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { initCareer } from "@/game/career";
-import { continuesVerifiedCareer, isStaleSave } from "@/lib/career-progress";
-
-// Normalize manager names without letting control characters reach persisted data.
-const normalizePublicText = (value: string) =>
-  [...value.normalize("NFKC")]
-    .map((char) => {
-      const code = char.charCodeAt(0);
-      return code < 32 || code === 127 ? " " : char;
-    })
-    .join("")
-    .replace(/\s+/g, " ")
-    .trim();
-const hasVisibleText = (value: string) => /[\p{L}\p{N}]/u.test(value);
-
-// Career JSON is untrusted even for authenticated users: bound its size and
-// depth and reject dangerous object keys before the Zod schema passes it on.
-function assertUntrustedJson(value: unknown): void {
-  let count = 0;
-  const seen = new WeakSet<object>();
-  const visit = (node: unknown, depth: number): void => {
-    if (++count > 100_000 || depth > 48) throw new Error("Carreira excede os limites permitidos.");
-    if (node === null || typeof node === "string" || typeof node === "boolean") return;
-    if (typeof node === "number" && Number.isFinite(node)) return;
-    if (typeof node !== "object" || seen.has(node)) throw new Error("JSON de carreira inválido.");
-    seen.add(node);
-    if (Array.isArray(node)) {
-      if (node.length > 5000) throw new Error("Carreira excede os limites permitidos.");
-      node.forEach((child) => visit(child, depth + 1));
-    } else {
-      const keys = Object.keys(node);
-      if (keys.length > 1000) throw new Error("Carreira excede os limites permitidos.");
-      for (const key of keys) {
-        if (key === "__proto__" || key === "prototype" || key === "constructor")
-          throw new Error("JSON de carreira inválido.");
-        visit((node as Record<string, unknown>)[key], depth + 1);
-      }
-    }
-  };
-  visit(value, 0);
-}
-
-const CareerInput = z.object({
-  state: z
-    .object({
-      leagueId: z.string().min(1).max(80),
-      clubId: z.string().min(1).max(80),
-      managerName: z
-        .string()
-        .transform(normalizePublicText)
-        .pipe(z.string().min(1).max(80))
-        .refine(hasVisibleText),
-      season: z.number().int().min(1).max(100),
-      round: z.number().int().min(1).max(1000),
-      fixtures: z.array(z.unknown()).max(5000),
-      results: z.array(z.unknown()).max(5000),
-    })
-    .passthrough(),
-});
 
 // A newly started career has no result to attest. Offline/imported results
 // remain personal saves, not trusted achievements or official progress.
@@ -117,27 +59,12 @@ export const loadCareer = createServerFn({ method: "GET" })
 
 export const saveCareer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => {
-    assertUntrustedJson(input);
-    return CareerInput.parse(input);
-  })
+  .validator(parseCareerSaveRequest)
   .handler(async ({ data, context }) => {
+    if (data.expectedOwnerId !== context.userId)
+      throw new Error("A conta mudou. Reabra a carreira antes de salvar.");
     const incoming = data.state as unknown as CareerState;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: stored } = await supabaseAdmin
-      .from("careers")
-      .select("state, updated_at, verified_progress")
-      .eq("user_id", context.userId)
-      .maybeSingle();
-    const prev = stored?.state as unknown as CareerState | undefined;
-    // An older device/tab must never overwrite newer progress of the same career.
-    try {
-      if (prev && isStaleSave(prev, incoming)) {
-        return { ok: false as const, stale: true, verifiedProgress: stored!.verified_progress };
-      }
-    } catch {
-      /* malformed stored save: allow replacement */
-    }
+    const { saveValidatedCareer } = await import("./career-save.server");
     // Malformed nested JSON is an unverified personal save, never an attested result.
     // Match scores and logs are produced on the client and cannot be replayed
     // here, so only a canonical, unplayed start is ever attested.
@@ -147,21 +74,15 @@ export const saveCareer = createServerFn({ method: "POST" })
     } catch {
       verified = false;
     }
-    const { error } = await supabaseAdmin.from("careers").upsert(
-      {
-        user_id: context.userId,
-        state: incoming as unknown as never,
-        verified_progress: verified,
-      },
-      { onConflict: "user_id" },
-    );
-    if (error) throw new Error("Não foi possível salvar a carreira.");
-    return { ok: true as const, stale: false, verifiedProgress: verified };
+    return saveValidatedCareer(context.userId, incoming, verified);
   });
 
 export const deleteCareer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .validator(parseCareerOwner)
+  .handler(async ({ data, context }) => {
+    if (data.expectedOwnerId !== context.userId)
+      throw new Error("A conta mudou. Reabra a carreira antes de excluir.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("careers").delete().eq("user_id", context.userId);
     if (error) throw new Error("Não foi possível excluir a carreira.");

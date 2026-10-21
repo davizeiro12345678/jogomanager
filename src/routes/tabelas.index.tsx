@@ -1,12 +1,13 @@
-import { StickyPlayCta } from "@/components/StickyPlayCta";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { PublicLinks } from "@/components/PublicLinks";
-import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
-import { LEAGUE_LABELS } from "@/lib/league-labels";
+import { createFileRoute } from "@tanstack/react-router";
 
-const PATH = "/tabelas";
+import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
+
+import { TablesIndex } from "@/pages/tabelas.index";
+import { TABELAS_INDEX_PATH as PATH } from "@/lib/public-route-paths";
+
 const TITLE =
   "Classificação ao vivo de 12 ligas: Brasileirão, Premier, La Liga e mais | Pro Football Manager 3D";
+
 const DESC =
   "Tabela, artilharia, assistências, forma recente, casa x fora e desfalques de 12 campeonatos — e o mesmo clube pronto para você comandar em 3D.";
 
@@ -23,37 +24,3 @@ export const Route = createFileRoute("/tabelas/")({
   }),
   component: TablesIndex,
 });
-
-function TablesIndex() {
-  return (
-    <main className="pitch-bg min-h-screen px-4 py-14">
-      <div className="mx-auto max-w-5xl">
-        <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">Futebol real</p>
-        <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">
-          Tabelas das principais ligas
-        </h1>
-        <p className="mt-4 max-w-2xl text-muted-foreground">
-          Cada página traz a classificação da temporada atual, quem rende melhor em casa e fora, o
-          melhor ataque, a defesa mais sólida, a forma das últimas cinco rodadas e os jogadores
-          lesionados. Use essas informações para escolher o clube da sua carreira de técnico.
-        </p>
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Object.entries(LEAGUE_LABELS).map(([slug, l]) => (
-            <li key={slug}>
-              <Link
-                to="/tabelas/$slug"
-                params={{ slug }}
-                className="block rounded-xl border border-border/60 surface-card p-5 transition hover:border-primary"
-              >
-                <span className="font-display text-lg">{l.name}</span>
-                <span className="mt-1 block text-xs text-muted-foreground">{l.country}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <PublicLinks exclude={PATH} />
-      </div>
-      <StickyPlayCta />
-    </main>
-  );
-}

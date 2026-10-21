@@ -1,0 +1,1 @@
+ALTER TABLE public.tech_telemetry ADD COLUMN IF NOT EXISTS user_id uuid, ADD COLUMN IF NOT EXISTS measurement_origin text NOT NULL DEFAULT 'client_unverified' CHECK(measurement_origin IN ('client_unverified','server_verified'));
