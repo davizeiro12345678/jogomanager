@@ -47,9 +47,11 @@ describe("outer response protection", () => {
     expect(createCspNonce()).not.toBe(nonce);
   });
   it("exposes initial SSR duration without weakening private cache protection", async () => {
-    deps.fetch.mockResolvedValue(new Response("<html></html>", {
-      headers: { "content-type": "text/html" },
-    }));
+    deps.fetch.mockResolvedValue(
+      new Response("<html></html>", {
+        headers: { "content-type": "text/html" },
+      }),
+    );
     const response = await server.fetch(new Request("https://jogomanager.com/auth"), {}, {});
     expect(response.headers.get("server-timing")).toMatch(/app;dur=\d+(?:\.\d+)?/);
     expect(response.headers.get("cache-control")).toBe("no-store");
