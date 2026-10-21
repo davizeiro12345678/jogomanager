@@ -122,7 +122,17 @@ function Perfil() {
         {club ? <Crest club={club} size={64} /> : null}
       </div>
 
-      {signedIn && <PasskeySettings />}
+      {signedIn ? (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <PasskeySettings />
+          <Link
+            to="/seguranca"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-primary hover:border-primary/60"
+          >
+            Segurança da conta · SMS, WhatsApp e MFA
+          </Link>
+        </div>
+      ) : null}
 
       <div className="mt-5 grid items-start gap-4 hud-stagger md:grid-cols-2 lg:grid-cols-3">
         <HudCard title="Números da carreira" tone={winRate >= 50 ? "good" : "neutral"}>
