@@ -24,16 +24,23 @@ export function PhoneMFASettings() {
     void supabase.auth.mfa.listFactors().then(({ data }) => {
       if (active && data?.phone?.length) {
         const enrolled = data.phone.find((item) => item.status === "verified");
-        if (enrolled) setFactor({ id: enrolled.id, status: enrolled.status, phone: enrolled.phone });
+        if (enrolled)
+          setFactor({ id: enrolled.id, status: enrolled.status, phone: enrolled.phone });
       }
     });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   if (!ENABLED) return null;
 
   const report = (cause: unknown) =>
-    setNotice(cause instanceof Error ? "Verificação indisponível. Tente novamente ou utilize outro fator." : "Não foi possível verificar seu segundo fator.");
+    setNotice(
+      cause instanceof Error
+        ? "Verificação indisponível. Tente novamente ou utilize outro fator."
+        : "Não foi possível verificar seu segundo fator.",
+    );
 
   const challenge = async (id: string) => {
     if (Date.now() < cooldownUntil) {
@@ -83,7 +90,9 @@ export function PhoneMFASettings() {
     setNotice("");
     try {
       const result = await supabase.auth.mfa.verify({
-        factorId: factor.id, challengeId, code: otp.trim(),
+        factorId: factor.id,
+        challengeId,
+        code: otp.trim(),
       });
       if (result.error) throw result.error;
       setFactor({ ...factor, status: "verified" });
@@ -103,7 +112,8 @@ export function PhoneMFASettings() {
         Verificação em duas etapas
       </h2>
       <p className="text-sm text-muted-foreground">
-        Um código por SMS ou WhatsApp ajuda a proteger sua conta. Nunca informe o código a terceiros.
+        Um código por SMS ou WhatsApp ajuda a proteger sua conta. Nunca informe o código a
+        terceiros.
       </p>
       {factor?.status === "verified" && (
         <p className="text-sm text-green-500">Telefone autenticado como segundo fator.</p>
@@ -112,39 +122,65 @@ export function PhoneMFASettings() {
         <label className="block text-sm">
           Telefone (formato internacional)
           <input
-            type="tel" autoComplete="tel" inputMode="tel" value={phone}
-            onChange={(e) => setPhone(e.target.value)} className="mt-1 min-h-11 w-full rounded border border-input bg-background px-3"
-            placeholder="+5511999999999" maxLength={16}
+            type="tel"
+            autoComplete="tel"
+            inputMode="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="mt-1 min-h-11 w-full rounded border border-input bg-background px-3"
+            placeholder="+5511999999999"
+            maxLength={16}
           />
         </label>
       )}
       <label className="block text-sm">
         Canal do código
-        <select className="mt-1 min-h-11 w-full rounded border border-input bg-background px-3"
-          value={channel} onChange={(e) => setChannel(e.target.value as Channel)}>
+        <select
+          className="mt-1 min-h-11 w-full rounded border border-input bg-background px-3"
+          value={channel}
+          onChange={(e) => setChannel(e.target.value as Channel)}
+        >
           <option value="sms">SMS</option>
           <option value="whatsapp">WhatsApp</option>
         </select>
       </label>
-      <button type="button" disabled={busy} onClick={() => void send()}
-        className="min-h-11 rounded-lg bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => void send()}
+        className="min-h-11 rounded-lg bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50"
+      >
         {factor ? "Solicitar novo código" : "Ativar segundo fator"}
       </button>
       {challengeId && (
         <div className="space-y-2">
           <label className="block text-sm">
             Código de verificação
-            <input type="text" inputMode="numeric" autoComplete="one-time-code"
-              value={otp} maxLength={10} onChange={(e) => setOtp(e.target.value)}
-              className="mt-1 min-h-11 w-full rounded border border-input bg-background px-3" />
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={otp}
+              maxLength={10}
+              onChange={(e) => setOtp(e.target.value)}
+              className="mt-1 min-h-11 w-full rounded border border-input bg-background px-3"
+            />
           </label>
-          <button type="button" disabled={busy} onClick={() => void verify()}
-            className="min-h-11 rounded-lg border border-primary px-4 py-2 disabled:opacity-50">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void verify()}
+            className="min-h-11 rounded-lg border border-primary px-4 py-2 disabled:opacity-50"
+          >
             Confirmar código
           </button>
         </div>
       )}
-      {notice && <p role="status" className="text-sm">{notice}</p>}
+      {notice && (
+        <p role="status" className="text-sm">
+          {notice}
+        </p>
+      )}
     </section>
   );
 }
