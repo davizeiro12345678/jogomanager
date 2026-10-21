@@ -1,0 +1,41 @@
+name: Temporary PR55 dependency security repair
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+    paths: [".github/workflows/perf-pr55-dependency-autofix.yml"]
+permissions:
+  contents: write
+jobs:
+  fix-production-audit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.number == 55
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin patched MCP SDK and server
+        run: |
+          npm pkg set "overrides.@modelcontextprotocol/sdk=1.32.1" "overrides.@modelcontextprotocol/server=2.3.0"
+          npm install --package-lock-only --ignore-scripts
+      - name: Prove the audit and code checks before commit
+        run: |
+          npm ci --ignore-scripts
+          npm audit --omit=dev --audit-level=high
+          npm run lint
+          npx tsc --noEmit
+      - name: Commit validated lockfile and overrides
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "fix(deps): upgrade vulnerable MCP SDK and server in lockfile"
+            git push origin HEAD:codex/jogomanager-performance-20261019
+          fi
