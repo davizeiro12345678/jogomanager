@@ -127,6 +127,7 @@ function Perfil() {
           <PasskeySettings />
           <Link
             to="/seguranca"
+            search={{}}
             className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-primary hover:border-primary/60"
           >
             Segurança da conta · SMS, WhatsApp e MFA
