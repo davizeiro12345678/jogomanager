@@ -48,6 +48,18 @@ function isH3SwallowedErrorBody(body: string): boolean {
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    // The duration only covers initial handler/response creation, not streamed body completion.
+    const ssrStart = performance.now();
+    const measured = (response: Response): Response => {
+      const headers = new Headers(response.headers);
+      const durationMs = Math.max(0, performance.now() - ssrStart);
+      headers.append("server-timing", `app;dur=${durationMs.toFixed(1)}`);
+      return new Response(request.method === "HEAD" ? null : response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
+    };
     // Rebuild from public fields: a cross-realm Request may not be cloneable.
     // Never trust a client-provided CSP nonce.
     const headers = new Headers(request.headers);
@@ -61,19 +73,19 @@ export default {
     const verifiedRequest = new Request(request.url, init);
     const protect = (response: Response) => secureResponse(response, verifiedRequest, nonce);
     const redirect = publicPageRedirect(verifiedRequest);
-    if (redirect) return protect(redirect);
+    if (redirect) return measured(protect(redirect));
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(verifiedRequest, env, ctx);
-      return protect(await normalizeCatastrophicSsrResponse(response));
+      return measured(protect(await normalizeCatastrophicSsrResponse(response)));
     } catch (error) {
       console.error(error);
-      return protect(
+      return measured(protect(
         new Response(renderErrorPage(), {
           status: 500,
           headers: { "content-type": "text/html; charset=utf-8" },
         }),
-      );
+      ));
     }
   },
 };
