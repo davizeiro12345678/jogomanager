@@ -25,16 +25,26 @@ describe("Fastly dedicated-origin authentication", () => {
   });
 
   it("rejects requests without a matching Fastly-generated secret", () => {
-    expect(fastlyOriginGate(request(FASTLY_ORIGIN_HOSTNAME), { FASTLY_ORIGIN_SECRET: key })?.status).toBe(403);
-    expect(fastlyOriginGate(request(FASTLY_ORIGIN_HOSTNAME, "b".repeat(64)), { FASTLY_ORIGIN_SECRET: key })?.status).toBe(403);
-    expect(fastlyOriginGate(request(FASTLY_ORIGIN_HOSTNAME, key.toUpperCase()), { FASTLY_ORIGIN_SECRET: key })?.status).toBe(403);
+    const env = { FASTLY_ORIGIN_SECRET: key };
+    const missing = fastlyOriginGate(request(FASTLY_ORIGIN_HOSTNAME), env);
+    const wrong = fastlyOriginGate(request(FASTLY_ORIGIN_HOSTNAME, "b".repeat(64)), env);
+    const uppercase = fastlyOriginGate(request(FASTLY_ORIGIN_HOSTNAME, key.toUpperCase()), env);
+    expect(missing?.status).toBe(403);
+    expect(wrong?.status).toBe(403);
+    expect(uppercase?.status).toBe(403);
   });
 
   it("allows an authenticated dedicated-origin request", () => {
-    expect(fastlyOriginGate(request(FASTLY_ORIGIN_HOSTNAME, key), { FASTLY_ORIGIN_SECRET: key })).toBeNull();
+    const response = fastlyOriginGate(request(FASTLY_ORIGIN_HOSTNAME, key), {
+      FASTLY_ORIGIN_SECRET: key,
+    });
+    expect(response).toBeNull();
   });
 
   it("rejects malformed secrets even if supplied by a client", () => {
-    expect(fastlyOriginGate(request(FASTLY_ORIGIN_HOSTNAME, "short"), { FASTLY_ORIGIN_SECRET: "short" })?.status).toBe(503);
+    const response = fastlyOriginGate(request(FASTLY_ORIGIN_HOSTNAME, "short"), {
+      FASTLY_ORIGIN_SECRET: "short",
+    });
+    expect(response?.status).toBe(503);
   });
 });
