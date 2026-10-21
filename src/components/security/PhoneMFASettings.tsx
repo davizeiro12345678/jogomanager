@@ -25,7 +25,7 @@ export function PhoneMFASettings() {
       if (active && data?.phone?.length) {
         const enrolled = data.phone.find((item) => item.status === "verified");
         if (enrolled)
-          setFactor({ id: enrolled.id, status: enrolled.status, phone: enrolled.phone });
+          setFactor({ id: enrolled.id, status: enrolled.status });
       }
     });
     return () => {
