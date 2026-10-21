@@ -20,9 +20,10 @@ const CODE_PATTERN = /^\d{6,8}$/;
 
 export const Route = createFileRoute("/seguranca")({
   ssr: false,
-  validateSearch: (search: Record<string, unknown>) => ({
-    next: safeAuthNext(search["next"]),
-  }),
+  validateSearch: (search: Record<string, unknown>): { next?: string } => {
+    const next = safeAuthNext(search["next"]);
+    return next ? { next } : {};
+  },
   head: () => ({
     meta: [
       { title: "Segurança da conta · Pro Football Manager 3D" },
