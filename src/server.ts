@@ -76,12 +76,11 @@ export default {
       return measured(protect(await normalizeCatastrophicSsrResponse(response)));
     } catch (error) {
       console.error(error);
-      return measured(protect(
-        new Response(renderErrorPage(), {
-          status: 500,
-          headers: { "content-type": "text/html; charset=utf-8" },
-        }),
-      ));
+      const errorResponse = new Response(renderErrorPage(), {
+        status: 500,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+      return measured(protect(errorResponse));
     }
   },
 };
