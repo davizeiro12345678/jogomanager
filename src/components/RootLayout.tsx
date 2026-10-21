@@ -179,6 +179,9 @@ function RootReadingControls({ pathname }: { pathname: string }) {
   const router = useRouter();
   const renderedPath = useRef(pathname);
   useEffect(() => {
+    // These public routes already declare canonical head metadata via TanStack
+    // SSR. Never download game-page metadata for a route that does not use it.
+    if (CONTENT_ONLY_PATHS.has(pathname)) return;
     let active = true;
     // Route metadata is only written after the client page renders. Keep its
     // copy and translation tables out of every initial route's static closure.
