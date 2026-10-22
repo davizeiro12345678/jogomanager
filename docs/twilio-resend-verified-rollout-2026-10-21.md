@@ -31,3 +31,29 @@
 - #58 rebased sem force push para HEAD moderno, preservando `hono@4.13.13`; corrigidas falhas de formatação e migrations Stripe sem schema local. **Lighthouse e bundle Rapier continuam falhando** até correção mensurada, portanto não declarar aprovação integral.
 - #59 mantém as alterações de otimização, transporte Resend e novo MFA em **draft**, sem merge. CI de nova HEAD precisa concluir sem erros antes de deploy.
 - Os checks Lighthouse são gates reais e não devem ser desligados só para marcar verde. `scripts/bundle-report.mjs` limita JS físico; desvio exige redução verdadeira de tamanho (não aumentar orçamento sem justificativa).
+
+
+## Complemento de 22/10/2026: hook Twilio de envio com limite real, EM STAGING
+
+- Edge Function Supabase publicada em produção **como endpoint técnico**, `twilio-verify-sms-hook` **versão 2**, mas `ENABLE_TWILIO_SMS_HOOK` continua desabilitado, sem credenciais Twilio e **não configurada como Auth Send SMS Hook**. Não há SMS real liberado.
+- Endpoint interno pronto: `https://lguqnwvsfeefxamzeyos.supabase.co/functions/v1/twilio-verify-sms-hook`. HTTP POST sem credenciais ou switch retorna **503** intencional (testado via `pg_net`). `verify_jwt=false` é exigido pelos eventos pré-login, mas uma assinatura Standard Webhooks HMAC-SHA256 é obrigatória quando habilitado.
+- O código fica em `supabase/functions/twilio-verify-sms-hook/index.ts` no PR #59. Verifica assinatura e timestamp de 5 minutos, limita payload a 20 KB, valida `E.164` e formato OTP antes de tentar enviar, trata limites e falhas do provedor sem expor OTP, telefone, tokens ou assinatura em logs.
+- Migração `20261021232000_reconcile_private_phone_otp_budget.sql` reconcilia no CI o limitador privado `auth_safety.consume_phone_otp_budget` que já existia em produção, mas estava ausente no histórico Git. A migração seguinte `20261021234500_stage_twilio_sms_hook_budget.sql` expõe RPC **somente service_role**. O acesso anônimo e autenticado ao RPC foi testado e negado.
+- Quotas compartilhadas SMS/WhatsApp: 60 segundos entre solicitações ao mesmo número, no máximo 4/tel/h, 8/tel/24 h, e até 15 solicitações/hora em uma chave GLOBAL. A função de hook **não recebe IP confiável do cliente**, portanto não se deve chamar esta última quota de limite por IP. O limite global conservador destina-se ao rollout inicial; deve ser dimensionado para o tráfego e teto financeiro verificados antes de liberar envios em grande escala.
+- Twilio Verify usa **CustomCode** gerado pelo Supabase; requer habilitar explicitamente `Enable Custom Verification Code` no serviço Verify. Para SMS, manda `RiskCheck=enable` para respeitar Fraud Guard e Geo Permissions ativados no serviço; para WhatsApp, não inclui esse parâmetro exclusivo de SMS.
+- Suporta nome de segredo `SEND_SMS_HOOK_SECRET` ou `SEND_SMS_HOOK_SECRETS` (último para rotação); segredos reais só no armazenamento privado de funções. Não inserir em código, variáveis públicas VITE_*, GitHub ou documentação.
+- PR #59 agora usa `import.meta.env.VITE_PHONE_AUTH_ENABLED` e `import.meta.env.VITE_PHONE_MFA_ENABLED` com nomes ESTÁTICOS, permitindo ao Vite remover os chunks de funções desativadas dos bundles de produção. Nenhuma flag foi habilitada.
+
+### Pré-requisitos externos para habilitar em produção
+
+1. Autenticar e validar propriedade da conta Twilio. Verificar status da conta, limite de gastos, remetentes e aprovações comerciais. Não criar nova cobrança sem preço e consentimento.
+2. No Twilio Verify, provisionar Verify Service, habilitar **Custom Verification Code**, configurar **Fraud Guard** em SMS, rever **Geo Permissions** com allowlist por país conforme público real, configurar limites do Verify e remetente WhatsApp aprovado. Confirmar se plano permite todas as proteções.
+3. Armazenar em Supabase Edge secrets `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`, `PHONE_OTP_HMAC_SECRET` (≥32 caracteres aleatórios), `SEND_SMS_HOOK_SECRET` fornecido pelo Supabase Auth. Não gravar segredos em `public`, Git ou cliente.
+4. Configurar Supabase Authentication → Hooks → **Send SMS** → HTTP → URL do hook. Esse hook **substitui** o envio telefônico nativo. Habilitar `ENABLE_TWILIO_SMS_HOOK=true` somente após validações de configuração, custo, allowlist e trilha de rollback.
+5. Usar apenas número próprio de teste, com consentimento. Exercitar envio real, verificação do código, cooldown, múltiplas contas usando mesmo telefone, SMS, WhatsApp, tentativa inválida, indisponibilidade Twilio e custo, assegurando que nenhum evento é declarado enviado se o Twilio rejeitar.
+6. Habilitar UI `VITE_PHONE_AUTH_ENABLED` e `VITE_PHONE_MFA_ENABLED` com **novo build** somente quando o serviço passar nos testes. Implementar e verificar enforcement AAL2 no servidor para operações críticas, em vez de confiar exclusivamente na interface.
+7. Recuperação segura: disponibilizar **TOTP ou passkey previamente cadastrada** como fator independente do número, verificação AAL2 antes de alterações críticas, fluxo auditável de perda dos dois fatores com prova de propriedade e período de revisão. O endpoint de SMS sozinho **não implementa recuperação de conta**.
+
+### Estado real
+
+Nenhuma credencial Twilio foi fornecida por conector autenticado. Não foram ativadas Geo Permissions nem Fraud Guard no console Twilio, não foi enviado SMS/WhatsApp real e não foi recuperada qualquer conta real. O hook **está publicado mas fail-closed**, impedindo cobrança e abuso enquanto pendente. `main` permanece sem os códigos do PR #59.
