@@ -128,12 +128,12 @@ export function Perfil() {
       </div>
 
       {signedIn && <PasskeySettings />}
-      {signedIn && import.meta.env["VITE_PHONE_AUTH_ENABLED"] === "true" && (
+      {signedIn && import.meta.env.VITE_PHONE_AUTH_ENABLED === "true" && (
         <Suspense fallback={null}>
           <VerifiedPhoneSettings />
         </Suspense>
       )}
-      {signedIn && import.meta.env["VITE_PHONE_MFA_ENABLED"] === "true" && (
+      {signedIn && import.meta.env.VITE_PHONE_MFA_ENABLED === "true" && (
         <Suspense fallback={null}>
           <PhoneMFASettings />
         </Suspense>
