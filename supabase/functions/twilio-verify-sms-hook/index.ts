@@ -151,23 +151,19 @@ Deno.serve(async (request: Request) => {
     env.pepper.length < 32 ||
     !env.supabase.startsWith("https://") ||
     !env.serviceRole
-  ) return reply(503, "{}");
+  )
+    return reply(503, "{}");
 
   const id = request.headers.get("webhook-id") ?? "";
   const timestamp = request.headers.get("webhook-timestamp") ?? "";
   const signature = request.headers.get("webhook-signature") ?? "";
-  if (!id || id.length > 200 || !/^\d{9,12}$/.test(timestamp) || !signature)
-    return reply(400, "{}");
-  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300)
-    return reply(400, "{}");
+  if (!id || id.length > 200 || !/^\d{9,12}$/.test(timestamp) || !signature) return reply(400, "{}");
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return reply(400, "{}");
   const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (!Number.isFinite(contentLength) || contentLength > MAX_BYTES)
-    return reply(413, "{}");
+  if (!Number.isFinite(contentLength) || contentLength > MAX_BYTES) return reply(413, "{}");
   const raw = await request.text().catch(() => null);
-  if (raw === null || new TextEncoder().encode(raw).byteLength > MAX_BYTES)
-    return reply(413, "{}");
-  if (!(await checkSignature(raw, id, timestamp, signature)))
-    return reply(401, "{}");
+  if (raw === null || new TextEncoder().encode(raw).byteLength > MAX_BYTES) return reply(413, "{}");
+  if (!(await checkSignature(raw, id, timestamp, signature))) return reply(401, "{}");
 
   let event: { user?: { phone?: string }; sms?: { otp?: string; channel?: string } };
   try {
