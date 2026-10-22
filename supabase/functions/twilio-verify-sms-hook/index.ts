@@ -8,6 +8,8 @@ const SID = /^AC[0-9a-fA-F]{32}$/;
 const VERIFY_SID = /^VA[0-9a-fA-F]{32}$/;
 const HEX = /^[0-9a-f]{64}$/;
 const MAX_BYTES = 20_000;
+const signingSecrets = () =>
+  Deno.env.get("SEND_SMS_HOOK_SECRETS") || Deno.env.get("SEND_SMS_HOOK_SECRET") || "";
 
 function reply(status: number, reason: string) {
   return new Response(reason, {
@@ -19,7 +21,7 @@ function reply(status: number, reason: string) {
 function config() {
   return {
     active: Deno.env.get("ENABLE_TWILIO_SMS_HOOK") === "true",
-    signing: Deno.env.get("SEND_SMS_HOOK_SECRETS") ?? "",
+    signing: signingSecrets(),
     account: Deno.env.get("TWILIO_ACCOUNT_SID") ?? "",
     token: Deno.env.get("TWILIO_AUTH_TOKEN") ?? "",
     verify: Deno.env.get("TWILIO_VERIFY_SERVICE_SID") ?? "",
@@ -37,7 +39,7 @@ async function checkSignature(
 ): Promise<boolean> {
   const signed = new TextEncoder().encode(`${id}.${stamp}.${raw}`);
   const provided = advertised.split(/\s+/).filter((v) => v.startsWith("v1,"));
-  for (const entry of (Deno.env.get("SEND_SMS_HOOK_SECRETS") ?? "").split("|")) {
+  for (const entry of signingSecrets().split("|")) {
     const b64 = entry.startsWith("v1,whsec_")
       ? entry.slice("v1,whsec_".length)
       : entry.startsWith("whsec_")
@@ -121,7 +123,7 @@ async function sendViaVerify(
     To: phone,
     Channel: channel,
     CustomCode: otp,
-    RiskCheck: "enable",
+    ...(channel === "sms" ? { RiskCheck: "enable" } : {}),
   });
   const res = await fetch(endpoint, {
     method: "POST",
