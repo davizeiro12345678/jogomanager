@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import "../public-styles.css";
 
 import { getLeagueDigests } from "@/lib/real-football.functions";
 

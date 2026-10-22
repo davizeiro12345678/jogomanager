@@ -19,4 +19,8 @@
 @source "./pages/guias.tsx";
 @source "./pages/guia-de-scouting.tsx";
 @source "./pages/melhores-formacoes.tsx";
+@source "./components/game/QuickMatchPage.tsx";
+@source "./components/game/MatchLoading.tsx";
+@source "./components/game/Crest.tsx";
+@source "./components/game/Flag.tsx";
 @import "./design-system.css";

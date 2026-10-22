@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import "../public-styles.css";
 import { QuickMatchPage } from "@/components/game/QuickMatchPage";
 import { canonical, noindexMeta, seoMeta } from "@/lib/seo";
 

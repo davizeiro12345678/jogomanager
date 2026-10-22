@@ -6,13 +6,24 @@
 // ============================================================================
 
 import { applyCustomToWorld, revertCustomWorld } from "@/lib/customData";
-import { loadDbCatalog } from "@/lib/db-catalog";
 import { applyMyClubToWorld, readMyClub, restoreWorld } from "@/lib/myClub";
 import { activeWorldId, newWorldId, setActiveWorld } from "@/lib/world-scope";
+import { reportSilent } from "@/lib/silent-errors";
 
 /** Monta o mundo da campanha ativa. Chamado no boot do app. */
 export function applyWorld() {
-  void loadDbCatalog();
+  // Local campaign overrides do not need the Supabase client. Keep the
+  // complete remote catalogue behind its own asynchronous boundary.
+  void import("@/lib/db-catalog")
+    .then((m) => m.loadDbCatalog())
+    .catch((error) =>
+      reportSilent("world.catalog", error, {
+        classification: "degradation",
+        feature: "club-catalog",
+        phase: "load",
+        dedupeKey: "world-catalog-load",
+      }),
+    );
   applyCustomToWorld();
   applyMyClubToWorld();
 }

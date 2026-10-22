@@ -7,13 +7,13 @@ import {
   RootComponent,
 } from "@/components/RootLayout";
 import appCss from "../styles.css?url";
-import publicCss from "../public-styles.css?url";
 
 const LIGHTWEIGHT_PUBLIC_ROUTES = new Set([
   "/",
   "/guias",
   "/guia-de-scouting",
   "/melhores-formacoes",
+  "/partida-rapida",
 ]);
 import { CONSENT_VISIBILITY_SCRIPT } from "@/lib/consent";
 
@@ -53,10 +53,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "Pro Football Manager 3D" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: LIGHTWEIGHT_PUBLIC_ROUTES.has(matches.at(-1)?.routeId ?? "") ? publicCss : appCss,
-      },
+      // Public and quick-selection CSS is manifest-managed and inlined by
+      // Start during SSR. Gameplay keeps its separately cached full sheet.
+      ...(LIGHTWEIGHT_PUBLIC_ROUTES.has(matches.at(-1)?.routeId ?? "")
+        ? []
+        : [{ rel: "stylesheet", href: appCss }]),
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       // Fontes carregadas sem bloquear a primeira pintura: entram como "print"

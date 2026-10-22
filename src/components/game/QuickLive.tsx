@@ -25,6 +25,9 @@ import { safeClub } from "@/game/squad";
 import { CAMERA_OPTIONS } from "@/game/camera-modes";
 import { useT } from "@/i18n/provider";
 import "./career-interface.css";
+// The selection screen uses the small public sheet. Load gameplay utilities
+// with the lazy match, before React renders the 3D interface.
+import "../../styles.css";
 
 interface Snap {
   minute: number;

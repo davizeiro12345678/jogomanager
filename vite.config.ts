@@ -160,7 +160,12 @@ const projectConfig = defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
-    server: { entry: "server" },
+    server: {
+      entry: "server",
+      // Route imports keep critical CSS out of client JavaScript. Start
+      // preserves the inline sheet during hydration and lazy navigation.
+      build: { inlineCss: true },
+    },
   },
 });
 
