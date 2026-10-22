@@ -111,6 +111,12 @@ const projectConfig = defineConfig({
           codeSplitting: {
             groups: [
               {
+                // Lazy routes share Vite's preload helper. If it lives in the
+                // app entry, each dynamic import pulls the entire entry back in.
+                name: "vite-preload",
+                test: /vite[\\/]preload-helper/,
+              },
+              {
                 // Radix needs the small public API (flushSync/portals). Keeping it
                 // out of the hydration entry avoids pulling the router and its
                 // dependencies back into every lazily loaded UI route. The client

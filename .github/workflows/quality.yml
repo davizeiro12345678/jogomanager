@@ -138,8 +138,10 @@ jobs:
           version: 2.75.2
       # These commands target the disposable local Docker database only.
       # No access token, production password, --linked, or remote DB URL is used.
+      - name: Verify database startup failure handling
+        run: node --test scripts/start-replay-db.test.mjs
       - name: Start local Supabase Postgres
-        run: supabase db start
+        run: bash scripts/start-replay-db.sh
       - name: Replay the complete canonical migration history
         run: supabase db reset --local --no-seed --yes
       - name: Verify application schema, ownership, and grants

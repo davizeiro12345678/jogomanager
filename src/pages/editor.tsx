@@ -9,7 +9,8 @@ import { lazy, Suspense, useState } from "react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { readCustom, type CustomData } from "@/lib/customData";
+import { readCustom } from "@/lib/custom-data-storage";
+import type { CustomData } from "@/lib/customData";
 
 const RosterTab = lazy(() => import("@/features/editor/roster"));
 

@@ -54,10 +54,16 @@ for (const name of await readdir(assets)) {
           ? "new"
           : null,
     imports: imports
-      .filter((i) => i.d === -1 && i.n?.startsWith("."))
+      .filter(
+        (i) =>
+          i.d === -1 && (i.n?.startsWith(".") || (i.n?.startsWith("/") && !i.n.startsWith("//"))),
+      )
       .map((i) => path.basename(i.n)),
     dynamicImports: imports
-      .filter((i) => i.d >= 0 && i.n?.startsWith("."))
+      .filter(
+        (i) =>
+          i.d >= 0 && (i.n?.startsWith(".") || (i.n?.startsWith("/") && !i.n.startsWith("//"))),
+      )
       .map((i) => path.basename(i.n)),
   });
 }

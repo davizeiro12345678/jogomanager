@@ -104,7 +104,9 @@ export function ArticleShell({
                   key={f.q}
                   className="rounded-xl border border-border/60 surface-card p-4 transition hover:border-primary/40"
                 >
-                  <summary className="cursor-pointer font-display text-base">{f.q}</summary>
+                  <summary className="cursor-pointer font-display text-base">
+                    <h3 className="inline font-display text-base">{f.q}</h3>
+                  </summary>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.a}</p>
                 </details>
               ))}
@@ -141,15 +143,18 @@ export function ArticleShell({
 export function Section({
   title,
   id,
+  level = 2,
   children,
 }: {
   title: string;
   id?: string;
+  level?: 2 | 3 | 4 | 5;
   children: ReactNode;
 }) {
+  const Heading = `h${level}` as "h2" | "h3" | "h4" | "h5";
   return (
     <section id={id} className="scroll-mt-24 rounded-2xl border border-border/60 surface-card p-5">
-      <h2 className="font-display text-xl">{title}</h2>
+      <Heading className="font-display text-xl">{title}</Heading>
       <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">{children}</div>
     </section>
   );
