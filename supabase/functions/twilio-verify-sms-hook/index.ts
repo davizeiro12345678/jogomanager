@@ -157,7 +157,8 @@ Deno.serve(async (request: Request) => {
   const id = request.headers.get("webhook-id") ?? "";
   const timestamp = request.headers.get("webhook-timestamp") ?? "";
   const signature = request.headers.get("webhook-signature") ?? "";
-  if (!id || id.length > 200 || !/^\d{9,12}$/.test(timestamp) || !signature) return reply(400, "{}");
+  if (!id || id.length > 200 || !/^\d{9,12}$/.test(timestamp) || !signature)
+    return reply(400, "{}");
   if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return reply(400, "{}");
   const contentLength = Number(request.headers.get("content-length") ?? "0");
   if (!Number.isFinite(contentLength) || contentLength > MAX_BYTES) return reply(413, "{}");
@@ -175,8 +176,7 @@ Deno.serve(async (request: Request) => {
   const otp = event.sms?.otp ?? "";
   // The documented Send SMS hook does not reliably include the original
   // requested channel. Default to SMS, never trust a request header.
-  const channel: "sms" | "whatsapp" =
-    event.sms?.channel === "whatsapp" ? "whatsapp" : "sms";
+  const channel: "sms" | "whatsapp" = event.sms?.channel === "whatsapp" ? "whatsapp" : "sms";
   if (!E164.test(phone) || !/^\d{4,10}$/.test(otp)) return reply(400, "{}");
 
   try {
