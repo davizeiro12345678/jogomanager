@@ -38,6 +38,12 @@ import { ActivityRanking } from "@/features/activity/ActivityRanking";
 
 import { PasskeySettings } from "@/components/PasskeySettings";
 
+const AuthenticatorSettings = lazy(() =>
+  import("@/components/security/AuthenticatorSettings").then((m) => ({
+    default: m.AuthenticatorSettings,
+  })),
+);
+
 const PhoneMFASettings = lazy(() =>
   import("@/components/security/PhoneMFASettings").then((module) => ({
     default: module.PhoneMFASettings,
@@ -128,6 +134,11 @@ export function Perfil() {
       </div>
 
       {signedIn && <PasskeySettings />}
+      {signedIn && (
+        <Suspense fallback={null}>
+          <AuthenticatorSettings />
+        </Suspense>
+      )}
       {signedIn && import.meta.env.VITE_PHONE_AUTH_ENABLED === "true" && (
         <Suspense fallback={null}>
           <VerifiedPhoneSettings />

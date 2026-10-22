@@ -11,7 +11,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { needsMfaChallenge } from "@/lib/mfa-session";
 
 import { Button } from "@/components/ui/button";
 
@@ -44,6 +45,10 @@ const PhoneAuthPanel = lazy(() =>
   })),
 );
 
+const MfaChallenge = lazy(() =>
+  import("@/components/security/MfaChallenge").then((m) => ({ default: m.MfaChallenge })),
+);
+
 export function AuthPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -68,11 +73,24 @@ export function AuthPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [magicEmail, setMagicEmail] = useState("");
   const [recoveryReady, setRecoveryReady] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(false);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
   // Managed Google/Apple/Microsoft credentials only work through the Lovable broker;
   // the direct provider path returns 400 "Unsupported provider".
   const brokeredOAuth = import.meta.env["VITE_AUTH_MODE"] !== "supabase-direct";
   const passkeysSupported = supportsPasskeys();
+
+  const checkMfa = useCallback(async () => {
+    const { data, error: assuranceError } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assuranceError || !data) throw new Error("Session assurance unavailable");
+    const required = needsMfaChallenge(data);
+    setMfaRequired(required);
+    return required;
+  }, []);
+  const continueSession = async () => {
+    if (!(await checkMfa())) await navigate({ href: destination });
+  };
 
   useEffect(() => {
     let alive = true;
@@ -97,12 +115,16 @@ export function AuthPage() {
     });
     void supabase.auth
       .getSession()
-      .then(({ data, error: sessionError }) => {
+      .then(async ({ data, error: sessionError }) => {
         if (!alive) return;
         if (sessionError) {
           setError(
             "O link não pôde ser validado. Tente entrar novamente ou solicite outro e-mail.",
           );
+          return;
+        }
+        if (data.session && (await checkMfa())) {
+          if (recovery) setRecoveryReady(true);
           return;
         }
         if (recovery) {
@@ -141,7 +163,7 @@ export function AuthPage() {
       alive = false;
       listener.subscription.unsubscribe();
     };
-  }, [destination, navigate, search.recovery, search.next]);
+  }, [destination, navigate, search.recovery, search.next, checkMfa]);
 
   const callback = (recovery = false) =>
     `${window.location.origin}/auth?next=${encodeURIComponent(destination)}${recovery ? "&recovery=1" : ""}`;
@@ -177,7 +199,7 @@ export function AuthPage() {
           });
           if (result.error) throw result.error;
           if (!result.data.session) throw new Error("No verified session");
-          await navigate({ href: destination });
+          await continueSession();
         } else {
           const submittedEmail = email.trim();
           const result = await supabase.auth.signInWithOtp({
@@ -204,6 +226,7 @@ export function AuthPage() {
         );
       } else if (mode === "update") {
         if (!recoveryReady) throw new Error("No recovery session");
+        if (await checkMfa()) return;
         const result = await supabase.auth.updateUser({ password });
         if (result.error) throw result.error;
         setNotice("Senha atualizada. Você já pode continuar sua carreira.");
@@ -225,7 +248,7 @@ export function AuthPage() {
                 },
               });
         if (result.error) throw result.error;
-        if (result.data.session) await navigate({ href: destination });
+        if (result.data.session) await continueSession();
         else {
           setConfirmationSent(true);
           setNotice(
@@ -253,7 +276,7 @@ export function AuthPage() {
           redirect_uri: callback(),
         });
         if (result.error) throw result.error;
-        if (!result.redirected) await navigate({ href: destination });
+        if (!result.redirected) await continueSession();
       } else {
         const result = await supabase.auth.signInWithOAuth({
           provider,
@@ -277,7 +300,7 @@ export function AuthPage() {
       const result = await supabase.auth.signInWithPasskey();
       if (result.error) throw result.error;
       if (!result.data?.session) throw new Error("No passkey session");
-      await navigate({ href: destination });
+      await continueSession();
     } catch (cause) {
       setError(passkeyErrorMessage(cause));
     } finally {
@@ -317,6 +340,19 @@ export function AuthPage() {
   }[mode];
   const inputClass =
     "min-h-11 w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary";
+  if (mfaRequired)
+    return (
+      <main className="auth-stage grid min-h-screen place-items-center px-4 py-10">
+        <Suspense fallback={<p role="status">Carregando verificação de segurança…</p>}>
+          <MfaChallenge
+            onVerified={async () => {
+              if (await checkMfa()) return;
+              if (mode !== "update") await navigate({ href: destination });
+            }}
+          />
+        </Suspense>
+      </main>
+    );
   if (signedInAs && mode !== "update")
     return (
       <main className="auth-stage grid min-h-screen place-items-center px-4 py-10">
@@ -324,7 +360,7 @@ export function AuthPage() {
           <h1 className="font-display text-2xl font-bold">Você já está conectado</h1>
           <p className="mt-2 text-sm text-muted-foreground">{signedInAs}</p>
           <div className="mt-6 grid gap-3">
-            <Button size="lg" onClick={() => void navigate({ href: destination })}>
+            <Button size="lg" onClick={() => void continueSession()}>
               Continuar para o jogo
             </Button>
             <Button
@@ -676,7 +712,7 @@ export function AuthPage() {
           )}
           {mode === "in" && import.meta.env.VITE_PHONE_AUTH_ENABLED === "true" && (
             <Suspense fallback={null}>
-              <PhoneAuthPanel destination={destination} />
+              <PhoneAuthPanel onSignedIn={continueSession} />
             </Suspense>
           )}
           {mode === "update" && notice ? (

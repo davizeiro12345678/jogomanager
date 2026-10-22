@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { readConsent, saveConsent } from "@/lib/consent";
 
 /** Isolated from consent settings, Firebase push and data-export UI.
@@ -53,12 +52,20 @@ export function ConsentBanner() {
           </a>
         </p>
         <div className="mt-3 flex gap-2">
-          <Button size="sm" onClick={() => choose(true)}>
+          <button
+            type="button"
+            className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
+            onClick={() => choose(true)}
+          >
             Aceitar
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => choose(false)}>
+          </button>
+          <button
+            type="button"
+            className="inline-flex min-h-11 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
+            onClick={() => choose(false)}
+          >
             Só o essencial
-          </Button>
+          </button>
         </div>
       </div>
     </div>

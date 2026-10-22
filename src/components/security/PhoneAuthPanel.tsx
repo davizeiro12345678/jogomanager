@@ -1,13 +1,11 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 
 const PHONE_NUMBER = /^\+[1-9]\d{7,14}$/;
 
 type PhoneChannel = "sms" | "whatsapp";
 
-export function PhoneAuthPanel({ destination }: { destination: string }) {
-  const navigate = useNavigate();
+export function PhoneAuthPanel({ onSignedIn }: { onSignedIn: () => Promise<void> }) {
   const [phone, setPhone] = useState("");
   const [channel, setChannel] = useState<PhoneChannel>("sms");
   const [code, setCode] = useState("");
@@ -42,7 +40,7 @@ export function PhoneAuthPanel({ destination }: { destination: string }) {
         });
         if (result.error) throw result.error;
         if (!result.data.session) throw new Error("A sessão não foi confirmada.");
-        await navigate({ href: destination });
+        await onSignedIn();
         return;
       }
       if (Date.now() - lastRequest < 60_000) {

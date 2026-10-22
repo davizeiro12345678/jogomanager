@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { FootballHome } from "@/components/home/FootballHome";
 import { getLeagueDigests } from "@/lib/real-football.functions";
 import { canonical, gameLd, websiteLd, seoMeta, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
+import heroMobileAvif from "@/assets/hero-stadium.jpg?format=avif&w=390;540&aspect=1:2&fit=cover&position=centre&quality=44&as=srcset";
 import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1080;1600&quality=52&as=srcset";
 
 export const Route = createFileRoute("/")({
@@ -23,7 +24,17 @@ export const Route = createFileRoute("/")({
         rel: "preload",
         as: "image",
         type: "image/avif",
+        imageSrcSet: heroMobileAvif,
+        imageSizes: "100vw",
+        media: "(max-width: 640px)",
+        fetchPriority: "high",
+      },
+      {
+        rel: "preload",
+        as: "image",
+        type: "image/avif",
         imageSrcSet: heroAvif,
+        media: "(min-width: 641px)",
         imageSizes: "100vw",
         fetchPriority: "high",
       },
