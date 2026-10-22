@@ -182,3 +182,28 @@ test("stress gate rejects skipped, missing and failed suites", () => {
     assert.match(result.stderr, /complete 200-match stress suite must execute and pass/);
   }
 });
+
+test("bundle analyzer counts shared root-relative modules without following remote URLs", () => {
+  const cwd = mkdtempSync(path.join(tmpdir(), "bundle-imports-"));
+  try {
+    writeFileSync(
+      path.join(cwd, "match-route.js"),
+      'import "/assets/shared.js"; import "https://example.invalid/remote.js"; export const route = 1;',
+    );
+    writeFileSync(path.join(cwd, "shared.js"), "export const shared = 123;");
+    const result = spawnSync(
+      process.execPath,
+      [path.join(root, "scripts/bundle-report.mjs"), "fixture", cwd],
+      { cwd, encoding: "utf8" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(
+      readFileSync(path.join(cwd, "verification/bundle-2026-10-01/fixture.json"), "utf8"),
+    );
+    const entry = report.entries.find((entry) => entry.name === "match-route.js");
+    assert.deepEqual(entry.dependencies.sort(), ["match-route.js", "shared.js"]);
+    assert.equal(entry.staticBytes, report.totalBytes);
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});

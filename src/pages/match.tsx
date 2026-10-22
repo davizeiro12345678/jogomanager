@@ -2,7 +2,10 @@ import { playGoalAnthem } from "@/game/goal-anthem";
 
 import { Link, useNavigate } from "@tanstack/react-router";
 
-import { NoCareer } from "@/components/game/screen-kit";
+// The career navigation shell is only needed when this route has no save.
+const NoCareer = lazy(() =>
+  import("@/components/game/screen-kit").then((module) => ({ default: module.NoCareer })),
+);
 
 import { toast } from "sonner";
 
@@ -160,7 +163,12 @@ export function MatchPage() {
   const { career, update } = useCareer();
   const navigate = useNavigate();
 
-  if (!career) return <NoCareer hint="Comece uma carreira para disputar os 90 minutos em 3D." />;
+  if (!career)
+    return (
+      <Suspense fallback={<p role="status">Carregando carreira…</p>}>
+        <NoCareer hint="Comece uma carreira para disputar os 90 minutos em 3D." />
+      </Suspense>
+    );
 
   const fixture = nextFixture(career);
   if (!fixture) {

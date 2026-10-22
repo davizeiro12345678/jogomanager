@@ -30,6 +30,7 @@ export function ScoutingPage() {
         { id: "observacao", title: "Como interpretar estatísticas" },
         { id: "perfis", title: "Perfis por função" },
         { id: "amostra", title: "Minutos e tamanho da amostra" },
+        { id: "checklist-decisao", title: "Checklist de decisão e orçamento" },
         { id: "relatorio", title: "Relatório antes de negociar" },
         { id: "pos-contratacao", title: "Revisão depois da chegada" },
         { id: "dados-scouting", title: "Contexto das ligas reais" },
@@ -216,6 +217,68 @@ export function ScoutingPage() {
           futura depende das condições da carreira. Um candidato pode ser bom para desenvolver e
           ainda estar distante da prontidão exigida para a próxima partida.
         </p>
+      </Section>
+      <Section id="checklist-decisao" title="Checklist de decisão: do objetivo à proposta">
+        <section aria-labelledby="scout-encaixe">
+          <h3 id="scout-encaixe" className="font-display text-lg text-foreground">
+            1. Confirme o encaixe esportivo
+          </h3>
+          <p>
+            Relacione a função procurada com uma carência do elenco. Compare o candidato com a
+            alternativa que já está no clube e registre qual problema ele deve resolver.
+          </p>
+        </section>
+        <section aria-labelledby="scout-orcamento">
+          <h3 id="scout-orcamento" className="font-display text-lg text-foreground">
+            2. Verifique a viabilidade financeira
+          </h3>
+          <section className="mt-3 space-y-2" aria-labelledby="scout-custo">
+            <h4 id="scout-custo" className="font-display text-base text-foreground">
+              Some o compromisso total do contrato
+            </h4>
+            <p>
+              Separe a transferência dos pagamentos recorrentes. Use os valores e a periodicidade
+              apresentados na interface, sem tratar o preço de compra como o custo completo.
+            </p>
+            <section aria-labelledby="scout-periodicidade">
+              <h5 id="scout-periodicidade" className="font-display text-sm text-foreground">
+                Confira a periodicidade antes de comparar salários
+              </h5>
+              <p>
+                Compare propostas no mesmo período. Um valor semanal e outro mensal não podem ser
+                somados ou comparados diretamente; registre também a duração do compromisso.
+              </p>
+            </section>
+            <section aria-labelledby="scout-incerteza">
+              <h5 id="scout-incerteza" className="font-display text-sm text-foreground">
+                Registre custos e informações ainda desconhecidos
+              </h5>
+              <p>
+                Se uma condição não estiver disponível, marque-a como pendente. Não complete dados
+                ausentes por suposição e não conte com uma venda futura ainda não confirmada.
+              </p>
+            </section>
+          </section>
+          <section className="mt-3 space-y-2" aria-labelledby="scout-reserva">
+            <h4 id="scout-reserva" className="font-display text-base text-foreground">
+              Preserve uma reserva para o restante da temporada
+            </h4>
+            <p>
+              Reveja o saldo previsto depois da proposta. Considere contratos existentes e a
+              possibilidade de precisar substituir um atleta indisponível antes de comprometer todo
+              o orçamento.
+            </p>
+          </section>
+        </section>
+        <section aria-labelledby="scout-decisao">
+          <h3 id="scout-decisao" className="font-display text-lg text-foreground">
+            3. Registre a decisão e o momento de revisar
+          </h3>
+          <p>
+            Anote se vai contratar, observar mais ou manter o elenco atual. Depois de uma sequência
+            de oportunidades, compare o papel esperado com a participação real do jogador.
+          </p>
+        </section>
       </Section>
       <Section id="relatorio" title="Um relatório curto que melhora a decisão de contratação">
         <ol className="list-decimal space-y-2 pl-5">

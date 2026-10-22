@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import type { Plugin } from "vite";
+import { createRequire } from "node:module";
+import { transformWithOxc, type Plugin } from "vite";
+import { rapierSourceModules, sharedRapierBindings } from "./rapier-source-modules";
 
 // The pinned compat package embeds the exact binary it also ships as a file.
 // Keep its official bindings/init, but let browsers and workers fetch the
@@ -47,24 +49,53 @@ export function isRapierCompatModule(id: string): boolean {
 
 /** Browser builds only: server physics and development retain their original init. */
 export function rapierWasmAsset(): Plugin {
+  const prefix = "\0pfm-rapier-source/";
+  const modulePath = createRequire(import.meta.url)
+    .resolve("@dimforge/rapier3d-compat")
+    .replace(/rapier\.cjs$/, "rapier.mjs");
+  let modules: Map<string, string>;
+  let bindingsUrl: string;
   return {
     name: "pfm-rapier-wasm-asset",
     apply: "build",
     applyToEnvironment: (environment) => environment.config.consumer === "client",
     enforce: "pre",
-    transform(code, id) {
-      if (!isRapierCompatModule(id)) return null;
-      const modulePath = id.split("?")[0]!;
+    async buildStart() {
+      const code = readFileSync(modulePath, "utf8");
       const wasm = readFileSync(path.join(path.dirname(modulePath), "rapier_wasm3d_bg.wasm"));
+      // Fail closed if upstream changes its embedded binary or namespace.
+      externalizeRapierWasm(code, wasm, '"validation-only"');
       const reference = this.emitFile({
         type: "asset",
         name: "rapier_wasm3d_bg.wasm",
         source: wasm,
       });
-      return {
-        code: externalizeRapierWasm(code, wasm, `import.meta.ROLLUP_FILE_URL_${reference}`),
-        map: null,
-      };
+      modules = rapierSourceModules(modulePath, `import.meta.ROLLUP_FILE_URL_${reference}`);
+      const bindings = await sharedRapierBindings(modulePath);
+      const assets = this.environment.config.build.assetsDir;
+      const fileName = `${assets}/${bindings.fileName}`;
+      this.emitFile({ type: "asset", fileName, source: bindings.code });
+      bindingsUrl = `${this.environment.config.base}${fileName}`;
+    },
+    resolveId(id, importer) {
+      if (id === "@dimforge/rapier3d-compat" || isRapierCompatModule(id))
+        return `${prefix}index.ts`;
+      if (!importer?.startsWith(prefix) || !id.startsWith(".")) return null;
+      const relative = path.posix.normalize(
+        path.posix.join(path.posix.dirname(importer.slice(prefix.length)), id),
+      );
+      if (relative === "rapier_wasm3d.js") return { id: bindingsUrl, external: "absolute" };
+      for (const candidate of [relative, `${relative}.ts`, `${relative}/index.ts`]) {
+        if (modules.has(candidate)) return `${prefix}${candidate}`;
+      }
+      throw new Error(`Unresolved official Rapier module: ${relative}`);
+    },
+    async load(id) {
+      if (!id.startsWith(prefix)) return null;
+      const relative = id.slice(prefix.length);
+      const source = modules.get(relative);
+      if (!source) throw new Error(`Missing official Rapier module: ${relative}`);
+      return transformWithOxc(source, relative, { lang: "ts", target: "es2022" });
     },
   };
 }

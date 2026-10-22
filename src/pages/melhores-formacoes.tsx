@@ -37,6 +37,7 @@ export function FormationsPage() {
       level="Iniciante"
       updated="13 de outubro de 2026"
       toc={[
+        { id: "comparar-formacoes", title: "Compare os quatro esquemas" },
         ...FORMATIONS.map((f) => ({ id: f.name, title: f.name })),
         { id: "escolher", title: "Como escolher na prática" },
         { id: "ajustes", title: "Os três ajustes que mais mudam o jogo" },
@@ -59,16 +60,18 @@ export function FormationsPage() {
         },
       ]}
     >
-      {FORMATIONS.map((f) => (
-        <Section key={f.name} id={f.name} title={f.name}>
-          <p>
-            <strong className="text-foreground">Forte em:</strong> {f.good}
-          </p>
-          <p>
-            <strong className="text-foreground">Cuidado com:</strong> {f.bad}
-          </p>
-        </Section>
-      ))}
+      <Section id="comparar-formacoes" title="Compare quatro formações para o seu elenco">
+        {FORMATIONS.map((f) => (
+          <Section key={f.name} id={f.name} title={f.name} level={3}>
+            <p>
+              <strong className="text-foreground">Forte em:</strong> {f.good}
+            </p>
+            <p>
+              <strong className="text-foreground">Cuidado com:</strong> {f.bad}
+            </p>
+          </Section>
+        ))}
+      </Section>
       <Section id="escolher" title="Como escolher na prática">
         <p>
           Comece pela sua melhor posição: se os dois melhores jogadores são pontas, jogue 4-3-3; se
