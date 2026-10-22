@@ -16,6 +16,8 @@ import {
 } from "@/game/customStyle";
 import type { Club, League, Player, Position } from "@/game/types";
 import { scopedKey } from "@/lib/world-scope";
+import { readCustom } from "./custom-data-storage";
+export { readCustom } from "./custom-data-storage";
 
 /** Dados do editor, por campanha. */
 function key() {
@@ -95,24 +97,6 @@ export interface CustomData {
   clubs: Record<string, ClubOverride>;
   players: CustomPlayer[];
   competitions: CustomCompetition[];
-}
-
-const EMPTY: CustomData = { clubs: {}, players: [], competitions: [] };
-
-export function readCustom(): CustomData {
-  if (typeof window === "undefined") return EMPTY;
-  try {
-    const raw = window.localStorage.getItem(key());
-    if (!raw) return EMPTY;
-    const parsed = JSON.parse(raw) as Partial<CustomData>;
-    return {
-      clubs: parsed.clubs ?? {},
-      players: parsed.players ?? [],
-      competitions: parsed.competitions ?? [],
-    };
-  } catch {
-    return EMPTY;
-  }
 }
 
 /** Versões anteriores do editor, da mais nova para a mais antiga. */
