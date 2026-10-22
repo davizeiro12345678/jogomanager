@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 const E164 = /^\+[1-9]\d{7,14}$/;
 // Intentionally disabled until Twilio Verify service, approved messaging channels,
 // Supabase phone auth, fraud limits and real delivery tests are configured.
-const ENABLED = import.meta.env["VITE_PHONE_MFA_ENABLED"] === "true";
+const ENABLED = import.meta.env.VITE_PHONE_MFA_ENABLED === "true";
 type Channel = "sms" | "whatsapp";
 type PhoneFactor = { id: string; status: string; phone?: string };
 
