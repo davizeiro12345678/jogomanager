@@ -127,11 +127,6 @@ jobs:
 
   database-replay:
     name: Supabase migration replay and access contracts
-    # setup-cli exports GHCR by default; its shared-runner rate limit can
-    # fail before any SQL runs. Use Supabase's official ECR mirror for
-    # start and reset alike, retaining the exact pinned CLI/image version.
-    env:
-      SUPABASE_INTERNAL_IMAGE_REGISTRY: public.ecr.aws
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -143,14 +138,11 @@ jobs:
           version: 2.75.2
       # These commands target the disposable local Docker database only.
       # No access token, production password, --linked, or remote DB URL is used.
+      - name: Verify database startup failure handling
+        run: node --test scripts/start-replay-db.test.mjs
       - name: Start local Supabase Postgres
-        env:
-          # Step scope overrides setup-cli's GITHUB_ENV GHCR default.
-          SUPABASE_INTERNAL_IMAGE_REGISTRY: public.ecr.aws
-        run: supabase db start
+        run: bash scripts/start-replay-db.sh
       - name: Replay the complete canonical migration history
-        env:
-          SUPABASE_INTERNAL_IMAGE_REGISTRY: public.ecr.aws
         run: supabase db reset --local --no-seed --yes
       - name: Verify application schema, ownership, and grants
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/supabase-replay-contract.sql
