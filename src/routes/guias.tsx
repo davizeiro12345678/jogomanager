@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import "../public-styles.css";
 
 import { articleLd, breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 import { GuidesPage } from "@/pages/guias";
