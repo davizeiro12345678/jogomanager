@@ -49,3 +49,13 @@
 O painel desta sessão está na tela de login, sem conector Twilio nem credenciais no ambiente. Fraud Guard, Geo Permissions, CustomCode, provider Phone/MFA do Supabase e WhatsApp NÃO foram ativados. Nenhum SMS/WhatsApp enviado. As flags `VITE_PHONE_AUTH_ENABLED` e `VITE_PHONE_MFA_ENABLED` continuam desativadas.
 
 O hook existente continua fail-closed: assinatura Standard Webhooks, HMAC de telefone, orçamento atômico no banco, timeout e `RiskCheck=enable` no SMS. Ele NÃO protege o envio real enquanto o Auth Hook não estiver configurado e ativo. Limite no navegador sozinho não impede SMS pumping. A configuração completa exige autenticação no Twilio, serviço Verify real, destinos permitidos definidos, credenciais no servidor e teste com destinatário autorizado.
+
+## Continuação de 22/10: provedores e infraestrutura de CI
+
+- Painel Supabase inspecionado: Phone desativado; Twitch e X OAuth2 habilitados; nenhum Custom Provider cadastrado. O frontend já descobre os providers habilitados via `/auth/v1/settings`, incluindo identificadores `custom:`. Não foram criadas entradas com credenciais fictícias ou reaproveitadas de outro provedor.
+- Phone agora também exige `external.phone === true` nas configurações públicas, além da flag de release. Isso evita oferecer uma tentativa de login contra um backend desativado. WhatsApp/telefone/MFA continuam sem ativação real.
+- Novos provedores OAuth/OIDC exigem Client ID/Secret do aplicativo correspondente e callback `https://lguqnwvsfeefxamzeyos.supabase.co/auth/v1/callback`. Referência: https://supabase.com/docs/guides/auth/custom-oauth-providers. Yahoo, Amazon e LINE exigem cadastro próprio e validação do fluxo; não são disponibilizados só por adicionar um botão.
+- O Twilio redirecionou para `accounts.google.com`; a revisão automática recusou acesso a esse domínio. Não houve leitura de credenciais, alteração no Twilio ou envio de mensagens.
+- CI: GHCR e depois ECR retornaram `toomanyrequests` antes de executar SQL. O bootstrap local agora tenta GHCR, ECR e Docker Hub somente nesse tipo de falha, preserva o registro bem-sucedido para `db reset` e continua falhando para problemas de saúde/SQL ou esgotamento dos três registros. CLI e versão da imagem permanecem fixados. Quatro testes comprovam esses caminhos.
+- Home: seções adicionais abaixo da dobra usam `content-visibility: auto`, preservando conteúdo e navegação no DOM. O hero permanece sem contenção. Build e validação de tipos aprovados; ganho de Lighthouse desta alteração ainda precisa ser medido no CI.
+- Nenhum orçamento foi alterado. Rapier 210.463 B, regressão total de JS e Lighthouse mobile continuam bloqueando a publicação. Não afirmar que todos os erros do GitHub foram resolvidos.

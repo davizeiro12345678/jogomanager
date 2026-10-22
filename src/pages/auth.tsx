@@ -710,11 +710,13 @@ export function AuthPage() {
               Esqueci minha senha
             </Button>
           )}
-          {mode === "in" && import.meta.env.VITE_PHONE_AUTH_ENABLED === "true" && (
-            <Suspense fallback={null}>
-              <PhoneAuthPanel onSignedIn={continueSession} />
-            </Suspense>
-          )}
+          {mode === "in" &&
+            methods?.phone &&
+            import.meta.env.VITE_PHONE_AUTH_ENABLED === "true" && (
+              <Suspense fallback={null}>
+                <PhoneAuthPanel onSignedIn={continueSession} />
+              </Suspense>
+            )}
           {mode === "update" && notice ? (
             <Button asChild className="mt-4 w-full">
               <Link to={destination}>Continuar minha carreira</Link>

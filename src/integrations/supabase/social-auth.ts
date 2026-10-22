@@ -30,6 +30,7 @@ export type SocialProvider = Provider;
 export type AuthMethods = {
   socialProviders: SocialProvider[];
   email: boolean;
+  phone: boolean;
   passkeys: boolean;
   signup: boolean;
 };
@@ -67,6 +68,7 @@ export function parseAuthMethods(
   return {
     socialProviders: [...builtIn, ...custom],
     email: external["email"] === true,
+    phone: external["phone"] === true,
     passkeys: settings["passkeys_enabled"] === true,
     signup: settings["disable_signup"] !== true,
   };
