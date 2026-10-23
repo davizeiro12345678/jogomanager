@@ -64,13 +64,14 @@ export function Page() {
             <dt className="font-medium">Perfil do criador no Discord</dt>
             <dd className="text-muted-foreground">
               Usuário: <strong className="text-foreground">{CREATOR.discordUsername}</strong>
-              {" · "}Nome visível: <strong className="text-foreground">{CREATOR.discordDisplayName}</strong>
+              {" · "}Nome visível:{" "}
+              <strong className="text-foreground">{CREATOR.discordDisplayName}</strong>
             </dd>
           </div>
         </dl>
         <p className="mt-3 text-xs text-muted-foreground">
-          Este é o perfil pessoal do criador; para entrar na comunidade, use o convite oficial abaixo.
-          Não compartilhe senhas nem códigos de autenticação.
+          Este é o perfil pessoal do criador; para entrar na comunidade, use o convite oficial
+          abaixo. Não compartilhe senhas nem códigos de autenticação.
         </p>
         <div className="mt-5 flex flex-wrap items-center gap-4">
           <DiscordLink>Comunidade no Discord</DiscordLink>
