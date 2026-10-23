@@ -63,10 +63,21 @@ describe("retired public pages", () => {
 
   it("keeps the official contacts consistent", () => {
     const contacts = ["davizeiro10.jogos@gmail.com", "davithomazini779@gmail.com"];
-    for (const file of ["../pages/contato.tsx", "../pages/criador.tsx", "../../public/llms.txt"]) {
-      const source = readFileSync(new URL(file, import.meta.url), "utf8");
-      for (const email of contacts) expect(source).toContain(email);
+    const creator = readFileSync(new URL("../content/creator.ts", import.meta.url), "utf8");
+    const llms = readFileSync(new URL("../../public/llms.txt", import.meta.url), "utf8");
+    for (const email of contacts) {
+      expect(creator).toContain(email);
+      expect(llms).toContain(email);
     }
+    for (const page of ["../pages/contato.tsx", "../pages/criador.tsx"]) {
+      const source = readFileSync(new URL(page, import.meta.url), "utf8");
+      expect(source).toContain("CREATOR");
+    }
+    const contactPage = readFileSync(new URL("../pages/contato.tsx", import.meta.url), "utf8");
+    const creatorPage = readFileSync(new URL("../pages/criador.tsx", import.meta.url), "utf8");
+    expect(contactPage).toContain("CREATOR.secondaryEmail");
+    expect(creatorPage).toContain("CREATOR.primaryEmail");
+    expect(creatorPage).toContain("CREATOR.secondaryEmail");
     const community = readFileSync(new URL("../content/community.ts", import.meta.url), "utf8");
     expect(community).toContain('DISCORD_INVITE = "https://discord.gg/6az4ssQQck"');
     const llms = readFileSync(new URL("../../public/llms.txt", import.meta.url), "utf8");
