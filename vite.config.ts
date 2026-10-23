@@ -112,6 +112,21 @@ const projectConfig = defineConfig({
           codeSplitting: {
             groups: [
               {
+                // Keep cohorts with the same startup consumers together.
+                // Grouping every public icon also made the editor download
+                // unused icons; these smaller groups preserve route isolation.
+                name: "public-checks",
+                test: /[\\/]node_modules[\\/]lucide-react[\\/]dist[\\/]esm[\\/]icons[\\/](?:check|chevron-right)\.mjs(?:$|\?)/,
+              },
+              {
+                name: "public-menu-users",
+                test: /[\\/]node_modules[\\/]lucide-react[\\/]dist[\\/]esm[\\/]icons[\\/](?:menu|users)\.mjs(?:$|\?)/,
+              },
+              {
+                name: "home-icons",
+                test: /[\\/]node_modules[\\/]lucide-react[\\/]dist[\\/]esm[\\/]icons[\\/](?:gamepad-2|arrow-down)\.mjs(?:$|\?)/,
+              },
+              {
                 // Lazy routes share Vite's preload helper. If it lives in the
                 // app entry, each dynamic import pulls the entire entry back in.
                 name: "vite-preload",
@@ -166,7 +181,8 @@ const projectConfig = defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
-    server: { entry: "server" },
+    // Only public shells opt in per request; gameplay keeps linked CSS.
+    server: { entry: "server", build: { inlineCss: true } },
   },
 });
 

@@ -1,3 +1,4 @@
+import "@/public-styles.css";
 import { Link } from "@tanstack/react-router";
 
 import { ArticleShell, Section } from "@/components/ArticleShell";

@@ -18,6 +18,17 @@ module.exports = async () => {
       ) {
         throw new Error(`Invalid rendered HTML for ${route} with Accept-Encoding ${encoding}`);
       }
+      if (route === "/") {
+        const style = html.match(/<style\b[^>]*data-tsr-inline-css[^>]*>/i)?.[0];
+        const nonce = style?.match(/nonce=["']([^"']+)["']/i)?.[1];
+        const csp = [
+          response.headers.get("content-security-policy"),
+          response.headers.get("content-security-policy-report-only"),
+        ].join("; ");
+        if (!nonce || !csp.includes(`'nonce-${nonce}'`)) {
+          throw new Error("Home inline stylesheet is missing the response's CSP nonce");
+        }
+      }
       console.log(`Verified decoded HTML: ${route} (${encoding})`);
     }
   }
