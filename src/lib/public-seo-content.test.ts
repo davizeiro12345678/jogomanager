@@ -3,7 +3,10 @@ import { readFileSync } from "node:fs";
 import { CREATOR } from "@/content/creator";
 
 const aboutSource = readFileSync(new URL("../pages/sobre.tsx", import.meta.url), "utf8");
-const managerSource = readFileSync(new URL("../pages/jogo-de-manager-de-futebol.tsx", import.meta.url), "utf8");
+const managerSource = readFileSync(
+  new URL("../pages/jogo-de-manager-de-futebol.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("páginas públicas e identidade do criador", () => {
   it("não carrega o catálogo volumoso na página Sobre", () => {
