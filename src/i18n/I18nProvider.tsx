@@ -15,7 +15,6 @@ import { isPublicContentPath } from "@/lib/public-content-routes";
 
 const STORAGE_KEY = "pfm3d.lang";
 
-
 function detect(): Lang {
   if (typeof window === "undefined") return "pt-BR";
   try {

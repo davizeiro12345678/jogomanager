@@ -146,6 +146,8 @@ jobs:
         run: supabase db reset --local --no-seed --yes
       - name: Verify application schema, ownership, and grants
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/supabase-replay-contract.sql
+      - name: Verify future tables require explicit API grants
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/explicit-public-grants.sql
 
   game-assets:
     name: 3D asset compression contract

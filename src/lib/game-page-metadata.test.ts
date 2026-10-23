@@ -1,7 +1,39 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { LANGS } from "@/i18n/locale-catalog";
 import { translate } from "@/i18n";
-import { gamePageHead, gamePageMetadata, socialLocale } from "./game-page-metadata";
+import {
+  applyGamePageMetadata,
+  gamePageHead,
+  gamePageMetadata,
+  socialLocale,
+} from "./game-page-metadata";
+
+it("does not touch the document for public or unknown routes", () => {
+  expect(() => applyGamePageMetadata("/", "en", (key) => key)).not.toThrow();
+  expect(() => applyGamePageMetadata("/unknown", "en", (key) => key)).not.toThrow();
+});
+
+it("updates gameplay metadata and removes an unrepresentable social locale", () => {
+  const tag = { setAttribute: vi.fn(), remove: vi.fn(), content: "" };
+  const pageDocument = {
+    title: "",
+    querySelector: vi.fn(() => tag),
+    createElement: vi.fn(() => tag),
+    head: { append: vi.fn() },
+  };
+  vi.stubGlobal("document", pageDocument);
+  try {
+    applyGamePageMetadata("/squad?save=private", "en", (key) => translate("en", key));
+    expect(pageDocument.title).toContain("Squad");
+    expect(pageDocument.title).not.toContain("private");
+    expect(tag.content).toBe("en_US");
+    expect(tag.setAttribute).toHaveBeenCalledWith("content", pageDocument.title);
+    applyGamePageMetadata("/squad", "eo", (key) => key);
+    expect(tag.remove).toHaveBeenCalledOnce();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
 
 it("uses translated route identity for all supported languages without leaking query data", () => {
   for (const lang of LANGS) {
