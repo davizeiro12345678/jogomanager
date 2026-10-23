@@ -1,3 +1,6 @@
+-- Replay prerequisite: production provisioned unaccent outside migration history.
+CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA extensions;
+
 set lock_timeout='2s';
 set statement_timeout='60s';
 create table public.club_catalog_links (

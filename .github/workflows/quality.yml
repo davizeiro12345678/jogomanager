@@ -132,7 +132,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify recorded migration history and preserved legacy files
-        run: node scripts/verify-migration-history.mjs
+        run: |
+          node --test scripts/migration-replay-provenance.test.mjs
+          node scripts/verify-migration-history.mjs
       - uses: supabase/setup-cli@v1
         with:
           version: 2.75.2
