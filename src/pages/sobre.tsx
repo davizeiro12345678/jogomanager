@@ -134,27 +134,46 @@ export function SobrePage() {
           </p>
         </section>
         <section className="mt-12 space-y-4" aria-labelledby="sobre-escolher-modo">
-          <h2 id="sobre-escolher-modo" className="font-display text-2xl">Qual modo combina com o seu objetivo?</h2>
+          <h2 id="sobre-escolher-modo" className="font-display text-2xl">
+            Qual modo combina com o seu objetivo?
+          </h2>
           <section aria-labelledby="sobre-carreira">
-            <h3 id="sobre-carreira" className="font-display text-xl">Quero construir uma equipe por várias temporadas</h3>
+            <h3 id="sobre-carreira" className="font-display text-xl">
+              Quero construir uma equipe por várias temporadas
+            </h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Comece pela carreira de treinador: compare elenco, calendário e orçamento; defina metas
-              e reveja as decisões depois das partidas. O catálogo de clubes e campeonatos pode mudar
-              conforme a versão e os dados disponíveis. <Link to="/modo-carreira" className="text-primary underline">Entenda a carreira</Link>.
+              Comece pela carreira de treinador: compare elenco, calendário e orçamento; defina
+              metas e reveja as decisões depois das partidas. O catálogo de clubes e campeonatos
+              pode mudar conforme a versão e os dados disponíveis.{" "}
+              <Link to="/modo-carreira" className="text-primary underline">
+                Entenda a carreira
+              </Link>
+              .
             </p>
           </section>
           <section aria-labelledby="sobre-partida">
-            <h3 id="sobre-partida" className="font-display text-xl">Quero experimentar o simulador primeiro</h3>
+            <h3 id="sobre-partida" className="font-display text-xl">
+              Quero experimentar o simulador primeiro
+            </h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Na <Link to="/partida-rapida" className="text-primary underline">partida rápida</Link>,
-              teste esquemas e observe os movimentos em campo antes de iniciar uma temporada longa.
-              Para avaliar desempenho, compare no mesmo aparelho e nas mesmas configurações gráficas.
+              Na{" "}
+              <Link to="/partida-rapida" className="text-primary underline">
+                partida rápida
+              </Link>
+              , teste esquemas e observe os movimentos em campo antes de iniciar uma temporada
+              longa. Para avaliar desempenho, compare no mesmo aparelho e nas mesmas configurações
+              gráficas.
             </p>
           </section>
           <section aria-labelledby="sobre-catalogo">
-            <h3 id="sobre-catalogo" className="font-display text-xl">Onde conferir os dados realmente disponíveis?</h3>
+            <h3 id="sobre-catalogo" className="font-display text-xl">
+              Onde conferir os dados realmente disponíveis?
+            </h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Consulte as <Link to="/tabelas" className="text-primary underline">tabelas e ligas</Link>
+              Consulte as{" "}
+              <Link to="/tabelas" className="text-primary underline">
+                tabelas e ligas
+              </Link>{" "}
               e a seleção de clube dentro do jogo. Um registro no banco de dados não significa
               necessariamente que a equipe esteja jogável com elenco completo em todos os modos.
             </p>
