@@ -173,14 +173,19 @@ export function FootballHome() {
       .then(async ({ readLocalCareer }) => {
         const save = readLocalCareer();
         if (!save || !active) return;
-        const [{ CLUBS }, { applyWorld }] = await Promise.all([
+        const [{ CLUBS }, { readMyClub }, { readCustom }] = await Promise.all([
           import("@/game/data/leagues"),
-          import("@/lib/world"),
+          import("@/lib/my-club-storage"),
+          import("@/lib/custom-data-storage"),
         ]);
         if (active) {
-          applyWorld();
+          const created = readMyClub();
           setResume({
-            club: CLUBS[save.clubId]?.name ?? save.clubId,
+            club:
+              (created?.id === save.clubId ? created.name : undefined) ??
+              readCustom().clubs[save.clubId]?.name ??
+              CLUBS[save.clubId]?.name ??
+              save.clubId,
             season: save.season ?? 1,
             round: (save.round ?? 0) + 1,
           });
@@ -281,6 +286,7 @@ export function FootballHome() {
             FUTEBOL. DECISÕES. HISTÓRIAS.
           </p>
           <h1 id="home-title">
+            <span className="sr-only">Pro Football Manager 3D: jogo de gestão de futebol. </span>
             SEU CLUBE.
             <br />
             <em>SUA HISTÓRIA.</em>

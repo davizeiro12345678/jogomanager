@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
-import { CREATOR } from "@/content/changelog";
+import { CREATOR } from "@/content/creator";
 import { shareDestinations } from "@/lib/share";
 import { DISCORD_INVITE } from "@/content/community";
 

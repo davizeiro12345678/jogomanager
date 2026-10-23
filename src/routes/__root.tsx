@@ -9,12 +9,7 @@ import {
 import appCss from "../styles.css?url";
 import publicCss from "../public-styles.css?url";
 
-const LIGHTWEIGHT_PUBLIC_ROUTES = new Set([
-  "/",
-  "/guias",
-  "/guia-de-scouting",
-  "/melhores-formacoes",
-]);
+import { isPublicContentPath } from "@/lib/public-content-routes";
 import { CONSENT_VISIBILITY_SCRIPT } from "@/lib/consent";
 
 // Optional prevents late font swaps after first paint, avoiding text-induced CLS
@@ -55,7 +50,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       {
         rel: "stylesheet",
-        href: LIGHTWEIGHT_PUBLIC_ROUTES.has(matches.at(-1)?.routeId ?? "") ? publicCss : appCss,
+        href: isPublicContentPath(matches.at(-1)?.pathname ?? "") ? publicCss : appCss,
       },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },

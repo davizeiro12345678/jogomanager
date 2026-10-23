@@ -82,7 +82,9 @@ export function HomeDetails() {
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {FAQ.map(([question, answer]) => (
             <details key={question} className="surface-card rounded-xl border border-border/60 p-4">
-              <summary className="cursor-pointer font-display text-lg">{question}</summary>
+              <summary className="cursor-pointer font-display text-lg">
+                <h3 className="inline font-display text-lg">{question}</h3>
+              </summary>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{answer}</p>
             </details>
           ))}

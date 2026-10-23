@@ -19,6 +19,8 @@ import {
 } from "@/game/customStyle";
 import type { Club } from "@/game/types";
 import { scopedKey } from "@/lib/world-scope";
+import { readMyClub } from "./my-club-storage";
+export { readMyClub } from "./my-club-storage";
 
 /** Chave por campanha: cada save tem o seu clube criado. */
 function key() {
@@ -44,16 +46,6 @@ export interface MyClub {
   fans: FansStyle;
   /** clube original que saiu da liga para abrir a vaga (guardado inteiro) */
   replaced?: Club;
-}
-
-export function readMyClub(): MyClub | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(key());
-    return raw ? (JSON.parse(raw) as MyClub) : null;
-  } catch {
-    return null;
-  }
 }
 
 export function writeMyClub(club: MyClub) {
