@@ -54,9 +54,9 @@ describe("retired public pages", () => {
       expect(indexedPaths).not.toContain(source);
       expect(indexedPaths).toContain(target);
       expect(navigation).not.toContain(`to: "${source}"`);
-      expect(llms).not.toContain(`https://jogomanager.com${source}`);
+      expect(llmsContent).not.toContain(`https://jogomanager.com${source}`);
     }
-    for (const match of llms.matchAll(/\]\(https:\/\/jogomanager\.com([^)]*)\)/g)) {
+    for (const match of llmsContent.matchAll(/\]\(https:\/\/jogomanager\.com([^)]*)\)/g)) {
       expect(indexedPaths).toContain(match[1]);
     }
   });
@@ -64,7 +64,7 @@ describe("retired public pages", () => {
   it("keeps the official contacts consistent", () => {
     const contacts = ["davizeiro10.jogos@gmail.com", "davithomazini779@gmail.com"];
     const creator = readFileSync(new URL("../content/creator.ts", import.meta.url), "utf8");
-    const llms = readFileSync(new URL("../../public/llms.txt", import.meta.url), "utf8");
+    const llmsContent = readFileSync(new URL("../../public/llms.txt", import.meta.url), "utf8");
     for (const email of contacts) {
       expect(creator).toContain(email);
       expect(llmsContent).toContain(email);
@@ -80,7 +80,7 @@ describe("retired public pages", () => {
     expect(creatorPage).toContain("CREATOR.secondaryEmail");
     const community = readFileSync(new URL("../content/community.ts", import.meta.url), "utf8");
     expect(community).toContain('DISCORD_INVITE = "https://discord.gg/6az4ssQQck"');
-    const llms = readFileSync(new URL("../../public/llms.txt", import.meta.url), "utf8");
+
     expect(llmsContent).toContain("https://discord.gg/6az4ssQQck");
   });
 });
