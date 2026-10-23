@@ -32,7 +32,7 @@ jobs:
       - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs
       - run: node --test scripts/verify-public-deployment.test.mjs
       - name: Verify Edge Function authentication and import contracts
-        run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs
+        run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs scripts/football-materialize-realism.test.mjs
       - run: npm run test:performance-gates
       - run: PFM_LOCAL_VERIFY=1 npm run build
       - run: npm run bundle:check

@@ -207,3 +207,34 @@ test("bundle analyzer counts shared root-relative modules without following remo
     rmSync(cwd, { recursive: true, force: true });
   }
 });
+
+test("cinematic analysis follows lazy sets in the stage's shared static registry", () => {
+  const cwd = mkdtempSync(path.join(tmpdir(), "cinematic-registry-"));
+  try {
+    writeFileSync(path.join(cwd, "CinematicStage3D-test.js"), 'import "./registry.js";');
+    writeFileSync(
+      path.join(cwd, "registry.js"),
+      'export const load=()=>import("./LockerRoom-test.js");',
+    );
+    writeFileSync(path.join(cwd, "LockerRoom-test.js"), 'export const room="locker";');
+    writeFileSync(
+      path.join(cwd, "unrelated.js"),
+      'export const load=()=>import("./Office-test.js");',
+    );
+    writeFileSync(path.join(cwd, "Office-test.js"), 'export const room="office";');
+    const result = spawnSync(
+      process.execPath,
+      [path.join(root, "scripts/bundle-report.mjs"), "fixture", cwd],
+      { cwd, encoding: "utf8" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(
+      readFileSync(path.join(cwd, "verification/bundle-2026-10-01/fixture.json"), "utf8"),
+    );
+    assert.deepEqual(report.cinematicStage.dynamicDependencies, ["LockerRoom-test.js"]);
+    assert.ok(!report.cinematicStage.staticDependencies.includes("LockerRoom-test.js"));
+    assert.ok(!report.cinematicStage.dynamicDependencies.includes("Office-test.js"));
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});

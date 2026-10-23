@@ -26,6 +26,9 @@ BEGIN
     'The public coupon RPC must run as its caller';
   ASSERT (SELECT prosecdef FROM pg_proc WHERE oid = 'app_private.redeem_game_coupon(text)'::regprocedure),
     'The private coupon implementation lost its isolated privilege boundary';
+  ASSERT strpos(pg_get_functiondef('app_private.redeem_game_coupon(text)'::regprocedure),
+    'app_private.mfa_session_allowed()') > 0,
+    'Coupon rewards must enforce enrolled MFA before privileged wallet writes';
   ASSERT NOT has_table_privilege('authenticated', 'public.coupon_eligible_users', 'INSERT'),
     'A caller must not grant itself coupon eligibility';
 
