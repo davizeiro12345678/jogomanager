@@ -1,26 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { z } from "zod";
+import { athletePanelSearch } from "@/lib/athlete-route-search";
 
 import { AthletePanelPage } from "@/pages/jogador.painel";
 
 export const Route = createFileRoute("/jogador/painel")({
   ssr: false,
-  validateSearch: z.object({
-    slot: z.number().int().min(1).max(3).catch(1),
-    tab: z
-      .enum([
-        "semana",
-        "calendario",
-        "saude",
-        "atributos",
-        "selecao",
-        "contrato",
-        "noticias",
-        "historico",
-      ])
-      .optional(),
-  }),
+  validateSearch: athletePanelSearch,
   head: () => ({
     meta: [
       { title: "Painel do atleta — Football Manager 3D" },

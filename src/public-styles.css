@@ -1,5 +1,8 @@
 @import "tailwindcss" source(none);
 @source "./components/RootLayout.tsx";
+@source "./components/game/QuickMatchPage.tsx";
+@source "./components/game/Crest.tsx";
+@source "./components/game/Flag.tsx";
 @source "./components/RoutePending.tsx";
 @source "./components/ArticleShell.tsx";
 @source "./components/SiteFooter.tsx";

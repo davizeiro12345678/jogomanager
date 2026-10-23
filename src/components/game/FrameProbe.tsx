@@ -1,5 +1,6 @@
 import { addAfterEffect, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
+import { subscribeRenderedFrames } from "./graphics-probe";
 import { FrameMetrics } from "@/game/frame-metrics";
 import { FrameRateWindow } from "@/game/frame-rate-window";
 import { FRAME_METRIC_DEFINITIONS, performanceMemorySample } from "@/game/performance-memory";
@@ -130,7 +131,7 @@ function hardwareMetadata(renderer: ReturnType<typeof rendererMetadata>) {
   };
 }
 
-/** Opt-in benchmark only: count ALL render passes, then reset once per frame. */
+/** Opt-in benchmark: share the single owner that counts all render passes. */
 export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: boolean }) {
   const effective = useRef({ quality, adaptive });
   effective.current = { quality, adaptive };
@@ -201,8 +202,6 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
       maxDraws = 0,
       measured = 0;
     let finalReport = false;
-    const prior = gl.info.autoReset;
-    gl.info.autoReset = false;
     const renderer = rendererMetadata(gl);
     const browser = browserMetadata();
     let observer: PerformanceObserver | undefined;
@@ -215,13 +214,10 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
       });
       observer.observe({ entryTypes: ["longtask"] });
     }
-    const stop = addAfterEffect(() => {
-      const now = performance.now();
-      if (finalReport) {
-        gl.info.reset();
-        return;
-      }
-      if (firstFrame === null && gl.info.render.calls > 0) firstFrame = now - start;
+    const stop = subscribeRenderedFrames(gl, (frame) => {
+      const now = frame.now;
+      if (finalReport) return;
+      if (firstFrame === null && frame.draws > 0) firstFrame = now - start;
       const currentContract = `${gl.domElement.width}:${gl.domElement.height}:${gl.getPixelRatio()}:${effective.current.quality}:${effective.current.adaptive}:${benchmarkMetadata()?.camera}`;
       if (initialContract === null) initialContract = currentContract;
       else if (initialContract !== currentContract) contractChanged = true;
@@ -234,9 +230,9 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
       if (!document.hidden && interval > 0) {
         metrics.add(interval);
         coveredMs += interval;
-        drawSum += gl.info.render.calls;
-        triangleSum += gl.info.render.triangles;
-        maxDraws = Math.max(maxDraws, gl.info.render.calls);
+        drawSum += frame.draws;
+        triangleSum += frame.triangles;
+        maxDraws = Math.max(maxDraws, frame.draws);
         measured++;
       }
       if (now - report >= 1000) {
@@ -390,7 +386,6 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
         }
       }
       last = now;
-      gl.info.reset();
     });
     return () => {
       stop();
@@ -398,7 +393,6 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
       window.removeEventListener("focus", onFocusChange);
       window.removeEventListener("blur", onFocusChange);
       observer?.disconnect();
-      gl.info.autoReset = prior;
     };
   }, [gl, scene]);
   return null;

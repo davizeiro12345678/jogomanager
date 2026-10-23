@@ -1,4 +1,5 @@
 import "./lib/error-capture";
+import { compressPublicHtml } from "./lib/public-html-compression";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
@@ -77,7 +78,10 @@ export default {
       }
       const handler = await getServerEntry();
       const response = await handler.fetch(verifiedRequest, env, ctx);
-      return measured(protect(await normalizeCatastrophicSsrResponse(response)));
+      return compressPublicHtml(
+        measured(protect(await normalizeCatastrophicSsrResponse(response))),
+        verifiedRequest,
+      );
     } catch (error) {
       console.error(error);
       const errorResponse = new Response(renderErrorPage(), {

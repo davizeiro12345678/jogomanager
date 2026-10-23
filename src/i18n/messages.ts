@@ -3,12 +3,11 @@ import type { Lang } from "./locale-catalog";
 import { EXPANDED_MESSAGES } from "./expanded-messages";
 import { INTERFACE_MESSAGES } from "./interface-messages";
 import { CINEMA_STUDIO_MESSAGES } from "./cinema-studio-messages";
+import { SCENE_INTERFACE_MESSAGES } from "./scene-interface-messages";
 import { resolveMessage } from "./format-message";
 type Dict = Record<string, string>;
 
-const ptBR: Dict = {
-  ...ptBRBootstrap,
-};
+const ptBR: Dict = ptBRBootstrap;
 
 const ptPT: Dict = {
   "nav.panel": "Painel",
@@ -51,9 +50,7 @@ const ptPT: Dict = {
   "shell.more": "Mais",
 };
 
-const en: Dict = {
-  ...enBootstrap,
-};
+const en: Dict = enBootstrap;
 
 const es: Dict = {
   "nav.panel": "Panel",
@@ -1118,10 +1115,12 @@ export function messageLanguage(lang: Lang, key: string): Lang {
 function resolveTranslation(lang: Lang, key: string) {
   return resolveMessage(key, [
     { lang, messages: CINEMA_STUDIO_MESSAGES[lang as keyof typeof CINEMA_STUDIO_MESSAGES] },
+    { lang, messages: SCENE_INTERFACE_MESSAGES[lang] },
     { lang, messages: INTERFACE_MESSAGES[lang] },
     { lang, messages: DICTS[lang] },
     { lang: "en", messages: INTERFACE_MESSAGES.en },
     { lang: "en", messages: CINEMA_STUDIO_MESSAGES.en },
+    { lang: "en", messages: SCENE_INTERFACE_MESSAGES.en },
     { lang: "en", messages: en },
     { lang: "pt-BR", messages: ptBR },
   ]);
