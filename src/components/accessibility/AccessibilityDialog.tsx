@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useT } from "@/i18n/provider";
-import { ReadingPreferences } from "./AccessibilitySettings";
+import { ReadingPreferences } from "./ReadingPreferences";
 import { LanguagePicker } from "./LanguagePicker";
 
 /** The modal and its language search load only when the preferences open. */

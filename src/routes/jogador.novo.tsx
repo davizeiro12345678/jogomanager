@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { athleteSlot } from "@/lib/athlete-search";
+import { createAthleteSearch } from "@/lib/athlete-route-search";
 
 import { CreateAthletePage } from "@/pages/jogador.novo";
 
 export const Route = createFileRoute("/jogador/novo")({
   ssr: false,
-  validateSearch: (search: Record<string, unknown>) => ({ slot: athleteSlot(search) }),
+  validateSearch: createAthleteSearch,
   head: () => ({
     meta: [
       { title: "Criar atleta — Football Manager 3D" },

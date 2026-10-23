@@ -1,3 +1,4 @@
+import { clearLocalData, exportLocalData } from "@/lib/local-data-controls";
 import { useEffect, useState } from "react";
 
 import { Download, ShieldCheck, Trash2 } from "lucide-react";
@@ -9,13 +10,7 @@ import { FirebasePushControl } from "./FirebasePushControl";
 import { Switch } from "@/components/ui/switch";
 
 import { TRUST_BADGES } from "@/components/privacy/trust-badges";
-import {
-  clearLocalData,
-  exportLocalData,
-  readConsent,
-  saveConsent,
-  type ConsentState,
-} from "@/lib/consent";
+import { readConsent, saveConsent, type ConsentState } from "@/lib/consent";
 
 export function TrustBadges() {
   return (

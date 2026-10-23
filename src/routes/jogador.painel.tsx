@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { athletePanelSearch } from "@/lib/athlete-search";
+import { athletePanelSearch } from "@/lib/athlete-route-search";
 
 import { AthletePanelPage } from "@/pages/jogador.painel";
 
