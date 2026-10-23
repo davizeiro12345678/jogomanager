@@ -4,27 +4,26 @@ import { Link } from "@tanstack/react-router";
 
 // Offer useful next steps instead of repeating every public URL on every article.
 const RELATED_PAGES: Record<string, readonly string[]> = {
-  "/taticas-e-formacoes": [
+  "/melhores-formacoes": [
     "/guias",
     "/planejamento-de-elenco",
     "/analise-de-partida-de-futebol",
     "/glossario-do-futebol",
   ],
   "/guias": [
-    "/taticas-e-formacoes",
+    "/melhores-formacoes",
     "/planejamento-de-elenco",
     "/analise-de-partida-de-futebol",
     "/modo-carreira-de-jogador",
     "/jogar-offline",
-    "/ligas-de-futebol",
+    "/tabelas",
   ],
-  "/planejamento-de-elenco": ["/guias", "/taticas-e-formacoes", "/brasileirao"],
-  "/analise-de-partida-de-futebol": ["/guias", "/taticas-e-formacoes", "/planejamento-de-elenco"],
+  "/planejamento-de-elenco": ["/guias", "/melhores-formacoes", "/mercado-de-transferencias"],
+  "/analise-de-partida-de-futebol": ["/guias", "/melhores-formacoes", "/planejamento-de-elenco"],
   "/modo-carreira-de-jogador": ["/guias", "/jogar-offline", "/comparativo-jogos-manager"],
-  "/brasileirao": ["/ligas-de-futebol", "/regras"],
-  "/ligas-de-futebol": ["/brasileirao", "/regras"],
-  "/regras": ["/glossario-do-futebol", "/taticas-e-formacoes"],
-  "/glossario-do-futebol": ["/regras", "/taticas-e-formacoes"],
+  "/tabelas": ["/analise-de-partida-de-futebol", "/regras"],
+  "/regras": ["/glossario-do-futebol", "/melhores-formacoes"],
+  "/glossario-do-futebol": ["/regras", "/melhores-formacoes"],
   "/jogar-offline": ["/perguntas-frequentes", "/contato"],
   "/comparativo-jogos-manager": ["/sobre", "/jogar-offline", "/produtos"],
 };
