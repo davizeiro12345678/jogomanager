@@ -766,5 +766,20 @@
       "20261019234214"
     ],
     "historyRegistrationLimit": "CLI inserts the migration-history row after file statements; an explicit COMMIT therefore precedes history registration. Verify migration history after any interrupted replay; do not blindly reapply partially registered files."
-  }
+  },
+  "replayPrerequisites": [
+    {
+      "version": "20261023001209",
+      "file": "20261023001209_link_public_club_catalog_identities.sql",
+      "recordedArchive": {
+        "path": "supabase/migration-archive/recorded/20261023001209_link_public_club_catalog_identities.sql",
+        "sha256": "2143e2404084dbb1a608f411d2753a5aad973dd8d5960fd803dc19c6c108f82e"
+      },
+      "normalizedSha256": "2143e2404084dbb1a608f411d2753a5aad973dd8d5960fd803dc19c6c108f82e",
+      "replayNormalizedSha256": "0bfc1e716d8f762f69e346ab00fb638bb228fee6d915c17b9ed94a89a14706eb",
+      "prerequisite": "unaccent-in-extensions",
+      "verifiedAt": "2026-10-23T20:05:39.879Z",
+      "reason": "Read-only production inspection confirmed unaccent 1.1 in extensions, absent from recorded SQL. The archived statement exactly matches schema_migrations.statements[1]. Original SQL and its recorded version remain unchanged in production; only fresh replay gains the idempotent extension prerequisite."
+    }
+  ]
 }
