@@ -12,6 +12,7 @@ module.exports = {
       startServerReadyTimeout: 30000,
       url: ["http://127.0.0.1:4173/"],
       numberOfRuns: 1,
+      puppeteerScript: "./scripts/verify-preview-representations.cjs",
       settings: {
         preset: "desktop",
         throttlingMethod: "provided",

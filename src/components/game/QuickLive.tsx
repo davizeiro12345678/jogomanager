@@ -1,3 +1,5 @@
+// Load the complete gameplay utility sheet when the optional match opens.
+import "@/styles.css";
 import {
   ArrowLeft,
   List,

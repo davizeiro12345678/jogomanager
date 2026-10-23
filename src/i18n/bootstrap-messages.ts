@@ -97,6 +97,5 @@ export const en: Record<string, string> = {
 /** Default Portuguese and English work offline without fetching 96 other packs. */
 export function translateBootstrap(lang: Lang, key: string): string {
   if (lang === "pt-BR") return ptInterface[key] ?? ptBR[key] ?? enInterface[key] ?? en[key] ?? key;
-  if (lang === "en") return enInterface[key] ?? en[key] ?? ptBR[key] ?? key;
   return enInterface[key] ?? en[key] ?? ptBR[key] ?? key;
 }

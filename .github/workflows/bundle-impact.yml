@@ -44,34 +44,41 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - name: Preserve uniform Brotli analyzer
-        run: cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
+      - name: Preserve analyzer and install one dependency graph for both revisions
+        run: |
+          cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
+          cp package.json "$RUNNER_TEMP/bundle-package.json"
+          cp package-lock.json "$RUNNER_TEMP/bundle-package-lock.json"
+          sha256sum package-lock.json > "$RUNNER_TEMP/bundle-dependency-lock.sha256"
+          npm ci
       - name: Build baseline from PR base SHA
         env:
           BASE_SHA: ${{ inputs.baseline_ref }}
         run: |
           git checkout --detach "$BASE_SHA"
-          # Use the same lockfile-matched build plugin for both commits. The
-          # current main package.json requested a version absent from its lock.
-          # This normalizes ONLY the build tooling, not application sources.
-          node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync("package.json","utf8")); const lock=JSON.parse(fs.readFileSync("package-lock.json","utf8")); p.devDependencies["@lovable.dev/vite-tanstack-config"]=lock.packages[""].devDependencies["@lovable.dev/vite-tanstack-config"]; fs.writeFileSync("package.json",JSON.stringify(p,null,2)+"\n");'
-          npm ci
+          # Isolate application-source changes using the candidate's exact,
+          # audited dependency graph, as required by AGENTS.md. Both builds
+          # keep their own source files and identical installed dependencies.
+          cp "$RUNNER_TEMP/bundle-package.json" package.json
+          cp "$RUNNER_TEMP/bundle-package-lock.json" package-lock.json
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
           cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs
           node scripts/bundle-report.mjs baseline .output/public/assets
           cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
-          git restore scripts/bundle-report.mjs package.json
+          git restore scripts/bundle-report.mjs package.json package-lock.json
       - name: Build proposed commit on the same runner
         env:
           HEAD_SHA: ${{ inputs.candidate_ref }}
         run: |
           git checkout --detach "$HEAD_SHA"
-          npm ci
+          cmp package.json "$RUNNER_TEMP/bundle-package.json"
+          cmp package-lock.json "$RUNNER_TEMP/bundle-package-lock.json"
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
           node scripts/bundle-report.mjs candidate .output/public/assets
           cp "$RUNNER_TEMP/baseline.json" verification/bundle-2026-10-01/baseline.json
+          cp "$RUNNER_TEMP/bundle-dependency-lock.sha256" verification/bundle-2026-10-01/dependency-lock.sha256
           node scripts/compare-bundle-reports.mjs \
             verification/bundle-2026-10-01/baseline.json \
             verification/bundle-2026-10-01/candidate.json --check
@@ -85,4 +92,5 @@ jobs:
             bundle-impact.json
             verification/bundle-2026-10-01/baseline.json
             verification/bundle-2026-10-01/candidate.json
+            verification/bundle-2026-10-01/dependency-lock.sha256
           if-no-files-found: error

@@ -4,9 +4,7 @@ import { EXPANDED_MESSAGES } from "./expanded-messages";
 import { INTERFACE_MESSAGES } from "./interface-messages";
 type Dict = Record<string, string>;
 
-const ptBR: Dict = {
-  ...ptBRBootstrap,
-};
+const ptBR: Dict = ptBRBootstrap;
 
 const ptPT: Dict = {
   "nav.panel": "Painel",
@@ -49,9 +47,7 @@ const ptPT: Dict = {
   "shell.more": "Mais",
 };
 
-const en: Dict = {
-  ...enBootstrap,
-};
+const en: Dict = enBootstrap;
 
 const es: Dict = {
   "nav.panel": "Panel",

@@ -16,6 +16,7 @@ module.exports = {
         "http://127.0.0.1:4173/partida-rapida",
       ],
       numberOfRuns: 3,
+      puppeteerScript: "./scripts/verify-preview-representations.cjs",
       settings: {
         formFactor: "mobile",
         screenEmulation: {
