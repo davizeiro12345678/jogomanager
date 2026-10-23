@@ -1,7 +1,6 @@
 /** Content routes never need a mutable career world, squads or game UI styles. */
 export const PUBLIC_CONTENT_PATHS = new Set([
   "/",
-  "/partida-rapida",
   "/guias",
   "/guia-de-scouting",
   "/melhores-formacoes",
@@ -29,4 +28,10 @@ export const PUBLIC_CONTENT_PATHS = new Set([
 export function isPublicContentPath(pathname: string): boolean {
   const path = pathname.replace(/\/$/, "") || "/";
   return PUBLIC_CONTENT_PATHS.has(path) || path === "/tabelas" || path.startsWith("/tabelas/");
+}
+
+/** Partida rápida pode usar o CSS leve, mas precisa inicializar o mundo do jogo. */
+export function isLightweightCssPath(pathname: string): boolean {
+  const path = pathname.replace(/\/$/, "") || "/";
+  return path === "/partida-rapida" || isPublicContentPath(path);
 }
