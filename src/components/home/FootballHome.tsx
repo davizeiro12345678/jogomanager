@@ -1,3 +1,4 @@
+import "@/public-styles.css";
 import { Await, getRouteApi, Link } from "@tanstack/react-router";
 import { HomeLeaguePulse } from "@/components/home/HomeLeaguePulse";
 import { Suspense, lazy, useEffect, useState } from "react";

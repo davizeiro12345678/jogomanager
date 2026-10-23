@@ -73,7 +73,17 @@ export default {
     if (redirect) return measured(protect(redirect));
     try {
       const handler = await getServerEntry();
-      const response = await handler.fetch(verifiedRequest, env, ctx);
+      const response = await handler.fetch(
+        verifiedRequest,
+        {
+          ...(env && typeof env === "object" ? env : {}),
+          // Measured benefit on the image-heavy home. Editorial/selection
+          // pages keep one independently cached public sheet: inlining their
+          // larger document regressed first paint in the same lab protocol.
+          inlineCss: new URL(verifiedRequest.url).pathname === "/",
+        },
+        ctx,
+      );
       return compressPublicHtml(
         measured(protect(await normalizeCatastrophicSsrResponse(response))),
         verifiedRequest,
