@@ -4,26 +4,21 @@
 // never collide with the other provider's ids.
 
 import type { TablesInsert } from "@/integrations/supabase/types";
+import { AsyncLocalStorage } from "node:async_hooks";
+import {
+  FIXTURE_ENDPOINTS,
+  LEADER_ENDPOINTS,
+  apiFootballPlayerId,
+  apiFootballProfileProjection,
+  isApiFootballPhase,
+  isFootballStaffRole,
+  type Phase,
+} from "./apifootball-phases";
+export type { Phase } from "./apifootball-phases";
 
 const BASE = "https://v3.football.api-sports.io";
 const SOURCE = "api-football";
 
-export type Phase =
-  | "leagues"
-  | "teams"
-  | "squads"
-  | "fixtures"
-  | "standings"
-  | "predictions"
-  | "odds"
-  | "stats"
-  | "countries"
-  | "timezones"
-  | "venues"
-  | "coaches"
-  | "injuries"
-  | "teamstats"
-  | "details";
 export type AfImportResult = {
   ok: boolean;
   phase: Phase;
@@ -41,10 +36,18 @@ async function admin() {
   return supabaseAdmin;
 }
 
-let lastRemaining: number | null = null;
+const importScope = new AsyncLocalStorage<{
+  deadline: number;
+  remaining: number | null;
+  seasons: Map<string, string | null>;
+}>();
+const remainingQuota = () => importScope.getStore()?.remaining ?? null;
 
 /** Every outbound API-Football request reserves a global database quota token. */
 async function guardedFootballFetch(path: string): Promise<Response> {
+  const scope = importScope.getStore();
+  if (!scope || Date.now() + 1000 >= scope.deadline)
+    throw new Error("API-Football invocation deadline reached");
   const key = process.env["APIFOOTBALL_API_KEY"];
   if (!key) throw new Error("API-Football server credential is not configured");
   const db = await admin();
@@ -54,7 +57,7 @@ async function guardedFootballFetch(path: string): Promise<Response> {
   }
   return fetch(`${BASE}${path}`, {
     headers: { "x-apisports-key": key },
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(Math.max(1, Math.min(20_000, scope.deadline - Date.now() - 500))),
   });
 }
 
@@ -71,18 +74,21 @@ async function afPage<T>(path: string): Promise<ApiFootballPage<T>> {
   for (let attempt = 0; attempt < 3; attempt++) {
     const res = await guardedFootballFetch(path);
     const rem = res.headers.get("x-ratelimit-requests-remaining");
-    if (rem !== null && Number.isFinite(Number(rem))) lastRemaining = Number(rem);
+    if (rem !== null && Number.isFinite(Number(rem)))
+      importScope.getStore()!.remaining = Number(rem);
     const text = await res.text();
     const limited = res.status === 429 || /"rateLimit"/i.test(text);
     if ((limited || res.status >= 500) && attempt < 2) {
       const hint = Number(res.headers.get("retry-after"));
       const delay =
         Number.isFinite(hint) && hint > 0 ? Math.min(8_000, hint * 1_000) : 2_000 * (attempt + 1);
+      if (Date.now() + delay + 1000 >= importScope.getStore()!.deadline)
+        throw new Error("API-Football retry exceeds invocation budget");
       await new Promise((resolve) => setTimeout(resolve, delay));
       continue;
     }
-    if (res.status === 404) return { response: [] };
-    if (!res.ok) throw new Error(`API-Football HTTP ${res.status}: ${text.slice(0, 200)}`);
+    if (res.status === 404 || res.status === 204) return { response: [] };
+    if (!res.ok) throw new Error(`API-Football HTTP ${res.status}`);
     let body: {
       response?: unknown;
       errors?: unknown;
@@ -94,7 +100,7 @@ async function afPage<T>(path: string): Promise<ApiFootballPage<T>> {
       throw new Error("API-Football returned invalid JSON");
     }
     if (body.errors && typeof body.errors === "object" && Object.keys(body.errors).length > 0) {
-      throw new Error(`API-Football provider error: ${JSON.stringify(body.errors).slice(0, 200)}`);
+      throw new Error("API-Football provider rejected the request");
     }
     if (!Array.isArray(body.response)) {
       throw new Error("API-Football returned an unexpected response shape");
@@ -231,8 +237,46 @@ async function importLeagues(): Promise<AfImportResult> {
     created,
     linked: rows.length,
     nextOffset: null,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
+}
+
+type AfVenue = {
+  id: number;
+  name?: string | null;
+  city?: string | null;
+  country?: string | null;
+  capacity?: number | null;
+  image?: string | null;
+  team_id?: number;
+};
+
+async function publishVenues(venues: AfVenue[]) {
+  const rows = venues
+    .filter(
+      (venue) =>
+        Number.isSafeInteger(venue.id) &&
+        venue.id > 0 &&
+        typeof venue.name === "string" &&
+        venue.name.trim(),
+    )
+    .map((venue) => ({
+      id: String(venue.id),
+      name: venue.name!,
+      city: venue.city ?? null,
+      country: venue.country ?? null,
+      capacity: venue.capacity ?? null,
+      image: venue.image ?? null,
+      team_id: venue.team_id ? String(venue.team_id) : null,
+    }));
+  if (!rows.length) return;
+  const db = await admin();
+  for (let index = 0; index < rows.length; index += 100) {
+    const result = await db.rpc("enrich_football_venues", {
+      p_venues: rows.slice(index, index + 100),
+    });
+    if (result.error) throw new Error("Official venues could not be materialized");
+  }
 }
 
 type AfTeam = {
@@ -244,7 +288,7 @@ type AfTeam = {
     founded: number | null;
     logo: string;
   };
-  venue: { city: string | null };
+  venue?: AfVenue | null;
 };
 
 async function importTeams(
@@ -317,6 +361,7 @@ async function importTeams(
       }
       maps.push({
         source_id: sid,
+        sport: "Soccer",
         league_source_id: lg.source_id,
         name: t.team.name,
         local_club_id: local,
@@ -333,6 +378,11 @@ async function importTeams(
     }
     const m = await db.from("official_teams").upsert(maps, { onConflict: "source_id" });
     if (m.error) throw new Error(m.error.message);
+    await publishVenues(
+      teams.flatMap((row) =>
+        row.venue ? [{ ...row.venue, country: row.team.country, team_id: row.team.id }] : [],
+      ),
+    );
     return true;
   });
   const fetched = leagues?.length ?? 0;
@@ -344,7 +394,7 @@ async function importTeams(
     linked,
     skipped: batch.skipped,
     nextOffset: fetched < limit && batch.done === fetched ? null : offset + batch.done,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -382,7 +432,9 @@ async function importSquads(
       console.error("squad", t.source_id, e);
       throw e;
     }
-    const players = (squad[0]?.players ?? []).filter((p) => p && p.id && p.name);
+    const players = (squad[0]?.players ?? []).filter(
+      (p) => p && p.id && p.name && !isFootballStaffRole(p.position),
+    );
     if (!players.length) return false;
     const rows = players
       .filter((p) => p.name)
@@ -430,7 +482,7 @@ async function importSquads(
     linked: 0,
     skipped: batch.skipped,
     nextOffset: fetched < limit && batch.done === fetched ? null : offset + batch.done,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -511,7 +563,7 @@ async function perLeague(
     skipped: batch.skipped,
     nextOffset:
       leagues.length < limit && batch.done === leagues.length ? null : offset + batch.done,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -520,7 +572,7 @@ async function fixturesFor(id: string, season: string) {
   const list = await af<AfFixture>(`/fixtures?league=${id}&season=${season}`);
   // API-Football can supply null venue/score objects for unplayed fixtures.
   // One incomplete match must not abort a complete league-season import.
-  const rows = list
+  const mapped = list
     .filter((f) => f?.fixture?.id && f.fixture.date && f?.teams?.home?.id && f?.teams?.away?.id)
     .map((f) => ({
       source_id: `af:${f.fixture.id}`,
@@ -538,6 +590,7 @@ async function fixturesFor(id: string, season: string) {
       venue_name: f.fixture.venue?.name ?? null,
       updated_at: new Date().toISOString(),
     }));
+  const rows = [...new Map(mapped.map((row) => [row.source_id, row])).values()];
   let n = 0;
   for (let k = 0; k < rows.length; k += 500) {
     const { error } = await db
@@ -602,6 +655,7 @@ async function statsFor(id: string, season: string, deadline: number) {
       .filter((p) => p.player?.id)
       .map((p) => ({ ref: `${p.player.id}:${id}:${season}`, payload: p }));
     written += await saveRaw("player_stats", rows);
+    await enrichProfiles(response.response);
     const total = Math.max(1, response.paging?.total ?? 1);
     if (page >= total) {
       const removed = await db
@@ -644,7 +698,7 @@ async function importStats(offset: number, deadline: number): Promise<AfImportRe
       created: 0,
       linked: 0,
       nextOffset: null,
-      remainingQuota: lastRemaining,
+      remainingQuota: remainingQuota(),
     };
   if (!league.current_season || sourceHasNoCoverage(league.coverage, "stats"))
     return {
@@ -655,7 +709,7 @@ async function importStats(offset: number, deadline: number): Promise<AfImportRe
       linked: 0,
       skipped: 1,
       nextOffset: offset + 1,
-      remainingQuota: lastRemaining,
+      remainingQuota: remainingQuota(),
     };
   const result = await statsFor(league.source_id.slice(3), league.current_season, deadline);
   return {
@@ -666,7 +720,7 @@ async function importStats(offset: number, deadline: number): Promise<AfImportRe
     linked: 0,
     skipped: result.complete && result.written === 0 ? 1 : 0,
     nextOffset: result.complete ? offset + 1 : offset,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -706,7 +760,7 @@ async function importPredictions(
     linked: 0,
     skipped: batch.skipped,
     nextOffset: ids.length < limit && batch.done === ids.length ? null : offset + batch.done,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -728,7 +782,7 @@ async function importOdds(offset: number, deadline: number): Promise<AfImportRes
     created,
     linked: 0,
     nextOffset: offset < 6 ? offset + 1 : null,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -751,7 +805,7 @@ async function importSimple(
     created,
     linked: 0,
     nextOffset: null,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -763,12 +817,13 @@ async function importVenues(
   const countries = (await af<{ name: string }>("/countries")).slice(offset, offset + limit);
   let created = 0;
   const batch = await pool(countries, 4, deadline, async (c) => {
-    const v = await af<{ id: number }>(`/venues?country=${encodeURIComponent(c.name)}`);
+    const v = await af<AfVenue>(`/venues?country=${encodeURIComponent(c.name)}`);
     if (!v.length) return false;
     created += await saveRaw(
       "venue",
       v.map((r) => ({ ref: String(r.id), payload: r })),
     );
+    await publishVenues(v.map((venue) => ({ ...venue, country: venue.country ?? c.name })));
     return true;
   });
   return {
@@ -780,7 +835,7 @@ async function importVenues(
     skipped: batch.skipped,
     nextOffset:
       countries.length < limit && batch.done === countries.length ? null : offset + batch.done,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
@@ -821,12 +876,12 @@ async function perTeam(
     linked: 0,
     skipped: batch.skipped,
     nextOffset: teams.length < limit && batch.done === teams.length ? null : offset + batch.done,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
   };
 }
 
-const seasonCache = new Map<string, string | null>();
 async function seasonOf(league: string) {
+  const seasonCache = importScope.getStore()!.seasons;
   if (seasonCache.has(league)) return seasonCache.get(league)!;
   const db = await admin();
   const { data } = await db
@@ -854,7 +909,7 @@ async function teamStatsFor(team: string, league: string | null) {
     `/teams/statistics?team=${team}&league=${league}&season=${season}`,
   );
   const rem = res.headers.get("x-ratelimit-requests-remaining");
-  if (rem) lastRemaining = Number(rem);
+  if (rem && Number.isFinite(Number(rem))) importScope.getStore()!.remaining = Number(rem);
   if (!res.ok) throw new Error(`API-Football team stats returned HTTP ${res.status}`);
   const body = (await res.json()) as { response?: unknown };
   return body.response && !Array.isArray(body.response)
@@ -913,11 +968,160 @@ async function importDetails(
     linked: 0,
     skipped: batch.skipped,
     nextOffset: ids.length < limit && doneIds === ids.length ? null : offset + doneIds,
-    remainingQuota: lastRemaining,
+    remainingQuota: remainingQuota(),
+  };
+}
+
+async function enrichProfiles(records: unknown[]): Promise<number> {
+  const projected = records.flatMap((row) => {
+    const profile = apiFootballProfileProjection(row);
+    return profile ? [profile] : [];
+  });
+  const profiles = [...new Map(projected.map((profile) => [profile.source_id, profile])).values()];
+  if (!profiles.length) return 0;
+  const db = await admin();
+  let changed = 0;
+  for (let index = 0; index < profiles.length; index += 100) {
+    const result = await db.rpc("enrich_existing_football_profiles", {
+      p_profiles: profiles.slice(index, index + 100),
+    });
+    if (result.error) throw new Error("Existing player profiles could not be enriched");
+    if (typeof result.data === "number") changed += result.data;
+  }
+  return changed;
+}
+
+async function importPlayerProfiles(offset: number): Promise<AfImportResult> {
+  // One provider page per lease; offset is a zero-based page checkpoint.
+  const page = offset + 1;
+  const body = await afPage<unknown>(`/players/profiles?page=${page}`);
+  const total = body.paging?.total ?? page;
+  if (
+    !Number.isSafeInteger(total) ||
+    total < page ||
+    (body.paging?.current !== undefined && body.paging.current !== page)
+  )
+    throw new Error("Invalid profile page checkpoint");
+  const rows = body.response.flatMap((payload) => {
+    const id = apiFootballPlayerId(payload);
+    return id ? [{ ref: id, payload }] : [];
+  });
+  const created = await saveRaw("player_profile", rows);
+  const enriched = await enrichProfiles(body.response);
+  return {
+    ok: true,
+    phase: "playerprofiles",
+    processed: 1,
+    created,
+    linked: enriched,
+    nextOffset: page < total ? offset + 1 : null,
+    remainingQuota: remainingQuota(),
+  };
+}
+
+async function importPlayerRecords(
+  phase: "playerseasons" | "trophies" | "sidelined",
+  offset: number,
+  limit: number,
+  deadline: number,
+): Promise<AfImportResult> {
+  const db = await admin();
+  // Canonical aliases hide duplicate people in the game, but their provider
+  // IDs still own historical records and must remain ingestion targets.
+  const targets = await db
+    .from("players")
+    .select("source_id")
+    .eq("source", SOURCE)
+    .eq("source_kind", "player")
+    .not("source_id", "is", null)
+    .order("source_id")
+    .range(offset, offset + limit - 1);
+  if (targets.error) throw new Error(targets.error.message);
+  let created = 0;
+  const endpoint = phase === "playerseasons" ? "/players/seasons" : `/${phase}`;
+  const kind = phase === "playerseasons" ? "player_season" : phase;
+  const batch = await pool(targets.data ?? [], 2, deadline, async (target) => {
+    if (!target.source_id || !/^\d+$/.test(target.source_id)) return false;
+    const list = await af<unknown>(`${endpoint}?player=${target.source_id}`);
+    if (!list.length) return false;
+    // A single stable parent record retains every career entry, including
+    // repeated trophies in different seasons, without index-based identities.
+    created += await saveRaw(kind, [{ ref: `player:${target.source_id}`, payload: list }]);
+    return true;
+  });
+  return {
+    ok: true,
+    phase,
+    processed: batch.done,
+    created,
+    linked: 0,
+    skipped: batch.skipped,
+    nextOffset:
+      (targets.data?.length ?? 0) < limit && batch.done === (targets.data?.length ?? 0)
+        ? null
+        : offset + batch.done,
+    remainingQuota: remainingQuota(),
+  };
+}
+
+async function importFixtureRecords(
+  phase: keyof typeof FIXTURE_ENDPOINTS,
+  offset: number,
+  limit: number,
+  deadline: number,
+): Promise<AfImportResult> {
+  const db = await admin();
+  const targets = await db
+    .from("official_events")
+    .select("source_id")
+    .like("source_id", "af:%")
+    .in("status", ["FT", "AET", "PEN"])
+    .order("source_id")
+    .range(offset, offset + limit - 1);
+  if (targets.error) throw new Error(targets.error.message);
+  let created = 0;
+  const kinds = {
+    fixtureevents: "fixture_events",
+    fixturelineups: "fixture_lineups",
+    fixturestatistics: "fixture_statistics",
+    fixtureplayers: "fixture_players",
+  } as const;
+  const batch = await pool(targets.data ?? [], 2, deadline, async (target) => {
+    const id = target.source_id.slice(3);
+    if (!/^\d+$/.test(id)) return false;
+    const list = await af<unknown>(`${FIXTURE_ENDPOINTS[phase]}?fixture=${id}`);
+    if (!list.length) return false;
+    created += await saveRaw(kinds[phase], [{ ref: id, payload: list }]);
+    return true;
+  });
+  return {
+    ok: true,
+    phase,
+    processed: batch.done,
+    created,
+    linked: 0,
+    skipped: batch.skipped,
+    nextOffset:
+      (targets.data?.length ?? 0) < limit && batch.done === (targets.data?.length ?? 0)
+        ? null
+        : offset + batch.done,
+    remainingQuota: remainingQuota(),
   };
 }
 
 export async function runApiFootballImport(opts: {
+  phase: Phase;
+  offset: number;
+  limit: number;
+  budgetMs: number;
+}): Promise<AfImportResult> {
+  return importScope.run(
+    { deadline: Date.now() + opts.budgetMs, remaining: null, seasons: new Map() },
+    () => runImport(opts),
+  );
+}
+
+async function runImport(opts: {
   phase: Phase;
   offset: number;
   limit: number;
@@ -928,6 +1132,51 @@ export async function runApiFootballImport(opts: {
   // would wrongly treat a partial page as the end of the catalog.
   const limit = Math.max(1, Math.min(50, opts.limit));
   try {
+    if (
+      !isApiFootballPhase(opts.phase) ||
+      !Number.isSafeInteger(opts.offset) ||
+      opts.offset < 0 ||
+      !Number.isSafeInteger(opts.limit) ||
+      opts.limit < 1 ||
+      !Number.isFinite(opts.budgetMs) ||
+      opts.budgetMs < 1000 ||
+      opts.budgetMs > 90000
+    )
+      throw new Error("Invalid API-Football import contract");
+    if (opts.phase in LEADER_ENDPOINTS) {
+      const phase = opts.phase as keyof typeof LEADER_ENDPOINTS;
+      return await perLeague(phase, opts.offset, limit, deadline, async (id, season) => {
+        const list = await af<unknown>(`${LEADER_ENDPOINTS[phase]}?league=${id}&season=${season}`);
+        const rows = list.flatMap((row) => {
+          const pid = apiFootballPlayerId(row);
+          return pid ? [{ ref: `${pid}:${id}:${season}`, payload: row }] : [];
+        });
+        const written = await saveRaw(phase, rows);
+        if (phase === "topscorers" || phase === "topassists")
+          await saveRaw("top_stats", [
+            {
+              ref: `${phase === "topscorers" ? "scorers" : "assists"}_${id}_${season}`,
+              payload: list,
+            },
+          ]);
+        return written;
+      });
+    }
+    if (opts.phase in FIXTURE_ENDPOINTS)
+      return await importFixtureRecords(
+        opts.phase as keyof typeof FIXTURE_ENDPOINTS,
+        opts.offset,
+        limit,
+        deadline,
+      );
+    if (opts.phase === "playerprofiles") return await importPlayerProfiles(opts.offset);
+    if (opts.phase === "transfers")
+      return await perTeam("transfers", opts.offset, limit, deadline, async (team) => {
+        const list = await af<unknown>(`/transfers?team=${team}`);
+        return list.length ? saveRaw("transfer", [{ ref: team, payload: list }]) : 0;
+      });
+    if (opts.phase === "playerseasons" || opts.phase === "trophies" || opts.phase === "sidelined")
+      return await importPlayerRecords(opts.phase, opts.offset, limit, deadline);
     if (opts.phase === "leagues") return await importLeagues();
     if (opts.phase === "teams") return await importTeams(opts.offset, limit, deadline);
     if (opts.phase === "fixtures")
@@ -951,7 +1200,8 @@ export async function runApiFootballImport(opts: {
     if (opts.phase === "injuries")
       return await perLeague("injuries", opts.offset, limit, deadline, injuriesFor);
     if (opts.phase === "details") return await importDetails(opts.offset, limit, deadline);
-    return await importSquads(opts.offset, limit, deadline);
+    if (opts.phase === "squads") return await importSquads(opts.offset, limit, deadline);
+    throw new Error("Unimplemented API-Football phase");
   } catch (e) {
     return {
       ok: false,

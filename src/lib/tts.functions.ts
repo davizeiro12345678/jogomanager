@@ -120,6 +120,7 @@ export const narrateEvent = createServerFn({ method: "POST" })
       language: lang,
       models: narrationModels("match"),
       voiceSettings: settings,
+      ...((hype || decisive) && role === "narrator" ? { delivery: "excited" as const } : {}),
     });
     return audio ? { ok: true, audio } : { ok: false, reason: "error" };
   });
@@ -183,19 +184,24 @@ type SynthOpts = {
   language?: RemoteNarrationLang;
   models: TtsModel[];
   voiceSettings: Record<string, unknown>;
+  delivery?: "excited";
+  deadline?: number;
   continuity?: { previousText?: string; nextText?: string };
 };
 
 /** Marianne requires a paid voice plan; Felipe keeps the voice realistic meanwhile. */
 async function synthesize(opts: SynthOpts): Promise<string | null> {
-  const audio = await synthesizeWith(opts);
+  const bounded = { ...opts, deadline: Date.now() + 8_000 };
+  const audio = await synthesizeWith(bounded);
   if (audio || opts.voiceId !== MARIANNE_VOICE_ID) return audio;
-  return synthesizeWith({ ...opts, voiceId: FELIPE_VOICE_ID });
+  return synthesizeWith({ ...bounded, voiceId: FELIPE_VOICE_ID });
 }
 
 async function synthesizeWith(opts: SynthOpts): Promise<string | null> {
   const tried = new Set<string>();
   for (const model of opts.models) {
+    const remaining = (opts.deadline ?? Date.now() + 8_000) - Date.now();
+    if (remaining < 100) return null;
     if (tried.has(model)) continue;
     tried.add(model);
     try {
@@ -209,7 +215,12 @@ async function synthesizeWith(opts: SynthOpts): Promise<string | null> {
       const shortNext = context?.nextText?.slice(0, 100);
       const requestBody = isDialogueModel
         ? {
-            inputs: [{ text: opts.text, voice_id: opts.voiceId }],
+            inputs: [
+              {
+                text: opts.delivery ? `[${opts.delivery}] ${opts.text}` : opts.text,
+                voice_id: opts.voiceId,
+              },
+            ],
             model_id: model,
             settings: v4VoiceSettings(opts.voiceSettings),
             ...(opts.language ? { language_code: opts.language } : {}),
@@ -227,14 +238,15 @@ async function synthesizeWith(opts: SynthOpts): Promise<string | null> {
         method: "POST",
         headers: { "xi-api-key": opts.apiKey, "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(Math.min(5_000, remaining)),
       });
       if (res.ok) return Buffer.from(await res.arrayBuffer()).toString("base64");
-      const body = await res.text();
-      console.error(`ElevenLabs TTS falhou [${res.status}] (${model}): ${body}`);
+      await res.body?.cancel();
+      console.error(`ElevenLabs TTS falhou [${res.status}] (${model})`);
       // A conta pode não ter acesso a um modelo; só esses erros avançam a cadeia.
       if (res.status !== 400 && res.status !== 422 && res.status !== 404) return null;
     } catch (err) {
-      console.error("ElevenLabs TTS erro de rede", err);
+      console.error("ElevenLabs TTS erro de rede", err instanceof Error ? err.name : "unknown");
       return null;
     }
   }

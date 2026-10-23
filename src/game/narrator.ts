@@ -15,6 +15,7 @@ import { audioBlobUrl, readVoiceCache, writeVoiceCache } from "./audio-cache";
 import { NARRATION_VOICE_REVISION } from "./narration-voice";
 import { voicesForLanguage } from "./speech-voices";
 import { boundedNumber } from "@/lib/accessibility-preferences";
+import { NarrationRotation } from "./narration-rotation";
 export type { NarrationEvent } from "./narration-lines";
 export interface NarratorOptions {
   lang: string;
@@ -61,7 +62,7 @@ export class Narrator {
   private captionOnly: boolean;
   private voiceURI: string;
   private lastByEvent = new Map<NarrationEvent, number>();
-  private lastVariant = new Map<NarrationEvent, number>();
+  private readonly rotation = new NarrationRotation();
   private synth: SpeechSynthesis | null;
   private audio: HTMLAudioElement | null = null;
   private utterance: SpeechSynthesisUtterance | null = null;
@@ -92,7 +93,7 @@ export class Narrator {
     this.speechTag = tag || SPEECH_TAG[this.lang];
     this.remoteFailures = 0;
     this.lastByEvent.clear();
-    this.lastVariant.clear();
+    this.rotation.clear();
   }
   setEnabled(on: boolean) {
     this.enabled = on;
@@ -335,11 +336,7 @@ export class Narrator {
       gap = MIN_GAP[event];
     if (gap && created - (this.lastByEvent.get(event) ?? -Infinity) < gap) return;
     this.lastByEvent.set(event, created);
-    const total = lineCount(this.lang, event),
-      previous = this.lastVariant.get(event);
-    let variant = Math.floor(Math.random() * total);
-    if (total > 1 && variant === previous) variant = (variant + 1) % total;
-    this.lastVariant.set(event, variant);
+    const variant = this.rotation.next(event, lineCount(this.lang, event));
     const item: QueueItem = {
       event,
       lang: this.lang,

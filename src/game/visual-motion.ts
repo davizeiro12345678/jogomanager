@@ -61,7 +61,11 @@ export function visualMotionFor(
   if (time === state.time) return state;
   const elapsed = Math.max(0, time - state.time);
   const dt = clamp(elapsed, 0, 0.1);
-  const turn = wrap(desired - state.yaw) * (1 - Math.exp(-(speed > 0.5 ? 13 : 5) * dt));
+  const desiredTurn = wrap(desired - state.yaw) * (1 - Math.exp(-(speed > 0.5 ? 13 : 5) * dt));
+  // Sprinting athletes need a longer arc than a stationary pivot. Bound the
+  // angular speed instead of snapping a running pelvis through a half-turn.
+  const maxTurnRate = 14 / (1 + speed * 0.22);
+  const turn = clamp(desiredTurn, -maxTurnRate * dt, maxTurnRate * dt);
   state.yaw = wrap(state.yaw + turn);
   const acceleration =
     ((player.vx - state.vx) * Math.sin(state.yaw) + (player.vz - state.vz) * Math.cos(state.yaw)) /

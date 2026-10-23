@@ -3,8 +3,18 @@ import {
   AGGREGATE_FOOTBALL_KINDS,
   aggregateFootballRef,
 } from "./football-coverage-plan.mjs";
-export function createFootballMaterializer({ upsert, teamMap, now = Date.now() }) {
+export function createFootballMaterializer({
+  upsert,
+  teamMap,
+  now = Date.now(),
+  enrichProfiles = async () => 0,
+  enrichVenues = async () => 0,
+}) {
   const stamp = () => new Date().toISOString();
+  const publishVenues = async (rows) => {
+    for (let index = 0; index < rows.length; index += 100)
+      await enrichVenues(rows.slice(index, index + 100));
+  };
   const raw = (kind, rows) =>
     upsert(
       "api_football_data",
@@ -98,12 +108,20 @@ export function createFootballMaterializer({ upsert, teamMap, now = Date.now() }
       );
       const maps = list.map((x) => ({
         source_id: `af:${x.team.id}`,
+        sport: "Soccer",
         league_source_id: teamMap.get(`af:${x.team.id}`)?.league_source_id ?? `af:${meta.league}`,
         name: x.team.name,
         local_club_id: teamMap.get(`af:${x.team.id}`)?.local_club_id ?? `af${x.team.id}`,
         updated_at: stamp(),
       }));
       await upsert("official_teams", maps);
+      await publishVenues(
+        list.flatMap((row) =>
+          row.venue?.id && row.venue?.name
+            ? [{ ...row.venue, team_id: row.team.id, country: row.team.country }]
+            : [],
+        ),
+      );
       for (const x of maps) teamMap.set(x.source_id, x);
       for (const x of list) {
         const t = x.team.id;
@@ -161,7 +179,14 @@ export function createFootballMaterializer({ upsert, teamMap, now = Date.now() }
           "players",
           list
             .flatMap((x) => x.players)
-            .filter((p) => p.id && p.name)
+            .filter(
+              (p) =>
+                p.id &&
+                p.name &&
+                !/coach|manager|assistant|trainer|staff|physio|technical|treinador|técnico|comissão/i.test(
+                  p.position ?? "",
+                ),
+            )
             .map((p) => ({
               club_id: club,
               name: p.name.slice(0, 80),
@@ -176,6 +201,7 @@ export function createFootballMaterializer({ upsert, teamMap, now = Date.now() }
               shirt_number: p.number > 0 && p.number < 100 ? p.number : null,
               photo_url: p.photo,
               source: "api-football",
+              source_kind: "player",
               source_id: String(p.id),
               sync_status: "synced",
             })),
@@ -217,7 +243,23 @@ export function createFootballMaterializer({ upsert, teamMap, now = Date.now() }
         return [ref, x];
       });
       await raw(job.kind, rows);
-      if (["player_profile", "player_stats"].includes(job.kind))
+      if (job.kind === "venue") await publishVenues(list);
+      if (["player_profile", "player_stats"].includes(job.kind)) {
+        const profiles = list.flatMap((row) => {
+          const player = row.player ?? row;
+          return Number.isSafeInteger(player.id) && player.id > 0
+            ? [
+                {
+                  source_id: String(player.id),
+                  birth_date: player.birth?.date ?? null,
+                  photo_url: player.photo ?? null,
+                  nationality: player.nationality ?? null,
+                },
+              ]
+            : [];
+        });
+        for (let index = 0; index < profiles.length; index += 100)
+          await enrichProfiles(profiles.slice(index, index + 100));
         for (const x of list) {
           const player = x.player?.id ?? x.id;
           if (!Number.isSafeInteger(player)) continue;
@@ -228,6 +270,7 @@ export function createFootballMaterializer({ upsert, teamMap, now = Date.now() }
           ])
             add(`/${endpoint}?player=${player}`, kind, { player }, 220);
         }
+      }
     }
     const current = Number(new URL(job.path, "https://local").searchParams.get("page") ?? 1);
     if (body.paging) {

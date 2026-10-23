@@ -27,7 +27,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("official asset browser cache", () => {
   it("serves a fresh complete catalog without making a redundant server request", async () => {
-    stored.set("manager3d.official.v2", JSON.stringify({ at: Date.now(), data }));
+    stored.set("manager3d.official.v3", JSON.stringify({ at: Date.now(), data }));
     await assets.loadOfficialAssets();
     await assets.loadOfficialAssets();
     expect(assets.officialCrest("club")).toBe(data.crests.club);
@@ -41,21 +41,21 @@ describe("official asset browser cache", () => {
     );
     await assets.loadOfficialAssets();
     expect(getOfficialAssets).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(stored.get("manager3d.official.v2")!).data).toEqual(data);
+    expect(JSON.parse(stored.get("manager3d.official.v3")!).data).toEqual(data);
   });
 
   it("recovers from malformed cached data", async () => {
-    stored.set("manager3d.official.v2", JSON.stringify({ at: Date.now(), data: null }));
+    stored.set("manager3d.official.v3", JSON.stringify({ at: Date.now(), data: null }));
     await assets.loadOfficialAssets();
     expect(getOfficialAssets).toHaveBeenCalledTimes(1);
     expect(assets.officialCrest("club")).toBe(data.crests.club);
   });
 
   it("refreshes the complete catalog when its freshness expires", async () => {
-    stored.set("manager3d.official.v2", JSON.stringify({ at: Date.now() - 8 * 86_400_000, data }));
+    stored.set("manager3d.official.v3", JSON.stringify({ at: Date.now() - 8 * 86_400_000, data }));
     await assets.loadOfficialAssets();
     expect(getOfficialAssets).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(stored.get("manager3d.official.v2")!).at).toBeGreaterThan(Date.now() - 1_000);
+    expect(JSON.parse(stored.get("manager3d.official.v3")!).at).toBeGreaterThan(Date.now() - 1_000);
   });
 
   it("allows a later load to recover after an unavailable server response", async () => {
