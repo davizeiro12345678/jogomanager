@@ -1,7 +1,34 @@
 import { expect, it } from "vitest";
+import { Vector3 } from "three";
 import { lookFor, proportionsFor } from "./player-model";
 import { scalpGeometry } from "./rig-geometry";
 import { sculptedHair, sculptedHead } from "./player-sculpt";
+import { headPoint, headAngle, fittedHairlineY } from "./sculpt/head";
+import { faceMorphology } from "./player-morphology";
+
+it("keeps buzz stubble against the seeded scalp without a short-hair forelock", () => {
+  const look = { ...lookFor("buzz-closeup", "MF"), hairStyle: "buzz" as const };
+  const p = proportionsFor(look),
+    face = faceMorphology(look.seed);
+  for (const detail of [false, true]) {
+    const hair = sculptedHair(p, look, detail),
+      positions = hair.getAttribute("position");
+    const columns = detail ? 120 : 18,
+      rows = detail ? 72 : 10;
+    let maximumProjection = 0;
+    for (let row = 0; row <= rows; row++)
+      for (let col = 0; col <= columns; col++) {
+        const angle = headAngle(col / columns),
+          line = fittedHairlineY(angle, face, detail);
+        const scalp = headPoint(p, line + ((1.14 - line) * row) / rows, angle, look.seed);
+        const point = new Vector3().fromBufferAttribute(positions, row * (columns + 1) + col);
+        maximumProjection = Math.max(maximumProjection, point.distanceTo(scalp));
+      }
+    expect(maximumProjection).toBeLessThan(0.001);
+    expect(hair.getAttribute("color")).toBeDefined();
+    hair.dispose();
+  }
+});
 
 it("changes hairstyles without changing bones or stature", () => {
   const look = lookFor("same-athlete", "MF");

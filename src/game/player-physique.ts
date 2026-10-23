@@ -1,4 +1,5 @@
 import { makeRng } from "./rng";
+import { pickTraits } from "./player-profile-traits";
 import type { Player } from "./types";
 import type { DetailedAttributes } from "./attributes";
 
@@ -115,7 +116,8 @@ export function physiqueFor(player: Player): { height: number; weight: number } 
       weight: player.developmentBase.profile.weight,
     };
   const rnd = makeRng(`profile-${player.id}-${player.name}`);
-  buildAttrs(player, rnd);
+  const attrs = buildAttrs(player, rnd);
+  pickTraits(player, attrs, rnd);
   // O pé dominante consome uma ou duas amostras antes das medidas na ficha.
   if (rnd() >= 0.72) rnd();
   const tall = player.pos === "GK" ? 8 : player.pos === "DF" ? 4 : 0;

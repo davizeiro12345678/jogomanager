@@ -746,9 +746,6 @@ function addSkinning(
   geometry.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
   geometry.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeight, 4));
   geometry.deleteAttribute("openingLeg");
-  // Authoring metadata is consumed above. Every sibling surface must expose
-  // the same attribute layout before the material/LOD geometry merge.
-  geometry.deleteAttribute("waistBand");
 }
 
 /**
@@ -771,4 +768,13 @@ export function rigRestMatrix(skin: RigSkin, joint: RigJoint): THREE.Matrix4 {
 /** Conta grupos de desenho de um atleta (usado em teste de orçamento). */
 export function countRigSkin(skin: RigSkin): number {
   return skin.groups.length;
+}
+
+/** Counts rendered triangles after all authored body parts have been batched. */
+export function countRigSkinTriangles(skin: RigSkin): number {
+  return skin.groups.reduce((total, group) => {
+    const position = group.geometry.getAttribute("position");
+    const indices = group.geometry.getIndex();
+    return total + (indices ? indices.count : position.count) / 3;
+  }, 0);
 }

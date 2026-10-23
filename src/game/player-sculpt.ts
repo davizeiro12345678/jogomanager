@@ -1,3 +1,6 @@
+import { gauss, faceRing, headPoint, gridSurface, sculptedHead, sculptedHair } from "./sculpt/head";
+import type { HeadShape } from "./sculpt/head";
+export { headPoint, sculptedHead, sculptedHair } from "./sculpt/head";
 import * as THREE from "three";
 import type { PlayerLook, Proportions } from "./player-model";
 import { makeLookRng } from "./player-model";
@@ -15,430 +18,145 @@ import {
   skinDetailMaterial,
 } from "./rig-materials";
 
-// Chin, jaw angle, cheekbones, temples and crown. Radii are interpolated
-// into ONE surface; the face is no longer a pile of intersecting spheres.
-const HEAD_PROFILE = [
-  [-1.14, 0.012, 0.012, 0.2],
-  // A narrower jaw and a gently recessed lower face prevent the portrait
-  // silhouette from becoming a round toy head while retaining enough volume
-  // for strong and wide athlete variants.
-  [-1.08, 0.31, 0.36, 0.17],
-  [-0.96, 0.57, 0.54, 0.12],
-  [-0.78, 0.72, 0.67, 0.075],
-  [-0.52, 0.78, 0.74, 0.035],
-  [-0.25, 0.85, 0.86, -0.005],
-  [0, 0.9, 0.92, -0.045],
-  [0.24, 0.87, 0.9, -0.038],
-  [0.48, 0.84, 0.86, -0.025],
-  [0.7, 0.8, 0.81, -0.035],
-  [0.9, 0.66, 0.67, -0.055],
-  [1.06, 0.37, 0.39, -0.065],
-  [1.14, 0.006, 0.006, -0.07],
-] as const;
-
-function profile(y: number) {
-  const row = Math.max(0, HEAD_PROFILE.findIndex((r) => r[0] >= y) - 1);
-  const a = HEAD_PROFILE[row]!;
-  const b = HEAD_PROFILE[Math.min(row + 1, HEAD_PROFILE.length - 1)]!;
-  const t = THREE.MathUtils.clamp((y - a[0]) / (b[0] - a[0]), 0, 1);
-  // Catmull-Rom tangents give smooth cheeks without a ledge at every ring.
-  const previous = HEAD_PROFILE[Math.max(0, row - 1)]!;
-  const next = HEAD_PROFILE[Math.min(HEAD_PROFILE.length - 1, row + 2)]!;
-  const sample = (column: 1 | 2 | 3) => {
-    const span = b[0] - a[0];
-    const m0 = (b[column] - previous[column]) / (b[0] - previous[0]);
-    const m1 = (next[column] - a[column]) / (next[0] - a[0]);
-    return (
-      (2 * t * t * t - 3 * t * t + 1) * a[column] +
-      (t * t * t - 2 * t * t + t) * span * m0 +
-      (-2 * t * t * t + 3 * t * t) * b[column] +
-      (t * t * t - t * t) * span * m1
-    );
-  };
-  return {
-    width: Math.max(0.006, sample(1)),
-    depth: Math.max(0.006, sample(2)),
-    center: sample(3),
-  };
-}
-
-const gauss = (x: number, y: number, cx: number, cy: number, sx: number, sy: number) =>
-  Math.exp(-(((x - cx) / sx) ** 2) - ((y - cy) / sy) ** 2);
-
-// Concentrate vertices around eyes, nose and mouth; the back of the skull
-// needs fewer samples. This adds detail without multiplying every head ring.
-const headAngle = (u: number) => u * Math.PI * 2 - Math.sin(u * Math.PI * 2) * 0.6;
-
-/** The hair shell and a few portrait-only roots need the same irregular,
- * receded hairline.  Sharing this curve prevents a strand from floating under
- * the fitted scalp when a player changes style in the studio. */
-function fittedHairlineY(angle: number, face: ReturnType<typeof faceMorphology>, detail: boolean) {
-  const front = Math.max(0, Math.cos(angle));
-  const temples = Math.abs(Math.sin(angle));
-  const edgeNoise = detail
-    ? 0.012 * Math.sin(angle * 11 + face.parting * 2.7) +
-      0.004 * Math.sin(angle * 23 - face.parting * 4.1)
-    : 0;
-  return (
-    -0.385 +
-    // Pull the frontal edge back slightly further than the temples. That
-    // exposes a forehead plane instead of forming a heavy close-up fringe.
-    0.055 * front ** 3 +
-    (0.925 + face.hairline) * front ** 1.72 +
-    0.078 * temples ** 5.5 * front +
-    // Hair turns above the ear and recedes at the temple. The previous
-    // frontal-to-nape interpolation made one dark diagonal slab cover the
-    // entire temporal plane, even for a short haircut. Preserve the seeded
-    // centre hairline while revealing this anatomical transition.
-    0.3 * temples ** 4 +
-    0.09 * temples ** 2 * front ** 0.7 -
-    0.022 * Math.cos(angle * 3 + face.parting) +
-    edgeNoise * front ** 3
-  );
-}
-
-/** The same surface sampler positions facial details and the fitted hair. */
-type HeadShape = Pick<Proportions, "headR" | "headW" | "headD">;
-
-/**
- * The stored facial landmarks describe the athlete and must remain stable for
- * existing saves.  The portrait renderer applies this small presentation
- * transform only when it builds the visible orbital surfaces: it keeps the
- * individual spacing while giving a relaxed adult eye aperture instead of
- * exposing a large, toy-like sclera in a studio close-up.
- */
-function renderedEyeMetrics(face: ReturnType<typeof faceMorphology>) {
-  return {
-    width: face.eyeWidth * 0.91,
-    opening: face.eyeOpening * 0.82,
-  };
-}
-
-function faceRing(y: number, seed: number) {
-  const ring = profile(y);
-  const face = faceMorphology(seed);
-  ring.width *=
-    1 +
-    (face.jaw - 1) * Math.exp(-(((y + 0.74) / 0.28) ** 2)) +
-    (face.chinWidth - 1) * Math.exp(-(((y + 0.99) / 0.145) ** 2)) +
-    (face.cheek - 1) * Math.exp(-(((y + 0.06) / 0.36) ** 2)) +
-    (face.temple - 1) * Math.exp(-(((y - 0.5) / 0.25) ** 2));
-  ring.depth *= 1 + (face.cranialDepth - 1) * Math.exp(-(((y - 0.16) / 0.85) ** 2));
-  return ring;
-}
-
-export function headPoint(P: HeadShape, y: number, angle: number, seed = 0) {
-  const ring = faceRing(THREE.MathUtils.clamp(y, -1.14, 1.14), seed);
-  const f = faceMorphology(seed);
-  const x = Math.sin(angle) * ring.width;
-  const front = Math.max(0, Math.cos(angle));
-  const noseX = x - f.noseDeviation;
-  // Separate bridge, tip and alar cartilages read as an adult nose in a
-  // three-quarter portrait.  The previous single round gaussian made the
-  // centre of every face look like the same soft button.
-  const noseBridge = f.noseProjection * 0.6 * gauss(noseX, y, 0, -0.005, f.noseWidth * 0.5, 0.34);
-  const noseTip = f.noseProjection * 0.72 * gauss(noseX, y, 0, -0.215, f.noseWidth * 0.72, 0.1);
-  const alar =
-    0.041 *
-    (gauss(Math.abs(noseX), y, f.noseWidth * 0.72, -0.235, 0.045, 0.063) +
-      gauss(Math.abs(noseX), y, f.noseWidth * 0.54, -0.3, 0.038, 0.05));
-  const nasalRoot = -0.031 * gauss(noseX, y, 0, 0.22, f.noseWidth * 0.62, 0.1);
-  const columella = 0.018 * gauss(noseX, y, 0, -0.33, f.noseWidth * 0.36, 0.07);
-  const nose = noseBridge + noseTip + alar + nasalRoot + columella;
-  const sockets =
-    -0.064 *
-    (gauss(x, y, f.eyeSpacing, 0.14, 0.225, 0.18) + gauss(x, y, -f.eyeSpacing, 0.14, 0.225, 0.18));
-  const brows =
-    0.05 *
-    (gauss(x, y, f.eyeSpacing, 0.31, 0.24, 0.09) + gauss(x, y, -f.eyeSpacing, 0.31, 0.24, 0.09));
-  const cheeks =
-    0.038 *
-    (gauss(x, y, 0.5, -0.14, 0.31, 0.25) * (1 + f.cheekAsymmetry) +
-      gauss(x, y, -0.5, -0.14, 0.31, 0.25) * (1 - f.cheekAsymmetry));
-  const muzzle = 0.021 * gauss(x, y, 0, -0.49, 0.3, 0.13);
-  const philtrum = -0.024 * gauss(x, y, 0, -0.365, 0.042, 0.065);
-  const chin = 0.048 * f.chinProjection * gauss(x, y, 0, -0.85, 0.28 * f.chinWidth, 0.14);
-  const nasolabial = -0.014 * gauss(Math.abs(x), y, 0.305, -0.43, 0.072, 0.2);
-  const lipFossa = -0.016 * gauss(x, y, 0, -0.66, 0.3, 0.06);
-  const temples = -0.025 * gauss(Math.abs(x), y, 0.75, 0.28, 0.13, 0.25);
-  // A broad transition from the orbital rim into the cheek avoids the
-  // continuous bright ridge created by a narrow, deep under-eye groove.
-  const lowerOrbit = -0.01 * gauss(Math.abs(x), y, f.eyeSpacing, -0.005, 0.21, 0.075);
-  const jawAngle = 0.026 * gauss(Math.abs(x), y, 0.66, -0.7, 0.13, 0.15);
-  const masseter = 0.018 * gauss(Math.abs(x), y, 0.64, -0.48, 0.16, 0.18);
-  return new THREE.Vector3(
-    x * P.headW,
-    y * P.headR,
-    (ring.center +
-      (front > 0 ? front ** 0.88 : Math.cos(angle)) * ring.depth +
-      front ** 4 *
-        (nose +
-          sockets +
-          brows +
-          cheeks +
-          muzzle +
-          philtrum +
-          chin +
-          nasolabial +
-          lipFossa +
-          temples +
-          lowerOrbit +
-          jawAngle +
-          masseter)) *
-      P.headD,
-  );
-}
-
 export function faceSurfaceZ(P: HeadShape, x: number, y: number, seed = 0) {
   const ring = faceRing(y / P.headR, seed);
   const angle = Math.asin(THREE.MathUtils.clamp(x / (P.headW * ring.width), -0.999, 0.999));
   return headPoint(P, y / P.headR, angle, seed).z;
 }
 
-function gridSurface(
-  columns: number,
-  rows: number,
-  point: (u: number, v: number) => THREE.Vector3,
-) {
-  const positions: number[] = [],
-    uv: number[] = [],
-    indices: number[] = [];
-  for (let row = 0; row <= rows; row++)
-    for (let col = 0; col <= columns; col++) {
-      const u = col / columns,
-        v = row / rows,
-        p = point(u, v);
-      positions.push(p.x, p.y, p.z);
-      uv.push(u, v);
-    }
-  for (let row = 0; row < rows; row++)
-    for (let col = 0; col < columns; col++) {
-      const a = row * (columns + 1) + col,
-        b = a + columns + 1;
-      indices.push(a, a + 1, b, a + 1, b + 1, b);
-    }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  return geometry;
-}
-
-export function sculptedHead(
-  P: HeadShape,
-  seed = 0,
-  detail = true,
-  portrait = true,
-  sampling?: { columns: number; rows: number },
-) {
-  // Around twice the original triangles, with rows concentrated over the
-  // same seeded face shape so the brow, cheeks, nose and jaw gain real contour
-  // instead of uniform, unused density at the back of the skull.
-  const columns = sampling?.columns ?? (detail ? (portrait ? 136 : 80) : 18);
-  const geometry = gridSurface(
-    columns,
-    sampling?.rows ?? (detail ? (portrait ? 102 : 68) : 20),
-    (u, v) => {
-      // Keep more rows across the eye line, nose and cheeks, where the sculpt
-      // actually bends the surface; spend fewer at the smooth crown and nape.
-      const centered = v * 2 - 1;
-      const faceWeighted = centered * (0.7 + centered * centered * 0.3);
-      return headPoint(P, faceWeighted * 1.14, headAngle(u), seed);
-    },
-  );
-  // Sample the normal from the continuous sculpt instead of averaging the
-  // surrounding triangle planes. The concentrated orbital grid has unequal
-  // triangle areas; area-weighted normals made cheek and bridge lighting
-  // depend on topology, especially when switching portrait/detail density.
-  // This preserves every position/index and smooths the existing surface.
-  const normal = geometry.getAttribute("normal");
-  const positions = geometry.getAttribute("position");
-  const uv = geometry.getAttribute("uv");
-  const tangentAngle = new THREE.Vector3(),
-    tangentHeight = new THREE.Vector3();
-  const surfaceNormal = new THREE.Vector3();
-  const epsilon = 0.0005;
-  const complexion = new Float32Array(positions.count * 3);
-  for (let i = 0; i < positions.count; i++) {
-    const angle = headAngle(uv.getX(i)),
-      height = positions.getY(i) / P.headR;
-    tangentAngle
-      .copy(headPoint(P, height, angle + epsilon, seed))
-      .sub(headPoint(P, height, angle - epsilon, seed));
-    tangentHeight
-      .copy(headPoint(P, height + epsilon, angle, seed))
-      .sub(headPoint(P, height - epsilon, angle, seed));
-    surfaceNormal.crossVectors(tangentAngle, tangentHeight).normalize();
-    normal.setXYZ(i, surfaceNormal.x, surfaceNormal.y, surfaceNormal.z);
-    const x = positions.getX(i) / P.headW;
-    const y = positions.getY(i) / P.headR;
-    const front = Math.max(0, positions.getZ(i) / P.headD);
-    // Subtle blood flow in cheeks/nose, cooler sockets and warmer temples.
-    // Baked linear multipliers preserve every skin tone and add no draw calls.
-    const cheek = Math.exp(-(((Math.abs(x) - 0.52) / 0.25) ** 2) - ((y + 0.18) / 0.28) ** 2);
-    const nose = Math.exp(-((x / 0.17) ** 2) - ((y + 0.24) / 0.18) ** 2);
-    const socket = Math.exp(-(((Math.abs(x) - 0.35) / 0.2) ** 2) - ((y - 0.09) / 0.18) ** 2);
-    const warmth = (cheek * 0.055 + nose * 0.035) * Math.min(1, front);
-    const nasalFold = gauss(Math.abs(x), y, 0.18, -0.28, 0.06, 0.09);
-    const philtrum = gauss(x, y, 0, -0.37, 0.045, 0.075);
-    const chinFossa = gauss(x, y, 0, -0.67, 0.26, 0.055);
-    const shade =
-      (socket * 0.06 + nasalFold * 0.028 + philtrum * 0.035 + chinFossa * 0.027) *
-      Math.min(1, front);
-    complexion.set([1 - shade, 1 - shade - warmth, 1 - shade - warmth * 1.3], i * 3);
-  }
-  geometry.setAttribute("color", new THREE.BufferAttribute(complexion, 3));
-  for (let a = 0; a < normal.count; a += columns + 1) {
-    const b = a + columns;
-    const n = new THREE.Vector3(
-      normal.getX(a) + normal.getX(b),
-      normal.getY(a) + normal.getY(b),
-      normal.getZ(a) + normal.getZ(b),
-    ).normalize();
-    normal.setXYZ(a, n.x, n.y, n.z);
-    normal.setXYZ(b, n.x, n.y, n.z);
-  }
-  return geometry;
-}
-
-/** Fitted hairline with a tapered fade, directional locks and matte volume. */
-export function sculptedHair(
-  P: HeadShape,
-  look: PlayerLook,
-  detail = true,
-  sampling?: { columns: number; rows: number },
-) {
-  const style = look.hairStyle;
-  const f = faceMorphology(look.seed);
-  const geometry = gridSurface(
-    // Spend the extra vertices on close athletes only. The scalp is one
-    // continuous surface, so strand relief below does not add meshes/draws.
-    sampling?.columns ?? (detail ? 120 : 18),
-    sampling?.rows ?? (detail ? 72 : 10),
-    (u, v) => {
-      const angle = headAngle(u);
-      const front = Math.max(0, Math.cos(angle));
-      const temples = Math.abs(Math.sin(angle));
-      const hairline = fittedHairlineY(angle, f, detail);
-      const y = hairline + (1.14 - hairline) * v;
-      const p = headPoint(P, y, angle, look.seed);
-      // Clear the skin by a fraction of a millimetre. A constant radial
-      // inflation at the pole turned the crown into a blunt helmet rim.
-      const minimumRadius = Math.hypot(p.x, p.z) + P.headR * 0.003 * Math.sin(v * Math.PI);
-      const fade = THREE.MathUtils.smoothstep(v, 0, 0.22);
-      const textured = style === "curly" || style === "afro";
-      const volume =
-        style === "buzz" || style === "braids" || style === "mohawk"
-          ? 0.008
-          : style === "afro"
-            ? 0.31
-            : style === "curly"
-              ? 0.115
-              : style === "medium"
-                ? 0.07
-                : 0.016;
-      const strands = detail
-        ? textured
-          ? 0.026 * Math.sin(angle * 17 + v * 37) * Math.sin(v * 31 - angle * 11) +
-            0.007 * Math.sin(angle * 31 + v * 54 + f.parting * 4)
-          : (style === "buzz" || style === "braids" ? 0.004 : 0.017) *
-            Math.sin(angle * 19 + v * 9 + f.parting * 3) *
-            Math.sin(v * Math.PI)
-        : 0;
-      // Taper the frontal temples and cut a shallow, seeded part through the
-      // crown.  A uniform inflated sphere is what made short hair read as a
-      // plastic helmet in the portrait camera.
-      const crown = THREE.MathUtils.smoothstep(v, 0.16, 0.88);
-      const partAngle = f.parting * 0.42;
-      const wrappedPart = Math.atan2(Math.sin(angle - partAngle), Math.cos(angle - partAngle));
-      const partGroove =
-        detail && !textured && style !== "buzz"
-          ? 0.024 * Math.exp(-((wrappedPart / 0.28) ** 2)) * crown
-          : 0;
-      // Directional lock relief is carved into the scalp shell itself. A
-      // broad clump and two finer fibers catch the key light as separate
-      // strands while preserving the single batched hair mesh.
-      const grainFade = detail ? fade * THREE.MathUtils.smoothstep(v, 0.08, 0.3) : 0;
-      const grainFlow = angle - partAngle + (1 - v) * (textured ? 0.16 : 0.3);
-      const grain = textured
-        ? 0
-        : grainFade *
-          (0.0075 * Math.cos(grainFlow * 34) +
-            0.003 * Math.cos(grainFlow * 71 + v * 5) +
-            0.009 * Math.cos(grainFlow * 15 + v * 2) +
-            0.0025 * Math.cos(grainFlow * 108 + v * 9 + f.parting));
-      const templeTaper = 1 - front * temples ** 1.35 * (style === "afro" ? 0.1 : 0.36);
-      const foreheadInset =
-        style === "afro" ? 0 : 0.018 * front ** 2 * THREE.MathUtils.smoothstep(v, 0.12, 0.72);
-      const shell =
-        1 +
-        Math.max(
-          0.004,
-          0.007 +
-            grain +
-            (volume * look.hairVolume + strands) * fade * templeTaper -
-            partGroove -
-            foreheadInset,
-        );
-      p.x *= shell;
-      p.z *= shell;
-      const ordinaryLift = volume * (0.18 + crown * 0.32) * fade;
-      const texturedLift = style === "afro" ? volume * fade : volume * fade * 0.68;
-      p.y +=
-        P.headR *
-        ((textured ? texturedLift : ordinaryLift) +
-          (style === "short" || style === "medium" ? 0.009 * front * v * (1 - v) * 4 : 0));
-      p.x +=
-        P.headR * (0.018 + f.parting * 0.028) * Math.sin(v * Math.PI) * front * fade * templeTaper;
-      const radius = Math.hypot(p.x, p.z);
-      if (radius < minimumRadius && radius > 1e-6) {
-        p.x *= minimumRadius / radius;
-        p.z *= minimumRadius / radius;
-      }
-      return p;
-    },
-  );
-  // Directional locks carry their own contact tone. This remains a single
-  // opaque hair draw and reads even when fine normal maps are not resident.
-  const uv = geometry.getAttribute("uv");
-  const colors = new Float32Array(uv.count * 3);
-  for (let i = 0; i < uv.count; i++) {
-    const angle = headAngle(uv.getX(i));
-    const v = uv.getY(i);
-    const lock = 0.92 + 0.08 * Math.cos(angle * 15 + (1 - v) * 4 + f.parting);
-    const root = 1 - 0.1 * Math.exp(-((v / 0.16) ** 2));
-    const value = detail ? lock * root : 1;
-    colors.set([value, value, value], i * 3);
-  }
-  if (detail) geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  return geometry;
-}
-
 function curve(points: THREE.Vector3[], radius: number, segments = 14) {
   return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), segments, radius, 5, false);
 }
 
-function eyePatch(P: Proportions, side: number, seed: number) {
+/** Close hair keeps the existing five-sided lock budget. Broad woven relief
+ * and a rounded, tapered tip change its silhouette instead of adding wisps,
+ * materials or bones. Roots stay buried in the fitted scalp. */
+function fittedHairLock(
+  points: THREE.Vector3[],
+  radius: number,
+  segments: number,
+  style: "ponytail" | "dreads" | "braids",
+) {
+  const path = new THREE.CatmullRomCurve3(points);
+  const geometry = new THREE.TubeGeometry(path, segments, radius, 5, false);
+  const positions = geometry.getAttribute("position");
+  const uv = geometry.getAttribute("uv");
+  const centre = new THREE.Vector3();
+  for (let row = 0; row <= segments; row++) {
+    const t = row / segments;
+    path.getPointAt(t, centre);
+    const taper = 0.64 * (1 - THREE.MathUtils.smoothstep(t, 0.2, 0.9)) + 0.35;
+    const root = 0.88 + THREE.MathUtils.smoothstep(t, 0, 0.18) * 0.12;
+    for (let col = 0; col <= 5; col++) {
+      const angle = (col / 5) * Math.PI * 2;
+      // Woven pairs turn along a braid. Dreads retain a soft, irregular
+      // cylindrical body; the ponytail narrows as one gathered bundle.
+      const braid = style === "braids" ? 0.87 + Math.cos(angle * 2 - t * Math.PI * 4) * 0.13 : 1;
+      const fibre = style === "dreads" ? 1 + Math.sin(t * Math.PI * 5) * 0.045 : 1;
+      const r = radius * taper * root * braid * fibre;
+      const i = row * 6 + col;
+      positions.setXYZ(
+        i,
+        centre.x -
+          geometry.normals[row]!.x * Math.cos(angle) * r +
+          geometry.binormals[row]!.x * Math.sin(angle) * r,
+        centre.y -
+          geometry.normals[row]!.y * Math.cos(angle) * r +
+          geometry.binormals[row]!.y * Math.sin(angle) * r,
+        centre.z -
+          geometry.normals[row]!.z * Math.cos(angle) * r +
+          geometry.binormals[row]!.z * Math.sin(angle) * r,
+      );
+      // A scalp alpha atlas cannot cut the circumference of a tubular lock.
+      uv.setY(i, 0.16 + uv.getY(i) * 0.68);
+    }
+  }
+  geometry.computeVertexNormals();
+  const normals = geometry.getAttribute("normal");
+  const average = new THREE.Vector3();
+  for (let row = 0; row <= segments; row++) {
+    const start = row * 6;
+    average
+      .set(
+        normals.getX(start) + normals.getX(start + 5),
+        normals.getY(start) + normals.getY(start + 5),
+        normals.getZ(start) + normals.getZ(start + 5),
+      )
+      .normalize();
+    normals.setXYZ(start, average.x, average.y, average.z);
+    normals.setXYZ(start + 5, average.x, average.y, average.z);
+  }
+  return geometry;
+}
+
+/** A narrow crest follows the crown and nape rather than floating as an
+ * ellipsoid. Its broad cut locks occupy fewer triangles than the old sphere. */
+function fittedMohawk(P: Proportions, seed: number) {
+  return gridSurface(8, 18, (u, v) => {
+    const t = u * 2 - 1;
+    const crown = Math.sin(v * Math.PI);
+    const height = crown * 1.14 + (0.57 * (1 - v) - 0.35 * v) * (1 - crown);
+    const centre = headPoint(P, height, v <= 0.5 ? 0 : Math.PI, seed);
+    const cut = Math.sin(v * Math.PI * 7 + (seed % 17)) * 0.014 * crown;
+    return new THREE.Vector3(
+      P.headR * t * (0.018 + crown ** 0.45 * 0.105),
+      centre.y + P.headR * (0.28 + cut) * crown ** 0.65 * (1 - Math.abs(t) ** 0.72),
+      centre.z,
+    );
+  });
+}
+
+/** The existing bun sphere becomes a gathered knot with shallow coiled
+ * lobes. It keeps the same triangle budget and the same attachment point. */
+function gatheredBun(radius: number, seed: number) {
+  const geometry = new THREE.SphereGeometry(radius, 12, 10);
+  const positions = geometry.getAttribute("position");
+  const uv = geometry.getAttribute("uv");
+  for (let i = 0; i < positions.count; i++) {
+    const u = uv.getX(i);
+    const v = uv.getY(i);
+    const gather = Math.sin(v * Math.PI) ** 2;
+    const coil = 1 + Math.cos(u * Math.PI * 10 + v * Math.PI * 3 + (seed % 13)) * gather * 0.09;
+    positions.setXYZ(
+      i,
+      positions.getX(i) * coil,
+      positions.getY(i) * (1 - gather * 0.045),
+      positions.getZ(i) * coil,
+    );
+    uv.setY(i, 0.16 + v * 0.68);
+  }
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function orbitalArch(u: number, portrait: boolean) {
+  // An elliptical palpebral opening has a fuller arc than a pointed sine
+  // lens. Shared sampling closes the upper/lower corners exactly.
+  const relaxed = Math.sin(u * Math.PI) ** 0.78;
+  return portrait
+    ? THREE.MathUtils.lerp(relaxed, Math.sqrt(Math.max(0, 1 - (u * 2 - 1) ** 2)), 0.3)
+    : relaxed;
+}
+
+function eyePatch(P: Proportions, side: number, seed: number, portrait = false) {
   const f = faceMorphology(seed);
-  const eye = renderedEyeMetrics(f);
   // An almond shaped lens fitted into the socket; no protruding eyeball.
   const geometry = gridSurface(20, 6, (u, v) => {
     const t = u * 2 - 1;
-    const aperture = Math.sin(u * Math.PI) ** 0.78;
-    const x = P.headW * (side * f.eyeSpacing + t * eye.width * 0.94);
+    const aperture = orbitalArch(u, portrait);
+    const x = P.headW * (side * f.eyeSpacing + t * f.eyeWidth * 0.86);
     const y =
       P.headR * (0.14 + side * f.eyeAsymmetry + side * t * 0.012) +
       // Use the very same rim as the attached lids. The narrower old sclera
       // left a skin gap at its corners and exposed a complete circular iris.
-      aperture * P.headR * (v * 0.96 - 0.5) * eye.opening;
+      aperture * P.headR * (v * 0.74 - 0.42) * f.eyeOpening;
     return new THREE.Vector3(
       x,
       y,
       faceSurfaceZ(P, x, y, seed) +
         // The sclera sits in the socket. The corneal dome can then project
         // naturally without turning the whole eye into a white marble.
-        P.headR * (0.011 + aperture * Math.sin(v * Math.PI) * 0.019),
+        P.headR * (0.003 + aperture * Math.sin(v * Math.PI) * 0.008),
     );
   });
   const uv = geometry.getAttribute("uv");
@@ -446,13 +164,13 @@ function eyePatch(P: Proportions, side: number, seed: number) {
   for (let i = 0; i < uv.count; i++) {
     const u = uv.getX(i),
       v = uv.getY(i);
-    const arch = Math.sin(u * Math.PI) ** 0.78;
+    const arch = orbitalArch(u, portrait);
     // Contact shade and the warm inner corner are baked into the existing
     // sclera. They survive flat fill light without a new occlusion pass/map.
     const shade =
       0.16 * Math.abs(v * 2 - 1) ** 1.4 * arch +
-      0.1 * (1 - arch) +
-      0.075 * THREE.MathUtils.smoothstep(v, 0.55, 1) * arch;
+      0.24 * (1 - arch) +
+      0.12 * THREE.MathUtils.smoothstep(v, 0.45, 1) * arch;
     const inner = side > 0 ? 1 - u : u;
     const warmth = 0.1 * THREE.MathUtils.smoothstep(inner, 0.7, 1);
     color.set([1 - shade * 0.7, 1 - shade - warmth * 0.3, 1 - shade - warmth * 0.55], i * 3);
@@ -518,18 +236,42 @@ function smoothRadialNormals(geometry: THREE.BufferGeometry, columns: number) {
 }
 
 /** Helix, antihelix, concha and lobe are one sculpted surface, sharing skin. */
-export function sculptedEar(P: Proportions, side: number, detail: boolean) {
+export function sculptedEar(P: Proportions, side: number, detail: boolean, portrait = false) {
   const R = P.headR;
   const ear = gridSurface(detail ? 28 : 12, detail ? 10 : 5, (u, v) => {
     const a = u * Math.PI * 2,
-      lobe = Math.max(0, -Math.sin(a));
-    const helix = Math.exp(-(((v - 0.82) / 0.14) ** 2));
-    const antihelix = Math.exp(-(((v - 0.46) / 0.14) ** 2)) * (0.6 + Math.sin(a) * 0.25);
-    const depth = 0.019 + helix * 0.073 + antihelix * v * 0.036 + lobe * v * 0.018;
+      lobe = Math.max(0, -Math.sin(a)),
+      upper = Math.max(0, Math.sin(a)),
+      anterior = Math.max(0, Math.cos(a));
+    // An auricle is a folded C, not concentric rings. The anterior helix
+    // opens into the concha, the antihelix forks above it, and the soft lobe
+    // hangs forward; all landmarks still occupy this single existing mesh.
+    const helix = Math.exp(-(((v - 0.82) / 0.11) ** 2)) * (1 - anterior ** 4 * v * 0.68);
+    const antihelix =
+      Math.exp(-(((v - (0.48 + upper * 0.12)) / 0.1) ** 2)) *
+      (0.35 + upper * 0.55 + (1 - anterior) * 0.18);
+    const concha = Math.exp(-(((v - 0.26) / 0.23) ** 2)) * (0.6 + anterior * v * 0.4);
+    const tragus = Math.exp(-(((v - 0.5) / 0.19) ** 2)) * anterior ** 10 * v;
+    // Broad, shallow rolling keeps the profile's helix but avoids a frontal
+    // fin. Leave the anterior tragus/lobe almost untouched; roll mainly the
+    // posterior/superior edge and contract its silhouette slightly in-plane.
+    const rimFade = portrait ? THREE.MathUtils.smoothstep(v, 0.55, 1) : 0;
+    const rimMask = 0.2 + 0.8 * Math.max(upper, Math.max(0, -Math.cos(a)));
+    const rimReturn = rimFade * rimMask * 0.03;
+    const contourScale = 1 - rimFade * rimMask * 0.035;
+    const depth =
+      0.025 +
+      v * 0.035 +
+      helix * 0.094 +
+      antihelix * v * 0.084 -
+      concha * 0.034 +
+      tragus * 0.083 +
+      lobe * v * 0.035 -
+      rimReturn;
     return new THREE.Vector3(
       side * (P.headW * 0.925 + R * depth),
-      R * (-0.065 + Math.sin(a) * v * (0.215 + lobe * 0.017)),
-      R * (-0.025 + Math.cos(a) * v * 0.135),
+      R * (-0.055 + (Math.sin(a) * v * (0.23 + upper * 0.028) - lobe * v * 0.013) * contourScale),
+      R * (-0.025 + (Math.cos(a) * v * (0.13 - upper * 0.018) + lobe * v * 0.028) * contourScale),
     );
   });
   // Outward surface must face the corresponding side of the head.
@@ -543,6 +285,16 @@ export function sculptedEar(P: Proportions, side: number, detail: boolean) {
   }
   ear.computeVertexNormals();
   smoothRadialNormals(ear, detail ? 28 : 12);
+  const uv = ear.getAttribute("uv"),
+    colors = new Float32Array(uv.count * 3);
+  for (let i = 0; i < uv.count; i++) {
+    const a = uv.getX(i) * Math.PI * 2,
+      v = uv.getY(i);
+    const cavity = Math.exp(-(((v - 0.27) / 0.23) ** 2)) * (0.6 + Math.max(0, Math.cos(a)) * 0.4);
+    const shade = cavity * 0.15;
+    colors.set([1 - shade * 0.65, 1 - shade - 0.035, 1 - shade - 0.045], i * 3);
+  }
+  ear.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   return ear;
 }
 
@@ -561,15 +313,9 @@ export function lipPatch(P: Proportions, seed: number, lower: boolean) {
     return new THREE.Vector3(
       x,
       y,
-      faceSurfaceZ(P, x, y, seed) +
-        // A relaxed lip rolls out of the mouth seam and settles flush into
-        // the face. The former half-sine projected by almost the lip's own
-        // height, making two bright cylindrical ridges under the key light.
-        P.headR *
-          (0.0008 +
-            arch *
-              (0.007 * (1 - v) ** 2 +
-                f.lipVolume * (lower ? 0.6 : 0.5) * Math.sin(v * Math.PI) * (1 - v))),
+      // The lip volume is already part of the shared continuous skull.
+      // This is a flush pigment layer, with no second projected ridge.
+      faceSurfaceZ(P, x, y, seed) + P.headR * 0.0008,
     );
   });
   // Lower lip rows run downward. Reverse their winding so the vermilion
@@ -599,6 +345,34 @@ export function lipPatch(P: Proportions, seed: number, lower: boolean) {
     color[i + 2] = 1 - pigment * (lower ? 0.18 : 0.22) - seam * 0.7;
   }
   geometry.setAttribute("color", new THREE.Float32BufferAttribute(color, 3));
+  // The skull uses normals sampled from its continuous sculpt. An attached
+  // lip patch used triangle averages instead, creating a bright horizontal
+  // border even where its relief and pigment had already faded into skin.
+  // Settle the outer tissue and mouth corners into the same facial normal;
+  // keep the rolled vermilion's interior shading intact.
+  const positions = geometry.getAttribute("position");
+  const normals = geometry.getAttribute("normal");
+  const across = new THREE.Vector3();
+  const vertical = new THREE.Vector3();
+  const facialNormal = new THREE.Vector3();
+  const patchNormal = new THREE.Vector3();
+  for (let i = 0; i < positions.count; i++) {
+    const attachment = 1;
+    const height = positions.getY(i) / P.headR;
+    const ring = faceRing(height, seed);
+    const angle = Math.asin(
+      THREE.MathUtils.clamp(positions.getX(i) / (P.headW * ring.width), -0.999, 0.999),
+    );
+    across
+      .copy(headPoint(P, height, angle + 0.0005, seed))
+      .sub(headPoint(P, height, angle - 0.0005, seed));
+    vertical
+      .copy(headPoint(P, height + 0.0005, angle, seed))
+      .sub(headPoint(P, height - 0.0005, angle, seed));
+    facialNormal.crossVectors(across, vertical).normalize();
+    patchNormal.fromBufferAttribute(normals, i).lerp(facialNormal, attachment).normalize();
+    normals.setXYZ(i, patchNormal.x, patchNormal.y, patchNormal.z);
+  }
   mapHeadSurfaceUv(geometry, P, seed);
   return geometry;
 }
@@ -642,8 +416,31 @@ function mouthInterior(P: Proportions, seed: number) {
     // A relaxed mouth has a narrow seam. The jaw exposes this interior while
     // speaking; a permanently tall cavity made a neutral face look grimacing.
     const y = P.headR * (-0.497 + t * f.mouthTilt + (v - 0.5) * arch * 0.016);
-    return new THREE.Vector3(x, y, faceSurfaceZ(P, x, y, seed) + P.headR * 0.0025);
+    return new THREE.Vector3(x, y, faceSurfaceZ(P, x, y, seed) - P.headR * 0.003);
   });
+}
+
+/** A shallow crease replaces the cylinder that outlined the whole mouth.
+ * Its colour and width fade into the commissures, while the oral cavity is
+ * actually recessed behind it until the existing jaw opens. */
+function relaxedMouthCrease(P: Proportions, seed: number) {
+  const f = faceMorphology(seed);
+  const geometry = gridSurface(24, 2, (u, v) => {
+    const t = u * 2 - 1;
+    const arch = Math.sin(u * Math.PI);
+    const x = t * P.headR * f.mouthWidth;
+    const y = P.headR * (-0.498 + 0.01 * (1 - t * t) + t * f.mouthTilt + (v - 0.5) * arch * 0.004);
+    return new THREE.Vector3(x, y, faceSurfaceZ(P, x, y, seed) + P.headR * 0.0011);
+  });
+  const uv = geometry.getAttribute("uv");
+  const colors = new Float32Array(uv.count * 3);
+  for (let i = 0; i < uv.count; i++) {
+    const crease = Math.sin(uv.getX(i) * Math.PI) ** 0.65 * Math.sin(uv.getY(i) * Math.PI);
+    colors.set([1 - crease * 0.5, 1 - crease * 0.61, 1 - crease * 0.58], i * 3);
+  }
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  mapHeadSurfaceUv(geometry, P, seed);
+  return geometry;
 }
 
 /** Facial hair follows the jaw and cheek landmarks with a separate chin
@@ -755,15 +552,20 @@ function tintBeardSurface(
 }
 
 /** Orbital tissue overlaps the limbus; a flat white eye patch alone reads as paint. */
-export function eyelidSurface(P: Proportions, side: number, seed: number, upper: boolean) {
+export function eyelidSurface(
+  P: Proportions,
+  side: number,
+  seed: number,
+  upper: boolean,
+  portrait = false,
+) {
   const f = faceMorphology(seed);
-  const eye = renderedEyeMetrics(f);
   const geometry = gridSurface(24, 4, (u, v) => {
     const t = u * 2 - 1,
-      arch = Math.max(0.012, Math.sin(u * Math.PI) ** 0.8);
-    const x = P.headW * (side * f.eyeSpacing + t * eye.width * 0.94);
-    const rim = eye.opening * (upper ? 0.46 : 0.5);
-    const fold = upper ? 0.044 : 0.028;
+      arch = portrait ? orbitalArch(u, true) : Math.max(0.012, Math.sin(u * Math.PI) ** 0.8);
+    const x = P.headW * (side * f.eyeSpacing + t * f.eyeWidth * 0.86);
+    const rim = f.eyeOpening * (upper ? 0.32 : 0.42);
+    const fold = upper ? 0.095 : 0.064;
     const y =
       P.headR *
       (0.14 +
@@ -778,8 +580,10 @@ export function eyelidSurface(P: Proportions, side: number, seed: number, upper:
       // second painted outline around the eye.
       faceSurfaceZ(P, x, y, seed) +
         P.headR *
+          // The wet margin is a narrow ridge. Its projection falls rapidly
+          // into the orbit instead of carrying a convex bag across the flap.
           THREE.MathUtils.lerp(
-            0.011 + arch * (0.017 + (1 - v) ** 2 * 0.02),
+            0.037 * (1 - v) ** 2 * arch + (upper ? 0.002 : 0) * Math.sin(v * Math.PI) * arch,
             0.0008,
             THREE.MathUtils.smoothstep(v, 0.65, 1),
           ),
@@ -794,19 +598,46 @@ export function eyelidSurface(P: Proportions, side: number, seed: number, upper:
     }
     geometry.computeVertexNormals();
   }
+  if (portrait) {
+    // Settle the flap's outer shading into the continuous face, rather than
+    // lighting its last narrow triangle strip as a separate white rim.
+    const position = geometry.getAttribute("position"),
+      normal = geometry.getAttribute("normal");
+    const uv = geometry.getAttribute("uv"),
+      n = new THREE.Vector3(),
+      faceN = new THREE.Vector3();
+    const epsilon = P.headR * 0.001;
+    for (let i = 0; i < position.count; i++) {
+      const blend = THREE.MathUtils.smoothstep(uv.getY(i), 0.4, 1);
+      if (!blend) continue;
+      const x = position.getX(i),
+        y = position.getY(i);
+      faceN
+        .set(
+          -(faceSurfaceZ(P, x + epsilon, y, seed) - faceSurfaceZ(P, x - epsilon, y, seed)) /
+            (2 * epsilon),
+          -(faceSurfaceZ(P, x, y + epsilon, seed) - faceSurfaceZ(P, x, y - epsilon, seed)) /
+            (2 * epsilon),
+          1,
+        )
+        .normalize();
+      n.fromBufferAttribute(normal, i).lerp(faceN, blend).normalize();
+      normal.setXYZ(i, n.x, n.y, n.z);
+    }
+  }
   const uv = geometry.getAttribute("uv");
   const color = new Float32Array(uv.count * 3);
   for (let i = 0; i < uv.count; i++) {
     const arch = Math.sin(uv.getX(i) * Math.PI) ** 0.8;
-    const rim = (1 - THREE.MathUtils.smoothstep(uv.getY(i), 0, 0.75)) * arch * 0.14;
+    const rim = (1 - THREE.MathUtils.smoothstep(uv.getY(i), 0, 0.35)) * arch * 0.075;
     // A narrow warm waterline connects sclera to skin. The upper fold keeps
     // its contact shade even in the studio's broad ambient fill.
     const crease = upper ? gauss(uv.getY(i), 0, 0.72, 0, 0.18, 1) * arch * 0.035 : 0;
     color.set([1 - rim * 0.45 - crease, 1 - rim - crease, 1 - rim * 1.12 - crease], i * 3);
   }
   geometry.setAttribute("color", new THREE.BufferAttribute(color, 3));
-  // The attached eyelid is skin: sample the same pore scale and coordinates
-  // as the skull instead of stretching a whole skin atlas across each lid.
+  // Continue skull pores across the attachment instead of repeating the
+  // complete skin atlas in each thin flap (which reads as a shiny sticker).
   mapHeadSurfaceUv(geometry, P, seed);
   return geometry;
 }
@@ -819,22 +650,20 @@ export function eyelidSurface(P: Proportions, side: number, seed: number, upper:
  */
 export function eyelidPivot(P: Proportions, side: number, seed: number, upper: boolean) {
   const f = faceMorphology(seed);
-  const eye = renderedEyeMetrics(f);
   const x = P.headW * side * f.eyeSpacing;
   const y =
     P.headR *
     (0.14 +
       side * f.eyeAsymmetry +
-      (upper ? 1 : -1) * (eye.opening * (upper ? 0.46 : 0.5) + (upper ? 0.044 : 0.028)));
+      (upper ? 1 : -1) * (f.eyeOpening * (upper ? 0.32 : 0.42) + (upper ? 0.095 : 0.064)));
   return new THREE.Vector3(x, y, faceSurfaceZ(P, x, y, seed) + P.headR * 0.0008);
 }
 
 function eyebrowSurface(P: Proportions, side: number, seed: number) {
   const f = faceMorphology(seed);
-  const eye = renderedEyeMetrics(f);
   return gridSurface(20, 3, (u, v) => {
     const t = u * 2 - 1;
-    const x = P.headW * (side * f.eyeSpacing + t * eye.width * 1.08);
+    const x = P.headW * (side * f.eyeSpacing + t * f.eyeWidth * 1.06);
     const taper = Math.max(0.04, Math.sin(u * Math.PI) ** 0.6);
     const outer = Math.max(0, side * t);
     const arch = 0.034 * Math.exp(-(((t + side * 0.18) / 0.63) ** 2));
@@ -861,12 +690,21 @@ export function buildSculptedFace(
   mats: PlayerMaterials,
   hi: boolean,
   portrait = true,
+  topology: "standard" | "ultra" = "standard",
 ) {
-  const headSampling = hi
-    ? portrait
-      ? { columns: 136, rows: 102 }
-      : { columns: 80, rows: 68 }
-    : undefined;
+  // The close-up tier deliberately spends most of its triangles on the two
+  // silhouettes players recognise immediately: face and hair.  Combined with
+  // the denser body rings passed by PlayerRig, this is a >3x mesh increase for
+  // the featured athlete, while every distant athlete keeps the lighter rig.
+  const headSampling = !hi
+    ? undefined
+    : topology === "ultra"
+      ? portrait
+        ? { columns: 256, rows: 192 }
+        : { columns: 192, rows: 152 }
+      : portrait
+        ? { columns: 136, rows: 102 }
+        : { columns: 80, rows: 68 };
   const head: RigPart[] = [
     rigPart(sculptedHead(P, look.seed, hi, portrait, headSampling), mats.skin, undefined, true),
   ];
@@ -887,24 +725,25 @@ export function buildSculptedFace(
   const eyeWhite = eyeWhiteMaterial(hi);
   const iris = irisMaterial(look.eyeColor, hi);
   const pupil = pupilMaterial();
-  const skinDetail = skinDetailMaterial(look.skin);
+  const skinDetail = skinDetailMaterial(look.skin, hi);
   for (const side of [-1, 1]) {
-    head.push(rigPart(sculptedEar(P, side, hi), mats.skin, undefined, true));
+    head.push(rigPart(sculptedEar(P, side, hi, portrait), mats.skin, undefined, true));
     const x = side * P.headW * f.eyeSpacing,
-      y = R * (0.14 + side * f.eyeAsymmetry);
+      y = R * (0.14 + side * f.eyeAsymmetry - (portrait ? f.eyeOpening * 0.05 : 0));
     const socketZ = faceSurfaceZ(P, x, y, look.seed);
-    const z = socketZ + R * 0.043;
+    const z = socketZ + R * 0.026;
     // Keep the exported dome's measurement contract intact, then sink its
     // portrait instance into the eyelid aperture. The old placement put the
     // full corneal convexity ahead of both lids, reading as a marble glued to
     // the face in the Studio close-up.
-    // An adult iris is taller than the relaxed opening. Keep the peripheral
-    // cornea underneath the lids, rather than shrinking the iris until the
-    // upper/lower lid has nothing to occlude. The recessed rim leaves a
-    // compact visible aperture in the studio instead of a toy-like disk.
-    const irisRadius = R * 0.064;
+    // Recess sclera, cornea, limbus and pupil together: moving only the lens
+    // behind the old sclera would hide its rim and leave white eye patches.
+    // The shallow ensemble lets orbital tissue settle into the face quickly.
+    // An adult iris is taller than the relaxed opening: the attached lids
+    // hide its upper/lower arcs instead of presenting a fully exposed marble.
+    const irisRadius = R * 0.058;
     const irisGeometry = irisDome(P, x, y, look.seed, irisRadius);
-    irisGeometry.translate(0, 0, -R * 0.014);
+    irisGeometry.translate(0, 0, -R * 0.028);
     const limbus = new THREE.TorusGeometry(irisRadius, R * 0.0011, hi ? 5 : 4, hi ? 18 : 12);
     const limbusPosition = limbus.getAttribute("position");
     for (let i = 0; i < limbusPosition.count; i++) {
@@ -919,7 +758,7 @@ export function buildSculptedFace(
     // The pupil also follows the local socket curvature. A flat disk whose
     // centre clears the dome can still disappear along one edge on a face
     // with a deeper socket or a broader nasal bridge.
-    const pupilGeometry = new THREE.CircleGeometry(R * 0.022, hi ? 18 : 12);
+    const pupilGeometry = new THREE.CircleGeometry(R * 0.0205, hi ? 18 : 12);
     const pupilPosition = pupilGeometry.getAttribute("position");
     for (let i = 0; i < pupilPosition.count; i++) {
       const px = pupilPosition.getX(i),
@@ -927,13 +766,13 @@ export function buildSculptedFace(
       pupilPosition.setZ(i, faceSurfaceZ(P, x + px, y + py, look.seed) - socketZ);
     }
     pupilGeometry.computeVertexNormals();
-    face.push(rigPart(eyePatch(P, side, look.seed), eyeWhite));
+    face.push(rigPart(eyePatch(P, side, look.seed, portrait), eyeWhite));
     eyes.push(
       rigPart(irisGeometry, iris),
       // A limbal ring keeps a small iris legible in the ordinary match
       // camera, where the old flat eye read as a single dark pixel.
       rigPart(limbus, pupil, {
-        position: [x, y, socketZ + R * 0.031],
+        position: [x, y, socketZ + R * 0.013],
       }),
       rigPart(pupilGeometry, pupil, {
         position: [x, y, z],
@@ -942,12 +781,12 @@ export function buildSculptedFace(
       // painted texture: it follows the animated eye bone and works with all
       // skin/eye combinations, including the medium detail model.
       rigPart(new THREE.SphereGeometry(R * 0.0019, hi ? 8 : 6, hi ? 6 : 5), eyeWhite, {
-        position: [x - side * R * 0.011, y + R * 0.011, socketZ + R * 0.052],
+        position: [x - side * R * 0.011, y + R * 0.011, socketZ + R * 0.029],
         scale: [1, 1, 0.36],
       }),
     );
-    const upperLid = eyelidSurface(P, side, look.seed, true);
-    const lowerLid = eyelidSurface(P, side, look.seed, false);
+    const upperLid = eyelidSurface(P, side, look.seed, true, portrait);
+    const lowerLid = eyelidSurface(P, side, look.seed, false, portrait);
     const upperPivot = eyelidPivot(P, side, look.seed, true);
     const lowerPivot = eyelidPivot(P, side, look.seed, false);
     // Vertices move into their own hinge space. The matching bone restores
@@ -973,7 +812,7 @@ export function buildSculptedFace(
         THREE.MathUtils.smoothstep(Math.abs(v * 2 - 1), 0.3, 1),
         THREE.MathUtils.smoothstep(Math.abs(u * 2 - 1), 0.72, 1),
       );
-      const skinBlend = 0.075 + edge * 0.925;
+      const skinBlend = 0.15 + edge * 0.85;
       browColors[i] =
         THREE.MathUtils.lerp(browColor.r, browSkin.r, skinBlend) /
         Math.max(0.001, detailMaterial.color.r);
@@ -997,16 +836,9 @@ export function buildSculptedFace(
       }),
     );
   }
-  const lips: THREE.Vector3[] = [];
-  for (let i = 0; i <= 12; i++) {
-    const t = (i / 12) * 2 - 1,
-      x = t * R * f.mouthWidth;
-    const y = R * (-0.495 + 0.009 * (1 - t * t) + t * f.mouthTilt);
-    lips.push(new THREE.Vector3(x, y, faceSurfaceZ(P, x, y, look.seed) + R * 0.008));
-  }
   face.push(
     rigPart(lipPatch(P, look.seed, false), mats.skin),
-    rigPart(curve(lips, R * 0.00115, hi ? 16 : 10), skinDetail),
+    rigPart(relaxedMouthCrease(P, look.seed), mats.skin),
   );
   // The integrated head surface already sculpts nasolabial folds and philtrum.
   // Overlay tubes intersected the skin and left dotted seams in close-ups.
@@ -1054,15 +886,23 @@ export function buildSculptedFace(
           P,
           look,
           hi,
-          hi ? (portrait ? { columns: 96, rows: 72 } : { columns: 36, rows: 24 }) : undefined,
+          !hi
+            ? undefined
+            : topology === "ultra"
+              ? portrait
+                ? { columns: 256, rows: 160 }
+                : { columns: 224, rows: 136 }
+              : portrait
+                ? { columns: 128, rows: 80 }
+                : { columns: 96, rows: 56 },
         ),
-        mats.hair,
+        look.hairStyle === "buzz" ? mats.skin : mats.hair,
       ),
     );
     if (look.hairStyle === "bun")
       hair.push(
         rigPart(
-          new THREE.SphereGeometry(R * 0.3, 12, 10),
+          portrait ? gatheredBun(R * 0.3, look.seed) : new THREE.SphereGeometry(R * 0.3, 12, 10),
           mats.hair,
           { position: [0, R * 0.48, -R * 0.91], scale: [1, 0.88, 0.8] },
           true,
@@ -1071,7 +911,7 @@ export function buildSculptedFace(
     if (look.hairStyle === "ponytail")
       (hi ? hairSecondary : hair).push(
         rigPart(
-          curve(
+          (portrait ? fittedHairLock : curve)(
             [
               new THREE.Vector3(0, R * 0.37, -R * 0.92),
               new THREE.Vector3(0, 0, -R * 1.19),
@@ -1079,6 +919,7 @@ export function buildSculptedFace(
             ],
             R * 0.115,
             12,
+            "ponytail",
           ),
           mats.hair,
         ),
@@ -1086,9 +927,9 @@ export function buildSculptedFace(
     if (look.hairStyle === "mohawk")
       hair.push(
         rigPart(
-          new THREE.SphereGeometry(R * 0.75, 14, 12),
+          portrait ? fittedMohawk(P, look.seed) : new THREE.SphereGeometry(R * 0.75, 14, 12),
           mats.hair,
-          { position: [0, R * 0.91, -R * 0.1], scale: [0.18, 0.43, 1.12] },
+          portrait ? undefined : { position: [0, R * 0.91, -R * 0.1], scale: [0.18, 0.43, 1.12] },
           true,
         ),
       );
@@ -1104,7 +945,7 @@ export function buildSculptedFace(
           .clone()
           .setY(-R * (0.35 + rng() * (frontal ? 0.22 : 0.6)))
           .multiply(new THREE.Vector3(1.1, 1, 1.08));
-        const strand = curve(
+        const strand = (portrait ? fittedHairLock : curve)(
           [
             p,
             p
@@ -1115,12 +956,14 @@ export function buildSculptedFace(
           ],
           R * 0.055,
           9,
+          look.hairStyle,
         );
         // The scalp mask fades its hairline, but must not cut an open slice
         // through the circumference of a tubular lock using that same atlas.
         const strandUv = strand.getAttribute("uv");
-        for (let vertex = 0; vertex < strandUv.count; vertex++)
-          strandUv.setY(vertex, 0.16 + strandUv.getY(vertex) * 0.68);
+        if (!portrait)
+          for (let vertex = 0; vertex < strandUv.count; vertex++)
+            strandUv.setY(vertex, 0.16 + strandUv.getY(vertex) * 0.68);
         (hi ? hairSecondary : hair).push(rigPart(strand, mats.hair));
       }
     }

@@ -6,6 +6,20 @@ import {
 } from "../../scripts/graphics-benchmark-contract";
 
 describe("graphics benchmark contract", () => {
+  it("records diagnostic effect switches instead of mixing incompatible samples", () => {
+    expect(resolveGraphicsBenchmark("")).toMatchObject({
+      rigTopology: "screen",
+      effectsPath: "bounded",
+      postFx: true,
+    });
+    expect(
+      resolveGraphicsBenchmark("?rigTopology=legacy&effectsPath=legacy&postFx=0"),
+    ).toMatchObject({
+      rigTopology: "legacy",
+      effectsPath: "legacy",
+      postFx: false,
+    });
+  });
   it("keeps the Flamengo x Palmeiras fixture and physical render target fixed", () => {
     const benchmark = resolveGraphicsBenchmark("");
 

@@ -30,7 +30,7 @@ export interface Player {
   developmentBase?: import("./player-development").DevelopmentBase | undefined;
   /** Explicit projection of career attrDeltas for match snapshots; never added twice. */
   developmentDelta?: import("./attributes").AttrDelta | undefined;
-  detailedAttributes?: import("./attributes").DetailedAttributes | undefined;
+  detailedAttributes?: Partial<import("./attributes").DetailedAttributes> | undefined;
   id: string;
   clubId: string;
   name: string;
@@ -78,9 +78,23 @@ export interface Player {
   birthDate?: string;
 }
 
-export type FormationKey = "4-3-3" | "4-4-2" | "3-5-2" | "4-2-3-1";
+export type FormationKey =
+  | "4-3-3"
+  | "4-4-2"
+  | "3-5-2"
+  | "4-2-3-1"
+  | "4-5-1"
+  | "5-3-2"
+  | "3-4-3"
+  | "4-1-4-1"
+  | "4-4-2-losango"
+  | "4-3-1-2"
+  | "5-4-1"
+  | "3-4-2-1";
 
 export interface Tactics {
+  /** Explicit opt-in; absent advanced tactics retain the legacy plan. */
+  advanced?: import("./tactical-plan").TacticalProgramV2;
   formation: FormationKey;
   mentality: number; // 0 = ultra defensivo, 4 = all out attack
   pressing: number; // 0..2
@@ -259,6 +273,7 @@ export interface ScoutReport {
 }
 
 export interface CareerState {
+  matchAnalytics?: import("./match-analytics").CareerMatchAnalytics[];
   /** Missing version preserves the rules of an existing personal save. */
   economyRulesVersion?: 1 | 2 | undefined;
   developmentRulesVersion?: 1 | 2 | undefined;

@@ -8,8 +8,9 @@ export interface MatchConditions {
   awayForm?: number;
   homeFatigue?: number;
   awayFatigue?: number;
-  homeTactics?: Pick<Tactics, "mentality" | "pressing" | "tempo">;
-  awayTactics?: Pick<Tactics, "mentality" | "pressing" | "tempo">;
+  homeTactics?: Pick<Tactics, "mentality" | "pressing" | "tempo"> &
+    Partial<Pick<Tactics, "formation" | "width" | "advanced">>;
+  awayTactics?: MatchConditions["homeTactics"];
   neutralVenue?: boolean;
 }
 

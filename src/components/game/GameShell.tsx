@@ -113,7 +113,7 @@ export function GameShell({
   const pathname = useLocation({ select: (location) => location.pathname });
   const signedIn = useSignedIn();
   const { t, dir } = useT();
-  const { sync } = useCareer();
+  const { sync, saveError } = useCareer();
   const shell = useRef<HTMLDivElement>(null);
   const header = useRef<HTMLElement>(null);
   const bottomNav = useRef<HTMLElement>(null);
@@ -381,6 +381,19 @@ export function GameShell({
               <span>{t("shell.localSave")}</span>
               <Link to="/auth" search={{ next: pathname }}>
                 {t("shell.cloudSave")} <ChevronRight size={13} />
+              </Link>
+            </div>
+          )}
+          {saveError && (
+            <div
+              role="alert"
+              aria-label="Falha ao salvar carreira"
+              data-career-save-error="true"
+              className="border border-amber-500/50 bg-amber-500/10 p-4 text-sm"
+            >
+              {saveError}{" "}
+              <Link to="/perfil" className="underline">
+                Abrir perfil e exportar carreira
               </Link>
             </div>
           )}

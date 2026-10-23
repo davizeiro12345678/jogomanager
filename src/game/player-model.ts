@@ -344,23 +344,30 @@ export function proportionsFor(look: PlayerLook): Proportions {
   const posture = (faceRng() - 0.5) * 0.12;
   const armSpan = build.arm * (0.97 + faceRng() * 0.06);
 
-  // Perna um pouco mais longa em atacantes, tronco mais curto: silhueta de
-  // velocista. O quadril continua apoiado no gramado (hipY soma a perna toda).
+  // Redistribute length from the lower leg into the trunk. Role variation
+  // remains, but an adult torso must not read as a child's short shirt above
+  // elongated legs. Normalize the complete skeleton below to retain stature.
   const legScale = build.leg;
-  const rawThigh = 0.44 * h * legScale;
-  const rawShin = 0.42 * h * legScale;
+  const rawThigh = 0.438 * h * legScale;
+  const rawShin = 0.382 * h * legScale;
   const rawFootH = 0.07 * h;
   const rawHipH = 0.13 * h;
-  const rawSpineLen = 0.19 * h * (2 - legScale);
-  const rawChestLen = 0.22 * h * (2 - legScale);
-  const rawNeckLen = 0.07 * h;
+  const rawSpineLen = 0.208 * h * (2 - legScale);
+  const rawChestLen = 0.242 * h * (2 - legScale);
+  // Leave a readable cervical column above the collar. The full skeleton is
+  // still normalized to the player's saved stature below.
+  const rawNeckLen = 0.074 * h;
   // Adult athletes average about 7.5 heads from sole to crown. Keep cranial
   // growth slower than stature, so tall keepers do not get oversized heads.
-  const rawHeadR = 0.1 * (0.98 + (h - 1) * 0.4);
+  const preferredHeadR = 0.104 * (0.98 + (h - 1) * 0.4);
 
   // Measure sole to skull, independently of the haircut. The leg pivots sit
   // below the pelvis; include that offset before normalizing the skeleton.
   const rawHipY = rawThigh + rawShin + rawFootH * 0.84 + rawHipH * 0.4;
+  const rawBodyHeight = rawHipY + rawHipH * 0.5 + rawSpineLen + rawChestLen + rawNeckLen;
+  // Bound cranial scale before stature normalization. Short athletes retain
+  // the same adult silhouette without inflating the head beyond 7.15 heads.
+  const rawHeadR = Math.min(preferredHeadR, rawBodyHeight / (7.15 * 2.28 - 1.8));
   const rawRigHeight =
     rawHipY + rawHipH * 0.5 + rawSpineLen + rawChestLen + rawNeckLen + rawHeadR * (0.66 + 1.14);
   const metricScale = (1.8 * h) / rawRigHeight;
@@ -371,39 +378,46 @@ export function proportionsFor(look: PlayerLook): Proportions {
   // Breadth varies independently from stature, but short, strong athletes
   // still need a human shoulder span. Bound the whole frame together so
   // deltoids, torso and pelvis keep their relative widths.
-  const shoulderEnvelope = 0.35 * build.shoulder * 1.04 + 0.058 * 2.36;
+  const shoulderEnvelope = 0.385 * build.shoulder * 1.04 + 0.062 * 2.36;
   const frameScale = Math.min(
     Math.max(g * strong * metricScale, (1.8 * h * 0.245) / shoulderEnvelope),
+    // Keep the recent branch's athletic shoulder envelope. The V2 torso
+    // and limb surfaces carry muscle volume without widening every joint.
     (1.8 * h * 0.315) / shoulderEnvelope,
   );
 
   return {
     hipY: thigh + shin + footH * 0.84 + rawHipH * metricScale * 0.4,
-    hipW: 0.232 * frameScale,
+    hipW: 0.255 * frameScale,
     hipH: rawHipH * metricScale,
     spineLen: rawSpineLen * metricScale,
     chestLen: rawChestLen * metricScale,
-    chestW: 0.196 * frameScale,
-    chestD: 0.116 * frameScale * (look.bodyType === "strong" ? 1.04 : 1),
-    shoulderW: 0.35 * build.shoulder * frameScale,
+    chestW: 0.233 * frameScale,
+    chestD: 0.133 * frameScale * (look.bodyType === "strong" ? 1.05 : 1),
+    shoulderW: 0.385 * build.shoulder * frameScale,
     neckLen: rawNeckLen * metricScale,
-    neckR: 0.056 * g * (look.role === "DF" || look.role === "GK" ? 1.06 : 1) * metricScale,
+    // A neck that is too narrow under the fitted collar makes the head read
+    // as a separate sphere in a portrait. Keep a realistic athletic taper,
+    // while giving the trapezius and jaw a continuous base in every LOD.
+    neckR: 0.052 * g * (look.role === "DF" || look.role === "GK" ? 1.06 : 1) * metricScale,
     headR,
     headH: headR * 2.28,
     headW: headR * faceWide * 0.87,
     headD: headR * (1.065 + (1 - faceWide) * 0.4),
     jawLen: headR * 0.52 * faceLong,
     chinFwd: headR * (0.12 + (faceLong - 0.94) * 0.5),
-    upperArm: 0.3 * h * metricScale * armSpan,
-    foreArm: 0.255 * h * metricScale * armSpan,
-    armR: 0.058 * frameScale,
+    upperArm: 0.29 * h * metricScale * armSpan,
+    foreArm: 0.235 * h * metricScale * armSpan,
+    armR: 0.062 * frameScale,
     armSpan,
     posture,
-    handR: 0.057 * Math.sqrt(g) * metricScale,
+    // Palm-to-fingertip length is about one tenth of standing stature.
+    // Keep hand size tied to stature; mass must not inflate a strong hand.
+    handR: 0.064 * h * metricScale * (0.98 + (g - 1) * 0.12),
     thigh,
     shin,
-    legR: 0.071 * frameScale,
-    footLen: 0.255 * h * metricScale,
+    legR: 0.082 * frameScale,
+    footLen: 0.26 * h * metricScale,
     footH,
   };
 }

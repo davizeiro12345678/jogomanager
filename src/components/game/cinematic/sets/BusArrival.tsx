@@ -1,15 +1,27 @@
 import { RoundedBox } from "@react-three/drei";
 import { useRef } from "react";
 import * as THREE from "three";
+import type { Speaker } from "@/content/cutscenes";
+
 import { CinematicActor as Figure } from "../CinematicActor";
 import { useCinematicFrame, useCinematicRuntime } from "../cinematic-runtime";
-import { cinematicSurface } from "../cinematic-surfaces";
-import type { CinematicSetProps } from "./types";
 
-export function BusArrival({ primary, secondary, speaker }: CinematicSetProps) {
+import { cinematicSurface } from "../cinematic-surfaces";
+
+/** Chegada do ônibus: pátio noturno, faróis acesos e torcida na grade. */
+export function BusArrival({
+  primary,
+  secondary,
+  speaker,
+}: {
+  primary: string;
+  secondary: string;
+  speaker: Speaker | null;
+}) {
   const beacon = useRef<THREE.PointLight>(null);
   const runtime = useCinematicRuntime();
   useCinematicFrame((time) => {
+    // Sinalizador prático junto à grade: permanece localizado e não lava a câmera.
     if (beacon.current)
       beacon.current.intensity = runtime.reduced ? 1.1 : Math.sin(time * 6) > 0 ? 2.8 : 0.35;
   });
@@ -27,6 +39,7 @@ export function BusArrival({ primary, secondary, speaker }: CinematicSetProps) {
           metalness={0.02}
         />
       </mesh>
+      {/* ônibus */}
       <group position={[0, 0, -3]}>
         <RoundedBox
           position={[0, 1.55, 0]}
@@ -45,6 +58,7 @@ export function BusArrival({ primary, secondary, speaker }: CinematicSetProps) {
         >
           <meshStandardMaterial color={secondary} roughness={0.4} metalness={0.3} />
         </RoundedBox>
+        {/* Para-brisa escuro e moldura dão profundidade ao volume frontal. */}
         <RoundedBox
           position={[0, 1.98, 4.79]}
           args={[2.52, 1.2, 0.08]}
@@ -96,6 +110,7 @@ export function BusArrival({ primary, secondary, speaker }: CinematicSetProps) {
             </mesh>
           </group>
         ))}
+        {/* Lentes práticas: iluminam a frente sem cones transparentes na imagem. */}
         {[-0.9, 0.9].map((x) => (
           <group key={x}>
             <mesh position={[x, 0.68, 4.83]}>
@@ -122,6 +137,7 @@ export function BusArrival({ primary, secondary, speaker }: CinematicSetProps) {
           </group>
         ))}
       </group>
+      {/* grade + torcida */}
       <mesh position={[-5.2, 0.55, -1]} castShadow>
         <boxGeometry args={[0.08, 1.1, 10]} />
         <meshStandardMaterial color="#6a737c" roughness={0.5} metalness={0.6} />
@@ -137,6 +153,7 @@ export function BusArrival({ primary, secondary, speaker }: CinematicSetProps) {
       />
       <Figure x={-6.3} z={-1.1} rot={1.4} color={secondary} seed={72} />
       <Figure x={-6.0} z={1.2} rot={1.2} color={primary} seed={73} />
+      {/* capitão desembarcando */}
       <Figure
         x={1.9}
         z={1.8}

@@ -7,3 +7,15 @@ export function standCameraPosition(fieldEdge: number, side: number) {
     z: (side >= 0 ? 1 : -1) * (fieldEdge + 7 + row * 1.5),
   };
 }
+
+export function keepPitchCameraInRunoff(
+  position: { x: number; y: number; z: number },
+  fieldHalfLength: number,
+  fieldHalfWidth: number,
+) {
+  const raisedClearance = Math.max(0, position.y - 1.9) * (1.5 / 1.45);
+  const endLimit = fieldHalfLength + 7 + raisedClearance;
+  const sideLimit = fieldHalfWidth + 4 + raisedClearance;
+  position.x = Math.max(-endLimit, Math.min(endLimit, position.x));
+  position.z = Math.max(-sideLimit, Math.min(sideLimit, position.z));
+}

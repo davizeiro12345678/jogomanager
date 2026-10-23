@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   createStripeClient,
+  createStripeIntegrationIdentifier,
   getConfiguredStripeEnvironment,
   getStripeErrorMessage,
 } from "@/lib/stripe.server";
@@ -12,8 +14,12 @@ import {
   resolveValidatedStripePrice,
   checkoutDiscountParams,
 } from "@/lib/store-products.server";
-import { assertPaymentsConfigured, PAYMENTS_UNAVAILABLE } from "@/lib/payments-config.server";
+import { assertPaymentsConfigured } from "@/lib/payments-config.server";
+import { PublicPaymentError } from "@/lib/payment-errors";
+import { assessAccountCheckoutFraudDefense } from "@/lib/google-fraud-defense.server";
 import type { StripeEnv } from "@/lib/stripe.server";
+import { getTrustedCheckoutOrigin, validateCheckoutReturnUrl } from "@/lib/checkout-origin.server";
+import type { Json } from "@/integrations/supabase/types";
 
 export type CheckoutSessionResult = { clientSecret: string } | { error: string };
 
@@ -42,27 +48,6 @@ export async function resolveOrCreateCustomer(
   return created.id;
 }
 
-// Fixed allowlist: request headers (Origin/Referer/forwarded host) are caller-controlled.
-const APP_HOSTS = new Set([
-  "jogomanager.com",
-  "futmanager.xyz",
-  "footballcarrer.fun",
-  "football-manager.app",
-  "soccer-manager.fun",
-  "futebolmanager.xyz",
-  "soccermanagement.fun",
-]);
-function isApprovedAppOrigin(url: URL) {
-  if (url.hostname === "localhost") return true;
-  if (url.protocol !== "https:" || url.port) return false;
-  const host = url.hostname.replace(/^www\./, "");
-  return (
-    APP_HOSTS.has(host) ||
-    /^[a-z0-9-]+\.lovable\.app$/.test(url.hostname) ||
-    /^[a-z0-9-]+\.lovableproject\.com$/.test(url.hostname)
-  );
-}
-
 export const createCheckoutSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(
@@ -71,6 +56,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       quantity?: number;
       returnUrl: string;
       clientEnvironment: StripeEnv;
+      fraudDefenseToken?: string | null;
     }) => {
       assertStoreProductKey(data.productKey);
       if (data.quantity != null && data.quantity !== 1) throw new Error("Invalid quantity");
@@ -84,19 +70,15 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<CheckoutSessionResult> => {
     try {
       const environment = assertPaymentsConfigured();
-      if (data.clientEnvironment !== environment) throw new Error(PAYMENTS_UNAVAILABLE);
-      const returnUrl = new URL(data.returnUrl);
-      if (
-        returnUrl.protocol !== "https:" && returnUrl.hostname !== "localhost"
-          ? true
-          : !isApprovedAppOrigin(returnUrl) || returnUrl.pathname !== "/checkout/return"
-      ) {
-        throw new Error("Invalid returnUrl");
-      }
+      if (data.clientEnvironment !== environment) throw new PublicPaymentError("unavailable");
+      const request = getRequest();
+      if (!request) throw new PublicPaymentError("invalid_return");
+      const returnUrl = validateCheckoutReturnUrl(request, data.returnUrl, "/checkout/return");
 
       // `store_products` selects the current active SKU first; Stripe only
       // confirms that its server-side amount and currency still match it.
       const product = await getServerStoreProduct(getStoreServiceSupabase(), data.productKey);
+      await assessAccountCheckoutFraudDefense(data.fraudDefenseToken, request);
       const stripe = createStripeClient(environment);
       const stripePrice = await resolveValidatedStripePrice(stripe, product);
       const isRecurring = stripePrice.type === "recurring";
@@ -120,7 +102,8 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         line_items: [{ price: stripePrice.id, quantity: 1 }],
         mode: isRecurring ? "subscription" : "payment",
         ui_mode: "embedded_page",
-        return_url: data.returnUrl,
+        integration_identifier: createStripeIntegrationIdentifier(),
+        return_url: returnUrl,
         customer: customerId,
         ...(await checkoutDiscountParams(stripe, product)),
         ...(!isRecurring && {
@@ -132,23 +115,23 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         }),
       } as Parameters<ReturnType<typeof createStripeClient>["checkout"]["sessions"]["create"]>[0]);
 
-      // Record ownership so the return page can verify a session before any Stripe lookup.
-      const { error: ownerError } = await getStoreServiceSupabase()
+      if (!session.id || !session.client_secret) throw new Error("Checkout session is incomplete");
+      const { error: offerError } = await getStoreServiceSupabase()
         .from("checkout_session_owners")
         .insert({
           session_id: session.id,
           user_id: context.userId,
           environment,
           product_key: product.key,
+          // Stripe's immutable unit price is checked before discounts; store
+          // the settled total separately when granting the purchase.
           price_cents: product.priceCents,
           currency: product.currency,
           stripe_price_id: stripePrice.id,
-          contents_snapshot:
-            product.contents as unknown as import("@/integrations/supabase/types").Json,
+          contents_snapshot: product.contents as unknown as Json,
         });
-      if (ownerError) throw new Error("Não foi possível registrar a compra.");
-
-      return { clientSecret: session.client_secret ?? "" };
+      if (offerError) throw new Error("Checkout offer could not be persisted");
+      return { clientSecret: session.client_secret };
     } catch (error) {
       return { error: getStripeErrorMessage(error) };
     }
@@ -165,13 +148,12 @@ export const createPortalSession = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<PortalSessionResult> => {
     try {
       const environment = getConfiguredStripeEnvironment();
+      const request = getRequest();
+      if (!request) throw new PublicPaymentError("invalid_return");
+      getTrustedCheckoutOrigin(request);
       let approvedReturnUrl: string | undefined;
       if (data.returnUrl) {
-        const returnUrl = new URL(data.returnUrl);
-        if (!isApprovedAppOrigin(returnUrl)) {
-          throw new Error("Invalid returnUrl");
-        }
-        approvedReturnUrl = returnUrl.toString();
+        approvedReturnUrl = validateCheckoutReturnUrl(request, data.returnUrl);
       }
       const { data: sub, error: subError } = await context.supabase
         .from("subscriptions")
@@ -182,7 +164,8 @@ export const createPortalSession = createServerFn({ method: "POST" })
         .limit(1)
         .maybeSingle();
       if (subError || !sub?.stripe_customer_id) {
-        throw new Error("No subscription found");
+        if (subError) throw new Error("Subscription lookup failed");
+        throw new PublicPaymentError("no_subscription");
       }
 
       const stripe = createStripeClient(environment);

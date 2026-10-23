@@ -3,8 +3,46 @@ import { emptyPose } from "./animation-core";
 import { AthletePoseBlender } from "./athlete-pose-blender";
 
 describe("athlete transitions", () => {
+  it("carries a moving joint into an interrupted clip without a frozen first derivative", () => {
+    const mixer = new AthletePoseBlender();
+    mixer.sample(emptyPose(), 0, { clip: "run", action: null, progress: 0 });
+    mixer.sample({ ...emptyPose(), armLPitch: 0.1 }, 0.02, {
+      clip: "run",
+      action: null,
+      progress: 0,
+    });
+    const target = { ...emptyPose(), armLPitch: 0.1 };
+    mixer.sample(target, 0, { clip: "idle", action: null, progress: 0 });
+    const next = mixer.sample(target, 0.005, { clip: "idle", action: null, progress: 0 }).armLPitch;
+    expect(next).toBeGreaterThan(0.115);
+    expect(next).toBeLessThan(0.13);
+    const atRest = mixer.sample(target, 0.5, { clip: "idle", action: null, progress: 0 });
+    expect(atRest.armLPitch).toBeCloseTo(0.1, 6);
+    expect(
+      Object.values(mixer.sample(target, NaN, { clip: "idle", action: null, progress: 0 })).every(
+        Number.isFinite,
+      ),
+    ).toBe(true);
+  });
+  it("approaches contact continuously instead of snapping on entering the old contact window", () => {
+    const mixer = new AthletePoseBlender();
+    mixer.sample(emptyPose(), 0, { clip: "run", action: null, progress: 0 });
+    const impact = { ...emptyPose(), legRPitch: -0.8 };
+    mixer.sample(impact, 0, { clip: "shotPower", action: "shotPower", progress: 0.3 });
+    const before = mixer.sample(impact, 0.005, {
+      clip: "shotPower",
+      action: "shotPower",
+      progress: 0.326,
+    }).legRPitch;
+    expect(before).toBeLessThan(0);
+    expect(before).toBeGreaterThan(-0.3);
+    expect(
+      mixer.sample(impact, 0.01, { clip: "shotPower", action: "shotPower", progress: 0.4 })
+        .legRPitch,
+    ).toBe(-0.8);
+  });
   it("starts interrupted transitions from the displayed pose and converges at different frame rates", () => {
-    for (const fps of [20, 30, 60, 120]) {
+    for (const fps of [15, 30, 60, 120]) {
       const mixer = new AthletePoseBlender();
       const idle = { ...emptyPose(), armLPitch: 0.05 };
       const run = { ...emptyPose(), armLPitch: 0.7 };

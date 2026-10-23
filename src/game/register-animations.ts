@@ -13,7 +13,9 @@ import type { ClipName } from "./animation";
 import { EXTRA_CLIPS } from "./animation-extra";
 import { EXTRA2_CLIPS } from "./animation-extra2";
 import { EXTRA3_CLIPS } from "./animation-extra3";
-import { motionMetadata } from "./motion-metadata";
+import { FOOTBALL_SEQUENCE_CLIPS, SEQUENCE_LIBRARY } from "./football-sequences";
+import { ATHLETIC_CLIPS } from "./animation-athletic";
+import { motionMetadata, footballContactAt } from "./motion-metadata";
 
 import type { Clip, ClipCtx, Pose } from "./animation-core";
 import type { AnimationFamily, AnnotatedClip, ClipMetadata } from "./animation-catalog";
@@ -25,6 +27,26 @@ import { ANIMATION_CATALOG, FAMILY_METADATA, STANDARD_MARKERS } from "./animatio
 
 /** Mapeia nome de clipe para família */
 const CLIP_FAMILY_MAP: Record<string, AnimationFamily> = {
+  thoracicRotation: "recovery",
+  anklePushOff: "recovery",
+  hipPivotLeft: "recovery",
+  hipPivotRight: "recovery",
+  keeperReach: "goalkeeper",
+  landingSettle: "recovery",
+  splitStep: "defense",
+  kneeDrive: "locomotion",
+  heelRecovery: "locomotion",
+  lateralReach: "defense",
+  hipOpen: "recovery",
+  captainSignal: "idle",
+  keeperShuffle: "goalkeeper",
+  calfRaise: "recovery",
+  readyPress: "defense",
+  receiveScan: "idle",
+  keeperSettle: "goalkeeper",
+  balanceRecover: "recovery",
+  shoulderRelease: "idle",
+  ankleMobilise: "recovery",
   // ---- Idle / Locomotion ----
   idle: "idle",
   breathe: "idle",
@@ -228,6 +250,8 @@ export const ALL_CLIPS: Record<string, Clip> = {
   ...EXTRA_CLIPS,
   ...EXTRA2_CLIPS,
   ...EXTRA3_CLIPS,
+  ...ATHLETIC_CLIPS,
+  ...FOOTBALL_SEQUENCE_CLIPS,
 };
 
 /** Versão do catálogo de animações */
@@ -322,13 +346,37 @@ export function initializeAnimationCatalog(): void {
 
   // Registra todos os clipes
   for (const [name, clip] of Object.entries(ALL_CLIPS)) {
-    const family = CLIP_FAMILY_MAP[name] ?? inferFamily(name);
+    const sequence = SEQUENCE_LIBRARY.find(([id]) => id === name);
+    const family = sequence?.[3] ?? CLIP_FAMILY_MAP[name] ?? inferFamily(name);
     const overrides = CLIP_METADATA_OVERRIDES[name] || {};
     const metadata = {
       ...FAMILY_METADATA[family],
       ...motionMetadata(name, family),
       ...overrides,
       family,
+      ...(sequence
+        ? {
+            ...motionMetadata(sequence[2], family),
+            loop: false,
+            duration: 1.4,
+            contactAt: footballContactAt(sequence[2]),
+            markers: [
+              { name: "preparation", time: 0.15, phase: "anticipation" as const },
+              { name: "contact", time: footballContactAt(sequence[2]), phase: "contact" as const },
+              { name: "recovery", time: 0.88, phase: "recovery" as const },
+            ],
+            tags: [
+              family,
+              "football-sequence",
+              "weight-transfer",
+              "procedural",
+              "anatomical-limits",
+            ],
+          }
+        : {}),
+      ...(Object.hasOwn(ATHLETIC_CLIPS, name)
+        ? { loop: true, support: "planted" as const, markers: [] }
+        : {}),
     };
 
     const annotatedClip: AnnotatedClip = { clip, metadata };

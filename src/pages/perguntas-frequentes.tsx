@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { SHIPPED_CATALOG } from "@/game/data/catalog-facts";
 
 import { PublicLinks } from "@/components/PublicLinks";
 
@@ -42,7 +43,7 @@ const GROUPS = [
       },
       {
         q: "Por que a quantidade de clubes do catálogo difere da tela de carreira?",
-        a: "O catálogo global inclui registros importados, enquanto cada modo pode oferecer um subconjunto de opções com elencos e regras integrados. Consulte a tela de seleção para saber o que está disponível naquele modo.",
+        a: `O catálogo incluído reúne ${SHIPPED_CATALOG.competitions} competições e ${SHIPPED_CATALOG.playableClubs} clubes únicos. Registros importados no aparelho podem ampliar as opções; cada carreira mantém a composição compatível com sua temporada.`,
       },
       {
         q: "Posso escolher clubes de vários países?",
@@ -84,7 +85,7 @@ const GROUPS = [
       },
       {
         q: "Posso apagar os dados do navegador sem perder minha carreira?",
-        a: "Não apague os dados locais sem confirmar que existe uma cópia válida. Exporte a carreira quando possível e verifique o save na nuvem. Uma carreira de convidado pode ser perdida ao limpar o navegador.",
+        a: "Antes de limpar os dados, abra Perfil do treinador (/perfil), escolha Exportar carreira, confira clube, temporada, rodada, data e versão e baixe o arquivo .pfm3d.json. Teste a cópia em outro perfil do navegador: escolha Importar carreira, revise o arquivo e confirme a restauração. Confira elenco, finanças, calendário e histórico antes de apagar o original. O arquivo do editor contém apenas personalizações e não recupera seu progresso.",
       },
       {
         q: "O que faço se uma carreira antiga aparecer de novo?",

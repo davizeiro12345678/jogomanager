@@ -1,8 +1,22 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { gpuTexturePolicy, prepareGpuTexture } from "./gpu-texture-policy";
+import { gpuTexturePolicy, prepareGpuTexture, selectTextureResolution } from "./gpu-texture-policy";
 
 describe("compressed GPU texture budgets", () => {
+  it("selects the device resolution before transferring or decoding high mips", () => {
+    const tiers = { 1024: "/high.ktx2", 256: "/low.ktx2", 512: "/match.ktx2" };
+    expect(selectTextureResolution(tiers, "/fallback.ktx2", 256)).toBe("/low.ktx2");
+    expect(selectTextureResolution(tiers, "/fallback.ktx2", 512)).toBe("/match.ktx2");
+    expect(selectTextureResolution(tiers, "/fallback.ktx2", 1024)).toBe("/high.ktx2");
+    expect(selectTextureResolution(undefined, "/fallback.ktx2", 256)).toBe("/fallback.ktx2");
+  });
+  it("reserves 1024px data only for portraits with sufficient device memory", () => {
+    expect(gpuTexturePolicy(16, 16, true).maxDataSize).toBe(1024);
+    expect(gpuTexturePolicy(16, 16, true).residentBudget).toBe(32 * 1024 * 1024);
+    expect(gpuTexturePolicy(16, 16, false).maxDataSize).toBe(512);
+    expect(gpuTexturePolicy(undefined, 4, true).maxDataSize).toBe(512);
+    expect(gpuTexturePolicy(2, 4, true).maxDataSize).toBe(256);
+  });
   it("releases the discarded backing allocation when decoder mipmaps share a buffer", () => {
     const buffer = new Uint8Array(1024 * 1024 + 256 * 256 + 64 * 64);
     buffer.fill(23, 1024 * 1024);
@@ -34,7 +48,7 @@ describe("compressed GPU texture budgets", () => {
     expect(result.bytes).toBe(mips.slice(1).reduce((sum, mip) => sum + mip.data.byteLength, 0));
     expect(texture.image).toMatchObject({ width: 512, height: 512 });
     expect(texture.mipmaps[0]).toBe(mips[1]);
-    expect(texture.anisotropy).toBe(1);
+    expect(texture.anisotropy).toBe(2);
     expect(texture.generateMipmaps).toBe(false);
   });
 
@@ -46,5 +60,37 @@ describe("compressed GPU texture budgets", () => {
       colorAnisotropy: 2,
     });
     expect(gpuTexturePolicy(16, 2).colorAnisotropy).toBe(2);
+  });
+
+  it("rejects an oversized texture without a usable authored mip instead of bypassing the budget", () => {
+    const texture = new THREE.CompressedTexture(
+      [{ width: 1024, height: 1024, data: new Uint8Array(16) }],
+      1024,
+      1024,
+      THREE.RGBA_BPTC_Format,
+    );
+    expect(prepareGpuTexture(texture, false, gpuTexturePolicy(2)).compressed).toBe(false);
+    texture.dispose();
+  });
+
+  it("rejects uncompressed fallbacks and malformed empty mip chains", () => {
+    const uncompressed = new THREE.CompressedTexture(
+      [{ width: 4, height: 4, data: new Uint8Array(64) }],
+      4,
+      4,
+      THREE.RGBA_BPTC_Format,
+    );
+    Object.assign(uncompressed, { format: THREE.RGBAFormat });
+    const empty = new THREE.CompressedTexture([], 4, 4, THREE.RGBA_BPTC_Format);
+    expect(prepareGpuTexture(uncompressed, false, gpuTexturePolicy()).compressed).toBe(false);
+    expect(prepareGpuTexture(empty, false, gpuTexturePolicy()).compressed).toBe(false);
+    uncompressed.dispose();
+    empty.dispose();
+  });
+
+  it("never sends NaN or unsupported anisotropy to the renderer", () => {
+    expect(gpuTexturePolicy(16, NaN).colorAnisotropy).toBe(1);
+    expect(gpuTexturePolicy(16, 1).dataAnisotropy).toBe(1);
+    expect(gpuTexturePolicy(2, 16).dataAnisotropy).toBe(1);
   });
 });

@@ -40,7 +40,9 @@ export function updateRigCorrectives(
     // At the middle of a bend, 30% linear skinning loses cos(angle / 2)
     // of the radius. Compensate on the existing 70% bisector influence,
     // separately across each compressed axis. Bone length remains fixed.
-    const correction = Math.min(1.38, (1 - 0.3 * Math.cos(angle * 0.5)) / 0.7) - 1;
+    const slenderJoint = joint.startsWith("wrist") || joint.startsWith("ankle");
+    const correction =
+      Math.min(slenderJoint ? 1.2 : 1.38, (1 - 0.3 * Math.cos(angle * 0.5)) / 0.7) - 1;
     const q = source.quaternion;
     const axisLength = q.x * q.x + q.y * q.y + q.z * q.z;
     const axisX = axisLength > 1e-8 ? (q.x * q.x) / axisLength : 0;

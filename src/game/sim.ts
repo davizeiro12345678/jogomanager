@@ -1,20 +1,42 @@
+import { rateMatchPlayers } from "./sim-reporting";
+import {
+  separatePlayers,
+  drainMatchStamina,
+  sanitizeMotion,
+  clampFinite,
+} from "./sim-motion-kernels";
+import { buildSimTeam, placeKickoffStarter } from "./sim-team";
+import { MatchVisualContextComputer } from "./sim-visual-context";
 import { FORMATIONS } from "./formations";
+import {
+  activePlan,
+  evaluateRules,
+  phasePosition,
+  roleFamiliarityKey,
+  tacticalEffects,
+  tacticalSignature,
+  withPlan,
+  type TacticalRuntimeState,
+  type TacticalPhase,
+} from "./tactical-plan";
+import {
+  createMatchAnalytics,
+  recordPass,
+  recordPassReception,
+  sampleAnalytics,
+} from "./match-analytics";
 import {
   evaluatePassLanesFallback,
   evaluatePassLanesIntoFallback,
-  MAX_PASS_LANE_PLAYERS,
-  type PassLaneKernel,
   type PassLaneIntoKernel,
+  type PassLaneKernel,
 } from "./wasm/match-perception";
+import { PassLaneBuffers } from "./wasm/pass-lane-buffers";
 import {
   MATCH_EXECUTION_REVISION,
   validExecutionContract,
   type MatchExecutionContract,
 } from "./match-execution-contract";
-import { PassLaneBuffers } from "./wasm/pass-lane-buffers";
-import { MatchVisualContextComputer } from "./sim-visual-context";
-import type { PlayerAction } from "./animation";
-import { calculatePlayerRatings } from "./sim-ratings";
 import { makeRng } from "./rng";
 import { physiqueFor } from "./player-physique";
 import { matchAttributes } from "./match-readiness";
@@ -22,6 +44,7 @@ import { positionalOverall } from "./overall";
 import {
   BOX_DEPTH,
   BOX_HALF,
+  BALL_RADIUS,
   PENALTY_DIST,
   type AiBenchInput,
   type AiLineupInput,
@@ -45,21 +68,17 @@ import {
   solveDirectFK,
   solvePenalty,
   shotProbabilities,
-  staminaDrainMult,
   type WeatherKind,
   woodworkAt,
   XG_PENALTY,
   xgForShot,
 } from "./sim-rules";
 import { pitchCondition, windFor, type WindVector } from "./ball-climate";
-import {
-  advanceAthlete,
-  athleteContact,
-  athleteRemainder,
-  restoreAthleteRemainder,
-} from "./athlete-dynamics";
+import { advanceAthlete, athleteRemainder, restoreAthleteRemainder } from "./athlete-dynamics";
+import type { PlayerAction } from "./animation";
 import { HIGH_FIDELITY_PHYSICS_STEP } from "./physics-quality";
-import type { Player, MatchEventLog } from "./types";
+import { planFreeKickFlight } from "./free-kick-flight";
+import type { MatchEventLog, Player, Tactics } from "./types";
 import { type VersionedVisualData } from "./visual-context";
 import type { CanonicalBallPhysicsState } from "./visual-ball";
 import type {
@@ -71,7 +90,25 @@ import type {
 // Medidas do campo vivem em sim-rules.ts; reexportadas aqui por compatibilidade.
 import { FIELD_X, FIELD_Z, GOAL_Z } from "./sim-rules";
 export { FIELD_X, FIELD_Z, GOAL_Z };
-import { emptyStats } from "./sim-contracts";
+export {
+  LIVE_MATCH_CLOCK_SCALE,
+  MATCH_SIMULATION_STEP,
+  MATCH_SIMULATION_TICK_LIMIT,
+  MAX_LIVE_MOTION_SCALE,
+} from "./sim-constants";
+
+export type {
+  Side,
+  TeamTalkKind,
+  SimPlayer,
+  ShotRecord,
+  PlayerRating,
+  TeamSetup,
+  MatchStats,
+  Scorer,
+  SimView,
+  MatchCheckpoint,
+} from "./sim-types";
 import type {
   Side,
   TeamTalkKind,
@@ -81,57 +118,185 @@ import type {
   TeamSetup,
   MatchStats,
   Scorer,
+  SimView,
   MatchCheckpoint,
-} from "./sim-contracts";
-export * from "./sim-contracts";
-
+} from "./sim-types";
+export { emptyStats } from "./sim-types";
+import { emptyStats } from "./sim-types";
 const CHECKPOINT_EXTERNAL = new Set(["rnd", "passLaneKernel", "ballPhysics"]);
-
-function clampFinite(value: number, lower: number, upper: number, fallback: number): number {
-  if (!Number.isFinite(value)) value = fallback;
-  return value <= lower ? lower : value >= upper ? upper : value;
-}
 
 export class MatchSim {
   readonly #visualContextComputer = new MatchVisualContextComputer();
+  analytics = createMatchAnalytics();
+  private tacticalRuntime: Partial<Record<Side, TacticalRuntimeState>> = {};
+  private tacticalPossession: Side = "home";
+  private tacticalTransitionAt = -100;
+  private tacticalEventSignature = "";
+
+  applyTacticalCommand(side: Side, tactics: Tactics) {
+    this.setup(side).tactics = structuredClone(tactics);
+    this.updateFormationSlots(side);
+    this.tacticalRuntime[side] = {
+      activePlanId: tactics.advanced?.activePlanId ?? "",
+      signature: tacticalSignature(tactics),
+      lastAutomaticAt: -5,
+      lastEvaluationMinute: -1,
+      manualOverride: !tactics.advanced?.automation,
+    };
+    const plan = activePlan(tactics);
+    if (plan)
+      this.analytics.changes.push({
+        minute: this.minute(),
+        side,
+        planId: plan.id,
+        name: plan.name,
+        reason: tactics.advanced?.automation ? "resume" : "manual",
+      });
+    this.analytics.changes = this.analytics.changes.slice(-40);
+    this.mentalityCache = null;
+  }
+
+  private updateTacticalPlans() {
+    if (this.possession !== this.tacticalPossession) {
+      this.tacticalPossession = this.possession;
+      this.tacticalTransitionAt = this.time;
+    }
+    const eventSignature = `${this.stats.home.goals}:${this.stats.away.goals}:${this.stats.home.red}:${this.stats.away.red}`;
+    const force = eventSignature !== this.tacticalEventSignature;
+    this.tacticalEventSignature = eventSignature;
+    for (const side of ["home", "away"] as const) {
+      const setup = this.setup(side);
+      const program = setup.tactics.advanced;
+      if (!program) continue;
+      const signature = tacticalSignature(setup.tactics);
+      let state = this.tacticalRuntime[side];
+      if (!state)
+        state = this.tacticalRuntime[side] = {
+          activePlanId: program.activePlanId,
+          signature,
+          lastAutomaticAt: -5,
+          lastEvaluationMinute: -1,
+          manualOverride: false,
+        };
+      if (state.signature !== signature) {
+        state.signature = signature;
+        state.activePlanId = program.activePlanId;
+        state.manualOverride = true;
+      }
+      if (!force && state.lastEvaluationMinute === this.minute()) continue;
+      const mine = this.players.filter((p) => p.side === side && !p.sentOff);
+      const others = this.players.filter((p) => p.side !== side && !p.sentOff);
+      const change = evaluateRules(
+        setup.tactics,
+        state,
+        {
+          minute: this.minute(),
+          goals: this.stats[side].goals,
+          opponents: this.stats[side === "home" ? "away" : "home"].goals,
+          players: mine.length,
+          opponentPlayers: others.length,
+          condition: mine.reduce((sum, p) => sum + p.stamina, 0) / Math.max(1, mine.length),
+        },
+        force,
+      );
+      if (change) {
+        const plan = program.plans.find((p) => p.id === change.planId)!;
+        setup.tactics = withPlan(setup.tactics, plan);
+        state.signature = tacticalSignature(setup.tactics);
+        this.updateFormationSlots(side);
+        this.analytics.changes.push({ ...change, side });
+        this.analytics.changes = this.analytics.changes.slice(-40);
+        this.pushEvent({
+          minute: change.minute,
+          type: "talk",
+          side,
+          text: `Plano tático: ${plan.name} (regra situacional).`,
+        });
+      }
+    }
+  }
+
+  private tacticalSlot(p: SimPlayer) {
+    let index = 0;
+    for (const candidate of this.players) {
+      if (candidate.side !== p.side) continue;
+      if (candidate === p) return Math.min(10, index);
+      index++;
+    }
+    return 0;
+  }
+  private updateFormationSlots(side: Side) {
+    const slots = FORMATIONS[this.setup(side).tactics.formation];
+    const dir = this.attackDir(side);
+    let index = 0;
+    for (const player of this.players) {
+      if (player.side !== side) continue;
+      const slot = slots[Math.min(10, index++)]!;
+      player.slotX = slot.x * dir;
+      player.slotZ = slot.z * dir;
+    }
+  }
+
+  private tacticalPhase(side: Side): TacticalPhase {
+    return this.time - this.tacticalTransitionAt < 5
+      ? this.possession === side
+        ? "won"
+        : "lost"
+      : this.possession === side
+        ? "possession"
+        : "defending";
+  }
   // Native private fields are excluded from checkpoint enumeration and saves.
   readonly #passLaneReceivers = new PassLaneBuffers();
   readonly #passLaneDefenders = new PassLaneBuffers();
-  readonly #passLaneOutput = new Float64Array(MAX_PASS_LANE_PLAYERS * 3);
-  #passLaneIntoKernel: PassLaneIntoKernel | null = evaluatePassLanesIntoFallback;
-  #perceptionBackend: "compat" | "wasm" = "compat";
-  #execution: MatchExecutionContract | null = null;
-  #physicsFault = false;
+  readonly #passLaneOutput = new Float64Array(64 * 3);
+  #passLaneIntoKernel: PassLaneIntoKernel = evaluatePassLanesIntoFallback;
+  #perceptionBackend: MatchExecutionContract["perception"] = "compat";
+  #physicsBackend: MatchExecutionContract["physics"] = "compat";
+  #executionLocked = false;
+  #executionFailure: Error | null = null;
   private passLaneKernel: PassLaneKernel = evaluatePassLanesFallback;
 
   setPassLaneKernel(kernel: PassLaneKernel) {
-    if (this.#execution) throw new Error("Match execution is already fixed");
     this.passLaneKernel = kernel;
-    this.#passLaneIntoKernel = null;
-    this.#perceptionBackend = kernel === evaluatePassLanesFallback ? "compat" : "wasm";
+    this.setPassLaneIntoKernel(
+      (x, z, receivers, defenders, output) => {
+        const result = kernel(x, z, receivers, defenders);
+        const written = Math.min(output.length, result.length);
+        for (let index = 0; index < written; index++) output[index] = result[index]!;
+        return written - (written % 3);
+      },
+      kernel === evaluatePassLanesFallback ? "compat" : "wasm",
+    );
   }
 
-  setPassLaneIntoKernel(kernel: PassLaneIntoKernel, backend: "compat" | "wasm") {
-    if (this.#execution) throw new Error("Match execution is already fixed");
+  setPassLaneIntoKernel(
+    kernel: PassLaneIntoKernel,
+    backend: MatchExecutionContract["perception"] = "wasm",
+  ) {
+    if (this.#executionLocked)
+      throw new Error("Match execution contract is fixed after the first tick");
     this.#passLaneIntoKernel = kernel;
     this.#perceptionBackend = backend;
+    this.passLaneKernel = evaluatePassLanesFallback;
   }
 
   executionContract(): MatchExecutionContract {
-    if (this.#execution) return { ...this.#execution };
     return {
       revision: MATCH_EXECUTION_REVISION,
-      physics: this.ballPhysics ? "rapier" : "compat",
+      physics: this.#physicsBackend,
       perception: this.#perceptionBackend,
     };
   }
 
   /** Internal recovery snapshot, never a career save or authority attestation. */
   checkpoint(): MatchCheckpoint {
-    if (this.#physicsFault) throw new Error("Physics recovery is required");
     const state: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(this))
       if (!CHECKPOINT_EXTERNAL.has(key)) state[key] = value;
+    if (this.#executionFailure) throw new Error("Match physics backend failed; recovery required");
+    if (this.#physicsBackend === "rapier" && !this.ballPhysics)
+      throw new Error("Match physics backend failed; recovery required");
     if (this.ballPhysics && !this.ballPhysics.checkpoint)
       throw new Error("Physics backend cannot checkpoint");
     return {
@@ -147,14 +312,27 @@ export class MatchSim {
   }
 
   restoreCheckpoint(checkpoint: MatchCheckpoint, authority?: BallPhysicsAuthority): void {
+    if (this.#executionLocked) throw new Error("Match execution contract is already fixed");
+    if (
+      (checkpoint?.version === 1 && checkpoint.physics) ||
+      (checkpoint?.execution && checkpoint.execution.revision !== MATCH_EXECUTION_REVISION)
+    )
+      throw new Error("Unsupported match execution checkpoint; unfinished match remains paused");
+    const expectedPhysics = checkpoint?.physics ? "rapier" : "compat";
+    const execution =
+      checkpoint?.execution ??
+      (checkpoint
+        ? {
+            revision: MATCH_EXECUTION_REVISION,
+            physics: expectedPhysics,
+            perception: checkpoint.perception,
+          }
+        : null);
     if (
       !checkpoint ||
       !checkpoint.state ||
       (checkpoint.version !== 1 && checkpoint.version !== 2) ||
-      (checkpoint.version === 2 &&
-        (!validExecutionContract(checkpoint.execution) ||
-          checkpoint.execution.physics !== (checkpoint.physics ? "rapier" : "compat") ||
-          checkpoint.execution.perception !== checkpoint.perception)) ||
+      (checkpoint.version === 2 && !validExecutionContract(checkpoint.execution)) ||
       checkpoint.seed !== this.matchSeed ||
       typeof checkpoint.state["time"] !== "number" ||
       !Number.isFinite(checkpoint.state["time"]) ||
@@ -164,7 +342,12 @@ export class MatchSim {
       !Number.isInteger(checkpoint.rng) ||
       checkpoint.rng < 1 ||
       checkpoint.rng > 0xffffffff ||
-      !["compat", "wasm"].includes(checkpoint.perception)
+      !["compat", "wasm"].includes(checkpoint.perception) ||
+      !validExecutionContract(execution) ||
+      execution.physics !== expectedPhysics ||
+      execution.perception !== checkpoint.perception ||
+      execution.physics !== (authority ? "rapier" : "compat") ||
+      execution.perception !== this.#perceptionBackend
     )
       throw new Error("Invalid match checkpoint");
     const keys = Object.keys(this).filter((key) => !CHECKPOINT_EXTERNAL.has(key));
@@ -195,6 +378,76 @@ export class MatchSim {
       )
     )
       throw new Error("Invalid player checkpoint");
+    const retained = Array.isArray(checkpoint.state["subsOut"])
+      ? (checkpoint.state["subsOut"] as SimPlayer[])
+      : [];
+    if (
+      [...players, ...retained].some(
+        (p) =>
+          p.emergencyKeeper !== undefined &&
+          (!p.emergencyKeeper ||
+            typeof p.emergencyKeeper !== "object" ||
+            typeof p.emergencyKeeper.pos !== "string" ||
+            p.emergencyKeeper.pos === "GK" ||
+            Object.keys(p.emergencyKeeper).some(
+              (key) => !["pos", "slotX", "slotZ"].includes(key),
+            ) ||
+            !Number.isFinite(p.emergencyKeeper.slotX) ||
+            !Number.isFinite(p.emergencyKeeper.slotZ)),
+      )
+    )
+      throw new Error("Invalid emergency keeper checkpoint");
+    const pending = checkpoint.state["pendingShot"] as Record<string, unknown> | null;
+    if (
+      pending !== null &&
+      (typeof pending !== "object" ||
+        Array.isArray(pending) ||
+        (Object.hasOwn(pending, "penalty") && pending["penalty"] !== true))
+    )
+      throw new Error("Invalid penalty shot checkpoint");
+    const flight = checkpoint.state["pass"] as Record<string, unknown> | null;
+    if (flight !== null) {
+      if (typeof flight !== "object" || Array.isArray(flight))
+        throw new Error("Invalid offside pass checkpoint");
+      const receptionKeys = ["receiveX", "receiveZ", "travelTime"];
+      if (
+        (flight["teammateTouched"] !== undefined && flight["teammateTouched"] !== true) ||
+        (receptionKeys.some((key) => flight[key] !== undefined) &&
+          (receptionKeys.some(
+            (key) => typeof flight[key] !== "number" || !Number.isFinite(flight[key]),
+          ) ||
+            (flight["travelTime"] as number) <= 0))
+      )
+        throw new Error("Invalid pass reception checkpoint");
+      const ids = flight["offsideIdsAtKick"];
+      const priorPlayers = Array.isArray(checkpoint.state["subsOut"])
+        ? (checkpoint.state["subsOut"] as SimPlayer[])
+        : [];
+      if (
+        (flight["offsideAtKick"] !== undefined && typeof flight["offsideAtKick"] !== "boolean") ||
+        (ids !== undefined &&
+          (!Array.isArray(ids) ||
+            ids.length > 11 ||
+            new Set(ids).size !== ids.length ||
+            ids.some(
+              (id: unknown) =>
+                typeof id !== "string" ||
+                ![...players, ...priorPlayers].some(
+                  (p) => p.id === id && p.side === flight["side"],
+                ),
+            )))
+      )
+        throw new Error("Invalid offside pass checkpoint");
+    }
+    const checkpointBall = checkpoint.state["ball"] as Record<string, unknown>;
+    for (const key of ["offsideExemptFor", "indirectFor"]) {
+      if (
+        checkpointBall[key] !== undefined &&
+        (typeof checkpointBall[key] !== "string" ||
+          !players.some((p) => p.id === checkpointBall[key]))
+      )
+        throw new Error("Invalid offside restart checkpoint");
+    }
     const state = structuredClone(checkpoint.state);
     // A fresh recovery backend must restore successfully before committing state.
     if (checkpoint.physics) authority!.restore!(checkpoint.physics);
@@ -205,19 +458,23 @@ export class MatchSim {
       restoreAthleteRemainder(player, checkpoint.athleteRemainders[index]!),
     );
     this.ballPhysics = authority ?? null;
-    this.#execution =
-      checkpoint.version === 2
-        ? { ...checkpoint.execution! }
-        : {
-            revision: MATCH_EXECUTION_REVISION,
-            physics: checkpoint.physics ? "rapier" : "compat",
-            perception: checkpoint.perception,
-          };
-    this.#physicsFault = false;
+    this.#physicsBackend = execution.physics;
+    this.#perceptionBackend = execution.perception;
+    this.#executionFailure = null;
+    this.#executionLocked = true;
   }
   time = 0; // segundos de jogo
   players: SimPlayer[] = [];
-  ball = { x: 0, z: 0, vx: 0, vz: 0, holder: null as string | null, height: 0 };
+  ball: {
+    x: number;
+    z: number;
+    vx: number;
+    vz: number;
+    holder: string | null;
+    height: number;
+    offsideExemptFor?: string;
+    indirectFor?: string;
+  } = { x: 0, z: 0, vx: 0, vz: 0, holder: null, height: 0 };
   possession: Side = "home";
   stats: Record<Side, MatchStats> = {
     home: emptyStats(),
@@ -269,6 +526,10 @@ export class MatchSim {
     xg: number;
     bigChance: boolean;
     bodyPart: "foot" | "head";
+    /** Stable within a flight; serializable so recovery updates the same attempt. */
+    shotMapIndex?: number;
+    /** Only newly taken penalties use final physical resolution for personal totals. */
+    penalty?: true;
   } | null = null;
   /** passe em voo: quem deve receber e até quando o passador não retoma a bola */
   private pass: {
@@ -278,6 +539,15 @@ export class MatchSim {
     fromX: number;
     dir: 1 | -1;
     side: Side;
+    offsideAtKick?: boolean;
+    /** All active attackers are judged from the same release, including errant receivers. */
+    offsideIdsAtKick?: string[];
+    /** A teammate touched the pass without controlling it; original passer may play again. */
+    teammateTouched?: true;
+    /** Planned reception in physical seconds, retained across a live recovery. */
+    receiveX?: number;
+    receiveZ?: number;
+    travelTime?: number;
   } | null = null;
 
   /* ---------------- estrutura da partida (Ciclo 2) ---------------- */
@@ -369,14 +639,18 @@ export class MatchSim {
   /** Liga ou desliga a autoridade física sem acoplar MatchSim ao WASM. */
   setBallPhysicsAuthority(authority: BallPhysicsAuthority | null) {
     if (this.ballPhysics === authority) return;
-    if (this.#execution) throw new Error("Match execution is already fixed");
+    if (this.#executionLocked)
+      throw new Error("Match execution contract is fixed after the first tick");
     this.ballPhysics?.dispose();
     this.ballPhysics = authority;
+    this.#physicsBackend = authority ? "rapier" : "compat";
+    this.#executionFailure = null;
     authority?.setCondition?.(this.weather, this.wind);
     this.synchronizeBallPhysics();
+    if (authority && this.ballPhysics !== authority) this.#physicsBackend = "compat";
   }
 
-  /** Permite ao Worker detectar uma falha WASM e cair para a rota compatível. */
+  /** Permite ao Worker escolher a apresentação compatível ou estado canônico da bola. */
   hasBallPhysicsAuthority() {
     return this.ballPhysics !== null;
   }
@@ -391,10 +665,13 @@ export class MatchSim {
       this.applyMutableBallPhysicsState(state);
     } catch {
       physics.dispose();
-      if (this.ballPhysics === physics) this.ballPhysics = null;
-      if (this.#execution) {
-        this.#physicsFault = true;
-        throw new Error("Physics recovery is required");
+      if (this.ballPhysics === physics) {
+        this.ballPhysics = null;
+        if (this.#executionLocked) {
+          this.#executionFailure = new Error("Match physics backend failed");
+          throw new Error("Match physics backend failed; recovery required");
+        }
+        this.#physicsBackend = "compat";
       }
     }
   }
@@ -455,57 +732,13 @@ export class MatchSim {
     } catch {
       physics.dispose();
       if (this.ballPhysics === physics) this.ballPhysics = null;
-      this.#physicsFault = true;
-      throw new Error("Physics recovery is required");
+      this.#executionFailure = new Error("Match physics backend failed");
+      throw new Error("Match physics backend failed; recovery required");
     }
   }
 
   private buildTeam(setup: TeamSetup, side: Side): SimPlayer[] {
-    const slots = FORMATIONS[setup.tactics.formation];
-    const dir = side === "home" ? 1 : -1;
-    return setup.players.slice(0, 11).map((p, i) => {
-      const slot = slots[Math.min(i, slots.length - 1)]!;
-      const physique = physiqueFor(p);
-      const x = slot.x * FIELD_X * 0.92 * dir;
-      const z = slot.z * FIELD_Z * 0.8 * dir;
-      return {
-        id: `${side}-${p.id}`,
-        side,
-        name: p.name,
-        number: p.number,
-        pos: p.pos,
-        heightCm: physique.height,
-        weightKg: physique.weight,
-        x,
-        z,
-        vx: 0,
-        vz: 0,
-        slotX: slot.x * dir,
-        slotZ: slot.z * dir,
-        ...matchAttributes(p, this.matchSeed, side),
-        action: null,
-        actionT: 0,
-        actionDur: 0,
-        pid: p.id,
-        goals: 0,
-        assists: 0,
-        shots: 0,
-        passes: 0,
-        tackles: 0,
-        saves: 0,
-        onSince: 0,
-        minutes: 0,
-        yellows: 0,
-        sentOff: false,
-        injuryWeeks: 0,
-        interceptions: 0,
-        offsides: 0,
-        foulsWon: 0,
-        pensScored: 0,
-        pensMissed: 0,
-        xg: 0,
-      };
-    });
+    return buildSimTeam(setup, side, this.matchSeed);
   }
 
   /**
@@ -566,10 +799,15 @@ export class MatchSim {
       pensMissed: 0,
       xg: 0,
     };
+    // The emergency assignment belongs to the outgoing athlete. A reserve
+    // keeps their registered role and must never inherit another player's marker.
+    delete fresh.emergencyKeeper;
     out.minutes += this.minute() - out.onSince;
     this.subsOut.push(out);
     setup.bench = setup.bench!.filter((player) => player.id !== incoming.id);
     if (this.ball.holder === out.id) this.ball.holder = fresh.id;
+    if (this.ball.offsideExemptFor === out.id) this.ball.offsideExemptFor = fresh.id;
+    if (this.ball.indirectFor === out.id) this.ball.indirectFor = fresh.id;
     this.players[idx] = fresh;
     this.synchronizeBallPhysics();
     this.subsUsed[side]++;
@@ -586,7 +824,7 @@ export class MatchSim {
 
   /** Notas de 0 a 10 de todos os jogadores que atuaram na partida. */
   playerRatings(): PlayerRating[] {
-    return calculatePlayerRatings(this.players, this.subsOut, this.minute(), this.stats);
+    return rateMatchPlayers(this.players, this.subsOut, this.stats, this.minute());
   }
 
   /** Melhor jogador da partida. */
@@ -611,12 +849,11 @@ export class MatchSim {
     this.ball.height = 0.12;
     this.ballVy = 0;
     this.ballSpin = 0;
-    this.pendingShot = null;
+    this.finishPendingShot();
     this.pass = null;
-    const team = this.players.filter((p) => p.side === side);
-    const starter = team.find((p) => p.pos === "FW") ?? team[team.length - 1]!;
-    starter.x = -0.6 * (side === "home" ? 1 : -1);
-    starter.z = 0;
+    const starter = placeKickoffStarter(this.players, side);
+    delete this.ball.offsideExemptFor;
+    delete this.ball.indirectFor;
     this.ball.holder = starter.id;
     this.possession = side;
     this.lastTouch = side;
@@ -628,8 +865,70 @@ export class MatchSim {
     return side === "home" ? this.home : this.away;
   }
 
+  /** A sent-off keeper is never eligible. Use one active outfielder until a
+   * legitimate keeper is brought on, without adding a player or changing skills. */
+  private keeper(side: Side): SimPlayer | null {
+    const active = this.players.filter((p) => p.side === side && !p.sentOff);
+    const natural = active.find((p) => p.pos === "GK" && !p.emergencyKeeper);
+    if (natural) {
+      for (const player of active)
+        if (player.emergencyKeeper) {
+          player.pos = player.emergencyKeeper.pos;
+          player.slotX = player.emergencyKeeper.slotX;
+          player.slotZ = player.emergencyKeeper.slotZ;
+          delete player.emergencyKeeper;
+        }
+      return natural;
+    }
+    const current = active.find((p) => p.pos === "GK");
+    if (current) return current;
+    let emergency: SimPlayer | null = null;
+    for (const player of active) {
+      if (
+        !emergency ||
+        player.defending * 0.7 + player.physical * 0.3 >
+          emergency.defending * 0.7 + emergency.physical * 0.3
+      )
+        emergency = player;
+    }
+    if (!emergency) return null;
+    emergency.emergencyKeeper = {
+      pos: emergency.pos,
+      slotX: emergency.slotX,
+      slotZ: emergency.slotZ,
+    };
+    emergency.pos = "GK";
+    emergency.slotX = -this.attackDir(side) * 0.98;
+    emergency.slotZ = 0;
+    emergency.x = -this.attackDir(side) * (FIELD_X - 1);
+    emergency.z = 0;
+    emergency.vx = emergency.vz = 0;
+    this.pushEvent({
+      minute: this.minute(),
+      type: "talk",
+      side,
+      text: `${emergency.name} assume o gol enquanto a equipe está sem goleiro elegível.`,
+    });
+    return emergency;
+  }
+
   private attackDir(side: Side) {
     return side === "home" ? 1 : -1;
+  }
+  /** Every pass uses the second-last opponent and ball at the instant of release. */
+  private advancedOffside(receiver: SimPlayer, ballX: number, dir: 1 | -1) {
+    let first = -Infinity,
+      second = -Infinity;
+    for (const p of this.players) {
+      if (p.side === receiver.side || p.sentOff) continue;
+      const x = p.x * dir;
+      if (x > first) {
+        second = first;
+        first = x;
+      } else if (x > second) second = x;
+    }
+    const line = Math.max(ballX * dir, Number.isFinite(second) ? second : -FIELD_X);
+    return isOffside(receiver.x, line * dir, dir);
   }
 
   private mentalityShift(side: Side) {
@@ -646,9 +945,31 @@ export class MatchSim {
     if (this.events.length > 80) this.events.shift();
   }
 
-  private recordShot(shot: ShotRecord) {
+  private recordShot(shot: ShotRecord, existingIndex?: number) {
+    if (existingIndex !== undefined && existingIndex >= 0 && existingIndex < this.shotMap.length) {
+      this.shotMap[existingIndex] = shot;
+      return existingIndex;
+    }
     this.shotMap.push(shot);
     if (this.shotMap.length > 120) this.shotMap.shift();
+    return this.shotMap.length - 1;
+  }
+
+  /** Count every attempt once, including blocks and shots interrupted before the goal plane. */
+  private trackPendingShot() {
+    const shot = this.pendingShot;
+    if (!shot) return;
+    shot.shotMapIndex = this.recordShot({
+      x: shot.fromX,
+      z: shot.fromZ,
+      side: shot.side,
+      result: "off",
+      minute: this.minute(),
+      name: this.players.find((player) => player.id === shot.shooter)?.name ?? "",
+      xg: shot.xg,
+      bigChance: shot.bigChance,
+      bodyPart: shot.bodyPart,
+    });
   }
 
   /** dispara uma animação curta no jogador */
@@ -682,6 +1003,8 @@ export class MatchSim {
 
   /** texto do relógio: 45+2', 90+3', 105', 120', PEN */
   clock(): string {
+    if (this.phase === "done")
+      return `${this.knockout && this.time > (90 + this.added1 + this.added2 + 1) * 60 ? 120 : 90}'`;
     return clockText(this.phase, this.time, this.added1, this.added2, this.addedET);
   }
 
@@ -698,7 +1021,9 @@ export class MatchSim {
   private readyToWhistle(): boolean {
     if (this.setPiece) return false;
     if (this.pendingShot) return this.time > this.graceUntil;
-    const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
+    const holder = this.ball.holder
+      ? this.players.find((p) => p.id === this.ball.holder && !p.sentOff)
+      : null;
     if (holder) {
       const goalX = this.attackDir(holder.side) * FIELD_X;
       if (Math.hypot(goalX - holder.x, holder.z) < 18) return this.time > this.graceUntil;
@@ -714,7 +1039,7 @@ export class MatchSim {
       this.phase = "half";
       this.freezeT = 6;
       this.ball.holder = null;
-      this.pendingShot = null;
+      this.finishPendingShot();
       this.pass = null;
       this.pushEvent({ minute: 45, type: "halftime", side: "neutral", text: "Intervalo." });
       this.halfTalk("home");
@@ -752,7 +1077,7 @@ export class MatchSim {
       this.phase = "etBreak";
       this.freezeT = 3;
       this.ball.holder = null;
-      this.pendingShot = null;
+      this.finishPendingShot();
       this.pass = null;
       this.pushEvent({
         minute: 105,
@@ -778,7 +1103,7 @@ export class MatchSim {
     if (this.knockout && draw) {
       this.phase = "shootout";
       this.ball.holder = null;
-      this.pendingShot = null;
+      this.finishPendingShot();
       this.pass = null;
       this.shootoutTimer = 1.5;
       // mando decide: quem joga em casa começa cobrando
@@ -841,6 +1166,7 @@ export class MatchSim {
   }
 
   private finishMatch() {
+    this.finishPendingShot();
     this.phase = "done";
     this.finished = true;
     const winner = shootoutWinner(this.shootout);
@@ -874,7 +1200,7 @@ export class MatchSim {
   private setupShootoutKick() {
     const side = this.shootoutTurn;
     const taker = this.shootoutTaker(side);
-    const gk = this.players.find((p) => p.side !== side && p.pos === "GK") ?? null;
+    const gk = this.keeper(side === "home" ? "away" : "home");
     if (taker) {
       taker.x = FIELD_X - PENALTY_DIST;
       taker.z = 0.6;
@@ -886,7 +1212,6 @@ export class MatchSim {
       gk.z = 0;
       gk.vx = 0;
       gk.vz = 0;
-      gk.sentOff = false; // goleiro expulso na disputa seria caso de manual; ignora
     }
     this.ball.x = FIELD_X - PENALTY_DIST;
     this.ball.z = 0;
@@ -896,7 +1221,7 @@ export class MatchSim {
     this.ballVy = 0;
     this.ballSpin = 0;
     this.ball.holder = null;
-    this.pendingShot = null;
+    this.finishPendingShot();
     this.pass = null;
     this.shootoutTimer = 1.8;
     this.synchronizeBallPhysics();
@@ -907,7 +1232,7 @@ export class MatchSim {
     if (this.shootoutTimer > 0) return;
     const side = this.shootoutTurn;
     const taker = this.shootoutTaker(side);
-    const gk = this.players.find((p) => p.side !== side && p.pos === "GK") ?? null;
+    const gk = this.keeper(side === "home" ? "away" : "home");
     if (!taker) {
       this.finishMatch();
       return;
@@ -994,6 +1319,7 @@ export class MatchSim {
   /** expulsão vale de verdade: o jogador sai de campo e o time fica com 10 */
   private sendOff(p: SimPlayer, why: string) {
     if (p.sentOff) return;
+    p.minutes += this.minute() - p.onSince;
     p.sentOff = true;
     this.stats[p.side].red++;
     this.stoppageDebt += 1;
@@ -1011,6 +1337,7 @@ export class MatchSim {
       side: p.side,
       text: `Cartão vermelho para ${p.name} (${why})!`,
     });
+    if (p.pos === "GK") this.keeper(p.side);
   }
 
   /** lesão no lance: semanas parado, queda física e (em geral) substituição */
@@ -1066,7 +1393,7 @@ export class MatchSim {
       }
     }
     // ajuste de postura no máximo a cada 10' (nunca no time do usuário)
-    if (!userManaged && min - this.aiTweakMin[side] >= 10) {
+    if (!userManaged && !this.setup(side).tactics.advanced && min - this.aiTweakMin[side] >= 10) {
       const sentOffs = this.players.filter((p) => p.side === side && p.sentOff).length;
       const tweak = aiMentalityTweak(diff, min, sentOffs);
       if (tweak) {
@@ -1086,7 +1413,16 @@ export class MatchSim {
   }
 
   /** melhor cobrador em campo (não expulso, não goleiro) */
-  private bestTaker(side: Side, attr: "shooting" | "passing"): SimPlayer | null {
+  private bestTaker(
+    side: Side,
+    attr: "shooting" | "passing",
+    kind?: "corners" | "freeKicks" | "penalties",
+  ): SimPlayer | null {
+    const preferences = kind ? activePlan(this.setup(side).tactics)?.setPieces[kind] : undefined;
+    for (const id of preferences ?? []) {
+      const chosen = this.players.find((p) => p.side === side && p.pid === id && !p.sentOff);
+      if (chosen) return chosen;
+    }
     let best: SimPlayer | null = null;
     for (const p of this.players) {
       if (p.side !== side || p.sentOff || p.pos === "GK") continue;
@@ -1098,28 +1434,31 @@ export class MatchSim {
   private setupPenalty(side: Side) {
     const dir = this.attackDir(side);
     const goalX = dir * FIELD_X;
-    const taker = this.bestTaker(side, "shooting");
-    const gk = this.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null;
+    const taker = this.bestTaker(side, "shooting", "penalties");
+    const gk = this.keeper(side === "home" ? "away" : "home");
     if (!taker) return;
     taker.x = goalX - dir * PENALTY_DIST;
     taker.z = 0.6;
     taker.vx = 0;
     taker.vz = 0;
     if (gk) {
-      gk.x = goalX - dir * 0.8;
+      gk.x = goalX;
       gk.z = 0;
       gk.vx = 0;
       gk.vz = 0;
     }
-    // todo mundo a 9,15 m da marca
+    // Law 14 requires every other active player behind the mark, outside
+    // the penalty area and at least 9.15 m away. Radial displacement alone
+    // could previously move a defender towards the goal inside the area.
+    const markX = goalX - dir * PENALTY_DIST;
     for (const p of this.players) {
       if (p === taker || p === gk || p.sentOff) continue;
-      const d = Math.hypot(p.x - (goalX - dir * PENALTY_DIST), p.z);
-      if (d < 9.5) {
-        const ang = Math.atan2(p.z, p.x - (goalX - dir * PENALTY_DIST));
-        p.x = goalX - dir * PENALTY_DIST + Math.cos(ang) * 10.5;
-        p.z = Math.sin(ang) * 10.5;
-      }
+      p.z = Math.max(-FIELD_Z + 1, Math.min(FIELD_Z - 1, p.z));
+      const circleBack = Math.sqrt(Math.max(0, 9.5 * 9.5 - p.z * p.z));
+      const maximumForward = Math.min(FIELD_X - BOX_DEPTH - 0.5, markX * dir - circleBack - 0.5);
+      p.x = Math.max(-FIELD_X + 1, Math.min(p.x * dir, maximumForward)) * dir;
+      p.vx = 0;
+      p.vz = 0;
     }
     this.ball.x = goalX - dir * PENALTY_DIST;
     this.ball.z = 0;
@@ -1129,7 +1468,7 @@ export class MatchSim {
     this.ballVy = 0;
     this.ballSpin = 0;
     this.ball.holder = null;
-    this.pendingShot = null;
+    this.finishPendingShot();
     this.pass = null;
     this.setPiece = { kind: "penalty", side, takerId: taker.id, timer: 2.2 };
     this.restartTimer = 2.6;
@@ -1150,12 +1489,13 @@ export class MatchSim {
     const side = sp.side;
     const dir = this.attackDir(side);
     const taker = this.players.find((p) => p.id === sp.takerId) ?? null;
-    const gk = this.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null;
+    const gk = this.keeper(side === "home" ? "away" : "home");
     this.setPiece = null;
     if (!taker) {
       this.scheduleRestart(side === "home" ? "away" : "home");
       return;
     }
+    this.ball.holder = null;
     const late = this.minute() >= 75;
     const close = Math.abs(this.stats.home.goals - this.stats.away.goals) <= 1;
     const out = solvePenalty({
@@ -1173,8 +1513,6 @@ export class MatchSim {
     this.stats[side].xg += XG_PENALTY;
     taker.shots++;
     taker.xg += XG_PENALTY;
-    if (out.scored) taker.pensScored++;
-    else taker.pensMissed++;
     const targetZ = out.skied
       ? Math.sign(out.takerSide || 1) * (GOAL_Z + 1.5 + this.rnd() * 2)
       : out.takerSide * GOAL_Z * 0.72;
@@ -1198,21 +1536,12 @@ export class MatchSim {
       fromZ: this.ball.z,
       targetZ,
       xg: XG_PENALTY,
+      penalty: true,
       bigChance: true,
       bodyPart: "foot",
     };
+    this.trackPendingShot();
     if (!out.scored && out.skied) {
-      this.recordShot({
-        x: this.ball.x,
-        z: this.ball.z,
-        side,
-        result: "off",
-        minute: this.minute(),
-        name: taker.name,
-        xg: XG_PENALTY,
-        bigChance: true,
-        bodyPart: "foot",
-      });
       this.pushEvent({
         minute: this.minute(),
         type: "penalty",
@@ -1226,7 +1555,7 @@ export class MatchSim {
   private setupDirectFK(side: Side, fx: number, fz: number) {
     const dir = this.attackDir(side);
     const goalX = dir * FIELD_X;
-    const taker = this.bestTaker(side, "shooting");
+    const taker = this.bestTaker(side, "shooting", "freeKicks");
     if (!taker) return;
     taker.x = fx - dir * 1.2;
     taker.z = fz + 0.8;
@@ -1247,6 +1576,24 @@ export class MatchSim {
       w.vz = 0;
       this.trigger(w, "block", 2.4);
     }
+    // The fouled carrier can differ from the specialist. Leave room for the
+    // run-up instead of letting that teammate trap the strike at its origin.
+    // All opponents, not just the selected wall, must respect Law 13's 9.15 m.
+    for (const p of this.players) {
+      if (p === taker || p.sentOff) continue;
+      const distance = Math.hypot(p.x - fx, p.z - fz);
+      const clearance = p.side === side ? 2.5 : 9.15;
+      if (distance >= clearance - 1e-9) continue;
+      const nx = distance > 0.001 ? (p.x - fx) / distance : -dir;
+      const nz = distance > 0.001 ? (p.z - fz) / distance : 0;
+      p.x = Math.max(-FIELD_X + 0.5, Math.min(FIELD_X - 0.5, fx + nx * (clearance + 0.2)));
+      p.z = Math.max(-FIELD_Z + 0.5, Math.min(FIELD_Z - 0.5, fz + nz * (clearance + 0.2)));
+      if (Math.hypot(p.x - fx, p.z - fz) < clearance) {
+        p.x = fx - dir * (clearance + 0.2);
+        p.z = fz;
+      }
+      p.vx = p.vz = 0;
+    }
     this.ball.x = fx;
     this.ball.z = fz;
     this.ball.vx = 0;
@@ -1255,7 +1602,7 @@ export class MatchSim {
     this.ballVy = 0;
     this.ballSpin = 0;
     this.ball.holder = null;
-    this.pendingShot = null;
+    this.finishPendingShot();
     this.pass = null;
     this.setPiece = { kind: "directFK", side, takerId: taker.id, timer: 2.4 };
     this.restartTimer = 2.8;
@@ -1276,12 +1623,13 @@ export class MatchSim {
     const side = sp.side;
     const dir = this.attackDir(side);
     const taker = this.players.find((p) => p.id === sp.takerId) ?? null;
-    const gk = this.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null;
+    const gk = this.keeper(side === "home" ? "away" : "home");
     this.setPiece = null;
     if (!taker) {
       this.restartFor(side, "throwIn");
       return;
     }
+    this.ball.holder = null;
     const fx = this.ball.x;
     const fz = this.ball.z;
     const dist = Math.hypot(dir * FIELD_X - fx, fz);
@@ -1296,13 +1644,16 @@ export class MatchSim {
       gk: gk?.defending ?? 60,
       rnd: this.rnd,
     });
-    this.trigger(taker, "shot", 0.8);
-    this.lastPass[side] = null; // falta direta não tem assistência
-    this.stats[side].shots++;
-    this.stats[side].xg += out.xg;
-    taker.shots++;
-    taker.xg += out.xg;
+    const recordAttempt = () => {
+      this.trigger(taker, "shot", 0.8);
+      this.lastPass[side] = null; // falta direta não tem assistência
+      this.stats[side].shots++;
+      this.stats[side].xg += out.xg;
+      taker.shots++;
+      taker.xg += out.xg;
+    };
     if (out.result === "wall") {
+      recordAttempt();
       // explode na barreira e segue viva
       const dx = dir * FIELD_X - fx;
       const dz = out.targetZ - fz;
@@ -1336,12 +1687,45 @@ export class MatchSim {
     const dz = out.targetZ - fz;
     const d = Math.hypot(dx, dz) || 1;
     const power = 21 + this.rnd() * 7;
-    this.ball.vx = (dx / d) * power;
-    this.ball.vz = (dz / d) * power;
-    this.ball.height = 0.25;
     const flight = Math.max(0.15, d / power);
-    this.ballVy = (out.targetH - 0.25) / flight + 4.905 * flight;
-    this.ballSpin = (this.rnd() - 0.5) * 6;
+    let launch: RapierBallState = {
+      x: fx,
+      z: fz,
+      height: 0.25,
+      holder: null,
+      vx: (dx / d) * power,
+      vz: (dz / d) * power,
+      vy: (out.targetH - 0.25) / flight + 4.905 * flight,
+      spin: (this.rnd() - 0.5) * 6,
+    };
+    const obstacles = this.players.filter(
+      (p) => p.side !== side && !p.sentOff && p.pos !== "GK" && Math.hypot(p.x - fx, p.z - fz) < 12,
+    );
+    if (out.result !== "off" && obstacles.length && this.ballPhysics?.createFlightProbe) {
+      const probe = this.ballPhysics.createFlightProbe();
+      let planned: RapierBallState | null;
+      try {
+        planned = planFreeKickFlight(
+          launch,
+          { x: dir * (FIELD_X + BALL_RADIUS), z: out.targetZ, height: out.targetH },
+          obstacles,
+          this.wind,
+          probe,
+        );
+      } finally {
+        probe.dispose();
+      }
+      // A direct free kick may be played to a teammate. Preserve its legal
+      // restart and count a pass, rather than inventing a shot or a scored goal.
+      if (!planned && this.playShortFreeKick(taker)) return;
+      if (planned) launch = planned;
+    }
+    recordAttempt();
+    this.ball.vx = launch.vx;
+    this.ball.vz = launch.vz;
+    this.ball.height = launch.height;
+    this.ballVy = launch.vy;
+    this.ballSpin = launch.spin;
     this.lastTouch = side;
     this.pendingShot = {
       side,
@@ -1354,31 +1738,76 @@ export class MatchSim {
       bigChance: false,
       bodyPart: "foot",
     };
-    if (out.result === "off") {
-      this.recordShot({
-        x: fx,
-        z: fz,
-        side,
-        result: "off",
-        minute: this.minute(),
-        name: taker.name,
-        xg: out.xg,
-        bigChance: false,
-        bodyPart: "foot",
-      });
-    }
+    this.trackPendingShot();
     this.synchronizeBallPhysics();
   }
 
+  private playShortFreeKick(taker: SimPlayer): boolean {
+    const side = taker.side,
+      dir = this.attackDir(side);
+    const fx = this.ball.x,
+      fz = this.ball.z;
+    const line = Math.max(fx * dir, defensiveLineX(this.players, side) * dir) * dir;
+    const mates = this.players.filter(
+      (p) =>
+        p.side === side &&
+        p.id !== taker.id &&
+        !p.sentOff &&
+        Math.hypot(p.x - fx, p.z - fz) >= 2.5 &&
+        !isOffside(p.x, line, dir),
+    );
+    mates.sort(
+      (a, b) =>
+        Math.hypot(a.x - fx, a.z - fz) - Math.hypot(b.x - fx, b.z - fz) ||
+        (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    );
+    const receiver = mates[0];
+    if (!receiver) return false;
+    const dx = receiver.x - fx,
+      dz = receiver.z - fz,
+      distance = Math.hypot(dx, dz);
+    const power = Math.min(25, 10 + distance * 0.8),
+      flight = distance / power;
+    const lofted = distance > power / pitchCondition(this.weather).rollDrag - 1;
+    taker.passes++;
+    this.stats[side].passes++;
+    recordPass(this.analytics, taker, receiver);
+    this.lastPass[side] = { id: taker.id, time: this.time };
+    this.trigger(taker, lofted ? "passLong" : "pass", 0.6);
+    this.ball.holder = null;
+    this.lastTouch = side;
+    this.ball.height = lofted ? 0.35 : BALL_RADIUS;
+    this.ball.vx = (dx / distance) * power;
+    this.ball.vz = (dz / distance) * power;
+    this.ballVy = lofted ? 4.905 * Math.max(0.4, flight) : 0;
+    this.ballSpin = 0;
+    delete this.ball.indirectFor;
+    delete this.ball.offsideExemptFor;
+    this.pass = {
+      from: taker.id,
+      to: receiver.id,
+      side,
+      dir,
+      fromX: fx,
+      until: this.time + 0.45,
+      offsideAtKick: false,
+      offsideIdsAtKick: [],
+      receiveX: receiver.x,
+      receiveZ: receiver.z,
+      travelTime: Math.max(0.25, flight * 1.2),
+    };
+    this.looseTime = 0;
+    this.synchronizeBallPhysics();
+    return true;
+  }
+
   private setupCorner(side: Side) {
+    const planned = activePlan(this.setup(side).tactics)?.setPieces;
     // batedor vai para a bandeira; área enche dos dois lados
     const dir = this.attackDir(side);
     const goalX = dir * FIELD_X;
     const cornerZ = Math.sign(this.ball.z || 1) * (FIELD_Z - 0.8);
-    const taker =
-      this.players
-        .filter((p) => p.side === side && !p.sentOff && p.pos !== "GK")
-        .sort((a, b) => b.passing - a.passing)[0] ?? null;
+    const taker = this.bestTaker(side, "passing", "corners");
     if (!taker) return;
     taker.x = goalX - dir * 1.5;
     taker.z = cornerZ;
@@ -1387,10 +1816,12 @@ export class MatchSim {
     const attack = this.players
       .filter((p) => p.side === side && !p.sentOff && p !== taker && p.pos !== "GK")
       .sort((a, b) => b.physical - a.physical)
-      .slice(0, 5);
+      .slice(0, planned ? 9 - planned.stayBack : 5);
     attack.forEach((p, i) => {
       p.x = goalX - dir * (6 + (i % 3) * 3.5) + (this.rnd() - 0.5) * 2;
       p.z = (i - 2) * 3.4 + (this.rnd() - 0.5) * 2;
+      if (planned?.target === "near") p.z += Math.sign(cornerZ) * 4;
+      if (planned?.target === "far") p.z -= Math.sign(cornerZ) * 4;
     });
     const defense = this.players
       .filter((p) => p.side !== side && !p.sentOff && p.pos !== "GK")
@@ -1399,6 +1830,11 @@ export class MatchSim {
     defense.forEach((p, i) => {
       p.x = goalX - dir * (4.5 + (i % 3) * 3) + (this.rnd() - 0.5) * 2;
       p.z = (i - 2.5) * 2.8 + (this.rnd() - 0.5) * 2;
+      const defensivePlan = activePlan(this.setup(p.side).tactics)?.setPieces;
+      if (defensivePlan?.marking === "man" && attack[i]) {
+        p.x = attack[i]!.x - dir;
+        p.z = attack[i]!.z;
+      }
     });
     this.ball.x = goalX - dir * 1.2;
     this.ball.z = cornerZ;
@@ -1408,7 +1844,7 @@ export class MatchSim {
     this.ballVy = 0;
     this.ballSpin = 0;
     this.ball.holder = null;
-    this.pendingShot = null;
+    this.finishPendingShot();
     this.pass = null;
     this.stats[side].corners++;
     this.setPiece = { kind: "corner", side, takerId: taker.id, timer: 2.2 };
@@ -1433,13 +1869,43 @@ export class MatchSim {
     // gol de escanteio tem assistência do batedor
     this.lastPass[side] = { id: sp.takerId, time: this.time };
     this.setPiece = null;
+    this.ball.holder = null;
+    if (activePlan(this.setup(side).tactics)?.setPieces.target === "short") {
+      const taker = this.players.find((p) => p.id === sp.takerId);
+      const receiver = this.players
+        .filter((p) => p.side === side && !p.sentOff && p.pos !== "GK" && p.id !== sp.takerId)
+        .sort(
+          (a, b) =>
+            Math.hypot(a.x - this.ball.x, a.z - this.ball.z) -
+            Math.hypot(b.x - this.ball.x, b.z - this.ball.z),
+        )[0];
+      if (taker && receiver) {
+        recordPass(this.analytics, taker, receiver);
+        recordPass(this.analytics, taker, receiver, true);
+        this.stats[side].passes++;
+        this.stats[side].passesOk++;
+        taker.passes++;
+        this.ball.holder = receiver.id;
+        this.possession = side;
+        this.ball.x = receiver.x;
+        this.ball.z = receiver.z;
+        this.pushEvent({
+          minute: this.minute(),
+          type: "corner",
+          side,
+          text: `Escanteio curto para ${receiver.name}.`,
+        });
+        this.synchronizeBallPhysics();
+        return;
+      }
+    }
     const attack = this.players.filter(
       (p) => p.side === side && !p.sentOff && p.pos !== "GK" && Math.abs(p.x - goalX) < 22,
     );
     const defense = this.players.filter(
       (p) => p.side !== side && !p.sentOff && p.pos !== "GK" && Math.abs(p.x - goalX) < 22,
     );
-    const gk = this.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null;
+    const gk = this.keeper(side === "home" ? "away" : "home");
     const att = attack.reduce((s, p) => s + p.physical + p.shooting * 0.4, 0);
     const dfn = defense.reduce((s, p) => s + p.physical + p.defending * 0.4, 0);
     const duel = solveCornerDuel({
@@ -1529,19 +1995,9 @@ export class MatchSim {
       bigChance: duel.headerXg > 0.12,
       bodyPart: "head",
     };
+    this.trackPendingShot();
     if (outcome === "off") {
       if (this.rnd() < 0.2) this.lastTouch = side === "home" ? "away" : "home";
-      this.recordShot({
-        x: header.x,
-        z: header.z,
-        side,
-        result: "off",
-        minute: this.minute(),
-        name: header.name,
-        xg: duel.headerXg,
-        bigChance: duel.headerXg > 0.12,
-        bodyPart: "head",
-      });
       this.pushEvent({
         minute: this.minute(),
         type: "shot",
@@ -1585,8 +2041,8 @@ export class MatchSim {
 
   step(dt: number, clockScale = 1, _legacyUseBallPhysics = true) {
     if (this.finished) return;
-    if (this.#physicsFault) throw new Error("Physics recovery is required");
-    this.#execution ??= this.executionContract();
+    if (this.#executionFailure) throw new Error("Match physics backend failed; recovery required");
+    this.#executionLocked = true;
     // intervalo e pausa da prorrogação: relógio parado, cena respira
     if (this.phase === "half" || this.phase === "etBreak") {
       this.freezeT -= dt;
@@ -1604,6 +2060,7 @@ export class MatchSim {
     }
     const clockDt = dt * Math.max(1, clockScale);
     this.time += clockDt;
+    if (this.home.tactics.advanced || this.away.tactics.advanced) this.updateTacticalPlans();
     this.pressSurge.home = Math.max(0, this.pressSurge.home - dt);
     this.pressSurge.away = Math.max(0, this.pressSurge.away - dt);
     this.mentalityCache = null;
@@ -1629,7 +2086,9 @@ export class MatchSim {
     this.moveBall(dt);
     this.sanitize();
 
-    const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
+    const holder = this.ball.holder
+      ? this.players.find((p) => p.id === this.ball.holder && !p.sentOff)
+      : null;
     if (holder) {
       this.dribble(holder, dt);
       this.pressure(holder, dt);
@@ -1644,6 +2103,7 @@ export class MatchSim {
     this.separate();
     this.sanitize();
 
+    sampleAnalytics(this.analytics, this.time, this.players, this.stats);
     // bola parada armada: a cobrança sai quando a barreira se posiciona
     if (this.setPiece) this.tickSetPiece(dt);
     // IA do treinador substitui e ajusta a postura a cada ~40s de jogo
@@ -1681,12 +2141,19 @@ export class MatchSim {
     set.clear();
     if (this.ball.holder) return set;
     for (const side of ["home", "away"] as Side[]) {
+      const receiving =
+        this.pass?.side === side && !this.pass.teammateTouched
+          ? this.players.find((p) => p.id === this.pass!.to && p.pos !== "GK" && !p.sentOff)
+          : undefined;
+      if (receiving) set.add(receiving.id);
       let first: SimPlayer | null = null;
       let second: SimPlayer | null = null;
       let firstDistance = Infinity;
       let secondDistance = Infinity;
       for (const player of this.players) {
         if (player.side !== side || player.pos === "GK" || player.sentOff) continue;
+        if (player === receiving || player.id === this.pendingShot?.shooter) continue;
+        if (this.pass && !this.pass.teammateTouched && player.id === this.pass.from) continue;
         const dx = player.x - this.ball.x;
         const dz = player.z - this.ball.z;
         const distance = dx * dx + dz * dz;
@@ -1701,18 +2168,21 @@ export class MatchSim {
         }
       }
       if (first) set.add(first.id);
-      if (second) set.add(second.id);
+      if (second && !receiving) set.add(second.id);
     }
     return set;
   }
 
   private moveOffBall(dt: number) {
+    // Set-piece setup already placed the taker, wall and penalty exclusion.
+    // Keep that staging intact until the ball is actually put into play.
+    if (this.setPiece) return;
     const bx = this.ball.x;
     const bz = this.ball.z;
     const chase = this.chasers();
     // The holder is skipped below, so its position stays fixed throughout this pass.
     const holder = this.ball.holder
-      ? this.players.find((q) => q.id === this.ball.holder)
+      ? this.players.find((q) => q.id === this.ball.holder && !q.sentOff)
       : undefined;
 
     // Urgência pelo placar e pelo relógio: quem está perdendo no fim empurra a
@@ -1753,6 +2223,42 @@ export class MatchSim {
 
       let tx = p.slotX * FIELD_X * 0.9 + this.mentalityShift(p.side) + bx * 0.22 + pressLine * dir;
       let tz = p.slotZ * FIELD_Z * widthFactor + bz * 0.28;
+      const plan = activePlan(setup.tactics);
+      const slot = plan ? this.tacticalSlot(p) : 0;
+      const instructionForRole = plan?.players.find((s) => s.slot === slot);
+      const learnedRole = instructionForRole
+        ? (setup.tactics.advanced!.familiarity.roles[
+            roleFamiliarityKey(p.pid, instructionForRole.role)
+          ] ?? 50)
+        : 50;
+      const desired = plan
+        ? phasePosition(
+            setup.tactics,
+            slot,
+            this.tacticalPhase(p.side),
+            (p.passing + p.defending) / 2,
+            learnedRole,
+          )
+        : undefined;
+      if (desired) {
+        tx = desired.x * FIELD_X * dir + bx * 0.18;
+        tz = desired.z * FIELD_Z + bz * 0.18;
+        if (!attacking) tx += (plan!.defending.pressLine - 1) * 3 * dir;
+        if (!attacking && holder) {
+          const instruction = plan?.opposition.find((v) => v.playerId === holder.pid);
+          if (
+            desired.player.marking === "man" ||
+            plan?.defending.marking === "man" ||
+            instruction?.marking === "man"
+          ) {
+            tx += (holder.x - tx) * 0.16;
+            tz += (holder.z - tz) * 0.22;
+          }
+          const show = instruction?.show ?? plan?.defending.show;
+          if (show === "outside") tz -= Math.sign(holder.z || 1) * 1.5;
+          if (show === "inside") tz += Math.sign(holder.z || 1) * 1.5;
+        }
+      }
       let sprint = 1;
 
       const ballDist = Math.hypot(bx - p.x, bz - p.z);
@@ -1777,7 +2283,11 @@ export class MatchSim {
           sprint = 1.18;
         }
         // goleiro sai da área para bola solta muito perto
-        const sweepRange = 9 + setup.tactics.mentality * 1.35 + p.pace / 35;
+        const sweepRange =
+          9 +
+          setup.tactics.mentality * 1.35 +
+          p.pace / 35 +
+          (desired?.player.role === "sweeper_keeper" ? 4 : 0);
         if (
           !this.ball.holder &&
           !incoming &&
@@ -1788,7 +2298,26 @@ export class MatchSim {
           tz = bz;
           sprint = 1.25;
         }
-      } else if (chase.has(p.id)) {
+      } else if (
+        this.pass?.to === p.id &&
+        !this.pass.teammateTouched &&
+        this.pass.receiveX !== undefined &&
+        this.pass.receiveZ !== undefined &&
+        this.looseTime < (this.pass.travelTime ?? 0) + 0.5
+      ) {
+        // Anticipate the delivery at its planned arrival, rather than turning
+        // every receiver back toward the ball while it is still at the passer.
+        tx = this.pass.receiveX;
+        tz = this.pass.receiveZ;
+        sprint = 1.2;
+      } else if (
+        chase.has(p.id) &&
+        (!plan ||
+          attacking ||
+          plan.defending.trigger === "always" ||
+          (plan.defending.trigger === "wide" && Math.abs(bz) > FIELD_Z * 0.5) ||
+          (plan.defending.trigger === "backpass" && surge))
+      ) {
         // interceptação: mira num ponto à frente da bola
         tx = bx + this.ball.vx * 0.22;
         tz = bz + this.ball.vz * 0.22;
@@ -1799,7 +2328,11 @@ export class MatchSim {
         // e permite a armadilha de impedimento.
         if (p.pos === "DF") {
           const line = lineX[p.side];
-          const trap = setup.tactics.pressing >= 3 && Math.abs(bx - line) > 14 ? dir * 3.5 : 0;
+          const trap =
+            (plan ? plan.defending.offside : setup.tactics.pressing >= 3) &&
+            Math.abs(bx - line) > 14
+              ? dir * 3.5
+              : 0;
           tx = tx * 0.35 + (line + trap) * 0.65;
           // marcação por zona: cobre o adversário mais perigoso da sua faixa
           let markZ: number | null = null;
@@ -1848,6 +2381,14 @@ export class MatchSim {
         tx += urgency(p.side) * 5 * dir;
       }
 
+      if (desired && p.pos !== "GK" && !chase.has(p.id)) {
+        const intendedX = desired.x * FIELD_X * dir + bx * 0.18;
+        const intendedZ = desired.z * FIELD_Z + bz * 0.18;
+        tx = tx * 0.35 + intendedX * 0.65;
+        tz = tz * 0.35 + intendedZ * 0.65;
+        if (attacking && plan?.possession.runs && p.pos === "FW") tx += dir * 3;
+        tx += (desired.player.freedom - 1) * Math.sin(this.time * 0.12 + p.number) * 2;
+      }
       tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, tx));
       tz = Math.max(-FIELD_Z + 2, Math.min(FIELD_Z - 2, tz));
 
@@ -1875,84 +2416,47 @@ export class MatchSim {
 
   /** empurra jogadores sobrepostos para que não se atravessem */
   private separate() {
-    const R = 0.85; // raio do corpo
-    const list = this.players;
-    for (let i = 0; i < list.length; i++) {
-      const a = list[i]!;
-      for (let j = i + 1; j < list.length; j++) {
-        const b = list[j]!;
-        let dx = b.x - a.x;
-        let dz = b.z - a.z;
-        // Resolve contacts in the original order; only reject provably distant pairs.
-        // NaN must reach the original recovery path instead of being hidden by the rejection.
-        if ((dx > 1.7 || dx < -1.7) && !Number.isNaN(dz)) continue;
-        const d2 = dx * dx + dz * dz;
-        if (d2 > 2.89) continue; // (0.85 * 2)^2
-        let d = Math.sqrt(d2);
-        if (d > R * 2) continue;
-        if (d < 1e-4) {
-          dx = (this.rnd() - 0.5) * 0.02;
-          dz = (this.rnd() - 0.5) * 0.02;
-          d = Math.hypot(dx, dz) || 1e-4;
-        }
-        const overlap = R * 2 - d;
-        // Quem conduz a bola cede menos, mas a soma dos deslocamentos sempre
-        // resolve toda a sobreposição para não deixar atletas grudados.
-        const aWeight = a.id === this.ball.holder ? 0.25 : 1;
-        const bWeight = b.id === this.ball.holder ? 0.25 : 1;
-        const totalWeight = aWeight + bWeight;
-        const nx = dx / d;
-        const nz = dz / d;
-        athleteContact(a, b, nx, nz);
-        a.x -= nx * overlap * (aWeight / totalWeight);
-        a.z -= nz * overlap * (aWeight / totalWeight);
-        b.x += nx * overlap * (bWeight / totalWeight);
-        b.z += nz * overlap * (bWeight / totalWeight);
-      }
-    }
-    for (const p of list) {
-      p.x = Math.max(-FIELD_X - 1, Math.min(FIELD_X + 1, p.x));
-      p.z = Math.max(-FIELD_Z - 1, Math.min(FIELD_Z + 1, p.z));
-    }
+    separatePlayers(this.players, this.ball.holder, this.rnd);
   }
 
   /** desgaste físico ao longo do jogo (calor e chuva pesam) */
   private drainStamina(dt: number) {
-    const climate = staminaDrainMult(this.weather);
-    for (const p of this.players) {
-      const speed = Math.hypot(p.vx, p.vz);
-      const effort = 0.0015 + (speed / 9) * 0.008 * (p.pos === "GK" ? 0.25 : 1);
-      const resist = 0.6 + (p.physical / 100) * 0.6;
-      p.stamina = Math.max(12, p.stamina - ((effort * climate) / resist) * dt);
-    }
+    drainMatchStamina(this.players, this.home.tactics, this.away.tactics, this.weather, dt);
   }
 
   /** blindagem contra NaN/Infinity vindos de dados ruins */
   private sanitize() {
-    for (const p of this.players) {
-      p.x = clampFinite(p.x, -FIELD_X - 1, FIELD_X + 1, 0);
-      p.z = clampFinite(p.z, -FIELD_Z - 1, FIELD_Z + 1, 0);
-      p.vx = clampFinite(p.vx, -14, 14, 0);
-      p.vz = clampFinite(p.vz, -14, 14, 0);
-      p.stamina = clampFinite(p.stamina, 0, 100, 70);
-    }
-    const b = this.ball;
-    b.x = clampFinite(b.x, -FIELD_X - 2, FIELD_X + 2, 0);
-    b.z = clampFinite(b.z, -FIELD_Z - 2, FIELD_Z + 2, 0);
-    b.vx = clampFinite(b.vx, -45, 45, 0);
-    b.vz = clampFinite(b.vz, -45, 45, 0);
-    b.height = clampFinite(b.height, 0.1, 12, 0.12);
+    sanitizeMotion(this.players, this.ball);
     this.ballVy = clampFinite(this.ballVy, -30, 30, 0);
     this.ballSpin = clampFinite(this.ballSpin, -12, 12, 0);
   }
 
   private moveBall(dt: number, useBallPhysics = true) {
-    const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
+    // The ball is dead while a set piece is armed. A nearby player must not
+    // acquire it before the strike and cancel that flight on the next tick.
+    if (this.setPiece) {
+      const held = this.ball.holder !== null;
+      this.ball.holder = null;
+      this.ball.vx = 0;
+      this.ball.vz = 0;
+      this.ballVy = 0;
+      this.ballSpin = 0;
+      if (held) this.synchronizeBallPhysics();
+      return;
+    }
+    const holder = this.ball.holder
+      ? this.players.find((p) => p.id === this.ball.holder && !p.sentOff)
+      : null;
+    if (this.ball.holder && !holder) {
+      this.ball.holder = null;
+      delete this.ball.offsideExemptFor;
+      delete this.ball.indirectFor;
+    }
     if (holder) {
       this.looseTime = 0;
       this.ballVy = 0;
       this.ballSpin = 0;
-      this.pendingShot = null;
+      this.finishPendingShot();
       this.pass = null;
       if (useBallPhysics && this.stepAuthoritativeBall(dt, holder)) return;
       const hs = Math.hypot(holder.vx, holder.vz) || 1;
@@ -1964,6 +2468,7 @@ export class MatchSim {
 
     this.looseTime += dt;
     const previousBall = { x: this.ball.x, z: this.ball.z, height: this.ball.height };
+    const previousVelocityX = this.ball.vx;
 
     this.lastAuthoritative = useBallPhysics && this.stepAuthoritativeBall(dt, null);
     if (!this.lastAuthoritative) {
@@ -2006,6 +2511,25 @@ export class MatchSim {
       }
     }
 
+    // A real post rebound occurs before the whole ball can cross the goal
+    // line. Preserve Rapier's reflected velocity and close/log the shot once.
+    const rebound = this.pendingShot;
+    if (this.lastAuthoritative && rebound) {
+      const dir = this.attackDir(rebound.side);
+      if (
+        previousVelocityX * dir > 0 &&
+        this.ball.vx * dir < 0 &&
+        Math.abs(this.ball.x - dir * FIELD_X) < 0.5 &&
+        woodworkAt(this.ball.z, this.ball.height)
+      ) {
+        const shooter =
+          this.players.find((p) => p.id === rebound.shooter) ??
+          this.subsOut.find((p) => p.id === rebound.shooter) ??
+          null;
+        this.woodworkOrRelease(rebound, shooter, this.ball.z, this.ball.height, dir);
+      }
+    }
+
     // --- bloqueio da defesa e interceptação no caminho da bola ---
     if (this.tryBlock(dt)) return;
 
@@ -2013,29 +2537,29 @@ export class MatchSim {
     if (this.pendingShot && this.resolveShot(previousBall)) return;
 
     // lateral: sai pela linha lateral, reposição do time que não tocou por último
-    if (Math.abs(this.ball.z) > FIELD_Z - 0.5) {
+    if (Math.abs(this.ball.z) > FIELD_Z + BALL_RADIUS) {
       this.ball.z = Math.sign(this.ball.z) * (FIELD_Z - 1);
       this.ball.vz = 0;
       this.ball.height = 0.12;
       this.ballVy = 0;
-      this.pendingShot = null;
+      this.finishPendingShot();
       this.restartFor(this.lastTouch === "home" ? "away" : "home", "throwIn");
       return;
     }
     // linha de fundo: escanteio se o último toque foi do time que defende aquele lado
-    if (Math.abs(this.ball.x) > FIELD_X - 0.5) {
+    if (Math.abs(this.ball.x) > FIELD_X + BALL_RADIUS) {
       const endSide: Side = this.ball.x > 0 ? "away" : "home"; // dono daquela meta
       this.ball.x = Math.sign(this.ball.x) * (FIELD_X - 0.6);
       this.ball.height = 0.12;
       this.ballVy = 0;
-      this.pendingShot = null;
+      this.finishPendingShot();
       if (this.lastTouch === endSide) {
         // desviou na defesa → escanteio para o adversário
         this.ball.z = Math.sign(this.ball.z || 1) * (FIELD_Z - 1);
         this.restartFor(endSide === "home" ? "away" : "home", "corner");
       } else {
         this.ball.z = 0;
-        this.scheduleRestart(endSide);
+        this.scheduleRestart(endSide, true);
       }
       return;
     }
@@ -2045,7 +2569,12 @@ export class MatchSim {
     let bestD = Infinity;
     for (const p of this.players) {
       if (p.sentOff) continue;
-      if (this.pass && p.id === this.pass.from && this.time < this.pass.until) continue;
+      // The kicker cannot immediately trap the same unresolved flight. Once
+      // a block/save/woodwork releases the shot, ordinary rebounds stay live.
+      if (this.pendingShot?.shooter === p.id) continue;
+      // The passer must release the intended flight; the old short timer used
+      // the accelerated game clock and allowed immediate self-recapture.
+      if (this.pass && !this.pass.teammateTouched && p.id === this.pass.from) continue;
       const d = Math.hypot(p.x - this.ball.x, p.z - this.ball.z);
       if (d < bestD) {
         bestD = d;
@@ -2084,15 +2613,36 @@ export class MatchSim {
    */
   private controlBall(p: SimPlayer, ballSpeed: number, h: number) {
     const isReceiver = this.pass?.to === p.id;
+    const teammatePass = !!this.pass && p.side === this.pass.side && p.id !== this.pass.from;
+    const passFrom = this.pass
+      ? (this.players.find((v) => v.id === this.pass!.from) ??
+        this.subsOut.find((v) => v.id === this.pass!.from))
+      : undefined;
+    const intended = this.pass
+      ? (this.players.find((v) => v.id === this.pass!.to) ??
+        this.subsOut.find((v) => v.id === this.pass!.to))
+      : undefined;
     // corte no caminho: adversário que chega no passe soma interceptação
     if (this.pass && !isReceiver && p.side !== this.pass.side) {
       p.interceptions++;
       this.stats[p.side].interceptions++;
     }
-    // impedimento: recebe à frente da linha num passe para frente (sem isenção)
-    if (this.pass && isReceiver && this.time > this.exemptUntil) {
-      const forward = (p.x - this.pass.fromX) * this.pass.dir > 1;
-      if (forward && isOffside(p.x, defensiveLineX(this.players, p.side), this.pass.dir)) {
+    // The release snapshot survives receiver/defender movement and recovery.
+    // Old in-flight checkpoints lack it; retain a bounded fallback using the
+    // correct second-last opponent and the known ball position at release.
+    if (this.pass && teammatePass) {
+      const legacyLine =
+        Math.max(
+          this.pass.fromX * this.pass.dir,
+          defensiveLineX(this.players, p.side) * this.pass.dir,
+        ) * this.pass.dir;
+      const offside =
+        this.pass.offsideIdsAtKick?.includes(p.id) ??
+        (isReceiver ? this.pass.offsideAtKick : undefined) ??
+        (this.time > this.exemptUntil &&
+          (p.x - this.pass.fromX) * this.pass.dir > 1 &&
+          isOffside(p.x, legacyLine, this.pass.dir));
+      if (offside) {
         p.offsides++;
         this.stats[p.side].offsides++;
         this.pass = null;
@@ -2107,8 +2657,10 @@ export class MatchSim {
           side: p.side,
           text: `Impedimento de ${p.name}.`,
         });
-        // infração: a defesa fica com a bola no local
-        this.restartFor(p.side === "home" ? "away" : "home", "throwIn");
+        // Offside is an indirect free kick at the involvement point, not a throw-in.
+        this.ball.x = Math.max(-FIELD_X + 1, Math.min(FIELD_X - 1, p.x));
+        this.ball.z = Math.max(-FIELD_Z + 1, Math.min(FIELD_Z - 1, p.z));
+        this.restartFor(p.side === "home" ? "away" : "home", "indirectFK");
         return;
       }
     }
@@ -2120,18 +2672,26 @@ export class MatchSim {
 
     this.trigger(p, h > 0.9 ? "header" : "trap", 0.5);
     this.lastTouch = p.side;
-    this.pass = null;
+    if (this.pass && teammatePass && !ok) this.pass.teammateTouched = true;
+    else this.pass = null;
+    // A touch that spills the ball still changes the shot's trajectory. It
+    // must not carry a nominal goal/save through that new loose-ball flight.
+    this.finishPendingShot();
     this.ballVy = 0;
     this.ballSpin = 0;
 
     if (ok) {
+      delete this.ball.offsideExemptFor;
+      delete this.ball.indirectFor;
       this.ball.holder = p.id;
       this.possession = p.side;
       this.ball.vx = 0;
       this.ball.vz = 0;
       this.ball.height = 0.12;
       this.looseTime = 0;
-      if (isReceiver) this.stats[p.side].passesOk++;
+      if (teammatePass) this.stats[p.side].passesOk++;
+      if (teammatePass && passFrom && intended)
+        recordPassReception(this.analytics, passFrom, intended, p);
       this.synchronizeBallPhysics();
       return;
     }
@@ -2172,7 +2732,7 @@ export class MatchSim {
       p.tackles++;
       this.lastTouch = p.side;
       const wasShot = !!this.pendingShot;
-      this.pendingShot = null;
+      this.finishPendingShot();
       this.pass = null;
       // rebote: a bola volta desviada e perde muita força
       const ang = Math.atan2(this.ball.vz, this.ball.vx) + Math.PI + (this.rnd() - 0.5) * 1.6;
@@ -2205,9 +2765,12 @@ export class MatchSim {
     const s = this.pendingShot!;
     const dir = this.attackDir(s.side);
     const goalX = dir * FIELD_X;
-    const gk = this.players.find((p) => p.side !== s.side && p.pos === "GK") ?? null;
-    const shooter = this.players.find((p) => p.id === s.shooter) ?? null;
-    const planeX = goalX - dir * 1.6;
+    const gk = this.keeper(s.side === "home" ? "away" : "home");
+    const shooter =
+      this.players.find((p) => p.id === s.shooter) ??
+      this.subsOut.find((p) => p.id === s.shooter) ??
+      null;
+    const planeX = goalX + dir * BALL_RADIUS;
     const crossed =
       dir > 0
         ? previous.x < planeX && this.ball.x >= planeX
@@ -2239,25 +2802,29 @@ export class MatchSim {
         1.1,
       );
       gk.saves++;
+      this.stats[gk.side].saves++;
       this.stats[s.side].onTarget++;
-      this.recordShot({
-        x: s.fromX,
-        z: s.fromZ,
-        side: s.side,
-        result: "saved",
-        minute: this.minute(),
-        name: shooter?.name ?? "",
-        xg: s.xg,
-        bigChance: s.bigChance,
-        bodyPart: s.bodyPart,
-      });
+      this.recordShot(
+        {
+          x: s.fromX,
+          z: s.fromZ,
+          side: s.side,
+          result: "saved",
+          minute: this.minute(),
+          name: shooter?.name ?? "",
+          xg: s.xg,
+          bigChance: s.bigChance,
+          bodyPart: s.bodyPart,
+        },
+        s.shotMapIndex,
+      );
       this.pushEvent({
         minute: this.minute(),
         type: "save",
         side: s.side,
         text: `${gk.name} faz a defesa em chute de ${shooter?.name ?? "o atacante"}.`,
       });
-      this.pendingShot = null;
+      this.finishPendingShot();
       // metade das defesas dá rebote; a outra o goleiro segura
       if (this.rnd() < 0.45) {
         gk.x = this.ball.x - dir * 0.4;
@@ -2281,8 +2848,17 @@ export class MatchSim {
         const shotXg = s.xg;
         const shotBig = s.bigChance;
         const shotBody = s.bodyPart;
-        this.pendingShot = null;
-        this.scoreGoal(s.side, shooter, s.fromX, s.fromZ, shotXg, shotBig, shotBody);
+        this.finishPendingShot(true);
+        this.scoreGoal(
+          s.side,
+          shooter,
+          s.fromX,
+          s.fromZ,
+          shotXg,
+          shotBig,
+          shotBody,
+          s.shotMapIndex,
+        );
         return true;
       }
       // A curva/altura física pode levar uma finalização nominalmente certeira
@@ -2307,7 +2883,7 @@ export class MatchSim {
     crossingH: number,
     dir: number,
   ): boolean {
-    this.pendingShot = null;
+    this.finishPendingShot();
     const hit = woodworkAt(crossingZ, crossingH);
     if (!hit) return false;
     const where = hit === "post" ? "a trave" : "o travessão";
@@ -2318,17 +2894,20 @@ export class MatchSim {
       text: `NA TRAVE! ${shooter?.name ?? "O chute"} explode em ${where}!`,
     });
     this.trigger(shooter, "protest", 1.4);
-    this.recordShot({
-      x: s.fromX,
-      z: s.fromZ,
-      side: s.side,
-      result: "off",
-      minute: this.minute(),
-      name: shooter?.name ?? "",
-      xg: s.xg,
-      bigChance: true,
-      bodyPart: s.bodyPart,
-    });
+    this.recordShot(
+      {
+        x: s.fromX,
+        z: s.fromZ,
+        side: s.side,
+        result: "off",
+        minute: this.minute(),
+        name: shooter?.name ?? "",
+        xg: s.xg,
+        bigChance: true,
+        bodyPart: s.bodyPart,
+      },
+      s.shotMapIndex,
+    );
     if (!this.lastAuthoritative) {
       const speed = Math.hypot(this.ball.vx, this.ball.vz);
       if (hit === "post") {
@@ -2346,6 +2925,21 @@ export class MatchSim {
     return false;
   }
 
+  /** Close a flight once; legacy unmarked penalties already have their counters. */
+  private finishPendingShot(scored = false) {
+    const shot = this.pendingShot;
+    if (shot?.penalty) {
+      const shooter =
+        this.players.find((p) => p.id === shot.shooter) ??
+        this.subsOut.find((p) => p.id === shot.shooter);
+      if (shooter) {
+        if (scored) shooter.pensScored++;
+        else shooter.pensMissed++;
+      }
+    }
+    this.pendingShot = null;
+  }
+
   /** Registra o gol, celebrações e reinício. */
   private scoreGoal(
     side: Side,
@@ -2355,6 +2949,7 @@ export class MatchSim {
     xg = 0,
     bigChance = false,
     bodyPart: "foot" | "head" = "foot",
+    shotMapIndex?: number,
   ) {
     this.stats[side].onTarget++;
     this.stats[side].goals++;
@@ -2362,21 +2957,26 @@ export class MatchSim {
     if (shooter) shooter.goals++;
     const assist = this.lastPass[side];
     if (assist && this.time - assist.time < 12 && assist.id !== shooter?.id) {
-      const provider = this.players.find((p) => p.id === assist.id);
+      const provider =
+        this.players.find((p) => p.id === assist.id) ??
+        this.subsOut.find((p) => p.id === assist.id);
       if (provider) provider.assists++;
     }
     this.lastPass[side] = null;
-    this.recordShot({
-      x: fromX,
-      z: fromZ,
-      side,
-      result: "goal",
-      minute: this.minute(),
-      name: shooter?.name ?? "",
-      xg,
-      bigChance,
-      bodyPart,
-    });
+    this.recordShot(
+      {
+        x: fromX,
+        z: fromZ,
+        side,
+        result: "goal",
+        minute: this.minute(),
+        name: shooter?.name ?? "",
+        xg,
+        bigChance,
+        bodyPart,
+      },
+      shotMapIndex,
+    );
     this.scorers.push({ minute: this.minute(), side, name: shooter?.name ?? "" });
     const celeb = this.rnd();
     this.trigger(
@@ -2399,7 +2999,7 @@ export class MatchSim {
   }
 
   /** entrega a bola parada ao jogador mais próximo do lado indicado */
-  private restartFor(side: Side, kind: "throwIn" | "corner") {
+  private restartFor(side: Side, kind: "throwIn" | "corner" | "indirectFK") {
     // escanteio é disputado na área, com goleiro, zaga e cabeçada
     if (kind === "corner") {
       this.setupCorner(side);
@@ -2408,7 +3008,7 @@ export class MatchSim {
     let best: SimPlayer | null = null;
     let bestD = Infinity;
     for (const p of this.players) {
-      if (p.side !== side || p.pos === "GK") continue;
+      if (p.side !== side || p.pos === "GK" || p.sentOff) continue;
       const d = Math.hypot(p.x - this.ball.x, p.z - this.ball.z);
       if (d < bestD) {
         bestD = d;
@@ -2421,19 +3021,23 @@ export class MatchSim {
     best.vx = 0;
     best.vz = 0;
     this.ball.holder = best.id;
+    if (kind === "throwIn") this.ball.offsideExemptFor = best.id;
+    else delete this.ball.offsideExemptFor;
+    if (kind === "indirectFK") this.ball.indirectFor = best.id;
+    else delete this.ball.indirectFor;
     this.possession = side;
     this.lastTouch = side;
     this.ball.vx = 0;
     this.ball.vz = 0;
     this.ballVy = 0;
     this.ballSpin = 0;
-    this.pendingShot = null;
+    this.finishPendingShot();
     this.pass = null;
     this.looseTime = 0;
     this.restartTimer = 0.8;
-    this.trigger(best, kind, 0.9);
+    this.trigger(best, kind === "indirectFK" ? "freeKick" : kind, 0.9);
     // não existe impedimento recebendo direto do lateral
-    this.exemptUntil = this.time + 1.5;
+    this.exemptUntil = kind === "throwIn" ? this.time + 1.5 : 0;
     this.synchronizeBallPhysics();
   }
 
@@ -2449,7 +3053,12 @@ export class MatchSim {
     const dx = targetX - holder.x;
     const dz = -holder.z * 0.25 + Math.sin(this.time * 0.9 + holder.number) * 4;
     const d = Math.hypot(dx, dz) || 1;
-    const speed = (2.35 + (holder.pace / 100) * 3.55) * (0.82 + (holder.stamina / 100) * 0.18);
+    const plan = activePlan(this.setup(holder.side).tactics);
+    const individual = plan?.players.find((p) => p.slot === this.tacticalSlot(holder));
+    const speed =
+      (2.35 + (holder.pace / 100) * 3.55) *
+      (0.82 + (holder.stamina / 100) * 0.18) *
+      (individual ? 0.8 + individual.dribble * 0.2 : 1);
     const targetVx = (dx / d) * speed;
     const targetVz = (dz / d) * speed;
     const k = 1 - Math.exp(-3.4 * dt);
@@ -2464,10 +3073,21 @@ export class MatchSim {
   private pressure(holder: SimPlayer, dt: number) {
     const { opp, dist } = this.nearestOpponent(holder);
     if (!opp || dist > 2.2 || this.restartTimer > 0) return;
-    const press = 0.55 + this.setup(opp.side).tactics.pressing * 0.22;
+    // This duel models a challenge for the ball. Body proximity alone allowed
+    // a marker behind the carrier to tackle a ball more than 2.5 m away.
+    if (Math.hypot(opp.x - this.ball.x, opp.z - this.ball.z) > 1.35) return;
+    const plan = activePlan(this.setup(opp.side).tactics);
+    const individual = plan?.players.find((p) => p.slot === this.tacticalSlot(opp));
+    const opposition = plan?.opposition.find((p) => p.playerId === holder.pid);
+    const press =
+      (0.55 + this.setup(opp.side).tactics.pressing * 0.22) *
+      (plan
+        ? (0.8 + (opposition?.pressing ?? individual?.pressing ?? 1) * 0.2) *
+          tacticalEffects(this.setup(opp.side).tactics).execution
+        : 1);
     let support = 0;
     for (const defender of this.players) {
-      if (defender.side !== opp.side || defender.id === opp.id) continue;
+      if (defender.side !== opp.side || defender.id === opp.id || defender.sentOff) continue;
       if (Math.hypot(defender.x - holder.x, defender.z - holder.z) < 3.2) support += 1;
     }
     const overload = 1 + Math.min(2, support) * 0.28;
@@ -2497,9 +3117,11 @@ export class MatchSim {
         const dirH = this.attackDir(holder.side);
         const goalX = dirH * FIELD_X;
         const distGoal = Math.hypot(goalX - holder.x, holder.z);
+        const penaltyAwarded = this.inBox(holder.x, holder.z, opp.side);
         const between = this.players.filter(
           (o) =>
             o.side === opp.side &&
+            o.id !== opp.id &&
             !o.sentOff &&
             o.pos !== "GK" &&
             (o.x - holder.x) * dirH > -2 &&
@@ -2508,7 +3130,15 @@ export class MatchSim {
         const foul: FoulInput = {
           slide,
           tactical: holder.x * dirH < -8 && Math.hypot(holder.vx, holder.vz) > 5,
-          goalDenied: distGoal < 16 && between <= 1,
+          // Law 12 also considers direction and the covering defenders; merely
+          // being close to goal while retreating is not an obvious opportunity.
+          goalDenied:
+            distGoal < 16 &&
+            between === 0 &&
+            holder.vx * (goalX - holder.x) - holder.vz * holder.z >
+              Math.max(0.5, Math.hypot(holder.vx, holder.vz) * distGoal * 0.5),
+          penaltyAwarded,
+          attemptBall: true,
           rapSheet: opp.yellows,
           ref: this.ref,
           rnd: this.rnd,
@@ -2526,12 +3156,14 @@ export class MatchSim {
         const hurtP = (slide ? 0.05 : 0.015) * (holder.stamina < 40 ? 1.8 : 1);
         if (this.rnd() < hurtP) this.injure(holder, "na dividida");
         // reinício pela zona da falta
-        if (this.inBox(holder.x, holder.z, opp.side)) this.setupPenalty(holder.side);
+        if (penaltyAwarded) this.setupPenalty(holder.side);
         else if (distGoal < 32) this.setupDirectFK(holder.side, holder.x, holder.z);
         else this.restartTimer = 1.4;
         return;
       }
       this.ball.holder = opp.id;
+      delete this.ball.offsideExemptFor;
+      delete this.ball.indirectFor;
       this.possession = opp.side;
       this.lastTouch = opp.side;
       this.decisionTimer = 0.4;
@@ -2541,6 +3173,9 @@ export class MatchSim {
   }
 
   private decide(holder: SimPlayer) {
+    const tactics = this.setup(holder.side).tactics;
+    const plan = activePlan(tactics);
+    const instruction = plan?.players.find((p) => p.slot === this.tacticalSlot(holder));
     const dir = this.attackDir(holder.side);
     const goalX = dir * FIELD_X;
     const distGoal = Math.hypot(goalX - holder.x, holder.z);
@@ -2556,13 +3191,14 @@ export class MatchSim {
       onRun: Math.hypot(holder.vx, holder.vz) > 5,
     });
     const shootUrge =
-      distGoal < 30
+      (plan ? 0.7 + plan.possession.shooting * 0.3 : 1) *
+      (distGoal < 30
         ? Math.min(0.72, chance * 2.4 + (distGoal < 9 ? 0.08 : 0)) *
           (0.8 + holder.shooting / 500) *
           (0.9 + mentality * 0.05)
-        : 0;
+        : 0);
 
-    if (holder.pos !== "GK" && this.rnd() < shootUrge) {
+    if (holder.pos !== "GK" && this.ball.indirectFor !== holder.id && this.rnd() < shootUrge) {
       this.shoot(holder, distGoal);
       return;
     }
@@ -2573,45 +3209,73 @@ export class MatchSim {
     let best: SimPlayer | null = null;
     let bestScore = -Infinity;
     const defenders = this.players.filter((p) => p.side !== holder.side && !p.sentOff);
+    const offsideExempt = this.ball.offsideExemptFor === holder.id || this.time <= this.exemptUntil;
     const receiversBuffer = this.#passLaneReceivers.pack(mates);
     const defendersBuffer = this.#passLaneDefenders.pack(defenders);
-    let lanes: Float64Array;
+    const expectedLaneValues = Math.min(64, mates.length) * 3;
+    let written: number;
     try {
-      if (this.#passLaneIntoKernel) {
-        const written = this.#passLaneIntoKernel(
-          holder.x,
-          holder.z,
-          receiversBuffer,
-          defendersBuffer,
-          this.#passLaneOutput,
-        );
-        if (written !== mates.length * 3) throw new Error("Invalid perception output");
-        lanes = this.#passLaneOutput;
-      } else lanes = this.passLaneKernel(holder.x, holder.z, receiversBuffer, defendersBuffer);
-      for (let index = 0; index < mates.length * 3; index++)
-        if (!Number.isFinite(lanes[index])) throw new Error("Invalid perception value");
-    } catch {
-      this.passLaneKernel = evaluatePassLanesFallback;
-      this.#passLaneIntoKernel = evaluatePassLanesIntoFallback;
-      // The fallback has proven numerical parity with the selected perception
-      // revision. Keep the recorded contract stable across a recoverable trap.
-      evaluatePassLanesIntoFallback(
+      written = this.#passLaneIntoKernel(
         holder.x,
         holder.z,
         receiversBuffer,
         defendersBuffer,
         this.#passLaneOutput,
       );
-      lanes = this.#passLaneOutput;
+      if (written !== expectedLaneValues) throw new Error("Invalid pass-lane kernel output");
+    } catch {
+      this.passLaneKernel = evaluatePassLanesFallback;
+      this.#passLaneIntoKernel = evaluatePassLanesIntoFallback;
+      this.#perceptionBackend = "compat";
+      written = this.#passLaneIntoKernel(
+        holder.x,
+        holder.z,
+        receiversBuffer,
+        defendersBuffer,
+        this.#passLaneOutput,
+      );
+      if (written !== expectedLaneValues) throw new Error("Invalid compatibility pass-lane output");
     }
     for (const [index, m] of mates.entries()) {
-      const dist = lanes[index * 3]!;
+      const dist = this.#passLaneOutput[index * 3]!;
       if (dist < 4 || dist > 42) continue;
+      if ((m.x - holder.x) * dir > 1 && !offsideExempt && this.advancedOffside(m, holder.x, dir))
+        continue;
       const forward = (m.x - holder.x) * dir;
-      const cover = lanes[index * 3 + 1]!;
-      const laneRisk = lanes[index * 3 + 2]!;
+      const cover = this.#passLaneOutput[index * 3 + 1]!;
+      const laneRisk = this.#passLaneOutput[index * 3 + 2]!;
+      // Reward progress that can get through the lane. Unlimited receiver
+      // space used to outweigh a defender standing directly across that lane.
+      const reachableProgress = forward > 0 ? forward / (1 + laneRisk) : forward;
+      const passLength =
+        holder.pos === "GK" && plan
+          ? plan.transitions.keeper === "long"
+            ? 2
+            : plan.transitions.keeper === "short"
+              ? 0
+              : 1
+          : plan && holder.x * dir < 0 && plan.possession.buildUp !== "mixed"
+            ? plan.possession.buildUp === "short"
+              ? 0
+              : 2
+            : (plan?.possession.passing ?? 1);
+      const risk = plan ? (plan.possession.risk + (instruction?.risk ?? 1)) / 2 : 1;
+      const focus = plan?.possession.focus;
+      const corridor =
+        focus === "left"
+          ? -m.z * 0.18
+          : focus === "right"
+            ? m.z * 0.18
+            : focus === "centre"
+              ? -Math.abs(m.z) * 0.18
+              : 0;
       const score =
-        forward * (0.7 + mentality * 0.12) + cover * 1.7 - dist * 0.32 - laneRisk + this.rnd() * 8;
+        reachableProgress * (0.7 + mentality * 0.12 + (passLength - 1) * 0.18) +
+        Math.min(6, cover) * 1.7 -
+        dist * (0.32 - (passLength - 1) * 0.12) -
+        laneRisk * (1.3 - risk * 0.3) +
+        corridor +
+        this.rnd() * 8;
       if (score > bestScore) {
         bestScore = score;
         best = m;
@@ -2631,14 +3295,24 @@ export class MatchSim {
     const aimX = best.x + best.vx * flight * 0.8;
     const aimZ = best.z + best.vz * flight * 0.8;
 
-    const success = Math.min(0.96, (holder.passing / 100) * (1 - rawDist / 90) + 0.25);
+    const success = Math.min(
+      0.96,
+      ((holder.passing / 100) * (1 - rawDist / 90) + 0.25) *
+        (plan ? tacticalEffects(tactics).execution : 1),
+    );
     const errRoll = this.rnd() * passErrMult(this.weather);
     const err = success > errRoll ? 0 : (this.rnd() - 0.5) * 12;
-    const dx = aimX - holder.x;
-    const dz = aimZ - holder.z;
+    const dx = aimX - this.ball.x;
+    const dz = aimZ - this.ball.z;
     const d = Math.hypot(dx, dz) || 1;
-    const wide = Math.abs(holder.z) > FIELD_Z * 0.55 && Math.abs(best.x - dir * FIELD_X) < 30;
-    const lofted = wide || rawDist > 22;
+    const wide =
+      Math.abs(holder.z) > FIELD_Z * (plan ? 0.72 - plan.possession.crosses * 0.12 : 0.55) &&
+      Math.abs(best.x - dir * FIELD_X) < 30;
+    // The compatibility roller has finite reach v/drag. Lift an intended
+    // delivery that cannot reach its receiver on the ground instead of letting
+    // it stop several metres short even without an opponent or technical error.
+    const groundReach = power / pitchCondition(this.weather).rollDrag;
+    const lofted = wide || rawDist > 22 || d > groundReach - 1;
     this.trigger(
       holder,
       wide ? "cross" : rawDist > 24 ? "passLong" : "pass",
@@ -2646,9 +3320,17 @@ export class MatchSim {
     );
     holder.passes++;
     this.stats[holder.side].passes++;
+    recordPass(this.analytics, holder, best);
     this.lastPass[holder.side] = { id: holder.id, time: this.time };
     this.ball.holder = null;
     this.lastTouch = holder.side;
+    const lineAtKick =
+      Math.max(holder.x * dir, defensiveLineX(this.players, holder.side) * dir) * dir;
+    const offsideIdsAtKick = offsideExempt
+      ? []
+      : mates.filter((p) => isOffside(p.x, lineAtKick, dir)).map((p) => p.id);
+    delete this.ball.offsideExemptFor;
+    delete this.ball.indirectFor;
     this.pass = {
       to: best.id,
       from: holder.id,
@@ -2656,6 +3338,11 @@ export class MatchSim {
       fromX: holder.x,
       dir,
       side: holder.side,
+      offsideAtKick: offsideIdsAtKick.includes(best.id),
+      offsideIdsAtKick,
+      receiveX: aimX,
+      receiveZ: aimZ,
+      travelTime: Math.max(0.25, (d / power) * 1.2),
     };
     this.ball.vx = (dx / d) * power + err * 0.18;
     this.ball.vz = (dz / d) * power + err;
@@ -2674,11 +3361,12 @@ export class MatchSim {
   }
 
   private shoot(holder: SimPlayer, distGoal: number) {
+    if (this.ball.indirectFor === holder.id) return;
     const side = holder.side;
     const dir = this.attackDir(side);
     this.stats[side].shots++;
     holder.shots++;
-    const gk = this.players.find((p) => p.side !== side && p.pos === "GK");
+    const gk = this.keeper(side === "home" ? "away" : "home");
     const gkSkill = gk ? gk.defending * 0.7 + gk.physical * 0.3 : 60;
     const { dist: pressD } = this.nearestOpponent(holder);
     const xg = xgForShot({
@@ -2725,7 +3413,7 @@ export class MatchSim {
     this.lastTouch = side;
     // reação ao chute: adversários próximos congelam por uma fração de segundo
     for (const p of this.players) {
-      if (p.side === side || p.pos === "GK") continue;
+      if (p.side === side || p.pos === "GK" || p.sentOff) continue;
       if (Math.hypot(p.x - holder.x, p.z - holder.z) < 7) {
         this.reactionUntil.set(p.id, this.time + 0.45 + this.rnd() * 0.2);
       }
@@ -2762,6 +3450,7 @@ export class MatchSim {
       bigChance: xg > 0.25,
       bodyPart: "foot",
     };
+    this.trackPendingShot();
     if (gk && outcome === "saved") {
       const dive = targetZ - gk.z;
       this.trigger(gk, Math.abs(dive) < 1.15 ? "save" : dive > 0 ? "diveRight" : "diveLeft", 1.15);
@@ -2771,17 +3460,6 @@ export class MatchSim {
     if (outcome === "off") {
       // parte das finalizações erradas desvia na defesa e vira escanteio
       if (this.rnd() < 0.22) this.lastTouch = side === "home" ? "away" : "home";
-      this.recordShot({
-        x: holder.x,
-        z: holder.z,
-        side,
-        result: "off",
-        minute: this.minute(),
-        name: holder.name,
-        xg,
-        bigChance: xg > 0.25,
-        bodyPart: "foot",
-      });
       this.pushEvent({
         minute: this.minute(),
         type: "shot",
@@ -2792,10 +3470,13 @@ export class MatchSim {
     this.synchronizeBallPhysics();
   }
 
-  private scheduleRestart(side: Side) {
-    const gk = this.players.find((p) => p.side === side && p.pos === "GK");
+  private scheduleRestart(side: Side, goalKick = false) {
+    const gk = this.keeper(side);
     if (!gk) return;
     this.ball.holder = gk.id;
+    if (goalKick) this.ball.offsideExemptFor = gk.id;
+    else delete this.ball.offsideExemptFor;
+    delete this.ball.indirectFor;
     this.possession = side;
     this.lastTouch = side;
     this.ball.vx = 0;
@@ -2803,7 +3484,7 @@ export class MatchSim {
     this.ball.height = 0.12;
     this.ballVy = 0;
     this.ballSpin = 0;
-    this.pendingShot = null;
+    this.finishPendingShot();
     this.pass = null;
     this.looseTime = 0;
     this.restartTimer = 1.5;
@@ -2819,7 +3500,14 @@ export class MatchSim {
     return [Math.round((h / total) * 100), Math.round((a / total) * 100)];
   }
 
-  /** Pure presentation context; never mutates the canonical match state. */
+  /**
+   * Gera contexto visual deterministico para todos os jogadores.
+   *
+   * Esta funcao nao afeta o estado da simulacao (placar, estatisticas, etc.)
+   * e e usada apenas para alimentar o sistema visual com dados realistas.
+   *
+   * @returns Dados visuais versionados para gravar em replays
+   */
   generateVisualContext(): VersionedVisualData {
     return this.#visualContextComputer.compute(this.players, this.ball, this.time, this.matchSeed);
   }

@@ -5,13 +5,29 @@ import { benchmarkTeam } from "./graphics-fixture";
 let sim: MatchSim | null = null;
 let seq = 0;
 let auto: ReturnType<typeof setInterval> | undefined;
+let manualMode = false;
+
+function publish() {
+  if (!sim) return;
+  const snapshot = snapshotMatch(sim, ++seq);
+  // QA metadata uses the existing read-only physics snapshot. It never feeds
+  // back into the simulation and is absent from the ordinary animated fixture.
+  postMessage(
+    manualMode
+      ? {
+          ...snapshot,
+          fixture: { seq: snapshot.seq, time: snapshot.time, ball: sim.physicsBallState() },
+        }
+      : snapshot,
+  );
+}
 
 function advance(ms: number) {
   if (!sim) return;
   // Fixed simulation steps keep the match sequence independent from render FPS.
   const steps = Math.max(1, Math.round(ms / (1000 / 30)));
   for (let i = 0; i < steps; i++) sim.step(1 / 30, 6);
-  postMessage(snapshotMatch(sim, ++seq));
+  publish();
 }
 
 function stopAuto() {
@@ -28,8 +44,9 @@ function startAuto() {
 function initialize(seed: string, manual: boolean) {
   stopAuto();
   seq = 0;
+  manualMode = manual;
   sim = new MatchSim(benchmarkTeam("fla"), benchmarkTeam("pal"), seed);
-  postMessage(snapshotMatch(sim, ++seq));
+  publish();
   if (!manual) startAuto();
 }
 
@@ -43,6 +60,7 @@ onmessage = ({
     return;
   }
   if (data.type === "manual") {
+    manualMode = data.manual === true;
     if (data.manual) stopAuto();
     else startAuto();
   }

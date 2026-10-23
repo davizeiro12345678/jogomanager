@@ -64,3 +64,20 @@ export function buildGrassInstanceBuffers(
     return { matrices, colors };
   });
 }
+
+export function copyGrassInstanceBuffers(
+  matrices: Float32Array,
+  colors: Float32Array,
+  source: GrassInstanceBuffers,
+): boolean {
+  if (
+    matrices.length !== source.matrices.length ||
+    colors.length !== source.colors.length ||
+    matrices.length % 16 !== 0 ||
+    colors.length !== (matrices.length / 16) * 3
+  )
+    return false;
+  matrices.set(source.matrices);
+  colors.set(source.colors);
+  return true;
+}

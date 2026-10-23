@@ -28,9 +28,9 @@ export function createPitchSurfaceMaterial(options: PitchSurfaceOptions) {
     ...(albedo ? { map: albedo, color: tint } : { color: "#2a5c32" }),
     ...(roughness ? { roughnessMap: roughness } : {}),
     ...(normal ? { normalMap: normal, normalScale } : {}),
-    roughness: 0.94 - wet * 0.16,
+    roughness: 0.98 - wet * 0.16,
     metalness: 0,
-    envMapIntensity: 0.32 + wet * 0.35,
+    envMapIntensity: 0.24 + wet * 0.35,
   };
   const material =
     wet > 0.45
@@ -49,7 +49,7 @@ export function createPitchSurfaceMaterial(options: PitchSurfaceOptions) {
     pitchWet: { value: wet },
   };
   material.customProgramCacheKey = () =>
-    `match-pitch-layers-v5:${options.mergeLayers !== false}:${Boolean(wear)}:${Boolean(markings)}:${Boolean(options.microRoughness)}`;
+    `match-pitch-layers-v7:${options.mergeLayers !== false}:${Boolean(wear)}:${Boolean(markings)}:${Boolean(options.microRoughness)}`;
   if (options.mergeLayers !== false && (wear || markings || options.microRoughness))
     material.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, uniforms);
@@ -68,6 +68,15 @@ export function createPitchSurfaceMaterial(options: PitchSurfaceOptions) {
         .replace(
           "#include <map_fragment>",
           `#include <map_fragment>
+        // Broad turf variation survives the TV camera; fibre detail stays in
+        // the existing normal/roughness maps instead of another render pass.
+        // Preserve the authored mower pattern and its club tint. A small
+        // pigment separation restores chlorophyll under the stadium's IBL.
+        float turfLuminance = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+        diffuseColor.rgb = max(vec3(0.0), mix(vec3(turfLuminance), diffuseColor.rgb, 1.08));
+        float turfMacro = sin(vPitchUv.x * 37.0 + sin(vPitchUv.y * 19.0)) * sin(vPitchUv.y * 43.0);
+        float turfMeso = sin(vPitchUv.x * 173.0 + vPitchUv.y * 51.0) * sin(vPitchUv.y * 137.0);
+        diffuseColor.rgb *= 1.0 + turfMacro * 0.025 + turfMeso * 0.012;
         ${
           wear
             ? `vec4 soil = texture2D(pitchWear, vPitchUv);
@@ -88,7 +97,7 @@ export function createPitchSurfaceMaterial(options: PitchSurfaceOptions) {
           `#include <roughnessmap_fragment>
           // A dry sports pitch has a broad fibre response, never a varnished
           // green floor. Retain the mower map; soil only affects worn patches.
-          roughnessFactor = clamp(roughnessFactor + (1.0 - pitchWet) * 0.16, 0.48, 1.0);
+          roughnessFactor = clamp(roughnessFactor + (1.0 - pitchWet) * 0.16 + turfMacro * pitchWet * 0.025, 0.48, 1.0);
           ${options.microRoughness ? "roughnessFactor *= 0.88 + 0.12 * texture2D(pitchDetailRoughness, vPitchUv * vec2(48.0, 32.0)).g;" : ""}
           ${wear ? "roughnessFactor = mix(roughnessFactor, 0.98 - pitchWet * 0.28, soil.a * pitchWearOpacity);" : ""}
           ${markings ? "roughnessFactor = mix(roughnessFactor, 0.94 - pitchWet * 0.08, pitchPaintCoverage);" : ""}`,

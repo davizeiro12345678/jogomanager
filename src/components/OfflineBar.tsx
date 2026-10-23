@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 
 const LABEL: Record<SyncState, string> = {
   local: "Salvo neste aparelho",
+  saving: "Salvando neste aparelho…",
+  unsaved: "Alterações não salvas — exporte a carreira",
   syncing: "Sincronizando…",
   synced: "Sincronizado",
   pending: "Aguardando sincronizar",
@@ -17,7 +19,7 @@ const LABEL: Record<SyncState, string> = {
 /** Selo discreto com o estado do salvamento. */
 export function SyncBadge({ sync, className }: { sync: SyncState; className?: string }) {
   const online = useOnline();
-  const state: SyncState = online ? sync : "offline";
+  const state: SyncState = sync === "unsaved" ? "unsaved" : online ? sync : "offline";
   const Icon =
     state === "synced"
       ? CloudCheck
@@ -29,11 +31,13 @@ export function SyncBadge({ sync, className }: { sync: SyncState; className?: st
 
   return (
     <span
+      data-career-sync={state}
       title={LABEL[state]}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium",
         state === "synced" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
         state === "syncing" && "border-sky-500/30 bg-sky-500/10 text-sky-400",
+        state === "unsaved" && "border-red-500/50 bg-red-500/10 text-red-300",
         state === "offline" && "border-amber-500/30 bg-amber-500/10 text-amber-400",
         (state === "pending" || state === "local") &&
           "border-muted-foreground/25 bg-muted/40 text-muted-foreground",

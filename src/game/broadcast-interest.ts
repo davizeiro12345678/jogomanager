@@ -1,4 +1,4 @@
-import type { SimView } from "./sim";
+import type { SimView } from "./sim-types";
 
 export function broadcastInterest(sim: SimView) {
   const ball = sim.ball;

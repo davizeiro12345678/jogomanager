@@ -13,6 +13,8 @@ export interface PlayerRigAnimationInput {
   currentTime: number;
   deltaSeconds: number;
   previewClip?: ClipName | undefined;
+  /** Stable per-event choice shared with the instanced player path. */
+  selectedClip?: ClipName | undefined;
   previewAt?: number | undefined;
   goalProgress?: number | undefined;
   selection: SelectCtx;
@@ -30,11 +32,12 @@ export function resolvePlayerRigAnimationFrame({
   currentTime,
   deltaSeconds,
   previewClip,
+  selectedClip,
   previewAt,
   goalProgress,
   selection,
 }: PlayerRigAnimationInput): PlayerRigAnimationFrame {
-  const clip = previewClip ?? selectClip(selection);
+  const clip = previewClip ?? selectedClip ?? selectClip(selection);
   const baseTime = clip === currentClip ? currentTime : 0;
   const nominal = GAIT_SPEED[clip];
   const cadence = nominal ? Math.max(0.55, Math.min(1.7, selection.speed / nominal)) : 1;

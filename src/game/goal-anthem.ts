@@ -6,6 +6,74 @@
 let ctx: AudioContext | null = null;
 let lastAt = 0;
 
+let crowdAt = -Infinity;
+let crowdNoise: AudioBuffer | null = null;
+export function playCrowdAccent(kind: import("./crowd-motion").CrowdBehavior, intensity: number) {
+  if (typeof window === "undefined" || document.hidden || !Number.isFinite(intensity)) return;
+  const at = performance.now();
+  if (at - crowdAt < (kind === "celebrate" ? 5000 : 12000)) return;
+  crowdAt = at;
+  try {
+    ctx ??= new AudioContext();
+    if (ctx.state === "suspended") void ctx.resume().catch(() => undefined);
+    const ac = ctx;
+    if (!crowdNoise) {
+      crowdNoise = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+      const samples = crowdNoise.getChannelData(0);
+      let seed = 163;
+      for (let i = 0; i < samples.length; i++) {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        samples[i] = ((seed / 4294967296) * 2 - 1) * 0.4;
+      }
+    }
+    const noise = ac.createBufferSource(),
+      filter = ac.createBiquadFilter(),
+      gain = ac.createGain();
+    noise.buffer = crowdNoise;
+    filter.type = "bandpass";
+    filter.frequency.value = kind === "boo" ? 280 : kind === "gasp" ? 900 : 620;
+    filter.Q.value = kind === "boo" ? 1.2 : 0.45;
+    const start = ac.currentTime;
+    const length = kind === "celebrate" ? 1.9 : kind === "gasp" ? 0.65 : 1.3;
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(Math.min(0.16, Math.max(0, intensity) * 0.12), start + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + length);
+    noise.connect(filter).connect(gain).connect(ac.destination);
+    noise.onended = () => {
+      noise.disconnect();
+      filter.disconnect();
+      gain.disconnect();
+    };
+    noise.start(start);
+    noise.stop(start + length);
+    const speech = window.speechSynthesis;
+    if (
+      (kind === "boo" || kind === "taunt") &&
+      speech &&
+      !speech.speaking &&
+      !speech.pending &&
+      typeof SpeechSynthesisUtterance !== "undefined"
+    ) {
+      const pt = document.documentElement.lang.startsWith("pt");
+      const lines =
+        kind === "boo"
+          ? pt
+            ? ["Juiz, acorda!", "Porra, joga bola!"]
+            : ["Ref, wake up!", "Come on, play!"]
+          : pt
+            ? ["Olé!", "Tá fácil demais!"]
+            : ["Olé!", "Too easy!"];
+      const voice = new SpeechSynthesisUtterance(lines[Math.floor(at / 12000) % lines.length]);
+      voice.lang = pt ? "pt-BR" : "en";
+      voice.volume = 0.22;
+      voice.rate = 1.15;
+      speech.speak(voice);
+    }
+  } catch {
+    /* Visual reactions remain available without audio support. */
+  }
+}
+
 const SCALE = [0, 2, 4, 5, 7, 9, 11, 12];
 
 function hash(s: string) {

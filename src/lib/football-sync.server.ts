@@ -816,13 +816,17 @@ export async function runSync(opts: {
     }
     return { ok: true as const, scope, items, detail };
   } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
     if (run?.id) {
       await db
         .from("import_runs")
-        .update({ status: "error", error: message, finished_at: new Date().toISOString() })
+        // `import_runs` is visible to the scheduler integration. Persisting a
+        // driver/provider message here could expose schema names, endpoints or
+        // credentials to every holder of that operational token. The run state
+        // and timestamp remain enough for retry/monitoring; the raw exception
+        // must stay out of shared persistence.
+        .update({ status: "error", error: "sync_failed", finished_at: new Date().toISOString() })
         .eq("id", run.id);
     }
-    return { ok: false as const, scope, error: message };
+    return { ok: false as const, scope, error: "Football sync failed" };
   }
 }

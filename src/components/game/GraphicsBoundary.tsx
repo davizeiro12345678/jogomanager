@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { reportLovableError } from "@/lib/lovable-error-reporting";
+import { reportSilent } from "@/lib/report-silent";
 
 /** A rendering fault can be retried without replacing the live match or save. */
 export class GraphicsBoundary extends Component<
@@ -11,10 +11,29 @@ export class GraphicsBoundary extends Component<
     return { failed: true };
   }
   override componentDidCatch(error: unknown, info: ErrorInfo) {
-    reportLovableError(error, { boundary: "graphics", componentStack: info.componentStack });
+    reportSilent("graphics", error, {
+      class: "degradation",
+      code: "render-boundary",
+      boundary: "graphics",
+    });
   }
+  private retry = () =>
+    this.setState(({ generation }) => ({ failed: false, generation: generation + 1 }));
   override render() {
-    if (this.state.failed && this.props.fallback) return this.props.fallback;
+    if (this.state.failed && this.props.fallback)
+      return (
+        <div className="relative h-full w-full">
+          {this.props.fallback}
+          <button
+            type="button"
+            onClick={this.retry}
+            className="absolute bottom-4 right-4 z-20 min-h-11 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg"
+            aria-label="Tentar carregar a cena 3D novamente"
+          >
+            Recarregar cena 3D
+          </button>
+        </div>
+      );
     if (this.state.failed)
       return (
         <div
@@ -27,9 +46,7 @@ export class GraphicsBoundary extends Component<
           </p>
           <button
             className="min-h-11 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground"
-            onClick={() =>
-              this.setState(({ generation }) => ({ failed: false, generation: generation + 1 }))
-            }
+            onClick={this.retry}
           >
             Tentar novamente
           </button>

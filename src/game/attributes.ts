@@ -464,13 +464,17 @@ function baseProfileFor(p: Player, stableIdentity = false): PlayerProfile {
   if (hit) return hit;
   const rnd = makeRng(stableIdentity ? `profile-id-${p.id}` : `profile-${p.id}-${p.name}`);
   const attrs = buildAttrs(seedPlayer, rnd);
+  // Existing unversioned profiles consumed traits before foot/measurements.
+  // Keep that legacy identity aligned with the match projection. Stored bases
+  // bypass generation, and new stable version-2 identities keep their own order.
+  const legacyTraits = stableIdentity ? undefined : pickTraits(p, attrs, rnd);
   const tall = p.pos === "GK" ? 8 : p.pos === "DF" ? 4 : 0;
   const profile: PlayerProfile = {
     attrs,
     foot: rnd() < 0.72 ? "destro" : rnd() < 0.9 ? "canhoto" : "ambidestro",
     height: Math.round(171 + tall + rnd() * 16),
     weight: Math.round(65 + tall * 0.9 + rnd() * 18),
-    traits: pickTraits(p, attrs, rnd),
+    traits: legacyTraits ?? pickTraits(p, attrs, rnd),
     personality: p.personality ?? PERSONALITIES[Math.floor(rnd() * PERSONALITIES.length)]!,
     spells: buildSpells(p, rnd),
     rapport: Math.round(45 + rnd() * 45),

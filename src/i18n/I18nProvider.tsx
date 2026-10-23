@@ -1,19 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-
 import { LANGS, RTL_LANGS, resolveLang, type Lang } from "./locale-catalog";
-
-import { translateBootstrap } from "./bootstrap-messages";
-
+import { bootstrapMessageLanguage, translateBootstrap } from "./bootstrap-messages";
+import { formatMessage } from "./format-message";
+import { I18nContext, type I18nValue } from "./context";
 import { reportSilent } from "@/lib/silent-errors";
-
-import { I18nContext, I18nValue } from "@/i18n/context";
 import { useLocation } from "@tanstack/react-router";
-
 // Preserve the synchronous, complete translation API for direct consumers.
 // Production UI consumes useT; its optional language pack stays a dynamic import.
 
 const STORAGE_KEY = "pfm3d.lang";
-
 // These public landing pages currently contain Portuguese editorial content
 // even when a visitor selects English for the game interface.
 const PORTUGUESE_EDITORIAL_PATHS = new Set([
@@ -38,7 +33,6 @@ const PORTUGUESE_EDITORIAL_PATHS = new Set([
   "/privacidade",
   "/termos",
 ]);
-
 const isPortugueseEditorialRoute = (pathname: string) =>
   PORTUGUESE_EDITORIAL_PATHS.has(pathname) ||
   pathname === "/tabelas" ||
@@ -65,21 +59,38 @@ function detect(): Lang {
   return "pt-BR";
 }
 
-type Translator = typeof import("./messages").translate;
+type Messages = typeof import("./messages");
+export function I18nProvider({ children, pathname }: { children: ReactNode; pathname?: string }) {
+  return pathname === undefined ? (
+    <RoutedI18nProvider>{children}</RoutedI18nProvider>
+  ) : (
+    <I18nProviderState pathname={pathname}>{children}</I18nProviderState>
+  );
+}
 
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("pt-BR");
+function RoutedI18nProvider({ children }: { children: ReactNode }) {
   const pathname = useLocation({ select: (location) => location.pathname });
-  const [loadedTranslator, setLoadedTranslator] = useState<Translator | null>(null);
+  return <I18nProviderState pathname={pathname}>{children}</I18nProviderState>;
+}
+
+function I18nProviderState({ children, pathname }: { children: ReactNode; pathname: string }) {
+  const [lang, setLangState] = useState<Lang>("pt-BR");
+  const [loadedMessages, setLoadedMessages] = useState<Messages | null>(null);
   useEffect(() => {
     setLangState(detect());
   }, []);
   useEffect(() => {
-    if (lang === "pt-BR" || lang === "en" || loadedTranslator) return;
+    const needsExtendedInterface =
+      pathname.endsWith("-studio.html") ||
+      pathname.startsWith("/jogador/") ||
+      pathname === "/match" ||
+      pathname === "/partida-rapida" ||
+      pathname === "/new";
+    if (loadedMessages || ((lang === "pt-BR" || lang === "en") && !needsExtendedInterface)) return;
     let active = true;
     void import("./messages")
       .then((module) => {
-        if (active) setLoadedTranslator(() => module.translate);
+        if (active) setLoadedMessages(module);
       })
       .catch((error) => {
         reportSilent("i18n.translation", error, {
@@ -92,7 +103,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [lang, loadedTranslator]);
+  }, [lang, loadedMessages, pathname]);
   const setLang = useCallback((l: Lang) => {
     if (!(LANGS as readonly string[]).includes(l)) return;
     setLangState(l);
@@ -118,9 +129,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       lang,
       setLang,
       dir,
-      t: (key: string) => (loadedTranslator ?? translateBootstrap)(lang, key),
+      t: (key, values) =>
+        formatMessage((loadedMessages?.translate ?? translateBootstrap)(lang, key), values),
+      messageLanguage: (key) =>
+        (loadedMessages?.messageLanguage ?? bootstrapMessageLanguage)(lang, key),
     }),
-    [lang, setLang, dir, loadedTranslator],
+    [lang, setLang, dir, loadedMessages],
   );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

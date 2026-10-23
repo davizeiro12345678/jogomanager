@@ -1,68 +1,40 @@
-import { lazy, useEffect } from "react";
-import { reportSilent } from "@/lib/silent-errors";
+import { createElement, lazy, useEffect, useState, type ComponentProps } from "react";
+import { retryChunk } from "@/lib/chunk-retry";
+import { reportSilent } from "@/lib/report-silent";
 
 let stage: Promise<typeof import("../CinematicStage3D")> | undefined;
-export const CINEMATIC_RETRY_DELAYS_MS = [250, 750, 2_000] as const;
-
-const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-export async function loadWithRetry<T>(
-  importer: () => Promise<T>,
-  sleep: (ms: number) => Promise<void> = wait,
-): Promise<T> {
-  let lastError: unknown;
-  for (let attempt = 0; attempt <= CINEMATIC_RETRY_DELAYS_MS.length; attempt += 1) {
-    try {
-      return await importer();
-    } catch (error) {
-      lastError = error;
-      const delay = CINEMATIC_RETRY_DELAYS_MS[attempt];
-      if (delay === undefined) break;
-      await sleep(delay);
-    }
-  }
-  throw lastError;
-}
 
 /** The dialogue shell never waits for Three, rigs or the lens bundle. */
 export function preloadCinematicStage() {
-  stage ??= loadWithRetry(() => import("../CinematicStage3D")).catch((error: unknown) => {
+  stage ??= retryChunk("cutscene", () => import("../CinematicStage3D")).catch((error: unknown) => {
     stage = undefined;
-    reportSilent("cutscene.stage", error, {
-      classification: "degradation",
-      feature: "cinematic-stage",
-      phase: "chunk-load",
-      dedupeKey: `cinematic-stage:${error instanceof Error ? error.message : String(error)}`,
-    });
     throw error;
   });
   return stage;
 }
 
-export const LazyCinematicStage = lazy(() =>
-  preloadCinematicStage().then((module) => ({ default: module.CinematicStage3D })),
-);
+export function LazyCinematicStage(
+  props: ComponentProps<(typeof import("../CinematicStage3D"))["CinematicStage3D"]>,
+) {
+  // A boundary retry mounts a fresh lazy generation; React caches rejections.
+  const [Stage] = useState(() =>
+    lazy(() => preloadCinematicStage().then((module) => ({ default: module.CinematicStage3D }))),
+  );
+  return createElement(Stage, props);
+}
 
 /** Prepare likely cutscenes after the host screen has had time to paint. */
 export function useCinematicPreload(enabled = true) {
   useEffect(() => {
     if (!enabled) return;
-    const connection = (
-      navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }
-    ).connection;
-    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-    // Cold page navigation must win over optional cinematic prefetch on
-    // metered/slow connections and memory-constrained phones.
-    if (
-      connection?.saveData ||
-      connection?.effectiveType === "slow-2g" ||
-      connection?.effectiveType === "2g" ||
-      connection?.effectiveType === "3g" ||
-      (typeof memory === "number" && memory <= 2)
-    )
-      return;
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } })
+      .connection;
+    if (connection?.saveData) return;
     const preload = () => {
-      if (!document.hidden) void preloadCinematicStage().catch(() => undefined);
+      if (!document.hidden)
+        void preloadCinematicStage().catch((error) =>
+          reportSilent("cutscene", error, { class: "degradation", code: "preload-exhausted" }),
+        );
     };
     if (typeof window.requestIdleCallback === "function") {
       const idle = window.requestIdleCallback(preload, { timeout: 2500 });

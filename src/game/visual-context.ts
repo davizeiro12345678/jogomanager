@@ -9,7 +9,7 @@
 //  com replays antigos.
 // ============================================================================
 
-import type { Side } from "./sim";
+import type { Side } from "./sim-types";
 import type { PlayerAction } from "./animation";
 
 // -----------------------------------------------------------------------------
@@ -355,8 +355,7 @@ export function emptyVersionedVisualData(playerCount: number): VersionedVisualDa
  * @returns Dados migrados para a versao atual
  */
 export function migrateVisualData(
-  oldData:
-    (Omit<Partial<VersionedVisualData>, "version"> & { version?: number }) | null | undefined,
+  oldData: Partial<VersionedVisualData> | null | undefined,
   playerCount: number,
 ): VersionedVisualData {
   // Se nao ha dados antigos, retorna dados vazios

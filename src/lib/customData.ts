@@ -18,6 +18,8 @@ import type { Club, League, Player, Position } from "@/game/types";
 import { scopedKey } from "@/lib/world-scope";
 import { readCustom } from "./custom-data-storage";
 export { readCustom } from "./custom-data-storage";
+import { parseImportJson, record, safeRecordId } from "./import-validation";
+import { validCustomData } from "./custom-data-validation";
 
 /** Dados do editor, por campanha. */
 function key() {
@@ -258,7 +260,7 @@ export function applyCustomToWorld() {
   const data = readCustom();
   badges.clear();
   for (const o of Object.values(data.clubs)) {
-    const club = CLUBS[o.id];
+    const club = safeRecordId(o.id) && Object.hasOwn(CLUBS, o.id) ? CLUBS[o.id] : undefined;
     if (!club) continue;
     remember(club);
     if (o.name.trim()) club.name = o.name.trim();
@@ -315,15 +317,29 @@ export function exportCustomJson(): string {
 }
 
 /** Valida e substitui os dados customizados a partir de um JSON exportado. */
-export function importCustomJson(raw: string): { ok: true } | { ok: false; error: string } {
+/** Validates a package for review without writing personal editor data. */
+export function previewCustomJson(
+  raw: string,
+): { ok: true; data: CustomData } | { ok: false; error: string } {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    parsed = parseImportJson(raw);
   } catch {
     return { ok: false, error: "Arquivo inválido: não é um JSON válido." };
   }
-  if (typeof parsed !== "object" || parsed === null) {
-    return { ok: false, error: "Arquivo inválido: formato inesperado." };
+  if (record(parsed) && parsed["kind"] === "pro-football-manager-3d-career") {
+    return {
+      ok: false,
+      error:
+        "Este arquivo é uma carreira de treinador. Abra Perfil do treinador > Importar carreira. Seus dados do editor foram preservados.",
+    };
+  }
+  if (!validCustomData(parsed)) {
+    return {
+      ok: false,
+      error:
+        "Pacote inválido: confira IDs, campos, imagens e limites numéricos. Seus dados foram preservados.",
+    };
   }
   const obj = parsed as Partial<CustomData>;
   if (obj.clubs !== undefined && typeof obj.clubs !== "object") {
@@ -345,7 +361,13 @@ export function importCustomJson(raw: string): { ok: true } | { ok: false; error
       return { ok: false, error: "Há um jogador sem id, clube, nome ou posição no arquivo." };
     }
   }
-  writeCustom(clean);
+  return { ok: true, data: clean };
+}
+
+export function importCustomJson(raw: string): { ok: true } | { ok: false; error: string } {
+  const result = previewCustomJson(raw);
+  if (!result.ok) return result;
+  writeCustom(result.data);
   return { ok: true };
 }
 

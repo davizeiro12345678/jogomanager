@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { publicPageRedirect } from "./lib/public-page-redirects";
+import { handleSportsDbSourceRequest } from "./lib/sportsdb-source.server";
 import { CSP_NONCE_HEADER, createCspNonce, secureResponse } from "./lib/security-headers";
 
 type ServerEntry = {
@@ -71,6 +72,9 @@ export default {
     const redirect = publicPageRedirect(verifiedRequest);
     if (redirect) return measured(protect(redirect));
     try {
+      if (new URL(verifiedRequest.url).pathname === "/api/public/sportsdb") {
+        return protect(await handleSportsDbSourceRequest(verifiedRequest, env));
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(verifiedRequest, env, ctx);
       return measured(protect(await normalizeCatastrophicSsrResponse(response)));

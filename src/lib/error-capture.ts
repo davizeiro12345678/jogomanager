@@ -1,5 +1,7 @@
 // Captures the original Error out-of-band so server.ts can recover the stack
 // when h3 has already swallowed the throw into a generic 500 Response.
+import { redactDiagnosticText } from "./error-redaction";
+import { subscribeSilentReports } from "./report-silent";
 
 let lastCapturedError:
   { error: unknown; at: number; context?: Record<string, unknown> } | undefined;
@@ -14,12 +16,17 @@ function record(error: unknown, context?: Record<string, unknown>) {
 }
 
 /**
- * Records a handled failure for server-side recovery and diagnostics without
+ * Records fatal handled failures for server-side recovery and diagnostics without
  * changing the existing consume-once API used by h3.
  */
 export function captureReportedError(error: unknown, context?: Record<string, unknown>) {
-  record(error, context);
+  if (context?.["classification"] === "fatal") record(error, context);
 }
+
+subscribeSilentReports((report, error) => {
+  if (report.class === "fatal")
+    record(error, { scope: report.scope, classification: report.class, code: report.code });
+});
 
 export function lastCapturedErrorContext(): Record<string, unknown> | undefined {
   return lastCapturedError?.context;
@@ -40,12 +47,17 @@ export function describeError(error: unknown): string {
       parts.push(typeof current === "string" ? current : safeStringify(current));
       break;
     }
-    const label = depth === 0 ? "" : "caused by: ";
-    const status = describeStatus(current);
-    parts.push(`${label}${current.stack ?? `${current.name}: ${current.message}`}${status}`);
-    current = current.cause;
+    try {
+      const label = depth === 0 ? "" : "caused by: ";
+      const status = describeStatus(current);
+      parts.push(`${label}${current.stack ?? `${current.name}: ${current.message}`}${status}`);
+      current = current.cause;
+    } catch {
+      parts.push("Error details unavailable");
+      break;
+    }
   }
-  return parts.join("\n").slice(0, DESCRIPTION_LENGTH_LIMIT);
+  return redactDiagnosticText(parts.join("\n"), DESCRIPTION_LENGTH_LIMIT);
 }
 
 function describeStatus(error: Error): string {
@@ -58,7 +70,11 @@ function safeStringify(value: unknown): string {
   try {
     return JSON.stringify(value) ?? String(value);
   } catch {
-    return String(value);
+    try {
+      return String(value);
+    } catch {
+      return "Unserializable error details";
+    }
   }
 }
 
@@ -72,7 +88,11 @@ function isErrorLike(value: unknown): value is Error {
 const originalConsoleError = console.error.bind(console);
 console.error = (...args: unknown[]) => {
   const expanded = args.map((arg) => {
-    if (!isErrorLike(arg)) return arg;
+    if (!isErrorLike(arg)) {
+      if (typeof arg === "string" || (arg !== null && typeof arg === "object"))
+        return describeError(arg);
+      return arg;
+    }
     record(arg);
     return describeError(arg);
   });

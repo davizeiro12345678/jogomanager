@@ -1,7 +1,10 @@
 mod crowd;
 mod match_perception;
-mod rig_section;
 mod turf_detail;
+mod rig_section;
+mod weather;
+mod net_float;
+pub use net_float::FloatNet;
 
 pub use crowd::{select_crowd, CrowdSelector};
 
@@ -18,7 +21,7 @@ pub fn wasm_abi_version() -> u32 {
 /// These capabilities do not confer authority over saves, scores or progression.
 #[wasm_bindgen]
 pub fn wasm_capabilities() -> u32 {
-    1 | 2 | 4 | 8 | 16 | 32 | 64 | 128
+    1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512
 }
 
 #[wasm_bindgen]

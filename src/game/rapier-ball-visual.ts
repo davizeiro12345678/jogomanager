@@ -36,8 +36,12 @@ export interface RapierVisualPhysicsOptions {
 export interface RapierVisualPhysics {
   readonly engine: "rapier-wasm-visual";
   reset(canonical: CanonicalBallPhysicsState): void;
+  /** Supply both canonical snapshots before each visual step. The after
+   * snapshot becomes the reconciliation target for that tick. */
   synchronize(before: CanonicalBallPhysicsState, after: CanonicalBallPhysicsState): void;
   step(dt: number): void;
+  /** Observational only. Fallback supplies attached/disposed or nonfinite
+   * values; it never updates the reconciliation target. Use synchronize. */
   read(fallback: CanonicalBallPhysicsState): VisualBallState;
   dispose(): void;
 }
@@ -142,6 +146,10 @@ class RapierVisualBall implements RapierVisualPhysics {
   }
 
   step(dt: number) {
+    // A paused/invalid frame has no elapsed time. Check before the release
+    // guard so it cannot consume the one valid tick already integrated by
+    // MatchSim, nor advance the solver/reconciliation while paused.
+    if (!Number.isFinite(dt) || dt <= 0) return;
     if (this.disposed || this.attached) return;
     if (this.skipNextStep) {
       this.skipNextStep = false;
@@ -172,6 +180,9 @@ class RapierVisualBall implements RapierVisualPhysics {
       this.world.timestep = substep;
       this.world.step();
     }
+    // Reconcile once per simulated tick, independent of how many render,
+    // camera or telemetry consumers subsequently read this presentation.
+    if (this.lastCanonical) this.reconcile(this.lastCanonical);
   }
 
   read(fallback: CanonicalBallPhysicsState): VisualBallState {
@@ -188,9 +199,13 @@ class RapierVisualBall implements RapierVisualPhysics {
       vz: finite(velocity.z, fallback.vz),
       spin: finite(this.visualSpin, fallback.spin),
     };
+    return visual;
+  }
 
+  private reconcile(fallback: CanonicalBallPhysicsState) {
+    const visual = this.read(fallback);
     const divergence = distance3D(visual, fallback);
-    if (divergence <= MAX_VISUAL_DIVERGENCE) return visual;
+    if (divergence <= MAX_VISUAL_DIVERGENCE) return;
 
     // Um rebote visual pode divergir por um instante; depois aproximamos a
     // apresentação da verdade canônica para que uma regra posterior nunca
@@ -207,7 +222,6 @@ class RapierVisualBall implements RapierVisualPhysics {
       spin: visual.spin + (fallback.spin - visual.spin) * blend,
     };
     this.setDynamic({ ...fallback, ...corrected, attached: false, holder: null });
-    return corrected;
   }
 
   dispose() {

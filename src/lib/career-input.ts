@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assertSafeJsonValue } from "./import-validation";
 
 // Normalize manager names without letting control characters reach persisted data.
 const normalizePublicText = (value: string) =>
@@ -58,6 +59,7 @@ const CareerInput = z.object({
 });
 
 export function parseCareerInput(input: unknown) {
+  assertSafeJsonValue(input);
   assertUntrustedJson(input);
   return CareerInput.parse(input);
 }

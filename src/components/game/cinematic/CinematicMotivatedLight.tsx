@@ -1,4 +1,5 @@
-import { useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
 import type { SceneArt } from "@/content/cutscenes";
@@ -45,6 +46,7 @@ export function CinematicMotivatedLight({
   const source = useRef<THREE.PointLight>(null);
   const spill = useRef<THREE.PointLight>(null);
   const runtime = useCinematicRuntime();
+  const invalidate = useThree((state) => state.invalidate);
   const first = useRef(true);
   const setup = PLACEMENT[kind];
   const color = useMemo(() => {
@@ -54,11 +56,14 @@ export function CinematicMotivatedLight({
     return COLOR_BY_LINE[light];
   }, [art, kind, light, mood]);
   const targetColor = useMemo(() => new THREE.Color(color), [color]);
+  useLayoutEffect(() => {
+    invalidate();
+  }, [targetColor, runtime.stopped, runtime.reduced, invalidate]);
   useCinematicFrame((_, dt) => {
     if (!source.current) return;
     // Practical fixtures hold steady. Mood changes settle like exposure, while
     // photographer flashes remain driven by their own visible sources.
-    const blend = first.current || runtime.reduced ? 1 : 1 - Math.exp(-3.6 * dt);
+    const blend = first.current || runtime.reduced || runtime.stopped ? 1 : 1 - Math.exp(-3.6 * dt);
     first.current = false;
     source.current.color.lerp(targetColor, blend);
     // The locker strip is a neutral practical. Dramatic dialogue can tint

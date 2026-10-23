@@ -17,9 +17,10 @@ export function applyMembership(league: League, registry: Record<string, Club>):
       ? `https://www.thesportsdb.com/league/${sourceUrl.slice(4)}`
       : sourceUrl,
     catalogStatus: "sourced",
-    clubs: clubRows.split(";").map((row) => {
+    clubs: clubRows.split(";").flatMap((row) => {
       const [id = "", label, source] = row.split("|");
-      const name = label || registry[id]?.name || "Clube";
+      const name = (label || registry[id]?.name || "").trim();
+      if (!id.trim() || !name || name.toLocaleLowerCase("pt-BR") === "clube") return [];
       const sourceTeamId = source || id.match(/_(\d{5,})$/)?.[1];
       return {
         ...(registry[id] ?? {
@@ -33,6 +34,8 @@ export function applyMembership(league: League, registry: Record<string, Club>):
           secondary: "#ffffff",
           strength: Math.max(40, Math.min(80, strength)),
         }),
+        // Reviewed membership labels replace obsolete or missing legacy labels.
+        name,
         league: league.id,
         ...(sourceTeamId ? { sourceTeamId } : {}),
       };

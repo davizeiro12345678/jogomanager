@@ -62,17 +62,28 @@ function normalize(value: string) {
     .replace(/[^a-z0-9]/g, "");
 }
 function mediaRows(type: string, sourceId: string, value: Record<string, unknown>): MediaRow[] {
+  const sourceUpdatedAt = dateTime(value["dateUpdated"]);
   return (MEDIA[type] ?? []).flatMap(([kind, field]) => {
     const url = str(value[field]);
     if (!url || !/^https:\/\//i.test(url)) return [];
-    return [{ source: "thesportsdb", entity_type: type, source_id: sourceId, kind, url }];
+    return [
+      {
+        source: "thesportsdb",
+        entity_type: type,
+        source_id: sourceId,
+        parent_source_id: "",
+        kind,
+        url,
+        source_updated_at: sourceUpdatedAt,
+      },
+    ];
   });
 }
 async function saveMedia(db: Admin, rows: MediaRow[]) {
   if (!rows.length) return 0;
   const { error } = await db
     .from("official_media")
-    .upsert(rows, { onConflict: "source,entity_type,source_id,kind" });
+    .upsert(rows, { onConflict: "source,entity_type,source_id,parent_source_id,kind" });
   if (error) throw new Error(error.message);
   return rows.length;
 }
@@ -118,8 +129,8 @@ async function saveVenue(db: Admin, venueId: string, localClubId?: string | null
       .select("id")
       .single();
   let { data, error } = await saveVenue(name);
-  // Different real venues share common names ("Estadio Municipal"); stadium
-  // names are unique, so disambiguate by city and then by the stable source ID.
+  // Different real venues share common names. Keep source identity stable
+  // while disambiguating the display name by city, then by provider ID.
   if (error?.message.includes("stadiums_name_key")) {
     ({ data, error } = await saveVenue(`${name} (${city ?? venueId})`.slice(0, 200)));
     if (error?.message.includes("stadiums_name_key")) {
@@ -166,16 +177,41 @@ export async function syncPremiumChain(options: {
         unavailable++;
         continue;
       }
-      // Only link when a unique local competition has the same country and normalized name.
+      // Resolve by source identity or exact country/name, then collapse known local aliases.
+      // Do not pick an arbitrary duplicate by roster size.
       const country = str(league["strCountry"]);
       let localId: string | null = null;
+      const candidateIds = new Set<string>();
+      const { data: bySourceId, error: sourceMatchError } = await db
+        .from("competitions")
+        .select("id")
+        .in("source_id", [`x${id}`, `y${id}`]);
+      if (sourceMatchError) throw new Error(sourceMatchError.message);
+      for (const candidate of bySourceId ?? []) candidateIds.add(candidate.id);
       if (country) {
-        const { data: candidates } = await db
+        const { data: candidates, error: nameMatchError } = await db
           .from("competitions")
-          .select("id,name,country")
+          .select("id,name")
           .eq("country", country);
-        const exact = (candidates ?? []).filter((c) => normalize(c.name) === normalize(name));
-        if (exact.length === 1) localId = exact[0]?.id ?? null;
+        if (nameMatchError) throw new Error(nameMatchError.message);
+        for (const candidate of candidates ?? []) {
+          if (normalize(candidate.name) === normalize(name)) candidateIds.add(candidate.id);
+        }
+      }
+      if (candidateIds.size) {
+        const ids = [...candidateIds];
+        const { data: aliases, error: aliasError } = await db
+          .from("sportsdb_competition_identity_aliases")
+          .select("alias_id,canonical_id")
+          .in("alias_id", ids);
+        if (aliasError) throw new Error(aliasError.message);
+        const canonicalByAlias = new Map(
+          (aliases ?? []).map((alias) => [alias.alias_id, alias.canonical_id]),
+        );
+        const canonicalIds = new Set(
+          ids.map((candidateId) => canonicalByAlias.get(candidateId) ?? candidateId),
+        );
+        if (canonicalIds.size === 1) localId = [...canonicalIds][0] ?? null;
       }
       const result = await db.from("official_leagues").upsert({
         source_id: id,
@@ -183,7 +219,8 @@ export async function syncPremiumChain(options: {
         sport: "Soccer",
         country,
         current_season: str(league["strCurrentSeason"]),
-        local_competition_id: localId,
+        ...(localId ? { local_competition_id: localId } : {}),
+        source_updated_at: dateTime(league["dateUpdated"]) ?? dateTime(item["dateUpdated"]),
       });
       if (result.error) throw new Error(result.error.message);
       if (localId) {
@@ -216,6 +253,7 @@ export async function syncPremiumChain(options: {
     const { data: leagues, error } = await db
       .from("official_leagues")
       .select("source_id,local_competition_id")
+      .eq("sport", "Soccer")
       .order("source_id")
       .range(offset, offset + limit - 1);
     if (error) throw new Error(error.message);
@@ -230,12 +268,13 @@ export async function syncPremiumChain(options: {
       const { data: locals } = linked.local_competition_id
         ? await db.from("clubs").select("id,name").eq("competition_id", linked.local_competition_id)
         : { data: null };
-      // Big leagues outlast one budget: skip teams already saved, stop at the
-      // deadline without advancing the offset, and the next call resumes.
-      const { data: done } = await db
+      // Resume a large league from stable provider identities without advancing
+      // its offset while teams still remain outside this invocation's budget.
+      const { data: done, error: doneError } = await db
         .from("official_teams")
         .select("source_id")
         .eq("league_source_id", linked.source_id);
+      if (doneError) throw new Error(doneError.message);
       const doneIds = new Set((done ?? []).map((row) => row.source_id));
       let leagueComplete = true;
       for (const listed of teams) {
@@ -251,13 +290,13 @@ export async function syncPremiumChain(options: {
         const match = (locals ?? []).filter((c) => normalize(c.name) === normalize(name));
         const localId = match.length === 1 ? (match[0]?.id ?? null) : null;
         const venueId = str(team["idVenue"]);
-        // Never clear a link made by the country-wide name matcher on re-import.
         const saved = await db.from("official_teams").upsert({
           source_id: id,
           league_source_id: linked.source_id,
           name,
           venue_source_id: venueId,
           ...(localId ? { local_club_id: localId } : {}),
+          source_updated_at: dateTime(team["dateUpdated"]) ?? dateTime(listed["dateUpdated"]),
         });
         if (saved.error) throw new Error(saved.error.message);
         if (localId) {
@@ -313,7 +352,6 @@ export async function syncPremiumChain(options: {
   }
 
   if (phase === "kits") {
-    // Copies official crests/kits onto game clubs already linked to an official team.
     const { data: teams, error } = await db
       .from("official_teams")
       .select("source_id,local_club_id")
@@ -364,28 +402,46 @@ export async function syncPremiumChain(options: {
   if (phase === "players") {
     const { data: players, error } = await db
       .from("players")
-      .select("id,source_id")
+      .select("id,source_id,source_updated_at")
       .eq("source", "thesportsdb")
       .not("source_id", "is", null)
       .order("id")
       .range(offset, offset + limit - 1);
     if (error) throw new Error(error.message);
+    const playerIds = (players ?? []).flatMap((p) => (p.source_id ? [p.source_id] : []));
+    const { data: aliases, error: aliasesError } = playerIds.length
+      ? await db
+          .from("sportsdb_player_aliases")
+          .select("alias_source_id,canonical_source_id")
+          .in("alias_source_id", playerIds)
+      : { data: [], error: null };
+    if (aliasesError) throw new Error(aliasesError.message);
+    const canonicalPlayerId = new Map(
+      (aliases ?? []).map((a) => [a.alias_source_id, a.canonical_source_id]),
+    );
     for (const p of players ?? []) {
       if (!withinBudget()) break;
       processed++;
       if (!p.source_id) continue;
-      const player = await sdbV2.lookupPlayer(p.source_id);
+      const sourceId = canonicalPlayerId.get(p.source_id) ?? p.source_id;
+      const player = await sdbV2.lookupPlayer(sourceId);
       if (!player) {
         unavailable++;
         continue;
       }
-      media += await saveMedia(db, mediaRows("player", p.source_id, player));
+      media += await saveMedia(db, mediaRows("player", sourceId, player));
       const photo = str(player["strCutout"]) ?? str(player["strThumb"]);
-      if (photo?.startsWith("https://")) {
+      const sourceUpdatedAt = dateTime(player["dateUpdated"]);
+      if (photo?.startsWith("https://") && sourceUpdatedAt) {
         const result = await db
           .from("players")
-          .update({ photo_url: photo, last_synced_at: new Date().toISOString() })
-          .eq("id", p.id);
+          .update({
+            photo_url: photo,
+            source_updated_at: sourceUpdatedAt,
+            last_synced_at: new Date().toISOString(),
+          })
+          .eq("id", p.id)
+          .or(`source_updated_at.is.null,source_updated_at.lt.${sourceUpdatedAt}`);
         if (result.error) throw new Error(result.error.message);
       }
       // The existing stats synchronizer persists player_stats separately by source ID.
@@ -408,6 +464,7 @@ export async function syncPremiumChain(options: {
       .from("official_leagues")
       .select("source_id")
       .eq("source_id", leagueId)
+      .eq("sport", "Soccer")
       .maybeSingle();
     if (!known) throw new Error("Unknown league");
     const events = await sdbV2.schedule(leagueId, season);
@@ -431,6 +488,7 @@ export async function syncPremiumChain(options: {
         status: str(event["strStatus"]),
         venue_source_id: str(event["idVenue"]),
         venue_name: str(event["strVenue"]),
+        source_updated_at: dateTime(event["dateUpdated"]) ?? dateTime(listed["dateUpdated"]),
       });
       if (upsert.error) throw new Error(upsert.error.message);
       media += await saveMedia(db, mediaRows("event", id, event));
@@ -486,6 +544,7 @@ export async function syncPremiumChain(options: {
               source_id: detailId,
               team_source_id: str(record["idTeam"]),
               player_source_id: str(record["idPlayer"]),
+              source_updated_at: dateTime(record["dateUpdated"]),
               minute: score(record["intTime"]),
               label:
                 str(record["strTimeline"]) ??

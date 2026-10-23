@@ -1,5 +1,4 @@
-import { del, get, set } from "idb-keyval";
-import { reportSilent } from "@/lib/silent-errors";
+import { del, get, keys, set } from "idb-keyval";
 
 const INDEX_KEY = "manager3d.voice-cache.v2.index";
 const ITEM_PREFIX = "manager3d.voice-cache.v2:";
@@ -9,18 +8,7 @@ const MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 type CacheEntry = { audio: string; bytes: number; touchedAt: number };
 type CacheIndex = Record<string, { bytes: number; touchedAt: number }>;
 
-// Cache quente limitado: evita reter dezenas de MB de base64 na memória.
-const MEMORY_LIMIT = 24;
 const memory = new Map<string, string>();
-function remember(key: string, audio: string) {
-  memory.delete(key);
-  memory.set(key, audio);
-  while (memory.size > MEMORY_LIMIT) {
-    const oldest = memory.keys().next().value;
-    if (oldest === undefined) break;
-    memory.delete(oldest);
-  }
-}
 
 function itemKey(key: string) {
   return `${ITEM_PREFIX}${key}`;
@@ -35,24 +23,18 @@ export async function readVoiceCache(key: string): Promise<string | null> {
       if (entry) await del(itemKey(key));
       return null;
     }
-    remember(key, entry.audio);
+    memory.set(key, entry.audio);
     const index = (await get<CacheIndex>(INDEX_KEY)) ?? {};
     index[key] = { bytes: entry.bytes, touchedAt: Date.now() };
     await set(INDEX_KEY, index);
     return entry.audio;
-  } catch (error) {
-    reportSilent("assets.cache", error, {
-      classification: "ignorable",
-      feature: "voice-cache",
-      phase: "read",
-      dedupeKey: "voice-cache-read",
-    });
+  } catch {
     return null;
   }
 }
 
 export async function writeVoiceCache(key: string, audio: string): Promise<void> {
-  remember(key, audio);
+  memory.set(key, audio);
   try {
     const bytes = Math.ceil((audio.length * 3) / 4);
     const now = Date.now();
@@ -70,14 +52,22 @@ export async function writeVoiceCache(key: string, audio: string): Promise<void>
     }
     await set(itemKey(key), { audio, bytes, touchedAt: now } satisfies CacheEntry);
     await set(INDEX_KEY, index);
-  } catch (error) {
-    reportSilent("assets.cache", error, {
-      classification: "ignorable",
-      feature: "voice-cache",
-      phase: "write",
-      dedupeKey: "voice-cache-write",
-    });
+  } catch {
     // A voz continua funcionando sem persistência quando o armazenamento está cheio.
+  }
+}
+
+/** Remove generated narration audio kept in IndexedDB and this worker's memory. */
+export async function clearVoiceCache(): Promise<boolean> {
+  memory.clear();
+  try {
+    const cachedKeys = (await keys()).filter(
+      (key): key is string => typeof key === "string" && key.startsWith(ITEM_PREFIX),
+    );
+    await Promise.all([...cachedKeys.map((key) => del(key)), del(INDEX_KEY)]);
+    return true;
+  } catch {
+    return false;
   }
 }
 

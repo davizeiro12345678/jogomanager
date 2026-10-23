@@ -43,8 +43,10 @@ export async function getAuthenticatedCheckoutOffer(
   const contents = parseStoreProductContents(offer?.contents_snapshot);
   if (
     !offer?.product_key ||
+    !/^[a-z0-9_]{2,80}$/.test(offer.product_key) ||
     !offer.stripe_price_id ||
     !offer.currency ||
+    !/^[A-Za-z]{3}$/.test(offer.currency) ||
     !Number.isSafeInteger(offer.price_cents) ||
     (offer.price_cents ?? -1) < 0 ||
     !contents
@@ -54,7 +56,7 @@ export async function getAuthenticatedCheckoutOffer(
   return {
     productKey: offer.product_key,
     stripePriceId: offer.stripe_price_id,
-    currency: offer.currency,
+    currency: offer.currency.toLowerCase(),
     snapshot: { priceCents: offer.price_cents!, contents },
   };
 }
@@ -134,6 +136,7 @@ export async function fulfillOneTimePurchase(
   if (
     !Number.isSafeInteger(paidAmountCents) ||
     paidAmountCents < 0 ||
+    paidAmountCents > amountCents ||
     paidAmountCents > 2_147_483_647
   )
     throw new Error("O total do pagamento é inválido.");

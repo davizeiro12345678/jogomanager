@@ -27,6 +27,7 @@ let live: MatchSim | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;
 let paused = true;
 let speed = 1;
+let analyticsVisible = false;
 let sequence = 0;
 let lastTick = 0;
 let accumulator = 0;
@@ -145,7 +146,7 @@ function publishSnapshot() {
   if (transport) {
     const recovery = recoveryState();
     const snapshot = transport.encode({
-      ...snapshotMatch(live, sequence + 1, latestVisualBall),
+      ...snapshotMatch(live, sequence + 1, latestVisualBall, true, analyticsVisible),
       ...(recovery ? { recovery } : {}),
     });
     if (!snapshot) return;
@@ -160,7 +161,7 @@ function publishSnapshot() {
   // Non-compact clients receive a plain snapshot; the optional event feed
   // only crosses the worker boundary when it changes.
   const includeEvents = live.lastEventId !== lastPublishedEventSeq;
-  const snapshot = snapshotMatch(live, sequence, latestVisualBall, includeEvents);
+  const snapshot = snapshotMatch(live, sequence, latestVisualBall, includeEvents, analyticsVisible);
   lastPublishedEventSeq = live.lastEventId;
   post({ id: commandId, ok: true, type: "snapshot", snapshot });
 }
@@ -306,9 +307,14 @@ async function handleMessage(message: LiveWorkerRequest) {
     post({ id: message.id, ok: true, type: "command" });
     return;
   }
+  if (message.type === "analyticsLive") {
+    analyticsVisible = message.visible;
+    publishSnapshot();
+    post({ id: message.id, ok: true, type: "command" });
+    return;
+  }
   if (message.type === "tacticsLive" && live) {
-    const setup = message.side === "home" ? live.home : live.away;
-    setup.tactics = { ...message.tactics };
+    live.applyTacticalCommand(message.side, message.tactics);
     publishSnapshot();
     post({ id: message.id, ok: true, type: "command", result: true });
     return;

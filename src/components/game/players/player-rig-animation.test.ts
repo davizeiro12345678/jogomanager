@@ -36,6 +36,17 @@ const input = (overrides: AnimationInputOverrides = {}) => {
 };
 
 describe("resolvePlayerRigAnimationFrame", () => {
+  it("holds the shared event choice while reception height changes and allows a preview override", () => {
+    const frameInput = input({
+      selectedClip: "chestControlExit",
+      selection: { action: "trap", ballHeight: 0.4 },
+    });
+    expect(resolvePlayerRigAnimationFrame(frameInput).clip).toBe("chestControlExit");
+    expect(
+      resolvePlayerRigAnimationFrame({ ...frameInput, previewClip: "thighCushion" }).clip,
+    ).toBe("thighCushion");
+  });
+
   it("prefers a preview clip and resets time when the clip changes", () => {
     const frame = resolvePlayerRigAnimationFrame(
       input({

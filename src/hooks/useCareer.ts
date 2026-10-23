@@ -1,27 +1,47 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
-import { migrateCareer } from "@/game/career";
+import { migrateCareer } from "@/game/career/migration";
 import { recordWorldTransition, withCareerWorld } from "@/game/career-world";
-import { useAuthUserId } from "@/hooks/useAuthUserId";
+import { supabase } from "@/integrations/supabase/client";
 import { loadCareer, saveCareer, deleteCareer } from "@/lib/career.functions";
 import {
+  backupCareerBeforeMigration,
   clearLocalCareer,
-  acknowledgeOutbox,
   isOnline,
   loadLocalCareer,
   localSavedAt,
   queueSync,
-  readOutbox,
   saveLocalCareer,
-  type LocalOwnerId,
 } from "@/lib/offline/store";
+import { flushCareerSync } from "@/lib/offline/sync";
 import type { CareerState } from "@/game/types";
+
+import { useAuthUserId } from "./useAuthUserId";
+import { careerQueryEnabled, careerQueryPolicy } from "./career-query-policy";
+import {
+  applyCareerSync,
+  beginCareerSave,
+  careerFeedbackSync,
+  careerSyncGuard,
+  CAREER_SAVE_ERROR,
+  clearCareerMemory,
+  failCareerSave,
+  hasUnpersistedCareer,
+  preserveCareerMemory,
+  publishVerifiedRestore,
+  retainCareerRestoreSources,
+  verifyCareerSave,
+  type CareerQueryData,
+  type CareerSaveTicket,
+  type CareerSyncState,
+} from "./career-save-feedback";
 
 export const CAREER_KEY = ["career"] as const;
 
-export type SyncState = "local" | "syncing" | "synced" | "pending" | "offline";
+export type SyncState = CareerSyncState;
+class StaleCareerUpload extends Error {}
 
 /** Tracks whether a Supabase session exists. `null` while unknown. */
 export function useSignedIn() {
@@ -32,57 +52,104 @@ export function useSignedIn() {
 /**
  * Persistência da carreira que funciona com ou sem conta e com ou sem internet.
  *
- * Each account gets a distinct query, local save, snapshot and outbox. A guest
- * save is deliberately not imported into an authenticated account: ownership
- * has to be confirmed by an explicit import flow, never inferred from a shared
- * browser profile.
+ * - Sempre grava primeiro no aparelho (IndexedDB + espelho no localStorage).
+ * - Com conta e conexão, envia para a nuvem.
+ * - Sem conexão, guarda na fila e envia sozinho quando a internet voltar.
  */
 export function useCareer() {
   const qc = useQueryClient();
   const userId = useAuthUserId();
   const signedIn = userId === undefined ? null : userId !== null;
-  const owner: LocalOwnerId = userId ?? null;
-  const scope = userId ?? "guest";
+  const owner = userId ?? null;
   const currentOwner = useRef<string | null | undefined>(userId);
-  // Updating the ref during render closes the small gap before effects run when
-  // a sign-in/sign-out swaps the active account.
   currentOwner.current = userId;
   const isCurrentOwner = useCallback(
-    (candidate: LocalOwnerId) =>
+    (candidate: string | null) =>
       currentOwner.current !== undefined && currentOwner.current === candidate,
     [],
   );
-
+  const assertCurrentOwner = useCallback(async () => {
+    if (!isCurrentOwner(owner))
+      throw new Error("A conta mudou. Reabra a carreira antes de continuar.");
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !isCurrentOwner(owner) || (data.session?.user.id ?? null) !== owner) {
+      throw new Error("A conta mudou. Reabra a carreira antes de continuar.");
+    }
+  }, [owner, isCurrentOwner]);
   const load = useServerFn(loadCareer);
   const save = useServerFn(saveCareer);
   const wipe = useServerFn(deleteCareer);
-  const [sync, setSync] = useState<SyncState>("local");
-  const flushingScope = useRef<string | null>(null);
+  const flushing = useRef(false);
+  const syncOwner = useCallback(
+    () =>
+      flushCareerSync(owner, {
+        assertOwner: assertCurrentOwner,
+        upload: async (state) => {
+          const result = await save({ data: { state, expectedOwnerId: userId! } });
+          if (result.stale)
+            throw new StaleCareerUpload(
+              "Há progresso mais recente na nuvem. A cópia local permanece pendente para revisão.",
+            );
+          if (!result.ok) throw new Error("Não foi possível confirmar a sincronização.");
+          return result;
+        },
+        prepare: migrateCareer,
+      }),
+    [owner, assertCurrentOwner, save, userId],
+  );
 
-  const query = useQuery({
-    queryKey: [...CAREER_KEY, scope],
-    enabled: userId !== undefined,
-    queryFn: async ({ signal }): Promise<{ career: CareerState | null; sync: SyncState }> => {
+  const query = useQuery<CareerQueryData>({
+    ...careerQueryPolicy,
+    queryKey: [...CAREER_KEY, userId],
+    enabled:
+      careerQueryEnabled(signedIn !== null, qc.getQueryState([...CAREER_KEY, userId])?.status) &&
+      !hasUnpersistedCareer(qc.getQueryData<CareerQueryData>([...CAREER_KEY, userId])),
+    structuralSharing: preserveCareerMemory,
+    gcTime: Infinity,
+    queryFn: async ({ signal }): Promise<CareerQueryData> => {
       const isActive = () => !signal.aborted && isCurrentOwner(owner);
+      const readAttempt =
+        qc.getQueryData<CareerQueryData>([...CAREER_KEY, userId])?.persistence?.attempt ?? 0;
+      await assertCurrentOwner();
+      const memory = qc.getQueryData<CareerQueryData>([...CAREER_KEY, userId]);
+      if (hasUnpersistedCareer(memory)) return memory!;
+      const protectedMemory = () => {
+        const current = qc.getQueryData<CareerQueryData>([...CAREER_KEY, userId]);
+        return hasUnpersistedCareer(current) || (current?.persistence?.attempt ?? 0) > readAttempt
+          ? current
+          : null;
+      };
+      const finish = (result: CareerQueryData): CareerQueryData =>
+        !isActive()
+          ? { career: null, sync: "local" }
+          : (protectedMemory() ?? { ...result, readAttempt });
       const local = await loadLocalCareer(owner);
-      // Migration is in memory only: rewriting the save here would bump its
-      // timestamp and let a stale local copy beat newer cloud progress.
-      const repairLocal = async (raw: CareerState) => migrateCareer(raw);
       if (!isActive()) return { career: null, sync: "local" };
-      if (!userId) return { career: local ? await repairLocal(local) : null, sync: "local" };
-      if (!isOnline()) return { career: local ? await repairLocal(local) : null, sync: "offline" };
+      const repairLocal = async (raw: CareerState) => {
+        const current = protectedMemory();
+        if (current) return current.career ?? raw;
+        // Reconciliation must not give an old local save a newer timestamp.
+        // Durable migration/backups remain in explicit saves and sync preparation.
+        return migrateCareer(raw);
+      };
+      if (!signedIn)
+        return finish({ career: local ? await repairLocal(local) : null, sync: "local" });
+      if (!isOnline()) {
+        return finish({ career: local ? await repairLocal(local) : null, sync: "offline" });
+      }
 
       let cloud: CareerState | null = null;
       let cloudAt = 0;
       try {
-        const raw = await load();
+        const raw = await load({ data: { expectedOwnerId: userId! } });
+        await assertCurrentOwner();
         if (!isActive()) return { career: null, sync: "local" };
         if (raw) {
           cloud = raw.state as CareerState;
           cloudAt = raw.updatedAt ? Date.parse(raw.updatedAt) : 0;
         }
       } catch {
-        return { career: local ? await repairLocal(local) : null, sync: "offline" };
+        return finish({ career: local ? await repairLocal(local) : null, sync: "offline" });
       }
 
       const localAt = await localSavedAt(owner);
@@ -91,107 +158,127 @@ export function useCareer() {
       if (local && (!cloud || localAt > cloudAt)) {
         const migrated = await repairLocal(local);
         if (!isActive()) return { career: null, sync: "local" };
-        const pending = await queueSync(migrated, owner);
-        if (!isActive()) return { career: null, sync: "local" };
+        const current = protectedMemory();
+        if (current) return current;
         try {
-          const res = await save({ data: { state: migrated, expectedOwnerId: userId } });
-          const acknowledged = await acknowledgeOutbox(pending, owner);
-          // A newer timestamp is not newer progress: keep the cloud career.
-          if (!res.stale) return { career: migrated, sync: acknowledged ? "synced" : "pending" };
-          // A concurrent writer may have advanced since our first cloud read.
-          // Fetch that winning revision instead of restoring the old snapshot.
-          if (!isActive()) return { career: null, sync: "local" };
-          const latest = await load();
-          if (!isActive()) return { career: null, sync: "local" };
-          cloud = latest?.state ? (latest.state as CareerState) : null;
-        } catch {
-          return { career: migrated, sync: "pending" };
+          await assertCurrentOwner();
+          await queueSync((await loadLocalCareer(owner)) ?? migrated, owner);
+          const result = await syncOwner();
+          return finish({
+            career: result.state ?? migrated,
+            sync: result.synced ? "synced" : "pending",
+          });
+        } catch (error) {
+          if (error instanceof StaleCareerUpload) {
+            try {
+              // A concurrent writer may have advanced after our initial read.
+              // Show that winning cloud revision while retaining the rejected
+              // personal local/outbox copy for explicit recovery.
+              const latest = await load({ data: { expectedOwnerId: userId! } });
+              await assertCurrentOwner();
+              if (latest?.state)
+                return finish({ career: migrateCareer(latest.state), sync: "pending" });
+            } catch {
+              /* The retained personal copy is still recoverable offline. */
+            }
+          }
+          return finish({ career: (await loadLocalCareer(owner)) ?? migrated, sync: "pending" });
         }
       }
       if (cloud) {
         const migrated = await repairLocal(cloud);
-        if (isActive()) await saveLocalCareer(migrated, "nuvem", owner);
-        return { career: migrated, sync: "synced" };
+        const current = protectedMemory();
+        if (current) return current;
+        if (!isActive()) return { career: null, sync: "local" };
+        await saveLocalCareer(migrated, "nuvem", owner);
+        return finish({ career: migrated, sync: "synced" });
       }
-      return { career: null, sync: "local" };
+      return finish({ career: null, sync: "local" });
     },
     staleTime: 30_000,
   });
 
-  // Clear the previous account's status immediately. Query data is separately
-  // keyed, but an old pending label must not appear during the identity switch.
-  useEffect(() => {
-    setSync("local");
-  }, [scope]);
-
-  // O estado de sincronização só é aplicado depois da montagem: alterá-lo
-  // dentro do queryFn atualizava um componente ainda não montado.
-  const querySync = query.data?.sync;
-  useEffect(() => {
-    if (querySync) setSync(querySync);
-  }, [querySync]);
-
-  const setSyncForOwner = useCallback(
-    (candidate: LocalOwnerId, next: SyncState) => {
-      if (isCurrentOwner(candidate)) setSync(next);
-    },
-    [isCurrentOwner],
-  );
-
   const mutation = useMutation({
-    mutationFn: async (state: CareerState) => {
-      const mutationOwner = owner;
-      const mutationUser = userId;
-      await saveLocalCareer(state, "auto", mutationOwner);
-      if (!isCurrentOwner(mutationOwner)) return { ok: true, stale: true };
-      if (!mutationUser) {
-        setSyncForOwner(mutationOwner, "local");
-        return { ok: true };
+    mutationFn: async ({
+      state,
+      expectedOwner,
+      replacement = false,
+      write,
+    }: {
+      state: CareerState;
+      expectedOwner: string | null;
+      replacement?: boolean;
+      write: CareerSaveTicket;
+    }): Promise<{ ok: true; sync: SyncState }> => {
+      // A file read or a match completion may finish after the account changed.
+      if (expectedOwner !== owner)
+        throw new Error("A conta mudou. Reabra a carreira antes de continuar.");
+      await assertCurrentOwner();
+      const previous = await loadLocalCareer(owner);
+      const previousVersion = previous?.version as unknown;
+      if (
+        !replacement &&
+        previous &&
+        previousVersion !== undefined &&
+        (typeof previousVersion !== "number" ||
+          !Number.isInteger(previousVersion) ||
+          previousVersion < 1 ||
+          previousVersion > 3)
+      )
+        throw new Error(
+          "Este save usa uma versão incompatível. Atualize o jogo ou restaure uma cópia explicitamente; o original foi mantido.",
+        );
+      await saveLocalCareer(state, "auto", owner);
+      await assertCurrentOwner();
+      verifyCareerSave(qc, [...CAREER_KEY, userId], write, signedIn ? "pending" : "local");
+      if (!signedIn) {
+        return { ok: true, sync: "local" as const };
       }
-      // Queue before sending: a later failure must never overwrite a newer
-      // pending save, and completion acknowledges only this upload's revision.
-      const pending = await queueSync(state, mutationOwner);
-      if (!isCurrentOwner(mutationOwner)) return { ok: true, stale: true };
+      await queueSync((await loadLocalCareer(owner)) ?? state, owner);
       if (!isOnline()) {
-        setSyncForOwner(mutationOwner, "offline");
-        return { ok: true };
+        applyCareerSync(qc, [...CAREER_KEY, userId], "offline", write);
+        return { ok: true, sync: "offline" as const };
       }
-      setSyncForOwner(mutationOwner, "syncing");
+      applyCareerSync(qc, [...CAREER_KEY, userId], "syncing", write);
       try {
-        const res = await save({ data: { state, expectedOwnerId: mutationUser } });
-        const acknowledged = await acknowledgeOutbox(pending, mutationOwner);
-        setSyncForOwner(mutationOwner, acknowledged ? "synced" : "pending");
-        // The cloud has newer progress: reload it instead of keeping the old copy.
-        if (res.stale) void qc.invalidateQueries({ queryKey: [...CAREER_KEY, scope] });
-      } catch {
-        setSyncForOwner(mutationOwner, "pending");
+        const result = await syncOwner();
+        const status = result.synced ? "synced" : "pending";
+        applyCareerSync(qc, [...CAREER_KEY, userId], status, write);
+        return { ok: true, sync: status };
+      } catch (error) {
+        applyCareerSync(qc, [...CAREER_KEY, userId], "pending", write);
+        if (error instanceof StaleCareerUpload)
+          void qc.invalidateQueries({ queryKey: [...CAREER_KEY, userId], exact: true });
+        return { ok: true, sync: "pending" as const };
       }
-      return { ok: true };
+    },
+    onError: (_error, variables) => {
+      failCareerSave(qc, [...CAREER_KEY, variables.expectedOwner], variables.write);
+      if (variables.write.verified)
+        applyCareerSync(qc, [...CAREER_KEY, variables.expectedOwner], "pending", variables.write);
     },
   });
 
-  // Envia a fila assim que a conexão volta, sem deixar uma conta drenar a fila
-  // persistida de outra durante uma troca de sessão.
+  // Envia a fila assim que a conexão volta.
   const flush = useCallback(async () => {
-    const flushOwner = owner;
-    if (!userId || flushingScope.current === scope || !isOnline()) return;
-    const entry = await readOutbox(flushOwner);
-    if (!entry || !isCurrentOwner(flushOwner) || flushingScope.current === scope) return;
-    flushingScope.current = scope;
-    setSyncForOwner(flushOwner, "syncing");
+    if (!signedIn || flushing.current || !isOnline()) return;
+    const key = [...CAREER_KEY, userId];
+    const memory = qc.getQueryData<CareerQueryData>(key);
+    if (hasUnpersistedCareer(memory)) return;
+    const guard = careerSyncGuard(memory);
+    flushing.current = true;
+    applyCareerSync(qc, key, "syncing", guard);
     try {
-      const res = await save({
-        data: { state: migrateCareer(entry.state), expectedOwnerId: userId },
-      });
-      const acknowledged = await acknowledgeOutbox(entry, flushOwner);
-      setSyncForOwner(flushOwner, acknowledged ? "synced" : "pending");
-      if (res.stale) void qc.invalidateQueries({ queryKey: [...CAREER_KEY, scope] });
-    } catch {
-      setSyncForOwner(flushOwner, "pending");
+      const result = await syncOwner();
+      applyCareerSync(qc, key, result.synced ? "synced" : "pending", guard);
+    } catch (error) {
+      applyCareerSync(qc, key, "pending", guard);
+      if (error instanceof StaleCareerUpload)
+        void qc.invalidateQueries({ queryKey: key, exact: true });
     } finally {
-      if (flushingScope.current === scope) flushingScope.current = null;
+      flushing.current = false;
     }
-  }, [isCurrentOwner, owner, qc, save, scope, setSyncForOwner, userId]);
+  }, [signedIn, syncOwner, qc, userId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -210,48 +297,79 @@ export function useCareer() {
   const mutate = mutation.mutate;
   const update = useCallback(
     (next: CareerState) => {
-      // An older reconciliation must not replace this optimistic update or
-      // enqueue its stale local snapshot after a slow cloud read finishes.
-      void qc.cancelQueries({ queryKey: [...CAREER_KEY, scope], exact: true }, { revert: false });
-      const old = qc.getQueryData<{ career: CareerState | null; sync: SyncState }>([
-        ...CAREER_KEY,
-        scope,
-      ]);
+      if (query.error) throw query.error;
+      if (!isCurrentOwner(owner))
+        throw new Error("A conta mudou. Reabra a carreira antes de continuar.");
+      void qc.cancelQueries({ queryKey: [...CAREER_KEY, userId], exact: true }, { revert: false });
+      const old = qc.getQueryData<CareerQueryData>([...CAREER_KEY, userId]);
       const prepared = old?.career
         ? recordWorldTransition(old.career, next)
         : withCareerWorld(next);
-      qc.setQueryData([...CAREER_KEY, scope], { career: prepared, sync: old?.sync ?? "local" });
-      mutate(prepared);
+      const write = beginCareerSave(qc, [...CAREER_KEY, userId], prepared);
+      mutate({ state: prepared, expectedOwner: owner, write });
     },
-    [qc, mutate, scope],
+    [qc, mutate, userId, owner, query.error, isCurrentOwner],
+  );
+
+  // Restoring a different save is a replacement, not an in-game transition.
+  // Wait for verified persistence before showing it or reporting success.
+  const mutateAsync = mutation.mutateAsync;
+  const restore = useCallback(
+    async (next: CareerState) => {
+      await assertCurrentOwner();
+      await qc.cancelQueries({ queryKey: [...CAREER_KEY, userId], exact: true }, { revert: false });
+      const memory = qc.getQueryData<CareerQueryData>([...CAREER_KEY, userId])?.career ?? null;
+      const write = beginCareerSave(qc, [...CAREER_KEY, userId], next, false);
+      const previous = await loadLocalCareer(owner);
+      await retainCareerRestoreSources(memory, previous, next, (original) =>
+        backupCareerBeforeMigration(original, owner),
+      );
+      const result = await mutateAsync({
+        state: next,
+        expectedOwner: owner,
+        replacement: true,
+        write,
+      });
+      await assertCurrentOwner();
+      if (!publishVerifiedRestore(qc, [...CAREER_KEY, userId], write, result.sync))
+        throw new Error(
+          "A carreira aberta mudou durante a restauração. Confira o perfil antes de continuar.",
+        );
+    },
+    [assertCurrentOwner, mutateAsync, owner, qc, userId],
   );
 
   const reset = useCallback(async () => {
-    const resetOwner = owner;
-    const resetUser = userId;
-    await clearLocalCareer(resetOwner);
-    if (resetUser && isOnline() && isCurrentOwner(resetOwner)) {
+    await assertCurrentOwner();
+    await qc.cancelQueries({ queryKey: [...CAREER_KEY, userId], exact: true }, { revert: false });
+    await clearLocalCareer(owner);
+    if (signedIn && isOnline()) {
       try {
-        await wipe({ data: { expectedOwnerId: resetUser } });
+        await assertCurrentOwner();
+        await wipe({ data: { expectedOwnerId: userId! } });
+        await assertCurrentOwner();
       } catch {
         /* offline: a carreira local já foi apagada */
       }
     }
-    if (isCurrentOwner(resetOwner)) {
-      qc.setQueryData([...CAREER_KEY, scope], (old: { sync: SyncState } | undefined) => ({
-        career: null,
-        sync: old?.sync ?? "local",
-      }));
-    }
-  }, [isCurrentOwner, owner, qc, scope, userId, wipe]);
+    clearCareerMemory(qc, [...CAREER_KEY, userId], "local");
+  }, [qc, wipe, signedIn, userId, owner, assertCurrentOwner]);
 
   return {
+    loadError: query.error
+      ? query.error instanceof Error && query.error.message.includes("versão")
+        ? query.error.message
+        : "Não foi possível abrir a carreira. Suas cópias foram mantidas; confira a conexão e o armazenamento."
+      : null,
     career: (query.data?.career ?? null) as CareerState | null,
-    isLoading: userId === undefined || query.isLoading,
-    saving: mutation.isPending,
+    isLoading: signedIn === null || query.isLoading,
+    saving: mutation.isPending || query.data?.persistence?.phase === "saving",
     signedIn,
-    sync,
+    sync: careerFeedbackSync(query.data),
+    saveError: careerFeedbackSync(query.data) === "unsaved" ? CAREER_SAVE_ERROR : null,
+    ownerId: owner,
     update,
+    restore,
     reset,
   };
 }

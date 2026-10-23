@@ -1162,6 +1162,7 @@ export const BUNDLED_LEAGUES: readonly League[] = Object.freeze(
   })),
 );
 
+export const SHIPPED_LEAGUES: readonly League[] = BUNDLED_LEAGUES;
 export const LEAGUES: League[] = current;
 export const CLUBS: Record<string, Club> = {
   ...legacyClubs,

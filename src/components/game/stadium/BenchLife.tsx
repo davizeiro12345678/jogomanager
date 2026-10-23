@@ -10,13 +10,14 @@
 
 import { useFrame } from "@react-three/fiber";
 import { memo, useMemo, useRef } from "react";
-import type React from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import { censusRef } from "@/game/scene-census";
+import { animateBenchSeatedActor, type BenchSeatedActor } from "@/game/bench-seated-animation";
 import { RigidActorBatch } from "./RigidActorBatch";
-import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
+import { type SimView } from "@/game/sim-types";
 
 export type Quality = "alta" | "media" | "baixa";
 
@@ -58,32 +59,23 @@ const Seated = memo(function Seated({
   face,
   shirt,
   skin,
-  phase,
-  bounce,
+  actor,
 }: {
   x: number;
   z: number;
   face: number;
   shirt: string;
   skin: string;
-  phase: number;
-  bounce: React.MutableRefObject<number>;
+  actor: BenchSeatedActor;
 }) {
-  const g = useRef<THREE.Group>(null);
-  const torso = useRef<THREE.Mesh>(null);
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    if (torso.current) torso.current.rotation.x = Math.sin(t * 1.4 + phase) * 0.05 - 0.06;
-    if (g.current) {
-      const jumping = bounce.current > 0.5 ? Math.abs(Math.sin(t * 9 + phase)) * 0.35 : 0;
-      g.current.position.y = 0.62 + jumping;
-      g.current.rotation.z = Math.sin(t * 0.9 + phase) * 0.03;
-    }
-  }, -20);
   return (
-    <group ref={g} position={[x, 0.62, z]} rotation={[0, face, 0]}>
+    <group
+      ref={(node) => void (actor.group = node)}
+      position={[x, 0.62, z]}
+      rotation={[0, face, 0]}
+    >
       {/* tronco */}
-      <mesh ref={torso} position={[0, 0.32, 0]}>
+      <mesh ref={(node) => void (actor.torso = node)} position={[0, 0.32, 0]}>
         <capsuleGeometry args={[0.17, 0.34, 3, 8]} />
         <meshStandardMaterial color={shirt} roughness={0.8} />
       </mesh>
@@ -301,16 +293,31 @@ export const BenchLife = memo(function BenchLife({
   );
   const count = quality === "alta" ? 7 : quality === "media" ? 4 : 0;
   const reserves = useMemo(() => {
-    const list: { dx: number; skin: string; phase: number }[] = [];
+    const list: { dx: number; skin: string }[] = [];
     for (let k = 0; k < 7; k++) {
       list.push({
         dx: -3.6 + k * 1.2,
         skin: SKINS[(k * 2 + 1) % SKINS.length]!,
-        phase: k * 1.7,
       });
     }
     return list;
   }, []);
+  const seatedActors = useMemo<BenchSeatedActor[]>(
+    () =>
+      Array.from({ length: 14 }, (_, index) => ({
+        group: null,
+        torso: null,
+        phase: (index % 7) * 1.7 + (index >= 7 ? 1 : 0),
+      })),
+    [],
+  );
+
+  useFrame(({ clock }) => {
+    for (let index = 0; index < count; index++) {
+      animateBenchSeatedActor(seatedActors[index]!, clock.elapsedTime, goalPulse.current);
+      animateBenchSeatedActor(seatedActors[7 + index]!, clock.elapsedTime, goalPulse.current);
+    }
+  }, -20);
 
   return (
     <group ref={censusRef("props")} name="bench-life">
@@ -329,8 +336,7 @@ export const BenchLife = memo(function BenchLife({
               face={Math.PI}
               shirt={homeColor}
               skin={r.skin}
-              phase={r.phase}
-              bounce={goalPulse}
+              actor={seatedActors[k]!}
             />
             <Seated
               x={-r.dx}
@@ -338,8 +344,7 @@ export const BenchLife = memo(function BenchLife({
               face={0}
               shirt={awayColor}
               skin={SKINS[(k + 2) % SKINS.length]!}
-              phase={r.phase + 1}
-              bounce={goalPulse}
+              actor={seatedActors[7 + k]!}
             />
           </group>
         ))}

@@ -1,4 +1,4 @@
-import type { SimView } from "./sim";
+import type { SimView } from "./sim-types";
 import type { VersionedVisualData } from "./visual-context";
 
 type CacheEntry = {

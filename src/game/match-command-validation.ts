@@ -1,4 +1,6 @@
 import type { LiveWorkerRequest } from "./live-match";
+import { FORMATION_KEYS } from "./formations";
+import { ROLE_CATALOG, TacticalProgramSchema } from "./tactical-plan";
 
 export const MAX_MATCH_BENCH_PLAYERS = 64;
 export const LIVE_CONTROL_RESPONSE_TIMEOUT_MS = 3_000;
@@ -12,7 +14,7 @@ export const validCareerEvaluationTime = (value: unknown): value is number =>
   value <= MAX_EVALUATION_TIME;
 
 /** Validate commands once at the worker boundary, never in the simulation tick. */
-const FORMS = ["4-3-3", "4-4-2", "3-5-2", "4-2-3-1"];
+const FORMS: readonly string[] = FORMATION_KEYS;
 const WEATHER = ["clear", "rain", "heat"];
 const RESERVED = new Set(["__proto__", "constructor", "prototype"]);
 const object = (v: unknown): v is Record<string, unknown> =>
@@ -38,7 +40,8 @@ export function validMatchTactics(v: unknown): boolean {
     integer(v["mentality"], 0, 4) &&
     integer(v["pressing"], 0, 2) &&
     integer(v["width"], 0, 2) &&
-    integer(v["tempo"], 0, 2)
+    integer(v["tempo"], 0, 2) &&
+    (v["advanced"] === undefined || TacticalProgramSchema.safeParse(v["advanced"]).success)
   );
 }
 
@@ -126,6 +129,8 @@ export function validMatchCommand(v: unknown): v is LiveWorkerRequest {
       return (
         side(v["side"]) && validMatchTactics(v["tactics"]) && validControlExpiry(v["expiresAt"])
       );
+    case "analyticsLive":
+      return typeof v["visible"] === "boolean";
     case "talkLive":
       return (
         side(v["side"]) &&
@@ -171,6 +176,9 @@ export function validMatchCommand(v: unknown): v is LiveWorkerRequest {
             integer(p["goals"], 0, 50) &&
             integer(p["assists"], 0, 50) &&
             typeof p["played"] === "boolean" &&
+            (p["tacticalRole"] === undefined ||
+              (typeof p["tacticalRole"] === "string" &&
+                Object.hasOwn(ROLE_CATALOG, p["tacticalRole"]))) &&
             (p["minutes"] === undefined || finite(p["minutes"], 0, 150)) &&
             (p["rating"] === undefined || finite(p["rating"], 0, 10)) &&
             (p["yellow"] === undefined || integer(p["yellow"], 0, 2)) &&

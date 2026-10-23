@@ -102,7 +102,18 @@ export function gaitPoseAt(
     const down = length - drop + bob - lift;
     const leg = solveLegTarget(z * forward, down, p.thigh, p.shin, z * lateral);
     // Toe-off and heel strike roll only at the edges of support.
-    const roll = stance ? Math.max(0, u - 0.8) * 0.7 - Math.max(0, 0.14 - u) * 0.5 : 0.08;
+    // Carry the actual toe-off/heel-strike angles through swing. A fixed
+    // swing angle snapped the boot by .15 rad at each landing, despite
+    // continuous hip/knee IK. Hermite tangents match support angular speed;
+    // the interior arc adds toe clearance with zero endpoint derivative.
+    const swingRatio = (1 - duty) / duty;
+    const roll = stance
+      ? Math.max(0, u - 0.8) * 0.7 - Math.max(0, 0.14 - u) * 0.5
+      : (2 * u ** 3 - 3 * u * u + 1) * 0.14 +
+        (u ** 3 - 2 * u * u + u) * 0.7 * swingRatio +
+        (-2 * u ** 3 + 3 * u * u) * -0.07 +
+        (u ** 3 - u * u) * 0.5 * swingRatio +
+        Math.sin(Math.PI * u) ** 2 * 0.08;
     return {
       ...leg,
       travel: z,

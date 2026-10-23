@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
+import { isPlayerRecord } from "./football-person-kind";
+import { validCatalogIdentity } from "./catalog-integrity";
 
 function publicClient() {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
@@ -93,23 +95,27 @@ export const getOfficialAssets = createServerFn({ method: "GET" }).handler(
 /** Public read: real squad rows for one club, when they were imported. */
 export const getRealSquad = createServerFn({ method: "GET" })
   .validator((input: unknown) =>
-    z.object({ clubId: z.string().trim().min(1).max(120) }).parse(input),
+    z
+      .object({ clubId: z.string().trim().min(1).max(120).refine(validCatalogIdentity) })
+      .parse(input),
   )
   .handler(async ({ data }) => {
     const { cachedPublicRead } = await import("./public-read-cache.server");
     return cachedPublicRead("squad", data.clubId, async () => {
       const db = publicClient();
-      return readPublicPages((cursor) => {
-        const query = db
-          .from("players")
-          .select(
-            "id, data_source:source, source_id, birth_date, name, position, age, shirt_number, nationality, overall, photo_url",
-          )
-          .eq("club_id", data.clubId)
-          .order("id")
-          .limit(50);
-        return cursor ? query.gt("id", cursor) : query;
-      }, 1_000);
+      return (
+        await readPublicPages((cursor) => {
+          const query = db
+            .from("players")
+            .select(
+              "id, data_source:source, source_id, source_kind, canonical_player_id, birth_date, name, position, age, shirt_number, nationality, overall, photo_url",
+            )
+            .eq("club_id", data.clubId)
+            .order("id")
+            .limit(50);
+          return cursor ? query.gt("id", cursor) : query;
+        }, 1_000)
+      ).filter(isPlayerRecord);
     });
   });
 
@@ -125,6 +131,8 @@ export interface MarketSearchInput {
 }
 
 export interface MarketRow {
+  canonical_player_id?: string | null;
+  source_kind?: string | null;
   id: string;
   name: string;
   position: string;
@@ -194,6 +202,10 @@ export const searchRealPlayers = createServerFn({ method: "GET" })
         if (rows.length === 0) break;
         list.push(...rows);
       }
-      return { rows: list.slice(0, PAGE), page, hasMore: list.length > PAGE };
+      return {
+        rows: list.slice(0, PAGE).filter(isPlayerRecord),
+        page,
+        hasMore: list.length > PAGE,
+      };
     });
   });

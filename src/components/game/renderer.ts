@@ -10,8 +10,6 @@
  * antigo), devolvemos `null` e o chamador segue com o caminho WebGL2 antigo.
  */
 
-import { reportSilent } from "@/lib/silent-errors";
-
 export type GpuBackend = "webgpu" | "webgl2";
 
 const PREF_KEY = "manager3d.webgpu";
@@ -63,6 +61,7 @@ export function webgpuEnabled(): boolean {
 }
 
 export function setWebgpuEnabled(on: boolean) {
+  cachedSupport = null;
   writeStored(PREF_KEY, on ? "on" : "off");
   if (on) removeStored(FAIL_KEY);
 }
@@ -85,20 +84,12 @@ export function detectWebGPU(): Promise<boolean> {
     try {
       const adapter = await gpu.requestAdapter();
       return Boolean(adapter);
-    } catch (error) {
-      reportSilent("graphics.renderer", error, {
-        classification: "degradation",
-        feature: "webgpu",
-        phase: "adapter",
-        dedupeKey: "webgpu-adapter",
-      });
+    } catch {
       return false;
     }
   })();
   return cachedSupport;
 }
-
-let extended = false;
 
 type WebGPURendererInternals = {
   init: () => Promise<unknown>;
@@ -131,36 +122,28 @@ export async function createWebGPURenderer(
   if (!(await detectWebGPU())) return null;
   let renderer: WebGPURendererInternals | null = null;
   try {
-    const [webgpu, fiber] = await Promise.all([
-      import("three/webgpu"),
-      import("@react-three/fiber"),
-    ]);
-    if (!extended) {
-      // Disponibiliza os materiais/nós WebGPU como elementos JSX; as classes
-      // de núcleo (geometrias, luzes, malhas) são as mesmas do three padrão.
-      (fiber.extend as (catalogue: unknown) => void)(webgpu);
-      extended = true;
-    }
-    const rendererInstance = new webgpu.WebGPURenderer({
-      ...(props as ConstructorParameters<typeof webgpu.WebGPURenderer>[0]),
+    // The scene uses standard Three materials. Registering the complete WebGPU
+    // namespace in R3F kept every exported node/material in the client bundle.
+    const { WebGPURenderer } = await import("three/webgpu");
+    renderer = new WebGPURenderer({
+      ...(props as ConstructorParameters<typeof WebGPURenderer>[0]),
       forceWebGL: false,
-    });
-    const rendererInternals = rendererInstance as unknown as WebGPURendererInternals;
-    renderer = rendererInternals;
-    await rendererInstance.init();
+    }) as unknown as WebGPURendererInternals;
+    const active = renderer;
+    await active.init();
 
     // WebGPURenderer silently offers its own WebGL2 fallback. Do not report
     // that renderer as native WebGPU: the scene needs the WebGL material path
     // and the surrounding Canvas will construct an ordinary WebGLRenderer.
-    if (!hasNativeWebGPUBackend(rendererInstance)) {
-      await disposeAfterFailedInit(rendererInternals);
+    if (!hasNativeWebGPUBackend(active)) {
+      await disposeAfterFailedInit(active);
       markWebgpuFailed();
       return null;
     }
 
     // Qualquer erro de validação do driver derruba o modo experimental na hora:
     // gravamos a falha e o chamador remonta o palco em WebGL2.
-    const device = rendererInternals.backend?.device;
+    const device = active.backend?.device;
     if (device) {
       let tripped = false;
       const trip = () => {
@@ -170,21 +153,19 @@ export async function createWebGPURenderer(
         onDeviceError?.();
       };
       device.onuncapturederror = trip;
-      void device.lost?.then(trip);
+      void device.lost?.then((info) => {
+        // Three destroys the device as part of a normal renderer teardown.
+        // Only an actual device failure should disable WebGPU for this device.
+        if (info.reason !== "destroyed") trip();
+      });
     }
-    return rendererInstance;
+    return active;
   } catch (err) {
     // Do not retry a renderer that failed while compiling its first pipeline
     // on every route transition. The preference UI is the explicit retry.
     await disposeAfterFailedInit(renderer);
     markWebgpuFailed();
     console.warn("WebGPU indisponível, seguindo em WebGL2:", err);
-    reportSilent("graphics.renderer", err, {
-      classification: "degradation",
-      feature: "webgpu",
-      phase: "init",
-      dedupeKey: "webgpu-init",
-    });
     return null;
   }
 }

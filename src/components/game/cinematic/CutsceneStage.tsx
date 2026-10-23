@@ -1,11 +1,14 @@
+import { Backdrop } from "./IllustratedBackdrop";
 /**
  * Cutscene presentation: a clear 3D stage with compact dialogue and choices.
  * The illustrated scene is a separate fallback, never a layer over WebGL.
  */
 import type React from "react";
+import { useT } from "@/i18n/provider";
+import { useAccessibility } from "@/hooks/useAccessibility";
+import { sceneText, sceneTitle, sceneSpeakerLabels } from "@/game/scene-localization";
 import "./cinematic.css";
 import {
-  lazy,
   startTransition,
   Suspense,
   useCallback,
@@ -14,13 +17,23 @@ import {
   useRef,
   useState,
 } from "react";
-import { Volume2, VolumeX, Pause, Play, ChevronRight, SlidersHorizontal } from "lucide-react";
+import {
+  Volume2,
+  VolumeX,
+  Pause,
+  Play,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  SlidersHorizontal,
+  RotateCcw,
+  BookOpen,
+} from "lucide-react";
 import { createPortal } from "react-dom";
 
 /** enquadramentos alternados: cada fala reposiciona levemente a câmera */
 import {
   CUTSCENES,
-  SPEAKER_LABEL,
   type ChoiceEffect,
   type Cutscene as SceneData,
   type CutsceneLine,
@@ -30,6 +43,7 @@ import { SHOTS } from "@/game/cutscene-timeline";
 import { directScene } from "@/game/cutscene-director";
 import { cinematicCueFor } from "@/game/cinematic-cue";
 import { CinematicSound } from "@/game/cinematic-sound";
+import { playCinematicVoice } from "@/game/cinematic-playback";
 import { beginCinematicOverlay } from "@/game/cinematic-overlay";
 import {
   cutsceneBranch,
@@ -37,12 +51,11 @@ import {
   type CutsceneChoiceReaction,
 } from "@/game/cutscene-choice";
 import { prefersReducedMotion, watchReducedMotion } from "@/game/device";
+import { dialogueBoundaries, dialogueRevealLength } from "@/game/dialogue-reveal";
 import type { Club, ManagerLook } from "@/game/types";
 import type { QualityLevel } from "@/game/device";
 import type { CinematicManner } from "@/game/cinematic-actor";
 import { LazyCinematicStage, preloadCinematicStage } from "./cinematic-loading";
-import { CutsceneLoadFallback } from "./CutsceneLoadFallback";
-import { CutsceneDialogue } from "./CutsceneDialogue";
 import { GraphicsBoundary } from "../GraphicsBoundary";
 import { Button } from "@/components/ui/button";
 import { audioBlobUrl } from "@/game/audio-cache";
@@ -100,15 +113,6 @@ interface Props {
   startPaused?: boolean;
 }
 
-// Load the SVG scene in a separate chunk. The 3D canvas and its controls do
-// not need to parse the many SVG illustrations at startup.
-const Backdrop = lazy(() =>
-  import("./CutsceneBackdrop").then(({ Backdrop }) => ({ default: Backdrop })),
-);
-const CutsceneSettings = lazy(() =>
-  import("./CutsceneSettings").then(({ CutsceneSettings }) => ({ default: CutsceneSettings })),
-);
-
 /* ------------------------------------------------------------- runtime */
 
 export function CutsceneStage({
@@ -137,12 +141,16 @@ export function CutsceneStage({
   reduceMotion = false,
   startPaused = false,
 }: Props) {
+  const { t, lang: uiLang, messageLanguage } = useT();
+  const accessibility = useAccessibility();
   // uniforme real do clube tinge o cenário quando nenhuma cor é forçada
   const accent = accentProp ?? club?.primary ?? "#0a8f3c";
   const accent2 = accent2Prop ?? club?.secondary ?? "#0b1220";
   const data: SceneData | undefined = sceneData ?? CUTSCENES[scene];
 
   const [i, setI] = useState(0);
+  // Replaying a performance never re-applies a career choice or rebuilds its branch.
+  const [replay, setReplay] = useState(0);
   // roteiro vivo: a resposta da escolha é enxertada aqui e a cena continua
   const [lines, setLines] = useState<CutsceneLine[]>(data?.lines ?? []);
   const [chosen, setChosen] = useState<number | null>(null);
@@ -152,13 +160,20 @@ export function CutsceneStage({
   const [mode, setMode] = useState<"3d" | "2d">(cinematic ? "3d" : "2d");
   const [paused, setPaused] = useState(startPaused);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const transcriptRef = useRef<HTMLElement>(null);
+  const transcriptTrigger = useRef<HTMLButtonElement>(null);
+  const transcriptWasOpen = useRef(false);
+  useEffect(() => {
+    if (transcriptOpen) transcriptRef.current?.focus();
+    else if (transcriptWasOpen.current) transcriptTrigger.current?.focus();
+    transcriptWasOpen.current = transcriptOpen;
+  }, [transcriptOpen]);
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
   useEffect(() => setPortalHost(document.body), []);
   const [hidden, setHidden] = useState(false);
   const [stageReady, setStageReady] = useState(false);
   const [mountStage, setMountStage] = useState(false);
-  const [stageLoadError, setStageLoadError] = useState<unknown>(null);
-  const [stageAttempt, setStageAttempt] = useState(0);
   const sceneStartedAt = useRef(0);
   const onStageReady = useCallback(() => {
     if (dialogRef.current) {
@@ -177,16 +192,7 @@ export function CutsceneStage({
         performance.now() - sceneStartedAt.current
       ).toFixed(1);
   }, []);
-  const onUnavailable = useCallback(() => {
-    setStageLoadError(null);
-    setMode("2d");
-  }, []);
-  const retryStage = useCallback(() => {
-    setStageLoadError(null);
-    setStageReady(false);
-    setMountStage(false);
-    setStageAttempt((attempt) => attempt + 1);
-  }, []);
+  const onUnavailable = useCallback(() => setMode("2d"), []);
   useEffect(() => {
     const changed = () => setHidden(document.hidden);
     changed();
@@ -197,7 +203,6 @@ export function CutsceneStage({
     sceneStartedAt.current = performance.now();
     setStageReady(false);
     setMountStage(false);
-    setStageLoadError(null);
     if (dialogRef.current) {
       delete dialogRef.current.dataset["sceneVisibleMs"];
       delete dialogRef.current.dataset["sceneInteractiveMs"];
@@ -211,19 +216,16 @@ export function CutsceneStage({
           performance.now() - sceneStartedAt.current
         ).toFixed(1);
     });
-    let alive = true;
-    void preloadCinematicStage().catch((error: unknown) => {
-      if (alive) setStageLoadError(error);
-    });
+    void preloadCinematicStage().catch(() => undefined);
     // Commit the lightweight controls before constructing the actor meshes.
     const frame = requestAnimationFrame(() => startTransition(() => setMountStage(true)));
     return () => {
-      alive = false;
       cancelAnimationFrame(visibleFrame);
       cancelAnimationFrame(frame);
     };
-  }, [mode, data, stageAttempt]);
-  const [captions, setCaptions] = useState(true);
+  }, [mode, data]);
+  const [captions, setCaptions] = useState(accessibility.preferences.captions);
+  const [captionScale, setCaptionScale] = useState(1);
   const [automatic, setAutomatic] = useState(autoPlay);
   const [ambientEnabled, setAmbientEnabled] = useState(false);
   const ambientRef = useRef<CinematicSound | null>(null);
@@ -249,15 +251,18 @@ export function CutsceneStage({
   const lineTension = direction?.lines[i]?.emotion.tension ?? 0;
   const [typed, setTyped] = useState(0);
   const [systemReduced, setSystemReduced] = useState(() => prefersReducedMotion());
-  const reduced = reduceMotion || systemReduced;
+  const reduced =
+    reduceMotion ||
+    accessibility.reducedMotion ||
+    (accessibility.preferences.motion === "system" && systemReduced);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
   const stageRef = useRef<HTMLDivElement>(null);
   const illustrationRef = useRef<HTMLDivElement>(null);
   const par = useRef({ x: 0, y: 0 });
   const dollyTime = useRef(0);
-  const pausedRef = useRef(paused || hidden);
-  pausedRef.current = paused || hidden;
+  const pausedRef = useRef(paused || hidden || transcriptOpen);
+  pausedRef.current = paused || hidden || transcriptOpen;
   const voiceRef = useRef<HTMLAudioElement | null>(null);
   const voiceUrlRef = useRef<string | null>(null);
   const voiceContextRef = useRef<AudioContext | null>(null);
@@ -266,6 +271,7 @@ export function CutsceneStage({
   const voicePlayingRef = useRef(false);
   const voiceVisemesRef = useRef<readonly TimedViseme[]>([]);
   const voiceFallbackTimerRef = useRef<number | null>(null);
+  const voiceFallbackRef = useRef<(() => void) | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(narrate);
   const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing" | "fallback">("idle");
 
@@ -280,6 +286,7 @@ export function CutsceneStage({
 
   const stopVoice = useCallback(() => {
     clearVoiceFallbackTimer();
+    voiceFallbackRef.current = null;
     voicePlayingRef.current = false;
     voiceRef.current?.pause();
     voiceRef.current = null;
@@ -295,6 +302,7 @@ export function CutsceneStage({
   const startVoiceAudio = useCallback(
     async (audio: HTMLAudioElement, visemes: readonly TimedViseme[]) => {
       let context = voiceContextRef.current;
+      if (pausedRef.current || voiceRef.current !== audio || audio.ended) return;
       if (visemes.length) {
         try {
           if (typeof window !== "undefined" && window.AudioContext) {
@@ -310,7 +318,12 @@ export function CutsceneStage({
           context = null;
         }
       }
-      await audio.play();
+      // AudioContext.resume is asynchronous: the user may pause or advance while it resolves.
+      if (pausedRef.current || voiceRef.current !== audio || audio.ended) return;
+      if (
+        !(await playCinematicVoice(audio, () => !pausedRef.current && voiceRef.current === audio))
+      )
+        return;
       if (context && visemes.length) {
         voiceClockRef.current = voiceClockFromContext(
           context,
@@ -337,9 +350,9 @@ export function CutsceneStage({
 
   useEffect(() => {
     dollyTime.current = 0;
-  }, [i, mode]);
+  }, [i, mode, replay]);
   useEffect(() => {
-    if (reduced || mode === "3d" || paused || hidden) return;
+    if (reduced || mode === "3d" || paused || hidden || transcriptOpen) return;
     let raf = 0;
     let previous = performance.now();
     const shot = SHOTS[i % SHOTS.length]!;
@@ -354,7 +367,7 @@ export function CutsceneStage({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [i, reduced, mode, paused, hidden]);
+  }, [i, reduced, mode, paused, hidden, transcriptOpen]);
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -374,22 +387,32 @@ export function CutsceneStage({
   const previousLine = i > 0 ? lines[i - 1] : undefined;
   const branchReactionForLine =
     line && branchReaction && branchLines.includes(line) ? branchReaction : undefined;
-  const full = line?.text ?? "";
+  const presented = sceneText(data, line, uiLang, t, messageLanguage);
+  const full = presented.text;
+  const presentedTitle = data ? sceneTitle(data, uiLang, t) : "";
+  const speakerLabels = useMemo(() => sceneSpeakerLabels(uiLang, t, data), [uiLang, t, data]);
+  const boundaries = useMemo(() => dialogueBoundaries(full), [full]);
   const cue = useMemo(
     () =>
       line && direction?.lines[i] && data
-        ? cinematicCueFor(`${data.id}:${line.id ?? i}`, line, direction.lines[i]!, lineMood, {
-            previousLine,
-            choiceReaction: branchReactionForLine,
-          })
+        ? cinematicCueFor(
+            `${data.id}:${line.id ?? i}:replay-${replay}`,
+            line,
+            direction.lines[i]!,
+            lineMood,
+            {
+              previousLine,
+              choiceReaction: branchReactionForLine,
+            },
+          )
         : undefined,
-    [line, direction, i, data, lineMood, previousLine, branchReactionForLine],
+    [line, direction, i, data, lineMood, previousLine, branchReactionForLine, replay],
   );
 
   useEffect(() => () => ambientRef.current?.dispose(), []);
   useEffect(() => {
-    ambientRef.current?.setPaused(paused || hidden);
-  }, [paused, hidden]);
+    ambientRef.current?.setPaused(paused || hidden || transcriptOpen);
+  }, [paused, hidden, transcriptOpen]);
   useEffect(() => {
     if (ambientEnabled) ambientRef.current?.accent(lineTension, lineMood === "good");
   }, [i, ambientEnabled, lineTension, lineMood]);
@@ -403,11 +426,11 @@ export function CutsceneStage({
       const sound = CinematicSound.create(data.art);
       if (sound) {
         ambientRef.current = sound;
-        sound.setPaused(paused || hidden);
+        sound.setPaused(paused || hidden || transcriptOpen);
         setAmbientEnabled(true);
       }
     }
-  }, [ambientEnabled, data, paused, hidden]);
+  }, [ambientEnabled, data, paused, hidden, transcriptOpen]);
 
   useEffect(() => {
     if (!narrate || !voiceEnabled || !data || !line || (mode === "3d" && !stageReady)) {
@@ -422,8 +445,15 @@ export function CutsceneStage({
     setVoiceState("loading");
     const fallback = () => {
       if (!alive || fallbackStarted) return;
+      // A hidden or paused scene keeps its authored clip and pending fallback.
+      // No new utterance or timeout starts until the viewer resumes.
+      if (pausedRef.current) {
+        voiceFallbackRef.current = fallback;
+        return;
+      }
       fallbackStarted = true;
       clearVoiceFallbackTimer();
+      voiceFallbackRef.current = null;
       voicePlayingRef.current = false;
       voiceClockRef.current = null;
       voiceVisemesRef.current = [];
@@ -442,7 +472,7 @@ export function CutsceneStage({
       }
       setVoiceState("playing");
       voicePlayingRef.current = true;
-      const utterance = new SpeechSynthesisUtterance(line.text);
+      const utterance = new SpeechSynthesisUtterance(full);
       utterance.onstart = () => {
         if (!alive) return;
         voicePlayingRef.current = true;
@@ -458,8 +488,7 @@ export function CutsceneStage({
         voicePlayingRef.current = false;
         setVoiceState("idle");
       };
-      const lang = document.documentElement.lang || navigator.language || "pt-BR";
-      utterance.lang = lang;
+      utterance.lang = presented.lang;
       utterance.rate = line.who === "referee" ? 0.9 : line.who === "commentator" ? 1.08 : 0.96;
       utterance.pitch =
         line.who === "referee"
@@ -482,7 +511,12 @@ export function CutsceneStage({
       voiceVisemesRef.current = visemes;
       audio.onplaying = () => {
         if (!alive || fallbackStarted) return;
+        if (pausedRef.current) {
+          audio?.pause();
+          return;
+        }
         clearVoiceFallbackTimer();
+        voiceFallbackRef.current = null;
         voicePlayingRef.current = true;
         setVoiceState("playing");
       };
@@ -494,13 +528,17 @@ export function CutsceneStage({
         setVoiceState("idle");
       };
       audio.onerror = fallback;
-      voiceFallbackTimerRef.current = window.setTimeout(fallback, SCENE_VOICE_WAIT_MS);
+      voiceFallbackRef.current = fallback;
+      if (!pausedRef.current)
+        voiceFallbackTimerRef.current = window.setTimeout(fallback, SCENE_VOICE_WAIT_MS);
       if (!pausedRef.current) void startVoiceAudio(audio, visemes).catch(fallback);
-      else setVoiceState("idle");
     };
 
-    const localClip = cutsceneVoiceFor(data.id, line.id);
-    if (localClip) {
+    const localClip = presented.lang.startsWith("pt") ? cutsceneVoiceFor(data.id, line.id) : null;
+    if (!presented.lang.startsWith("pt")) {
+      // Portuguese recorded clips must not contradict localized captions.
+      fallback();
+    } else if (localClip) {
       beginAudio(localClip.src, localClip.visemes);
     } else {
       const authoredIndex = data.lines.indexOf(line);
@@ -526,7 +564,7 @@ export function CutsceneStage({
     const authoredIndex = data.lines.indexOf(line);
     const nextLine = lines[i + 1];
     const nextAuthored = nextLine ? data.lines.indexOf(nextLine) : -1;
-    if (nextAuthored >= 0 && nextLine) {
+    if (presented.lang.startsWith("pt") && nextAuthored >= 0 && nextLine) {
       void sceneVoice(loadVoice, data.id, nextAuthored, nextLine.id).catch(() => undefined);
     }
     return () => {
@@ -547,6 +585,9 @@ export function CutsceneStage({
     stageReady,
     clearVoiceFallbackTimer,
     startVoiceAudio,
+    replay,
+    full,
+    presented.lang,
   ]);
 
   // The dialogue begins with the visible scene, in small batches of characters.
@@ -563,12 +604,12 @@ export function CutsceneStage({
       const now = performance.now();
       if (!pausedRef.current) elapsed += Math.min(100, now - previous);
       previous = now;
-      const length = Math.min(full.length, Math.floor(elapsed / 24));
+      const length = dialogueRevealLength(boundaries, elapsed);
       setTyped((value) => Math.max(value, length));
       if (length >= full.length) clearInterval(id);
     }, 50);
     return () => clearInterval(id);
-  }, [full, i, reduced, mode, stageReady]);
+  }, [full, boundaries, i, reduced, mode, stageReady, replay]);
 
   useEffect(() => {
     if (!data) doneRef.current();
@@ -612,9 +653,11 @@ export function CutsceneStage({
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Tab") {
-        const buttons = dialogRef.current?.querySelectorAll<HTMLElement>(
-          "button:not(:disabled), select, a[href]",
-        );
+        const buttons = Array.from(
+          dialogRef.current?.querySelectorAll<HTMLElement>(
+            "button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href], [tabindex='0']",
+          ) ?? [],
+        ).filter((element) => element.getClientRects().length > 0);
         const first = buttons?.[0],
           last = buttons?.[buttons.length - 1];
         if (
@@ -629,6 +672,7 @@ export function CutsceneStage({
         }
         return;
       }
+      if (e.defaultPrevented || e.isComposing || (transcriptOpen && e.key !== "Escape")) return;
       if (
         e.key !== "Escape" &&
         e.target instanceof HTMLElement &&
@@ -639,12 +683,15 @@ export function CutsceneStage({
         e.preventDefault();
         next();
       } else if (e.key === "Escape") {
-        doneRef.current();
+        e.preventDefault();
+        if (transcriptOpen) setTranscriptOpen(false);
+        else if (settingsOpen) setSettingsOpen(false);
+        else doneRef.current();
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [next]);
+  }, [next, transcriptOpen, settingsOpen]);
 
   useEffect(() => {
     if (!portalHost) return;
@@ -661,25 +708,42 @@ export function CutsceneStage({
   }, [portalHost]);
   useEffect(() => {
     if (!narrate || !voiceEnabled) return;
-    if (paused || hidden) {
+    if (paused || hidden || transcriptOpen) {
+      clearVoiceFallbackTimer();
+      voicePlayingRef.current = false;
       voiceClockRef.current = voiceVisemesRef.current.length ? RESTING_VOICE_CLOCK : null;
       voiceRef.current?.pause();
       window.speechSynthesis?.pause();
     } else {
       const audio = voiceRef.current;
-      if (audio?.paused)
+      if (voiceFallbackRef.current && voiceFallbackTimerRef.current === null)
+        voiceFallbackTimerRef.current = window.setTimeout(
+          voiceFallbackRef.current,
+          SCENE_VOICE_WAIT_MS,
+        );
+      if (audio?.paused && !audio.ended)
         void startVoiceAudio(audio, voiceVisemesRef.current).catch(() => {
           voiceClockRef.current = null;
         });
       window.speechSynthesis?.resume();
+      if (window.speechSynthesis?.speaking) voicePlayingRef.current = true;
     }
-  }, [paused, hidden, narrate, voiceEnabled, startVoiceAudio]);
+  }, [
+    paused,
+    hidden,
+    transcriptOpen,
+    narrate,
+    voiceEnabled,
+    startVoiceAudio,
+    clearVoiceFallbackTimer,
+  ]);
   useEffect(() => {
     if (
       !automatic ||
       (mode === "3d" && !stageReady) ||
       paused ||
       hidden ||
+      transcriptOpen ||
       typed < full.length ||
       (line?.choices && chosen === null) ||
       voiceState === "playing" ||
@@ -695,6 +759,7 @@ export function CutsceneStage({
     automatic,
     paused,
     hidden,
+    transcriptOpen,
     typed,
     full,
     line,
@@ -709,7 +774,7 @@ export function CutsceneStage({
 
   if (!data || !line || !portalHost) return null;
   // elenco que fala: nome e rosto do locutor atual vêm do elenco da carreira
-  const speaker = speakerName(cast, SPEAKER_LABEL, line.who, {
+  const speaker = speakerName(cast, speakerLabels, line.who, {
     ...(managerName ? { manager: managerName } : {}),
     ...(captainName ? { captain: captainName } : {}),
   });
@@ -720,17 +785,19 @@ export function CutsceneStage({
     <div
       ref={dialogRef}
       role="dialog"
+      data-state="open"
       aria-modal="true"
       aria-labelledby="cutscene-title"
       tabIndex={-1}
       className="cutscene-screen"
       data-scene-mode={mode}
-      data-scene-paused={paused || hidden}
+      data-scene-paused={paused || hidden || transcriptOpen}
       data-scene-reduced={reduced}
       data-scene-loading={mode === "3d" && !stageReady}
       data-scene-art={data.art}
       data-scene-mood={lineMood}
       data-scene-beat={i}
+      style={{ "--cine-caption-scale": captionScale } as React.CSSProperties}
     >
       <div
         ref={stageRef}
@@ -739,43 +806,29 @@ export function CutsceneStage({
       >
         {mode === "2d" || !stageReady ? (
           <div ref={illustrationRef} className="absolute inset-0" aria-hidden="true">
-            <Suspense
-              fallback={
-                <div className="absolute inset-0 bg-gradient-to-b from-slate-800 to-slate-950" />
-              }
-            >
-              <Backdrop
-                art={data.art}
-                a={accent}
-                b={accent2}
-                reduced={reduced || mode === "3d"}
-                trophies={trophies}
-              />
-            </Suspense>
+            <Backdrop
+              art={data.art}
+              a={accent}
+              b={accent2}
+              reduced={reduced || mode === "3d"}
+              trophies={trophies}
+            />
           </div>
         ) : null}
-        {mode === "3d" && stageLoadError ? (
-          <CutsceneLoadFallback onIllustrated={onUnavailable} onRetry={retryStage} />
-        ) : null}
-        {mode === "3d" && !stageLoadError && mountStage ? (
+        {mode === "3d" && mountStage ? (
           <GraphicsBoundary
             fallback={
               <button type="button" onClick={onUnavailable} className="cutscene-loading z-10">
-                A cena 3D não carregou. Abrir cena ilustrada.
+                {t("scene.unavailable")}
               </button>
             }
           >
-            <Suspense
-              fallback={
-                <p role="status" className="cutscene-loading">
-                  Preparando cena 3D…
-                </p>
-              }
-            >
+            <Suspense fallback={null}>
               <LazyCinematicStage
-                key={`${data.id}:${stageAttempt}`}
+                key={data.id}
                 art={data.art}
                 business={data.business}
+                language={data.language}
                 primary={accent}
                 secondary={accent2}
                 beat={i}
@@ -787,7 +840,7 @@ export function CutsceneStage({
                 dollyTo={direction?.lines[i]?.dollyTo ?? 0}
                 climax={direction?.lines[i]?.beat ?? false}
                 light={direction?.lines[i]?.light ?? "neutra"}
-                paused={paused}
+                paused={paused || hidden || transcriptOpen}
                 reduced={reduced}
                 look={look}
                 cast={cast}
@@ -804,17 +857,17 @@ export function CutsceneStage({
             </Suspense>
           </GraphicsBoundary>
         ) : null}
-        {mode === "3d" && !stageReady && !stageLoadError ? (
+        {mode === "3d" && !stageReady ? (
           <p role="status" className="cutscene-loading">
-            Preparando cena 3D…
+            {t("scene.loading")}
           </p>
         ) : null}
       </div>
       <div className="cutscene-matte" aria-hidden="true" />
       {stageReady && i === 0 && (
         <div className="cutscene-slate" aria-hidden="true">
-          <span>{club?.short ?? "Futebol. Bastidores. História."}</span>
-          <strong>{data.title}</strong>
+          <span>{club?.short ?? t("scene.storyTag")}</span>
+          <strong>{presentedTitle}</strong>
         </div>
       )}
       <header className="cutscene-top">
@@ -833,13 +886,13 @@ export function CutsceneStage({
           )}
           <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-[0.24em] text-white/55">
-              {club?.short ?? "Carreira de treinador"}
+              {club?.short ?? t("scene.managerCareer")}
             </p>
             <h2
               id="cutscene-title"
               className="truncate font-display text-sm uppercase tracking-wide text-white sm:text-base"
             >
-              {data.title}
+              {presentedTitle}
             </h2>
           </div>
         </div>
@@ -850,56 +903,176 @@ export function CutsceneStage({
           className="text-white/80 hover:bg-white/10 hover:text-white"
           onClick={() => doneRef.current()}
         >
-          Pular cena
+          {t("scene.skip")}
         </Button>
       </header>
-      <div className="cutscene-bottom">
+      {transcriptOpen && (
+        <section
+          ref={transcriptRef}
+          tabIndex={0}
+          className="cutscene-transcript"
+          aria-labelledby="cutscene-transcript-title"
+        >
+          <div className="cutscene-transcript-heading">
+            <h3 id="cutscene-transcript-title">{t("scene.transcript")}</h3>
+            <button
+              type="button"
+              onClick={() => setTranscriptOpen(false)}
+              className="cutscene-control px-3"
+            >
+              {t("scene.backToScene")}
+            </button>
+          </div>
+          <p>{t("scene.transcriptHint")}</p>
+          <ol>
+            {lines.slice(0, i + 1).map((entry, index) => {
+              const copy = sceneText(data, entry, uiLang, t, messageLanguage);
+              const name = speakerName(cast, speakerLabels, entry.who, {
+                ...(managerName ? { manager: managerName } : {}),
+                ...(captainName ? { captain: captainName } : {}),
+              });
+              return (
+                <li
+                  key={`${entry.id ?? index}-${index}`}
+                  aria-current={index === i ? "step" : undefined}
+                >
+                  {name && <strong>{name}</strong>}
+                  <p lang={copy.lang} dir="auto">
+                    {copy.text}
+                  </p>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      )}
+      <div className="cutscene-bottom" hidden={transcriptOpen}>
         {(captions || pendingChoice) && (
-          <CutsceneDialogue
-            key={i}
-            speaker={speaker}
-            fullText={full}
-            visibleText={full.slice(0, typed)}
-            choices={line.choices}
-            selectedChoice={chosen}
-            choiceLocked={chosen !== null}
-            onAdvance={next}
-            onChoose={choose}
-          />
+          <section
+            key={`${i}-${replay}`}
+            className="cutscene-dialogue"
+            aria-label={t("scene.dialogue")}
+          >
+            {speaker ? <p className="cutscene-speaker">{speaker}</p> : null}
+            <button
+              type="button"
+              onClick={next}
+              aria-label={t(typed < full.length ? "scene.fullLine" : "scene.continue")}
+              className="cutscene-caption block w-full text-start leading-relaxed text-white"
+              dir="auto"
+              lang={presented.lang}
+            >
+              {full.slice(0, typed)}
+              {typed < full.length && (
+                <span aria-hidden className="opacity-40">
+                  ▍
+                </span>
+              )}
+            </button>
+            <p className="sr-only" aria-live="polite" lang={presented.lang}>
+              {speaker ? `${speaker}: ` : ""}
+              {full}
+            </p>
+            {line.choices && (
+              <div className="cutscene-choices" role="group" aria-label={t("scene.choice")}>
+                {line.choices.map((choice, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => choose(index)}
+                    disabled={chosen !== null}
+                    aria-pressed={chosen === index}
+                    className="cutscene-choice"
+                  >
+                    <span className="block font-semibold">{choice.label}</span>
+                    {choice.hint ? (
+                      <span className="mt-1 block text-xs text-white/60">{choice.hint}</span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
         )}
-        {pendingChoice && (
-          <p className="cutscene-decision">Sua resposta muda o rumo da conversa.</p>
-        )}
+        {pendingChoice && <p className="cutscene-decision">{t("scene.decision")}</p>}
         {settingsOpen && (
-          <Suspense fallback={null}>
-            <CutsceneSettings
-              captions={captions}
-              pendingChoice={pendingChoice}
-              onToggleCaptions={() => setCaptions((value) => !value)}
-              narrate={narrate}
-              voiceEnabled={voiceEnabled}
-              onToggleVoice={() => setVoiceEnabled((value) => !value)}
-              ambientEnabled={ambientEnabled}
-              onToggleAmbience={toggleAmbience}
-              automatic={automatic}
-              onToggleAutomatic={() => setAutomatic((value) => !value)}
-              mode={mode}
-              onToggleMode={() => {
+          <div
+            id="cutscene-settings"
+            className="cutscene-settings"
+            role="group"
+            aria-label={t("scene.preferences")}
+          >
+            <label className="cutscene-caption-size">
+              <span>{t("scene.captionSize")}</span>
+              <input
+                type="range"
+                min="1"
+                max="1.5"
+                step="0.1"
+                value={captionScale}
+                onChange={(event) => setCaptionScale(Number(event.target.value))}
+              />
+            </label>
+            <button
+              type="button"
+              aria-pressed={captions}
+              disabled={pendingChoice}
+              onClick={() => setCaptions((value) => !value)}
+              className="cutscene-control px-3 text-xs"
+            >
+              {captions ? <Eye size={17} /> : <EyeOff size={17} />}
+              {t(captions ? "scene.captionHide" : "scene.captionShow")}
+            </button>
+            {narrate && (
+              <button
+                type="button"
+                aria-pressed={voiceEnabled}
+                onClick={() => setVoiceEnabled((value) => !value)}
+                className="cutscene-control px-3 text-xs"
+              >
+                {voiceEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
+                {t(voiceEnabled ? "scene.voiceOff" : "scene.voiceOn")}
+              </button>
+            )}
+            <button
+              type="button"
+              aria-pressed={ambientEnabled}
+              onClick={toggleAmbience}
+              className="cutscene-control px-3 text-xs"
+            >
+              {ambientEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
+              {t("scene.ambience")}
+            </button>
+            <button
+              type="button"
+              aria-pressed={automatic}
+              onClick={() => setAutomatic((value) => !value)}
+              className="cutscene-control px-3 text-xs"
+            >
+              {t("scene.automatic")}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
                 setMode((value) => (value === "3d" ? "2d" : "3d"));
                 setSettingsOpen(false);
               }}
-            />
-          </Suspense>
+              className="cutscene-control px-3 text-xs"
+            >
+              {t(mode === "3d" ? "scene.illustrated" : "scene.stage")}
+            </button>
+          </div>
         )}
         <div className="cutscene-progress" aria-hidden="true">
           {lines.map((_, index) => (
             <span key={index} data-complete={index < i} data-active={index === i} />
           ))}
         </div>
-        <div className="cutscene-controls" role="group" aria-label="Controles da cena">
+        <div className="cutscene-controls" role="group" aria-label={t("scene.controls")}>
           <button
             type="button"
-            aria-label={paused ? "Reproduzir cena" : "Pausar cena"}
+            aria-label={t(paused ? "scene.play" : "scene.pause")}
+            title={t(paused ? "scene.play" : "scene.pause")}
             aria-pressed={paused}
             onClick={() => setPaused((value) => !value)}
             className="cutscene-control"
@@ -908,19 +1081,47 @@ export function CutsceneStage({
           </button>
           <button
             type="button"
-            aria-label="Preferências da cena"
+            aria-label={t("scene.replay")}
+            title={t("scene.replay")}
+            onClick={() => {
+              stopVoice();
+              setReplay((value) => value + 1);
+              setCaptions(true);
+            }}
+            className="cutscene-control"
+          >
+            <RotateCcw size={17} />
+          </button>
+          <button
+            type="button"
+            aria-label={t("scene.preferences")}
+            title={t("scene.preferences")}
             aria-expanded={settingsOpen}
             aria-controls="cutscene-settings"
             onClick={() => setSettingsOpen((value) => !value)}
             className="cutscene-control px-3 text-xs"
           >
             <SlidersHorizontal size={17} />
-            <span className="hidden sm:inline">Ajustes</span>
+            <span className="hidden sm:inline">{t("scene.settings")}</span>
           </button>
           {sequenceActions}
+          <button
+            type="button"
+            ref={transcriptTrigger}
+            onClick={() => {
+              setSettingsOpen(false);
+              setTranscriptOpen(true);
+            }}
+            aria-label={t("scene.transcript")}
+            title={t("scene.transcript")}
+            aria-expanded={transcriptOpen}
+            className="cutscene-control"
+          >
+            <BookOpen size={17} aria-hidden="true" />
+          </button>
           <span
             className="ml-auto text-xs tabular-nums text-white/60"
-            aria-label="Progresso do diálogo"
+            aria-label={t("scene.progress")}
           >
             {i + 1} / {lines.length}
           </span>
@@ -929,17 +1130,17 @@ export function CutsceneStage({
             onClick={next}
             disabled={pendingChoice && typed >= full.length}
             className="cutscene-control bg-primary px-3 text-primary-foreground"
-            aria-label="Avançar diálogo"
+            aria-label={t("scene.advance")}
           >
             <ChevronRight size={18} />
-            <span className="hidden text-xs sm:inline">Continuar</span>
+            <span className="hidden text-xs sm:inline">{t("scene.continue")}</span>
           </button>
         </div>
         <span className="sr-only" aria-live="polite">
           {voiceState === "loading"
-            ? "Carregando narração"
+            ? t("scene.voiceLoading")
             : voiceState === "playing"
-              ? "Narração em reprodução"
+              ? t("scene.voicePlaying")
               : ""}
         </span>
       </div>

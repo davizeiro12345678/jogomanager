@@ -336,6 +336,7 @@ export function athleticTorsoSurface(
   geometry: THREE.BufferGeometry,
   width: number,
   height: number,
+  closeSculpt = false,
 ) {
   const positions = geometry.getAttribute("position");
   for (let i = 0; i < positions.count; i++) {
@@ -356,6 +357,12 @@ export function athleticTorsoSurface(
     const lowerPec = Math.exp(-(((Math.abs(x) - 0.43) / 0.35) ** 2) - ((y - 0.58) / 0.12) ** 2);
     const abdomen = Math.exp(-((x / 0.62) ** 2) - ((y - 0.34) / 0.21) ** 2);
     const lumbar = Math.exp(-((x / 0.36) ** 2) - ((y - 0.35) / 0.25) ** 2);
+    const axillaryFold = closeSculpt
+      ? Math.exp(-(((Math.abs(x) - 0.83) / 0.17) ** 2) - ((y - 0.7) / 0.15) ** 2)
+      : 0;
+    const trapezius = closeSculpt
+      ? Math.exp(-(((Math.abs(x) - 0.39) / 0.29) ** 2) - ((y - 0.88) / 0.13) ** 2)
+      : 0;
     // Tailored cloth tension follows the obliques and lower back, with subtle
     // diagonal drape rather than a perfect cylindrical waist.
     const drape = Math.sin(y * 25 + Math.abs(x) * 5) * oblique * 0.006;
@@ -364,7 +371,10 @@ export function athleticTorsoSurface(
     positions.setX(
       i,
       positions.getX(i) +
-        Math.sign(x) * width * envelope * (deltoid * 0.034 + lat * 0.02 + serratus * 0.008),
+        Math.sign(x) *
+          width *
+          envelope *
+          (deltoid * (closeSculpt ? 0.061 : 0.043) + lat * 0.029 + serratus * 0.009),
     );
     positions.setZ(
       i,
@@ -372,14 +382,15 @@ export function athleticTorsoSurface(
         width *
           envelope *
           (z > 0
-            ? pectoral * 0.057 +
-              lowerPec * 0.018 +
-              clavicle * 0.024 -
+            ? pectoral * 0.073 +
+              lowerPec * (closeSculpt ? 0.035 : 0.024) +
+              clavicle * (closeSculpt ? 0.052 : 0.024) +
+              axillaryFold * 0.029 -
               sternum * 0.016 -
               oblique * 0.016 +
               abdomen * 0.013 +
               drape
-            : -scapula * 0.042 - lat * 0.016 + lumbar * 0.015 - drape),
+            : -scapula * 0.052 - lat * 0.016 - trapezius * 0.042 + lumbar * 0.015 - drape),
     );
   }
   refreshSurfaceNormals(geometry);
@@ -757,6 +768,13 @@ export function anatomicalLimb(
     // surface avoids the small floating sphere that previously read as a
     // plastic cap during a close inspection.
     const lateral = Math.abs(x) / Math.max(radius * 0.1, Math.hypot(x, z));
+    // Patella spans the femur/tibia boundary. Share one shallow front lens
+    // across both seam rings so a bent knee keeps a continuous bony landmark.
+    if ((kind === "thigh" || kind === "calf") && front > 0) {
+      const distance = kind === "thigh" ? 1 - u : u;
+      const patella = Math.exp(-((distance / 0.095) ** 2));
+      position.setZ(i, position.getZ(i) + radius * 0.11 * patella * angular ** 4);
+    }
     if (kind === "calf") {
       const shin = Math.exp(-(((u - 0.62) / 0.3) ** 2)) * (1 - lateral) ** 3;
       const heads = Math.exp(-(((u - 0.33) / 0.19) ** 2)) * lateral * (1 - lateral) * 4;

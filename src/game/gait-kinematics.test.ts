@@ -18,6 +18,26 @@ const legEnd = (pitch: number, knee: number) => ({
 });
 
 describe("physical player movement", () => {
+  it.each([1.6, 5.5, 8])(
+    "keeps both ankles continuous through toe-off and heel-strike at %s m/s",
+    (speed) => {
+      const duty = 0.64 - Math.min(1, speed / 6.8) * 0.38;
+      for (const boundary of [0, duty, 0.5, (duty + 0.5) % 1]) {
+        const before = gaitPoseAt((boundary - 1e-6) * Math.PI * 2, speed, p).pose;
+        const after = gaitPoseAt((boundary + 1e-6) * Math.PI * 2, speed, p).pose;
+        for (const joint of [
+          "ankleL",
+          "ankleR",
+          "kneeL",
+          "kneeR",
+          "legLPitch",
+          "legRPitch",
+        ] as const)
+          expect(Math.abs(after[joint] - before[joint])).toBeLessThan(0.001);
+      }
+    },
+  );
+
   it.each([-0.3, 0, 0.35])("reaches a target at %s m with a knee that bends anatomically", (z) => {
     const target = solveLegTarget(z, p.thigh + p.shin - 0.16, p.thigh, p.shin);
     const end = legEnd(target.pitch, target.knee);
@@ -78,6 +98,18 @@ describe("physical player movement", () => {
       (start + 0.8 * gaitCadence(5.5, p.thigh + p.shin) * Math.PI * 2) % (Math.PI * 2),
       6,
     );
+  });
+
+  it("returns a shared frame before reading motion inputs again", () => {
+    const player = { id: "cached", x: 0, z: 0, vx: 0, vz: 5.5 };
+    const owner = {};
+    const result = visualMotionFor(owner, player, { x: 0, z: 5 }, 12, p.thigh + p.shin, 1);
+    Object.defineProperty(player, "vx", {
+      get: () => {
+        throw new Error("duplicate motion calculation");
+      },
+    });
+    expect(visualMotionFor(owner, player, { x: 0, z: 5 }, 12, p.thigh + p.shin, 1)).toBe(result);
   });
 
   it("gives the same stride clock at 30 and 120 frames per second", () => {

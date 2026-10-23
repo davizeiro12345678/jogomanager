@@ -45,7 +45,7 @@ export function clampPoseAnatomy(pose: Pose): Pose {
 }
 
 const AIRBORNE_CLIPS =
-  /jump|header|headClear|dive|savehigh|celebrateArms|celebratejump|bicycle|volleyair/i;
+  /jump|header|headClear|aerialLanding|dive|savehigh|celebrateArms|celebratejump|bicycle|volleyair/i;
 
 /** 0 = pés no chão, 1 = no ar (o contato não puxa a raiz para baixo). */
 export function airborneFactor(clip: string, hipY: number): number {

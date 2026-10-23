@@ -1,10 +1,12 @@
-import { CinematicActor as Figure } from "../CinematicActor";
+import { CelebrationRain } from "./Particles";
+
+import type { Speaker } from "@/content/cutscenes";
 import { CinematicCrowd } from "../CinematicCrowd";
 import { CinematicTraining } from "../CinematicTraining";
+import { CinematicActor as Figure } from "../CinematicActor";
+
 import { useCinematicArtwork } from "../cinematic-artwork";
-import { cinematicSurface } from "../cinematic-surfaces";
-import { CelebrationRain } from "./shared";
-import type { CinematicSetProps } from "./types";
+import { CinematicPitchSurface } from "../CinematicPitchSurface";
 
 export function PitchEntry({
   primary,
@@ -12,32 +14,18 @@ export function PitchEntry({
   speaker,
   festive = false,
   training = false,
-}: CinematicSetProps) {
+}: {
+  primary: string;
+  secondary: string;
+  speaker: Speaker | null;
+  festive?: boolean;
+  training?: boolean;
+}) {
   const artwork = useCinematicArtwork("pitch", primary, secondary);
   return (
     <group>
-      {Array.from({ length: 14 }).map((_, i) => (
-        <mesh
-          key={i}
-          receiveShadow
-          rotation-x={-Math.PI / 2}
-          position={[0, i % 2 ? 0.001 : 0, 8 - i * 2.2]}
-        >
-          <planeGeometry args={[40, 2.2]} />
-          <meshStandardMaterial
-            color={i % 2 ? "#337b43" : "#2c6e3b"}
-            map={cinematicSurface("grass")}
-            normalMap={cinematicSurface("grass", "normal")}
-            normalScale={[0.14, 0.14]}
-            roughnessMap={cinematicSurface("grass", "roughness")}
-            roughness={0.94}
-          />
-        </mesh>
-      ))}
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0.006, -4]}>
-        <ringGeometry args={[4.2, 4.32, 48]} />
-        <meshBasicMaterial color="#eafff2" />
-      </mesh>
+      <CinematicPitchSurface />
+      {/* gol ao fundo */}
       <group position={[0, 0, -16]}>
         <mesh position={[-3.66, 1.22, 0]}>
           <cylinderGeometry args={[0.06, 0.06, 2.44, 8]} />
@@ -52,6 +40,7 @@ export function PitchEntry({
           <meshStandardMaterial color="#f3fff7" />
         </mesh>
       </group>
+      {/* Terraces support the crowd silhouettes in daylight as well as night. */}
       {Array.from({ length: 7 }, (_, row) => (
         <mesh key={row} position={[0, (2.28 + row * 0.62) / 2, -22 - row * 0.7]} receiveShadow>
           <boxGeometry args={[33, 2.28 + row * 0.62, 0.8]} />
@@ -71,6 +60,7 @@ export function PitchEntry({
         rows={7}
         cols={44}
       />
+      {/* refletores */}
       {[-14, 14].map((x) => (
         <group key={x} position={[x, 0, -18]}>
           <mesh position={[0, 5, 0]}>
@@ -83,6 +73,7 @@ export function PitchEntry({
           </mesh>
         </group>
       ))}
+      {/* fila de entrada + bola */}
       {training ? (
         <CinematicTraining primary={primary} secondary={secondary} speaker={speaker} />
       ) : (

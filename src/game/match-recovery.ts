@@ -18,12 +18,14 @@ export async function recoverMatch(
     { knockout: state["knockout"] as boolean, weather: state["weather"] as MatchSim["weather"] },
   );
   try {
-    if (checkpoint.perception === "wasm") {
+    if ((checkpoint.execution?.perception ?? checkpoint.perception) === "wasm") {
       const kernel = await loadPassLaneIntoKernel();
       if (!kernel) throw new Error("Recovery perception backend unavailable");
       sim.setPassLaneIntoKernel(kernel, "wasm");
     }
-    if (checkpoint.physics) {
+    if (
+      (checkpoint.execution?.physics ?? (checkpoint.physics ? "rapier" : "compat")) === "rapier"
+    ) {
       const { createRapierBallAuthority } = await import("./rapier-ball-authority");
       const authority = await createRapierBallAuthority();
       try {

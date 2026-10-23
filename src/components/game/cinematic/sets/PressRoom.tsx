@@ -1,14 +1,26 @@
+import { PressFlashes } from "./Particles";
+
 import { useEffect, useMemo } from "react";
+
+import type { Speaker } from "@/content/cutscenes";
+
 import { CinematicActor as Figure } from "../CinematicActor";
+
 import {
   cinematicBackdrop,
   cinematicSurface,
   releaseCinematicBackdrop,
 } from "../cinematic-surfaces";
-import { PressFlashes } from "./shared";
-import type { CinematicSetProps } from "./types";
 
-export function PressRoom({ primary, secondary, speaker }: CinematicSetProps) {
+export function PressRoom({
+  primary,
+  secondary,
+  speaker,
+}: {
+  primary: string;
+  secondary: string;
+  speaker: Speaker | null;
+}) {
   const backdrop = useMemo(() => cinematicBackdrop(primary, secondary), [primary, secondary]);
   useEffect(() => () => releaseCinematicBackdrop(backdrop), [backdrop]);
   return (
@@ -24,6 +36,7 @@ export function PressRoom({ primary, secondary, speaker }: CinematicSetProps) {
           roughness={0.65}
         />
       </mesh>
+      {/* painel de patrocinadores */}
       <mesh position={[0, 2.4, -4]} receiveShadow>
         <boxGeometry args={[13, 4.8, 0.2]} />
         <meshStandardMaterial color="#21303b" roughness={0.72} />
@@ -32,6 +45,7 @@ export function PressRoom({ primary, secondary, speaker }: CinematicSetProps) {
         <planeGeometry args={[12.6, 4.25]} />
         <meshStandardMaterial map={backdrop} roughness={0.78} />
       </mesh>
+      {/* mesa, microfones e garrafa */}
       <mesh position={[0, 0.76, -1.4]} castShadow receiveShadow>
         <boxGeometry args={[4.6, 0.14, 1.1]} />
         <meshStandardMaterial color="#101513" roughness={0.3} metalness={0.25} />
@@ -58,6 +72,7 @@ export function PressRoom({ primary, secondary, speaker }: CinematicSetProps) {
         attention={[-3.4, 2.4]}
         acting={speaker === "manager"}
       />
+      {/* fotógrafos e flashes */}
       {Array.from({ length: 5 }).map((_, i) => (
         <Figure
           key={i}

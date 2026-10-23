@@ -1,23 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { HeroSelectionBuffer, stageHeroMembership, heroPriorityScore } from "./hero-selection";
+import { HeroSelectionBuffer, stageHeroMembership } from "./hero-selection";
 
 describe("bounded hero selection", () => {
-  it("prioritizes readable football moments while rejecting tiny actors", () => {
-    const background = {
-      retained: false,
-      ballHolder: false,
-      contact: false,
-      keeperSave: false,
-      scorer: false,
-    };
-    expect(heroPriorityScore(0.04, background)).toBeNull();
-    expect(heroPriorityScore(0.02, { ...background, keeperSave: true })).toBeNull();
-    expect(heroPriorityScore(0.04, { ...background, ballHolder: true })).toBeGreaterThan(0.06);
-    expect(heroPriorityScore(0.055, { ...background, keeperSave: true })).toBeGreaterThan(
-      heroPriorityScore(0.07, background)!,
-    );
-    expect(heroPriorityScore(0.04, { ...background, retained: true })).not.toBeNull();
-  });
   it("stages mesh creation, preserves eligible rigs and drops the previous roster", () => {
     const desired = ["a", "b", "c"];
     let current = stageHeroMembership(new Set(), desired);

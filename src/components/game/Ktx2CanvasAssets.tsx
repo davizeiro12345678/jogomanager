@@ -4,20 +4,26 @@ import { onKtx2Ready, retainKtx2 } from "@/game/textures/ktx2";
 
 /** A Canvas owns decoder lifetime. Asset arrival redraws demand-rendered
  * portraits and paused dialogue without changing their simulation clock. */
-export function Ktx2CanvasAssets({ enabled = true }: { enabled?: boolean }) {
+export function Ktx2CanvasAssets({
+  enabled = true,
+  portrait = false,
+}: {
+  enabled?: boolean;
+  portrait?: boolean;
+}) {
   const gl = useThree((state) => state.gl);
   const invalidate = useThree((state) => state.invalidate);
   useEffect(() => {
     if (!enabled) return;
     const unsubscribe = onKtx2Ready(() => invalidate());
-    let release = retainKtx2(gl);
+    let release = retainKtx2(gl, portrait);
     const lost = () => {
       release();
       release = () => undefined;
     };
     const restored = () => {
       release();
-      release = retainKtx2(gl);
+      release = retainKtx2(gl, portrait);
       invalidate();
     };
     gl.domElement.addEventListener("webglcontextlost", lost);
@@ -28,6 +34,6 @@ export function Ktx2CanvasAssets({ enabled = true }: { enabled?: boolean }) {
       gl.domElement.removeEventListener("webglcontextrestored", restored);
       release();
     };
-  }, [gl, invalidate, enabled]);
+  }, [gl, invalidate, enabled, portrait]);
   return null;
 }

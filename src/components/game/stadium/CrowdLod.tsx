@@ -1,7 +1,8 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { CROWD_MOTION_GLSL } from "@/game/crowd-motion";
+import { CROWD_MOTION_GLSL, createCrowdBehavior, advanceCrowdBehavior } from "@/game/crowd-motion";
+import { useVisual } from "@/game/visual-settings";
 import { supporterGeometry } from "@/game/crowd-geometry";
 import { crowdLodMaterial } from "@/game/crowd-lod-material";
 
@@ -168,12 +169,14 @@ function buildTiles(positions: THREE.Vector3[]): CrowdTile[] {
 export function CrowdLod({
   crowd,
   pulse,
+  sim,
   budget,
   supporters,
   webgl2 = true,
 }: {
   crowd: CrowdData;
   pulse: React.MutableRefObject<number>;
+  sim?: import("@/game/sim-types").SimView;
   budget: Pick<
     RuntimeSceneBudget,
     "crowdInstances" | "crowdVisibleTiles" | "crowdUpdateSeconds" | "stage" | "tier"
@@ -182,6 +185,17 @@ export function CrowdLod({
   /** Native WebGPU keeps the same instance pools, without GLSL-only motion hooks. */
   webgl2?: boolean;
 }) {
+  const behavior = useRef(createCrowdBehavior());
+  const visual = useVisual();
+  const soundLoader = useRef<Promise<typeof import("@/game/goal-anthem")> | null>(null);
+  const soundEnabled = useRef(visual.crowdSound);
+  soundEnabled.current = visual.crowdSound;
+  useEffect(
+    () => () => {
+      soundEnabled.current = false;
+    },
+    [],
+  );
   const capacity = Math.min(
     MAX_CROWD_INSTANCES,
     resolveRuntimeSceneBudget(budget.tier).crowdInstances,
@@ -264,6 +278,9 @@ export function CrowdLod({
       pulse: { value: 0 },
       wave: { value: 0 },
       agitation: { value: 0 },
+      energy: { value: 0 },
+      protest: { value: 0 },
+      waveStrength: { value: 0 },
     };
     const materials = [0, 1, 2].map((tier) => {
       const legacy =
@@ -271,16 +288,20 @@ export function CrowdLod({
         location.pathname.endsWith("/graphics-benchmark.html") &&
         new URLSearchParams(location.search).get("crowdLighting") === "legacy";
       const material = crowdLodMaterial(tier, card, legacy);
-      if (webgl2)
+      if (webgl2) {
+        material.customProgramCacheKey = () => `crowd-articulation-v2-tier-${tier}`;
         material.onBeforeCompile = (shader) => {
           shader.uniforms["crowdTime"] = uniforms.time;
           shader.uniforms["crowdPulse"] = uniforms.pulse;
           shader.uniforms["crowdWave"] = uniforms.wave;
           shader.uniforms["crowdAgitation"] = uniforms.agitation;
+          shader.uniforms["crowdEnergy"] = uniforms.energy;
+          shader.uniforms["crowdProtest"] = uniforms.protest;
+          shader.uniforms["crowdWaveStrength"] = uniforms.waveStrength;
           shader.vertexShader = shader.vertexShader
             .replace(
               "#include <common>",
-              "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave; uniform float crowdAgitation; attribute vec3 crowdSkin; attribute vec2 crowdStyle; attribute float crowdRegion;\n" +
+              "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave; uniform float crowdAgitation; uniform float crowdEnergy; uniform float crowdProtest; uniform float crowdWaveStrength; attribute vec3 crowdSkin; attribute vec2 crowdStyle; attribute float crowdRegion;\n" +
                 CROWD_MOTION_GLSL,
             )
             .replace(
@@ -299,7 +320,7 @@ export function CrowdLod({
               // cada ~28 s); sutil no jogo corrido, erupção quando sai o gol
               float ang = atan(instanceMatrix[3].z, instanceMatrix[3].x);
               float dw = abs(mod(ang - crowdWave + 3.14159265, 6.2831853) - 3.14159265);
-              transformed.y += exp(-dw * dw * 5.0) * (0.1 + crowdPulse * 0.6);`,
+              transformed.y += exp(-dw * dw * 5.0) * crowdWaveStrength * 0.45;`,
             );
           if (tier < 2)
             // color_vertex includes the instance tint when available; its vColor
@@ -320,6 +341,7 @@ export function CrowdLod({
            else if (uv.y < 0.37) vColor.rgb = vec3(0.028, 0.043, 0.06);`,
             );
         };
+      }
       return material;
     });
     const geometries = [
@@ -387,6 +409,36 @@ export function CrowdLod({
     if (!seatUpload) return;
     data.uniforms.time.value = clock.elapsedTime;
     data.uniforms.pulse.value = pulse.current;
+    if (sim) advanceCrowdBehavior(behavior.current, sim, dt, supporters);
+    const mood = behavior.current;
+    if (visual.crowdSound && !document.hidden && mood.age <= Math.min(0.1, dt) && sim) {
+      const kind = mood.behavior,
+        energy = mood.intensity;
+      soundLoader.current ??= import("@/game/goal-anthem");
+      void soundLoader.current
+        .then((audio) => {
+          if (soundEnabled.current) audio.playCrowdAccent(kind, energy);
+        })
+        .catch(() => {
+          soundLoader.current = null;
+        });
+    }
+    data.uniforms.energy.value =
+      mood.behavior === "celebrate"
+        ? mood.intensity
+        : mood.behavior === "chant"
+          ? 0.08
+          : mood.behavior === "taunt"
+            ? 0.3
+            : 0;
+    data.uniforms.protest.value =
+      mood.behavior === "boo" || mood.behavior === "taunt" ? mood.intensity : 0;
+    data.uniforms.waveStrength.value =
+      mood.behavior === "wave"
+        ? mood.intensity
+        : mood.behavior === "celebrate"
+          ? mood.intensity * 0.6
+          : 0;
     data.uniforms.agitation.value =
       supporters?.climate === "protesto"
         ? supporters.intensity

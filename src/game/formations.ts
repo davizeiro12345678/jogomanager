@@ -7,7 +7,67 @@ export interface Slot {
   label: string;
 }
 
+const keeper: Slot = { pos: "GK", x: -0.94, z: 0, label: "GOL" };
+function shape(lines: Array<[Position, number, number, string]>): Slot[] {
+  return [
+    { ...keeper },
+    ...lines.flatMap(([pos, count, x, label]) =>
+      Array.from({ length: count }, (_, i) => ({
+        pos,
+        x,
+        z: count === 1 ? 0 : -0.76 + (i * 1.52) / (count - 1),
+        label,
+      })),
+    ),
+  ];
+}
+
 export const FORMATIONS: Record<FormationKey, Slot[]> = {
+  "4-5-1": shape([
+    ["DF", 4, -0.66, "DEF"],
+    ["MF", 5, -0.12, "MEI"],
+    ["FW", 1, 0.52, "ATA"],
+  ]),
+  "5-3-2": shape([
+    ["DF", 5, -0.67, "DEF"],
+    ["MF", 3, -0.15, "MEI"],
+    ["FW", 2, 0.52, "ATA"],
+  ]),
+  "3-4-3": shape([
+    ["DF", 3, -0.68, "ZAG"],
+    ["MF", 4, -0.12, "MEI"],
+    ["FW", 3, 0.5, "ATA"],
+  ]),
+  "4-1-4-1": shape([
+    ["DF", 4, -0.66, "DEF"],
+    ["MF", 1, -0.36, "VOL"],
+    ["MF", 4, 0.05, "MEI"],
+    ["FW", 1, 0.55, "ATA"],
+  ]),
+  "4-4-2-losango": shape([
+    ["DF", 4, -0.66, "DEF"],
+    ["MF", 1, -0.36, "VOL"],
+    ["MF", 2, -0.05, "MC"],
+    ["MF", 1, 0.25, "MEI"],
+    ["FW", 2, 0.55, "ATA"],
+  ]),
+  "4-3-1-2": shape([
+    ["DF", 4, -0.66, "DEF"],
+    ["MF", 3, -0.2, "MC"],
+    ["MF", 1, 0.22, "MEI"],
+    ["FW", 2, 0.55, "ATA"],
+  ]),
+  "5-4-1": shape([
+    ["DF", 5, -0.7, "DEF"],
+    ["MF", 4, -0.12, "MEI"],
+    ["FW", 1, 0.52, "ATA"],
+  ]),
+  "3-4-2-1": shape([
+    ["DF", 3, -0.68, "ZAG"],
+    ["MF", 4, -0.18, "MEI"],
+    ["MF", 2, 0.24, "MEI"],
+    ["FW", 1, 0.6, "ATA"],
+  ]),
   "4-3-3": [
     { pos: "GK", x: -0.94, z: 0, label: "GOL" },
     { pos: "DF", x: -0.62, z: -0.72, label: "LE" },
@@ -62,8 +122,22 @@ export const FORMATIONS: Record<FormationKey, Slot[]> = {
   ],
 };
 
-export const MENTALITIES = ["Retrancado", "Defensivo", "Equilibrado", "Ofensivo", "All out attack"];
+export const MENTALITIES = ["Retrancado", "Defensivo", "Equilibrado", "Ofensivo", "Ataque total"];
 
 export const PRESSING = ["Bloco baixo", "Padrão", "Pressão alta"];
 export const WIDTHS = ["Estreito", "Padrão", "Aberto"];
 export const TEMPOS = ["Lento", "Padrão", "Acelerado"];
+export const FORMATION_KEYS: FormationKey[] = [
+  "4-3-3",
+  "4-4-2",
+  "3-5-2",
+  "4-2-3-1",
+  "4-5-1",
+  "5-3-2",
+  "3-4-3",
+  "4-1-4-1",
+  "4-4-2-losango",
+  "4-3-1-2",
+  "5-4-1",
+  "3-4-2-1",
+];

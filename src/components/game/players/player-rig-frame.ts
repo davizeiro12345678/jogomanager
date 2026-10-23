@@ -2,7 +2,16 @@ import { useFrame } from "@react-three/fiber";
 import type React from "react";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { emptyPose, getClip, mixPose, type ClipName, type Pose } from "@/game/animation";
+import {
+  emptyPose,
+  getClip,
+  mixPose,
+  type ClipName,
+  type Pose,
+  type SelectCtx,
+} from "@/game/animation";
+import { selectPlayerClip } from "@/game/visual-clip-selection";
+import { clothContactPulse } from "@/game/cloth-contact";
 import { ballGazePitch, emptyFacialPose } from "@/game/facial-animation";
 import {
   emptyActionContext,
@@ -90,6 +99,7 @@ interface PlayerRigFrameInput {
     paused: boolean;
     previewClip: ClipName | undefined;
     previewAt: number | undefined;
+    wet: number;
     onPoseReady: ((skin: RigSkin) => void) | undefined;
   };
   resources: {
@@ -123,6 +133,7 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     paused,
     previewClip,
     previewAt,
+    wet,
     onPoseReady,
   } = scene;
   const {
@@ -227,8 +238,6 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
       onPoseReady?.(skin);
       return;
     }
-    sampled.current = previewAt;
-    painted.current = true;
     const g = root.current;
     if (!g) {
       lastClothTime.current = state.clock.elapsedTime;
@@ -340,7 +349,7 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     }
 
     // ---- passo de animação em taxa reduzida longe da câmera
-    const step = lod === 0 ? 0 : lod === 1 ? 1 / 36 : 1 / 16;
+    const step = paused || previewAt !== undefined || lod === 0 ? 0 : lod === 1 ? 1 / 36 : 1 / 16;
     acc.current += dt;
     if (acc.current < step) return;
     const adt = acc.current;
@@ -353,28 +362,31 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     else if (speed > 0.9) idleFor.current = 0;
     const stopped = idleFor.current > 0.25;
 
+    const selection: SelectCtx = {
+      isGK,
+      action,
+      actionT: goalPresentation ? 1 - goalPresentation.progress : player.actionT,
+      actionDur: goalPresentation ? 1 : player.actionDur,
+      ...(goalPresentation ? { actionSeed: goalPresentation.actionSeed } : {}),
+      speed,
+      hasBall: sim.ball.holder === player.id,
+      ballDist: ballDistance,
+      ballHeight: sim.ball.height,
+      stamina: player.stamina,
+      defending: sim.possession !== player.side,
+      stopped,
+      seed,
+      time: sim.time,
+    };
     const animationFrame = resolvePlayerRigAnimationFrame({
       currentClip: clipName.current,
       currentTime: clipTime.current,
       deltaSeconds: adt,
       previewClip,
+      selectedClip: previewClip ? undefined : selectPlayerClip(sim, player.id, selection),
       previewAt,
       goalProgress: goalPresentation?.progress,
-      selection: {
-        isGK,
-        action,
-        actionT: goalPresentation ? 1 - goalPresentation.progress : player.actionT,
-        actionDur: goalPresentation ? 1 : player.actionDur,
-        ...(goalPresentation ? { actionSeed: goalPresentation.actionSeed } : {}),
-        speed,
-        hasBall: sim.ball.holder === player.id,
-        ballDist: ballDistance,
-        stamina: player.stamina,
-        defending: sim.possession !== player.side,
-        stopped,
-        seed,
-        time: sim.time,
-      },
+      selection,
     });
     clipName.current = animationFrame.clip;
     clipTime.current = animationFrame.clipTime;
@@ -482,6 +494,8 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     clampPoseAnatomy(p);
 
     cur.current = poseBlender.sample(p, adt, {
+      supportFoot: contactL.current >= contactR.current ? "left" : "right",
+      phase: motion.phase,
       clip: clipName.current,
       action,
       progress: u,
@@ -642,9 +656,15 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     clothInput.bend = Math.abs(c.spine) + Math.abs(c.legLPitch - c.legRPitch) * 0.22;
     clothInput.yaw = motion.yaw;
     clothInput.roll = c.hipRoll;
+    clothInput.wet = wet;
+    clothInput.contact = clothContactPulse(player.action, player.actionT, player.actionDur);
     clothInput.legL = Math.min(1, Math.abs(c.kneeL) * 0.58 + Math.abs(c.legLPitch) * 0.24);
     clothInput.legR = Math.min(1, Math.abs(c.kneeR) * 0.58 + Math.abs(c.legRPitch) * 0.24);
     cloth.update(paused ? 0 : clothElapsed, clothInput);
+    // A paused demand-rendered pose is cached only after reaching the bones;
+    // a skipped cadence sample must never freeze the preceding clip.
+    sampled.current = previewAt;
+    painted.current = true;
     onPoseReady?.(skin);
 
     // ---- sombra de contato acompanha a altura do quadril

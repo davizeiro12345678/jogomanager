@@ -17,7 +17,43 @@ export function safeAuthNext(value: unknown): string | undefined {
   }
 }
 
-export type AuthMode = "in" | "up" | "reset" | "update" | "magic";
+export type AuthMode = "in" | "up" | "reset" | "update" | "magic" | "phone";
+
+type RecoveryAuth = {
+  updateUser: (attributes: { password: string }) => Promise<{ error: unknown }>;
+  signOut: (options: { scope: "others" }) => Promise<{ error: unknown }>;
+};
+
+/** Keep the verified recovery session while preventing other sessions from refreshing. */
+export async function completePasswordRecovery(auth: RecoveryAuth, password: string) {
+  const result = await auth.updateUser({ password });
+  if (result.error) throw result.error;
+  try {
+    const revoked = await auth.signOut({ scope: "others" });
+    return { otherSessionsRevoked: !revoked.error };
+  } catch {
+    // The password already changed. Do not misreport this as a failed password update.
+    return { otherSessionsRevoked: false };
+  }
+}
+
+/** Remove raw Supabase callback errors from browser history after displaying a safe message. */
+export function authCallbackUrlWithoutErrorDetails(location: string): string {
+  const url = new URL(location);
+  const errorParams = ["error", "error_code", "error_description", "sb"];
+  for (const param of errorParams) url.searchParams.delete(param);
+
+  if (url.hash.startsWith("#")) {
+    const fragmentParams = new URLSearchParams(url.hash.slice(1));
+    const hadError = errorParams.some((param) => fragmentParams.has(param));
+    if (hadError) {
+      for (const param of errorParams) fragmentParams.delete(param);
+      url.hash = fragmentParams.size ? `#${fragmentParams.toString()}` : "";
+    }
+  }
+
+  return `${url.pathname}${url.search}${url.hash}`;
+}
 
 /** Callback URLs may report an expired email link or a failed OAuth code exchange. */
 export function authCallbackErrorMessage(errorCode: unknown, errorDescription: unknown): string {
@@ -46,10 +82,12 @@ export function authErrorMessage(error: unknown, mode: AuthMode): string {
     same_password: "Escolha uma senha diferente da anterior.",
     signup_disabled: "O cadastro está indisponível no momento. Tente novamente mais tarde.",
     over_email_send_rate_limit: "Aguarde alguns minutos antes de solicitar outro e-mail.",
+    over_sms_send_rate_limit: "Aguarde alguns minutos antes de solicitar outro SMS.",
     over_request_rate_limit: "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
     provider_disabled: "Esta forma de entrada está indisponível. Escolha outro método de acesso.",
     otp_expired: "O código ou link expirou. Solicite um novo e-mail de acesso.",
     otp_disabled: "O acesso por código ou link está indisponível. Escolha outro método de acesso.",
+    sms_send_failed: "Não foi possível enviar o SMS. Confira o número ou tente outro método.",
     captcha_failed:
       "O serviço de acesso ainda exige verificação de segurança. Use uma conta vinculada enquanto essa configuração é ajustada.",
   };

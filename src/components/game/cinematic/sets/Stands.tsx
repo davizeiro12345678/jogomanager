@@ -1,10 +1,12 @@
-import { hash } from "@/components/game/cinematic/sets/hash";
-import * as THREE from "three";
-import { CinematicCrowd } from "../CinematicCrowd";
-import { useCinematicArtwork } from "../cinematic-artwork";
-import type { CinematicSetProps } from "./types";
+import { hash } from "./hash";
 
-export function Stands({ primary, secondary }: CinematicSetProps) {
+import * as THREE from "three";
+
+import { CinematicCrowd } from "../CinematicCrowd";
+
+import { useCinematicArtwork } from "../cinematic-artwork";
+
+export function Stands({ primary, secondary }: { primary: string; secondary: string }) {
   const artwork = useCinematicArtwork("stands", primary, secondary);
   return (
     <group>
@@ -45,6 +47,7 @@ export function Stands({ primary, secondary }: CinematicSetProps) {
         rows={5}
         cols={52}
       />
+      {/* bandeirões */}
       {[-9, -3, 3, 9].map((x, i) => (
         <mesh key={x} position={[x, 3.4 + (i % 2) * 0.5, -9]} rotation-z={(hash(i) - 0.5) * 0.12}>
           <planeGeometry args={[3.4, 2]} />

@@ -51,11 +51,12 @@ export function cinematicLook(seed: number, identity?: ManagerLook): PlayerLook 
       ? {
           skin: SKIN_TONES[identity.skin % SKIN_TONES.length] ?? look.skin,
           hairStyle:
-            (["bald", "buzz", "short", "medium", "curly", "afro", "bun"] as const)[identity.hair] ??
-            "short",
+            (["bald", "short", "afro", "ponytail", "curly", "bun", "medium"] as const)[
+              identity.hair
+            ] ?? "short",
           hairColor: identity.hairColor,
           beard:
-            (["none", "stubble", "goatee", "full", "moustache"] as const)[identity.beard] ?? "none",
+            (["none", "moustache", "goatee", "full", "stubble"] as const)[identity.beard] ?? "none",
         }
       : {}),
   };

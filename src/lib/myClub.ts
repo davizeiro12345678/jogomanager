@@ -19,6 +19,15 @@ import {
 } from "@/game/customStyle";
 import type { Club } from "@/game/types";
 import { scopedKey } from "@/lib/world-scope";
+import {
+  boundedNumber,
+  colorField,
+  parseImportJson,
+  record,
+  safeRecordId,
+  textField,
+  validStyles,
+} from "./import-validation";
 
 /** Chave por campanha: cada save tem o seu clube criado. */
 function key() {
@@ -50,7 +59,7 @@ export function readMyClub(): MyClub | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(key());
-    return raw ? (JSON.parse(raw) as MyClub) : null;
+    return raw ? importClubPack('{"format":"manager3d.club","club":' + raw + "}") : null;
   } catch {
     return null;
   }
@@ -89,6 +98,8 @@ export function clubToBeReplaced(leagueId: string, myId?: string): Club | null {
  * Devolve o pacote com o retrato do clube substituído preenchido.
  */
 export function registerMyClub(my: MyClub): MyClub {
+  // Never assign into an inherited object-registry slot, including old local packages.
+  if (!safeRecordId(my.id)) return my;
   const league = LEAGUES.find((l) => l.id === my.leagueId);
   if (!league) return my;
 
@@ -214,9 +225,38 @@ export function exportClubPack(club: MyClub): string {
 /** Lê um pacote exportado. Devolve null se o arquivo não for válido. */
 export function importClubPack(text: string): MyClub | null {
   try {
-    const data = JSON.parse(text) as { format?: string; club?: MyClub };
-    if (data.format !== "manager3d.club" || !data.club?.name) return null;
-    const c = data.club;
+    const data = parseImportJson(text);
+    if (!record(data) || data["format"] !== "manager3d.club" || !record(data["club"])) return null;
+    const raw = data["club"];
+    if (
+      !textField(raw["name"]) ||
+      !raw["name"].trim() ||
+      !validStyles(raw) ||
+      (raw["id"] !== undefined && (!safeRecordId(raw["id"]) || !raw["id"].startsWith("my-"))) ||
+      (raw["strength"] !== undefined && !boundedNumber(raw["strength"], 35, 99)) ||
+      (raw["founded"] !== undefined && !boundedNumber(raw["founded"], 1800, 2200))
+    )
+      return null;
+    for (const field of ["short", "city", "country", "leagueId"])
+      if (raw[field] !== undefined && !textField(raw[field])) return null;
+    for (const field of ["primary", "secondary"])
+      if (raw[field] !== undefined && !colorField(raw[field])) return null;
+    if (raw["replaced"] !== undefined) {
+      const r = raw["replaced"];
+      if (
+        !record(r) ||
+        !safeRecordId(r["id"]) ||
+        !Object.hasOwn(CLUBS, r["id"]) ||
+        !textField(r["name"]) ||
+        !textField(r["short"], 8) ||
+        !safeRecordId(r["league"]) ||
+        !colorField(r["primary"]) ||
+        !colorField(r["secondary"]) ||
+        !boundedNumber(r["strength"], 0, 99)
+      )
+        return null;
+    }
+    const c = raw as unknown as MyClub;
     return {
       ...DEFAULT_MY_CLUB,
       ...c,

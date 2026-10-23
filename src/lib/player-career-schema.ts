@@ -92,6 +92,12 @@ export const AthleteSaveSchema = z
         beardStyle: short,
         bootVariant: integer,
         bodyType: short,
+        identitySeed: z
+          .string()
+          .min(1)
+          .max(80)
+          .regex(/^[a-zA-Z0-9_-]+$/)
+          .optional(),
       })
       .passthrough()
       .optional(),

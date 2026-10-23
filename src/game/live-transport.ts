@@ -96,7 +96,7 @@ const PLAYER_META_FIELDS = [
 // Adding a metadata field to SimPlayer must also update this transport contract.
 const metadataContractComplete: Exclude<
   keyof PlayerMeta,
-  (typeof PLAYER_META_FIELDS)[number]
+  (typeof PLAYER_META_FIELDS)[number] | "emergencyKeeper"
 > extends never
   ? true
   : never = true;
@@ -112,6 +112,7 @@ function metadataFor(player: SimPlayer): PlayerMeta {
     pid: player.pid,
     ...(player.heightCm === undefined ? {} : { heightCm: player.heightCm }),
     ...(player.weightKg === undefined ? {} : { weightKg: player.weightKg }),
+    ...(player.emergencyKeeper ? { emergencyKeeper: { ...player.emergencyKeeper } } : {}),
   };
 }
 export interface PackedLiveSnapshot extends Omit<LiveSnapshot, "players" | "events"> {
@@ -182,6 +183,14 @@ export class LiveSnapshotEncoder {
             break;
           }
         }
+        const role = player.emergencyKeeper,
+          previousRole = cached.emergencyKeeper;
+        if (
+          role?.pos !== previousRole?.pos ||
+          role?.slotX !== previousRole?.slotX ||
+          role?.slotZ !== previousRole?.slotZ
+        )
+          rosterChanged = true;
       }
     }
     if (rosterChanged) {
@@ -281,7 +290,13 @@ export class LiveSnapshotDecoder {
         throw new Error("Invalid live roster");
     }
     const players = packet.roster
-      ? packet.roster.map((meta) => ({ ...meta }) as SimPlayer)
+      ? packet.roster.map(
+          (meta) =>
+            ({
+              ...meta,
+              ...(meta.emergencyKeeper ? { emergencyKeeper: { ...meta.emergencyKeeper } } : {}),
+            }) as SimPlayer,
+        )
       : this.players;
     const revision = packet.roster ? packet.rosterRevision : this.revision;
     if (revision !== packet.rosterRevision || players.length !== packet.count)

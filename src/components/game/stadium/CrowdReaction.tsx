@@ -62,7 +62,21 @@ const RANK: Record<CrowdMood, number> = {
  */
 function useReactionTracker(sim: SimView, supporters?: SupporterMatchday) {
   const ref = useRef<CrowdReactionState>({ ...EMPTY });
-  const last = useRef({ goals: 0, shots: 0, cards: 0, fouls: 0, minute: 0, homeGoals: 0 });
+  const last = useRef({
+    goals: sim.stats.home.goals + sim.stats.away.goals,
+    shots: sim.stats.home.onTarget + sim.stats.away.onTarget,
+    cards:
+      sim.stats.home.yellow +
+      sim.stats.away.yellow +
+      sim.stats.home.red * 2 +
+      sim.stats.away.red * 2,
+    fouls: sim.stats.home.fouls + sim.stats.away.fouls,
+    minute: sim.minute(),
+    homeGoals: sim.stats.home.goals,
+    homeShots: sim.stats.home.onTarget,
+    homeCards: sim.stats.home.yellow + sim.stats.home.red * 2,
+    homeFouls: sim.stats.home.fouls,
+  });
 
   useFrame((_, dt) => {
     const state = ref.current;
@@ -87,20 +101,21 @@ function useReactionTracker(sim: SimView, supporters?: SupporterMatchday) {
       mood = "chance";
       boost = 0.62;
       // a chance é do lado que finalizou: quem tem mais finalizações no total
-      side = home.onTarget + home.shots >= away.onTarget + away.shots ? "home" : "away";
+      side = home.onTarget > prev.homeShots ? "home" : "away";
     } else if (cards > prev.cards) {
       mood = "protest";
       boost = 0.46;
-      side = home.yellow + home.red >= away.yellow + away.red ? "away" : "home";
+      side = home.yellow + home.red * 2 > prev.homeCards ? "away" : "home";
     } else if (fouls > prev.fouls) {
       mood = "protest";
       boost = 0.28;
+      side = home.fouls > prev.homeFouls ? "away" : "home";
     }
 
     // bola no terço final: zumbido contínuo, sem evento
     if (mood === "idle") {
-      const attackingHome = sim.ball.x > FIELD_X * 0.55;
-      const attackingAway = sim.ball.x < -FIELD_X * 0.55;
+      const attackingHome = Math.abs(sim.ball.x) > FIELD_X * 0.55 && sim.possession === "home";
+      const attackingAway = Math.abs(sim.ball.x) > FIELD_X * 0.55 && sim.possession === "away";
       if (attackingHome || attackingAway) {
         mood = "buzz";
         side = attackingHome ? "home" : "away";
@@ -138,6 +153,9 @@ function useReactionTracker(sim: SimView, supporters?: SupporterMatchday) {
     prev.fouls = fouls;
     prev.minute = minute;
     prev.homeGoals = home.goals;
+    prev.homeShots = home.onTarget;
+    prev.homeCards = home.yellow + home.red * 2;
+    prev.homeFouls = home.fouls;
   });
 
   return ref;
