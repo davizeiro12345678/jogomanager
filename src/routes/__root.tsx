@@ -9,7 +9,7 @@ import {
 import appCss from "../styles.css?url";
 import publicCss from "../public-styles.css?url";
 
-import { isPublicContentPath } from "@/lib/public-content-routes";
+import { isLightweightCssPath } from "@/lib/public-content-routes";
 import { CONSENT_VISIBILITY_SCRIPT } from "@/lib/consent";
 
 // Optional prevents late font swaps after first paint, avoiding text-induced CLS
@@ -50,7 +50,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       {
         rel: "stylesheet",
-        href: isPublicContentPath(matches.at(-1)?.pathname ?? "") ? publicCss : appCss,
+        href: isLightweightCssPath(matches.at(-1)?.pathname ?? "") ? publicCss : appCss,
       },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
