@@ -248,7 +248,9 @@ function playerTextureMaps(hi: boolean, names: ReturnType<typeof detailTextureNa
       : null,
     skinRough: hi ? compressedOrFallback("sweatMask", WHITE_ROUGHNESS, skinRoughness) : null,
     hairNormal: hi ? compressedOrFallback("hairNormal", FLAT_NORMAL, hairStrandNormal) : null,
-    hairRough: hi ? compressedOrFallback("hairRough", WHITE_ROUGHNESS) : null,
+    // Fine fibres retain a broad response even when an old compressed
+    // roughness asset contains near-black channels from an earlier bake.
+    hairRough: hi ? garmentRoughness("shorts") : null,
     bootRough: hi ? compressedOrFallback("bootRough", WHITE_ROUGHNESS) : null,
     shinNormal: hi ? compressedOrFallback("shinNormal", FLAT_NORMAL) : null,
     shinRough: hi ? compressedOrFallback("shinRough", WHITE_ROUGHNESS) : null,
@@ -489,9 +491,9 @@ export function playerMaterials(
       : new THREE.MeshStandardMaterial({ color: kit.detail, roughness: 0.8 }),
     hair: hi
       ? new THREE.MeshPhysicalMaterial({
-          color: "white",
+          color: look.hairColor,
           vertexColors: true,
-          map: hairFiberColor(look.hairColor),
+          map: hairFiberColor("#ffffff"),
           alphaMap: hairlineMask(),
           // Keep the wisps present at the hairline. A high alpha cutoff made
           // the shared shell read as a hard, glossy helmet in portrait views.
@@ -509,9 +511,9 @@ export function playerMaterials(
           sheen: 0.08,
           sheenRoughness: 0.82,
           sheenColor: new THREE.Color(shade(look.hairColor, 0.55)),
-          anisotropy: 0.18,
+          anisotropy: 0.08,
           anisotropyRotation: Math.PI / 2,
-          specularIntensity: 0.14,
+          specularIntensity: 0.08,
           envMapIntensity: 0.18,
         })
       : new THREE.MeshStandardMaterial({

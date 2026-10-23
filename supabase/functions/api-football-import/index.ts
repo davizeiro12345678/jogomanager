@@ -163,6 +163,18 @@ Deno.serve(async (request: Request) => {
           const materialize = createFootballMaterializer({
             teamMap,
             now: Date.parse(settings.cutoff),
+            enrichVenues: async (venues: Record<string, unknown>[]) => {
+              const result = await db.rpc("enrich_football_venues", { p_venues: venues });
+              if (result.error) throw new Error("database_venue_enrichment");
+              return result.data;
+            },
+            enrichProfiles: async (profiles: Record<string, unknown>[]) => {
+              const result = await db.rpc("enrich_existing_football_profiles", {
+                p_profiles: profiles,
+              });
+              if (result.error) throw new Error("database_profile_enrichment");
+              return result.data;
+            },
             upsert: async (target: string, rows: Record<string, unknown>[]) => {
               const key = (r: Record<string, unknown>) =>
                 target === "api_football_data"

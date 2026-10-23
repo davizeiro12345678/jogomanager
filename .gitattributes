@@ -1,2 +1,3 @@
 # Recorded database statements are byte-preserved provenance, including CRLF.
 /supabase/migration-archive/recorded/*.sql -text
+/supabase/migration-archive/legacy/*.sql -text

@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { assessMatchSetup } from "./match-setup-budget.mjs";
 
 const [baselineArg, candidateArg, outputArg] = process.argv.slice(2);
@@ -26,7 +26,7 @@ if (
   );
 mkdirSync(output, { recursive: true });
 const require = createRequire(path.join(candidate, "package.json"));
-const tsx = require.resolve("tsx");
+const tsx = pathToFileURL(require.resolve("tsx")).href;
 const sampler = fileURLToPath(new URL("./match-setup-sample.mjs", import.meta.url));
 const fixturePath = path.join(output, "match-fixture.json");
 function sample(mode, root, target = "") {

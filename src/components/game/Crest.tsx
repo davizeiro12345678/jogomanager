@@ -88,7 +88,7 @@ export function Crest({
     setImgFailed(false);
     const sync = () => setCustom(badgeFor(club.id) ?? officialCrest(club.id));
     sync();
-    void loadOfficialAssets().then(sync);
+    void loadOfficialAssets();
     const off = subscribeOfficial(sync);
     return () => {
       off();

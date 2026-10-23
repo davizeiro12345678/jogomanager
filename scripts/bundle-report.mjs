@@ -83,7 +83,7 @@ const rootDependencies = root ? closure(root.name) : [];
 const cinematicStageChunk = chunks.find((chunk) => chunk.name.startsWith("CinematicStage3D-"));
 const cinematicStageDependencies = cinematicStageChunk ? closure(cinematicStageChunk.name) : [];
 const cinematicStageDynamicDependencies = cinematicStageChunk
-  ? cinematicStageChunk.dynamicImports
+  ? [...new Set(cinematicStageDependencies.flatMap((name) => byName.get(name).dynamicImports))]
   : [];
 const cinematicSetChunks = cinematicSetChunkPrefixes.map(({ set, prefix }) => {
   const chunk = chunks.find((candidate) => candidate.name.startsWith(prefix));

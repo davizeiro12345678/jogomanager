@@ -414,15 +414,13 @@ function Banners({ color, alt, rings }: { color: string; alt: string; rings: num
  * físicos e espectadores próximos 3D; esta camada resolve o detalhe que o
  * olho lê à distância em só quatro superfícies, sem milhares de meshes.
  */
-function crowdBackdropTexture(homeColor: string, awayColor: string) {
+function crowdBackdropTexture(homeColor: string, awayColor: string, occupancy: number) {
   if (typeof document === "undefined") return null;
   const canvas = document.createElement("canvas");
   canvas.width = 1024;
   canvas.height = 320;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
-  ctx.fillStyle = "rgba(9, 15, 20, 0.88)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const neutral = ["#d6dbe0", "#55708c", "#d1b36e", "#80909e", "#adbac4"];
   let seed = 0x9e3779b9;
@@ -435,6 +433,7 @@ function crowdBackdropTexture(homeColor: string, awayColor: string) {
   for (let row = 0; row < rows; row++) {
     const y = 5 + row * 16 + random() * 2;
     for (let col = 0; col < columns; col++) {
+      if (random() > occupancy || col % 29 < 2) continue;
       const x = 3 + col * 12 + random() * 2;
       const sector = col / columns;
       const shirt =
@@ -444,12 +443,41 @@ function crowdBackdropTexture(homeColor: string, awayColor: string) {
             ? awayColor
             : neutral[(row * 3 + col) % neutral.length]!;
       const height = 7 + random() * 5;
+      const shoulder = 7 + random() * 2;
+      // Shoulder slope, neck, arms and occlusion replace the rectangular
+      // shirt grid while retaining the same atlas and four background draws.
       ctx.fillStyle = shirt;
-      ctx.fillRect(x, y + 5, 8 + random() * 2, height);
-      ctx.fillStyle = ["#f0c9a5", "#d79d70", "#9b603a", "#70401f"][Math.floor(random() * 4)]!;
       ctx.beginPath();
-      ctx.arc(x + 4.5, y + 3.5, 3 + random() * 0.8, 0, Math.PI * 2);
+      ctx.moveTo(x + 2, y + 6);
+      ctx.lineTo(x - 0.5, y + 8);
+      ctx.lineTo(x + 0.7, y + height + 5);
+      ctx.lineTo(x + shoulder, y + height + 5);
+      ctx.lineTo(x + shoulder + 1, y + 8);
+      ctx.lineTo(x + shoulder - 1, y + 6);
+      ctx.closePath();
       ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,0.20)";
+      ctx.fillRect(x + 1, y + height + 2, shoulder - 1, 3);
+      ctx.fillStyle = "rgba(255,245,225,0.12)";
+      ctx.fillRect(x + 1.2, y + 7, shoulder - 1, 1);
+      ctx.fillStyle = ["#f0c9a5", "#d79d70", "#9b603a", "#70401f"][Math.floor(random() * 4)]!;
+      ctx.fillRect(x + 3.2, y + 4.8, 2.6, 2);
+      ctx.beginPath();
+      ctx.ellipse(x + 4.5, y + 3.5, 2.7 + random() * 0.5, 3.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = ["#29231f", "#44342c", "#1d2023", "#77716a"][Math.floor(random() * 4)]!;
+      ctx.beginPath();
+      ctx.ellipse(x + 4.5, y + 2, 3, 1.8, 0, Math.PI, Math.PI * 2);
+      ctx.fill();
+      if ((row + col) % 7 === 0) {
+        ctx.strokeStyle = shirt;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(x, y + 8);
+        ctx.lineTo(x - 2, y + 2);
+        ctx.lineTo(x - 1, y - 2);
+        ctx.stroke();
+      }
       // cabeças, braços e bandeiras não ficam regulares como um grid de UI
       if (random() > 0.91) {
         ctx.fillStyle = shirt;
@@ -477,8 +505,14 @@ const CROWD_BACKDROP_TEXTURE_ASPECT = 1024 / 320;
  * Repetir somente o U com base na proporção do painel corrige a leitura dos
  * espectadores em planos abertos, sem criar outro material, textura ou draw.
  */
-function crowdBackdropGeometry(width: number, height: number) {
+function crowdBackdropGeometry(width: number, height: number, depth: number) {
   const geometry = new THREE.PlaneGeometry(width, height);
+  // Follow the rake of the terraces. A vertical panel at the rear was hidden
+  // by nearly every concrete tier, leaving only its top row visible.
+  const position = geometry.getAttribute("position") as THREE.BufferAttribute;
+  for (let index = 0; index < position.count; index++)
+    position.setZ(index, (position.getY(index) * depth) / height);
+  geometry.computeVertexNormals();
   const repeatX = Math.max(1, Math.round(width / height / CROWD_BACKDROP_TEXTURE_ASPECT));
   const uv = geometry.getAttribute("uv") as THREE.BufferAttribute;
   for (let index = 0; index < uv.count; index++) uv.setX(index, uv.getX(index) * repeatX);
@@ -497,16 +531,23 @@ function CrowdBackdrop({
   rings: number;
   occupancy?: number;
 }) {
-  const texture = useMemo(() => crowdBackdropTexture(homeColor, awayColor), [homeColor, awayColor]);
+  const texture = useMemo(
+    () => crowdBackdropTexture(homeColor, awayColor, occupancy),
+    [homeColor, awayColor, occupancy],
+  );
   useEffect(() => () => texture?.dispose(), [texture]);
   const height = Math.max(9, rings * 1.45 + 0.6);
+  const depth = rings * 1.5;
   // Dois buffers compartilhados entre quatro painéis: a mesma cobertura de
   // arquibancada, com o mesmo orçamento de quatro draws.
   const longitudinalGeometry = useMemo(
-    () => crowdBackdropGeometry(FIELD_X * 2 + 24, height),
-    [height],
+    () => crowdBackdropGeometry(FIELD_X * 2 + 24, height, depth),
+    [height, depth],
   );
-  const endGeometry = useMemo(() => crowdBackdropGeometry(FIELD_Z * 2 + 18, height), [height]);
+  const endGeometry = useMemo(
+    () => crowdBackdropGeometry(FIELD_Z * 2 + 18, height, depth),
+    [height, depth],
+  );
   useEffect(
     () => () => {
       longitudinalGeometry.dispose();
@@ -515,12 +556,9 @@ function CrowdBackdrop({
     [longitudinalGeometry, endGeometry],
   );
   if (!texture) return null;
-  const y = 1.9 + height * 0.5;
-  // Os degraus finais são volumes opacos. A massa de silhuetas fica alguns
-  // centímetros para dentro deles: assim ela fica visível acima das cadeiras
-  // sem aparecer através da estrutura quando a câmera muda de lado.
-  const zEdge = FIELD_Z + 6 + (rings - 1) * 1.5;
-  const xEdge = FIELD_X + 9 + (rings - 1) * 1.5;
+  const y = 3.2 + height * 0.5;
+  const zEdge = FIELD_Z + 6.5 + depth * 0.5;
+  const xEdge = FIELD_X + 9.5 + depth * 0.5;
   return (
     <group renderOrder={1}>
       {[-1, 1].map((z) => (
@@ -528,12 +566,12 @@ function CrowdBackdrop({
           key={`crowd-z-${z}`}
           geometry={longitudinalGeometry}
           position={[0, y, z * zEdge]}
-          rotation={[0, z > 0 ? Math.PI : 0, 0]}
+          rotation={[0, z > 0 ? 0 : Math.PI, 0]}
         >
           <meshBasicMaterial
             map={texture}
             transparent
-            opacity={0.9 * occupancy}
+            opacity={1}
             depthWrite={false}
             toneMapped={false}
             side={THREE.DoubleSide}
@@ -545,12 +583,12 @@ function CrowdBackdrop({
           key={`crowd-x-${x}`}
           geometry={endGeometry}
           position={[x * xEdge, y, 0]}
-          rotation={[0, x > 0 ? -Math.PI / 2 : Math.PI / 2, 0]}
+          rotation={[0, x > 0 ? Math.PI / 2 : -Math.PI / 2, 0]}
         >
           <meshBasicMaterial
             map={texture}
             transparent
-            opacity={0.84 * occupancy}
+            opacity={1}
             depthWrite={false}
             toneMapped={false}
             side={THREE.DoubleSide}

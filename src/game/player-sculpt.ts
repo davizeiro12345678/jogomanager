@@ -127,7 +127,13 @@ function faceRing(y: number, seed: number) {
   return ring;
 }
 
-export function headPoint(P: HeadShape, y: number, angle: number, seed = 0) {
+export function headPoint(
+  P: HeadShape,
+  y: number,
+  angle: number,
+  seed = 0,
+  target = new THREE.Vector3(),
+) {
   const ring = faceRing(THREE.MathUtils.clamp(y, -1.14, 1.14), seed);
   const f = faceMorphology(seed);
   const x = Math.sin(angle) * ring.width;
@@ -166,7 +172,7 @@ export function headPoint(P: HeadShape, y: number, angle: number, seed = 0) {
   const lowerOrbit = -0.01 * gauss(Math.abs(x), y, f.eyeSpacing, -0.005, 0.21, 0.075);
   const jawAngle = 0.026 * gauss(Math.abs(x), y, 0.66, -0.7, 0.13, 0.15);
   const masseter = 0.018 * gauss(Math.abs(x), y, 0.64, -0.48, 0.16, 0.18);
-  return new THREE.Vector3(
+  return target.set(
     x * P.headW,
     y * P.headR,
     (ring.center +
@@ -258,17 +264,19 @@ export function sculptedHead(
   const tangentAngle = new THREE.Vector3(),
     tangentHeight = new THREE.Vector3();
   const surfaceNormal = new THREE.Vector3();
+  const surfaceA = new THREE.Vector3(),
+    surfaceB = new THREE.Vector3();
   const epsilon = 0.0005;
   const complexion = new Float32Array(positions.count * 3);
   for (let i = 0; i < positions.count; i++) {
     const angle = headAngle(uv.getX(i)),
       height = positions.getY(i) / P.headR;
     tangentAngle
-      .copy(headPoint(P, height, angle + epsilon, seed))
-      .sub(headPoint(P, height, angle - epsilon, seed));
+      .copy(headPoint(P, height, angle + epsilon, seed, surfaceA))
+      .sub(headPoint(P, height, angle - epsilon, seed, surfaceB));
     tangentHeight
-      .copy(headPoint(P, height + epsilon, angle, seed))
-      .sub(headPoint(P, height - epsilon, angle, seed));
+      .copy(headPoint(P, height + epsilon, angle, seed, surfaceA))
+      .sub(headPoint(P, height - epsilon, angle, seed, surfaceB));
     surfaceNormal.crossVectors(tangentAngle, tangentHeight).normalize();
     normal.setXYZ(i, surfaceNormal.x, surfaceNormal.y, surfaceNormal.z);
     const x = positions.getX(i) / P.headW;
@@ -314,8 +322,8 @@ export function sculptedHair(
   const geometry = gridSurface(
     // Spend the extra vertices on close athletes only. The scalp is one
     // continuous surface, so strand relief below does not add meshes/draws.
-    sampling?.columns ?? (detail ? 120 : 18),
-    sampling?.rows ?? (detail ? 72 : 10),
+    sampling?.columns ?? (detail ? 96 : 18),
+    sampling?.rows ?? (detail ? 56 : 10),
     (u, v) => {
       const angle = headAngle(u);
       const front = Math.max(0, Math.cos(angle));
@@ -364,10 +372,11 @@ export function sculptedHair(
       const grain = textured
         ? 0
         : grainFade *
-          (0.0075 * Math.cos(grainFlow * 34) +
-            0.003 * Math.cos(grainFlow * 71 + v * 5) +
-            0.009 * Math.cos(grainFlow * 15 + v * 2) +
-            0.0025 * Math.cos(grainFlow * 108 + v * 9 + f.parting));
+          // The fine fibres live in the normal map. Sub-pixel geometric
+          // frequencies alias into silver stair steps on a dark haircut.
+          (0.005 * Math.cos(grainFlow * 22) +
+            0.0015 * Math.cos(grainFlow * 45 + v * 5) +
+            0.007 * Math.cos(grainFlow * 15 + v * 2));
       const templeTaper = 1 - front * temples ** 1.35 * (style === "afro" ? 0.1 : 0.36);
       const foreheadInset =
         style === "afro" ? 0 : 0.018 * front ** 2 * THREE.MathUtils.smoothstep(v, 0.12, 0.72);

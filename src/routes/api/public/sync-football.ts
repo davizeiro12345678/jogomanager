@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { isApiFootballPhase } from "@/lib/apifootball-phases";
 
 /**
  * Manual / scheduled importer trigger.
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/api/public/sync-football")({
           const offset = lease.out_offset;
           const token = lease.out_token;
           if (
+            !isApiFootballPhase(lease.out_phase) ||
             typeof offset !== "number" ||
             !Number.isSafeInteger(offset) ||
             offset < 0 ||
@@ -68,27 +70,10 @@ export const Route = createFileRoute("/api/public/sync-football")({
         }
         if (scope === "apifootball") {
           const p = url.searchParams.get("phase");
-          const allowed = [
-            "leagues",
-            "teams",
-            "squads",
-            "fixtures",
-            "standings",
-            "predictions",
-            "odds",
-            "stats",
-            "countries",
-            "timezones",
-            "venues",
-            "coaches",
-            "injuries",
-            "teamstats",
-            "details",
-          ] as const;
-          const phase = allowed.find((x) => x === p);
-          if (!phase) {
+          if (!isApiFootballPhase(p)) {
             return new Response("Invalid phase", { status: 400 });
           }
+          const phase = p;
           const n = (k: string, d: number, max: number) => {
             const v = Number(url.searchParams.get(k) ?? d);
             return Number.isSafeInteger(v) && v >= 0 && v <= max ? v : d;

@@ -33,6 +33,19 @@ function expectSameVisualBall(actual: VisualBallState, expected: VisualBallState
 }
 
 describe("Rapier visual ball physics", () => {
+  it("keeps zero, negative and invalid time steps physically inert", async () => {
+    const physics = await createRapierVisualPhysics();
+    const launch = frozenCanonical({ height: 1.4, vx: 4, vy: 2, spin: 2 });
+    try {
+      physics.reset(launch);
+      const before = physics.read(launch);
+      for (const dt of [0, -1, NaN, Infinity]) physics.step(dt);
+      expectSameVisualBall(physics.read(launch), before);
+      expect(launch.height).toBe(1.4);
+    } finally {
+      physics.dispose();
+    }
+  });
   it("initializes asynchronously and exposes a visual-only engine", async () => {
     const physics = await createRapierVisualPhysics();
     const attached = frozenCanonical({

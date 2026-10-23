@@ -58,6 +58,10 @@ export function rigPart(
   transform?: RigTransform,
   castShadow = false,
 ): RigPart {
+  // A low-detail material does not consume authored pigment. Keeping that
+  // unused attribute on just one limb would split an otherwise shared draw.
+  if ((material as THREE.MeshStandardMaterial).vertexColors === false)
+    geometry.deleteAttribute("color");
   if ((material as THREE.MeshStandardMaterial).vertexColors && !geometry.hasAttribute("color"))
     geometry.setAttribute(
       "color",
@@ -735,12 +739,20 @@ export function anatomicalLimb(
     subdivisions,
   );
   const position = geometry.getAttribute("position");
+  const complexion = new Float32Array(position.count * 3);
   for (let i = 0; i < position.count; i++) {
     const u = -position.getY(i) / length;
     const envelope = Math.sin(THREE.MathUtils.clamp(u, 0, 1) * Math.PI) ** 2;
     const x = position.getX(i),
       z = position.getZ(i);
     const front = z >= 0 ? 1 : -1;
+    // Pigment and soft tissue vary around knees, elbows and the inner arm.
+    // Bake subtle linear multipliers into the existing surface; every saved
+    // skin tone keeps its identity, and the endpoints remain seam-compatible.
+    const joint = Math.exp(-(((u - 0.83) / 0.16) ** 2));
+    const warmth = envelope * (joint * 0.035 + (front < 0 ? 0.012 : 0));
+    const crease = envelope * joint * 0.012;
+    complexion.set([1 - crease, 1 - warmth - crease, 1 - warmth * 1.35 - crease], i * 3);
     const bulge =
       kind === "upperArm"
         ? (front > 0 ? 0.13 : 0.09) * Math.exp(-(((u - 0.48) / 0.24) ** 2))
@@ -815,6 +827,7 @@ export function anatomicalLimb(
             envelope * (kind === "thigh" ? 0.065 : 0.055) * Math.exp(-(((u - 0.43) / 0.25) ** 2))),
       );
   }
+  geometry.setAttribute("color", new THREE.BufferAttribute(complexion, 3));
   refreshSurfaceNormals(geometry);
   smoothRingSeams(geometry, radial);
   if (rigidEnds) return geometry;

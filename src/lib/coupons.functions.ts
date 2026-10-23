@@ -14,6 +14,7 @@ const REASONS: Record<string, string> = {
   used: "Você já usou este cupom.",
   login: "Entre na sua conta para usar cupons.",
   verify_email: "Confirme seu e-mail para resgatar cupons.",
+  mfa_required: "Confirme a autenticação em duas etapas para resgatar cupons.",
   not_eligible: "Este cupom não foi autorizado para sua conta.",
 };
 

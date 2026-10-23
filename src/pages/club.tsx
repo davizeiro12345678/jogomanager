@@ -19,6 +19,7 @@ import type { TrainingFocus } from "@/game/types";
 import { ClubHeritagePanel, ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
 
 import { RealClubInfo } from "@/components/game/RealClubInfo";
+import { DatabaseClubInfo } from "@/components/game/DatabaseClubInfo";
 
 const TRAININGS: { key: TrainingFocus; label: string; desc: string }[] = [
   { key: "equilibrado", label: "Equilibrado", desc: "Recuperação e ritmo estáveis" },
@@ -61,20 +62,20 @@ export function ClubHub() {
             background: `linear-gradient(135deg, ${club.primary}33, transparent 60%)`,
           }}
         >
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4 sm:flex-nowrap">
             <Crest club={club} size={64} />
-            <div>
+            <div className="min-w-0 flex-1">
               <ScreenHeader title={<>{club.name}</>} />
               <p className="text-sm text-muted-foreground">
                 {pos}º lugar · {row?.pts ?? 0} pts · {row?.p ?? 0} jogos · objetivo:{" "}
                 {career.objective}º ou melhor
               </p>
             </div>
-            <div className="ml-auto text-right">
+            <div className="ml-auto w-full text-right sm:w-auto">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                 Diretoria
               </p>
-              <div className="mt-1 h-2 w-28 overflow-hidden rounded-full bg-secondary">
+              <div className="ml-auto mt-1 h-2 w-28 overflow-hidden rounded-full bg-secondary">
                 <div
                   className={`h-full transition-all ${career.approval >= 55 ? "bg-primary" : career.approval >= 35 ? "bg-amber-400" : "bg-destructive"}`}
                   style={{ width: `${career.approval}%` }}
@@ -89,15 +90,19 @@ export function ClubHub() {
               <p className="font-display text-xs uppercase tracking-[0.25em] text-primary">
                 Rodada {career.round} · {fixture.home === career.clubId ? "Em casa" : "Fora"}
               </p>
-              <div className="mt-3 flex items-center gap-3">
+              <div className="mt-3 flex flex-wrap items-center gap-3 sm:flex-nowrap">
                 <Crest club={CLUBS[fixture.home]!} size={40} />
-                <span className="font-display text-2xl">{CLUBS[fixture.home]!.short}</span>
+                <span className="whitespace-nowrap font-display text-2xl">
+                  {CLUBS[fixture.home]!.short}
+                </span>
                 <span className="text-muted-foreground">x</span>
-                <span className="font-display text-2xl">{CLUBS[fixture.away]!.short}</span>
+                <span className="whitespace-nowrap font-display text-2xl">
+                  {CLUBS[fixture.away]!.short}
+                </span>
                 <Crest club={CLUBS[fixture.away]!} size={40} />
                 <Link
                   to="/match"
-                  className="ml-auto rounded-lg bg-primary px-5 py-2.5 font-display text-sm uppercase tracking-widest text-primary-foreground transition hover:brightness-110"
+                  className="w-full rounded-lg bg-primary px-5 py-2.5 text-center font-display text-sm uppercase tracking-widest text-primary-foreground transition hover:brightness-110 sm:ml-auto sm:w-auto"
                 >
                   Jogar partida 3D
                 </Link>
@@ -219,6 +224,7 @@ export function ClubHub() {
         <ClubHonoursPanel clubId={career.clubId} />
         <div className="mt-6">
           <RealClubInfo name={club.name} />
+          <DatabaseClubInfo clubId={club.id} />
         </div>
       </div>
     </GameShell>

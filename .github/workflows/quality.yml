@@ -32,7 +32,7 @@ jobs:
       - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs
       - run: node --test scripts/verify-public-deployment.test.mjs
       - name: Verify Edge Function authentication and import contracts
-        run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs
+        run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs scripts/football-materialize-realism.test.mjs
       - run: npm run test:performance-gates
       - run: PFM_LOCAL_VERIFY=1 npm run build
       - run: npm run bundle:check
@@ -146,6 +146,10 @@ jobs:
         run: supabase db reset --local --no-seed --yes
       - name: Verify application schema, ownership, and grants
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/supabase-replay-contract.sql
+      - name: Verify public catalog and bounded identity enrichment
+        run: |
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realism-catalog-readonly.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realism-profile-fixtures.sql
 
   game-assets:
     name: 3D asset compression contract
