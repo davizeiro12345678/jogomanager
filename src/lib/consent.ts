@@ -40,28 +40,3 @@ export function saveConsent(next: Omit<ConsentState, "decidedAt">): ConsentState
   window.dispatchEvent(new CustomEvent("consent-changed", { detail: state }));
   return state;
 }
-
-/** Tudo que o jogo guarda neste navegador, para exportação em JSON. */
-export function exportLocalData(): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (let i = 0; i < window.localStorage.length; i++) {
-    const k = window.localStorage.key(i);
-    if (!k || k.startsWith("sb-")) continue; // sessão de login não é exportada
-    const v = window.localStorage.getItem(k);
-    try {
-      out[k] = v ? JSON.parse(v) : v;
-    } catch {
-      out[k] = v;
-    }
-  }
-  return out;
-}
-
-export function clearLocalData() {
-  const keys: string[] = [];
-  for (let i = 0; i < window.localStorage.length; i++) {
-    const k = window.localStorage.key(i);
-    if (k && !k.startsWith("sb-")) keys.push(k);
-  }
-  keys.forEach((k) => window.localStorage.removeItem(k));
-}

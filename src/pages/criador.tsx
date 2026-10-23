@@ -4,7 +4,8 @@ import { PublicLinks } from "@/components/PublicLinks";
 
 import { DiscordLink } from "@/components/CommunityInvite";
 
-import { CHANGELOG, CREATOR } from "@/content/changelog";
+import { CHANGELOG } from "@/content/changelog";
+import { CREATOR } from "@/content/creator";
 import { CRIADOR_PATH as PATH } from "@/lib/public-route-paths";
 
 export function Page() {
@@ -41,10 +42,10 @@ export function Page() {
             <dt className="font-medium">E-mail principal</dt>
             <dd>
               <a
-                href="mailto:davizeiro10.jogos@gmail.com"
+                href={`mailto:${CREATOR.primaryEmail}`}
                 className="break-all text-primary underline underline-offset-4"
               >
-                davizeiro10.jogos@gmail.com
+                {CREATOR.primaryEmail}
               </a>
             </dd>
           </div>
@@ -52,14 +53,26 @@ export function Page() {
             <dt className="font-medium">E-mail secundário</dt>
             <dd>
               <a
-                href="mailto:davithomazini779@gmail.com"
+                href={`mailto:${CREATOR.secondaryEmail}`}
                 className="break-all text-primary underline underline-offset-4"
               >
-                davithomazini779@gmail.com
+                {CREATOR.secondaryEmail}
               </a>
             </dd>
           </div>
+          <div>
+            <dt className="font-medium">Perfil do criador no Discord</dt>
+            <dd className="text-muted-foreground">
+              Usuário: <strong className="text-foreground">{CREATOR.discordUsername}</strong>
+              {" · "}Nome visível:{" "}
+              <strong className="text-foreground">{CREATOR.discordDisplayName}</strong>
+            </dd>
+          </div>
         </dl>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Este é o perfil pessoal do criador; para entrar na comunidade, use o convite oficial
+          abaixo. Não compartilhe senhas nem códigos de autenticação.
+        </p>
         <div className="mt-5 flex flex-wrap items-center gap-4">
           <DiscordLink>Comunidade no Discord</DiscordLink>
           <Link to="/contato" className="text-sm text-primary underline underline-offset-4">

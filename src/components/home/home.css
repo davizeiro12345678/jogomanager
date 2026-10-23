@@ -638,8 +638,7 @@
     opacity: 0.95;
   }
   .home-hero-shade {
-    background:
-      linear-gradient(180deg, #08130f66 0%, #08130fb8 45%, #0c1211 100%);
+    background: linear-gradient(180deg, #08130f66 0%, #08130fb8 45%, #0c1211 100%);
   }
   .home-hero h1 {
     font-size: clamp(40px, 9.2vw, 65px);
@@ -787,4 +786,20 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted-foreground);
+}
+
+/* Keep each offscreen section in the DOM for links, search and assistive
+   technology while skipping its layout/paint until the browser approaches it.
+   Learned sizes are retained when scrolling back. Never contain the hero. */
+.home-body > .home-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 740px;
+}
+.home-body > .home-first-season {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 560px;
+}
+.home-body > .home-final-cta {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 280px;
 }

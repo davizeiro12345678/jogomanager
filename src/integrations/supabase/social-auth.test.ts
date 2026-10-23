@@ -73,6 +73,7 @@ describe("configured authentication methods", () => {
     ).toEqual({
       socialProviders: [],
       email: false,
+      phone: false,
       passkeys: false,
       signup: false,
     });
@@ -176,4 +177,11 @@ describe("public settings discovery", () => {
     await expect(availableAuthMethods()).rejects.toThrow(/configuration/);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+});
+
+it("offers phone only when the live project explicitly enables it", () => {
+  expect(parseAuthMethods({ external: { phone: true } }).phone).toBe(true);
+  for (const phone of [false, undefined, "true", 1]) {
+    expect(parseAuthMethods({ external: { phone } }).phone).toBe(false);
+  }
 });

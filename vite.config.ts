@@ -12,6 +12,7 @@ import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 import { imagetools } from "vite-imagetools";
 import { protectThreeSourceTags } from "./scripts/r3f-source-compat.ts";
 import { rapierWasmAsset } from "./scripts/rapier-wasm-asset.ts";
+import { bundleModuleAudit } from "./scripts/bundle-module-audit.ts";
 import { resolveBuildCommit } from "./src/lib/release-identity.ts";
 
 // Load non-VITE_ env vars into process.env for server routes (email, webhooks).
@@ -111,6 +112,12 @@ const projectConfig = defineConfig({
           codeSplitting: {
             groups: [
               {
+                // Lazy routes share Vite's preload helper. If it lives in the
+                // app entry, each dynamic import pulls the entire entry back in.
+                name: "vite-preload",
+                test: /vite[\\/]preload-helper/,
+              },
+              {
                 // Radix needs the small public API (flushSync/portals). Keeping it
                 // out of the hydration entry avoids pulling the router and its
                 // dependencies back into every lazily loaded UI route. The client
@@ -136,7 +143,12 @@ const projectConfig = defineConfig({
     // The authoritative fallback may run on the browser's main thread too.
     // Externalize its identical binary there as well; the plugin explicitly
     // excludes server environments so SSR retains the official initialization.
-    plugins: [...(enableMcpRouteGenerator ? [mcpPlugin()] : []), imagetools(), rapierWasmAsset()],
+    plugins: [
+      ...(enableMcpRouteGenerator ? [mcpPlugin()] : []),
+      imagetools(),
+      rapierWasmAsset(),
+      bundleModuleAudit(),
+    ],
     resolve: {
       alias: {
         "entities/lib/decode.js": path.resolve(
@@ -154,7 +166,7 @@ const projectConfig = defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
-    server: { entry: "server" },
+    server: { entry: "server", build: { inlineCss: true } },
   },
 });
 

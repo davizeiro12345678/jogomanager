@@ -1,6 +1,7 @@
+import "@/public-styles.css";
 import { Await, getRouteApi, Link } from "@tanstack/react-router";
 import { HomeLeaguePulse } from "@/components/home/HomeLeaguePulse";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import {
   ArrowDown,
   ArrowRight,
@@ -16,12 +17,14 @@ import {
 } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { DiscordLink } from "@/components/CommunityInvite";
-import { HomeDetails } from "./HomeDetails";
+import heroMobileAvif from "@/assets/hero-stadium.jpg?format=avif&w=390;450&aspect=1:2&fit=cover&position=centre&quality=44&as=srcset";
 import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1080;1600&quality=52&as=srcset";
 import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1080;1600&quality=62&as=srcset";
 import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
 import "./home.css";
 
+// Defer lengthy editorial sections without creating an extra chunk for the tiny league pulse.
+const HomeDetails = lazy(() => import("./HomeDetails").then((m) => ({ default: m.HomeDetails })));
 const SYSTEMS = [
   {
     id: "tactics",
@@ -171,14 +174,19 @@ export function FootballHome() {
       .then(async ({ readLocalCareer }) => {
         const save = readLocalCareer();
         if (!save || !active) return;
-        const [{ CLUBS }, { applyWorld }] = await Promise.all([
+        const [{ CLUBS }, { readMyClub }, { readCustom }] = await Promise.all([
           import("@/game/data/leagues"),
-          import("@/lib/world"),
+          import("@/lib/my-club-storage"),
+          import("@/lib/custom-data-storage"),
         ]);
         if (active) {
-          applyWorld();
+          const created = readMyClub();
           setResume({
-            club: CLUBS[save.clubId]?.name ?? save.clubId,
+            club:
+              (created?.id === save.clubId ? created.name : undefined) ??
+              readCustom().clubs[save.clubId]?.name ??
+              CLUBS[save.clubId]?.name ??
+              save.clubId,
             season: save.season ?? 1,
             round: (save.round ?? 0) + 1,
           });
@@ -254,6 +262,12 @@ export function FootballHome() {
       </header>
       <section id="home-content" className="home-hero" aria-labelledby="home-title">
         <picture>
+          <source
+            media="(max-width: 640px)"
+            type="image/avif"
+            srcSet={heroMobileAvif}
+            sizes="100vw"
+          />
           <source type="image/avif" srcSet={heroAvif} sizes="100vw" />
           <source type="image/webp" srcSet={heroWebp} sizes="100vw" />
           <img
@@ -273,6 +287,7 @@ export function FootballHome() {
             FUTEBOL. DECISÕES. HISTÓRIAS.
           </p>
           <h1 id="home-title">
+            <span className="sr-only">Pro Football Manager 3D: jogo de gestão de futebol. </span>
             SEU CLUBE.
             <br />
             <em>SUA HISTÓRIA.</em>
@@ -481,7 +496,9 @@ export function FootballHome() {
           </Link>
         </section>
         <div className="home-guide-content">
-          <HomeDetails />
+          <Suspense fallback={null}>
+            <HomeDetails />
+          </Suspense>
         </div>
         <nav className="home-more-modes" aria-label="Outras formas de jogar">
           <span>Jogue do seu jeito</span>

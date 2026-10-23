@@ -2,6 +2,7 @@ import * as React from "react";
 import { render } from "@react-email/render";
 import { EmailAPIError, sendLovableEmail } from "@lovable.dev/email-js";
 import { TEMPLATES } from "./registry";
+import { deliverViaResend } from "./resend-transport";
 
 // Server-only: reads LOVABLE_API_KEY. Never import from client components.
 
@@ -68,24 +69,16 @@ export async function sendTemplateEmail(
     const from = process.env["TRANSACTIONAL_EMAIL_FROM"];
     if (!key || !from)
       throw new Error("Configure RESEND_API_KEY and a verified TRANSACTIONAL_EMAIL_FROM.");
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-        "Idempotency-Key": options.idempotencyKey || crypto.randomUUID(),
-      },
-      body: JSON.stringify({
-        from,
-        to: [recipient],
-        subject,
-        html,
-        text,
-        ...(options.replyTo ? { reply_to: options.replyTo } : {}),
-      }),
-      signal: AbortSignal.timeout(15_000),
+    await deliverViaResend({
+      key,
+      from,
+      recipient,
+      subject,
+      html,
+      text,
+      idempotencyKey: options.idempotencyKey || crypto.randomUUID(),
+      ...(options.replyTo ? { replyTo: options.replyTo } : {}),
     });
-    if (!response.ok) throw new Error(`Transactional email failed (${response.status}).`);
     return { sent: true };
   }
 

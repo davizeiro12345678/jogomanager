@@ -5,6 +5,7 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { SiteFooter } from "@/components/SiteFooter";
 
 import { DiscordLink } from "@/components/CommunityInvite";
+import { CREATOR } from "@/content/creator";
 import { CONTATO_PATH as PATH } from "@/lib/public-route-paths";
 
 const CHANNELS = [
@@ -93,6 +94,10 @@ export function ContatoPage() {
               em outra aba.
             </p>
           </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Perfil do criador no Discord: {CREATOR.discordUsername} (nome visível:{" "}
+            {CREATOR.discordDisplayName}). O perfil pessoal não substitui o suporte oficial.
+          </p>
           <p className="mt-3 text-xs text-muted-foreground">
             Nunca envie senha, códigos de autenticação, dados completos de cartão ou comprovantes
             com informações pessoais por e-mail, WhatsApp ou Discord.
