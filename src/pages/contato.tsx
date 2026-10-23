@@ -95,8 +95,8 @@ export function ContatoPage() {
             </p>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Perfil do criador no Discord: {CREATOR.discordUsername} (nome visível: {CREATOR.discordDisplayName}).
-            O perfil pessoal não substitui o suporte oficial.
+            Perfil do criador no Discord: {CREATOR.discordUsername} (nome visível:{" "}
+            {CREATOR.discordDisplayName}). O perfil pessoal não substitui o suporte oficial.
           </p>
           <p className="mt-3 text-xs text-muted-foreground">
             Nunca envie senha, códigos de autenticação, dados completos de cartão ou comprovantes
