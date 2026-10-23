@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPublicContentPath } from "./public-content-routes";
+import { isPublicContentPath, isLightweightCssPath } from "./public-content-routes";
 
 describe("public content isolation", () => {
   it("keeps articles and dynamic league tables independent of the career world", () => {
@@ -14,7 +14,13 @@ describe("public content isolation", () => {
       "/privacidade",
     ])
       expect(isPublicContentPath(path), path).toBe(true);
+    it("selects lightweight CSS for quick-match without disabling world startup", () => {
+    expect(isLightweightCssPath("/partida-rapida")).toBe(true);
+    expect(isPublicContentPath("/partida-rapida")).toBe(false);
+    expect(isLightweightCssPath("/guias")).toBe(true);
+    expect(isLightweightCssPath("/dashboard")).toBe(false);
   });
+});
   it("still initializes the world for game routes, including similar prefixes", () => {
     for (const path of [
       "/new",
