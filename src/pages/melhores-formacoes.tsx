@@ -63,12 +63,10 @@ export function FormationsPage() {
       <Section id="comparar-formacoes" title="Compare quatro formações para o seu elenco">
         {FORMATIONS.map((f) => (
           <Section key={f.name} id={f.name} title={f.name} level={3}>
-            <p>
-              <strong className="text-foreground">Forte em:</strong> {f.good}
-            </p>
-            <p>
-              <strong className="text-foreground">Cuidado com:</strong> {f.bad}
-            </p>
+            <h4 className="font-display text-base text-foreground">Pontos fortes do {f.name}</h4>
+            <p>{f.good}</p>
+            <h4 className="font-display text-base text-foreground">Riscos desse esquema</h4>
+            <p>{f.bad}</p>
           </Section>
         ))}
       </Section>
@@ -269,6 +267,25 @@ export function FormationsPage() {
         </p>
       </Section>
       <Section id="registro" title="Como registrar uma experiência tática útil">
+        <section aria-labelledby="registro-teste">
+          <h3 id="registro-teste" className="font-display text-lg text-foreground">
+            Organize o teste de uma mudança
+          </h3>
+          <section className="mt-3 space-y-2" aria-labelledby="registro-contexto">
+            <h4 id="registro-contexto" className="font-display text-base text-foreground">
+              Guarde o contexto de cada tentativa
+            </h4>
+            <section aria-labelledby="registro-comparacao">
+              <h5 id="registro-comparacao" className="font-display text-sm text-foreground">
+                Compare períodos com condições semelhantes
+              </h5>
+              <p>
+                Registre adversário, placar, expulsões e condição física. Uma melhora contra dez
+                jogadores não demonstra, sozinha, que a formação resolveu o problema observado.
+              </p>
+            </section>
+          </section>
+        </section>
         <p>
           Anote formação, titulares, condição física, adversário e a mudança testada. Depois
           registre o que observou: de onde saíram as chances, quais setores ficaram expostos e

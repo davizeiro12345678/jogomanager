@@ -12,7 +12,8 @@ import {
 import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { I18nProvider, useT } from "../i18n";
+import { I18nProvider, useT } from "../i18n/provider";
+import { isPublicContentPath } from "@/lib/public-content-routes";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
 // Reading-controls UI is only visible on the public home page. Keep it out of
 // the shared initial JS closure for every gameplay and editorial route.
@@ -97,18 +98,6 @@ export function RootShell({ children }: { children: ReactNode }) {
 
 // SEO/editorial pages must not download the full league and squad catalogue.
 // On navigation into gameplay we still initialize it immediately.
-const CONTENT_ONLY_PATHS = new Set([
-  "/",
-  "/guias",
-  "/guia-de-scouting",
-  "/melhores-formacoes",
-  "/dicas-de-gestao",
-  "/perguntas-frequentes",
-  "/privacidade",
-  "/termos",
-  "/contato",
-]);
-
 export function RootComponent() {
   const { queryClient } = useRouteContext({ from: "__root__" });
   const pathname = useLocation({ select: (location) => location.pathname });
@@ -117,7 +106,7 @@ export function RootComponent() {
   useEffect(() => {
     // The public home needs no catalogue. Restore the campaign on entry to the
     // rest of the app, rather than downloading every club after first paint.
-    if (CONTENT_ONLY_PATHS.has(pathname) || worldReady.current) return;
+    if (isPublicContentPath(pathname) || worldReady.current) return;
     worldReady.current = true;
     void import("../lib/world")
       .then((m) => m.applyWorld())
@@ -181,7 +170,7 @@ function RootReadingControls({ pathname }: { pathname: string }) {
   useEffect(() => {
     // These public routes already declare canonical head metadata via TanStack
     // SSR. Never download game-page metadata for a route that does not use it.
-    if (CONTENT_ONLY_PATHS.has(pathname)) return;
+    if (isPublicContentPath(pathname)) return;
     let active = true;
     // Route metadata is only written after the client page renders. Keep its
     // copy and translation tables out of every initial route's static closure.

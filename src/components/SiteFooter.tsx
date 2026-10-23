@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
-import { CREATOR } from "@/content/changelog";
+import { CREATOR } from "@/content/creator";
 import { shareDestinations } from "@/lib/share";
 import { DISCORD_INVITE } from "@/content/community";
 
@@ -13,7 +13,7 @@ import { DISCORD_INVITE } from "@/content/community";
  */
 
 /** Data da última revisão editorial do conteúdo público. */
-export const CONTENT_UPDATED = "2026-09-14";
+export const CONTENT_UPDATED = "2026-10-23";
 
 const SOURCES = [
   {
@@ -51,7 +51,7 @@ export function SiteFooter({ path = "/" }: { path?: string }) {
           </h2>
           <p className="mt-3">
             Jogo e conteúdo criados por <strong className="text-foreground">{CREATOR.name}</strong>,
-            que acompanha futebol e jogos de gestão esportiva há mais de dez anos.
+            responsável pelo desenvolvimento deste jogo de gestão de futebol para navegador.
           </p>
           <p className="mt-2">
             <Link to="/criador" className="underline underline-offset-4 hover:text-foreground">

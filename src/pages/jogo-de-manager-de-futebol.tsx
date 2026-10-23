@@ -234,6 +234,73 @@ export function Page() {
           </p>
         </section>
 
+        <section aria-labelledby="manager-treinamento" className="mt-12 space-y-5">
+          <h2 id="manager-treinamento" className="font-display text-2xl">
+            Como tomar decisões melhores em cinco rodadas
+          </h2>
+          <p className="text-muted-foreground">
+            Acompanhe um exemplo hipotético: seu time recebe muitos contra-ataques, mas cria boas
+            chances pelos lados. Em vez de mudar tudo ao mesmo tempo, estabeleça um objetivo
+            observável para cada rodada. O resultado depende dos jogadores e da simulação.
+          </p>
+          <section aria-labelledby="manager-diagnostico" className="space-y-3">
+            <h3 id="manager-diagnostico" className="font-display text-xl">
+              Rodadas 1 e 2: identifique o problema real
+            </h3>
+            <p className="text-muted-foreground">
+              Observe se a perda de bola acontece no meio ou no ataque e se o adversário encontra
+              espaço entre seus zagueiros e volantes. Diferencie um erro isolado de um padrão.
+            </p>
+            <section aria-labelledby="manager-indicadores" className="space-y-2">
+              <h4 id="manager-indicadores" className="font-display text-lg">
+                Indicadores úteis para comparar partidas
+              </h4>
+              <p className="text-muted-foreground">
+                Registre finalizações criadas e concedidas, posse quando disponível, cartões,
+                cansaço e os momentos em que as chances aconteceram. Use a mesma definição para cada
+                indicador e não trate uma única partida como prova definitiva.
+              </p>
+              <section aria-labelledby="manager-indicador-limite" className="space-y-2">
+                <h5 id="manager-indicador-limite" className="font-display text-base">
+                  Quando não há estatística suficiente
+                </h5>
+                <p className="text-muted-foreground">
+                  Se a versão não mostrar uma métrica, use a observação em 3D e registre a
+                  incerteza. Não invente números para completar a análise.
+                </p>
+              </section>
+            </section>
+          </section>
+          <section aria-labelledby="manager-experimento" className="space-y-3">
+            <h3 id="manager-experimento" className="font-display text-xl">
+              Rodadas 3 e 4: faça um teste controlado
+            </h3>
+            <p className="text-muted-foreground">
+              Mantenha a formação e altere apenas a pressão ou a altura da linha conforme as
+              instruções disponíveis. Compare o comportamento com o jogo anterior, lembrando que os
+              adversários não são idênticos. Use o{" "}
+              <Link to="/melhores-formacoes" className="text-primary underline">
+                guia tático
+              </Link>{" "}
+              para avaliar prós e contras.
+            </p>
+          </section>
+          <section aria-labelledby="manager-revisao" className="space-y-3">
+            <h3 id="manager-revisao" className="font-display text-xl">
+              Rodada 5: escolha o próximo investimento
+            </h3>
+            <p className="text-muted-foreground">
+              Se a proteção defensiva melhorou mas falta profundidade, priorize um reforço que cubra
+              a função específica, não apenas o atleta com maior nota geral. Compare custo total de
+              contrato e o impacto no banco antes de contratar. Veja{" "}
+              <Link to="/planejamento-de-elenco" className="text-primary underline">
+                planejamento do elenco
+              </Link>
+              .
+            </p>
+          </section>
+        </section>
+
         <section aria-labelledby="manager-faq" className="mt-12">
           <h2 id="manager-faq" className="font-display text-2xl">
             Dúvidas comuns de quem está começando
