@@ -47,7 +47,7 @@ describe("retired public pages", () => {
   it("keeps canonical discovery resources free of retired URLs", () => {
     const sitemap = readFileSync(new URL("../routes/sitemap[.]xml.ts", import.meta.url), "utf8");
     const navigation = readFileSync(new URL("./public-pages.ts", import.meta.url), "utf8");
-    const llms = readFileSync(new URL("../../public/llms.txt", import.meta.url), "utf8");
+    const llmsContent = readFileSync(new URL("../../public/llms.txt", import.meta.url), "utf8");
     const indexedPaths = [...sitemap.matchAll(/path: "([^"]+)"/g)].map((match) => match[1]);
     expect(new Set(indexedPaths).size).toBe(indexedPaths.length);
     for (const [source, target] of Object.entries(PUBLIC_PAGE_REDIRECTS)) {
@@ -67,7 +67,7 @@ describe("retired public pages", () => {
     const llms = readFileSync(new URL("../../public/llms.txt", import.meta.url), "utf8");
     for (const email of contacts) {
       expect(creator).toContain(email);
-      expect(llms).toContain(email);
+      expect(llmsContent).toContain(email);
     }
     for (const page of ["../pages/contato.tsx", "../pages/criador.tsx"]) {
       const source = readFileSync(new URL(page, import.meta.url), "utf8");
@@ -81,6 +81,6 @@ describe("retired public pages", () => {
     const community = readFileSync(new URL("../content/community.ts", import.meta.url), "utf8");
     expect(community).toContain('DISCORD_INVITE = "https://discord.gg/6az4ssQQck"');
     const llms = readFileSync(new URL("../../public/llms.txt", import.meta.url), "utf8");
-    expect(llms).toContain("https://discord.gg/6az4ssQQck");
+    expect(llmsContent).toContain("https://discord.gg/6az4ssQQck");
   });
 });
