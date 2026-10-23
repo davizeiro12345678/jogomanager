@@ -14,7 +14,7 @@ import { useSignedIn } from "@/hooks/useCareer";
 import { useT } from "@/i18n/provider";
 import { Settings2, Volume2 } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { PreferenceToggle, ReadingPreferences } from "./AccessibilitySettings";
+import { PreferenceToggle, ReadingPreferences } from "./ReadingPreferences";
 import { LanguagePicker } from "./LanguagePicker";
 
 export function NarrationSettings({

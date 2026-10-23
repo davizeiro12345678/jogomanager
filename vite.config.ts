@@ -12,6 +12,7 @@ import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 import { imagetools } from "vite-imagetools";
 import { protectThreeSourceTags } from "./scripts/r3f-source-compat.ts";
 import { rapierWasmAsset } from "./scripts/rapier-wasm-asset.ts";
+import { bundleModuleAudit } from "./scripts/bundle-module-audit.ts";
 import { resolveBuildCommit } from "./src/lib/release-identity.ts";
 
 // Load non-VITE_ env vars into process.env for server routes (email, webhooks).
@@ -142,7 +143,12 @@ const projectConfig = defineConfig({
     // The authoritative fallback may run on the browser's main thread too.
     // Externalize its identical binary there as well; the plugin explicitly
     // excludes server environments so SSR retains the official initialization.
-    plugins: [...(enableMcpRouteGenerator ? [mcpPlugin()] : []), imagetools(), rapierWasmAsset()],
+    plugins: [
+      ...(enableMcpRouteGenerator ? [mcpPlugin()] : []),
+      imagetools(),
+      rapierWasmAsset(),
+      bundleModuleAudit(),
+    ],
     resolve: {
       alias: {
         "entities/lib/decode.js": path.resolve(

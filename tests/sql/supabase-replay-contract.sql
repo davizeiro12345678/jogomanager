@@ -182,4 +182,35 @@ END;
 $contract$;
 RESET ROLE;
 
+-- MFA enrollment must close the existing personal-data policies and CAS RPC.
+INSERT INTO auth.mfa_factors (id,user_id,factor_type,status,created_at,updated_at,secret)
+VALUES ('33333333-3333-4333-8333-333333333331',
+ '22222222-2222-4222-8222-222222222222','totp','verified',now(),now(),'disposable-test-secret');
+SELECT set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222', true);
+SELECT set_config('request.jwt.claim.role', 'authenticated', true);
+SELECT set_config('request.jwt.claims', '{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated","aal":"aal1"}', true);
+SET LOCAL ROLE authenticated;
+DO $mfa$
+BEGIN
+ ASSERT NOT app_private.mfa_session_allowed(), 'Verified factors must require AAL2';
+ ASSERT NOT EXISTS (SELECT 1 FROM public.user_wallet), 'AAL1 must not read even its own wallet after MFA enrollment';
+ BEGIN
+  PERFORM * FROM public.mutate_player_career(1,0,'delete',null);
+  RAISE EXCEPTION 'CAS RPC bypassed MFA';
+ EXCEPTION WHEN invalid_authorization_specification THEN NULL;
+ END;
+END;
+$mfa$;
+RESET ROLE;
+SELECT set_config('request.jwt.claims', '{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated","aal":"aal2"}', true);
+SET LOCAL ROLE authenticated;
+DO $mfa$
+BEGIN
+ ASSERT app_private.mfa_session_allowed(), 'AAL2 should restore access';
+ ASSERT (SELECT coins FROM public.user_wallet WHERE user_id=auth.uid())=100, 'AAL2 must preserve ownership and existing wallet';
+ ASSERT NOT EXISTS (SELECT 1 FROM public.user_wallet WHERE user_id<>auth.uid()), 'MFA must never weaken ownership';
+END;
+$mfa$;
+RESET ROLE;
+
 ROLLBACK;

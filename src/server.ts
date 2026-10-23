@@ -1,4 +1,5 @@
 import "./lib/error-capture";
+import { compressPublicHtml } from "./lib/public-html-compression";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
@@ -48,6 +49,14 @@ function isH3SwallowedErrorBody(body: string): boolean {
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    // The duration only covers initial handler/response creation, not streamed body completion.
+    const ssrStart = performance.now();
+    const measured = (response: Response): Response => {
+      const durationMs = Math.max(0, performance.now() - ssrStart);
+      // secureResponse already builds a fresh mutable response; no extra copy.
+      response.headers.append("server-timing", `app;dur=${durationMs.toFixed(1)}`);
+      return response;
+    };
     // Rebuild from public fields: a cross-realm Request may not be cloneable.
     // Never trust a client-provided CSP nonce.
     const headers = new Headers(request.headers);
@@ -61,19 +70,21 @@ export default {
     const verifiedRequest = new Request(request.url, init);
     const protect = (response: Response) => secureResponse(response, verifiedRequest, nonce);
     const redirect = publicPageRedirect(verifiedRequest);
-    if (redirect) return protect(redirect);
+    if (redirect) return measured(protect(redirect));
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(verifiedRequest, env, ctx);
-      return protect(await normalizeCatastrophicSsrResponse(response));
+      return compressPublicHtml(
+        measured(protect(await normalizeCatastrophicSsrResponse(response))),
+        verifiedRequest,
+      );
     } catch (error) {
       console.error(error);
-      return protect(
-        new Response(renderErrorPage(), {
-          status: 500,
-          headers: { "content-type": "text/html; charset=utf-8" },
-        }),
-      );
+      const errorResponse = new Response(renderErrorPage(), {
+        status: 500,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+      return measured(protect(errorResponse));
     }
   },
 };

@@ -9,12 +9,18 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, useRef, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useT } from "../i18n";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
-import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
+// Reading-controls UI is only visible on the public home page. Keep it out of
+// the shared initial JS closure for every gameplay and editorial route.
+const AccessibilitySettings = lazy(() =>
+  import("@/components/accessibility/AccessibilitySettings").then((m) => ({
+    default: m.AccessibilitySettings,
+  })),
+);
 
 export function NotFoundComponent() {
   return (
@@ -173,6 +179,9 @@ function RootReadingControls({ pathname }: { pathname: string }) {
   const router = useRouter();
   const renderedPath = useRef(pathname);
   useEffect(() => {
+    // These public routes already declare canonical head metadata via TanStack
+    // SSR. Never download game-page metadata for a route that does not use it.
+    if (CONTENT_ONLY_PATHS.has(pathname)) return;
     let active = true;
     // Route metadata is only written after the client page renders. Keep its
     // copy and translation tables out of every initial route's static closure.
@@ -236,7 +245,9 @@ function RootReadingControls({ pathname }: { pathname: string }) {
   }, [router]);
   return pathname === "/" ? (
     <div className="public-reading-controls">
-      <AccessibilitySettings />
+      <Suspense fallback={null}>
+        <AccessibilitySettings />
+      </Suspense>
     </div>
   ) : null;
 }

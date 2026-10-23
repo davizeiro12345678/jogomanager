@@ -1,6 +1,6 @@
-import { INTERFACE_MESSAGES } from "./interface-messages";
+import { en as enInterface, pt as ptInterface } from "./interface-bootstrap";
 import type { Lang } from "./locale-catalog";
-const ptBR: Record<string, string> = {
+export const ptBR: Record<string, string> = {
   "nav.panel": "Painel",
   "nav.central": "Central do clube",
   "nav.squad": "Elenco",
@@ -48,7 +48,7 @@ const ptBR: Record<string, string> = {
   "shell.language": "Idioma",
   "shell.more": "Mais",
 };
-const en: Record<string, string> = {
+export const en: Record<string, string> = {
   "nav.panel": "Dashboard",
   "nav.central": "Club Hub",
   "nav.squad": "Squad",
@@ -94,11 +94,8 @@ const en: Record<string, string> = {
   "shell.language": "Language",
   "shell.more": "More",
 };
-const ptInterface = INTERFACE_MESSAGES["pt-BR"]!;
-const enInterface = INTERFACE_MESSAGES.en!;
 /** Default Portuguese and English work offline without fetching 96 other packs. */
 export function translateBootstrap(lang: Lang, key: string): string {
   if (lang === "pt-BR") return ptInterface[key] ?? ptBR[key] ?? enInterface[key] ?? en[key] ?? key;
-  if (lang === "en") return enInterface[key] ?? en[key] ?? ptBR[key] ?? key;
   return enInterface[key] ?? en[key] ?? ptBR[key] ?? key;
 }

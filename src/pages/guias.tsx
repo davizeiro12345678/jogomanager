@@ -137,7 +137,7 @@ export function GuidesPage() {
               to={item.to}
               className="rounded-lg border border-border/60 p-4 transition hover:border-primary"
             >
-              <span className="block font-display text-base text-primary">{item.title} →</span>
+              <h3 className="font-display text-base text-primary">{item.title} →</h3>
               <span className="mt-2 block text-sm">{item.detail}</span>
             </Link>
           ))}
