@@ -71,8 +71,12 @@ export function compressPublicHtml(response: Response, request: Request): Respon
       // the same failure to the HTTP consumer rather than returning partial HTML.
     },
   );
-  return new Response(Readable.toWeb(gzip) as ReadableStream<Uint8Array>, {
+  const init: ResponseInit & { encodeBody: "manual" } = {
     status: response.status,
     headers,
-  });
+    // Workers otherwise compress an already encoded body a second time.
+    // Node's standard Response ignores this Cloudflare-specific option.
+    encodeBody: "manual",
+  };
+  return new Response(Readable.toWeb(gzip) as ReadableStream<Uint8Array>, init);
 }
