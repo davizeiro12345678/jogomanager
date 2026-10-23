@@ -2,11 +2,10 @@ import { Link } from "@tanstack/react-router";
 
 import { PublicLinks } from "@/components/PublicLinks";
 
-import { CREATOR } from "@/content/changelog";
+import { CREATOR } from "@/content/creator";
 
 import { CommunityInvite } from "@/components/CommunityInvite";
 
-import { BUNDLED_LEAGUES } from "@/game/data/leagues";
 import { SOBRE_PATH as PATH } from "@/lib/public-route-paths";
 
 const BLOCKS = [
@@ -36,22 +35,12 @@ const BLOCKS = [
   },
 ];
 
-const PUBLIC_CLUB_COUNT = new Set(
-  BUNDLED_LEAGUES.flatMap((league) =>
-    league.clubs
-      .filter((club) => {
-        const name = club.name.trim().toLocaleLowerCase("pt-BR");
-        return name.length > 0 && name !== "clube";
-      })
-      .map((club) => club.id),
-  ),
-).size;
-
+// Dados de catálogo não entram no JS da página "Sobre". Consulte o catálogo no jogo.
 const FACTS = [
-  { label: "Competições", value: String(BUNDLED_LEAGUES.length) },
-  { label: "Clubes identificados", value: String(PUBLIC_CLUB_COUNT) },
+  { label: "Experiência", value: "Carreira" },
+  { label: "Visualização", value: "3D" },
   { label: "Idiomas", value: "39" },
-  { label: "Preço", value: "Grátis" },
+  { label: "Acesso", value: "Grátis" },
 ];
 
 export function SobrePage() {
@@ -143,6 +132,33 @@ export function SobrePage() {
             exportada do progresso. Os guias ajudam a aprofundar cada decisão; a comunidade é um
             espaço para compartilhar o que você aprendeu.
           </p>
+        </section>
+        <section className="mt-12 space-y-4" aria-labelledby="sobre-escolher-modo">
+          <h2 id="sobre-escolher-modo" className="font-display text-2xl">Qual modo combina com o seu objetivo?</h2>
+          <section aria-labelledby="sobre-carreira">
+            <h3 id="sobre-carreira" className="font-display text-xl">Quero construir uma equipe por várias temporadas</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Comece pela carreira de treinador: compare elenco, calendário e orçamento; defina metas
+              e reveja as decisões depois das partidas. O catálogo de clubes e campeonatos pode mudar
+              conforme a versão e os dados disponíveis. <Link to="/modo-carreira" className="text-primary underline">Entenda a carreira</Link>.
+            </p>
+          </section>
+          <section aria-labelledby="sobre-partida">
+            <h3 id="sobre-partida" className="font-display text-xl">Quero experimentar o simulador primeiro</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Na <Link to="/partida-rapida" className="text-primary underline">partida rápida</Link>,
+              teste esquemas e observe os movimentos em campo antes de iniciar uma temporada longa.
+              Para avaliar desempenho, compare no mesmo aparelho e nas mesmas configurações gráficas.
+            </p>
+          </section>
+          <section aria-labelledby="sobre-catalogo">
+            <h3 id="sobre-catalogo" className="font-display text-xl">Onde conferir os dados realmente disponíveis?</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Consulte as <Link to="/tabelas" className="text-primary underline">tabelas e ligas</Link>
+              e a seleção de clube dentro do jogo. Um registro no banco de dados não significa
+              necessariamente que a equipe esteja jogável com elenco completo em todos os modos.
+            </p>
+          </section>
         </section>
         <CommunityInvite />
         <PublicLinks exclude={PATH} />
