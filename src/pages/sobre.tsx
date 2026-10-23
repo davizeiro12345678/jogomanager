@@ -145,7 +145,7 @@ export function SobrePage() {
               Comece pela carreira de treinador: compare elenco, calendário e orçamento; defina
               metas e reveja as decisões depois das partidas. O catálogo de clubes e campeonatos
               pode mudar conforme a versão e os dados disponíveis.{" "}
-              <Link to="/modo-carreira" className="text-primary underline">
+              <Link to="/guias" className="text-primary underline">
                 Entenda a carreira
               </Link>
               .
