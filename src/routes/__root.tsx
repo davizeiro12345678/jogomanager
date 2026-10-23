@@ -16,8 +16,8 @@ import { CONSENT_VISIBILITY_SCRIPT } from "@/lib/consent";
 const GOOGLE_FONTS =
   "https://fonts.googleapis.com/css2?family=Archivo+Black&family=Hind:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=optional";
 
-/** Activate only a loaded sheet; a failed request must keep the system-font fallback. */
-const ENABLE_FONTS = `(function(){var l=document.getElementById('google-fonts');if(l){var go=function(){l.media='all'};l.sheet?go():l.addEventListener('load',go,{once:true})}})();`;
+/** Keep font downloads out of the hero's critical network window. */
+const ENABLE_FONTS = `(function(){var l=document.getElementById('google-fonts');if(!l)return;var go=function(){if(l.sheet)l.media='all'};document.readyState==='complete'?go():window.addEventListener('load',go,{once:true})})();`;
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: ({ matches }) => ({

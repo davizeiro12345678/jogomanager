@@ -1,12 +1,22 @@
 import { expect, it, vi } from "vitest";
 import { LANGS } from "@/i18n/locale-catalog";
 import { translate } from "@/i18n";
+import { loadGamePageHead } from "./load-game-page-head";
 import {
   applyGamePageMetadata,
   gamePageHead,
   gamePageMetadata,
   socialLocale,
 } from "./game-page-metadata";
+
+it("awaits private page metadata without exposing save identifiers", async () => {
+  const head = await loadGamePageHead("/squad?save=private-player#result");
+  expect(head.meta.find((meta) => meta["name"] === "robots")?.["content"]).toBe(
+    "noindex, follow",
+  );
+  expect(head.links[0]?.href).toBe("https://jogomanager.com/squad");
+  expect(JSON.stringify(head)).not.toContain("private-player");
+});
 
 it("does not touch the document for public or unknown routes", () => {
   expect(() => applyGamePageMetadata("/", "en", (key) => key)).not.toThrow();

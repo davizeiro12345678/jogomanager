@@ -15,6 +15,8 @@ BEGIN
   ASSERT has_table_privilege('service_role', 'public.explicit_grants_contract_probe', 'INSERT'), 'Preserve backend writes';
   ASSERT has_table_privilege('anon', 'public.clubs', 'SELECT'), 'Preserve existing public catalogue';
   ASSERT has_function_privilege('authenticated', 'public.mutate_player_career(integer,bigint,text,jsonb)', 'EXECUTE'), 'Preserve career RPC';
+  ASSERT NOT has_table_privilege('anon', 'backup_restore.club_stadium_links_oct23', 'SELECT'), 'Repair backups must remain private';
+  ASSERT NOT has_table_privilege('authenticated', 'backup_restore.club_stadium_links_oct23', 'SELECT'), 'Repair backups must not become player data';
 END;
 $contract$;
 GRANT SELECT ON public.explicit_grants_contract_probe TO anon;
