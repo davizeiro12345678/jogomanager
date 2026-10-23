@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { assessMatchSetup } from "./match-setup-budget.mjs";
 
 const [baselineArg, candidateArg, outputArg] = process.argv.slice(2);
@@ -32,7 +32,7 @@ const fixturePath = path.join(output, "match-fixture.json");
 function sample(mode, root, target = "") {
   const run = spawnSync(
     process.execPath,
-    ["--import", tsx, sampler, mode, root, fixturePath, target],
+    ["--import", pathToFileURL(tsx).href, sampler, mode, root, fixturePath, target],
     {
       cwd: root,
       env: { ...process.env, TSX_TSCONFIG_PATH: path.join(root, "tsconfig.json") },

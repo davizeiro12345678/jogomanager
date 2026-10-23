@@ -41,6 +41,14 @@ const FAQ = [
     "Exporte uma cópia no editor e confira a sincronização antes de trocar de aparelho ou limpar os dados do navegador.",
   ],
   [
+    "O catálogo de clubes é igual às equipes jogáveis?",
+    "Não necessariamente. O catálogo pode incluir registros informativos; confira na seleção de clube as opções de carreira disponíveis nesta versão.",
+  ],
+  [
+    "O 3D funciona do mesmo jeito em qualquer celular?",
+    "O jogo adapta a qualidade conforme o hardware. Para comparar fluidez, teste no mesmo aparelho e navegador, com o mesmo nível gráfico.",
+  ],
+  [
     "Onde aprendo a jogar melhor?",
     "Os guias explicam escalação, táticas, scouting e finanças. Comece por uma partida rápida e aplique uma mudança por vez.",
   ],
@@ -82,7 +90,9 @@ export function HomeDetails() {
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {FAQ.map(([question, answer]) => (
             <details key={question} className="surface-card rounded-xl border border-border/60 p-4">
-              <summary className="cursor-pointer font-display text-lg">{question}</summary>
+              <summary className="cursor-pointer font-display text-lg">
+                <h3 className="inline font-display text-lg">{question}</h3>
+              </summary>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{answer}</p>
             </details>
           ))}

@@ -1,5 +1,15 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
+import { createElement, type ComponentType } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRouter,
+  RouterProvider,
+} from "@tanstack/react-router";
+import { Page as CreatorPage } from "../pages/criador";
+import { ContatoPage } from "../pages/contato";
 import { PUBLIC_PAGE_REDIRECTS, publicPageRedirect } from "./public-page-redirects";
 
 const ssrFetch = vi.hoisted(() => vi.fn(() => new Response("SSR")));
@@ -61,15 +71,24 @@ describe("retired public pages", () => {
     }
   });
 
-  it("keeps the official contacts consistent", () => {
+  it("keeps the official contacts consistent", async () => {
     const contacts = ["davizeiro10.jogos@gmail.com", "davithomazini779@gmail.com"];
-    for (const file of ["../pages/contato.tsx", "../pages/criador.tsx", "../../public/llms.txt"]) {
-      const source = readFileSync(new URL(file, import.meta.url), "utf8");
-      for (const email of contacts) expect(source).toContain(email);
+    // Verify rendered links: these pages share identity constants, so their
+    // source does not need to duplicate the literal contact addresses.
+    for (const page of [ContatoPage, CreatorPage] as ComponentType[]) {
+      const router = createRouter({
+        routeTree: createRootRoute({ component: () => createElement(page) }),
+        history: createMemoryHistory({ initialEntries: ["/"] }),
+        isServer: true,
+      });
+      await router.load();
+      const html = renderToStaticMarkup(createElement(RouterProvider, { router }));
+      for (const email of contacts) expect(html).toContain(`href="mailto:${email}"`);
     }
     const community = readFileSync(new URL("../content/community.ts", import.meta.url), "utf8");
     expect(community).toContain('DISCORD_INVITE = "https://discord.gg/6az4ssQQck"');
     const llms = readFileSync(new URL("../../public/llms.txt", import.meta.url), "utf8");
+    for (const email of contacts) expect(llms).toContain(email);
     expect(llms).toContain("https://discord.gg/6az4ssQQck");
   });
 });

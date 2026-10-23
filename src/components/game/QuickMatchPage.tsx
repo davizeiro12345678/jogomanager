@@ -1,3 +1,4 @@
+import "@/public-styles.css";
 import { Link } from "@tanstack/react-router";
 import { Shuffle } from "lucide-react";
 import { lazy, Suspense, useState } from "react";

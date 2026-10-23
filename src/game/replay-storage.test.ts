@@ -32,7 +32,7 @@ import {
 } from "./replay-storage";
 import { buildTeamSetup } from "./quickMatch";
 import type { Replay } from "./replay";
-import { encodeStoredReplay } from "./replay-codec";
+import { encodeReplay, encodeStoredReplay } from "./replay-codec";
 const fixture = (title: string): Replay => ({
   id: "same-id",
   title,
@@ -59,6 +59,30 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 describe("owner scoped replay archives", () => {
+  it("preserves an empty authoritative v3 archive instead of resurrecting deleted v2 replays", async () => {
+    archive.set("manager3d.replays.v2", [fixture("deleted")]);
+    archive.set("manager3d.replays.v3", []);
+    expect(await listReplaySummaries()).toEqual([]);
+    expect(await loadReplay("same-id")).toBeUndefined();
+    await storeReplayEntry({ ...fixture("new"), id: "new-id" });
+    expect((await listReplaySummaries()).map((row) => row.id)).toEqual(["new-id"]);
+  });
+  it("preserves v3 retention decisions when older v2 records are absent from the current archive", async () => {
+    archive.set("manager3d.replays.v2", [fixture("evicted")]);
+    archive.set("manager3d.replays.v3", [
+      encodeReplay({ ...fixture("retained"), id: "retained-id" }),
+    ]);
+    expect((await listReplaySummaries()).map((row) => row.id)).toEqual(["retained-id"]);
+  });
+  it("migrates a completed revision-2 packed replay and permits a subsequent new recording", async () => {
+    const packed = encodeReplay(fixture("historical physics"));
+    archive.set("manager3d.replays.v3", [
+      { ...packed, execution: { revision: 2, physics: "rapier", perception: "wasm" } },
+    ]);
+    expect((await loadReplay("same-id"))?.execution?.revision).toBe(2);
+    await storeReplayEntry({ ...fixture("new recording"), id: "new-id" });
+    expect(await listReplaySummaries()).toHaveLength(2);
+  });
   it("retains the main packed v3 guest archive and clears its recovery copy", async () => {
     const packed = [encodeStoredReplay(fixture("main packed archive"))];
     archive.set("manager3d.replays.v3", packed);

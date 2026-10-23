@@ -33,16 +33,15 @@ async function catalog(owner: ReplayOwner): Promise<ReplaySummary[]> {
   if (existing) return existing;
   // An account never adopts the previous visitor's or another account's archive.
   if (owner !== null) return [];
-  const originals = (await get<Replay[]>("manager3d.replays.v2")) ?? [];
-  const records = new Map<string, Replay | StoredReplayV3>(originals.map((r) => [r.id, r]));
-  const packed = (await get<StoredReplayV3[]>(REPLAY_V3_KEY)) ?? [];
-  for (const record of packed) {
-    try {
-      decodeReplay(record);
-      records.set(record.id, record);
-    } catch (error) {
-      if (!records.has(record.id)) throw error;
-    }
+  const packed = await get<(Replay | StoredReplayV3)[]>(REPLAY_V3_KEY);
+  // An existing v3 array, including [], records deletions and retention. V2 is
+  // only a migration source when v3 is absent, never a union/recovery overlay.
+  const originals = packed ?? (await get<Replay[]>("manager3d.replays.v2")) ?? [];
+  if (!Array.isArray(originals)) throw new TypeError("Arquivo de replays inválido.");
+  const records = new Map<string, Replay | StoredReplayV3>();
+  for (const record of originals) {
+    decodeReplay(record);
+    records.set(record.id, record);
   }
   const summaries = [...records.values()].map(summary).sort((a, b) => b.createdAt - a.createdAt);
   await replayStoreTransaction("readwrite", (store) => {

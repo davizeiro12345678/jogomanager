@@ -24,6 +24,9 @@ const K_SNAPSHOTS = "career.snapshots";
 const K_OUTBOX = "career.outbox";
 const K_ACK = "career.outbox.ack";
 const K_MIGRATION_BACKUPS = "career.migration-backups";
+// Written atomically with state/time. Historical unscoped IDB keys alone do not
+// prove that this layout has ever committed a save after the parent v2 layout.
+const K_CANONICAL_WRITE = "career.canonical-write.v1";
 const previousScope = (owner: LocalOwnerId) =>
   owner ? `account-${encodeURIComponent(owner)}` : "guest";
 const previousMirrorKey = (owner: LocalOwnerId) => `manager3d.career.v2.${previousScope(owner)}`;
@@ -107,10 +110,9 @@ function readCareerMirror(key: string): CareerState | null {
 }
 
 export function readLocalCareer(owner: LocalOwnerId = null): CareerState | null {
-  return (
-    readCareerMirror(scopedCareerKey(LEGACY_KEY, owner)) ??
-    readCareerMirror(previousMirrorKey(owner))
-  );
+  const current = readCareerMirror(scopedCareerKey(LEGACY_KEY, owner));
+  const previous = readCareerMirror(previousMirrorKey(owner));
+  return mirrorSavedAt(owner) > 0 ? (current ?? previous) : (previous ?? current);
 }
 
 function writeMirrorValue(key: string, value: string): boolean {
@@ -180,10 +182,12 @@ export async function saveLocalCareer(
     await setMany([
       [scopedCareerKey(K_CAREER, owner), state],
       [scopedCareerKey(K_SAVED_AT, owner), at],
+      [scopedCareerKey(K_CANONICAL_WRITE, owner), at],
     ]);
     persisted =
       JSON.stringify(await get(scopedCareerKey(K_CAREER, owner))) === serialized &&
-      (await get(scopedCareerKey(K_SAVED_AT, owner))) === at;
+      (await get(scopedCareerKey(K_SAVED_AT, owner))) === at &&
+      (await get(scopedCareerKey(K_CANONICAL_WRITE, owner))) === at;
     await update<Snapshot[] | undefined>(scopedCareerKey(K_SNAPSHOTS, owner), (list) =>
       [{ at, label, state }, ...(Array.isArray(list) ? list : [])].slice(0, MAX_SNAPSHOTS),
     );
@@ -281,7 +285,9 @@ export async function exportLocalCareerData(owner: LocalOwnerId = null) {
     Snapshot[] | undefined,
     OutboxEntry | undefined,
     unknown,
+    unknown,
   ] = [
+    undefined,
     undefined,
     undefined,
     undefined,
@@ -300,6 +306,7 @@ export async function exportLocalCareerData(owner: LocalOwnerId = null) {
       ),
       ...["career", "savedAt", "snapshots", "outbox"].map((name) => previousIdbKey(owner, name)),
       scopedCareerKey(K_ACK, owner),
+      scopedCareerKey(K_CANONICAL_WRITE, owner),
     ])) as typeof stored;
   } catch {
     /* Privacy export remains available from the verified mirror. */
@@ -315,20 +322,33 @@ export async function exportLocalCareerData(owner: LocalOwnerId = null) {
     previousSnapshots,
     previousOutbox,
     storedAcknowledgements,
+    storedCanonicalWrite,
   ] = stored;
   const currentMirror = readCareerMirror(scopedCareerKey(LEGACY_KEY, owner));
   const oldMirror = readCareerMirror(previousMirrorKey(owner));
+  const currentMirrorAt = mirrorSavedAt(owner);
+  const currentIdbAt = storageTime(savedAt);
   const canonicalCandidates = [
-    { state: career, at: storageTime(savedAt) },
-    { state: currentMirror, at: mirrorSavedAt(owner) },
+    {
+      state: career,
+      at: currentIdbAt,
+      confirmed: currentIdbAt > 0 && storageTime(storedCanonicalWrite) === currentIdbAt,
+    },
+    { state: currentMirror, at: currentMirrorAt, confirmed: currentMirrorAt > 0 },
   ].filter((candidate) => careerRecord(candidate.state));
+  const confirmed = canonicalCandidates.filter((candidate) => candidate.confirmed);
+  // Without timestamps, the parent's scoped v2 layout takes precedence over
+  // its retained unscoped recovery copy. Never stamp that historical data as new.
+  const previousTime =
+    storageTime(previousAt) || Math.max(0, ...canonicalCandidates.map((candidate) => candidate.at));
   const candidates = (
-    canonicalCandidates.length
-      ? canonicalCandidates
+    confirmed.length
+      ? confirmed
       : [
-          { state: previousCareer, at: storageTime(previousAt) },
-          { state: oldMirror, at: storageTime(previousAt) },
+          { state: previousCareer, at: previousTime },
+          { state: oldMirror, at: previousTime },
           { state: previousOutbox?.state, at: storageTime(previousOutbox?.at) },
+          ...canonicalCandidates,
         ].filter((candidate) => careerRecord(candidate.state))
   ).sort((left, right) => right.at - left.at);
   const selected = candidates[0];
@@ -364,6 +384,7 @@ export async function clearLocalCareerData(owner: LocalOwnerId = null): Promise<
     await Promise.all([
       del(scopedCareerKey(K_CAREER, owner)),
       del(scopedCareerKey(K_SAVED_AT, owner)),
+      del(scopedCareerKey(K_CANONICAL_WRITE, owner)),
       del(scopedCareerKey(K_SNAPSHOTS, owner)),
       del(scopedCareerKey(K_OUTBOX, owner)),
       del(scopedCareerKey(K_ACK, owner)),

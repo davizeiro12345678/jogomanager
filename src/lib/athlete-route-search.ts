@@ -1,23 +1,27 @@
-import * as z from "zod/mini";
+import { athleteSlot, athletePanelSearch as parsePanel } from "./athlete-search";
 
-// Route search validators are eager even when their page components are lazy.
-// Keep the same bounded, non-coercing schema without importing classic Zod's
-// form helpers and JSON-schema generation into every public page.
-const slot = z.catch(z.int().check(z.minimum(1), z.maximum(3)), 1);
+// Route validators are eager. Preserve the parser interface and URL contract
+// without making every route download a schema engine for two small checks.
+function searchRecord(input: unknown): Record<string, unknown> {
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    throw new TypeError("Parâmetros de busca inválidos");
+  return input as Record<string, unknown>;
+}
 
-export const createAthleteSearch = z.object({ slot });
-export const athletePanelSearch = z.object({
-  slot,
-  tab: z.optional(
-    z.enum([
-      "semana",
-      "calendario",
-      "saude",
-      "atributos",
-      "selecao",
-      "contrato",
-      "noticias",
-      "historico",
-    ]),
-  ),
-});
+function validator<T>(parse: (input: unknown) => T) {
+  return {
+    parse,
+    safeParse(input: unknown) {
+      try {
+        return { success: true as const, data: parse(input) };
+      } catch (error) {
+        return { success: false as const, error };
+      }
+    },
+  };
+}
+
+export const createAthleteSearch = validator((input) => ({
+  slot: athleteSlot(searchRecord(input)),
+}));
+export const athletePanelSearch = validator((input) => parsePanel(searchRecord(input)));

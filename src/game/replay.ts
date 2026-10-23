@@ -18,6 +18,7 @@ import type { PlayerAction } from "./animation";
 import { emptyStats } from "./sim";
 import type { MatchStats, Side, SimPlayer, SimView, TeamSetup } from "./sim";
 import type { MatchExecutionContract } from "./match-execution-contract";
+import type { RecordedMatchExecutionContract } from "./recorded-execution-contract";
 import {
   emptyActionContext,
   emptyContactContext,
@@ -65,7 +66,7 @@ interface VisualContextSource {
 
 export interface Replay {
   /** Absent on existing saves. Playback preserves recorded frames. */
-  execution?: MatchExecutionContract;
+  execution?: RecordedMatchExecutionContract;
   id: string;
   createdAt: number;
   title: string;

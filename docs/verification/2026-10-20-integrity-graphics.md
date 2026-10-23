@@ -1,12 +1,12 @@
 # Integridade, realismo e apresentação 3D — atualização em 23/10/2026
 
-A versão de entrega foi integrada ao main `d39b785ff20814ae7e6fce06eeb5f68476a6c6a3`. A rodada integrada passou em 2.011 testes de 370 arquivos, TypeScript, lint e builds da aplicação e do estúdio. O [relatório de 690 partidas](2026-10-22-simulation-690.md) registra a amostra física final, seus denominadores e os problemas de calibração ainda abertos. O [fechamento de entrega](2026-10-23-delivery.md) registra as verificações finais e os limites de publicação. Resultados de rodadas anteriores não substituem a validação desta versão.
+A versão de entrega foi integrada ao main `66f55eab558edb41a6f2d79482d1ac6ed69ed163`. A rodada integrada passou em 2.033 testes de 375 arquivos, TypeScript, lint e builds da aplicação e do estúdio. O [relatório de 690 partidas](2026-10-22-simulation-690.md) registra a amostra física final, seus denominadores e os problemas de calibração ainda abertos. O [fechamento de entrega](2026-10-23-delivery.md) registra as verificações finais e os limites de publicação. Resultados de rodadas anteriores não substituem a validação desta versão.
 
-Esta entrega integra alterações por responsabilidade sobre o `origin/main`
+Esta curadoria começou sobre o `origin/main`
 `5abde06de8eed679307bb318c96eb29f40dad93d`, sem sobrescrever a cópia de trabalho
 anterior, suas variáveis de ambiente ou o histórico publicado. Os resultados
 locais, a inspeção de infraestrutura e a publicação do código são evidências
-distintas. O commit desta entrega não representa um deploy.
+distintas. As integrações do repositório podem criar previews ao receber commits; não foi solicitada publicação de produção.
 
 ## Defeitos corrigidos e comportamento resultante
 

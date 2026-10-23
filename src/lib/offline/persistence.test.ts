@@ -39,6 +39,7 @@ import {
   exportLocalCareerData,
   loadLocalCareer,
   localSavedAt,
+  readLocalCareer,
   saveLocalCareer,
   scopedCareerKey,
 } from "./store";
@@ -72,6 +73,41 @@ afterEach(() => {
 });
 
 describe("verified local persistence", () => {
+  it("reconciles the parent's newer v2 guest save before reusing unscoped IDB keys", async () => {
+    const stale = { ...career, round: 2 };
+    const recent = { ...career, round: 12 };
+    db.rows.set("career.state", stale);
+    db.rows.set("career.savedAt", 100);
+    db.rows.set("career.v2.guest.career", recent);
+    db.rows.set("career.v2.guest.savedAt", 200);
+    mirror.set("manager3d.career.v1", JSON.stringify(recent));
+    mirror.set("manager3d.career.v2.guest", JSON.stringify(recent));
+    expect((await loadLocalCareer())?.round).toBe(12);
+    expect((await exportLocalCareerData()).savedAt).toBe(200);
+    expect(db.rows.get("career.state")).toEqual(stale);
+    expect(db.rows.get("career.v2.guest.career")).toEqual(recent);
+    expect(await loadLocalCareer("other-account")).toBeNull();
+  });
+  it("prefers the historical scoped guest mirror until a current-layout mirror write is confirmed", () => {
+    mirror.set("manager3d.career.v1", JSON.stringify({ ...career, round: 2 }));
+    mirror.set("manager3d.career.v2.guest", JSON.stringify({ ...career, round: 12 }));
+    expect(readLocalCareer()?.round).toBe(12);
+  });
+  it("keeps an explicitly confirmed IDB write ahead of a previous-layout clock from the future", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(1000);
+    db.rows.set("career.v2.guest.career", { ...career, round: 12 });
+    db.rows.set("career.v2.guest.savedAt", 5000);
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => null,
+        setItem: () => {
+          throw new Error("quota");
+        },
+      },
+    });
+    await saveLocalCareer({ ...career, round: 3 });
+    expect((await loadLocalCareer())?.round).toBe(3);
+  });
   it("does not restore an older IDB career when a newer fallback save shares its clock millisecond", async () => {
     vi.spyOn(Date, "now").mockReturnValue(1000);
     await saveLocalCareer(career, "auto", "alice");

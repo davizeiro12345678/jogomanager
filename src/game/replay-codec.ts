@@ -3,7 +3,10 @@ import type { PlayerAction } from "./animation";
 import type { Replay, ReplayFrame, ReplayPlayerMeta } from "./replay";
 import type { TeamSetup } from "./sim";
 import type { VersionedVisualData } from "./visual-context";
-import { validExecutionContract, type MatchExecutionContract } from "./match-execution-contract";
+import {
+  validRecordedExecutionContract,
+  type RecordedMatchExecutionContract,
+} from "./recorded-execution-contract";
 import { validMatchTeam } from "./match-command-validation";
 
 export const REPLAY_FORMAT_V2 = 2;
@@ -12,7 +15,7 @@ export const REPLAY_V3_MIN_REDUCTION = 0.2;
 const QUANTIZE = 100;
 
 export type StoredReplayV3 = {
-  execution?: MatchExecutionContract;
+  execution?: RecordedMatchExecutionContract;
   version: typeof REPLAY_FORMAT_V3;
   id: string;
   createdAt: number;
@@ -186,7 +189,7 @@ function validateReplayInput(raw: object): void {
     !Array.isArray(replay["score"]) ||
     replay["score"].length !== 2 ||
     !replay["score"].every((v) => Number.isInteger(v) && v >= 0 && v <= 65535) ||
-    (replay["execution"] !== undefined && !validExecutionContract(replay["execution"]))
+    (replay["execution"] !== undefined && !validRecordedExecutionContract(replay["execution"]))
   )
     fail();
   const meta = replay["meta"] as ReplayPlayerMeta[];

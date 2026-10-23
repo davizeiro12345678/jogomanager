@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildTeamSetup } from "./quickMatch";
 import { MatchSim } from "./sim";
 import { ReplayRecorder, ReplaySim } from "./replay";
+import { validExecutionContract } from "./match-execution-contract";
 import {
   decodeReplay,
   encodeReplay,
@@ -22,6 +23,29 @@ function makeReplay() {
 }
 
 describe("versioned replay codec", () => {
+  it("plays completed historical solver revisions while rejecting them for live recovery", () => {
+    const stored = encodeReplay(makeReplay());
+    for (const revision of [1, 2] as const) {
+      const execution = { revision, physics: "rapier", perception: "wasm" } as const;
+      const decoded = decodeReplay({ ...stored, execution });
+      expect(decoded.execution).toEqual(execution);
+      expect(decoded.frames).toHaveLength(stored.frames.timesMs.length);
+      expect(validExecutionContract(execution)).toBe(false);
+      const playback = new ReplaySim(decoded);
+      playback.seek(playback.duration);
+      expect([playback.stats.home.goals, playback.stats.away.goals]).toEqual([
+        decoded.frames.at(-1)?.hg,
+        decoded.frames.at(-1)?.ag,
+      ]);
+      expect(decoded.score).toEqual(stored.score);
+    }
+    for (const execution of [
+      { revision: 0, physics: "rapier", perception: "wasm" },
+      { revision: 4, physics: "rapier", perception: "wasm" },
+      { revision: 2, physics: "unrecognised", perception: "wasm" },
+    ])
+      expect(() => decodeReplay({ ...stored, execution })).toThrow();
+  });
   it("round-trips legacy-shaped replays with score, seek and visual context", () => {
     const original = makeReplay();
     const stored = encodeReplay(original);
