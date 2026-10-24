@@ -66,8 +66,11 @@ async function verifiedUser(token) {
   const response = await sbFetch("/auth/v1/user", token);
   if (!response.ok) return null;
   const user = await response.json();
-  if (!user || typeof user.id !== "string" ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id)) {
+  if (
+    !user ||
+    typeof user.id !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id)
+  ) {
     return null;
   }
   return { id: user.id, token };
@@ -100,13 +103,15 @@ function runPreview(homeClub, awayClub) {
       if (err) reject(err);
       else resolve(value);
     }
-    worker.once("message", msg => {
+    worker.once("message", (msg) => {
       if (msg?.ok && Number.isInteger(msg.homeGoals) && Number.isInteger(msg.awayGoals)) {
         done(null, msg);
       } else done(new Error("simulation_failed"));
     });
-    worker.once("error", err => done(err));
-    worker.once("exit", code => { if (!finished) done(new Error("worker_exit_" + code)); });
+    worker.once("error", (err) => done(err));
+    worker.once("exit", (code) => {
+      if (!finished) done(new Error("worker_exit_" + code));
+    });
   });
 }
 
@@ -129,8 +134,13 @@ export function createAuxServer() {
       if (path.pathname === "/healthz" && req.method === "GET") {
         return respond(res, 200, { ok: true, service: "jogomanager-aux", version: 1 }, origin);
       }
-      if (!supabaseUrl?.startsWith("https://") || !publishableKey ||
-          !Number.isInteger(port) || port < 1 || port > 65535) {
+      if (
+        !supabaseUrl?.startsWith("https://") ||
+        !publishableKey ||
+        !Number.isInteger(port) ||
+        port < 1 ||
+        port > 65535
+      ) {
         return respond(res, 503, { error: "not_configured" }, origin);
       }
       if (path.pathname === "/readyz" && req.method === "GET") {
@@ -168,33 +178,54 @@ export function createAuxServer() {
           return respond(res, 503, { error: "purchase_lookup_unavailable" }, origin);
         }
         const purchases = await upstream.json();
-        return respond(res, 200, {
-          status: Array.isArray(purchases) && purchases[0]
-            ? String(purchases[0].status) : "not_found",
-        }, origin);
+        return respond(
+          res,
+          200,
+          {
+            status:
+              Array.isArray(purchases) && purchases[0]
+                ? String(purchases[0].status)
+                : "not_found",
+          },
+          origin,
+        );
       }
       if (!previewEnabled) return respond(res, 503, { error: "preview_disabled" }, origin);
       if (activeWorkers >= workerLimit) return respond(res, 429, { error: "busy" }, origin);
       let input;
-      try { input = await readBody(req); }
-      catch { return respond(res, 400, { error: "invalid_body" }, origin); }
-      if (!input || typeof input !== "object" ||
-          typeof input.homeClub !== "string" || typeof input.awayClub !== "string" ||
-          !/^[A-Za-z0-9_-]{1,80}$/.test(input.homeClub) ||
-          !/^[A-Za-z0-9_-]{1,80}$/.test(input.awayClub)) {
+      try {
+        input = await readBody(req);
+      } catch {
+        return respond(res, 400, { error: "invalid_body" }, origin);
+      }
+      if (
+        !input ||
+        typeof input !== "object" ||
+        typeof input.homeClub !== "string" ||
+        typeof input.awayClub !== "string" ||
+        !/^[A-Za-z0-9_-]{1,80}$/.test(input.homeClub) ||
+        !/^[A-Za-z0-9_-]{1,80}$/.test(input.awayClub)
+      ) {
         return respond(res, 400, { error: "invalid_club" }, origin);
       }
       activeWorkers++;
       try {
         const result = await runPreview(input.homeClub, input.awayClub);
-        return respond(res, 200, {
-          homeGoals: result.homeGoals,
-          awayGoals: result.awayGoals,
-          unofficial: true,
-        }, origin);
+        return respond(
+          res,
+          200,
+          {
+            homeGoals: result.homeGoals,
+            awayGoals: result.awayGoals,
+            unofficial: true,
+          },
+          origin,
+        );
       } catch {
         return respond(res, 503, { error: "simulation_unavailable" }, origin);
-      } finally { activeWorkers--; }
+      } finally {
+        activeWorkers--;
+      }
     } catch {
       respond(res, 503, { error: "dependency_unavailable" }, origin);
     }
