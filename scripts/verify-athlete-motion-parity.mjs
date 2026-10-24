@@ -39,3 +39,33 @@ for (let seed = 0; seed < 256; seed++) {
   }
 }
 console.log(JSON.stringify({ checkpoints, exactStates: true, remainderParity: true }));
+
+if (process.argv.includes("--full")) {
+  const reference = await import(pathToFileURL(path.resolve(base, "src/game/sim.ts")).href);
+  const current = await import("../src/game/sim.ts");
+  const { buildTeamSetup } = await import("../src/game/quickMatch.ts");
+  const home = buildTeamSetup("fla"),
+    away = buildTeamSetup("pal");
+  let fullCheckpoints = 0;
+  for (let seed = 0; seed < 12; seed++) {
+    const a = new reference.MatchSim(
+      structuredClone(home),
+      structuredClone(away),
+      `motion-parity-${seed}`,
+    );
+    const b = new current.MatchSim(
+      structuredClone(home),
+      structuredClone(away),
+      `motion-parity-${seed}`,
+    );
+    for (let tick = 0; tick < 3000; tick++) {
+      a.step(reference.MATCH_SIMULATION_STEP, reference.LIVE_MATCH_CLOCK_SCALE);
+      b.step(current.MATCH_SIMULATION_STEP, current.LIVE_MATCH_CLOCK_SCALE);
+      if (tick % 100 === 0 || tick === 2999) {
+        assert.deepEqual(b.checkpoint(), a.checkpoint(), `match seed=${seed}, tick=${tick}`);
+        fullCheckpoints++;
+      }
+    }
+  }
+  console.log(JSON.stringify({ fullCheckpoints, pairedTicks: 36000, exactMatchCheckpoints: true }));
+}

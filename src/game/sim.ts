@@ -125,6 +125,14 @@ export { emptyStats } from "./sim-types";
 import { emptyStats } from "./sim-types";
 const CHECKPOINT_EXTERNAL = new Set(["rnd", "passLaneKernel", "ballPhysics"]);
 
+function movementUrgency(side: Side, lateGame: boolean, remaining: number, goalDiff: number) {
+  if (!lateGame) return 0;
+  const diff = side === "home" ? goalDiff : -goalDiff;
+  if (diff < 0) return Math.min(1, (15 - remaining) / 15) * (diff <= -2 ? 1 : 0.8);
+  if (diff > 0) return -Math.min(1, (15 - remaining) / 15) * 0.6;
+  return 0;
+}
+
 export class MatchSim {
   readonly #visualContextComputer = new MatchVisualContextComputer();
   analytics = createMatchAnalytics();
@@ -2173,6 +2181,30 @@ export class MatchSim {
     return set;
   }
 
+  private movementContext(side: Side, bz: number) {
+    const setup = this.setup(side);
+    const dir = this.attackDir(side);
+    const attacking = this.possession === side;
+    const defendingWide = !attacking && Math.abs(bz) > FIELD_Z * 0.7;
+    const widthFactor = (0.62 + setup.tactics.width * 0.14) * (defendingWide ? 0.76 : 1);
+    const surge = !attacking && this.pressSurge[side] > 0;
+    const pressLine = attacking
+      ? 10 + setup.tactics.mentality * 5
+      : -6 + setup.tactics.pressing * 7 + (surge ? 7 : 0);
+    const shift = this.mentalityShift(side);
+    return {
+      setup,
+      dir,
+      attacking,
+      widthFactor,
+      surge,
+      pressLine,
+      shift,
+      plan: activePlan(setup.tactics),
+      phase: this.tacticalPhase(side),
+    };
+  }
+
   private moveOffBall(dt: number) {
     // Set-piece setup already placed the taker, wall and penalty exclusion.
     // Keep that staging intact until the ball is actually put into play.
@@ -2190,15 +2222,8 @@ export class MatchSim {
     const remaining = Math.max(0, 90 - this.time / 60);
     const lateGame = remaining < 15;
     const goalDiff = this.stats.home.goals - this.stats.away.goals;
-    const urgency = (side: Side) => {
-      if (!lateGame) return 0;
-      const diff = side === "home" ? goalDiff : -goalDiff;
-      if (diff < 0) return Math.min(1, (15 - remaining) / 15) * (diff <= -2 ? 1 : 0.8);
-      if (diff > 0) return -Math.min(1, (15 - remaining) / 15) * 0.6;
-      return 0;
-    };
-    const urgencyHome = urgency("home");
-    const urgencyAway = urgency("away");
+    const urgencyHome = movementUrgency("home", lateGame, remaining, goalDiff);
+    const urgencyAway = movementUrgency("away", lateGame, remaining, goalDiff);
     const weatherTraction = this.weather === "rain" ? 0.72 : 1;
     const roamingTime = this.time * 0.4;
     const freedomTime = this.time * 0.12;
@@ -2216,31 +2241,8 @@ export class MatchSim {
     // Tactics are fixed throughout this sequential movement pass. Build each
     // side's context on its first eligible athlete, preserving lazy cache writes
     // while avoiding the same plan lookup and scalar work for all eleven.
-    const movementFor = (side: Side) => {
-      const setup = this.setup(side);
-      const dir = this.attackDir(side);
-      const attacking = this.possession === side;
-      const defendingWide = !attacking && Math.abs(bz) > FIELD_Z * 0.7;
-      const widthFactor = (0.62 + setup.tactics.width * 0.14) * (defendingWide ? 0.76 : 1);
-      const surge = !attacking && this.pressSurge[side] > 0;
-      const pressLine = attacking
-        ? 10 + setup.tactics.mentality * 5
-        : -6 + setup.tactics.pressing * 7 + (surge ? 7 : 0);
-      const shift = this.mentalityShift(side);
-      return {
-        setup,
-        dir,
-        attacking,
-        widthFactor,
-        surge,
-        pressLine,
-        shift,
-        plan: activePlan(setup.tactics),
-        phase: this.tacticalPhase(side),
-      };
-    };
-    let homeMovement: ReturnType<typeof movementFor> | undefined;
-    let awayMovement: ReturnType<typeof movementFor> | undefined;
+    let homeMovement: ReturnType<MatchSim["movementContext"]> | undefined;
+    let awayMovement: ReturnType<MatchSim["movementContext"]> | undefined;
     // Count all roster entries, even suspended/ball-carrying players; this
     // matches tacticalSlot's original side-relative iteration exactly.
     let homeSlotIndex = 0;
@@ -2252,8 +2254,8 @@ export class MatchSim {
       if (p.id === this.ball.holder) continue;
       const { setup, dir, attacking, widthFactor, surge, pressLine, shift, plan, phase } =
         p.side === "home"
-          ? (homeMovement ??= movementFor("home"))
-          : (awayMovement ??= movementFor("away"));
+          ? (homeMovement ??= this.movementContext("home", bz))
+          : (awayMovement ??= this.movementContext("away", bz));
       let tx = p.slotX * FIELD_X * 0.9 + shift + bx * 0.22 + pressLine * dir;
       let tz = p.slotZ * FIELD_Z * widthFactor + bz * 0.28;
       const slot = plan ? rosterSlot : 0;
