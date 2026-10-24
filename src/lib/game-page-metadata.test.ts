@@ -11,9 +11,7 @@ import {
 
 it("awaits private page metadata without exposing save identifiers", async () => {
   const head = await loadGamePageHead("/squad?save=private-player#result");
-  expect(head.meta.find((meta) => meta["name"] === "robots")?.["content"]).toBe(
-    "noindex, follow",
-  );
+  expect(head.meta.find((meta) => meta["name"] === "robots")?.["content"]).toBe("noindex, follow");
   expect(head.links[0]?.href).toBe("https://jogomanager.com/squad");
   expect(JSON.stringify(head)).not.toContain("private-player");
 });

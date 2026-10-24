@@ -73,6 +73,15 @@ type RawStanding = {
     standings: StandingRow[][];
   };
 };
+
+// Imports store a single league object; older snapshots used a one-item array.
+// Normalize both before projecting the public fields, without returning raw data.
+function standingPayload(payload: unknown): RawStanding | null {
+  const candidate = Array.isArray(payload) ? payload[0] : payload;
+  if (!candidate || typeof candidate !== "object") return null;
+  const raw = candidate as RawStanding;
+  return Array.isArray(raw.league?.standings) ? raw : null;
+}
 type RawInjury = {
   player?: { name?: string; type?: string; reason?: string };
   team?: { name?: string };
@@ -114,7 +123,7 @@ export const getLeagueTable = createServerFn({ method: "GET" })
         .limit(1);
       if (standingsError) throw new Error("Não foi possível carregar a tabela da liga.");
       const row = rows?.[0];
-      const raw = (row?.payload as unknown as RawStanding[] | null)?.[0];
+      const raw = standingPayload(row?.payload);
       if (!row || !raw) return null;
       const [injuryResult, topResult] = await Promise.all([
         db
@@ -364,7 +373,7 @@ export const getLeagueDigests = createServerFn({ method: "GET" }).handler(
       const out: LeagueDigest[] = [];
       for (const lg of FEATURED_LEAGUES) {
         const row = source.get(lg.id);
-        const raw = (row?.payload as unknown as RawStanding[] | null)?.[0];
+        const raw = standingPayload(row?.payload);
         const table = raw?.league.standings[0];
         if (!raw || !table || table.length < 6) continue;
         let hw = 0,

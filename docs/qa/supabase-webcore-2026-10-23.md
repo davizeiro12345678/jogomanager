@@ -10,7 +10,9 @@ Esta proposta altera código e migrações versionadas. Publicação depende de 
 - CSS de cutscenes/HUD é carregado com o jogo. O stylesheet completo compilado permanece idêntico byte a byte ao da base.
 - O CSS público compilado passa de 59.437 para 57.446 bytes; gzip nível 9, de 11.817 para 11.389 bytes. A geração Tailwind inclui explicitamente o novo componente DiscordLink.
 - As migrações adicionam contratos explícitos de grants para objetos futuros, um índice de busca e um reparo de vínculos com correspondências estritas e registro para reversão. O teste SQL deve rodar somente no banco descartável do replay.
-- body-parser 2.4.0 e zod 4.6.6 corrigem os avisos altos GHSA-27r3-jxmh-p828 e GHSA-mrhx-c7xc-m3w5. Os dois lockfiles foram regenerados pelos respectivos gerenciadores. Nenhuma dependência de produto foi adicionada.
+- body-parser 2.4.0 e zod 4.6.6 corrigem os avisos altos GHSA-27r3-jxmh-p828 e GHSA-mrhx-c7xc-m3w5. fast-uri 3.1.9 e Undici 7.30.1 (no ramo de Wrangler) corrigem os avisos moderados da cadeia de ferramentas. Os dois lockfiles foram regenerados pelos respectivos gerenciadores. Nenhuma dependência de produto foi adicionada.
+
+- A projeção pública das ligas normaliza o objeto de classificação e a lista legada de um item, preservando a seleção da temporada e a remoção de campos do provedor. Testes cobrem os dois formatos, cache, concorrência e entradas ausentes/malformadas.
 
 ## Comparação auxiliar
 
@@ -46,7 +48,7 @@ A comparação estrita local e o orçamento absoluto passaram. Nenhum limite foi
 - Build limpo, lint sem erros/avisos, tipos e histórico de migrações passaram localmente.
 - Suíte anterior à última mudança de head assíncrono: 262 arquivos / 1.411 testes aprovados; após essa mudança: 17 testes focados aprovados.
 - Quatro testes do bootstrap de fontes e 12 testes do mecanismo de gates passaram; estes últimos não equivalem à execução dos gates reais.
-- npm audit de produção local reportou zero vulnerabilidades na base de avisos consultada.
+- npm audit completo, incluindo desenvolvimento, reportou zero vulnerabilidades após os quatro patches. A consulta é um retrato da base de avisos.
 - O preview Cloudflare local foi impedido por restrição de interfaces de rede do ambiente; não há certificação visual/Lighthouse local desta revisão.
 - Replay nativo PostgreSQL, stress de 200 partidas com replays, MatchSim ABBA, graphics, comparação de bundles e Lighthouse desktop/mobile continuam obrigatórios no CI.
 - Não se declara ganho de produção antes de publicar uma revisão aprovada e comparar a mesma carga.
@@ -56,3 +58,7 @@ Referências públicas:
 - https://github.com/advisories/GHSA-mrhx-c7xc-m3w5
 - https://npmscan.com/package/body-parser
 - https://npmscan.com/package/zod
+
+## CI da revisão de5a5bd
+
+Comparação de bundle, replay nativo de migrações/contratos de acesso, 200 partidas e replays, MatchSim ABBA, gráficos, assets, WASM e Lighthouse desktop passaram. Build/types/tests parou em formatação de um teste, corrigida nesta atualização. O Lighthouse mobile continuou reprovado pelos limites existentes de performance/LCP/TBT; a publicação permanece bloqueada. A revisão atual deve executar novamente todos os checks, sem reaproveitar aprovação de outro SHA.
