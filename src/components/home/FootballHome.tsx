@@ -25,7 +25,11 @@ import "./home.css";
 
 // Defer lengthy editorial sections without creating an extra chunk for the tiny league pulse.
 const HomeDetails = lazy(() => import("./HomeDetails").then((m) => ({ default: m.HomeDetails })));
-const TacticalPreview = lazy(() => import("@/features/home/components/TacticalPreview").then((m) => ({ default: m.TacticalPreview })));
+const TacticalPreview = lazy(() =>
+  import("@/features/home/components/TacticalPreview").then((m) => ({
+    default: m.TacticalPreview,
+  })),
+);
 const SYSTEMS = [
   {
     id: "tactics",
@@ -298,7 +302,14 @@ export function FootballHome() {
               </Link>
             </div>
           </div>
-          <Suspense fallback={<div className="mx-auto aspect-[4/5] w-full max-w-[375px] rounded-xl border border-white/10 bg-[#111e18]" aria-hidden="true" />}>
+          <Suspense
+            fallback={
+              <div
+                className="mx-auto aspect-[4/5] w-full max-w-[375px] rounded-xl border border-white/10 bg-[#111e18]"
+                aria-hidden="true"
+              />
+            }
+          >
             <TacticalPreview />
           </Suspense>
         </section>
