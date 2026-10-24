@@ -1,7 +1,7 @@
 import "@/public-styles.css";
 import { Link } from "@tanstack/react-router";
 import { Shuffle } from "lucide-react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
 import { Flag } from "@/components/game/Flag";
@@ -28,8 +28,19 @@ const DIFFS: { id: Difficulty; label: string }[] = [
 
 export function QuickMatchPage() {
   const { t, lang } = useT();
-  useCareerLeagueCatalog();
-  const availableCatalog = catalogFacts(LEAGUES);
+  const catalogVersion = useCareerLeagueCatalog();
+  // The catalogue can be enriched asynchronously; only recalculate when that
+  // version changes, not on every club, difficulty or opponent selection.
+  const availableCatalog = useMemo(() => catalogFacts(LEAGUES), [catalogVersion]);
+  const leaguesByCountry = useMemo(() => {
+    const countries = LEAGUES.reduce<Record<string, typeof LEAGUES>>((acc, league) => {
+      (acc[league.country] ??= []).push(league);
+      return acc;
+    }, {});
+    return Object.entries(countries).sort(([a], [b]) =>
+      a === "Brasil" ? -1 : b === "Brasil" ? 1 : a.localeCompare(b, lang),
+    );
+  }, [catalogVersion, lang]);
   const [leagueId, setLeagueId] = useState(LEAGUES[0]!.id);
   const league = getLeague(leagueId);
   const [myClub, setMyClub] = useState(league.clubs[0]!.id);
@@ -115,16 +126,7 @@ export function QuickMatchPage() {
             onChange={(e) => chooseLeague(e.target.value)}
             className="w-full rounded-lg border border-input bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary"
           >
-            {Object.entries(
-              LEAGUES.reduce<Record<string, typeof LEAGUES>>((acc, l) => {
-                (acc[l.country] ??= []).push(l);
-                return acc;
-              }, {}),
-            )
-              .sort(([a], [b]) =>
-                a === "Brasil" ? -1 : b === "Brasil" ? 1 : a.localeCompare(b, lang),
-              )
-              .map(([country, ls]) => (
+            {leaguesByCountry.map(([country, ls]) => (
                 <optgroup key={country} label={country}>
                   {ls.map((l) => (
                     <option key={l.id} value={l.id}>
