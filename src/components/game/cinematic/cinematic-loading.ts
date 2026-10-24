@@ -1,11 +1,16 @@
 import { createElement, lazy, useEffect, useState, type ComponentProps } from "react";
 import { retryChunk } from "@/lib/chunk-retry";
 import { reportSilent } from "@/lib/report-silent";
+import type { CinematicSet } from "@/game/cinematic-blocking";
 
 let stage: Promise<typeof import("../CinematicStage3D")> | undefined;
 
 /** The dialogue shell never waits for Three, rigs or the lens bundle. */
-export function preloadCinematicStage() {
+export function preloadCinematicStage(set?: CinematicSet) {
+  if (set)
+    void import("./sets/registry")
+      .then((module) => module.preloadCinematicSet(set))
+      .catch(() => undefined);
   stage ??= retryChunk("cutscene", () => import("../CinematicStage3D")).catch((error: unknown) => {
     stage = undefined;
     throw error;

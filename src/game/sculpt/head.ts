@@ -122,8 +122,14 @@ function shapeFaceRing(
   return ring;
 }
 
-export function headPoint(P: HeadShape, y: number, angle: number, seed = 0) {
-  return sampleHeadPoint(P, y, angle, faceMorphology(seed), new THREE.Vector3());
+export function headPoint(
+  P: HeadShape,
+  y: number,
+  angle: number,
+  seed = 0,
+  target = new THREE.Vector3(),
+) {
+  return sampleHeadPoint(P, y, angle, faceMorphology(seed), target);
 }
 
 /** Construction-scoped scratch is never retained by a mesh or shared across rigs. */

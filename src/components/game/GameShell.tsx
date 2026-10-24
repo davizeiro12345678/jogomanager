@@ -54,6 +54,8 @@ import { CommandPalette } from "./CommandPalette";
 import { Crest } from "./Crest";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import "./career-interface.css";
+const prepareMatch = () =>
+  import("./stadium-loading").then((module) => module.preloadStadium()).catch(() => undefined);
 
 const TABS: {
   to: string;
@@ -201,6 +203,7 @@ export function GameShell({
         <Link
           key={tab.to}
           to={tab.to}
+          preload="intent"
           onClick={() => closeMenu && setMenuOpen(false)}
           aria-current={pathname === tab.to ? "page" : undefined}
           className="career-nav-item"
@@ -337,7 +340,17 @@ export function GameShell({
               </DropdownMenuContent>
             </DropdownMenu>
             {fixture && (
-              <Link to="/match" className="career-primary-button career-header-play">
+              <Link
+                to="/match"
+                preload="intent"
+                onPointerEnter={() => {
+                  void prepareMatch();
+                }}
+                onFocus={() => {
+                  void prepareMatch();
+                }}
+                className="career-primary-button career-header-play"
+              >
                 <Play size={15} aria-hidden="true" />
                 <span>{t("action.play")}</span>
               </Link>

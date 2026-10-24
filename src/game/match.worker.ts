@@ -189,11 +189,6 @@ function advanceLive(spatialDt: number, clockDt: number) {
     latestVisualBall = visualBallFromCanonical(after);
     return;
   }
-  if (live.hasBallPhysicsAuthority()) {
-    recoveryDirty = true;
-
-    void attachVisualFallback(live, liveEpoch);
-  }
   if (!visualPhysics) {
     latestVisualBall = undefined;
     return;

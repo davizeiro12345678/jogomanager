@@ -219,3 +219,80 @@ test("bundle analyzer counts shared root-relative modules without following remo
     rmSync(cwd, { recursive: true, force: true });
   }
 });
+
+test("cinematic analysis follows lazy sets in the stage's shared static registry", () => {
+  const cwd = mkdtempSync(path.join(tmpdir(), "cinematic-registry-"));
+  try {
+    writeFileSync(path.join(cwd, "CinematicStage3D-test.js"), 'import "./registry.js";');
+    writeFileSync(
+      path.join(cwd, "registry.js"),
+      'export const load=()=>import("./LockerRoom-test.js");',
+    );
+    writeFileSync(path.join(cwd, "LockerRoom-test.js"), 'export const room="locker";');
+    writeFileSync(
+      path.join(cwd, "unrelated.js"),
+      'export const load=()=>import("./Office-test.js");',
+    );
+    writeFileSync(path.join(cwd, "Office-test.js"), 'export const room="office";');
+    const result = spawnSync(
+      process.execPath,
+      [path.join(root, "scripts/bundle-report.mjs"), "fixture", cwd],
+      { cwd, encoding: "utf8" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(
+      readFileSync(path.join(cwd, "verification/bundle-2026-10-01/fixture.json"), "utf8"),
+    );
+    assert.deepEqual(report.cinematicStage.dynamicDependencies, ["LockerRoom-test.js"]);
+    assert.ok(!report.cinematicStage.staticDependencies.includes("LockerRoom-test.js"));
+    assert.ok(!report.cinematicStage.dynamicDependencies.includes("Office-test.js"));
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test("startup measurement retains the deferred hydration runtime and its bootstrap", () => {
+  const cwd = mkdtempSync(path.join(tmpdir(), "hydration-startup-"));
+  try {
+    const sources = {
+      "index-bootstrap.js": 'export const start=()=>import("./hydrate-app-test.js");',
+      "hydrate-app-test.js": 'import "./renderer.js"; import "./router.js";',
+      "renderer.js": 'export const renderer="mandatory hydration runtime";',
+      "router.js": 'export const dashboard=()=>import("./dashboard-lazy.js");',
+      "dashboard-lazy.js": 'export const screen="unopened dashboard";',
+      "match-route.js": 'export const route="match";',
+      "match.worker-test.js": 'export const worker="sequential simulation";',
+    };
+    for (const [name, source] of Object.entries(sources))
+      writeFileSync(path.join(cwd, name), source);
+    const result = spawnSync(
+      process.execPath,
+      [path.join(root, "scripts/bundle-report.mjs"), "fixture", cwd],
+      { cwd, encoding: "utf8" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(
+      readFileSync(path.join(cwd, "verification/bundle-2026-10-01/fixture.json"), "utf8"),
+    );
+    const entry = report.entries.find((entry) => entry.name === "match-route.js");
+    assert.deepEqual(entry.startupDependencies.sort(), [
+      "hydrate-app-test.js",
+      "index-bootstrap.js",
+      "match-route.js",
+      "renderer.js",
+      "router.js",
+    ]);
+    assert.equal(
+      entry.startupBytes,
+      report.totalBytes -
+        Buffer.byteLength(sources["dashboard-lazy.js"]) -
+        Buffer.byteLength(sources["match.worker-test.js"]),
+    );
+    assert.deepEqual(
+      report.entries.find((entry) => entry.name === "match.worker-test.js").startupDependencies,
+      ["match.worker-test.js"],
+    );
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});

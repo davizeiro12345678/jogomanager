@@ -34,7 +34,7 @@ jobs:
       - run: node --test scripts/font-loading.test.mjs
       - run: node --test scripts/preview-stylesheets.test.cjs
       - name: Verify Edge Function authentication and import contracts
-        run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs
+        run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs scripts/football-materialize-realism.test.mjs
       - run: npm run test:performance-gates
       - run: PFM_LOCAL_VERIFY=1 npm run build
       - run: npm run bundle:check
@@ -134,7 +134,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify recorded migration history and preserved legacy files
-        run: node scripts/verify-migration-history.mjs
+        run: |
+          node --test scripts/migration-replay-provenance.test.mjs
+          node scripts/verify-migration-history.mjs
       - uses: supabase/setup-cli@v1
         with:
           version: 2.75.2
@@ -148,6 +150,10 @@ jobs:
         run: supabase db reset --local --no-seed --yes
       - name: Verify application schema, ownership, and grants
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/supabase-replay-contract.sql
+      - name: Verify public catalog and bounded identity enrichment
+        run: |
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realism-catalog-readonly.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realism-profile-fixtures.sql
       - name: Verify future tables require explicit API grants
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/explicit-public-grants.sql
 

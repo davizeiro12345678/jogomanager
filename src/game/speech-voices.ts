@@ -1,4 +1,4 @@
-import { resolveLang } from "@/i18n/locale-catalog";
+import { resolveLang } from "@/i18n/locale-identifiers";
 /** Match actual language codes, avoiding Norwegian matching Northern Sotho. */
 export function voicesForLanguage(
   voices: readonly SpeechSynthesisVoice[],

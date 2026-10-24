@@ -12,20 +12,23 @@ vi.mock("@tanstack/react-start", () => ({
 }));
 vi.mock("@supabase/supabase-js", () => ({
   createClient: () => ({
-    from: () => {
+    from: (table: string) => {
       const query = {
         select: (projection: string) => {
-          fixture.projections.push(projection);
+          if (table === "players") fixture.projections.push(projection);
           return query;
         },
         eq: () => query,
         is: () => query,
+        in: () => query,
         order: () => query,
         limit: () => query,
         range: () => query,
         gt: () => query,
         then: (resolve: (value: unknown) => unknown) =>
-          Promise.resolve(fixture.pages.shift() ?? { data: [], error: null }).then(resolve),
+          Promise.resolve(
+            (table === "players" ? fixture.pages.shift() : null) ?? { data: [], error: null },
+          ).then(resolve),
       };
       return query;
     },
@@ -84,7 +87,7 @@ describe("public football role admission", () => {
     expect(result.rows.map((row) => row.id)).toEqual(["person-1"]);
     expect(result.hasMore).toBe(true);
     expect(fixture.projections).toEqual([
-      "id, source, source_id, birth_date, name, position, age, shirt_number, nationality, overall, photo_url, club_id",
+      "id, source, source_id, source_kind, canonical_player_id, birth_date, name, position, age, shirt_number, nationality, overall, photo_url, club_id",
     ]);
   });
 });

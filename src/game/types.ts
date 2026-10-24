@@ -1,6 +1,10 @@
 export type Position = "GK" | "DF" | "MF" | "FW";
 
 export interface Club {
+  crestUrl?: string | undefined;
+  city?: string | undefined;
+  country?: string | undefined;
+  founded?: number | undefined;
   sourceTeamId?: string;
   id: string;
   name: string;
@@ -12,6 +16,7 @@ export interface Club {
 }
 
 export interface League {
+  logoUrl?: string | undefined;
   membershipSeason?: string;
   membershipSource?: string;
   catalogStatus?: "sourced" | "legacy";

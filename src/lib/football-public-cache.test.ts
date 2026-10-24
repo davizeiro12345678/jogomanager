@@ -27,6 +27,11 @@ vi.mock("@supabase/supabase-js", () => ({
           if (column === "club_id") call.clubId = value;
           return query;
         },
+        in: (column: string, values: string[]) => {
+          if (column === "club_id" && values[0] !== undefined) call.clubId = values[0];
+          return query;
+        },
+        is: () => query,
         not: () => query,
         order: () => query,
         limit: () => query,
@@ -133,8 +138,13 @@ describe("bounded public football projections", () => {
     });
     const other = await getRealSquad({ data: { clubId: "pal" } });
     expect(other[0]?.id).toBe("two");
-    expect(fixture.calls.map((call) => call.clubId)).toEqual(["fla", "fla", "pal", "pal"]);
-    for (const call of fixture.calls) {
+    const playerCalls = fixture.calls.filter((call) => call.table === "players");
+    expect(playerCalls.map((call) => call.clubId)).toEqual(["fla", "fla", "pal", "pal"]);
+    expect(fixture.calls.filter((call) => call.table === "club_catalog_links")).toHaveLength(2);
+    expect(fixture.calls.filter((call) => call.table === "player_identity_aliases")).toHaveLength(
+      2,
+    );
+    for (const call of playerCalls) {
       expect(call.projection).toContain("data_source:source");
       expect(call.projection).toContain("source_kind, canonical_player_id");
       expect(call.projection).not.toBe("*");
@@ -158,6 +168,10 @@ describe("bounded public football projections", () => {
     expect((await getRealSquad({ data: { clubId: "fla" } })).map((row) => row.id)).toEqual([
       "complete",
     ]);
-    expect(fixture.calls).toHaveLength(4);
+    expect(fixture.calls.filter((call) => call.table === "players")).toHaveLength(4);
+    expect(fixture.calls.filter((call) => call.table === "club_catalog_links")).toHaveLength(1);
+    expect(fixture.calls.filter((call) => call.table === "player_identity_aliases")).toHaveLength(
+      1,
+    );
   });
 });

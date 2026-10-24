@@ -14,6 +14,8 @@ import { protectThreeSourceTags } from "./scripts/r3f-source-compat.ts";
 import { rapierWasmAsset } from "./scripts/rapier-wasm-asset.ts";
 import { bundleModuleAudit } from "./scripts/bundle-module-audit.ts";
 import { leagueCatalogAsset } from "./scripts/league-catalog-asset.ts";
+import { postfxLookupAssets } from "./scripts/postfx-lookup-assets.ts";
+import { modulePreloadPlan } from "./scripts/module-preload-plan.ts";
 import { resolveBuildCommit } from "./src/lib/release-identity.ts";
 
 // Load non-VITE_ env vars into process.env for server routes (email, webhooks).
@@ -73,6 +75,7 @@ const verificationOutput =
                         ? "verification/graphics-2026-09-30/production"
                         : null;
 
+const preloadPlan = modulePreloadPlan();
 const projectConfig = defineConfig({
   nitro: {
     preset: "cloudflare-module",
@@ -108,6 +111,7 @@ const projectConfig = defineConfig({
   vite: {
     define: { __JOGOMANAGER_BUILD_COMMIT__: JSON.stringify(buildCommit) },
     build: {
+      modulePreload: { resolveDependencies: preloadPlan.resolveDependencies },
       rolldownOptions: {
         output: {
           // A shared sheet can have both a CSS chunk name and a ?url import
@@ -120,24 +124,24 @@ const projectConfig = defineConfig({
           codeSplitting: {
             groups: [
               {
-                // Share the invitation and its URL without a separate tiny request.
-                // The full editorial community section remains separate.
-                name: "community-link",
-                test: /[\\/]src[\\/](?:components[\\/]DiscordLink\.tsx|content[\\/]community\.ts)$/,
+                // Pure helpers already used by every route share one transport.
+                // Avoid tiny shared chunks without importing gameplay or UI.
+                name: "browser-shared-data",
+                test: /[\\/]src[\\/](?:lib[\\/](?:seo|public-route-paths|league-faq|league-labels|consent|auth-next|lovable-error-reporting)|i18n[\\/](?:bootstrap-messages|locale-identifiers))\.ts$/,
+                includeDependenciesRecursively: false,
+              },
+              {
+                // React's small shared API, scheduler, store adapters and app
+                // contexts are used together. Share one transport instead of
+                // many tiny requests. The client renderer remains deferred.
+                name: "browser-react",
+                test: /[\\/]src[\\/](?:components[\\/]DiscordLink\.tsx|content[\\/]community\.ts|i18n[\\/]context\.ts|hooks[\\/]useAccessibility\.ts|lib[\\/]accessibility-preferences\.ts)$|[\\/]node_modules[\\/](?:scheduler[\\/]|use-sync-external-store[\\/]|react-dom[\\/](?:index\.js|cjs[\\/]react-dom\.(?:production|development)\.js)(?:$|\?))/,
               },
               {
                 // Lazy routes share Vite's preload helper. If it lives in the
                 // app entry, each dynamic import pulls the entire entry back in.
                 name: "vite-preload",
                 test: /vite[\\/]preload-helper/,
-              },
-              {
-                // Radix needs the small public API (flushSync/portals). Keeping it
-                // out of the hydration entry avoids pulling the router and its
-                // dependencies back into every lazily loaded UI route. The client
-                // renderer remains separate; this matches no react-dom/client file.
-                name: "react-dom-api",
-                test: /[\\/]node_modules[\\/]react-dom[\\/](?:index\.js|cjs[\\/]react-dom\.(?:production|development)\.js)(?:$|\?)/,
               },
             ],
           },
@@ -160,6 +164,8 @@ const projectConfig = defineConfig({
     plugins: [
       ...(enableMcpRouteGenerator ? [mcpPlugin()] : []),
       imagetools(),
+      postfxLookupAssets(),
+      preloadPlan.plugin,
       rapierWasmAsset(),
       leagueCatalogAsset(),
       bundleModuleAudit(),
@@ -179,6 +185,7 @@ const projectConfig = defineConfig({
     },
   },
   tanstackStart: {
+    client: { entry: "client" },
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server", build: { inlineCss: true } },

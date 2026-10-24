@@ -9,9 +9,9 @@ import type { OfficialAssets } from "./football.functions";
 import { reportSilent } from "./silent-errors";
 
 // v1 could contain a Data API-truncated catalog. Fetch it completely once.
-const CACHE_KEY = "manager3d.official.v2";
+const CACHE_KEY = "manager3d.official.v3";
 const PREF_KEY = "manager3d.officialLook";
-const TTL = 1000 * 60 * 60 * 24 * 7;
+const TTL = 1000 * 60 * 60 * 24;
 
 let cache: OfficialAssets = { crests: {}, kits: {} };
 let loaded = false;
@@ -44,6 +44,14 @@ export function officialKit(clubId: string): string | undefined {
   return cache.kits[clubId];
 }
 
+function stringRecord(value: unknown): value is Record<string, string> {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.values(value).every((item) => typeof item === "string")
+  );
+}
 function readCache(): OfficialAssets | null {
   if (typeof localStorage === "undefined") return null;
   try {
@@ -54,14 +62,8 @@ function readCache(): OfficialAssets | null {
       !Number.isFinite(parsed.at) ||
       Date.now() - parsed.at > TTL ||
       !parsed.data ||
-      typeof parsed.data.crests !== "object" ||
-      !parsed.data.crests ||
-      Array.isArray(parsed.data.crests) ||
-      !Object.values(parsed.data.crests).every((value) => typeof value === "string") ||
-      typeof parsed.data.kits !== "object" ||
-      !parsed.data.kits ||
-      Array.isArray(parsed.data.kits) ||
-      !Object.values(parsed.data.kits).every((value) => typeof value === "string")
+      !stringRecord(parsed.data.crests) ||
+      !stringRecord(parsed.data.kits)
     )
       return null;
     return parsed.data;

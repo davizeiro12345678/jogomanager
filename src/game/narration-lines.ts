@@ -4,9 +4,10 @@
  * O servidor gera o áudio a partir DESTAS frases (nunca de texto livre vindo do
  * navegador), então o endpoint de voz não pode ser usado como TTS genérico.
  */
-import { LANGS, resolveLang, type Lang } from "@/i18n/locale-catalog";
+import { LANGS, resolveLang, type Lang } from "@/i18n/locale-identifiers";
 import { MATCH_EVENT_MESSAGES } from "@/i18n/match-event-messages";
 import { FABI_VOICE_ID, FELIPE_VOICE_ID, MARIANNE_VOICE_ID } from "./narration-voice";
+import { EDITORIAL_NARRATION } from "./narration-editorial";
 
 export type NarrationEvent =
   | "goal"
@@ -92,7 +93,7 @@ export function broadcastRole(event: NarrationEvent): BroadcastRole {
     event === "chance" ||
     event === "corner"
   )
-    return "commentator";
+    return event === "corner" ? "commentator" : "narrator";
   return "narrator";
 }
 
@@ -542,9 +543,16 @@ function expandPack(lang: RemoteNarrationLang, pack: Pack): Pack {
       const all = [...lines, ...(extra[event as NarrationEvent] ?? [])];
       return [
         event,
-        all.flatMap((line, index) =>
-          leads.map((lead, style) => (style === index % leads.length ? line : `${lead}${line}`)),
-        ),
+        [
+          ...new Set([
+            ...all.flatMap((line, index) =>
+              leads.map((lead, style) =>
+                style === index % leads.length ? line : `${lead}${line}`,
+              ),
+            ),
+            ...EDITORIAL_NARRATION[lang][event as NarrationEvent],
+          ]),
+        ],
       ];
     }),
   ) as Pack;

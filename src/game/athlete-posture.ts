@@ -63,7 +63,9 @@ export function refineAthletePosture(pose: Pose, input: AthletePostureInput): Po
   pose.hipYaw += turn * 0.012;
   // The gaze and upper trunk lead a turn; the pelvis and support catch up.
   pose.headYaw += turn * 0.04;
-  pose.chest += turn * 0.02;
+  // `chest` is sagittal pitch: a signed turn must not bend the trunk backward
+  // on left curves and forward on right curves.
+  pose.chest += Math.abs(turn) * 0.008;
   pose.armLRoll += Math.max(0, -turn) * 0.025;
   pose.armRRoll -= Math.max(0, turn) * 0.025;
   // Upper arms lag the hip cycle; retain authored actions and quiet idle arms.

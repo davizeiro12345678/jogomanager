@@ -346,6 +346,58 @@ export type Database = {
         }
         Relationships: []
       }
+      club_catalog_links: {
+        Row: {
+          club_id: string
+          match_rule: string
+          metadata_before: Json
+          reviewed_at: string
+          source: string
+          source_club_id: string
+          source_team_id: string | null
+        }
+        Insert: {
+          club_id: string
+          match_rule?: string
+          metadata_before: Json
+          reviewed_at?: string
+          source: string
+          source_club_id: string
+          source_team_id?: string | null
+        }
+        Update: {
+          club_id?: string
+          match_rule?: string
+          metadata_before?: Json
+          reviewed_at?: string
+          source?: string
+          source_club_id?: string
+          source_team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_catalog_links_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_catalog_links_source_club_id_fkey"
+            columns: ["source_club_id"]
+            isOneToOne: true
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_catalog_links_source_team_id_fkey"
+            columns: ["source_team_id"]
+            isOneToOne: false
+            referencedRelation: "official_teams"
+            referencedColumns: ["source_id"]
+          },
+        ]
+      }
       club_external_ids: {
         Row: {
           club_id: string
@@ -1123,6 +1175,56 @@ export type Database = {
         }
         Relationships: []
       }
+      official_event_aliases: {
+        Row: {
+          canonical_source_id: string
+          reason: string
+          reviewed_at: string
+          source_id: string
+        }
+        Insert: {
+          canonical_source_id: string
+          reason?: string
+          reviewed_at?: string
+          source_id: string
+        }
+        Update: {
+          canonical_source_id?: string
+          reason?: string
+          reviewed_at?: string
+          source_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "official_event_aliases_canonical_source_id_fkey"
+            columns: ["canonical_source_id"]
+            isOneToOne: false
+            referencedRelation: "official_events"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "official_event_aliases_canonical_source_id_fkey"
+            columns: ["canonical_source_id"]
+            isOneToOne: false
+            referencedRelation: "official_events_catalog"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "official_event_aliases_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: true
+            referencedRelation: "official_events"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "official_event_aliases_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: true
+            referencedRelation: "official_events_catalog"
+            referencedColumns: ["source_id"]
+          },
+        ]
+      }
       official_event_details: {
         Row: {
           detail_type: string
@@ -1166,6 +1268,13 @@ export type Database = {
             columns: ["event_source_id"]
             isOneToOne: false
             referencedRelation: "official_events"
+            referencedColumns: ["source_id"]
+          },
+          {
+            foreignKeyName: "official_event_details_event_source_id_fkey"
+            columns: ["event_source_id"]
+            isOneToOne: false
+            referencedRelation: "official_events_catalog"
             referencedColumns: ["source_id"]
           },
         ]
@@ -1516,6 +1625,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_career_clubs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_catalog"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_career_revisions: {
@@ -1629,6 +1745,69 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_honours_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_identity_aliases: {
+        Row: {
+          canonical_player_id: string
+          match_rule: string
+          player_id: string
+          reviewed_at: string
+          source: string | null
+          source_id: string | null
+        }
+        Insert: {
+          canonical_player_id: string
+          match_rule?: string
+          player_id: string
+          reviewed_at?: string
+          source?: string | null
+          source_id?: string | null
+        }
+        Update: {
+          canonical_player_id?: string
+          match_rule?: string
+          player_id?: string
+          reviewed_at?: string
+          source?: string | null
+          source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_identity_aliases_canonical_player_id_fkey"
+            columns: ["canonical_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_identity_aliases_canonical_player_id_fkey"
+            columns: ["canonical_player_id"]
+            isOneToOne: false
+            referencedRelation: "players_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_identity_aliases_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_identity_aliases_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players_catalog"
             referencedColumns: ["id"]
           },
         ]
@@ -1761,6 +1940,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_season_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_catalog"
+            referencedColumns: ["id"]
+          },
         ]
       }
       players: {
@@ -1848,6 +2034,13 @@ export type Database = {
             columns: ["canonical_player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "players_canonical_player_id_fkey"
+            columns: ["canonical_player_id"]
+            isOneToOne: false
+            referencedRelation: "players_catalog"
             referencedColumns: ["id"]
           },
           {
@@ -2663,7 +2856,163 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      official_events_catalog: {
+        Row: {
+          away_score: number | null
+          away_team_name: string | null
+          away_team_source_id: string | null
+          home_score: number | null
+          home_team_name: string | null
+          home_team_source_id: string | null
+          league_source_id: string | null
+          season: string | null
+          source_id: string | null
+          source_updated_at: string | null
+          starts_at: string | null
+          status: string | null
+          updated_at: string | null
+          venue_name: string | null
+          venue_source_id: string | null
+        }
+        Insert: {
+          away_score?: number | null
+          away_team_name?: string | null
+          away_team_source_id?: string | null
+          home_score?: number | null
+          home_team_name?: string | null
+          home_team_source_id?: string | null
+          league_source_id?: string | null
+          season?: string | null
+          source_id?: string | null
+          source_updated_at?: string | null
+          starts_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          venue_name?: string | null
+          venue_source_id?: string | null
+        }
+        Update: {
+          away_score?: number | null
+          away_team_name?: string | null
+          away_team_source_id?: string | null
+          home_score?: number | null
+          home_team_name?: string | null
+          home_team_source_id?: string | null
+          league_source_id?: string | null
+          season?: string | null
+          source_id?: string | null
+          source_updated_at?: string | null
+          starts_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          venue_name?: string | null
+          venue_source_id?: string | null
+        }
+        Relationships: []
+      }
+      players_catalog: {
+        Row: {
+          age: number | null
+          birth_date: string | null
+          canonical_player_id: string | null
+          club_id: string | null
+          created_at: string | null
+          data_version: number | null
+          height_cm: number | null
+          id: string | null
+          last_synced_at: string | null
+          name: string | null
+          nationality: string | null
+          overall: number | null
+          overall_breakdown: Json | null
+          photo_url: string | null
+          position: string | null
+          potential: number | null
+          preferred_foot: string | null
+          shirt_number: number | null
+          source: string | null
+          source_id: string | null
+          source_kind: string | null
+          source_updated_at: string | null
+          sync_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          age?: number | null
+          birth_date?: string | null
+          canonical_player_id?: string | null
+          club_id?: string | null
+          created_at?: string | null
+          data_version?: number | null
+          height_cm?: number | null
+          id?: string | null
+          last_synced_at?: string | null
+          name?: string | null
+          nationality?: string | null
+          overall?: number | null
+          overall_breakdown?: Json | null
+          photo_url?: string | null
+          position?: string | null
+          potential?: number | null
+          preferred_foot?: string | null
+          shirt_number?: number | null
+          source?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          source_updated_at?: string | null
+          sync_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          age?: number | null
+          birth_date?: string | null
+          canonical_player_id?: string | null
+          club_id?: string | null
+          created_at?: string | null
+          data_version?: number | null
+          height_cm?: number | null
+          id?: string | null
+          last_synced_at?: string | null
+          name?: string | null
+          nationality?: string | null
+          overall?: number | null
+          overall_breakdown?: Json | null
+          photo_url?: string | null
+          position?: string | null
+          potential?: number | null
+          preferred_foot?: string | null
+          shirt_number?: number | null
+          source?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          source_updated_at?: string | null
+          sync_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_canonical_player_id_fkey"
+            columns: ["canonical_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "players_canonical_player_id_fkey"
+            columns: ["canonical_player_id"]
+            isOneToOne: false
+            referencedRelation: "players_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "players_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       activate_training_boost: {
@@ -2671,6 +3020,22 @@ export type Database = {
         Returns: {
           training_boosts: number
           training_until: string
+        }[]
+      }
+      backfill_existing_football_venues: {
+        Args: { p_after?: string; p_limit?: number }
+        Returns: {
+          last_id: string
+          materialized: number
+          processed: number
+        }[]
+      }
+      backfill_football_birth_dates: {
+        Args: { p_after?: string; p_limit?: number }
+        Returns: {
+          last_id: string
+          processed: number
+          updated: number
         }[]
       }
       begin_payment_webhook_event: {
@@ -2703,6 +3068,11 @@ export type Database = {
           training_boosts: number
         }[]
       }
+      enrich_existing_football_profiles: {
+        Args: { p_profiles: Json }
+        Returns: number
+      }
+      enrich_football_venues: { Args: { p_venues: Json }; Returns: number }
       finish_payment_webhook_event: {
         Args: { _event_id: string; _succeeded: boolean }
         Returns: undefined
@@ -2822,6 +3192,19 @@ export type Database = {
         }
         Returns: Json
       }
+      jm_consume_sms_hook_budget: {
+        Args: { p_channel: string; p_global_hmac: string; p_phone_hmac: string }
+        Returns: {
+          allowed: boolean
+          reason: string
+          retry_after_seconds: number
+        }[]
+      }
+      jm_resend_webhook_signing_key: { Args: never; Returns: string }
+      jm_store_resend_delivery_event: {
+        Args: { p_email_id?: string; p_event_id: string; p_event_type: string }
+        Returns: boolean
+      }
       list_api_football_league_targets: {
         Args: { p_limit: number; p_offset: number }
         Returns: {
@@ -2851,6 +3234,14 @@ export type Database = {
           new_revision: number
           status: string
         }[]
+      }
+      reconcile_football_player_aliases: {
+        Args: { p_limit?: number; p_source_ids?: string[] }
+        Returns: number
+      }
+      reconcile_football_profile_names: {
+        Args: { p_limit?: number; p_source_ids?: string[] }
+        Returns: number
       }
       reconcile_purchase_payment_review: {
         Args: {
@@ -2895,6 +3286,7 @@ export type Database = {
         Args: { _bucket: string }
         Returns: boolean
       }
+      reserve_voice_request: { Args: { p_user_id: string }; Returns: boolean }
       restore_lovable_batch: {
         Args: {
           p_batch: number

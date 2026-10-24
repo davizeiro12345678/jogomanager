@@ -6,15 +6,15 @@ import {
   useRouteContext,
   useRouter,
   useLocation,
-  HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useT } from "../i18n/provider";
-import { isPublicContentPath } from "@/lib/public-content-routes";
+import { isLightweightCssPath, isPublicContentPath } from "@/lib/public-content-routes";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
+import { RouteHeadContent } from "@/components/RouteHeadContent";
 // Reading-controls UI is only visible on the public home page. Keep it out of
 // the shared initial JS closure for every gameplay and editorial route.
 const AccessibilitySettings = lazy(() =>
@@ -83,10 +83,15 @@ export function ErrorComponent({ error, reset }: { error: unknown; reset: () => 
 }
 
 export function RootShell({ children }: { children: ReactNode }) {
+  const pathname = useLocation({ select: (location) => location.pathname });
   return (
-    <html lang="pt-BR" className="dark">
+    <html
+      lang="pt-BR"
+      className="dark"
+      data-public-shell={isLightweightCssPath(pathname) ? "true" : undefined}
+    >
       <head>
-        <HeadContent />
+        <RouteHeadContent />
       </head>
       <body>
         {children}
@@ -176,8 +181,7 @@ function RootReadingControls({ pathname }: { pathname: string }) {
     // copy and translation tables out of every initial route's static closure.
     void import("../lib/game-page-metadata")
       .then(({ applyGamePageMetadata }) => {
-        if (!active) return;
-        applyGamePageMetadata(pathname, lang, t);
+        if (active) applyGamePageMetadata(pathname, lang, t);
       })
       .catch(() => undefined);
     return () => {

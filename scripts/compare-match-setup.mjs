@@ -26,13 +26,13 @@ if (
   );
 mkdirSync(output, { recursive: true });
 const require = createRequire(path.join(candidate, "package.json"));
-const tsx = require.resolve("tsx");
+const tsx = pathToFileURL(require.resolve("tsx")).href;
 const sampler = fileURLToPath(new URL("./match-setup-sample.mjs", import.meta.url));
 const fixturePath = path.join(output, "match-fixture.json");
 function sample(mode, root, target = "") {
   const run = spawnSync(
     process.execPath,
-    ["--import", pathToFileURL(tsx).href, sampler, mode, root, fixturePath, target],
+    ["--import", tsx, sampler, mode, root, fixturePath, target],
     {
       cwd: root,
       env: { ...process.env, TSX_TSCONFIG_PATH: path.join(root, "tsconfig.json") },

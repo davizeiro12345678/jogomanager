@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { LANGS, RTL_LANGS, resolveLang, type Lang } from "./locale-catalog";
+import { LANGS, RTL_LANGS, resolveLang, type Lang } from "./locale-identifiers";
 import { bootstrapMessageLanguage, translateBootstrap } from "./bootstrap-messages";
 import { formatMessage } from "./format-message";
 import { I18nContext, type I18nValue } from "./context";

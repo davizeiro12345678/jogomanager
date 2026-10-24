@@ -100,7 +100,7 @@ function useReactionTracker(sim: SimView, supporters?: SupporterMatchday) {
     } else if (shots > prev.shots) {
       mood = "chance";
       boost = 0.62;
-      // a chance é do lado que finalizou: quem tem mais finalizações no total
+      // A reação pertence ao lado que acabou de finalizar.
       side = home.onTarget > prev.homeShots ? "home" : "away";
     } else if (cards > prev.cards) {
       mood = "protest";
@@ -141,7 +141,10 @@ function useReactionTracker(sim: SimView, supporters?: SupporterMatchday) {
     }
 
     // decaimento
-    state.intensity = Math.max(0, state.intensity - dt * DECAY[state.mood]);
+    state.intensity = Math.max(
+      0,
+      state.intensity - Math.min(0.1, Math.max(0, dt)) * DECAY[state.mood],
+    );
     if (state.intensity <= 0.001) {
       state.mood = "idle";
       state.intensity = 0;

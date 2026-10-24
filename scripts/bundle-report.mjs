@@ -80,11 +80,23 @@ const closure = (entry) => {
   return [...seen];
 };
 const root = chunks.find((c) => c.dynamicImports.some((name) => name.startsWith("dashboard-")));
-const rootDependencies = root ? closure(root.name) : [];
+// Hydration is mandatory startup work even when its download follows the first
+// SSR paint. Keep it in every browser route's cost so deferral cannot hide bytes.
+const hydration = chunks.find((chunk) => chunk.name.startsWith("hydrate-app-"));
+const bootstraps = hydration
+  ? chunks.filter((chunk) => chunk.dynamicImports.includes(hydration.name))
+  : [];
+const rootDependencies = [
+  ...new Set([
+    ...(root ? closure(root.name) : []),
+    ...(hydration ? closure(hydration.name) : []),
+    ...bootstraps.flatMap((chunk) => closure(chunk.name)),
+  ]),
+];
 const cinematicStageChunk = chunks.find((chunk) => chunk.name.startsWith("CinematicStage3D-"));
 const cinematicStageDependencies = cinematicStageChunk ? closure(cinematicStageChunk.name) : [];
 const cinematicStageDynamicDependencies = cinematicStageChunk
-  ? cinematicStageChunk.dynamicImports
+  ? [...new Set(cinematicStageDependencies.flatMap((name) => byName.get(name).dynamicImports))]
   : [];
 const cinematicSetChunks = cinematicSetChunkPrefixes.map(({ set, prefix }) => {
   const chunk = chunks.find((candidate) => candidate.name.startsWith(prefix));
@@ -169,6 +181,8 @@ const report = {
   chunks: chunks.sort((a, b) => b.bytes - a.bytes),
 };
 if (process.argv.includes("--check")) {
+  if (hydration && bootstraps.some((chunk) => closure(chunk.name).includes(hydration.name)))
+    throw new Error("The first-paint bootstrap must not statically import its hydration runtime");
   const worker = entries.find((e) => e.name.startsWith("match.worker-"));
   const quick = entries.find((e) => e.name.startsWith("partida-rapida-"));
   const home = entries.find((e) => e.surface === "home");

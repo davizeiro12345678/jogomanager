@@ -174,7 +174,7 @@ export function gamePageMetadata(pathname: string, lang: Lang, translate: (key: 
   };
 }
 
-/** Client-only metadata updates stay with the on-demand gameplay catalogue. */
+/** Apply route identity after navigation without exposing personal career data. */
 export function applyGamePageMetadata(
   pathname: string,
   lang: Lang,

@@ -1,7 +1,7 @@
 import { useMemo, useState, useId } from "react";
 import { Languages, Search } from "lucide-react";
-import { LANGS, LANG_NAMES, useT, type Lang } from "@/i18n/provider";
-import { languageSearchText, RTL_LANGS } from "@/i18n/locale-catalog";
+import { useT } from "@/i18n/provider";
+import { LANGS, LANG_NAMES, languageSearchText, RTL_LANGS, type Lang } from "@/i18n/locale-catalog";
 
 export function LanguagePicker() {
   const { lang, setLang, t } = useT();
