@@ -5,7 +5,10 @@ import { sculptedHair, sculptedHead } from "./head";
 const look = lookFor("surface-cache-MF", "MF", true);
 const proportions = proportionsFor(look);
 
-function expectIndependentBuffers(first: ReturnType<typeof sculptedHead>, second: ReturnType<typeof sculptedHead>) {
+function expectIndependentBuffers(
+  first: ReturnType<typeof sculptedHead>,
+  second: ReturnType<typeof sculptedHead>,
+) {
   for (const name of ["position", "normal", "uv", "color"]) {
     const a = first.getAttribute(name);
     const b = second.getAttribute(name);
@@ -45,8 +48,11 @@ describe("bounded sculpt cache", () => {
     const third = sculptedHair(proportions, look, true);
     expect(third.getAttribute("position").getZ(0)).toBe(firstZ);
 
-    const otherStyle = sculptedHair(proportions, { ...look, hairStyle: "afro" }, true);
-    expect(otherStyle.getAttribute("position").array).not.toEqual(third.getAttribute("position").array);
+    const alternateStyle = look.hairStyle === "afro" ? "short" : "afro";
+    const otherStyle = sculptedHair(proportions, { ...look, hairStyle: alternateStyle }, true);
+    expect(otherStyle.getAttribute("position").array).not.toEqual(
+      third.getAttribute("position").array,
+    );
 
     for (const geometry of [second, third, otherStyle]) geometry.dispose();
   });
