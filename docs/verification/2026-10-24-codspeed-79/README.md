@@ -1,5 +1,7 @@
 # CPU Match3D: meta de 79% do tempo anterior
 
+> **Histórico de `ccba0f9`.** As medições abaixo pertencem a esse commit. O cálculo plano experimental e o cache do decoder foram retirados depois; esta tabela não certifica o HEAD atual. Veja [a correção guiada pelo CodSpeed](correction-native-integration.md).
+
 **Resultado local: 20/25 medianas atingem a meta; 18/25 também pelo limite superior do intervalo exploratório de 99%.** Meta global ainda não certificada pelo CodSpeed.
 
 A solicitação foi interpretada como tempo novo ≤ 0,79 × tempo anterior: redução mínima de 21%, sem alterar sementes, cargas, número de atletas, detalhamento geométrico, frequência física, critérios ou limites. Base congelada: `76f51b6a784d6f6b4fc0ff5bf06a7e08173cf639`.

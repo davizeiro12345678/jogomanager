@@ -1,0 +1,11 @@
+
+ RUN  v5.0.3 /workspace/scratch/jogomanager
+
+
+ Test Files  6 passed (6)
+      Tests  22 passed (22)
+   Start at  02:06:11
+   Duration  10.83s (tests 90%, transform 6%, import 4%)
+
+    Isolate  6 workers spawned · ~115ms startup each (spawn + environment, per file)
+             at least ~576ms faster with isolate: false — reuses workers across files instead of one per file

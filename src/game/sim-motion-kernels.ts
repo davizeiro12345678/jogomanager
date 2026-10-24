@@ -1,4 +1,3 @@
-import { planarLength } from "./planar-length";
 import type { SimPlayer } from "./sim-types";
 import type { Tactics } from "./types";
 import { FIELD_X, FIELD_Z, staminaDrainMult, type WeatherKind } from "./sim-rules";
@@ -30,7 +29,7 @@ export function separatePlayers(players: SimPlayer[], holder: string | null, rnd
       if (d < 1e-4) {
         dx = (rnd() - 0.5) * 0.02;
         dz = (rnd() - 0.5) * 0.02;
-        d = planarLength(dx, dz) || 1e-4;
+        d = Math.hypot(dx, dz) || 1e-4;
       }
       const overlap = R * 2 - d;
       // Quem conduz a bola cede menos, mas a soma dos deslocamentos sempre
@@ -65,7 +64,7 @@ export function drainMatchStamina(
     away: away.advanced ? tacticalEffects(away).fatigue : 1,
   };
   for (const p of players) {
-    const speed = planarLength(p.vx, p.vz);
+    const speed = Math.hypot(p.vx, p.vz);
     const effort = 0.0015 + (speed / 9) * 0.008 * (p.pos === "GK" ? 0.25 : 1);
     const resist = 0.6 + (p.physical / 100) * 0.6;
     const cost = costs[p.side];

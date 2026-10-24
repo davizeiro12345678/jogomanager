@@ -106,23 +106,8 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
   };
 }
 
-// The format has exactly 65536 coordinate values. Resolve each quotient once
-// lazily; subsequent frames read the exact float64 result, not an approximation.
-// The owned table costs 512 KiB only after a validated V3 replay is decoded.
-let decodedCoordinates: Float64Array | undefined;
-function coordinateTable(): Float64Array {
-  if (!decodedCoordinates) {
-    decodedCoordinates = new Float64Array(65536);
-    for (let index = 0; index < decodedCoordinates.length; index++)
-      decodedCoordinates[index] = (index - 32768) / QUANTIZE;
-  }
-  return decodedCoordinates;
-}
-const decodedActions = Array.from({ length: 256 }, (_, code) => actionFromCode(code));
-
 function decodeV3(raw: StoredReplayV3): Replay {
-  const coordinates = coordinateTable();
-  const frames = new Array<ReplayFrame>(raw.frames.timesMs.length);
+  const frames: ReplayFrame[] = [];
   const playerCount = raw.meta.length;
   const times = raw.frames.timesMs;
   const ball = raw.frames.ball;
@@ -142,13 +127,13 @@ function decodeV3(raw: StoredReplayV3): Replay {
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
       const source = (frameBase + playerIndex) * 4;
       const target = playerIndex * 4;
-      p[target] = coordinates[positions[source]! + 32768] ?? NaN;
-      p[target + 1] = coordinates[positions[source + 1]! + 32768] ?? NaN;
-      p[target + 2] = coordinates[positions[source + 2]! + 32768] ?? NaN;
-      p[target + 3] = coordinates[positions[source + 3]! + 32768] ?? NaN;
-      a[playerIndex] = decodedActions[actions[frameBase + playerIndex]!] ?? null;
+      p[target] = positions[source]! / QUANTIZE;
+      p[target + 1] = positions[source + 1]! / QUANTIZE;
+      p[target + 2] = positions[source + 2]! / QUANTIZE;
+      p[target + 3] = positions[source + 3]! / QUANTIZE;
+      a[playerIndex] = actionFromCode(actions[frameBase + playerIndex]!);
     }
-    const frame: ReplayFrame = {
+    frames.push({
       t: timeMs / 1_000,
       b: [
         numeric(ball, frameIndex * 3) / QUANTIZE,
@@ -160,10 +145,8 @@ function decodeV3(raw: StoredReplayV3): Replay {
       hg: numeric(score, frameIndex * 2),
       ag: numeric(score, frameIndex * 2 + 1),
       poss: numeric(possession, frameIndex) === 1 ? "away" : "home",
-    };
-    const visual = raw.frames.visual?.[frameIndex];
-    if (visual) frame.v = visual;
-    frames[frameIndex] = frame;
+      ...(raw.frames.visual?.[frameIndex] ? { v: raw.frames.visual[frameIndex]! } : {}),
+    });
   }
   return {
     ...(raw.execution ? { execution: { ...raw.execution } } : {}),

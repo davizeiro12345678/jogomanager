@@ -1,4 +1,3 @@
-import { planarLength } from "./planar-length";
 import { rateMatchPlayers } from "./sim-reporting";
 import {
   separatePlayers,
@@ -1027,8 +1026,8 @@ export class MatchSim {
       : null;
     if (holder) {
       const goalX = this.attackDir(holder.side) * FIELD_X;
-      if (planarLength(goalX - holder.x, holder.z) < 18) return this.time > this.graceUntil;
-    } else if (planarLength(this.ball.vx, this.ball.vz) > 12) {
+      if (Math.hypot(goalX - holder.x, holder.z) < 18) return this.time > this.graceUntil;
+    } else if (Math.hypot(this.ball.vx, this.ball.vz) > 12) {
       return this.time > this.graceUntil;
     }
     return true;
@@ -1520,7 +1519,7 @@ export class MatchSim {
     const targetH = out.skied ? 3.2 + this.rnd() * 1.5 : 0.35 + this.rnd() * 1.3;
     const dx = dir * FIELD_X - this.ball.x;
     const dz = targetZ - this.ball.z;
-    const d = planarLength(dx, dz) || 1;
+    const d = Math.hypot(dx, dz) || 1;
     const power = 24 + this.rnd() * 7;
     this.ball.vx = (dx / d) * power;
     this.ball.vz = (dz / d) * power;
@@ -1565,7 +1564,7 @@ export class MatchSim {
     // barreira: 2 a 4 adversários a 9,15 m, entre a bola e o gol
     const foes = this.players
       .filter((p) => p.side !== side && !p.sentOff && p.pos !== "GK")
-      .sort((a, b) => planarLength(a.x - fx, a.z - fz) - planarLength(b.x - fx, b.z - fz));
+      .sort((a, b) => Math.hypot(a.x - fx, a.z - fz) - Math.hypot(b.x - fx, b.z - fz));
     const wall = Math.min(foes.length, 2 + Math.floor(this.rnd() * 3));
     const ang = Math.atan2(0 - fz, goalX - fx);
     for (let i = 0; i < wall; i++) {
@@ -1582,14 +1581,14 @@ export class MatchSim {
     // All opponents, not just the selected wall, must respect Law 13's 9.15 m.
     for (const p of this.players) {
       if (p === taker || p.sentOff) continue;
-      const distance = planarLength(p.x - fx, p.z - fz);
+      const distance = Math.hypot(p.x - fx, p.z - fz);
       const clearance = p.side === side ? 2.5 : 9.15;
       if (distance >= clearance - 1e-9) continue;
       const nx = distance > 0.001 ? (p.x - fx) / distance : -dir;
       const nz = distance > 0.001 ? (p.z - fz) / distance : 0;
       p.x = Math.max(-FIELD_X + 0.5, Math.min(FIELD_X - 0.5, fx + nx * (clearance + 0.2)));
       p.z = Math.max(-FIELD_Z + 0.5, Math.min(FIELD_Z - 0.5, fz + nz * (clearance + 0.2)));
-      if (planarLength(p.x - fx, p.z - fz) < clearance) {
+      if (Math.hypot(p.x - fx, p.z - fz) < clearance) {
         p.x = fx - dir * (clearance + 0.2);
         p.z = fz;
       }
@@ -1633,9 +1632,9 @@ export class MatchSim {
     this.ball.holder = null;
     const fx = this.ball.x;
     const fz = this.ball.z;
-    const dist = planarLength(dir * FIELD_X - fx, fz);
+    const dist = Math.hypot(dir * FIELD_X - fx, fz);
     const wall = this.players.filter(
-      (p) => p.side !== side && !p.sentOff && planarLength(p.x - fx, p.z - fz) < 12,
+      (p) => p.side !== side && !p.sentOff && Math.hypot(p.x - fx, p.z - fz) < 12,
     ).length;
     const out = solveDirectFK({
       dist,
@@ -1658,7 +1657,7 @@ export class MatchSim {
       // explode na barreira e segue viva
       const dx = dir * FIELD_X - fx;
       const dz = out.targetZ - fz;
-      const d = planarLength(dx, dz) || 1;
+      const d = Math.hypot(dx, dz) || 1;
       this.ball.vx = (dx / d) * 12;
       this.ball.vz = (dz / d) * 12;
       this.ballVy = 2.5;
@@ -1686,7 +1685,7 @@ export class MatchSim {
     }
     const dx = dir * FIELD_X - fx;
     const dz = out.targetZ - fz;
-    const d = planarLength(dx, dz) || 1;
+    const d = Math.hypot(dx, dz) || 1;
     const power = 21 + this.rnd() * 7;
     const flight = Math.max(0.15, d / power);
     let launch: RapierBallState = {
@@ -1700,8 +1699,7 @@ export class MatchSim {
       spin: (this.rnd() - 0.5) * 6,
     };
     const obstacles = this.players.filter(
-      (p) =>
-        p.side !== side && !p.sentOff && p.pos !== "GK" && planarLength(p.x - fx, p.z - fz) < 12,
+      (p) => p.side !== side && !p.sentOff && p.pos !== "GK" && Math.hypot(p.x - fx, p.z - fz) < 12,
     );
     if (out.result !== "off" && obstacles.length && this.ballPhysics?.createFlightProbe) {
       const probe = this.ballPhysics.createFlightProbe();
@@ -1755,19 +1753,19 @@ export class MatchSim {
         p.side === side &&
         p.id !== taker.id &&
         !p.sentOff &&
-        planarLength(p.x - fx, p.z - fz) >= 2.5 &&
+        Math.hypot(p.x - fx, p.z - fz) >= 2.5 &&
         !isOffside(p.x, line, dir),
     );
     mates.sort(
       (a, b) =>
-        planarLength(a.x - fx, a.z - fz) - planarLength(b.x - fx, b.z - fz) ||
+        Math.hypot(a.x - fx, a.z - fz) - Math.hypot(b.x - fx, b.z - fz) ||
         (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
     );
     const receiver = mates[0];
     if (!receiver) return false;
     const dx = receiver.x - fx,
       dz = receiver.z - fz,
-      distance = planarLength(dx, dz);
+      distance = Math.hypot(dx, dz);
     const power = Math.min(25, 10 + distance * 0.8),
       flight = distance / power;
     const lofted = distance > power / pitchCondition(this.weather).rollDrag - 1;
@@ -1827,7 +1825,7 @@ export class MatchSim {
     });
     const defense = this.players
       .filter((p) => p.side !== side && !p.sentOff && p.pos !== "GK")
-      .sort((a, b) => planarLength(a.x - goalX, a.z) - planarLength(b.x - goalX, b.z))
+      .sort((a, b) => Math.hypot(a.x - goalX, a.z) - Math.hypot(b.x - goalX, b.z))
       .slice(0, 6);
     defense.forEach((p, i) => {
       p.x = goalX - dir * (4.5 + (i % 3) * 3) + (this.rnd() - 0.5) * 2;
@@ -1878,8 +1876,8 @@ export class MatchSim {
         .filter((p) => p.side === side && !p.sentOff && p.pos !== "GK" && p.id !== sp.takerId)
         .sort(
           (a, b) =>
-            planarLength(a.x - this.ball.x, a.z - this.ball.z) -
-            planarLength(b.x - this.ball.x, b.z - this.ball.z),
+            Math.hypot(a.x - this.ball.x, a.z - this.ball.z) -
+            Math.hypot(b.x - this.ball.x, b.z - this.ball.z),
         )[0];
       if (taker && receiver) {
         recordPass(this.analytics, taker, receiver);
@@ -1972,7 +1970,7 @@ export class MatchSim {
         : (this.rnd() - 0.5) * GOAL_Z * 1.5;
     const dx = goalX - header.x;
     const dz = targetZ - header.z;
-    const d = planarLength(dx, dz) || 1;
+    const d = Math.hypot(dx, dz) || 1;
     const power = 13 + this.rnd() * 6;
     this.ball.x = header.x;
     this.ball.z = header.z;
@@ -2263,7 +2261,7 @@ export class MatchSim {
       }
       let sprint = 1;
 
-      const ballDist = planarLength(bx - p.x, bz - p.z);
+      const ballDist = Math.hypot(bx - p.x, bz - p.z);
 
       if (p.pos === "GK") {
         // Goleiro acompanha ângulo e profundidade: protege o primeiro pau sem
@@ -2399,11 +2397,11 @@ export class MatchSim {
       const speed = baseSpeed * (p.pos === "GK" ? 0.68 : 1) * Math.min(1.22, sprint) * stam;
       const dx = tx - p.x;
       const dz = tz - p.z;
-      const d = planarLength(dx, dz);
+      const d = Math.hypot(dx, dz);
       let speedEff = speed;
       if (d > 0.001) {
         // curva de corrida: quanto maior a mudança de direção, mais o jogador reduz
-        const curSpeed = planarLength(p.vx, p.vz);
+        const curSpeed = Math.hypot(p.vx, p.vz);
         if (curSpeed > 2.5) {
           const dot = (dx / d) * (p.vx / curSpeed) + (dz / d) * (p.vz / curSpeed);
           // só penaliza curvas realmente fechadas (> ~100°); o resto mantém o ritmo
@@ -2461,7 +2459,7 @@ export class MatchSim {
       this.finishPendingShot();
       this.pass = null;
       if (useBallPhysics && this.stepAuthoritativeBall(dt, holder)) return;
-      const hs = planarLength(holder.vx, holder.vz) || 1;
+      const hs = Math.hypot(holder.vx, holder.vz) || 1;
       this.ball.x = holder.x + (holder.vx / hs) * 0.9;
       this.ball.z = holder.z + (holder.vz / hs) * 0.9;
       this.ball.height = 0.12;
@@ -2486,7 +2484,7 @@ export class MatchSim {
       if (this.ballSpin !== 0 && airborne) {
         const vx = this.ball.vx;
         const vz = this.ball.vz;
-        const sp = planarLength(vx, vz) || 1;
+        const sp = Math.hypot(vx, vz) || 1;
         this.ball.vx += (-vz / sp) * this.ballSpin * dt;
         this.ball.vz += (vx / sp) * this.ballSpin * dt;
         this.ballSpin *= Math.exp(-0.8 * dt);
@@ -2577,13 +2575,13 @@ export class MatchSim {
       // The passer must release the intended flight; the old short timer used
       // the accelerated game clock and allowed immediate self-recapture.
       if (this.pass && !this.pass.teammateTouched && p.id === this.pass.from) continue;
-      const d = planarLength(p.x - this.ball.x, p.z - this.ball.z);
+      const d = Math.hypot(p.x - this.ball.x, p.z - this.ball.z);
       if (d < bestD) {
         bestD = d;
         closest = p;
       }
     }
-    const ballSpeed = planarLength(this.ball.vx, this.ball.vz);
+    const ballSpeed = Math.hypot(this.ball.vx, this.ball.vz);
     const h = this.ball.height;
     // bola muito alta não pode ser dominada; entre 0.9 e 2.4 é cabeceio
     const reachable = h <= 2.4;
@@ -2718,14 +2716,14 @@ export class MatchSim {
    * Devolve verdadeiro quando a jogada foi encerrada aqui.
    */
   private tryBlock(dt: number): boolean {
-    const speed = planarLength(this.ball.vx, this.ball.vz);
+    const speed = Math.hypot(this.ball.vx, this.ball.vz);
     if (speed < 8 || this.ball.height > 1.9) return false;
     const attacking = this.pendingShot?.side ?? (this.pass ? this.lastTouch : null);
     if (!attacking) return false;
 
     for (const p of this.players) {
       if (p.side === attacking || p.pos === "GK" || p.sentOff) continue;
-      const d = planarLength(p.x - this.ball.x, p.z - this.ball.z);
+      const d = Math.hypot(p.x - this.ball.x, p.z - this.ball.z);
       if (d > 1.25) continue;
       const chance = (0.35 + (p.defending / 100) * 0.5) * Math.min(1, dt * 30);
       if (this.rnd() > chance) continue;
@@ -2911,7 +2909,7 @@ export class MatchSim {
       s.shotMapIndex,
     );
     if (!this.lastAuthoritative) {
-      const speed = planarLength(this.ball.vx, this.ball.vz);
+      const speed = Math.hypot(this.ball.vx, this.ball.vz);
       if (hit === "post") {
         this.ball.vx = -dir * Math.abs(this.ball.vx) * 0.5;
         this.ball.vz += Math.sign(crossingZ || 1) * (1.5 + Math.min(2.5, speed * 0.12));
@@ -3011,7 +3009,7 @@ export class MatchSim {
     let bestD = Infinity;
     for (const p of this.players) {
       if (p.side !== side || p.pos === "GK" || p.sentOff) continue;
-      const d = planarLength(p.x - this.ball.x, p.z - this.ball.z);
+      const d = Math.hypot(p.x - this.ball.x, p.z - this.ball.z);
       if (d < bestD) {
         bestD = d;
         best = p;
@@ -3054,7 +3052,7 @@ export class MatchSim {
     const targetX = dir * FIELD_X;
     const dx = targetX - holder.x;
     const dz = -holder.z * 0.25 + Math.sin(this.time * 0.9 + holder.number) * 4;
-    const d = planarLength(dx, dz) || 1;
+    const d = Math.hypot(dx, dz) || 1;
     const plan = activePlan(this.setup(holder.side).tactics);
     const individual = plan?.players.find((p) => p.slot === this.tacticalSlot(holder));
     const speed =
@@ -3077,7 +3075,7 @@ export class MatchSim {
     if (!opp || dist > 2.2 || this.restartTimer > 0) return;
     // This duel models a challenge for the ball. Body proximity alone allowed
     // a marker behind the carrier to tackle a ball more than 2.5 m away.
-    if (planarLength(opp.x - this.ball.x, opp.z - this.ball.z) > 1.35) return;
+    if (Math.hypot(opp.x - this.ball.x, opp.z - this.ball.z) > 1.35) return;
     const plan = activePlan(this.setup(opp.side).tactics);
     const individual = plan?.players.find((p) => p.slot === this.tacticalSlot(opp));
     const opposition = plan?.opposition.find((p) => p.playerId === holder.pid);
@@ -3090,7 +3088,7 @@ export class MatchSim {
     let support = 0;
     for (const defender of this.players) {
       if (defender.side !== opp.side || defender.id === opp.id || defender.sentOff) continue;
-      if (planarLength(defender.x - holder.x, defender.z - holder.z) < 3.2) support += 1;
+      if (Math.hypot(defender.x - holder.x, defender.z - holder.z) < 3.2) support += 1;
     }
     const overload = 1 + Math.min(2, support) * 0.28;
     const fatigue = 0.55 + (opp.stamina / 100) * 0.45;
@@ -3118,7 +3116,7 @@ export class MatchSim {
         holder.foulsWon++;
         const dirH = this.attackDir(holder.side);
         const goalX = dirH * FIELD_X;
-        const distGoal = planarLength(goalX - holder.x, holder.z);
+        const distGoal = Math.hypot(goalX - holder.x, holder.z);
         const penaltyAwarded = this.inBox(holder.x, holder.z, opp.side);
         const between = this.players.filter(
           (o) =>
@@ -3127,18 +3125,18 @@ export class MatchSim {
             !o.sentOff &&
             o.pos !== "GK" &&
             (o.x - holder.x) * dirH > -2 &&
-            planarLength(goalX - o.x, o.z) < distGoal,
+            Math.hypot(goalX - o.x, o.z) < distGoal,
         ).length;
         const foul: FoulInput = {
           slide,
-          tactical: holder.x * dirH < -8 && planarLength(holder.vx, holder.vz) > 5,
+          tactical: holder.x * dirH < -8 && Math.hypot(holder.vx, holder.vz) > 5,
           // Law 12 also considers direction and the covering defenders; merely
           // being close to goal while retreating is not an obvious opportunity.
           goalDenied:
             distGoal < 16 &&
             between === 0 &&
             holder.vx * (goalX - holder.x) - holder.vz * holder.z >
-              Math.max(0.5, planarLength(holder.vx, holder.vz) * distGoal * 0.5),
+              Math.max(0.5, Math.hypot(holder.vx, holder.vz) * distGoal * 0.5),
           penaltyAwarded,
           attemptBall: true,
           rapSheet: opp.yellows,
@@ -3180,7 +3178,7 @@ export class MatchSim {
     const instruction = plan?.players.find((p) => p.slot === this.tacticalSlot(holder));
     const dir = this.attackDir(holder.side);
     const goalX = dir * FIELD_X;
-    const distGoal = planarLength(goalX - holder.x, holder.z);
+    const distGoal = Math.hypot(goalX - holder.x, holder.z);
     const { dist: pressDist } = this.nearestOpponent(holder);
     const mentality = this.setup(holder.side).tactics.mentality;
 
@@ -3190,7 +3188,7 @@ export class MatchSim {
       wide: Math.abs(holder.z),
       bodyPart: "foot",
       pressDist,
-      onRun: planarLength(holder.vx, holder.vz) > 5,
+      onRun: Math.hypot(holder.vx, holder.vz) > 5,
     });
     const shootUrge =
       (plan ? 0.7 + plan.possession.shooting * 0.3 : 1) *
@@ -3285,7 +3283,7 @@ export class MatchSim {
     }
 
     if (!best) return;
-    const rawDist = planarLength(best.x - holder.x, best.z - holder.z);
+    const rawDist = Math.hypot(best.x - holder.x, best.z - holder.z);
     const isBackPass = (best.x - holder.x) * dir < -2;
     if (isBackPass) {
       const pressingSide: Side = holder.side === "home" ? "away" : "home";
@@ -3306,7 +3304,7 @@ export class MatchSim {
     const err = success > errRoll ? 0 : (this.rnd() - 0.5) * 12;
     const dx = aimX - this.ball.x;
     const dz = aimZ - this.ball.z;
-    const d = planarLength(dx, dz) || 1;
+    const d = Math.hypot(dx, dz) || 1;
     const wide =
       Math.abs(holder.z) > FIELD_Z * (plan ? 0.72 - plan.possession.crosses * 0.12 : 0.55) &&
       Math.abs(best.x - dir * FIELD_X) < 30;
@@ -3376,7 +3374,7 @@ export class MatchSim {
       wide: Math.abs(holder.z),
       bodyPart: "foot",
       pressDist: pressD,
-      onRun: planarLength(holder.vx, holder.vz) > 5,
+      onRun: Math.hypot(holder.vx, holder.vz) > 5,
     });
     this.stats[side].xg += xg;
     holder.xg += xg;
@@ -3416,7 +3414,7 @@ export class MatchSim {
     // reação ao chute: adversários próximos congelam por uma fração de segundo
     for (const p of this.players) {
       if (p.side === side || p.pos === "GK" || p.sentOff) continue;
-      if (planarLength(p.x - holder.x, p.z - holder.z) < 7) {
+      if (Math.hypot(p.x - holder.x, p.z - holder.z) < 7) {
         this.reactionUntil.set(p.id, this.time + 0.45 + this.rnd() * 0.2);
       }
     }
@@ -3431,7 +3429,7 @@ export class MatchSim {
 
     const dx = dir * FIELD_X - holder.x;
     const dz = targetZ - holder.z;
-    const d = planarLength(dx, dz) || 1;
+    const d = Math.hypot(dx, dz) || 1;
     const power = 24 + (holder.shooting / 100) * 13 + this.rnd() * 6;
     this.ball.vx = (dx / d) * power;
     this.ball.vz = (dz / d) * power;
