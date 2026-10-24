@@ -1,16 +1,19 @@
 import { FORMATIONS } from "./formations";
 import { physiqueFor } from "./player-physique";
 import { matchAttributes } from "./match-readiness";
+import { teamDay } from "./match-probability";
 import { FIELD_X, FIELD_Z } from "./sim-rules";
 import type { TeamSetup, Side, SimPlayer } from "./sim-types";
 export function buildSimTeam(setup: TeamSetup, side: Side, seed: string): SimPlayer[] {
   const slots = FORMATIONS[setup.tactics.formation];
   const dir = side === "home" ? 1 : -1;
+  const day = teamDay(seed, side);
   return setup.players.slice(0, 11).map((p, i) => {
     const slot = slots[Math.min(i, slots.length - 1)]!;
     const physique = physiqueFor(p);
     const x = slot.x * FIELD_X * 0.92 * dir;
     const z = slot.z * FIELD_Z * 0.8 * dir;
+    const attributes = matchAttributes(p, seed, side, undefined, day);
     return {
       id: `${side}-${p.id}`,
       side,
@@ -25,7 +28,12 @@ export function buildSimTeam(setup: TeamSetup, side: Side, seed: string): SimPla
       vz: 0,
       slotX: slot.x * dir,
       slotZ: slot.z * dir,
-      ...matchAttributes(p, seed, side),
+      pace: attributes.pace,
+      shooting: attributes.shooting,
+      passing: attributes.passing,
+      defending: attributes.defending,
+      physical: attributes.physical,
+      stamina: attributes.stamina,
       action: null,
       actionT: 0,
       actionDur: 0,

@@ -19,7 +19,6 @@ import type { VisualBallState } from "./visual-ball";
 import type { MatchPhase, ShootoutKick, WeatherKind } from "./sim-rules";
 import type { MatchExecutionContract } from "./match-execution-contract";
 import type { PackedLiveSnapshot } from "./live-transport";
-import { PLAYER_FRAME_FIELDS } from "./live-transport";
 import {
   applyLivePlayerBuffer,
   createLivePlayerBuffer,
@@ -67,12 +66,47 @@ const eventCache = new WeakMap<MatchSim, { seq: number; events: MatchSim["events
 const legacyPacketEvents = new WeakMap<MatchSim, { seq: number; events: MatchSim["events"] }>();
 const legacyPacketRoles = new WeakMap<MatchSim, string>();
 const analyticsSent = new WeakMap<MatchSim, number>();
-const tacticsSent = new WeakMap<MatchSim, string>();
+type SentTactics = {
+  home: Tactics;
+  away: Tactics;
+  homeAdvanced: string | undefined;
+  awayAdvanced: string | undefined;
+};
+const tacticsSent = new WeakMap<MatchSim, SentTactics>();
+const BASIC_TACTICS = ["formation", "mentality", "pressing", "width", "tempo"] as const;
+const basicTacticsComplete: Exclude<
+  keyof Tactics,
+  "advanced" | (typeof BASIC_TACTICS)[number]
+> extends never
+  ? true
+  : never = true;
+void basicTacticsComplete;
+function sameBasicTactics(a: Tactics, b: Tactics) {
+  return (
+    a.formation === b.formation &&
+    a.mentality === b.mentality &&
+    a.pressing === b.pressing &&
+    a.width === b.width &&
+    a.tempo === b.tempo
+  );
+}
 function tacticsChanged(sim: MatchSim) {
-  // Advanced instructions may change without changing the active plan ID.
-  const key = JSON.stringify([sim.home.tactics, sim.away.tactics]);
-  if (tacticsSent.get(sim) === key) return false;
-  tacticsSent.set(sim, key);
+  // Compare fixed scalars directly. Only nested advanced instructions need
+  // serialization to detect in-place edits between Worker snapshots.
+  const home = sim.home.tactics,
+    away = sim.away.tactics;
+  const homeAdvanced = home.advanced === undefined ? undefined : JSON.stringify(home.advanced);
+  const awayAdvanced = away.advanced === undefined ? undefined : JSON.stringify(away.advanced);
+  const previous = tacticsSent.get(sim);
+  if (
+    previous &&
+    sameBasicTactics(home, previous.home) &&
+    sameBasicTactics(away, previous.away) &&
+    homeAdvanced === previous.homeAdvanced &&
+    awayAdvanced === previous.awayAdvanced
+  )
+    return false;
+  tacticsSent.set(sim, { home: { ...home }, away: { ...away }, homeAdvanced, awayAdvanced });
   return true;
 }
 
@@ -165,6 +199,13 @@ export interface MatchRuntime extends SimView {
   possessionPct(): [number, number];
 }
 
+/** Own mutable metadata without allocating an empty conditional spread per athlete. */
+function copyPlayer(player: SimPlayer): SimPlayer {
+  const copy = { ...player };
+  if (player.emergencyKeeper) copy.emergencyKeeper = { ...player.emergencyKeeper };
+  return copy;
+}
+
 export function snapshotMatch(
   sim: MatchSim,
   seq: number,
@@ -212,10 +253,7 @@ export function snapshotMatch(
     weather: sim.weather,
     wind: { ...sim.wind },
     refName: sim.ref.name,
-    players: sim.players.map((player) => ({
-      ...player,
-      ...(player.emergencyKeeper ? { emergencyKeeper: { ...player.emergencyKeeper } } : {}),
-    })),
+    players: sim.players.map(copyPlayer),
     ball: { ...sim.ball },
     ...(visualBall ? { visualBall: { ...visualBall } } : {}),
     possession: sim.possession,
@@ -292,10 +330,35 @@ export function snapshotMatchPacket(
 
 /** Preserve interpolated x/z; copy every declared mutable wire field. */
 function applyPlayerFrame(current: SimPlayer, target: SimPlayer) {
-  for (let column = 2; column < PLAYER_FRAME_FIELDS.length; column++) {
-    const field = PLAYER_FRAME_FIELDS[column]!;
-    current[field] = target[field];
-  }
+  // Fixed wire fields use direct writes so V8 can specialize each numeric slot.
+  current.vx = target.vx;
+  current.vz = target.vz;
+  current.slotX = target.slotX;
+  current.slotZ = target.slotZ;
+  current.pace = target.pace;
+  current.shooting = target.shooting;
+  current.passing = target.passing;
+  current.defending = target.defending;
+  current.physical = target.physical;
+  current.stamina = target.stamina;
+  current.actionT = target.actionT;
+  current.actionDur = target.actionDur;
+  current.goals = target.goals;
+  current.assists = target.assists;
+  current.shots = target.shots;
+  current.passes = target.passes;
+  current.tackles = target.tackles;
+  current.saves = target.saves;
+  current.onSince = target.onSince;
+  current.minutes = target.minutes;
+  current.yellows = target.yellows;
+  current.injuryWeeks = target.injuryWeeks;
+  current.interceptions = target.interceptions;
+  current.offsides = target.offsides;
+  current.foulsWon = target.foulsWon;
+  current.pensScored = target.pensScored;
+  current.pensMissed = target.pensMissed;
+  current.xg = target.xg;
   current.action = target.action;
   current.sentOff = target.sentOff;
   current.id = target.id;
@@ -408,10 +471,7 @@ export class WorkerMatchView implements MatchRuntime {
     this.previousBall.z = this.ball.z;
     this.previousBall.height = this.ball.height;
     if (rosterChanged) {
-      this.players = next.players.map((player) => ({
-        ...player,
-        ...(player.emergencyKeeper ? { emergencyKeeper: { ...player.emergencyKeeper } } : {}),
-      }));
+      this.players = next.players.map(copyPlayer);
     } else {
       for (let index = 0; index < next.players.length; index += 1) {
         const target = next.players[index];

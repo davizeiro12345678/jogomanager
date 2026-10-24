@@ -1,4 +1,4 @@
-import { makeRng } from "./rng";
+import { sumRngDraws } from "./rng";
 import type { Tactics } from "./types";
 
 export interface MatchConditions {
@@ -30,8 +30,7 @@ export function strengthEdge(home: number, away: number): number {
 
 /** Independent seed stream: a good/bad day cannot alter identity or consume the event RNG. */
 export function teamDay(seed: string, side: "home" | "away"): number {
-  const rnd = makeRng(`match-day:${seed}:${side}`);
-  return (rnd() + rnd() + rnd() - 1.5) * 4;
+  return (sumRngDraws(`match-day:${seed}:${side}`, 3) - 1.5) * 4;
 }
 
 export function expectedGoals(home: number, away: number, seed: string, ctx: MatchConditions = {}) {
@@ -73,9 +72,13 @@ export function expectedGoals(home: number, away: number, seed: string, ctx: Mat
 
 function poissonBuckets(lambda: number): number[] {
   const p = [Math.exp(-lambda)];
-  for (let i = 1; i < 8; i++) p.push((p[i - 1]! * lambda) / i);
+  let sum = p[0]!;
+  for (let i = 1; i < 8; i++) {
+    p.push((p[i - 1]! * lambda) / i);
+    sum += p[i]!;
+  }
   // The final bucket owns the tail; no rejection loop or lost probability mass.
-  p.push(Math.max(0, 1 - p.reduce((sum, v) => sum + v, 0)));
+  p.push(Math.max(0, 1 - sum));
   return p;
 }
 
@@ -88,18 +91,15 @@ export function regulationScore(rates: { home: number; away: number }, rnd: () =
   const rho = -0.06;
   let roll = rnd();
   for (let hg = 0; hg < hp.length; hg++) {
-    for (let ag = 0; ag < ap.length; ag++) {
-      const tau =
-        hg === 0 && ag === 0
-          ? 1 - home * away * rho
-          : hg === 0 && ag === 1
-            ? 1 + home * rho
-            : hg === 1 && ag === 0
-              ? 1 + away * rho
-              : hg === 1 && ag === 1
-                ? 1 - rho
-                : 1;
-      roll -= hp[hg]! * ap[ag]! * tau;
+    const h = hp[hg]!;
+    // Dixon-Coles changes only the first two away buckets. Keep the exact
+    // subtraction order, but avoid four low-score branches for every tail cell.
+    roll -= h * ap[0]! * (hg === 0 ? 1 - home * away * rho : hg === 1 ? 1 + away * rho : 1);
+    if (roll <= 0) return { hg, ag: 0 };
+    roll -= h * ap[1]! * (hg === 0 ? 1 + home * rho : hg === 1 ? 1 - rho : 1);
+    if (roll <= 0) return { hg, ag: 1 };
+    for (let ag = 2; ag < ap.length; ag++) {
+      roll -= h * ap[ag]!;
       if (roll <= 0) return { hg, ag };
     }
   }

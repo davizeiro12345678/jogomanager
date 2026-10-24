@@ -26,11 +26,13 @@ export function pickLineup(players: Player[], formation: FormationKey, source?: 
   // Formação desconhecida (save antigo, tática corrompida): cai no 4-3-3 em vez
   // de estourar e derrubar a tela inteira.
   const slots = FORMATIONS[formation] ?? FORMATIONS["4-3-3"];
-  const available = [...players]
+  // Read readiness once per eligible athlete. Sorting used to recalculate
+  // effective/normalized ratings twice for every comparator invocation.
+  const available = players
     .filter((p) => !p.suspended && p.injuryWeeks === 0)
-    .sort(
-      (a, b) => selectionRating(b, source) - selectionRating(a, source) || a.id.localeCompare(b.id),
-    );
+    .map((player) => ({ player, rating: selectionRating(player, source) }))
+    .sort((a, b) => b.rating - a.rating || a.player.id.localeCompare(b.player.id))
+    .map(({ player }) => player);
   const taken = new Set<string>();
   const picks: Player[] = new Array(slots.length).fill(undefined);
 

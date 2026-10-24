@@ -188,6 +188,44 @@ describe("ground contact affine FK", () => {
         }
     }
   });
+  it("recomputes mutable poses and optional proportions without retaining solve state", () => {
+    const input: GroundContactInput = {
+      P: { hipY: 0.94, hipH: 0.2, thigh: 0.44, shin: 0.43 },
+      pose: emptyPose(),
+      hipShiftX: 0,
+      leanX: 0,
+      leanZ: 0,
+      airborne: 0,
+      previousRootY: 0,
+      dt: 1 / 60,
+    };
+    for (let index = 0; index < 96; index++) {
+      input.pose.hipPitch = Math.sin(index) * 0.4;
+      input.pose.hipRoll = Math.cos(index * 0.6) * 0.7;
+      input.pose.legLPitch = Math.sin(index * 0.3) * 0.7;
+      input.pose.legRPitch = Math.cos(index * 0.4) * 0.5;
+      input.pose.kneeL = -0.3 - (index % 5) * 0.2;
+      input.pose.kneeR = -0.2 - (index % 3) * 0.3;
+      input.pose.ankleL = (index % 4) * 0.3 - 0.45;
+      input.pose.ankleR = (index % 5) * 0.3 - 0.6;
+      input.airborne = index % 3 === 0 ? 0 : index % 3 === 1 ? 0.1 : 1;
+      input.bodyContact = index % 2;
+      input.plantedFoot = index % 3 === 0 ? "left" : index % 3 === 1 ? "right" : undefined;
+      input.P.thigh = 0.36 + (index % 7) * 0.02;
+      const snapshot = JSON.stringify(input);
+      const expected = referenceSolveGroundContact(input);
+      const result = solveGroundContact(input);
+      for (const key of Object.keys(expected) as (keyof GroundContactResult)[])
+        expect(result[key]).toBeCloseTo(expected[key], 11);
+      expect(JSON.stringify(input)).toBe(snapshot);
+      // Subsequent calls may reuse the caller's pose but cannot mutate a
+      // previous returned result or carry its pre-ankle frame into this call.
+      const previous = { ...result };
+      input.pose.hipYaw += 0.2;
+      solveGroundContact(input);
+      expect(result).toEqual(previous);
+    }
+  });
   it("clamps every canonical channel and sanitizes invalid values in place", () => {
     const pose = emptyPose();
     for (const key of JOINTS) pose[key] = Number.NaN;

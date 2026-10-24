@@ -116,8 +116,10 @@ export type LiveSnapshotPacket = Omit<LiveSnapshot, "players" | "events"> & {
 export type RecycledSnapshotBuffers = LivePlayerBufferPacket;
 export type SnapshotBufferPool = ReturnType<typeof createSnapshotBufferPool>;
 
+const actionCodes = new Map(ACTION_NAMES.map((action, index) => [action, index + 1]));
+
 export function actionCode(action: PlayerAction | null): number {
-  return action ? ACTION_NAMES.indexOf(action) + 1 : 0;
+  return action ? (actionCodes.get(action) ?? 0) : 0;
 }
 
 export function actionFromCode(code: number): PlayerAction | null {

@@ -1,0 +1,765 @@
+{
+  "baseline": "76f51b6a784d6f6b4fc0ff5bf06a7e08173cf639",
+  "targetRatio": 0.79,
+  "interpretation": "79% of previous duration = 21% reduction",
+  "protocol": "ABBA repeated three times; six paired blocks per revision; five samples per block; same fixed iteration plan; >=32 warmup calls and >=100ms per benchmark; callbacks registered by unchanged benchmark files, outside CodSpeed instrumentation",
+  "node": "v24.22.1",
+  "arch": "x86_64",
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "bootstrap": "exact paired resampling 6^6=46656; percentile99 exploratory, no serial-dependence or multiple-comparison correction",
+  "count": 25,
+  "medianMeets79": 22,
+  "upper99Meets79": 20,
+  "results": [
+    {
+      "name": "match setup: buildTeamSetup",
+      "iterationsPerSample": 315,
+      "beforeMs": 0.12591897460317508,
+      "afterMs": 0.07188658730158765,
+      "ratio": 0.5708955900263105,
+      "reductionPercent": 42.91044099736895,
+      "pairedBaselineBlockMediansMs": [
+        0.1229715650793647,
+        0.14736671746031788,
+        0.13697480317460425,
+        0.11997583492063443,
+        0.12809598412698447,
+        0.12374196507936566
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.07047964126984173,
+        0.06410736825396848,
+        0.0693065873015878,
+        0.07329353333333356,
+        0.08009359047619072,
+        0.08007096190476154
+      ],
+      "bootstrap99Ratio": [
+        0.43501931344322015,
+        0.6470800900357901
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "match setup: new MatchSim",
+      "iterationsPerSample": 522,
+      "beforeMs": 0.11566258812260571,
+      "afterMs": 0.05324369540229894,
+      "ratio": 0.46033636516813087,
+      "reductionPercent": 53.96636348318691,
+      "pairedBaselineBlockMediansMs": [
+        0.10699645785440623,
+        0.1374796130268206,
+        0.11967198275862122,
+        0.10955854022988512,
+        0.11165319348659022,
+        0.12712635632183952
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.05226469540229897,
+        0.04743531417624532,
+        0.05422269540229891,
+        0.05152812643678167,
+        0.0729855727969349,
+        0.07079954214559385
+      ],
+      "bootstrap99Ratio": [
+        0.34503526109715826,
+        0.6536810145578202
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "match simulation: 300 live ticks",
+      "iterationsPerSample": 21,
+      "beforeMs": 5.432928476190476,
+      "afterMs": 4.207013190476205,
+      "ratio": 0.7743546061600516,
+      "reductionPercent": 22.56453938399484,
+      "pairedBaselineBlockMediansMs": [
+        4.979939619047617,
+        5.245336047619038,
+        5.498320761904758,
+        6.198183619047628,
+        5.367536190476195,
+        7.060428047619033
+      ],
+      "pairedCandidateBlockMediansMs": [
+        4.346344285714297,
+        4.4409975714285705,
+        3.9397424285714244,
+        3.9534538571428604,
+        5.036091666666683,
+        4.067682095238113
+      ],
+      "bootstrap99Ratio": [
+        0.5761240066188119,
+        0.9382501557422928
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": false
+    },
+    {
+      "name": "match simulation: 120 coarse steps",
+      "iterationsPerSample": 33,
+      "beforeMs": 3.782020409090909,
+      "afterMs": 2.767707954545461,
+      "ratio": 0.7318067210564684,
+      "reductionPercent": 26.81932789435316,
+      "pairedBaselineBlockMediansMs": [
+        3.86955215151515,
+        3.888978818181813,
+        3.612079030303021,
+        3.598468363636364,
+        3.6944886666666674,
+        4.156118939393943
+      ],
+      "pairedCandidateBlockMediansMs": [
+        2.7664750000000105,
+        3.039164818181813,
+        2.688216303030307,
+        2.7515104545454547,
+        2.9074964848484868,
+        2.768940909090912
+      ],
+      "bootstrap99Ratio": [
+        0.666232355105479,
+        0.7869821096167443
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "live match: snapshotMatch",
+      "iterationsPerSample": 9240,
+      "beforeMs": 0.0037342126082250825,
+      "afterMs": 0.002644043235930733,
+      "ratio": 0.7080591046441459,
+      "reductionPercent": 29.19408953558541,
+      "pairedBaselineBlockMediansMs": [
+        0.0035472573593073346,
+        0.0039266580086580365,
+        0.00392116785714283,
+        0.003229585497835459,
+        0.0033078678571428592,
+        0.003960894696969719
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.0027849356060606167,
+        0.0025698106060606054,
+        0.0025212943722943914,
+        0.0024936745670995695,
+        0.002883717207792216,
+        0.0027182758658008607
+      ],
+      "bootstrap99Ratio": [
+        0.6429957768070503,
+        0.8717752136214415
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": false
+    },
+    {
+      "name": "live match: WorkerMatchView.apply",
+      "iterationsPerSample": 2526,
+      "beforeMs": 0.027194187846397468,
+      "afterMs": 0.005771844022169461,
+      "ratio": 0.21224550094199934,
+      "reductionPercent": 78.77544990580006,
+      "pairedBaselineBlockMediansMs": [
+        0.02620892834520973,
+        0.030480357878068225,
+        0.028179447347585207,
+        0.02514447110055416,
+        0.025688678543150944,
+        0.03556863143309567
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.005828929136975508,
+        0.005714758907363413,
+        0.005450197941409434,
+        0.005270646872525749,
+        0.006144111638954926,
+        0.006379313935075309
+      ],
+      "bootstrap99Ratio": [
+        0.17935224601134153,
+        0.23917585439960495
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "replay codec: encodeReplay",
+      "iterationsPerSample": 6,
+      "beforeMs": 20.056503583333402,
+      "afterMs": 16.4736055,
+      "ratio": 0.8213597864430007,
+      "reductionPercent": 17.864021355699933,
+      "pairedBaselineBlockMediansMs": [
+        19.85679716666679,
+        20.25621000000001,
+        20.57976999999998,
+        19.21283383333336,
+        18.026327833333198,
+        21.042190499999986
+      ],
+      "pairedCandidateBlockMediansMs": [
+        14.022941500000039,
+        13.494230166666663,
+        17.71598166666672,
+        15.23122933333328,
+        21.03805983333329,
+        18.149217833333296
+      ],
+      "bootstrap99Ratio": [
+        0.6661774422099028,
+        1.1670740723149935
+      ],
+      "medianMeets79": false,
+      "upper99Meets79": false
+    },
+    {
+      "name": "replay codec: decodeReplay",
+      "iterationsPerSample": 9,
+      "beforeMs": 8.902695777777758,
+      "afterMs": 11.44423877777778,
+      "ratio": 1.2854801583071087,
+      "reductionPercent": -28.54801583071087,
+      "pairedBaselineBlockMediansMs": [
+        10.447307999999996,
+        8.985112222222192,
+        8.820279333333323,
+        8.398810777777726,
+        7.675260777777718,
+        9.436804444444432
+      ],
+      "pairedCandidateBlockMediansMs": [
+        8.64522477777781,
+        15.01161522222224,
+        8.844907333333342,
+        14.043570222222217,
+        16.77070288888889,
+        8.694428888888877
+      ],
+      "bootstrap99Ratio": [
+        0.8275074093515588,
+        2.1850336261466614
+      ],
+      "medianMeets79": false,
+      "upper99Meets79": false
+    },
+    {
+      "name": "season: generateFixtures",
+      "iterationsPerSample": 1170,
+      "beforeMs": 0.02700314273504299,
+      "afterMs": 0.01829915982905957,
+      "ratio": 0.6776677814361239,
+      "reductionPercent": 32.23322185638761,
+      "pairedBaselineBlockMediansMs": [
+        0.024760059829060262,
+        0.0289803871794871,
+        0.028542076068376453,
+        0.025591020512821028,
+        0.02396084786324793,
+        0.02841526495726495
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.018249186324786015,
+        0.016526114529913948,
+        0.018349133333333125,
+        0.01849593247863253,
+        0.01853357264957299,
+        0.017448282905982517
+      ],
+      "bootstrap99Ratio": [
+        0.5702516818550811,
+        0.7734940247252476
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "season: tableFromFixtures",
+      "iterationsPerSample": 231,
+      "beforeMs": 0.03944730519480516,
+      "afterMs": 0.03184261471861366,
+      "ratio": 0.8072190118276326,
+      "reductionPercent": 19.278098817236746,
+      "pairedBaselineBlockMediansMs": [
+        0.03908276190476267,
+        0.03981184848484765,
+        0.044444567099564264,
+        0.04056520779220953,
+        0.03480539393939426,
+        0.03871026839826764
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.030953064935062616,
+        0.038243030303030015,
+        0.03391314285714283,
+        0.032113683982683126,
+        0.0315715454545442,
+        0.029149683982683847
+      ],
+      "bootstrap99Ratio": [
+        0.7530220065327253,
+        0.9605941888778481
+      ],
+      "medianMeets79": false,
+      "upper99Meets79": false
+    },
+    {
+      "name": "season: simulateDivisionTable",
+      "iterationsPerSample": 21,
+      "beforeMs": 3.1154209761904808,
+      "afterMs": 2.1857982380952308,
+      "ratio": 0.7016060605613603,
+      "reductionPercent": 29.839393943863968,
+      "pairedBaselineBlockMediansMs": [
+        2.8534945238095264,
+        3.1751820476190566,
+        3.6302128571428294,
+        3.055659904761905,
+        2.899442714285691,
+        3.3054228095237965
+      ],
+      "pairedCandidateBlockMediansMs": [
+        2.1323289999999835,
+        2.368028047619018,
+        2.2996003333333386,
+        2.0775061904761882,
+        2.239267476190478,
+        2.037385190476189
+      ],
+      "bootstrap99Ratio": [
+        0.6163765750650549,
+        0.7723096114841316
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "rng: makeRng 10k draws",
+      "iterationsPerSample": 876,
+      "beforeMs": 0.05945917636986254,
+      "afterMs": 0.02359668036529749,
+      "ratio": 0.39685515013722417,
+      "reductionPercent": 60.314484986277584,
+      "pairedBaselineBlockMediansMs": [
+        0.059024618721460774,
+        0.059893734018264304,
+        0.0636975388127868,
+        0.0537604269406392,
+        0.056515076484018906,
+        0.064135191780822
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.023361229452055415,
+        0.02383213127853956,
+        0.025950277397260132,
+        0.022728014840183098,
+        0.02501001940639229,
+        0.022640660958904223
+      ],
+      "bootstrap99Ratio": [
+        0.3530146294140238,
+        0.4425371239383267
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "rig geometry: fallback 64 radial",
+      "iterationsPerSample": 1026,
+      "beforeMs": 0.07533742884990208,
+      "afterMs": 0.02379839424951238,
+      "ratio": 0.31589071478569997,
+      "reductionPercent": 68.41092852143001,
+      "pairedBaselineBlockMediansMs": [
+        0.0747538762183233,
+        0.06673665107212544,
+        0.07738557017543896,
+        0.07592098148148087,
+        0.07078533333333326,
+        0.08007270272904415
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.033616601364522755,
+        0.028809505847953068,
+        0.013607583820662841,
+        0.03003547368421069,
+        0.018787282651071692,
+        0.016866504873294327
+      ],
+      "bootstrap99Ratio": [
+        0.17584135892277356,
+        0.4496971002057927
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "rig geometry: fallback 16 radial",
+      "iterationsPerSample": 5946,
+      "beforeMs": 0.018476675664312263,
+      "afterMs": 0.007573400437268653,
+      "ratio": 0.409889775350481,
+      "reductionPercent": 59.0110224649519,
+      "pairedBaselineBlockMediansMs": [
+        0.017830365623948876,
+        0.02280705314497131,
+        0.019321141944164087,
+        0.016682192734611714,
+        0.01793014261688543,
+        0.019023208711739095
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.004420113689875498,
+        0.0042298249243189045,
+        0.008520028927009768,
+        0.009810225529767888,
+        0.00797728859737629,
+        0.007169512277161016
+      ],
+      "bootstrap99Ratio": [
+        0.18546126487417475,
+        0.5880657108950628
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "rig geometry: Rust/WASM 64 radial",
+      "iterationsPerSample": 657,
+      "beforeMs": 0.13460757001522133,
+      "afterMs": 0.019569878995433464,
+      "ratio": 0.14538468373822153,
+      "reductionPercent": 85.46153162617784,
+      "pairedBaselineBlockMediansMs": [
+        0.12781513850837056,
+        0.13853279756468997,
+        0.13068234246575272,
+        0.12621700456620988,
+        0.14267480213089734,
+        0.14919633028919446
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.019354901065448543,
+        0.018916436834093983,
+        0.018800357686454175,
+        0.02235772146118707,
+        0.02308282496194798,
+        0.019784856925418388
+      ],
+      "bootstrap99Ratio": [
+        0.13260954131424307,
+        0.17713715784990636
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "rig geometry: Rust/WASM 16 radial",
+      "iterationsPerSample": 2316,
+      "beforeMs": 0.03489262176165796,
+      "afterMs": 0.006358557858376495,
+      "ratio": 0.18223216076481957,
+      "reductionPercent": 81.77678392351804,
+      "pairedBaselineBlockMediansMs": [
+        0.0326477711571674,
+        0.034633863557858344,
+        0.03540985924006874,
+        0.03290114810017214,
+        0.035151379965457565,
+        0.0389359982728845
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.006067502158894388,
+        0.005895495682210938,
+        0.005806316925734097,
+        0.0080497150259064,
+        0.006874901986183131,
+        0.006649613557858602
+      ],
+      "bootstrap99Ratio": [
+        0.16397458364262127,
+        0.24466365129259068
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "presentation adapter: 22 mixed action poses",
+      "iterationsPerSample": 1122,
+      "beforeMs": 0.026989810606060934,
+      "afterMs": 0.01698496033868091,
+      "ratio": 0.6293100973026725,
+      "reductionPercent": 37.06899026973275,
+      "pairedBaselineBlockMediansMs": [
+        0.025230988413547335,
+        0.02709438680926845,
+        0.02690413903743391,
+        0.025075494652406768,
+        0.02707548217468796,
+        0.029020599821746658
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.01713464973262037,
+        0.016835270944741455,
+        0.018830442067736063,
+        0.01647186007130099,
+        0.017837352941177075,
+        0.016712660427807828
+      ],
+      "bootstrap99Ratio": [
+        0.5758895588120875,
+        0.6999087404928938
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "presentation adapter: 22 run poses",
+      "iterationsPerSample": 3018,
+      "beforeMs": 0.023723706925115925,
+      "afterMs": 0.014800322233267082,
+      "ratio": 0.6238621257624039,
+      "reductionPercent": 37.61378742375962,
+      "pairedBaselineBlockMediansMs": [
+        0.022141992379059273,
+        0.024056876408217402,
+        0.023390537442014452,
+        0.02188556262425476,
+        0.024963852551358447,
+        0.024181491385022926
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.015935858515573154,
+        0.014813463883366474,
+        0.0141052488402916,
+        0.01478718058316769,
+        0.015165618952948424,
+        0.014777936381709869
+      ],
+      "bootstrap99Ratio": [
+        0.6030322678672414,
+        0.7197120404866749
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "presentation locomotion: 22 reusable gait poses",
+      "iterationsPerSample": 4872,
+      "beforeMs": 0.019852660714285604,
+      "afterMs": 0.01098700697865336,
+      "ratio": 0.5534274290371223,
+      "reductionPercent": 44.65725709628777,
+      "pairedBaselineBlockMediansMs": [
+        0.017707726395730507,
+        0.01916965681444986,
+        0.02096645566502464,
+        0.018332947044334816,
+        0.020535664614121346,
+        0.02142470710180619
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.010699841338259308,
+        0.011102571018062139,
+        0.013491277709359843,
+        0.010659801108374443,
+        0.011297729885057175,
+        0.01087144293924458
+      ],
+      "bootstrap99Ratio": [
+        0.507425510537228,
+        0.6434696414552042
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "presentation contact: 22 grounded athletes",
+      "iterationsPerSample": 543,
+      "beforeMs": 0.03809216390423567,
+      "afterMs": 0.021576063535911384,
+      "ratio": 0.5664173762917214,
+      "reductionPercent": 43.35826237082786,
+      "pairedBaselineBlockMediansMs": [
+        0.03429896132596826,
+        0.03865599263351698,
+        0.03752833517495436,
+        0.03554712523020053,
+        0.03965167955801369,
+        0.04017785451196854
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.021658580110495436,
+        0.021026856353591854,
+        0.02072199815837803,
+        0.02158096500920734,
+        0.022633970534070864,
+        0.021571162062615428
+      ],
+      "bootstrap99Ratio": [
+        0.5368918356800166,
+        0.6314646063085706
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "presentation contact: body recovery",
+      "iterationsPerSample": 21462,
+      "beforeMs": 0.0016984386590252747,
+      "afterMs": 0.0010558023949305533,
+      "ratio": 0.6216311606663928,
+      "reductionPercent": 37.836883933360724,
+      "pairedBaselineBlockMediansMs": [
+        0.001573274019196775,
+        0.0017396537135402114,
+        0.0017184773087317406,
+        0.0016784000093188088,
+        0.0016567529587176966,
+        0.0018789398005777998
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.0011134360730594036,
+        0.0010683027676824095,
+        0.0009482545895070527,
+        0.0009913630136986911,
+        0.0011193894324853417,
+        0.001043302022178697
+      ],
+      "bootstrap99Ratio": [
+        0.551799307845896,
+        0.7077191000890368
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "presentation geometry: head portrait",
+      "iterationsPerSample": 6,
+      "beforeMs": 79.1863900833335,
+      "afterMs": 29.596424333333438,
+      "ratio": 0.3737564536303145,
+      "reductionPercent": 62.62435463696855,
+      "pairedBaselineBlockMediansMs": [
+        76.5787183333335,
+        80.34617083333312,
+        78.72712350000013,
+        76.21330883333333,
+        79.64565666666688,
+        86.78150800000003
+      ],
+      "pairedCandidateBlockMediansMs": [
+        29.361918833333522,
+        31.960313833333203,
+        29.353955166666918,
+        27.80255766666657,
+        31.154984500000257,
+        29.830929833333357
+      ],
+      "bootstrap99Ratio": [
+        0.3437475393183228,
+        0.39778266346544877
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "presentation geometry: head match close",
+      "iterationsPerSample": 6,
+      "beforeMs": 32.58508658333358,
+      "afterMs": 11.72923291666666,
+      "ratio": 0.35995708916317126,
+      "reductionPercent": 64.00429108368287,
+      "pairedBaselineBlockMediansMs": [
+        29.83062450000034,
+        32.19209233333337,
+        32.978080833333784,
+        29.02615016666641,
+        34.978832333333536,
+        34.07793533333339
+      ],
+      "pairedCandidateBlockMediansMs": [
+        11.15147983333342,
+        12.25853166666669,
+        11.421604666666704,
+        11.249662500000037,
+        12.863623999999922,
+        12.036861166666617
+      ],
+      "bootstrap99Ratio": [
+        0.3463392768181314,
+        0.3875699131784667
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "presentation geometry: head match distant",
+      "iterationsPerSample": 45,
+      "beforeMs": 2.202652399999958,
+      "afterMs": 0.8704591111110858,
+      "ratio": 0.3951867807699037,
+      "reductionPercent": 60.48132192300963,
+      "pairedBaselineBlockMediansMs": [
+        2.175223799999933,
+        2.230080999999983,
+        2.1550081555555356,
+        2.146441866666606,
+        2.4982716888888614,
+        2.36573831111107
+      ],
+      "pairedCandidateBlockMediansMs": [
+        0.8550309777777633,
+        0.8858872444444084,
+        0.8363310444444424,
+        0.8094025555555466,
+        0.8939588888889072,
+        0.8911867111111254
+      ],
+      "bootstrap99Ratio": [
+        0.35783093282640804,
+        0.3972444249533605
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    },
+    {
+      "name": "presentation geometry: detailed hair",
+      "iterationsPerSample": 6,
+      "beforeMs": 20.290297583333388,
+      "afterMs": 13.843363666666544,
+      "ratio": 0.6822651865903433,
+      "reductionPercent": 31.77348134096567,
+      "pairedBaselineBlockMediansMs": [
+        18.655126166666378,
+        24.64502916666667,
+        19.305779000000257,
+        20.32359333333382,
+        20.312754333333334,
+        20.26784083333344
+      ],
+      "pairedCandidateBlockMediansMs": [
+        14.074051499999769,
+        13.612675833333318,
+        14.233871499999927,
+        13.251706500000182,
+        14.178871333333518,
+        13.118810166666663
+      ],
+      "bootstrap99Ratio": [
+        0.5523497554527131,
+        0.7544334663974436
+      ],
+      "medianMeets79": true,
+      "upper99Meets79": true
+    }
+  ]
+}

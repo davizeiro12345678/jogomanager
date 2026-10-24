@@ -87,19 +87,6 @@ export interface GroundContactResult {
 }
 
 type Point = { x: number; y: number; z: number };
-/** Same XYZ order as the skeleton's local rotations. */
-function rotate(v: Point, pitch: number, yaw: number, roll: number): Point {
-  const x1 = v.x * Math.cos(roll) - v.y * Math.sin(roll);
-  const y1 = v.x * Math.sin(roll) + v.y * Math.cos(roll);
-  const x2 = x1 * Math.cos(yaw) + v.z * Math.sin(yaw);
-  const z2 = -x1 * Math.sin(yaw) + v.z * Math.cos(yaw);
-  return {
-    x: x2,
-    y: y1 * Math.cos(pitch) - z2 * Math.sin(pitch),
-    z: y1 * Math.sin(pitch) + z2 * Math.cos(pitch),
-  };
-}
-
 /** Row-vector multiplication by the skeleton's Rx * Ry * Rz rotation.
  * Mutates one scratch row; no matrix or transformed point allocations. */
 function rotateHeightRow(row: Point, pitch: number, yaw: number, roll: number): void {
@@ -118,71 +105,94 @@ function rotateHeightRow(row: Point, pitch: number, yaw: number, roll: number): 
   row.z = zz;
 }
 
-/** FK for sole, ankle and toe. Includes pelvis shift, hip roll, leg abduction
- * and the root lean, so side steps and goalkeeping do not use a flat guess. */
-export function soleHeightFor(input: GroundContactInput, left: boolean, ankleDelta = 0) {
+interface ContactFrame {
+  row: Point;
+  origin: number;
+}
+interface FootFrame extends ContactFrame {
+  footAngle: number;
+}
+
+/** Root and pelvis are common to both feet and both ankle projections.
+ * This frame belongs to one solve; no pose/input identity cache can go stale. */
+function contactFrame(input: GroundContactInput): ContactFrame {
+  const { P, pose } = input;
+  const cosine = Math.cos(input.leanX);
+  const row: Point = {
+    x: Math.sin(input.leanZ) * cosine,
+    y: Math.cos(input.leanZ) * cosine,
+    z: -Math.sin(input.leanX),
+  };
+  const origin = row.x * input.hipShiftX + row.y * (P.hipY + pose.hipY);
+  rotateHeightRow(row, pose.hipPitch, pose.hipYaw, pose.hipRoll + (input.hipRollOffset ?? 0));
+  return { row, origin };
+}
+
+/** Only the ankle changes during the second ground-clearance projection. */
+function footFrame(input: GroundContactInput, left: boolean, frame: ContactFrame): FootFrame {
   const { P, pose } = input;
   const pitch = left ? pose.legLPitch : pose.legRPitch;
   const roll = left ? pose.legLRoll : pose.legRRoll;
   const knee = left ? pose.kneeL : pose.kneeR;
-  const ankle = (left ? pose.ankleL : pose.ankleR) + ankleDelta;
-  const footH = P.footH ?? 0.07;
-  const footLen = P.footLen ?? 0.26;
-  // Only height is needed. Compose the height row backwards through the
-  // chain instead of transforming four points through five rotations each.
-  // Translations are accumulated before entering each child's coordinates.
-  const row: Point = {
-    x: Math.sin(input.leanZ) * Math.cos(input.leanX),
-    y: Math.cos(input.leanZ) * Math.cos(input.leanX),
-    z: -Math.sin(input.leanX),
-  };
-  let origin = row.x * input.hipShiftX + row.y * (P.hipY + pose.hipY);
-  rotateHeightRow(row, pose.hipPitch, pose.hipYaw, pose.hipRoll + (input.hipRollOffset ?? 0));
+  const row = { ...frame.row };
+  let origin = frame.origin;
   origin += row.x * (left ? 1 : -1) * (P.hipW ?? 0.255) * 0.36 - row.y * P.hipH * 0.4;
   rotateHeightRow(row, pitch, 0, roll);
   origin -= row.y * P.thigh;
   rotateHeightRow(row, -knee, 0, 0);
   origin -= row.y * P.shin;
-  rotateHeightRow(row, ankle, 0, 0);
-  const axisX = row.x;
-  const axisY = row.y;
-  const axisZ = row.z;
+  return { row, origin, footAngle: input.leanX + pose.hipPitch + pitch - knee };
+}
+
+function projectSole(input: GroundContactInput, frame: FootFrame, ankle: number): number {
+  const { P } = input;
+  const cosine = Math.cos(ankle);
+  const sine = Math.sin(ankle);
+  // The ankle has only one rotational degree of freedom. Keep its height
+  // row in scalars rather than allocating a new vector for each projection.
+  const axisX = frame.row.x;
+  const axisY = frame.row.y * cosine + frame.row.z * sine;
+  const axisZ = -frame.row.y * sine + frame.row.z * cosine;
+  const footH = P.footH ?? 0.07;
+  const footLen = P.footLen ?? 0.26;
   const lateralScale = axisX * footH;
   const depthSquared = (axisY * footH * 0.045) ** 2;
-  const centreY = origin - axisY * footH * 0.64;
+  const centreY = frame.origin - axisY * footH * 0.64;
   let lowest = Infinity;
-  // Project each real elliptical sole section. This includes its outer edge
-  // during lateral roll and its full toe reach during a planted kick.
+  // Every physical section remains in the projection, including the full
+  // elliptical edge during lateral roll and toe reach during a planted kick.
   for (const section of SOLE_CONTACT_PROFILE) {
     const centre = centreY + axisZ * section.z * footLen;
     const radius = Math.sqrt((lateralScale * section.width) ** 2 + depthSquared);
     lowest = Math.min(lowest, centre - radius);
   }
-  const angle = input.leanX + pose.hipPitch + pitch - knee;
-  return { y: lowest, footAngle: angle };
+  return lowest;
+}
+
+/** FK for sole, ankle and toe, including pelvis shift/roll and root lean. */
+export function soleHeightFor(input: GroundContactInput, left: boolean, ankleDelta = 0) {
+  const frame = footFrame(input, left, contactFrame(input));
+  const ankle = (left ? input.pose.ankleL : input.pose.ankleR) + ankleDelta;
+  return { y: projectSole(input, frame, ankle), footAngle: frame.footAngle };
 }
 
 export function solveGroundContact(input: GroundContactInput): GroundContactResult {
   const { pose, airborne, previousRootY, dt } = input;
-  const l = soleHeightFor(input, true);
-  const r = soleHeightFor(input, false);
+  const frame = contactFrame(input);
+  const left = footFrame(input, true, frame);
+  const right = footFrame(input, false, frame);
+  const l = { y: projectSole(input, left, pose.ankleL), footAngle: left.footAngle };
+  const r = { y: projectSole(input, right, pose.ankleR), footAngle: right.footAngle };
   const lowest = Math.min(l.y, r.y);
   const planted = clamp(0.008 - lowest, -0.6, 0.6);
   const air = clamp(airborne, 0, 1);
   // Authored jump height already lives in pose.hipY. Accumulating the old
   // root offset in flight made repeated headers drift upwards.
   const bodyContact = clamp(input.bodyContact ?? 0, 0, 1);
-  const pelvisBottom = (side: number) => {
-    const point = rotate(
-      { x: side * (input.P.hipW ?? 0.255) * 0.6, y: -input.P.hipH * 0.7, z: 0 },
-      pose.hipPitch,
-      pose.hipYaw,
-      pose.hipRoll + (input.hipRollOffset ?? 0),
-    );
-    point.x += input.hipShiftX;
-    point.y += input.P.hipY + pose.hipY;
-    return rotate(point, input.leanX, 0, input.leanZ).y;
-  };
+  const pelvisBottom = (side: number) =>
+    frame.origin +
+    frame.row.x * (side * (input.P.hipW ?? 0.255) * 0.6) +
+    frame.row.y * (-input.P.hipH * 0.7);
   const bodyPlanted =
     bodyContact > 0
       ? clamp(0.012 - Math.min(pelvisBottom(-1), pelvisBottom(1)), -1.2, 0.6)
@@ -212,17 +222,12 @@ export function solveGroundContact(input: GroundContactInput): GroundContactResu
   // Flattening the sole changes toe/heel clearance. Measure the final ankle
   // angle after its anatomical clamp, before placing the root.
   if (air < 0.1) {
-    const finalL = soleHeightFor(
-      input,
-      true,
-      clamp(pose.ankleL + ankleLFix, -0.9, 0.9) - pose.ankleL,
-    );
-    const finalR = soleHeightFor(
-      input,
-      false,
-      clamp(pose.ankleR + ankleRFix, -0.9, 0.9) - pose.ankleR,
-    );
-    rootY = Math.max(rootY, clamp(0.008 - Math.min(finalL.y, finalR.y), -0.6, 0.6));
+    const deltaL = clamp(pose.ankleL + ankleLFix, -0.9, 0.9) - pose.ankleL;
+    const deltaR = clamp(pose.ankleR + ankleRFix, -0.9, 0.9) - pose.ankleR;
+    // A free/already-flat ankle needs no second identical sole projection.
+    const finalL = deltaL === 0 ? l.y : projectSole(input, left, pose.ankleL + deltaL);
+    const finalR = deltaR === 0 ? r.y : projectSole(input, right, pose.ankleR + deltaR);
+    rootY = Math.max(rootY, clamp(0.008 - Math.min(finalL, finalR), -0.6, 0.6));
   }
 
   return {

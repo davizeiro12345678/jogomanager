@@ -47,6 +47,21 @@ describe("physical player movement", () => {
     expect(solveLegTarget(0.1, 0.6, p.thigh, p.shin, 0, leg)).toBe(leg);
   });
 
+  it("overwrites every reused pose channel after downstream layers mutate the buffer", () => {
+    const out = emptyPose();
+    const direction = { forward: 3, lateral: -1, turnRate: 0.3, stamina: 65, hasBall: true };
+    for (const speed of [0, 0.001, 0.5, 3, 8, 12]) {
+      for (const phase of [-5, 0, 1.2, 9]) {
+        for (const joint of JOINTS) out[joint] = Number.NaN;
+        const fresh = gaitPoseAt(phase, speed, p, emptyPose(), direction);
+        const reused = gaitPoseAt(phase, speed, p, out, direction);
+        expect(reused.pose).toEqual(fresh.pose);
+        expect(reused.contactL).toBe(fresh.contactL);
+        expect(reused.contactR).toBe(fresh.contactR);
+      }
+    }
+  });
+
   it.each([1.6, 5.5, 8])(
     "keeps both ankles continuous through toe-off and heel-strike at %s m/s",
     (speed) => {

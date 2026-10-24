@@ -1,0 +1,183 @@
+{
+  "baseline": "76f51b6a784d6f6b4fc0ff5bf06a7e08173cf639",
+  "sources": [
+    {
+      "path": "src/game/animation-core.ts",
+      "baselineSHA256": "a703e0ec554986f73f9eb5fc08bfe0d51c44118869733639d91c85b3dd040f5d",
+      "candidateSHA256": "deb26f811de40c5a7c272f09e1ec1d202680596854f95075a158b8368dcc2c14"
+    },
+    {
+      "path": "src/game/athlete-dynamics.ts",
+      "baselineSHA256": "1e3cc93667cac1de9a2f3714c2860a3aa966e8ef03d6d7194bd08a7eaeb18235",
+      "candidateSHA256": "97c0d0b6dcd578e8cd582ae02ac4cf445e0027d5a7b532cfdb115fddb68baba6"
+    },
+    {
+      "path": "src/game/career/squad.ts",
+      "baselineSHA256": "5c510018af03d653e23d37f66a90b24d28149f5487efaf17c27f339e552c9b35",
+      "candidateSHA256": "85a17b21155be39127918c88ad3949aaf6ead80006a9fba23d9d8a8adb2009c1"
+    },
+    {
+      "path": "src/game/gait-kinematics.test.ts",
+      "baselineSHA256": "fe7ac39aa794b6d1fb4df3f75f0bda831a482e888d342cc960942b85ee901c84",
+      "candidateSHA256": "d550135841f523fd461f700e12d985bc7af96f6c26cb24fe499df692d47b969c"
+    },
+    {
+      "path": "src/game/gait-kinematics.ts",
+      "baselineSHA256": "57a71551cec93d189832a0ac034a88b17688dc962571b24f604cb1ec965a8232",
+      "candidateSHA256": "1a2c68db8ff54bde779cd89047becea301907dfd06479a4ce1866d3a1fadeff8"
+    },
+    {
+      "path": "src/game/ground-contact.test.ts",
+      "baselineSHA256": "3c384751a369464fe9c2a75772a244831c964f8a96e6972f7c1315f1618f54b6",
+      "candidateSHA256": "fe0a731d88baa34ccb9fe0e58e3fe1fd962b524c1e5b14f5b14e5bcf9c0aafb3"
+    },
+    {
+      "path": "src/game/ground-contact.ts",
+      "baselineSHA256": "1d76ca63095fb7fb486af2ad9c91cd1aa55eaaa4e5294e390c435591ce427f88",
+      "candidateSHA256": "b6455357e2e7f7d26377be03e61a5050721472d3e56d62e8ac2c9903dabf6cd9"
+    },
+    {
+      "path": "src/game/live-frame-direct.test.ts",
+      "baselineSHA256": null,
+      "candidateSHA256": "05be1084d55fd786bb43335ad0bae081ced84cef419fa856e94748b52cb3a5ed"
+    },
+    {
+      "path": "src/game/live-match-buffer.ts",
+      "baselineSHA256": "e6deaad958d6ea4c4b40278ef65e2de3961f28ed9804c4a22f781b68bd2bbb2a",
+      "candidateSHA256": "39615f3f925b5b48a9debc6da27e820d3f6684a463c63d0ecb371b034bdd2f33"
+    },
+    {
+      "path": "src/game/live-match.ts",
+      "baselineSHA256": "b9b4fc789603c14addb3c90b761af257d5302ec24d3d8d983b9e1370815b397c",
+      "candidateSHA256": "10fb2a0e4df600354dd5aec49a85462a5d92838ee7b7d10532103b1fd649cf2b"
+    },
+    {
+      "path": "src/game/match-probability.ts",
+      "baselineSHA256": "290a94c27db99c01cd3a5dd8f681dc91d77c201eefd9a9e99aa7b168f4b784ec",
+      "candidateSHA256": "0b4add884395e70ba334a10c7edfa6ca349c9f3935514c2f371917d8ade7afcc"
+    },
+    {
+      "path": "src/game/match-readiness.ts",
+      "baselineSHA256": "70ac88257e63496af424ccb0d85e92a4e8612ec919086d87f292adab4645a45b",
+      "candidateSHA256": "4c4ef7f579e4314c6e11421da64eb7ca39460d652011a80e6436e8d8ee07026b"
+    },
+    {
+      "path": "src/game/planar-length.test.ts",
+      "baselineSHA256": null,
+      "candidateSHA256": "1f865b8dc0446c007dfa32a857d5ecba86e9c5a542bc8a964dce87d4fc966d49"
+    },
+    {
+      "path": "src/game/planar-length.ts",
+      "baselineSHA256": null,
+      "candidateSHA256": "d0f39ba3fbcc9e2c9a3c802b896ab34d220b8e9739075588f8c1ef940d0bc811"
+    },
+    {
+      "path": "src/game/replay-codec.ts",
+      "baselineSHA256": "e8463725e8fbc9d2d6444658068031b8d3858b8a7499a8aff82744667e464a20",
+      "candidateSHA256": "07e85f1cab9b9098f1cf79ee38e9edce1823da6b9365c04972e145269e8c8ebc"
+    },
+    {
+      "path": "src/game/rig-section-kernel.ts",
+      "baselineSHA256": "3b01087173a329edc2c5a28f25a1edd2dc304c6d1f8ef0b1aca6c0ae0f662ed2",
+      "candidateSHA256": "7973a8985d727b4d5ce1fbfcb60be2955b29c01a317f69611125b769578fe218"
+    },
+    {
+      "path": "src/game/rig-section-profile.test.ts",
+      "baselineSHA256": null,
+      "candidateSHA256": "1303875aa8efa94da9a56204dc9c30e00190dc04a79820b306de79b33c2cabdf"
+    },
+    {
+      "path": "src/game/rng.test.ts",
+      "baselineSHA256": null,
+      "candidateSHA256": "0b6398558e05b114f14923469a9c1ba6c6aea0be4fa8e3758bdacc9a3955a72a"
+    },
+    {
+      "path": "src/game/rng.ts",
+      "baselineSHA256": "dc3b10519a0e5790f1f088bc01e9385e63bc427dbb32f18162672e202606f242",
+      "candidateSHA256": "7b86c8a1394c79e76af1f3b2cfe4e81fa6c6e07ecad5e34538a52354403ec0e9"
+    },
+    {
+      "path": "src/game/sculpt/head-grid.test.ts",
+      "baselineSHA256": null,
+      "candidateSHA256": "8788cb8fbe8c4ba8a0ea14fb2032fce5fa2dec441c0cd9dd55353b4e74656f91"
+    },
+    {
+      "path": "src/game/sculpt/head.ts",
+      "baselineSHA256": "eb9f93f2fc24abdeaeb11a7342c85d156217d41f51eddbeab4cc2677ebd4bac6",
+      "candidateSHA256": "a30d436aeddee00f032a575535e1ca8e3437e873ae31f63d478c843f06e5a0e9"
+    },
+    {
+      "path": "src/game/season.ts",
+      "baselineSHA256": "20db0112bb455c1dd7443c5a8b28feae339086dd3159165e49ef8d7b2ef5967f",
+      "candidateSHA256": "ca44412c91ad1866f5e986f7ee549900d2ca56e201ae9513186d23d430f449ee"
+    },
+    {
+      "path": "src/game/sim-motion-kernels.ts",
+      "baselineSHA256": "096261f99e67919c5c42816693089a85a8d9d0bc6c901c1fcdc7cf4b2004c1fd",
+      "candidateSHA256": "5cc07bcbee7142aff5405c76c3316cb81417bfe03c1a0ee880bc72cb71616508"
+    },
+    {
+      "path": "src/game/sim-team.ts",
+      "baselineSHA256": "bda85cd771668348e2fca5a9bd49a05403d181e52fef340c1e39761964fd2b9d",
+      "candidateSHA256": "14dcca7b697facce470ed624c72cd6dd0a2f0a22d13621e13831da6de180c82a"
+    },
+    {
+      "path": "src/game/sim.ts",
+      "baselineSHA256": "bd31a4f5cec64c1e3976732438eeb0f035405b8583ce5177caa0bd0f180b972b",
+      "candidateSHA256": "94b0b4c67612d04ccbda503f3d47a4ed6f7206ee345e487ad3378f421d849a54"
+    },
+    {
+      "path": "src/game/squad.ts",
+      "baselineSHA256": "9884290ca3318d1f1343b58c5c2fd3c622d285856d5685430ae8478d8fec87fe",
+      "candidateSHA256": "a2c032c69206d7804e9d99f30d74341d6b88fa5581d90b7603c4e37916b80b91"
+    },
+    {
+      "path": "src/game/standings.test.ts",
+      "baselineSHA256": null,
+      "candidateSHA256": "3275e19b1b22368d13406a0775b75fead38c5b47d16c642f94534e43ca33cf36"
+    },
+    {
+      "path": "src/game/standings.ts",
+      "baselineSHA256": "cc962d125c79db55d179cd4fd387ec53bf2945300896820f99041acf66e37498",
+      "candidateSHA256": "e504086db2db5a49a52ca329ee9f9940857f8521cffcecc7a481eb48aad2bde7"
+    },
+    {
+      "path": "src/game/wasm/pkg/crowd_visibility_wasm_bg.wasm",
+      "baselineSHA256": "d5f3a9d011549143c8538187cdf9b680bd74a09d11cfc438d4e127c7e1d0face",
+      "candidateSHA256": "79d86a0eb750716b91ef07beeb91647efac77dc00f09e1e23db067fe4463b246"
+    },
+    {
+      "path": "wasm/crowd-visibility/src/rig_section.rs",
+      "baselineSHA256": "0da011f315b43c71a22139805c08d981b6d78ab75e3fc71055fc0545aba60587",
+      "candidateSHA256": "baac09253d605e136f3a54282c4ae0f2d8ede879c85bcac2cb8deb4a6908e01f"
+    }
+  ],
+  "benchmarks": [
+    {
+      "path": "src/game/benchmarks/index.ts",
+      "sha256": "f914bbcc1ea162ae1d3070a13fa0f7404a915f8fdd0aba201af1bd4e957fe5ac",
+      "unchanged": true
+    },
+    {
+      "path": "src/game/benchmarks/match.ts",
+      "sha256": "ec37c002281c74d5823b445d7b1a4757ca89d7cf6d27393d6d22842396adaa2c",
+      "unchanged": true
+    },
+    {
+      "path": "src/game/benchmarks/presentation.ts",
+      "sha256": "36177b557f50998ed8767ae5d756b789db1c7b9ea41351bdd16ac223c3ca8f93",
+      "unchanged": true
+    },
+    {
+      "path": "src/game/benchmarks/rig.ts",
+      "sha256": "f781ebb2fff0495566369207e7c70682622012a1a34d0fe5faf3b5978db5e29b",
+      "unchanged": true
+    },
+    {
+      "path": "src/game/benchmarks/season.ts",
+      "sha256": "e094f659fed493021bfebcce2a4b6e65fd968f2cd6771bcdf7a6f683013c15b5",
+      "unchanged": true
+    }
+  ],
+  "lockSHA256": "204338c0ae2cf90a64a6b54a10f72f9b21e60dc64c7422c427c740f6477687d9"
+}

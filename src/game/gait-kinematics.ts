@@ -1,4 +1,4 @@
-import { emptyPose, JOINTS, type Pose } from "./animation-core";
+import { emptyPose, type Pose } from "./animation-core";
 import type { Proportions } from "./player-model";
 
 const TAU = Math.PI * 2;
@@ -9,8 +9,12 @@ const smooth = (u: number) => u * u * u * (u * (u * 6 - 15) + 10);
 /** Full strides per second, scaled to each athlete's actual leg length. */
 export function gaitCadence(speed: number, legLength = 0.86): number {
   const s = clamp(speed, 0, 12);
+  return cadenceFor(s, legLength, clamp(s / 6.8, 0, 1));
+}
+
+function cadenceFor(s: number, legLength: number, amount: number): number {
   const base = (0.78 + Math.sqrt(s) * 0.43) / Math.sqrt(clamp(legLength / 0.86, 0.8, 1.25));
-  const duty = 0.64 - clamp(s / 6.8, 0, 1) * 0.38;
+  const duty = 0.64 - amount * 0.38;
   // If the anatomical stride limit is reached, increase cadence so support
   // still travels back at the athlete's actual world speed.
   return Math.max(base, (s * duty) / (2 * clamp(legLength, 0.55, 1.3) * 0.48));
@@ -45,7 +49,10 @@ export function solveLegTarget(
   const cosine = clamp((length * length - thigh * thigh - shin * shin) / (2 * thigh * shin), -1, 1);
   const bend = Math.acos(cosine);
   const verticalReach = thigh + shin * Math.cos(bend);
-  const roll = Math.asin(clamp(lateral / Math.max(0.001, verticalReach), -0.95, 0.95));
+  const roll =
+    lateral === 0 && !Number.isNaN(verticalReach)
+      ? lateral
+      : Math.asin(clamp(lateral / Math.max(0.001, verticalReach), -0.95, 0.95));
   const pitch =
     Math.atan2(-forward, down) - Math.atan2(shin * Math.sin(bend), verticalReach * Math.cos(roll));
   out.pitch = pitch;
@@ -108,9 +115,10 @@ function sampleFoot(
   const z = stance
     ? halfStride * (1 - 2 * u)
     : halfStride * (2 * smooth(u) - 1 - swingVelocity * u * (1 - u) * (1 - 2 * u));
+  const swingSine = stance ? 0 : Math.sin(Math.PI * u);
   const lift = stance
     ? 0
-    : Math.sin(Math.PI * u) ** 1.4 * (0.04 + amount * 0.23) * active * (1 - fatigue * 0.18);
+    : swingSine ** 1.4 * (0.04 + amount * 0.23) * active * (1 - fatigue * 0.18);
   const down = length - drop + bob - lift;
   const leg = solveLegTarget(z * forward, down, p.thigh, p.shin, z * lateral, result);
   // Toe-off and heel strike roll only at the edges of support.
@@ -119,13 +127,14 @@ function sampleFoot(
   // continuous hip/knee IK. Hermite tangents match support angular speed;
   // the interior arc adds toe clearance with zero endpoint derivative.
   const swingRatio = (1 - duty) / duty;
+  const u3 = stance ? 0 : u ** 3;
   const roll = stance
     ? Math.max(0, u - 0.8) * 0.7 - Math.max(0, 0.14 - u) * 0.5
-    : (2 * u ** 3 - 3 * u * u + 1) * 0.14 +
-      (u ** 3 - 2 * u * u + u) * 0.7 * swingRatio +
-      (-2 * u ** 3 + 3 * u * u) * -0.07 +
-      (u ** 3 - u * u) * 0.5 * swingRatio +
-      Math.sin(Math.PI * u) ** 2 * 0.08;
+    : (2 * u3 - 3 * u * u + 1) * 0.14 +
+      (u3 - 2 * u * u + u) * 0.7 * swingRatio +
+      (-2 * u3 + 3 * u * u) * -0.07 +
+      (u3 - u * u) * 0.5 * swingRatio +
+      swingSine ** 2 * 0.08;
   result.travel = z;
   result.ankle = leg.ankle + roll * active;
   // Quiet feet at a stop; blend load out during swing as movement begins.
@@ -143,7 +152,10 @@ export function gaitPoseAt(
   out = emptyPose(),
   direction?: GaitDirection,
 ): GaitSample {
-  for (const joint of JOINTS) out[joint] = 0;
+  // Every driven channel is assigned below. Only these two neutral channels
+  // need clearing when a caller reuses a pose modified by downstream layers.
+  out.hipPitch = 0;
+  out.headYaw = 0;
   const s = clamp(speed, 0, 12);
   const amount = clamp(s / 6.8, 0, 1);
   const active = smooth(clamp(s / 0.65, 0, 1));
@@ -151,7 +163,7 @@ export function gaitPoseAt(
   const fatigue = direction ? 1 - clamp(direction.stamina / 100, 0, 1) : 0;
   const forward = direction ? clamp(direction.forward / Math.max(0.01, s), -1, 1) : 1;
   const lateral = direction ? clamp(direction.lateral / Math.max(0.01, s), -1, 1) : 0;
-  const cadence = gaitCadence(s, length);
+  const cadence = cadenceFor(s, length, amount);
   const duty = 0.64 - amount * 0.38;
   const halfStride = Math.min(length * 0.48, (s * duty) / (2 * cadence));
   // Leave enough vertical reach for the entire stance sweep. Asking for a
@@ -254,13 +266,14 @@ export function gaitPoseAt(
   return sample;
 }
 
+const AUTHORED_ACTION_CLIP = /dive|save|catch|jump|header|tackle|slide|fall|celebrat|gk|limp|slip/i;
+
 /** Actions retain the authored preparation/contact/follow-through. */
 export function locomotionWeight(
   speed: number,
   action: string | null | undefined,
   clip: string,
 ): number {
-  if (action || /dive|save|catch|jump|header|tackle|slide|fall|celebrat|gk|limp|slip/i.test(clip))
-    return 0;
+  if (action || AUTHORED_ACTION_CLIP.test(clip)) return 0;
   return clamp((speed - 0.35) / 1.3, 0, 1);
 }

@@ -133,11 +133,22 @@ function sampleHeadPoint(
   angle: number,
   f: ReturnType<typeof faceMorphology>,
   out: THREE.Vector3,
+  sampledRing?: ReturnType<typeof profile>,
 ) {
   const ringHeight = THREE.MathUtils.clamp(y, -1.14, 1.14);
-  const ring = shapeFaceRing(profile(ringHeight), ringHeight, f);
+  const ring = sampledRing ?? shapeFaceRing(profile(ringHeight), ringHeight, f);
   const x = Math.sin(angle) * ring.width;
   const front = Math.max(0, Math.cos(angle));
+  // Facial relief has exactly zero weight on the back of the skull. Avoid
+  // evaluating its Gaussian fields for those samples, including the four
+  // finite-difference normal samples at every vertex. The continuous ring
+  // remains identical and still supplies the fitted rear scalp/hair surface.
+  if (front === 0)
+    return out.set(
+      x * P.headW,
+      y * P.headR,
+      (ring.center + Math.cos(angle) * ring.depth) * P.headD,
+    );
   const noseX = x - f.noseDeviation;
   // Separate bridge, tip and alar cartilages read as an adult nose in a
   // three-quarter portrait.  The previous single round gaussian made the
@@ -221,30 +232,45 @@ function sampleHeadPoint(
 export function gridSurface(
   columns: number,
   rows: number,
-  point: (u: number, v: number) => THREE.Vector3,
+  point: (u: number, v: number, column: number, row: number) => THREE.Vector3,
   normals: "triangles" | "surface" = "triangles",
 ) {
-  const positions: number[] = [],
-    uv: number[] = [],
-    indices: number[] = [];
+  const vertexCount = (rows + 1) * (columns + 1);
+  const positions = new Float32Array(vertexCount * 3);
+  const uv = new Float32Array(vertexCount * 2);
+  const indices =
+    vertexCount - 1 >= 65535
+      ? new Uint32Array(rows * columns * 6)
+      : new Uint16Array(rows * columns * 6);
+  let vertex = 0;
   for (let row = 0; row <= rows; row++)
     for (let col = 0; col <= columns; col++) {
       const u = col / columns,
         v = row / rows,
-        p = point(u, v);
-      positions.push(p.x, p.y, p.z);
-      uv.push(u, v);
+        p = point(u, v, col, row);
+      positions[vertex * 3] = p.x;
+      positions[vertex * 3 + 1] = p.y;
+      positions[vertex * 3 + 2] = p.z;
+      uv[vertex * 2] = u;
+      uv[vertex * 2 + 1] = v;
+      vertex++;
     }
+  let index = 0;
   for (let row = 0; row < rows; row++)
     for (let col = 0; col < columns; col++) {
       const a = row * (columns + 1) + col,
         b = a + columns + 1;
-      indices.push(a, a + 1, b, a + 1, b + 1, b);
+      indices[index++] = a;
+      indices[index++] = a + 1;
+      indices[index++] = b;
+      indices[index++] = a + 1;
+      indices[index++] = b + 1;
+      indices[index++] = b;
     }
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-  geometry.setIndex(indices);
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+  geometry.setIndex(new THREE.BufferAttribute(indices, 1));
   if (normals === "triangles") geometry.computeVertexNormals();
   else
     geometry.setAttribute(
@@ -295,6 +321,19 @@ export function sculptedHead(
   // instead of uniform, unused density at the back of the skull.
   const morphology = faceMorphology(seed);
   const sample = new THREE.Vector3();
+  // Every angular vertex on a row uses the same seeded skull ring. Keep
+  // these scalar rings for this construction only, including the two normal
+  // derivative heights, rather than reinterpolating the profile per angle.
+  const rings = new Map<number, ReturnType<typeof profile>>();
+  const pointAt = (height: number, angle: number, out: THREE.Vector3) => {
+    const ringHeight = THREE.MathUtils.clamp(height, -1.14, 1.14);
+    let ring = rings.get(ringHeight);
+    if (!ring) {
+      ring = shapeFaceRing(profile(ringHeight), ringHeight, morphology);
+      rings.set(ringHeight, ring);
+    }
+    return sampleHeadPoint(P, height, angle, morphology, out, ring);
+  };
   const columns = sampling?.columns ?? (detail ? (portrait ? 136 : 80) : 18);
   const geometry = gridSurface(
     columns,
@@ -304,7 +343,7 @@ export function sculptedHead(
       // actually bends the surface; spend fewer at the smooth crown and nape.
       const centered = v * 2 - 1;
       const faceWeighted = centered * (0.7 + centered * centered * 0.3);
-      return sampleHeadPoint(P, faceWeighted * 1.14, headAngle(u), morphology, sample);
+      return pointAt(faceWeighted * 1.14, headAngle(u), sample);
     },
     "surface",
   );
@@ -327,15 +366,17 @@ export function sculptedHead(
     const angle = headAngle(uv.getX(i)),
       height = positions.getY(i) / P.headR;
     tangentAngle
-      .copy(sampleHeadPoint(P, height, angle + epsilon, morphology, sample))
-      .sub(sampleHeadPoint(P, height, angle - epsilon, morphology, opposite));
+      .copy(pointAt(height, angle + epsilon, sample))
+      .sub(pointAt(height, angle - epsilon, opposite));
     tangentHeight
-      .copy(sampleHeadPoint(P, height + epsilon, angle, morphology, sample))
-      .sub(sampleHeadPoint(P, height - epsilon, angle, morphology, opposite));
+      .copy(pointAt(height + epsilon, angle, sample))
+      .sub(pointAt(height - epsilon, angle, opposite));
     surfaceNormal.crossVectors(tangentAngle, tangentHeight).normalize();
     normal.setXYZ(i, surfaceNormal.x, surfaceNormal.y, surfaceNormal.z);
     headComplexion(P, positions.getX(i), positions.getY(i), positions.getZ(i), pigment);
-    complexion.set([pigment.r, pigment.g, pigment.b], i * 3);
+    complexion[i * 3] = pigment.r;
+    complexion[i * 3 + 1] = pigment.g;
+    complexion[i * 3 + 2] = pigment.b;
   }
   geometry.setAttribute("color", new THREE.BufferAttribute(complexion, 3));
   for (let a = 0; a < normal.count; a += columns + 1) {
@@ -372,16 +413,30 @@ export function sculptedHair(
   const f = faceMorphology(look.seed);
   const sample = new THREE.Vector3();
   const columns = sampling?.columns ?? (detail ? 120 : 18);
+  // Hairline and angular fields depend on the column, never its height.
+  // Compute them once for this shell, with the same double-precision u as
+  // gridSurface, rather than repeating their trigonometry along every row.
+  const partAngle = f.parting * 0.42;
+  const columnSamples = Array.from({ length: columns + 1 }, (_, column) => {
+    const angle = headAngle(column / columns);
+    const front = Math.max(0, Math.cos(angle));
+    const temples = Math.abs(Math.sin(angle));
+    const wrappedPart = Math.atan2(Math.sin(angle - partAngle), Math.cos(angle - partAngle));
+    return {
+      angle,
+      front,
+      hairline: fittedHairlineY(angle, f, detail, style),
+      wrappedPart,
+      templeTaper: 1 - front * temples ** 1.35 * (style === "afro" ? 0.1 : 0.36),
+    };
+  });
   const geometry = gridSurface(
     // Spend the extra vertices on close athletes only. The scalp is one
     // continuous surface, so strand relief below does not add meshes/draws.
     columns,
     sampling?.rows ?? (detail ? 72 : 10),
-    (u, v) => {
-      const angle = headAngle(u);
-      const front = Math.max(0, Math.cos(angle));
-      const temples = Math.abs(Math.sin(angle));
-      const hairline = fittedHairlineY(angle, f, detail, style);
+    (_u, v, column) => {
+      const { angle, front, hairline, wrappedPart, templeTaper } = columnSamples[column]!;
       const y = hairline + (1.14 - hairline) * v;
       const p = sampleHeadPoint(P, y, angle, f, sample);
       // A shaved cut is scalp stubble, not a short hairstyle with the same
@@ -414,8 +469,6 @@ export function sculptedHair(
       // crown.  A uniform inflated sphere is what made short hair read as a
       // plastic helmet in the portrait camera.
       const crown = THREE.MathUtils.smoothstep(v, 0.16, 0.88);
-      const partAngle = f.parting * 0.42;
-      const wrappedPart = Math.atan2(Math.sin(angle - partAngle), Math.cos(angle - partAngle));
       const partGroove =
         detail && !textured ? 0.009 * Math.exp(-((wrappedPart / 0.28) ** 2)) * crown : 0;
       // Only broad locks belong in geometry. Fine frequencies above the
@@ -432,7 +485,6 @@ export function sculptedHair(
           : grainFade *
             (0.012 * Math.cos(grainFlow * 12 + v * 2) +
               0.003 * Math.cos(grainFlow * 24 + v * 3 + f.parting));
-      const templeTaper = 1 - front * temples ** 1.35 * (style === "afro" ? 0.1 : 0.36);
       const foreheadInset =
         style === "afro" ? 0 : 0.004 * front ** 2 * THREE.MathUtils.smoothstep(v, 0.12, 0.72);
       // Uneven broad locks break the profile silhouette without adding fibre
@@ -533,7 +585,9 @@ export function sculptedHair(
           ? Math.sin(sweptCropFlow(angle, v, f.parting) * 5 + v * 7) * Math.sin(v * Math.PI) * 0.075
           : 0;
       const tone = 0.94 + locks * 0.105 + clumpTone - root;
-      colors.set([tone, tone * 0.99, tone * 0.97], i * 3);
+      colors[i * 3] = tone;
+      colors[i * 3 + 1] = tone * 0.99;
+      colors[i * 3 + 2] = tone * 0.97;
     }
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   }

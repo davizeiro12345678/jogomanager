@@ -65,9 +65,31 @@ export const JOINTS: JointName[] = [
 ];
 
 export function emptyPose(): Pose {
-  const p = {} as Pose;
-  for (const j of JOINTS) p[j] = 0;
-  return p;
+  // Literal construction keeps fixed joint slots in a shared fast object shape.
+  return {
+    hipY: 0,
+    hipPitch: 0,
+    hipRoll: 0,
+    hipYaw: 0,
+    spine: 0,
+    chest: 0,
+    headPitch: 0,
+    headYaw: 0,
+    armLPitch: 0,
+    armLRoll: 0,
+    elbowL: 0,
+    armRPitch: 0,
+    armRRoll: 0,
+    elbowR: 0,
+    legLPitch: 0,
+    legLRoll: 0,
+    kneeL: 0,
+    ankleL: 0,
+    legRPitch: 0,
+    legRRoll: 0,
+    kneeR: 0,
+    ankleR: 0,
+  };
 }
 
 export interface ClipCtx {
