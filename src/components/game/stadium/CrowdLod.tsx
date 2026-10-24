@@ -5,6 +5,7 @@ import { CROWD_MOTION_GLSL, createCrowdBehavior, advanceCrowdBehavior } from "@/
 import { useVisual } from "@/game/visual-settings";
 import { supporterGeometry } from "@/game/crowd-geometry";
 import { crowdLodMaterial } from "@/game/crowd-lod-material";
+import { crowdCard } from "./textures/crowd-card";
 
 import { resolveRuntimeSceneBudget, type RuntimeSceneBudget } from "@/game/runtime-scene-budget";
 import { censusRef } from "@/game/scene-census";
@@ -101,36 +102,6 @@ function copySeatToInstance(
     seat,
     instance,
   );
-}
-
-function crowdCard() {
-  if (typeof document === "undefined") return new THREE.Texture();
-  const canvas = document.createElement("canvas");
-  canvas.width = 64;
-  canvas.height = 128;
-  const c = canvas.getContext("2d")!;
-  c.fillStyle = "#ffffff";
-  c.beginPath();
-  c.ellipse(32, 20, 11, 14, 0, 0, Math.PI * 2);
-  c.fill();
-  c.fillStyle = "#ffffff";
-  c.beginPath();
-  c.ellipse(32, 12, 11, 7, 0, 0, Math.PI * 2);
-  c.fill();
-  c.fillStyle = "#ffffff";
-  c.beginPath();
-  c.moveTo(17, 37);
-  c.lineTo(47, 37);
-  c.lineTo(55, 81);
-  c.lineTo(10, 81);
-  c.closePath();
-  c.fill();
-  c.fillStyle = "#ffffff";
-  c.fillRect(18, 81, 12, 42);
-  c.fillRect(34, 81, 12, 42);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
 }
 
 function tileIndex(position: THREE.Vector3) {
@@ -289,7 +260,7 @@ export function CrowdLod({
         new URLSearchParams(location.search).get("crowdLighting") === "legacy";
       const material = crowdLodMaterial(tier, card, legacy);
       if (webgl2) {
-        material.customProgramCacheKey = () => `crowd-articulation-v2-tier-${tier}`;
+        material.customProgramCacheKey = () => `crowd-articulation-v3-tier-${tier}`;
         material.onBeforeCompile = (shader) => {
           shader.uniforms["crowdTime"] = uniforms.time;
           shader.uniforms["crowdPulse"] = uniforms.pulse;
@@ -331,7 +302,13 @@ export function CrowdLod({
            if (crowdRegion > 0.5 && crowdRegion < 1.5) vColor.rgb = crowdSkin;
            else if (crowdRegion > 1.5 && crowdRegion < 2.5) vColor.rgb = mix(vec3(0.021, 0.035, 0.049), vec3(0.15, 0.18, 0.22), crowdStyle.x);
            else if (crowdRegion > 2.5 && crowdRegion < 3.5) vColor.rgb = mix(vec3(0.012, 0.009, 0.007), vec3(0.23, 0.12, 0.047), crowdStyle.y);
-           else if (crowdRegion > 3.5) vColor.rgb = mix(vColor.rgb, vec3(0.75), step(0.6, crowdStyle.x));`,
+           else if (crowdRegion > 3.5) vColor.rgb = mix(vColor.rgb, vec3(0.75), step(0.6, crowdStyle.x));
+           if (crowdRegion < 0.5) {
+             // Seeded shirt panels stay in the existing single spectator draw.
+             float shirtBand = 1.0 - smoothstep(0.035, 0.07, abs(position.y - 0.12));
+             float shirtStyle = step(0.55, crowdStyle.y);
+             vColor.rgb = mix(vColor.rgb, mix(vColor.rgb * 0.35, vec3(0.76), crowdStyle.x), shirtBand * shirtStyle * 0.65);
+           }`,
             );
           else
             shader.vertexShader = shader.vertexShader.replace(

@@ -1,3 +1,4 @@
+import { initializeRapier } from "./rapier-runtime";
 /**
  * Ponte física visual de baixa complexidade para a bola.
  *
@@ -5,13 +6,7 @@
  * imagem com quique, giro, trave e rede, mas nunca devolve dados para
  * `MatchSim`. Regras, placar, posse, saves e replays continuam canônicos.
  */
-import {
-  ColliderDesc,
-  init as initializeRapierWasm,
-  RigidBodyDesc,
-  RigidBodyType,
-  World,
-} from "@dimforge/rapier3d-compat";
+import { ColliderDesc, RigidBodyDesc, RigidBodyType, World } from "@dimforge/rapier3d-compat";
 
 import {
   type CanonicalBallPhysicsState,
@@ -59,12 +54,6 @@ function distance3D(
   b: Pick<CanonicalBallPhysicsState, "x" | "z" | "height">,
 ) {
   return Math.hypot(a.x - b.x, a.z - b.z, a.height - b.height);
-}
-
-let rapierReady: Promise<void> | null = null;
-
-function initializeRapier() {
-  return (rapierReady ??= initializeRapierWasm());
 }
 
 function makeWorld() {

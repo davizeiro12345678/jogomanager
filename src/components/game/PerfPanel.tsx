@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 
-const Perf = lazy(() => import("r3f-perf").then((m) => ({ default: m.Perf })));
+const Perf = lazy(() => import("./PerformanceStats"));
 
-/** Painel de medição (r3f-perf): só na prévia com `?perf=1`; jogadores nunca o veem. */
+/** Local opt-in diagnostics; player-facing performance probes remain unchanged. */
 export function PerfPanel() {
   const [on, setOn] = useState(false);
   useEffect(() => {
@@ -11,7 +11,7 @@ export function PerfPanel() {
   if (!on) return null;
   return (
     <Suspense fallback={null}>
-      <Perf position="top-left" minimal />
+      <Perf />
     </Suspense>
   );
 }

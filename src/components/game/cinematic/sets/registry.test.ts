@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CINEMATIC_SET_LOADERS,
+  cacheCinematicSetLoader,
   resolveCinematicSetLoader,
   type CinematicSetLoader,
 } from "./registry";
@@ -34,6 +35,21 @@ function testLoaders() {
 }
 
 describe("cinematic set loader registry", () => {
+  it("shares preloaded set imports and allows a failed import to be retried", async () => {
+    let calls = 0;
+    const cached = cacheCinematicSetLoader(async () => {
+      calls++;
+      if (calls === 1) throw new Error("offline");
+      return { default: () => null };
+    });
+    const failed = cached();
+    expect(cached()).toBe(failed);
+    await expect(failed).rejects.toThrow("offline");
+    const retry = cached();
+    expect(cached()).toBe(retry);
+    await retry;
+    expect(calls).toBe(2);
+  });
   it("registers every known cinematic set", () => {
     expect(Object.keys(CINEMATIC_SET_LOADERS)).toEqual(setKeys);
   });

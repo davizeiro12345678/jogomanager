@@ -1,3 +1,4 @@
+import { initializeRapier } from "./rapier-runtime";
 /**
  * Autoridade física canônica da bola.
  *
@@ -5,13 +6,7 @@
  * mas posição, velocidade, gravidade, contato com gramado, traves e rede são
  * calculados pelo mundo WASM do Rapier e escritos de volta nesse estado.
  */
-import {
-  ColliderDesc,
-  init as initializeRapierWasm,
-  RigidBodyDesc,
-  RigidBodyType,
-  World,
-} from "@dimforge/rapier3d-compat";
+import { ColliderDesc, RigidBodyDesc, RigidBodyType, World } from "@dimforge/rapier3d-compat";
 
 import { pitchCondition } from "./ball-climate";
 import { highFidelitySubsteps } from "./physics-quality";
@@ -94,12 +89,6 @@ function finite(value: number, fallback = 0) {
 
 function copyState(state: RapierBallState): RapierBallState {
   return { ...state };
-}
-
-let rapierReady: Promise<void> | null = null;
-
-function initializeRapier() {
-  return (rapierReady ??= initializeRapierWasm());
 }
 
 function changed(a: RapierBallState | null, b: RapierBallState) {

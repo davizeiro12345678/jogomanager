@@ -1,4 +1,3 @@
-import "./cinematic.css";
 import { memo } from "react";
 
 import { type SceneArt } from "@/content/cutscenes";

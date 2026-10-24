@@ -1,13 +1,18 @@
 import * as THREE from "three";
 import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 import { mergeRigParts, rigPart, type RigPart } from "@/game/rig-geometry";
+import { stadiumSurfaceDetail } from "@/game/stadium-surface-detail";
 
 /** Public builder makes the same three-material geometry budget testable. */
 export function buildArenaArchitecture(rings: number, color: string, night: boolean) {
   rings = THREE.MathUtils.clamp(Math.round(rings), 4, 16);
+  const detail = stadiumSurfaceDetail();
   const concrete = new THREE.MeshStandardMaterial({
     color: "#8f9c9f",
     roughness: 0.94,
+    normalMap: detail.normal,
+    roughnessMap: detail.roughness,
+    normalScale: new THREE.Vector2(0.18, 0.18),
     vertexColors: true,
   });
   const metal = new THREE.MeshStandardMaterial({

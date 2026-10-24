@@ -22,7 +22,7 @@ const assetProxy: Record<string, ProxyOptions> = {
   },
 };
 
-import { rapierWasmAsset } from "./rapier-wasm-asset";
+import { rapierWasmAsset } from "./rapier-wasm-asset.ts";
 export default defineConfig({
   cacheDir: "node_modules/.vite-benchmark",
   plugins: [react(), tailwindcss(), rapierWasmAsset()],

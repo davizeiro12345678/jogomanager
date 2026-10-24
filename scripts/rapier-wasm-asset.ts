@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { transformWithOxc, type Plugin } from "vite";
-import { rapierSourceModules, sharedRapierBindings } from "./rapier-source-modules";
+import { rapierSourceModules, sharedRapierBindings } from "./rapier-source-modules.ts";
 
 // The pinned compat package embeds the exact binary it also ships as a file.
 // Keep its official bindings/init, but let browsers and workers fetch the

@@ -20,7 +20,8 @@ import {
   cinematicDrillFor,
   cinematicDrillPose,
 } from "@/game/cinematic-action";
-import { emptyPose, mixPose } from "@/game/animation-core";
+import { emptyPose } from "@/game/animation-core";
+import { AthletePoseBlender } from "@/game/athlete-pose-blender";
 import { proportionsFor } from "@/game/player-model";
 import { faceMorphology } from "@/game/player-morphology";
 import {
@@ -187,7 +188,7 @@ export function CinematicActor({
   const target = useRef(emptyPose());
   const drillScratch = useRef(emptyPose());
   const mouthPose = useRef<MouthPose>({ open: 0.015, wide: 0.1, round: 0 });
-  const current = useRef(emptyPose());
+  const poseBlender = useMemo(() => new AthletePoseBlender(), []);
   const first = useRef(true);
   const listening = useRef(new CinematicGaze());
   const hairMotion = useRef(createAthleteHairMotionState());
@@ -267,13 +268,14 @@ export function CinematicActor({
       !holdingTrophy && !exercise && !recovery && !clipboard && !acting && idle.kind === "cross"
         ? idle.weight
         : 0;
-    mixPose(
-      current.current,
-      target.current,
-      first.current || runtime.reduced ? 1 : 1 - Math.exp(-12 * dt),
-      current.current,
-    );
-    const c = current.current,
+    // Blend only at a change of performance, carrying outgoing momentum.
+    // A permanent low-pass delayed every gesture, footstep and ball contact.
+    const c = poseBlender.sample(target.current, dt, {
+        clip: `${posture}:${acting}:${runtime.cue?.id ?? "idle"}:${drillIndex ?? "none"}`,
+        action: null,
+        progress: 0,
+        instant: first.current || runtime.reduced,
+      }),
       b = skin.boneOf;
     const wantedYaw = attention
       ? cinematicAttentionYaw(drill?.x ?? x, drill?.z ?? z, drill?.yaw ?? rot, attention)

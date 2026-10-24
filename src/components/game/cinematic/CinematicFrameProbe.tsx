@@ -1,5 +1,6 @@
 import { useFrame, useThree } from "@react-three/fiber";
-import { useRef, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
+import { subscribeRenderedFrames, type RenderedFrameSample } from "../graphics-probe";
 import { useCinematicRuntime } from "./cinematic-runtime";
 import { cinematicGestureAt } from "@/game/cinematic-cue";
 import { cinematicDrillFor } from "@/game/cinematic-action";
@@ -23,6 +24,15 @@ export function CinematicFrameProbe({
 }) {
   const runtime = useCinematicRuntime();
   const invalidate = useThree((state) => state.invalidate);
+  const gl = useThree((state) => state.gl);
+  const rendered = useRef<RenderedFrameSample | null>(null);
+  useEffect(
+    () =>
+      subscribeRenderedFrames(gl, (frame) => {
+        rendered.current = frame;
+      }),
+    [gl],
+  );
   const boundary = useRef(new CinematicFrameBoundary());
   const sample = useRef({
     frames: 0,
@@ -31,16 +41,19 @@ export function CinematicFrameProbe({
     visible: false,
     ready: false,
   });
-  useFrame(({ gl, camera }, dt) => {
-    const draws = gl.info.render.calls;
-    const triangles = gl.info.render.triangles;
-    gl.info.reset();
+  useFrame(({ camera }, dt) => {
+    // The shared post-render owner counts scene + lens passes exactly once.
+    // Reading/resetting renderer.info here only saw the composer's last pass.
+    const draws = rendered.current?.draws ?? 0;
+    const triangles = rendered.current?.triangles ?? 0;
     const element = host.current;
     if (!element) return;
     const current = sample.current;
     if (draws > 0) {
       element.dataset["cinematicDraws"] = String(draws);
       element.dataset["cinematicTriangles"] = String(triangles);
+      element.dataset["cinematicPrograms"] = String(rendered.current?.programs ?? "unavailable");
+      element.dataset["cinematicTextures"] = String(rendered.current?.textures ?? "unavailable");
     }
     element.dataset["cinematicTime"] = runtime.clock.time.toFixed(3);
     element.dataset["cinematicLineTime"] = runtime.clock.lineTime.toFixed(3);

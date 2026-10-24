@@ -11,7 +11,16 @@ vi.mock("@react-three/fiber", () => ({
   useThree: (select: (state: { invalidate: typeof probe.invalidate }) => unknown) =>
     select({ invalidate: probe.invalidate }),
 }));
-vi.mock("react", () => ({ useRef: (current: unknown) => ({ current }) }));
+vi.mock("react", () => ({
+  useRef: (current: unknown) => ({ current }),
+  useEffect: (effect: () => unknown) => effect(),
+}));
+vi.mock("../graphics-probe", () => ({
+  subscribeRenderedFrames: (_gl: unknown, sample: (frame: unknown) => void) => {
+    sample({ draws: 12, triangles: 200, textures: 4, programs: 2 });
+    return () => undefined;
+  },
+}));
 vi.mock("./cinematic-runtime", () => ({
   useCinematicRuntime: () => ({ clock: { time: 0, lineTime: 0 } }),
 }));
@@ -43,6 +52,9 @@ describe("paused cinematic initialization", () => {
     probe.frame!(state, 1 / 60);
     expect(onReady).toHaveBeenCalledTimes(1);
     expect(dataset["cinematicReady"]).toBe("true");
+    expect(dataset["cinematicDraws"]).toBe("12");
+    expect(dataset["cinematicTextures"]).toBe("4");
+    expect(state.gl.info.reset).not.toHaveBeenCalled();
     expect(onVisible).toHaveBeenCalledTimes(1);
     for (let index = 0; index < 8; index++) probe.frame!(state, 1 / 60);
     expect(probe.invalidate).toHaveBeenCalledTimes(3);

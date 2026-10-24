@@ -23,7 +23,7 @@ export function lowKitPattern(pattern: KitPattern): number {
 /** Club patterns survive the distant instance path without 22 texture atlases
  * or extra meshes. Derivative filtering suppresses shimmer in wide cameras. */
 export function applyLowKitShader(material: THREE.MeshStandardMaterial) {
-  material.customProgramCacheKey = () => "instanced-club-kit-v1";
+  material.customProgramCacheKey = () => "instanced-club-kit-v2";
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
       .replace(
@@ -52,7 +52,18 @@ export function applyLowKitShader(material: THREE.MeshStandardMaterial) {
         if (pattern > 5.5 && pattern < 6.5) stripe = smoothstep(-filterWidth, filterWidth, sin(vLowKitUv.x * 12.56637) * sin(vLowKitUv.y * 12.56637));
         if (pattern > 6.5) stripe = 1.0 - smoothstep(0.045, 0.075, abs(vLowKitUv.y - (0.48 + abs(vLowKitUv.x - 0.5) * 0.6)));
         diffuseColor.rgb = mix(diffuseColor.rgb, vLowKit.rgb, stripe * 0.88);
+        // The instanced squad retains fabric response without per-player maps.
+        vec2 weaveUv = vLowKitUv * vec2(96.0, 128.0);
+        float weaveVisibility = 1.0 - smoothstep(0.18, 0.6, max(fwidth(weaveUv.x), fwidth(weaveUv.y)));
+        float kitWeave = sin(weaveUv.x * 6.2831853) * sin(weaveUv.y * 6.2831853) * weaveVisibility;
+        float kitSeam = 1.0 - smoothstep(0.012, 0.028, min(vLowKitUv.y, 1.0 - vLowKitUv.y));
+        diffuseColor.rgb *= 1.0 - kitSeam * 0.09 + kitWeave * 0.025;
       `,
+      )
+      .replace(
+        "#include <roughnessmap_fragment>",
+        `#include <roughnessmap_fragment>
+        roughnessFactor = clamp(roughnessFactor + kitWeave * 0.035 + kitSeam * 0.04, 0.68, 1.0);`,
       );
   };
 }

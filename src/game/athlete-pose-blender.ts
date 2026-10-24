@@ -1,4 +1,4 @@
-import { emptyPose, JOINTS, type Pose } from "./animation-core";
+import { emptyPose, JOINTS, type JointName, type Pose } from "./animation-core";
 import { footballContactAt } from "./motion-metadata";
 
 export interface PoseBlendInput {
@@ -14,6 +14,8 @@ const smooth = (u: number) => {
   const t = Math.max(0, Math.min(1, u));
   return t * t * t * (t * (t * 6 - 15) + 10);
 };
+const LEFT_SUPPORT = new Set<JointName>(["legLPitch", "legLRoll", "kneeL", "ankleL"]);
+const RIGHT_SUPPORT = new Set<JointName>(["legRPitch", "legRRoll", "kneeR", "ankleR"]);
 
 /** Transitions start from the last displayed pose, including interrupted
  * actions. Once settled, feet follow the stride without another low-pass lag.
@@ -72,15 +74,16 @@ export class AthletePoseBlender {
     const supportWeight = smooth(this.elapsed / (this.duration * (0.65 + 0.15 * supportPhase)));
     const u = Math.max(0, Math.min(1, this.elapsed / this.duration));
     const momentumEnvelope = u * (1 - u) ** 3 * this.duration;
+    const support =
+      input.supportFoot === "left"
+        ? LEFT_SUPPORT
+        : input.supportFoot === "right"
+          ? RIGHT_SUPPORT
+          : null;
     for (const joint of JOINTS) {
       // Settle the planted chain earlier while the trunk carries outgoing
       // momentum. Final ground IK still owns the world-space sole contact.
-      const planted =
-        input.supportFoot === "left"
-          ? /^(legL|kneeL|ankleL)/.test(joint)
-          : input.supportFoot === "right"
-            ? /^(legR|kneeR|ankleR)/.test(joint)
-            : false;
+      const planted = support?.has(joint) ?? false;
       const jointWeight = !input.action && planted ? Math.max(weight, supportWeight) : weight;
       const desired = Number.isFinite(target[joint]) ? target[joint] : this.pose[joint];
       const previous = this.pose[joint];
@@ -92,8 +95,12 @@ export class AthletePoseBlender {
         this.from[joint] +
         (desired - this.from[joint]) * jointWeight +
         this.entryVelocity[joint] * carry;
-      if (!changed && step > 0)
-        this.velocity[joint] = Math.max(-16, Math.min(16, (this.pose[joint] - previous) / step));
+      if (!changed && step > 0) {
+        // Root height is metres, other channels are radians. Reusing the
+        // angular cap could launch the hips during an interrupted landing.
+        const cap = joint === "hipY" ? 0.65 : 16;
+        this.velocity[joint] = Math.max(-cap, Math.min(cap, (this.pose[joint] - previous) / step));
+      }
     }
     return this.pose;
   }

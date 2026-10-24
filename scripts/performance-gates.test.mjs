@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { assessMatchSetup } from "./match-setup-budget.mjs";
+import { isMatchRouteEntry } from "./bundle-report-comparison.mjs";
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -31,7 +32,7 @@ const surfaces = [
   { name: "index-home.js", surface: "home" },
   { name: "new-career.js", surface: "new" },
   { name: "partida-rapida-route.js" },
-  { name: "match-route.js" },
+  { name: "match-ab_cd-EF.js" },
   { name: "CinematicStage3D-stage.js" },
   { name: "editor-route.js" },
   { name: "match.worker-runtime.js" },
@@ -46,6 +47,17 @@ const fixture = () => ({
     startupGzipBytes: 10_000,
     startupBrotliBytes: 8_000,
   })),
+});
+
+test("Match startup selects the route rather than similarly named helper chunks", () => {
+  assert.equal(isMatchRouteEntry({ name: "match-ab_cd-EF.js" }), true);
+  for (const name of [
+    "match-analytics-Cyb17t5O.js",
+    "match-perception-CMra0uUA.js",
+    "match-command-validation-C_rYpHTH.js",
+    "match.worker-D9wYlcgh.js",
+  ])
+    assert.equal(isMatchRouteEntry({ name }), false, name);
 });
 
 function compare(mutate) {

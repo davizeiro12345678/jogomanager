@@ -1,3 +1,7 @@
+import { CutsceneTransport } from "./CutsceneTransport";
+import { CutsceneDialogue } from "./CutsceneDialogue";
+import { CutsceneSettings } from "./CutsceneSettings";
+import styles from "./cinematic.module.css";
 import { Backdrop } from "./IllustratedBackdrop";
 /**
  * Cutscene presentation: a clear 3D stage with compact dialogue and choices.
@@ -7,7 +11,7 @@ import type React from "react";
 import { useT } from "@/i18n/provider";
 import { useAccessibility } from "@/hooks/useAccessibility";
 import { sceneText, sceneTitle, sceneSpeakerLabels } from "@/game/scene-localization";
-import "./cinematic.css";
+
 import {
   startTransition,
   Suspense,
@@ -17,18 +21,6 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  Volume2,
-  VolumeX,
-  Pause,
-  Play,
-  ChevronRight,
-  Eye,
-  EyeOff,
-  SlidersHorizontal,
-  RotateCcw,
-  BookOpen,
-} from "lucide-react";
 import { createPortal } from "react-dom";
 
 /** enquadramentos alternados: cada fala reposiciona levemente a câmera */
@@ -789,7 +781,7 @@ export function CutsceneStage({
       aria-modal="true"
       aria-labelledby="cutscene-title"
       tabIndex={-1}
-      className="cutscene-screen"
+      className={styles["cutscene-screen"]}
       data-scene-mode={mode}
       data-scene-paused={paused || hidden || transcriptOpen}
       data-scene-reduced={reduced}
@@ -801,7 +793,7 @@ export function CutsceneStage({
     >
       <div
         ref={stageRef}
-        className="cutscene-world"
+        className={styles["cutscene-world"]}
         onPointerMove={mode === "2d" ? onPointerMove : undefined}
       >
         {mode === "2d" || !stageReady ? (
@@ -818,7 +810,11 @@ export function CutsceneStage({
         {mode === "3d" && mountStage ? (
           <GraphicsBoundary
             fallback={
-              <button type="button" onClick={onUnavailable} className="cutscene-loading z-10">
+              <button
+                type="button"
+                onClick={onUnavailable}
+                className={`${styles["cutscene-loading"]} z-10`}
+              >
                 {t("scene.unavailable")}
               </button>
             }
@@ -858,19 +854,19 @@ export function CutsceneStage({
           </GraphicsBoundary>
         ) : null}
         {mode === "3d" && !stageReady ? (
-          <p role="status" className="cutscene-loading">
+          <p role="status" className={styles["cutscene-loading"]}>
             {t("scene.loading")}
           </p>
         ) : null}
       </div>
-      <div className="cutscene-matte" aria-hidden="true" />
+      <div className={styles["cutscene-matte"]} aria-hidden="true" />
       {stageReady && i === 0 && (
-        <div className="cutscene-slate" aria-hidden="true">
+        <div className={styles["cutscene-slate"]} aria-hidden="true">
           <span>{club?.short ?? t("scene.storyTag")}</span>
           <strong>{presentedTitle}</strong>
         </div>
       )}
-      <header className="cutscene-top">
+      <header className={styles["cutscene-top"]}>
         <div className="flex min-w-0 items-center gap-3">
           {club ? (
             (brand ?? (
@@ -910,15 +906,15 @@ export function CutsceneStage({
         <section
           ref={transcriptRef}
           tabIndex={0}
-          className="cutscene-transcript"
+          className={styles["cutscene-transcript"]}
           aria-labelledby="cutscene-transcript-title"
         >
-          <div className="cutscene-transcript-heading">
+          <div className={styles["cutscene-transcript-heading"]}>
             <h3 id="cutscene-transcript-title">{t("scene.transcript")}</h3>
             <button
               type="button"
               onClick={() => setTranscriptOpen(false)}
-              className="cutscene-control px-3"
+              className={`${styles["cutscene-control"]} px-3`}
             >
               {t("scene.backToScene")}
             </button>
@@ -946,196 +942,83 @@ export function CutsceneStage({
           </ol>
         </section>
       )}
-      <div className="cutscene-bottom" hidden={transcriptOpen}>
+      <div className={styles["cutscene-bottom"]} hidden={transcriptOpen}>
         {(captions || pendingChoice) && (
-          <section
+          <CutsceneDialogue
             key={`${i}-${replay}`}
-            className="cutscene-dialogue"
-            aria-label={t("scene.dialogue")}
-          >
-            {speaker ? <p className="cutscene-speaker">{speaker}</p> : null}
-            <button
-              type="button"
-              onClick={next}
-              aria-label={t(typed < full.length ? "scene.fullLine" : "scene.continue")}
-              className="cutscene-caption block w-full text-start leading-relaxed text-white"
-              dir="auto"
-              lang={presented.lang}
-            >
-              {full.slice(0, typed)}
-              {typed < full.length && (
-                <span aria-hidden className="opacity-40">
-                  ▍
-                </span>
-              )}
-            </button>
-            <p className="sr-only" aria-live="polite" lang={presented.lang}>
-              {speaker ? `${speaker}: ` : ""}
-              {full}
-            </p>
-            {line.choices && (
-              <div className="cutscene-choices" role="group" aria-label={t("scene.choice")}>
-                {line.choices.map((choice, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => choose(index)}
-                    disabled={chosen !== null}
-                    aria-pressed={chosen === index}
-                    className="cutscene-choice"
-                  >
-                    <span className="block font-semibold">{choice.label}</span>
-                    {choice.hint ? (
-                      <span className="mt-1 block text-xs text-white/60">{choice.hint}</span>
-                    ) : null}
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
+            speaker={speaker}
+            fullText={full}
+            visibleText={full.slice(0, typed)}
+            choices={line.choices}
+            selectedChoice={chosen}
+            choiceLocked={chosen !== null}
+            onAdvance={next}
+            onChoose={choose}
+            language={presented.lang}
+            labels={{
+              dialogue: t("scene.dialogue"),
+              fullLine: t("scene.fullLine"),
+              continue: t("scene.continue"),
+              choice: t("scene.choice"),
+            }}
+          />
         )}
-        {pendingChoice && <p className="cutscene-decision">{t("scene.decision")}</p>}
+        {pendingChoice && <p className={styles["cutscene-decision"]}>{t("scene.decision")}</p>}
         {settingsOpen && (
-          <div
-            id="cutscene-settings"
-            className="cutscene-settings"
-            role="group"
-            aria-label={t("scene.preferences")}
-          >
-            <label className="cutscene-caption-size">
-              <span>{t("scene.captionSize")}</span>
-              <input
-                type="range"
-                min="1"
-                max="1.5"
-                step="0.1"
-                value={captionScale}
-                onChange={(event) => setCaptionScale(Number(event.target.value))}
-              />
-            </label>
-            <button
-              type="button"
-              aria-pressed={captions}
-              disabled={pendingChoice}
-              onClick={() => setCaptions((value) => !value)}
-              className="cutscene-control px-3 text-xs"
-            >
-              {captions ? <Eye size={17} /> : <EyeOff size={17} />}
-              {t(captions ? "scene.captionHide" : "scene.captionShow")}
-            </button>
-            {narrate && (
-              <button
-                type="button"
-                aria-pressed={voiceEnabled}
-                onClick={() => setVoiceEnabled((value) => !value)}
-                className="cutscene-control px-3 text-xs"
-              >
-                {voiceEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
-                {t(voiceEnabled ? "scene.voiceOff" : "scene.voiceOn")}
-              </button>
-            )}
-            <button
-              type="button"
-              aria-pressed={ambientEnabled}
-              onClick={toggleAmbience}
-              className="cutscene-control px-3 text-xs"
-            >
-              {ambientEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
-              {t("scene.ambience")}
-            </button>
-            <button
-              type="button"
-              aria-pressed={automatic}
-              onClick={() => setAutomatic((value) => !value)}
-              className="cutscene-control px-3 text-xs"
-            >
-              {t("scene.automatic")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode((value) => (value === "3d" ? "2d" : "3d"));
-                setSettingsOpen(false);
-              }}
-              className="cutscene-control px-3 text-xs"
-            >
-              {t(mode === "3d" ? "scene.illustrated" : "scene.stage")}
-            </button>
-          </div>
-        )}
-        <div className="cutscene-progress" aria-hidden="true">
-          {lines.map((_, index) => (
-            <span key={index} data-complete={index < i} data-active={index === i} />
-          ))}
-        </div>
-        <div className="cutscene-controls" role="group" aria-label={t("scene.controls")}>
-          <button
-            type="button"
-            aria-label={t(paused ? "scene.play" : "scene.pause")}
-            title={t(paused ? "scene.play" : "scene.pause")}
-            aria-pressed={paused}
-            onClick={() => setPaused((value) => !value)}
-            className="cutscene-control"
-          >
-            {paused ? <Play size={17} /> : <Pause size={17} />}
-          </button>
-          <button
-            type="button"
-            aria-label={t("scene.replay")}
-            title={t("scene.replay")}
-            onClick={() => {
-              stopVoice();
-              setReplay((value) => value + 1);
-              setCaptions(true);
-            }}
-            className="cutscene-control"
-          >
-            <RotateCcw size={17} />
-          </button>
-          <button
-            type="button"
-            aria-label={t("scene.preferences")}
-            title={t("scene.preferences")}
-            aria-expanded={settingsOpen}
-            aria-controls="cutscene-settings"
-            onClick={() => setSettingsOpen((value) => !value)}
-            className="cutscene-control px-3 text-xs"
-          >
-            <SlidersHorizontal size={17} />
-            <span className="hidden sm:inline">{t("scene.settings")}</span>
-          </button>
-          {sequenceActions}
-          <button
-            type="button"
-            ref={transcriptTrigger}
-            onClick={() => {
+          <CutsceneSettings
+            captions={captions}
+            pendingChoice={pendingChoice}
+            onToggleCaptions={() => setCaptions((value) => !value)}
+            narrate={narrate}
+            voiceEnabled={voiceEnabled}
+            onToggleVoice={() => setVoiceEnabled((value) => !value)}
+            ambientEnabled={ambientEnabled}
+            onToggleAmbience={toggleAmbience}
+            automatic={automatic}
+            onToggleAutomatic={() => setAutomatic((value) => !value)}
+            mode={mode}
+            onToggleMode={() => {
+              setMode((value) => (value === "3d" ? "2d" : "3d"));
               setSettingsOpen(false);
-              setTranscriptOpen(true);
             }}
-            aria-label={t("scene.transcript")}
-            title={t("scene.transcript")}
-            aria-expanded={transcriptOpen}
-            className="cutscene-control"
-          >
-            <BookOpen size={17} aria-hidden="true" />
-          </button>
-          <span
-            className="ml-auto text-xs tabular-nums text-white/60"
-            aria-label={t("scene.progress")}
-          >
-            {i + 1} / {lines.length}
-          </span>
-          <button
-            type="button"
-            onClick={next}
-            disabled={pendingChoice && typed >= full.length}
-            className="cutscene-control bg-primary px-3 text-primary-foreground"
-            aria-label={t("scene.advance")}
-          >
-            <ChevronRight size={18} />
-            <span className="hidden text-xs sm:inline">{t("scene.continue")}</span>
-          </button>
-        </div>
+            captionScale={captionScale}
+            onCaptionScale={setCaptionScale}
+            labels={{
+              preferences: t("scene.preferences"),
+              captionSize: t("scene.captionSize"),
+              captionHide: t("scene.captionHide"),
+              captionShow: t("scene.captionShow"),
+              voiceOff: t("scene.voiceOff"),
+              voiceOn: t("scene.voiceOn"),
+              ambience: t("scene.ambience"),
+              automatic: t("scene.automatic"),
+              illustrated: t("scene.illustrated"),
+              stage: t("scene.stage"),
+            }}
+          />
+        )}
+        <CutsceneTransport
+          paused={paused}
+          settingsOpen={settingsOpen}
+          transcriptOpen={transcriptOpen}
+          index={i}
+          count={lines.length}
+          advanceDisabled={pendingChoice && typed >= full.length}
+          sequenceActions={sequenceActions}
+          transcriptTrigger={transcriptTrigger}
+          onPause={() => setPaused((value) => !value)}
+          onReplay={() => {
+            stopVoice();
+            setReplay((value) => value + 1);
+            setCaptions(true);
+          }}
+          onSettings={() => setSettingsOpen((value) => !value)}
+          onTranscript={() => {
+            setSettingsOpen(false);
+            setTranscriptOpen(true);
+          }}
+          onAdvance={next}
+        />
         <span className="sr-only" aria-live="polite">
           {voiceState === "loading"
             ? t("scene.voiceLoading")

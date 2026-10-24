@@ -37,3 +37,6 @@ if (result.status !== 0) process.exit(result.status ?? 1);
 // wasm-pack ignores its entire output by default. This project ships the
 // generated files so normal frontend builds do not require a Rust toolchain.
 await rm(path.join(root, "src/game/wasm/pkg/.gitignore"), { force: true });
+// Ship the same size-optimized asset even when wasm-pack could not find a
+// native Binaryen tool. The locked JS tool checks the public ABI before writeback.
+await import("./optimize-crowd-wasm.mjs");

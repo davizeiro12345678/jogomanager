@@ -49,7 +49,7 @@ export function createPitchSurfaceMaterial(options: PitchSurfaceOptions) {
     pitchWet: { value: wet },
   };
   material.customProgramCacheKey = () =>
-    `match-pitch-layers-v7:${options.mergeLayers !== false}:${Boolean(wear)}:${Boolean(markings)}:${Boolean(options.microRoughness)}`;
+    `match-pitch-layers-v8:${options.mergeLayers !== false}:${Boolean(wear)}:${Boolean(markings)}:${Boolean(options.microRoughness)}`;
   if (options.mergeLayers !== false && (wear || markings || options.microRoughness))
     material.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, uniforms);
@@ -77,6 +77,12 @@ export function createPitchSurfaceMaterial(options: PitchSurfaceOptions) {
         float turfMacro = sin(vPitchUv.x * 37.0 + sin(vPitchUv.y * 19.0)) * sin(vPitchUv.y * 43.0);
         float turfMeso = sin(vPitchUv.x * 173.0 + vPitchUv.y * 51.0) * sin(vPitchUv.y * 137.0);
         diffuseColor.rgb *= 1.0 + turfMacro * 0.025 + turfMeso * 0.012;
+        // Fibres resolve in a close camera and fade before becoming subpixel.
+        // Analytical filtering prevents a sparkling carpet during camera cuts.
+        vec2 fibreUv = vPitchUv * vec2(420.0, 290.0);
+        float fibreVisibility = 1.0 - smoothstep(0.18, 0.65, max(fwidth(fibreUv.x), fwidth(fibreUv.y)));
+        float fibreGrain = sin(fibreUv.x * 6.2831853) * sin(fibreUv.y * 6.2831853);
+        diffuseColor.rgb *= 1.0 + fibreGrain * fibreVisibility * 0.045;
         ${
           wear
             ? `vec4 soil = texture2D(pitchWear, vPitchUv);

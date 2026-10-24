@@ -3,6 +3,24 @@ import { emptyPose } from "./animation-core";
 import { AthletePoseBlender } from "./athlete-pose-blender";
 
 describe("athlete transitions", () => {
+  it("follows a continuous gesture exactly once its transition has settled", () => {
+    const mixer = new AthletePoseBlender();
+    for (let frame = 0; frame < 120; frame++) {
+      const target = { ...emptyPose(), armLPitch: Math.sin((frame / 60) * 3) * 0.5 };
+      const actual = mixer.sample(target, 1 / 60, { clip: "dialogue", action: null, progress: 0 });
+      expect(actual.armLPitch).toBeCloseTo(target.armLPitch, 10);
+    }
+  });
+  it("bounds root-height momentum in metres during an interrupted landing", () => {
+    const mixer = new AthletePoseBlender();
+    mixer.sample(emptyPose(), 0, { clip: "land", action: null, progress: 0 });
+    const raised = { ...emptyPose(), hipY: 0.1 };
+    mixer.sample(raised, 0.01, { clip: "land", action: null, progress: 0 });
+    mixer.sample(raised, 0, { clip: "stand", action: null, progress: 0 });
+    expect(
+      mixer.sample(raised, 0.005, { clip: "stand", action: null, progress: 0 }).hipY,
+    ).toBeLessThan(0.105);
+  });
   it("carries a moving joint into an interrupted clip without a frozen first derivative", () => {
     const mixer = new AthletePoseBlender();
     mixer.sample(emptyPose(), 0, { clip: "run", action: null, progress: 0 });

@@ -1,3 +1,4 @@
+import styles from "@/components/game/cinematic/cinematic.module.css";
 import { playGoalAnthem } from "@/game/goal-anthem";
 
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -650,7 +651,7 @@ function LiveMatch({
                     setIntroStep(PREMATCH_SCENE_IDS.length);
                     setCeremony(false);
                   }}
-                  className="cutscene-control px-3 text-xs"
+                  className={`${styles["cutscene-control"]} px-3 text-xs`}
                 >
                   Pular para o jogo
                 </button>
@@ -661,7 +662,7 @@ function LiveMatch({
                     setIntroStep(PREMATCH_SCENE_IDS.length);
                     setCeremony(false);
                   }}
-                  className="cutscene-control px-3 text-xs"
+                  className={`${styles["cutscene-control"]} px-3 text-xs`}
                 >
                   Não mostrar mais
                 </button>
