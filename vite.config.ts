@@ -13,6 +13,7 @@ import { imagetools } from "vite-imagetools";
 import { protectThreeSourceTags } from "./scripts/r3f-source-compat.ts";
 import { rapierWasmAsset } from "./scripts/rapier-wasm-asset.ts";
 import { bundleModuleAudit } from "./scripts/bundle-module-audit.ts";
+import { postfxLookupAssets } from "./scripts/postfx-lookup-assets.ts";
 import { resolveBuildCommit } from "./src/lib/release-identity.ts";
 
 // Load non-VITE_ env vars into process.env for server routes (email, webhooks).
@@ -146,6 +147,7 @@ const projectConfig = defineConfig({
     plugins: [
       ...(enableMcpRouteGenerator ? [mcpPlugin()] : []),
       imagetools(),
+      postfxLookupAssets(),
       rapierWasmAsset(),
       bundleModuleAudit(),
     ],
@@ -164,6 +166,7 @@ const projectConfig = defineConfig({
     },
   },
   tanstackStart: {
+    client: { entry: "client" },
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server", build: { inlineCss: true } },

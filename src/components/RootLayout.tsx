@@ -6,7 +6,6 @@ import {
   useRouteContext,
   useRouter,
   useLocation,
-  HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
@@ -15,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useT } from "../i18n/provider";
 import { isPublicContentPath } from "@/lib/public-content-routes";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
+import { RouteHeadContent } from "@/components/RouteHeadContent";
 // Reading-controls UI is only visible on the public home page. Keep it out of
 // the shared initial JS closure for every gameplay and editorial route.
 const AccessibilitySettings = lazy(() =>
@@ -86,7 +86,7 @@ export function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" className="dark">
       <head>
-        <HeadContent />
+        <RouteHeadContent />
       </head>
       <body>
         {children}
@@ -175,32 +175,8 @@ function RootReadingControls({ pathname }: { pathname: string }) {
     // Route metadata is only written after the client page renders. Keep its
     // copy and translation tables out of every initial route's static closure.
     void import("../lib/game-page-metadata")
-      .then(({ gamePageMetadata }) => {
-        if (!active) return;
-        const page = gamePageMetadata(pathname, lang, t);
-        if (!page) return;
-        document.title = page.title;
-        for (const selector of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
-          document.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", page.title);
-        }
-        for (const selector of [
-          'meta[name="description"]',
-          'meta[property="og:description"]',
-          'meta[name="twitter:description"]',
-        ]) {
-          document
-            .querySelector<HTMLMetaElement>(selector)
-            ?.setAttribute("content", page.description);
-        }
-        let localeTag = document.querySelector<HTMLMetaElement>('meta[property="og:locale"]');
-        if (page.locale) {
-          if (!localeTag) {
-            localeTag = document.createElement("meta");
-            localeTag.setAttribute("property", "og:locale");
-            document.head.append(localeTag);
-          }
-          localeTag.content = page.locale;
-        } else localeTag?.remove();
+      .then(({ applyGamePageMetadata }) => {
+        if (active) applyGamePageMetadata(pathname, lang, t);
       })
       .catch(() => undefined);
     return () => {

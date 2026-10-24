@@ -1,6 +1,5 @@
 // Merges clubs and competitions stored in the backend that the bundled catalogue
 // does not ship, so every imported club can be chosen. Bundled entries win.
-import { supabase } from "@/integrations/supabase/client";
 import { CLUBS, LEAGUES } from "@/game/data/leagues";
 import type { Club, League } from "@/game/types";
 import { catalogImageUrl } from "./catalog-media";
@@ -134,6 +133,8 @@ type ClubSelect = {
 };
 
 async function fetchAll(): Promise<Cache> {
+  // A fresh public cache needs neither auth SDK initialization nor another download.
+  const { supabase } = await import("@/integrations/supabase/client");
   // Only an empty page proves exhaustion: an operator may configure a row cap
   // below PAGE. Independent competition/club keysets walk their primary keys.
   async function pages<T extends { id: string }>(

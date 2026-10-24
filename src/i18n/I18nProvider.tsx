@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { LANGS, RTL_LANGS, resolveLang, type Lang } from "./locale-catalog";
+import { LANGS, RTL_LANGS, resolveLang, type Lang } from "./locale-identifiers";
 
 import { translateBootstrap } from "./bootstrap-messages";
 
