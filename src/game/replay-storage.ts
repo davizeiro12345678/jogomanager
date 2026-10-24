@@ -40,8 +40,13 @@ async function catalog(owner: ReplayOwner): Promise<ReplaySummary[]> {
   if (!Array.isArray(originals)) throw new TypeError("Arquivo de replays inválido.");
   const records = new Map<string, Replay | StoredReplayV3>();
   for (const record of originals) {
-    decodeReplay(record);
-    records.set(record.id, record);
+    try {
+      decodeReplay(record);
+      records.set(record.id, record);
+    } catch {
+      // Ignore a corrupt legacy entry, not the rest of the archive. The
+      // original array is deliberately kept unchanged for manual recovery.
+    }
   }
   const summaries = [...records.values()].map(summary).sort((a, b) => b.createdAt - a.createdAt);
   await replayStoreTransaction("readwrite", (store) => {
