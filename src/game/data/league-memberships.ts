@@ -20,7 +20,7 @@ export function applyMembership(league: League, registry: Record<string, Club>):
     clubs: clubRows.split(";").flatMap((row) => {
       const [id = "", label, source] = row.split("|");
       const name = (label || registry[id]?.name || "").trim();
-      if (!id.trim() || !name || name.toLocaleLowerCase("pt-BR") === "clube") return [];
+      if (!id.trim() || !name || (name.length === 5 && name.toLowerCase() === "clube")) return [];
       const sourceTeamId = source || id.match(/_(\d{5,})$/)?.[1];
       return {
         ...(registry[id] ?? {

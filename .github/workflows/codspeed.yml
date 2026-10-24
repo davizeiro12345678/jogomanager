@@ -35,3 +35,28 @@ jobs:
         with:
           mode: simulation,walltime
           run: npm run bench
+
+  paired-benchmarks:
+    name: PR 62 paired CodSpeed on one runner
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 62
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Prepare identical dependencies for the integrated reference
+        run: |
+          git worktree add --detach .codspeed-base fd65b3d7616d6dd0544768fec1c645cedfe9dab6
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$GITHUB_WORKSPACE/.codspeed-base/node_modules"
+          cmp package-lock.json .codspeed-base/package-lock.json
+      - name: Measure all original workloads and catalogue on the same hardware
+        uses: CodSpeedHQ/action@v5
+        with:
+          mode: simulation,walltime
+          run: node scripts/paired-codspeed.mjs .codspeed-base .
