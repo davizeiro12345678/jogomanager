@@ -11,7 +11,9 @@ const oldFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => {
   calls.push({ url: String(url), headers: init.headers });
   if (String(url).includes("/auth/v1/user")) {
-    return new Response(JSON.stringify({ id: "7ff4ab46-3a29-4013-bdb1-a715636c06e0" }), { status: 200 });
+    return new Response(JSON.stringify({ id: "7ff4ab46-3a29-4013-bdb1-a715636c06e0" }), {
+      status: 200,
+    });
   }
   if (String(url).includes("/auth/v1/settings")) return new Response("{}", { status: 200 });
   if (String(url).includes("/rest/v1/user_purchases")) {
@@ -23,11 +25,11 @@ globalThis.fetch = async (url, init) => {
 let server, base;
 before(async () => {
   server = createAuxServer();
-  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   base = "http://127.0.0.1:" + server.address().port;
 });
 after(async () => {
-  await new Promise(resolve => server.close(resolve));
+  await new Promise((resolve) => server.close(resolve));
   globalThis.fetch = oldFetch;
 });
 
@@ -49,11 +51,14 @@ test("auth responds only with verified user ID", async () => {
 });
 test("purchase requires session ID and scopes to verified user", async () => {
   const headers = { authorization: "Bearer test-user-jwt-mock" };
-  assert.equal((await oldFetch(base + "/v1/purchases/status?reference=bad", { headers })).status, 400);
+  assert.equal(
+    (await oldFetch(base + "/v1/purchases/status?reference=bad", { headers })).status,
+    400,
+  );
   const r = await oldFetch(base + "/v1/purchases/status?reference=cs_test_123456", { headers });
   assert.equal(r.status, 200);
   assert.deepEqual(await r.json(), { status: "completed" });
-  const call = calls.find(x => x.url.includes("/rest/v1/user_purchases"));
+  const call = calls.find((x) => x.url.includes("/rest/v1/user_purchases"));
   assert.ok(call.url.includes("user_id=eq.7ff4ab46-3a29-4013-bdb1-a715636c06e0"));
   assert.equal(call.headers.authorization, "Bearer test-user-jwt-mock");
 });
