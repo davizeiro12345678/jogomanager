@@ -104,7 +104,7 @@ export function Pitch({
     const k = 1 - vis.grassTint * 0.35; // >1 clareia, <1 escurece
     // Retain the club's tint control while giving the turf a cooler chlorophyll
     // base; daylight no longer washes the mower stripes into a yellow carpet.
-    return new THREE.Color(k * 0.91, k * 0.98, k * 0.94);
+    return new THREE.Color(k * 0.86, k * 0.94, k * 0.85);
   }, [vis.grassTint]);
   // A textura de desgaste mantém fibras e zonas de uso, mas nunca deve virar
   // uma camada de lama em uma partida seca vista da transmissão.

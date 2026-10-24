@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emptyPose } from "./animation-core";
+import { emptyPose, JOINTS } from "./animation-core";
 import { gaitCadence, gaitPoseAt, locomotionWeight, solveLegTarget } from "./gait-kinematics";
 import {
   airborneFactor,
@@ -18,6 +18,35 @@ const legEnd = (pitch: number, knee: number) => ({
 });
 
 describe("physical player movement", () => {
+  it("keeps both feet quiet and loaded at zero speed regardless of phase", () => {
+    const baseline = gaitPoseAt(0, 0, p).pose;
+    for (let frame = 0; frame < 120; frame++) {
+      const sample = gaitPoseAt((frame / 120) * Math.PI * 2, 0, p);
+      expect(sample.contactL).toBe(1);
+      expect(sample.contactR).toBe(1);
+      for (const joint of JOINTS) expect(sample.pose[joint]).toBeCloseTo(baseline[joint], 12);
+    }
+  });
+
+  it("removes the arm jump when accelerating across the old stride cutoff", () => {
+    for (const speed of [0, 0.0001, 0.001, 0.002, 0.003]) {
+      const pose = gaitPoseAt(1.2, speed, p).pose;
+      expect(Math.abs(pose.armLPitch - 0.04)).toBeLessThan(0.001);
+      expect(Math.abs(pose.armRPitch - 0.04)).toBeLessThan(0.001);
+    }
+  });
+
+  it("reuses caller-owned gait and leg buffers without allocating per-frame results", () => {
+    const out = emptyPose();
+    const first = gaitPoseAt(0, 5, p, out);
+    for (let frame = 1; frame < 120; frame++) {
+      expect(gaitPoseAt(frame * 0.1, 5, p, out)).toBe(first);
+      expect(first.pose).toBe(out);
+    }
+    const leg = { pitch: 0, knee: 0, ankle: 0, roll: 0 };
+    expect(solveLegTarget(0.1, 0.6, p.thigh, p.shin, 0, leg)).toBe(leg);
+  });
+
   it.each([1.6, 5.5, 8])(
     "keeps both ankles continuous through toe-off and heel-strike at %s m/s",
     (speed) => {

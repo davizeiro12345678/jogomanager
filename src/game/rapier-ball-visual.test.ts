@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { BALL_PHYSICS_RADIUS, createRapierVisualPhysics } from "./rapier-ball-visual";
 import type { CanonicalBallPhysicsState, VisualBallState } from "./visual-ball";
+import { createRapierBallAuthority } from "./rapier-ball-authority";
+import { GOAL_NET_DEPTH } from "./sim-rules";
 
 function canonical(overrides: Partial<CanonicalBallPhysicsState> = {}): CanonicalBallPhysicsState {
   return {
@@ -223,6 +225,41 @@ describe("Rapier visual ball physics", () => {
       physics.dispose();
     }
   });
+
+  it.each([-1, 1])(
+    "places the fallback back net at the authoritative goal depth (%s)",
+    async (direction) => {
+      const visual = await createRapierVisualPhysics();
+      const authority = await createRapierBallAuthority();
+      const initial = frozenCanonical({ x: direction * 52.7, height: 1.4, vx: direction * 10 });
+      const ball = { ...initial };
+      let furthest = 0;
+      let rebounded = false;
+      try {
+        visual.reset(initial);
+        authority.reset(ball);
+        for (let tick = 0; tick < 24; tick++) {
+          const before = canonical(ball);
+          authority.step(1 / 120, ball, null);
+          visual.synchronize(before, canonical(ball));
+          visual.step(1 / 120);
+          const presentation = visual.read(canonical(ball));
+          // With no wind/spin or turf contact, both worlds must hit the same
+          // physical back net. A shallow invisible wall rebounds a metre early.
+          expect(presentation.x).toBeCloseTo(ball.x, 2);
+          expect(presentation.vx).toBeCloseTo(ball.vx, 2);
+          furthest = Math.max(furthest, direction * presentation.x);
+          rebounded ||= direction * presentation.vx < -0.2;
+        }
+        expect(furthest).toBeGreaterThan(52.5 + GOAL_NET_DEPTH - 0.25);
+        expect(rebounded).toBe(true);
+        expect(initial.x).toBe(direction * 52.7);
+      } finally {
+        visual.dispose();
+        authority.dispose();
+      }
+    },
+  );
 
   it("renders a post rebound without changing the canonical ball or football rules", async () => {
     const physics = await createRapierVisualPhysics();

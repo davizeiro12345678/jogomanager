@@ -34,6 +34,29 @@ function ringRadius(geometry: THREE.BufferGeometry, row: number, ringSize = 6) {
 }
 
 describe("football hair silhouettes", () => {
+  it("separates cropped and medium crown volume at identical fixed scalp topology", () => {
+    for (const detail of [false, true]) {
+      const shapes = (["buzz", "short", "medium"] as const).map((hairStyle) =>
+        sculptedHair(P, { ...look, hairStyle }, detail),
+      );
+      const crowns = shapes.map((geometry) => {
+        geometry.computeBoundingBox();
+        expect(geometry.groups).toHaveLength(0);
+        expect(geometry.index!.count).toBe(shapes[0]!.index!.count);
+        expect(geometry.getAttribute("position").count).toBe(
+          shapes[0]!.getAttribute("position").count,
+        );
+        expect(Array.from(geometry.getAttribute("normal").array).every(Number.isFinite)).toBe(true);
+        return geometry.boundingBox!.max.y;
+      });
+      // Broad crown mass must survive both portrait and broadcast sampling;
+      // texture grain alone cannot distinguish these haircuts in silhouette.
+      expect(crowns[1]! - crowns[0]!).toBeGreaterThan(P.headR * 0.025);
+      expect(crowns[2]! - crowns[1]!).toBeGreaterThan(P.headR * 0.025);
+      shapes.forEach((geometry) => geometry.dispose());
+    }
+  });
+
   it("keeps the frontal scalp normal continuous at the atlas seam in every detail tier", () => {
     for (const detail of [false, true])
       for (const hairStyle of ["buzz", "short", "curly", "afro", "braids"] as const) {

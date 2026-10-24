@@ -140,3 +140,24 @@ it("uses shared compressed skin and fabric normals at medium quality", () => {
   skin.dispose();
   loadedMaps.clear();
 });
+
+it("keeps light shorts and ribbed socks below the satin finish of equipment", () => {
+  const look = lookFor("floodlit-white-kit", "MF");
+  const kit: Kit = {
+    base: "#ffffff",
+    detail: "#15191f",
+    shorts: "#ffffff",
+    socks: "#ffffff",
+    pattern: "solid",
+  };
+  const mats = playerMaterials(look, kit, null, "alta");
+  const shorts = mats.shorts as THREE.MeshPhysicalMaterial;
+  const socks = mats.socks as THREE.MeshPhysicalMaterial;
+  for (const garment of [shorts, socks]) {
+    expect(garment.sheen).toBeLessThanOrEqual(0.3);
+    expect(garment.roughness).toBeGreaterThanOrEqual(0.9);
+    expect(garment.normalScale.length()).toBeLessThan(0.5);
+    expect(garment.clearcoat).toBe(0);
+  }
+  expect(playerMaterials(look, kit, null, "alta")).toBe(mats);
+});

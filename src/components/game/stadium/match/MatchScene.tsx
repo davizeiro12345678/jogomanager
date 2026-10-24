@@ -160,21 +160,21 @@ export function Scene({
             scale={[60, 60, 1]}
           />
           <Lightformer
-            intensity={time === "noite" ? 2.4 : 1.2}
+            intensity={time === "noite" ? 2.4 : time === "dia" ? 0.78 : 1.2}
             color="#dceaff"
             position={[-30, 14, 0]}
             rotation-y={Math.PI / 2}
             scale={[60, 8, 1]}
           />
           <Lightformer
-            intensity={time === "noite" ? 2.4 : 1.2}
+            intensity={time === "noite" ? 2.4 : time === "dia" ? 0.78 : 1.2}
             color="#dceaff"
             position={[30, 14, 0]}
             rotation-y={-Math.PI / 2}
             scale={[60, 8, 1]}
           />
           <Lightformer
-            intensity={0.8}
+            intensity={time === "dia" ? 0.55 : 0.8}
             color={
               time === "entardecer" && look.weather !== "chuva" && look.weather !== "neve"
                 ? "#ff9b5c"

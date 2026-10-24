@@ -493,8 +493,16 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     // a pose e também remove qualquer NaN antes que ele vire matriz de osso.
     clampPoseAnatomy(p);
 
+    const actionSupport = footballSupportFor(
+      action,
+      u,
+      P.hipW,
+      actionContext.action ? actionContext.usedFoot : dominantFoot,
+    );
     cur.current = poseBlender.sample(p, adt, {
-      supportFoot: contactL.current >= contactR.current ? "left" : "right",
+      supportFoot:
+        actionSupport.plantedFoot ?? (contactL.current >= contactR.current ? "left" : "right"),
+      event: selection.actionSeed,
       phase: motion.phase,
       clip: clipName.current,
       action,
@@ -508,12 +516,6 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     // construção de `P.hipY`. Bastava agachar, dobrar o joelho ou inclinar o
     // corpo para o pé afundar ou flutuar. Agora medimos onde a sola realmente
     // está e movemos a raiz para plantá-la.
-    const actionSupport = footballSupportFor(
-      action,
-      u,
-      P.hipW,
-      actionContext.action ? actionContext.usedFoot : dominantFoot,
-    );
     const support = c.legRPitch - c.legLPitch;
     const shift =
       Math.max(-1, Math.min(1, support)) * 0.045 * Math.min(1, speed / 4) + actionSupport.shiftX;

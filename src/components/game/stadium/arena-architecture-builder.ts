@@ -8,17 +8,17 @@ export function buildArenaArchitecture(rings: number, color: string, night: bool
   rings = THREE.MathUtils.clamp(Math.round(rings), 4, 16);
   const detail = stadiumSurfaceDetail();
   const concrete = new THREE.MeshStandardMaterial({
-    color: "#8f9c9f",
+    color: "#aaa79d",
     roughness: 0.94,
     normalMap: detail.normal,
     roughnessMap: detail.roughness,
-    normalScale: new THREE.Vector2(0.18, 0.18),
+    normalScale: new THREE.Vector2(0.23, 0.23),
     vertexColors: true,
   });
   const metal = new THREE.MeshStandardMaterial({
-    color: "#b7c5cf",
-    roughness: 0.55,
-    metalness: 0.4,
+    color: "#a1afb7",
+    roughness: 0.46,
+    metalness: 0.66,
     vertexColors: true,
   });
   const accent = new THREE.MeshStandardMaterial({
@@ -175,14 +175,14 @@ export function buildArenaArchitecture(rings: number, color: string, night: bool
     for (let i = 0; i < position.count; i++) {
       const up = normal.getY(i);
       const panel =
-        0.025 *
+        0.04 *
         Math.sin(Math.floor(position.getX(i) / 8) * 2.17 + Math.floor(position.getZ(i) / 6) * 1.71);
       const shade = THREE.MathUtils.clamp(
-        (up < -0.2 ? 0.62 : up > 0.5 ? 1 : 0.83) + panel,
-        0.58,
+        (up < -0.2 ? 0.48 : up > 0.5 ? 1 : 0.76) + panel,
+        0.44,
         1.03,
       );
-      colors.set([shade * 0.98, shade, Math.min(1.03, shade * 1.025)], i * 3);
+      colors.set([shade, shade * 0.985, shade * 0.96], i * 3);
     }
     mesh.geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   }

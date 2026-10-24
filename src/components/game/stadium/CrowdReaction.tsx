@@ -289,11 +289,13 @@ function FlashBursts({
       const positions = new Float32Array(per * 3);
       for (let i = 0; i < per; i++) {
         // anel da arquibancada: atrás dos gols e nas laterais
-        const along = Math.random() * 2 - 1;
-        const side = Math.random() < 0.5 ? -1 : 1;
-        const depth = 0.86 + Math.random() * 0.22;
+        // Stable seats keep flashes reproducible across mounts and captures.
+        const seed = (i + 1) * 73 + index * 131;
+        const along = ((seed * 37) % 997) / 498 - 1;
+        const side = seed % 2 === 0 ? -1 : 1;
+        const depth = 0.86 + (((seed * 53) % 991) / 990) * 0.22;
         positions[i * 3] = along * FIELD_X * 0.96;
-        positions[i * 3 + 1] = 6 + Math.random() * 12;
+        positions[i * 3 + 1] = 6 + (((seed * 71) % 983) / 982) * 12;
         positions[i * 3 + 2] = side * FIELD_Z * depth;
       }
       const geometry = new THREE.BufferGeometry();
@@ -303,6 +305,8 @@ function FlashBursts({
     // `phases` é constante: incluí-la só silencia o lint de dependências
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [count]);
+
+  useEffect(() => () => clouds.forEach((geometry) => geometry.dispose()), [clouds]);
 
   useFrame((state) => {
     if (!enabled) return;

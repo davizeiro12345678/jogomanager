@@ -14,8 +14,9 @@ import {
   visualBallFromCanonical,
 } from "./visual-ball";
 import { highFidelitySubsteps } from "./physics-quality";
+import { BALL_RADIUS, GOAL_NET_DEPTH, GOAL_POST_RADIUS } from "./sim-rules";
 
-export const BALL_PHYSICS_RADIUS = 0.12;
+export const BALL_PHYSICS_RADIUS = BALL_RADIUS;
 
 const DEFAULT_FIELD_X = 52.5;
 const DEFAULT_FIELD_Z = 34;
@@ -291,14 +292,14 @@ class RapierVisualBall implements RapierVisualPhysics {
       const goalX = direction * fieldX;
       for (const goalZ of [-GOAL_HALF_WIDTH, GOAL_HALF_WIDTH]) {
         this.world.createCollider(
-          ColliderDesc.cylinder(GOAL_HEIGHT / 2, 0.075)
+          ColliderDesc.cylinder(GOAL_HEIGHT / 2, GOAL_POST_RADIUS)
             .setTranslation(goalX, GOAL_HEIGHT / 2, goalZ)
             .setFriction(0.35)
             .setRestitution(0.7),
         );
       }
       this.world.createCollider(
-        ColliderDesc.cuboid(0.075, 0.075, GOAL_HALF_WIDTH)
+        ColliderDesc.cuboid(GOAL_POST_RADIUS, GOAL_POST_RADIUS, GOAL_HALF_WIDTH)
           .setTranslation(goalX, GOAL_HEIGHT, 0)
           .setFriction(0.35)
           .setRestitution(0.68),
@@ -306,7 +307,7 @@ class RapierVisualBall implements RapierVisualPhysics {
       // Rede leve: dá retorno visual à finalização sem decidir se foi gol.
       this.world.createCollider(
         ColliderDesc.cuboid(0.04, GOAL_HEIGHT / 2, GOAL_HALF_WIDTH)
-          .setTranslation(direction * (fieldX + 0.95), GOAL_HEIGHT / 2, 0)
+          .setTranslation(direction * (fieldX + GOAL_NET_DEPTH), GOAL_HEIGHT / 2, 0)
           .setFriction(0.72)
           .setRestitution(0.22),
       );

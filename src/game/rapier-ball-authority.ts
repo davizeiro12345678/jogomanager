@@ -15,7 +15,7 @@ import {
   BALL_FLIGHT_PREDICTION_STEP,
   BALL_FLIGHT_PREDICTION_TICKS,
 } from "./ball-flight-prediction";
-import { BALL_RADIUS, GOAL_NET_DEPTH, type WeatherKind } from "./sim-rules";
+import { BALL_RADIUS, GOAL_NET_DEPTH, GOAL_POST_RADIUS, type WeatherKind } from "./sim-rules";
 
 export const BALL_PHYSICS_RADIUS = BALL_RADIUS;
 
@@ -408,14 +408,14 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
       const goalX = direction * fieldX;
       for (const goalZ of [-GOAL_HALF_WIDTH, GOAL_HALF_WIDTH]) {
         this.world.createCollider(
-          ColliderDesc.cylinder(GOAL_HEIGHT / 2, 0.075)
+          ColliderDesc.cylinder(GOAL_HEIGHT / 2, GOAL_POST_RADIUS)
             .setTranslation(goalX, GOAL_HEIGHT / 2, goalZ)
             .setFriction(0.35)
             .setRestitution(0.7),
         );
       }
       this.world.createCollider(
-        ColliderDesc.cuboid(0.075, 0.075, GOAL_HALF_WIDTH)
+        ColliderDesc.cuboid(GOAL_POST_RADIUS, GOAL_POST_RADIUS, GOAL_HALF_WIDTH)
           .setTranslation(goalX, GOAL_HEIGHT, 0)
           .setFriction(0.35)
           .setRestitution(0.68),

@@ -20,6 +20,8 @@ export const GOAL_Z = 3.66;
 export const GOAL_H = 2.44;
 /** Canonical ball radius; goal/out decisions require the whole ball over the line. */
 export const BALL_RADIUS = 0.12;
+/** Existing authoritative goal-frame contact radius, shared with its mesh. */
+export const GOAL_POST_RADIUS = 0.075;
 export const GOAL_NET_DEPTH = 1.9;
 /** distância da marca do pênalti até a linha de fundo */
 export const PENALTY_DIST = 11;

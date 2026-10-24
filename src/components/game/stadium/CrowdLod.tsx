@@ -243,7 +243,7 @@ export function CrowdLod({
     };
   }, [layout, seatUpload]);
   const data = useMemo(() => {
-    const card = crowdCard();
+    const card = crowdCard(webgl2);
     const uniforms = {
       time: { value: 0 },
       pulse: { value: 0 },
@@ -252,6 +252,9 @@ export function CrowdLod({
       energy: { value: 0 },
       protest: { value: 0 },
       waveStrength: { value: 0 },
+      eventAge: { value: 0 },
+      surprise: { value: 0 },
+      chant: { value: 0 },
     };
     const materials = [0, 1, 2].map((tier) => {
       const legacy =
@@ -260,7 +263,7 @@ export function CrowdLod({
         new URLSearchParams(location.search).get("crowdLighting") === "legacy";
       const material = crowdLodMaterial(tier, card, legacy);
       if (webgl2) {
-        material.customProgramCacheKey = () => `crowd-articulation-v3-tier-${tier}`;
+        material.customProgramCacheKey = () => `crowd-articulation-v4-tier-${tier}`;
         material.onBeforeCompile = (shader) => {
           shader.uniforms["crowdTime"] = uniforms.time;
           shader.uniforms["crowdPulse"] = uniforms.pulse;
@@ -269,24 +272,33 @@ export function CrowdLod({
           shader.uniforms["crowdEnergy"] = uniforms.energy;
           shader.uniforms["crowdProtest"] = uniforms.protest;
           shader.uniforms["crowdWaveStrength"] = uniforms.waveStrength;
+          shader.uniforms["crowdEventAge"] = uniforms.eventAge;
+          shader.uniforms["crowdSurprise"] = uniforms.surprise;
+          shader.uniforms["crowdChant"] = uniforms.chant;
           shader.vertexShader = shader.vertexShader
             .replace(
               "#include <common>",
-              "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave; uniform float crowdAgitation; uniform float crowdEnergy; uniform float crowdProtest; uniform float crowdWaveStrength; attribute vec3 crowdSkin; attribute vec2 crowdStyle; attribute float crowdRegion;\n" +
+              "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave; uniform float crowdAgitation; uniform float crowdEnergy; uniform float crowdProtest; uniform float crowdWaveStrength; uniform float crowdEventAge; uniform float crowdSurprise; uniform float crowdChant; attribute vec3 crowdSkin; attribute vec2 crowdStyle; attribute float crowdRegion;\n" +
                 CROWD_MOTION_GLSL,
             )
             .replace(
               "#include <beginnormal_vertex>",
-              `#include <beginnormal_vertex>\n${tier < 2 ? "objectNormal = crowdArticulate(objectNormal, true);" : ""}`,
+              `#include <beginnormal_vertex>\n${tier < 2 ? "objectNormal = crowdArticulate(objectNormal, true) / crowdBodyScale();" : ""}`,
             )
             .replace(
               "#include <begin_vertex>",
               `#include <begin_vertex>
               float phase = instanceMatrix[3].x * 0.71 + instanceMatrix[3].z * 0.37;
               ${tier < 2 ? "transformed = crowdArticulate(transformed, false);" : ""}
+              // Independent shoulder breadth and torso fullness without new geometry.
+              transformed *= crowdBodyScale();
+              float response = smoothstep(0.0, 0.32, max(0.0, crowdEventAge - crowdStyle.x * 0.22));
+              float lean = crowdSurprise * response * 0.12;
+              transformed.z += lean * max(0.0, position.y + 0.55);
               transformed.x += sin(crowdTime * 1.7 + phase) * 0.035 * max(0.0, position.y + 0.6);
               transformed.z += sin(crowdTime * 5.2 + phase) * crowdAgitation * 0.05 * max(0.0, position.y + 0.6);
-              transformed.y += abs(sin(crowdTime * (5.8 + crowdStyle.x) + phase)) * crowdPulse * 0.24;
+              transformed.y += abs(sin(crowdTime * 5.8 + phase)) * max(crowdPulse, crowdEnergy) * response * 0.24;
+              transformed.y -= sin(min(crowdEventAge * 9.0, 3.14159265)) * max(crowdPulse, crowdEnergy) * 0.07;
               // ola mexicana: corcova que viaja ao redor do anel (uma volta a
               // cada ~28 s); sutil no jogo corrido, erupção quando sai o gol
               float ang = atan(instanceMatrix[3].z, instanceMatrix[3].x);
@@ -310,13 +322,51 @@ export function CrowdLod({
              vColor.rgb = mix(vColor.rgb, mix(vColor.rgb * 0.35, vec3(0.76), crowdStyle.x), shirtBand * shirtStyle * 0.65);
            }`,
             );
-          else
-            shader.vertexShader = shader.vertexShader.replace(
-              "#include <color_vertex>",
-              `#include <color_vertex>
-           if (uv.y > 0.70) vColor.rgb = mix(crowdSkin, vec3(0.024, 0.014, 0.009), step(0.89, uv.y));
-           else if (uv.y < 0.37) vColor.rgb = vec3(0.028, 0.043, 0.06);`,
-            );
+          else {
+            shader.vertexShader = shader.vertexShader
+              .replace(
+                "#include <common>",
+                "#include <common>\nvarying vec2 crowdCardUv; varying vec3 crowdCardSkin; varying vec2 crowdCardStyle;",
+              )
+              .replace(
+                "#include <uv_vertex>",
+                `#include <uv_vertex>
+                crowdCardUv = uv;
+                crowdCardSkin = crowdSkin;
+                crowdCardStyle = crowdStyle;
+                float seatPhase = instanceMatrix[3].x * 0.057 + instanceMatrix[3].z * 0.033;
+                float cardBeat = 0.5 + 0.5 * sin(crowdTime * 5.6 + floor(seatPhase) * 0.7);
+                float cardResponse = smoothstep(0.0, 0.32, max(0.0, crowdEventAge - crowdStyle.x * 0.22));
+                float cardAng = atan(instanceMatrix[3].z, instanceMatrix[3].x);
+                float cardDw = abs(mod(cardAng - crowdWave + 3.14159265, 6.2831853) - 3.14159265);
+                float cardWaveRaise = exp(-cardDw * cardDw * 5.0) * crowdWaveStrength;
+                float cardCheer = max(crowdPulse, crowdEnergy) * cardResponse;
+                float cardPose = 0.0;
+                if (crowdChant > 0.1 && cardBeat > mix(0.42, 0.68, crowdStyle.x)) cardPose = 2.0;
+                if (max(cardCheer, cardWaveRaise) > 0.18) cardPose = cardBeat > 0.26 || cardWaveRaise > 0.2 ? 1.0 : 2.0;
+                if (crowdSurprise * cardResponse > 0.12) cardPose = 3.0;
+                vMapUv = vMapUv * 0.5 + vec2(mod(cardPose, 2.0) * 0.5, 0.5 - floor(cardPose / 2.0) * 0.5);`,
+              );
+            // Colour by fragment region, avoiding the old four-vertex skin gradient
+            // that washed team shirts into flesh from head to waist.
+            shader.fragmentShader = shader.fragmentShader
+              .replace(
+                "#include <common>",
+                "#include <common>\nvarying vec2 crowdCardUv; varying vec3 crowdCardSkin; varying vec2 crowdCardStyle;",
+              )
+              .replace(
+                "#include <color_fragment>",
+                `#include <color_fragment>
+                vec2 cardUv = crowdCardUv;
+                if (cardUv.y > 0.69 && abs(cardUv.x - 0.5) < 0.18)
+                  diffuseColor.rgb = mix(crowdCardSkin, vec3(0.025, 0.016, 0.011), step(0.845, cardUv.y));
+                else if (cardUv.y < 0.34) diffuseColor.rgb = mix(vec3(0.025, 0.038, 0.055), vec3(0.12, 0.15, 0.2), crowdCardStyle.x);
+                else {
+                  float band = step(0.55, crowdCardStyle.y) * (1.0 - smoothstep(0.025, 0.055, abs(cardUv.y - 0.48)));
+                  diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.025), vec3(0.8), step(0.7, crowdCardStyle.x)), band * 0.8);
+                }`,
+              );
+          }
         };
       }
       return material;
@@ -400,6 +450,10 @@ export function CrowdLod({
           soundLoader.current = null;
         });
     }
+    data.uniforms.eventAge.value = mood.age;
+    data.uniforms.surprise.value = mood.behavior === "gasp" ? mood.intensity : 0;
+    data.uniforms.chant.value =
+      mood.behavior === "chant" ? 0.75 : mood.behavior === "taunt" ? 0.4 : 0;
     data.uniforms.energy.value =
       mood.behavior === "celebrate"
         ? mood.intensity

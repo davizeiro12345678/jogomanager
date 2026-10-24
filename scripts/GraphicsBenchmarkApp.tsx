@@ -60,6 +60,16 @@ export function Benchmark() {
   const [manualFixture, setManualFixture] = useState<ManualFixtureState | null>(null);
   const workerRef = useRef<Worker | null>(null);
   const manual = new URLSearchParams(location.search).get("manual") === "1";
+  const crowdProbe = manual && new URLSearchParams(location.search).get("crowdProbe") === "1";
+  const [presentationProbe, setPresentationProbe] = useState("nenhuma");
+  function probeCrowd(kind: "goal" | "gasp") {
+    if (!controller || !crowdProbe) return;
+    // Only the presentation copy changes. The deterministic worker fixture and
+    // its score/checkpoints remain untouched; this is never a match result.
+    if (kind === "goal") controller.view.stats.home.goals++;
+    else controller.view.stats.home.onTarget++;
+    setPresentationProbe(kind);
+  }
   useEffect(() => {
     const view = new WorkerMatchView(
       benchmarkTeam(benchmark.fixture.homeClubId),
@@ -188,6 +198,19 @@ export function Benchmark() {
             {manualFixture
               ? `seq=${manualFixture.seq} tempo=${manualFixture.time.toFixed(6)} s | bola x=${manualFixture.ball.x.toFixed(6)} y=${manualFixture.ball.height.toFixed(6)} z=${manualFixture.ball.z.toFixed(6)} | vx=${manualFixture.ball.vx.toFixed(6)} vy=${manualFixture.ball.vy.toFixed(6)} vz=${manualFixture.ball.vz.toFixed(6)} | velocidade=${Math.hypot(manualFixture.ball.vx, manualFixture.ball.vy, manualFixture.ball.vz).toFixed(6)} m/s | velocidade horizontal=${Math.hypot(manualFixture.ball.vx, manualFixture.ball.vz).toFixed(6)} m/s`
               : "Aguardando primeira mensagem da fixture"}
+          </output>
+        </section>
+      )}
+      {crowdProbe && (
+        <section aria-label="Inspeção visual da torcida">
+          <button disabled={!controller} onClick={() => probeCrowd("goal")}>
+            Torcida: gol sintético
+          </button>{" "}
+          <button disabled={!controller} onClick={() => probeCrowd("gasp")}>
+            Torcida: surpresa sintética
+          </button>{" "}
+          <output data-crowd-probe={presentationProbe}>
+            Reação visual: {presentationProbe}; o Worker não é alterado.
           </output>
         </section>
       )}

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { GoalNetPanel } from "../GoalNet";
 import { censusRef } from "@/game/scene-census";
-import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
+import { FIELD_X, FIELD_Z, GOAL_POST_RADIUS } from "@/game/sim-rules";
 import type { SimView } from "@/game/sim-types";
 import { ktx2, useKtx2Revision } from "@/game/textures/ktx2";
 import { presentationBall, type Quality } from "./shared";
@@ -163,7 +163,7 @@ export function Goal({
           {[-3.66, 3.66].map((z) => (
             <group key={z}>
               <mesh position={[0, 1.22, z]} material={postMaterial} castShadow={quality === "alta"}>
-                <cylinderGeometry args={[0.06, 0.06, 2.44, 16]} />
+                <cylinderGeometry args={[GOAL_POST_RADIUS, GOAL_POST_RADIUS, 2.44, 16]} />
               </mesh>
               <mesh
                 position={[side * 1.05, 0.62, z]}
@@ -180,7 +180,7 @@ export function Goal({
             material={postMaterial}
             castShadow={quality === "alta"}
           >
-            <cylinderGeometry args={[0.06, 0.06, 7.32, 16]} />
+            <cylinderGeometry args={[GOAL_POST_RADIUS, GOAL_POST_RADIUS, 7.32, 16]} />
           </mesh>
           <mesh
             position={[side * 1.9, 0.05, 0]}

@@ -7,13 +7,13 @@ import { faceMorphology, skinAlbedo } from "../player-morphology";
 // into ONE surface; the face is no longer a pile of intersecting spheres.
 export const HEAD_PROFILE = [
   [-1.14, 0.012, 0.012, 0.2],
-  // A narrower jaw and a gently recessed lower face prevent the portrait
-  // silhouette from becoming a round toy head while retaining enough volume
-  // for strong and wide athlete variants.
-  [-1.08, 0.31, 0.36, 0.17],
-  [-0.96, 0.57, 0.54, 0.12],
-  [-0.78, 0.72, 0.67, 0.075],
-  [-0.52, 0.78, 0.74, 0.035],
+  // Carry the mandibular body into the chin instead of collapsing the last
+  // three rings into a pointed mask. Keep the seeded jaw variation and taper,
+  // while broadening its continuous attachment to the upper neck.
+  [-1.08, 0.34, 0.36, 0.17],
+  [-0.96, 0.59, 0.55, 0.12],
+  [-0.78, 0.75, 0.69, 0.075],
+  [-0.52, 0.8, 0.76, 0.035],
   [-0.25, 0.85, 0.86, -0.005],
   [0, 0.9, 0.92, -0.045],
   [0.24, 0.87, 0.9, -0.038],
@@ -112,27 +112,29 @@ export function headPoint(P: HeadShape, y: number, angle: number, seed = 0) {
   // Separate bridge, tip and alar cartilages read as an adult nose in a
   // three-quarter portrait.  The previous single round gaussian made the
   // centre of every face look like the same soft button.
-  const noseBridge = f.noseProjection * 0.47 * gauss(noseX, y, 0, -0.005, f.noseWidth * 0.79, 0.35);
-  const noseTip = f.noseProjection * 0.66 * gauss(noseX, y, 0, -0.225, f.noseWidth * 1.02, 0.16);
+  const noseBridge = f.noseProjection * 0.38 * gauss(noseX, y, 0, -0.005, f.noseWidth * 1.15, 0.36);
+  const noseTip = f.noseProjection * 0.57 * gauss(noseX, y, 0, -0.225, f.noseWidth * 1.15, 0.18);
   const alar =
     0.029 * gauss(Math.abs(noseX), y, f.noseWidth * 0.8, -0.255, 0.08, 0.1) +
     0.013 * gauss(Math.abs(noseX), y, f.noseWidth * 0.6, -0.32, 0.065, 0.085);
   const nasalRoot = -0.018 * gauss(noseX, y, 0, 0.22, f.noseWidth * 0.8, 0.12);
-  const columella = 0.01 * gauss(noseX, y, 0, -0.34, f.noseWidth * 0.5, 0.1);
+  const columella = 0.005 * gauss(noseX, y, 0, -0.34, f.noseWidth * 0.6, 0.12);
   const nose = noseBridge + noseTip + alar + nasalRoot + columella;
   const sockets =
-    -0.055 *
+    -0.04 *
     (gauss(x, y, f.eyeSpacing, 0.14, 0.215, 0.155) +
       gauss(x, y, -f.eyeSpacing, 0.14, 0.215, 0.155));
   const brows =
-    0.032 *
-    (gauss(x, y, f.eyeSpacing, 0.31, 0.24, 0.09) + gauss(x, y, -f.eyeSpacing, 0.31, 0.24, 0.09));
+    0.04 *
+    (gauss(x, y, f.eyeSpacing, 0.27, 0.26, 0.12) + gauss(x, y, -f.eyeSpacing, 0.27, 0.26, 0.12));
   const cheeks =
-    0.042 *
-    (gauss(x, y, 0.5, -0.11, 0.3, 0.2) * (1 + f.cheekAsymmetry) +
-      gauss(x, y, -0.5, -0.11, 0.3, 0.2) * (1 - f.cheekAsymmetry));
-  const muzzle = 0.024 * gauss(x, y, 0, -0.49, 0.34, 0.16);
-  const philtrum = -0.011 * gauss(x, y, 0, -0.39, 0.055, 0.09);
+    0.07 *
+    (gauss(x, y, 0.49, -0.06, 0.33, 0.25) * (1 + f.cheekAsymmetry) +
+      gauss(x, y, -0.49, -0.06, 0.33, 0.25) * (1 - f.cheekAsymmetry));
+  // The maxilla supports the upper lip all the way from the nasal base.
+  // A narrow muzzle and deep philtrum left a pinched shadow under the tip.
+  const muzzle = 0.05 * gauss(x, y, 0, -0.44, 0.4, 0.23);
+  const philtrum = -0.005 * gauss(x, y, 0, -0.39, 0.075, 0.1);
   // Resting vermilion belongs to the continuous facial surface. Separate
   // projected upper/lower patches plus a tube seam formed three lit bars.
   // Their seeded width and tilt are retained; the patches now only pigment
@@ -145,15 +147,17 @@ export function headPoint(P: HeadShape, y: number, angle: number, seed = 0) {
     (0.009 * Math.exp(-(((y - mouthSeam - 0.023) / 0.024) ** 2)) +
       0.011 * Math.exp(-(((y - mouthSeam + 0.03) / 0.032) ** 2)) -
       0.006 * Math.exp(-(((y - mouthSeam) / 0.012) ** 2)));
-  const chin = 0.062 * f.chinProjection * gauss(x, y, 0, -0.85, 0.31 * f.chinWidth, 0.15);
+  const chin = 0.052 * f.chinProjection * gauss(x, y, 0, -0.85, 0.35 * f.chinWidth, 0.18);
   // Soft tissue turns around the muzzle; a narrow deep trench reads as an
   // incised puppet cheek in grazing light rather than a relaxed adult fold.
-  const nasolabial = -0.009 * gauss(Math.abs(x), y, 0.305, -0.43, 0.11, 0.21);
-  const lipFossa = -0.016 * gauss(x, y, 0, -0.66, 0.3, 0.06);
+  const nasolabial = -0.005 * gauss(Math.abs(x), y, 0.305, -0.43, 0.11, 0.21);
+  const lipFossa = -0.009 * gauss(x, y, 0, -0.66, 0.3, 0.085);
   const temples = -0.025 * gauss(Math.abs(x), y, 0.75, 0.28, 0.13, 0.25);
-  const lowerOrbit = -0.01 * gauss(Math.abs(x), y, f.eyeSpacing, -0.005, 0.21, 0.075);
-  const jawAngle = 0.039 * gauss(Math.abs(x), y, 0.69, -0.7, 0.15, 0.16);
-  const masseter = 0.029 * gauss(Math.abs(x), y, 0.68, -0.48, 0.23, 0.24);
+  const lowerOrbit = -0.006 * gauss(Math.abs(x), y, f.eyeSpacing, -0.005, 0.24, 0.105);
+  // Broad masseter tissue bridges cheek and jaw. Narrow isolated bumps made
+  // the lower face look pinched under stadium side light.
+  const jawAngle = 0.029 * gauss(Math.abs(x), y, 0.66, -0.7, 0.2, 0.22);
+  const masseter = 0.025 * gauss(Math.abs(x), y, 0.63, -0.47, 0.27, 0.29);
   return new THREE.Vector3(
     x * P.headW,
     y * P.headR,
@@ -323,8 +327,10 @@ export function sculptedHair(
             : style === "curly"
               ? 0.115
               : style === "medium"
-                ? 0.07
-                : 0.024;
+                ? 0.15
+                : style === "short"
+                  ? 0.085
+                  : 0.024;
       const strands = detail
         ? textured
           ? 0.026 * Math.sin(angle * 17 + v * 37) * Math.sin(v * 31 - angle * 11) +
@@ -351,17 +357,25 @@ export function sculptedHair(
         textured || cropped
           ? 0
           : grainFade *
-            (0.025 * Math.cos(grainFlow * 12 + v * 2) +
-              0.008 * Math.cos(grainFlow * 24 + v * 3 + f.parting));
+            (0.012 * Math.cos(grainFlow * 12 + v * 2) +
+              0.003 * Math.cos(grainFlow * 24 + v * 3 + f.parting));
       const templeTaper = 1 - front * temples ** 1.35 * (style === "afro" ? 0.1 : 0.36);
       const foreheadInset =
         style === "afro" ? 0 : 0.004 * front ** 2 * THREE.MathUtils.smoothstep(v, 0.12, 0.72);
+      // Uneven broad locks break the profile silhouette without adding fibre
+      // cards. Frequencies fit inside the existing angular grid; envelope
+      // vanishes at the hairline and crown so the fitted seam stays closed.
+      const clump =
+        detail && (style === "short" || style === "medium")
+          ? 0.035 * Math.sin(angle * 5 + v * 7 + f.parting * 3) * Math.sin(v * Math.PI)
+          : 0;
       const shell =
         1 +
         Math.max(
           0.004,
           0.007 +
             grain +
+            clump +
             (volume * look.hairVolume + strands) * fade * templeTaper -
             partGroove -
             foreheadInset,
@@ -372,7 +386,14 @@ export function sculptedHair(
       const forelock = cropped
         ? 0
         : front ** 3 * Math.sin(v * Math.PI) * (0.055 + f.parting * 0.02);
-      const ordinaryLift = volume * (0.18 + crown * 0.32) * fade + forelock * fade;
+      // Lift and sweep a broad crown mass rather than engraving deep regular
+      // ridges into a fitted cap. Fibre maps still provide the small strands.
+      const sweep =
+        style === "short" || style === "medium"
+          ? 0.045 * Math.sin(angle - partAngle) * front * Math.sin(v * Math.PI)
+          : 0;
+      const ordinaryLift =
+        volume * (0.18 + crown * 0.32) * fade + forelock * fade + sweep * fade + clump * 0.65;
       const texturedLift = style === "afro" ? volume * fade : volume * fade * 0.68;
       p.y +=
         P.headR *
@@ -429,7 +450,11 @@ export function sculptedHair(
       const locks =
         (Math.cos(flow * 12 + v * 2) + Math.cos(flow * 24 + v * 3 + f.parting) * 0.3) / 1.3;
       const root = (1 - THREE.MathUtils.smoothstep(v, 0, 0.23)) * 0.11;
-      const tone = 0.9 + locks * 0.18 - root;
+      const clumpTone =
+        style === "short" || style === "medium"
+          ? Math.sin(angle * 5 + v * 7 + f.parting * 3) * Math.sin(v * Math.PI) * 0.075
+          : 0;
+      const tone = 0.94 + locks * 0.105 + clumpTone - root;
       colors.set([tone, tone * 0.99, tone * 0.97], i * 3);
     }
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));

@@ -410,15 +410,18 @@ export function LowPlayers({
         hasAction: Boolean(action),
         defending: sim.possession !== player.side,
       });
+      const actionSupport = footballSupportFor(action, u, p.hipW, usedFoot);
       const pose = clampPoseAnatomy(
         poseBlenders[index]!.sample(clampPoseAnatomy(authored), dt, {
           clip,
           action,
           progress: u,
+          supportFoot: actionSupport.plantedFoot,
+          phase: motion.phase,
+          event: goalPresentation?.actionSeed,
           instant: paused || previewAt !== undefined,
         }),
       );
-      const actionSupport = footballSupportFor(action, u, p.hipW, usedFoot);
       const shift =
         Math.max(-1, Math.min(1, pose.legRPitch - pose.legLPitch)) *
           0.045 *

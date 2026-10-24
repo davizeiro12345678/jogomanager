@@ -83,7 +83,7 @@ export interface PlayerMaterials {
   shin: THREE.Material;
 }
 
-const NORMAL_SCALE = new THREE.Vector2(0.55, 0.55);
+const NORMAL_SCALE = new THREE.Vector2(0.32, 0.32);
 const MAX_ENTRIES = 96;
 const cache = new Map<string, PlayerMaterials>();
 const textureRefreshers = new Map<PlayerMaterials, () => void>();
@@ -483,11 +483,13 @@ export function playerMaterials(
       ? new THREE.MeshPhysicalMaterial({
           color: kit.shorts,
           vertexColors: true,
-          roughness: 0.91,
+          // White fabric keeps its folds under floodlights without a broad
+          // satin rim competing with skin and printed shirt details.
+          roughness: 0.95,
           normalMap: maps.shorts,
           roughnessMap: maps.shortsRough,
           normalScale: NORMAL_SCALE,
-          sheen: 0.48,
+          sheen: 0.24,
           sheenRoughness: 0.78,
           sheenColor: new THREE.Color(shade(kit.shorts, 0.35)),
         })
@@ -499,7 +501,7 @@ export function playerMaterials(
           normalMap: rib,
           roughnessMap: maps.socksRough,
           normalScale: NORMAL_SCALE,
-          sheen: 0.6,
+          sheen: 0.3,
           sheenRoughness: 0.8,
           sheenColor: new THREE.Color(shade(kit.socks, 0.45)),
         })
