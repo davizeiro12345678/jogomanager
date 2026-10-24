@@ -55,7 +55,9 @@ const parse = (body) => {
     typeof data.seed !== "string" ||
     data.seed.length < 16 ||
     data.seed.length > 128
-  ) throw new Error("invalid_body");
+  ) {
+    throw new Error("invalid_body");
+  }
   return data;
 };
 
@@ -79,7 +81,9 @@ const server = createServer(async (req, res) => {
       req.headers["x-pfm-signature"] ?? "",
       key,
     )
-  ) return write(res, 401, { error: "unauthorized" });
+  ) {
+    return write(res, 401, { error: "unauthorized" });
+  }
   let data;
   try {
     data = parse(body);
@@ -101,10 +105,8 @@ const server = createServer(async (req, res) => {
       const elapsed = Date.now() - new Date(previous.createdAt).getTime();
       // A process can crash mid-match. Reclaim only failed or stale
       // sessions without invalidating a still-running simulation.
-      if (
-        previous.status !== "failed" &&
-        !(previous.status === "running" && elapsed > 120_000)
-      ) return write(res, 409, { error: "room_in_progress" });
+      if (previous.status !== "failed" && !(previous.status === "running" && elapsed > 120_000))
+        return write(res, 409, { error: "room_in_progress" });
       if (previous.status === "running" && busy) {
         return write(res, 409, { error: "room_in_progress" });
       }
@@ -132,16 +134,21 @@ const server = createServer(async (req, res) => {
     const started = performance.now();
     const result = await simulateAuthoritativeRoom(data.homeClub, data.awayClub, data.seed);
     const durationMs = Math.round(performance.now() - started);
-    await jobs.updateOne({ roomId: data.roomId, digest, status: "running" }, {
-      $set: { status: "finished", result, durationMs, completedAt: new Date() },
-    });
+    await jobs.updateOne(
+      { roomId: data.roomId, digest, status: "running" },
+      {
+        $set: { status: "finished", result, durationMs, completedAt: new Date() },
+      },
+    );
     return write(res, 200, result);
   } catch {
     if (claimed) {
-      await jobs.updateOne(
-        { roomId: data.roomId, digest, status: "running" },
-        { $set: { status: "failed", completedAt: new Date() } },
-      ).catch(() => undefined);
+      await jobs
+        .updateOne(
+          { roomId: data.roomId, digest, status: "running" },
+          { $set: { status: "failed", completedAt: new Date() } },
+        )
+        .catch(() => undefined);
     }
     return write(res, 503, { error: "simulation_unavailable" });
   } finally {
@@ -157,5 +164,9 @@ const shutdown = async () => {
   server.close();
   await mongo.close();
 };
-process.on("SIGTERM", () => { void shutdown(); });
-process.on("SIGINT", () => { void shutdown(); });
+process.on("SIGTERM", () => {
+  void shutdown();
+});
+process.on("SIGINT", () => {
+  void shutdown();
+});
