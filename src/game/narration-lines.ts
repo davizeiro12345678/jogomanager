@@ -4,7 +4,7 @@
  * O servidor gera o áudio a partir DESTAS frases (nunca de texto livre vindo do
  * navegador), então o endpoint de voz não pode ser usado como TTS genérico.
  */
-import { LANGS, resolveLang, type Lang } from "@/i18n/locale-catalog";
+import { LANGS, resolveLang, type Lang } from "@/i18n/locale-identifiers";
 import { MATCH_EVENT_MESSAGES } from "@/i18n/match-event-messages";
 import { FABI_VOICE_ID, FELIPE_VOICE_ID, MARIANNE_VOICE_ID } from "./narration-voice";
 import { EDITORIAL_NARRATION } from "./narration-editorial";

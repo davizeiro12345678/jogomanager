@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 import { globalAgent } from "node:https";
+import { postfxLookupAssets } from "./postfx-lookup-assets";
 
 // Asset manifests retain their production paths. The isolated studio has no
 // Lovable asset edge, so forward only that public namespace in dev/preview.
@@ -24,7 +25,7 @@ const assetProxy: Record<string, ProxyOptions> = {
 
 export default defineConfig({
   cacheDir: "node_modules/.vite-benchmark",
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), postfxLookupAssets()],
   resolve: {
     alias: {
       "@/lib/telemetry-client": path.resolve(import.meta.dirname, "graphics-telemetry-stub.ts"),
