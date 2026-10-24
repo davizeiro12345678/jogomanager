@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { GameModeCards } from "@/features/home/components/GameModeCards";
+import { TacticalPreview } from "@/features/home/components/TacticalPreview";
 import { DiscordLink } from "@/components/DiscordLink";
 import heroMobileAvif from "@/assets/hero-stadium.jpg?format=avif&w=390;450&aspect=1:2&fit=cover&position=centre&quality=44&as=srcset";
 import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1080;1600&quality=52&as=srcset";
@@ -25,11 +26,7 @@ import "./home.css";
 
 // Defer lengthy editorial sections without creating an extra chunk for the tiny league pulse.
 const HomeDetails = lazy(() => import("./HomeDetails").then((m) => ({ default: m.HomeDetails })));
-const TacticalPreview = lazy(() =>
-  import("@/features/home/components/TacticalPreview").then((m) => ({
-    default: m.TacticalPreview,
-  })),
-);
+
 const SYSTEMS = [
   {
     id: "tactics",
@@ -302,16 +299,7 @@ export function FootballHome() {
               </Link>
             </div>
           </div>
-          <Suspense
-            fallback={
-              <div
-                className="mx-auto aspect-[4/5] w-full max-w-[375px] rounded-xl border border-white/10 bg-[#111e18]"
-                aria-hidden="true"
-              />
-            }
-          >
-            <TacticalPreview />
-          </Suspense>
+          <TacticalPreview />
         </section>
         <section className="home-first-season" aria-labelledby="home-first-title">
           <p className="home-kicker">SEU PRIMEIRO DIA NO CLUBE</p>
