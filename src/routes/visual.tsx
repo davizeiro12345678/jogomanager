@@ -1,4 +1,4 @@
-import { gamePageHead } from "@/lib/game-page-metadata";
+import { loadGamePageHead } from "@/lib/load-game-page-head";
 
 /**
  * /visual — Ajustes visuais do jogo.
@@ -14,6 +14,6 @@ import { VisualPage } from "@/pages/visual";
 
 export const Route = createFileRoute("/visual")({
   ssr: false,
-  head: () => gamePageHead("/visual"),
+  head: () => loadGamePageHead("/visual"),
   component: VisualPage,
 });

@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
-import { DiscordLink } from "@/components/CommunityInvite";
+import { DiscordLink } from "@/components/DiscordLink";
 import heroMobileAvif from "@/assets/hero-stadium.jpg?format=avif&w=390;450&aspect=1:2&fit=cover&position=centre&quality=44&as=srcset";
 import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1080;1600&quality=52&as=srcset";
 import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1080;1600&quality=62&as=srcset";

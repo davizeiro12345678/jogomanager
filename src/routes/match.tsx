@@ -1,4 +1,4 @@
-import { gamePageHead } from "@/lib/game-page-metadata";
+import { loadGamePageHead } from "@/lib/load-game-page-head";
 
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -6,6 +6,6 @@ import { MatchPage } from "@/pages/match";
 
 export const Route = createFileRoute("/match")({
   ssr: false,
-  head: () => gamePageHead("/match"),
+  head: () => loadGamePageHead("/match"),
   component: MatchPage,
 });
