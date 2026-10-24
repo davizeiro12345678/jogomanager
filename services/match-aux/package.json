@@ -7,7 +7,7 @@
     "mongodb": "6.21.0"
   },
   "scripts": {
-    "start": "node --import tsx ./services/match-aux/server.mjs",
+    "start": "node --import tsx ./server.mjs",
     "test": "node --test services/match-aux/signature.test.mjs"
   }
 }
