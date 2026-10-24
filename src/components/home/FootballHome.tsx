@@ -169,32 +169,42 @@ export function FootballHome() {
   );
   useEffect(() => {
     let active = true;
-    // Returning players alone need the catalogue to resolve their club name.
-    void import("@/lib/careerStorage")
-      .then(async ({ readLocalCareer }) => {
-        const save = readLocalCareer();
-        if (!save || !active) return;
-        const [{ CLUBS }, { readMyClub }, { readCustom }] = await Promise.all([
-          import("@/game/data/leagues"),
-          import("@/lib/my-club-storage"),
-          import("@/lib/custom-data-storage"),
-        ]);
-        if (active) {
-          const created = readMyClub();
-          setResume({
-            club:
-              (created?.id === save.clubId ? created.name : undefined) ??
-              readCustom().clubs[save.clubId]?.name ??
-              CLUBS[save.clubId]?.name ??
-              save.clubId,
-            season: save.season ?? 1,
-            round: (save.round ?? 0) + 1,
-          });
-        }
-      })
-      .catch(() => undefined);
+    // The resume card is useful, but never critical to the hero paint.
+    // Read local saves during idle time instead of competing with hydration,
+    // image decoding and input responsiveness on slower phones.
+    const readResume = () => {
+      if (!active) return;
+      void import("@/lib/careerStorage")
+        .then(async ({ readLocalCareer }) => {
+          const save = readLocalCareer();
+          if (!save || !active) return;
+          const [{ CLUBS }, { readMyClub }, { readCustom }] = await Promise.all([
+            import("@/game/data/leagues"),
+            import("@/lib/my-club-storage"),
+            import("@/lib/custom-data-storage"),
+          ]);
+          if (active) {
+            const created = readMyClub();
+            setResume({
+              club:
+                (created?.id === save.clubId ? created.name : undefined) ??
+                readCustom().clubs[save.clubId]?.name ??
+                CLUBS[save.clubId]?.name ??
+                save.clubId,
+              season: save.season ?? 1,
+              round: (save.round ?? 0) + 1,
+            });
+          }
+        })
+        .catch(() => undefined);
+    };
+    const hasIdle = typeof window.requestIdleCallback === "function";
+    const idleId = hasIdle ? window.requestIdleCallback(readResume, { timeout: 2000 }) : undefined;
+    const fallbackId = hasIdle ? undefined : window.setTimeout(readResume, 250);
     return () => {
       active = false;
+      if (idleId !== undefined) window.cancelIdleCallback(idleId);
+      if (fallbackId !== undefined) window.clearTimeout(fallbackId);
     };
   }, []);
   useEffect(() => {
