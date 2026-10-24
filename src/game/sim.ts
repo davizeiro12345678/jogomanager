@@ -2208,22 +2208,42 @@ export class MatchSim {
       } else if (q.x > lineX.away) lineX.away = q.x;
     }
 
-    for (const p of this.players) {
-      if (p.sentOff) continue;
-      if (p.id === this.ball.holder) continue;
-      const setup = this.setup(p.side);
-      const dir = this.attackDir(p.side);
-      const attacking = this.possession === p.side;
+    // Tactics are fixed throughout this sequential movement pass. Build each
+    // side's context on its first eligible athlete, preserving lazy cache writes
+    // while avoiding the same plan lookup and scalar work for all eleven.
+    const movementFor = (side: Side) => {
+      const setup = this.setup(side);
+      const dir = this.attackDir(side);
+      const attacking = this.possession === side;
       const defendingWide = !attacking && Math.abs(bz) > FIELD_Z * 0.7;
       const widthFactor = (0.62 + setup.tactics.width * 0.14) * (defendingWide ? 0.76 : 1);
-      const surge = !attacking && this.pressSurge[p.side] > 0;
+      const surge = !attacking && this.pressSurge[side] > 0;
       const pressLine = attacking
         ? 10 + setup.tactics.mentality * 5
         : -6 + setup.tactics.pressing * 7 + (surge ? 7 : 0);
-
-      let tx = p.slotX * FIELD_X * 0.9 + this.mentalityShift(p.side) + bx * 0.22 + pressLine * dir;
+      const shift = this.mentalityShift(side);
+      return {
+        setup,
+        dir,
+        attacking,
+        widthFactor,
+        surge,
+        pressLine,
+        shift,
+        plan: activePlan(setup.tactics),
+      };
+    };
+    let homeMovement: ReturnType<typeof movementFor> | undefined;
+    let awayMovement: ReturnType<typeof movementFor> | undefined;
+    for (const p of this.players) {
+      if (p.sentOff) continue;
+      if (p.id === this.ball.holder) continue;
+      const { setup, dir, attacking, widthFactor, surge, pressLine, shift, plan } =
+        p.side === "home"
+          ? (homeMovement ??= movementFor("home"))
+          : (awayMovement ??= movementFor("away"));
+      let tx = p.slotX * FIELD_X * 0.9 + shift + bx * 0.22 + pressLine * dir;
       let tz = p.slotZ * FIELD_Z * widthFactor + bz * 0.28;
-      const plan = activePlan(setup.tactics);
       const slot = plan ? this.tacticalSlot(p) : 0;
       const instructionForRole = plan?.players.find((s) => s.slot === slot);
       const learnedRole = instructionForRole
