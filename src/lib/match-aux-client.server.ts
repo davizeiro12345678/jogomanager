@@ -62,10 +62,7 @@ export async function simulateOnMatchAux(input: {
   }
   const data = raw as Record<string, unknown>;
   const validInteger = (value: unknown, lower: number, upper: number): value is number =>
-    typeof value === "number" &&
-    Number.isSafeInteger(value) &&
-    value >= lower &&
-    value <= upper;
+    typeof value === "number" && Number.isSafeInteger(value) && value >= lower && value <= upper;
   if (
     !validInteger(data["hg"], 0, 50) ||
     !validInteger(data["ag"], 0, 50) ||
@@ -80,5 +77,4 @@ export async function simulateOnMatchAux(input: {
     minute: data["minute"],
     steps: data["steps"],
   };
-
 }
