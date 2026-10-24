@@ -1,6 +1,7 @@
 import type { LiveWorkerRequest } from "./live-match";
 import { FORMATION_KEYS } from "./formations";
-import { ROLE_CATALOG, TacticalProgramSchema } from "./tactical-plan";
+import { ROLE_CATALOG } from "./tactical-plan";
+import { validTacticalProgram } from "./tactical-validation";
 
 export const MAX_MATCH_BENCH_PLAYERS = 64;
 export const LIVE_CONTROL_RESPONSE_TIMEOUT_MS = 3_000;
@@ -41,7 +42,7 @@ export function validMatchTactics(v: unknown): boolean {
     integer(v["pressing"], 0, 2) &&
     integer(v["width"], 0, 2) &&
     integer(v["tempo"], 0, 2) &&
-    (v["advanced"] === undefined || TacticalProgramSchema.safeParse(v["advanced"]).success)
+    (v["advanced"] === undefined || validTacticalProgram(v["advanced"]))
   );
 }
 
