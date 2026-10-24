@@ -8,7 +8,7 @@
   padding: 19px;
   box-shadow: 0 30px 80px #0004;
 }
-.tactics-top {
+.top {
   display: flex;
   justify-content: space-between;
   font-size: 8px;
@@ -41,7 +41,7 @@
   color: #112410;
   border-color: var(--home-lime);
 }
-.tactics-caption {
+.caption {
   font-size: 11px;
   color: #8da191;
   text-align: center;
