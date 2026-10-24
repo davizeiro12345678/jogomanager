@@ -433,6 +433,19 @@ export function buildRigSkin(
 
   const groups: RigSkinGroup[] = [];
   for (const bucket of buckets.values()) {
+    // Authored hair can carry vertex tint while its rigid companion does not.
+    // A neutral tint preserves both surfaces and the authored albedo; Three
+    // rejects mismatched attributes and would otherwise drop the whole bucket.
+    if (bucket.geometries.some((geometry) => geometry.hasAttribute("color")))
+      for (const geometry of bucket.geometries)
+        if (!geometry.hasAttribute("color"))
+          geometry.setAttribute(
+            "color",
+            new THREE.Float32BufferAttribute(
+              new Float32Array(geometry.getAttribute("position").count * 3).fill(1),
+              3,
+            ),
+          );
     const merged =
       bucket.geometries.length === 1
         ? bucket.geometries[0]!

@@ -1,6 +1,11 @@
 import type { Lang } from "./locale-catalog";
 export const SCENE_INTERFACE_MESSAGES: Partial<Record<Lang, Record<string, string>>> = {
   "pt-BR": {
+    "scene.storyTag": "Sua história",
+    "scene.managerCareer": "Carreira de treinador",
+    "scene.transcript": "Transcrição da cena",
+    "scene.backToScene": "Voltar à cena",
+    "scene.transcriptHint": "Leia todas as falas desta cena.",
     "scene.replay": "Repetir fala",
     "scene.pause": "Pausar cena",
     "scene.play": "Reproduzir cena",
@@ -30,6 +35,11 @@ export const SCENE_INTERFACE_MESSAGES: Partial<Record<Lang, Record<string, strin
     "scene.unavailable": "A cena 3D não carregou. Abrir cena ilustrada.",
   },
   en: {
+    "scene.storyTag": "Your story",
+    "scene.managerCareer": "Manager career",
+    "scene.transcript": "Scene transcript",
+    "scene.backToScene": "Back to the scene",
+    "scene.transcriptHint": "Read every line in this scene.",
     "scene.replay": "Replay this line",
     "scene.pause": "Pause scene",
     "scene.play": "Play scene",

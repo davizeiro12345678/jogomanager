@@ -29,8 +29,6 @@ import {
 
 import { getLeague, LEAGUES } from "@/game/data/leagues";
 
-import { initCareer } from "@/game/career";
-
 import {
   createManagerProfile,
   DEFAULT_MANAGER_ATTRIBUTES,
@@ -48,10 +46,6 @@ import {
 import { Crest } from "@/components/game/Crest";
 
 import { useCareer } from "@/hooks/useCareer";
-
-import { loadRealSquad } from "@/lib/realSquads";
-
-import { startWorldForNewCareer } from "@/lib/world";
 
 import { Flag } from "@/components/game/Flag";
 
@@ -229,6 +223,12 @@ export function NewCareer() {
     });
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
+      const [{ initCareer }, { loadRealSquad }, { startWorldForNewCareer }] = await Promise.all([
+        import("@/game/career"),
+        import("@/lib/realSquads"),
+        import("@/lib/world"),
+      ]);
+      if (!mounted.current) return;
       // A slow optional sports endpoint cannot trap a guest in the wizard.
       await Promise.race([
         loadRealSquad(club.id),

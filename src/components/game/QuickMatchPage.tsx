@@ -13,7 +13,6 @@ import { AccessibilitySettings } from "@/components/accessibility/AccessibilityS
 import { useT } from "@/i18n/provider";
 import { SHIPPED_CATALOG, catalogFacts } from "@/game/data/catalog-facts";
 import { useCareerLeagueCatalog } from "@/hooks/useCareerLeagueCatalog";
-import { prepareQuickMatchRosters } from "@/game/quick-roster-loading";
 
 const loadQuickLive = () => import("@/components/game/QuickLive");
 const QuickLive = lazy(loadQuickLive);
@@ -42,6 +41,7 @@ export function QuickMatchPage() {
     if (preparing || myClub === oppClub) return;
     setPreparing(true);
     try {
+      const { prepareQuickMatchRosters } = await import("@/game/quick-roster-loading");
       await prepareQuickMatchRosters(myClub, oppClub);
       setStarted(true);
     } finally {

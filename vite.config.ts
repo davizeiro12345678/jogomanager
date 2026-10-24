@@ -13,6 +13,7 @@ import { imagetools } from "vite-imagetools";
 import { protectThreeSourceTags } from "./scripts/r3f-source-compat.ts";
 import { rapierWasmAsset } from "./scripts/rapier-wasm-asset.ts";
 import { bundleModuleAudit } from "./scripts/bundle-module-audit.ts";
+import { leagueCatalogAsset } from "./scripts/league-catalog-asset.ts";
 import { resolveBuildCommit } from "./src/lib/release-identity.ts";
 
 // Load non-VITE_ env vars into process.env for server routes (email, webhooks).
@@ -109,6 +110,13 @@ const projectConfig = defineConfig({
     build: {
       rolldownOptions: {
         output: {
+          // A shared sheet can have both a CSS chunk name and a ?url import
+          // name. Use its content hash so SSR and client emission agree even
+          // when route splitting changes the chunk that first owns the sheet.
+          assetFileNames: (asset) =>
+            asset.names.some((name) => name.endsWith(".css"))
+              ? "assets/style-[hash][extname]"
+              : "assets/[name]-[hash][extname]",
           codeSplitting: {
             groups: [
               {
@@ -138,7 +146,7 @@ const projectConfig = defineConfig({
     },
     // Module workers retain dynamic import boundaries. IIFE output inlined
     // Rapier's WASM and season management into every match worker startup.
-    worker: { format: "es", plugins: () => [rapierWasmAsset()] },
+    worker: { format: "es", plugins: () => [rapierWasmAsset(), leagueCatalogAsset()] },
     // O preview do sandbox é servido num host *.e2b.app gerado por sessão; sem
     // liberar a lista de hosts o Vite responde 403 e o jogo não carrega.
     server: {
@@ -153,6 +161,7 @@ const projectConfig = defineConfig({
       ...(enableMcpRouteGenerator ? [mcpPlugin()] : []),
       imagetools(),
       rapierWasmAsset(),
+      leagueCatalogAsset(),
       bundleModuleAudit(),
     ],
     resolve: {
