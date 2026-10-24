@@ -40,6 +40,31 @@ function assertUntrustedJson(value: unknown): void {
   visit(value, 0);
 }
 
+/** IndexedDB retains explicitly undefined optional fields, while JSON omits
+ * them. Match JSON serialization before checking an offline career payload;
+ * never turn array holes, non-JSON values or unsafe object shapes into data. */
+function normalizeUndefinedProperties(input: unknown): unknown {
+  const seen = new WeakSet<object>();
+  let count = 0;
+  const visit = (value: unknown, depth: number): unknown => {
+    if (++count > 100_000 || depth > 32) throw new Error("Carreira excede os limites permitidos.");
+    if (value === null || typeof value !== "object") return value;
+    if (seen.has(value)) throw new Error("JSON de carreira inválido.");
+    seen.add(value);
+    if (Array.isArray(value)) return value.map((entry) => visit(entry, depth + 1));
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null)
+      throw new Error("JSON de carreira inválido.");
+    const clean: Record<string, unknown> = Object.create(null);
+    for (const [key, entry] of Object.entries(value)) {
+      if (++count > 100_000) throw new Error("Carreira excede os limites permitidos.");
+      if (entry !== undefined) clean[key] = visit(entry, depth + 1);
+    }
+    return clean;
+  };
+  return visit(input, 0);
+}
+
 const CareerInput = z.object({
   state: z
     .object({
@@ -59,9 +84,10 @@ const CareerInput = z.object({
 });
 
 export function parseCareerInput(input: unknown) {
-  assertSafeJsonValue(input);
-  assertUntrustedJson(input);
-  return CareerInput.parse(input);
+  const normalized = normalizeUndefinedProperties(input);
+  assertSafeJsonValue(normalized);
+  assertUntrustedJson(normalized);
+  return CareerInput.parse(normalized);
 }
 
 const CareerOwner = z.object({ expectedOwnerId: z.string().uuid() });
