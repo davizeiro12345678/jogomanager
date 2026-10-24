@@ -68,45 +68,56 @@ afterEach(() => {
 });
 
 describe("public league projections", () => {
-  it("serves 20 concurrent digest reads through one bounded RPC and caches the projection", async () => {
-    let release!: () => void;
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    request.mockImplementation(async (input, init) => {
-      expect(requestUrl(input).pathname).toBe("/rest/v1/rpc/get_public_league_digest_source");
-      expect(JSON.parse(String(init?.body))).toEqual({
-        p_league_ids: [71, 72, 39, 140, 135, 78, 61, 94, 88, 128, 253, 262],
+  it.each(["array", "object"])(
+    "serves concurrent %s standings through one bounded digest RPC",
+    async (shape) => {
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
       });
-      await gate;
-      return Response.json([
-        { league_id: 39, payload: leaguePayload(39), injury_count: 10 },
-        { league_id: 71, payload: leaguePayload(71), injury_count: 123 },
-        ...emptyDigest().filter((row) => row.league_id !== 39 && row.league_id !== 71),
-      ]);
-    });
-    const readers = Array.from({ length: 20 }, () => functions.getLeagueDigests());
-    await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(1));
-    release();
-    const [result] = await Promise.all(readers);
-    expect(result?.map((row) => row.slug)).toEqual(["brasileirao-serie-a", "premier-league"]);
-    expect(result?.[0]).toMatchObject({
-      season: 2027,
-      teams: 6,
-      injuries: 123,
-      goalsPerGame: 1.5,
-      homeWinPct: 50,
-      awayWinPct: 0,
-      drawPct: 50,
-      leader: "Club 1",
-      leaderGap: 1,
-      bestDefense: { team: "Club 1", against: 1, played: 4 },
-    });
-    expect(JSON.stringify(result)).not.toContain("provider_internal");
-    expect(JSON.stringify(result)).not.toContain("standings");
-    expect(await functions.getLeagueDigests()).toEqual(result);
-    expect(request).toHaveBeenCalledTimes(1);
-  });
+      request.mockImplementation(async (input, init) => {
+        expect(requestUrl(input).pathname).toBe("/rest/v1/rpc/get_public_league_digest_source");
+        expect(JSON.parse(String(init?.body))).toEqual({
+          p_league_ids: [71, 72, 39, 140, 135, 78, 61, 94, 88, 128, 253, 262],
+        });
+        await gate;
+        return Response.json([
+          {
+            league_id: 39,
+            payload: shape === "object" ? leaguePayload(39)[0] : leaguePayload(39),
+            injury_count: 10,
+          },
+          {
+            league_id: 71,
+            payload: shape === "object" ? leaguePayload(71)[0] : leaguePayload(71),
+            injury_count: 123,
+          },
+          ...emptyDigest().filter((row) => row.league_id !== 39 && row.league_id !== 71),
+        ]);
+      });
+      const readers = Array.from({ length: 20 }, () => functions.getLeagueDigests());
+      await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+      release();
+      const [result] = await Promise.all(readers);
+      expect(result?.map((row) => row.slug)).toEqual(["brasileirao-serie-a", "premier-league"]);
+      expect(result?.[0]).toMatchObject({
+        season: 2027,
+        teams: 6,
+        injuries: 123,
+        goalsPerGame: 1.5,
+        homeWinPct: 50,
+        awayWinPct: 0,
+        drawPct: 50,
+        leader: "Club 1",
+        leaderGap: 1,
+        bestDefense: { team: "Club 1", against: 1, played: 4 },
+      });
+      expect(JSON.stringify(result)).not.toContain("provider_internal");
+      expect(JSON.stringify(result)).not.toContain("standings");
+      expect(await functions.getLeagueDigests()).toEqual(result);
+      expect(request).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it("does not cache a failed digest RPC as missing public data", async () => {
     request.mockImplementation(async () => Response.json(emptyDigest()));
@@ -130,41 +141,64 @@ describe("public league projections", () => {
     },
   );
 
-  it("reads scoring leaders for the season of the selected standings", async () => {
-    request.mockImplementation(async (input) => {
-      const url = requestUrl(input);
-      const kind = url.searchParams.get("kind");
-      if (kind === "eq.standings")
-        return Response.json([
-          { ref: "71:2027", payload: leaguePayload(), updated_at: "2027-05-01T00:00:00Z" },
-        ]);
-      if (kind === "eq.top_stats") {
-        expect(url.searchParams.get("ref")).toBe("in.(scorers_71_2027,assists_71_2027)");
-        return Response.json([
-          {
-            ref: "scorers_71_2027",
-            payload: [
-              {
-                player: { name: "Forward" },
-                statistics: [
-                  { team: { name: "Club 1" }, games: { appearences: 4 }, goals: { total: 5 } },
-                ],
-              },
-            ],
-          },
-        ]);
-      }
-      return Response.json([]);
-    });
-    const result = await functions.getLeagueTable({ data: { slug: "brasileirao-serie-a" } });
-    expect(result?.season).toBe(2027);
-    expect(result?.scorers[0]?.goals).toBe(5);
-    expect(request).toHaveBeenCalledTimes(3);
-    expect(await functions.getLeagueTable({ data: { slug: "brasileirao-serie-a" } })).toEqual(
-      result,
-    );
-    expect(request).toHaveBeenCalledTimes(3);
-  });
+  it.each(["array", "object"])(
+    "reads scoring leaders from the selected %s standings season",
+    async (shape) => {
+      request.mockImplementation(async (input) => {
+        const url = requestUrl(input);
+        const kind = url.searchParams.get("kind");
+        if (kind === "eq.standings")
+          return Response.json([
+            {
+              ref: "71:2027",
+              payload: shape === "object" ? leaguePayload()[0] : leaguePayload(),
+              updated_at: "2027-05-01T00:00:00Z",
+            },
+          ]);
+        if (kind === "eq.top_stats") {
+          expect(url.searchParams.get("ref")).toBe("in.(scorers_71_2027,assists_71_2027)");
+          return Response.json([
+            {
+              ref: "scorers_71_2027",
+              payload: [
+                {
+                  player: { name: "Forward" },
+                  statistics: [
+                    { team: { name: "Club 1" }, games: { appearences: 4 }, goals: { total: 5 } },
+                  ],
+                },
+              ],
+            },
+          ]);
+        }
+        return Response.json([]);
+      });
+      const result = await functions.getLeagueTable({ data: { slug: "brasileirao-serie-a" } });
+      expect(result?.season).toBe(2027);
+      expect(result?.scorers[0]?.goals).toBe(5);
+      expect(result?.groups[0]).toHaveLength(6);
+      expect(JSON.stringify(result)).not.toContain("provider_internal");
+      expect(request).toHaveBeenCalledTimes(3);
+      expect(await functions.getLeagueTable({ data: { slug: "brasileirao-serie-a" } })).toEqual(
+        result,
+      );
+      expect(request).toHaveBeenCalledTimes(3);
+    },
+  );
+
+  it.each([
+    { payload: null },
+    { payload: {} },
+    { payload: [] },
+    { payload: { league: { standings: null } } },
+  ])(
+    "keeps absent or malformed standings unavailable without querying auxiliary data: $payload",
+    async ({ payload }) => {
+      request.mockResolvedValue(Response.json([{ ref: "71:2027", payload }]));
+      expect(await functions.getLeagueTable({ data: { slug: "brasileirao-serie-a" } })).toBeNull();
+      expect(request).toHaveBeenCalledOnce();
+    },
+  );
 
   it("refuses to retain an incomplete league projection after an auxiliary query error", async () => {
     let unavailable = true;

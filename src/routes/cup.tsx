@@ -1,4 +1,4 @@
-import { gamePageHead } from "@/lib/game-page-metadata";
+import { loadGamePageHead } from "@/lib/load-game-page-head";
 
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -6,6 +6,6 @@ import { CupPage } from "@/pages/cup";
 
 export const Route = createFileRoute("/cup")({
   ssr: false,
-  head: () => gamePageHead("/cup"),
+  head: () => loadGamePageHead("/cup"),
   component: CupPage,
 });

@@ -1,27 +1,23 @@
-import type { ReactNode } from "react";
-import { ArrowUpRight, MessageCircle, Users } from "lucide-react";
-import { DISCORD_INVITE, COMMUNITY_TOPICS } from "@/content/community";
+import { Users } from "lucide-react";
+import { DiscordLink } from "./DiscordLink";
 
-export function DiscordLink({
-  children = "Entrar no Discord",
-  className = "",
-}: {
-  children?: ReactNode;
-  className?: string;
-}) {
-  return (
-    <a
-      href={DISCORD_INVITE}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#5865f2] px-5 py-3 font-display text-sm text-white transition hover:bg-[#4752c4] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary ${className}`}
-    >
-      <MessageCircle size={18} aria-hidden="true" />
-      {children}
-      <ArrowUpRight size={16} aria-hidden="true" />
-    </a>
-  );
-}
+export { DiscordLink } from "./DiscordLink";
+
+// Only the full community section needs this editorial copy.
+const COMMUNITY_TOPICS = [
+  {
+    title: "Encontre sua próxima rivalidade",
+    text: "Conheça outros treinadores, combine partidas e compartilhe o código da sua sala.",
+  },
+  {
+    title: "Troque ideias de futebol",
+    text: "Converse sobre formações, contratações e os desafios da sua carreira.",
+  },
+  {
+    title: "Ajude a construir o jogo",
+    text: "Compartilhe sugestões, relate problemas e acompanhe as conversas sobre novidades.",
+  },
+] as const;
 
 export function CommunityInvite({ compact = false }: { compact?: boolean }) {
   return (

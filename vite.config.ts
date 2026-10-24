@@ -113,6 +113,12 @@ const projectConfig = defineConfig({
           codeSplitting: {
             groups: [
               {
+                // Share the invitation and its URL without a separate tiny request.
+                // The full editorial community section remains separate.
+                name: "community-link",
+                test: /[\\/]src[\\/](?:components[\\/]DiscordLink\.tsx|content[\\/]community\.ts)$/,
+              },
+              {
                 // Lazy routes share Vite's preload helper. If it lives in the
                 // app entry, each dynamic import pulls the entire entry back in.
                 name: "vite-preload",

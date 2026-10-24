@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { gamePageHead } from "@/lib/game-page-metadata";
+import { loadGamePageHead } from "@/lib/load-game-page-head";
 
 import { MultiplayerPage } from "@/pages/multiplayer";
 
 export const Route = createFileRoute("/multiplayer")({
   ssr: false,
-  head: () => gamePageHead("/multiplayer"),
+  head: () => loadGamePageHead("/multiplayer"),
   component: MultiplayerPage,
 });
