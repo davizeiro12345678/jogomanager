@@ -1,0 +1,26 @@
+[Unit]
+Description=Pro Football Manager 3D signed auxiliary match replay worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=matchaux
+Group=matchaux
+WorkingDirectory=/opt/jogomanager
+EnvironmentFile=/etc/match-aux.env
+ExecStart=/usr/bin/node --import tsx /opt/jogomanager/services/match-aux/server.mjs
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+CapabilityBoundingSet=
+MemoryMax=384M
+TasksMax=64
+LimitNOFILE=8192
+
+[Install]
+WantedBy=multi-user.target

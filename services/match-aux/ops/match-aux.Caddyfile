@@ -1,0 +1,9 @@
+match-aux.jogomanager.com {
+  encode zstd gzip
+  header {
+    X-Content-Type-Options nosniff
+    Referrer-Policy no-referrer
+    Cache-Control no-store
+  }
+  reverse_proxy 127.0.0.1:3090
+}
