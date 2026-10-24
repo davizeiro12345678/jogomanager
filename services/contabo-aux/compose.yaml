@@ -1,0 +1,41 @@
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: services/contabo-aux/Dockerfile
+    restart: unless-stopped
+    env_file: [.env]
+    networks: [private]
+    mem_limit: 1024m
+    cpus: 2.0
+    pids_limit: 200
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/readyz').then(x => process.exit(x.ok?0:1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 7s
+      retries: 3
+    expose: ["8080"]
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      - API_DOMAIN=${API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [private]
+    depends_on:
+      api:
+        condition: service_healthy
+networks:
+  private:
+volumes:
+  caddy_data:
+  caddy_config:
