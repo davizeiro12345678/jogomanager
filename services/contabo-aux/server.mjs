@@ -183,9 +183,7 @@ export function createAuxServer() {
           200,
           {
             status:
-              Array.isArray(purchases) && purchases[0]
-                ? String(purchases[0].status)
-                : "not_found",
+              Array.isArray(purchases) && purchases[0] ? String(purchases[0].status) : "not_found",
           },
           origin,
         );
