@@ -74,6 +74,25 @@ describe("owner scoped replay archives", () => {
     ]);
     expect((await listReplaySummaries()).map((row) => row.id)).toEqual(["retained-id"]);
   });
+  it("keeps healthy guest replays usable when a legacy archive also contains a corrupt entry", async () => {
+    const healthy = encodeReplay(fixture("readable"));
+    const originals = [
+      { version: 3, id: "corrupt", frames: { timesMs: [] } },
+      healthy,
+    ];
+    archive.set("manager3d.replays.v3", originals);
+    expect((await listReplaySummaries()).map((row) => row.id)).toEqual(["same-id"]);
+    expect((await loadReplay("same-id"))?.title).toBe("readable");
+    expect(archive.get("manager3d.replays.v3")).toBe(originals);
+    await storeReplayEntry({ ...fixture("new"), id: "new-id" });
+    expect((await listReplaySummaries()).map((row) => row.id)).toEqual([
+      "new-id",
+      "same-id",
+    ]);
+    await removeReplayEntry("same-id");
+    expect((await listReplaySummaries()).map((row) => row.id)).toEqual(["new-id"]);
+    expect(archive.get("manager3d.replays.v3")).toBe(originals);
+  });
   it("migrates a completed revision-2 packed replay and permits a subsequent new recording", async () => {
     const packed = encodeReplay(fixture("historical physics"));
     archive.set("manager3d.replays.v3", [
