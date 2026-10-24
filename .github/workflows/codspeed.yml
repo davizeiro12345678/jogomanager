@@ -59,4 +59,5 @@ jobs:
         uses: CodSpeedHQ/action@v5
         with:
           mode: simulation,walltime
+          simulation-track-subprocess: "true"
           run: node scripts/paired-codspeed.mjs .codspeed-base .

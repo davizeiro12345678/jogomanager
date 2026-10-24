@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, realpathSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const [baseArg, headArg] = process.argv.slice(2);
 if (!baseArg || !headArg) throw new Error("Usage: paired-codspeed.mjs BASE_DIR HEAD_DIR");
@@ -25,11 +25,27 @@ console.log(
   }),
 );
 const require = createRequire(path.join(head, "package.json"));
+const { getV8Flags, getCodspeedRunnerMode } = await import(
+  pathToFileURL(require.resolve("@codspeed/core"))
+);
+if (getCodspeedRunnerMode() === "disabled")
+  throw new Error("Run paired benchmarks through CodSpeed");
+// V8 command-line flags are not inherited by spawnSync. Ask the installed
+// CodSpeed integration for this instrument's exact flags for both revisions.
+const instrumentFlags = getV8Flags();
 const driver = fileURLToPath(new URL("./codspeed-revision.mjs", import.meta.url));
 for (const [index, root] of roots.entries()) {
   const result = spawnSync(
     process.execPath,
-    ["--import", require.resolve("tsx"), driver, root, index === 0 ? "baseline" : "candidate"],
+    [
+      ...instrumentFlags,
+      ...process.execArgv,
+      "--import",
+      require.resolve("tsx"),
+      driver,
+      root,
+      index === 0 ? "baseline" : "candidate",
+    ],
     {
       cwd: root,
       env: { ...process.env, TSX_TSCONFIG_PATH: path.join(root, "tsconfig.json") },
