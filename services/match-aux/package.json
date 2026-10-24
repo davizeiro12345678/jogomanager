@@ -1,0 +1,13 @@
+{
+  "name": "pfm-match-aux",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.22.0 <25" },
+  "dependencies": {
+    "mongodb": "6.21.0"
+  },
+  "scripts": {
+    "start": "node --import tsx ./services/match-aux/server.mjs",
+    "test": "node --test services/match-aux/signature.test.mjs"
+  }
+}
