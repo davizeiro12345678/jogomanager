@@ -271,23 +271,43 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
         .maybeSingle();
       if (secretError || !secret?.seed) return { ok: false, reason: "invalid_room" };
 
-      const sim = new MatchSim(
-        buildTeamSetup(room.host_club),
-        buildTeamSetup(room.guest_club),
-        secret.seed,
-      );
-      let steps = 0;
-      while (!sim.finished && steps++ < MATCH_SIMULATION_TICK_LIMIT) {
-        sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
+      // Only the trusted server may choose the remote authority.
+      // Default production behavior stays unchanged until static-IP
+      // egress, secrets, and Atlas connectivity pass an end-to-end test.
+      const { matchAuxEnabled, simulateOnMatchAux } = await import("./match-aux-client.server");
+      let result: { hg: number; ag: number; minute: number };
+      if (matchAuxEnabled()) {
+        const verified = await simulateOnMatchAux({
+          roomId: room.id,
+          homeClub: room.host_club,
+          awayClub: room.guest_club,
+          seed: secret.seed,
+        });
+        result = { hg: verified.hg, ag: verified.ag, minute: verified.minute };
+      } else {
+        const sim = new MatchSim(
+          buildTeamSetup(room.host_club),
+          buildTeamSetup(room.guest_club),
+          secret.seed,
+        );
+        let steps = 0;
+        while (!sim.finished && steps++ < MATCH_SIMULATION_TICK_LIMIT) {
+          sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
+        }
+        if (!sim.finished) return { ok: false, reason: "simulation_failed" };
+        result = {
+          hg: sim.stats.home.goals,
+          ag: sim.stats.away.goals,
+          minute: sim.minute(),
+        };
       }
-      if (!sim.finished) return { ok: false, reason: "simulation_failed" };
 
       const { data: updatedRoom, error: updateError } = await supabaseAdmin
         .from("match_rooms")
         .update({
           status: "done",
-          minute: sim.minute(),
-          state: { hg: sim.stats.home.goals, ag: sim.stats.away.goals },
+          minute: result.minute,
+          state: { hg: result.hg, ag: result.ag },
           updated_at: new Date().toISOString(),
         })
         .eq("id", room.id)
