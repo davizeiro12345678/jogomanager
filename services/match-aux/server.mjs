@@ -90,6 +90,7 @@ const server = createServer(async (req, res) => {
     .update(JSON.stringify([data.roomId, data.homeClub, data.awayClub, data.seed]))
     .digest("hex");
   let claimed = false;
+  let slotAcquired = false;
   try {
     const previous = await jobs.findOne({ roomId: data.roomId });
     if (previous) {
@@ -97,10 +98,28 @@ const server = createServer(async (req, res) => {
       if (previous.status === "finished" && previous.result) {
         return write(res, 200, previous.result);
       }
-      return write(res, 409, { error: "room_in_progress" });
+      const elapsed = Date.now() - new Date(previous.createdAt).getTime();
+      // A process can crash mid-match. Reclaim only failed or stale
+      // sessions without invalidating a still-running simulation.
+      if (
+        previous.status !== "failed" &&
+        !(previous.status === "running" && elapsed > 120_000)
+      ) return write(res, 409, { error: "room_in_progress" });
+      if (previous.status === "running" && busy) {
+        return write(res, 409, { error: "room_in_progress" });
+      }
+      const released = await jobs.deleteOne({
+        _id: previous._id,
+        digest,
+        status: previous.status,
+      });
+      if (released.deletedCount !== 1) {
+        return write(res, 409, { error: "room_in_progress" });
+      }
     }
     if (busy) return write(res, 429, { error: "server_busy" });
     busy = true;
+    slotAcquired = true;
     // Unique index prevents conflicting claims across multiple processes.
     await jobs.insertOne({
       roomId: data.roomId,
@@ -126,7 +145,7 @@ const server = createServer(async (req, res) => {
     }
     return write(res, 503, { error: "simulation_unavailable" });
   } finally {
-    if (claimed) busy = false;
+    if (slotAcquired) busy = false;
   }
 });
 server.requestTimeout = 25_000;
