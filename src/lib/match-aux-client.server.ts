@@ -56,27 +56,29 @@ export async function simulateOnMatchAux(input: {
     signal: AbortSignal.timeout(18_000),
   });
   if (!response.ok) throw new Error("match_aux_not_available");
-  const result: unknown = await response.json();
+  const raw: unknown = await response.json();
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("match_aux_invalid_result");
+  }
+  const data = raw as Record<string, unknown>;
+  const validInteger = (value: unknown, lower: number, upper: number): value is number =>
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= lower &&
+    value <= upper;
   if (
-    !result ||
-    typeof result !== "object" ||
-    !("hg" in result) ||
-    !("ag" in result) ||
-    !("minute" in result) ||
-    !("steps" in result) ||
-    ![result.hg, result.ag, result.minute, result.steps].every(
-      (value) => typeof value === "number" && Number.isSafeInteger(value),
-    ) ||
-    result.hg < 0 ||
-    result.ag < 0 ||
-    result.hg > 50 ||
-    result.ag > 50 ||
-    result.minute < 0 ||
-    result.minute > 200 ||
-    result.steps < 1 ||
-    result.steps > 100000
+    !validInteger(data["hg"], 0, 50) ||
+    !validInteger(data["ag"], 0, 50) ||
+    !validInteger(data["minute"], 0, 200) ||
+    !validInteger(data["steps"], 1, 100000)
   ) {
     throw new Error("match_aux_invalid_result");
   }
-  return result as AuxiliaryMatchResult;
+  return {
+    hg: data["hg"],
+    ag: data["ag"],
+    minute: data["minute"],
+    steps: data["steps"],
+  };
+
 }
