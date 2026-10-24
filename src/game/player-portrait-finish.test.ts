@@ -67,7 +67,7 @@ describe("isolated portrait finish", () => {
     }
   });
 
-  it("rolls the portrait helix back into its attachment without adding vertices or changing match ears", () => {
+  it("embeds the portrait ear root in the temporal plane without adding vertices or changing match ears", () => {
     const p = proportionsFor(lookFor("portrait-ear", "MF"));
     for (const side of [-1, 1]) {
       const legacy = sculptedEar(p, side, true),
@@ -87,9 +87,12 @@ describe("isolated portrait finish", () => {
         expect(inset).toBeGreaterThanOrEqual(-1e-7);
         // v1's abrupt .078R X-only return formed the rejected frontal fin.
         // Bound both displacement and lighting-plane rotation from profile.
-        expect(inset).toBeLessThan(p.headR * 0.031);
+        expect(inset).toBeGreaterThanOrEqual(p.headW * 0.055 - 1e-7);
+        expect(inset).toBeLessThan(p.headW * 0.055 + p.headR * 0.031);
         expect(Math.abs(a.getY(i) - b.getY(i))).toBeLessThan(p.headR * 0.01);
-        expect(Math.abs(a.getZ(i) - b.getZ(i))).toBeLessThan(p.headR * 0.006);
+        // Posterior root placement hides the front-facing plate while
+        // preserving the local helix folds and radial geometry.
+        expect(Math.abs(a.getZ(i) - b.getZ(i) + p.headR * 0.035)).toBeLessThan(p.headR * 0.006);
         const normal = new THREE.Vector3().fromBufferAttribute(normals, i);
         const original = new THREE.Vector3().fromBufferAttribute(originalNormals, i);
         expect(normal.dot(original)).toBeGreaterThan(0.8);

@@ -263,7 +263,7 @@ export function CrowdLod({
         new URLSearchParams(location.search).get("crowdLighting") === "legacy";
       const material = crowdLodMaterial(tier, card, legacy);
       if (webgl2) {
-        material.customProgramCacheKey = () => `crowd-articulation-v5-tier-${tier}`;
+        material.customProgramCacheKey = () => `crowd-articulation-v6-tier-${tier}`;
         material.onBeforeCompile = (shader) => {
           shader.uniforms["crowdTime"] = uniforms.time;
           shader.uniforms["crowdPulse"] = uniforms.pulse;
@@ -324,7 +324,7 @@ export function CrowdLod({
             shader.vertexShader = shader.vertexShader
               .replace(
                 "#include <common>",
-                "#include <common>\nvarying vec2 crowdCardUv; varying vec3 crowdCardSkin; varying vec2 crowdCardStyle;",
+                "#include <common>\nvarying vec2 crowdCardUv; varying vec3 crowdCardSkin; varying vec2 crowdCardStyle; varying vec2 crowdNextFrameUv; varying float crowdFrameBlend;",
               )
               .replace(
                 "#include <uv_vertex>",
@@ -343,17 +343,30 @@ export function CrowdLod({
                 if (crowdChant > 0.1 && cardBeat > mix(0.42, 0.68, crowdStyle.x)) cardPose = 2.0;
                 if (max(cardCheer, cardWaveRaise) > 0.18) cardPose = cardBeat > 0.26 || cardWaveRaise > 0.2 ? 1.0 : 2.0;
                 if (crowdSurprise * cardResponse > 0.12) cardPose = 3.0;
-                float cardFrame = floor(mod(crowdTime * 8.0 + crowdStyle.x * 8.0, 8.0));
+                float cardPhase = mod(crowdTime * 8.0 + crowdStyle.x * 8.0, 8.0);
+                float cardFrame = floor(cardPhase);
+                crowdFrameBlend = fract(cardPhase);
                 // Pixel inset prevents atlas bleed at the edge of a gesture tile.
                 vec2 insetUv = mix(vec2(0.5 / 64.0, 0.5 / 128.0), vec2(1.0 - 0.5 / 64.0, 1.0 - 0.5 / 128.0), vMapUv);
-                vMapUv = insetUv * vec2(0.125, 0.25) + vec2(cardFrame * 0.125, 0.75 - cardPose * 0.25);`,
+                vMapUv = insetUv * vec2(0.125, 0.25) + vec2(cardFrame * 0.125, 0.75 - cardPose * 0.25);
+                crowdNextFrameUv = insetUv * vec2(0.125, 0.25) + vec2(mod(cardFrame + 1.0, 8.0) * 0.125, 0.75 - cardPose * 0.25);`,
               );
             // Colour by fragment region, avoiding the old four-vertex skin gradient
             // that washed team shirts into flesh from head to waist.
             shader.fragmentShader = shader.fragmentShader
               .replace(
+                "#include <map_fragment>",
+                `#ifdef USE_MAP
+                // Interpolate in the same colour space as Three's CanvasTexture.
+                // Preserve alpha for the existing opaque alpha-tested batch.
+                vec4 crowdA = texture2D(map, vMapUv);
+                vec4 crowdB = texture2D(map, crowdNextFrameUv);
+                diffuseColor *= mix(crowdA, crowdB, crowdFrameBlend);
+                #endif`,
+              )
+              .replace(
                 "#include <common>",
-                "#include <common>\nvarying vec2 crowdCardUv; varying vec3 crowdCardSkin; varying vec2 crowdCardStyle;",
+                "#include <common>\nvarying vec2 crowdCardUv; varying vec3 crowdCardSkin; varying vec2 crowdCardStyle; varying vec2 crowdNextFrameUv; varying float crowdFrameBlend;",
               )
               .replace(
                 "#include <color_fragment>",

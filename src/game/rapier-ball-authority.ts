@@ -244,9 +244,12 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     if (this.disposed) return;
 
     if (holder && holder.id === state.holder) {
-      this.setHeldState(state, holder);
+      const target = this.setHeldState(state, holder);
       this.stepWorld(dt);
-      this.writeHeldState(state, holder);
+      // Without an observer the synchronous solver cannot change the holder.
+      // Reuse its target; observers may mutate external state, so preserve
+      // the existing post-solver read when instrumentation is installed.
+      this.writeHeldState(state, holder, this.options.observeSubstep ? undefined : target);
       this.lastWritten = copyState(state);
       return;
     }
@@ -342,10 +345,14 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     this.ballBody.setNextKinematicTranslation(target);
     this.ballBody.setLinvel({ x: finite(holder.vx), y: 0, z: finite(holder.vz) }, true);
     this.ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    return target;
   }
 
-  private writeHeldState(state: RapierBallState, holder: RapierBallHolder) {
-    const target = this.holderTarget(holder);
+  private writeHeldState(
+    state: RapierBallState,
+    holder: RapierBallHolder,
+    target = this.holderTarget(holder),
+  ) {
     state.x = target.x;
     state.z = target.z;
     state.height = BALL_PHYSICS_RADIUS;

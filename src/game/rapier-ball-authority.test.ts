@@ -3,6 +3,48 @@ import { describe, expect, it, vi } from "vitest";
 import { BALL_PHYSICS_RADIUS, createRapierBallAuthority } from "./rapier-ball-authority";
 
 describe("RapierBallAuthority", () => {
+  it("reuses the held target while preserving observer changes after solver execution", async () => {
+    for (const observed of [false, true]) {
+      const holder = { id: "home-9", x: 4, z: -2, vx: 3, vz: 4 };
+      const physics = await createRapierBallAuthority(
+        observed
+          ? {
+              observeSubstep: () => {
+                holder.x = 8;
+              },
+            }
+          : {},
+      );
+      const state = {
+        x: 0,
+        z: 0,
+        height: BALL_PHYSICS_RADIUS,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        spin: 0,
+        holder: holder.id,
+      };
+      const target = vi.spyOn(
+        physics as unknown as {
+          holderTarget(value: typeof holder): { x: number; y: number; z: number };
+        },
+        "holderTarget",
+      );
+      try {
+        physics.step(1 / 30, state, holder);
+        expect(target).toHaveBeenCalledTimes(observed ? 2 : 1);
+        expect(state.x).toBe((observed ? 8 : 4) + (3 / 5) * 0.9);
+        expect(state.z).toBe(-2 + (4 / 5) * 0.9);
+        expect(state.vx).toBe(3);
+        expect(state.vz).toBe(4);
+      } finally {
+        target.mockRestore();
+        physics.dispose();
+      }
+    }
+  });
+
   it("avoids per-substep velocity reads for a straight flight without skipping solver work", async () => {
     let observations = 0;
     const physics = await createRapierBallAuthority({ observeSubstep: () => observations++ });

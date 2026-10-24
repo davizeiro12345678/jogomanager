@@ -1,11 +1,42 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { lookFor, proportionsFor } from "./player-model";
-import { headPoint, lipPatch } from "./player-sculpt";
+import { headPoint, lipPatch, eyelidSurface } from "./player-sculpt";
 import { buildSculptedFace, faceSurfaceZ } from "./player-sculpt";
 import { playerMaterials } from "./player-materials";
+import { headComplexion } from "./sculpt/head";
 
 describe("attached facial surface shading", () => {
+  it.each(["studio-fla-MF-1", "orbital-depth-dark"])(
+    "continues skull albedo into lip and eyelid attachments in both views: %s",
+    (id) => {
+      const look = lookFor(id, "MF", true);
+      const P = proportionsFor(look);
+      const expected = new THREE.Color();
+      for (const portrait of [false, true])
+        for (const lower of [false, true]) {
+          const geometries = [
+            lipPatch(P, look.seed, lower),
+            eyelidSurface(P, 1, look.seed, !lower, portrait),
+          ];
+          for (const geometry of geometries) {
+            const position = geometry.getAttribute("position");
+            const color = geometry.getAttribute("color");
+            // The outer row is the anatomical attachment, after each patch's
+            // own pigment/waterline has vanished. Compare actual authored
+            // attributes; merely sharing a material does not ensure this.
+            for (let i = position.count - 25; i < position.count; i++) {
+              headComplexion(P, position.getX(i), position.getY(i), position.getZ(i), expected);
+              expect(color.getX(i)).toBeCloseTo(expected.r, 6);
+              expect(color.getY(i)).toBeCloseTo(expected.g, 6);
+              expect(color.getZ(i)).toBeCloseTo(expected.b, 6);
+            }
+            geometry.dispose();
+          }
+        }
+    },
+  );
+
   it("keeps relaxed mouth details flush with the face instead of stacking projected bars", () => {
     const look = { ...lookFor("studio-fla-MF-1", "MF", true), beard: "none" as const };
     const P = proportionsFor(look);

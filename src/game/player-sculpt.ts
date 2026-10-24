@@ -1,4 +1,12 @@
-import { gauss, faceRing, headPoint, gridSurface, sculptedHead, sculptedHair } from "./sculpt/head";
+import {
+  gauss,
+  faceRing,
+  headPoint,
+  headComplexion,
+  gridSurface,
+  sculptedHead,
+  sculptedHair,
+} from "./sculpt/head";
 import type { HeadShape } from "./sculpt/head";
 export { headPoint, sculptedHead, sculptedHair } from "./sculpt/head";
 import * as THREE from "three";
@@ -156,7 +164,12 @@ function eyePatch(P: Proportions, side: number, seed: number, portrait = false) 
       faceSurfaceZ(P, x, y, seed) +
         // The sclera sits in the socket. The corneal dome can then project
         // naturally without turning the whole eye into a white marble.
-        P.headR * (0.003 + aperture * Math.sin(v * Math.PI) * 0.008),
+        P.headR *
+          (0.003 +
+            aperture * Math.sin(v * Math.PI) * 0.008 -
+            // The canthi enter the orbital skin. Keeping even their zero-area
+            // tips in front produced pale triangular stickers under side light.
+            0.02 * (1 - aperture) ** 2),
     );
   });
   const uv = geometry.getAttribute("uv");
@@ -269,9 +282,14 @@ export function sculptedEar(P: Proportions, side: number, detail: boolean, portr
       lobe * v * 0.035 -
       rimReturn;
     return new THREE.Vector3(
-      side * (P.headW * 0.925 + R * depth),
+      // The root belongs inside the temporal side plane; a fixed outer
+      // root left the entire auricle floating beside the portrait silhouette.
+      side * (P.headW * (portrait ? 0.87 : 0.925) + R * depth),
       R * (-0.055 + (Math.sin(a) * v * (0.23 + upper * 0.028) - lobe * v * 0.013) * contourScale),
-      R * (-0.025 + (Math.cos(a) * v * (0.13 - upper * 0.018) + lobe * v * 0.028) * contourScale),
+      R *
+        (-0.025 -
+          (portrait ? 0.035 : 0) +
+          (Math.cos(a) * v * (0.13 - upper * 0.018) + lobe * v * 0.028) * contourScale),
     );
   });
   // Outward surface must face the corresponding side of the head.
@@ -373,8 +391,26 @@ export function lipPatch(P: Proportions, seed: number, lower: boolean) {
     patchNormal.fromBufferAttribute(normals, i).lerp(facialNormal, attachment).normalize();
     normals.setXYZ(i, patchNormal.x, patchNormal.y, patchNormal.z);
   }
+  continueHeadComplexion(geometry, P);
   mapHeadSurfaceUv(geometry, P, seed);
   return geometry;
+}
+
+/** Multiply local vermilion/waterline pigment by the same continuous skin
+ * field as the underlying skull; attachments now match albedo as well as UVs. */
+function continueHeadComplexion(geometry: THREE.BufferGeometry, P: HeadShape) {
+  const position = geometry.getAttribute("position");
+  const color = geometry.getAttribute("color");
+  const pigment = new THREE.Color();
+  for (let i = 0; i < position.count; i++) {
+    headComplexion(P, position.getX(i), position.getY(i), position.getZ(i), pigment);
+    color.setXYZ(
+      i,
+      color.getX(i) * pigment.r,
+      color.getY(i) * pigment.g,
+      color.getZ(i) * pigment.b,
+    );
+  }
 }
 
 /** Match the skull's skin-map scale on an attached facial patch. A full 0–1
@@ -439,6 +475,7 @@ function relaxedMouthCrease(P: Proportions, seed: number) {
     colors.set([1 - crease * 0.5, 1 - crease * 0.61, 1 - crease * 0.58], i * 3);
   }
   geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  continueHeadComplexion(geometry, P);
   mapHeadSurfaceUv(geometry, P, seed);
   return geometry;
 }
@@ -598,7 +635,7 @@ export function eyelidSurface(
     }
     geometry.computeVertexNormals();
   }
-  if (portrait) {
+  {
     // Settle the flap's outer shading into the continuous face, rather than
     // lighting its last narrow triangle strip as a separate white rim.
     const position = geometry.getAttribute("position"),
@@ -632,12 +669,18 @@ export function eyelidSurface(
     const rim = (1 - THREE.MathUtils.smoothstep(uv.getY(i), 0, 0.35)) * arch * 0.075;
     // A narrow warm waterline connects sclera to skin. The upper fold keeps
     // its contact shade even in the studio's broad ambient fill.
-    const crease = upper ? gauss(uv.getY(i), 0, 0.72, 0, 0.18, 1) * arch * 0.035 : 0;
+    const crease = upper
+      ? gauss(uv.getY(i), 0, 0.72, 0, 0.18, 1) *
+        arch *
+        0.035 *
+        (1 - THREE.MathUtils.smoothstep(uv.getY(i), 0.8, 1))
+      : 0;
     color.set([1 - rim * 0.45 - crease, 1 - rim - crease, 1 - rim * 1.12 - crease], i * 3);
   }
   geometry.setAttribute("color", new THREE.BufferAttribute(color, 3));
   // Continue skull pores across the attachment instead of repeating the
   // complete skin atlas in each thin flap (which reads as a shiny sticker).
+  continueHeadComplexion(geometry, P);
   mapHeadSurfaceUv(geometry, P, seed);
   return geometry;
 }

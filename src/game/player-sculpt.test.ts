@@ -8,6 +8,7 @@ import {
   palmSurface,
 } from "./rig-geometry";
 import { buildRigSkin, countRigSkin } from "./rig-skin";
+import { headComplexion } from "./sculpt/head";
 import { HERO_MESH_COST } from "./draw-budget";
 import { lookFor, proportionsFor, type HairStyle } from "./player-model";
 import { faceMorphology, skinAlbedo } from "./player-morphology";
@@ -168,9 +169,12 @@ describe("sculpted football player", () => {
           expect(projection).toBeLessThan(p.headR * 0.017);
           if (i >= 6 * 25) {
             expect(projection).toBeCloseTo(p.headR * 0.0008, 7);
-            expect(colors.getX(i)).toBeCloseTo(1, 7);
-            expect(colors.getY(i)).toBeCloseTo(1, 7);
-            expect(colors.getZ(i)).toBeCloseTo(1, 7);
+            // At the attachment, match the skull's actual complexion, not
+            // unpigmented white (which made a bright strip under the lip).
+            const pigment = headComplexion(p, x, y, positions.getZ(i), new THREE.Color());
+            expect(colors.getX(i)).toBeCloseTo(pigment.r, 7);
+            expect(colors.getY(i)).toBeCloseTo(pigment.g, 7);
+            expect(colors.getZ(i)).toBeCloseTo(pigment.b, 7);
           }
           // Reconstruct the head sample from its authored nonuniform UV grid.
           // This verifies the attached lip samples pores/roughness at the same
@@ -429,7 +433,10 @@ describe("sculpted football player", () => {
       for (let i = 0; i < points.count; i++) {
         const projection =
           points.getZ(i) - faceSurfaceZ(P, points.getX(i), points.getY(i), look.seed);
-        expect(projection).toBeGreaterThan(0);
+        // Corners are intentionally buried; the central sclera remains
+        // visible while pale point-like triangles cannot escape the orbit.
+        if (i % 21 === 0 || i % 21 === 20) expect(projection).toBeLessThan(0);
+        else expect(projection).toBeGreaterThan(-P.headR * 0.02);
         expect(projection).toBeLessThan(P.headR * 0.05);
       }
     }

@@ -52,7 +52,11 @@ import {
 import { type SimPlayer, type SimView } from "@/game/sim";
 import { type Quality } from "./player-rig-contract";
 import { applyRigFacialPresentation } from "./player-rig-face";
-import { resolvePlayerRigAnimationFrame } from "./player-rig-animation";
+import {
+  PlayerRigAnimationClock,
+  resolvePlayerRigAnimationFrame,
+  supportShiftAt,
+} from "./player-rig-animation";
 
 export type PlayerRigBoneRefs = Pick<
   Record<RigJoint, React.RefObject<THREE.Bone | null>>,
@@ -195,7 +199,7 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
   const ikBuf = useRef<Pose>(emptyPose());
   const clipName = useRef<ClipName>("idle");
   const clipTime = useRef(0);
-  const acc = useRef(0);
+  const animationClock = useMemo(() => new PlayerRigAnimationClock(), []);
   const lastClothTime = useRef<number | null>(null);
   const looseHair = useRef(createAthleteHairMotionState());
   const idleFor = useRef(0);
@@ -243,7 +247,9 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
       lastClothTime.current = state.clock.elapsedTime;
       return;
     }
-    const dt = Math.min(rawDt, 0.05);
+    // Secondary springs use a bounded integration step; pose clocks retain
+    // the full elapsed interval below, including frames longer than 50 ms.
+    const dt = Number.isFinite(rawDt) ? Math.max(0, Math.min(rawDt, 0.05)) : 0;
 
     // A vista do Worker já interpola snapshots. Uma segunda mola aqui fazia o
     // corpo perseguir um alvo em movimento e criava jitter em FPS variável.
@@ -258,7 +264,7 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     const facing = toX * -cameraMatrix[8]! + toZ * -cameraMatrix[10]!;
     const dist2 = toX * toX + toZ * toZ;
     if (facing < -4 && dist2 > 144) {
-      acc.current = 0;
+      animationClock.reset();
       // A culled player resumes from the current rendering clock, not from
       // an elapsed interval that may span a long off-screen sequence.
       lastClothTime.current = state.clock.elapsedTime;
@@ -350,10 +356,8 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
 
     // ---- passo de animação em taxa reduzida longe da câmera
     const step = paused || previewAt !== undefined || lod === 0 ? 0 : lod === 1 ? 1 / 36 : 1 / 16;
-    acc.current += dt;
-    if (acc.current < step) return;
-    const adt = acc.current;
-    acc.current = 0;
+    const adt = animationClock.consume(rawDt, step);
+    if (adt === null) return;
 
     const speed = dirLen;
     // histerese: só é "parado" depois de ~0,25 s praticamente sem deslocamento,
@@ -520,10 +524,7 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     const shift =
       Math.max(-1, Math.min(1, support)) * 0.045 * Math.min(1, speed / 4) + actionSupport.shiftX;
     const previousShift = hips.current?.position.x ?? 0;
-    const hipShiftX =
-      previewAt !== undefined
-        ? shift
-        : previousShift + (shift - previousShift) * Math.min(1, adt * 14);
+    const hipShiftX = previewAt !== undefined ? shift : supportShiftAt(previousShift, shift, adt);
     const ground = solveGroundContact({
       P,
       pose: c,

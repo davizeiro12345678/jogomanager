@@ -242,6 +242,35 @@ export function gridSurface(
   return geometry;
 }
 
+/** Continuous linear skin pigment/contact field shared by the skull and its
+ * attached tissues. Author once in head space so a lid/lip cannot become a
+ * pale sticker where its own pigment fades out. No texture or frame cost. */
+export function headComplexion(
+  P: HeadShape,
+  pointX: number,
+  pointY: number,
+  pointZ: number,
+  out: THREE.Color,
+) {
+  const x = pointX / P.headW;
+  const y = pointY / P.headR;
+  const front = Math.max(0, pointZ / P.headD);
+  // Subtle blood flow in cheeks/nose, cooler sockets and warmer temples.
+  // Baked linear multipliers preserve every skin tone and add no draw calls.
+  const cheek = Math.exp(-(((Math.abs(x) - 0.52) / 0.25) ** 2) - ((y + 0.18) / 0.28) ** 2);
+  const nose = Math.exp(-((x / 0.17) ** 2) - ((y + 0.24) / 0.18) ** 2);
+  const socket = Math.exp(-(((Math.abs(x) - 0.35) / 0.2) ** 2) - ((y - 0.09) / 0.18) ** 2);
+  // Keep cheek variation visible on the retained narrower main skull,
+  // including the low-resolution facial rings, without darkening the nose.
+  const warmth = (cheek * 0.0565 + nose * 0.035) * Math.min(1, front);
+  const nasalFold = gauss(Math.abs(x), y, 0.18, -0.28, 0.06, 0.09);
+  const philtrum = gauss(x, y, 0, -0.37, 0.045, 0.075);
+  const chinFossa = gauss(x, y, 0, -0.67, 0.26, 0.055);
+  const shade =
+    (socket * 0.1 + nasalFold * 0.028 + philtrum * 0.035 + chinFossa * 0.027) * Math.min(1, front);
+  return out.setRGB(1 - shade, 1 - shade - warmth, 1 - shade - warmth * 1.3);
+}
+
 export function sculptedHead(
   P: HeadShape,
   seed = 0,
@@ -281,6 +310,7 @@ export function sculptedHead(
   const opposite = new THREE.Vector3();
   const epsilon = 0.0005;
   const complexion = new Float32Array(positions.count * 3);
+  const pigment = new THREE.Color();
   for (let i = 0; i < positions.count; i++) {
     const angle = headAngle(uv.getX(i)),
       height = positions.getY(i) / P.headR;
@@ -292,24 +322,8 @@ export function sculptedHead(
       .sub(sampleHeadPoint(P, height - epsilon, angle, morphology, opposite));
     surfaceNormal.crossVectors(tangentAngle, tangentHeight).normalize();
     normal.setXYZ(i, surfaceNormal.x, surfaceNormal.y, surfaceNormal.z);
-    const x = positions.getX(i) / P.headW;
-    const y = positions.getY(i) / P.headR;
-    const front = Math.max(0, positions.getZ(i) / P.headD);
-    // Subtle blood flow in cheeks/nose, cooler sockets and warmer temples.
-    // Baked linear multipliers preserve every skin tone and add no draw calls.
-    const cheek = Math.exp(-(((Math.abs(x) - 0.52) / 0.25) ** 2) - ((y + 0.18) / 0.28) ** 2);
-    const nose = Math.exp(-((x / 0.17) ** 2) - ((y + 0.24) / 0.18) ** 2);
-    const socket = Math.exp(-(((Math.abs(x) - 0.35) / 0.2) ** 2) - ((y - 0.09) / 0.18) ** 2);
-    // Keep cheek variation visible on the retained narrower main skull,
-    // including the low-resolution facial rings, without darkening the nose.
-    const warmth = (cheek * 0.0565 + nose * 0.035) * Math.min(1, front);
-    const nasalFold = gauss(Math.abs(x), y, 0.18, -0.28, 0.06, 0.09);
-    const philtrum = gauss(x, y, 0, -0.37, 0.045, 0.075);
-    const chinFossa = gauss(x, y, 0, -0.67, 0.26, 0.055);
-    const shade =
-      (socket * 0.06 + nasalFold * 0.028 + philtrum * 0.035 + chinFossa * 0.027) *
-      Math.min(1, front);
-    complexion.set([1 - shade, 1 - shade - warmth, 1 - shade - warmth * 1.3], i * 3);
+    headComplexion(P, positions.getX(i), positions.getY(i), positions.getZ(i), pigment);
+    complexion.set([pigment.r, pigment.g, pigment.b], i * 3);
   }
   geometry.setAttribute("color", new THREE.BufferAttribute(complexion, 3));
   for (let a = 0; a < normal.count; a += columns + 1) {
