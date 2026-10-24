@@ -175,32 +175,9 @@ function RootReadingControls({ pathname }: { pathname: string }) {
     // Route metadata is only written after the client page renders. Keep its
     // copy and translation tables out of every initial route's static closure.
     void import("../lib/game-page-metadata")
-      .then(({ gamePageMetadata }) => {
+      .then(({ applyGamePageMetadata }) => {
         if (!active) return;
-        const page = gamePageMetadata(pathname, lang, t);
-        if (!page) return;
-        document.title = page.title;
-        for (const selector of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
-          document.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", page.title);
-        }
-        for (const selector of [
-          'meta[name="description"]',
-          'meta[property="og:description"]',
-          'meta[name="twitter:description"]',
-        ]) {
-          document
-            .querySelector<HTMLMetaElement>(selector)
-            ?.setAttribute("content", page.description);
-        }
-        let localeTag = document.querySelector<HTMLMetaElement>('meta[property="og:locale"]');
-        if (page.locale) {
-          if (!localeTag) {
-            localeTag = document.createElement("meta");
-            localeTag.setAttribute("property", "og:locale");
-            document.head.append(localeTag);
-          }
-          localeTag.content = page.locale;
-        } else localeTag?.remove();
+        applyGamePageMetadata(pathname, lang, t);
       })
       .catch(() => undefined);
     return () => {

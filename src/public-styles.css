@@ -5,6 +5,7 @@
 @source "./components/SiteFooter.tsx";
 @source "./components/PublicLinks.tsx";
 @source "./components/CommunityInvite.tsx";
+@source "./components/DiscordLink.tsx";
 @source "./components/StickyPlayCta.tsx";
 @source "./components/LeagueDataInsights.tsx";
 @source "./components/LeagueExtras.tsx";

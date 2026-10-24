@@ -174,6 +174,36 @@ export function gamePageMetadata(pathname: string, lang: Lang, translate: (key: 
   };
 }
 
+/** Client-only metadata updates stay with the on-demand gameplay catalogue. */
+export function applyGamePageMetadata(
+  pathname: string,
+  lang: Lang,
+  translate: (key: string) => string,
+) {
+  const page = gamePageMetadata(pathname, lang, translate);
+  if (!page) return;
+  document.title = page.title;
+  for (const selector of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
+    document.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", page.title);
+  }
+  for (const selector of [
+    'meta[name="description"]',
+    'meta[property="og:description"]',
+    'meta[name="twitter:description"]',
+  ]) {
+    document.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", page.description);
+  }
+  let localeTag = document.querySelector<HTMLMetaElement>('meta[property="og:locale"]');
+  if (page.locale) {
+    if (!localeTag) {
+      localeTag = document.createElement("meta");
+      localeTag.setAttribute("property", "og:locale");
+      document.head.append(localeTag);
+    }
+    localeTag.content = page.locale;
+  } else localeTag?.remove();
+}
+
 /** Static route metadata is available before hydration and excludes personal saves. */
 export function gamePageHead(path: string) {
   const page = gamePageMetadata(path, "pt-BR", (key) => translateBootstrap("pt-BR", key));
