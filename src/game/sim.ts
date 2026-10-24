@@ -2197,6 +2197,11 @@ export class MatchSim {
       if (diff > 0) return -Math.min(1, (15 - remaining) / 15) * 0.6;
       return 0;
     };
+    const urgencyHome = urgency("home");
+    const urgencyAway = urgency("away");
+    const weatherTraction = this.weather === "rain" ? 0.72 : 1;
+    const roamingTime = this.time * 0.4;
+    const freedomTime = this.time * 0.12;
 
     // Linha defensiva conjunta: a referência é o zagueiro mais recuado do lado
     // sem a bola, o que permite subir junto e armar impedimento.
@@ -2231,20 +2236,27 @@ export class MatchSim {
         pressLine,
         shift,
         plan: activePlan(setup.tactics),
+        phase: this.tacticalPhase(side),
       };
     };
     let homeMovement: ReturnType<typeof movementFor> | undefined;
     let awayMovement: ReturnType<typeof movementFor> | undefined;
+    // Count all roster entries, even suspended/ball-carrying players; this
+    // matches tacticalSlot's original side-relative iteration exactly.
+    let homeSlotIndex = 0;
+    let awaySlotIndex = 0;
     for (const p of this.players) {
+      const rosterSlot =
+        p.side === "home" ? Math.min(10, homeSlotIndex++) : Math.min(10, awaySlotIndex++);
       if (p.sentOff) continue;
       if (p.id === this.ball.holder) continue;
-      const { setup, dir, attacking, widthFactor, surge, pressLine, shift, plan } =
+      const { setup, dir, attacking, widthFactor, surge, pressLine, shift, plan, phase } =
         p.side === "home"
           ? (homeMovement ??= movementFor("home"))
           : (awayMovement ??= movementFor("away"));
       let tx = p.slotX * FIELD_X * 0.9 + shift + bx * 0.22 + pressLine * dir;
       let tz = p.slotZ * FIELD_Z * widthFactor + bz * 0.28;
-      const slot = plan ? this.tacticalSlot(p) : 0;
+      const slot = plan ? rosterSlot : 0;
       const instructionForRole = plan?.players.find((s) => s.slot === slot);
       const learnedRole = instructionForRole
         ? (setup.tactics.advanced!.familiarity.roles[
@@ -2255,7 +2267,7 @@ export class MatchSim {
         ? phasePosition(
             setup.tactics,
             slot,
-            this.tacticalPhase(p.side),
+            phase,
             (p.passing + p.defending) / 2,
             learnedRole,
           )
@@ -2281,7 +2293,8 @@ export class MatchSim {
       }
       let sprint = 1;
 
-      const ballDist = Math.hypot(bx - p.x, bz - p.z);
+      // Attacking outfielders never read ballDist; avoid that sqrt entirely.
+      const ballDist = p.pos === "GK" || !attacking ? Math.hypot(bx - p.x, bz - p.z) : 0;
 
       if (p.pos === "GK") {
         // Goleiro acompanha ângulo e profundidade: protege o primeiro pau sem
@@ -2374,7 +2387,7 @@ export class MatchSim {
           sprint = (surge ? 1.3 : 1.15) * (0.82 + p.stamina / 550);
         }
         // perdendo no fim: a equipe inteira sobe para pressionar
-        tx += urgency(p.side) * 7 * dir;
+        tx += (p.side === "home" ? urgencyHome : urgencyAway) * 7 * dir;
       } else {
         // Movimento sem bola de verdade, em vez de balanço aleatório:
         // atacante ataca as costas da linha, ponta corta para dentro,
@@ -2397,8 +2410,8 @@ export class MatchSim {
           tz += Math.sign(p.slotZ) * 3.5;
           sprint = 1.2;
         }
-        tz += Math.sin(this.time * 0.4 + p.number) * 0.9;
-        tx += urgency(p.side) * 5 * dir;
+        tz += Math.sin(roamingTime + p.number) * 0.9;
+        tx += (p.side === "home" ? urgencyHome : urgencyAway) * 5 * dir;
       }
 
       if (desired && p.pos !== "GK" && !chase.has(p.id)) {
@@ -2407,7 +2420,7 @@ export class MatchSim {
         tx = tx * 0.35 + intendedX * 0.65;
         tz = tz * 0.35 + intendedZ * 0.65;
         if (attacking && plan?.possession.runs && p.pos === "FW") tx += dir * 3;
-        tx += (desired.player.freedom - 1) * Math.sin(this.time * 0.12 + p.number) * 2;
+        tx += (desired.player.freedom - 1) * Math.sin(freedomTime + p.number) * 2;
       }
       tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, tx));
       tz = Math.max(-FIELD_Z + 2, Math.min(FIELD_Z - 2, tz));
@@ -2430,7 +2443,7 @@ export class MatchSim {
         // reação tardia a um chute próximo
         if ((this.reactionUntil.get(p.id) ?? 0) > this.time) speedEff *= 0.3;
       }
-      advanceAthlete(p, tx, tz, speedEff, dt, this.weather === "rain" ? 0.72 : 1);
+      advanceAthlete(p, tx, tz, speedEff, dt, weatherTraction);
     }
   }
 
