@@ -183,16 +183,16 @@ export function applyGamePageMetadata(
   const page = gamePageMetadata(pathname, lang, translate);
   if (!page) return;
   document.title = page.title;
-  for (const [selectors, content] of [
-    ['meta[property="og:title"],meta[name="twitter:title"]', page.title],
-    [
-      'meta[name="description"],meta[property="og:description"],meta[name="twitter:description"]',
-      page.description,
-    ],
-  ])
-    document
-      .querySelectorAll<HTMLMetaElement>(selectors!)
-      .forEach((tag) => (tag.content = content!));
+  for (const selector of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
+    document.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", page.title);
+  }
+  for (const selector of [
+    'meta[name="description"]',
+    'meta[property="og:description"]',
+    'meta[name="twitter:description"]',
+  ]) {
+    document.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", page.description);
+  }
   let localeTag = document.querySelector<HTMLMetaElement>('meta[property="og:locale"]');
   if (page.locale) {
     if (!localeTag) {

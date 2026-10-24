@@ -48,7 +48,10 @@ const planBefore = unwrap(read("before/database-plan.json"))?.[0]?.["QUERY PLAN"
 const planAfter = unwrap(read("midpoint/database-plan.json"))?.[0]?.["QUERY PLAN"]?.[0];
 const setup = read("after/match-setup/match-setup.json");
 const tests = read("after/tests.json");
-const bundle = JSON.parse(fs.readFileSync("bundle-impact.json", "utf8"));
+// Keep the original comparison paired with its original fixtures. Later build
+// comparisons belong to the dated remediation section, not this initial table.
+const bundle = read("bundle-impact.json");
+const remediation = read("remediation/current-status.json");
 const final = read("after/quality-final.json");
 const quality = [
   ...(final?.checks ?? []),
@@ -455,6 +458,7 @@ const data = {
   app,
   lighthouse,
   gallery,
+  remediation,
 };
 fs.writeFileSync(path.join(root, "metrics.json"), JSON.stringify(data, null, 2));
 const csv = [
@@ -578,6 +582,73 @@ html +=
   "</div>";
 html +=
   '<aside class="notice"><p><strong>Escopo:</strong> os ensaios 3D usam o mesmo fallback procedural de texturas nas versões, pois os assets publicados não ficaram disponíveis neste ambiente. Ensaios curtos e longos ficam separados. Uma execução por GPU e versão não certifica a campanha de três repetições. O aplicativo e a Edge Function desta atualização não foram publicados.</p></aside>';
+if (remediation) {
+  const checks = remediation.checks
+    .map(
+      (check) =>
+        "<tr><td>" +
+        esc(check.name) +
+        '</td><td><span class="tag ' +
+        (check.status === "aprovado" ? "ok" : check.status === "falhou" ? "bad" : "pending") +
+        '">' +
+        esc(check.status) +
+        "</span></td><td>" +
+        esc(check.detail) +
+        '</td><td><a href="' +
+        esc(check.evidence) +
+        '">prova ↗</a></td></tr>',
+    )
+    .join("");
+  const images = (remediation.photos ?? [])
+    .map(
+      (photo) =>
+        "<figure><figcaption>" +
+        esc(photo.label) +
+        '</figcaption><a href="' +
+        esc(photo.path) +
+        '"><img src="' +
+        esc(photo.path) +
+        '" alt="' +
+        esc(photo.label) +
+        '" loading="lazy" style="width:100%;height:460px;object-fit:contain"></a></figure>',
+    )
+    .join("");
+  const comparisons = (remediation.metrics ?? [])
+    .map(
+      (metric) =>
+        "<tr><td>" +
+        esc(metric.label) +
+        "</td><td>" +
+        esc((metric.before / 1024).toFixed(2)) +
+        " KiB</td><td>" +
+        esc((metric.mid / 1024).toFixed(2)) +
+        " KiB</td><td>" +
+        esc((metric.after / 1024).toFixed(2)) +
+        " KiB</td><td>" +
+        esc(metric.reductionPercent) +
+        "</td></tr>",
+    )
+    .join("");
+  html += section(
+    "Atualização / Correções verificadas",
+    "Estado atual e histórico preservado.",
+    "<p>" +
+      esc(remediation.updatedAt) +
+      " · Base de integração <code>" +
+      esc(remediation.baseline) +
+      "</code> · revisão CI <code>" +
+      esc(remediation.ciHead) +
+      "</code>. " +
+      esc(remediation.scope) +
+      '</p><div class="table-wrap"><table><thead><tr><th>Verificação</th><th>Estado atual</th><th>Resultado e escopo</th><th>Evidência</th></tr></thead><tbody>' +
+      checks +
+      '</tbody></table></div><h3 style="margin-top:28px">Carregamento: base atual, etapa intermediária e correção</h3><p>Mesma máquina, Node, dependências e analisador. A coluna intermediária preserva a etapa 9 reprovada. A hidratação adiada está incluída em todos os caminhos. Tamanhos comprimidos são estimativas offline.</p><div class="table-wrap"><table><thead><tr><th>Métrica</th><th>Base 3ff9192</th><th>Etapa 9</th><th>Etapa 14</th><th>Redução final</th></tr></thead><tbody>' +
+      comparisons +
+      '</tbody></table></div><div class="gallery" style="margin-top:20px">' +
+      images +
+      "</div><p>As tabelas e fotos a seguir preservam a campanha inicial de realismo. Falhas históricas continuam registradas; a tabela desta atualização identifica as correções e a revisão efetivamente verificada.</p>",
+  );
+}
 html += section(
   "01 / Evidência visual",
   "A mesma cena, em três etapas.",
@@ -616,9 +687,9 @@ html += section(
   '<div class="timeline"><article><span class="eyebrow">Antes</span><h3>Base isolada</h3><p>Mesmo commit inicial, dependências e protocolo. Catálogo, plano SQL e fotos preservados. Capturas iniciais por software ficam apenas como diagnóstico.</p></article><article><span class="eyebrow">Metade</span><h3>Primeira integração</h3><p>28 fases e 45 aliases de eventos. Cabelo e materiais inspecionados. A amostra intermediária documenta também a regressão de p95.</p></article><article><span class="eyebrow">Depois</span><h3>Correções e limites</h3><p>Clubes e atletas reconciliados, datas e estádios recuperados, torcida ajustada aos degraus. Física visual sem tempo artificial e 106 falas autorais com rotação sem repetir no ciclo.</p></article></div>',
 );
 html +=
-  '<section class="section" id="gates"><span class="eyebrow">06 / Critérios obrigatórios</span><h2>A publicação depende de resolver as falhas.</h2><div class="table-wrap"><table><thead><tr><th>Verificação</th><th>Estado</th><th>Resultado e limite</th><th>Evidência</th></tr></thead><tbody>' +
+  '<section class="section" id="gates"><span class="eyebrow">06 / Registro da campanha inicial</span><h2>Resultados históricos dos critérios obrigatórios.</h2><p>Esta tabela preserva a primeira campanha. Consulte a atualização acima para correções posteriores; aprovação exige uma revisão com todos os critérios obrigatórios atendidos.</p><div class="table-wrap"><table><thead><tr><th>Verificação</th><th>Estado inicial</th><th>Resultado e limite</th><th>Evidência</th></tr></thead><tbody>' +
   qrows +
-  '</tbody></table></div><div class="grid2" style="margin-top:18px"><article class="block"><h3>Correções necessárias</h3><ul><li>Eliminar o crescimento dos bundles e reduzir o Rapier abaixo de 180.000 bytes, preservando os limites.</li><li>Investigar o custo de GPU e overdraw na Intel antes de repetir a campanha completa.</li><li>Executar o replay SQL e as fixtures em banco descartável.</li><li>Resolver a divergência da migração canônica de segurança e os cupons previsíveis ativos pelo fluxo autorizado.</li><li>Completar Lighthouse, audição das vozes reais e verificação de assets publicados.</li><li>Após aprovação dos critérios, entregar aplicativo/Edge Function e confirmar o SHA exato publicado.</li></ul></article><article class="block"><h3>Limites das conclusões</h3><ul><li>Ensaio curto não equivale ao FPS de uma partida ao vivo.</li><li>Uma consulta mais rápida não mede o Supabase inteiro.</li><li>28 categorias suportadas não significam 28 importações concluídas.</li><li>Testes de áudio usam transportes simulados; não certificam o timbre real.</li><li>Fotos locais não comprovam publicação desta revisão em jogomanager.com.</li></ul></article></div></section>';
+  '</tbody></table></div><div class="grid2" style="margin-top:18px"><article class="block"><h3>Trabalho restante para aprovação completa</h3><ul><li>Concluir a comparação dos bundles e o Lighthouse móvel na revisão final, preservando todos os limites.</li><li>Investigar o custo de GPU na Intel e completar três repetições equivalentes por placa.</li><li>Confirmar audição das vozes reais e os assets publicados.</li><li>Completar as fases de importação pretendidas dentro da quota disponível.</li><li>Após todos os critérios aprovados, entregar aplicativo/Edge Function e confirmar o SHA exato publicado.</li></ul></article><article class="block"><h3>Limites das conclusões</h3><ul><li>Ensaio curto não equivale ao FPS de uma partida ao vivo.</li><li>Uma consulta mais rápida não mede o Supabase inteiro.</li><li>28 categorias suportadas não significam 28 importações concluídas.</li><li>Testes de áudio usam transportes simulados; não certificam o timbre real.</li><li>Fotos locais não comprovam publicação desta revisão em jogomanager.com.</li></ul></article></div></section>';
 html += section(
   "07 / Supabase Advisors",
   "Avisos disponíveis para avaliação.",

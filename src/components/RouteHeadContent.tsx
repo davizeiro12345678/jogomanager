@@ -1,39 +1,21 @@
-import { Asset, HeadContent, useLocation, useRouter, useTags } from "@tanstack/react-router";
+import { Asset, useLocation, useRouter, useTags } from "@tanstack/react-router";
 import { isLightweightCssPath } from "@/lib/public-content-routes";
 
 /** Public SSR content can paint while the browser fetches its interactive shell. */
 export function RouteHeadContent() {
   const pathname = useLocation({ select: (location) => location.pathname });
-  return isLightweightCssPath(pathname) ? <PublicHeadContent /> : <HeadContent />;
-}
-
-function PublicHeadContent() {
   const tags = useTags();
   const nonce = useRouter().options.ssr?.nonce;
-  // Discover responsive hero images before the framework's hydration hints.
-  const images = tags.filter(
-    (tag) =>
-      tag.tag === "link" && tag.attrs?.["rel"] === "preload" && tag.attrs?.["as"] === "image",
-  );
-  const remaining = tags.filter((tag) => !images.includes(tag));
-  const hintIndex = remaining.findIndex(
-    (tag) => tag.tag === "link" && tag.attrs?.["rel"] === "modulepreload",
-  );
-  remaining.splice(hintIndex < 0 ? remaining.length : hintIndex, 0, ...images);
+  // The small client entry starts hydration after the first paint. Preloading
+  // its runtime here would compete with the SSR content. Preserve all other
+  // tags, their original order and the framework's CSP nonce handling.
+  const visibleTags = isLightweightCssPath(pathname)
+    ? tags.filter((tag) => !(tag.tag === "link" && tag.attrs?.["rel"] === "modulepreload"))
+    : tags;
   return (
     <>
-      {remaining.map((tag) => (
-        <Asset
-          {...tag}
-          attrs={{
-            ...tag.attrs,
-            ...(tag.tag === "link" && tag.attrs?.["rel"] === "modulepreload"
-              ? { fetchPriority: "low" }
-              : {}),
-          }}
-          key={`tsr-meta-${JSON.stringify(tag)}`}
-          {...(nonce ? { nonce } : {})}
-        />
+      {visibleTags.map((tag) => (
+        <Asset {...tag} key={`tsr-meta-${JSON.stringify(tag)}`} {...(nonce ? { nonce } : {})} />
       ))}
     </>
   );
