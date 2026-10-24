@@ -57,3 +57,28 @@ it("atualiza a ficha quando a base muda e ignora deltas não finitos", () => {
   expect(after).not.toBe(before);
   setAttrDeltas({});
 });
+
+it("invalidates reused roster measurements for every generation input and protects cached values", () => {
+  const original = buildTeamSetup("fla").players[0]!;
+  const player = { ...original, developmentBase: undefined };
+  const first = physiqueFor(player);
+  first.height = -999;
+  expect(physiqueFor(player).height).not.toBe(-999);
+  for (const change of [
+    { id: "updated-id" },
+    { name: "Updated name" },
+    { pos: "MF" as const },
+    { age: 35 },
+    { ovr: 95 },
+    { pace: 25 },
+    { shooting: 99 },
+    { passing: 22 },
+    { defending: 98 },
+    { physical: 20 },
+  ]) {
+    Object.assign(player, change);
+    expect(physiqueFor(player)).toEqual(physiqueFor({ ...player }));
+    const full = profileFor({ ...player });
+    expect(physiqueFor(player)).toEqual({ height: full.height, weight: full.weight });
+  }
+});

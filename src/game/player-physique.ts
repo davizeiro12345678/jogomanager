@@ -108,6 +108,31 @@ export function buildAttrs(p: Player, rnd: () => number): DetailedAttributes {
   };
 }
 
+const PHYSIQUE_INPUTS = [
+  "id",
+  "name",
+  "pos",
+  "age",
+  "ovr",
+  "pace",
+  "shooting",
+  "passing",
+  "defending",
+  "physical",
+] as const;
+const generatedPhysiques = new WeakMap<
+  Player,
+  {
+    inputs: unknown[];
+    height: number;
+    weight: number;
+  }
+>();
+// Career matches can rebuild roster objects with identical scalar inputs.
+// Bound shared value reuse while keeping weak identity as the fast path.
+const physiqueValues = new Map<string, { inputs: unknown[]; height: number; weight: number }>();
+const MAX_PHYSIQUE_VALUES = 2048;
+
 /** Mesma identidade física da ficha completa, sem carregar históricos ou o catálogo. */
 export function physiqueFor(player: Player): { height: number; weight: number } {
   if (player.developmentBase?.profile)
@@ -115,14 +140,37 @@ export function physiqueFor(player: Player): { height: number; weight: number } 
       height: player.developmentBase.profile.height,
       weight: player.developmentBase.profile.weight,
     };
+  const cached = generatedPhysiques.get(player);
+  if (cached && PHYSIQUE_INPUTS.every((key, index) => Object.is(player[key], cached.inputs[index])))
+    return { height: cached.height, weight: cached.weight };
+  const inputs = PHYSIQUE_INPUTS.map((key) => player[key]);
+  // JSON maps non-finite numbers to null; never share those ambiguous keys.
+  const key = inputs.every((value) => typeof value !== "number" || Number.isFinite(value))
+    ? JSON.stringify(inputs)
+    : null;
+  const shared = key === null ? undefined : physiqueValues.get(key);
+  if (shared) {
+    generatedPhysiques.set(player, shared);
+    return { height: shared.height, weight: shared.weight };
+  }
   const rnd = makeRng(`profile-${player.id}-${player.name}`);
   const attrs = buildAttrs(player, rnd);
   pickTraits(player, attrs, rnd);
   // O pé dominante consome uma ou duas amostras antes das medidas na ficha.
   if (rnd() >= 0.72) rnd();
   const tall = player.pos === "GK" ? 8 : player.pos === "DF" ? 4 : 0;
-  return {
+  const result = {
     height: Math.round(171 + tall + rnd() * 16),
     weight: Math.round(65 + tall * 0.9 + rnd() * 18),
   };
+  // Repeated matches reuse immutable roster objects. Check all generation
+  // inputs so in-place editor/import changes cannot leave stale measurements.
+  const entry = { inputs, ...result };
+  generatedPhysiques.set(player, entry);
+  if (key !== null) {
+    if (physiqueValues.size >= MAX_PHYSIQUE_VALUES)
+      physiqueValues.delete(physiqueValues.keys().next().value!);
+    physiqueValues.set(key, entry);
+  }
+  return result;
 }

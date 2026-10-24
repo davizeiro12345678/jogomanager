@@ -14,7 +14,10 @@ fn hash(index: u32, seed: u32) -> u32 {
 /// A bounded one-time batch; movement stays in the vertex shader.
 #[wasm_bindgen]
 pub fn build_weather_instances(count: f64, seed: u32) -> Vec<f32> {
-    if !count.is_finite() || count.fract() != 0.0 || !(0.0..=MAX_WEATHER_INSTANCES as f64).contains(&count) {
+    if !count.is_finite()
+        || count.fract() != 0.0
+        || !(0.0..=MAX_WEATHER_INSTANCES as f64).contains(&count)
+    {
         return Vec::new();
     }
     let mut data = Vec::with_capacity(count as usize * 5);

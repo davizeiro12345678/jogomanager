@@ -11,8 +11,8 @@ import type {
   Player,
   TrainingReport,
 } from "./types";
-import { TacticalProgramSchema } from "./tactical-plan";
-import { repairMatchAnalytics } from "./match-analytics";
+import { TacticalProgramSchema } from "./tactical-schema";
+import { repairMatchAnalytics } from "./match-analytics-repair";
 import {
   repairPlayerIdentities,
   repairShirtNumbers,

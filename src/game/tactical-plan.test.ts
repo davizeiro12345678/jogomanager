@@ -1,3 +1,5 @@
+import { repairMatchAnalytics } from "./match-analytics-repair";
+import { TacticalProgramSchema } from "./tactical-schema";
 import { describe, expect, it } from "vitest";
 import { FORMATIONS, FORMATION_KEYS } from "./formations";
 import { initCareer } from "./career";
@@ -15,7 +17,6 @@ import {
   opponentProgram,
   phasePosition,
   presetPlan,
-  TacticalProgramSchema,
   tacticalEffects,
   tacticalSignature,
   withPlan,
@@ -27,7 +28,6 @@ import {
   appendMatchAnalytics,
   createMatchAnalytics,
   recordPass,
-  repairMatchAnalytics,
   sampleAnalytics,
 } from "./match-analytics";
 import { validMatchCommand, validMatchTactics } from "./match-command-validation";
