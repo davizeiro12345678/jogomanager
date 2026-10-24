@@ -63,13 +63,68 @@ afterEach(() => {
 });
 
 describe("complete public club catalog", () => {
+  it("enriches a bundled club without replacing its identity, strength or league membership", async () => {
+    const existing: Club = {
+      id: "club-0",
+      league: "league-1",
+      name: "Saved club",
+      short: "SAV",
+      primary: "#111111",
+      secondary: "#eeeeee",
+      strength: 77,
+    };
+    catalog.CLUBS[existing.id] = existing;
+    const league: League = {
+      id: "league-1",
+      name: "Saved league",
+      country: "Brazil",
+      flag: "BR",
+      clubs: [existing],
+    };
+    catalog.LEAGUES.push(league);
+    request.mockImplementation(async (input) => {
+      const url = new URL(input instanceof Request ? input.url : String(input));
+      if (url.searchParams.has("id")) return Response.json([]);
+      return Response.json(
+        url.pathname.endsWith("/clubs")
+          ? [
+              {
+                ...clubs[0],
+                crest_url: "https://media.example/crest.png",
+                city: "Rio",
+                country: "Brazil",
+                founded: 1895,
+              },
+            ]
+          : [{ ...competitions[0], logo_url: "https://media.example/league.png" }],
+      );
+    });
+    await loadDbCatalog();
+    expect(catalog.CLUBS[existing.id]).toBe(existing);
+    expect(existing).toMatchObject({
+      name: "Saved club",
+      strength: 77,
+      crestUrl: "https://media.example/crest.png",
+      city: "Rio",
+      country: "Brazil",
+      founded: 1895,
+    });
+    expect(league).toMatchObject({
+      name: "Saved league",
+      logoUrl: "https://media.example/league.png",
+      clubs: [existing],
+    });
+    const cache = JSON.parse(stored.get("db-catalog-v3")!);
+    expect(cache.clubs[0]).toHaveLength(11);
+  });
+
   it("loads every competition and club despite a lower API cap, sharing concurrent refreshes", async () => {
     await Promise.all(Array.from({ length: 20 }, () => loadDbCatalog()));
     expect(catalog.LEAGUES.map((league) => league.id)).toEqual(["league-1", "league-2"]);
     expect(Object.keys(catalog.CLUBS)).toHaveLength(4);
     expect(catalog.LEAGUES.every((league) => league.clubs.length === 2)).toBe(true);
     expect(request).toHaveBeenCalledTimes(8);
-    expect(JSON.parse(stored.get("db-catalog-v2")!).clubs).toHaveLength(4);
+    expect(JSON.parse(stored.get("db-catalog-v3")!).clubs).toHaveLength(4);
     await loadDbCatalog();
     expect(request).toHaveBeenCalledTimes(8);
   });
@@ -81,7 +136,7 @@ describe("complete public club catalog", () => {
     await loadDbCatalog();
     expect(catalog.LEAGUES).toEqual([]);
     expect(Object.keys(catalog.CLUBS)).toHaveLength(0);
-    expect(stored.has("db-catalog-v2")).toBe(false);
+    expect(stored.has("db-catalog-v3")).toBe(false);
     request.mockImplementation(async (input) => page(input));
     await loadDbCatalog();
     expect(Object.keys(catalog.CLUBS)).toHaveLength(4);
@@ -102,7 +157,7 @@ describe("complete public club catalog", () => {
 
   it("retains imported clubs when a stale catalog refreshes and the next visit is offline", async () => {
     stored.set(
-      "db-catalog-v2",
+      "db-catalog-v3",
       JSON.stringify({
         at: Date.now() - 8 * 24 * 60 * 60 * 1_000,
         leagues: competitions.map((league) => [
@@ -123,7 +178,7 @@ describe("complete public club catalog", () => {
       }),
     );
     await loadDbCatalog();
-    const fresh = JSON.parse(stored.get("db-catalog-v2")!);
+    const fresh = JSON.parse(stored.get("db-catalog-v3")!);
     expect(fresh.leagues).toHaveLength(2);
     expect(fresh.clubs).toHaveLength(4);
     expect(request).toHaveBeenCalledTimes(8);
@@ -141,7 +196,7 @@ describe("complete public club catalog", () => {
   });
 
   it("discards malformed cached rows and rebuilds them without crashing club selection", async () => {
-    stored.set("db-catalog-v2", JSON.stringify({ at: Date.now(), leagues: [null], clubs: [] }));
+    stored.set("db-catalog-v3", JSON.stringify({ at: Date.now(), leagues: [null], clubs: [] }));
     await loadDbCatalog();
     expect(catalog.LEAGUES).toHaveLength(2);
     expect(Object.keys(catalog.CLUBS)).toHaveLength(4);

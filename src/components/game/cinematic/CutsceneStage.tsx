@@ -41,6 +41,7 @@ import type { Club, ManagerLook } from "@/game/types";
 import type { QualityLevel } from "@/game/device";
 import type { CinematicManner } from "@/game/cinematic-actor";
 import { LazyCinematicStage, preloadCinematicStage } from "./cinematic-loading";
+import { cinematicSetFor } from "@/game/cinematic-set";
 import { CutsceneLoadFallback } from "./CutsceneLoadFallback";
 import { CutsceneDialogue } from "./CutsceneDialogue";
 import { GraphicsBoundary } from "../GraphicsBoundary";
@@ -212,9 +213,11 @@ export function CutsceneStage({
         ).toFixed(1);
     });
     let alive = true;
-    void preloadCinematicStage().catch((error: unknown) => {
-      if (alive) setStageLoadError(error);
-    });
+    void preloadCinematicStage(data ? cinematicSetFor(data.art) : undefined).catch(
+      (error: unknown) => {
+        if (alive) setStageLoadError(error);
+      },
+    );
     // Commit the lightweight controls before constructing the actor meshes.
     const frame = requestAnimationFrame(() => startTransition(() => setMountStage(true)));
     return () => {

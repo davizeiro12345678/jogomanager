@@ -1,0 +1,132 @@
+/** Stable BCP-47 identifiers: existing saves keep their language selection. */
+export const BASE_LANGS = [
+  "pt-BR",
+  "pt-PT",
+  "en",
+  "es",
+  "fr",
+  "de",
+  "it",
+  "nl",
+  "pl",
+  "tr",
+  "ru",
+  "uk",
+  "ar",
+  "he",
+  "fa",
+  "hi",
+  "bn",
+  "id",
+  "ms",
+  "vi",
+  "th",
+  "ja",
+  "ko",
+  "zh-CN",
+  "zh-TW",
+  "sv",
+  "no",
+  "da",
+  "fi",
+  "cs",
+  "sk",
+  "hu",
+  "ro",
+  "el",
+  "bg",
+  "sr",
+  "hr",
+  "ca",
+  "sw",
+] as const;
+export const ADDED_LANGS = [
+  "af",
+  "am",
+  "as",
+  "az",
+  "be",
+  "bs",
+  "ceb",
+  "cy",
+  "eo",
+  "et",
+  "eu",
+  "fil",
+  "ga",
+  "gd",
+  "gl",
+  "gu",
+  "ha",
+  "hy",
+  "ig",
+  "is",
+  "jv",
+  "ka",
+  "kk",
+  "km",
+  "kn",
+  "ku",
+  "ky",
+  "lb",
+  "lo",
+  "lt",
+  "lv",
+  "mk",
+  "ml",
+  "mn",
+  "mr",
+  "mt",
+  "my",
+  "ne",
+  "pa",
+  "ps",
+  "si",
+  "sl",
+  "so",
+  "sq",
+  "ta",
+  "te",
+  "tg",
+  "tk",
+  "ur",
+  "uz",
+  "yo",
+  "zu",
+  "rw",
+  "mg",
+  "ny",
+  "sd",
+  "yi",
+  "ug",
+  "dv",
+] as const;
+export const LANGS = [...BASE_LANGS, ...ADDED_LANGS] as const;
+export type Lang = (typeof LANGS)[number];
+export type AddedLang = (typeof ADDED_LANGS)[number];
+export const RTL_LANGS: ReadonlySet<Lang> = new Set([
+  "ar",
+  "he",
+  "fa",
+  "ps",
+  "ur",
+  "sd",
+  "yi",
+  "ug",
+  "dv",
+]);
+
+/** Region/script aliases are resolved before base-language fallback. */
+export function resolveLang(raw: string | undefined): Lang | undefined {
+  const tag = raw?.trim().replaceAll("_", "-").toLowerCase();
+  if (!tag) return undefined;
+  const exact = LANGS.find((lang) => lang.toLowerCase() === tag);
+  if (exact) return exact;
+  const base = tag.split("-")[0];
+  if (base === "pt") return /-(pt|ao|mz|cv)(-|$)/.test(tag) ? "pt-PT" : "pt-BR";
+  if (base === "zh") return /-(hant|tw|hk|mo)(-|$)/.test(tag) ? "zh-TW" : "zh-CN";
+  if (base === "nb" || base === "nn") return "no";
+  if (base === "tl") return "fil";
+  if (base === "iw") return "he";
+  return LANGS.find((lang) => lang.toLowerCase().split("-")[0] === base);
+}

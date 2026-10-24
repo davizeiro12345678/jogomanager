@@ -1,8 +1,7 @@
 import type { SceneArt, Speaker } from "@/content/cutscenes";
 import { cinematicDrillAt, type CinematicDrill } from "./cinematic-action";
-
-export type CinematicSet =
-  "locker" | "tunnel" | "press" | "pitch" | "stands" | "office" | "arrival";
+import { cinematicSetFor, type CinematicSet } from "./cinematic-set";
+export { cinematicSetFor, type CinematicSet } from "./cinematic-set";
 
 export type CinematicStageRole = Exclude<Speaker, "narrator">;
 export type CinematicStagePresence = "resident" | "overlay";
@@ -19,29 +18,6 @@ export interface CinematicStageActor {
 }
 
 type StageMark = readonly [number, number];
-
-const SET_BY_ART = {
-  arrival: "arrival",
-  press: "press",
-  dressing: "locker",
-  trophy: "pitch",
-  training: "pitch",
-  gym: "locker",
-  tactics: "locker",
-  staff: "office",
-  board: "office",
-  transfer: "office",
-  tunnel: "tunnel",
-  kitroom: "locker",
-  pitchentry: "pitch",
-  celebration: "stands",
-  defeat: "locker",
-  farewell: "tunnel",
-  bus: "arrival",
-  office: "office",
-  medical: "locker",
-  gala: "press",
-} as const satisfies Record<SceneArt, CinematicSet>;
 
 const DEFAULT_ART_BY_SET: Record<CinematicSet, SceneArt> = {
   locker: "dressing",
@@ -195,11 +171,6 @@ const MEDICAL_RESIDENT_MARKS: Partial<Record<CinematicStageRole, StageMark>> = {
   doctor: [-1.8, -0.9],
   manager: [1.6, -1.65],
 };
-
-/** Shared mapping for stage composition, shots, and any future presentation layer. */
-export function cinematicSetFor(art: SceneArt): CinematicSet {
-  return SET_BY_ART[art];
-}
 
 function trainingResidentMark(
   role: CinematicStageRole,

@@ -1,5 +1,6 @@
 import { lazy, useEffect } from "react";
 import { reportSilent } from "@/lib/silent-errors";
+import type { CinematicSet } from "@/game/cinematic-blocking";
 
 let stage: Promise<typeof import("../CinematicStage3D")> | undefined;
 export const CINEMATIC_RETRY_DELAYS_MS = [250, 750, 2_000] as const;
@@ -25,7 +26,11 @@ export async function loadWithRetry<T>(
 }
 
 /** The dialogue shell never waits for Three, rigs or the lens bundle. */
-export function preloadCinematicStage() {
+export function preloadCinematicStage(set?: CinematicSet) {
+  if (set)
+    void import("./sets/registry")
+      .then((module) => module.preloadCinematicSet(set))
+      .catch(() => undefined);
   stage ??= loadWithRetry(() => import("../CinematicStage3D")).catch((error: unknown) => {
     stage = undefined;
     reportSilent("cutscene.stage", error, {

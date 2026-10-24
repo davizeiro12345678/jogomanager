@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { safeAuthNext } from "@/lib/auth-policy";
+import { safeAuthNext } from "@/lib/auth-next";
 
 import { AuthPage } from "@/pages/auth";
 

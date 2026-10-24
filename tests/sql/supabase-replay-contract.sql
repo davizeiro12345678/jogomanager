@@ -183,6 +183,10 @@ $contract$;
 RESET ROLE;
 
 -- MFA enrollment must close the existing personal-data policies and CAS RPC.
+INSERT INTO public.game_coupons (code,description,coins,active)
+VALUES ('REPLAYMFATEST','MFA coupon boundary fixture',7,true);
+INSERT INTO public.coupon_eligible_users (code,user_id)
+VALUES ('REPLAYMFATEST','22222222-2222-4222-8222-222222222222');
 INSERT INTO auth.mfa_factors (id,user_id,factor_type,status,created_at,updated_at,secret)
 VALUES ('33333333-3333-4333-8333-333333333331',
  '22222222-2222-4222-8222-222222222222','totp','verified',now(),now(),'disposable-test-secret');
@@ -193,6 +197,8 @@ SET LOCAL ROLE authenticated;
 DO $mfa$
 BEGIN
  ASSERT NOT app_private.mfa_session_allowed(), 'Verified factors must require AAL2';
+ ASSERT public.redeem_game_coupon('REPLAYMFATEST')->>'reason'='mfa_required',
+   'SECURITY DEFINER coupon rewards bypassed enrolled MFA';
  ASSERT NOT EXISTS (SELECT 1 FROM public.user_wallet), 'AAL1 must not read even its own wallet after MFA enrollment';
  BEGIN
   PERFORM * FROM public.mutate_player_career(1,0,'delete',null);
@@ -202,6 +208,14 @@ BEGIN
 END;
 $mfa$;
 RESET ROLE;
+DO $mfa_wallet$
+BEGIN
+ ASSERT (SELECT coins FROM public.user_wallet WHERE user_id='22222222-2222-4222-8222-222222222222')=100,
+   'AAL1 must not change wallet balances';
+ ASSERT NOT EXISTS (SELECT 1 FROM public.coupon_redemptions WHERE code='REPLAYMFATEST'),
+   'AAL1 must not consume an allocated coupon';
+END;
+$mfa_wallet$;
 SELECT set_config('request.jwt.claims', '{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated","aal":"aal2"}', true);
 SET LOCAL ROLE authenticated;
 DO $mfa$
@@ -209,6 +223,9 @@ BEGIN
  ASSERT app_private.mfa_session_allowed(), 'AAL2 should restore access';
  ASSERT (SELECT coins FROM public.user_wallet WHERE user_id=auth.uid())=100, 'AAL2 must preserve ownership and existing wallet';
  ASSERT NOT EXISTS (SELECT 1 FROM public.user_wallet WHERE user_id<>auth.uid()), 'MFA must never weaken ownership';
+ ASSERT public.redeem_game_coupon('REPLAYMFATEST')->>'ok'='true', 'AAL2 must restore eligible coupon redemption';
+ ASSERT public.redeem_game_coupon('REPLAYMFATEST')->>'reason'='used', 'AAL2 must retain coupon idempotency';
+ ASSERT (SELECT coins FROM public.user_wallet WHERE user_id=auth.uid())=107, 'The MFA coupon must reward once';
 END;
 $mfa$;
 RESET ROLE;

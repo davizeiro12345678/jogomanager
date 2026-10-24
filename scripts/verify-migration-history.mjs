@@ -10,6 +10,9 @@ const manifest = JSON.parse(
 );
 const files = (await readdir(migrationDirectory)).filter((file) => file.endsWith(".sql")).sort();
 const recorded = new Map(manifest.recordedMigrations.map((entry) => [entry.version, entry]));
+const prerequisites = new Map(
+  (manifest.replayPrerequisites ?? []).map((entry) => [entry.version, entry]),
+);
 const recordedMaximum = [...recorded.keys()].sort().at(-1);
 const seen = new Set();
 const wrappedVersions = [];
@@ -60,6 +63,30 @@ for (const file of files) {
         `Recorded migration body or approved replay envelope changed: ${file}. Add a new incremental migration instead.`,
       );
     }
+  } else if (prerequisites.has(version)) {
+    const prerequisite = prerequisites.get(version);
+    const archivePath = `supabase/migration-archive/recorded/${file}`;
+    if (
+      prerequisite.file !== file ||
+      prerequisite.recordedArchive.path !== archivePath ||
+      prerequisite.prerequisite !== "unaccent-in-extensions"
+    ) {
+      throw new Error(`Unsupported replay prerequisite: ${file}`);
+    }
+    const original = await readFile(path.join(root, archivePath));
+    const normalized = normalizeSql(original.toString("utf8"));
+    const replay =
+      "-- Replay prerequisite: production provisioned unaccent outside migration history.\nCREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA extensions;\n\n" +
+      normalized;
+    if (
+      sha256(original) !== prerequisite.recordedArchive.sha256 ||
+      sha256(normalized) !== prerequisite.normalizedSha256 ||
+      normalizeSql(sql) !== replay ||
+      sha256(replay) !== prerequisite.replayNormalizedSha256
+    ) {
+      throw new Error(`Recorded prerequisite migration or replay prelude changed: ${file}`);
+    }
+    newMigrations += 1;
   } else {
     if (version <= recordedMaximum) {
       throw new Error(`Unrecorded migration precedes the production baseline: ${file}`);
@@ -76,6 +103,9 @@ if (
 for (const { version, file } of recorded.values()) {
   if (!seen.has(version)) throw new Error(`Missing production migration: ${file}`);
 }
+for (const { version, file } of prerequisites.values()) {
+  if (!seen.has(version)) throw new Error(`Missing prerequisite migration: ${file}`);
+}
 for (const archived of manifest.archivedRepositoryFiles) {
   const body = await readFile(path.join(root, archived.path));
   if (createHash("sha256").update(body).digest("hex") !== archived.sha256) {
@@ -83,5 +113,5 @@ for (const archived of manifest.archivedRepositoryFiles) {
   }
 }
 console.log(
-  `PASS migration history: ${recorded.size} recorded originals, ${transactionEnvelopes} explicit transaction envelopes, ${newMigrations} incremental, ${manifest.archivedRepositoryFiles.length} preserved repository files.`,
+  `PASS migration history: ${recorded.size} recorded originals, ${transactionEnvelopes} explicit transaction envelopes, ${prerequisites.size} verified extension prerequisite, ${newMigrations} incremental, ${manifest.archivedRepositoryFiles.length} preserved repository files.`,
 );

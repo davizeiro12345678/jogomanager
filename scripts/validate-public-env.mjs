@@ -12,9 +12,8 @@ function readEnv(filename) {
     if (!line || line.startsWith("#")) continue;
     const match = line.match(/^([A-Z][A-Z0-9_]*)=(.*)$/);
     if (!match) throw Error(`${filename}:${index + 1}: invalid environment declaration`);
-    if (result.has(match[1])) {
+    if (result.has(match[1]))
       throw Error(`${filename}:${index + 1}: duplicate variable ${match[1]}`);
-    }
     const value = match[2].replace(/^(['"])(.*)\1$/, "$2");
     result.set(match[1], value);
     if (/^sk_(?:live|test)_|^sb_secret_|^gh[pousr]_|^github_pat_|^whsec_/i.test(value)) {

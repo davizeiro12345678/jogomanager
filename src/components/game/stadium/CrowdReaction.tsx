@@ -62,7 +62,16 @@ const RANK: Record<CrowdMood, number> = {
  */
 function useReactionTracker(sim: SimView, supporters?: SupporterMatchday) {
   const ref = useRef<CrowdReactionState>({ ...EMPTY });
-  const last = useRef({ goals: 0, shots: 0, cards: 0, fouls: 0, minute: 0, homeGoals: 0 });
+  const last = useRef({
+    goals: 0,
+    shots: 0,
+    cards: 0,
+    fouls: 0,
+    minute: 0,
+    homeGoals: 0,
+    homeShots: 0,
+    homeCards: 0,
+  });
 
   useFrame((_, dt) => {
     const state = ref.current;
@@ -86,12 +95,12 @@ function useReactionTracker(sim: SimView, supporters?: SupporterMatchday) {
     } else if (shots > prev.shots) {
       mood = "chance";
       boost = 0.62;
-      // a chance é do lado que finalizou: quem tem mais finalizações no total
-      side = home.onTarget + home.shots >= away.onTarget + away.shots ? "home" : "away";
+      // A reação pertence ao lado que acabou de finalizar.
+      side = home.onTarget > prev.homeShots ? "home" : "away";
     } else if (cards > prev.cards) {
       mood = "protest";
       boost = 0.46;
-      side = home.yellow + home.red >= away.yellow + away.red ? "away" : "home";
+      side = home.yellow + home.red * 2 > prev.homeCards ? "home" : "away";
     } else if (fouls > prev.fouls) {
       mood = "protest";
       boost = 0.28;
@@ -126,7 +135,10 @@ function useReactionTracker(sim: SimView, supporters?: SupporterMatchday) {
     }
 
     // decaimento
-    state.intensity = Math.max(0, state.intensity - dt * DECAY[state.mood]);
+    state.intensity = Math.max(
+      0,
+      state.intensity - Math.min(0.1, Math.max(0, dt)) * DECAY[state.mood],
+    );
     if (state.intensity <= 0.001) {
       state.mood = "idle";
       state.intensity = 0;
@@ -138,6 +150,8 @@ function useReactionTracker(sim: SimView, supporters?: SupporterMatchday) {
     prev.fouls = fouls;
     prev.minute = minute;
     prev.homeGoals = home.goals;
+    prev.homeShots = home.onTarget;
+    prev.homeCards = home.yellow + home.red * 2;
   });
 
   return ref;

@@ -142,13 +142,15 @@ class RapierVisualBall implements RapierVisualPhysics {
   }
 
   step(dt: number) {
-    if (this.disposed || this.attached) return;
+    if (this.disposed || this.attached || !Number.isFinite(dt) || dt <= 0) return;
     if (this.skipNextStep) {
       this.skipNextStep = false;
       return;
     }
 
-    const safeDt = Math.max(1 / 240, Math.min(1 / 15, finite(dt, 1 / 30)));
+    // Small render steps must not manufacture time. In particular, a paused
+    // frame (dt=0) cannot produce a bounce, extra spin or gravity drift.
+    const safeDt = Math.min(1 / 15, dt);
     // Ten slices cover the largest live spatial tick (1 / 15 s) at at least
     // 139 Hz. Magnus samples share those slices so a visual curve remains
     // continuous through a post or turf collision.

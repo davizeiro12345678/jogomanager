@@ -27,7 +27,7 @@ export function createGrassBladeMaterial(
     side: THREE.DoubleSide,
   });
   material.customProgramCacheKey = () =>
-    `match-grass-contact-wind-v3:${webgl2 ? "webgl2" : "webgpu-standard"}`;
+    `match-grass-contact-wind-v4:${webgl2 ? "webgl2" : "webgpu-standard"}`;
   if (webgl2)
     material.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, uniforms);
@@ -49,6 +49,9 @@ export function createGrassBladeMaterial(
         float h = clamp(position.y / 0.035, 0.0, 1.0);
         vGrassHeight = h;
         float fade = 1.0 - smoothstep(16.0, 29.0, distance(cameraPosition, wp));
+        if (fade <= 0.001) {
+          transformed = vec3(0.0);
+        } else {
         float travel = dot(wp.xz, uWindDirection);
         float gust = 0.65 + 0.25 * sin(uTime * 0.43 - travel * 0.055)
                          + 0.10 * sin(uTime * 0.91 + wp.z * 0.09);
@@ -58,10 +61,11 @@ export function createGrassBladeMaterial(
         float near = (1.0 - smoothstep(0.15, 1.25, length(d))) *
           (1.0 - smoothstep(0.25, 0.85, uBall.y));
         vec3 bend = vec3(uWindDirection.x, 0.0, uWindDirection.y) * w * gust * 0.007 * h * h * uWind;
-        bend += vec3(normalize(d + vec2(0.0001)).x, 0.0, normalize(d + vec2(0.0001)).y) * near * 0.028 * h;
+        vec2 ballDirection = normalize(d + vec2(0.0001));
+        bend += vec3(ballDirection.x, 0.0, ballDirection.y) * near * 0.028 * h;
         float trample = 0.0;
         for (int i = 0; i < 22; i++) {
-          if (i >= uPlayerCount) break;
+          if (i >= uPlayerCount || fade <= 0.001) break;
           vec2 offset = wp.xz - uPlayers[i].xz;
           float contact = 1.0 - smoothstep(0.12, 0.56, length(offset));
           trample = max(trample, contact);
@@ -70,7 +74,8 @@ export function createGrassBladeMaterial(
         transformed += vec3(dot(bend, normalize(instanceMatrix[0].xyz)), 0.0,
                             dot(bend, normalize(instanceMatrix[2].xyz)));
         transformed.y = max(0.0, transformed.y - (near * 0.012 + trample * 0.025) * h) * fade;
-        transformed.xz *= fade;`,
+        transformed.xz *= fade;
+        }`,
         )
         .replace(
           "#include <color_vertex>",

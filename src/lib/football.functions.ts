@@ -91,6 +91,48 @@ export const getOfficialAssets = createServerFn({ method: "GET" }).handler(
 );
 
 /** Public read: real squad rows for one club, when they were imported. */
+async function clubIdentityIds(clubId: string) {
+  const { cachedPublicRead } = await import("./public-read-cache.server");
+  return cachedPublicRead("club", `identities:${clubId}`, async () => {
+    const result = await publicClient()
+      .from("club_catalog_links")
+      .select("source_club_id")
+      .eq("club_id", clubId)
+      .limit(4);
+    if (result.error) throw new Error("Não foi possível carregar os vínculos do clube.");
+    return [clubId, ...(result.data ?? []).map((link) => link.source_club_id)];
+  });
+}
+
+async function attachPublicIdentityAliases<T extends { id: string }>(
+  rows: T[],
+): Promise<(T & { identity_aliases?: string[] })[]> {
+  if (!rows.length) return rows;
+  const db = publicClient();
+  const keys = new Map<string, string[]>();
+  for (let index = 0; index < rows.length; index += 100) {
+    const ids = rows.slice(index, index + 100).map((row) => row.id);
+    const aliases = await readPublicPages((cursor) => {
+      const query = db
+        .from("player_identity_aliases")
+        .select("id:player_id,canonical_player_id,source,source_id")
+        .in("canonical_player_id", ids)
+        .order("player_id")
+        .limit(100);
+      return cursor ? query.gt("player_id", cursor) : query;
+    }, 2000);
+    for (const alias of aliases) {
+      const list = keys.get(alias.canonical_player_id) ?? [];
+      list.push(`record:${alias.id}`);
+      if (alias.source && alias.source_id) list.push(`provider:${alias.source}:${alias.source_id}`);
+      keys.set(alias.canonical_player_id, list);
+    }
+  }
+  return rows.map((row) =>
+    keys.has(row.id) ? { ...row, identity_aliases: keys.get(row.id)! } : row,
+  );
+}
+
 export const getRealSquad = createServerFn({ method: "GET" })
   .validator((input: unknown) =>
     z.object({ clubId: z.string().trim().min(1).max(120) }).parse(input),
@@ -99,17 +141,21 @@ export const getRealSquad = createServerFn({ method: "GET" })
     const { cachedPublicRead } = await import("./public-read-cache.server");
     return cachedPublicRead("squad", data.clubId, async () => {
       const db = publicClient();
-      return readPublicPages((cursor) => {
+      const clubIds = await clubIdentityIds(data.clubId);
+      const rows = await readPublicPages((cursor) => {
         const query = db
           .from("players")
           .select(
             "id, data_source:source, source_id, birth_date, name, position, age, shirt_number, nationality, overall, photo_url",
           )
-          .eq("club_id", data.clubId)
+          .in("club_id", clubIds)
+          .eq("source_kind", "player")
+          .is("canonical_player_id", null)
           .order("id")
           .limit(50);
         return cursor ? query.gt("id", cursor) : query;
       }, 1_000);
+      return attachPublicIdentityAliases(rows);
     });
   });
 
@@ -137,6 +183,7 @@ export interface MarketRow {
   source?: string | null;
   source_id?: string | null;
   birth_date?: string | null;
+  identity_aliases?: string[];
 }
 
 const PAGE = 24;
@@ -183,7 +230,7 @@ export const searchRealPlayers = createServerFn({ method: "GET" })
         // User text is a literal name fragment, not an unrestricted LIKE pattern.
         if (data.q) query = query.ilike("name", `%${data.q.replace(/[\\%_]/g, "\\$&")}%`);
         if (data.pos && data.pos !== "ALL") query = query.eq("position", data.pos);
-        if (data.clubId) query = query.eq("club_id", data.clubId);
+        if (data.clubId) query = query.in("club_id", await clubIdentityIds(data.clubId));
         if (data.minAge !== undefined) query = query.gte("age", data.minAge);
         if (data.maxAge !== undefined) query = query.lte("age", data.maxAge);
         if (data.minOvr !== undefined) query = query.gte("overall", data.minOvr);
@@ -194,6 +241,10 @@ export const searchRealPlayers = createServerFn({ method: "GET" })
         if (rows.length === 0) break;
         list.push(...rows);
       }
-      return { rows: list.slice(0, PAGE), page, hasMore: list.length > PAGE };
+      return {
+        rows: await attachPublicIdentityAliases(list.slice(0, PAGE)),
+        page,
+        hasMore: list.length > PAGE,
+      };
     });
   });

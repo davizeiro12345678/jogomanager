@@ -57,6 +57,7 @@ describe("public football queries", () => {
     }));
     request.mockImplementation(async (input) => {
       const url = requestUrl(input);
+      if (url.pathname.endsWith("/player_identity_aliases")) return ok([]);
       const cursor = url.searchParams.get("id")?.replace(/^gt\./, "") ?? "";
       const rows = url.pathname.endsWith("/clubs") ? clubs : kits;
       expect(url.searchParams.get("order")).toBe("id.asc");
@@ -97,6 +98,7 @@ describe("public football queries", () => {
     let failPage = true;
     request.mockImplementation(async (input) => {
       const url = requestUrl(input);
+      if (url.pathname.endsWith("/player_identity_aliases")) return ok([]);
       if (url.pathname.endsWith("/kits")) return ok([]);
       if (!url.searchParams.has("id"))
         return ok([{ id: "first", crest_url: "https://images.example/first.png", website: null }]);
@@ -120,22 +122,53 @@ describe("public football queries", () => {
     ];
     request.mockImplementation(async (input) => {
       const url = requestUrl(input);
-      expect(url.searchParams.get("club_id")).toBe("eq.club");
+      if (url.pathname.endsWith("/player_identity_aliases")) return ok([]);
+      if (url.pathname.endsWith("/club_catalog_links")) return ok([{ source_club_id: "af127" }]);
+      expect(url.searchParams.get("club_id")).toBe("in.(club,af127)");
+      expect(url.searchParams.get("source_kind")).toBe("eq.player");
+      expect(url.searchParams.get("canonical_player_id")).toBe("is.null");
       const cursor = url.searchParams.get("id")?.replace(/^gt\./, "") ?? "";
       return ok(rows.filter((row) => row.id > cursor).slice(0, 1));
     });
     expect(await functions.getRealSquad({ data: { clubId: " club " } })).toEqual(rows);
     expect(await functions.getRealSquad({ data: { clubId: "club" } })).toEqual(rows);
-    expect(request).toHaveBeenCalledTimes(4);
+    expect(request).toHaveBeenCalledTimes(6);
   });
 
   it("rejects a stalled cursor instead of looping or retaining incomplete players", async () => {
-    request.mockImplementation(async () => ok([{ id: "stalled" }]));
+    request.mockImplementation(async (input) =>
+      ok(requestUrl(input).pathname.endsWith("/club_catalog_links") ? [] : [{ id: "stalled" }]),
+    );
     await expect(functions.getRealSquad({ data: { clubId: "club" } })).rejects.toThrow("paginação");
-    expect(request).toHaveBeenCalledTimes(2);
+    expect(request).toHaveBeenCalledTimes(3);
     request.mockImplementation(async () => ok([]));
     expect(await functions.getRealSquad({ data: { clubId: "club" } })).toEqual([]);
-    expect(request).toHaveBeenCalledTimes(3);
+    expect(request).toHaveBeenCalledTimes(4);
+  });
+  it("retains historical provider identities after canonical reconciliation", async () => {
+    request.mockImplementation(async (input) => {
+      const url = requestUrl(input);
+      if (url.pathname.endsWith("/club_catalog_links")) return ok([]);
+      if (url.pathname.endsWith("/player_identity_aliases"))
+        return ok(
+          url.searchParams.has("player_id")
+            ? []
+            : [
+                {
+                  id: "older-record",
+                  canonical_player_id: "canonical",
+                  source: "api-football",
+                  source_id: "11756",
+                },
+              ],
+        );
+      return ok(url.searchParams.has("id") ? [] : [{ id: "canonical", name: "Agustín Rossi" }]);
+    });
+    const [player] = await functions.getRealSquad({ data: { clubId: "fla" } });
+    expect(player).toMatchObject({
+      id: "canonical",
+      identity_aliases: ["record:older-record", "provider:api-football:11756"],
+    });
   });
 
   it.each([
@@ -159,6 +192,7 @@ describe("public football queries", () => {
   it("uses literal text for name searches, preserves zero filters and caches identical searches", async () => {
     request.mockImplementation(async (input) => {
       const url = requestUrl(input);
+      if (url.pathname.endsWith("/player_identity_aliases")) return ok([]);
       expect(url.searchParams.get("name")).toBe("ilike.%50\\%\\_%");
       expect(url.searchParams.getAll("age")).toEqual(["gte.0", "lte.120"]);
       expect(url.searchParams.getAll("overall")).toEqual(["gte.0", "lte.100"]);
@@ -191,6 +225,7 @@ describe("public football queries", () => {
       ];
       request.mockImplementation(async (input) => {
         const url = requestUrl(input);
+        if (url.pathname.endsWith("/player_identity_aliases")) return ok([]);
         expect(url.searchParams.get("source_kind")).toBe("eq.player");
         expect(url.searchParams.get("canonical_player_id")).toBe("is.null");
         expect(url.searchParams.get("select")).toBe(
@@ -213,6 +248,7 @@ describe("public football queries", () => {
     const rows = Array.from({ length: 30 }, (_, i) => ({ id: `player-${i}`, name: `Player ${i}` }));
     request.mockImplementation(async (input) => {
       const url = requestUrl(input);
+      if (url.pathname.endsWith("/player_identity_aliases")) return ok([]);
       const offset = Number(url.searchParams.get("offset") ?? 0);
       const limit = Math.min(10, Number(url.searchParams.get("limit") ?? 25));
       return ok(rows.slice(offset, offset + limit));
@@ -220,11 +256,11 @@ describe("public football queries", () => {
     const first = await functions.searchRealPlayers({ data: {} });
     expect(first.rows).toHaveLength(24);
     expect(first.hasMore).toBe(true);
-    expect(request).toHaveBeenCalledTimes(3);
+    expect(request).toHaveBeenCalledTimes(4);
     const last = await functions.searchRealPlayers({ data: { page: 1 } });
     expect(last.rows).toHaveLength(6);
     expect(last.hasMore).toBe(false);
-    expect(request).toHaveBeenCalledTimes(5);
+    expect(request).toHaveBeenCalledTimes(7);
   });
 
   it("retries a failed market read and never converts its error into an empty cached page", async () => {
