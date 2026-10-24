@@ -456,8 +456,9 @@ export class WorkerMatchView implements MatchRuntime {
       this.positions = new Float64Array(next.players.length * 4);
     for (let index = 0; index < next.players.length; index += 1) {
       const target = next.players[index]!;
-      // Identity lookup is needed only on substitution/reordering, not 10 times
-      // a second during ordinary play. New athletes begin at their target.
+      // Preserve the old interpolated coordinates before updating wire fields.
+      // On a stable roster, apply the frame in the same pass rather than
+      // traversing all 22 athletes twice on every Worker delivery.
       const current = rosterChanged
         ? this.players.find((player) => player.id === target.id)
         : this.players[index];
@@ -466,20 +467,12 @@ export class WorkerMatchView implements MatchRuntime {
       this.positions[offset + 1] = current?.z ?? target.z;
       this.positions[offset + 2] = target.x;
       this.positions[offset + 3] = target.z;
+      if (!rosterChanged && current) applyPlayerFrame(current, target);
     }
     this.previousBall.x = this.ball.x;
     this.previousBall.z = this.ball.z;
     this.previousBall.height = this.ball.height;
-    if (rosterChanged) {
-      this.players = next.players.map(copyPlayer);
-    } else {
-      for (let index = 0; index < next.players.length; index += 1) {
-        const target = next.players[index];
-        const current = this.players[index];
-        if (!target || !current) continue;
-        applyPlayerFrame(current, target);
-      }
-    }
+    if (rosterChanged) this.players = next.players.map(copyPlayer);
     this.targetBall.x = next.ball.x;
     this.targetBall.z = next.ball.z;
     this.targetBall.height = next.ball.height;
