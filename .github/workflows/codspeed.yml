@@ -55,9 +55,19 @@ jobs:
           git worktree add --detach .codspeed-base fd65b3d7616d6dd0544768fec1c645cedfe9dab6
           ln -s "$GITHUB_WORKSPACE/node_modules" "$GITHUB_WORKSPACE/.codspeed-base/node_modules"
           cmp package-lock.json .codspeed-base/package-lock.json
-      - name: Measure all original workloads and catalogue on the same hardware
+      - name: Verify the paired environment
+        run: node scripts/verify-codspeed-pair.mjs .codspeed-base .
+      - name: Measure integrated baseline on this runner
         uses: CodSpeedHQ/action@v5
+        env:
+          TSX_TSCONFIG_PATH: ${{ github.workspace }}/.codspeed-base/tsconfig.json
         with:
           mode: simulation,walltime
-          simulation-track-subprocess: "true"
-          run: node scripts/paired-codspeed.mjs .codspeed-base .
+          run: node --import tsx scripts/codspeed-revision.mjs .codspeed-base baseline
+      - name: Measure candidate on the same runner
+        uses: CodSpeedHQ/action@v5
+        env:
+          TSX_TSCONFIG_PATH: ${{ github.workspace }}/tsconfig.json
+        with:
+          mode: simulation,walltime
+          run: node --import tsx scripts/codspeed-revision.mjs . candidate
