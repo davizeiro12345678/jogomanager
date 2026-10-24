@@ -13,6 +13,9 @@ export const REPLAY_FORMAT_V2 = 2;
 export const REPLAY_FORMAT_V3 = 3;
 export const REPLAY_V3_MIN_REDUCTION = 0.2;
 const QUANTIZE = 100;
+// Action bytes are always Uint8; decode once rather than resolving each player
+// action on every stored frame. Every unused byte still maps to null.
+const DECODED_ACTIONS = Array.from({ length: 256 }, (_, code) => actionFromCode(code));
 
 export type StoredReplayV3 = {
   execution?: RecordedMatchExecutionContract;
@@ -107,17 +110,18 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
 }
 
 function decodeV3(raw: StoredReplayV3): Replay {
-  const frames: ReplayFrame[] = [];
   const playerCount = raw.meta.length;
   const times = raw.frames.timesMs;
+  const frames = new Array<ReplayFrame>(times.length);
   const ball = raw.frames.ball;
   const positions = raw.frames.positions;
   const actions = raw.frames.actions;
   const score = raw.frames.score;
   const possession = raw.frames.possession;
+  const visual = raw.frames.visual;
   let timeMs = 0;
   for (let frameIndex = 0; frameIndex < times.length; frameIndex += 1) {
-    timeMs += numeric(times, frameIndex);
+    timeMs += times[frameIndex]!;
     // V3 buffers are length-validated before decoding. Preallocate the exact
     // player arrays and read typed buffers directly: avoid repeated push growth,
     // optional indexed lookups and four helper calls per athlete per frame.
@@ -131,22 +135,22 @@ function decodeV3(raw: StoredReplayV3): Replay {
       p[target + 1] = positions[source + 1]! / QUANTIZE;
       p[target + 2] = positions[source + 2]! / QUANTIZE;
       p[target + 3] = positions[source + 3]! / QUANTIZE;
-      a[playerIndex] = actionFromCode(actions[frameBase + playerIndex]!);
+      a[playerIndex] = DECODED_ACTIONS[actions[frameBase + playerIndex]!] ?? null;
     }
-    frames.push({
+    frames[frameIndex] = {
       t: timeMs / 1_000,
       b: [
-        numeric(ball, frameIndex * 3) / QUANTIZE,
-        numeric(ball, frameIndex * 3 + 1) / QUANTIZE,
-        numeric(ball, frameIndex * 3 + 2) / QUANTIZE,
+        ball[frameIndex * 3]! / QUANTIZE,
+        ball[frameIndex * 3 + 1]! / QUANTIZE,
+        ball[frameIndex * 3 + 2]! / QUANTIZE,
       ],
       p,
       a,
-      hg: numeric(score, frameIndex * 2),
-      ag: numeric(score, frameIndex * 2 + 1),
-      poss: numeric(possession, frameIndex) === 1 ? "away" : "home",
-      ...(raw.frames.visual?.[frameIndex] ? { v: raw.frames.visual[frameIndex]! } : {}),
-    });
+      hg: score[frameIndex * 2]!,
+      ag: score[frameIndex * 2 + 1]!,
+      poss: possession[frameIndex] === 1 ? "away" : "home",
+      ...(visual?.[frameIndex] ? { v: visual[frameIndex]! } : {}),
+    };
   }
   return {
     ...(raw.execution ? { execution: { ...raw.execution } } : {}),
