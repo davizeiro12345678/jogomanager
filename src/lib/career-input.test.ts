@@ -29,9 +29,7 @@ describe("career sync JSON validation", () => {
 
   it("still rejects non-JSON array entries and unsafe career fields", () => {
     const career = validCareer();
-    expect(() =>
-      parseCareerInput({ state: { ...career.state, fixtures: [undefined] } }),
-    ).toThrow();
+    expect(() => parseCareerInput({ state: { ...career.state, fixtures: [undefined] } })).toThrow();
     expect(() =>
       parseCareerInput({ state: { ...career.state, round: Number.POSITIVE_INFINITY } }),
     ).toThrow();
