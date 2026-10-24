@@ -272,9 +272,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
       // Only the trusted server may choose the remote authority.
       // Default production behavior stays unchanged until static-IP
       // egress, secrets, and Atlas connectivity pass an end-to-end test.
-      const { matchAuxEnabled, simulateOnMatchAux } = await import(
-        "./match-aux-client.server"
-      );
+      const { matchAuxEnabled, simulateOnMatchAux } = await import("./match-aux-client.server");
       let result: { hg: number; ag: number; minute: number };
       if (matchAuxEnabled()) {
         const verified = await simulateOnMatchAux({
