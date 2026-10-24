@@ -4,9 +4,8 @@ import {
   LIVE_MATCH_CLOCK_SCALE,
   MATCH_SIMULATION_STEP,
   MATCH_SIMULATION_TICK_LIMIT,
-  MAX_LIVE_MOTION_SCALE,
-  MatchSim,
-} from "./sim";
+} from "./sim-contracts";
+import type { MatchSim } from "./sim";
 
 import type { RapierVisualPhysics } from "./rapier-ball-visual";
 import {
@@ -233,6 +232,9 @@ async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive"
   recoveryTicks = [];
 
   clearVisualPhysics();
+  // Career commands share this worker but do not need the live solver. Load it
+  // inside the sequential command queue, before fixing the seeded execution.
+  const { MatchSim } = await import("./sim");
   // Freeze the backend before the first step so loading timing cannot change
   // the seeded pass decisions halfway through a match.
   live = new MatchSim(message.home, message.away, message.seed, {
@@ -366,6 +368,7 @@ async function handleMessage(message: LiveWorkerRequest) {
     return;
   }
   if (message.type === "simulate") {
+    const { MatchSim } = await import("./sim");
     const sim = new MatchSim(message.home, message.away, message.seed, {
       knockout: message.knockout,
       weather: message.weather,
