@@ -330,7 +330,11 @@ function surfaceFromCache(cache: Map<string, THREE.BufferGeometry>, key: string)
   return source.clone();
 }
 
-function rememberSurface(cache: Map<string, THREE.BufferGeometry>, key: string, surface: THREE.BufferGeometry) {
+function rememberSurface(
+  cache: Map<string, THREE.BufferGeometry>,
+  key: string,
+  surface: THREE.BufferGeometry,
+) {
   cache.set(key, surface.clone()); // caller owns the original geometry
   if (cache.size > MAX_CACHED_SURFACES) {
     const oldest = cache.keys().next().value;
