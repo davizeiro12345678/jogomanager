@@ -14,4 +14,6 @@ CodSpeed run `6add3bc2ab287825ce854d91` measured the standard `300 live ticks` W
 
 [CodSpeed comparison](https://app.codspeed.io/davizeiro12345678/jogomanager/runs/compare/6add2174d6a14e1526843ad7..6add3bc2ab287825ce854d91)
 
-The second experiment moves tick-local urgency and movement-context closures into a module function and a class method. The same profile attributes 4.93% self time to `__name` invoked from `moveOffBall`; reducing function recreation targets that overhead while preserving lazy side-context evaluation. After both experiments, all 30,720 body/remainder states, 36,000 paired ticks and 372 full checkpoints still match b6368e9. Affected mechanics/realism tests: 37 tests / 3 files passed. The second performance result is still pending; the main-comparison gates remain mandatory.
+The second closure-hoisting experiment was tested with 30,720 exact body/remainder states, 36,000 paired ticks and 372 full checkpoints; 37 affected tests passed. It did not produce a material improvement in the standard 300-tick workload. The paired-job hardware changed again and cannot establish its isolated effect. The closure changes were therefore removed from the final source; only the simpler scalar-local motion change remains. No massive or all-benchmark gain is established.
+
+[Second comparison](https://app.codspeed.io/davizeiro12345678/jogomanager/runs/compare/6add3bc2ab287825ce854d91..6add3e0eab287825ce854db2)

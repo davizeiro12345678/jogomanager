@@ -1097,6 +1097,12 @@ export type Database = {
           },
         ]
       }
+      match_room_messages: {
+        Row: { id: string; room_id: string; user_id: string; body: string; created_at: string }
+        Insert: { room_id: string; body: string }
+        Update: never
+        Relationships: [{ foreignKeyName: "match_room_messages_room_id_fkey"; columns: ["room_id"]; isOneToOne: false; referencedRelation: "match_rooms"; referencedColumns: ["id"] }]
+      }
       match_rooms: {
         Row: {
           code: string

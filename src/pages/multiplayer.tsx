@@ -20,6 +20,8 @@ import { buildTeamSetup } from "@/game/quickMatch";
 
 import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
 
+import { readRoomMessage, mergeRoomMessages, type RoomMessage } from "@/game/room-chat";
+
 import { shouldShowLiveRoom } from "@/game/multiplayer-room-state";
 
 import { getLiveRoomConnectionState } from "@/game/multiplayer-connection";
@@ -226,6 +228,7 @@ export function MultiplayerPage() {
     return (
       <LiveRoom
         room={room}
+        userId={userId}
         online={online}
         busy={busy}
         operationError={error}
@@ -514,64 +517,145 @@ function SideCard({
   );
 }
 
-/** Chat da sala por canal em tempo real (não fica salvo). */
-function RoomChat({ roomId, userId }: { roomId: string; userId: string | null }) {
-  const [msgs, setMsgs] = useState<{ id: string; from: string; text: string }[]>([]);
+/** Room messages come from rows whose sender and access are checked by Postgres. */
+function RoomChat({
+  roomId,
+  userId,
+  writable = true,
+}: {
+  roomId: string;
+  userId: string | null;
+  writable?: boolean;
+}) {
+  const [msgs, setMsgs] = useState<RoomMessage[]>([]);
   const [text, setText] = useState("");
-  const chanRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-
+  const [sending, setSending] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const activeRoom = useRef(roomId);
+  activeRoom.current = roomId;
   useEffect(() => {
-    const ch = supabase.channel(`room-chat-${roomId}`, { config: { broadcast: { self: true } } });
-    ch.on("broadcast", { event: "msg" }, ({ payload }) => {
-      setMsgs((m) => [...m.slice(-40), payload as { id: string; from: string; text: string }]);
-    }).subscribe();
-    chanRef.current = ch;
+    let disposed = false;
+    setMsgs([]);
+    setText("");
+    setSending(false);
+    setChatError(null);
+    const accept = (rows: unknown[]) => {
+      const messages = rows
+        .map((row) => readRoomMessage(row, roomId))
+        .filter((m): m is RoomMessage => m !== null);
+      if (!disposed) setMsgs((current) => mergeRoomMessages(current, messages));
+    };
+    const refresh = async () => {
+      const { data, error } = await supabase
+        .from("match_room_messages")
+        .select("*")
+        .eq("room_id", roomId)
+        .order("created_at", { ascending: false })
+        .limit(40);
+      if (!disposed && error)
+        setChatError("O chat está indisponível. Tente novamente em instantes.");
+      if (data) accept(data);
+    };
+    const channel = supabase
+      .channel(`room-messages-${roomId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "match_room_messages",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => accept([payload.new]),
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED")
+          void refresh().catch(() => {
+            if (!disposed) setChatError("O chat está indisponível.");
+          });
+      });
+    const sync = () =>
+      void refresh().catch(() => {
+        if (!disposed) setChatError("O chat está indisponível.");
+      });
+    sync();
+    const timer = window.setInterval(sync, 8000);
     return () => {
-      void supabase.removeChannel(ch);
-      chanRef.current = null;
+      disposed = true;
+      window.clearInterval(timer);
+      void supabase.removeChannel(channel);
     };
   }, [roomId]);
-
+  async function send() {
+    const body = text.trim().slice(0, 200);
+    if (!body || !userId || !writable || sending) return;
+    setSending(true);
+    setChatError(null);
+    try {
+      const { data, error } = await supabase
+        .from("match_room_messages")
+        .insert({ room_id: roomId, body })
+        .select("*")
+        .single();
+      if (error) throw error;
+      if (activeRoom.current !== roomId) return;
+      const message = readRoomMessage(data, roomId);
+      if (message) setMsgs((current) => mergeRoomMessages(current, [message]));
+      setText((current) => (current.trim().slice(0, 200) === body ? "" : current));
+    } catch {
+      if (activeRoom.current !== roomId) return;
+      setChatError("Não foi possível enviar. Há limite de 10 mensagens por minuto e 200 por sala.");
+    } finally {
+      if (activeRoom.current === roomId) setSending(false);
+    }
+  }
   return (
     <div className="mt-5 rounded-xl border border-border/50 bg-background/40 p-3">
-      <div className="max-h-40 overflow-y-auto text-sm">
+      <div
+        className="max-h-40 overflow-y-auto text-sm"
+        role="log"
+        aria-live="polite"
+        aria-label="Mensagens da sala"
+      >
         {msgs.length === 0 ? (
           <p className="text-xs text-muted-foreground">Converse com seu adversário aqui.</p>
         ) : (
-          msgs.map((m, i) => (
-            <p key={`${m.id}-${i}`} className="mb-1">
+          msgs.map((m) => (
+            <p key={m.id} className="mb-1">
               <span className="text-muted-foreground">
-                {m.from === userId ? "Você" : "Adversário"}:{" "}
+                {m.user_id === userId ? "Você" : "Adversário"}:{" "}
               </span>
-              {m.text}
+              {m.body}
             </p>
           ))
         )}
       </div>
+      {chatError ? (
+        <p role="alert" className="mt-2 text-xs text-red-400">
+          {chatError}
+        </p>
+      ) : null}
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          const value = text.trim().slice(0, 200);
-          if (!value) return;
-          void chanRef.current?.send({
-            type: "broadcast",
-            event: "msg",
-            payload: { id: userId ?? "anon", from: userId ?? "anon", text: value },
-          });
-          setText("");
+          void send();
         }}
         className="mt-2 flex gap-2"
       >
         <input
+          disabled={!writable}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          maxLength={200}
+          aria-label="Mensagem para o adversário"
           placeholder="Mensagem…"
           className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
         />
         <button
           type="submit"
+          disabled={sending || !userId || !writable || !text.trim()}
           aria-label="Enviar mensagem"
-          className="min-h-11 rounded-lg bg-primary px-3 py-1.5 text-primary-foreground"
+          className="min-h-11 rounded-lg bg-primary px-3 py-1.5 text-primary-foreground disabled:opacity-50"
         >
           <Send size={14} />
         </button>
@@ -586,6 +670,7 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string | null })
  */
 function LiveRoom({
   room,
+  userId,
   online,
   busy,
   operationError,
@@ -593,6 +678,7 @@ function LiveRoom({
   onExit,
 }: {
   room: Room;
+  userId: string | null;
   online: boolean;
   busy: boolean;
   operationError: string | null;
@@ -609,6 +695,7 @@ function LiveRoom({
   );
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
   const [quality] = useState<Quality>(() => detectQuality() as Quality);
+  const [showChat, setShowChat] = useState(false);
   const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [snap, setSnap] = useState({ minute: 0, hg: 0, ag: 0, finished: false });
   const published = useRef(false);
@@ -780,7 +867,22 @@ function LiveRoom({
           </div>
         </div>
       ) : null}
+      {showChat ? (
+        <aside
+          className="absolute bottom-20 right-3 z-20 w-[min(24rem,calc(100vw-1.5rem))] rounded-xl bg-background/95 p-3 shadow-xl"
+          aria-label="Chat da partida"
+        >
+          <RoomChat roomId={room.id} userId={userId} writable={room.status === "live"} />
+        </aside>
+      ) : null}
       <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl">
+        <button
+          onClick={() => setShowChat((open) => !open)}
+          aria-expanded={showChat}
+          className="rounded-full px-4 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
+        >
+          Chat
+        </button>
         {room.status === "done" ? (
           <button
             onClick={onRematch}
