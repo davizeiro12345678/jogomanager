@@ -65,27 +65,38 @@ export function advanceAthlete(
   const h = useFixedSlices ? HIGH_FIDELITY_PHYSICS_STEP : dt / steps;
   const response = 1 - Math.exp(-6 * h);
   const speedCap = Math.max(0, maxSpeed);
+  // Integrate in scalar locals; the 139 Hz inner loop need not repeatedly
+  // load and store four fields on the player object. Keep every arithmetic
+  // operation in the original order to preserve replay/checkpoint identity.
+  let x = p.x,
+    z = p.z,
+    vx = p.vx,
+    vz = p.vz;
   for (let i = 0; i < steps; i++) {
-    const dx = tx - p.x,
-      dz = tz - p.z,
+    const dx = tx - x,
+      dz = tz - z,
       distance = Math.hypot(dx, dz);
     const desiredSpeed = Math.min(speedCap, Math.sqrt(2 * braking * Math.max(0, distance - 0.08)));
     const ux = distance > 0.00001 ? (dx / distance) * desiredSpeed : 0;
     const uz = distance > 0.00001 ? (dz / distance) * desiredSpeed : 0;
-    const dvx = ux - p.vx,
-      dvz = uz - p.vz,
+    const dvx = ux - vx,
+      dvz = uz - vz,
       change = Math.hypot(dvx, dvz);
     // Deceleration may use more force than launch, but never teleports velocity.
-    const slowing = dvx * p.vx + dvz * p.vz < 0;
+    const slowing = dvx * vx + dvz * vz < 0;
     const limit = (slowing ? braking : acceleration) * h;
     const factor = change > 0 ? Math.min(response, limit / change) : 0;
-    const oldX = p.vx,
-      oldZ = p.vz;
-    p.vx += dvx * factor;
-    p.vz += dvz * factor;
-    p.x += (oldX + p.vx) * 0.5 * h;
-    p.z += (oldZ + p.vz) * 0.5 * h;
+    const oldX = vx,
+      oldZ = vz;
+    vx += dvx * factor;
+    vz += dvz * factor;
+    x += (oldX + vx) * 0.5 * h;
+    z += (oldZ + vz) * 0.5 * h;
   }
+  p.x = x;
+  p.z = z;
+  p.vx = vx;
+  p.vz = vz;
 }
 
 /** Inelastic shoulder contact with limited tangential friction. Equal and
