@@ -1,5 +1,6 @@
 import {
   gauss,
+  MOUTH_SPAN,
   faceRing,
   headPoint,
   headComplexion,
@@ -152,7 +153,7 @@ function eyePatch(P: Proportions, side: number, seed: number, portrait = false) 
   const geometry = gridSurface(20, 6, (u, v) => {
     const t = u * 2 - 1;
     const aperture = orbitalArch(u, portrait);
-    const x = P.headW * (side * f.eyeSpacing + t * f.eyeWidth * 0.86);
+    const x = P.headW * (side * f.eyeSpacing + t * f.eyeWidth * 1.04);
     const y =
       P.headR * (0.14 + side * f.eyeAsymmetry + side * t * 0.012) +
       // Use the very same rim as the attached lids. The narrower old sclera
@@ -320,7 +321,7 @@ export function lipPatch(P: Proportions, seed: number, lower: boolean) {
   const f = faceMorphology(seed);
   const geometry = gridSurface(24, 6, (u, v) => {
     const t = u * 2 - 1;
-    const x = t * P.headR * f.mouthWidth;
+    const x = t * P.headR * f.mouthWidth * MOUTH_SPAN;
     const arch = Math.sin(u * Math.PI);
     const seam = -0.498 + 0.01 * (1 - t * t) + t * f.mouthTilt;
     const cupid = 0.026 * Math.exp(-(((Math.abs(t) - 0.28) / 0.17) ** 2));
@@ -448,7 +449,7 @@ function mouthInterior(P: Proportions, seed: number) {
   return gridSurface(20, 3, (u, v) => {
     const t = u * 2 - 1;
     const arch = Math.sin(u * Math.PI);
-    const x = t * P.headR * f.mouthWidth * 0.88;
+    const x = t * P.headR * f.mouthWidth * MOUTH_SPAN * 0.88;
     // A relaxed mouth has a narrow seam. The jaw exposes this interior while
     // speaking; a permanently tall cavity made a neutral face look grimacing.
     const y = P.headR * (-0.497 + t * f.mouthTilt + (v - 0.5) * arch * 0.016);
@@ -464,7 +465,7 @@ function relaxedMouthCrease(P: Proportions, seed: number) {
   const geometry = gridSurface(24, 2, (u, v) => {
     const t = u * 2 - 1;
     const arch = Math.sin(u * Math.PI);
-    const x = t * P.headR * f.mouthWidth;
+    const x = t * P.headR * f.mouthWidth * MOUTH_SPAN;
     const y = P.headR * (-0.498 + 0.01 * (1 - t * t) + t * f.mouthTilt + (v - 0.5) * arch * 0.004);
     return new THREE.Vector3(x, y, faceSurfaceZ(P, x, y, seed) + P.headR * 0.0011);
   });
@@ -531,7 +532,7 @@ export function sculptedMoustache(P: HeadShape, look: PlayerLook, detail = true)
   const geometry = gridSurface(detail ? 22 : 12, 3, (u, v) => {
     const t = u * 2 - 1;
     const taper = Math.max(0.035, Math.sin(u * Math.PI) ** 0.75);
-    const x = t * P.headR * (f.mouthWidth * 0.93);
+    const x = t * P.headR * (f.mouthWidth * MOUTH_SPAN * 0.93);
     const split = Math.exp(-((t / 0.15) ** 2));
     // Taper the silhouette itself, not just its relief. The previous fixed
     // top/bottom edges left a dark rectangle at either side of the philtrum.
@@ -588,6 +589,35 @@ function tintBeardSurface(
   return geometry;
 }
 
+/** The alar opening rolls inward, with a dark centre fading into the skin
+ * at its perimeter. Same circle topology as the old projected dot; shares the skull material. */
+export function nostrilSurface(P: Proportions, look: PlayerLook, side: number, detail: boolean) {
+  const f = faceMorphology(look.seed);
+  const R = P.headR;
+  const x = f.noseDeviation * P.headW + side * R * f.noseWidth * 0.98;
+  const y = -R * 0.29;
+  const geometry = new THREE.CircleGeometry(1, detail ? 10 : 7);
+  const position = geometry.getAttribute("position");
+  const colors = new Float32Array(position.count * 3);
+  for (let i = 0; i < position.count; i++) {
+    const u = position.getX(i),
+      v = position.getY(i);
+    const radius = Math.min(1, Math.hypot(u, v));
+    const px = x + u * R * 0.021;
+    const py = y + v * R * 0.01 - side * u * R * 0.004;
+    position.setXYZ(i, px, py, faceSurfaceZ(P, px, py, look.seed) + R * 0.0009);
+    // Dark centre represents the opening; its shared edge pigment exactly
+    // meets the surrounding albedo rather than producing a hard black disk.
+    const pigment = radius < 0.5 ? 0.26 : 1;
+    colors.set([pigment, pigment, pigment], i * 3);
+  }
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  geometry.computeVertexNormals();
+  continueHeadComplexion(geometry, P);
+  mapHeadSurfaceUv(geometry, P, look.seed);
+  return geometry;
+}
+
 /** Orbital tissue overlaps the limbus; a flat white eye patch alone reads as paint. */
 export function eyelidSurface(
   P: Proportions,
@@ -600,7 +630,7 @@ export function eyelidSurface(
   const geometry = gridSurface(24, 4, (u, v) => {
     const t = u * 2 - 1,
       arch = portrait ? orbitalArch(u, true) : Math.max(0.012, Math.sin(u * Math.PI) ** 0.8);
-    const x = P.headW * (side * f.eyeSpacing + t * f.eyeWidth * 0.86);
+    const x = P.headW * (side * f.eyeSpacing + t * f.eyeWidth * 1.04);
     const rim = f.eyeOpening * (upper ? 0.32 : 0.42);
     const fold = upper ? 0.095 : 0.064;
     const y =
@@ -706,7 +736,7 @@ function eyebrowSurface(P: Proportions, side: number, seed: number) {
   const f = faceMorphology(seed);
   return gridSurface(20, 3, (u, v) => {
     const t = u * 2 - 1;
-    const x = P.headW * (side * f.eyeSpacing + t * f.eyeWidth * 1.06);
+    const x = P.headW * (side * f.eyeSpacing + t * f.eyeWidth * 1.24);
     const taper = Math.max(0.04, Math.sin(u * Math.PI) ** 0.6);
     const outer = Math.max(0, side * t);
     const arch = 0.034 * Math.exp(-(((t + side * 0.18) / 0.63) ** 2));
@@ -868,16 +898,9 @@ export function buildSculptedFace(
     }
     browGeometry.setAttribute("color", new THREE.BufferAttribute(browColors, 3));
     face.push(rigPart(browGeometry, detailMaterial));
-    // A recessed oval opening reads as a nostril; the old projected sphere
-    // made two charcoal beads sit on the end of the nose in close-up.
-    const nx = f.noseDeviation * P.headW + side * R * f.noseWidth * 0.76,
-      ny = -R * 0.25;
-    face.push(
-      rigPart(new THREE.CircleGeometry(R * 0.0155, hi ? 10 : 7), skinDetail, {
-        position: [nx, ny, faceSurfaceZ(P, nx, ny, look.seed) + R * 0.0045],
-        scale: [1.28, 0.54, 1],
-      }),
-    );
+    // Each nostril is an elliptical cavity pigment fitted to the actual
+    // alar surface, never a planar circle perched on the end of the nose.
+    face.push(rigPart(nostrilSurface(P, look, side, hi), mats.skin));
   }
   face.push(
     rigPart(lipPatch(P, look.seed, false), mats.skin),

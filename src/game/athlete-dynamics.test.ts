@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { advanceAthlete, athleteContact } from "./athlete-dynamics";
 
 const body = (extra = {}) => ({
@@ -13,6 +13,21 @@ const body = (extra = {}) => ({
   ...extra,
 });
 describe("athlete mechanics", () => {
+  it("evaluates the constant response once per motion call and skips work for a retained fractional slice", () => {
+    const exp = vi.spyOn(Math, "exp");
+    const p = body();
+    try {
+      advanceAthlete(p, 20, 0, 7, 1 / 600, 1);
+      expect(exp).not.toHaveBeenCalled();
+      expect(p.x).toBe(0);
+      advanceAthlete(p, 20, 0, 7, 1 / 30, 1);
+      expect(exp).toHaveBeenCalledTimes(1);
+      expect(p.x).toBeGreaterThan(0);
+    } finally {
+      exp.mockRestore();
+    }
+  });
+
   it("limits launch and reversal acceleration instead of snapping velocity", () => {
     const p = body();
     advanceAthlete(p, 20, 0, 7, 1 / 30, 1);

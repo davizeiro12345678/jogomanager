@@ -74,3 +74,38 @@ it("preserves skull scale and a clear eye line in both sculpted levels of detail
     head.dispose();
   }
 });
+
+it("breaks short and medium hairline silhouettes at portrait scale while preserving other cuts", () => {
+  const look = lookFor("studio-fla-MF-1", "MF", true),
+    face = faceMorphology(look.seed);
+  for (const detail of [false, true]) {
+    for (const style of [
+      "buzz",
+      "curly",
+      "afro",
+      "braids",
+      "dreads",
+      "bun",
+      "ponytail",
+      "mohawk",
+    ] as const)
+      for (const angle of [0, 0.35, 0.7, 1.2, 2.8])
+        expect(fittedHairlineY(angle, face, detail, style)).toBe(
+          fittedHairlineY(angle, face, detail),
+        );
+    for (const style of ["short", "medium"] as const) {
+      const deviations = [-0.8, -0.4, 0, 0.4, 0.8].map(
+        (angle) =>
+          fittedHairlineY(angle, face, detail, style) - fittedHairlineY(angle, face, detail),
+      );
+      // Macro temporal recession plus a lowered off-centre forelock must
+      // change the contour at centimetre scale, not only vary fibre pigment.
+      expect(Math.max(...deviations) - Math.min(...deviations)).toBeGreaterThan(0.06);
+      expect(fittedHairlineY(0, face, detail, style)).toBeGreaterThan(0.35);
+      expect(fittedHairlineY(0, face, detail, style)).toBeCloseTo(
+        fittedHairlineY(Math.PI * 2, face, detail, style),
+        12,
+      );
+    }
+  }
+});

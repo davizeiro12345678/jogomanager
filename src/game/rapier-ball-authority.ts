@@ -325,12 +325,13 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     const translation = this.ballBody.translation();
     if (translation.y < BALL_PHYSICS_RADIUS * 2.5) return; // no chão o vento não pega
     const step = finite(dt, 1 / 30);
+    const mass = this.ballBody.mass();
     const clamp = (v: number) => Math.max(-0.16, Math.min(0.16, v));
     this.ballBody.applyImpulse(
       {
-        x: clamp(this.wind.x * step * this.ballBody.mass()),
+        x: clamp(this.wind.x * step * mass),
         y: 0,
-        z: clamp(this.wind.z * step * this.ballBody.mass()),
+        z: clamp(this.wind.z * step * mass),
       },
       true,
     );

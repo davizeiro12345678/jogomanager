@@ -1,0 +1,245 @@
+{
+  "fixture": "studio-fla-MF-1",
+  "records": [
+    {
+      "style": "buzz",
+      "detail": false,
+      "vertices": 209,
+      "triangles": 360,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "buzz",
+      "detail": true,
+      "vertices": 8833,
+      "triangles": 17280,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "curly",
+      "detail": false,
+      "vertices": 209,
+      "triangles": 360,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "curly",
+      "detail": true,
+      "vertices": 8833,
+      "triangles": 17280,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "afro",
+      "detail": false,
+      "vertices": 209,
+      "triangles": 360,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "afro",
+      "detail": true,
+      "vertices": 8833,
+      "triangles": 17280,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "braids",
+      "detail": false,
+      "vertices": 209,
+      "triangles": 360,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "braids",
+      "detail": true,
+      "vertices": 8833,
+      "triangles": 17280,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "dreads",
+      "detail": false,
+      "vertices": 209,
+      "triangles": 360,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "dreads",
+      "detail": true,
+      "vertices": 8833,
+      "triangles": 17280,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "mohawk",
+      "detail": false,
+      "vertices": 209,
+      "triangles": 360,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "mohawk",
+      "detail": true,
+      "vertices": 8833,
+      "triangles": 17280,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "bun",
+      "detail": false,
+      "vertices": 209,
+      "triangles": 360,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "bun",
+      "detail": true,
+      "vertices": 8833,
+      "triangles": 17280,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "ponytail",
+      "detail": false,
+      "vertices": 209,
+      "triangles": 360,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "ponytail",
+      "detail": true,
+      "vertices": 8833,
+      "triangles": 17280,
+      "same": {
+        "position": true,
+        "normal": true,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "short",
+      "detail": false,
+      "vertices": 209,
+      "triangles": 360,
+      "same": {
+        "position": false,
+        "normal": false,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "short",
+      "detail": true,
+      "vertices": 8833,
+      "triangles": 17280,
+      "same": {
+        "position": false,
+        "normal": false,
+        "uv": true,
+        "color": false
+      }
+    },
+    {
+      "style": "medium",
+      "detail": false,
+      "vertices": 209,
+      "triangles": 360,
+      "same": {
+        "position": false,
+        "normal": false,
+        "uv": true,
+        "color": true
+      }
+    },
+    {
+      "style": "medium",
+      "detail": true,
+      "vertices": 8833,
+      "triangles": 17280,
+      "same": {
+        "position": false,
+        "normal": false,
+        "uv": true,
+        "color": false
+      }
+    }
+  ]
+}

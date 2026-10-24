@@ -22,6 +22,8 @@ import type React from "react";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
+import { crowdSectorTeam } from "@/game/crowd-sector";
+
 import { CrowdLod } from "@/components/game/stadium/CrowdLod";
 
 import {
@@ -648,6 +650,7 @@ export function Stands({
     const positions: THREE.Vector3[] = [];
     const colors: THREE.Color[] = [];
     const skins: THREE.Color[] = [];
+    const affiliations: number[] = [];
     const home = new THREE.Color(homeColor);
     const homeAlt = new THREE.Color(homeColor).offsetHSL(0, -0.1, 0.14);
     const away = new THREE.Color(awayColor);
@@ -695,6 +698,7 @@ export function Stands({
             ),
           );
           colors.push(shirtFor(sector, zSide, i, ring));
+          affiliations.push(crowdSectorTeam(sector, zSide));
           skins.push(pick(i, ring));
         }
       }
@@ -718,11 +722,12 @@ export function Stands({
                 : home
               : shirtFor(sector, xSide, i, ring);
           colors.push(mosaic);
+          affiliations.push(xSide === 1 ? 1 : crowdSectorTeam(sector, xSide));
           skins.push(pick(i + 3, ring));
         }
       }
     }
-    return { positions, colors, skins };
+    return { positions, colors, skins, affiliations };
   }, [homeColor, awayColor, density, rings]);
 
   return (

@@ -2,6 +2,7 @@ import { addAfterEffect, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { subscribeRenderedFrames } from "./graphics-probe";
 import { FrameMetrics } from "@/game/frame-metrics";
+import { installRendererResourceProbe } from "@/game/renderer-resource-probe";
 import { FrameRateWindow } from "@/game/frame-rate-window";
 import { FRAME_METRIC_DEFINITIONS, performanceMemorySample } from "@/game/performance-memory";
 import {
@@ -137,6 +138,24 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
   effective.current = { quality, adaptive };
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
+  useEffect(() => {
+    if (
+      !location.pathname.includes("graphics-benchmark") ||
+      new URLSearchParams(location.search).get("resourceProbe") !== "1"
+    )
+      return;
+    return installRendererResourceProbe(window, () => {
+      const census = censusScene(scene);
+      return {
+        geometries: gl.info.memory.geometries,
+        textures: gl.info.memory.textures,
+        programs: gl.info.programs?.length ?? null,
+        materials: census.materials,
+        census: census.total,
+      };
+    });
+  }, [gl, scene]);
+
   // Telemetria opcional (com consentimento): 30 s de amostra após 10 s de partida.
   useEffect(() => {
     if (location.pathname.includes("graphics-benchmark")) return;

@@ -62,13 +62,13 @@ export function Benchmark() {
   const manual = new URLSearchParams(location.search).get("manual") === "1";
   const crowdProbe = manual && new URLSearchParams(location.search).get("crowdProbe") === "1";
   const [presentationProbe, setPresentationProbe] = useState("nenhuma");
-  function probeCrowd(kind: "goal" | "gasp") {
+  function probeCrowd(kind: "goal" | "gasp", side: "home" | "away" = "home") {
     if (!controller || !crowdProbe) return;
     // Only the presentation copy changes. The deterministic worker fixture and
     // its score/checkpoints remain untouched; this is never a match result.
-    if (kind === "goal") controller.view.stats.home.goals++;
+    if (kind === "goal") controller.view.stats[side].goals++;
     else controller.view.stats.home.onTarget++;
-    setPresentationProbe(kind);
+    setPresentationProbe(`${kind}-${side}`);
   }
   useEffect(() => {
     const view = new WorkerMatchView(
@@ -208,6 +208,9 @@ export function Benchmark() {
           </button>{" "}
           <button disabled={!controller} onClick={() => probeCrowd("gasp")}>
             Torcida: surpresa sintética
+          </button>{" "}
+          <button disabled={!controller} onClick={() => probeCrowd("goal", "away")}>
+            Torcida: gol visitante sintético
           </button>{" "}
           <output data-crowd-probe={presentationProbe}>
             Reação visual: {presentationProbe}; o Worker não é alterado.

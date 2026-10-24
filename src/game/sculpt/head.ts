@@ -50,6 +50,9 @@ export function profile(y: number) {
   };
 }
 
+/** Render-only spans preserve the seeded identity and centre landmarks. */
+export const MOUTH_SPAN = 1.12;
+
 export const gauss = (x: number, y: number, cx: number, cy: number, sx: number, sy: number) =>
   Math.exp(-(((x - cx) / sx) ** 2) - ((y - cy) / sy) ** 2);
 
@@ -64,6 +67,7 @@ export function fittedHairlineY(
   angle: number,
   face: ReturnType<typeof faceMorphology>,
   detail: boolean,
+  style?: PlayerLook["hairStyle"],
 ) {
   const front = Math.max(0, Math.cos(angle));
   const temples = Math.abs(Math.sin(angle));
@@ -71,7 +75,7 @@ export function fittedHairlineY(
     ? 0.012 * Math.sin(angle * 11 + face.parting * 2.7) +
       0.004 * Math.sin(angle * 23 - face.parting * 4.1)
     : 0;
-  return (
+  const line =
     -0.385 +
     // Pull the frontal edge back slightly further than the temples. That
     // exposes a forehead plane instead of forming a heavy close-up fringe.
@@ -83,8 +87,16 @@ export function fittedHairlineY(
     0.3 * temples ** 4 +
     0.09 * temples ** 2 * front ** 0.7 -
     0.022 * Math.cos(angle * 3 + face.parting) +
-    edgeNoise * front ** 3
-  );
+    edgeNoise * front ** 3;
+  if (style !== "short" && style !== "medium") return line;
+  // Broad, seeded temporal recesses and a displaced forelock interrupt the
+  // continuous bowl rim. The old microscopic noise could not change the
+  // silhouette at a normal portrait distance.
+  const signed = Math.atan2(Math.sin(angle), Math.cos(angle));
+  const sweepSide = face.parting < 0 ? -1 : 1;
+  const recess = 0.075 * Math.exp(-(((Math.abs(signed) - 0.73) / 0.28) ** 2));
+  const fringe = 0.05 * Math.exp(-(((signed - sweepSide * 0.2) / 0.4) ** 2));
+  return line + (recess - fringe) * front ** 2;
 }
 
 /** The same surface sampler positions facial details and the fitted hair. */
@@ -130,11 +142,11 @@ function sampleHeadPoint(
   // Separate bridge, tip and alar cartilages read as an adult nose in a
   // three-quarter portrait.  The previous single round gaussian made the
   // centre of every face look like the same soft button.
-  const noseBridge = f.noseProjection * 0.38 * gauss(noseX, y, 0, -0.005, f.noseWidth * 1.15, 0.36);
-  const noseTip = f.noseProjection * 0.57 * gauss(noseX, y, 0, -0.225, f.noseWidth * 1.15, 0.18);
+  const noseBridge = f.noseProjection * 0.44 * gauss(noseX, y, 0, -0.005, f.noseWidth * 1.3, 0.36);
+  const noseTip = f.noseProjection * 0.65 * gauss(noseX, y, 0, -0.225, f.noseWidth * 1.2, 0.16);
   const alar =
-    0.029 * gauss(Math.abs(noseX), y, f.noseWidth * 0.8, -0.255, 0.08, 0.1) +
-    0.013 * gauss(Math.abs(noseX), y, f.noseWidth * 0.6, -0.32, 0.065, 0.085);
+    0.047 * gauss(Math.abs(noseX), y, f.noseWidth * 1.05, -0.265, 0.09, 0.105) +
+    0.018 * gauss(Math.abs(noseX), y, f.noseWidth * 0.7, -0.32, 0.08, 0.085);
   const nasalRoot = -0.018 * gauss(noseX, y, 0, 0.22, f.noseWidth * 0.8, 0.12);
   const columella = 0.005 * gauss(noseX, y, 0, -0.34, f.noseWidth * 0.6, 0.12);
   const nose = noseBridge + noseTip + alar + nasalRoot + columella;
@@ -157,14 +169,14 @@ function sampleHeadPoint(
   // projected upper/lower patches plus a tube seam formed three lit bars.
   // Their seeded width and tilt are retained; the patches now only pigment
   // this soft rolled tissue and the jaw still drives the lower face.
-  const mouthT = x / ((P.headR / P.headW) * f.mouthWidth);
+  const mouthT = x / ((P.headR / P.headW) * f.mouthWidth * MOUTH_SPAN);
   const mouthEnvelope = Math.max(0, 1 - mouthT * mouthT) ** 1.3;
   const mouthSeam = -0.498 + 0.01 * (1 - mouthT * mouthT) + mouthT * f.mouthTilt;
   const lipVolume =
     mouthEnvelope *
-    (0.009 * Math.exp(-(((y - mouthSeam - 0.023) / 0.024) ** 2)) +
-      0.011 * Math.exp(-(((y - mouthSeam + 0.03) / 0.032) ** 2)) -
-      0.006 * Math.exp(-(((y - mouthSeam) / 0.012) ** 2)));
+    (0.006 * Math.exp(-(((y - mouthSeam - 0.023) / 0.03) ** 2)) +
+      0.009 * Math.exp(-(((y - mouthSeam + 0.03) / 0.038) ** 2)) -
+      0.0025 * Math.exp(-(((y - mouthSeam) / 0.015) ** 2)));
   const chin = 0.052 * f.chinProjection * gauss(x, y, 0, -0.85, 0.35 * f.chinWidth, 0.18);
   // Soft tissue turns around the muzzle; a narrow deep trench reads as an
   // incised puppet cheek in grazing light rather than a relaxed adult fold.
@@ -339,6 +351,15 @@ export function sculptedHead(
   return geometry;
 }
 
+function sweptCropFlow(angle: number, v: number, parting: number) {
+  return (
+    angle -
+    parting * 0.42 +
+    (1 - v) * 1.2 +
+    Math.sin(angle * 3 + v * 5 + parting) * 0.12 * Math.sin(v * Math.PI)
+  );
+}
+
 /** Fitted hairline with a tapered fade, directional locks and matte volume. */
 export function sculptedHair(
   P: HeadShape,
@@ -347,6 +368,7 @@ export function sculptedHair(
   sampling?: { columns: number; rows: number },
 ) {
   const style = look.hairStyle;
+  const sweptCrop = style === "short" || style === "medium";
   const f = faceMorphology(look.seed);
   const sample = new THREE.Vector3();
   const columns = sampling?.columns ?? (detail ? 120 : 18);
@@ -359,7 +381,7 @@ export function sculptedHair(
       const angle = headAngle(u);
       const front = Math.max(0, Math.cos(angle));
       const temples = Math.abs(Math.sin(angle));
-      const hairline = fittedHairlineY(angle, f, detail);
+      const hairline = fittedHairlineY(angle, f, detail, style);
       const y = hairline + (1.14 - hairline) * v;
       const p = sampleHeadPoint(P, y, angle, f, sample);
       // A shaved cut is scalp stubble, not a short hairstyle with the same
@@ -400,7 +422,9 @@ export function sculptedHair(
       // angular grid's Nyquist limit made metallic-looking saw teeth; fibre
       // maps supply that scale without aliasing the silhouette or normals.
       const grainFade = detail ? fade * THREE.MathUtils.smoothstep(v, 0.08, 0.3) : 0;
-      const grainFlow = angle - partAngle + (1 - v) * (textured ? 0.16 : 0.65);
+      const grainFlow = sweptCrop
+        ? sweptCropFlow(angle, v, f.parting)
+        : angle - partAngle + (1 - v) * (textured ? 0.16 : 0.65);
       const cropped = style === "braids" || style === "mohawk";
       const grain =
         textured || cropped
@@ -416,7 +440,7 @@ export function sculptedHair(
       // vanishes at the hairline and crown so the fitted seam stays closed.
       const clump =
         detail && (style === "short" || style === "medium")
-          ? 0.035 * Math.sin(angle * 5 + v * 7 + f.parting * 3) * Math.sin(v * Math.PI)
+          ? 0.055 * Math.sin(sweptCropFlow(angle, v, f.parting) * 5 + v * 7) * Math.sin(v * Math.PI)
           : 0;
       const shell =
         1 +
@@ -425,7 +449,10 @@ export function sculptedHair(
           0.007 +
             grain +
             clump +
-            (volume * look.hairVolume + strands) * fade * templeTaper -
+            (volume * look.hairVolume + strands) *
+              fade *
+              templeTaper *
+              (sweptCrop ? 1 - 0.58 * (1 - front ** 2) * Math.sin(v * Math.PI) : 1) -
             partGroove -
             foreheadInset,
         );
@@ -434,12 +461,12 @@ export function sculptedHair(
       // A swept forelock and flatter temples break the uniform cap contour.
       const forelock = cropped
         ? 0
-        : front ** 3 * Math.sin(v * Math.PI) * (0.055 + f.parting * 0.02);
+        : front ** 3 * Math.sin(v * Math.PI) * ((sweptCrop ? 0.15 : 0.055) + f.parting * 0.02);
       // Lift and sweep a broad crown mass rather than engraving deep regular
       // ridges into a fitted cap. Fibre maps still provide the small strands.
       const sweep =
         style === "short" || style === "medium"
-          ? 0.045 * Math.sin(angle - partAngle) * front * Math.sin(v * Math.PI)
+          ? 0.095 * Math.sin(angle - partAngle) * front * Math.sin(v * Math.PI)
           : 0;
       const ordinaryLift =
         volume * (0.18 + crown * 0.32) * fade + forelock * fade + sweep * fade + clump * 0.65;
@@ -495,13 +522,15 @@ export function sculptedHair(
     for (let i = 0; i < uv.count; i++) {
       const angle = headAngle(uv.getX(i));
       const v = uv.getY(i);
-      const flow = angle - f.parting * 0.42 + (1 - v) * 0.65;
+      const flow = sweptCrop
+        ? sweptCropFlow(angle, v, f.parting)
+        : angle - f.parting * 0.42 + (1 - v) * 0.65;
       const locks =
         (Math.cos(flow * 12 + v * 2) + Math.cos(flow * 24 + v * 3 + f.parting) * 0.3) / 1.3;
       const root = (1 - THREE.MathUtils.smoothstep(v, 0, 0.23)) * 0.11;
       const clumpTone =
         style === "short" || style === "medium"
-          ? Math.sin(angle * 5 + v * 7 + f.parting * 3) * Math.sin(v * Math.PI) * 0.075
+          ? Math.sin(sweptCropFlow(angle, v, f.parting) * 5 + v * 7) * Math.sin(v * Math.PI) * 0.075
           : 0;
       const tone = 0.94 + locks * 0.105 + clumpTone - root;
       colors.set([tone, tone * 0.99, tone * 0.97], i * 3);

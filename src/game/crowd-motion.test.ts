@@ -6,6 +6,17 @@ function fixture(minute = 20) {
   return { stats: { home: stat(), away: stat() }, minute: () => minute } as unknown as SimView;
 }
 describe("crowd reacts to authoritative view counters", () => {
+  it.each(["home", "away"] as const)("targets the %s scoring side for sector reactions", (side) => {
+    const sim = fixture();
+    const state = createCrowdBehavior();
+    advanceCrowdBehavior(state, sim, 1 / 60);
+    sim.stats[side].goals = 1;
+    advanceCrowdBehavior(state, sim, 1 / 60);
+    expect(state.behavior).toBe("celebrate");
+    expect(state.side).toBe(side);
+    expect(sim.stats.home.goals).toBe(side === "home" ? 1 : 0);
+    expect(sim.stats.away.goals).toBe(side === "away" ? 1 : 0);
+  });
   it("does not celebrate old goals when a replay or scene mounts", () => {
     const sim = fixture();
     sim.stats.home.goals = 3;

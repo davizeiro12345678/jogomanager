@@ -115,6 +115,18 @@ export function advanceCrowdBehavior(
  * phases come from seat coordinates, so no spectator animation loop runs on CPU. */
 export const CROWD_MOTION_GLSL = `
 attribute vec2 crowdLimb;
+float crowdSupport() {
+  return abs(crowdAffiliation) < 0.5 ? 0.35 : step(0.5, crowdAffiliation * crowdEventSide);
+}
+float crowdLocalEnergy() {
+  return max(crowdPulse, crowdEnergy) * mix(1.0, crowdSupport(), crowdCelebrate);
+}
+float crowdLocalWave() {
+  return crowdWaveStrength * mix(1.0, crowdSupport(), crowdCelebrate);
+}
+float crowdLocalSurprise() {
+  return max(crowdSurprise, crowdCelebrate * (1.0 - crowdSupport()) * crowdEnergy * 0.85);
+}
 vec3 crowdBodyScale() {
   return vec3(mix(0.82, 1.18, crowdStyle.x), 1.0, mix(0.84, 1.16, crowdStyle.y));
 }
@@ -135,11 +147,11 @@ vec3 crowdArticulate(vec3 v, bool normalOnly) {
   float attack = smoothstep(0.0, 0.32, responseAge);
   float waveAngle = atan(instanceMatrix[3].z, instanceMatrix[3].x);
   float waveDistance = abs(mod(waveAngle - crowdWave + 3.14159265, 6.2831853) - 3.14159265);
-  float ola = exp(-waveDistance * waveDistance * 5.0) * crowdWaveStrength;
-  float energy = clamp(max(crowdPulse, crowdEnergy) * attack + ola, 0.0, 1.0);
+  float ola = exp(-waveDistance * waveDistance * 5.0) * crowdLocalWave();
+  float energy = clamp(crowdLocalEnergy() * attack + ola, 0.0, 1.0);
   float raise = energy * (0.82 + 0.18 * sin(crowdTime * 2.0 + phase));
   float chant = crowdChant * (0.35 + beat * 0.65);
-  float surprise = crowdSurprise * attack;
+  float surprise = crowdLocalSurprise() * attack;
   float shoulderZ = side * (0.06 * sin(crowdTime * 1.1 + phase) + raise * mix(2.65, 0.35, clap));
   float shoulderX = -clap * (0.35 + chant * 0.9 + energy * 0.7);
   // Gasp: both hands to temples; protest: an asymmetric forward point.
@@ -166,7 +178,7 @@ vec2 crowdShear() {
   float phase = instanceMatrix[3].x * 0.71 + instanceMatrix[3].z * 0.37;
   float response = smoothstep(0.0, 0.32, max(0.0, crowdEventAge - crowdStyle.x * 0.22));
   return vec2(sin(crowdTime * 1.7 + phase) * 0.035,
-    crowdSurprise * response * 0.12 + sin(crowdTime * 5.2 + phase) * crowdAgitation * 0.05);
+    crowdLocalSurprise() * response * 0.12 + sin(crowdTime * 5.2 + phase) * crowdAgitation * 0.05);
 }
 vec3 crowdShearNormal(vec3 n) {
   vec3 p = crowdArticulate(position, false) * crowdBodyScale();

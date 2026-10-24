@@ -30,6 +30,7 @@ import type { PlayerLook } from "@/game/player-model";
 import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
 import { matchLook, type Weather } from "@/game/matchday";
 import { matchLighting } from "@/game/match-lighting";
+import { matchShadowCamera } from "@/game/match-shadow-camera";
 import { useVisual } from "@/game/visual-settings";
 
 import { presentationBall, type Quality } from "./shared";
@@ -128,6 +129,8 @@ export function Scene({
   );
 
   const lighting = matchLighting(time, look.weather, quality === "baixa");
+  const [keyX, keyY, keyZ] = lighting.keyPosition;
+  const shadowCamera = useMemo(() => matchShadowCamera([keyX, keyY, keyZ]), [keyX, keyY, keyZ]);
   const sunColor = lighting.keyColor;
   const visualBall = presentationBall(sim);
 
@@ -213,12 +216,12 @@ export function Scene({
         shadow-bias={-0.00014}
         shadow-normalBias={quality === "alta" ? 0.014 : 0.03}
         shadow-radius={quality === "alta" ? 2.4 : 1.2}
-        shadow-camera-near={12}
-        shadow-camera-far={165}
-        shadow-camera-left={-52}
-        shadow-camera-right={52}
-        shadow-camera-top={38}
-        shadow-camera-bottom={-38}
+        shadow-camera-near={shadowCamera.near}
+        shadow-camera-far={shadowCamera.far}
+        shadow-camera-left={shadowCamera.left}
+        shadow-camera-right={shadowCamera.right}
+        shadow-camera-top={shadowCamera.top}
+        shadow-camera-bottom={shadowCamera.bottom}
       />
       <directionalLight
         position={[-55, 48, -35]}

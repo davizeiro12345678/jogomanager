@@ -70,6 +70,30 @@ afterEach(() => {
 });
 
 describe("crowd worker buffers and lifecycle", () => {
+  it("releases lanes, mailboxes and timers through 100 attach/detach cycles", () => {
+    for (let cycle = 0; cycle < 100; cycle++) {
+      const { client, worker, release } = createClient(cycle % 2 === 0);
+      client.select(input);
+      const request = worker.postMessage.mock.calls.at(-1)![0];
+      if (cycle % 2) {
+        worker.emit({
+          type: "result",
+          requestId: request.requestId,
+          packed: new Uint32Array([2, 4]),
+        });
+        expect(client.select(input)?.indices).toEqual(new Uint32Array([0, 1]));
+      }
+      client.dispose();
+      client.dispose();
+      expect(release).toHaveBeenCalledTimes(1);
+      expect(worker.terminate).toHaveBeenCalledTimes(1);
+      expect(worker.onmessage).toBeNull();
+      expect(worker.onerror).toBeNull();
+      expect(crowdWorkerStats.active).toBe(0);
+      expect(vi.getTimerCount()).toBe(0);
+    }
+  });
+
   it("ignores stale ordinary results without releasing the active request", () => {
     const { client, worker } = createClient();
     client.select(input);

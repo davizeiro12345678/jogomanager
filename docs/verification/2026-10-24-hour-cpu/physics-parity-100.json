@@ -1,0 +1,2030 @@
+{
+  "baseline": "467b735f",
+  "candidate": "working-tree",
+  "startedAt": "2026-10-24T15:14:41.785Z",
+  "status": "passed",
+  "elapsedSeconds": 498.913,
+  "requestedSeeds": 100,
+  "completedSeeds": 100,
+  "totalTicks": 2979014,
+  "checkpointPairs": 9968,
+  "protocol": {
+    "dt": 0.03333333333333333,
+    "speed": 6,
+    "physics": "real Rapier both revisions",
+    "observerEvery": 5,
+    "fullCheckpointsEveryTicks": 300,
+    "canonicalStateEveryTicks": 30,
+    "replaySamplingEveryTicks": 15,
+    "replayMetadataExcluded": [
+      "id",
+      "createdAt"
+    ],
+    "wallTimeoutSeconds": 1500
+  },
+  "results": [
+    {
+      "seed": "endurance-467-0",
+      "ticks": 29898,
+      "fullCheckpoints": 100,
+      "score": [
+        0,
+        1
+      ],
+      "simulatedSeconds": 5943.3999999967855,
+      "replayFrames": 1983,
+      "replayHash": "5e6bb9dfd27090de83624134660b363783bcecf08ca6fa0f701805c2b715f62d",
+      "weather": "clear",
+      "wind": {
+        "x": 1.0138637524468719,
+        "z": -0.7301641222639632,
+        "strength01": 0.5679198221345855
+      },
+      "observerSubsteps": 146595,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-1",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        3,
+        1
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1981,
+      "replayHash": "316fa445a5c362b0bd8ceb131d619bfd6db3c3e83ddb71e719b60698684b0436",
+      "weather": "clear",
+      "wind": {
+        "x": -0.8335317411335432,
+        "z": -0.5849085507848187,
+        "strength01": 0.4628543262475762
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-2",
+      "ticks": 29615,
+      "fullCheckpoints": 99,
+      "score": [
+        1,
+        2
+      ],
+      "simulatedSeconds": 5886.799999996837,
+      "replayFrames": 1963,
+      "replayHash": "420acf6e9f5352fbb4dbb35d18e4a93c66e1ead475783c56a98a6da0f0720607",
+      "weather": "clear",
+      "wind": {
+        "x": 0.11531042734845375,
+        "z": 0.22159126806804189,
+        "strength01": 0.11354467641054228
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-3",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1981,
+      "replayHash": "ecc4d2e26c6d3e369dfd64edde1425b07a1f40488316c921db52b8e2058fcd17",
+      "weather": "clear",
+      "wind": {
+        "x": 0.17541558625650042,
+        "z": -0.023260330195601173,
+        "strength01": 0.08043229130139065
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-4",
+      "ticks": 30482,
+      "fullCheckpoints": 102,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 6060.199999996679,
+      "replayFrames": 2021,
+      "replayHash": "55b8dc36ba9e2a5317eb7bf4bc7a13755c1b88d468d84f2b48e4f91f4362b4ca",
+      "weather": "clear",
+      "wind": {
+        "x": 0.11683026513420972,
+        "z": 0.20624399094871448,
+        "strength01": 0.10774347274987534
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-5",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        2,
+        1
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1981,
+      "replayHash": "98c288b1d904a0c01e6322463140a0b219a0af905fd654308684558b03dfb339",
+      "weather": "clear",
+      "wind": {
+        "x": -0.09248231615005133,
+        "z": -0.05256026940201769,
+        "strength01": 0.04835210200822489
+      },
+      "observerSubsteps": 146130,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-6",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2001,
+      "replayHash": "b62a504b9c9995a4eb41d43b2f1e5a3b0e996a14cc7533d1f6fb99f60974ae8d",
+      "weather": "clear",
+      "wind": {
+        "x": 0.3544343335219607,
+        "z": -0.2849784215817747,
+        "strength01": 0.2067239533326673
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-7",
+      "ticks": 28982,
+      "fullCheckpoints": 97,
+      "score": [
+        1,
+        0
+      ],
+      "simulatedSeconds": 5760.199999996952,
+      "replayFrames": 1922,
+      "replayHash": "af0b6515b2d839dd9267aae11d9530e17f9d3366415d61639c56da47f0f9bffb",
+      "weather": "clear",
+      "wind": {
+        "x": 0.022504058682522393,
+        "z": 0.2901490812484158,
+        "strength01": 0.13228203810285777
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-8",
+      "ticks": 29282,
+      "fullCheckpoints": 98,
+      "score": [
+        0,
+        0
+      ],
+      "simulatedSeconds": 5820.1999999968975,
+      "replayFrames": 1941,
+      "replayHash": "9f014a8a6470ce87259a1c4eca4179fef7d954d7d148cb6c3d39a75297e69b54",
+      "weather": "clear",
+      "wind": {
+        "x": -0.046622451921774895,
+        "z": 0.08745694403960444,
+        "strength01": 0.0450490322493186
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-9",
+      "ticks": 28986,
+      "fullCheckpoints": 97,
+      "score": [
+        1,
+        0
+      ],
+      "simulatedSeconds": 5760.999999996951,
+      "replayFrames": 1921,
+      "replayHash": "462c2e82ec07f9eeb5bb75027a3e897d094fdae90eb40e0f768d57dff70b0b52",
+      "weather": "clear",
+      "wind": {
+        "x": 0.12364701379556606,
+        "z": -0.2432329930933747,
+        "strength01": 0.1240258512023667
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-10",
+      "ticks": 29582,
+      "fullCheckpoints": 99,
+      "score": [
+        0,
+        4
+      ],
+      "simulatedSeconds": 5880.199999996843,
+      "replayFrames": 1961,
+      "replayHash": "d8ba461a91c96733b28741be1d39cca4f50268deb5b0f3067d1ee0d1ecd0cb9d",
+      "weather": "clear",
+      "wind": {
+        "x": -0.4366103296243974,
+        "z": -0.012665734177117385,
+        "strength01": 0.19854272848037494
+      },
+      "observerSubsteps": 144630,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-11",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        2,
+        1
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1982,
+      "replayHash": "6e0977ff2c94c740fa894fffc99b026014d39e68df178f56304907b11c320328",
+      "weather": "clear",
+      "wind": {
+        "x": 1.2051624859360965,
+        "z": 0.9697167725815864,
+        "strength01": 0.7031169148712334
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-12",
+      "ticks": 29595,
+      "fullCheckpoints": 99,
+      "score": [
+        2,
+        2
+      ],
+      "simulatedSeconds": 5882.799999996841,
+      "replayFrames": 1961,
+      "replayHash": "5e6635eac0ee729afbe75f72d46c9480ae0c16f7addb00d65d540381deeb7935",
+      "weather": "clear",
+      "wind": {
+        "x": -0.5569208001008656,
+        "z": 0.7567204977588968,
+        "strength01": 0.42707604015330697
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-13",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2001,
+      "replayHash": "a7125fc4cea47d05fe3b875e993edf93cb1b038a28f7d359249c32232c8108a5",
+      "weather": "clear",
+      "wind": {
+        "x": -0.2845053442207806,
+        "z": 0.2973504974164203,
+        "strength01": 0.18706111676609988
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-14",
+      "ticks": 29883,
+      "fullCheckpoints": 100,
+      "score": [
+        2,
+        1
+      ],
+      "simulatedSeconds": 5940.399999996788,
+      "replayFrames": 1982,
+      "replayHash": "3c9c2d84156283b7717f226022fa730700709647c2d005beea84820ce009c346",
+      "weather": "clear",
+      "wind": {
+        "x": 0.08377778611769027,
+        "z": 0.08095819470485968,
+        "strength01": 0.05295590465803715
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-15",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        2,
+        4
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2001,
+      "replayHash": "e52b8af1455509730b4132e527d07b359d7778844b9db2ce6eee98d16353a33b",
+      "weather": "clear",
+      "wind": {
+        "x": -0.6703400477801718,
+        "z": 1.54282401370869,
+        "strength01": 0.7646181076892058
+      },
+      "observerSubsteps": 146625,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-16",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        1,
+        0
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2001,
+      "replayHash": "2f20449d6f73227da60455e17ef576a4822b11244b4561e222be5ca0cea669ea",
+      "weather": "clear",
+      "wind": {
+        "x": 0.4153799103514501,
+        "z": 0.011410497037991804,
+        "strength01": 0.18888027460145002
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-17",
+      "ticks": 30020,
+      "fullCheckpoints": 101,
+      "score": [
+        0,
+        4
+      ],
+      "simulatedSeconds": 5967.799999996763,
+      "replayFrames": 1990,
+      "replayHash": "0269504fa94d8ab97b67bd6954d7072af5652b3eab7e43ea626f520bde050e3f",
+      "weather": "clear",
+      "wind": {
+        "x": -1.030669368656444,
+        "z": 1.2998804563673243,
+        "strength01": 0.7540481039322912
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-18",
+      "ticks": 28982,
+      "fullCheckpoints": 97,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5760.199999996952,
+      "replayFrames": 1922,
+      "replayHash": "3dec976f9c00a5a30787575d33629713fbfebcb6a744cae8f1a605ff43f19a39",
+      "weather": "clear",
+      "wind": {
+        "x": 0.33338036451157604,
+        "z": 0.6543185018281802,
+        "strength01": 0.3337970783574168
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-19",
+      "ticks": 29582,
+      "fullCheckpoints": 99,
+      "score": [
+        0,
+        0
+      ],
+      "simulatedSeconds": 5880.199999996843,
+      "replayFrames": 1961,
+      "replayHash": "41e02f0366fe0bd9cf356ed328283ec294e9d99a0659d44963a55de1d63dc23c",
+      "weather": "clear",
+      "wind": {
+        "x": 0.02809768335541156,
+        "z": -0.023457522754475317,
+        "strength01": 0.016637451428158038
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-20",
+      "ticks": 29904,
+      "fullCheckpoints": 100,
+      "score": [
+        3,
+        1
+      ],
+      "simulatedSeconds": 5944.599999996784,
+      "replayFrames": 1982,
+      "replayHash": "8289167a3204e73cfcecb178d407b4df34d96f08963eb22eac6165dbed6eb31a",
+      "weather": "clear",
+      "wind": {
+        "x": -0.23762836755835567,
+        "z": -0.8189212981538507,
+        "strength01": 0.3875914537877013
+      },
+      "observerSubsteps": 147275,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-21",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        3,
+        2
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2001,
+      "replayHash": "faa54cc38b2a6ea5ca484d9d49a9797de1e8e5934abfc396ad037ff92ec38102",
+      "weather": "clear",
+      "wind": {
+        "x": -0.3289245828948539,
+        "z": -0.2130014597142425,
+        "strength01": 0.1781220928850499
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-22",
+      "ticks": 29309,
+      "fullCheckpoints": 98,
+      "score": [
+        0,
+        0
+      ],
+      "simulatedSeconds": 5825.599999996893,
+      "replayFrames": 1942,
+      "replayHash": "fc5eeefc383fb885ba6aad4629ed82a30ffc564a93343e458eda2714770b8f53",
+      "weather": "clear",
+      "wind": {
+        "x": 1.3780050281075376,
+        "z": -1.625068941314205,
+        "strength01": 0.9684855393769051
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-23",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1981,
+      "replayHash": "b9584e5dda923b8b961c256097224cefd4d4310fea6562bba12bcd543a209e0c",
+      "weather": "clear",
+      "wind": {
+        "x": -0.3461370915189746,
+        "z": -0.0820261455183186,
+        "strength01": 0.1616924784188582
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-24",
+      "ticks": 29282,
+      "fullCheckpoints": 98,
+      "score": [
+        3,
+        2
+      ],
+      "simulatedSeconds": 5820.1999999968975,
+      "replayFrames": 1941,
+      "replayHash": "a2ce0a03eaa2b7a607849b345b53a324574dbd630590a244100de5020d31b260",
+      "weather": "clear",
+      "wind": {
+        "x": -0.2545731659329635,
+        "z": -0.13053830360624977,
+        "strength01": 0.13004111358895898
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-25",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        0,
+        1
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1981,
+      "replayHash": "4d525cc5ffac16dce71ce56bfdd94c616e2503e0cda926b8599c68297b546099",
+      "weather": "clear",
+      "wind": {
+        "x": 0.33718613897385047,
+        "z": -0.0661751595106098,
+        "strength01": 0.1561902077678083
+      },
+      "observerSubsteps": 145805,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-26",
+      "ticks": 29582,
+      "fullCheckpoints": 99,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5880.199999996843,
+      "replayFrames": 1962,
+      "replayHash": "b285702bf5195b72cb9d12767192afeb223d6dbba94c1350ac426ec22fd66331",
+      "weather": "clear",
+      "wind": {
+        "x": -0.44278513584610685,
+        "z": 0.03700216682327911,
+        "strength01": 0.20196751072283156
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-27",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        2,
+        2
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2002,
+      "replayHash": "bcec3b268487177385edc2f19117875eb3bfbd26549b433b1614187f4339b7d1",
+      "weather": "clear",
+      "wind": {
+        "x": 0.045473583769279756,
+        "z": -0.04268877227502973,
+        "strength01": 0.028350587394511833
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-28",
+      "ticks": 29306,
+      "fullCheckpoints": 98,
+      "score": [
+        1,
+        0
+      ],
+      "simulatedSeconds": 5824.999999996893,
+      "replayFrames": 1942,
+      "replayHash": "fe0770dc192b648ba28d082820639bfd3dcc258556d331e2628f385a1ddf8a21",
+      "weather": "clear",
+      "wind": {
+        "x": -1.7965904023269899,
+        "z": -0.9457758042407655,
+        "strength01": 0.9228760455100036
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-29",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1981,
+      "replayHash": "717c2f0a224ac2a9dbd34922b1346167280192f711ea96af6277821997fe6730",
+      "weather": "clear",
+      "wind": {
+        "x": 0.28460785600844096,
+        "z": -0.23192800957413692,
+        "strength01": 0.16688209905458443
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-30",
+      "ticks": 29899,
+      "fullCheckpoints": 100,
+      "score": [
+        2,
+        2
+      ],
+      "simulatedSeconds": 5943.599999996785,
+      "replayFrames": 1983,
+      "replayHash": "55959aaf2521053c5d47e6c1daa53af3eefd2f6e8fa673588aaa72ddd1245261",
+      "weather": "clear",
+      "wind": {
+        "x": -0.7523200786501502,
+        "z": 0.799671611079243,
+        "strength01": 0.49906114050695155
+      },
+      "observerSubsteps": 146245,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-31",
+      "ticks": 30482,
+      "fullCheckpoints": 102,
+      "score": [
+        1,
+        0
+      ],
+      "simulatedSeconds": 6060.199999996679,
+      "replayFrames": 2021,
+      "replayHash": "c86c04fd366a56fb533fced33f7fb237169a86e89bad0773685f141dd987d7e5",
+      "weather": "clear",
+      "wind": {
+        "x": 0.18584659780908133,
+        "z": 0.053984826345776935,
+        "strength01": 0.08796754589473658
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-32",
+      "ticks": 30495,
+      "fullCheckpoints": 102,
+      "score": [
+        4,
+        3
+      ],
+      "simulatedSeconds": 6062.799999996677,
+      "replayFrames": 2021,
+      "replayHash": "eb36f25a4ce262da6e43d10967debf0921d14c0d6225148e204fef007ced774c",
+      "weather": "clear",
+      "wind": {
+        "x": 1.3665226096022032,
+        "z": 1.01892204566923,
+        "strength01": 0.7748081844342364
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-33",
+      "ticks": 28993,
+      "fullCheckpoints": 97,
+      "score": [
+        0,
+        0
+      ],
+      "simulatedSeconds": 5762.39999999695,
+      "replayFrames": 1921,
+      "replayHash": "02944f630d0a761944d01e06901b11ac5c7aed3accfc798571045ee615c04506",
+      "weather": "clear",
+      "wind": {
+        "x": 0.0006601202980900363,
+        "z": -0.001822521015442964,
+        "strength01": 0.000881084706634283
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-34",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        1,
+        0
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1981,
+      "replayHash": "6ad35cf5f8df44d68b8bf3792be4200871f589b96ff113fe3b35278ca5692833",
+      "weather": "clear",
+      "wind": {
+        "x": 0.3154414447930077,
+        "z": -0.03714543947237701,
+        "strength01": 0.144373174037107
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-35",
+      "ticks": 29892,
+      "fullCheckpoints": 100,
+      "score": [
+        0,
+        0
+      ],
+      "simulatedSeconds": 5942.199999996787,
+      "replayFrames": 1982,
+      "replayHash": "d408814a9ac0fbfa9f0704f1c06feb45d24c9d95fb7ddcf7b6aad9f206e25244",
+      "weather": "clear",
+      "wind": {
+        "x": 0.24683734614477892,
+        "z": -0.0199292594997147,
+        "strength01": 0.1125638944689523
+      },
+      "observerSubsteps": 145470,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-36",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2001,
+      "replayHash": "d94724824188b250b640035cd8e7a62d3e4d7a184a98673d9a3bfda6d1ffe06b",
+      "weather": "clear",
+      "wind": {
+        "x": -0.614170806065114,
+        "z": -0.5424671234708156,
+        "strength01": 0.3724711867134001
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-37",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        0,
+        1
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1981,
+      "replayHash": "5eec23c21db5547b4d3e11223e0420987324fb97953e9f0e2eccf68c9f4ae513",
+      "weather": "clear",
+      "wind": {
+        "x": 0.5684745589638157,
+        "z": -0.4552626729257567,
+        "strength01": 0.3310474940173497
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-38",
+      "ticks": 29282,
+      "fullCheckpoints": 98,
+      "score": [
+        2,
+        2
+      ],
+      "simulatedSeconds": 5820.1999999968975,
+      "replayFrames": 1941,
+      "replayHash": "e81d66e74533efc9c97b7484e7bc87be35ddc69fb8ae4ad1fa1aa2565ed2dad6",
+      "weather": "clear",
+      "wind": {
+        "x": 0.10552154991972627,
+        "z": -0.22347090769154565,
+        "strength01": 0.11233256050300869
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-39",
+      "ticks": 29892,
+      "fullCheckpoints": 100,
+      "score": [
+        0,
+        3
+      ],
+      "simulatedSeconds": 5942.199999996787,
+      "replayFrames": 1981,
+      "replayHash": "1817eafe384c20023e692324c6af4ae6ba737c55c54e641977478d6ef36187ee",
+      "weather": "clear",
+      "wind": {
+        "x": -0.02424642107679446,
+        "z": 0.48647207585277197,
+        "strength01": 0.22139815370213578
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-40",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1981,
+      "replayHash": "6c79887030ab741a3812b6be25d86b2b0878ed32bc08f2148913baaa1a9df78e",
+      "weather": "clear",
+      "wind": {
+        "x": -0.19060858058292995,
+        "z": 0.1029991418002235,
+        "strength01": 0.09848066282839599
+      },
+      "observerSubsteps": 144830,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-41",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1981,
+      "replayHash": "eab05f00d84c0ac94dcdcab128403c1b5d9a9ea457a30da9a6d7f5674f23bdb3",
+      "weather": "clear",
+      "wind": {
+        "x": -0.13251992432970638,
+        "z": 0.5333769386351767,
+        "strength01": 0.2498150096613575
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-42",
+      "ticks": 29894,
+      "fullCheckpoints": 100,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5942.599999996786,
+      "replayFrames": 1981,
+      "replayHash": "8c6af4ad046d7537fd7b821d35473a4a3732d541246f482128cabf18fa9104a8",
+      "weather": "clear",
+      "wind": {
+        "x": 0.8798680512634128,
+        "z": 0.5015385748691441,
+        "strength01": 0.4603512694276023
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-43",
+      "ticks": 30194,
+      "fullCheckpoints": 101,
+      "score": [
+        2,
+        3
+      ],
+      "simulatedSeconds": 6002.599999996732,
+      "replayFrames": 2001,
+      "replayHash": "12475c136ebed989887e5602cc2652c5192b35283cdbda8a9f0efa1a03a68131",
+      "weather": "clear",
+      "wind": {
+        "x": -0.5702028042089119,
+        "z": 0.9036229588927808,
+        "strength01": 0.4856761687181212
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-44",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        2,
+        2
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1981,
+      "replayHash": "3350c99f19cf40e38d7d386a2001e9501febdab9faafc3289c1d90eb70d44e1e",
+      "weather": "clear",
+      "wind": {
+        "x": 0.14381429282848582,
+        "z": -0.33392425064124603,
+        "strength01": 0.16526209836063735
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-45",
+      "ticks": 30482,
+      "fullCheckpoints": 102,
+      "score": [
+        0,
+        3
+      ],
+      "simulatedSeconds": 6060.199999996679,
+      "replayFrames": 2022,
+      "replayHash": "179a929c452e7d089b59fbda10564c21a7de8fb06e6f647c97ecb7a79122e9a9",
+      "weather": "clear",
+      "wind": {
+        "x": -0.28369484906885706,
+        "z": -0.003594011246111071,
+        "strength01": 0.12896255166693166
+      },
+      "observerSubsteps": 148540,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-46",
+      "ticks": 29295,
+      "fullCheckpoints": 98,
+      "score": [
+        0,
+        1
+      ],
+      "simulatedSeconds": 5822.799999996895,
+      "replayFrames": 1941,
+      "replayHash": "8662899d9a926f3c117274f1b69733c1b06acaec703c783e425840569dc348b8",
+      "weather": "clear",
+      "wind": {
+        "x": -0.2722821307004792,
+        "z": -0.22459665763918799,
+        "strength01": 0.1604366570774635
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-47",
+      "ticks": 30482,
+      "fullCheckpoints": 102,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 6060.199999996679,
+      "replayFrames": 2021,
+      "replayHash": "7f57769c0d7076e1afd0f253eb6f10367686787040556640e70d58e91db6f373",
+      "weather": "clear",
+      "wind": {
+        "x": 0.060661595527554235,
+        "z": -0.6946873284197418,
+        "strength01": 0.3169685678810558
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-48",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        3,
+        3
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2002,
+      "replayHash": "09374a207daadc68f99c6f13cef97cfc3a558b401d2dab95ca95eae6ed3b2a08",
+      "weather": "clear",
+      "wind": {
+        "x": 0.38351159350986214,
+        "z": 0.30812075282996976,
+        "strength01": 0.22361582531382074
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-49",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        2,
+        1
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1981,
+      "replayHash": "703490c9382d08c6209bee1dfa8052c1c7d73a34f9517dc2a18ec8bba310ed35",
+      "weather": "clear",
+      "wind": {
+        "x": 0.02128615761839111,
+        "z": -0.027577362700727,
+        "strength01": 0.015834966536865315
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-50",
+      "ticks": 29888,
+      "fullCheckpoints": 100,
+      "score": [
+        2,
+        1
+      ],
+      "simulatedSeconds": 5941.399999996787,
+      "replayFrames": 1981,
+      "replayHash": "a09ed9e4d93dc3619c5a8eb0abc22c5fd03948601599963c5b465c1735feb6c9",
+      "weather": "clear",
+      "wind": {
+        "x": 0.716905084710012,
+        "z": -0.4635514104455433,
+        "strength01": 0.38805320698090573
+      },
+      "observerSubsteps": 144475,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-51",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2001,
+      "replayHash": "b2a9cf615068463df523eddc910cbb3a7433165a14ab9aff797dfc8eee4ff84f",
+      "weather": "clear",
+      "wind": {
+        "x": 0.35675240480203524,
+        "z": -0.21737694180827108,
+        "strength01": 0.1898917771177366
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-52",
+      "ticks": 29582,
+      "fullCheckpoints": 99,
+      "score": [
+        2,
+        0
+      ],
+      "simulatedSeconds": 5880.199999996843,
+      "replayFrames": 1962,
+      "replayHash": "4323996d54bf11e53ee886e7450f2b5d4f3921ba4dfda13a9c275ed626944004",
+      "weather": "clear",
+      "wind": {
+        "x": -0.6036156072669303,
+        "z": -0.12764282454896764,
+        "strength01": 0.28043815039563924
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-53",
+      "ticks": 29582,
+      "fullCheckpoints": 99,
+      "score": [
+        1,
+        2
+      ],
+      "simulatedSeconds": 5880.199999996843,
+      "replayFrames": 1961,
+      "replayHash": "f7357ca4e6a173d98f2ead033e079b8a0612c5a7b7aa1646bb8b236be30aa9c6",
+      "weather": "clear",
+      "wind": {
+        "x": -0.6816913164856202,
+        "z": -0.3884812053911513,
+        "strength01": 0.35664318172811443
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-54",
+      "ticks": 29884,
+      "fullCheckpoints": 100,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5940.599999996788,
+      "replayFrames": 1981,
+      "replayHash": "a9acce53235c277bcf34039cd978b48dc57bafbadb70ce8c98d27fdcf6b46cfe",
+      "weather": "clear",
+      "wind": {
+        "x": 0.1768187976264851,
+        "z": 0.11486990433274115,
+        "strength01": 0.09584334467283703
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-55",
+      "ticks": 29582,
+      "fullCheckpoints": 99,
+      "score": [
+        2,
+        2
+      ],
+      "simulatedSeconds": 5880.199999996843,
+      "replayFrames": 1962,
+      "replayHash": "f1474d23b91f6a5a4f87c58c527b5be4b3037402c2ec74ef4b24f81dffb6212e",
+      "weather": "clear",
+      "wind": {
+        "x": -0.6271543051227616,
+        "z": 0.8528517247551264,
+        "strength01": 0.4811913991050625
+      },
+      "observerSubsteps": 142650,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-56",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        0,
+        1
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1981,
+      "replayHash": "d3ac52b6b121c96f7ab90e84d3cbd66b71c3fdfa06d9832b174e36c6635b3a7d",
+      "weather": "clear",
+      "wind": {
+        "x": 0.9945227791646691,
+        "z": 0.2576792950529379,
+        "strength01": 0.46698305873327295
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-57",
+      "ticks": 30183,
+      "fullCheckpoints": 101,
+      "score": [
+        3,
+        0
+      ],
+      "simulatedSeconds": 6000.399999996734,
+      "replayFrames": 2002,
+      "replayHash": "e8591efc87f1c670edc3f5c3fe7370db343a09e5a9db7d6438232aca83a394e2",
+      "weather": "clear",
+      "wind": {
+        "x": 0.7036542904452074,
+        "z": 0.023298295370161794,
+        "strength01": 0.32001813321205025
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-58",
+      "ticks": 29898,
+      "fullCheckpoints": 100,
+      "score": [
+        2,
+        2
+      ],
+      "simulatedSeconds": 5943.3999999967855,
+      "replayFrames": 1982,
+      "replayHash": "52fd5c456ad21494fa95229de0fbd0030450cb0275971b215e7f5572af72617d",
+      "weather": "clear",
+      "wind": {
+        "x": 0.8922757532374068,
+        "z": -0.2363537677072741,
+        "strength01": 0.41956764526284207
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-59",
+      "ticks": 29882,
+      "fullCheckpoints": 100,
+      "score": [
+        1,
+        3
+      ],
+      "simulatedSeconds": 5940.199999996788,
+      "replayFrames": 1982,
+      "replayHash": "16e274620d2274284dd71071baad5c49f76353b4ff54bbc2f9da5eaa09eb070a",
+      "weather": "clear",
+      "wind": {
+        "x": 0.3643771825140211,
+        "z": -0.28407376230214904,
+        "strength01": 0.21001211769709532
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-60",
+      "ticks": 29582,
+      "fullCheckpoints": 99,
+      "score": [
+        2,
+        1
+      ],
+      "simulatedSeconds": 5880.199999996843,
+      "replayFrames": 1961,
+      "replayHash": "b85455d05004b50c6202d18c58d2817a67158f0ac3ae74881d5fad38abbb81a0",
+      "weather": "clear",
+      "wind": {
+        "x": -0.3403122354766998,
+        "z": 0.0617851616398245,
+        "strength01": 0.15721611160022966
+      },
+      "observerSubsteps": 145990,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-61",
+      "ticks": 29899,
+      "fullCheckpoints": 100,
+      "score": [
+        2,
+        1
+      ],
+      "simulatedSeconds": 5943.599999996785,
+      "replayFrames": 1983,
+      "replayHash": "7f3b7771ef3907b450d92049aabc2397d20200ca9a2094feabfb38f4ae02de9f",
+      "weather": "clear",
+      "wind": {
+        "x": -0.05601608035175894,
+        "z": 0.09292339922452256,
+        "strength01": 0.04931882986883548
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-62",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2001,
+      "replayHash": "f189f990c4de47bd5ea55f7e56f1e6af3ac897b428fdb484ac109f66ad13b2bc",
+      "weather": "clear",
+      "wind": {
+        "x": -0.3046966689697911,
+        "z": 0.10440895248064821,
+        "strength01": 0.1464040665781464
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-63",
+      "ticks": 30187,
+      "fullCheckpoints": 101,
+      "score": [
+        0,
+        0
+      ],
+      "simulatedSeconds": 6001.199999996733,
+      "replayFrames": 2001,
+      "replayHash": "37121d8bb64c79f027b76d1dba53e8c82e8c8ad4c1603b32e74c8aa2749480f0",
+      "weather": "clear",
+      "wind": {
+        "x": 0.008406482022405909,
+        "z": -0.4276636132300743,
+        "strength01": 0.19443010334560476
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-64",
+      "ticks": 30482,
+      "fullCheckpoints": 102,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 6060.199999996679,
+      "replayFrames": 2021,
+      "replayHash": "8f0a0243a526ea5f636d78d937708c7742b5f340878441b99698ad24677f7a0b",
+      "weather": "clear",
+      "wind": {
+        "x": -0.0064614550192717,
+        "z": -0.032862530519848034,
+        "strength01": 0.015223515907895157
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-65",
+      "ticks": 30482,
+      "fullCheckpoints": 102,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 6060.199999996679,
+      "replayFrames": 2021,
+      "replayHash": "eb7b2bb8f8c7fea40afdabea270e5e5daf44d7766e0ba25cfe3d61d9dfe58d48",
+      "weather": "clear",
+      "wind": {
+        "x": 0.035575963939110854,
+        "z": -0.17520840003187602,
+        "strength01": 0.08126534521579742
+      },
+      "observerSubsteps": 148480,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-66",
+      "ticks": 29299,
+      "fullCheckpoints": 98,
+      "score": [
+        0,
+        0
+      ],
+      "simulatedSeconds": 5823.599999996894,
+      "replayFrames": 1942,
+      "replayHash": "3ef6d7f078a32c5d0ae35b43a91be5fcf16c2b5a4c5c5ffb410b455fabf59056",
+      "weather": "clear",
+      "wind": {
+        "x": 0.4861845689967484,
+        "z": -0.6197244652582472,
+        "strength01": 0.3580346513454886
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-67",
+      "ticks": 29288,
+      "fullCheckpoints": 98,
+      "score": [
+        1,
+        4
+      ],
+      "simulatedSeconds": 5821.399999996896,
+      "replayFrames": 1942,
+      "replayHash": "9e2f82c6c529cdd15a462702aea7d7f3f0ee0e71200e1025ec36850962f7c619",
+      "weather": "clear",
+      "wind": {
+        "x": 0.34770021330250805,
+        "z": 0.028740394845882002,
+        "strength01": 0.15858455042524092
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-68",
+      "ticks": 30193,
+      "fullCheckpoints": 101,
+      "score": [
+        0,
+        0
+      ],
+      "simulatedSeconds": 6002.399999996732,
+      "replayFrames": 2001,
+      "replayHash": "47a9d253b801d2003786f4d4873bd12f0e01e78841417561197fccfcd093d5b0",
+      "weather": "clear",
+      "wind": {
+        "x": 1.6837880733545796,
+        "z": -0.3787282037626812,
+        "strength01": 0.784479788716205
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-69",
+      "ticks": 30487,
+      "fullCheckpoints": 102,
+      "score": [
+        1,
+        2
+      ],
+      "simulatedSeconds": 6061.199999996678,
+      "replayFrames": 2021,
+      "replayHash": "b68a2579896d2d41eacbeab7e0a454a6da64db0a0c2c8214953b38c3270f785c",
+      "weather": "clear",
+      "wind": {
+        "x": 0.08002357828992364,
+        "z": -0.36920489101173803,
+        "strength01": 0.1717171568254178
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-70",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        2,
+        2
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2002,
+      "replayHash": "b7b0976b496cd6868385dd0179d1dc3619dcd79e614e7b1dcdb917685b9afc29",
+      "weather": "clear",
+      "wind": {
+        "x": -0.4787806847582127,
+        "z": 1.01097250498004,
+        "strength01": 0.5084607199215414
+      },
+      "observerSubsteps": 145620,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-71",
+      "ticks": 29582,
+      "fullCheckpoints": 99,
+      "score": [
+        1,
+        0
+      ],
+      "simulatedSeconds": 5880.199999996843,
+      "replayFrames": 1961,
+      "replayHash": "3dc33306c12eac6ef115fca21376f58cde110946edef59717370f67372ffa41f",
+      "weather": "clear",
+      "wind": {
+        "x": -0.10278604634143024,
+        "z": 0.01730853687144958,
+        "strength01": 0.047378720271147104
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-72",
+      "ticks": 28982,
+      "fullCheckpoints": 97,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5760.199999996952,
+      "replayFrames": 1921,
+      "replayHash": "977ccf85eafdbbc85dfe7566a0ffeaeba5ba409efb02243dfcb3202c0a905914",
+      "weather": "clear",
+      "wind": {
+        "x": 0.16800056887471415,
+        "z": -0.30710467164975935,
+        "strength01": 0.15911523871843447
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-73",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2002,
+      "replayHash": "b3a1e702ed20d00b409b1c52d6915bb00ac7fa2f9317afce79e5e38f2de234bd",
+      "weather": "clear",
+      "wind": {
+        "x": -0.0946285259164628,
+        "z": -0.4262748627829042,
+        "strength01": 0.1984781024194407
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-74",
+      "ticks": 29282,
+      "fullCheckpoints": 98,
+      "score": [
+        3,
+        1
+      ],
+      "simulatedSeconds": 5820.1999999968975,
+      "replayFrames": 1942,
+      "replayHash": "94c6052777a47eea3a114753364ae222070bd97f2f7045f2e50c947b8fe65289",
+      "weather": "clear",
+      "wind": {
+        "x": 0.17314633648946245,
+        "z": -0.1806696328430882,
+        "strength01": 0.113746464908631
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-75",
+      "ticks": 29887,
+      "fullCheckpoints": 100,
+      "score": [
+        2,
+        2
+      ],
+      "simulatedSeconds": 5941.1999999967875,
+      "replayFrames": 1982,
+      "replayHash": "d20d867ffe912499accec2bfe6cf63f422d77a4e9d445abfbb0a1010c212e156",
+      "weather": "clear",
+      "wind": {
+        "x": -0.1499224243564429,
+        "z": -0.45934079955430657,
+        "strength01": 0.21963093736716968
+      },
+      "observerSubsteps": 146895,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-76",
+      "ticks": 29941,
+      "fullCheckpoints": 100,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5951.999999996778,
+      "replayFrames": 1984,
+      "replayHash": "cea6010aca84997e730c3c6a7dff11343d5ed72601705c6b9fe6fb8e716960a6",
+      "weather": "clear",
+      "wind": {
+        "x": -0.537698141159319,
+        "z": 0.2558451796979142,
+        "strength01": 0.2706649475625123
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-77",
+      "ticks": 29582,
+      "fullCheckpoints": 99,
+      "score": [
+        1,
+        0
+      ],
+      "simulatedSeconds": 5880.199999996843,
+      "replayFrames": 1961,
+      "replayHash": "ed272702d9c1f93681a8c79df848025fe36fb1c91a3d24e35cefebe56ff7fe19",
+      "weather": "clear",
+      "wind": {
+        "x": 0.06196936389491789,
+        "z": -0.36030175857386093,
+        "strength01": 0.16617821217302908
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-78",
+      "ticks": 29899,
+      "fullCheckpoints": 100,
+      "score": [
+        1,
+        0
+      ],
+      "simulatedSeconds": 5943.599999996785,
+      "replayFrames": 1982,
+      "replayHash": "a28f94bafcc1f2e2ae47896bd147498ff816d23a151993bc741e6f0aa2c2adef",
+      "weather": "clear",
+      "wind": {
+        "x": 0.196796747077192,
+        "z": -0.23352553573732546,
+        "strength01": 0.13881369843147695
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-79",
+      "ticks": 29282,
+      "fullCheckpoints": 98,
+      "score": [
+        5,
+        0
+      ],
+      "simulatedSeconds": 5820.1999999968975,
+      "replayFrames": 1941,
+      "replayHash": "2ce33cfea70103489b0ec3941ab872f272a38c164bc159ff4110a1dcc4c6ecd2",
+      "weather": "clear",
+      "wind": {
+        "x": 0.6971399068377955,
+        "z": -0.17982818254541516,
+        "strength01": 0.327254489688626
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-80",
+      "ticks": 28982,
+      "fullCheckpoints": 97,
+      "score": [
+        2,
+        1
+      ],
+      "simulatedSeconds": 5760.199999996952,
+      "replayFrames": 1922,
+      "replayHash": "da184ade0414a824eff98e4012c740c1bc29aa49c06216ce855bf797a651631c",
+      "weather": "clear",
+      "wind": {
+        "x": 0.539173606498202,
+        "z": 0.29358732518530123,
+        "strength01": 0.27905599998352537
+      },
+      "observerSubsteps": 142280,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-81",
+      "ticks": 30526,
+      "fullCheckpoints": 102,
+      "score": [
+        0,
+        2
+      ],
+      "simulatedSeconds": 6068.999999996671,
+      "replayFrames": 2023,
+      "replayHash": "6e76853502f046b12a16b6fdcea4c8160d8f58cfbf2a765f1fc4edc43f3e9e1a",
+      "weather": "clear",
+      "wind": {
+        "x": 0.06295063356974911,
+        "z": -0.314640496531568,
+        "strength01": 0.14585273927712641
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-82",
+      "ticks": 28682,
+      "fullCheckpoints": 96,
+      "score": [
+        0,
+        0
+      ],
+      "simulatedSeconds": 5700.199999997007,
+      "replayFrames": 1902,
+      "replayHash": "cf2f68dbc29d03f0d65a644381873ddc78597e43e353303e20581e751b850605",
+      "weather": "clear",
+      "wind": {
+        "x": 0.012684623871314726,
+        "z": -0.002294054225622499,
+        "strength01": 0.00585927194069055
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-83",
+      "ticks": 28982,
+      "fullCheckpoints": 97,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5760.199999996952,
+      "replayFrames": 1922,
+      "replayHash": "299c8300f5ebdda7f73651ecc52b1de9a6b276320f564723c94808266e7ca049",
+      "weather": "clear",
+      "wind": {
+        "x": 0.30136563757937535,
+        "z": -0.9475035394997452,
+        "strength01": 0.45194350851869036
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-84",
+      "ticks": 29907,
+      "fullCheckpoints": 100,
+      "score": [
+        1,
+        0
+      ],
+      "simulatedSeconds": 5945.199999996784,
+      "replayFrames": 1982,
+      "replayHash": "bf0d1efb43458b7285fcda20c3e40824ddde7307ed0d6031fad0b776fb819c3b",
+      "weather": "clear",
+      "wind": {
+        "x": 1.052118151557818,
+        "z": 0.0009822107836398957,
+        "strength01": 0.4782357318326831
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-85",
+      "ticks": 29282,
+      "fullCheckpoints": 98,
+      "score": [
+        0,
+        0
+      ],
+      "simulatedSeconds": 5820.1999999968975,
+      "replayFrames": 1942,
+      "replayHash": "4b56680e5fd8fce0ec4b494ff1f1da8eb1f3a7b52f7ec10fcd8da0cfe7aea402",
+      "weather": "clear",
+      "wind": {
+        "x": 0.34503406443222123,
+        "z": 0.07301439156758657,
+        "strength01": 0.1603067868431522
+      },
+      "observerSubsteps": 143160,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-86",
+      "ticks": 29621,
+      "fullCheckpoints": 99,
+      "score": [
+        2,
+        2
+      ],
+      "simulatedSeconds": 5887.999999996836,
+      "replayFrames": 1963,
+      "replayHash": "b92b85494448505323f0907773c2274aeeae421397d603f45bc4ec844859a065",
+      "weather": "clear",
+      "wind": {
+        "x": -0.275149351192266,
+        "z": 0.3211031057342338,
+        "strength01": 0.19221112809397956
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-87",
+      "ticks": 30197,
+      "fullCheckpoints": 101,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 6003.199999996731,
+      "replayFrames": 2003,
+      "replayHash": "3c1e00bcbdffbc772b8f0033908bce748b5a89fcaf42586b47aa95f951bdaecc",
+      "weather": "clear",
+      "wind": {
+        "x": -0.8073769391756823,
+        "z": 0.2466111670094919,
+        "strength01": 0.3837275283770974
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-88",
+      "ticks": 29290,
+      "fullCheckpoints": 98,
+      "score": [
+        2,
+        1
+      ],
+      "simulatedSeconds": 5821.799999996896,
+      "replayFrames": 1942,
+      "replayHash": "5f454b6628fc85a9c1dc83bb20757286913ee8c32d75e432f860134471f9d0c3",
+      "weather": "clear",
+      "wind": {
+        "x": 0.03661496114095374,
+        "z": -0.40131292917402933,
+        "strength01": 0.18317263822113586
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-89",
+      "ticks": 30482,
+      "fullCheckpoints": 102,
+      "score": [
+        0,
+        1
+      ],
+      "simulatedSeconds": 6060.199999996679,
+      "replayFrames": 2021,
+      "replayHash": "379aee45fc29716294c5368c7f623706acf3ef8c0f3ab0fb889c208dadbd5b6a",
+      "weather": "clear",
+      "wind": {
+        "x": 0.037219150123626206,
+        "z": 0.019836878016010032,
+        "strength01": 0.01917064983651719
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-90",
+      "ticks": 29895,
+      "fullCheckpoints": 100,
+      "score": [
+        1,
+        5
+      ],
+      "simulatedSeconds": 5942.799999996786,
+      "replayFrames": 1981,
+      "replayHash": "8d02b17ea152754cec6d39c8db5b50ccc4e41fd20e5a3f2401e95dea731494aa",
+      "weather": "clear",
+      "wind": {
+        "x": 1.2818515110140296,
+        "z": -0.9331152229557496,
+        "strength01": 0.7206871313127604
+      },
+      "observerSubsteps": 144835,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-91",
+      "ticks": 29898,
+      "fullCheckpoints": 100,
+      "score": [
+        3,
+        3
+      ],
+      "simulatedSeconds": 5943.3999999967855,
+      "replayFrames": 1982,
+      "replayHash": "a1d07012f9e29a678891876f1fedfdb38a02ff0ea74d3455212db322d9558b28",
+      "weather": "clear",
+      "wind": {
+        "x": 0.369614694659511,
+        "z": -0.17668519646471245,
+        "strength01": 0.1862153962296857
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-92",
+      "ticks": 29582,
+      "fullCheckpoints": 99,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5880.199999996843,
+      "replayFrames": 1962,
+      "replayHash": "20b6145096d38ddcc26a1e92809f7ce4886f142ad1642f2a7910f5a608947e39",
+      "weather": "clear",
+      "wind": {
+        "x": -0.8342412153953499,
+        "z": 0.22215395298606716,
+        "strength01": 0.3924153812801126
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-93",
+      "ticks": 29582,
+      "fullCheckpoints": 99,
+      "score": [
+        0,
+        0
+      ],
+      "simulatedSeconds": 5880.199999996843,
+      "replayFrames": 1961,
+      "replayHash": "9db545a02ddc68357edec71edc2bf4069f2824b49a0ee9f345e0ee4a2c023d8c",
+      "weather": "clear",
+      "wind": {
+        "x": -0.03460069883364112,
+        "z": 0.11736150686424231,
+        "strength01": 0.05561625389170578
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-94",
+      "ticks": 28982,
+      "fullCheckpoints": 97,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 5760.199999996952,
+      "replayFrames": 1922,
+      "replayHash": "184067559f6c00b3107207da9c4746d095244d215753883b270d989b1cc729f4",
+      "weather": "clear",
+      "wind": {
+        "x": 0.25458443849441736,
+        "z": -0.36012506500417646,
+        "strength01": 0.20046603696590118
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-95",
+      "ticks": 29582,
+      "fullCheckpoints": 99,
+      "score": [
+        0,
+        2
+      ],
+      "simulatedSeconds": 5880.199999996843,
+      "replayFrames": 1961,
+      "replayHash": "9b6b5d49d828093b4cdaad04c89a81b692200c0941767793fee633c391a0f90d",
+      "weather": "clear",
+      "wind": {
+        "x": 0.06310391311256303,
+        "z": 0.12777400666278405,
+        "strength01": 0.06477599773048
+      },
+      "observerSubsteps": 144275,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-96",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        2,
+        2
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2001,
+      "replayHash": "4b0e7f68502af0e04fdff2daff54117bfabe161ffb1610735b50ae3bdebff612",
+      "weather": "clear",
+      "wind": {
+        "x": -0.2770964315593099,
+        "z": -0.18307236672478597,
+        "strength01": 0.15095968746622515
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-97",
+      "ticks": 29282,
+      "fullCheckpoints": 98,
+      "score": [
+        0,
+        0
+      ],
+      "simulatedSeconds": 5820.1999999968975,
+      "replayFrames": 1941,
+      "replayHash": "f658323fd0acb74d6e10d56bcdd1f57da3303010de9f69f0bd81b8889bb7d606",
+      "weather": "clear",
+      "wind": {
+        "x": 0.1589107358030966,
+        "z": -0.029728639450377646,
+        "strength01": 0.0734852742276747
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-98",
+      "ticks": 28993,
+      "fullCheckpoints": 97,
+      "score": [
+        0,
+        0
+      ],
+      "simulatedSeconds": 5762.39999999695,
+      "replayFrames": 1921,
+      "replayHash": "18055f72cc1a1354b8c7d360d332c6f901a3328319d12841ba94c71f85e02b6b",
+      "weather": "clear",
+      "wind": {
+        "x": -0.25515620429967595,
+        "z": 0.6107361775400629,
+        "strength01": 0.300860806050795
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    },
+    {
+      "seed": "endurance-467-99",
+      "ticks": 30182,
+      "fullCheckpoints": 101,
+      "score": [
+        1,
+        1
+      ],
+      "simulatedSeconds": 6000.199999996734,
+      "replayFrames": 2002,
+      "replayHash": "82a67c3a6f61277b79eebcd6a877bc2b46885c28a6cfcb3d6eca77a0db94bcce",
+      "weather": "clear",
+      "wind": {
+        "x": -1.2931170675619572,
+        "z": 0.16825880355935235,
+        "strength01": 0.5927354251034557
+      },
+      "observerSubsteps": 0,
+      "exact": true
+    }
+  ],
+  "sourceHashesUnchanged": true,
+  "sampledReplayFrames": 197500,
+  "allSeedsExact": true
+}

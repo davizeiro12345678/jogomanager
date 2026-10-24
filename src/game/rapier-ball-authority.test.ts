@@ -3,6 +3,27 @@ import { describe, expect, it, vi } from "vitest";
 import { BALL_PHYSICS_RADIUS, createRapierBallAuthority } from "./rapier-ball-authority";
 
 describe("RapierBallAuthority", () => {
+  it("reads invariant ball mass once for a two-axis airborne wind impulse", async () => {
+    const physics = await createRapierBallAuthority();
+    const state = { x: 0, z: 0, height: 2, vx: 0, vy: 0, vz: 0, spin: 0, holder: null };
+    physics.reset(state);
+    physics.setCondition("rain", { x: 0.4, z: -0.2 });
+    const internal = physics as unknown as {
+      ballBody: { mass(): number; linvel(): { x: number; z: number } };
+      applyWindImpulse(dt: number): void;
+    };
+    const mass = vi.spyOn(internal.ballBody, "mass");
+    try {
+      internal.applyWindImpulse(0.05);
+      expect(mass).toHaveBeenCalledTimes(1);
+      expect(internal.ballBody.linvel().x).toBeCloseTo(0.02, 6);
+      expect(internal.ballBody.linvel().z).toBeCloseTo(-0.01, 6);
+    } finally {
+      mass.mockRestore();
+      physics.dispose();
+    }
+  });
+
   it("reuses the held target while preserving observer changes after solver execution", async () => {
     for (const observed of [false, true]) {
       const holder = { id: "home-9", x: 4, z: -2, vx: 3, vz: 4 };

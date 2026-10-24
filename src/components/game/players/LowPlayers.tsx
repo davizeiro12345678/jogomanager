@@ -3,8 +3,8 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { createElement, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { MutableRefObject } from "react";
 import * as THREE from "three";
-import { emptyPose, getClip, mixPose, selectClip, type ClipName } from "@/game/animation";
-import { gaitPoseAt, locomotionWeight } from "@/game/gait-kinematics";
+import { selectClip, type ClipName } from "@/game/animation";
+import { PlayerLocomotionPose } from "@/game/player-locomotion-pose";
 import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
 import type { Kit } from "@/game/kits";
 import {
@@ -152,7 +152,18 @@ export function LowPlayers({
   );
   const shortsAnimator = useMemo(() => new LowShortsAnimator(geometries["hips"]!), [geometries]);
   const torsoAnimator = useMemo(() => new LowTorsoAnimator(geometries["torso"]!), [geometries]);
-  const gaitBuffer = useRef(emptyPose());
+  const locomotionPose = useMemo(() => new PlayerLocomotionPose(), []);
+  const locomotionDirection = useMemo(
+    () => ({
+      forward: 0,
+      lateral: 0,
+      turnRate: 0,
+      stamina: 100,
+      hasBall: false,
+      style: 0,
+    }),
+    [],
+  );
   const rootY = useRef(new Float32Array(MAX_PLAYERS));
   const tmp = useMemo(
     () => ({
@@ -369,33 +380,31 @@ export function LowPlayers({
         (action && player.actionDur > 0
           ? Math.max(0, Math.min(1, 1 - player.actionT / player.actionDur))
           : (clock.elapsedTime % 1.4) / 1.4);
-      const authored = getClip(clip)({
-        t:
-          previewAt !== undefined
-            ? previewAt * (player.actionDur || 1.4)
-            : goalPresentation
-              ? goalPresentation.progress * GOAL_PRESENTATION_SECONDS
-              : clock.elapsedTime,
-        u,
-        speed,
-        stride: Math.min(1, speed / 7),
-        seed: look.seed % 97,
-      });
-      const gaitWeight = locomotionWeight(speed, action, clip);
-      if (gaitWeight > 0)
-        mixPose(
-          authored,
-          gaitPoseAt(motion.phase, speed, p, gaitBuffer.current, {
-            forward: motion.forward,
-            lateral: motion.lateral,
-            turnRate: motion.turnRate,
-            stamina: player.stamina,
-            hasBall: sim.ball.holder === player.id,
-            style: look.seed,
-          }).pose,
-          gaitWeight,
-          authored,
-        );
+      locomotionDirection.forward = motion.forward;
+      locomotionDirection.lateral = motion.lateral;
+      locomotionDirection.turnRate = motion.turnRate;
+      locomotionDirection.stamina = player.stamina;
+      locomotionDirection.hasBall = sim.ball.holder === player.id;
+      locomotionDirection.style = look.seed;
+      const authored = locomotionPose.sample(
+        clip,
+        {
+          t:
+            previewAt !== undefined
+              ? previewAt * (player.actionDur || 1.4)
+              : goalPresentation
+                ? goalPresentation.progress * GOAL_PRESENTATION_SECONDS
+                : clock.elapsedTime,
+          u,
+          speed,
+          stride: Math.min(1, speed / 7),
+          seed: look.seed % 97,
+        },
+        action,
+        motion.phase,
+        p,
+        locomotionDirection,
+      );
       const actionContext = visual?.actionContexts[index];
       const usedFoot = actionContext?.action ? actionContext.usedFoot : dominantFeet[index]!;
       refineFootballAction(authored, action, u, p, usedFoot);
