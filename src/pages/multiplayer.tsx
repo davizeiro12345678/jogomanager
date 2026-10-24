@@ -20,6 +20,8 @@ import { buildTeamSetup } from "@/game/quickMatch";
 
 import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
 
+import { shouldShowLiveRoom } from "@/game/multiplayer-room-state";
+
 import { getLiveRoomConnectionState } from "@/game/multiplayer-connection";
 
 import { useOnline } from "@/hooks/useOnline";
@@ -70,17 +72,7 @@ export function MultiplayerPage() {
     setOpen((rooms ?? []) as unknown as Room[]);
     const list = (mine ?? []) as unknown as Room[];
     const active = list.find((r) => r.status !== "done");
-    setHistory(
-      list.filter((r) => {
-        const state = r.state as { hg?: unknown; ag?: unknown };
-        return (
-          r.server_seeded &&
-          r.status === "done" &&
-          Number.isInteger(state.hg) &&
-          Number.isInteger(state.ag)
-        );
-      }),
-    );
+    setHistory(list.filter((r) => r.server_seeded && r.status === "done" && shouldShowLiveRoom(r)));
     setRoom((cur) => cur ?? active ?? null);
   }, [online, userId]);
 
@@ -127,26 +119,29 @@ export function MultiplayerPage() {
     };
   }, [online, room?.id]);
 
-  async function createRoom() {
+  async function createRoom(hostClub = club) {
     if (!userId) return setError("Entre na conta novamente para criar uma sala.");
     setBusy(true);
     setError(null);
-    const { createMatchRoom } = await import("@/lib/multiplayer.functions");
-    const result = await createMatchRoom({ data: { hostClub: club } }).catch((error) => {
+    try {
+      const { createMatchRoom } = await import("@/lib/multiplayer.functions");
+      const result = await createMatchRoom({ data: { hostClub } });
+      if (!result.ok) {
+        setError("Não foi possível criar a sala.");
+        return;
+      }
+      setRoom(result.room as unknown as Room);
+    } catch (error) {
       reportSilent("multiplayer.operation", error, {
         classification: "fatal",
         feature: "rooms",
         phase: "create",
         dedupeKey: "room-create",
       });
-      return {
-        ok: false as const,
-        reason: "create_failed",
-      };
-    });
-    setBusy(false);
-    if (!result.ok) return setError("Não foi possível criar a sala.");
-    setRoom(result.room as unknown as Room);
+      setError("Não foi possível criar a sala. Tente novamente.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function joinRoom(target: Room) {
@@ -227,12 +222,17 @@ export function MultiplayerPage() {
     );
   }
 
-  if (room && room.status === "live" && room.guest_club) {
+  if (room && room.guest_club && shouldShowLiveRoom(room)) {
     return (
       <LiveRoom
         room={room}
-        isHost={room.host_id === userId}
         online={online}
+        busy={busy}
+        operationError={error}
+        onRematch={() => {
+          const ownClub = room.host_id === userId ? room.host_club : room.guest_club;
+          if (ownClub) void createRoom(ownClub);
+        }}
         onExit={() => {
           void leave();
         }}
@@ -586,13 +586,17 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string | null })
  */
 function LiveRoom({
   room,
-  isHost,
   online,
+  busy,
+  operationError,
+  onRematch,
   onExit,
 }: {
   room: Room;
-  isHost: boolean;
   online: boolean;
+  busy: boolean;
+  operationError: string | null;
+  onRematch: () => void;
   onExit: () => void;
 }) {
   const setups = useMemo(
@@ -650,7 +654,13 @@ function LiveRoom({
   }, [setups, sim]);
 
   useEffect(() => {
-    if (!online || !isHost || !snap.finished || published.current) return;
+    if (
+      !online ||
+      (!snap.finished && room.status !== "settling") ||
+      room.status === "done" ||
+      published.current
+    )
+      return;
     let disposed = false;
     let attempts = 0;
     const publish = async () => {
@@ -669,12 +679,13 @@ function LiveRoom({
         });
       }
       published.current = false;
-      if (attempts++ < 4) {
-        publishRetry.current = window.setTimeout(() => {
+      publishRetry.current = window.setTimeout(
+        () => {
           publishRetry.current = null;
           if (!disposed && !published.current) void publish();
-        }, 3000);
-      }
+        },
+        Math.min(30_000, 3000 * 2 ** Math.min(attempts++, 4)),
+      );
     };
     void publish();
     return () => {
@@ -688,7 +699,7 @@ function LiveRoom({
       // remains the single authority if the earlier request also reaches it.
       published.current = false;
     };
-  }, [online, snap.finished, isHost, room.id]);
+  }, [online, snap.finished, room.id, room.status]);
 
   useEffect(() => {
     if (authoritativeResult.current) return;
@@ -738,6 +749,22 @@ function LiveRoom({
           </span>
         </div>
       </div>
+      <div
+        role="status"
+        aria-live="polite"
+        className="pointer-events-none absolute inset-x-0 top-20 z-10 text-center text-xs text-white"
+      >
+        {room.status === "done"
+          ? "Resultado oficial confirmado pelo servidor"
+          : room.status === "settling" || snap.finished
+            ? "Confirmando resultado no servidor…"
+            : "Apresentação da partida · resultado sujeito à confirmação do servidor"}
+      </div>
+      {operationError ? (
+        <p role="alert" className="absolute inset-x-0 top-28 z-20 text-center text-sm text-red-300">
+          {operationError}
+        </p>
+      ) : null}
       {connection.notice ? (
         <div
           role="status"
@@ -754,6 +781,15 @@ function LiveRoom({
         </div>
       ) : null}
       <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl">
+        {room.status === "done" ? (
+          <button
+            onClick={onRematch}
+            disabled={!online || busy}
+            className="rounded-full bg-primary px-4 py-1.5 font-display text-xs uppercase tracking-wide text-primary-foreground disabled:opacity-50"
+          >
+            {busy ? "Criando…" : "Nova revanche"}
+          </button>
+        ) : null}
         <button
           onClick={() =>
             setCamera((c) =>

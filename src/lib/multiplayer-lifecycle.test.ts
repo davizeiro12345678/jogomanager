@@ -92,7 +92,7 @@ describe("competitive room lifecycle", () => {
         data: { roomId, homeGoals: 999, awayGoals: 0 },
         context: { userId: "stranger" },
       }),
-    ).toEqual({ ok: false, reason: "not_host" });
+    ).toEqual({ ok: false, reason: "not_participant" });
     expect(db.updates).toBe(0);
     expect(db.deletedSeeds).toBe(0);
   });
