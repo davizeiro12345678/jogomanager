@@ -53,7 +53,12 @@ jobs:
       - name: Prepare identical dependencies for the integrated reference
         run: |
           git worktree add --detach .codspeed-base fd65b3d7616d6dd0544768fec1c645cedfe9dab6
+          # Compare both source revisions under the candidate's exact dependency
+          # environment, including after a dependency update. The reference
+          # source and all benchmark fixtures stay pinned to fd65b3d.
+          cp package.json package-lock.json .codspeed-base/
           ln -s "$GITHUB_WORKSPACE/node_modules" "$GITHUB_WORKSPACE/.codspeed-base/node_modules"
+          cmp package.json .codspeed-base/package.json
           cmp package-lock.json .codspeed-base/package-lock.json
       - name: Verify the paired environment
         run: node scripts/verify-codspeed-pair.mjs .codspeed-base .
