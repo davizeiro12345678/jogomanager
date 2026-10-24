@@ -2264,13 +2264,7 @@ export class MatchSim {
           ] ?? 50)
         : 50;
       const desired = plan
-        ? phasePosition(
-            setup.tactics,
-            slot,
-            phase,
-            (p.passing + p.defending) / 2,
-            learnedRole,
-          )
+        ? phasePosition(setup.tactics, slot, phase, (p.passing + p.defending) / 2, learnedRole)
         : undefined;
       if (desired) {
         tx = desired.x * FIELD_X * dir + bx * 0.18;
