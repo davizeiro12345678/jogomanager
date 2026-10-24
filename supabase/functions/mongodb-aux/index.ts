@@ -3,7 +3,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import { MongoClient } from "npm:mongodb@6.21.0";
 
-const headers = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
+const headers = {
+  "content-type": "application/json; charset=utf-8",
+  "cache-control": "no-store",
+};
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers });
 
 let cachedClient: Promise<MongoClient> | undefined;
@@ -17,10 +20,12 @@ function getMongoClient(): Promise<MongoClient> {
     minPoolSize: 0,
     connectTimeoutMS: 2500,
     serverSelectionTimeoutMS: 3000,
-  }).connect().catch((err) => {
-    cachedClient = undefined; // recover after a transient network outage
-    throw err;
-  });
+  })
+    .connect()
+    .catch((err) => {
+      cachedClient = undefined; // recover after a transient network outage
+      throw err;
+    });
   return cachedClient;
 }
 
