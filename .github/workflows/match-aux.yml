@@ -1,0 +1,30 @@
+name: Auxiliary match worker
+on:
+  pull_request:
+    paths:
+      - 'services/match-aux/**'
+      - 'src/lib/match-aux-client.server.ts'
+      - 'src/lib/multiplayer.functions.ts'
+      - '.github/workflows/match-aux.yml'
+  workflow_dispatch:
+jobs:
+  auxiliary-contract:
+    name: Signed auxiliary match engine parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install pinned main app dependencies
+        run: npm ci
+      - name: Install isolated MongoDB driver
+        run: npm install --prefix services/match-aux --ignore-scripts --no-audit --no-fund
+      - name: HMAC and replay contract tests
+        run: node --import tsx --test services/match-aux/signature.test.mjs services/match-aux/engine.test.mjs
+      - name: Strict TypeScript
+        run: npm exec -- tsc --noEmit --pretty false
+      - name: Lint and formatting
+        run: npm run lint
