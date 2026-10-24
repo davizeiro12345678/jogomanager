@@ -7,7 +7,8 @@ const headers = {
   "content-type": "application/json; charset=utf-8",
   "cache-control": "no-store",
 };
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers });
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers });
 
 let cachedClient: Promise<MongoClient> | undefined;
 function getMongoClient(): Promise<MongoClient> {
