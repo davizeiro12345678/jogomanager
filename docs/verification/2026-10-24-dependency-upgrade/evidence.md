@@ -15,7 +15,7 @@ Two removed TanStack `.inputValidator` calls now use `.validator`, and their tes
 
 ## Validation and rollout
 
-`npm ci --ignore-scripts`, TypeScript, zero-warning ESLint, and production build passed locally under Node 24.22.1 (CI pins 24.22.0). The initial full suite exposed 14 failures in the old TanStack test adapter; all 14 pass after the compatibility correction. A new full suite is running on the final candidate. The auxiliary signature/engine tests passed all six cases. Real MongoDB 7 connectivity, real multiplayer sessions and all release gates still require validation. Keep this PR draft; do not merge or deploy while those are missing or failed.
+`npm ci --ignore-scripts`, TypeScript, zero-warning ESLint, and production build passed locally under Node 24.22.1 (CI pins 24.22.0). The initial full suite exposed 14 failures in the old TanStack test adapter; all 14 pass after the compatibility correction. The fresh full suite on the corrected dependency candidate passed: 2,200 tests / 405 files. Integrated validation with the final PR #62 source is a separate check. The auxiliary signature/engine tests passed all six cases. Real MongoDB 7 connectivity, real multiplayer sessions and all release gates still require validation. Keep this PR draft; do not merge or deploy while those are missing or failed.
 
 ## Direct declarations
 
