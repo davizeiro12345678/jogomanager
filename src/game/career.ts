@@ -8,6 +8,8 @@ import { updatedSeasonComposition } from "./catalog-season";
 import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
 import { expectedGoals, regulationScore, type MatchConditions } from "./match-probability";
+import { advancedQuickScore } from "./tactical-quick-sim";
+import { learnTactics, type TacticalRole } from "./tactical-plan";
 import { selectionRating } from "./match-readiness";
 import { migrateSquadRatings } from "./squad-rating-migration";
 import { applyRegens } from "./regen";
@@ -213,7 +215,7 @@ export function enrichPlayer(p: Player): Player {
   };
 }
 
-function defaultV3(club: { strength: number } | undefined) {
+export function defaultV3(club: { strength: number } | undefined) {
   const s = club?.strength ?? 70;
   return {
     fanApproval: 62,
@@ -235,7 +237,7 @@ function defaultV3(club: { strength: number } | undefined) {
  * Cada cadastro entra no lugar do jogador mais fraco da mesma posição
  * (ou simplesmente do mais fraco), mantendo o tamanho do plantel.
  */
-function withCustomPlayers(clubId: string, squad: Player[]): Player[] {
+export function withCustomPlayers(clubId: string, squad: Player[]): Player[] {
   const custom = customPlayersFor(clubId);
   if (custom.length === 0) return squad;
   const list = [...squad];
@@ -263,7 +265,7 @@ function withCustomPlayers(clubId: string, squad: Player[]): Player[] {
  * A força de cada jogador continua vindo do balanceamento do jogo; o que muda
  * é quem veste a camisa: nome, idade, número, nacionalidade e foto.
  */
-function withRealPlayers(clubId: string, squad: Player[]): Player[] {
+export function withRealPlayers(clubId: string, squad: Player[]): Player[] {
   return applyImportedSquad(clubId, squad, realSquadFor(clubId)).map(enrichPlayer);
 }
 
@@ -277,17 +279,19 @@ export function initCareer(
   const squad = withCustomPlayers(
     clubId,
     withRealPlayers(clubId, buildSquad(clubId).map(enrichPlayer)),
-  ).map((p) => {
-    const frozen = withDevelopmentBase(p, 2);
-    return {
-      ...frozen,
-      value: valueFor(p.ovr, p.age, {
-        economyRulesVersion: 2,
-        potential: p.potential,
-        contractYears: p.contractYears,
-      }),
-    };
-  });
+  )
+    .map((p) => {
+      const frozen = withDevelopmentBase(p, 2);
+      return {
+        ...frozen,
+        value: valueFor(p.ovr, p.age, {
+          economyRulesVersion: 2,
+          potential: p.potential,
+          contractYears: p.contractYears,
+        }),
+      };
+    })
+    .map((player) => developedPlayer(player, { attrDeltas: {} }));
   const formation: FormationKey = "4-3-3";
   const { lineup, bench } = pickLineup(squad, formation);
   const objective = Math.max(1, Math.min(15, Math.round((96 - club.strength) / 4)));
@@ -385,7 +389,7 @@ export function migrateCareer(raw: unknown): CareerState {
   };
 }
 
-function upgradeCatalog(state: CareerState): CareerState {
+export function upgradeCatalog(state: CareerState): CareerState {
   if (state.catalogRevision === 1) return state;
   const owned = Object.values(state.players).filter((p) => p.clubId === state.clubId);
   const completed = completeSquad(state.clubId, owned).map(
@@ -428,8 +432,12 @@ function upgradeCatalog(state: CareerState): CareerState {
   };
 }
 
-function migrateCareerShape(raw: unknown): CareerState {
+export function migrateCareerShape(raw: unknown): CareerState {
   const s = raw as CareerState & { version?: number };
+  if (s && s.version !== undefined && ![1, 2, 3].includes(s.version))
+    throw new Error(
+      "Este save usa uma versão incompatível. Atualize o jogo para abri-lo; a cópia original foi preservada.",
+    );
   if (s && s.version === 3) {
     const ready = {
       ...s,
@@ -504,6 +512,8 @@ export function quickSimulate(
   const rnd = makeRng(seed);
   const h = CLUBS[homeId]?.strength ?? 70;
   const a = CLUBS[awayId]?.strength ?? 70;
+  if (ctx.homeTactics?.advanced || ctx.awayTactics?.advanced)
+    return advancedQuickScore(h, a, seed, ctx);
   const { hg, ag } = regulationScore(expectedGoals(h, a, seed, ctx), rnd);
   return { hg, ag, events: quickEvents(hg, ag, rnd) };
 }
@@ -583,7 +593,7 @@ export function recentForm(fixtures: Fixture[], clubId: string, beforeRound: num
 }
 
 /** Minutos dos gols, pênaltis, gols contra e expulsões, com viradas plausíveis. */
-function quickEvents(hg: number, ag: number, rnd: () => number): QuickSimEvent[] {
+export function quickEvents(hg: number, ag: number, rnd: () => number): QuickSimEvent[] {
   const ev: QuickSimEvent[] = [];
   const minute = () => {
     // mais gols no fim de cada tempo
@@ -1034,6 +1044,7 @@ function endSeason(state: CareerState): CareerState {
 /** Desempenho individual de uma partida (jogadores do clube do usuário). */
 export interface MatchPerformance {
   pid: string;
+  tacticalRole?: TacticalRole;
   goals: number;
   assists: number;
   played: boolean;
@@ -1295,7 +1306,18 @@ export function advanceRound(
     };
   }
 
-  return next;
+  return matchResult
+    ? learnTactics(
+        next,
+        "match",
+        `${state.season}:${round}:${played?.home ?? state.clubId}:${played?.away ?? ""}`,
+        performances.length
+          ? performances
+              .filter((p) => p.played)
+              .map((p) => ({ playerId: p.pid, role: p.tacticalRole, minutes: p.minutes ?? 90 }))
+          : undefined,
+      )
+    : next;
 }
 
 /** Roda as fases de copa que caem nesta rodada. */
@@ -1581,7 +1603,7 @@ export function resign(state: CareerState): CareerState {
   };
 }
 
-function pickRandomClubId(rnd: () => number, exclude: string): string {
+export function pickRandomClubId(rnd: () => number, exclude: string): string {
   const ids = Object.keys(CLUBS).filter((id) => id !== exclude);
   return ids[Math.floor(rnd() * ids.length)] ?? exclude;
 }

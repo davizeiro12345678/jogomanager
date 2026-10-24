@@ -1,14 +1,15 @@
-import { subscribeRenderedFrames } from "./graphics-probe";
-import { rendererMetadata } from "@/game/graphics-renderer-metadata";
-import { reportSilent } from "@/lib/silent-errors";
-import { useThree } from "@react-three/fiber";
+import { addAfterEffect, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
-import { FrameMetrics, heapUsedBytes } from "@/game/frame-metrics";
+import { subscribeRenderedFrames } from "./graphics-probe";
+import { FrameMetrics } from "@/game/frame-metrics";
+import { installRendererResourceProbe } from "@/game/renderer-resource-probe";
 import { FrameRateWindow } from "@/game/frame-rate-window";
+import { FRAME_METRIC_DEFINITIONS, performanceMemorySample } from "@/game/performance-memory";
 import {
   assessNativePerformance,
   nativeMeasurementTiming,
   nativeFrameInterval,
+  nativePageSchedulingState,
 } from "@/game/native-performance-contract";
 import { censusBudgetUse, censusFitsBudget, censusScene } from "@/game/scene-census";
 
@@ -33,6 +34,24 @@ type GraphicsBenchmarkMetadata = {
   };
 };
 
+type BenchmarkRenderer = {
+  constructor?: { name?: string };
+  isWebGLRenderer?: boolean;
+  isWebGPURenderer?: boolean;
+  capabilities?: {
+    isWebGL2?: boolean;
+    maxTextureSize?: number;
+    getMaxAnisotropy?: () => number;
+  };
+  getContext?: () => {
+    VERSION?: number;
+    getParameter?: (parameter: number) => unknown;
+    getExtension?: (
+      name: string,
+    ) => { UNMASKED_RENDERER_WEBGL?: number; UNMASKED_VENDOR_WEBGL?: number } | null;
+  } | null;
+};
+
 type BenchmarkNavigator = Navigator & {
   deviceMemory?: number;
   userAgentData?: { mobile?: boolean; platform?: string };
@@ -46,6 +65,45 @@ function benchmarkMetadata(): GraphicsBenchmarkMetadata | null {
   return typeof candidate.id === "string" && typeof candidate.seed === "string"
     ? (candidate as GraphicsBenchmarkMetadata)
     : null;
+}
+
+function rendererMetadata(gl: unknown) {
+  const renderer = gl as BenchmarkRenderer;
+  const name = renderer.constructor?.name ?? "unknown";
+  const isWebGpu = renderer.isWebGPURenderer === true || /webgpu/i.test(name);
+  const isWebGl2 = !isWebGpu && (renderer.capabilities?.isWebGL2 === true || /webgl2/i.test(name));
+  let contextVersion: string | null = null;
+  let gpuRenderer: string | null = null;
+  let gpuVendor: string | null = null;
+  try {
+    const context = renderer.getContext?.();
+    if (context?.getParameter && typeof context.VERSION === "number") {
+      const value = context.getParameter(context.VERSION);
+      contextVersion = typeof value === "string" ? value : null;
+      const debug = context.getExtension?.("WEBGL_debug_renderer_info");
+      if (debug?.UNMASKED_RENDERER_WEBGL)
+        gpuRenderer = String(context.getParameter(debug.UNMASKED_RENDERER_WEBGL));
+      if (debug?.UNMASKED_VENDOR_WEBGL)
+        gpuVendor = String(context.getParameter(debug.UNMASKED_VENDOR_WEBGL));
+    }
+  } catch {
+    // WebGPU renderers and privacy-hardened browsers may not expose a WebGL context.
+  }
+  return {
+    kind: isWebGpu
+      ? "webgpu"
+      : isWebGl2
+        ? "webgl2"
+        : renderer.isWebGLRenderer
+          ? "webgl"
+          : "unknown",
+    renderer: name,
+    contextVersion,
+    gpuRenderer,
+    gpuVendor,
+    maxTextureSize: renderer.capabilities?.maxTextureSize ?? null,
+    maxAnisotropy: renderer.capabilities?.getMaxAnisotropy?.() ?? null,
+  };
 }
 
 function browserMetadata() {
@@ -74,20 +132,38 @@ function hardwareMetadata(renderer: ReturnType<typeof rendererMetadata>) {
   };
 }
 
-/** Opt-in benchmark only: count ALL render passes, then reset once per frame. */
+/** Opt-in benchmark: share the single owner that counts all render passes. */
 export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: boolean }) {
   const effective = useRef({ quality, adaptive });
   effective.current = { quality, adaptive };
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
+  useEffect(() => {
+    if (
+      !location.pathname.includes("graphics-benchmark") ||
+      new URLSearchParams(location.search).get("resourceProbe") !== "1"
+    )
+      return;
+    return installRendererResourceProbe(window, () => {
+      const census = censusScene(scene);
+      return {
+        geometries: gl.info.memory.geometries,
+        textures: gl.info.memory.textures,
+        programs: gl.info.programs?.length ?? null,
+        materials: census.materials,
+        census: census.total,
+      };
+    });
+  }, [gl, scene]);
+
   // Telemetria opcional (com consentimento): 30 s de amostra após 10 s de partida.
   useEffect(() => {
     if (location.pathname.includes("graphics-benchmark")) return;
     const metrics = new FrameMetrics();
     const start = performance.now();
     let last = start;
-    const stop = subscribeRenderedFrames(gl, (frame) => {
-      const now = frame.now;
+    const stop = addAfterEffect(() => {
+      const now = performance.now();
       if (!document.hidden && now - start > 10_000) metrics.add(now - last);
       last = now;
       if (now - start > 40_000) {
@@ -95,26 +171,21 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
         const s = metrics.summary();
         void import("@/lib/telemetry-client")
           .then((m) => m.reportTechSample({ fps: s.fps, p95: s.p95 }))
-          .catch((error) => {
-            reportSilent("telemetry.optional", error, {
-              classification: "ignorable",
-              feature: "frame-probe",
-              phase: "report",
-              dedupeKey: "frame-probe-report",
-            });
+          .catch(() => {
+            /* Optional telemetry must never break the renderer. */
           });
       }
     });
     return stop;
-  }, [gl]);
+  }, []);
   useEffect(() => {
     if (!location.pathname.includes("graphics-benchmark")) return;
     const meter = new FrameRateWindow();
-    return subscribeRenderedFrames(gl, (frame) => {
-      const sample = meter.sample(frame.now, document.hidden);
+    return addAfterEffect(() => {
+      const sample = meter.sample(performance.now(), document.hidden);
       if (sample) window.dispatchEvent(new CustomEvent("graphics-live", { detail: sample }));
     });
-  }, [gl]);
+  }, []);
   useEffect(() => {
     if (!location.pathname.includes("graphics-benchmark")) return;
     const timing = nativeMeasurementTiming(location.search);
@@ -125,6 +196,8 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
     let report = start;
     let interruptions = document.hidden ? 1 : 0;
     let coveredMs = 0;
+    let focusChanges = 0;
+    let previousFocus = nativePageSchedulingState(document).hasFocus;
     let initialContract: string | null = null;
     let contractChanged = false;
     const onVisibility = () => {
@@ -132,6 +205,14 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
       last = performance.now();
     };
     document.addEventListener("visibilitychange", onVisibility);
+    const onFocusChange = () => {
+      const nextFocus = nativePageSchedulingState(document).hasFocus;
+      if (nextFocus !== null && previousFocus !== null && nextFocus !== previousFocus)
+        focusChanges++;
+      previousFocus = nextFocus;
+    };
+    window.addEventListener("focus", onFocusChange);
+    window.addEventListener("blur", onFocusChange);
     let firstFrame: number | null = null;
     let longTasks = 0;
     let longTaskMs = 0;
@@ -140,7 +221,6 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
       maxDraws = 0,
       measured = 0;
     let finalReport = false;
-
     const renderer = rendererMetadata(gl);
     const browser = browserMetadata();
     let observer: PerformanceObserver | undefined;
@@ -155,11 +235,9 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
     }
     const stop = subscribeRenderedFrames(gl, (frame) => {
       const now = frame.now;
-      if (finalReport) {
-        return;
-      }
+      if (finalReport) return;
       if (firstFrame === null && frame.draws > 0) firstFrame = now - start;
-      const currentContract = `${frame.width}:${frame.height}:${frame.dpr}:${effective.current.quality}:${effective.current.adaptive}:${benchmarkMetadata()?.camera}`;
+      const currentContract = `${gl.domElement.width}:${gl.domElement.height}:${gl.getPixelRatio()}:${effective.current.quality}:${effective.current.adaptive}:${benchmarkMetadata()?.camera}`;
       if (initialContract === null) initialContract = currentContract;
       else if (initialContract !== currentContract) contractChanged = true;
       const interval = nativeFrameInterval(
@@ -235,6 +313,8 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
           new CustomEvent("graphics-sample", {
             detail: {
               ...frameSummary,
+              metricDefinitions: FRAME_METRIC_DEFINITIONS,
+              memory: performanceMemorySample(performance, census.total),
               elapsed: (now - start) / 1000,
               complete: now - start >= endMs,
               protocol: {
@@ -244,6 +324,11 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
                 contractChanged,
                 adaptive: effective.current.adaptive,
                 longTasksScope: "whole run including warmup",
+                page: {
+                  ...nativePageSchedulingState(document),
+                  focusChanges,
+                  scope: "browser visibility/focus only; does not prove OS foreground or occlusion",
+                },
               },
               acceptance: assessNativePerformance({
                 ...frameSummary,
@@ -253,9 +338,9 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
                 coveredMs,
                 contractChanged,
                 adaptive: effective.current.adaptive,
-                width: frame.width,
-                height: frame.height,
-                dpr: frame.dpr,
+                width: gl.domElement.width,
+                height: gl.domElement.height,
+                dpr: gl.getPixelRatio(),
                 quality:
                   effective.current.quality === benchmarkMetadata()?.quality
                     ? effective.current.quality
@@ -265,10 +350,9 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
               draws: measured ? drawSum / measured : 0,
               maxDraws,
               triangles: measured ? triangleSum / measured : 0,
-              heapUsedBytes: heapUsedBytes(performance),
-              geometries: frame.geometries,
-              textures: frame.textures,
-              programs: frame.programs,
+              geometries: gl.info.memory.geometries,
+              textures: gl.info.memory.textures,
+              programs: gl.info.programs?.length ?? null,
               materials: census.materials,
               staticBatches,
               actorBatches,
@@ -299,9 +383,9 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
               firstFrameMs: firstFrame,
               longTasks: observer ? longTasks : null,
               longTaskMs: observer ? longTaskMs : null,
-              width: frame.width,
-              height: frame.height,
-              dpr: frame.dpr,
+              width: gl.domElement.width,
+              height: gl.domElement.height,
+              dpr: gl.getPixelRatio(),
               scenario: benchmarkMetadata(),
               browser,
               hardware: hardwareMetadata(renderer),
@@ -311,7 +395,6 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
                 contextVersion: renderer.contextVersion,
                 gpuRenderer: renderer.gpuRenderer,
                 gpuVendor: renderer.gpuVendor,
-                rendererClass: renderer.rendererClass,
               },
             },
           }),
@@ -326,6 +409,8 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
     return () => {
       stop();
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onFocusChange);
+      window.removeEventListener("blur", onFocusChange);
       observer?.disconnect();
     };
   }, [gl, scene]);

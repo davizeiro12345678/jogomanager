@@ -6,6 +6,7 @@ import { getSilentErrorReports, reportSilent, resetSilentErrorReports } from "./
 describe("reportSilent", () => {
   afterEach(() => {
     resetSilentErrorReports();
+    consumeLastCapturedError();
     vi.restoreAllMocks();
   });
 
@@ -39,7 +40,17 @@ describe("reportSilent", () => {
     });
     expect(report?.cause).toContain("chunk indisponível");
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(consumeLastCapturedError()).toBe(second);
+    expect(consumeLastCapturedError()).toBeUndefined();
+  });
+
+  it("keeps a fatal cause available when a later degradation is handled", () => {
+    const fatal = new Error("server request failed");
+    reportSilent("server.request", fatal, { classification: "fatal" });
+    reportSilent("cutscene.preload", new Error("optional asset unavailable"), {
+      classification: "degradation",
+    });
+    expect(consumeLastCapturedError()).toBe(fatal);
+    expect(consumeLastCapturedError()).toBeUndefined();
   });
 
   it("accepts all classes and never rethrows the original failure", () => {

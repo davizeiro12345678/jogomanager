@@ -1,3 +1,8 @@
+import {
+  PublicPaymentError,
+  publicPaymentErrorMessage,
+  PUBLIC_PAYMENTS_UNAVAILABLE,
+} from "./payment-errors";
 import Stripe from "stripe";
 
 const getEnv = (key: string): string => {
@@ -119,46 +124,47 @@ export function createStripeClient(env: StripeEnv): Stripe {
   });
 }
 
+export function createStripeIntegrationIdentifier(prefix = "jogomanager_checkout"): string {
+  const alphabet = "abcdefghijklmnopqrstuvwxyz";
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  const suffix = Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
+  return `${prefix}_${suffix}`;
+}
+
 export function getStripeErrorMessage(error: unknown): string {
+  if (error instanceof PublicPaymentError) return publicPaymentErrorMessage(error);
   if (error && typeof error === "object") {
-    const stripeError = error as {
-      message?: string;
-      type?: string;
-      code?: string;
-      decline_code?: string;
-      param?: string;
-      requestId?: string;
-      raw?: {
-        message?: string;
-        type?: string;
-        code?: string;
-        decline_code?: string;
-        param?: string;
-        requestId?: string;
-      };
-    };
-
-    const message = stripeError.raw?.message ?? stripeError.message;
-    if (message) {
-      const details = [
-        stripeError.raw?.type ?? stripeError.type,
-        stripeError.raw?.code ?? stripeError.code,
-        stripeError.raw?.decline_code ?? stripeError.decline_code,
-        stripeError.raw?.param ?? stripeError.param,
-        stripeError.raw?.requestId ?? stripeError.requestId,
-      ].filter(Boolean);
-      return details.length ? `${message} (${details.join(", ")})` : message;
+    const stripeError = error as { type?: unknown; code?: unknown; decline_code?: unknown };
+    // Provider messages, raw bodies, parameter names and request IDs are private.
+    // Only stable error categories select application-owned actionable copy.
+    if (stripeError.type === "StripeCardError") {
+      const code = stripeError.decline_code ?? stripeError.code;
+      if (code === "insufficient_funds")
+        return "O cartão não tem saldo suficiente. Use outra forma de pagamento.";
+      if (code === "expired_card") return "O cartão expirou. Use outro cartão.";
+      if (code === "incorrect_cvc")
+        return "Confira o código de segurança do cartão e tente novamente.";
+      if (code === "authentication_required")
+        return "Confirme o pagamento com seu banco e tente novamente.";
+      return "O cartão não autorizou o pagamento. Confira os dados ou use outra forma de pagamento.";
     }
+    if (stripeError.type === "StripeRateLimitError")
+      return "Aguarde alguns instantes antes de tentar o pagamento novamente.";
   }
-
-  return "Stripe request failed";
+  return PUBLIC_PAYMENTS_UNAVAILABLE;
 }
 
 export async function verifyWebhook(req: Request, env: StripeEnv): Promise<Stripe.Event> {
   const signature = req.headers.get("stripe-signature");
   const maxBytes = 1_048_576;
-  if (Number(req.headers.get("content-length") ?? 0) > maxBytes)
-    throw new Error("Webhook body too large");
+  const declaredLength = req.headers.get("content-length");
+  if (
+    declaredLength !== null &&
+    (!/^\d+$/.test(declaredLength) || !Number.isSafeInteger(Number(declaredLength)))
+  )
+    throw new Error("Invalid webhook body size");
+  if (Number(declaredLength ?? 0) > maxBytes) throw new Error("Webhook body too large");
   if (!signature || signature.length > 4096 || !req.body)
     throw new Error("Missing signature or body");
   const reader = req.body.getReader();

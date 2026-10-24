@@ -4,7 +4,11 @@ import type { CareerState } from "@/game/types";
 
 const { indexed } = vi.hoisted(() => ({ indexed: new Map<string, unknown>() }));
 
-vi.mock("idb-keyval", () => ({
+vi.mock("./indexeddb", () => ({
+  getMany: vi.fn(async (keys: string[]) => keys.map((key) => indexed.get(key))),
+  setMany: vi.fn(async (entries: [string, unknown][]) => {
+    for (const [key, value] of entries) indexed.set(key, value);
+  }),
   get: vi.fn(async (key: string) => indexed.get(key)),
   set: vi.fn(async (key: string, value: unknown) => void indexed.set(key, value)),
   update: vi.fn(async (key: string, updater: (value: unknown) => unknown) => {
@@ -47,7 +51,8 @@ class MemoryStorage implements Storage {
   }
 }
 
-const career = (managerName: string) => ({ managerName }) as CareerState;
+const career = (managerName: string) =>
+  ({ managerName, clubId: "fla", leagueId: "bra1" }) as CareerState;
 
 describe("offline career owner boundary", () => {
   let storage: MemoryStorage;
@@ -113,6 +118,44 @@ describe("offline career owner boundary", () => {
       expect(await readOutbox("alice-id")).toBeNull();
     } finally {
       now.mockRestore();
+    }
+  });
+
+  it("preserves distinct legacy queue revisions even when their state and timestamp are equal", async () => {
+    const older = { at: 123456789, state: career("Same save"), revision: "legacy-revision-a" };
+    const newer = { ...older, revision: "legacy-revision-b" };
+    indexed.set("career.v2.account-alice-id.outbox", newer);
+    expect(await acknowledgeOutbox(older, "alice-id")).toBe(false);
+    expect(await readOutbox("alice-id")).toEqual(newer);
+    expect(await acknowledgeOutbox(newer, "alice-id")).toBe(true);
+    expect(await readOutbox("alice-id")).toBeNull();
+  });
+});
+
+describe("offline career mirror", () => {
+  function stored(raw: string) {
+    const getItem = vi.fn(() => raw);
+    vi.stubGlobal("window", { localStorage: { getItem } });
+    return getItem;
+  }
+
+  it("preserves valid legacy saves for the normal migration", () => {
+    const career = { version: 1, clubId: "fla", leagueId: "bra1", managerName: "Joao" };
+    const getItem = stored(JSON.stringify(career));
+    expect(readLocalCareer()).toEqual(career);
+    expect(getItem).toHaveBeenCalledWith(LEGACY_KEY);
+  });
+
+  it("does not pass hostile or malformed storage to the game", () => {
+    for (const raw of [
+      "null",
+      "[]",
+      '{"clubId":null}',
+      '{"clubId":"fla","leagueId":"bra1","managerName":"A","__proto__":{}}',
+      " ".repeat(4 * 1024 * 1024 + 1),
+    ]) {
+      stored(raw);
+      expect(readLocalCareer()).toBeNull();
     }
   });
 });

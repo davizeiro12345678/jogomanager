@@ -6,8 +6,10 @@ export type FingerIndex = 0 | 1 | 2 | 3;
 export type HandJoint =
   `finger${HandSide}${FingerIndex}` | `fingerTip${HandSide}${FingerIndex}` | `thumb${HandSide}`;
 
-export const FINGER_LENGTHS = [0.84, 1.09, 1.02, 0.76] as const;
-export const FINGER_CENTERS_Y = [1.795, 1.915, 1.875, 1.73] as const;
+// Preserve each proximal attachment while restoring the index and little
+// finger's adult proportions. Bone pivots and nails share these landmarks.
+export const FINGER_LENGTHS = [0.74, 0.84, 0.79, 0.61] as const;
+export const FINGER_CENTERS_Y = [1.745, 1.79, 1.76, 1.655] as const;
 export const fingerX = (index: number, radius: number, side = 1) =>
   side * (index - 1.5) * radius * 0.36;
 
@@ -188,14 +190,14 @@ export function applyHandPose(
       const base = bones[`finger${side}${index}`];
       const tip = bones[`fingerTip${side}${index}`];
       // The last two fingers remain slightly more curled in a relaxed hand.
-      const curl = clamp(pose.grip + index * 0.025, 0, 0.94);
+      const curl = clamp(pose.grip * (0.92 + index * 0.045) + index * 0.025, 0, 0.94);
       base.rotation.x += (-curl * 1.08 - base.rotation.x) * k;
       tip.rotation.x += (-curl * 1.25 - tip.rotation.x) * k;
       base.rotation.z += (sign * (index - 1.5) * pose.spread - base.rotation.z) * k;
     }
     const thumb = bones[`thumb${side}`];
     thumb.rotation.x += (-pose.grip * 0.55 - thumb.rotation.x) * k;
-    thumb.rotation.y += (sign * pose.grip * 0.35 - thumb.rotation.y) * k;
-    thumb.rotation.z += (sign * pose.grip * 0.45 - thumb.rotation.z) * k;
+    thumb.rotation.y += (sign * (pose.grip * 0.35 + pose.spread * 0.32) - thumb.rotation.y) * k;
+    thumb.rotation.z += (sign * (pose.grip * 0.45 + pose.spread * 0.28) - thumb.rotation.z) * k;
   }
 }

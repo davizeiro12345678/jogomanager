@@ -1,17 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-
+import React, { useEffect, useRef, useState } from "react";
 import { Stadium3D, type Quality } from "../src/components/game/Stadium3D";
-
 import { benchmarkTeam } from "./graphics-fixture";
-
 import { CAMERA_OPTIONS, type CameraMode } from "../src/game/camera-modes";
-
 import { WorkerMatchView } from "../src/game/live-match";
-
 import { DEFAULT_VISUAL } from "../src/game/visual-settings";
-
+import { gpuTextureStats } from "../src/game/textures/ktx2";
 import { nativeMeasurementTiming } from "../src/game/native-performance-contract";
-
 import {
   resolveGraphicsBenchmark,
   type GraphicsBenchmarkMetadata,
@@ -20,16 +14,19 @@ import {
 // Dedicated origin and explicit settings; no career saves or authentication.
 // Use the store's existing public persistence contract, before first render.
 const settingsKey = "manager3d.visual.v3";
-
 const benchmark = resolveGraphicsBenchmark(location.search);
-
 const rendererQuality: Quality = benchmark.quality === "cinema" ? "alta" : benchmark.quality;
-
 const measurementTiming = nativeMeasurementTiming(location.search);
 
 type BenchmarkWindow = Window & {
   __PFM_GRAPHICS_BENCHMARK__?: GraphicsBenchmarkMetadata;
 };
+
+interface ManualFixtureState {
+  seq: number;
+  time: number;
+  ball: { x: number; z: number; height: number; vx: number; vy: number; vz: number };
+}
 
 function setBenchmarkMetadata(camera: CameraMode) {
   (window as BenchmarkWindow).__PFM_GRAPHICS_BENCHMARK__ = { ...benchmark, camera };
@@ -42,13 +39,13 @@ localStorage.setItem(
     quality: benchmark.quality,
     adaptive: false,
     showFps: false,
+    postFx: benchmark.postFx,
     time: benchmark.time,
     weather: benchmark.weather,
     mow: benchmark.mow,
     resolutionScale: 1,
   }),
 );
-
 setBenchmarkMetadata(benchmark.camera);
 
 export function Benchmark() {
@@ -60,8 +57,19 @@ export function Benchmark() {
   });
   const [mode, setMode] = useState<CameraMode>(benchmark.camera);
   const [run, setRun] = useState(0);
+  const [manualFixture, setManualFixture] = useState<ManualFixtureState | null>(null);
   const workerRef = useRef<Worker | null>(null);
   const manual = new URLSearchParams(location.search).get("manual") === "1";
+  const crowdProbe = manual && new URLSearchParams(location.search).get("crowdProbe") === "1";
+  const [presentationProbe, setPresentationProbe] = useState("nenhuma");
+  function probeCrowd(kind: "goal" | "gasp", side: "home" | "away" = "home") {
+    if (!controller || !crowdProbe) return;
+    // Only the presentation copy changes. The deterministic worker fixture and
+    // its score/checkpoints remain untouched; this is never a match result.
+    if (kind === "goal") controller.view.stats[side].goals++;
+    else controller.view.stats.home.onTarget++;
+    setPresentationProbe(`${kind}-${side}`);
+  }
   useEffect(() => {
     const view = new WorkerMatchView(
       benchmarkTeam(benchmark.fixture.homeClubId),
@@ -75,6 +83,7 @@ export function Benchmark() {
     let started = false;
     worker.onmessage = (event) => {
       view.apply(event.data);
+      if (manual && event.data.fixture) setManualFixture(event.data.fixture);
       if (!started) {
         started = true;
         setController({ view, isWorker: true });
@@ -126,6 +135,7 @@ export function Benchmark() {
             }
           : null,
         metrics: sample,
+        textures: { ...gpuTextureStats },
       });
     return () => {
       if (priorAdvance) bridge.advanceTime = priorAdvance;
@@ -157,6 +167,7 @@ export function Benchmark() {
         <button
           onClick={() => {
             setController(null);
+            setManualFixture(null);
             setRun((value) => value + 1);
           }}
         >
@@ -164,6 +175,48 @@ export function Benchmark() {
         </button>
         <span>Worker: {String(controller?.isWorker ?? false)}</span>
       </div>
+      {manual && (
+        <section aria-label="Controle da fixture manual" style={{ padding: "0 12px 12px" }}>
+          <button
+            disabled={!controller}
+            onClick={() => workerRef.current?.postMessage({ type: "advance", ms: 1000 })}
+          >
+            Avançar 1 s
+          </button>{" "}
+          <button
+            disabled={!controller}
+            onClick={() => workerRef.current?.postMessage({ type: "advance", ms: 10000 })}
+          >
+            Avançar 10 s
+          </button>
+          <output
+            id="manual-fixture"
+            data-seq={manualFixture?.seq}
+            data-time={manualFixture?.time}
+            style={{ display: "block", fontFamily: "monospace", whiteSpace: "pre-wrap" }}
+          >
+            {manualFixture
+              ? `seq=${manualFixture.seq} tempo=${manualFixture.time.toFixed(6)} s | bola x=${manualFixture.ball.x.toFixed(6)} y=${manualFixture.ball.height.toFixed(6)} z=${manualFixture.ball.z.toFixed(6)} | vx=${manualFixture.ball.vx.toFixed(6)} vy=${manualFixture.ball.vy.toFixed(6)} vz=${manualFixture.ball.vz.toFixed(6)} | velocidade=${Math.hypot(manualFixture.ball.vx, manualFixture.ball.vy, manualFixture.ball.vz).toFixed(6)} m/s | velocidade horizontal=${Math.hypot(manualFixture.ball.vx, manualFixture.ball.vz).toFixed(6)} m/s`
+              : "Aguardando primeira mensagem da fixture"}
+          </output>
+        </section>
+      )}
+      {crowdProbe && (
+        <section aria-label="Inspeção visual da torcida">
+          <button disabled={!controller} onClick={() => probeCrowd("goal")}>
+            Torcida: gol sintético
+          </button>{" "}
+          <button disabled={!controller} onClick={() => probeCrowd("gasp")}>
+            Torcida: surpresa sintética
+          </button>{" "}
+          <button disabled={!controller} onClick={() => probeCrowd("goal", "away")}>
+            Torcida: gol visitante sintético
+          </button>{" "}
+          <output data-crowd-probe={presentationProbe}>
+            Reação visual: {presentationProbe}; o Worker não é alterado.
+          </output>
+        </section>
+      )}
       <div style={{ width: benchmark.viewport.width, height: benchmark.viewport.height }}>
         {controller && (
           <Stadium3D

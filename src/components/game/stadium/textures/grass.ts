@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { createNoise2D } from "simplex-noise";
-import { turfDetailTextures, retainTurfDetail } from "./turf-detail";
+import { turfDetailTextures } from "./turf-detail";
 import { OwnedTextureCache } from "@/game/owned-texture-cache";
 
 /**
@@ -311,15 +311,56 @@ function buildRoughness(pattern: MowPattern = "checker", size = 256) {
 
 const _albedo = new OwnedTextureCache<MowPattern>(1);
 const _rough = new OwnedTextureCache<MowPattern>(1);
+const _preview = new OwnedTextureCache<MowPattern>(1);
+
+/** A bounded first-frame map keeps mowing readable while compressed detail
+ * is loading. No noise field, wear decals or thousands of blade strokes. */
+export function grassMowPreview(pattern: MowPattern) {
+  return _preview.get(pattern, () => {
+    const made = canvas(128);
+    if (!made) return null;
+    const { c, ctx } = made;
+    const spec = MOW[pattern];
+    ctx.fillStyle = "#285c30";
+    ctx.fillRect(0, 0, 128, 128);
+    withStripes(ctx, 128, spec, (i, x, w) => {
+      ctx.fillStyle = i % 2 === 0 ? "rgba(172,220,140,.16)" : "rgba(0,25,12,.16)";
+      ctx.fillRect(x, 0, w, 256);
+    });
+    if (spec.cross) {
+      ctx.save();
+      ctx.translate(64, 64);
+      ctx.rotate(spec.angle + Math.PI / 2);
+      ctx.translate(-128, -128);
+      for (let i = 0; i < spec.count; i += 2) {
+        ctx.fillStyle = "rgba(172,220,140,.09)";
+        ctx.fillRect((i * 256) / spec.count, 0, 256 / spec.count, 256);
+      }
+      ctx.restore();
+    }
+    if (spec.rings)
+      for (let r = 8; r < 90; r += 8) {
+        ctx.strokeStyle = "rgba(172,220,140,.1)";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(64, 64, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    const texture = new THREE.CanvasTexture(c);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+    return texture;
+  });
+}
 
 export function retainGrassMaps(albedo: THREE.Texture | null, roughness: THREE.Texture | null) {
   const releaseAlbedo = _albedo.retain(albedo);
   const releaseRoughness = _rough.retain(roughness);
-  const releaseDetail = retainTurfDetail();
+  const releasePreview = _preview.retain(albedo);
   return () => {
     releaseAlbedo();
     releaseRoughness();
-    releaseDetail();
+    releasePreview();
   };
 }
 

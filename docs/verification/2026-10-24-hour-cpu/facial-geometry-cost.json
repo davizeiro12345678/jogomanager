@@ -1,0 +1,148 @@
+{
+  "baseline": "467b735",
+  "fixture": "studio-fla-MF-1",
+  "data": [
+    {
+      "portrait": false,
+      "hi": false,
+      "topology": "standard",
+      "before": {
+        "vertices": 3000,
+        "triangles": 4734,
+        "parts": 28,
+        "materials": 7
+      },
+      "after": {
+        "vertices": 3000,
+        "triangles": 4734,
+        "parts": 28,
+        "materials": 7
+      }
+    },
+    {
+      "portrait": false,
+      "hi": false,
+      "topology": "ultra",
+      "before": {
+        "vertices": 3000,
+        "triangles": 4734,
+        "parts": 28,
+        "materials": 7
+      },
+      "after": {
+        "vertices": 3000,
+        "triangles": 4734,
+        "parts": 28,
+        "materials": 7
+      }
+    },
+    {
+      "portrait": false,
+      "hi": true,
+      "topology": "standard",
+      "before": {
+        "vertices": 14816,
+        "triangles": 27660,
+        "parts": 28,
+        "materials": 7
+      },
+      "after": {
+        "vertices": 14816,
+        "triangles": 27660,
+        "parts": 28,
+        "materials": 7
+      }
+    },
+    {
+      "portrait": false,
+      "hi": true,
+      "topology": "ultra",
+      "before": {
+        "vertices": 64052,
+        "triangles": 125324,
+        "parts": 28,
+        "materials": 7
+      },
+      "after": {
+        "vertices": 64052,
+        "triangles": 125324,
+        "parts": 28,
+        "materials": 7
+      }
+    },
+    {
+      "portrait": true,
+      "hi": false,
+      "topology": "standard",
+      "before": {
+        "vertices": 3000,
+        "triangles": 4734,
+        "parts": 28,
+        "materials": 7
+      },
+      "after": {
+        "vertices": 3000,
+        "triangles": 4734,
+        "parts": 28,
+        "materials": 7
+      }
+    },
+    {
+      "portrait": true,
+      "hi": false,
+      "topology": "ultra",
+      "before": {
+        "vertices": 3000,
+        "triangles": 4734,
+        "parts": 28,
+        "materials": 7
+      },
+      "after": {
+        "vertices": 3000,
+        "triangles": 4734,
+        "parts": 28,
+        "materials": 7
+      }
+    },
+    {
+      "portrait": true,
+      "hi": true,
+      "topology": "standard",
+      "before": {
+        "vertices": 28258,
+        "triangles": 54252,
+        "parts": 28,
+        "materials": 7
+      },
+      "after": {
+        "vertices": 28258,
+        "triangles": 54252,
+        "parts": 28,
+        "materials": 7
+      }
+    },
+    {
+      "portrait": true,
+      "hi": true,
+      "topology": "ultra",
+      "before": {
+        "vertices": 94676,
+        "triangles": 186252,
+        "parts": 28,
+        "materials": 7
+      },
+      "after": {
+        "vertices": 94676,
+        "triangles": 186252,
+        "parts": 28,
+        "materials": 7
+      }
+    }
+  ],
+  "candidate": "working tree after facial anatomy and swept-hair pass",
+  "scope": "face builder only, not whole rig or FPS",
+  "source_sha256": {
+    "src/game/player-sculpt.ts": "8578c5622b2d88c445a324fd885fff4cc546d50e2a8430388feff4ef2d9bf11a",
+    "src/game/sculpt/head.ts": "eb9f93f2fc24abdeaeb11a7342c85d156217d41f51eddbeab4cc2677ebd4bac6"
+  }
+}

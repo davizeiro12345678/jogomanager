@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { ktx2, needsKtx2ProceduralFallback, type ExtraKtx2Name } from "@/game/textures/ktx2";
 
 type Surface = "tile" | "wood" | "wall" | "grass" | "asphalt";
 type SurfaceChannel = "color" | "normal" | "roughness";
@@ -227,7 +228,21 @@ function surfaceMaps(kind: Surface) {
 
 /** Small, shared authored PBR maps: no downloads or per-frame generation. */
 export function cinematicSurface(kind: Surface, channel: SurfaceChannel = "color") {
-  return surfaceMaps(kind)?.[channel] ?? null;
+  const suffix = channel === "color" ? "albedo" : channel === "roughness" ? "rough" : "normal";
+  const name =
+    kind === "grass"
+      ? channel === "color"
+        ? "grass_blade_albedo"
+        : channel === "normal"
+          ? "grassNormal"
+          : "grassDetailRough"
+      : kind === "asphalt"
+        ? (`stadium_asphalt_${suffix}` as ExtraKtx2Name)
+        : (`cinema_${kind}_${suffix}` as ExtraKtx2Name);
+  return (
+    ktx2(name) ??
+    (needsKtx2ProceduralFallback(name) ? (surfaceMaps(kind)?.[channel] ?? null) : null)
+  );
 }
 
 /** A complete sponsor wall replaces 24 blank rectangles with a single surface. */

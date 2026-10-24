@@ -60,3 +60,31 @@ it("caches unavailable or incompatible binaries as safe optional fallbacks", asy
     expect(runtime.stats.failures).toBe(1);
   }
 });
+
+it("shares a verified memory across rig, weather and net consumers without reinitializing", async () => {
+  const memory = new WebAssembly.Memory({ initial: 1 });
+  const module = {
+    ...moduleFor(1, 128 | 256 | 512),
+    default: vi.fn(async () => ({ memory })),
+  };
+  const runtime = new WasmRuntime(async () => module);
+  expect(runtime.memory).toBeNull();
+  expect(await Promise.all([runtime.load(128), runtime.load(256), runtime.load(512)])).toEqual([
+    module,
+    module,
+    module,
+  ]);
+  expect(runtime.memory).toBe(memory);
+  expect(module.default).toHaveBeenCalledOnce();
+});
+
+it("does not publish memory from an incompatible binary", async () => {
+  const module = {
+    ...moduleFor(9, 1023),
+    default: vi.fn(async () => ({ memory: new WebAssembly.Memory({ initial: 1 }) })),
+  };
+  const runtime = new WasmRuntime(async () => module);
+  expect(await runtime.load(512)).toBeNull();
+  expect(runtime.memory).toBeNull();
+  expect(runtime.stats.failures).toBe(1);
+});

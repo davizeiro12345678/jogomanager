@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { createPortal } from "@react-three/fiber";
+import { createPortal, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { Speaker } from "@/content/cutscenes";
 import { cinematicActorPose, cinematicIdleAt, cinematicLook } from "@/game/cinematic-actor";
 import { cinematicDetail, cinematicHairMotionDriveAt } from "@/game/cinematic-performance";
+import { CinematicPoseBudget, cinematicActorBounds } from "@/game/cinematic-pose-budget";
 import {
   advanceAthleteHairMotion,
   createAthleteHairMotionState,
@@ -19,7 +20,8 @@ import {
   cinematicDrillFor,
   cinematicDrillPose,
 } from "@/game/cinematic-action";
-import { emptyPose, mixPose } from "@/game/animation-core";
+import { emptyPose } from "@/game/animation-core";
+import { AthletePoseBlender } from "@/game/athlete-pose-blender";
 import { proportionsFor } from "@/game/player-model";
 import { faceMorphology } from "@/game/player-morphology";
 import {
@@ -82,21 +84,36 @@ export function CinematicActor({
   costume?: "staff" | "player";
 }) {
   const runtime = useCinematicRuntime();
+  const camera = useThree((state) => state.camera);
+  const poseBudget = useMemo(() => new CinematicPoseBudget(), []);
   const staff = costume === "staff" || Boolean(role && role !== "captain" && role !== "fan");
-  const formal = role === "president" || role === "agent";
+  const formal =
+    role === "president" || role === "agent" || (role === "manager" && runtime.look?.outfit === 0);
   const identity =
     role === "manager" ? runtime.look : role ? runtime.cast?.[role]?.look : undefined;
   const look = useMemo(
     () => ({
       ...cinematicLook(seed, identity),
-      sleeves: staff ? ("long" as const) : ("short" as const),
+      sleeves:
+        staff && !(role === "manager" && identity?.outfit === 2)
+          ? ("long" as const)
+          : ("short" as const),
       collar: staff ? (formal ? ("v" as const) : ("polo" as const)) : ("crew" as const),
       ...(staff ? { bootColor: "#1b2029", bootAccent: formal ? "#dce5eb" : "#69717c" } : {}),
     }),
-    [seed, identity, staff, formal],
+    [seed, identity, staff, formal, role],
   );
   const facialShape = useMemo(() => faceMorphology(look.seed), [look.seed]);
   const p = useMemo(() => proportionsFor(look), [look]);
+  const bounds = useMemo(() => {
+    const envelope = cinematicActorBounds(look.height * 1.8);
+    return {
+      local: new THREE.Sphere(new THREE.Vector3(0, envelope.centerY, 0), envelope.radius),
+      world: new THREE.Sphere(),
+      projection: new THREE.Matrix4(),
+      frustum: new THREE.Frustum(),
+    };
+  }, [look.height]);
   const kit = useMemo<Kit>(
     () => ({
       base: formal ? "#283744" : color,
@@ -117,10 +134,10 @@ export function CinematicActor({
       ? look.hairStyle
       : "none";
   // Close-up dialogue exposes pores, fabric, hair direction and boot grain.
-  // A cutscene normally has one or two narrative subjects, so their physical
-  // material pass can start at the balanced tier while extras remain on the
-  // inexpensive standard surfaces.
-  const materialQuality = detail.portrait ? "alta" : "media";
+  // Balanced retains portrait geometry and normal maps. Physical coat/sheen
+  // shading is reserved for high, instead of silently enabling it for every
+  // speaking actor on integrated GPUs and small creation previews.
+  const materialQuality = detail.high ? "alta" : "media";
   useEffect(() => {
     if (detail.portrait) requestKtx2(detailTextureNames(look, kit));
   }, [detail.portrait, look, kit]);
@@ -171,7 +188,7 @@ export function CinematicActor({
   const target = useRef(emptyPose());
   const drillScratch = useRef(emptyPose());
   const mouthPose = useRef<MouthPose>({ open: 0.015, wide: 0.1, round: 0 });
-  const current = useRef(emptyPose());
+  const poseBlender = useMemo(() => new AthletePoseBlender(), []);
   const first = useRef(true);
   const listening = useRef(new CinematicGaze());
   const hairMotion = useRef(createAthleteHairMotionState());
@@ -191,16 +208,29 @@ export function CinematicActor({
         mesh.skeleton = skin.skeleton;
         mesh.bindMatrix.copy(skin.bindMatrix);
         mesh.bindMatrixInverse.copy(skin.bindMatrix).invert();
-        mesh.frustumCulled = false;
+        mesh.boundingSphere = bounds.local.clone();
+        mesh.frustumCulled = true;
         mesh.castShadow =
           runtime.quality !== "baixa" && part.castShadow && part.lod === "core" && narrativeSubject;
         return mesh;
       }),
-    [skin, runtime.quality, narrativeSubject, cloth],
+    [skin, runtime.quality, narrativeSubject, cloth, bounds],
   );
   useEffect(() => () => skin.dispose(), [skin]);
-  useCinematicFrame((time, dt) => {
-    if (dt === 0 && !first.current) return;
+  useCinematicFrame((time, rawDt) => {
+    if (rawDt === 0 && !first.current) return;
+    if (group.current) {
+      group.current.updateWorldMatrix(true, false);
+      bounds.world.copy(bounds.local).applyMatrix4(group.current.matrixWorld);
+    }
+    bounds.projection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    bounds.frustum.setFromProjectionMatrix(bounds.projection);
+    const inFrame = !group.current || bounds.frustum.intersectsSphere(bounds.world);
+    // Absolute scene time still drives authored poses. Only secondary work
+    // for listeners/offscreen actors is coalesced; a principal stays full rate.
+    const sampled = poseBudget.sample(rawDt, inFrame, narrativeSubject, first.current);
+    if (sampled === null) return;
+    const dt = sampled;
     const arriving = entrance && time < 4.8;
     const posture = arriving ? "walk" : pose;
     cinematicActorPose(
@@ -238,13 +268,14 @@ export function CinematicActor({
       !holdingTrophy && !exercise && !recovery && !clipboard && !acting && idle.kind === "cross"
         ? idle.weight
         : 0;
-    mixPose(
-      current.current,
-      target.current,
-      first.current || runtime.reduced ? 1 : 1 - Math.exp(-12 * dt),
-      current.current,
-    );
-    const c = current.current,
+    // Blend only at a change of performance, carrying outgoing momentum.
+    // A permanent low-pass delayed every gesture, footstep and ball contact.
+    const c = poseBlender.sample(target.current, dt, {
+        clip: `${posture}:${acting}:${runtime.cue?.id ?? "idle"}:${drillIndex ?? "none"}`,
+        action: null,
+        progress: 0,
+        instant: first.current || runtime.reduced,
+      }),
       b = skin.boneOf;
     const wantedYaw = attention
       ? cinematicAttentionYaw(drill?.x ?? x, drill?.z ?? z, drill?.yaw ?? rot, attention)
@@ -411,7 +442,7 @@ export function CinematicActor({
       lift: Math.max(0, c.hipY),
       effort: exercise || drill ? 0.7 : acting ? 0.2 : 0,
       bend: Math.abs(c.spine) + Math.abs(c.legLPitch - c.legRPitch) * 0.18,
-      yaw: rot,
+      yaw: rot + c.hipYaw + c.chest,
       roll: c.hipRoll,
       legL: Math.min(1, Math.abs(c.kneeL) * 0.58 + Math.abs(c.legLPitch) * 0.24),
       legR: Math.min(1, Math.abs(c.kneeR) * 0.58 + Math.abs(c.legRPitch) * 0.24),
@@ -450,7 +481,13 @@ export function CinematicActor({
     }
   });
   return (
-    <group ref={group} position={[x, 0, z]} rotation-y={rot} scale={scale} dispose={null}>
+    <group
+      ref={group}
+      position={[x, 0, z]}
+      rotation-y={rot}
+      scale={scale}
+      userData={{ cinematicDynamic: true }}
+    >
       <primitive object={skin.root} />
       {meshes.map((mesh) => (
         <primitive key={mesh.uuid} object={mesh} />

@@ -1,0 +1,17 @@
+{
+  "baseline": "72389e64",
+  "results": [
+    {
+      "observed": false,
+      "ticks": 360,
+      "exactState": true,
+      "exactCheckpoints": 360
+    },
+    {
+      "observed": true,
+      "ticks": 360,
+      "exactState": true,
+      "exactCheckpoints": 360
+    }
+  ]
+}

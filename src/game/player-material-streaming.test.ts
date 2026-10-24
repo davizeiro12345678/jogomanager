@@ -5,20 +5,19 @@ import { lookFor } from "./player-model";
 
 const stream = vi.hoisted(() => ({
   loaded: new Map<string, unknown>(),
-  listeners: new Set<(reset?: boolean) => void>(),
+  listeners: new Set<() => void>(),
 }));
 
 vi.mock("./textures/ktx2", () => ({
   ktx2: (name: string) => stream.loaded.get(name) ?? null,
   needsKtx2ProceduralFallback: (_name: string) => false,
-  onKtx2Ready: (listener: (reset?: boolean) => void) => {
+  onKtx2Ready: (listener: () => void) => {
     stream.listeners.add(listener);
     return () => stream.listeners.delete(listener);
   },
 }));
 
 import { detailTextureNames, playerMaterials, retainPlayerMaterials } from "./player-materials";
-import { gloveLatexNormal } from "./textures/fabric";
 
 const kit: Kit = {
   base: "#cc2028",
@@ -35,23 +34,7 @@ function arrive(name: string, texture: THREE.Texture) {
 
 afterEach(() => {
   stream.loaded.clear();
-  for (const listener of stream.listeners) listener(true);
-});
-
-it("refreshes only mounted uniforms on arrival and reacquires maps when an inactive cached uniform mounts", () => {
-  const look = lookFor("inactive-stream-cache", "MF");
-  const set = playerMaterials(look, kit, new THREE.Texture(), "alta");
-  const material = set.skin as THREE.MeshStandardMaterial;
-  const prior = material.normalMap;
-  const texture = new THREE.Texture();
-  arrive(detailTextureNames(look, kit)[5], texture);
-  expect(material.normalMap).toBe(prior);
-  const release = retainPlayerMaterials(set);
-  expect(material.normalMap).toBe(texture);
-  release();
-  stream.loaded.clear();
-  for (const listener of stream.listeners) listener(true);
-  expect(material.normalMap).not.toBe(texture);
+  for (const listener of stream.listeners) listener();
 });
 
 it("streams skin and fabric maps without replacing a mounted athlete's materials", () => {
@@ -59,6 +42,7 @@ it("streams skin and fabric maps without replacing a mounted athlete's materials
   const atlas = new THREE.Texture();
   const surface = { sweat: 1, dirt: 1, wet: 0 } as const;
   const set = playerMaterials(look, kit, atlas, "alta", surface);
+  const initialGlove = (set.glove as THREE.MeshStandardMaterial).normalMap;
   const dispose = vi.spyOn(set.jersey, "dispose");
   const release = retainPlayerMaterials(set);
   const roughness = (set.jersey as THREE.MeshStandardMaterial).roughness;
@@ -76,7 +60,10 @@ it("streams skin and fabric maps without replacing a mounted athlete's materials
   expect(playerMaterials(look, kit, atlas, "alta", surface)).toBe(set);
   expect((set.jersey as THREE.MeshStandardMaterial).normalMap).toBe(fabric);
   expect((set.jerseyPlain as THREE.MeshStandardMaterial).normalMap).toBe(fabric);
-  expect((set.glove as THREE.MeshStandardMaterial).normalMap).toBe(gloveLatexNormal());
+  expect((set.glove as THREE.MeshStandardMaterial).normalMap).toBe(initialGlove);
+  const glove = new THREE.Texture();
+  arrive("glove_normal", glove);
+  expect((set.glove as THREE.MeshStandardMaterial).normalMap).toBe(glove);
   expect((set.skin as THREE.MeshStandardMaterial).normalMap).toBe(skin);
   expect((set.shorts as THREE.MeshStandardMaterial).normalMap).toBe(shorts);
   expect((set.jersey as THREE.MeshStandardMaterial).roughnessMap).toBe(rough);
@@ -92,7 +79,6 @@ it("keeps shader versions stable when a compressed map replaces an existing map"
   const look = lookFor("stable-fabric-program", "FW");
   const atlas = new THREE.Texture();
   const set = playerMaterials(look, kit, atlas, "alta");
-  const release = retainPlayerMaterials(set);
   const material = set.jersey as THREE.MeshStandardMaterial;
   const version = material.version;
   const compressed = new THREE.Texture();
@@ -105,7 +91,6 @@ it("keeps shader versions stable when a compressed map replaces an existing map"
   const otherUv = new THREE.Texture();
   arrive(detailTextureNames(look, kit)[0], otherUv);
   expect(material.version).toBeGreaterThan(version);
-  release();
 });
 
 it("updates retained, evicted materials until their final owner releases them", () => {
@@ -130,7 +115,6 @@ it("updates retained, evicted materials until their final owner releases them", 
 it("keeps all high-quality shader features stable as sweat, hair, boot and shin maps arrive", () => {
   const look = lookFor("stable-detail-programs", "MF");
   const set = playerMaterials(look, kit, new THREE.Texture(), "alta");
-  const release = retainPlayerMaterials(set);
   const versions = Object.values(set).map((material) => material.version);
   for (const name of [
     "hairNormal",
@@ -145,7 +129,6 @@ it("keeps all high-quality shader features stable as sweat, hair, boot and shin 
   }
   for (const name of detailTextureNames(look, kit)) arrive(name, new THREE.Texture());
   expect(Object.values(set).map((material) => material.version)).toEqual(versions);
-  release();
 });
 
 it("keeps compressed microdetail out of medium and low-quality shader features", () => {

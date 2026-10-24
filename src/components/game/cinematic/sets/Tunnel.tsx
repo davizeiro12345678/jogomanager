@@ -1,10 +1,21 @@
+import { TunnelDust } from "./Particles";
+
+import type { Speaker } from "@/content/cutscenes";
+
 import { CinematicActor as Figure } from "../CinematicActor";
+
 import { useCinematicArtwork } from "../cinematic-artwork";
 import { cinematicSurface } from "../cinematic-surfaces";
-import { TunnelDust } from "./shared";
-import type { CinematicSetProps } from "./types";
 
-export function Tunnel({ primary, secondary, speaker }: CinematicSetProps) {
+export function Tunnel({
+  primary,
+  secondary,
+  speaker,
+}: {
+  primary: string;
+  secondary: string;
+  speaker: Speaker | null;
+}) {
   const vista = useCinematicArtwork("stadium", primary, secondary, "tunnel");
   return (
     <group>
@@ -19,6 +30,7 @@ export function Tunnel({ primary, secondary, speaker }: CinematicSetProps) {
           roughness={0.82}
         />
       </mesh>
+      {/* arcos do túnel */}
       {Array.from({ length: 10 }).map((_, i) => (
         <group key={i} position={[0, 0, 3 - i * 1.5]}>
           <mesh position={[-3.3, 1.7, 0]} receiveShadow>
@@ -39,6 +51,7 @@ export function Tunnel({ primary, secondary, speaker }: CinematicSetProps) {
           </mesh>
         </group>
       ))}
+      {/* faixas LED nas laterais */}
       <mesh position={[-3.16, 2.5, -4]}>
         <boxGeometry args={[0.04, 0.09, 20]} />
         <meshBasicMaterial color={secondary} toneMapped={false} />
@@ -47,6 +60,7 @@ export function Tunnel({ primary, secondary, speaker }: CinematicSetProps) {
         <boxGeometry args={[0.04, 0.09, 20]} />
         <meshBasicMaterial color={secondary} toneMapped={false} />
       </mesh>
+      {/* fila de atletas */}
       {Array.from({ length: 8 }).map((_, i) => (
         <Figure
           key={i}
@@ -59,6 +73,7 @@ export function Tunnel({ primary, secondary, speaker }: CinematicSetProps) {
           acting={i === 0 && speaker === "captain"}
         />
       ))}
+      {/* boca do túnel */}
       <mesh position={[0, 1.9, -12]}>
         <planeGeometry args={[6.6, 3.8]} />
         <meshBasicMaterial map={vista} color="#e6fff0" toneMapped={false} />

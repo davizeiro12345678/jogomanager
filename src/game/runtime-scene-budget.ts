@@ -92,19 +92,18 @@ const BASE: Record<GraphicsTier, BudgetBase> = {
   },
 };
 
-const clampStage = (stage: number) =>
-  Number.isFinite(stage) ? Math.max(0, Math.min(8, Math.floor(stage))) : 0;
+const clampStage = (stage: number) => Math.max(0, Math.min(8, Math.floor(stage)));
 
 /** Resolve a visible, bounded scene at every quality-pressure stage. */
 export function resolveRuntimeSceneBudget(tier: GraphicsTier, rawStage = 0): RuntimeSceneBudget {
   const stage = clampStage(rawStage);
   const base = BASE[tier];
-  const resolutionScale = stage >= 3 ? 0.66 : stage >= 2 ? 0.76 : stage >= 1 ? 0.88 : 1;
+  const resolutionScale = stage >= 2 ? 0.76 : stage >= 1 ? 0.88 : 1;
   const textureScale = stage >= 7 ? 0.5 : stage >= 5 ? 0.75 : 1;
   const grassScale = stage >= 4 ? 0.32 : stage >= 3 ? 0.58 : 1;
   const crowdScale = stage >= 6 ? 0.42 : stage >= 5 ? 0.62 : stage >= 4 ? 0.78 : 1;
   const propScale = stage >= 6 ? 0.48 : stage >= 5 ? 0.7 : 1;
-  const effectsScale = stage >= 7 ? 0.18 : stage >= 4 ? 0.46 : stage >= 2 ? 0.72 : 1;
+  const effectsScale = stage >= 7 ? 0.18 : stage >= 6 ? 0.46 : 1;
   // Heróis são a última alavanca: só caem quando o governador já espremeu o
   // resto da cena (estágio 7+). A quantidade inicial é derivada do orçamento
   // medido em `MatchPlayers` (`draw-budget.ts`).
@@ -126,8 +125,7 @@ export function resolveRuntimeSceneBudget(tier: GraphicsTier, rawStage = 0): Run
     replayHeroPlayers: Math.max(0, Math.round(base.replayHeroPlayers * heroScale)),
     weatherDensity: base.weatherDensity * effectsScale,
     goalFxDensity: base.goalFxDensity * effectsScale,
-    // Dynamic shadows are the biggest GPU cost on phones; drop them before crowd/heroes.
-    shadows: stage < 3,
-    post: stage >= 2 ? "off" : stage >= 1 && base.post === "cinema" ? "balanced" : base.post,
+    shadows: stage < 6,
+    post: stage >= 7 ? "off" : stage >= 6 && base.post === "cinema" ? "balanced" : base.post,
   };
 }

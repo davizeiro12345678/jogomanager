@@ -33,7 +33,7 @@ export default function CinematicLens({
   const runtime = useCinematicRuntime();
   const depth = useRef<DepthOfFieldEffect>(null);
   const aberration = useMemo(
-    () => new THREE.Vector2(0.00045 + intensity * 0.00045, 0.00075 + intensity * 0.0005),
+    () => new THREE.Vector2(0.0001125 + intensity * 0.0001125, 0.0001875 + intensity * 0.000125),
     [intensity],
   );
   useFrame(() => {
@@ -45,7 +45,7 @@ export default function CinematicLens({
       key={quality}
       enableNormalPass={false}
       multisampling={0}
-      resolutionScale={quality === "alta" ? 0.85 : 0.7}
+      resolutionScale={quality === "alta" ? 1 : 0.85}
     >
       {quality === "alta" ? (
         <N8AO
@@ -63,9 +63,9 @@ export default function CinematicLens({
         <DepthOfField
           ref={depth}
           target={runtime.focus}
-          worldFocusRange={climax ? 1.2 : 1.8}
+          worldFocusRange={climax ? 1.8 : 2.4}
           focalLength={climax ? 0.038 : 0.026}
-          bokehScale={climax ? 0.82 : 0.54}
+          bokehScale={climax ? 0.65 : 0.35}
           resolutionScale={0.62}
         />
       ) : (
@@ -82,18 +82,11 @@ export default function CinematicLens({
       ) : (
         <></>
       )}
-      {/* Mood grade: warm and lively for good news, cool and muted for bad, neutral otherwise. */}
-      <HueSaturation
-        hue={mood === "good" ? 0.018 : mood === "bad" ? -0.035 : 0}
-        saturation={mood === "good" ? 0.06 : mood === "bad" ? -0.1 : -0.025}
-      />
-      <BrightnessContrast
-        brightness={mood === "good" ? 0.022 : mood === "bad" ? -0.006 : 0.012}
-        contrast={climax ? 0.08 : mood === "bad" ? 0.06 : 0.045}
-      />
+      <HueSaturation saturation={mood === "bad" ? -0.07 : -0.025} />
+      <BrightnessContrast brightness={0.012} contrast={climax ? 0.07 : 0.045} />
       <Vignette offset={climax ? 0.18 : 0.22} darkness={climax ? 0.31 : 0.24} />
       {quality === "alta" ? (
-        <Noise opacity={mood === "bad" ? 0.028 : 0.018} blendFunction={BlendFunction.OVERLAY} />
+        <Noise opacity={mood === "bad" ? 0.008 : 0.004} blendFunction={BlendFunction.OVERLAY} />
       ) : (
         <></>
       )}

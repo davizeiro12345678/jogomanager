@@ -9,6 +9,8 @@ export const WASM_CAPABILITY = {
   reusableCrowdOutput: 32,
   boundedPerception: 64,
   rigSection: 128,
+  weatherFloat32: 256,
+  netFloat32: 512,
 } as const;
 export type GameWasmModule = typeof import("./pkg/crowd_visibility_wasm");
 type AbiModule = {
@@ -18,6 +20,7 @@ type AbiModule = {
 };
 
 export class WasmRuntime<M extends AbiModule> {
+  memory: WebAssembly.Memory | null = null;
   private pending: Promise<M | null> | undefined;
   readonly stats = { loads: 0, failures: 0, timeouts: 0, abi: 0, capabilities: 0 };
   private readonly importer: () => Promise<M>;
@@ -52,7 +55,8 @@ export class WasmRuntime<M extends AbiModule> {
     this.stats.loads++;
     try {
       const module = await this.importer();
-      await module.default();
+      const instance = await module.default();
+      const memory = (instance as { memory?: unknown } | null)?.memory;
       if (
         typeof module.wasm_abi_version !== "function" ||
         typeof module.wasm_capabilities !== "function"
@@ -69,8 +73,10 @@ export class WasmRuntime<M extends AbiModule> {
         throw new Error("Unsupported WASM ABI");
       this.stats.abi = abi;
       this.stats.capabilities = capabilities;
+      if (memory instanceof WebAssembly.Memory) this.memory = memory;
       return module;
     } catch {
+      this.memory = null;
       this.stats.failures++;
       return null;
     }
@@ -79,5 +85,6 @@ export class WasmRuntime<M extends AbiModule> {
 
 const runtime = new WasmRuntime<GameWasmModule>(() => import("./pkg/crowd_visibility_wasm"));
 export const gameWasmStats = runtime.stats;
+export const gameWasmMemory = () => runtime.memory;
 export const loadGameWasm = (required: number, deadline?: number) =>
   runtime.load(required, deadline);

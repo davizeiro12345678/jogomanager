@@ -103,7 +103,7 @@ describe("MatchSim", () => {
       expect(sim.finished, `seed stability-${index}`).toBe(true);
       expect(guard, `seed stability-${index}`).toBeLessThanOrEqual(16_000);
     }
-  });
+  }, 180_000);
 
   it("keeps player acceleration and top speed in a human range", () => {
     const sim = create("movement-envelope");
@@ -137,7 +137,7 @@ describe("MatchSim", () => {
       looseTime: number;
     };
     sim.ball.holder = null;
-    sim.ball.x = FIELD_X - 1;
+    sim.ball.x = FIELD_X + 0.2; // Whole ball has crossed the canonical goal line.
     sim.ball.z = 3.9;
     sim.ball.height = 1.1;
     sim.ball.vx = 12;

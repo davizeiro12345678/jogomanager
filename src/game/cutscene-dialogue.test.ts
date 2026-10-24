@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Cutscene, CutsceneLine } from "@/content/cutscenes";
+import { CUTSCENES, type Cutscene, type CutsceneLine } from "@/content/cutscenes";
 import { cinematicCueFor } from "./cinematic-cue";
 import { cinematicExpressionAt } from "./cinematic-expression";
 import { cutsceneBranch } from "./cutscene-choice";
@@ -133,5 +133,33 @@ describe("cutscene dialogue reactions", () => {
     expect(listener.headRoll).not.toBeCloseTo(idleOnly.headRoll, 6);
     expect(listener.gazeY).not.toBeCloseTo(idleOnly.gazeY, 8);
     expect(Object.values(listener).every(Number.isFinite)).toBe(true);
+  });
+
+  it("maps an indirect agent response to the real player behind the negotiation", () => {
+    const scene = CUTSCENES["agent-demands"]!;
+    const lineIndex = scene.lines.findIndex((line) => line.choices?.length);
+    const receptive = cutsceneBranch(scene.lines, lineIndex, 0, {
+      participants: {
+        agent: {
+          playerId: "star",
+          relationship: { trust: 88, respect: 82 },
+          personality: "ambicioso",
+        },
+      },
+    })!;
+    const resistant = cutsceneBranch(scene.lines, lineIndex, 1, {
+      participants: {
+        agent: {
+          playerId: "star",
+          relationship: { trust: 18, respect: 22 },
+          personality: "temperamental",
+        },
+      },
+    })!;
+    expect(receptive.reaction).toMatchObject({ responder: "agent", playerId: "star" });
+    expect(receptive.reaction!.support).toBeGreaterThan(receptive.reaction!.resistance);
+    expect(receptive.reaction!.trustDelta).toBeGreaterThan(0);
+    expect(resistant.reaction!.resistance).toBeGreaterThan(resistant.reaction!.support);
+    expect(resistant.reaction!.trustDelta).toBeLessThan(0);
   });
 });

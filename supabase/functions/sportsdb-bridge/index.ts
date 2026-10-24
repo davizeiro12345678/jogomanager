@@ -57,7 +57,7 @@ async function source(params: Record<string, string>, schedulerToken: string) {
   }
 }
 
-Deno.serve(async (request) => {
+async function handleRequest(request: Request): Promise<Response> {
   if (request.method !== "POST") return Response.json({ error: "POST required" }, { status: 405 });
   const token = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
   if (new URL(request.url).pathname.endsWith("/authorize")) {
@@ -155,9 +155,23 @@ Deno.serve(async (request) => {
       archives,
       source_complete: sourceComplete(status),
     });
-  } catch (error) {
-    const message = String(error).slice(0, 300);
-    await rpc("sportsdb_bridge_release", { p_owner: owner, p_error: message });
+  } catch {
+    const message = "SportsDB bridge failed";
+    try {
+      await rpc("sportsdb_bridge_release", { p_owner: owner, p_error: message });
+    } catch {
+      console.error("sportsdb-bridge lease release failed");
+    }
+    console.error("sportsdb-bridge sync failed");
     return Response.json({ error: message, pages, archives }, { status: 503 });
+  }
+}
+
+Deno.serve(async (request) => {
+  try {
+    return await handleRequest(request);
+  } catch {
+    console.error("sportsdb-bridge request failed");
+    return Response.json({ error: "SportsDB bridge failed" }, { status: 503 });
   }
 });

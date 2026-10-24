@@ -55,8 +55,10 @@ it("rolls mirrored shoulder domes into the torso above their pivot without separ
 it("gives adult fingers and boot instep readable volume without changing sole contact height", () => {
   const p = proportionsFor(lookFor("hand-boot-silhouette", "MF"));
   const handLength = p.handR * (FINGER_CENTERS_Y[1] + FINGER_LENGTHS[1] * 0.5);
-  expect(handLength / (p.upperArm + p.foreArm)).toBeGreaterThan(0.25);
-  expect(handLength / (p.upperArm + p.foreArm)).toBeLessThan(0.35);
+  // The previous 25–35% envelope retained visibly oversized hands. Keep the
+  // smaller adult hand readable without using finger width as a LOD aid.
+  expect(handLength / (p.upperArm + p.foreArm)).toBeGreaterThan(0.22);
+  expect(handLength / (p.upperArm + p.foreArm)).toBeLessThan(0.3);
   const upper = footballBoot(p.footLen, p.footH, 16);
   const sole = footballBoot(p.footLen, p.footH, 16, true);
   upper.computeBoundingBox();

@@ -3,7 +3,10 @@ import type { PlayerAction } from "./animation";
 import type { Replay, ReplayFrame, ReplayPlayerMeta } from "./replay";
 import type { TeamSetup } from "./sim";
 import type { VersionedVisualData } from "./visual-context";
-import { validExecutionContract, type MatchExecutionContract } from "./match-execution-contract";
+import {
+  validRecordedExecutionContract,
+  type RecordedMatchExecutionContract,
+} from "./recorded-execution-contract";
 import { validMatchTeam } from "./match-command-validation";
 
 export const REPLAY_FORMAT_V2 = 2;
@@ -12,7 +15,7 @@ export const REPLAY_V3_MIN_REDUCTION = 0.2;
 const QUANTIZE = 100;
 
 export type StoredReplayV3 = {
-  execution?: MatchExecutionContract;
+  execution?: RecordedMatchExecutionContract;
   version: typeof REPLAY_FORMAT_V3;
   id: string;
   createdAt: number;
@@ -36,7 +39,8 @@ export type StoredReplayV2 = Replay & { version: typeof REPLAY_FORMAT_V2 };
 export type StoredReplay = StoredReplayV2 | StoredReplayV3;
 
 function integer(value: number) {
-  return Math.max(-32_768, Math.min(32_767, Math.round(value * QUANTIZE)));
+  const rounded = Math.round(value * QUANTIZE);
+  return rounded < -32_768 ? -32_768 : rounded > 32_767 ? 32_767 : rounded;
 }
 
 function numeric(values: Int16Array | Uint8Array | Uint16Array | Uint32Array, index: number) {
@@ -56,7 +60,8 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
   const hasVisual = frames.some((frame) => frame.v !== undefined);
   const visual = hasVisual ? frames.map((frame) => frame.v ?? null) : undefined;
 
-  frames.forEach((frame, frameIndex) => {
+  for (let frameIndex = 0; frameIndex < frames.length; frameIndex++) {
+    const frame = frames[frameIndex]!;
     const timeMs = Math.max(previousTimeMs, Math.round(frame.t * 1_000));
     timesMs[frameIndex] = timeMs - previousTimeMs;
     previousTimeMs = timeMs;
@@ -65,16 +70,19 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
     score[frameIndex * 2] = Math.max(0, Math.min(65_535, frame.hg));
     score[frameIndex * 2 + 1] = Math.max(0, Math.min(65_535, frame.ag));
     possession[frameIndex] = frame.poss === "away" ? 1 : 0;
+    const frameBase = frameIndex * playerCount;
+    const coords = frame.p;
+    const frameActions = frame.a;
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
       const source = playerIndex * 4;
-      const target = (frameIndex * playerCount + playerIndex) * 4;
-      positions[target] = integer(frame.p[source] ?? 0 / 1);
-      positions[target + 1] = integer(frame.p[source + 1] ?? 0 / 1);
-      positions[target + 2] = integer(frame.p[source + 2] ?? 0 / 1);
-      positions[target + 3] = integer(frame.p[source + 3] ?? 0 / 1);
-      actions[frameIndex * playerCount + playerIndex] = actionCode(frame.a[playerIndex] ?? null);
+      const target = (frameBase + playerIndex) * 4;
+      positions[target] = integer(coords[source] ?? 0 / 1);
+      positions[target + 1] = integer(coords[source + 1] ?? 0 / 1);
+      positions[target + 2] = integer(coords[source + 2] ?? 0 / 1);
+      positions[target + 3] = integer(coords[source + 3] ?? 0 / 1);
+      actions[frameBase + playerIndex] = actionCode(frameActions[playerIndex] ?? null);
     }
-  });
+  }
 
   return {
     version: REPLAY_FORMAT_V3,
@@ -186,7 +194,7 @@ function validateReplayInput(raw: object): void {
     !Array.isArray(replay["score"]) ||
     replay["score"].length !== 2 ||
     !replay["score"].every((v) => Number.isInteger(v) && v >= 0 && v <= 65535) ||
-    (replay["execution"] !== undefined && !validExecutionContract(replay["execution"]))
+    (replay["execution"] !== undefined && !validRecordedExecutionContract(replay["execution"]))
   )
     fail();
   const meta = replay["meta"] as ReplayPlayerMeta[];

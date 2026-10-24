@@ -298,7 +298,12 @@ test("SportsDB rejects a partial Cloudflare Access credential configuration befo
     ),
   );
   assert.equal(response.status, 503);
-  assert.match((await response.json()).error, /configured together/);
+  const body = await response.json();
+  assert.deepEqual(body, { error: "SportsDB bridge failed", pages: 0, archives: 0 });
+  assert.doesNotMatch(
+    JSON.stringify(body),
+    /Cloudflare|CLIENT_ID|CLIENT_SECRET|test-only-access-id/,
+  );
   assert.deepEqual(calls, [
     "sportsdb_bridge_authorize",
     "sportsdb_bridge_acquire",

@@ -10,7 +10,12 @@ export function matchRigSegments(
   dense: boolean,
   match = false,
 ) {
-  if (quality === "alta" && (match || !dense)) return { radial: 16, cap: 6 };
+  // Only the athlete that wins the screen-coverage LOD gets the presentation
+  // mesh.  This keeps the ordinary 22-player match inside the established
+  // draw/triangle budget while making a replay or player-career close-up read
+  // like a genuinely denser model.
+  if (quality === "alta" && match) return dense ? { radial: 32, cap: 12 } : { radial: 16, cap: 6 };
+  if (quality === "alta" && !dense) return { radial: 16, cap: 6 };
   return segmentsFor(quality === "alta" ? 0 : quality === "media" ? 1 : 2);
 }
 

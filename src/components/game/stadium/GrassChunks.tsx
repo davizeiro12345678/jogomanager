@@ -1,11 +1,15 @@
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { FIELD_X, FIELD_Z } from "@/game/sim";
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 import { censusRef } from "@/game/scene-census";
 import { grassBladeGeometry } from "@/game/grass-blade";
 import { markNearestGrassChunks } from "@/game/grass-chunk-visibility";
-import { buildGrassInstanceBuffers, type GrassInstanceBuffers } from "@/game/grass-instance-data";
+import {
+  buildGrassInstanceBuffers,
+  copyGrassInstanceBuffers,
+  type GrassInstanceBuffers,
+} from "@/game/grass-instance-data";
 import { acquirePresentationLanes } from "@/game/presentation-lanes";
 
 const COLS = 6,
@@ -27,7 +31,6 @@ export function GrassChunks({
   pressure?: number;
   maxVisibleChunks?: number;
 }) {
-  const invalidate = useThree((state) => state.invalidate);
   const refs = useRef<(THREE.InstancedMesh | null)[]>([]);
   const meshRefs = useMemo(
     () =>
@@ -66,14 +69,17 @@ export function GrassChunks({
         const source = buffers[index];
         if (!mesh || !source) return;
         const matrices = mesh.instanceMatrix.array as Float32Array;
-        matrices.set(source.matrices);
+        // React may already have mounted the next tier before this effect's
+        // cleanup runs. Its smaller allocation must not receive the old job.
+        if (matrices.length !== count * 16 || source.matrices.length !== matrices.length) return;
+        if (!mesh.instanceColor || mesh.instanceColor.array.length !== count * 3)
+          mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3);
+        if (!copyGrassInstanceBuffers(matrices, mesh.instanceColor.array as Float32Array, source))
+          return;
         mesh.instanceMatrix.needsUpdate = true;
-        mesh.instanceColor ??= new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3);
-        (mesh.instanceColor.array as Float32Array).set(source.colors);
         mesh.instanceColor.needsUpdate = true;
         mesh.computeBoundingSphere();
       });
-      invalidate();
     };
     if (typeof Worker === "undefined") {
       apply(buildGrassInstanceBuffers(chunks, count, WIDTH, DEPTH, FIELD_X));
@@ -143,7 +149,7 @@ export function GrassChunks({
       controller.abort();
       finish();
     };
-  }, [chunks, count, invalidate]);
+  }, [chunks, count]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   const elapsed = useRef(1);
   useFrame(({ camera }, dt) => {

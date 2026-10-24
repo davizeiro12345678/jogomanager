@@ -6,6 +6,8 @@ import { CREATOR } from "@/content/creator";
 
 import { CommunityInvite } from "@/components/CommunityInvite";
 
+import SHIPPED_CATALOG from "@/game/data/catalog-summary.generated.json";
+import { LANGS } from "@/i18n/locale-catalog";
 import { SOBRE_PATH as PATH } from "@/lib/public-route-paths";
 
 const BLOCKS = [
@@ -19,28 +21,29 @@ const BLOCKS = [
   },
   {
     title: "Partidas em 3D",
-    body: "O estádio, o gramado, as arquibancadas e os jogadores são gerados pelo próprio jogo, com clima, horário e desgaste do campo. A qualidade se ajusta sozinha ao aparelho, então roda bem tanto no computador quanto no celular.",
+    body: "O estádio, o gramado, as arquibancadas e os jogadores são gerados pelo próprio jogo, com clima, horário e desgaste do campo. As preferências gráficas permitem ajustar a apresentação; a fluidez depende do aparelho e do navegador.",
   },
   {
     title: "Grátis e sem obrigação de pagar",
-    body: "Dá para jogar uma carreira inteira sem gastar nada. As compras da loja são só atalhos: moedas, relatórios de olheiro, impulsos de treino e temas visuais. Nada disso é necessário para ganhar títulos.",
+    body: "Dá para jogar uma carreira inteira sem gastar nada. Produtos opcionais e seus efeitos são descritos na loja. Ofertas de vantagem competitiva indisponíveis ficam bloqueadas; compras não são necessárias para ganhar títulos.",
   },
   {
     title: "Seu progresso fica salvo",
     body: "Com conta, a carreira é guardada na nuvem e volta em qualquer aparelho. Sem internet, o jogo continua funcionando no próprio navegador e sincroniza assim que a conexão volta.",
   },
   {
-    title: "Em português, com 39 idiomas",
+    title: "Em português, com opções de idioma",
     body: "O jogo nasceu em português do Brasil, com clubes e competições brasileiras, e pode ser jogado em dezenas de outros idiomas. Nomes, escudos e uniformes podem ser editados por você no modo editor.",
   },
 ];
 
-// Dados de catálogo não entram no JS da página "Sobre". Consulte o catálogo no jogo.
+const PUBLIC_CLUB_COUNT = SHIPPED_CATALOG.playableClubs;
+
 const FACTS = [
-  { label: "Experiência", value: "Carreira" },
-  { label: "Visualização", value: "3D" },
-  { label: "Idiomas", value: "39" },
-  { label: "Acesso", value: "Grátis" },
+  { label: "Competições incluídas", value: String(SHIPPED_CATALOG.competitions) },
+  { label: "Clubes únicos incluídos", value: String(PUBLIC_CLUB_COUNT) },
+  { label: "Opções de idioma", value: String(LANGS.length) },
+  { label: "Preço", value: "Grátis" },
 ];
 
 export function SobrePage() {

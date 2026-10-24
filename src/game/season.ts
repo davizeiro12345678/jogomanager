@@ -8,7 +8,7 @@ import { tableFromFixtures } from "./standings";
 const BYE = "__bye__";
 
 export function generateFixtures(leagueId: string, seed: string, clubIds?: string[]): Fixture[] {
-  const clubs = clubIds?.length ? [...clubIds] : getLeague(leagueId).clubs.map((c) => c.id);
+  const clubs = clubIds?.length ? clubIds : getLeague(leagueId).clubs.map((c) => c.id);
   const rnd = makeRng(`fix-${seed}`);
   const list = [...clubs];
   for (let i = list.length - 1; i > 0; i--) {
@@ -37,22 +37,27 @@ export function generateFixtures(leagueId: string, seed: string, clubIds?: strin
         awayGoals: null,
       });
     }
-    const fixed = rotation[0]!;
-    const rest = rotation.slice(1);
-    rest.unshift(rest.pop()!);
-    rotation.splice(0, rotation.length, fixed, ...rest);
+    // Circle scheduling keeps the first club fixed. Rotate the remaining
+    // slots in place instead of allocating and spreading a new row each round.
+    const last = rotation[n - 1]!;
+    for (let i = n - 1; i > 1; i--) rotation[i] = rotation[i - 1]!;
+    rotation[1] = last;
   }
 
-  const first = [...rounds];
-  const second = first.map((f) => ({
-    round: f.round + (n - 1),
-    home: f.away,
-    away: f.home,
-    homeGoals: null,
-    awayGoals: null,
-  }));
-
-  return leagueId === "x5686" ? first : [...first, ...second];
+  if (leagueId !== "x5686") {
+    const firstLength = rounds.length;
+    for (let i = 0; i < firstLength; i++) {
+      const f = rounds[i]!;
+      rounds.push({
+        round: f.round + (n - 1),
+        home: f.away,
+        away: f.home,
+        homeGoals: null,
+        awayGoals: null,
+      });
+    }
+  }
+  return rounds;
 }
 
 export function computeTable(state: CareerState): TableRow[] {

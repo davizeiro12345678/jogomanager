@@ -48,8 +48,8 @@ function buildAlbedo(size = 512) {
   }
 
   // juntas dos painéis
-  ctx.strokeStyle = "rgba(24,28,33,0.4)";
-  ctx.lineWidth = 3;
+  ctx.strokeStyle = "rgba(24,28,33,0.3)";
+  ctx.lineWidth = 2;
   const cells = 4;
   for (let i = 1; i < cells; i++) {
     ctx.beginPath();
@@ -68,7 +68,7 @@ function buildAlbedo(size = 512) {
     const y = rand() * size * 0.7;
     const len = size * (0.05 + rand() * 0.3);
     const g = ctx.createLinearGradient(x, y, x, y + len);
-    g.addColorStop(0, "rgba(28,32,36,0.22)");
+    g.addColorStop(0, "rgba(28,32,36,0.16)");
     g.addColorStop(1, "rgba(28,32,36,0)");
     ctx.fillStyle = g;
     ctx.fillRect(x, y, 1 + rand() * 5, len);

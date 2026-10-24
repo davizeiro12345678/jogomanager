@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { BALL_PHYSICS_RADIUS, createRapierVisualPhysics } from "./rapier-ball-visual";
 import type { CanonicalBallPhysicsState, VisualBallState } from "./visual-ball";
+import { createRapierBallAuthority } from "./rapier-ball-authority";
+import { GOAL_NET_DEPTH } from "./sim-rules";
 
 function canonical(overrides: Partial<CanonicalBallPhysicsState> = {}): CanonicalBallPhysicsState {
   return {
@@ -33,19 +35,81 @@ function expectSameVisualBall(actual: VisualBallState, expected: VisualBallState
 }
 
 describe("Rapier visual ball physics", () => {
-  it("keeps zero, negative and invalid time steps physically inert", async () => {
+  it("does not read velocity in zero-spin visual substeps while still advancing the ball", async () => {
     const physics = await createRapierVisualPhysics();
-    const launch = frozenCanonical({ height: 1.4, vx: 4, vy: 2, spin: 2 });
+    const state = canonical({ height: 2, vx: 5, vy: 2, vz: 1, spin: 0 });
+    physics.reset(state);
+    const body = (physics as unknown as { ballBody: { linvel(): unknown } }).ballBody;
+    const read = vi.spyOn(body, "linvel");
+    try {
+      physics.step(1 / 30);
+      expect(read).toHaveBeenCalledTimes(1); // reconciliation only
+      expect(physics.read(state).x).toBeGreaterThan(state.x);
+    } finally {
+      read.mockRestore();
+      physics.dispose();
+    }
+  });
+
+  it("ignores invalid elapsed time without moving a free ball or consuming a release skip", async () => {
+    const physics = await createRapierVisualPhysics();
+    const launch = frozenCanonical({ height: 2, vx: 5, vy: 2, spin: 3 });
+    const held = frozenCanonical({ attached: true, holder: "home-9" });
     try {
       physics.reset(launch);
-      const before = physics.read(launch);
-      for (const dt of [0, -1, NaN, Infinity]) physics.step(dt);
-      expectSameVisualBall(physics.read(launch), before);
-      expect(launch.height).toBe(1.4);
+      const initial = physics.read(launch);
+      for (const dt of [0, -1, NaN, Infinity, -Infinity]) {
+        physics.step(dt);
+        expectSameVisualBall(physics.read(launch), initial);
+      }
+      physics.step(1 / 60);
+      expect(physics.read(launch).x).toBeGreaterThan(initial.x);
+      physics.reset(held);
+      physics.synchronize(held, launch);
+      const released = physics.read(launch);
+      for (const dt of [0, -1, NaN, Infinity, -Infinity]) {
+        physics.step(dt);
+        expectSameVisualBall(physics.read(launch), released);
+      }
+      physics.step(1 / 60);
+      expectSameVisualBall(physics.read(launch), released);
+      physics.step(1 / 60);
+      expect(physics.read(launch).x).toBeGreaterThan(released.x);
     } finally {
       physics.dispose();
     }
   });
+
+  it("keeps reads observational and subsequent trajectories independent of reader count", async () => {
+    const single = await createRapierVisualPhysics(),
+      multiple = await createRapierVisualPhysics();
+    const launch = frozenCanonical({ x: 20, height: 2, vx: 5, spin: 2 });
+    const fallback = frozenCanonical({ height: 2, vx: 5, spin: 2 });
+    try {
+      single.reset(launch);
+      multiple.reset(launch);
+      for (let tick = 0; tick < 8; tick++) {
+        const once = single.read(fallback),
+          repeated = multiple.read(fallback);
+        expectSameVisualBall(once, repeated);
+        for (let reader = 0; reader < 3; reader++)
+          expectSameVisualBall(multiple.read(fallback), repeated);
+        // The canonical snapshots are the same even when presentation starts
+        // far away (e.g. joining an existing replay). Synchronize performs no
+        // discontinuity reset here; step owns the bounded reconciliation.
+        single.synchronize(fallback, fallback);
+        multiple.synchronize(fallback, fallback);
+        single.step(1 / 60);
+        multiple.step(1 / 60);
+      }
+      expectSameVisualBall(single.read(fallback), multiple.read(fallback));
+      expect(Math.abs(single.read(fallback).x)).toBeLessThan(3);
+    } finally {
+      single.dispose();
+      multiple.dispose();
+    }
+  });
+
   it("initializes asynchronously and exposes a visual-only engine", async () => {
     const physics = await createRapierVisualPhysics();
     const attached = frozenCanonical({
@@ -178,6 +242,41 @@ describe("Rapier visual ball physics", () => {
     }
   });
 
+  it.each([-1, 1])(
+    "places the fallback back net at the authoritative goal depth (%s)",
+    async (direction) => {
+      const visual = await createRapierVisualPhysics();
+      const authority = await createRapierBallAuthority();
+      const initial = frozenCanonical({ x: direction * 52.7, height: 1.4, vx: direction * 10 });
+      const ball = { ...initial };
+      let furthest = 0;
+      let rebounded = false;
+      try {
+        visual.reset(initial);
+        authority.reset(ball);
+        for (let tick = 0; tick < 24; tick++) {
+          const before = canonical(ball);
+          authority.step(1 / 120, ball, null);
+          visual.synchronize(before, canonical(ball));
+          visual.step(1 / 120);
+          const presentation = visual.read(canonical(ball));
+          // With no wind/spin or turf contact, both worlds must hit the same
+          // physical back net. A shallow invisible wall rebounds a metre early.
+          expect(presentation.x).toBeCloseTo(ball.x, 2);
+          expect(presentation.vx).toBeCloseTo(ball.vx, 2);
+          furthest = Math.max(furthest, direction * presentation.x);
+          rebounded ||= direction * presentation.vx < -0.2;
+        }
+        expect(furthest).toBeGreaterThan(52.5 + GOAL_NET_DEPTH - 0.25);
+        expect(rebounded).toBe(true);
+        expect(initial.x).toBe(direction * 52.7);
+      } finally {
+        visual.dispose();
+        authority.dispose();
+      }
+    },
+  );
+
   it("renders a post rebound without changing the canonical ball or football rules", async () => {
     const physics = await createRapierVisualPhysics();
     const incoming = frozenCanonical({
@@ -197,15 +296,17 @@ describe("Rapier visual ball physics", () => {
     try {
       physics.reset(incoming);
       for (let tick = 0; tick < 30; tick += 1) {
-        physics.step(1 / 120);
-        // The renderer receives the visual pose and a separate canonical
-        // fallback. Advancing this fallback mimics a rule engine that does
-        // not know about the cosmetic post collision.
+        const before = fallback;
+        // Match the worker: advance canonical rules, synchronize the pair,
+        // step presentation, then read without mutating it. The canonical
+        // trajectory deliberately does not know about the visual post.
         fallback = canonical({
           ...fallback,
           x: fallback.x + fallback.vx / 120,
           z: fallback.z + fallback.vz / 120,
         });
+        physics.synchronize(before, fallback);
+        physics.step(1 / 120);
         const visual = physics.read(fallback);
         reversedAfterPost ||= visual.vx < -0.2;
       }

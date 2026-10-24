@@ -14,9 +14,8 @@
 // ============================================================================
 
 import { useFrame } from "@react-three/fiber";
-import { memo, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { useDisposable } from "../useDisposable";
 
 import { useRuntimeSceneBudget } from "@/components/game/runtime-budget-context";
 import type { Weather } from "@/game/matchday";
@@ -165,10 +164,9 @@ function Beam({
   radius: number;
 }) {
   const material = useBeamMaterial(color, TOWER_Y, radius, haze, seed);
-  const geometry = useDisposable(
-    () => new THREE.ConeGeometry(radius, TOWER_Y, 14, 1, true),
-    [radius],
-  );
+  const geometry = useMemo(() => new THREE.ConeGeometry(radius, TOWER_Y, 14, 1, true), [radius]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => () => material.dispose(), [material]);
   useFrame((state) => {
     material.uniforms["uTime"]!.value = state.clock.elapsedTime;
     const u = material.uniforms["uIntensity"]!;

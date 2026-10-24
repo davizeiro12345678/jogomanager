@@ -2,7 +2,9 @@ import { useFrame } from "@react-three/fiber";
 import type React from "react";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { emptyPose, getClip, mixPose, type ClipName, type Pose } from "@/game/animation";
+import { emptyPose, type ClipName, type Pose, type SelectCtx } from "@/game/animation";
+import { selectPlayerClip } from "@/game/visual-clip-selection";
+import { clothContactPulse } from "@/game/cloth-contact";
 import { ballGazePitch, emptyFacialPose } from "@/game/facial-animation";
 import {
   emptyActionContext,
@@ -18,7 +20,8 @@ import { spineRollForAction, updateRigCorrectives } from "@/game/rig-correctives
 import type { FaceMorphology } from "@/game/player-morphology";
 import { AthleteCloth, type ClothMotion } from "@/game/athlete-cloth";
 import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
-import { gaitPoseAt, locomotionWeight } from "@/game/gait-kinematics";
+import { AthleteGazeMotion } from "@/game/athlete-gaze-motion";
+import { PlayerLocomotionPose } from "@/game/player-locomotion-pose";
 import { visualMotionFor } from "@/game/visual-motion";
 import { goalPresentationFor, type GoalFocusRef } from "@/game/goal-choreography";
 import {
@@ -43,7 +46,11 @@ import {
 import { type SimPlayer, type SimView } from "@/game/sim";
 import { type Quality } from "./player-rig-contract";
 import { applyRigFacialPresentation } from "./player-rig-face";
-import { resolvePlayerRigAnimationFrame } from "./player-rig-animation";
+import {
+  PlayerRigAnimationClock,
+  resolvePlayerRigAnimationFrame,
+  supportShiftAt,
+} from "./player-rig-animation";
 
 export type PlayerRigBoneRefs = Pick<
   Record<RigJoint, React.RefObject<THREE.Bone | null>>,
@@ -90,6 +97,7 @@ interface PlayerRigFrameInput {
     paused: boolean;
     previewClip: ClipName | undefined;
     previewAt: number | undefined;
+    wet: number;
     onPoseReady: ((skin: RigSkin) => void) | undefined;
   };
   resources: {
@@ -123,6 +131,7 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     paused,
     previewClip,
     previewAt,
+    wet,
     onPoseReady,
   } = scene;
   const {
@@ -180,15 +189,25 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
   const seed = look.seed % 97;
   const cur = useRef<Pose>(emptyPose());
   const poseBlender = useMemo(() => new AthletePoseBlender(), []);
-  const blendBuf = useRef<Pose>(emptyPose());
   const ikBuf = useRef<Pose>(emptyPose());
   const clipName = useRef<ClipName>("idle");
   const clipTime = useRef(0);
-  const acc = useRef(0);
+  const animationClock = useMemo(() => new PlayerRigAnimationClock(), []);
   const lastClothTime = useRef<number | null>(null);
   const looseHair = useRef(createAthleteHairMotionState());
   const idleFor = useRef(0);
-  const gaitBuffer = useRef(emptyPose());
+  const locomotionPose = useMemo(() => new PlayerLocomotionPose(), []);
+  const locomotionDirection = useMemo(
+    () => ({
+      forward: 0,
+      lateral: 0,
+      turnRate: 0,
+      stamina: 100,
+      hasBall: false,
+      style: 0,
+    }),
+    [],
+  );
   const handBuffers = useMemo(
     () => ({
       L: { grip: 0, spread: 0, wrist: 0, pronation: 0, deviation: 0 },
@@ -217,6 +236,7 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
   const contactL = useRef(1);
   const contactR = useRef(1);
   const accelerationLean = useRef(0);
+  const gazeMotion = useMemo(() => new AthleteGazeMotion(), []);
   useFrame((state, rawDt) => {
     if (paused && painted.current && sampled.current === previewAt) {
       // A paused pose still serves a changed inspection camera. Do not
@@ -227,14 +247,14 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
       onPoseReady?.(skin);
       return;
     }
-    sampled.current = previewAt;
-    painted.current = true;
     const g = root.current;
     if (!g) {
       lastClothTime.current = state.clock.elapsedTime;
       return;
     }
-    const dt = Math.min(rawDt, 0.05);
+    // Secondary springs use a bounded integration step; pose clocks retain
+    // the full elapsed interval below, including frames longer than 50 ms.
+    const dt = Number.isFinite(rawDt) ? Math.max(0, Math.min(rawDt, 0.05)) : 0;
 
     // A vista do Worker já interpola snapshots. Uma segunda mola aqui fazia o
     // corpo perseguir um alvo em movimento e criava jitter em FPS variável.
@@ -249,7 +269,8 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     const facing = toX * -cameraMatrix[8]! + toZ * -cameraMatrix[10]!;
     const dist2 = toX * toX + toZ * toZ;
     if (facing < -4 && dist2 > 144) {
-      acc.current = 0;
+      animationClock.reset();
+      gazeMotion.reset();
       // A culled player resumes from the current rendering clock, not from
       // an elapsed interval that may span a long off-screen sequence.
       lastClothTime.current = state.clock.elapsedTime;
@@ -340,11 +361,9 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     }
 
     // ---- passo de animação em taxa reduzida longe da câmera
-    const step = lod === 0 ? 0 : lod === 1 ? 1 / 36 : 1 / 16;
-    acc.current += dt;
-    if (acc.current < step) return;
-    const adt = acc.current;
-    acc.current = 0;
+    const step = paused || previewAt !== undefined || lod === 0 ? 0 : lod === 1 ? 1 / 36 : 1 / 16;
+    const adt = animationClock.consume(rawDt, step);
+    if (adt === null) return;
 
     const speed = dirLen;
     // histerese: só é "parado" depois de ~0,25 s praticamente sem deslocamento,
@@ -353,47 +372,50 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     else if (speed > 0.9) idleFor.current = 0;
     const stopped = idleFor.current > 0.25;
 
+    const selection: SelectCtx = {
+      isGK,
+      action,
+      actionT: goalPresentation ? 1 - goalPresentation.progress : player.actionT,
+      actionDur: goalPresentation ? 1 : player.actionDur,
+      ...(goalPresentation ? { actionSeed: goalPresentation.actionSeed } : {}),
+      speed,
+      hasBall: sim.ball.holder === player.id,
+      ballDist: ballDistance,
+      ballHeight: sim.ball.height,
+      stamina: player.stamina,
+      defending: sim.possession !== player.side,
+      stopped,
+      seed,
+      time: sim.time,
+    };
     const animationFrame = resolvePlayerRigAnimationFrame({
       currentClip: clipName.current,
       currentTime: clipTime.current,
       deltaSeconds: adt,
       previewClip,
+      selectedClip: previewClip ? undefined : selectPlayerClip(sim, player.id, selection),
       previewAt,
       goalProgress: goalPresentation?.progress,
-      selection: {
-        isGK,
-        action,
-        actionT: goalPresentation ? 1 - goalPresentation.progress : player.actionT,
-        actionDur: goalPresentation ? 1 : player.actionDur,
-        ...(goalPresentation ? { actionSeed: goalPresentation.actionSeed } : {}),
-        speed,
-        hasBall: sim.ball.holder === player.id,
-        ballDist: ballDistance,
-        stamina: player.stamina,
-        defending: sim.possession !== player.side,
-        stopped,
-        seed,
-        time: sim.time,
-      },
+      selection,
     });
     clipName.current = animationFrame.clip;
     clipTime.current = animationFrame.clipTime;
     const u = animationFrame.progress;
     const ctx = animationFrame.context;
-    let p = getClip(clipName.current)(ctx);
-
-    const gaitWeight = locomotionWeight(speed, action, clipName.current);
-    if (gaitWeight > 0) {
-      const gait = gaitPoseAt(motion.phase, speed, P, gaitBuffer.current, {
-        forward: motion.forward,
-        lateral: motion.lateral,
-        turnRate: motion.turnRate,
-        stamina: player.stamina,
-        hasBall: sim.ball.holder === player.id,
-        style: look.seed,
-      }).pose;
-      p = mixPose(p, gait, gaitWeight, blendBuf.current);
-    }
+    locomotionDirection.forward = motion.forward;
+    locomotionDirection.lateral = motion.lateral;
+    locomotionDirection.turnRate = motion.turnRate;
+    locomotionDirection.stamina = player.stamina;
+    locomotionDirection.hasBall = sim.ball.holder === player.id;
+    locomotionDirection.style = look.seed;
+    let p = locomotionPose.sample(
+      clipName.current,
+      ctx,
+      action,
+      motion.phase,
+      P,
+      locomotionDirection,
+    );
 
     // ---- IK contextual compartilhado: o contexto é gerado uma vez por
     // snapshot e reutilizado por todos os atletas, sem ficar obsoleto.
@@ -451,11 +473,18 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     let look2 = toBall - g.rotation.y;
     while (look2 > Math.PI) look2 -= Math.PI * 2;
     while (look2 < -Math.PI) look2 += Math.PI * 2;
-    const gaze = Math.max(-0.9, Math.min(0.9, look2));
+    const targetGaze = Math.max(-0.9, Math.min(0.9, look2));
     const ballH = Math.hypot(attentionX - g.position.x, attentionZ - g.position.z);
     const eyeHeight =
       P.hipY + P.hipH * 0.5 + P.spineLen + P.chestLen + P.neckLen + P.headR * 0.96 + p.hipY;
-    const gazePitch = ballGazePitch(ballH, attentionHeight, eyeHeight);
+    const smoothGaze = gazeMotion.sample(
+      targetGaze,
+      ballGazePitch(ballH, attentionHeight, eyeHeight),
+      adt,
+      paused || previewAt !== undefined,
+    );
+    const gaze = smoothGaze.yaw;
+    const gazePitch = smoothGaze.pitch;
     p.headYaw += gaze * 0.75;
     p.chest += Math.min(0.12, gaze * gaze * 0.1);
     p.headPitch += gazePitch;
@@ -481,7 +510,17 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     // a pose e também remove qualquer NaN antes que ele vire matriz de osso.
     clampPoseAnatomy(p);
 
+    const actionSupport = footballSupportFor(
+      action,
+      u,
+      P.hipW,
+      actionContext.action ? actionContext.usedFoot : dominantFoot,
+    );
     cur.current = poseBlender.sample(p, adt, {
+      supportFoot:
+        actionSupport.plantedFoot ?? (contactL.current >= contactR.current ? "left" : "right"),
+      event: selection.actionSeed,
+      phase: motion.phase,
       clip: clipName.current,
       action,
       progress: u,
@@ -494,20 +533,11 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     // construção de `P.hipY`. Bastava agachar, dobrar o joelho ou inclinar o
     // corpo para o pé afundar ou flutuar. Agora medimos onde a sola realmente
     // está e movemos a raiz para plantá-la.
-    const actionSupport = footballSupportFor(
-      action,
-      u,
-      P.hipW,
-      actionContext.action ? actionContext.usedFoot : dominantFoot,
-    );
     const support = c.legRPitch - c.legLPitch;
     const shift =
       Math.max(-1, Math.min(1, support)) * 0.045 * Math.min(1, speed / 4) + actionSupport.shiftX;
     const previousShift = hips.current?.position.x ?? 0;
-    const hipShiftX =
-      previewAt !== undefined
-        ? shift
-        : previousShift + (shift - previousShift) * Math.min(1, adt * 14);
+    const hipShiftX = previewAt !== undefined ? shift : supportShiftAt(previousShift, shift, adt);
     const ground = solveGroundContact({
       P,
       pose: c,
@@ -642,9 +672,15 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     clothInput.bend = Math.abs(c.spine) + Math.abs(c.legLPitch - c.legRPitch) * 0.22;
     clothInput.yaw = motion.yaw;
     clothInput.roll = c.hipRoll;
+    clothInput.wet = wet;
+    clothInput.contact = clothContactPulse(player.action, player.actionT, player.actionDur);
     clothInput.legL = Math.min(1, Math.abs(c.kneeL) * 0.58 + Math.abs(c.legLPitch) * 0.24);
     clothInput.legR = Math.min(1, Math.abs(c.kneeR) * 0.58 + Math.abs(c.legRPitch) * 0.24);
     cloth.update(paused ? 0 : clothElapsed, clothInput);
+    // A paused demand-rendered pose is cached only after reaching the bones;
+    // a skipped cadence sample must never freeze the preceding clip.
+    sampled.current = previewAt;
+    painted.current = true;
     onPoseReady?.(skin);
 
     // ---- sombra de contato acompanha a altura do quadril

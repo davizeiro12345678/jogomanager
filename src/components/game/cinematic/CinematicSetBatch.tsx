@@ -1,5 +1,6 @@
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { useKtx2Revision } from "@/game/textures/ktx2";
 import * as THREE from "three";
 import { batchStaticStadium, type StaticStadiumBatch } from "@/game/static-stadium-batch";
 
@@ -21,13 +22,25 @@ export function CinematicSetBatch({
   const cleanup = useRef<StaticStadiumBatch | null>(null);
   const frames = useRef(0);
   const { invalidate } = useThree();
-  useEffect(
-    () => () => {
-      cleanup.current?.();
-      cleanup.current = null;
+  const textureRevision = useKtx2Revision();
+  useLayoutEffect(
+    () => {
+      frames.current = 0;
+      invalidate();
+      return () => {
+        cleanup.current?.();
+        cleanup.current = null;
+      };
     },
-    [],
+    // Source materials have received the decoded maps in this commit. Rebuild
+    // the cloned batches without remounting animated actors or resetting clocks.
+    [textureRevision, invalidate],
   );
+  // React can reapply source visibility during a commit. Reconcile it here,
+  // instead of walking every static mesh in every animation frame.
+  useLayoutEffect(() => {
+    cleanup.current?.hideSources();
+  });
   useFrame(() => {
     if (!group.current) return;
     let prepared = false;
@@ -40,7 +53,6 @@ export function CinematicSetBatch({
       prepared = true;
       invalidate();
     }
-    cleanup.current.hideSources();
     if (prepared || ++frames.current % 60 === 0) {
       const stats = group.current.userData["staticBatch"] as {
         sources: THREE.Mesh[];

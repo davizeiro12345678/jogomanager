@@ -2,10 +2,10 @@
  * Ground contact and the visible mesh must use the same physical envelope. */
 export const FOOTBALL_BOOT_PROFILE = [
   { z: -0.3, width: 0.25, depth: 0.19, centerDepth: 0.31 },
-  { z: -0.19, width: 0.6, depth: 0.46, centerDepth: 0.22 },
-  { z: 0.03, width: 0.67, depth: 0.46, centerDepth: 0.25 },
-  { z: 0.29, width: 0.72, depth: 0.29, centerDepth: 0.4 },
-  { z: 0.49, width: 0.63, depth: 0.23, centerDepth: 0.45 },
+  { z: -0.19, width: 0.54, depth: 0.46, centerDepth: 0.22 },
+  { z: 0.03, width: 0.61, depth: 0.43, centerDepth: 0.26 },
+  { z: 0.29, width: 0.69, depth: 0.26, centerDepth: 0.42 },
+  { z: 0.49, width: 0.59, depth: 0.2, centerDepth: 0.47 },
   { z: 0.59, width: 0.24, depth: 0.12, centerDepth: 0.49 },
   { z: 0.61, width: 0.015, depth: 0.02, centerDepth: 0.49 },
 ] as const;

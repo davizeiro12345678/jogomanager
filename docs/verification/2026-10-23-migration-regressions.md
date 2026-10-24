@@ -1,0 +1,15 @@
+# Regressões de migração reproduzidas e corrigidas em 23/10/2026
+
+Os testes adicionais reproduziram cinco falhas em dois arquivos antes da correção. A suíte integrada posterior passou em **2.033 testes, 375 arquivos**, com TypeScript, lint, build da aplicação e build do estúdio aprovados. O stress de 200 partidas e cada repetição independente foi executado separadamente.
+
+| Caso               | Antes, com o armazenamento da revisão anterior                                             | Comportamento corrigido                                                                                              | Regressão que permanece proibida                             |
+| ------------------ | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Save de visitante  | IndexedDB sem escopo na rodada 2 vencia o compartimento v2 da rodada 12                    | Reconciliação pelo tempo/proveniência; a rodada 12 continua selecionada sem regravar as cópias originais             | Não adotar dados do visitante ao entrar em outra conta       |
+| Espelho síncrono   | A home podia preferir o espelho antigo sem saber se era uma gravação do layout atual       | Espelho v2 tem precedência até haver tempo confirmado no layout atual                                                | Não tratar uma leitura de migração como um save novo         |
+| Gravação explícita | A cópia v2 de um relógio futuro podia voltar a competir com a carreira recém-salva         | Estado, tempo e marcador do layout são gravados numa transação e conferidos; uma gravação confirmada tem precedência | Marcador local não comprova progresso atestado pelo servidor |
+| Replay apagado     | Um arquivo v3 vazio era unido à cópia v2 e ressuscitava uma gravação excluída              | Array v3 existente, inclusive vazio, é a autoridade; v2 só migra quando v3 está ausente                              | Respeitar exclusões e retenção das 20 gravações anteriores   |
+| Replay concluído   | Metadados da física revisão 2 tornavam o replay inválido e podiam bloquear novas gravações | Validador próprio para gravações das revisões conhecidas; frames e placar são preservados e reproduzidos             | Recuperação de solver ativo continua exigindo a revisão 3    |
+
+Os 45 arquivos congelados da auditoria física de 690 partidas não foram alterados por essas correções. A mudança de compatibilidade está no codec/armazenamento de replay e na persistência da carreira. O limite de revisão do checkpoint, as regras, o RNG e o Worker sequencial permanecem os mesmos da amostra física.
+
+Evidência local: `final-checks/review-migrations-before-23.log`, `final-checks/main66-review-final-23-unit.json`, `final-checks/main66-review-final-23-state.json` e `final-checks/main66-browser-23-state.json`, sob `verification/graphics-realism-20261020/`. A rodada final de navegador aprovou backup novo, backup legado, loja, falha de gravação, carreira 3D, inspeção gráfica e cutscenes.

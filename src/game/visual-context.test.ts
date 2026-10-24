@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { buildTeamSetup } from "./quickMatch";
 import { MatchSim } from "./sim";
-import { ReplayRecorder, ReplaySim, type Replay } from "./replay";
+import {
+  ReplayRecorder,
+  ReplaySim,
+  type Replay,
+  type ReplayFrame,
+  type ReplayPlayerMeta,
+} from "./replay";
 import {
   emptyActionContext,
   emptyContactContext,
@@ -274,7 +280,7 @@ describe("Version Migration", () => {
       version: 1,
       actionContexts: [emptyActionContext()],
       contactContexts: [emptyContactContext()],
-    };
+    } as unknown as Partial<VersionedVisualData>;
 
     const migrated = migrateVisualData(oldData, 22);
     expect(migrated.version).toBe(VISUAL_CONTEXT_VERSION);
@@ -341,27 +347,24 @@ describe("Replay with Visual Context", () => {
     const palSetup = buildTeamSetup("pal");
 
     // Cria meta para 22 jogadores (11 de cada time)
-    const meta: Replay["meta"] = [];
-    for (const p of flaSetup.players.slice(0, 11)) {
-      meta.push({
+    const meta: ReplayPlayerMeta[] = [
+      ...flaSetup.players.slice(0, 11).map((p) => ({
         id: `home-${p.id}`,
         side: "home" as const,
         name: p.name,
         number: p.number,
         pos: p.pos,
         pid: p.id,
-      });
-    }
-    for (const p of palSetup.players.slice(0, 11)) {
-      meta.push({
+      })),
+      ...palSetup.players.slice(0, 11).map((p) => ({
         id: `away-${p.id}`,
         side: "away" as const,
         name: p.name,
         number: p.number,
         pos: p.pos,
         pid: p.id,
-      });
-    }
+      })),
+    ];
 
     const oldReplay: Replay = {
       id: "old-replay",
@@ -374,8 +377,8 @@ describe("Replay with Visual Context", () => {
         {
           t: 0,
           b: [0, 0, 0] as [number, number, number],
-          p: Array<number>(22 * 4).fill(0),
-          a: Array<Replay["frames"][number]["a"][number]>(22).fill(null),
+          p: Array(22 * 4).fill(0) as number[],
+          a: Array.from({ length: 22 }, () => null),
           hg: 0,
           ag: 0,
           poss: "home" as const,
@@ -383,13 +386,13 @@ describe("Replay with Visual Context", () => {
         {
           t: 1,
           b: [1, 0, 0] as [number, number, number],
-          p: Array<number>(22 * 4).fill(0),
-          a: Array<Replay["frames"][number]["a"][number]>(22).fill(null),
+          p: Array(22 * 4).fill(0) as number[],
+          a: Array.from({ length: 22 }, () => null),
           hg: 0,
           ag: 0,
           poss: "home" as const,
         },
-      ],
+      ] satisfies ReplayFrame[],
       score: [0, 0] as [number, number],
     };
 

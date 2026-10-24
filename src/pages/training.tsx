@@ -79,6 +79,7 @@ export function TrainingPage() {
             {FOCUS.map((f) => (
               <button
                 key={f.key}
+                aria-pressed={career.training === f.key}
                 onClick={() => update({ ...career, training: f.key })}
                 className={`rounded-xl border p-3 text-left transition ${
                   career.training === f.key
@@ -99,6 +100,7 @@ export function TrainingPage() {
             {INTENSITY.map((i) => (
               <button
                 key={i.key}
+                aria-pressed={intensity === i.key}
                 onClick={() => update({ ...career, trainingIntensity: i.key })}
                 className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
                   intensity === i.key

@@ -1,4 +1,4 @@
-import { useServerFn } from "@tanstack/react-start";
+import { createClientOnlyFn, useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { StripeCheckoutFrame } from "@/components/StripeCheckoutFrame";
@@ -13,6 +13,16 @@ import {
 import { startGuestCheckout } from "@/lib/guest-checkout.functions";
 import { withPaymentTimeout } from "@/lib/embedded-checkout";
 import { getStripeEnvironment, type StripeEnv } from "@/lib/stripe";
+
+const getGoogleFraudDefenseEnabled = createClientOnlyFn(async () => {
+  const fraudDefense = await import("@/lib/google-fraud-defense.client");
+  return fraudDefense.isGoogleFraudDefenseEnabled();
+});
+
+const createGoogleFraudDefenseToken = createClientOnlyFn(async () => {
+  const fraudDefense = await import("@/lib/google-fraud-defense.client");
+  return fraudDefense.createGoogleFraudDefenseToken("guest_checkout");
+});
 
 export interface GuestCheckoutProduct {
   key: string;
@@ -53,6 +63,7 @@ export function GuestCheckoutDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [fraudDefenseEnabled, setFraudDefenseEnabled] = useState(false);
   const requestVersion = useRef(0);
   const inFlight = useRef(false);
   const clientEnvironment = useMemo<StripeEnv | null>(() => {
@@ -77,6 +88,20 @@ export function GuestCheckoutDialog({
     };
   }, [open, product?.key]);
 
+  useEffect(() => {
+    let active = true;
+    void getGoogleFraudDefenseEnabled()
+      .then((enabled) => {
+        if (active) setFraudDefenseEnabled(enabled ?? false);
+      })
+      .catch(() => {
+        if (active) setFraudDefenseEnabled(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!open || !product || inFlight.current) return;
@@ -89,6 +114,7 @@ export function GuestCheckoutDialog({
     setBusy(true);
     setError(null);
     try {
+      const fraudDefenseToken = await createGoogleFraudDefenseToken();
       const result = await withPaymentTimeout(
         start({
           data: {
@@ -96,6 +122,7 @@ export function GuestCheckoutDialog({
             email,
             hasPurchaseConsent,
             clientEnvironment,
+            fraudDefenseToken,
           },
         }),
       );
@@ -166,6 +193,10 @@ export function GuestCheckoutDialog({
               <p className="text-sm text-muted-foreground">
                 Use um e-mail que você consiga abrir agora. Depois do pagamento, ele recebe um link
                 seguro para criar ou vincular sua conta e entregar o item uma única vez.
+                {fraudDefenseEnabled
+                  ? " A análise antifraude do Google ajuda a identificar tentativas automatizadas."
+                  : null}{" "}
+                Os dados do cartão seguem diretamente para a Stripe.
               </p>
               <label className="block text-sm font-medium" htmlFor="guest-checkout-email">
                 E-mail para receber a compra

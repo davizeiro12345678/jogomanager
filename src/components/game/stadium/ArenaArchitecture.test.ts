@@ -1,7 +1,7 @@
 import { buildArenaArchitecture } from "@/components/game/stadium/arena-architecture-builder";
 import { expect, it } from "vitest";
 it("keeps roof braces, concourse portals and railings within three material draws", () => {
-  for (const rings of [4, 11, 16]) {
+  for (let rings = 4; rings <= 16; rings++) {
     const data = buildArenaArchitecture(rings, "#b22b42", true);
     expect(data.meshes).toHaveLength(3);
     let triangles = 0;

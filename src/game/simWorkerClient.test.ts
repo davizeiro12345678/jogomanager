@@ -5,8 +5,8 @@ import { createLiveMatchController } from "./simWorkerClient";
 import { buildTeamSetup } from "./quickMatch";
 import { MatchSim } from "./sim";
 
-// Backend loading is exercised separately with deadlines, traps and aborts.
-// These controller tests inspect the lifecycle after initialization completes.
+// Backend initialization has its own deadline, trap and abort coverage.
+// Controller lifecycle fixtures keep the selected compatible backend explicit.
 vi.mock("./match-execution", () => ({
   initializeMatchExecution: async (sim: MatchSim) => sim.executionContract(),
 }));
@@ -183,6 +183,17 @@ describe("live match worker lifecycle", () => {
     worker.emitMessage({ id: first.id, ok: true, type: "command", result: true });
     expect(controller.view.home.tactics).toEqual(firstTactics);
   });
+  it("retains automatic worker plans as the rollback baseline for later manual commands", () => {
+    const { controller, worker } = createController();
+    const sim = new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), "worker-lifecycle-test");
+    sim.home.tactics = { ...sim.home.tactics, mentality: 4 };
+    worker.emitMessage({ id: 1, ok: true, type: "snapshot", snapshot: snapshotMatch(sim, 1) });
+    expect(controller.view.home.tactics.mentality).toBe(4);
+    controller.setTactics("home", { ...controller.view.home.tactics, mentality: 0 });
+    const command = worker.messages.at(-1)!;
+    worker.emitMessage({ id: command.id, ok: false, code: "queue-full", error: "Fila cheia" });
+    expect(controller.view.home.tactics.mentality).toBe(4);
+  });
 
   it("reconciles a late tactical acknowledgement without executing a second command", async () => {
     const { controller, worker } = createController();
@@ -257,9 +268,7 @@ describe("live match worker lifecycle", () => {
     const { controller, worker } = createController();
 
     worker.onerror?.({ message: "worker failed" } as ErrorEvent);
-    await Promise.resolve();
-    await Promise.resolve();
-
+    await vi.dynamicImportSettled();
     expect(vi.getTimerCount()).toBe(1);
     controller.dispose();
     expect(vi.getTimerCount()).toBe(0);
@@ -288,8 +297,7 @@ describe("live match worker lifecycle", () => {
       worker.emitMessage({ id: 1, ok: true, type: "snapshot", snapshot });
 
       worker.onerror?.({ message: "worker failed before first tick" } as ErrorEvent);
-      await Promise.resolve();
-      await Promise.resolve();
+      await vi.dynamicImportSettled();
 
       expect(restore).toHaveBeenCalledTimes(1);
       expect(restore).toHaveBeenCalledWith(checkpoint);
@@ -332,19 +340,45 @@ describe("live match worker lifecycle", () => {
   it("sleeps while the fallback is paused and releases its simulation once", async () => {
     const dispose = vi.spyOn(MatchSim.prototype, "dispose");
     const { controller, worker } = createController();
-    expect(dispose).toHaveBeenCalledTimes(1);
+    expect(dispose).not.toHaveBeenCalled();
     worker.onerror?.({ message: "worker failed" } as ErrorEvent);
-    await Promise.resolve();
-    await Promise.resolve();
     controller.pause(true);
+    await vi.dynamicImportSettled();
     expect(vi.getTimerCount()).toBe(0);
     controller.pause(false);
     expect(vi.getTimerCount()).toBe(1);
     controller.dispose();
     controller.dispose();
-    expect(dispose).toHaveBeenCalledTimes(2);
+    expect(dispose).toHaveBeenCalledTimes(1);
     expect(vi.getTimerCount()).toBe(0);
     dispose.mockRestore();
+  });
+
+  it("does not revive a disposed match when a fallback chunk finishes loading", async () => {
+    const { controller, worker } = createController();
+    worker.onerror?.({ message: "worker failed" } as ErrorEvent);
+    controller.dispose();
+    await vi.dynamicImportSettled();
+    expect(vi.getTimerCount()).toBe(0);
+    expect(worker.terminate).toHaveBeenCalledTimes(1);
+  });
+
+  it("retains an immediate skip while the no-worker engine chunk is loading", async () => {
+    vi.stubGlobal("Worker", undefined);
+    const onFinished = vi.fn();
+    const controller = createLiveMatchController({
+      home: buildTeamSetup("fla"),
+      away: buildTeamSetup("pal"),
+      seed: "deferred-skip",
+      onSnapshot: () => undefined,
+      onFinished,
+    });
+    controllers.push(controller);
+    controller.skip();
+    await vi.dynamicImportSettled();
+    await vi.runAllTimersAsync();
+    expect(controller.view.finished).toBe(true);
+    expect(onFinished).toHaveBeenCalledTimes(1);
   });
 
   it("collects opt-in bridge telemetry without changing the live snapshot payload", () => {

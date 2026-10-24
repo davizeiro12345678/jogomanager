@@ -5,14 +5,20 @@
  * resultante é pequeno o suficiente para caber no aparelho e permite rever o
  * jogo em 3D depois, além de exportar um vídeo.
  */
-import { get, set } from "idb-keyval";
-import { decodeReplay, encodeReplay, type StoredReplayV3 } from "./replay-codec";
+import {
+  listReplaySummaries,
+  loadReplay,
+  storeReplayEntry,
+  removeReplayEntry,
+  type ReplayOwner,
+} from "./replay-storage";
 import { reportSilent } from "@/lib/silent-errors";
 
 import type { PlayerAction } from "./animation";
 import { emptyStats } from "./sim";
 import type { MatchStats, Side, SimPlayer, SimView, TeamSetup } from "./sim";
 import type { MatchExecutionContract } from "./match-execution-contract";
+import type { RecordedMatchExecutionContract } from "./recorded-execution-contract";
 import {
   emptyActionContext,
   emptyContactContext,
@@ -22,9 +28,6 @@ import {
   VISUAL_CONTEXT_VERSION,
 } from "./visual-context";
 
-const KEY = "manager3d.replays.v3";
-const LEGACY_KEY = "manager3d.replays.v2";
-const MAX_REPLAYS = 20;
 /** amostras por segundo de jogo simulado */
 const HZ = 4;
 
@@ -63,7 +66,7 @@ interface VisualContextSource {
 
 export interface Replay {
   /** Absent on existing saves. Playback preserves recorded frames. */
-  execution?: MatchExecutionContract;
+  execution?: RecordedMatchExecutionContract;
   id: string;
   createdAt: number;
   title: string;
@@ -318,25 +321,12 @@ function makePlayer(m: ReplayPlayerMeta): SimPlayer {
  * Armazenamento
  * ---------------------------------------------------------------- */
 
-export async function listReplays(): Promise<Replay[]> {
+export async function listReplays(owner: ReplayOwner = null): Promise<Replay[]> {
   if (typeof window === "undefined") return [];
   try {
-    const modern = await get<unknown>(KEY);
-    const stored = Array.isArray(modern) ? modern : await get<unknown[]>(LEGACY_KEY);
-    if (!Array.isArray(stored)) return [];
-    return stored.flatMap((value) => {
-      try {
-        return [decodeReplay(value)];
-      } catch (error) {
-        reportSilent("replay.storage", error, {
-          classification: "degradation",
-          feature: "replay",
-          phase: "decode",
-          dedupeKey: "replay-decode",
-        });
-        return [];
-      }
-    });
+    const rows = await listReplaySummaries(owner);
+    const loaded = await Promise.all(rows.map((row) => loadReplay(row.id, owner)));
+    return loaded.filter((replay): replay is Replay => replay !== undefined);
   } catch (error) {
     reportSilent("replay.storage", error, {
       classification: "degradation",
@@ -347,13 +337,11 @@ export async function listReplays(): Promise<Replay[]> {
     return [];
   }
 }
-
-export async function saveReplay(replay: Replay) {
-  if (typeof window === "undefined") return;
+export async function saveReplay(replay: Replay, owner: ReplayOwner = null): Promise<boolean> {
+  if (typeof window === "undefined") return false;
   try {
-    const list = await listReplays();
-    const next = [replay, ...list].slice(0, MAX_REPLAYS).map(encodeReplay);
-    await set(KEY, next satisfies StoredReplayV3[]);
+    await storeReplayEntry(replay, owner);
+    return true;
   } catch (error) {
     reportSilent("replay.storage", error, {
       classification: "degradation",
@@ -361,15 +349,13 @@ export async function saveReplay(replay: Replay) {
       phase: "write",
       dedupeKey: "replay-write",
     });
-    /* sem espaço: a partida segue normalmente */
+    return false;
   }
 }
-
-export async function deleteReplay(id: string) {
+export async function deleteReplay(id: string, owner: ReplayOwner = null): Promise<void> {
   if (typeof window === "undefined") return;
   try {
-    const list = await listReplays();
-    await set(KEY, list.filter((r) => r.id !== id).map(encodeReplay));
+    await removeReplayEntry(id, owner);
   } catch (error) {
     reportSilent("replay.storage", error, {
       classification: "degradation",
@@ -377,7 +363,6 @@ export async function deleteReplay(id: string) {
       phase: "delete",
       dedupeKey: "replay-delete",
     });
-    /* falha de quota/cache não impede a partida */
   }
 }
 

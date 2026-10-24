@@ -11,6 +11,8 @@ import type {
   Player,
   TrainingReport,
 } from "./types";
+import { TacticalProgramSchema } from "./tactical-schema";
+import { repairMatchAnalytics } from "./match-analytics-repair";
 import {
   repairPlayerIdentities,
   repairShirtNumbers,
@@ -345,6 +347,18 @@ export function repairCareer(input: CareerState): RepairResult {
   )
     fixes.push("Relatórios de treino inválidos corrigidos");
 
+  if (input.tactics?.advanced && !TacticalProgramSchema.safeParse(input.tactics.advanced).success) {
+    const { advanced: _invalid, ...legacy } = input.tactics;
+    input = { ...input, tactics: legacy };
+    fixes.push("Plano tático avançado inválido removido; esquema anterior preservado");
+  }
+  if (input.matchAnalytics !== undefined) {
+    const cleaned = repairMatchAnalytics(input.matchAnalytics);
+    if (JSON.stringify(cleaned) !== JSON.stringify(input.matchAnalytics)) {
+      input = { ...input, matchAnalytics: cleaned };
+      fixes.push("Análises inválidas removidas");
+    }
+  }
   if (!fixes.length) return { state: input, fixes };
   return {
     state: {

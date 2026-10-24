@@ -10,12 +10,14 @@ import { Bench } from "tinybench";
 import { registerMatchBenchmarks } from "./match";
 import { registerSeasonBenchmarks } from "./season";
 import { registerRigBenchmarks } from "./rig";
+import { registerPresentationBenchmarks } from "./presentation";
 
 const bench = withCodSpeed(new Bench({ time: 200, warmupTime: 50 }));
 
 registerMatchBenchmarks(bench);
 registerSeasonBenchmarks(bench);
 registerRigBenchmarks(bench);
+registerPresentationBenchmarks(bench);
 
 await bench.run();
 console.table(bench.table());

@@ -1,3 +1,4 @@
+import styles from "./cinematic.module.css";
 import type { CutsceneChoice } from "@/content/cutscene-types";
 
 interface CutsceneDialogueProps {
@@ -9,6 +10,8 @@ interface CutsceneDialogueProps {
   choiceLocked: boolean;
   onAdvance: () => void;
   onChoose: (index: number) => void;
+  language?: string | undefined;
+  labels?: { dialogue: string; fullLine: string; continue: string; choice: string };
 }
 
 export function CutsceneDialogue({
@@ -20,17 +23,24 @@ export function CutsceneDialogue({
   choiceLocked,
   onAdvance,
   onChoose,
+  language,
+  labels = {
+    dialogue: "Diálogo da cena",
+    fullLine: "Mostrar fala completa",
+    continue: "Continuar diálogo",
+    choice: "Escolha sua resposta",
+  },
 }: CutsceneDialogueProps) {
   return (
-    <section className="cutscene-dialogue" aria-label="Diálogo da cena">
-      {speaker ? <p className="cutscene-speaker">{speaker}</p> : null}
+    <section className={styles["cutscene-dialogue"]} aria-label={labels.dialogue}>
+      {speaker ? <p className={styles["cutscene-speaker"]}>{speaker}</p> : null}
       <button
         type="button"
         onClick={onAdvance}
-        aria-label={
-          visibleText.length < fullText.length ? "Mostrar fala completa" : "Continuar diálogo"
-        }
-        className="block w-full text-left text-base leading-relaxed text-white sm:text-lg"
+        aria-label={visibleText.length < fullText.length ? labels.fullLine : labels.continue}
+        className={`${styles["cutscene-caption"]} block w-full text-start leading-relaxed text-white`}
+        dir="auto"
+        lang={language}
       >
         {visibleText}
         {visibleText.length < fullText.length && (
@@ -39,12 +49,12 @@ export function CutsceneDialogue({
           </span>
         )}
       </button>
-      <p className="sr-only" aria-live="polite">
+      <p className="sr-only" aria-live="polite" lang={language}>
         {speaker ? `${speaker}: ` : ""}
         {fullText}
       </p>
       {choices && (
-        <div className="cutscene-choices" role="group" aria-label="Escolha sua resposta">
+        <div className={styles["cutscene-choices"]} role="group" aria-label={labels.choice}>
           {choices.map((choice, index) => (
             <button
               key={index}
@@ -52,7 +62,7 @@ export function CutsceneDialogue({
               onClick={() => onChoose(index)}
               disabled={choiceLocked}
               aria-pressed={selectedChoice === index}
-              className="cutscene-choice"
+              className={styles["cutscene-choice"]}
             >
               <span className="block font-semibold">{choice.label}</span>
               {choice.hint ? (

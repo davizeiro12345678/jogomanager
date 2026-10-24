@@ -6,6 +6,10 @@ export class BallResponse {
   impact(speed: number) {
     this.velocity += Math.min(2.5, Math.max(0, speed) * 0.065);
   }
+  reset() {
+    this.compression = 0;
+    this.velocity = 0;
+  }
   step(dt: number) {
     let remaining = Math.max(0, Math.min(dt, 0.1));
     while (remaining > 0) {

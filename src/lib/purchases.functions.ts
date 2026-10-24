@@ -10,6 +10,7 @@ export interface PurchaseRow {
   reference: string | null;
   error: string | null;
   createdAt: string;
+  refundReview: boolean;
   paymentReview?: "payment_failed" | "refund_review" | null;
   refundedAmountCents?: number;
 }
@@ -67,6 +68,9 @@ export const getPurchases = createServerFn({ method: "GET" })
       reference: r.reference ?? null,
       error: (r as { error: string | null }).error ?? null,
       createdAt: r.created_at,
+      refundReview: r.reference
+        ? reviewByReference.get(r.reference)?.review_status === "refund_review"
+        : false,
       paymentReview: r.reference
         ? ((reviewByReference.get(r.reference)?.review_status as PurchaseRow["paymentReview"]) ??
           null)
@@ -80,7 +84,7 @@ export const getPurchases = createServerFn({ method: "GET" })
       purchases,
       totalSpentCents: purchases
         .filter((p) => p.status === "completed")
-        .reduce((sum, p) => sum + p.amountCents, 0),
+        .reduce((sum, p) => sum + Math.max(0, p.amountCents - (p.refundedAmountCents ?? 0)), 0),
       completedCount: purchases.filter((p) => p.status === "completed").length,
       pendingCount: purchases.filter((p) => p.status === "pending").length,
       coins: wallet?.coins ?? 0,

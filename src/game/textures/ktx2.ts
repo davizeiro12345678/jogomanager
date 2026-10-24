@@ -18,7 +18,7 @@ import { useSyncExternalStore } from "react";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { deviceTextureDecodeWorkers } from "@/game/device-workload";
 import { BoundedWorkQueue } from "@/game/bounded-work-queue";
-import { gpuTexturePolicy, prepareGpuTexture } from "./gpu-texture-policy";
+import { gpuTexturePolicy, prepareGpuTexture, selectTextureResolution } from "./gpu-texture-policy";
 import { TextureRendererOwners } from "./texture-owners";
 import {
   canRequestTexture,
@@ -29,54 +29,9 @@ import {
   type TextureFailure,
 } from "./texture-load-policy";
 
-import bootNormalAsset from "@/assets/textures/boot_normal.ktx2.asset.json";
-import bootRoughAsset from "@/assets/textures/boot_rough.ktx2.asset.json";
-import fiberNormalAsset from "@/assets/textures/fiber_normal.ktx2.asset.json";
-import fiberRoughAsset from "@/assets/textures/fiber_rough.ktx2.asset.json";
-import hairNormalAsset from "@/assets/textures/hair_normal.ktx2.asset.json";
-import hairRoughAsset from "@/assets/textures/hair_rough.ktx2.asset.json";
-import shinNormalAsset from "@/assets/textures/shin_normal.ktx2.asset.json";
-import shinRoughAsset from "@/assets/textures/shin_rough.ktx2.asset.json";
-import skinNormalAsset from "@/assets/textures/skin_normal.ktx2.asset.json";
-import sockNormalAsset from "@/assets/textures/sock_normal.ktx2.asset.json";
-import sweatMaskAsset from "@/assets/textures/sweat_mask.ktx2.asset.json";
-import sweatNormalAsset from "@/assets/textures/sweat_normal.ktx2.asset.json";
-import grassAlbedoAsset from "@/assets/textures/grass_albedo.ktx2.asset.json";
-import grassNormalAsset from "@/assets/textures/grass_normal.ktx2.asset.json";
-import grassRoughAsset from "@/assets/textures/grass_rough.ktx2.asset.json";
-import concreteAlbedoAsset from "@/assets/textures/concrete_albedo.ktx2.asset.json";
-import concreteRoughAsset from "@/assets/textures/concrete_rough.ktx2.asset.json";
-import netMaskAsset from "@/assets/textures/net_mask.ktx2.asset.json";
-
-import asset0 from "@/assets/textures/jersey_solid_normal.ktx2.asset.json";
-import asset1 from "@/assets/textures/jersey_solid_rough.ktx2.asset.json";
-import asset2 from "@/assets/textures/jersey_stripes_normal.ktx2.asset.json";
-import asset3 from "@/assets/textures/jersey_stripes_rough.ktx2.asset.json";
-import asset4 from "@/assets/textures/jersey_pin_normal.ktx2.asset.json";
-import asset5 from "@/assets/textures/jersey_pin_rough.ktx2.asset.json";
-import asset6 from "@/assets/textures/jersey_hoops_normal.ktx2.asset.json";
-import asset7 from "@/assets/textures/jersey_hoops_rough.ktx2.asset.json";
-import asset8 from "@/assets/textures/jersey_sash_normal.ktx2.asset.json";
-import asset9 from "@/assets/textures/jersey_sash_rough.ktx2.asset.json";
-import asset10 from "@/assets/textures/jersey_halves_normal.ktx2.asset.json";
-import asset11 from "@/assets/textures/jersey_halves_rough.ktx2.asset.json";
-import asset12 from "@/assets/textures/jersey_checks_normal.ktx2.asset.json";
-import asset13 from "@/assets/textures/jersey_checks_rough.ktx2.asset.json";
-import asset14 from "@/assets/textures/shorts_plain_normal.ktx2.asset.json";
-import asset15 from "@/assets/textures/shorts_mesh_normal.ktx2.asset.json";
-import asset16 from "@/assets/textures/shorts_stitched_normal.ktx2.asset.json";
-import asset17 from "@/assets/textures/socks_rib_normal.ktx2.asset.json";
-import asset18 from "@/assets/textures/socks_fine_normal.ktx2.asset.json";
-import asset19 from "@/assets/textures/socks_heavy_normal.ktx2.asset.json";
-import asset20 from "@/assets/textures/boot_leather_normal.ktx2.asset.json";
-import asset21 from "@/assets/textures/boot_synthetic_normal.ktx2.asset.json";
-import asset22 from "@/assets/textures/boot_knit_normal.ktx2.asset.json";
-import asset23 from "@/assets/textures/skin_light_normal.ktx2.asset.json";
-import asset24 from "@/assets/textures/skin_medium_normal.ktx2.asset.json";
-import asset25 from "@/assets/textures/skin_dark_normal.ktx2.asset.json";
-import asset26 from "@/assets/textures/grass_stripes_albedo.ktx2.asset.json";
-import asset27 from "@/assets/textures/grass_diagonal_albedo.ktx2.asset.json";
-import asset28 from "@/assets/textures/grass_wide_albedo.ktx2.asset.json";
+import textureUrls from "@/assets/textures/texture-library-v2.urls.json";
+import textureVariants from "@/assets/textures/texture-library-v2.variants.json";
+import { TextureRevisions } from "./texture-revisions";
 
 export type Ktx2Name =
   | "fiberNormal"
@@ -92,7 +47,14 @@ export type Ktx2Name =
   | "shinRough"
   | "sockNormal";
 export type StadiumKtx2Name =
-  "grassAlbedo" | "grassNormal" | "grassRough" | "concreteAlbedo" | "concreteRough" | "netMask";
+  | "grassAlbedo"
+  | "grassNormal"
+  | "grassRough"
+  | "grassDetailRough"
+  | "concreteAlbedo"
+  | "concreteNormal"
+  | "concreteRough"
+  | "netMask";
 export type DetailKtx2Name =
   | "jersey_solid_normal"
   | "jersey_solid_rough"
@@ -122,60 +84,139 @@ export type DetailKtx2Name =
   | "skin_dark_normal"
   | "grass_stripes_albedo"
   | "grass_diagonal_albedo"
-  | "grass_wide_albedo";
-export type TextureName = Ktx2Name | StadiumKtx2Name | DetailKtx2Name;
+  | "grass_wide_albedo"
+  | "grass_rings_albedo"
+  | "grass_diamond_albedo"
+  | "grass_fine_albedo"
+  | "grass_spiral_albedo"
+  | "grass_bands_albedo";
+const EXTRA_TEXTURES = [
+  "glove_normal",
+  "glove_rough",
+  "skin_rough",
+  "lip_normal",
+  "lip_rough",
+  "beard_normal",
+  "iris_detail_albedo",
+  "sclera_albedo",
+  "grass_blade_albedo",
+  "net_normal",
+  "net_rough",
+  "ball_normal",
+  "ball_rough",
+  "shorts_plain_rough",
+  "shorts_mesh_rough",
+  "shorts_stitched_rough",
+  "socks_rib_rough",
+  "socks_fine_rough",
+  "socks_heavy_rough",
+  "stadium_metal_albedo",
+  "stadium_metal_normal",
+  "stadium_metal_rough",
+  "stadium_seat_albedo",
+  "stadium_seat_normal",
+  "stadium_seat_rough",
+  "stadium_asphalt_albedo",
+  "stadium_asphalt_normal",
+  "stadium_asphalt_rough",
+  "cinema_tile_albedo",
+  "cinema_tile_normal",
+  "cinema_tile_rough",
+  "cinema_wood_albedo",
+  "cinema_wood_normal",
+  "cinema_wood_rough",
+  "cinema_wall_albedo",
+  "cinema_wall_normal",
+  "cinema_wall_rough",
+] as const;
+export type ExtraKtx2Name = (typeof EXTRA_TEXTURES)[number];
+export type TextureName = Ktx2Name | StadiumKtx2Name | DetailKtx2Name | ExtraKtx2Name;
+type TextureSource = { url: string; repeat: number | readonly [number, number]; color?: boolean };
 
 /** repetição de cada mapa sobre a malha do jogador */
-const SOURCES: Record<TextureName, { url: string; repeat: number; color?: boolean }> = {
-  fiberNormal: { url: fiberNormalAsset.url, repeat: 6 },
-  fiberRough: { url: fiberRoughAsset.url, repeat: 6 },
-  skinNormal: { url: skinNormalAsset.url, repeat: 4 },
-  sweatNormal: { url: sweatNormalAsset.url, repeat: 3 },
-  sweatMask: { url: sweatMaskAsset.url, repeat: 3 },
-  hairNormal: { url: hairNormalAsset.url, repeat: 3 },
-  hairRough: { url: hairRoughAsset.url, repeat: 3 },
-  bootNormal: { url: bootNormalAsset.url, repeat: 3 },
-  bootRough: { url: bootRoughAsset.url, repeat: 3 },
-  shinNormal: { url: shinNormalAsset.url, repeat: 2 },
-  shinRough: { url: shinRoughAsset.url, repeat: 2 },
-  sockNormal: { url: sockNormalAsset.url, repeat: 4 },
-  grassAlbedo: { url: grassAlbedoAsset.url, repeat: 1, color: true },
-  grassNormal: { url: grassNormalAsset.url, repeat: 6 },
-  grassRough: { url: grassRoughAsset.url, repeat: 6 },
-  concreteAlbedo: { url: concreteAlbedoAsset.url, repeat: 1, color: true },
-  concreteRough: { url: concreteRoughAsset.url, repeat: 1 },
-  netMask: { url: netMaskAsset.url, repeat: 1 },
-  jersey_solid_normal: { url: asset0.url, repeat: 6 },
-  jersey_solid_rough: { url: asset1.url, repeat: 6 },
-  jersey_stripes_normal: { url: asset2.url, repeat: 6 },
-  jersey_stripes_rough: { url: asset3.url, repeat: 6 },
-  jersey_pin_normal: { url: asset4.url, repeat: 6 },
-  jersey_pin_rough: { url: asset5.url, repeat: 6 },
-  jersey_hoops_normal: { url: asset6.url, repeat: 6 },
-  jersey_hoops_rough: { url: asset7.url, repeat: 6 },
-  jersey_sash_normal: { url: asset8.url, repeat: 6 },
-  jersey_sash_rough: { url: asset9.url, repeat: 6 },
-  jersey_halves_normal: { url: asset10.url, repeat: 6 },
-  jersey_halves_rough: { url: asset11.url, repeat: 6 },
-  jersey_checks_normal: { url: asset12.url, repeat: 6 },
-  jersey_checks_rough: { url: asset13.url, repeat: 6 },
-  shorts_plain_normal: { url: asset14.url, repeat: 6 },
-  shorts_mesh_normal: { url: asset15.url, repeat: 6 },
-  shorts_stitched_normal: { url: asset16.url, repeat: 6 },
-  socks_rib_normal: { url: asset17.url, repeat: 6 },
-  socks_fine_normal: { url: asset18.url, repeat: 6 },
-  socks_heavy_normal: { url: asset19.url, repeat: 6 },
-  boot_leather_normal: { url: asset20.url, repeat: 3 },
-  boot_synthetic_normal: { url: asset21.url, repeat: 3 },
-  boot_knit_normal: { url: asset22.url, repeat: 3 },
-  skin_light_normal: { url: asset23.url, repeat: 3 },
-  skin_medium_normal: { url: asset24.url, repeat: 3 },
-  skin_dark_normal: { url: asset25.url, repeat: 3 },
-  grass_stripes_albedo: { url: asset26.url, repeat: 1, color: true },
-  grass_diagonal_albedo: { url: asset27.url, repeat: 1, color: true },
-  grass_wide_albedo: { url: asset28.url, repeat: 1, color: true },
+const SOURCES: Record<TextureName, TextureSource> = {
+  ...(Object.fromEntries(
+    EXTRA_TEXTURES.map((name) => [
+      name,
+      {
+        url: textureUrls[name],
+        repeat:
+          name === "grass_blade_albedo"
+            ? [8, 4]
+            : name.startsWith("cinema_tile")
+              ? [8, 6]
+              : name.startsWith("cinema_wood")
+                ? [5, 4]
+                : name.startsWith("cinema_wall")
+                  ? [4, 3]
+                  : name.startsWith("stadium_asphalt")
+                    ? [7, 5]
+                    : name.startsWith("shorts_")
+                      ? 6
+                      : name.startsWith("socks_") || name === "skin_rough"
+                        ? 4
+                        : name.startsWith("lip_") || name === "beard_normal"
+                          ? 2
+                          : 1,
+        color: name.endsWith("_albedo"),
+      },
+    ]),
+  ) as Record<ExtraKtx2Name, TextureSource>),
+  fiberNormal: { url: textureUrls.fiber_normal, repeat: 6 },
+  fiberRough: { url: textureUrls.fiber_rough, repeat: 6 },
+  skinNormal: { url: textureUrls.skin_normal, repeat: 4 },
+  sweatNormal: { url: textureUrls.sweat_normal, repeat: 3 },
+  sweatMask: { url: textureUrls.sweat_mask, repeat: 3 },
+  hairNormal: { url: textureUrls.hair_normal, repeat: 2 },
+  hairRough: { url: textureUrls.hair_rough, repeat: 3 },
+  bootNormal: { url: textureUrls.boot_normal, repeat: 3 },
+  bootRough: { url: textureUrls.boot_rough, repeat: 3 },
+  shinNormal: { url: textureUrls.shin_normal, repeat: 2 },
+  shinRough: { url: textureUrls.shin_rough, repeat: 2 },
+  sockNormal: { url: textureUrls.sock_normal, repeat: 4 },
+  grassAlbedo: { url: textureUrls.grass_albedo, repeat: 1, color: true },
+  grassNormal: { url: textureUrls.grass_normal, repeat: [48, 32] },
+  grassRough: { url: textureUrls.grass_rough, repeat: 1 },
+  grassDetailRough: { url: textureUrls.grass_detail_rough, repeat: [48, 32] },
+  concreteAlbedo: { url: textureUrls.concrete_albedo, repeat: 1, color: true },
+  concreteNormal: { url: textureUrls.concrete_normal, repeat: 1 },
+  concreteRough: { url: textureUrls.concrete_rough, repeat: 1 },
+  netMask: { url: textureUrls.net_mask, repeat: 1 },
+  jersey_solid_normal: { url: textureUrls.jersey_solid_normal, repeat: 6 },
+  jersey_solid_rough: { url: textureUrls.jersey_solid_rough, repeat: 6 },
+  jersey_stripes_normal: { url: textureUrls.jersey_stripes_normal, repeat: 6 },
+  jersey_stripes_rough: { url: textureUrls.jersey_stripes_rough, repeat: 6 },
+  jersey_pin_normal: { url: textureUrls.jersey_pin_normal, repeat: 6 },
+  jersey_pin_rough: { url: textureUrls.jersey_pin_rough, repeat: 6 },
+  jersey_hoops_normal: { url: textureUrls.jersey_hoops_normal, repeat: 6 },
+  jersey_hoops_rough: { url: textureUrls.jersey_hoops_rough, repeat: 6 },
+  jersey_sash_normal: { url: textureUrls.jersey_sash_normal, repeat: 6 },
+  jersey_sash_rough: { url: textureUrls.jersey_sash_rough, repeat: 6 },
+  jersey_halves_normal: { url: textureUrls.jersey_halves_normal, repeat: 6 },
+  jersey_halves_rough: { url: textureUrls.jersey_halves_rough, repeat: 6 },
+  jersey_checks_normal: { url: textureUrls.jersey_checks_normal, repeat: 6 },
+  jersey_checks_rough: { url: textureUrls.jersey_checks_rough, repeat: 6 },
+  shorts_plain_normal: { url: textureUrls.shorts_plain_normal, repeat: 6 },
+  shorts_mesh_normal: { url: textureUrls.shorts_mesh_normal, repeat: 6 },
+  shorts_stitched_normal: { url: textureUrls.shorts_stitched_normal, repeat: 6 },
+  socks_rib_normal: { url: textureUrls.socks_rib_normal, repeat: 6 },
+  socks_fine_normal: { url: textureUrls.socks_fine_normal, repeat: 6 },
+  socks_heavy_normal: { url: textureUrls.socks_heavy_normal, repeat: 6 },
+  boot_leather_normal: { url: textureUrls.boot_leather_normal, repeat: 3 },
+  boot_synthetic_normal: { url: textureUrls.boot_synthetic_normal, repeat: 3 },
+  boot_knit_normal: { url: textureUrls.boot_knit_normal, repeat: 3 },
+  skin_light_normal: { url: textureUrls.skin_light_normal, repeat: 3 },
+  skin_medium_normal: { url: textureUrls.skin_medium_normal, repeat: 3 },
+  skin_dark_normal: { url: textureUrls.skin_dark_normal, repeat: 3 },
+  grass_stripes_albedo: { url: textureUrls.grass_stripes_albedo, repeat: 1, color: true },
+  grass_diagonal_albedo: { url: textureUrls.grass_diagonal_albedo, repeat: 1, color: true },
+  grass_wide_albedo: { url: textureUrls.grass_wide_albedo, repeat: 1, color: true },
+  grass_rings_albedo: { url: textureUrls.grass_rings_albedo, repeat: 1, color: true },
+  grass_diamond_albedo: { url: textureUrls.grass_diamond_albedo, repeat: 1, color: true },
+  grass_fine_albedo: { url: textureUrls.grass_fine_albedo, repeat: 1, color: true },
+  grass_spiral_albedo: { url: textureUrls.grass_spiral_albedo, repeat: 1, color: true },
+  grass_bands_albedo: { url: textureUrls.grass_bands_albedo, repeat: 1, color: true },
 };
-
 const loaded = new Map<TextureName, THREE.Texture>();
 const requested = new Set<TextureName>();
 const pending = new Set<TextureName>();
@@ -200,17 +241,40 @@ export const gpuTextureStats = {
 };
 const listeners = new Set<(reset?: boolean) => void>();
 let revision = 0;
+const assetRevisions = new TextureRevisions<TextureName>();
 let disposing = false;
+let notificationPending = false;
+let pendingReset = false;
 
-function notifyKtx2Change(reset = false) {
-  revision += 1;
-  for (const fn of listeners) fn(reset);
+function notifyKtx2Change(reset = false, name?: TextureName) {
+  assetRevisions.touch(name);
+  pendingReset ||= reset;
+  if (notificationPending) return;
+  notificationPending = true;
+  const publish = () => {
+    notificationPending = false;
+    const reset = pendingReset;
+    pendingReset = false;
+    revision += 1;
+    // A subscriber can unmount while the decoder is waiting for a frame.
+    // Deliver only to the consumers still registered at publication time.
+    for (const fn of listeners) fn(reset);
+  };
+  // Several decoded channels can complete together. Notify their consumers
+  // once per painted frame while retaining backend ownership/reset semantics.
+  if (
+    typeof requestAnimationFrame === "function" &&
+    typeof document !== "undefined" &&
+    !document.hidden
+  )
+    requestAnimationFrame(publish);
+  else queueMicrotask(publish);
 }
 /** Re-render only when a compressed asset arrives; no per-frame checks. */
-export function useKtx2Revision(): number {
+export function useKtx2Revision(names?: readonly TextureName[]): number {
   return useSyncExternalStore(
     onKtx2Ready,
-    () => revision,
+    () => (names ? assetRevisions.snapshot(names) : revision),
     () => 0,
   );
 }
@@ -254,6 +318,18 @@ export function requestKtx2(names: readonly TextureName[]): void {
     retryTimers.delete(name);
     requested.add(name);
     const src = SOURCES[name];
+    const filename = src.url
+      .split("/")
+      .at(-1)
+      ?.replace(/\.ktx2$/, "") as keyof typeof textureVariants;
+    const selected = selectTextureResolution(
+      textureVariants[filename],
+      src.url,
+      src.color ? policy.maxColorSize : policy.maxDataSize,
+    );
+    const url = /^[a-f0-9]{16}$/.test(selected)
+      ? `/textures/v2/${selected}/${filename}.ktx2`
+      : selected;
     const activeLoader = loader;
     const activeGeneration = generation;
     loadQueue?.enqueue(
@@ -265,7 +341,7 @@ export function requestKtx2(names: readonly TextureName[]): void {
             return;
           }
           activeLoader.load(
-            src.url,
+            url,
             (tex) => {
               resolve();
               if (activeGeneration !== generation || loader !== activeLoader) {
@@ -288,11 +364,12 @@ export function requestKtx2(names: readonly TextureName[]): void {
                   retryAt: Number.POSITIVE_INFINITY,
                   permanent: true,
                 });
-                notifyKtx2Change();
+                notifyKtx2Change(false, name);
                 return;
               }
               tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-              tex.repeat.set(src.repeat, src.repeat);
+              if (typeof src.repeat === "number") tex.repeat.set(src.repeat, src.repeat);
+              else tex.repeat.set(src.repeat[0], src.repeat[1]);
               tex.colorSpace = src.color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
               tex.needsUpdate = true;
               loaded.set(name, tex);
@@ -300,7 +377,7 @@ export function requestKtx2(names: readonly TextureName[]): void {
               gpuTextureStats.residentTextures = loaded.size;
               gpuTextureStats.droppedMips += prepared.droppedMips;
               failures.delete(name);
-              notifyKtx2Change();
+              notifyKtx2Change(false, name);
             },
             undefined,
             (error) => {
@@ -332,6 +409,7 @@ export function requestKtx2(names: readonly TextureName[]): void {
  */
 export function initKtx2(
   renderer: THREE.WebGLRenderer | import("three/webgpu").WebGPURenderer,
+  portrait = false,
 ): void {
   if (started || typeof window === "undefined") return;
   // Reserve two temporary shared-WASM lanes during stadium preparation.
@@ -352,6 +430,7 @@ export function initKtx2(
   policy = gpuTexturePolicy(
     (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
     renderer instanceof THREE.WebGLRenderer ? renderer.capabilities.getMaxAnisotropy() : 4,
+    portrait,
   );
   requestKtx2([...pending]);
   pending.clear();
@@ -360,6 +439,7 @@ export function initKtx2(
 /** Keep shared textures alive while a scene uses them; release after the last scene leaves. */
 export function retainKtx2(
   renderer: THREE.WebGLRenderer | import("three/webgpu").WebGPURenderer,
+  portrait = false,
 ): () => void {
   // Every Canvas detects its own supported formats, including cold studio
   // access and a replacement renderer after context recovery. The shared
@@ -377,7 +457,7 @@ export function retainKtx2(
   const compatibleBefore = owners.compatible;
   const releaseOwner = owners.acquire(renderer, profile);
   if (started && owners.compatible && decoderProfile !== profile) disposeKtx2();
-  initKtx2(renderer);
+  initKtx2(renderer, portrait);
   if (compatibleBefore !== owners.compatible) notifyKtx2Change();
   let released = false;
   return () => {

@@ -1,10 +1,8 @@
-import { ScreenHeader } from "@/components/game/screen-kit";
+import { CareerTransferPanel } from "@/components/game/CareerTransferPanel";
 
 import { Link } from "@tanstack/react-router";
 
-import { lazy, Suspense, useRef, useState } from "react";
-
-import { Download, Upload } from "lucide-react";
+import { lazy, Suspense } from "react";
 
 import { Crest } from "@/components/game/Crest";
 
@@ -29,10 +27,6 @@ import { ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
 import { AdMetricsPanel } from "@/features/ads/AdMetricsPanel";
 
 import { SidebarAd } from "@/features/ads/AdZones";
-
-import { exportCareerFile, importCareerFile } from "@/game/contracts/career-transfer";
-
-import { Button } from "@/components/ui/button";
 
 import { ActivityRanking } from "@/features/activity/ActivityRanking";
 
@@ -64,24 +58,46 @@ const FALLBACK_LOOK = {
 };
 
 export function Perfil() {
-  const { career, update, signedIn } = useCareer();
-  const importRef = useRef<HTMLInputElement>(null);
-  const [transferStatus, setTransferStatus] = useState("");
+  const { career, restore, signedIn, ownerId, isLoading, loadError } = useCareer();
+
+  if (isLoading)
+    return (
+      <p className="p-8" role="status">
+        Carregando carreira…
+      </p>
+    );
 
   if (!career)
     return (
       <div className="flex min-h-screen items-center justify-center px-6">
         <div className="surface-card w-full max-w-md p-8 text-center">
-          <ScreenHeader title="Perfil vazio" />
+          <h1 className="font-display text-2xl uppercase tracking-wide">
+            {loadError ? "Carreira requer recuperação" : "Perfil vazio"}
+          </h1>
+          {loadError ? (
+            <p className="mt-3 text-sm text-amber-300" role="alert">
+              {loadError}
+            </p>
+          ) : null}
           <p className="mt-2 text-sm text-muted-foreground">
-            Crie um treinador para começar a somar jogos, títulos e conquistas.
+            {loadError
+              ? "A carreira existente foi mantida. Restaure uma cópia compatível para continuar."
+              : "Crie um treinador ou restaure uma cópia JSON da sua carreira."}
           </p>
-          <Link
-            to="/new"
-            className="mt-6 inline-grid min-h-[44px] place-items-center rounded-xl bg-primary px-6 font-display text-sm uppercase tracking-wider text-primary-foreground"
-          >
-            Criar treinador
-          </Link>
+          {!loadError ? (
+            <Link
+              to="/new"
+              className="mt-6 inline-grid min-h-[44px] place-items-center rounded-xl bg-primary px-6 font-display text-sm uppercase tracking-wider text-primary-foreground"
+            >
+              Criar treinador
+            </Link>
+          ) : null}
+          <CareerTransferPanel
+            career={null}
+            ownerId={ownerId}
+            ready={signedIn !== null}
+            onImport={restore}
+          />
         </div>
       </div>
     );
@@ -116,10 +132,10 @@ export function Perfil() {
         <GuestCloudPrompt next="/perfil" compact />
       </div>
 
-      <div className="surface-card flex flex-col items-center gap-5 p-6 sm:flex-row sm:items-end">
+      <header className="surface-card flex flex-col items-center gap-5 p-6 sm:flex-row sm:items-end">
         <ManagerPortrait look={manager?.look ?? FALLBACK_LOOK} size={96} />
         <div className="min-w-0 flex-1 text-center sm:text-left">
-          <ScreenHeader title={<>{career.managerName}</>} />
+          <h1 className="font-display text-3xl uppercase tracking-wide">{career.managerName}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {club ? club.name : "Sem clube"} · Temporada {career.season} · Rodada {career.round}
           </p>
@@ -131,7 +147,7 @@ export function Perfil() {
           </div>
         </div>
         {club ? <Crest club={club} size={64} /> : null}
-      </div>
+      </header>
 
       {signedIn && <PasskeySettings />}
       {signedIn && (
@@ -318,60 +334,13 @@ export function Perfil() {
             >
               Painel
             </Link>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const blob = new Blob([exportCareerFile(career)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const anchor = document.createElement("a");
-                anchor.href = url;
-                anchor.download = `carreira-${career.managerName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.pfm3d.json`;
-                anchor.click();
-                URL.revokeObjectURL(url);
-                setTransferStatus("Cópia da carreira exportada.");
-              }}
-            >
-              <Download size={14} /> Exportar carreira
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => importRef.current?.click()}
-            >
-              <Upload size={14} /> Importar carreira
-            </Button>
-            <input
-              ref={importRef}
-              type="file"
-              accept="application/json,.json"
-              className="sr-only"
-              onChange={async (event) => {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                try {
-                  const imported = importCareerFile(await file.text());
-                  update(imported);
-                  setTransferStatus("Carreira importada e salva neste aparelho.");
-                } catch (error) {
-                  setTransferStatus(
-                    error instanceof Error
-                      ? error.message
-                      : "Não foi possível importar a carreira.",
-                  );
-                } finally {
-                  event.target.value = "";
-                }
-              }}
-            />
           </div>
-          {transferStatus ? (
-            <p role="status" className="mt-3 text-xs text-primary">
-              {transferStatus}
-            </p>
-          ) : null}
+          <CareerTransferPanel
+            career={career}
+            ownerId={ownerId}
+            ready={signedIn !== null}
+            onImport={restore}
+          />
         </HudCard>
       </div>
     </GameShell>

@@ -33,10 +33,12 @@ Os valores são definidos em `src/game/contracts/graphics-profile.ts` e continua
 
 | Perfil | FPS alvo | Frame time p95 máximo | Draw calls máximas | Triângulos máximos |
 | ------ | -------: | --------------------: | -----------------: | -----------------: |
-| Baixa  |       60 |                 22 ms |                 90 |            180.000 |
-| Média  |       60 |                 20 ms |                170 |            420.000 |
-| Alta   |       45 |                 28 ms |                260 |            850.000 |
+| Baixa  |       60 |                 15 ms |                 90 |            180.000 |
+| Média  |       60 |                 15 ms |                170 |            420.000 |
+| Alta   |       60 |                 15 ms |                260 |            850.000 |
 | Cinema |       30 |               33,3 ms |                340 |          1.200.000 |
+
+Esses valores são os alvos configurados para o controlador; a atualização de 22/10/2026 tornou os alvos de frame time e do perfil Alta mais exigentes, sem aumentar os limites de geometria ou chamadas de desenho. A configuração não comprova que um dispositivo alcançou o alvo.
 
 O governador reduz o trabalho visual quando há pressão. Testes de contrato e imagens de um navegador com renderização por software não comprovam esses limites em um aparelho físico. Mudanças do rig ou do renderizador exigem comparação no mesmo cenário, semente, resolução, qualidade, dispositivo e caminho gráfico, com erros e perdas visuais examinados. Registrar explicitamente quando essa certificação não foi realizada.
 

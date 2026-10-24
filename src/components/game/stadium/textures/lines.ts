@@ -1,6 +1,12 @@
 import * as THREE from "three";
 
-import { FIELD_X, FIELD_Z } from "@/game/sim";
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
+import {
+  penaltyArcAngles,
+  cornerArcAngles,
+  pitchBoxPath,
+  PITCH_PAINT,
+} from "@/game/pitch-markings";
 
 /**
  * Marcação do campo pintada como textura (em vez de linhas de 1 pixel).
@@ -48,19 +54,15 @@ function build() {
   ctx.lineCap = "butt";
   ctx.lineJoin = "miter";
 
-  const paint = (draw: () => void, width = 0.12) => {
-    // três passadas: sangramento largo e fraco, corpo da tinta e miolo claro
+  const paint = (draw: () => void, width = PITCH_PAINT.lineWidth) => {
+    // Physical paint width is 12 cm. A narrower broken core reads as brushed
+    // chalk without the former wide blurred halo or a third canvas pass.
     ctx.save();
-    ctx.strokeStyle = "rgba(236,244,238,0.16)";
-    ctx.lineWidth = width * PX_PER_M * 2.6;
-    ctx.filter = "blur(2px)";
-    draw();
-    ctx.filter = "none";
-    ctx.strokeStyle = "rgba(240,248,242,0.86)";
-    ctx.lineWidth = width * PX_PER_M * 1.45;
+    ctx.strokeStyle = "rgba(240,248,242,0.88)";
+    ctx.lineWidth = width * PX_PER_M;
     draw();
     ctx.strokeStyle = "rgba(255,255,255,0.97)";
-    ctx.lineWidth = width * PX_PER_M;
+    ctx.lineWidth = width * PX_PER_M * 0.82;
     draw();
     ctx.restore();
   };
@@ -81,6 +83,12 @@ function build() {
     ctx.arc(X(x), Y(z), r * PX_PER_M, a0, a1);
     ctx.stroke();
   };
+  const box = (side: number, kind: "penalty" | "goal") => () => {
+    const points = pitchBoxPath(side, FIELD_X, kind);
+    ctx.beginPath();
+    points.forEach(([x, z], index) => (index ? ctx.lineTo(X(x), Y(z)) : ctx.moveTo(X(x), Y(z))));
+    ctx.stroke();
+  };
 
   // contorno, meio-campo e círculo central
   paint(rect(-FIELD_X, -FIELD_Z, FIELD_X, FIELD_Z));
@@ -89,20 +97,12 @@ function build() {
 
   for (const s of [1, -1]) {
     // grande área e pequena área
-    paint(rect(s * FIELD_X, -20.16, s * (FIELD_X - 16.5), 20.16));
-    paint(rect(s * FIELD_X, -9.16, s * (FIELD_X - 5.5), 9.16));
+    paint(box(s, "penalty"));
+    paint(box(s, "goal"));
     // meia-lua
     const px = s * (FIELD_X - 11);
-    const a = Math.acos(5.5 / 9.15);
-    paint(
-      arc(
-        px,
-        0,
-        9.15,
-        s > 0 ? Math.PI / 2 + a : -Math.PI / 2 + a,
-        s > 0 ? (3 * Math.PI) / 2 - a : Math.PI / 2 - a,
-      ),
-    );
+    const [arcStart, arcEnd] = penaltyArcAngles(s);
+    paint(arc(px, 0, 9.15, arcStart, arcEnd));
     // marca do pênalti
     ctx.fillStyle = "rgba(255,255,255,0.95)";
     ctx.beginPath();
@@ -110,7 +110,8 @@ function build() {
     ctx.fill();
     // cantos
     for (const z of [1, -1]) {
-      paint(arc(s * FIELD_X, z * FIELD_Z, 1, 0, Math.PI * 2), 0.1);
+      const [start, end] = cornerArcAngles(s, z);
+      paint(arc(s * FIELD_X, z * FIELD_Z, 1, start, end), 0.12);
     }
   }
   // ponto central
@@ -121,23 +122,18 @@ function build() {
 
   // desgaste: a cal descasca em manchas pequenas
   ctx.globalCompositeOperation = "destination-out";
-  for (let i = 0; i < 5200; i++) {
+  for (let i = 0; i < 900; i++) {
     const x = rand() * w;
     const y = rand() * h;
-    ctx.fillStyle = `rgba(0,0,0,${0.25 + rand() * 0.6})`;
+    ctx.fillStyle = `rgba(0,0,0,${0.08 + rand() * 0.12})`;
     ctx.beginPath();
-    ctx.ellipse(x, y, 1 + rand() * 5, 1 + rand() * 3, rand() * 3, 0, 7);
+    ctx.ellipse(x, y, 0.5 + rand() * 1.5, 0.5 + rand(), rand() * 3, 0, 7);
     ctx.fill();
   }
   ctx.globalCompositeOperation = "source-over";
 
-  // respingos de cal fora da linha
-  for (let i = 0; i < 900; i++) {
-    ctx.fillStyle = `rgba(240,246,240,${0.05 + rand() * 0.16})`;
-    ctx.beginPath();
-    ctx.arc(rand() * w, rand() * h, 0.6 + rand() * 1.8, 0, 7);
-    ctx.fill();
-  }
+  // Keep runoff and playing surface clean; random paint across the whole
+  // texture resembled floating debris in low broadcast views.
 
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;

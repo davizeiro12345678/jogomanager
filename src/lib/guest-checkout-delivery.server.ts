@@ -1,10 +1,11 @@
+import { validateGuestCheckoutOffer } from "@/lib/guest-checkout-offer.server";
 import {
   fulfillOneTimePurchase,
   recordPendingPurchase,
   syncSubscriptionForUser,
 } from "@/lib/fulfillment.server";
 import { type StripeEnv, createStripeClient } from "@/lib/stripe.server";
-import { getStoreServiceSupabase, parseStoreProductContents } from "@/lib/store-products.server";
+import { getStoreServiceSupabase } from "@/lib/store-products.server";
 
 interface ClaimedIntentRow {
   id: string;
@@ -63,27 +64,25 @@ export async function deliverClaimedGuestPurchase(
     return;
   }
 
-  const lineItem = session.line_items?.data?.[0];
-  // Preço de tabela antes dos descontos da Stripe; promoções baixam só o total.
-  const amount = lineItem?.amount_subtotal ?? session.amount_subtotal ?? 0;
-  const paymentCurrency = lineItem?.price?.currency ?? session.currency;
-  const snapshotContents = parseStoreProductContents(intent.contents_snapshot);
-  if (
-    !intent.stripe_price_id ||
-    !snapshotContents ||
-    lineItem?.price?.id !== intent.stripe_price_id ||
-    amount !== intent.amount_cents ||
-    paymentCurrency?.toUpperCase() !== intent.currency
-  ) {
-    throw new Error("O valor do pagamento não confere com a compra registrada.");
-  }
+  const {
+    amount,
+    paidAmount,
+    contents: snapshotContents,
+  } = validateGuestCheckoutOffer(session, intent, environment);
 
   if (session.mode === "payment") {
-    await recordPendingPurchase(userId, intent.product_key, session.id, amount);
-    await fulfillOneTimePurchase(userId, intent.product_key, session.id, amount, {
-      priceCents: intent.amount_cents,
-      contents: snapshotContents,
-    });
+    await recordPendingPurchase(userId, intent.product_key, session.id, paidAmount);
+    await fulfillOneTimePurchase(
+      userId,
+      intent.product_key,
+      session.id,
+      amount,
+      {
+        priceCents: intent.amount_cents,
+        contents: snapshotContents,
+      },
+      paidAmount,
+    );
     return;
   }
 

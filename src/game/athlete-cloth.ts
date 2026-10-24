@@ -17,6 +17,9 @@ export interface ClothMotion {
   /** Independent leg loading compresses the matching shorts hem. */
   legL?: number;
   legR?: number;
+  /** Cosmetic material response: heavier wet fabric and a contact-time pulse. */
+  wet?: number;
+  contact?: number;
 }
 
 /** Cosmetic second-order mechanics: fixed substeps, bounded inertia, no changes
@@ -49,6 +52,8 @@ export class ClothDynamics {
   advance(dt: number, motion: ClothMotion) {
     if (!Number.isFinite(dt) || dt <= 0) return;
     const elapsed = Math.min(dt, 0.25);
+    const wet = Number.isFinite(motion.wet) ? clamp(motion.wet!, 0, 1) : 0;
+    const contact = Number.isFinite(motion.contact) ? clamp(motion.contact!, 0, 1) : 0;
     const x = Number.isFinite(motion.x) ? clamp(motion.x, -15, 15) : 0;
     const z = Number.isFinite(motion.z) ? clamp(motion.z, -15, 15) : 0;
     const lift = Number.isFinite(motion.lift) ? motion.lift : this.priorLift;
@@ -111,11 +116,12 @@ export class ClothDynamics {
         const target = axis === 0 ? targetX : targetZ;
         this.velocity[axis] =
           this.velocity[axis]! +
-          (this.stiffness * (target - this.offset[axis]!) - this.damping * this.velocity[axis]!) *
+          ((this.stiffness / (1 + wet * 0.22)) * (target - this.offset[axis]!) -
+            this.damping * (1 + wet * 0.3) * this.velocity[axis]!) *
             h;
         this.offset[axis] = clamp(this.offset[axis]! + this.velocity[axis]! * h, -0.021, 0.021);
       }
-      this.impact += (landing * 0.1 - this.impact) * Math.min(1, h * 18);
+      this.impact += (landing * 0.1 + contact * 0.22 - this.impact) * Math.min(1, h * 18);
       this.executed += 1;
     }
     this.accumulator = Math.max(0, this.accumulator - steps * h);
@@ -245,8 +251,10 @@ export class AthleteCloth {
   update(dt: number, motion: ClothMotion) {
     if (this.garments.size === 0) return;
     this.dynamics.advance(dt, motion);
-    const x = this.dynamics.offset[0]! / 0.018,
-      z = this.dynamics.offset[1]! / 0.018;
+    const wet = Number.isFinite(motion.wet) ? clamp(motion.wet!, 0, 1) : 0;
+    const drape = 1 - wet * 0.22;
+    const x = (this.dynamics.offset[0]! / 0.018) * drape,
+      z = (this.dynamics.offset[1]! / 0.018) * drape;
     const effort = Number.isFinite(motion.effort) ? clamp(motion.effort, 0, 1) : 0;
     const bend = Number.isFinite(motion.bend) ? clamp(Math.abs(motion.bend), 0, 1.5) : 0;
     const roll = Number.isFinite(motion.roll) ? Math.abs(motion.roll!) : 0;

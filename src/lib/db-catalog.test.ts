@@ -202,3 +202,27 @@ describe("complete public club catalog", () => {
     expect(Object.keys(catalog.CLUBS)).toHaveLength(4);
   });
 });
+
+it("admits distinct club identities while rejecting blank or sentinel labels in cached catalogs", async () => {
+  const league = "admission-test-league";
+  stored.set(
+    "db-catalog-v3",
+    JSON.stringify({
+      at: Date.now(),
+      leagues: [[league, "Liga válida", "Brasil", "BR"]],
+      clubs: [
+        ["admission-test-empty", league, " \t ", "", "", "", 70],
+        ["admission-test-null", league, "null", "", "", "", 70],
+        ["admission-test-one", league, "Clube Homônimo", "ONE", "", "", 70],
+        ["admission-test-two", league, "Clube Homônimo", "TWO", "", "", 70],
+      ],
+    }),
+  );
+  await loadDbCatalog();
+  expect(catalog.CLUBS["admission-test-empty"]).toBeUndefined();
+  expect(catalog.CLUBS["admission-test-null"]).toBeUndefined();
+  expect(catalog.LEAGUES.find((row) => row.id === league)?.clubs.map((club) => club.id)).toEqual([
+    "admission-test-one",
+    "admission-test-two",
+  ]);
+});

@@ -76,8 +76,8 @@ export function shortsPanelNormal(): THREE.DataTexture {
   shortsNormal = new THREE.DataTexture(data, size, size);
   shortsNormal.name = "athlete-shorts-twill-seam";
   shortsNormal.wrapS = shortsNormal.wrapT = THREE.RepeatWrapping;
-  shortsNormal.repeat.set(1.5, 1.5);
-  shortsNormal.anisotropy = 2;
+  shortsNormal.repeat.set(2, 2);
+  shortsNormal.anisotropy = 4;
   shortsNormal.needsUpdate = true;
   return shortsNormal;
 }
@@ -111,7 +111,13 @@ export function gloveLatexNormal(): THREE.DataTexture {
 
 export function hairFiberColor(color: string): THREE.CanvasTexture | null {
   const texture = make(`hair-color:${color}`, 256, 1, (ctx, size) => {
-    ctx.fillStyle = color;
+    const pigment = new THREE.Color(color);
+    // Very dark dyed albedo clips directional clumps into featureless black
+    // under ACES. A small warm fibre contribution preserves dark identity
+    // while leaving diffuse strand separation visible without glossy plates.
+    const luminance = pigment.r * 0.2126 + pigment.g * 0.7152 + pigment.b * 0.0722;
+    if (luminance < 0.045) pigment.lerp(new THREE.Color("#756a5d"), 0.055);
+    ctx.fillStyle = `#${pigment.getHexString()}`;
     ctx.fillRect(0, 0, size, size);
     for (let strand = 0; strand < size * 2; strand++) {
       const x = strand * 0.5;

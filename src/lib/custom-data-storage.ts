@@ -1,3 +1,5 @@
+import { parseImportJson } from "./import-validation";
+import { validCustomData } from "./custom-data-validation";
 // Reading a campaign's overrides does not need the football catalogue or renderer.
 import { scopedKey } from "./world-scope";
 import type { CustomData } from "./customData";
@@ -7,7 +9,8 @@ export function readCustom(): CustomData {
   try {
     const raw = window.localStorage.getItem(scopedKey("manager3d.custom.v1"));
     if (!raw) return EMPTY;
-    const parsed = JSON.parse(raw) as Partial<CustomData>;
+    const parsed = parseImportJson(raw);
+    if (!validCustomData(parsed)) return EMPTY;
     return {
       clubs: parsed.clubs ?? {},
       players: parsed.players ?? [],

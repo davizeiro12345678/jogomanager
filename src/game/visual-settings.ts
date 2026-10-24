@@ -68,6 +68,7 @@ export interface VisualSettings {
   crowdDensity: number;
   shadows: ShadowPref;
   postFx: boolean;
+  crowdSound: boolean;
   /** intensidade dos efeitos de imagem (0.2 a 1.4) */
   postIntensity: number;
   /** partículas (chuva, neve, confete, fumaça) — 0 desliga */
@@ -104,6 +105,7 @@ export const DEFAULT_VISUAL: VisualSettings = {
   crowdDensity: 1,
   shadows: "auto",
   postFx: true,
+  crowdSound: false,
   postIntensity: 1,
   particles: 1,
   resolutionScale: 1,
@@ -130,6 +132,7 @@ export const VISUAL_SECTIONS = {
     "crowdDensity",
     "shadows",
     "postFx",
+    "crowdSound",
     "postIntensity",
     "particles",
     "resolutionScale",
@@ -214,6 +217,7 @@ export function migrateVisualSettings(raw: unknown): Partial<VisualSettings> {
     time: (o["time"] as Auto<TimeOfDay>) ?? "auto",
     mow: (o["mow"] as Auto<MowPattern>) ?? "auto",
     postFx: o["postFx"] !== false,
+    crowdSound: o["crowdSound"] === true,
     sponsors: Array.isArray(o["sponsors"]) ? (o["sponsors"] as string[]) : [],
     byClub,
     broadcast,

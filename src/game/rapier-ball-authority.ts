@@ -1,3 +1,4 @@
+import { initializeRapier } from "./rapier-runtime";
 /**
  * Autoridade física canônica da bola.
  *
@@ -5,27 +6,23 @@
  * mas posição, velocidade, gravidade, contato com gramado, traves e rede são
  * calculados pelo mundo WASM do Rapier e escritos de volta nesse estado.
  */
-import {
-  ColliderDesc,
-  init as initializeRapierWasm,
-  RigidBodyDesc,
-  RigidBodyType,
-  World,
-} from "@dimforge/rapier3d-compat";
+import { ColliderDesc, RigidBodyDesc, RigidBodyType, World } from "@dimforge/rapier3d-compat";
 
 import { pitchCondition } from "./ball-climate";
 import { highFidelitySubsteps } from "./physics-quality";
-import type { WeatherKind } from "./sim-rules";
+import {
+  BALL_LINEAR_DAMPING,
+  BALL_FLIGHT_PREDICTION_STEP,
+  BALL_FLIGHT_PREDICTION_TICKS,
+} from "./ball-flight-prediction";
+import { BALL_RADIUS, GOAL_NET_DEPTH, GOAL_POST_RADIUS, type WeatherKind } from "./sim-rules";
 
-export const BALL_PHYSICS_RADIUS = 0.12;
+export const BALL_PHYSICS_RADIUS = BALL_RADIUS;
 
 const DEFAULT_FIELD_X = 52.5;
 const DEFAULT_FIELD_Z = 34;
 const GOAL_HALF_WIDTH = 3.66;
 const GOAL_HEIGHT = 2.44;
-// O MatchSim resolve finalizações no mesmo plano para evitar que um impacto
-// em poste/travessão seja decidido como gol antes da colisão física.
-const GOAL_LINE_INSET = 1.6;
 const MAX_AUTHORITATIVE_STEP = 0.4;
 
 export interface RapierBallState {
@@ -67,6 +64,13 @@ export interface BallPhysicsAuthority {
   dispose(): void;
   checkpoint?(): BallPhysicsCheckpoint;
   restore?(checkpoint: BallPhysicsCheckpoint): void;
+  /** Separate bounded world for decisions; never advances this live authority. */
+  createFlightProbe?(): BallFlightProbe;
+}
+
+export interface BallFlightProbe {
+  sample(initial: RapierBallState): readonly RapierBallState[];
+  dispose(): void;
 }
 
 export interface BallPhysicsCheckpoint {
@@ -85,12 +89,6 @@ function finite(value: number, fallback = 0) {
 
 function copyState(state: RapierBallState): RapierBallState {
   return { ...state };
-}
-
-let rapierReady: Promise<void> | null = null;
-
-function initializeRapier() {
-  return (rapierReady ??= initializeRapierWasm());
 }
 
 function changed(a: RapierBallState | null, b: RapierBallState) {
@@ -178,11 +176,11 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
         .setTranslation(0, BALL_PHYSICS_RADIUS, 0)
         .setCcdEnabled(true)
         .setCanSleep(false)
-        .setLinearDamping(0.16)
+        .setLinearDamping(BALL_LINEAR_DAMPING)
         .setAngularDamping(0.28),
     );
     this.ballCollider = this.world.createCollider(
-      ColliderDesc.ball(BALL_PHYSICS_RADIUS).setFriction(0.72).setRestitution(0.54),
+      ColliderDesc.ball(BALL_PHYSICS_RADIUS).setMass(0.43).setFriction(0.72).setRestitution(0.54),
       this.ballBody,
     );
   }
@@ -192,6 +190,41 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     if (holder && holder.id === state.holder) this.setHeldState(state, holder);
     else this.setDynamicState(state);
     this.lastWritten = copyState(state);
+  }
+
+  createFlightProbe(): BallFlightProbe {
+    if (this.disposed) throw new Error("Cannot predict from a disposed ball authority");
+    // One world per plan, reused for its at most eight candidates. Observation
+    // callbacks belong to the live solver and must not count prediction work.
+    const checkpoint = this.checkpoint();
+    const probe = new RapierBallAuthority({
+      fieldX: this.options.fieldX,
+      fieldZ: this.options.fieldZ,
+    });
+    let disposed = false;
+    return {
+      sample: (initial) => {
+        if (disposed) throw new Error("Ball flight probe already disposed");
+        // Resetting only translation/velocity retains solver contact caches
+        // and rotation from the previous candidate. Restore the same snapshot
+        // before each bounded sample, keeping only one probe world alive.
+        probe.restore(checkpoint);
+        const state = { ...initial };
+        probe.reset(state, null);
+        const result = [{ ...state }];
+        for (let tick = 0; tick < BALL_FLIGHT_PREDICTION_TICKS; tick++) {
+          probe.step(BALL_FLIGHT_PREDICTION_STEP, state, null);
+          result.push({ ...state });
+        }
+        return result;
+      },
+      dispose: () => {
+        if (!disposed) {
+          disposed = true;
+          probe.dispose();
+        }
+      },
+    };
   }
 
   setCondition(weather: WeatherKind, wind: { x: number; z: number }) {
@@ -204,12 +237,19 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
   }
 
   step(dt: number, state: RapierBallState, holder: RapierBallHolder | null) {
+    // Reject paused/invalid time before rule injection or holder attachment:
+    // even those pre-solver operations mutate bodies and checkpoint state.
+    // Every finite positive interval retains the existing integration path.
+    if (!Number.isFinite(dt) || dt <= 0) return;
     if (this.disposed) return;
 
     if (holder && holder.id === state.holder) {
-      this.setHeldState(state, holder);
+      const target = this.setHeldState(state, holder);
       this.stepWorld(dt);
-      this.writeHeldState(state, holder);
+      // Without an observer the synchronous solver cannot change the holder.
+      // Reuse its target; observers may mutate external state, so preserve
+      // the existing post-solver read when instrumentation is installed.
+      this.writeHeldState(state, holder, this.options.observeSubstep ? undefined : target);
       this.lastWritten = copyState(state);
       return;
     }
@@ -239,7 +279,7 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
   }
 
   private stepWorld(dt: number, beforeStep?: (substep: number) => void) {
-    const total = Math.max(1 / 240, Math.min(MAX_AUTHORITATIVE_STEP, finite(dt, 1 / 30)));
+    const total = Math.min(MAX_AUTHORITATIVE_STEP, finite(dt, 1 / 30));
     const count = highFidelitySubsteps(total);
     const substep = total / count;
     for (let index = 0; index < count; index += 1) {
@@ -261,13 +301,19 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
   }
 
   private applyMagnusImpulse(dt: number, spin: number) {
+    // Most grounded/straight-flight samples have no spin. Avoid the WASM
+    // velocity read and planar length calculation before the existing guard.
+    if (Math.abs(spin) < 0.001) return;
     const velocity = this.ballBody.linvel();
     const speed = Math.hypot(velocity.x, velocity.z);
-    if (Math.abs(spin) < 0.001 || speed < 0.01) return;
+    if (speed < 0.01) return;
 
     // A curva entra como impulso externo no mundo Rapier. Gravidade, atrito,
     // colisões e o resultado da integração seguem exclusivamente no solver.
-    const strength = Math.max(-0.16, Math.min(0.16, finite(spin) * finite(dt, 1 / 30) * 0.045));
+    const strength = Math.max(
+      -0.16,
+      Math.min(0.16, finite(spin) * finite(dt, 1 / 30) * this.ballBody.mass()),
+    );
     this.ballBody.applyImpulse(
       { x: -(velocity.z / speed) * strength, y: 0, z: (velocity.x / speed) * strength },
       true,
@@ -279,9 +325,14 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     const translation = this.ballBody.translation();
     if (translation.y < BALL_PHYSICS_RADIUS * 2.5) return; // no chão o vento não pega
     const step = finite(dt, 1 / 30);
+    const mass = this.ballBody.mass();
     const clamp = (v: number) => Math.max(-0.16, Math.min(0.16, v));
     this.ballBody.applyImpulse(
-      { x: clamp(this.wind.x * step * 0.045), y: 0, z: clamp(this.wind.z * step * 0.045) },
+      {
+        x: clamp(this.wind.x * step * mass),
+        y: 0,
+        z: clamp(this.wind.z * step * mass),
+      },
       true,
     );
   }
@@ -295,10 +346,14 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     this.ballBody.setNextKinematicTranslation(target);
     this.ballBody.setLinvel({ x: finite(holder.vx), y: 0, z: finite(holder.vz) }, true);
     this.ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    return target;
   }
 
-  private writeHeldState(state: RapierBallState, holder: RapierBallHolder) {
-    const target = this.holderTarget(holder);
+  private writeHeldState(
+    state: RapierBallState,
+    holder: RapierBallHolder,
+    target = this.holderTarget(holder),
+  ) {
     state.x = target.x;
     state.z = target.z;
     state.height = BALL_PHYSICS_RADIUS;
@@ -361,24 +416,24 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     );
 
     for (const direction of [-1, 1]) {
-      const goalX = direction * (fieldX - GOAL_LINE_INSET);
+      const goalX = direction * fieldX;
       for (const goalZ of [-GOAL_HALF_WIDTH, GOAL_HALF_WIDTH]) {
         this.world.createCollider(
-          ColliderDesc.cylinder(GOAL_HEIGHT / 2, 0.075)
+          ColliderDesc.cylinder(GOAL_HEIGHT / 2, GOAL_POST_RADIUS)
             .setTranslation(goalX, GOAL_HEIGHT / 2, goalZ)
             .setFriction(0.35)
             .setRestitution(0.7),
         );
       }
       this.world.createCollider(
-        ColliderDesc.cuboid(0.075, 0.075, GOAL_HALF_WIDTH)
+        ColliderDesc.cuboid(GOAL_POST_RADIUS, GOAL_POST_RADIUS, GOAL_HALF_WIDTH)
           .setTranslation(goalX, GOAL_HEIGHT, 0)
           .setFriction(0.35)
           .setRestitution(0.68),
       );
       this.world.createCollider(
         ColliderDesc.cuboid(0.04, GOAL_HEIGHT / 2, GOAL_HALF_WIDTH)
-          .setTranslation(direction * (fieldX - GOAL_LINE_INSET + 0.95), GOAL_HEIGHT / 2, 0)
+          .setTranslation(direction * (fieldX + GOAL_NET_DEPTH), GOAL_HEIGHT / 2, 0)
           .setFriction(0.72)
           .setRestitution(0.22),
       );

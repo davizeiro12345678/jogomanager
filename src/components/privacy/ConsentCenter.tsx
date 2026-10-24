@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Download, ShieldCheck, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { FirebasePushControl } from "./FirebasePushControl";
 
 import { Switch } from "@/components/ui/switch";
@@ -29,6 +29,7 @@ export function TrustBadges() {
 }
 
 export function ConsentCenter() {
+  const ownerId = useAuthUserId();
   const [state, setState] = useState<ConsentState | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [cookieManagerReady, setCookieManagerReady] = useState(false);
@@ -50,23 +51,40 @@ export function ConsentCenter() {
     setMessage("Preferências salvas.");
   };
 
-  const handleExport = () => {
-    const blob = new Blob([JSON.stringify(exportLocalData(), null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "meus-dados-jogomanager.json";
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExport = async () => {
+    if (ownerId === undefined) return;
+    try {
+      const blob = new Blob([JSON.stringify(await exportLocalData(ownerId), null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "dados-locais-jogomanager.json";
+      a.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+    } catch {
+      setMessage("Não foi possível exportar todos os dados locais. Tente novamente.");
+    }
   };
 
-  const handleDelete = () => {
-    if (!window.confirm("Apagar a carreira e as preferências salvas neste navegador?")) return;
-    clearLocalData();
+  const handleDelete = async () => {
+    if (ownerId === undefined) return;
+    if (
+      !window.confirm(
+        String(
+          "Apagar as carreiras locais do perfil atual e as preferências públicas do jogo? Dados de outras contas e dados na nuvem serão preservados. Arquivos globais de replays e áudio só são incluídos no modo visitante.",
+        ),
+      )
+    )
+      return;
+    const cleared = await clearLocalData(ownerId);
     setState(readConsent());
-    setMessage("Dados deste navegador apagados.");
+    setMessage(
+      cleared
+        ? "Seleção de dados locais apagada. Outras contas e dados na nuvem foram preservados."
+        : "Não foi possível apagar todos os dados locais. Alguns dados da carreira podem ter permanecido; tente novamente.",
+    );
   };
 
   const rows = [
@@ -133,14 +151,18 @@ export function ConsentCenter() {
             <ShieldCheck className="mr-1.5 h-4 w-4" aria-hidden /> Preferências de cookies
           </Button>
         )}
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="mr-1.5 h-4 w-4" aria-hidden /> Exportar meus dados (JSON)
+        <Button variant="outline" size="sm" onClick={() => void handleExport()}>
+          <Download className="mr-1.5 h-4 w-4" aria-hidden /> Exportar dados locais do jogo (JSON)
         </Button>
-        <Button variant="outline" size="sm" onClick={handleDelete}>
+        <Button variant="outline" size="sm" onClick={() => void handleDelete()}>
           <Trash2 className="mr-1.5 h-4 w-4" aria-hidden /> Apagar dados deste navegador
         </Button>
       </div>
       <FirebasePushControl />
+      <p className="mt-3 text-xs text-muted-foreground">
+        A exportação e exclusão abrangem apenas o perfil local atual; outras contas, compras,
+        sessões e dados na nuvem são preservados.
+      </p>
       <p className="mt-3 text-xs text-muted-foreground" role="status" aria-live="polite">
         {message ??
           (state.decidedAt

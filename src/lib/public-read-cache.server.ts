@@ -77,5 +77,5 @@ export function cachedPublicRead<T>(
   key: string,
   load: () => Promise<T>,
 ): Promise<T> {
-  return publicCaches[namespace].get(key, load) as Promise<T>;
+  return publicCaches[namespace].get(key, load).then((value) => structuredClone(value) as T);
 }

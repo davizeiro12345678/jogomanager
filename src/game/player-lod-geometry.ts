@@ -13,7 +13,10 @@ import { articulateLowTorso } from "./player-lod-torso";
 
 /** Distant bodies use the same anatomical landmarks with one sample per span.
  * At match-camera scale extra intermediate rings add vertices without detail. */
-export function createLowPlayerGeometries(compact = false): Record<string, THREE.BufferGeometry> {
+export function createLowPlayerGeometries(
+  compact = false,
+  affineCloth = false,
+): Record<string, THREE.BufferGeometry> {
   const radial = compact ? 6 : 8;
   const geometries: Record<string, THREE.BufferGeometry> = {
     torso: articulateLowTorso(
@@ -34,8 +37,9 @@ export function createLowPlayerGeometries(compact = false): Record<string, THREE
         0.5,
         1,
       ).translate(0, -0.5, 0),
+      affineCloth,
     ),
-    hips: lowShortsGeometry(),
+    hips: lowShortsGeometry(affineCloth),
     head: sculptedHead({ headR: 0.5, headW: 0.5, headD: 0.5 }, 0, false, false, {
       columns: compact ? 8 : 12,
       rows: compact ? 8 : 14,

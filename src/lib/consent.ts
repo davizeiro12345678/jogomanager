@@ -40,3 +40,4 @@ export function saveConsent(next: Omit<ConsentState, "decidedAt">): ConsentState
   window.dispatchEvent(new CustomEvent("consent-changed", { detail: state }));
   return state;
 }
+export { canAccessCareerMirror, exportLocalData, clearLocalData } from "./local-data-controls";

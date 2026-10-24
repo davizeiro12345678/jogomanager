@@ -1,5 +1,6 @@
 import { en as enInterface, pt as ptInterface } from "./interface-bootstrap";
 import type { Lang } from "./locale-catalog";
+import { resolveMessage } from "./format-message";
 export const ptBR: Record<string, string> = {
   "nav.panel": "Painel",
   "nav.central": "Central do clube",
@@ -96,6 +97,23 @@ export const en: Record<string, string> = {
 };
 /** Default Portuguese and English work offline without fetching 96 other packs. */
 export function translateBootstrap(lang: Lang, key: string): string {
-  if (lang === "pt-BR") return ptInterface[key] ?? ptBR[key] ?? enInterface[key] ?? en[key] ?? key;
-  return enInterface[key] ?? en[key] ?? ptBR[key] ?? key;
+  return resolveBootstrap(lang, key)?.text ?? key;
+}
+
+export function bootstrapMessageLanguage(lang: Lang, key: string): Lang {
+  return resolveBootstrap(lang, key)?.lang ?? "pt-BR";
+}
+
+function resolveBootstrap(lang: Lang, key: string) {
+  return resolveMessage(key, [
+    ...(lang === "pt-BR"
+      ? [
+          { lang: "pt-BR" as const, messages: ptInterface },
+          { lang: "pt-BR" as const, messages: ptBR },
+        ]
+      : []),
+    { lang: "en", messages: enInterface },
+    { lang: "en", messages: en },
+    { lang: "pt-BR", messages: ptBR },
+  ]);
 }

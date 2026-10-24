@@ -66,6 +66,83 @@ export class CrowdSelector {
 if (Symbol.dispose) CrowdSelector.prototype[Symbol.dispose] = CrowdSelector.prototype.free;
 
 /**
+ * Presentation-only Float32 cloth. No match state, clock, seed or RNG input.
+ */
+export class FloatNet {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        FloatNetFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_floatnet_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    data_len() {
+        const ret = wasm.floatnet_data_len(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @returns {number}
+     */
+    data_ptr() {
+        const ret = wasm.floatnet_data_ptr(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @param {number} u
+     * @param {number} v
+     * @param {number} speed
+     */
+    impact(u, v, speed) {
+        wasm.floatnet_impact(this.__wbg_ptr, u, v, speed);
+    }
+    /**
+     * @param {number} cols
+     * @param {number} rows
+     * @param {number} width
+     * @param {number} height
+     */
+    constructor(cols, rows, width, height) {
+        const ret = wasm.floatnet_new(cols, rows, width, height);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        this.__wbg_ptr = ret[0];
+        FloatNetFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * @param {Float32Array} displacement
+     * @param {Float32Array} velocity
+     * @param {number} accumulator
+     * @returns {boolean}
+     */
+    restore(displacement, velocity, accumulator) {
+        const ptr0 = passArrayF32ToWasm0(displacement, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passArrayF32ToWasm0(velocity, wasm.__wbindgen_malloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.floatnet_restore(this.__wbg_ptr, ptr0, len0, ptr1, len1, accumulator);
+        return ret !== 0;
+    }
+    /**
+     * @param {number} dt
+     * @param {number} time
+     * @param {number} wind
+     * @param {number} wet
+     */
+    step(dt, time, wind, wet) {
+        wasm.floatnet_step(this.__wbg_ptr, dt, time, wind, wet);
+    }
+}
+if (Symbol.dispose) FloatNet.prototype[Symbol.dispose] = FloatNet.prototype.free;
+
+/**
  * A seamless fibre normal tile and roughness tile, packed RGBA then RGBA.
  * Integer arithmetic keeps native Rust, WASM and the JS fallback byte-identical.
  * @param {number} size
@@ -76,6 +153,20 @@ export function build_turf_detail(size, seed) {
     const ret = wasm.build_turf_detail(size, seed);
     var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
+ * Packed f32 GPU spawn data: x/y/z, fall speed, snow phase. Presentation only.
+ * A bounded one-time batch; movement stays in the vertex shader.
+ * @param {number} count
+ * @param {number} seed
+ * @returns {Float32Array}
+ */
+export function build_weather_instances(count, seed) {
+    const ret = wasm.build_weather_instances(count, seed);
+    var v1 = getArrayF32FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
     return v1;
 }
 
@@ -246,6 +337,9 @@ function __wbg_get_imports() {
 const CrowdSelectorFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_crowdselector_free(ptr, 1));
+const FloatNetFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_floatnet_free(ptr, 1));
 
 function getArrayF32FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
@@ -303,11 +397,24 @@ function getUint8ArrayMemory0() {
     return cachedUint8ArrayMemory0;
 }
 
+function passArrayF32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getFloat32ArrayMemory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
 function passArrayF64ToWasm0(arg, malloc) {
     const ptr = malloc(arg.length * 8, 8) >>> 0;
     getFloat64ArrayMemory0().set(arg, ptr / 8);
     WASM_VECTOR_LEN = arg.length;
     return ptr;
+}
+
+function takeFromExternrefTable0(idx) {
+    const value = wasm.__wbindgen_externrefs.get(idx);
+    wasm.__externref_table_dealloc(idx);
+    return value;
 }
 
 let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });

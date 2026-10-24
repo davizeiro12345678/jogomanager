@@ -63,14 +63,19 @@ const RANK: Record<CrowdMood, number> = {
 function useReactionTracker(sim: SimView, supporters?: SupporterMatchday) {
   const ref = useRef<CrowdReactionState>({ ...EMPTY });
   const last = useRef({
-    goals: 0,
-    shots: 0,
-    cards: 0,
-    fouls: 0,
-    minute: 0,
-    homeGoals: 0,
-    homeShots: 0,
-    homeCards: 0,
+    goals: sim.stats.home.goals + sim.stats.away.goals,
+    shots: sim.stats.home.onTarget + sim.stats.away.onTarget,
+    cards:
+      sim.stats.home.yellow +
+      sim.stats.away.yellow +
+      sim.stats.home.red * 2 +
+      sim.stats.away.red * 2,
+    fouls: sim.stats.home.fouls + sim.stats.away.fouls,
+    minute: sim.minute(),
+    homeGoals: sim.stats.home.goals,
+    homeShots: sim.stats.home.onTarget,
+    homeCards: sim.stats.home.yellow + sim.stats.home.red * 2,
+    homeFouls: sim.stats.home.fouls,
   });
 
   useFrame((_, dt) => {
@@ -100,16 +105,17 @@ function useReactionTracker(sim: SimView, supporters?: SupporterMatchday) {
     } else if (cards > prev.cards) {
       mood = "protest";
       boost = 0.46;
-      side = home.yellow + home.red * 2 > prev.homeCards ? "home" : "away";
+      side = home.yellow + home.red * 2 > prev.homeCards ? "away" : "home";
     } else if (fouls > prev.fouls) {
       mood = "protest";
       boost = 0.28;
+      side = home.fouls > prev.homeFouls ? "away" : "home";
     }
 
     // bola no terço final: zumbido contínuo, sem evento
     if (mood === "idle") {
-      const attackingHome = sim.ball.x > FIELD_X * 0.55;
-      const attackingAway = sim.ball.x < -FIELD_X * 0.55;
+      const attackingHome = Math.abs(sim.ball.x) > FIELD_X * 0.55 && sim.possession === "home";
+      const attackingAway = Math.abs(sim.ball.x) > FIELD_X * 0.55 && sim.possession === "away";
       if (attackingHome || attackingAway) {
         mood = "buzz";
         side = attackingHome ? "home" : "away";
@@ -152,6 +158,7 @@ function useReactionTracker(sim: SimView, supporters?: SupporterMatchday) {
     prev.homeGoals = home.goals;
     prev.homeShots = home.onTarget;
     prev.homeCards = home.yellow + home.red * 2;
+    prev.homeFouls = home.fouls;
   });
 
   return ref;
@@ -285,11 +292,13 @@ function FlashBursts({
       const positions = new Float32Array(per * 3);
       for (let i = 0; i < per; i++) {
         // anel da arquibancada: atrás dos gols e nas laterais
-        const along = Math.random() * 2 - 1;
-        const side = Math.random() < 0.5 ? -1 : 1;
-        const depth = 0.86 + Math.random() * 0.22;
+        // Stable seats keep flashes reproducible across mounts and captures.
+        const seed = (i + 1) * 73 + index * 131;
+        const along = ((seed * 37) % 997) / 498 - 1;
+        const side = seed % 2 === 0 ? -1 : 1;
+        const depth = 0.86 + (((seed * 53) % 991) / 990) * 0.22;
         positions[i * 3] = along * FIELD_X * 0.96;
-        positions[i * 3 + 1] = 6 + Math.random() * 12;
+        positions[i * 3 + 1] = 6 + (((seed * 71) % 983) / 982) * 12;
         positions[i * 3 + 2] = side * FIELD_Z * depth;
       }
       const geometry = new THREE.BufferGeometry();
@@ -299,6 +308,8 @@ function FlashBursts({
     // `phases` é constante: incluí-la só silencia o lint de dependências
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [count]);
+
+  useEffect(() => () => clouds.forEach((geometry) => geometry.dispose()), [clouds]);
 
   useFrame((state) => {
     if (!enabled) return;

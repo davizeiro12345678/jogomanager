@@ -10,6 +10,8 @@
  * that source instead of failing.
  */
 
+import { isNonPlayerRole } from "./football-person-kind";
+
 export interface RemoteTeam {
   source: string;
   externalId: string;
@@ -36,6 +38,8 @@ export interface RemoteHonour {
 }
 
 export interface RemotePlayer {
+  sourceKind?: "player";
+  rawPosition?: string | undefined;
   source: string;
   externalId: string;
   name: string;
@@ -307,14 +311,18 @@ export async function footballDataSquad(teamId: string): Promise<RemotePlayer[]>
     { "X-Auth-Token": key },
   );
   const squad = json?.squad ?? [];
-  return squad.map((p) => ({
-    source: "football-data",
-    externalId: String(p.id ?? ""),
-    name: p.name ?? "",
-    position: mapPosition(p.position),
-    age: p.dateOfBirth ? ageFrom(p.dateOfBirth) : undefined,
-    nationality: p.nationality ?? undefined,
-  }));
+  return squad
+    .filter((p) => !isNonPlayerRole(p.position))
+    .map((p) => ({
+      source: "football-data",
+      externalId: String(p.id ?? ""),
+      name: p.name ?? "",
+      sourceKind: "player" as const,
+      rawPosition: p.position,
+      position: mapPosition(p.position),
+      age: p.dateOfBirth ? ageFrom(p.dateOfBirth) : undefined,
+      nationality: p.nationality ?? undefined,
+    }));
 }
 
 /* ------------------------------------------------------------------ */
@@ -416,11 +424,13 @@ export async function sdbSquad(teamId: string): Promise<RemotePlayer[]> {
   );
   const list = json?.player ?? [];
   return list
-    .filter((p) => p.strPlayer)
+    .filter((p) => p.strPlayer && !isNonPlayerRole(p.strPosition))
     .map((p) => ({
       source: "thesportsdb",
       externalId: String(p.idPlayer ?? ""),
       name: p.strPlayer!,
+      sourceKind: "player" as const,
+      rawPosition: p.strPosition,
       position: mapPosition(p.strPosition),
       age: p.dateBorn ? ageFrom(p.dateBorn) : undefined,
       birthDate: p.dateBorn || undefined,

@@ -83,7 +83,7 @@ const ACTION_NAMES: readonly PlayerAction[] = [
 
 export type LivePlayerMeta = Pick<
   SimPlayer,
-  "id" | "side" | "name" | "number" | "pos" | "heightCm" | "weightKg" | "pid"
+  "id" | "side" | "name" | "number" | "pos" | "heightCm" | "weightKg" | "pid" | "emergencyKeeper"
 >;
 
 export type LivePlayerBuffer = {
@@ -116,8 +116,10 @@ export type LiveSnapshotPacket = Omit<LiveSnapshot, "players" | "events"> & {
 export type RecycledSnapshotBuffers = LivePlayerBufferPacket;
 export type SnapshotBufferPool = ReturnType<typeof createSnapshotBufferPool>;
 
+const actionCodes = new Map(ACTION_NAMES.map((action, index) => [action, index + 1]));
+
 export function actionCode(action: PlayerAction | null): number {
-  return action ? ACTION_NAMES.indexOf(action) + 1 : 0;
+  return action ? (actionCodes.get(action) ?? 0) : 0;
 }
 
 export function actionFromCode(code: number): PlayerAction | null {
@@ -125,16 +127,19 @@ export function actionFromCode(code: number): PlayerAction | null {
 }
 
 export function createLivePlayerMetadata(players: readonly SimPlayer[]): LivePlayerMeta[] {
-  return players.map(({ id, side, name, number, pos, heightCm, weightKg, pid }) => ({
-    id,
-    side,
-    name,
-    number,
-    pos,
-    ...(heightCm === undefined ? {} : { heightCm }),
-    ...(weightKg === undefined ? {} : { weightKg }),
-    pid,
-  }));
+  return players.map(
+    ({ id, side, name, number, pos, heightCm, weightKg, pid, emergencyKeeper }) => ({
+      id,
+      side,
+      name,
+      number,
+      pos,
+      ...(heightCm === undefined ? {} : { heightCm }),
+      ...(weightKg === undefined ? {} : { weightKg }),
+      pid,
+      ...(emergencyKeeper ? { emergencyKeeper: { ...emergencyKeeper } } : {}),
+    }),
+  );
 }
 
 function allocatePlayerBuffer(length: number): LivePlayerBuffer {
@@ -198,6 +203,7 @@ export function validateLivePlayerBuffer(buffer: LivePlayerBuffer, length: numbe
 function playerFromMeta(meta: LivePlayerMeta): SimPlayer {
   return {
     ...meta,
+    ...(meta.emergencyKeeper ? { emergencyKeeper: { ...meta.emergencyKeeper } } : {}),
     x: 0,
     z: 0,
     vx: 0,
@@ -254,6 +260,18 @@ export function applyLivePlayerBuffer(
   validateLivePlayerBuffer(buffer, metadata.length);
   const players = ensureLivePlayers(target, metadata);
   players.forEach((player, index) => {
+    const meta = metadata[index]!;
+    player.side = meta.side;
+    player.name = meta.name;
+    player.number = meta.number;
+    player.pos = meta.pos;
+    player.pid = meta.pid;
+    if (meta.heightCm === undefined) delete player.heightCm;
+    else player.heightCm = meta.heightCm;
+    if (meta.weightKg === undefined) delete player.weightKg;
+    else player.weightKg = meta.weightKg;
+    if (meta.emergencyKeeper === undefined) delete player.emergencyKeeper;
+    else player.emergencyKeeper = { ...meta.emergencyKeeper };
     const position = index * 2;
     const offset = index * PLAYER_STATE_STRIDE;
     player.x = buffer.positions[position]!;

@@ -7,6 +7,9 @@ import { getRealSquad } from "./football.functions";
 import { normalizeRealPlayers } from "./real-player-records";
 
 export interface RealPlayer {
+  canonical_player_id?: string | null;
+  source_kind?: "player" | "athlete" | "coach" | "staff";
+  raw_position?: string | null;
   id?: string;
   data_source?: string | null;
   source_id?: string | null;

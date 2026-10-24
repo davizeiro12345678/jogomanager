@@ -1,7 +1,9 @@
 import type Stripe from "stripe";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { assertCheckoutProductNonPayToWin } from "@/lib/entitlement-contract";
+import { assertCheckoutProductNonPayToWin } from "./entitlement-contract";
+import { PublicPaymentError } from "./payment-errors";
+import { salePrice } from "@/game/store-offers";
 
 /**
  * Dados comerciais que somente o servidor pode transformar em uma sessão de
@@ -27,6 +29,8 @@ export interface ServerStoreProduct {
   contents: StoreProductContents;
   /** desconto promocional ativo agora (0 = sem promoção) */
   salePercentOff: number;
+  /** amount that Checkout/fulfillment expects after the server-side sale */
+  checkoutPriceCents: number;
 }
 
 type ProductRow = {
@@ -38,6 +42,7 @@ type ProductRow = {
   kind: string;
   active: boolean;
   stripe_lookup_key: string | null;
+  coins: number;
   contents: unknown;
   sale_percent_off?: number | null;
   sale_starts_at?: string | null;
@@ -108,6 +113,9 @@ export function parseStoreProductContents(value: unknown): StoreProductContents 
 function parseProductRow(row: ProductRow): ServerStoreProduct {
   const contents = parseStoreProductContents(row.contents);
   if (!contents) throw new Error(`Conteúdo inválido para o produto ${row.key}.`);
+  if (!Number.isSafeInteger(row.coins) || row.coins !== contents.coins) {
+    throw new Error(`A quantidade exibida não confere com a entrega do produto ${row.key}.`);
+  }
   if (!row.stripe_lookup_key || !/^[a-zA-Z0-9_-]{2,120}$/.test(row.stripe_lookup_key)) {
     throw new Error(`Checkout não configurado para o produto ${row.key}.`);
   }
@@ -117,6 +125,8 @@ function parseProductRow(row: ProductRow): ServerStoreProduct {
   if (!/^[A-Za-z]{3}$/.test(row.currency)) {
     throw new Error(`Moeda inválida para o produto ${row.key}.`);
   }
+
+  const salePercentOff = activeSalePercent(row, Date.now());
 
   return {
     key: row.key,
@@ -128,8 +138,20 @@ function parseProductRow(row: ProductRow): ServerStoreProduct {
     active: row.active,
     stripeLookupKey: row.stripe_lookup_key,
     contents,
-    salePercentOff: activeSalePercent(row, Date.now()),
+    salePercentOff,
+    checkoutPriceCents: calculateCheckoutPriceCents(row.price_cents, salePercentOff),
   };
+}
+
+/** Keep the charged amount identical to the public catalog's salePrice helper. */
+export function calculateCheckoutPriceCents(priceCents: number, salePercentOff: number): number {
+  if (!Number.isSafeInteger(priceCents) || priceCents < 0 || priceCents > 2_147_483_647) {
+    throw new Error("Preço inválido para o produto.");
+  }
+  if (!Number.isInteger(salePercentOff) || salePercentOff < 0 || salePercentOff > 90) {
+    throw new Error("Desconto inválido para o produto.");
+  }
+  return Math.round(priceCents * (1 - salePercentOff / 100));
 }
 
 export async function getServerStoreProduct(
@@ -141,14 +163,14 @@ export async function getServerStoreProduct(
   let query = supabase
     .from("store_products")
     .select(
-      "key, name, description, price_cents, currency, kind, active, stripe_lookup_key, contents, sale_percent_off, sale_starts_at, sale_ends_at",
+      "key, name, description, price_cents, currency, kind, active, stripe_lookup_key, coins, contents, sale_percent_off, sale_starts_at, sale_ends_at",
     )
     .eq("key", productKey);
   if (options.activeOnly !== false) query = query.eq("active", true);
 
   const { data, error } = await query.maybeSingle();
   if (error) throw new Error(`Não foi possível validar o catálogo: ${error.message}`);
-  if (!data) throw new Error("Este item não está disponível.");
+  if (!data) throw new PublicPaymentError("item_unavailable");
   return parseProductRow(data as ProductRow);
 }
 
@@ -161,8 +183,6 @@ export async function resolveValidatedStripePrice(
   stripe: Stripe,
   product: ServerStoreProduct,
 ): Promise<Stripe.Price> {
-  // This is the shared, last server gate before either authenticated or guest
-  // checkout queries Stripe. It is deliberately before any provider request.
   assertCheckoutProductNonPayToWin(product);
   const prices = await stripe.prices.list({
     lookup_keys: [product.stripeLookupKey],
@@ -189,11 +209,7 @@ export function activeSalePercent(
   },
   now: number,
 ): number {
-  const pct = row.sale_percent_off ?? 0;
-  if (!Number.isInteger(pct) || pct < 1 || pct > 90) return 0;
-  if (row.sale_starts_at && now < Date.parse(row.sale_starts_at)) return 0;
-  if (row.sale_ends_at && now > Date.parse(row.sale_ends_at)) return 0;
-  return pct;
+  return salePrice({ ...row, price_cents: 0 }, now).percent;
 }
 
 /**

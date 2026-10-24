@@ -20,7 +20,7 @@ export function matchLighting(time: TimeOfDay, weather: Weather, low: boolean) {
         ? "#4a3630"
         : "#8fbfe8";
   const keyColor = night ? "#e4ecff" : cloud ? "#e4edf3" : sunset ? "#ffc79a" : "#fff6e0";
-  const key = night ? 1.18 : sunset ? 1.5 : 1.72;
+  const key = night ? 1.18 : sunset ? 1.5 : 1.92;
   return {
     sky,
     keyColor,
@@ -30,7 +30,9 @@ export function matchLighting(time: TimeOfDay, weather: Weather, low: boolean) {
       number,
       number,
     ],
-    fillIntensity: night ? 0.72 : cloud ? 0.62 : 0.36,
+    // Retain readability on the no-IBL tier; the detailed stadium gets a
+    // distinct sun side and cooler fill instead of evenly washing its tiers.
+    fillIntensity: night ? 0.68 : cloud ? 0.59 : low ? 0.32 : 0.23,
     hemiIntensity: low
       ? night
         ? 0.42
@@ -45,10 +47,10 @@ export function matchLighting(time: TimeOfDay, weather: Weather, low: boolean) {
           ? 0.5
           : sunset
             ? 0.3
-            : 0.34,
+            : 0.28,
     hemiColor: night ? "#a9c9ef" : cloud ? "#c5d5e0" : sunset ? "#ffe0c6" : "#dde9f0",
-    groundColor: night ? "#08131a" : cloud ? "#203027" : "#102c1d",
-    environmentKey: cloud && !night ? 1.55 : night ? 1.45 : sunset ? 1.45 : low ? 1.75 : 2.1,
+    groundColor: night ? "#10191e" : cloud ? "#26332b" : "#1d3025",
+    environmentKey: cloud && !night ? 1.55 : night ? 1.45 : sunset ? 1.45 : low ? 1.75 : 1.65,
     fogNear: night ? 80 : cloud ? 82 : sunset ? 95 : 120,
     fogFar: night ? 230 : cloud ? 245 : sunset ? 270 : 330,
   };

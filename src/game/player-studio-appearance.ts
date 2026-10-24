@@ -1,4 +1,82 @@
-import type { PlayerLook } from "./player-model";
+import {
+  lookWithPhysique,
+  type PlayerLook,
+  type HairStyle,
+  type BeardStyle,
+  type BodyType,
+} from "./player-model";
+
+export interface StudioAppearanceSelection {
+  hairStyle: HairStyle | "original";
+  beard: BeardStyle | "original";
+  physique: BodyType | "original";
+  height?: number | undefined;
+  weight?: number | undefined;
+}
+
+/** A local bridge between the DOM and Canvas React roots. Structural edits
+ * notify the mounted scene synchronously, including a paused demand canvas. */
+export function createStudioAppearanceStore(initial: PlayerLook, id = "local") {
+  let current = initial;
+  let notifications = 0;
+  const listeners = new Set<() => void>();
+  return {
+    diagnostics: () => ({
+      id,
+      subscribers: listeners.size,
+      notifications,
+      revision: studioAppearanceRevision(current),
+    }),
+    getSnapshot: () => current,
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    set(next: PlayerLook) {
+      if (studioAppearanceRevision(next) === studioAppearanceRevision(current)) return;
+      current = next;
+      [...listeners].forEach((listener) => {
+        notifications++;
+        listener();
+      });
+    },
+  };
+}
+
+/** Single resolver used by the authoring controls and both rendering tiers.
+ * A headband is an accessory over medium hair, as in seeded lookFor records;
+ * it must never become an unrecognised geometry style of its own. */
+export function resolveStudioAppearance(
+  look: PlayerLook,
+  selection: StudioAppearanceSelection,
+): PlayerLook {
+  return lookWithPhysique(
+    {
+      ...look,
+      hairStyle:
+        selection.hairStyle === "original"
+          ? look.hairStyle
+          : selection.hairStyle === "headband"
+            ? "medium"
+            : selection.hairStyle,
+      headband:
+        selection.hairStyle === "headband" || (selection.hairStyle === "original" && look.headband),
+      beard: selection.beard === "original" ? look.beard : selection.beard,
+      bodyType: selection.physique === "original" ? look.bodyType : selection.physique,
+      girth:
+        selection.physique === "original"
+          ? look.girth
+          : selection.physique === "strong"
+            ? 1.16
+            : selection.physique === "slim"
+              ? 0.88
+              : 1,
+    },
+    { height: selection.height, weight: selection.weight },
+  );
+}
 
 /**
  * Geometry in the Player Studio is intentionally rebuilt when an authoring

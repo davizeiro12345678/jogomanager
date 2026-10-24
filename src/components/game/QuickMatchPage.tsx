@@ -1,7 +1,7 @@
 import "@/public-styles.css";
 import { Link } from "@tanstack/react-router";
 import { Shuffle } from "lucide-react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
 import { Flag } from "@/components/game/Flag";
@@ -11,6 +11,8 @@ import type { Difficulty } from "@/game/quickMatch";
 import { safeClub } from "@/game/club-reference";
 import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
 import { useT } from "@/i18n/provider";
+import { SHIPPED_CATALOG, catalogFacts } from "@/game/data/catalog-facts";
+import { useCareerLeagueCatalog } from "@/hooks/useCareerLeagueCatalog";
 
 const loadQuickLive = () => import("@/components/game/QuickLive");
 const QuickLive = lazy(loadQuickLive);
@@ -26,12 +28,37 @@ const DIFFS: { id: Difficulty; label: string }[] = [
 
 export function QuickMatchPage() {
   const { t, lang } = useT();
+  const catalogVersion = useCareerLeagueCatalog();
+  // The catalogue can be enriched asynchronously; only recalculate when that
+  // version changes, not on every club, difficulty or opponent selection.
+  const availableCatalog = useMemo(() => catalogFacts(LEAGUES), [catalogVersion]);
+  const leaguesByCountry = useMemo(() => {
+    const countries = LEAGUES.reduce<Record<string, typeof LEAGUES>>((acc, league) => {
+      (acc[league.country] ??= []).push(league);
+      return acc;
+    }, {});
+    return Object.entries(countries).sort(([a], [b]) =>
+      a === "Brasil" ? -1 : b === "Brasil" ? 1 : a.localeCompare(b, lang),
+    );
+  }, [catalogVersion, lang]);
   const [leagueId, setLeagueId] = useState(LEAGUES[0]!.id);
   const league = getLeague(leagueId);
   const [myClub, setMyClub] = useState(league.clubs[0]!.id);
   const [oppClub, setOppClub] = useState(league.clubs[1]!.id);
   const [difficulty, setDifficulty] = useState<Difficulty>("normal");
   const [started, setStarted] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  async function startMatch() {
+    if (preparing || myClub === oppClub) return;
+    setPreparing(true);
+    try {
+      const { prepareQuickMatchRosters } = await import("@/game/quick-roster-loading");
+      await prepareQuickMatchRosters(myClub, oppClub);
+      setStarted(true);
+    } finally {
+      setPreparing(false);
+    }
+  }
   const [seed, setSeed] = useState(() => `quick-${Date.now()}`);
 
   function chooseLeague(id: string) {
@@ -81,6 +108,11 @@ export function QuickMatchPage() {
         </div>
         <p className="mt-1 text-sm text-muted-foreground">{t("quick.description")}</p>
 
+        <p className="mt-2 text-xs text-muted-foreground">
+          Catálogo incluído: {SHIPPED_CATALOG.competitions} competições e{" "}
+          {new Intl.NumberFormat("pt-BR").format(SHIPPED_CATALOG.playableClubs)} clubes únicos.
+          Disponíveis neste aparelho, com importações: {availableCatalog.competitions} competições.
+        </p>
         {/* All leagues, grouped by country (was a 40-button wall that hid most leagues). */}
         <div className="mt-6 flex max-w-md items-center gap-3">
           <Flag league={league.id} country={league.country} size={24} />
@@ -89,20 +121,12 @@ export function QuickMatchPage() {
           </label>
           <select
             id="quick-league"
+            disabled={preparing}
             value={leagueId}
             onChange={(e) => chooseLeague(e.target.value)}
             className="w-full rounded-lg border border-input bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary"
           >
-            {Object.entries(
-              LEAGUES.reduce<Record<string, typeof LEAGUES>>((acc, l) => {
-                (acc[l.country] ??= []).push(l);
-                return acc;
-              }, {}),
-            )
-              .sort(([a], [b]) =>
-                a === "Brasil" ? -1 : b === "Brasil" ? 1 : a.localeCompare(b, lang),
-              )
-              .map(([country, ls]) => (
+            {leaguesByCountry.map(([country, ls]) => (
                 <optgroup key={country} label={country}>
                   {ls.map((l) => (
                     <option key={l.id} value={l.id}>
@@ -121,6 +145,7 @@ export function QuickMatchPage() {
             value={myClub}
             onChange={setMyClub}
             disabled={oppClub}
+            busy={preparing}
           />
           <TeamPicker
             title={t("quick.away")}
@@ -128,6 +153,7 @@ export function QuickMatchPage() {
             value={oppClub}
             onChange={setOppClub}
             disabled={myClub}
+            busy={preparing}
           />
         </div>
 
@@ -137,6 +163,7 @@ export function QuickMatchPage() {
             {DIFFS.map((d) => (
               <button
                 key={d.id}
+                disabled={preparing}
                 onClick={() => setDifficulty(d.id)}
                 aria-pressed={difficulty === d.id}
                 className={`min-h-11 rounded-lg border px-3 py-2 font-display text-xs uppercase tracking-wide ${
@@ -156,19 +183,20 @@ export function QuickMatchPage() {
             ))}
           </div>
           <button
+            disabled={preparing}
             onClick={randomize}
             className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border surface-card px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground"
           >
             <Shuffle size={14} aria-hidden="true" /> {t("quick.random")}
           </button>
           <button
-            onClick={() => setStarted(true)}
+            onClick={() => void startMatch()}
             onPointerEnter={preloadQuickLive}
             onFocus={preloadQuickLive}
-            disabled={myClub === oppClub}
+            disabled={preparing || myClub === oppClub}
             className="min-h-12 rounded-lg bg-primary px-6 py-2 font-display text-base uppercase tracking-wide text-primary-foreground shadow-lg disabled:opacity-40"
           >
-            {t("quick.start")}
+            {preparing ? "Preparando elencos…" : t("quick.start")}
           </button>
           <Link
             to="/"
@@ -188,12 +216,14 @@ function TeamPicker({
   value,
   onChange,
   disabled,
+  busy = false,
 }: {
   title: string;
   clubs: string[];
   value: string;
   onChange: (id: string) => void;
   disabled: string;
+  busy?: boolean;
 }) {
   return (
     <section className="rounded-2xl border border-border/60 surface-card p-4">
@@ -215,7 +245,7 @@ function TeamPicker({
           <button
             key={id}
             onClick={() => onChange(id)}
-            disabled={id === disabled}
+            disabled={busy || id === disabled}
             className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
               id === value
                 ? "bg-primary/15 text-foreground"

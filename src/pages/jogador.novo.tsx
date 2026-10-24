@@ -16,6 +16,9 @@ import { POSITION_LABEL } from "@/game/player-career/attributes";
 
 import {
   athleteAppearanceFromLegacy,
+  ATHLETE_HAIR_STYLES,
+  ATHLETE_BEARD_STYLES,
+  RIG_POSITION_FOR_CAREER,
   defaultAthleteAppearance,
   legacyAppearanceFromAthleteAppearance,
   type AthleteAppearanceV1,
@@ -41,23 +44,33 @@ const AthleteHero3D = lazy(() =>
     default: module.AthleteHero3D,
   })),
 );
+const PlayerStudio = lazy(() => import("@/components/game/players/PlayerStudio"));
 
 const SKINS = ["#f4d3b5", "#e2b48c", "#c68a5d", "#a0673f", "#7a4a2a", "#4e2e1a"];
 
 const HAIR_COLORS = ["#1b1410", "#4a2f1d", "#8a5a2b", "#d8b46a", "#b5b5b5"];
 
-const HAIR_STYLES = [
-  "Raspado",
-  "Degradê",
-  "Curto",
-  "Cacheado",
-  "Black",
-  "Tranças",
-  "Coque",
-  "Moicano",
-  "Ondulado",
-  "Longo",
-];
+const HAIR_LABELS: Record<(typeof ATHLETE_HAIR_STYLES)[number], string> = {
+  buzz: "Raspado",
+  short: "Curto",
+  medium: "Ondulado",
+  curly: "Cacheado",
+  afro: "Black",
+  mohawk: "Moicano",
+  bun: "Coque",
+  ponytail: "Rabo de cavalo",
+  dreads: "Dreads",
+  braids: "Tranças",
+  headband: "Faixa",
+  bald: "Careca",
+};
+const BEARD_LABELS: Record<(typeof ATHLETE_BEARD_STYLES)[number], string> = {
+  none: "Sem barba",
+  stubble: "Rala",
+  goatee: "Cavanhaque",
+  full: "Cheia",
+  moustache: "Bigode",
+};
 
 const NATIONS = [
   "Brasil",
@@ -124,9 +137,7 @@ export function CreateAthletePage() {
     );
   };
   const setSkin = (value: number) => updateLegacyAppearance({ skin: value });
-  const setHair = (value: number) => updateLegacyAppearance({ hair: value });
   const setHairColor = (value: number) => updateLegacyAppearance({ hairColor: value });
-  const setBeard = (value: number) => updateLegacyAppearance({ beard: value });
   const [studioOpen, setStudioOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [furthest, setFurthest] = useState(0);
@@ -149,7 +160,7 @@ export function CreateAthletePage() {
   const club = clubPool.find((c) => c.id === clubId) ?? clubPool[0];
   const previewAthlete = useMemo(
     () => ({
-      seed: `preview-${name || "novo"}-${skin}-${hair}-${hairColor}-${beard}`,
+      seed: `preview-${slotId}-${name || "novo"}`,
       nickname: nickname || name.split(" ")[0] || "ATLETA",
       clubId: club?.id ?? "fla",
       position,
@@ -160,8 +171,23 @@ export function CreateAthletePage() {
       ),
       build,
       appearance: { skin, hair, hairColor, beard, boots: 0 },
+      appearanceV1,
     }),
-    [name, nickname, club?.id, position, shirt, heightCm, build, skin, hair, hairColor, beard],
+    [
+      name,
+      nickname,
+      club?.id,
+      position,
+      shirt,
+      heightCm,
+      build,
+      skin,
+      hair,
+      hairColor,
+      beard,
+      appearanceV1,
+      slotId,
+    ],
   );
 
   const nextStep = () => {
@@ -433,15 +459,32 @@ export function CreateAthletePage() {
                 </div>
                 <span className="athlete-quality-badge">Alta qualidade</span>
               </div>
-              <Suspense
-                fallback={
-                  <div className="athlete-3d-preview grid place-items-center" role="status">
-                    Preparando visualização 3D…
-                  </div>
-                }
-              >
-                <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
-              </Suspense>
+              {!studioOpen && (
+                <Suspense
+                  fallback={
+                    <div className="athlete-3d-preview grid place-items-center" role="status">
+                      Preparando visualização 3D…
+                    </div>
+                  }
+                >
+                  <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
+                </Suspense>
+              )}
+              <Button type="button" variant="outline" onClick={() => setStudioOpen(!studioOpen)}>
+                {studioOpen ? "Voltar à prévia do atleta" : "Ver meu atleta no estúdio 3D"}
+              </Button>
+              {studioOpen && (
+                <Suspense fallback={<p role="status">Preparando estúdio 3D…</p>}>
+                  <PlayerStudio
+                    clubId={club?.id ?? "fla"}
+                    position={RIG_POSITION_FOR_CAREER[position]}
+                    heightCm={heightCm}
+                    weightKg={previewAthlete.weightKg}
+                    value={appearanceV1}
+                    onChange={setAppearanceV1}
+                  />
+                </Suspense>
+              )}
               <div className="athlete-field">
                 <span>Tom de pele</span>
                 <div className="athlete-chips">
@@ -462,10 +505,18 @@ export function CreateAthletePage() {
               </div>
               <label className="athlete-field">
                 <span>Cabelo</span>
-                <select value={hair} onChange={(e) => setHair(Number(e.target.value))}>
-                  {HAIR_STYLES.map((h, i) => (
-                    <option key={h} value={i}>
-                      {h}
+                <select
+                  value={appearanceV1.hairStyle}
+                  onChange={(e) =>
+                    setAppearanceV1((previous) => ({
+                      ...previous,
+                      hairStyle: e.target.value as AthleteAppearanceV1["hairStyle"],
+                    }))
+                  }
+                >
+                  {ATHLETE_HAIR_STYLES.map((hairStyle) => (
+                    <option key={hairStyle} value={hairStyle}>
+                      {HAIR_LABELS[hairStyle]}
                     </option>
                   ))}
                 </select>
@@ -490,10 +541,18 @@ export function CreateAthletePage() {
               </div>
               <label className="athlete-field">
                 <span>Barba</span>
-                <select value={beard} onChange={(e) => setBeard(Number(e.target.value))}>
-                  {["Sem barba", "Rala", "Média", "Cheia"].map((b, i) => (
-                    <option key={b} value={i}>
-                      {b}
+                <select
+                  value={appearanceV1.beardStyle}
+                  onChange={(e) =>
+                    setAppearanceV1((previous) => ({
+                      ...previous,
+                      beardStyle: e.target.value as AthleteAppearanceV1["beardStyle"],
+                    }))
+                  }
+                >
+                  {ATHLETE_BEARD_STYLES.map((beardStyle) => (
+                    <option key={beardStyle} value={beardStyle}>
+                      {BEARD_LABELS[beardStyle]}
                     </option>
                   ))}
                 </select>

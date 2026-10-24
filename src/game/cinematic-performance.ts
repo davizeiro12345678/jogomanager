@@ -1,5 +1,5 @@
-import type { AthleteHairMotionInput, AthleteLooseHairStyle } from "./athlete-secondary-motion";
 import { graphicsRendererClass } from "./graphics-renderer-metadata";
+import type { AthleteHairMotionInput, AthleteLooseHairStyle } from "./athlete-secondary-motion";
 
 /** Cosmetic time: hidden/paused scenes do no work and a stalled frame cannot
  * fling the camera or a hand across the room. Never used by the match Worker. */
@@ -19,7 +19,9 @@ export function cinematicDetail(quality: string, hero: boolean) {
   return {
     high: quality === "alta" && hero,
     portrait,
-    radial: hero ? (quality === "alta" ? 16 : quality === "media" ? 12 : 8) : 8,
+    // A speaking actor is one of at most two close subjects. Spend geometry
+    // on that silhouette and face; background extras stay at the compact tier.
+    radial: hero ? (quality === "alta" ? 48 : quality === "media" ? 24 : 8) : 8,
   };
 }
 

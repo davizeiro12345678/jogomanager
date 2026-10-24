@@ -1,3 +1,4 @@
+import { isNonPlayerRole } from "./football-person-kind";
 // Bulk, resumable API-Football import. Each call processes one bounded page
 // (offset/limit) so a runner can walk the whole catalog under the daily quota.
 // Mappings live in official_leagues/official_teams with an "af:" prefix so they
@@ -317,19 +318,21 @@ async function importTeams(
     }
     if (!teams.length) return false;
     const country = teams[0]!.team.country;
-    const { data: existing } = await db
+    const { data: existing, error: existingError } = await db
       .from("clubs")
       .select("id, name")
       .eq("country", country)
       .limit(5000);
+    if (existingError) throw new Error("api_football_existing_clubs_unavailable");
     const byName = new Map((existing ?? []).map((c) => [norm(c.name), c.id]));
-    const { data: already } = await db
+    const { data: already, error: mappingError } = await db
       .from("official_teams")
       .select("source_id, local_club_id")
       .in(
         "source_id",
         teams.map((t) => `af:${t.team.id}`),
       );
+    if (mappingError) throw new Error("api_football_team_mapping_unavailable");
     const known = new Map((already ?? []).map((r) => [r.source_id, r.local_club_id]));
 
     const newClubs: TablesInsert<"clubs">[] = [];
@@ -433,7 +436,8 @@ async function importSquads(
       throw e;
     }
     const players = (squad[0]?.players ?? []).filter(
-      (p) => p && p.id && p.name && !isFootballStaffRole(p.position),
+      (p) =>
+        p && p.id && p.name && !isNonPlayerRole(p.position) && !isFootballStaffRole(p.position),
     );
     if (!players.length) return false;
     const rows = players

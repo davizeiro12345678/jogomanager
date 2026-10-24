@@ -1,0 +1,35 @@
+{
+  "summary": {
+    "managerName": "QA Restauração",
+    "clubId": "fla",
+    "clubName": "Flamengo",
+    "season": 2,
+    "round": 4,
+    "calendarYear": 2027,
+    "gameSaveVersion": 3,
+    "exportedAt": "2026-10-20T16:57:22.846Z",
+    "checksum": "5b7939ef",
+    "playerCount": 26,
+    "fixtureCount": 380,
+    "historyCount": 1
+  },
+  "fingerprints": {
+    "players": "b545e728081b24717fcb80997ad06ba592523f1531db1cd4bffcefe5b35e469a",
+    "lineup": "bf6b3c0db4b0bc1bd72be3334a69da1583e5a0e5c410c238aab32e108b150fa2",
+    "bench": "b209b69940bf37e32ca5f2aeacb9935687069c1294dedb6b5dc48d1e9e29cb61",
+    "finances": "23376a00803a8356725b89bec415c1673a63b6375f3c43834e4372d62de53b87",
+    "fixtures": "c2b73127a4e40f5471eea090e6529e80246c193c258f067893c4ae5ce23efc7f",
+    "results": "80a2f1422bc2187249635c5ae5131f5dcce16693dfa0c26e3872d8c8d3897b88",
+    "history": "b6adf40e8045a9e55d73acfcfd90eee6dba655d48f0972ebcb1c9df25621a1d3",
+    "managerHistory": "28f6fc33df40c9f04d69cc54720db2da24ccaf2782d47c0c950e899f9b0cc6ce"
+  },
+  "clubId": "fla",
+  "season": 2,
+  "round": 4,
+  "calendarYear": 2027,
+  "finances": {
+    "budget": 38.75,
+    "spent": 12.5,
+    "income": 7.25
+  }
+}

@@ -14,11 +14,45 @@
 import * as THREE from "three";
 import { beardFiberColor, beardFiberMask, hairStrandNormal, irisColor } from "./textures/fabric";
 import { skinAlbedo } from "./player-morphology";
+import { ktx2, onKtx2Ready, type TextureName } from "./textures/ktx2";
 
 const MAX_ENTRIES = 64;
 const cache = new Map<string, THREE.Material>();
 const users = new WeakMap<THREE.Material, number>();
 const retired = new WeakSet<THREE.Material>();
+const streamedDetails = new Map<
+  THREE.Material,
+  Partial<Record<"map" | "normalMap" | "roughnessMap", TextureName>>
+>();
+
+function refreshDetailMaps(
+  material: THREE.Material,
+  sources: Partial<Record<"map" | "normalMap" | "roughnessMap", TextureName>>,
+) {
+  const target = material as THREE.MeshStandardMaterial;
+  for (const [slot, name] of Object.entries(sources)) {
+    const texture = ktx2(name);
+    if (!texture) continue;
+    const key = slot as "map" | "normalMap" | "roughnessMap";
+    if (target[key] === texture) continue;
+    const hadMap = Boolean(target[key]);
+    target[key] = texture;
+    if (slot === "map") target.color.set(material.userData["compressedTint"] ?? "#ffffff");
+    if (!hadMap) target.needsUpdate = true;
+  }
+}
+function streamDetailMaps(
+  material: THREE.Material,
+  sources: Partial<Record<"map" | "normalMap" | "roughnessMap", TextureName>>,
+) {
+  streamedDetails.set(material, sources);
+  refreshDetailMaps(material, sources);
+  return material;
+}
+onKtx2Ready(() => {
+  for (const [material, sources] of streamedDetails)
+    if ((users.get(material) ?? 0) > 0) refreshDetailMaps(material, sources);
+});
 
 function retireSharedMaterial(material: THREE.Material) {
   if ((users.get(material) ?? 0) > 0) retired.add(material);
@@ -29,7 +63,11 @@ function retireSharedMaterial(material: THREE.Material) {
  * detail maps alive until its last mounted owner releases them. */
 export function retainSharedDetailMaterials(materials: Iterable<THREE.Material>): () => void {
   const unique = new Set(materials);
-  for (const material of unique) users.set(material, (users.get(material) ?? 0) + 1);
+  for (const material of unique) {
+    users.set(material, (users.get(material) ?? 0) + 1);
+    const sources = streamedDetails.get(material);
+    if (sources) refreshDetailMaps(material, sources);
+  }
   let released = false;
   return () => {
     if (released) return;
@@ -46,6 +84,7 @@ export function retainSharedDetailMaterials(materials: Iterable<THREE.Material>)
 }
 
 function disposeSharedMaterial(material: THREE.Material) {
+  streamedDetails.delete(material);
   material.dispose();
   const owned = material.userData["ownedTexture"] as THREE.Texture | undefined;
   owned?.dispose();
@@ -91,18 +130,26 @@ export function sharedDetailMaterialCount(): number {
 
 /** Esclera do olho. */
 export function eyeWhiteMaterial(hi = false): THREE.Material {
-  return sharedDetailMaterial(`eye-white:${hi}`, () =>
-    hi
-      ? new THREE.MeshPhysicalMaterial({
-          color: "#c9c3b8",
-          vertexColors: true,
-          roughness: 0.5,
-          clearcoat: 0.12,
-          clearcoatRoughness: 0.18,
-          ior: 1.376,
-        })
-      : new THREE.MeshStandardMaterial({ color: "#b8b2a9", vertexColors: true, roughness: 0.52 }),
-  );
+  return sharedDetailMaterial(`eye-white:${hi}`, () => {
+    if (!hi)
+      return new THREE.MeshStandardMaterial({
+        color: "#c9c3b8",
+        vertexColors: true,
+        roughness: 0.44,
+      });
+    const material = new THREE.MeshPhysicalMaterial({
+      color: "#c8bfb3",
+      vertexColors: true,
+      roughness: 0.48,
+      clearcoat: 0.12,
+      clearcoatRoughness: 0.08,
+      ior: 1.376,
+    });
+    // Streaming must preserve the warm sclera tint instead of resetting its
+    // material to white as soon as the compressed atlas arrives.
+    material.userData["compressedTint"] = "#c8bfb3";
+    return streamDetailMaps(material, { map: "sclera_albedo" });
+  });
 }
 
 /** The shell and its edge tint must use the same linear albedo. Mixing the
@@ -120,26 +167,26 @@ export function beardMaterial(skin: string, hair: string, style: string): THREE.
   return sharedDetailMaterial(`beard:${skin}:${hair}:${style}`, () => {
     const tone = beardAlbedo(skin, hair, style);
     const map = beardFiberColor("#" + tone.getHexString());
-    return new THREE.MeshStandardMaterial({
-      color: map ? "#ffffff" : tone,
-      vertexColors: true,
-      map,
-      roughness: 0.94,
-      alphaMap: beardFiberMask(style === "stubble"),
-      // Keep the dense central growth, but allow the fibre mask to soften the
-      // edge rather than layering an almost opaque dark shell over the jaw.
-      alphaTest: style === "stubble" ? 0.04 : 0.075,
-      transparent: true,
-      // Keep full facial hair dense enough to read on the broadcast camera,
-      // while letting the sculpted cheek and jaw planes remain visible in a
-      // close portrait instead of forming an opaque mask.
-      opacity: style === "stubble" ? 0.62 : 0.8,
-      depthWrite: false,
-      alphaToCoverage: true,
-      normalMap: hairStrandNormal(),
-      normalScale: new THREE.Vector2(0.055, 0.085),
-      envMapIntensity: 0.14,
-    });
+    return streamDetailMaps(
+      new THREE.MeshStandardMaterial({
+        color: map ? "#ffffff" : tone,
+        vertexColors: true,
+        map,
+        roughness: 0.94,
+        alphaMap: beardFiberMask(style === "stubble"),
+        // Keep the dense central growth, but allow the fibre mask to soften the
+        // edge rather than layering an almost opaque dark shell over the jaw.
+        alphaTest: style === "stubble" ? 0.04 : 0.075,
+        transparent: true,
+        opacity: style === "stubble" ? 0.65 : 0.88,
+        depthWrite: false,
+        alphaToCoverage: true,
+        normalMap: hairStrandNormal(),
+        normalScale: new THREE.Vector2(0.055, 0.085),
+        envMapIntensity: 0.14,
+      }),
+      { normalMap: "beard_normal" },
+    );
   });
 }
 
@@ -153,19 +200,16 @@ export function pupilMaterial(): THREE.Material {
 
 /** Íris na cor do atleta. */
 export function irisMaterial(color: string, hi = false): THREE.Material {
-  return sharedDetailMaterial(
-    `iris:${color}:${hi}`,
-    () =>
-      new (hi ? THREE.MeshPhysicalMaterial : THREE.MeshStandardMaterial)({
-        // Tint the procedural atlas down so green and blue eyes preserve
-        // their identity without glowing against the sclera in the portrait
-        // light rig.
-        color: irisColor(color) ? "#8f8f8f" : new THREE.Color(color).multiplyScalar(0.56),
-        map: irisColor(color),
-        roughness: hi ? 0.42 : 0.48,
-        ...(hi ? { clearcoat: 0.3, clearcoatRoughness: 0.16, ior: 1.376 } : {}),
-      }),
-  );
+  return sharedDetailMaterial(`iris:${color}:${hi}`, () => {
+    const material = new (hi ? THREE.MeshPhysicalMaterial : THREE.MeshStandardMaterial)({
+      color: irisColor(color) ? "#ffffff" : color,
+      map: irisColor(color),
+      roughness: hi ? 0.25 : 0.36,
+      ...(hi ? { clearcoat: 0.8, clearcoatRoughness: 0.08, ior: 1.376 } : {}),
+    });
+    material.userData["compressedTint"] = color;
+    return hi ? streamDetailMaps(material, { map: "iris_detail_albedo" }) : material;
+  });
 }
 
 /** Travas da chuteira. */
@@ -188,10 +232,18 @@ export function armbandMaterial(): THREE.Material {
  * Detalhe de pele (narinas, lábio, boca) num material único por tom: três
  * malhas a menos por atleta com a mesma leitura visual.
  */
-export function skinDetailMaterial(skin: string): THREE.Material {
-  return sharedDetailMaterial(`skin-detail:${skin}`, () => {
-    const dark = new THREE.Color(skinAlbedo(skin)).lerp(new THREE.Color("#3a1d12"), 0.45);
-    return new THREE.MeshStandardMaterial({ color: dark, vertexColors: true, roughness: 0.62 });
+export function skinDetailMaterial(skin: string, hi = false): THREE.Material {
+  return sharedDetailMaterial(`skin-detail:${skin}:${hi}`, () => {
+    const dark = new THREE.Color(skinAlbedo(skin)).lerp(new THREE.Color("#6b302c"), 0.3);
+    const material = new THREE.MeshStandardMaterial({
+      color: dark,
+      vertexColors: true,
+      roughness: 0.64,
+    });
+    material.normalScale.set(0.08, 0.08);
+    return hi
+      ? streamDetailMaps(material, { normalMap: "lip_normal", roughnessMap: "lip_rough" })
+      : material;
   });
 }
 

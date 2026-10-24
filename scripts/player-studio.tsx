@@ -8,27 +8,32 @@ import {
 } from "@tanstack/react-router";
 import PlayerStudio from "../src/components/game/players/PlayerStudio";
 import { StudioShell } from "../src/components/game/cinematic/StudioShell";
-import { I18nProvider } from "../src/i18n/provider";
-import { AccessibilityProvider } from "../src/components/accessibility/AccessibilityProvider";
 import "../src/styles.css";
 
 // The product's actual player renderer and controls, without authentication
 // or a career save. Served alongside the existing graphics fixture.
+const params = new URLSearchParams(location.search);
+const inspection = params.has("movement")
+  ? {
+      movement: params.get("movement") ?? "idle",
+      phase: Number(params.get("phase") ?? 0.45),
+      framing: params.get("framing") ?? "body",
+      angle: params.get("angle") ?? "threeQuarter",
+    }
+  : undefined;
+const requestedPosition =
+  params.get("position") ?? (inspection?.movement.startsWith("keeper") ? "GK" : "MF");
+const position = ["GK", "DF", "MF", "FW"].includes(requestedPosition) ? requestedPosition : "MF";
 export function PlayerStudioApp() {
   return (
-    <I18nProvider>
-      <AccessibilityProvider>
-        <StudioShell current="players">
-          <PlayerStudio />
-        </StudioShell>
-      </AccessibilityProvider>
-    </I18nProvider>
+    <StudioShell current="players">
+      <PlayerStudio
+        initialPosition={position}
+        {...(inspection ? { initialInspection: inspection } : {})}
+      />
+    </StudioShell>
   );
 }
-
-// The production translation provider observes the active route. A memory
-// router supplies that contract without importing application routes, auth,
-// server functions or career state into the isolated renderer fixture.
 const rootRoute = createRootRoute();
 const studioRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -39,5 +44,4 @@ const router = createRouter({
   routeTree: rootRoute.addChildren([studioRoute]),
   history: createMemoryHistory({ initialEntries: ["/player-studio.html"] }),
 });
-
 createRoot(document.getElementById("root")!).render(<RouterProvider router={router} />);

@@ -1,0 +1,120 @@
+{
+  "method": "Exact paired nonparametric bootstrap: enumerate all 6^6=46,656 paired resamples of ABBA-matched raw sample indexes; ratio of medians; percentile 99% interval. Pair A1[j] with B1[j], A2[j] with B2[j]. No correction for serial dependence, n=6 exploratory. Timing CPU only.",
+  "workloads": {
+    "adapter22": {
+      "ratioMedianOfSamples": 0.28049634114764177,
+      "pairedBootstrap99Ratio": [
+        0.24629835189098714,
+        0.31987930061905284
+      ],
+      "baselineDispersion": {
+        "minMs": 217.4155310000001,
+        "maxMs": 340.66230399999995,
+        "medianMs": 251.94074799999999,
+        "p25Ms": 219.38257925000016,
+        "p75Ms": 307.49583600000005,
+        "madMs": 34.026864499999874
+      },
+      "candidateDispersion": {
+        "minMs": 68.44088999999997,
+        "maxMs": 87.80420100000003,
+        "medianMs": 70.66845800000004,
+        "p25Ms": 69.11081975000008,
+        "p75Ms": 76.34460649999994,
+        "madMs": 1.9652545000000146
+      }
+    },
+    "mixedAdapter22": {
+      "ratioMedianOfSamples": 0.4287276001096079,
+      "pairedBootstrap99Ratio": [
+        0.41346674479681206,
+        0.4592417812322727
+      ],
+      "baselineDispersion": {
+        "minMs": 210.88619899999958,
+        "maxMs": 266.95287199999984,
+        "medianMs": 221.7529545,
+        "p25Ms": 218.4073000000002,
+        "p75Ms": 226.57318925000027,
+        "madMs": 4.811959000000115
+      },
+      "candidateDispersion": {
+        "minMs": 92.23275699999999,
+        "maxMs": 110.37613499999998,
+        "medianMs": 95.07161200000007,
+        "p25Ms": 94.13338374999995,
+        "p75Ms": 100.94038224999997,
+        "madMs": 1.9510430000001406
+      }
+    },
+    "live300": {
+      "ratioMedianOfSamples": 1.0251075180204157,
+      "pairedBootstrap99Ratio": [
+        0.807720752702269,
+        1.364742555363846
+      ],
+      "baselineDispersion": {
+        "minMs": 39.76562399999966,
+        "maxMs": 53.10381200000029,
+        "medianMs": 44.6364709999998,
+        "p25Ms": 40.804700999999795,
+        "p75Ms": 48.98433174999991,
+        "madMs": 4.284150500000123
+      },
+      "candidateDispersion": {
+        "minMs": 42.09381200000007,
+        "maxMs": 55.54008300000032,
+        "medianMs": 45.75718200000006,
+        "p25Ms": 42.55034899999998,
+        "p75Ms": 48.925199500000076,
+        "madMs": 3.295190000000048
+      }
+    },
+    "contacts22": {
+      "ratioMedianOfSamples": 0.9771299871331338,
+      "pairedBootstrap99Ratio": [
+        0.9159935188920553,
+        1.0003661551520882
+      ],
+      "baselineDispersion": {
+        "minMs": 136.43974900000012,
+        "maxMs": 188.5510949999998,
+        "medianMs": 145.33411149999984,
+        "p25Ms": 139.7885752499999,
+        "p75Ms": 154.95387124999957,
+        "madMs": 7.657996999999796
+      },
+      "candidateDispersion": {
+        "minMs": 133.91959700000007,
+        "maxMs": 172.71158100000002,
+        "medianMs": 142.01031850000027,
+        "p25Ms": 134.36854399999993,
+        "p75Ms": 149.2364429999999,
+        "madMs": 7.8134904999999435
+      }
+    },
+    "headClose": {
+      "ratioMedianOfSamples": 0.9970249752981862,
+      "pairedBootstrap99Ratio": [
+        0.8839630659475824,
+        1.1048713975736253
+      ],
+      "baselineDispersion": {
+        "minMs": 494.5193330000002,
+        "maxMs": 567.4328819999992,
+        "medianMs": 514.6180800000002,
+        "p25Ms": 500.5454330000007,
+        "p75Ms": 527.2223927500008,
+        "madMs": 16.127426500000183
+      },
+      "candidateDispersion": {
+        "minMs": 468.2941229999997,
+        "maxMs": 550.7707850000006,
+        "medianMs": 513.0870785000002,
+        "p25Ms": 507.4683725,
+        "p75Ms": 541.1914865000003,
+        "madMs": 21.60897150000028
+      }
+    }
+  }
+}

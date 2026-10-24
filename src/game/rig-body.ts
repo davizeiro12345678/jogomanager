@@ -19,7 +19,7 @@ import * as THREE from "three";
 import type { Proportions, PlayerLook } from "./player-model";
 import type { PlayerMaterials } from "./player-materials";
 import { buildSculptedFace } from "./player-sculpt";
-import { footballShorts } from "./player-shorts";
+import { footballShorts, SHORTS_FIT } from "./player-shorts";
 import { FINGER_CENTERS_Y, FINGER_LENGTHS, fingerX } from "./player-hands";
 import {
   armbandMaterial,
@@ -50,7 +50,6 @@ import {
   type RigMesh,
   type RigPart,
 } from "./rig-geometry";
-import { withRigGeometryContext } from "./rig-geometry-worker-client";
 
 /** Segmentação por qualidade, como no rig original. */
 export interface RigSegments {
@@ -58,12 +57,21 @@ export interface RigSegments {
   cap: number;
 }
 
+/**
+ * `ultra` is intentionally reserved for a close athlete or the isolated
+ * studio.  It raises real surface density without making the 22-player
+ * broadcast path pay the same cost.
+ */
+export type RigTopology = "standard" | "ultra";
+
 export interface RigBodyContext {
   P: Proportions;
   look: PlayerLook;
   segs: RigSegments;
   /** qualidade alta: detalhes finos de rosto, músculos e mechas de cabelo */
   hi: boolean;
+  /** Close-up-only surface density.  Animation and material batching stay shared. */
+  topology?: RigTopology;
   portrait?: boolean;
   /** Staff actors reuse the athlete skeleton with full-length cloth trousers. */
   trousers?: boolean;
@@ -246,7 +254,7 @@ function garmentTopstitch(geometry: THREE.BufferGeometry, value: number) {
 }
 
 /** Constrói o corpo completo. Devolve malhas já mescladas por junta. */
-function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
+export function buildRigBody(ctx: RigBodyContext): RigBody {
   const { P, look, segs, hi, mats, handR, handMat } = ctx;
   const portrait = ctx.portrait ?? true;
   const skin = mats.skin;
@@ -324,8 +332,8 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
               // The tube's inner edge meets the authored shell. The old
               // radii sat inside the thigh near the opening and alternated
               // cloth/skin triangles once the femur rotated into a seat.
-              P.legR * 1.16 + 0.007 + 0.0022 + shortsHemTube,
-              P.legR * 1.24 + 0.007 + 0.0022 + shortsHemTube,
+              P.legR * SHORTS_FIT.hemWidth + SHORTS_FIT.allowance + 0.0022 + shortsHemTube,
+              P.legR * SHORTS_FIT.hemDepth + SHORTS_FIT.allowance + 0.0022 + shortsHemTube,
               shortsHemTube,
               segs.radial,
               hi ? 5 : 4,
@@ -379,8 +387,8 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
             athleticTorsoSurface(
               anatomicalSection(
                 [
-                  { y: -P.hipH * 0.12, width: P.hipW * 0.59, depth: P.chestD * 0.85 },
-                  { y: P.spineLen * 0.4, width: P.chestW * 0.73, depth: P.chestD * 0.9 },
+                  { y: -P.hipH * 0.12, width: P.hipW * 0.65, depth: P.chestD * 0.93 },
+                  { y: P.spineLen * 0.4, width: P.chestW * 0.79, depth: P.chestD * 0.92 },
                   { y: P.spineLen * 1.06, width: P.chestW * 0.98, depth: P.chestD * 1.025 },
                   {
                     y: P.spineLen + P.chestLen * 0.4,
@@ -389,8 +397,8 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
                   },
                   {
                     y: P.spineLen + P.chestLen * 0.73,
-                    width: P.shoulderW * 0.54,
-                    depth: P.chestD * 0.885,
+                    width: P.shoulderW * 0.565,
+                    depth: P.chestD * 0.91,
                   },
                   {
                     y: P.spineLen + P.chestLen * 0.87,
@@ -408,7 +416,7 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
                     width: Math.max(P.shoulderW * 0.265, P.neckR * 1.4),
                     depth: Math.max(P.chestD * 0.54, P.neckR * 1.23),
                   },
-                  { y: P.spineLen + P.chestLen, width: P.neckR * 1.39, depth: P.neckR * 1.21 },
+                  { y: P.spineLen + P.chestLen, width: P.neckR * 1.39, depth: P.neckR * 1.22 },
                 ],
                 Math.max(12, segs.radial + (hi ? 8 : 4)),
                 0.94,
@@ -416,6 +424,7 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
               ),
               P.chestW,
               torsoHeight,
+              hi && portrait,
             ),
             P.chestW,
           ),
@@ -434,8 +443,8 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
   spine.push(
     rigPart(
       ellipticalGarmentRing(
-        P.hipW * 0.605,
-        P.chestD * 0.865,
+        P.hipW * 0.651,
+        P.chestD * 0.94,
         Math.max(P.hipH * 0.021, 0.0019),
         Math.max(12, segs.radial),
         hi ? 5 : 4,
@@ -449,7 +458,7 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
     for (const side of SIDES) {
       const seam = new THREE.TubeGeometry(
         new THREE.CatmullRomCurve3([
-          new THREE.Vector3(side * P.hipW * 0.6, torsoBottom + P.hipH * 0.018, P.chestD * 0.33),
+          new THREE.Vector3(side * P.hipW * 0.65, torsoBottom + P.hipH * 0.018, P.chestD * 0.33),
           new THREE.Vector3(side * P.chestW * 0.76, P.spineLen * 0.4, P.chestD * 0.36),
           new THREE.Vector3(side * P.chestW * 1.0, P.spineLen + P.chestLen * 0.3, P.chestD * 0.4),
           new THREE.Vector3(
@@ -563,10 +572,11 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
       neckSurface(
         anatomicalSection(
           [
-            { y: -P.neckLen * 0.12, width: P.neckR * 1.3, depth: P.neckR * 1.12 },
-            { y: P.neckLen * 0.16, width: P.neckR * 1.11, depth: P.neckR * 0.98 },
-            { y: P.neckLen * 0.65, width: P.neckR * 0.87, depth: P.neckR * 0.82 },
-            { y: P.neckLen * 1.25, width: P.neckR * 0.93, depth: P.neckR * 0.86 },
+            { y: -P.neckR * 0.16, width: P.neckR * 1.33, depth: P.neckR * 1.21 },
+            { y: P.neckLen * 0.18, width: P.neckR * 1.12, depth: P.neckR * 1.02 },
+            { y: P.neckLen * 0.56, width: P.neckR * 0.91, depth: P.neckR * 0.88 },
+            { y: P.neckLen * 0.95, width: P.neckR * 0.95, depth: P.neckR * 0.92 },
+            { y: P.neckLen * 1.25, width: P.neckR * 1.02, depth: P.neckR * 0.95 },
           ],
           segs.radial,
         ),
@@ -581,7 +591,7 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
 
   /* --------------------------------------------------------------- rosto */
 
-  const sculpt = buildSculptedFace(P, look, mats, hi, portrait ?? true);
+  const sculpt = buildSculptedFace(P, look, mats, hi, portrait ?? true, ctx.topology ?? "standard");
   const { head, face, eyes, jaw, eyelidUpperL, eyelidLowerL, eyelidUpperR, eyelidLowerR } = sculpt;
   const hairParts = sculpt.hair;
   const hairSecondaryParts = sculpt.hairSecondary;
@@ -640,7 +650,7 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
     if (look.sleeves === "short")
       arm.push(
         rigPart(
-          clothSurface(shoulderSleeve(P.upperArm, P.armR, segs.radial, side), 0.001),
+          shoulderSleeve(P.upperArm, P.armR, segs.radial, side),
           jerseyPlain,
           undefined,
           cast,
@@ -848,8 +858,8 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
           : 0.38;
     const calfProfile = [
       [0, 0.76, 0.78],
-      [0.22, 0.84, 0.94],
-      [0.4, 0.86, 1.02],
+      [0.22, 0.78, 0.9],
+      [0.4, 0.79, 0.96],
       [0.74, 0.56, 0.63],
       [1, 0.41, 0.5],
     ];
@@ -918,9 +928,16 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
       new THREE.Vector3(x, footballBootUpperY(P.footLen, P.footH, x, z, side) + lift, z);
     ankle.push(
       rigPart(
-        new THREE.SphereGeometry(P.legR * 0.45, segs.radial, 10),
+        anatomicalSection(
+          [
+            { y: -P.footH * 0.12, width: P.legR * 0.43, depth: P.legR * 0.48 },
+            { y: P.footH * 0.07, width: P.legR * 0.44, depth: P.legR * 0.5 },
+            { y: P.footH * 0.25, width: P.legR * 0.41, depth: P.legR * 0.5 },
+          ],
+          segs.radial,
+        ),
         socks,
-        { position: [0, P.footH * 0.06, 0], scale: [1, 0.62, 1.05] },
+        undefined,
         cast,
       ),
       rigPart(
@@ -1113,24 +1130,6 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
   const all: RigMesh[] = [];
   for (const meshes of Object.values(merged)) all.push(...meshes);
   return { ...merged, all };
-}
-
-/**
- * The presentation worker may warm only the exact sections requested by this
- * deterministic identity/style/LOD tuple. Until its full-flow benchmark passes
- * the release gate, this wrapper remains a zero-behaviour synchronous call.
- */
-export function buildRigBody(ctx: RigBodyContext): RigBody {
-  const lod = ctx.hi ? 0 : ctx.segs.radial >= 8 ? 1 : 2;
-  const style = [
-    ctx.trousers ? "trousers" : "shorts",
-    ctx.staffStyle ?? "athlete",
-    ctx.look.hairStyle,
-    ctx.look.gloves ? "gloves" : "hands",
-  ].join(":");
-  return withRigGeometryContext(String(ctx.look.seed), style, lod, () =>
-    buildRigBodyUnprepared(ctx),
-  );
 }
 
 /** Malhas visíveis no LOD 0 (todas) — usado no teste de orçamento. */

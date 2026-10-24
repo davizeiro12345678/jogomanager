@@ -1,3 +1,4 @@
+import styles from "./cinematic.module.css";
 import { Volume2, VolumeX, Eye, EyeOff } from "lucide-react";
 
 interface CutsceneSettingsProps {
@@ -13,6 +14,20 @@ interface CutsceneSettingsProps {
   onToggleAutomatic: () => void;
   mode: "3d" | "2d";
   onToggleMode: () => void;
+  captionScale?: number;
+  onCaptionScale?: (scale: number) => void;
+  labels?: {
+    preferences: string;
+    captionSize: string;
+    captionHide: string;
+    captionShow: string;
+    voiceOff: string;
+    voiceOn: string;
+    ambience: string;
+    automatic: string;
+    illustrated: string;
+    stage: string;
+  };
 }
 
 export function CutsceneSettings({
@@ -28,54 +43,85 @@ export function CutsceneSettings({
   onToggleAutomatic,
   mode,
   onToggleMode,
+  captionScale = 1,
+  onCaptionScale,
+  labels = {
+    preferences: "Preferências da cena",
+    captionSize: "Tamanho das legendas",
+    captionHide: "Ocultar legendas",
+    captionShow: "Mostrar legendas",
+    voiceOff: "Desligar voz",
+    voiceOn: "Ligar voz",
+    ambience: "Som ambiente",
+    automatic: "Automático",
+    illustrated: "Cena ilustrada",
+    stage: "Ver palco 3D",
+  },
 }: CutsceneSettingsProps) {
   return (
     <div
       id="cutscene-settings"
-      className="cutscene-settings"
+      className={styles["cutscene-settings"]}
       role="group"
-      aria-label="Preferências da cena"
+      aria-label={labels.preferences}
     >
+      {onCaptionScale && (
+        <label className={styles["cutscene-caption-size"]}>
+          <span>{labels.captionSize}</span>
+          <input
+            type="range"
+            min="1"
+            max="1.5"
+            step="0.1"
+            value={captionScale}
+            onChange={(event) => onCaptionScale(Number(event.target.value))}
+          />
+        </label>
+      )}
       <button
         type="button"
         aria-pressed={captions}
         disabled={pendingChoice}
         onClick={onToggleCaptions}
-        className="cutscene-control px-3 text-xs"
+        className={`${styles["cutscene-control"]} px-3 text-xs`}
       >
         {captions ? <Eye size={17} /> : <EyeOff size={17} />}
-        {captions ? "Ocultar legendas" : "Mostrar legendas"}
+        {captions ? labels.captionHide : labels.captionShow}
       </button>
       {narrate && (
         <button
           type="button"
           aria-pressed={voiceEnabled}
           onClick={onToggleVoice}
-          className="cutscene-control px-3 text-xs"
+          className={`${styles["cutscene-control"]} px-3 text-xs`}
         >
           {voiceEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
-          {voiceEnabled ? "Desligar voz" : "Ligar voz"}
+          {voiceEnabled ? labels.voiceOff : labels.voiceOn}
         </button>
       )}
       <button
         type="button"
         aria-pressed={ambientEnabled}
         onClick={onToggleAmbience}
-        className="cutscene-control px-3 text-xs"
+        className={`${styles["cutscene-control"]} px-3 text-xs`}
       >
         {ambientEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
-        Som ambiente
+        {labels.ambience}
       </button>
       <button
         type="button"
         aria-pressed={automatic}
         onClick={onToggleAutomatic}
-        className="cutscene-control px-3 text-xs"
+        className={`${styles["cutscene-control"]} px-3 text-xs`}
       >
-        Automático
+        {labels.automatic}
       </button>
-      <button type="button" onClick={onToggleMode} className="cutscene-control px-3 text-xs">
-        {mode === "3d" ? "Cena ilustrada" : "Ver palco 3D"}
+      <button
+        type="button"
+        onClick={onToggleMode}
+        className={`${styles["cutscene-control"]} px-3 text-xs`}
+      >
+        {mode === "3d" ? labels.illustrated : labels.stage}
       </button>
     </div>
   );

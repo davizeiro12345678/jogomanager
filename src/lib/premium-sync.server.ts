@@ -10,6 +10,25 @@ type Admin = Awaited<typeof import("@/integrations/supabase/client.server")>["su
 
 const SOURCE = "thesportsdb";
 
+function sourceTimestamp(value: unknown): string | null {
+  const raw = str(value);
+  if (!raw) return null;
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
+function validFootballBirth(value: unknown): { birthDate: string; age: number } | null {
+  const birthDate = str(value);
+  if (!birthDate || birthDate === "1970-01-01" || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate))
+    return null;
+  const parsed = new Date(`${birthDate}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== birthDate)
+    return null;
+  const age = ageFrom(birthDate);
+  if (age == null || age < 15 || age > 60) return null;
+  return { birthDate, age };
+}
+
 export async function premiumSyncSquads(limit = 40, offset = 0, budgetMs = 45_000) {
   const { supabaseAdmin: db } = (await import("@/integrations/supabase/client.server")) as {
     supabaseAdmin: Admin;
@@ -47,22 +66,74 @@ export async function premiumSyncSquads(limit = 40, offset = 0, budgetMs = 45_00
       continue;
     }
 
-    const { data: existing } = await db
-      .from("players")
-      .select("id, source_id")
-      .eq("club_id", link.club_id)
-      .eq("source", SOURCE);
-    const bySource = new Map((existing ?? []).map((p) => [p.source_id, p.id]));
+    const incoming = remote.slice(0, 40);
+    const incomingIds = incoming.flatMap((p) => {
+      const id = str(p["idPlayer"]);
+      return id ? [id] : [];
+    });
+    if (!incomingIds.length) continue;
 
-    const rows = remote.slice(0, 40).flatMap((p) => {
+    const { data: aliases, error: aliasesError } = await db
+      .from("sportsdb_player_aliases")
+      .select("alias_source_id, canonical_source_id")
+      .in("alias_source_id", incomingIds);
+    if (aliasesError) throw new Error(aliasesError.message);
+    const canonicalByAlias = new Map(
+      (aliases ?? []).map((a) => [a.alias_source_id, a.canonical_source_id]),
+    );
+    const canonicalIds = [...new Set(incomingIds.map((id) => canonicalByAlias.get(id) ?? id))];
+    const { data: existing, error: existingError } = await db
+      .from("players")
+      .select(
+        "id, source_id, age, birth_date, height_cm, preferred_foot, shirt_number, nationality, photo_url, source_updated_at",
+      )
+      .eq("source", SOURCE)
+      .in("source_id", canonicalIds);
+    if (existingError) throw new Error(existingError.message);
+    const bySource = new Map(
+      (existing ?? []).flatMap((p) => (p.source_id ? [[p.source_id, p] as const] : [])),
+    );
+    const uniqueIncoming = new Map<string, (typeof incoming)[number]>();
+    for (const player of incoming) {
+      const id = str(player["idPlayer"]);
+      if (!id) continue;
+      const canonicalId = canonicalByAlias.get(id) ?? id;
+      const current = uniqueIncoming.get(canonicalId);
+      const incomingTime = sourceTimestamp(player["dateUpdated"]);
+      const currentTime = current ? sourceTimestamp(current["dateUpdated"]) : null;
+      if (
+        !current ||
+        (incomingTime && (!currentTime || Date.parse(incomingTime) > Date.parse(currentTime)))
+      ) {
+        uniqueIncoming.set(canonicalId, player);
+      }
+    }
+
+    const rows = [...uniqueIncoming.values()].flatMap((p) => {
       const sourceId = str(p["idPlayer"]);
       const name = str(p["strPlayer"]);
       if (!sourceId || !name) return [];
+      const canonicalId = canonicalByAlias.get(sourceId) ?? sourceId;
+      const current = bySource.get(canonicalId);
+      const updatedAt = sourceTimestamp(p["dateUpdated"]);
+      if (
+        current &&
+        (!updatedAt ||
+          (current.source_updated_at &&
+            Date.parse(updatedAt) <= Date.parse(current.source_updated_at)))
+      )
+        return [];
       const position = mapPosition(str(p["strPosition"]) ?? undefined);
-      const birth = str(p["dateBorn"]);
-      const age = birth ? (ageFrom(birth) ?? null) : null;
+      const birth = validFootballBirth(p["dateBorn"]);
+      if (!current && !birth) return [];
+      const age =
+        birth?.age ??
+        (current?.birth_date ? ageFrom(current.birth_date) : null) ??
+        current?.age ??
+        null;
+      if (age == null) return [];
       const breakdown = computeOverall({
-        seed: `${SOURCE}:${sourceId}`,
+        seed: `${SOURCE}:${canonicalId}`,
         leagueTier: tier,
         clubStrength: strength,
         position,
@@ -73,23 +144,29 @@ export async function premiumSyncSquads(limit = 40, offset = 0, budgetMs = 45_00
       const photo = str(p["strCutout"]) ?? str(p["strThumb"]);
       return [
         {
-          id: bySource.get(sourceId),
+          id: current?.id,
           club_id: link.club_id,
           name: name.slice(0, 120),
           position,
-          age: age ?? 24,
-          birth_date: birth && /^\d{4}-\d{2}-\d{2}$/.test(birth) ? birth : null,
-          height_cm: height && height > 100 && height < 230 ? Math.round(height) : null,
-          preferred_foot: str(p["strSide"]),
-          shirt_number: shirt && shirt >= 1 && shirt <= 99 ? Math.round(shirt) : null,
-          nationality: str(p["strNationality"]),
-          photo_url: photo?.startsWith("https://") ? photo : null,
+          age,
+          ...(birth ? { birth_date: birth.birthDate } : {}),
+          height_cm:
+            height && height > 100 && height < 230
+              ? Math.round(height)
+              : (current?.height_cm ?? null),
+          preferred_foot: str(p["strSide"]) ?? current?.preferred_foot ?? null,
+          shirt_number:
+            shirt && shirt >= 1 && shirt <= 99
+              ? Math.round(shirt)
+              : (current?.shirt_number ?? null),
+          nationality: str(p["strNationality"]) ?? current?.nationality ?? null,
+          photo_url: photo?.startsWith("https://") ? photo : (current?.photo_url ?? null),
           overall: breakdown.overall,
           potential: breakdown.potential,
           overall_breakdown: { ...breakdown },
           source: SOURCE,
-          source_id: sourceId,
-          source_updated_at: str(p["dateUpdated"]),
+          source_id: canonicalId,
+          source_updated_at: updatedAt,
           last_synced_at: now,
           sync_status: "synced",
         },
@@ -99,22 +176,27 @@ export async function premiumSyncSquads(limit = 40, offset = 0, budgetMs = 45_00
     const toUpdate = rows.filter((r) => r.id);
     const toInsert = rows.filter((r) => !r.id).map(({ id: _id, ...r }) => r);
     if (toInsert.length) {
-      const res = await db.from("players").insert(toInsert);
+      const res = await db
+        .from("players")
+        .upsert(toInsert, { onConflict: "source,source_id", ignoreDuplicates: true });
       if (res.error) failed++;
       else inserted += toInsert.length;
     }
     for (const r of toUpdate) {
       const { id, ...patch } = r;
+      if (!r.source_updated_at) continue;
       const res = await db
         .from("players")
         .update(patch)
-        .eq("id", id as string);
+        .eq("id", id as string)
+        .or(`source_updated_at.is.null,source_updated_at.lt.${r.source_updated_at}`);
       if (!res.error) updated++;
     }
-    await db
+    const clubUpdate = await db
       .from("clubs")
-      .update({ last_synced_at: now, sync_status: "synced", source_id: link.external_id })
+      .update({ last_synced_at: now, sync_status: "synced" })
       .eq("id", link.club_id);
+    if (clubUpdate.error) failed++;
     clubs++;
   }
 

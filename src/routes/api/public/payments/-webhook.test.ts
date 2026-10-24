@@ -18,6 +18,7 @@ const deps = vi.hoisted(() => ({
   syncSubscription: vi.fn(),
   markGuestPaid: vi.fn(),
   markGuestFailed: vi.fn(),
+  deliverGuest: vi.fn(),
   event: null as unknown,
 }));
 
@@ -43,6 +44,10 @@ vi.mock("@/lib/fulfillment.server", () => ({
 vi.mock("@/lib/guest-checkout.functions", () => ({
   markGuestCheckoutFailed: deps.markGuestFailed,
   markGuestCheckoutPaid: deps.markGuestPaid,
+}));
+
+vi.mock("@/lib/guest-checkout-delivery.server", () => ({
+  deliverClaimedGuestPurchase: deps.deliverGuest,
 }));
 
 import { Route } from "./webhook";
@@ -329,5 +334,49 @@ describe("Stripe payment webhook lifecycle", () => {
     expect((await post({ request: request() })).status).toBe(503);
     expect(deps.finishEvent).toHaveBeenCalledWith("evt_fixture", false);
     expect(deps.fulfill).not.toHaveBeenCalled();
+  });
+});
+
+describe("current provider subscription reconciliation", () => {
+  it.each(["invoice.paid", "invoice.payment_failed"])(
+    "loads current subscription for %s rather than trusting an old invoice",
+    async (type) => {
+      deps.retrieveSubscription.mockResolvedValue({
+        id: "sub_fixture",
+        status: "past_due",
+        metadata: { userId: "user_1" },
+      });
+      deps.event = sessionEvent(type, {
+        id: "in_fixture",
+        parent: { subscription_details: { subscription: "sub_fixture" } },
+      });
+      expect((await post({ request: request() })).status).toBe(200);
+      expect(deps.retrieveSubscription).toHaveBeenCalledWith("sub_fixture");
+      expect(deps.syncSubscription).toHaveBeenCalledWith(
+        expect.objectContaining({ status: "past_due" }),
+        "sandbox",
+      );
+      expect(deps.finishEvent).toHaveBeenCalledWith("evt_fixture", true);
+    },
+  );
+  it("keeps a retryable failed card attempt from closing a guest intent", async () => {
+    deps.event = sessionEvent("payment_intent.payment_failed", { id: "pi_fixture" });
+    deps.listSessions.mockResolvedValue({
+      data: [
+        {
+          id: "cs_test_retry",
+          metadata: { guestCheckoutIntentId: "00000000-0000-4000-8000-000000000001" },
+        },
+      ],
+      has_more: false,
+    });
+    expect((await post({ request: request() })).status).toBe(200);
+    expect(deps.markGuestFailed).not.toHaveBeenCalled();
+    expect(deps.reconcileReview).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reference: "cs_test_retry",
+        type: "payment_intent.payment_failed",
+      }),
+    );
   });
 });

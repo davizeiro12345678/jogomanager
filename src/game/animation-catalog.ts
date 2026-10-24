@@ -259,18 +259,6 @@ export function selectClipFromContext(ctx: ClipSelectionContext): {
     }
 
     if (
-      actionName.includes("celebrat") ||
-      actionName.includes("kneeslide") ||
-      actionName.includes("knee-slide") ||
-      actionName.includes("hug") ||
-      actionName.includes("fistpump") ||
-      actionName.includes("badgekiss") ||
-      actionName.includes("salute")
-    ) {
-      return { name: ctx.action, family: "celebration" };
-    }
-
-    if (
       actionName.includes("tackle") ||
       actionName.includes("slide") ||
       actionName.includes("block") ||

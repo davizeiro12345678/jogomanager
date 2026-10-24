@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "auditDate": "2026-10-22",
+  "runtime": "v24.22.0",
+  "matches": 690,
+  "physics": "Rapier canonical ball authority; sequential within each match",
+  "physicsSteps": 20007183,
+  "sample": "stratified stress fixtures; not a natural season or population estimate",
+  "coverage": {
+    "competitions": 300,
+    "distinctClubsPlayed": 1187,
+    "rosterRecordsExamined": 5234,
+    "uniquePlayableClubs": 4601,
+    "competitionMemberships": 4642,
+    "allClubsPlayed": false
+  },
+  "results": {
+    "homeWins": 160,
+    "draws": 393,
+    "awayWins": 137,
+    "goals": 1036,
+    "maximumCombinedGoals": 7,
+    "maximumGoalMargin": 3,
+    "marginsAtLeastFive": 0,
+    "combinedGoalsAtLeastEight": 0,
+    "auditedInvariantViolations": 0
+  },
+  "statistics": {
+    "shots": 13779,
+    "shotsOnTarget": 5374,
+    "saves": 4338,
+    "xG": 1604.852347897,
+    "passes": 315146,
+    "passesCompleted": 169798,
+    "fouls": 5956,
+    "yellowCards": 1805,
+    "redCards": 335,
+    "penaltiesAwarded": 238,
+    "penaltiesTaken": 238,
+    "penaltyGoals": 132
+  },
+  "directFreeKicks": {
+    "setups": 1446,
+    "recordedShots": 1446,
+    "physicalGoals": 49,
+    "plans": 609,
+    "candidates": 1369,
+    "predictedStates": 165649,
+    "shortPassFallbacksInThisSample": 0,
+    "attemptDenominator": "delta of recorded stats.shots; not raw method calls",
+    "nominalPredictedGoals": {
+      "total": 95,
+      "physicalGoals": 49,
+      "opponentGoalkeeperTouches": 45,
+      "opponentOutfieldTouches": 1
+    }
+  },
+  "sourceIntegrity": {
+    "frozenSourceFiles": 45,
+    "simulationSha256": "0565e0d8bc0f274e28d8325149b01716c78048ecc34a04f30a5bb6def6fc010f",
+    "ballAuthoritySha256": "5042908d22fa11c6ce5a3984d8c0f00724a58f20ccc470f2f50baf60820c05eb"
+  },
+  "openCalibration": [
+    "draw frequency",
+    "goal frequency",
+    "pass completion",
+    "penalty conversion",
+    "red card frequency"
+  ],
+  "limitations": [
+    "690 games have at most 1380 team appearances; they cannot cover 4601 distinct clubs",
+    "catalog coverage and played-match coverage are different populations",
+    "historical Node 24.19 comparisons are statistical, not CPU benchmarks",
+    "short-pass fallback has focused-test coverage but did not occur in this sample",
+    "zero observed extreme scores does not prove such scores are impossible"
+  ]
+}

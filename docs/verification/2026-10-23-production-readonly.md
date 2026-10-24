@@ -1,0 +1,32 @@
+# Supabase de produção — leitura de 23/10/2026
+
+Consulta SQL às 19:46 UTC e infraestrutura conferida no painel autenticado. Nenhum DDL, resize, alteração de réplica, configuração de autenticação ou publicação de produção foi realizado por esta entrega. As integrações existentes do GitHub criaram ambientes de preview separados.
+
+| Medida                      | Instantâneo anterior de 22/10           | Leitura de 23/10                                | Interpretação                                                              |
+| --------------------------- | --------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------- |
+| Compute                     | Large/m6g.large, 8 GB, 2 vCPU dedicadas | Small/t4g.small, 2 GB, compartilhado            | Alteração externa a esta entrega; não atribuir ao código                   |
+| Réplica                     | São Paulo em RESIZING                   | Nenhuma réplica de leitura                      | As leituras e escritas passam pelo primário                                |
+| CPU e RAM do painel         | 2% e 38%                                | 3% e 59%                                        | Pontos instantâneos, não média nem p95 de pico                             |
+| Conexões do painel          | 44/160                                  | 10/90                                           | A consulta SQL separada encontrou 15/90                                    |
+| Disco provisionado          | 59 GB                                   | 59 GB                                           | Não houve expansão feita por esta tarefa                                   |
+| Uso total do painel         | 9,10 GB                                 | 11,77 GB, aproximadamente 20%                   | Inclui banco, WAL e sistema; não comparar diretamente com pg_database_size |
+| Tamanho do banco no SQL     | Aproximadamente 8,14 GiB                | 11.608.321.171 bytes, aproximadamente 10,81 GiB | Crescimento observado; origem e taxa futura não foram inferidas            |
+| Esperas de lock e deadlocks | Zero no instantâneo                     | Zero; início do contador não informado          | Não comprova ausência de contenção em toda a semana                        |
+
+A carga observada não justifica comprar mais compute neste momento. Validar horários de maior acesso, duração das consultas de importação e uso de conexões antes de dimensionar. O Advisor indica alocação absoluta de 10 conexões para Auth; aumentar a máquina, sozinho, não aumenta esse limite. Índices sem uso registrado não foram removidos: alguns suportam integridade, ownership e fluxos pouco frequentes.
+
+| Controle consultado                                                                | Resultado                                                                                                                    | Limite                                                                                       |
+| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Estado do projeto                                                                  | ACTIVE_HEALTHY, PostgreSQL 17.6                                                                                              | Estado do projeto no momento da consulta                                                     |
+| Sete tabelas críticas encontradas                                                  | Todas com RLS, sem SELECT anônimo                                                                                            | Não é auditoria de todas as tabelas e funções                                                |
+| Careers, player_careers, entitlement_ledger, user_cosmetic_grants, wallet_item_log | Políticas pessoais por auth.uid(); MFA como política RESTRICTIVE                                                             | Inspeção da política, sem tentar acessar dados de outra pessoa                               |
+| Checkout_session_owners e payment_webhook_events                                   | Sem SELECT para anon e authenticated                                                                                         | Tabelas internas de acesso negado por projeto                                                |
+| Advisor de segurança                                                               | 20 INFO sem política; 25 exposições de schema GraphQL para anon, 47 para authenticated; 1 função SECURITY DEFINER executável | Descoberta de schema não implica que as linhas ignorem RLS; revisar objeto por objeto        |
+| Advisor de desempenho                                                              | 63 índices sem uso registrado; Auth com alocação absoluta                                                                    | Não pressupor que índices de proteção podem ser removidos                                    |
+| HTTP observado entre 18:50 e 19:50 UTC                                             | 1.296 registros: 1.292 respostas 200 e 4 respostas 206; nenhum 4xx/5xx nesse recorte                                         | Amostra dos logs disponíveis; não certifica checkout, login e sincronização em toda condição |
+
+O painel também exibia um aviso do provedor. A [página oficial do incidente da Management API](https://status.supabase.com/incidents/01M5J8ZQ04EZXAYF10Q75MGC1T) estava em Monitoring, com mitigação em andamento. Esse incidente deve ser separado da saúde e do dimensionamento da instância Postgres deste projeto.
+
+As consultas de importação com timeout observadas em 20/10 pertencem a outra janela e carga. Não há comparação causal de p95 entre elas e os registros HTTP acima. As otimizações preparadas no repositório não receberam crédito por uma melhora de produção sem implantação e medição equivalente.
+
+Os artefatos locais ficam em `verification/graphics-realism-20261020/database-security/refresh-20261023.json`. Logs, políticas e estatísticas foram consultados por agregados; nenhum conteúdo de carreira, e-mail, IP, token ou payload de pagamento foi exportado para este relatório.

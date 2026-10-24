@@ -16,7 +16,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 
 import { censusRef } from "@/game/scene-census";
 import { SidelineFlashBatch } from "@/game/sideline-flash-batch";
-import { FIELD_X, FIELD_Z } from "@/game/sim";
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 
 type FigureOpts = {
   /** altura total aproximada */

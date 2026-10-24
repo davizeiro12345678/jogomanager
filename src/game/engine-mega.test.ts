@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { pitchCondition, windFor } from "./ball-climate";
 import { snapshotMatch, WorkerMatchView } from "./live-match";
 import { buildTeamSetup } from "./quickMatch";
+import { BALL_PHYSICS_RADIUS } from "./rapier-ball-authority";
 import { FIELD_X, MatchSim } from "./sim";
 import { GOAL_Z, woodworkAt } from "./sim-rules";
 
@@ -169,11 +170,22 @@ describe("woodwork event", () => {
     };
 
     expect(internals.resolveShot({ x: FIELD_X - 5, z: GOAL_Z, height: 1 })).toBe(false);
+    expect(internals.pendingShot).not.toBeNull();
+    expect(sim.events.filter((event) => event.type === "post")).toHaveLength(0);
+    expect(sim.ball.vx).toBe(12);
+
+    // The inset used by the old fixture is still in the field. Resolve the
+    // compatible integrator's rebound only at the canonical whole-ball plane.
+    const previous = { x: sim.ball.x, z: sim.ball.z, height: sim.ball.height };
+    sim.ball.x = FIELD_X + BALL_PHYSICS_RADIUS;
+    expect(internals.resolveShot(previous)).toBe(false);
     expect(internals.pendingShot).toBeNull();
-    expect(sim.events.some((event) => event.type === "post")).toBe(true);
+    expect(sim.events.filter((event) => event.type === "post")).toHaveLength(1);
     expect(sim.ball.vx).toBeLessThan(0);
     expect(sim.ball.holder).toBeNull();
     expect(sim.shotMap.at(-1)?.result).toBe("off");
+    expect(sim.shotMap).toHaveLength(1);
+    sim.dispose();
   });
 });
 

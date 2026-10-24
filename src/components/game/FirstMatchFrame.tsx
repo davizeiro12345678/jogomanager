@@ -1,7 +1,5 @@
-import { useThree } from "@react-three/fiber";
+import { addAfterEffect, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
-import { subscribeRenderedFrames } from "./graphics-probe";
-import { rendererMetadata } from "@/game/graphics-renderer-metadata";
 
 /** Measures mount through the first completed draw, including renderer setup
  * and procedural geometry. It does not claim network navigation or full LOD
@@ -23,10 +21,10 @@ export function FirstMatchFrame({
   firstFrameCallback.current = onFirstFrame;
   useEffect(() => {
     let sent = false;
-    return subscribeRenderedFrames(gl, (frame) => {
-      if (sent) return;
+    return addAfterEffect(() => {
+      if (sent || gl.info.render.calls === 0) return;
       sent = true;
-      const elapsedMs = frame.now - startedAt;
+      const elapsedMs = performance.now() - startedAt;
       window.dispatchEvent(
         new CustomEvent("graphics-ready", {
           detail: {
@@ -35,9 +33,9 @@ export function FirstMatchFrame({
             meetsTarget: elapsedMs <= 1000,
             scope: "Stadium3D mount to first completed draw",
             quality,
-            requestedBackend: backend,
-            ...rendererMetadata(gl),
-            ...frame,
+            backend,
+            draws: gl.info.render.calls,
+            triangles: gl.info.render.triangles,
           },
         }),
       );

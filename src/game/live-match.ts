@@ -1,7 +1,8 @@
 import type { Player, Tactics } from "./types";
+import { emptyStats } from "./sim-types";
+import { analyticsSnapshot, type MatchAnalyticsV1 } from "./match-analytics";
 import {
-  MatchSim,
-  emptyStats,
+  type MatchSim,
   type MatchStats,
   type PlayerRating,
   type Scorer,
@@ -32,6 +33,8 @@ import {
 
 export interface LiveSnapshot {
   execution?: MatchExecutionContract;
+  analytics?: MatchAnalyticsV1;
+  tactics?: { home: Tactics; away: Tactics };
   recovery?: { checkpointSeq: number; ticks: Array<[number, number]> };
   seq: number;
   sentAt: number;
@@ -61,6 +64,51 @@ export interface LiveSnapshot {
 
 const eventCache = new WeakMap<MatchSim, { seq: number; events: MatchSim["events"] }>();
 const legacyPacketEvents = new WeakMap<MatchSim, { seq: number; events: MatchSim["events"] }>();
+const legacyPacketRoles = new WeakMap<MatchSim, string>();
+const analyticsSent = new WeakMap<MatchSim, number>();
+type SentTactics = {
+  home: Tactics;
+  away: Tactics;
+  homeAdvanced: string | undefined;
+  awayAdvanced: string | undefined;
+};
+const tacticsSent = new WeakMap<MatchSim, SentTactics>();
+const BASIC_TACTICS = ["formation", "mentality", "pressing", "width", "tempo"] as const;
+const basicTacticsComplete: Exclude<
+  keyof Tactics,
+  "advanced" | (typeof BASIC_TACTICS)[number]
+> extends never
+  ? true
+  : never = true;
+void basicTacticsComplete;
+function sameBasicTactics(a: Tactics, b: Tactics) {
+  return (
+    a.formation === b.formation &&
+    a.mentality === b.mentality &&
+    a.pressing === b.pressing &&
+    a.width === b.width &&
+    a.tempo === b.tempo
+  );
+}
+function tacticsChanged(sim: MatchSim) {
+  // Compare fixed scalars directly. Only nested advanced instructions need
+  // serialization to detect in-place edits between Worker snapshots.
+  const home = sim.home.tactics,
+    away = sim.away.tactics;
+  const homeAdvanced = home.advanced === undefined ? undefined : JSON.stringify(home.advanced);
+  const awayAdvanced = away.advanced === undefined ? undefined : JSON.stringify(away.advanced);
+  const previous = tacticsSent.get(sim);
+  if (
+    previous &&
+    sameBasicTactics(home, previous.home) &&
+    sameBasicTactics(away, previous.away) &&
+    homeAdvanced === previous.homeAdvanced &&
+    awayAdvanced === previous.awayAdvanced
+  )
+    return false;
+  tacticsSent.set(sim, { home: { ...home }, away: { ...away }, homeAdvanced, awayAdvanced });
+  return true;
+}
 
 export interface LiveResult extends LiveSnapshot {
   ratings: PlayerRating[];
@@ -80,6 +128,7 @@ export type LiveWorkerRequest =
       compact?: boolean;
     }
   | { id: number; type: "pauseLive"; paused: boolean }
+  | { id: number; type: "analyticsLive"; visible: boolean }
   | { id: number; type: "speedLive"; speed: number }
   | { id: number; type: "tacticsLive"; side: Side; tactics: Tactics; expiresAt: number }
   | { id: number; type: "talkLive"; side: Side; kind: TeamTalkKind; expiresAt: number }
@@ -135,6 +184,7 @@ export type LiveWorkerResponse =
     };
 
 export interface MatchRuntime extends SimView {
+  analytics?: MatchAnalyticsV1;
   events: MatchSim["events"];
   shotMap: ShotRecord[];
   scorers: Scorer[];
@@ -149,12 +199,24 @@ export interface MatchRuntime extends SimView {
   possessionPct(): [number, number];
 }
 
+/** Own mutable metadata without allocating an empty conditional spread per athlete. */
+function copyPlayer(player: SimPlayer): SimPlayer {
+  const copy = { ...player };
+  if (player.emergencyKeeper) copy.emergencyKeeper = { ...player.emergencyKeeper };
+  return copy;
+}
+
 export function snapshotMatch(
   sim: MatchSim,
   seq: number,
   visualBall?: VisualBallState,
   includeEvents = true,
+  analyticsVisible = false,
 ): LiveSnapshot {
+  const now = performance.now();
+  const sendAnalytics =
+    sim.finished || (analyticsVisible && now - (analyticsSent.get(sim) ?? -1000) >= 500);
+  if (sendAnalytics) analyticsSent.set(sim, now);
   // Most snapshots only move players and the ball. Do not clone the historical
   // feed merely to discard it on the way to the structured-clone boundary.
   const events = includeEvents
@@ -172,7 +234,18 @@ export function snapshotMatch(
   return {
     seq,
     execution: sim.executionContract(),
-    sentAt: performance.now(),
+    ...(sendAnalytics
+      ? { analytics: analyticsSnapshot(sim.analytics, sim.time, sim.stats, sim.shotMap) }
+      : {}),
+    ...(tacticsChanged(sim)
+      ? {
+          tactics: {
+            home: structuredClone(sim.home.tactics),
+            away: structuredClone(sim.away.tactics),
+          },
+        }
+      : {}),
+    sentAt: now,
     time: sim.time,
     clock: sim.clock(),
     phase: sim.phase,
@@ -180,7 +253,7 @@ export function snapshotMatch(
     weather: sim.weather,
     wind: { ...sim.wind },
     refName: sim.ref.name,
-    players: sim.players.map((player) => ({ ...player })),
+    players: sim.players.map(copyPlayer),
     ball: { ...sim.ball },
     ...(visualBall ? { visualBall: { ...visualBall } } : {}),
     possession: sim.possession,
@@ -193,8 +266,13 @@ export function snapshotMatch(
 }
 
 export function resultMatch(sim: MatchSim, seq: number, visualBall?: VisualBallState): LiveResult {
+  const snapshot = snapshotMatch(sim, seq, visualBall, true, true);
   return {
-    ...snapshotMatch(sim, seq, visualBall),
+    ...snapshot,
+    // A requested final report always contains analytics, even inside the
+    // visibility throttle window or while a skip command is being finalized.
+    analytics:
+      snapshot.analytics ?? analyticsSnapshot(sim.analytics, sim.time, sim.stats, sim.shotMap),
     ratings: sim.playerRatings(),
     scorers: sim.scorers.map((item) => ({ ...item })),
     shotMap: sim.shotMap.map((item) => ({ ...item })),
@@ -210,10 +288,17 @@ export function snapshotMatchPacket(
     rosterVersion?: number;
     includeMetadata?: boolean;
     visualBall?: VisualBallState;
+    analyticsVisible?: boolean;
   } = {},
 ): LiveSnapshotPacket {
   const pool = options.pool ?? createSnapshotBufferPool(3);
   const buffer = createLivePlayerBuffer(sim.players, pool.acquire(sim.players.length));
+  const roleKey = JSON.stringify(
+    sim.players.map((player) => [player.id, player.pos, player.emergencyKeeper]),
+  );
+  const previousRoles = legacyPacketRoles.get(sim);
+  const rolesChanged = previousRoles !== undefined && previousRoles !== roleKey;
+  legacyPacketRoles.set(sim, roleKey);
   const previous = legacyPacketEvents.get(sim);
   const added = previous
     ? sim.events.filter((event) => !previous.events.includes(event))
@@ -223,7 +308,7 @@ export function snapshotMatchPacket(
     players: _players,
     events: _events,
     ...envelope
-  } = snapshotMatch(sim, seq, options.visualBall, false);
+  } = snapshotMatch(sim, seq, options.visualBall, false, options.analyticsVisible);
   return {
     ...envelope,
     type: "snapshot",
@@ -233,7 +318,9 @@ export function snapshotMatchPacket(
       velocities: buffer.velocities.buffer as ArrayBuffer,
       states: buffer.states.buffer as ArrayBuffer,
     },
-    ...(options.includeMetadata ? { metadata: createLivePlayerMetadata(sim.players) } : {}),
+    ...(options.includeMetadata || rolesChanged
+      ? { metadata: createLivePlayerMetadata(sim.players) }
+      : {}),
     ...((previous?.seq ?? 0) !== sim.lastEventId || added.length
       ? { eventDelta: { fromSeq: previous?.seq ?? 0, toSeq: sim.lastEventId, added } }
       : {}),
@@ -241,7 +328,55 @@ export function snapshotMatchPacket(
   };
 }
 
+/** Preserve interpolated x/z; copy every declared mutable wire field. */
+function applyPlayerFrame(current: SimPlayer, target: SimPlayer) {
+  // Fixed wire fields use direct writes so V8 can specialize each numeric slot.
+  current.vx = target.vx;
+  current.vz = target.vz;
+  current.slotX = target.slotX;
+  current.slotZ = target.slotZ;
+  current.pace = target.pace;
+  current.shooting = target.shooting;
+  current.passing = target.passing;
+  current.defending = target.defending;
+  current.physical = target.physical;
+  current.stamina = target.stamina;
+  current.actionT = target.actionT;
+  current.actionDur = target.actionDur;
+  current.goals = target.goals;
+  current.assists = target.assists;
+  current.shots = target.shots;
+  current.passes = target.passes;
+  current.tackles = target.tackles;
+  current.saves = target.saves;
+  current.onSince = target.onSince;
+  current.minutes = target.minutes;
+  current.yellows = target.yellows;
+  current.injuryWeeks = target.injuryWeeks;
+  current.interceptions = target.interceptions;
+  current.offsides = target.offsides;
+  current.foulsWon = target.foulsWon;
+  current.pensScored = target.pensScored;
+  current.pensMissed = target.pensMissed;
+  current.xg = target.xg;
+  current.action = target.action;
+  current.sentOff = target.sentOff;
+  current.id = target.id;
+  current.side = target.side;
+  current.name = target.name;
+  current.number = target.number;
+  current.pos = target.pos;
+  current.pid = target.pid;
+  if (target.heightCm === undefined) delete current.heightCm;
+  else current.heightCm = target.heightCm;
+  if (target.weightKg === undefined) delete current.weightKg;
+  else current.weightKg = target.weightKg;
+  if (target.emergencyKeeper === undefined) delete current.emergencyKeeper;
+  else current.emergencyKeeper = { ...target.emergencyKeeper };
+}
+
 export class WorkerMatchView implements MatchRuntime {
+  analytics?: MatchAnalyticsV1;
   time = 0;
   clock = "0'";
   phase: MatchPhase = "first";
@@ -306,6 +441,11 @@ export class WorkerMatchView implements MatchRuntime {
       const recyclable = this.legacyBuffers.length > 2 ? this.legacyBuffers.shift() : undefined;
       return recyclable ? [recyclable.positions, recyclable.velocities, recyclable.states] : [];
     }
+    if (next.analytics) this.analytics = next.analytics;
+    if (next.tactics) {
+      this.home.tactics = structuredClone(next.tactics.home);
+      this.away.tactics = structuredClone(next.tactics.away);
+    }
     const now = performance.now();
     if (this.receivedAt) this.intervalMs = Math.max(50, Math.min(250, now - this.receivedAt));
     this.receivedAt = now;
@@ -331,17 +471,13 @@ export class WorkerMatchView implements MatchRuntime {
     this.previousBall.z = this.ball.z;
     this.previousBall.height = this.ball.height;
     if (rosterChanged) {
-      this.players = next.players.map((player) => ({ ...player }));
+      this.players = next.players.map(copyPlayer);
     } else {
       for (let index = 0; index < next.players.length; index += 1) {
         const target = next.players[index];
         const current = this.players[index];
         if (!target || !current) continue;
-        const x = current.x;
-        const z = current.z;
-        Object.assign(current, target);
-        current.x = x;
-        current.z = z;
+        applyPlayerFrame(current, target);
       }
     }
     this.targetBall.x = next.ball.x;

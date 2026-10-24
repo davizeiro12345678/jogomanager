@@ -1,3 +1,4 @@
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 import {
   EmptyState,
   ErrorPanel,
@@ -35,6 +36,13 @@ const CAMERAS: [CameraMode, string][] = [
 ];
 
 export function ReplaysPage() {
+  const owner = useAuthUserId();
+  return (
+    <ScopedReplaysPage key={owner === undefined ? "loading" : (owner ?? "guest")} owner={owner} />
+  );
+}
+
+function ScopedReplaysPage({ owner }: { owner: string | null | undefined }) {
   const { career } = useCareer();
   const [list, setList] = useState<Replay[] | null>(null);
   const [current, setCurrent] = useState<Replay | null>(null);
@@ -42,10 +50,11 @@ export function ReplaysPage() {
   const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
+    if (owner === undefined) return;
     let active = true;
     setLoadError(false);
     setList(null);
-    void listReplays()
+    void listReplays(owner)
       .then((replays) => {
         if (active) setList(replays);
       })
@@ -55,13 +64,17 @@ export function ReplaysPage() {
     return () => {
       active = false;
     };
-  }, [refresh]);
+  }, [refresh, owner]);
 
-  const remove = useCallback(async (id: string) => {
-    await deleteReplay(id);
-    setList(await listReplays());
-    setCurrent((c) => (c?.id === id ? null : c));
-  }, []);
+  const remove = useCallback(
+    async (id: string) => {
+      if (owner === undefined) return;
+      await deleteReplay(id, owner);
+      setList(await listReplays(owner));
+      setCurrent((c) => (c?.id === id ? null : c));
+    },
+    [owner],
+  );
 
   const body = (
     <div className="space-y-4">

@@ -18,7 +18,11 @@ const ClubsTab = lazy(() => import("@/features/editor/clubs"));
 
 const CompetitionsTab = lazy(() => import("@/features/editor/competitions"));
 
-const ImportExportTab = lazy(() => import("@/features/editor/import-export"));
+const ImportExportTab = lazy(() =>
+  import("@/components/game/editor/ImportExportEditor").then((m) => ({
+    default: m.ImportExportTab,
+  })),
+);
 
 function EditorTabLoading() {
   return (
