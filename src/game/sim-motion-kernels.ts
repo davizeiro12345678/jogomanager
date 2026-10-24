@@ -22,6 +22,9 @@ export function separatePlayers(players: SimPlayer[], holder: string | null, rnd
       // Resolve contacts in the original order; only reject provably distant pairs.
       // NaN must reach the original recovery path instead of being hidden by the rejection.
       if ((dx > 1.7 || dx < -1.7) && !Number.isNaN(dz)) continue;
+      // Symmetric broad-phase: reject widely separated lanes before squares
+      // and sqrt. When dx is NaN, retain the historical recovery/RNG path.
+      if ((dz > 1.7 || dz < -1.7) && !Number.isNaN(dx)) continue;
       const d2 = dx * dx + dz * dz;
       if (d2 > 2.89) continue; // (0.85 * 2)^2
       let d = Math.sqrt(d2);
