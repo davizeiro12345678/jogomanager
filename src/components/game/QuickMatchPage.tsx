@@ -31,8 +31,12 @@ export function QuickMatchPage() {
   const catalogVersion = useCareerLeagueCatalog();
   // The catalogue can be enriched asynchronously; only recalculate when that
   // version changes, not on every club, difficulty or opponent selection.
-  const availableCatalog = useMemo(() => catalogFacts(LEAGUES), [catalogVersion]);
+  const availableCatalog = useMemo(() => {
+    void catalogVersion;
+    return catalogFacts(LEAGUES);
+  }, [catalogVersion]);
   const leaguesByCountry = useMemo(() => {
+    void catalogVersion;
     const countries = LEAGUES.reduce<Record<string, typeof LEAGUES>>((acc, league) => {
       (acc[league.country] ??= []).push(league);
       return acc;
@@ -127,14 +131,14 @@ export function QuickMatchPage() {
             className="w-full rounded-lg border border-input bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary"
           >
             {leaguesByCountry.map(([country, ls]) => (
-                <optgroup key={country} label={country}>
-                  {ls.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
+              <optgroup key={country} label={country}>
+                {ls.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
           </select>
         </div>
 
