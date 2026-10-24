@@ -315,6 +315,33 @@ export function headComplexion(
   return out.setRGB(1 - shade, 1 - shade - warmth, 1 - shade - warmth * 1.3);
 }
 
+// Geometry construction is CPU-heavy but identical for the same seeded shape.
+// Keep only a few immutable source geometries: every caller gets a deep clone,
+// so mutating/disposal of a rig cannot affect a different rig or a later frame.
+const HEAD_GEOMETRY_CACHE = new Map<string, THREE.BufferGeometry>();
+const HAIR_GEOMETRY_CACHE = new Map<string, THREE.BufferGeometry>();
+const MAX_CACHED_SURFACES = 6;
+
+function surfaceFromCache(cache: Map<string, THREE.BufferGeometry>, key: string) {
+  const source = cache.get(key);
+  if (!source) return null;
+  cache.delete(key);
+  cache.set(key, source); // bounded LRU; recent roster/portrait variants survive
+  return source.clone();
+}
+
+function rememberSurface(cache: Map<string, THREE.BufferGeometry>, key: string, surface: THREE.BufferGeometry) {
+  cache.set(key, surface.clone()); // caller owns the original geometry
+  if (cache.size > MAX_CACHED_SURFACES) {
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) {
+      cache.get(oldest)?.dispose();
+      cache.delete(oldest);
+    }
+  }
+  return surface;
+}
+
 export function sculptedHead(
   P: HeadShape,
   seed = 0,
@@ -322,6 +349,11 @@ export function sculptedHead(
   portrait = true,
   sampling?: { columns: number; rows: number },
 ) {
+  const columns = sampling?.columns ?? (detail ? (portrait ? 136 : 80) : 18);
+  const rows = sampling?.rows ?? (detail ? (portrait ? 102 : 68) : 20);
+  const key = `head:${P.headR}:${P.headW}:${P.headD}:${seed}:${columns}:${rows}`;
+  const cached = surfaceFromCache(HEAD_GEOMETRY_CACHE, key);
+  if (cached) return cached;
   // Around twice the original triangles, with rows concentrated over the
   // same seeded face shape so the brow, cheeks, nose and jaw gain real contour
   // instead of uniform, unused density at the back of the skull.
@@ -340,10 +372,9 @@ export function sculptedHead(
     }
     return sampleHeadPoint(P, height, angle, morphology, out, ring);
   };
-  const columns = sampling?.columns ?? (detail ? (portrait ? 136 : 80) : 18);
   const geometry = gridSurface(
     columns,
-    sampling?.rows ?? (detail ? (portrait ? 102 : 68) : 20),
+    rows,
     (u, v) => {
       // Keep more rows across the eye line, nose and cheeks, where the sculpt
       // actually bends the surface; spend fewer at the smooth crown and nape.
@@ -395,7 +426,7 @@ export function sculptedHead(
     normal.setXYZ(a, n.x, n.y, n.z);
     normal.setXYZ(b, n.x, n.y, n.z);
   }
-  return geometry;
+  return rememberSurface(HEAD_GEOMETRY_CACHE, key, geometry);
 }
 
 function sweptCropFlow(angle: number, v: number, parting: number) {
@@ -419,6 +450,10 @@ export function sculptedHair(
   const f = faceMorphology(look.seed);
   const sample = new THREE.Vector3();
   const columns = sampling?.columns ?? (detail ? 120 : 18);
+  const rows = sampling?.rows ?? (detail ? 72 : 10);
+  const key = `hair:${P.headR}:${P.headW}:${P.headD}:${look.seed}:${style}:${look.skin}:${look.hairColor}:${detail}:${columns}:${rows}`;
+  const cached = surfaceFromCache(HAIR_GEOMETRY_CACHE, key);
+  if (cached) return cached;
   // Hairline and angular fields depend on the column, never its height.
   // Compute them once for this shell, with the same double-precision u as
   // gridSurface, rather than repeating their trigonometry along every row.
@@ -440,7 +475,7 @@ export function sculptedHair(
     // Spend the extra vertices on close athletes only. The scalp is one
     // continuous surface, so strand relief below does not add meshes/draws.
     columns,
-    sampling?.rows ?? (detail ? 72 : 10),
+    rows,
     (_u, v, column) => {
       const { angle, front, hairline, wrappedPart, templeTaper } = columnSamples[column]!;
       const y = hairline + (1.14 - hairline) * v;
@@ -614,5 +649,5 @@ export function sculptedHair(
     normals.setXYZ(start, average.x, average.y, average.z);
     normals.setXYZ(end, average.x, average.y, average.z);
   }
-  return geometry;
+  return rememberSurface(HAIR_GEOMETRY_CACHE, key, geometry);
 }
