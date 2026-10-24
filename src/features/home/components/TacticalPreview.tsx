@@ -49,8 +49,8 @@ type Formation = keyof typeof FORMATIONS;
 export function TacticalPreview() {
   const [formation, setFormation] = useState<Formation>("4-3-3");
   return (
-    <div className={styles.tactics} aria-label="Prévia das formações">
-      <div className={styles.top}>
+    <div className={styles["tactics"]} aria-label="Prévia das formações">
+      <div className={styles["top"]}>
         <span>PRANCHETA DO TREINADOR</span>
         <span>PRÉVIA</span>
       </div>
@@ -71,7 +71,7 @@ export function TacticalPreview() {
         {FORMATIONS[formation].map(([x, y], i) => (
           <g
             key={i}
-            className={styles.player}
+            className={styles["player"]}
             style={{ transform: `translate(${x * 2 + 20}px,${y * 2.64 + 18}px)` }}
           >
             <circle
@@ -93,7 +93,7 @@ export function TacticalPreview() {
           </g>
         ))}
       </svg>
-      <div className={styles.formations} role="group" aria-label="Experimentar formação">
+      <div className={styles["formations"]} role="group" aria-label="Experimentar formação">
         {(Object.keys(FORMATIONS) as Formation[]).map((f) => (
           <button
             key={f}
@@ -105,7 +105,7 @@ export function TacticalPreview() {
           </button>
         ))}
       </div>
-      <p className={styles.caption}>Mude o desenho. Imagine a próxima jogada.</p>
+      <p className={styles["caption"]}>Mude o desenho. Imagine a próxima jogada.</p>
     </div>
   );
 }
