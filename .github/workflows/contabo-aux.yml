@@ -1,0 +1,41 @@
+name: Contabo auxiliary service checks
+
+on:
+  pull_request:
+    paths:
+      - "services/contabo-aux/**"
+      - ".github/workflows/contabo-aux.yml"
+      - "src/game/**"
+      - "src/integrations/supabase/**"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: contabo-aux-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  service-contract:
+    name: Node API smoke tests and container build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Check JavaScript syntax
+        run: node --check services/contabo-aux/server.mjs && node --check services/contabo-aux/server.test.mjs
+      - name: Verify bounded endpoints with simulated Supabase
+        run: node --test services/contabo-aux/server.test.mjs
+      - name: Install pinned dependencies
+        run: npm ci
+      - name: Bundle isolated match worker
+        run: ./node_modules/.bin/esbuild services/contabo-aux/match-worker.ts --bundle --platform=node --format=esm --target=node22 --tsconfig=tsconfig.json --outfile=/tmp/jogomanager-match-worker.mjs
+      - name: Build production Docker image
+        run: docker build --file services/contabo-aux/Dockerfile --tag jogomanager-contabo-aux:verify .
