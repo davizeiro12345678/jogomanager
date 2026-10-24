@@ -3,7 +3,7 @@
 //  Contato do pé com o gramado e travas anatômicas da pose. Funções puras.
 // ============================================================================
 
-import type { Pose } from "./animation-core";
+import { JOINTS, type Pose } from "./animation-core";
 import { SOLE_CONTACT_PROFILE } from "./boot-profile";
 
 const clamp = (v: number, lo: number, hi: number) =>
@@ -37,7 +37,7 @@ const LIMITS: Partial<Record<keyof Pose, readonly [number, number]>> = {
 
 /** Trava a pose nos limites anatômicos e remove NaN (in-place). */
 export function clampPoseAnatomy(pose: Pose): Pose {
-  for (const key of Object.keys(pose) as (keyof Pose)[]) {
+  for (const key of JOINTS) {
     const lim = LIMITS[key];
     pose[key] = lim ? clamp(pose[key], lim[0], lim[1]) : clamp(pose[key], -Math.PI, Math.PI);
   }
@@ -100,6 +100,24 @@ function rotate(v: Point, pitch: number, yaw: number, roll: number): Point {
   };
 }
 
+/** Row-vector multiplication by the skeleton's Rx * Ry * Rz rotation.
+ * Mutates one scratch row; no matrix or transformed point allocations. */
+function rotateHeightRow(row: Point, pitch: number, yaw: number, roll: number): void {
+  const cp = Math.cos(pitch),
+    sp = Math.sin(pitch);
+  const y = row.y * cp + row.z * sp;
+  const z = -row.y * sp + row.z * cp;
+  const cy = Math.cos(yaw),
+    sy = Math.sin(yaw);
+  const x = row.x * cy - z * sy;
+  const zz = row.x * sy + z * cy;
+  const cr = Math.cos(roll),
+    sr = Math.sin(roll);
+  row.x = x * cr + y * sr;
+  row.y = -x * sr + y * cr;
+  row.z = zz;
+}
+
 /** FK for sole, ankle and toe. Includes pelvis shift, hip roll, leg abduction
  * and the root lean, so side steps and goalkeeping do not use a flat guess. */
 export function soleHeightFor(input: GroundContactInput, left: boolean, ankleDelta = 0) {
@@ -110,24 +128,25 @@ export function soleHeightFor(input: GroundContactInput, left: boolean, ankleDel
   const ankle = (left ? pose.ankleL : pose.ankleR) + ankleDelta;
   const footH = P.footH ?? 0.07;
   const footLen = P.footLen ?? 0.26;
-  const transform = (point: Point) => {
-    let v = rotate(point, ankle, 0, 0);
-    v.y -= P.shin;
-    v = rotate(v, -knee, 0, 0);
-    v.y -= P.thigh;
-    v = rotate(v, pitch, 0, roll);
-    v.x += (left ? 1 : -1) * (P.hipW ?? 0.255) * 0.36;
-    v.y -= P.hipH * 0.4;
-    v = rotate(v, pose.hipPitch, pose.hipYaw, pose.hipRoll + (input.hipRollOffset ?? 0));
-    v.x += input.hipShiftX;
-    v.y += P.hipY + pose.hipY;
-    // YXZ root yaw has no effect on height: roll then pitch are sufficient.
-    return rotate(v, input.leanX, 0, input.leanZ).y;
+  // Only height is needed. Compose the height row backwards through the
+  // chain instead of transforming four points through five rotations each.
+  // Translations are accumulated before entering each child's coordinates.
+  const row: Point = {
+    x: Math.sin(input.leanZ) * Math.cos(input.leanX),
+    y: Math.cos(input.leanZ) * Math.cos(input.leanX),
+    z: -Math.sin(input.leanX),
   };
-  const origin = transform({ x: 0, y: 0, z: 0 });
-  const axisX = transform({ x: 1, y: 0, z: 0 }) - origin;
-  const axisY = transform({ x: 0, y: 1, z: 0 }) - origin;
-  const axisZ = transform({ x: 0, y: 0, z: 1 }) - origin;
+  let origin = row.x * input.hipShiftX + row.y * (P.hipY + pose.hipY);
+  rotateHeightRow(row, pose.hipPitch, pose.hipYaw, pose.hipRoll + (input.hipRollOffset ?? 0));
+  origin += row.x * (left ? 1 : -1) * (P.hipW ?? 0.255) * 0.36 - row.y * P.hipH * 0.4;
+  rotateHeightRow(row, pitch, 0, roll);
+  origin -= row.y * P.thigh;
+  rotateHeightRow(row, -knee, 0, 0);
+  origin -= row.y * P.shin;
+  rotateHeightRow(row, ankle, 0, 0);
+  const axisX = row.x;
+  const axisY = row.y;
+  const axisZ = row.z;
   const lateralScale = axisX * footH;
   const depthSquared = (axisY * footH * 0.045) ** 2;
   const centreY = origin - axisY * footH * 0.64;

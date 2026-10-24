@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { BALL_PHYSICS_RADIUS, createRapierVisualPhysics } from "./rapier-ball-visual";
 import type { CanonicalBallPhysicsState, VisualBallState } from "./visual-ball";
@@ -35,6 +35,22 @@ function expectSameVisualBall(actual: VisualBallState, expected: VisualBallState
 }
 
 describe("Rapier visual ball physics", () => {
+  it("does not read velocity in zero-spin visual substeps while still advancing the ball", async () => {
+    const physics = await createRapierVisualPhysics();
+    const state = canonical({ height: 2, vx: 5, vy: 2, vz: 1, spin: 0 });
+    physics.reset(state);
+    const body = (physics as unknown as { ballBody: { linvel(): unknown } }).ballBody;
+    const read = vi.spyOn(body, "linvel");
+    try {
+      physics.step(1 / 30);
+      expect(read).toHaveBeenCalledTimes(1); // reconciliation only
+      expect(physics.read(state).x).toBeGreaterThan(state.x);
+    } finally {
+      read.mockRestore();
+      physics.dispose();
+    }
+  });
+
   it("ignores invalid elapsed time without moving a free ball or consuming a release skip", async () => {
     const physics = await createRapierVisualPhysics();
     const launch = frozenCanonical({ height: 2, vx: 5, vy: 2, spin: 3 });

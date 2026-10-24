@@ -92,7 +92,14 @@ export type HeadShape = Pick<Proportions, "headR" | "headW" | "headD">;
 
 export function faceRing(y: number, seed: number) {
   const ring = profile(y);
-  const face = faceMorphology(seed);
+  return shapeFaceRing(ring, y, faceMorphology(seed));
+}
+
+function shapeFaceRing(
+  ring: ReturnType<typeof profile>,
+  y: number,
+  face: ReturnType<typeof faceMorphology>,
+) {
   ring.width *=
     1 +
     (face.jaw - 1) * Math.exp(-(((y + 0.74) / 0.28) ** 2)) +
@@ -104,8 +111,19 @@ export function faceRing(y: number, seed: number) {
 }
 
 export function headPoint(P: HeadShape, y: number, angle: number, seed = 0) {
-  const ring = faceRing(THREE.MathUtils.clamp(y, -1.14, 1.14), seed);
-  const f = faceMorphology(seed);
+  return sampleHeadPoint(P, y, angle, faceMorphology(seed), new THREE.Vector3());
+}
+
+/** Construction-scoped scratch is never retained by a mesh or shared across rigs. */
+function sampleHeadPoint(
+  P: HeadShape,
+  y: number,
+  angle: number,
+  f: ReturnType<typeof faceMorphology>,
+  out: THREE.Vector3,
+) {
+  const ringHeight = THREE.MathUtils.clamp(y, -1.14, 1.14);
+  const ring = shapeFaceRing(profile(ringHeight), ringHeight, f);
   const x = Math.sin(angle) * ring.width;
   const front = Math.max(0, Math.cos(angle));
   const noseX = x - f.noseDeviation;
@@ -158,7 +176,11 @@ export function headPoint(P: HeadShape, y: number, angle: number, seed = 0) {
   // the lower face look pinched under stadium side light.
   const jawAngle = 0.029 * gauss(Math.abs(x), y, 0.66, -0.7, 0.2, 0.22);
   const masseter = 0.025 * gauss(Math.abs(x), y, 0.63, -0.47, 0.27, 0.29);
-  return new THREE.Vector3(
+  // A broad zygomatic shelf turning into a shallow buccal plane reads in
+  // grazing stadium light without engraving a fold into the mouth corners.
+  const zygomatic = 0.018 * gauss(Math.abs(x), y, 0.52, 0.015, 0.23, 0.13);
+  const buccal = -0.018 * gauss(Math.abs(x), y, 0.52, -0.34, 0.22, 0.23);
+  return out.set(
     x * P.headW,
     y * P.headR,
     (ring.center +
@@ -177,7 +199,9 @@ export function headPoint(P: HeadShape, y: number, angle: number, seed = 0) {
           temples +
           lowerOrbit +
           jawAngle +
-          masseter)) *
+          masseter +
+          zygomatic +
+          buccal)) *
       P.headD,
   );
 }
@@ -186,6 +210,7 @@ export function gridSurface(
   columns: number,
   rows: number,
   point: (u: number, v: number) => THREE.Vector3,
+  normals: "triangles" | "surface" = "triangles",
 ) {
   const positions: number[] = [],
     uv: number[] = [],
@@ -208,7 +233,12 @@ export function gridSurface(
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
   geometry.setIndex(indices);
-  geometry.computeVertexNormals();
+  if (normals === "triangles") geometry.computeVertexNormals();
+  else
+    geometry.setAttribute(
+      "normal",
+      new THREE.Float32BufferAttribute(new Float32Array(positions.length), 3),
+    );
   return geometry;
 }
 
@@ -222,6 +252,8 @@ export function sculptedHead(
   // Around twice the original triangles, with rows concentrated over the
   // same seeded face shape so the brow, cheeks, nose and jaw gain real contour
   // instead of uniform, unused density at the back of the skull.
+  const morphology = faceMorphology(seed);
+  const sample = new THREE.Vector3();
   const columns = sampling?.columns ?? (detail ? (portrait ? 136 : 80) : 18);
   const geometry = gridSurface(
     columns,
@@ -231,8 +263,9 @@ export function sculptedHead(
       // actually bends the surface; spend fewer at the smooth crown and nape.
       const centered = v * 2 - 1;
       const faceWeighted = centered * (0.7 + centered * centered * 0.3);
-      return headPoint(P, faceWeighted * 1.14, headAngle(u), seed);
+      return sampleHeadPoint(P, faceWeighted * 1.14, headAngle(u), morphology, sample);
     },
+    "surface",
   );
   // Sample the normal from the continuous sculpt instead of averaging the
   // surrounding triangle planes. The concentrated orbital grid has unequal
@@ -245,17 +278,18 @@ export function sculptedHead(
   const tangentAngle = new THREE.Vector3(),
     tangentHeight = new THREE.Vector3();
   const surfaceNormal = new THREE.Vector3();
+  const opposite = new THREE.Vector3();
   const epsilon = 0.0005;
   const complexion = new Float32Array(positions.count * 3);
   for (let i = 0; i < positions.count; i++) {
     const angle = headAngle(uv.getX(i)),
       height = positions.getY(i) / P.headR;
     tangentAngle
-      .copy(headPoint(P, height, angle + epsilon, seed))
-      .sub(headPoint(P, height, angle - epsilon, seed));
+      .copy(sampleHeadPoint(P, height, angle + epsilon, morphology, sample))
+      .sub(sampleHeadPoint(P, height, angle - epsilon, morphology, opposite));
     tangentHeight
-      .copy(headPoint(P, height + epsilon, angle, seed))
-      .sub(headPoint(P, height - epsilon, angle, seed));
+      .copy(sampleHeadPoint(P, height + epsilon, angle, morphology, sample))
+      .sub(sampleHeadPoint(P, height - epsilon, angle, morphology, opposite));
     surfaceNormal.crossVectors(tangentAngle, tangentHeight).normalize();
     normal.setXYZ(i, surfaceNormal.x, surfaceNormal.y, surfaceNormal.z);
     const x = positions.getX(i) / P.headW;
@@ -300,6 +334,7 @@ export function sculptedHair(
 ) {
   const style = look.hairStyle;
   const f = faceMorphology(look.seed);
+  const sample = new THREE.Vector3();
   const columns = sampling?.columns ?? (detail ? 120 : 18);
   const geometry = gridSurface(
     // Spend the extra vertices on close athletes only. The scalp is one
@@ -312,7 +347,7 @@ export function sculptedHair(
       const temples = Math.abs(Math.sin(angle));
       const hairline = fittedHairlineY(angle, f, detail);
       const y = hairline + (1.14 - hairline) * v;
-      const p = headPoint(P, y, angle, look.seed);
+      const p = sampleHeadPoint(P, y, angle, f, sample);
       // A shaved cut is scalp stubble, not a short hairstyle with the same
       // swept forelock. Keep the shared seeded head and a submillimetre shell.
       if (style === "buzz") return p.multiplyScalar(1.002);

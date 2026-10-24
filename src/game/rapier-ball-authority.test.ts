@@ -1,8 +1,27 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { BALL_PHYSICS_RADIUS, createRapierBallAuthority } from "./rapier-ball-authority";
 
 describe("RapierBallAuthority", () => {
+  it("avoids per-substep velocity reads for a straight flight without skipping solver work", async () => {
+    let observations = 0;
+    const physics = await createRapierBallAuthority({ observeSubstep: () => observations++ });
+    const state = { x: 0, z: 0, height: 2, vx: 5, vy: 2, vz: 1, spin: 0, holder: null };
+    physics.reset(state);
+    const body = (physics as unknown as { ballBody: { linvel(): unknown } }).ballBody;
+    const read = vi.spyOn(body, "linvel");
+    try {
+      physics.step(1 / 30, state, null);
+      expect(observations).toBe(5);
+      expect(read).toHaveBeenCalledTimes(1); // final canonical write, no Magnus reads
+      expect(state.x).toBeGreaterThan(0);
+      expect(state.height).toBeLessThan(2 + 2 / 30);
+    } finally {
+      read.mockRestore();
+      physics.dispose();
+    }
+  });
+
   it("leaves canonical state, checkpoint and solver observations untouched for invalid elapsed time", async () => {
     let observations = 0;
     const physics = await createRapierBallAuthority({ observeSubstep: () => observations++ });

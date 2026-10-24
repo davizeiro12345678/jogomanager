@@ -4,8 +4,8 @@ import * as THREE from "three";
 export function crowdCard(animated = false) {
   if (typeof document === "undefined") return new THREE.Texture();
   const canvas = document.createElement("canvas");
-  canvas.width = 64;
-  canvas.height = 128;
+  canvas.width = animated ? 512 : 64;
+  canvas.height = animated ? 512 : 128;
   const c = canvas.getContext("2d");
   if (!c) return new THREE.Texture();
   const fill = (x: number, y: number, rx: number, ry: number) => {
@@ -13,14 +13,20 @@ export function crowdCard(animated = false) {
     c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
     c.fill();
   };
-  // Four 32×64 pose tiles retain the original 64×128 texture allocation.
+  // Four gestures × eight phases: 64×128 tiles, 1 MiB RGBA before mipmaps.
   // Native WebGPU uses the same neutral idle drawing across the full card.
-  const poses = animated ? 4 : 1;
-  for (let pose = 0; pose < poses; pose++) {
+  const poses = animated ? 32 : 1;
+  for (let tile = 0; tile < poses; tile++) {
+    const pose = animated ? Math.floor(tile / 8) : 0;
+    const phase = animated ? (tile % 8) / 8 : 0;
+    const reach = 0.5 - 0.5 * Math.cos(phase * Math.PI * 2);
     c.save();
     if (animated) {
-      c.translate((pose % 2) * 32, Math.floor(pose / 2) * 64);
-      c.scale(0.5, 0.5);
+      c.translate((tile % 8) * 64, Math.floor(tile / 8) * 128);
+      // Clip each tile to prevent filtering from picking neighbouring limbs.
+      c.beginPath();
+      c.rect(0, 0, 64, 128);
+      c.clip();
     }
     const face = c.createLinearGradient(20, 0, 44, 0);
     face.addColorStop(0, "#a5a5a5");
@@ -48,10 +54,18 @@ export function crowdCard(animated = false) {
     c.lineCap = "round";
     c.strokeStyle = shirt;
     for (const side of [-1, 1]) {
-      const elbowX = pose === 2 ? 32 + side * 15 : 32 + side * 24;
-      const elbowY = pose === 0 ? 63 : pose === 1 ? 27 : 46;
-      const handX = pose === 2 ? 32 + side * 3 : 32 + side * (pose === 3 ? 10 : 23);
-      const handY = pose === 0 ? 77 : pose === 1 ? 9 : pose === 2 ? 40 : 24;
+      const elbowX = pose === 2 ? 32 + side * (15 - reach * 4) : 32 + side * 24;
+      const elbowY = pose === 0 ? 63 + reach * 2 : pose === 1 ? 35 - reach * 10 : 46 - reach * 3;
+      const handX =
+        pose === 2 ? 32 + side * (12 - reach * 9) : 32 + side * (pose === 3 ? 15 - reach * 5 : 23);
+      const handY =
+        pose === 0
+          ? 77 - reach * 2
+          : pose === 1
+            ? 21 - reach * 12
+            : pose === 2
+              ? 44 - reach * 4
+              : 30 - reach * 6;
       c.beginPath();
       c.moveTo(32 + side * 15, 48);
       c.lineTo(elbowX, elbowY);

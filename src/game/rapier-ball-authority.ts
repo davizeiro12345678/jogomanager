@@ -298,9 +298,12 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
   }
 
   private applyMagnusImpulse(dt: number, spin: number) {
+    // Most grounded/straight-flight samples have no spin. Avoid the WASM
+    // velocity read and planar length calculation before the existing guard.
+    if (Math.abs(spin) < 0.001) return;
     const velocity = this.ballBody.linvel();
     const speed = Math.hypot(velocity.x, velocity.z);
-    if (Math.abs(spin) < 0.001 || speed < 0.01) return;
+    if (speed < 0.01) return;
 
     // A curva entra como impulso externo no mundo Rapier. Gravidade, atrito,
     // colisões e o resultado da integração seguem exclusivamente no solver.

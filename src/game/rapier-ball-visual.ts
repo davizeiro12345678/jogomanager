@@ -153,19 +153,21 @@ class RapierVisualBall implements RapierVisualPhysics {
     const substeps = highFidelitySubsteps(safeDt, 10);
     const substep = safeDt / substeps;
     for (let index = 0; index < substeps; index++) {
-      const velocity = this.ballBody.linvel();
-      const speed = Math.hypot(velocity.x, velocity.z);
-      if (Math.abs(this.visualSpin) > 0.001 && speed > 0.01) {
-        const magnus = this.visualSpin * substep * 0.045;
-        this.ballBody.setLinvel(
-          {
-            x: velocity.x - (velocity.z / speed) * magnus,
-            y: velocity.y,
-            z: velocity.z + (velocity.x / speed) * magnus,
-          },
-          true,
-        );
-        this.visualSpin *= Math.exp(-0.85 * substep);
+      if (Math.abs(this.visualSpin) > 0.001) {
+        const velocity = this.ballBody.linvel();
+        const speed = Math.hypot(velocity.x, velocity.z);
+        if (speed > 0.01) {
+          const magnus = this.visualSpin * substep * 0.045;
+          this.ballBody.setLinvel(
+            {
+              x: velocity.x - (velocity.z / speed) * magnus,
+              y: velocity.y,
+              z: velocity.z + (velocity.x / speed) * magnus,
+            },
+            true,
+          );
+          this.visualSpin *= Math.exp(-0.85 * substep);
+        }
       }
       this.world.timestep = substep;
       this.world.step();

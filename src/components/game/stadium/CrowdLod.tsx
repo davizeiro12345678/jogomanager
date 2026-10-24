@@ -263,7 +263,7 @@ export function CrowdLod({
         new URLSearchParams(location.search).get("crowdLighting") === "legacy";
       const material = crowdLodMaterial(tier, card, legacy);
       if (webgl2) {
-        material.customProgramCacheKey = () => `crowd-articulation-v4-tier-${tier}`;
+        material.customProgramCacheKey = () => `crowd-articulation-v5-tier-${tier}`;
         material.onBeforeCompile = (shader) => {
           shader.uniforms["crowdTime"] = uniforms.time;
           shader.uniforms["crowdPulse"] = uniforms.pulse;
@@ -283,7 +283,7 @@ export function CrowdLod({
             )
             .replace(
               "#include <beginnormal_vertex>",
-              `#include <beginnormal_vertex>\n${tier < 2 ? "objectNormal = crowdArticulate(objectNormal, true) / crowdBodyScale();" : ""}`,
+              `#include <beginnormal_vertex>\n${tier < 2 ? "objectNormal = crowdShearNormal(crowdArticulate(objectNormal, true) / crowdBodyScale());" : ""}`,
             )
             .replace(
               "#include <begin_vertex>",
@@ -293,10 +293,8 @@ export function CrowdLod({
               // Independent shoulder breadth and torso fullness without new geometry.
               transformed *= crowdBodyScale();
               float response = smoothstep(0.0, 0.32, max(0.0, crowdEventAge - crowdStyle.x * 0.22));
-              float lean = crowdSurprise * response * 0.12;
-              transformed.z += lean * max(0.0, position.y + 0.55);
-              transformed.x += sin(crowdTime * 1.7 + phase) * 0.035 * max(0.0, position.y + 0.6);
-              transformed.z += sin(crowdTime * 5.2 + phase) * crowdAgitation * 0.05 * max(0.0, position.y + 0.6);
+              vec2 shear = crowdShear();
+              transformed.xz += shear * max(0.0, transformed.y + 0.55);
               transformed.y += abs(sin(crowdTime * 5.8 + phase)) * max(crowdPulse, crowdEnergy) * response * 0.24;
               transformed.y -= sin(min(crowdEventAge * 9.0, 3.14159265)) * max(crowdPulse, crowdEnergy) * 0.07;
               // ola mexicana: corcova que viaja ao redor do anel (uma volta a
@@ -345,7 +343,10 @@ export function CrowdLod({
                 if (crowdChant > 0.1 && cardBeat > mix(0.42, 0.68, crowdStyle.x)) cardPose = 2.0;
                 if (max(cardCheer, cardWaveRaise) > 0.18) cardPose = cardBeat > 0.26 || cardWaveRaise > 0.2 ? 1.0 : 2.0;
                 if (crowdSurprise * cardResponse > 0.12) cardPose = 3.0;
-                vMapUv = vMapUv * 0.5 + vec2(mod(cardPose, 2.0) * 0.5, 0.5 - floor(cardPose / 2.0) * 0.5);`,
+                float cardFrame = floor(mod(crowdTime * 8.0 + crowdStyle.x * 8.0, 8.0));
+                // Pixel inset prevents atlas bleed at the edge of a gesture tile.
+                vec2 insetUv = mix(vec2(0.5 / 64.0, 0.5 / 128.0), vec2(1.0 - 0.5 / 64.0, 1.0 - 0.5 / 128.0), vMapUv);
+                vMapUv = insetUv * vec2(0.125, 0.25) + vec2(cardFrame * 0.125, 0.75 - cardPose * 0.25);`,
               );
             // Colour by fragment region, avoiding the old four-vertex skin gradient
             // that washed team shirts into flesh from head to waist.

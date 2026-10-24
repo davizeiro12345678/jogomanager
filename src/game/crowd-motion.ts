@@ -160,4 +160,18 @@ vec3 crowdArticulate(vec3 v, bool normalOnly) {
   if (!normalOnly) v += shoulder;
   return v;
 }
+// Shear is applied after articulated rotation/scale; normals use its inverse
+// transpose rather than retaining the upright torso lighting during a gasp.
+vec2 crowdShear() {
+  float phase = instanceMatrix[3].x * 0.71 + instanceMatrix[3].z * 0.37;
+  float response = smoothstep(0.0, 0.32, max(0.0, crowdEventAge - crowdStyle.x * 0.22));
+  return vec2(sin(crowdTime * 1.7 + phase) * 0.035,
+    crowdSurprise * response * 0.12 + sin(crowdTime * 5.2 + phase) * crowdAgitation * 0.05);
+}
+vec3 crowdShearNormal(vec3 n) {
+  vec3 p = crowdArticulate(position, false) * crowdBodyScale();
+  vec2 shear = crowdShear() * step(-0.55, p.y);
+  n.y -= dot(shear, n.xz);
+  return n;
+}
 `;
