@@ -37,5 +37,19 @@ jobs:
         run: npm ci
       - name: Bundle isolated match worker
         run: ./node_modules/.bin/esbuild services/contabo-aux/match-worker.ts --bundle --platform=node --format=esm --target=node22 --tsconfig=tsconfig.json --outfile=/tmp/jogomanager-match-worker.mjs
+      - name: Validate isolated Compose exposure (no public ingress by default)
+        run: |
+          cp services/contabo-aux/.env.example services/contabo-aux/.env
+          docker compose --env-file services/contabo-aux/.env -f services/contabo-aux/compose.yaml config --quiet
+          docker compose --env-file services/contabo-aux/.env -f services/contabo-aux/compose.yaml config --format json > /tmp/contabo-compose.json
+          python3 - <<'PY'
+          import json
+          with open('/tmp/contabo-compose.json', encoding='utf-8') as handle:
+              config = json.load(handle)
+          for name in ('api', 'caddy'):
+              for port in config['services'][name].get('ports', []):
+                  assert port.get('host_ip') == '127.0.0.1', (name, port)
+          print('PASS: all published service ports bind to loopback only')
+          PY
       - name: Build production Docker image
         run: docker build --file services/contabo-aux/Dockerfile --tag jogomanager-contabo-aux:verify .
