@@ -19,11 +19,13 @@ services:
       interval: 30s
       timeout: 7s
       retries: 3
+    ports: ["127.0.0.1:18080:8080"]
     expose: ["8080"]
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
-    ports: ["80:80", "443:443"]
+    # Padrão restrito: não abre a origem pública nem contorna o WAF.
+    ports: ["127.0.0.1:18081:80", "127.0.0.1:18443:443"]
     environment:
       - API_DOMAIN=${API_DOMAIN}
     volumes:
