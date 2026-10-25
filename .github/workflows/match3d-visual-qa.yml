@@ -1,0 +1,65 @@
+name: Match 3D visual evidence
+
+on:
+  pull_request:
+    paths:
+      - "src/game/**"
+      - "src/components/game/**"
+      - "scripts/**"
+      - ".github/workflows/match3d-visual-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: match3d-visual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha || '5a75fef3662e3750917df1c2259169e4ed9f24d3' }}
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      NODE_USE_ENV_PROXY: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install isolated browser test tooling
+        run: |
+          npm install --prefix "$RUNNER_TEMP/match3d-qa" --no-package-lock --no-save playwright@1.62.1
+          command -v google-chrome > "$RUNNER_TEMP/match3d-chrome-path"
+      - name: Prepare immutable baseline
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/match3d-base" "$BASE_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/match3d-base/node_modules"
+      - name: Build and capture baseline with the candidate evidence runner
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/match3d-qa/node_modules/playwright
+        run: |
+          export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(cat "$RUNNER_TEMP/match3d-chrome-path")"
+          (cd "$RUNNER_TEMP/match3d-base" && npm run graphics:build)
+          node scripts/capture-match3d-evidence.mjs "$RUNNER_TEMP/match3d-base" "$RUNNER_TEMP/match3d-evidence/baseline" 4194 "$BASE_SHA"
+      - name: Build and capture candidate
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/match3d-qa/node_modules/playwright
+        run: |
+          export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(cat "$RUNNER_TEMP/match3d-chrome-path")"
+          npm run graphics:build
+          node scripts/capture-match3d-evidence.mjs "$GITHUB_WORKSPACE" "$RUNNER_TEMP/match3d-evidence/candidate" 4193 "$CANDIDATE_SHA"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: match3d-visual-evidence
+          path: ${{ runner.temp }}/match3d-evidence
+          if-no-files-found: error
+          retention-days: 14
