@@ -138,6 +138,14 @@ const projectConfig = defineConfig({
                 test: /[\\/]src[\\/](?:components[\\/]DiscordLink\.tsx|content[\\/]community\.ts|i18n[\\/]context\.ts|hooks[\\/]useAccessibility\.ts|lib[\\/]accessibility-preferences\.ts)$|[\\/]node_modules[\\/](?:scheduler[\\/]|use-sync-external-store[\\/]|react-dom[\\/](?:index\.js|cjs[\\/]react-dom\.(?:production|development)\.js)(?:$|\?))/,
               },
               {
+                // Router and RPC serialization already belong to every hydrated
+                // route. Share their transport without pulling route bodies or
+                // optional dependencies into the initial browser runtime.
+                name: "browser-router",
+                test: /[\\/]node_modules[\\/](?:@tanstack[\\/](?:react-router|router-core|history|start-client-core)|seroval|seroval-plugins|cookie-es)[\\/]/,
+                includeDependenciesRecursively: false,
+              },
+              {
                 // Lazy routes share Vite's preload helper. If it lives in the
                 // app entry, each dynamic import pulls the entire entry back in.
                 name: "vite-preload",

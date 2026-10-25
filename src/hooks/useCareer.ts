@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef } from "react";
 
-import { migrateCareer } from "@/game/career/migration";
 import { recordWorldTransition, withCareerWorld } from "@/game/career-world";
 import { supabase } from "@/integrations/supabase/client";
 import { loadCareer, saveCareer, deleteCareer } from "@/lib/career.functions";
@@ -42,6 +41,13 @@ export const CAREER_KEY = ["career"] as const;
 
 export type SyncState = CareerSyncState;
 class StaleCareerUpload extends Error {}
+
+// A visitor without a saved career does not need the migration/season engine.
+// Keep the authoritative migration on the existing asynchronous load/sync path.
+async function migrateStoredCareer(state: CareerState): Promise<CareerState> {
+  const { migrateCareer } = await import("@/game/career/migration");
+  return migrateCareer(state);
+}
 
 /** Tracks whether a Supabase session exists. `null` while unknown. */
 export function useSignedIn() {
@@ -93,7 +99,7 @@ export function useCareer() {
           if (!result.ok) throw new Error("Não foi possível confirmar a sincronização.");
           return result;
         },
-        prepare: migrateCareer,
+        prepare: migrateStoredCareer,
       }),
     [owner, assertCurrentOwner, save, userId],
   );
@@ -130,7 +136,7 @@ export function useCareer() {
         if (current) return current.career ?? raw;
         // Reconciliation must not give an old local save a newer timestamp.
         // Durable migration/backups remain in explicit saves and sync preparation.
-        return migrateCareer(raw);
+        return migrateStoredCareer(raw);
       };
       if (!signedIn)
         return finish({ career: local ? await repairLocal(local) : null, sync: "local" });
@@ -177,7 +183,7 @@ export function useCareer() {
               const latest = await load({ data: { expectedOwnerId: userId! } });
               await assertCurrentOwner();
               if (latest?.state)
-                return finish({ career: migrateCareer(latest.state), sync: "pending" });
+                return finish({ career: await migrateStoredCareer(latest.state), sync: "pending" });
             } catch {
               /* The retained personal copy is still recoverable offline. */
             }

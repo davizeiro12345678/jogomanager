@@ -30,6 +30,7 @@ vi.mock("idb-keyval", () => ({
 }));
 import { flushCareerSync } from "./sync";
 import {
+  clearLocalCareer,
   exportLocalCareerData,
   loadLocalCareer,
   queueSync,
@@ -63,6 +64,101 @@ afterEach(() => {
 });
 const assertOwner = async () => {};
 describe("owner-serialized career uploads", () => {
+  it("rechecks durable progress after a deferred migration before sending anything", async () => {
+    await saveLocalCareer(career(1), "auto", "alice");
+    await queueSync(career(1), "alice");
+    let release!: () => void;
+    let entered!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const began = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const uploaded: number[] = [];
+    const pending = flushCareerSync("alice", {
+      assertOwner,
+      prepare: async (state) => {
+        if (state.round === 1) {
+          entered();
+          await gate;
+        }
+        return state;
+      },
+      upload: async (state) => {
+        uploaded.push(state.round);
+      },
+    });
+    await began;
+    await saveLocalCareer(career(2), "auto", "alice");
+    await queueSync(career(2), "alice");
+    release();
+    const result = await pending;
+    expect(uploaded).toEqual([2]);
+    expect(result.synced).toBe(true);
+    expect((await loadLocalCareer("alice"))?.round).toBe(2);
+    expect(await readOutbox("alice")).toBeNull();
+  });
+  it("does not persist a migration after the owner changes while its code loads", async () => {
+    await saveLocalCareer(career(1), "auto", "alice");
+    await queueSync(career(1), "alice");
+    let activeOwner = "alice";
+    const uploaded: number[] = [];
+    await expect(
+      flushCareerSync("alice", {
+        assertOwner: async () => {
+          if (activeOwner !== "alice") throw new Error("Conta mudou");
+        },
+        prepare: async (state) => {
+          await Promise.resolve();
+          activeOwner = "bob";
+          return state.round === 1 ? career(2) : state;
+        },
+        upload: async (state) => {
+          uploaded.push(state.round);
+        },
+      }),
+    ).rejects.toThrow("Conta mudou");
+    expect(uploaded).toEqual([]);
+    expect((await loadLocalCareer("alice"))?.round).toBe(1);
+    expect((await readOutbox("alice"))?.state.round).toBe(1);
+    expect((await exportLocalCareerData("alice")).migrationBackups).toEqual([]);
+    expect(await loadLocalCareer("bob")).toBeNull();
+  });
+  it("retains recoverable state and queue when migration loading fails", async () => {
+    await saveLocalCareer(career(1), "auto", "alice");
+    await queueSync(career(1), "alice");
+    const upload = vi.fn();
+    await expect(
+      flushCareerSync("alice", {
+        assertOwner,
+        prepare: async () => {
+          throw new Error("Migration unavailable offline");
+        },
+        upload,
+      }),
+    ).rejects.toThrow("Migration unavailable offline");
+    expect(upload).not.toHaveBeenCalled();
+    expect((await loadLocalCareer("alice"))?.round).toBe(1);
+    expect((await readOutbox("alice"))?.state.round).toBe(1);
+  });
+  it("does not resurrect a career deleted while migration code is loading", async () => {
+    await saveLocalCareer(career(1), "auto", "alice");
+    await queueSync(career(1), "alice");
+    const upload = vi.fn();
+    const result = await flushCareerSync("alice", {
+      assertOwner,
+      prepare: async () => {
+        await clearLocalCareer("alice");
+        return career(2);
+      },
+      upload,
+    });
+    expect(upload).not.toHaveBeenCalled();
+    expect(result).toEqual({ state: null, synced: true });
+    expect(await loadLocalCareer("alice")).toBeNull();
+    expect(await readOutbox("alice")).toBeNull();
+  });
   it("retains the raw recovery copy before persisting or uploading a migrated state", async () => {
     await saveLocalCareer(career(1), "auto", "alice");
     await queueSync(career(1), "alice");

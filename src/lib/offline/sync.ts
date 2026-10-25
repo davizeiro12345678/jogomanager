@@ -47,6 +47,20 @@ export async function flushCareerSync(
         const latest = await loadLocalCareer(owner);
         if (latest && !same(latest, entry.state)) continue;
         const prepared = options.prepare ? await options.prepare(entry.state) : entry.state;
+        // Loading migration code can yield long enough for a save, deletion or
+        // account switch. Revalidate before persisting or uploading its result.
+        await options.assertOwner();
+        const queuedNow = await readOutbox(owner);
+        const localNow = await loadLocalCareer(owner);
+        if (!queuedNow) return { state: localNow, synced: true };
+        if (
+          queuedNow.at !== entry.at ||
+          queuedNow.operationId !== entry.operationId ||
+          queuedNow.revision !== entry.revision ||
+          !same(queuedNow.state, entry.state) ||
+          (localNow && !same(localNow, entry.state))
+        )
+          continue;
         if (!same(prepared, entry.state)) {
           await backupCareerBeforeMigration(entry.state, owner);
           const now = await loadLocalCareer(owner);
