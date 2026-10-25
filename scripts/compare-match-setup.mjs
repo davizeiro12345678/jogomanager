@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { assessMatchSetup } from "./match-setup-budget.mjs";
+import { assessSetupParity } from "./match-setup-parity.mjs";
 
 const [baselineArg, candidateArg, outputArg] = process.argv.slice(2);
 if (!baselineArg || !candidateArg || !outputArg)
@@ -26,13 +27,13 @@ if (
   );
 mkdirSync(output, { recursive: true });
 const require = createRequire(path.join(candidate, "package.json"));
-const tsx = pathToFileURL(require.resolve("tsx")).href;
+const tsx = require.resolve("tsx");
 const sampler = fileURLToPath(new URL("./match-setup-sample.mjs", import.meta.url));
 const fixturePath = path.join(output, "match-fixture.json");
 function sample(mode, root, target = "") {
   const run = spawnSync(
     process.execPath,
-    ["--import", tsx, sampler, mode, root, fixturePath, target],
+    ["--import", pathToFileURL(tsx).href, sampler, mode, root, fixturePath, target],
     {
       cwd: root,
       env: { ...process.env, TSX_TSCONFIG_PATH: path.join(root, "tsconfig.json") },
@@ -54,15 +55,8 @@ for (const [index, revision] of ["baseline", "candidate", "candidate", "baseline
   console.log(`Completed ${revision} pass ${index + 1}/4`);
 }
 const first = reports[0];
-const violations = [];
-for (const report of reports) {
-  if (JSON.stringify(report.environment) !== JSON.stringify(first.environment))
-    violations.push("Runtime or CPU changed between samples");
-  if (report.fixtureSha256 !== first.fixtureSha256)
-    violations.push("Team fixture changed between samples");
-  if (JSON.stringify(report.checkpoints) !== JSON.stringify(first.checkpoints))
-    violations.push(`${report.revision}: deterministic checkpoints differ`);
-}
+const parity = assessSetupParity(reports);
+const violations = [...parity.violations];
 const cpuSamples = (revision) =>
   reports
     .filter((report) => report.revision === revision)
@@ -83,6 +77,7 @@ const result = {
   fixtureSha256: first.fixtureSha256,
   samplesPerRevision: 62,
   deterministicCheckpoints: first.checkpoints.length,
+  parity,
   budget,
   violations,
 };

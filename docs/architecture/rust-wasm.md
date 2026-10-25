@@ -42,8 +42,12 @@ npm exec -- vitest run src/game/wasm --pool=forks --maxWorkers=1
 remove somente o `.gitignore` automático do pacote gerado. Os artefatos são
 versionados para que o build habitual do frontend e o Lovable não dependam de
 uma instalação Rust. Entregue fonte, `Cargo.lock` e arquivos gerados juntos.
-O wasm-opt pré-compilado usado pelo wasm-pack varia por sistema operacional,
-então os bytes do WASM podem diferir entre Windows e Linux. O job Rust no CI
+O wasm-pack recebe `--no-opt` porque sua etapa automática percorre também o
+kernel independente de assentos com memória compartilhada. A etapa seguinte,
+`scripts/optimize-crowd-wasm.mjs`, usa o Binaryen 132.0.0 fixado no lockfile,
+otimiza somente o arquivo da torcida e confere seus imports/exports antes de
+gravá-lo. Isso preserva os módulos independentes e evita depender do wasm-opt
+encontrado no PATH. Os bytes gerados ainda podem variar por toolchain. O job Rust no CI
 fixa as ferramentas, compara as bindings geradas e testa a paridade tanto do
 WASM recém-compilado quanto do binário versionado.
 

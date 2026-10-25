@@ -1,0 +1,240 @@
+{
+  "scope": "Historical observation on 2026-10-23, before later renderer/simulation/optimized-WASM commits. Not a measurement of the latest PR head.",
+  "protocol": "One pair on Intel Iris Xe; identical diagnostic collector, manual=1 fixture with automatic simulation stopped, camera, quality, canvas 1280x720/DPR1; 60s warm-up and 300s collection per revision; no adaptive changes.",
+  "baseline": {
+    "commit": "93c31441261e011f3db3198d77c44b8208a8596e",
+    "measuredAt": "2026-10-23T20:10:56.095Z",
+    "finishedAt": "2026-10-23T20:16:59.152Z",
+    "artifactSha256": "75a6479d49c57938dc4b865ffde8b3b0167d020bc7fdcdc3e8a18e1886da2c30",
+    "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x000046A6) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "browserViewport": {
+      "width": 1440,
+      "height": 1000,
+      "dpr": 1
+    },
+    "scenario": {
+      "id": "broadcast",
+      "label": "Alto · transmissão · dia",
+      "seed": "graphics-broadcast-v1",
+      "quality": "alta",
+      "presetCamera": "broadcast",
+      "camera": "broadcast",
+      "time": "dia",
+      "weather": "seco",
+      "mow": "stripes",
+      "fixture": {
+        "homeClubId": "fla",
+        "awayClubId": "pal",
+        "label": "Flamengo x Palmeiras"
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      "rigTopology": "screen",
+      "effectsPath": "bounded",
+      "postFx": true,
+      "requested": {
+        "scenario": "broadcast",
+        "seed": null,
+        "quality": null,
+        "camera": null
+      }
+    },
+    "servedHtmlSha256": "071e05340ad6b8aac5eac63ebc5a7d4e6df5166fc222c94e1e2bdfb8f68a3dfd",
+    "servedBundles": [
+      {
+        "file": "benchmark-O0_jeUCc.js",
+        "bytes": 229902,
+        "sha256": "42d84099a0d76ed74b25e1a6b637cb05521407960f3b7a186907f3ec3174fa61"
+      }
+    ],
+    "frames": 9605,
+    "fps": 32.016666666666666,
+    "p50Ms": 30,
+    "p95Ms": 38.400000005960464,
+    "p99Ms": 60.599999994039536,
+    "onePercentLowFps": 12.789072594578291,
+    "drawsMean": 223.92545549193127,
+    "trianglesMean": 221189.58261322227,
+    "memory": {
+      "jsHeap": {
+        "available": true,
+        "usedBytes": 61752217,
+        "allocatedBytes": 127194657,
+        "limitBytes": 4395630592,
+        "source": "performance.memory",
+        "scope": "browser-reported JS heap; excludes total process RAM and separate Worker/WASM memories"
+      },
+      "sceneReferencedResources": {
+        "geometryBytes": 10291100,
+        "textureBytes": 47819473,
+        "source": "scene-census",
+        "scope": "deduplicated visible scene geometry/texture objects; buffer bytes and estimated texture payload, not GPU allocation"
+      },
+      "processRam": {
+        "available": false,
+        "bytes": null,
+        "reason": "not exposed by this browser benchmark; capture process/Worker memory with an external profiler"
+      },
+      "deviceVram": {
+        "available": false,
+        "bytes": null,
+        "reason": "actual device allocation is not exposed by WebGL renderer.info or the scene census"
+      }
+    },
+    "protocol": {
+      "warmupMs": 60000,
+      "measurementMs": 300000,
+      "interruptions": 0,
+      "coveredMs": 300000,
+      "contractChanged": false,
+      "adaptive": false,
+      "longTasksScope": "whole run including warmup",
+      "page": {
+        "visibility": "visible",
+        "hasFocus": true,
+        "focusChanges": 0,
+        "scope": "browser visibility/focus only; does not prove OS foreground or occlusion"
+      }
+    },
+    "acceptance": {
+      "passes": false,
+      "reasons": [
+        "mean-fps-below-69",
+        "p95-above-20ms",
+        "one-percent-low-below-50"
+      ],
+      "scope": "single run; three equivalent runs and both GPUs required for campaign acceptance"
+    },
+    "javascriptErrors": 0,
+    "failedRequests": 0
+  },
+  "candidate": {
+    "commit": "6a49afd45bde606569322e5ffd2c2c1c0ad7d2f4",
+    "measuredAt": "2026-10-23T20:17:01.464Z",
+    "finishedAt": "2026-10-23T20:23:06.249Z",
+    "artifactSha256": "7f97d5aa8f04e699f7a9cae975d853b79422647c8134553651c71b0c7fa93271",
+    "renderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x000046A6) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "browserViewport": {
+      "width": 1440,
+      "height": 1000,
+      "dpr": 1
+    },
+    "scenario": {
+      "id": "broadcast",
+      "label": "Alto · transmissão · dia",
+      "seed": "graphics-broadcast-v1",
+      "quality": "alta",
+      "presetCamera": "broadcast",
+      "camera": "broadcast",
+      "time": "dia",
+      "weather": "seco",
+      "mow": "stripes",
+      "fixture": {
+        "homeClubId": "fla",
+        "awayClubId": "pal",
+        "label": "Flamengo x Palmeiras"
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      "rigTopology": "screen",
+      "effectsPath": "bounded",
+      "postFx": true,
+      "requested": {
+        "scenario": "broadcast",
+        "seed": null,
+        "quality": null,
+        "camera": null
+      }
+    },
+    "servedHtmlSha256": "89a0abd71da7291d59a2be3507351dc6becdb08938df07d877e0dd7da5428787",
+    "servedBundles": [
+      {
+        "file": "benchmark-CrvPzcTX.js",
+        "bytes": 130851,
+        "sha256": "caeb93dfa690a46d3fc0c697c800c5fd83023ce44b282ba46003062b6dd46db0"
+      }
+    ],
+    "frames": 12142,
+    "fps": 40.47333333333333,
+    "p50Ms": 25,
+    "p95Ms": 27.799999982118607,
+    "p99Ms": 29.80000001192093,
+    "onePercentLowFps": 31.851291022978817,
+    "drawsMean": 191.8349530555098,
+    "trianglesMean": 452287.18909570086,
+    "memory": {
+      "jsHeap": {
+        "available": true,
+        "usedBytes": 98200366,
+        "allocatedBytes": 153612898,
+        "limitBytes": 4395630592,
+        "source": "performance.memory",
+        "scope": "browser-reported JS heap; excludes total process RAM and separate Worker/WASM memories"
+      },
+      "sceneReferencedResources": {
+        "geometryBytes": 11460868,
+        "textureBytes": 51878291,
+        "source": "scene-census",
+        "scope": "deduplicated visible scene geometry/texture objects; buffer bytes and estimated texture payload, not GPU allocation"
+      },
+      "processRam": {
+        "available": false,
+        "bytes": null,
+        "reason": "not exposed by this browser benchmark; capture process/Worker memory with an external profiler"
+      },
+      "deviceVram": {
+        "available": false,
+        "bytes": null,
+        "reason": "actual device allocation is not exposed by WebGL renderer.info or the scene census"
+      }
+    },
+    "protocol": {
+      "warmupMs": 60000,
+      "measurementMs": 300000,
+      "interruptions": 0,
+      "coveredMs": 300000,
+      "contractChanged": false,
+      "adaptive": false,
+      "longTasksScope": "whole run including warmup",
+      "page": {
+        "visibility": "visible",
+        "hasFocus": true,
+        "focusChanges": 0,
+        "scope": "browser visibility/focus only; does not prove OS foreground or occlusion"
+      }
+    },
+    "acceptance": {
+      "passes": false,
+      "reasons": [
+        "mean-fps-below-69",
+        "p95-above-20ms",
+        "one-percent-low-below-50"
+      ],
+      "scope": "single run; three equivalent runs and both GPUs required for campaign acceptance"
+    },
+    "javascriptErrors": 0,
+    "failedRequests": 0
+  },
+  "changePercent": {
+    "fps": 26.41332639250389,
+    "p95Ms": -27.604166724470105,
+    "drawsMean": -14.33088630585717,
+    "trianglesMean": 104.47942608878726,
+    "jsHeapUsedBytes": 59.023223409128775
+  },
+  "campaignAccepted": false,
+  "limitations": [
+    "One pair only; campaign requires three equivalent runs and both GPUs.",
+    "Rendering observation with manual=1 and simulation time at zero; not FPS of an automatically progressing match or simultaneous solver load.",
+    "Targets 69 FPS, p95 <=20 ms and 1% low >=50 FPS not met.",
+    "JS heap excludes process RAM and separate Worker/WASM memories. Scene texture/geometry census is not actual GPU allocation.",
+    "Baseline diagnostic collector was harmonized; renderer and simulation source were retained. Browser focus does not prove OS foreground/occlusion.",
+    "Later commits must not inherit these numbers as a fresh FPS measurement."
+  ]
+}
