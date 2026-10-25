@@ -3,6 +3,19 @@ import { emptyPose } from "./animation-core";
 import { AthletePoseBlender } from "./athlete-pose-blender";
 
 describe("athlete transitions", () => {
+  it("survives invalid frame deltas without poisoning an interrupted transition", () => {
+    const mixer = new AthletePoseBlender();
+    const idle = emptyPose();
+    const run = { ...idle, legLPitch: -0.6, kneeL: -0.8 };
+    mixer.sample(idle, 0, { clip: "idle", action: null, progress: 0 });
+    mixer.sample(run, 0, { clip: "run", action: null, progress: 0 });
+    const shown = { ...mixer.sample(run, 0.05, { clip: "run", action: null, progress: 0 }) };
+    for (const dt of [NaN, Infinity, -Infinity, -0.1])
+      expect(mixer.sample(run, dt, { clip: "run", action: null, progress: 0 })).toEqual(shown);
+    for (let i = 0; i < 30; i++)
+      mixer.sample(run, 1 / 60, { clip: "run", action: null, progress: 0 });
+    expect(mixer.pose).toEqual(run);
+  });
   it("starts interrupted transitions from the displayed pose and converges at different frame rates", () => {
     for (const fps of [20, 30, 60, 120]) {
       const mixer = new AthletePoseBlender();

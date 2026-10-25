@@ -4,6 +4,7 @@ import { kitTextureFor } from "@/game/graphics/kit-atlas";
 import { useMatchSurface } from "@/game/graphics/surface-context-state";
 import type { Kit } from "@/game/kits";
 import { matchRigSegments } from "@/game/match-rig-detail";
+import { isCoarsePointer } from "@/game/device";
 import {
   detailTextureNames,
   playerMaterials,
@@ -68,7 +69,12 @@ export function usePlayerRigMeshes({
   // A qualidade baixa usava a mesma malha de 14 segmentos da alta nos 22
   // jogadores. Ajustar a geometria ao nível global reduz muito o trabalho da
   // GPU sem alterar silhueta, materiais ou animações.
-  const segs = matchRigSegments(quality, portrait || denseGeometry, !portrait && matchTopology);
+  const segs = matchRigSegments(
+    quality,
+    portrait || denseGeometry,
+    !portrait && matchTopology,
+    isCoarsePointer(),
+  );
 
   // Materiais compartilhados entre jogadores com a mesma combinação de
   // uniforme/aparência: derruba o número de programas de shader e de objetos

@@ -3,6 +3,15 @@ import { denseMatchRig, legacyMatchRigRequested, matchRigSegments } from "./matc
 import { segmentsFor } from "./player-model";
 
 describe("match rig screen detail", () => {
+  it("reserves dense facial detail while bounding the mobile portrait body", () => {
+    const mobile = matchRigSegments("alta", true, false, true);
+    expect(mobile.radial).toBeGreaterThanOrEqual(24);
+    expect(mobile.radial).toBeLessThanOrEqual(32);
+    expect(mobile.cap).toBeLessThanOrEqual(6);
+    expect(matchRigSegments("alta", true, true, true)).toEqual(
+      matchRigSegments("alta", false, true),
+    );
+  });
   it("restricts the legacy comparison to the isolated fixture", () => {
     expect(legacyMatchRigRequested("/graphics-benchmark.html", "?rigTopology=legacy")).toBe(true);
     expect(legacyMatchRigRequested("/partida-rapida", "?rigTopology=legacy")).toBe(false);

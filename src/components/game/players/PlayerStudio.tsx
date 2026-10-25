@@ -52,6 +52,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalS
 import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { CanvasLifecycle } from "../CanvasLifecycle";
+import { MobileFramebufferBudget } from "../MobileFramebufferBudget";
+import { detectQuality } from "@/game/device";
 import { GraphicsBoundary } from "../GraphicsBoundary";
 import { Ktx2CanvasAssets } from "../Ktx2CanvasAssets";
 import type { CanvasStatus } from "../canvas-lifecycle";
@@ -608,6 +610,7 @@ export default function PlayerStudio({
 }: PlayerStudioProps) {
   const { t, dir, lang } = useT();
   const { reducedMotion } = useAccessibility();
+  const [deviceQuality] = useState(detectQuality);
   const [localPosition, setLocalPosition] = useState("MF");
   const position = positionValue ?? localPosition;
   const [movementId, setMovementId] = useState("idle");
@@ -745,6 +748,7 @@ export default function PlayerStudio({
                 }
               >
                 <CanvasLifecycle onStatus={setSceneStatus} />
+                <MobileFramebufferBudget tier={deviceQuality} requested={[1, 1.5]} />
                 <Ktx2CanvasAssets enabled={detail} />
                 <StudioScene
                   key={movementId}

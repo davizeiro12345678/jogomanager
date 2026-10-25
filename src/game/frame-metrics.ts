@@ -43,11 +43,29 @@ export class FrameMetrics {
     const start = this.size === this.capacity ? this.cursor : 0;
     let mean = 0;
     let stalls = 0;
+    let over33Ms = 0;
+    let windowStart = 0;
+    let firstEndpointMs = 0;
+    let retainedMs = 0;
+    let minFiveSecondFps: number | null = null;
     for (let index = 0; index < this.size; index += 1) {
       const sample = this.samples[(start + index) % this.capacity]!;
       values[index] = sample;
       mean += sample;
       if (sample > 50) stalls += 1;
+      if (sample > 33.3) over33Ms += 1;
+      retainedMs += sample;
+      if (index === 0) firstEndpointMs = sample;
+      // Count observed frame endpoints in (now - 5 s, now]. This reports
+      // submission cadence, with no invented/interpolated presented frames.
+      while (windowStart < index && firstEndpointMs <= retainedMs - 5000) {
+        windowStart++;
+        firstEndpointMs += this.samples[(start + windowStart) % this.capacity]!;
+      }
+      if (retainedMs >= 5000) {
+        const fps = (index - windowStart + 1) / 5;
+        minFiveSecondFps = minFiveSecondFps === null ? fps : Math.min(minFiveSecondFps, fps);
+      }
     }
     const sorted = values.sort();
     const count = this.size;
@@ -68,6 +86,9 @@ export class FrameMetrics {
       p99: percentile(0.99),
       maxMs: sorted[count - 1] ?? 0,
       stalls,
+      over33Ms,
+      over33Percent: count ? (over33Ms / count) * 100 : 0,
+      minFiveSecondFps,
     };
   }
 }

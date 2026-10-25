@@ -135,9 +135,27 @@ export function headPoint(
   target = new THREE.Vector3(),
 ) {
   const ring = faceRing(THREE.MathUtils.clamp(y, -1.14, 1.14), seed);
-  const f = faceMorphology(seed);
+  return headPointOnRing(P, y, angle, ring, faceMorphology(seed), target);
+}
+
+function headPointOnRing(
+  P: HeadShape,
+  y: number,
+  angle: number,
+  ring: ReturnType<typeof faceRing>,
+  f: ReturnType<typeof faceMorphology>,
+  target: THREE.Vector3,
+) {
   const x = Math.sin(angle) * ring.width;
   const front = Math.max(0, Math.cos(angle));
+  // Back-of-skull vertices have no frontal relief. Avoid evaluating the
+  // orbital/nasal gaussians that are multiplied by zero on this hemisphere.
+  if (front === 0)
+    return target.set(
+      x * P.headW,
+      y * P.headR,
+      (ring.center + Math.cos(angle) * ring.depth) * P.headD,
+    );
   const noseX = x - f.noseDeviation;
   // Separate bridge, tip and alar cartilages read as an adult nose in a
   // three-quarter portrait.  The previous single round gaussian made the
@@ -242,6 +260,20 @@ export function sculptedHead(
   // same seeded face shape so the brow, cheeks, nose and jaw gain real contour
   // instead of uniform, unused density at the back of the skull.
   const columns = sampling?.columns ?? (detail ? (portrait ? 136 : 80) : 18);
+  // Rows reuse the same anatomical ring, including the two finite-difference
+  // normal samples. Keep this cache local to one build: no athlete, shape or
+  // mutable geometry can escape into another player's portrait.
+  const rings = new Map<number, ReturnType<typeof faceRing>>();
+  const face = faceMorphology(seed);
+  const sample = (height: number, angle: number, target = new THREE.Vector3()) => {
+    const clamped = THREE.MathUtils.clamp(height, -1.14, 1.14);
+    let ring = rings.get(clamped);
+    if (!ring) {
+      ring = faceRing(clamped, seed);
+      rings.set(clamped, ring);
+    }
+    return headPointOnRing(P, height, angle, ring, face, target);
+  };
   const geometry = gridSurface(
     columns,
     sampling?.rows ?? (detail ? (portrait ? 102 : 68) : 20),
@@ -250,7 +282,7 @@ export function sculptedHead(
       // actually bends the surface; spend fewer at the smooth crown and nape.
       const centered = v * 2 - 1;
       const faceWeighted = centered * (0.7 + centered * centered * 0.3);
-      return headPoint(P, faceWeighted * 1.14, headAngle(u), seed);
+      return sample(faceWeighted * 1.14, headAngle(u));
     },
   );
   // Sample the normal from the continuous sculpt instead of averaging the
@@ -272,11 +304,11 @@ export function sculptedHead(
     const angle = headAngle(uv.getX(i)),
       height = positions.getY(i) / P.headR;
     tangentAngle
-      .copy(headPoint(P, height, angle + epsilon, seed, surfaceA))
-      .sub(headPoint(P, height, angle - epsilon, seed, surfaceB));
+      .copy(sample(height, angle + epsilon, surfaceA))
+      .sub(sample(height, angle - epsilon, surfaceB));
     tangentHeight
-      .copy(headPoint(P, height + epsilon, angle, seed, surfaceA))
-      .sub(headPoint(P, height - epsilon, angle, seed, surfaceB));
+      .copy(sample(height + epsilon, angle, surfaceA))
+      .sub(sample(height - epsilon, angle, surfaceB));
     surfaceNormal.crossVectors(tangentAngle, tangentHeight).normalize();
     normal.setXYZ(i, surfaceNormal.x, surfaceNormal.y, surfaceNormal.z);
     const x = positions.getX(i) / P.headW;

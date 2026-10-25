@@ -41,7 +41,7 @@ export class AthletePoseBlender {
       this.elapsed = 0;
       this.duration = input.action ? 0.14 : 0.22;
       this.clip = input.clip;
-    } else this.elapsed += Math.max(0, Math.min(0.5, dt));
+    } else this.elapsed += Number.isFinite(dt) ? Math.max(0, Math.min(0.5, dt)) : 0;
     this.progress = input.progress;
     let weight = smooth(this.elapsed / this.duration);
     if (input.action && Math.abs(input.progress - footballContactAt(input.action)) < 0.075) {

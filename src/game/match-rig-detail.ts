@@ -9,8 +9,10 @@ export function matchRigSegments(
   quality: "alta" | "media" | "baixa",
   dense: boolean,
   match = false,
+  mobile = false,
 ) {
   if (quality === "alta" && (match || !dense)) return { radial: 16, cap: 6 };
+  if (quality === "alta" && mobile) return { radial: 24, cap: 6 };
   return segmentsFor(quality === "alta" ? 0 : quality === "media" ? 1 : 2);
 }
 

@@ -96,9 +96,30 @@ const clampStage = (stage: number) =>
   Number.isFinite(stage) ? Math.max(0, Math.min(8, Math.floor(stage))) : 0;
 
 /** Resolve a visible, bounded scene at every quality-pressure stage. */
-export function resolveRuntimeSceneBudget(tier: GraphicsTier, rawStage = 0): RuntimeSceneBudget {
+export function resolveRuntimeSceneBudget(
+  tier: GraphicsTier,
+  rawStage = 0,
+  mobile = false,
+): RuntimeSceneBudget {
   const stage = clampStage(rawStage);
-  const base = BASE[tier];
+  const requested = BASE[tier];
+  const basic = tier === "baixa";
+  // Reserve mobile work for the athletes and ball before optional scenery.
+  const base = mobile
+    ? {
+        ...requested,
+        grassDensity: Math.min(requested.grassDensity, basic ? 0.24 : 0.42),
+        grassChunks: Math.min(requested.grassChunks, basic ? 3 : 6),
+        crowdInstances: Math.min(requested.crowdInstances, basic ? 512 : 1024),
+        crowdVisibleTiles: Math.min(requested.crowdVisibleTiles, basic ? 4 : 6),
+        crowdUpdateSeconds: Math.max(requested.crowdUpdateSeconds, basic ? 0.7 : 0.5),
+        flagCount: Math.min(requested.flagCount, basic ? 2 : 6),
+        propRings: Math.min(requested.propRings, basic ? 3 : 5),
+        heroPlayers: Math.min(requested.heroPlayers, basic ? 0 : 1),
+        replayHeroPlayers: Math.min(requested.replayHeroPlayers, basic ? 0 : 1),
+        post: "off" as const,
+      }
+    : requested;
   const resolutionScale = stage >= 3 ? 0.66 : stage >= 2 ? 0.76 : stage >= 1 ? 0.88 : 1;
   const textureScale = stage >= 7 ? 0.5 : stage >= 5 ? 0.75 : 1;
   const grassScale = stage >= 4 ? 0.32 : stage >= 3 ? 0.58 : 1;
@@ -127,7 +148,7 @@ export function resolveRuntimeSceneBudget(tier: GraphicsTier, rawStage = 0): Run
     weatherDensity: base.weatherDensity * effectsScale,
     goalFxDensity: base.goalFxDensity * effectsScale,
     // Dynamic shadows are the biggest GPU cost on phones; drop them before crowd/heroes.
-    shadows: stage < 3,
+    shadows: stage < 3 && !mobile,
     post: stage >= 2 ? "off" : stage >= 1 && base.post === "cinema" ? "balanced" : base.post,
   };
 }

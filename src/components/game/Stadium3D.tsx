@@ -1,4 +1,5 @@
 import { RuntimeBudget } from "@/components/game/RuntimeBudget";
+import { MobileFramebufferBudget } from "./MobileFramebufferBudget";
 import {
   QualityPressure,
   RuntimeSceneBudgetContext,
@@ -53,7 +54,7 @@ import { Floodlights } from "./stadium/StadiumFloodlights";
 import { Scoreboard } from "./stadium/StadiumScoreboard";
 
 import { cameraOption, type CameraMode } from "@/game/camera-modes";
-import { dprFor } from "@/game/device";
+import { dprFor, isCoarsePointer } from "@/game/device";
 
 import { AmbientLife } from "@/components/game/stadium/AmbientLife";
 import { Atmosphere } from "@/components/game/stadium/Atmosphere";
@@ -965,7 +966,7 @@ function Stadium3DImpl({
   const [fps, setFps] = useState<FpsSample | null>(null);
   const sceneTier = vis.quality === "cinema" ? "cinema" : quality;
   const sceneBudget = useMemo(
-    () => resolveRuntimeSceneBudget(sceneTier, pressure),
+    () => resolveRuntimeSceneBudget(sceneTier, pressure, isCoarsePointer()),
     [sceneTier, pressure],
   );
 
@@ -1093,6 +1094,7 @@ function Stadium3DImpl({
           }}
         >
           <CanvasLifecycle onStatus={(status) => setRendererReady(status === "ready")} />
+          <MobileFramebufferBudget tier={sceneTier} requested={dpr} />
           <FirstMatchFrame
             startedAt={startedAt.current}
             quality={quality}

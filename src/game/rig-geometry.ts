@@ -983,9 +983,41 @@ export function fittedLimbCover(
   cover.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   cover.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
   cover.setIndex(indices);
-  cover.computeVertexNormals();
-  smoothRingSeams(cover, radial);
+  cover.userData["surfaceSeams"] = heights.map((_, row) => [
+    row * (radial + 1),
+    row * (radial + 1) + radial,
+  ]);
+  refreshSurfaceNormals(cover);
   return cover;
+}
+
+/** Continuous skin under the cuff, inset only where the garment covers it. */
+export function footballThigh(
+  length: number,
+  radius: number,
+  radial: number,
+  subdivisions?: number,
+  side: -1 | 1 = 1,
+) {
+  const geometry = fittedLimbCover(
+    "thigh",
+    length,
+    radius,
+    radial,
+    0,
+    0,
+    1.035,
+    subdivisions,
+    side,
+  );
+  const position = geometry.getAttribute("position");
+  for (let i = 0; i < position.count; i++) {
+    const inset = 0.72 + 0.28 * THREE.MathUtils.smoothstep(-position.getY(i) / length, 0, 0.4);
+    position.setX(i, position.getX(i) * inset);
+    position.setZ(i, position.getZ(i) * inset);
+  }
+  refreshSurfaceNormals(geometry);
+  return geometry;
 }
 
 /** Libera as geometrias criadas pelo merge (materiais são compartilhados). */
