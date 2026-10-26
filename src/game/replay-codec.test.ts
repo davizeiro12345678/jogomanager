@@ -63,6 +63,23 @@ describe("versioned replay codec", () => {
     expect(decoded.frames.at(-1)?.t).toBeCloseTo(original.frames.at(-1)?.t ?? 0, 2);
   });
 
+  it("keeps exact V2/V3 decisions after a byte-size preflight", () => {
+    const original = makeReplay();
+    const withoutVisual = {
+      ...original,
+      frames: original.frames.map((frame) => ({ ...frame, v: undefined })),
+    };
+    for (const replay of [original, withoutVisual]) {
+      const encoded = encodeReplay(replay);
+      const expected = estimateReplayBytes(replay, encoded).reductionRatio >= REPLAY_V3_MIN_REDUCTION
+        ? encoded
+        : { version: 2, ...replay };
+      const actual = encodeStoredReplay(replay);
+      expect(actual).toEqual(expected);
+      expect(decodeReplay(actual)).toEqual(decodeReplay(expected));
+    }
+  });
+
   it("accepts unversioned and v2-shaped stored data", () => {
     const replay = makeReplay();
     expect(decodeReplay(replay)).toEqual(replay);
