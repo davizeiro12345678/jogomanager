@@ -111,7 +111,9 @@ export function MatchPlayers({
         // Renderer counters can be reset by post-processing or FrameProbe.
         // Measure actual non-player surfaces instead of treating zero as headroom.
         const otherDraws = countNonHeroDraws(scene);
-        const wanted = allocateHeroes(maxDraws, otherDraws, base, 1).count;
+        // A detailed rig is optional; its athlete remains in LowPlayers when
+        // there is no room. A forced minimum defeated the measured ceiling.
+        const wanted = allocateHeroes(maxDraws, otherDraws, base).count;
         if (wanted < heroLimit) {
           headroom.current = 0;
           setHeroLimit(wanted);

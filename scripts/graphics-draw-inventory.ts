@@ -1,5 +1,5 @@
 import { _roots } from "@react-three/fiber";
-import type { Mesh, Material, WebGLRenderer } from "three";
+import type { Mesh, Material, MeshStandardMaterial, WebGLRenderer } from "three";
 import {
   subscribeRenderedFrames,
   type RenderedFrameSample,
@@ -66,6 +66,10 @@ export function readDrawInventory() {
           transparent: material.transparent,
           side: material.side,
           forceSinglePass: material.forceSinglePass,
+          roughness: (material as MeshStandardMaterial).roughness,
+          metalness: (material as MeshStandardMaterial).metalness,
+          map: (material as MeshStandardMaterial).map?.uuid,
+          attributes: Object.keys(mesh.geometry.attributes),
         };
       }),
   };
