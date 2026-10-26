@@ -2263,7 +2263,18 @@ export class MatchSim {
         p.side === "home" ? Math.min(10, homeSlotIndex++) : Math.min(10, awaySlotIndex++);
       if (p.sentOff) continue;
       if (p.id === this.ball.holder) continue;
-      const { setup, dir, attacking, widthFactor, surge, pressLine, shift, plan, instructionsBySlot, phase } =
+      const {
+        setup,
+        dir,
+        attacking,
+        widthFactor,
+        surge,
+        pressLine,
+        shift,
+        plan,
+        instructionsBySlot,
+        phase,
+      } =
         p.side === "home"
           ? (homeMovement ??= movementFor("home"))
           : (awayMovement ??= movementFor("away"));
