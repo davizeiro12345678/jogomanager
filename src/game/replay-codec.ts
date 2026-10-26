@@ -274,18 +274,17 @@ function validateReplayInput(raw: object): void {
 }
 
 /**
- * Measure the exact serialized envelope and binary payload without allocating
- * binary buffers when the stored replay is likely to stay in V2 format.
+ * An optional stored buffer allows the same exact byte budget to be computed
+ * before allocating typed arrays, without changing the V2/V3 threshold.
  */
-function replaySizes(replay: Replay, stored?: StoredReplayV3) {
-  const frames = replay.frames;
+export function estimateReplayBytes(replay: Replay, stored?: StoredReplayV3) {
   const text = new TextEncoder();
   const v2Bytes = text.encode(JSON.stringify(replay)).byteLength;
   const source = stored ?? replay;
   const visual = stored
     ? stored.frames.visual
-    : frames.some((frame) => frame.v !== undefined)
-      ? frames.map((frame) => frame.v ?? null)
+    : replay.frames.some((frame) => frame.v !== undefined)
+      ? replay.frames.map((frame) => frame.v ?? null)
       : undefined;
   const envelope = {
     version: REPLAY_FORMAT_V3,
@@ -298,32 +297,31 @@ function replaySizes(replay: Replay, stored?: StoredReplayV3) {
     score: source.score,
     visual,
   };
-  // Each frame has 15 fixed bytes and 9 bytes per athlete in six arrays.
-  const buffers = stored?.frames;
-  const binaryBytes = buffers
+  const arrays = stored
     ? [
-        buffers.timesMs,
-        buffers.ball,
-        buffers.positions,
-        buffers.actions,
-        buffers.score,
-        buffers.possession,
-      ].reduce((sum, value) => sum + value.byteLength, 0)
-    : frames.length * (15 + replay.meta.length * 9);
-  const v3Bytes = binaryBytes + text.encode(JSON.stringify(envelope)).byteLength;
+        stored.frames.timesMs,
+        stored.frames.ball,
+        stored.frames.positions,
+        stored.frames.actions,
+        stored.frames.score,
+        stored.frames.possession,
+      ]
+    : null;
+  const v3Bytes =
+    (arrays
+      ? arrays.reduce((sum, value) => sum + value.byteLength, 0)
+      : replay.frames.length * (15 + replay.meta.length * 9)) +
+    text.encode(JSON.stringify(envelope)).byteLength;
   return {
+    frameCount: replay.frames.length,
     v2Bytes,
     v3Bytes,
     reductionRatio: v2Bytes ? 1 - v3Bytes / v2Bytes : 0,
   };
 }
 
-export function estimateReplayBytes(replay: Replay, stored: StoredReplayV3) {
-  return { frameCount: replay.frames.length, ...replaySizes(replay, stored) };
-}
-
 export function encodeStoredReplay(replay: Replay): StoredReplay {
-  if (replaySizes(replay).reductionRatio < REPLAY_V3_MIN_REDUCTION)
+  if (estimateReplayBytes(replay).reductionRatio < REPLAY_V3_MIN_REDUCTION)
     return { version: REPLAY_FORMAT_V2, ...replay };
   return encodeReplay(replay);
 }
