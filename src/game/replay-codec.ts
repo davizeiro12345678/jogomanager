@@ -299,13 +299,16 @@ function replaySizes(replay: Replay, stored?: StoredReplayV3) {
     visual,
   };
   // Each frame has 15 fixed bytes and 9 bytes per athlete in six arrays.
-  const binaryBytes = stored
-    ? stored.frames.timesMs.byteLength +
-      stored.frames.ball.byteLength +
-      stored.frames.positions.byteLength +
-      stored.frames.actions.byteLength +
-      stored.frames.score.byteLength +
-      stored.frames.possession.byteLength
+  const buffers = stored?.frames;
+  const binaryBytes = buffers
+    ? [
+        buffers.timesMs,
+        buffers.ball,
+        buffers.positions,
+        buffers.actions,
+        buffers.score,
+        buffers.possession,
+      ].reduce((sum, value) => sum + value.byteLength, 0)
     : frames.length * (15 + replay.meta.length * 9);
   const v3Bytes = binaryBytes + text.encode(JSON.stringify(envelope)).byteLength;
   return {
