@@ -8,6 +8,7 @@
 
 import { CLUBS, LEAGUES } from "@/game/data/leagues";
 import {
+  badges,
   setClubStyle,
   type CrestStyle,
   type FansStyle,
@@ -18,6 +19,7 @@ import type { Club, League, Player, Position } from "@/game/types";
 import { scopedKey } from "@/lib/world-scope";
 import { readCustom } from "./custom-data-storage";
 export { readCustom } from "./custom-data-storage";
+export { badgeFor } from "@/game/customStyle";
 
 /** Dados do editor, por campanha. */
 function key() {
@@ -217,12 +219,6 @@ export const FORMAT_LABEL: Record<CompetitionFormat, string> = {
 /* -------------------------------------------------------------------------- */
 /*  Escudos enviados pelo usuário                                             */
 /* -------------------------------------------------------------------------- */
-
-const badges = new Map<string, string>();
-
-export function badgeFor(clubId: string): string | undefined {
-  return badges.get(clubId);
-}
 
 /** Retrato do clube oficial antes de qualquer edição, para poder desfazer. */
 type ClubSnapshot = Pick<Club, "name" | "short" | "primary" | "secondary" | "strength">;

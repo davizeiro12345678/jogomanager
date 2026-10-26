@@ -61,6 +61,9 @@ export function QuickMatchPage() {
     );
   }
 
+  // localeCompare with an explicit locale constructs ICU collation work for
+  // every sort comparison. Share one comparator without caching mutable leagues.
+  const countryCompare = new Intl.Collator(lang).compare;
   return (
     <div className="pitch-bg min-h-screen px-4 py-10">
       <div className="mx-auto max-w-5xl">
@@ -92,9 +95,7 @@ export function QuickMatchPage() {
                 return acc;
               }, {}),
             )
-              .sort(([a], [b]) =>
-                a === "Brasil" ? -1 : b === "Brasil" ? 1 : a.localeCompare(b, lang),
-              )
+              .sort(([a], [b]) => (a === "Brasil" ? -1 : b === "Brasil" ? 1 : countryCompare(a, b)))
               .map(([country, ls]) => (
                 <optgroup key={country} label={country}>
                   {ls.map((l) => (

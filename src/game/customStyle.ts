@@ -56,6 +56,9 @@ const crests = new Map<string, CrestStyle>();
 const kits = new Map<string, KitStyle>();
 const stadiums = new Map<string, StadiumStyle>();
 const fans = new Map<string, FansStyle>();
+/** Shared applied badge registry; reading it must not initialize a campaign. */
+export const badges = new Map<string, string>();
+export const badgeFor = (clubId: string) => badges.get(clubId);
 
 export function setClubStyle(
   clubId: string,

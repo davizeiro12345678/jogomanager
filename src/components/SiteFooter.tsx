@@ -14,6 +14,9 @@ import { DISCORD_INVITE } from "@/content/community";
 
 /** Data da última revisão editorial do conteúdo público. */
 export const CONTENT_UPDATED = "2026-10-23";
+// The editorial timestamp is fixed. Avoid initializing ICU on every hydration
+// and footer rerender; the regression verifies this copy against the ISO date.
+const CONTENT_UPDATED_LABEL = "23 de outubro de 2026";
 
 const SOURCES = [
   {
@@ -36,11 +39,6 @@ const SOURCES = [
 
 export function SiteFooter({ path = "/" }: { path?: string }) {
   const url = `https://jogomanager.com${path}`;
-  const updated = new Date(`${CONTENT_UPDATED}T12:00:00Z`).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
 
   return (
     <footer className="mt-14 border-t border-border/60 pt-8 text-sm text-muted-foreground">
@@ -71,7 +69,7 @@ export function SiteFooter({ path = "/" }: { path?: string }) {
           <p className="mt-2">
             Revisado em{" "}
             <time dateTime={CONTENT_UPDATED} className="text-foreground">
-              {updated}
+              {CONTENT_UPDATED_LABEL}
             </time>
           </p>
         </section>

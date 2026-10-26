@@ -1,0 +1,41 @@
+name: Match 3D mobile draw inventory
+on:
+  pull_request:
+    paths:
+      - "src/components/game/**"
+      - "src/game/**"
+      - "scripts/GraphicsBenchmarkApp.tsx"
+      - "scripts/graphics-draw-inventory.ts"
+      - ".github/scripts/inspect-mobile-scene.mjs"
+      - ".github/workflows/match3d-mobile-draws.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run graphics:build
+      - name: Inspect real mobile draws
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/draw-qa/node_modules/playwright
+        run: |
+          npm install --prefix "$RUNNER_TEMP/draw-qa" --no-package-lock --no-save playwright@1.62.1
+          export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(command -v google-chrome)"
+          node .github/scripts/inspect-mobile-scene.mjs "$RUNNER_TEMP/mobile-draw-inventory" "${{ github.event.pull_request.head.sha || github.sha }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-draw-inventory
+          path: ${{ runner.temp }}/mobile-draw-inventory
+          if-no-files-found: error
+          retention-days: 14
