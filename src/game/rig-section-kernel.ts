@@ -72,13 +72,7 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
     const zOffset = rings[offset + 3]!;
     const v = (y - bottom) / span;
     for (let side = 0; side <= radial; side++) {
-      write(
-        profileX[side]! * xRadius,
-        y,
-        profileZ[side]! * zRadius + zOffset,
-        side / radial,
-        v,
-      );
+      write(profileX[side]! * xRadius, y, profileZ[side]! * zRadius + zOffset, side / radial, v);
     }
   }
   for (const [row, mask] of [
