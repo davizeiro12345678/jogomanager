@@ -1,7 +1,7 @@
 import type { Plugin } from "vite";
 import ts from "typescript";
 
-/** Compact registered GLSL trivia while preserving executable tokens and lines. */
+/** Compact registered GLSL indentation while preserving every token and line. */
 export function compactThreeShader(source: string, id: string): string | null {
   if (/[\\/]node_modules[\\/]three[\\/]build[\\/]three\.(?:module|core)\.js$/.test(id)) {
     const file = ts.createSourceFile(id, source, ts.ScriptTarget.Latest, false, ts.ScriptKind.JS);
@@ -47,34 +47,9 @@ export function compactThreeShader(source: string, id: string): string | null {
 }
 
 function compactLiteral(shader: string): string | null {
-  // Keep licensed chunks intact. Quoted/escaped preprocessor text is outside
-  // this small lexer. Never join or remove source lines.
-  if (
-    /[\\\"']/.test(shader) ||
-    /copyright|licen[cs]e|spdx|permission|warranty|all rights|\b(?:CC0|CC-BY|MIT|BSD)\b/i.test(
-      shader,
-    )
-  )
-    return null;
-  let block = false;
-  const value = shader
-    .split("\n")
-    .map((line) => {
-      if (!block && /^\s*\/\//.test(line)) return "";
-      for (let i = 0; i < line.length - 1; i++) {
-        const pair = line.slice(i, i + 2);
-        if (!block && pair === "//") break;
-        if (!block && pair === "/*") {
-          block = true;
-          i++;
-        } else if (block && pair === "*/") {
-          block = false;
-          i++;
-        }
-      }
-      return line.trimStart();
-    })
-    .join("\n");
+  // Keep all tokens and line boundaries. Skip escaped/preprocessor text.
+  if (/[\\"']/.test(shader)) return null;
+  const value = shader.replace(/\n[ \t]+/g, "\n");
   return value === shader ? null : value;
 }
 

@@ -8,9 +8,11 @@ import { batchStaticStadium, type StaticStadiumBatch } from "@/game/static-stadi
 export function StaticBatch({
   children,
   signature,
+  enabled = true,
 }: {
   children: ReactNode;
   signature?: string | number;
+  enabled?: boolean;
 }) {
   const root = useRef<THREE.Group>(null);
   const pending = useRef(true);
@@ -23,8 +25,9 @@ export function StaticBatch({
       cleanup.current?.();
       cleanup.current = null;
     };
-  }, [signature]);
+  }, [signature, enabled]);
   useFrame(() => {
+    if (!enabled) return;
     if (pending.current && root.current) {
       // Descendants may attach from layout effects after the parent mounts.
       // Batching an empty first frame permanently missed those stadium props.

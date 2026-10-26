@@ -36,6 +36,7 @@ import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/component
 import { skyTexture } from "@/components/game/stadium/textures/sky";
 
 import { StadiumProps } from "@/components/game/stadium/Props";
+import { StaticBatch } from "./stadium/StaticBatch";
 import { Ball } from "./stadium/StadiumBall";
 import {
   framingFor,
@@ -770,7 +771,6 @@ function Scene({
       <BenchLife sim={sim} quality={quality} goalPulse={goalPulse} />
 
       <AdBoards homeColor={sim.home.primary} awayColor={sim.away.primary} />
-      <Floodlights time={time} quality={quality} />
       {/* Feixes volumétricos, poeira e brilho das lâmpadas (custo fixo e baixo) */}
       <Atmosphere
         time={time}
@@ -778,17 +778,34 @@ function Scene({
         weather={look.weather}
         webgl2={backend === "webgl2"}
       />
-      <Stands
-        sim={sim}
-        homeColor={sim.home.primary}
-        awayColor={sim.away.primary}
-        quality={quality}
-        goalPulse={goalPulse}
-        night={time !== "dia"}
-        supporters={supporters}
-        webgl2={backend === "webgl2"}
-      />
-      {/* O que a arquibancada faz em cada lance: gol, chance, falta, protesto */}
+      {/* Batch only fixed scenery. Players, ball, officials, weather and
+          reactions retain their existing independent animation ownership. */}
+      <StaticBatch
+        enabled={quality !== "alta"}
+        signature={`fixed:${quality}:${time}:${budget.stage}:${sim.home.primary}:${sim.away.primary}:${supporters?.occupancy}`}
+      >
+        <Floodlights time={time} quality={quality} />
+        <Stands
+          sim={sim}
+          homeColor={sim.home.primary}
+          awayColor={sim.away.primary}
+          quality={quality}
+          goalPulse={goalPulse}
+          night={time !== "dia"}
+          supporters={supporters}
+          webgl2={backend === "webgl2"}
+        />
+        {/* O que a arquibancada faz em cada lance: gol, chance, falta, protesto */}
+        <StadiumProps
+          rings={budget.propRings}
+          quality={quality}
+          homeColor={sim.home.primary}
+          awayColor={sim.away.primary}
+          sim={sim}
+        />
+        <Scoreboard sim={sim} replay={replay} goalPulse={goalPulse} />
+        <SidelineLife goalPulse={goalPulse} />
+      </StaticBatch>
       <CrowdReaction
         sim={sim}
         quality={quality}
@@ -796,15 +813,6 @@ function Scene({
         color={sim.home.primary}
         supporters={supporters}
       />
-      <StadiumProps
-        rings={budget.propRings}
-        quality={quality}
-        homeColor={sim.home.primary}
-        awayColor={sim.away.primary}
-        sim={sim}
-      />
-      <Scoreboard sim={sim} replay={replay} goalPulse={goalPulse} />
-      <SidelineLife goalPulse={goalPulse} />
       <AmbientLife time={time} />
       <Ball sim={sim} quality={quality} hiVis={look.hiVisBall} wet={look.wet} />
       <MatchSurfaceProvider

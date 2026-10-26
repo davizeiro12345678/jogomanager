@@ -11,6 +11,7 @@ const wrapped = new WeakSet<Mesh>(),
 const records = new Map<string, { mesh: Mesh; count: number }>();
 const frames: RenderedFrameSample[] = [];
 export function readDrawInventory() {
+  const active = new Set<Mesh>();
   for (const root of _roots.values()) {
     const { scene, gl } = root.store.getState();
     const renderer = gl as WebGLRenderer;
@@ -20,9 +21,11 @@ export function readDrawInventory() {
         if (frames.length < 120000) frames.push(frame);
       });
     }
-    scene.traverse((object) => {
+    scene.traverseVisible((object) => {
       const mesh = object as Mesh;
-      if (!mesh.isMesh || wrapped.has(mesh)) return;
+      if (!mesh.isMesh) return;
+      active.add(mesh);
+      if (wrapped.has(mesh)) return;
       wrapped.add(mesh);
       const record = { mesh, count: 0 },
         prior = mesh.onBeforeRender;
@@ -33,10 +36,10 @@ export function readDrawInventory() {
       };
     });
   }
-  return {
-    frames,
+  const result = {
+    frames: frames.splice(0),
     objects: [...records.values()]
-      .filter((record) => record.count > 0)
+      .filter((record) => record.count > 0 && active.has(record.mesh))
       .map(({ mesh, count }) => {
         const ancestors: string[] = [];
         for (let node = mesh.parent; node; node = node.parent)
@@ -57,7 +60,7 @@ export function readDrawInventory() {
             mesh.matrixWorld.elements[14],
           ],
           triangles:
-            (mesh.geometry.index?.count ?? mesh.geometry.getAttribute("position").count) / 3,
+            (mesh.geometry.index?.count ?? mesh.geometry.getAttribute("position")?.count ?? 0) / 3,
           material: material.type,
           color: material.color?.getHexString(),
           transparent: material.transparent,
@@ -66,4 +69,6 @@ export function readDrawInventory() {
         };
       }),
   };
+  for (const record of records.values()) record.count = 0;
+  return result;
 }

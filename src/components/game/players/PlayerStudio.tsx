@@ -543,17 +543,6 @@ function StudioScene({
         <circleGeometry args={[1.65, 64]} />
         <meshStandardMaterial color="#354753" roughness={0.76} metalness={0.05} />
       </mesh>
-      <ContactShadows
-        key={`${appearance.seed}:${movement.id}:${previewAt ?? "live"}:${detail}`}
-        position={[0, 0.002, 0]}
-        opacity={0.26}
-        scale={4}
-        blur={3.2}
-        far={1.3}
-        resolution={256}
-        frames={1}
-        color="#061018"
-      />
       {detail ? (
         <PlayerRig
           key={appearanceRevision}
@@ -765,6 +754,19 @@ export default function PlayerStudio({
                   viewAngle={viewAngle}
                   cameraCommand={cameraCommand}
                   clothPhysics={clothPhysics}
+                />
+                {/* Keep Drei's capture resources alive for this Canvas. Its
+                    one-frame counter resets on control rerenders; remounting
+                    per pose leaked offscreen geometry/targets in Drei. */}
+                <ContactShadows
+                  position={[0, 0.002, 0]}
+                  opacity={0.26}
+                  scale={4}
+                  blur={3.2}
+                  far={1.3}
+                  resolution={256}
+                  frames={1}
+                  color="#061018"
                 />
               </Canvas>
             </GraphicsBoundary>

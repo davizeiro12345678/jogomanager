@@ -90,6 +90,7 @@ function Dugout({ x, color }: { x: number; color: string }) {
           roughness={0.08}
           metalness={0}
           side={THREE.DoubleSide}
+          forceSinglePass
         />
       </mesh>
       <mesh position={[0, 1.7, -1.75]}>

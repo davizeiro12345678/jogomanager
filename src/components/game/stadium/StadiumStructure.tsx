@@ -401,6 +401,7 @@ function Banners({ color, alt, rings }: { color: string; alt: string; rings: num
                 transparent
                 opacity={0.85}
                 side={THREE.DoubleSide}
+                forceSinglePass
               />
             </mesh>
           ))
@@ -575,6 +576,7 @@ function CrowdBackdrop({
             depthWrite={false}
             toneMapped={false}
             side={THREE.DoubleSide}
+            forceSinglePass
           />
         </mesh>
       ))}
@@ -592,6 +594,7 @@ function CrowdBackdrop({
             depthWrite={false}
             toneMapped={false}
             side={THREE.DoubleSide}
+            forceSinglePass
           />
         </mesh>
       ))}
