@@ -19,7 +19,9 @@ concurrency:
 jobs:
   evidence:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Two serial software-rendered captures, including 12 action video encodes.
+    # This runner allowance changes no measured frame-time or graphics budget.
+    timeout-minutes: 60
     env:
       BASE_SHA: ${{ github.event.pull_request.base.sha || '5a75fef3662e3750917df1c2259169e4ed9f24d3' }}
       CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}

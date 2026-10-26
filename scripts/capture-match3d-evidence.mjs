@@ -447,7 +447,10 @@ try {
       id: "mobile-basic",
       scenario: "broadcast",
       quality: "baixa",
-      canvas: [960, 540],
+      // Preserve the existing baixa DPR ceiling0.9 on BOTH revisions.
+      // Physical864x486 is the fixed comparison, below the additional960x540 cap.
+      canvas: [864, 486],
+      css: [960, 540],
       cores: 4,
       memory: 3,
     },
@@ -493,7 +496,7 @@ try {
         .evaluate((element, dimensions) => {
           element.style.width = `${dimensions[0]}px`;
           element.style.height = `${dimensions[1]}px`;
-        }, config.canvas);
+        }, config.css ?? config.canvas);
       await match.waitForFunction(([width, height]) => {
         const canvas = document.querySelector("canvas");
         return canvas?.width === width && canvas?.height === height;

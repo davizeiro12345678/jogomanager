@@ -985,6 +985,11 @@ function Stadium3DImpl({
       : Math.min(cap, base * s);
   }, [eff, vis.resolutionScale, sceneBudget.resolutionScale, sceneTier]);
 
+  const requestedDpr =
+    pixelRatio === undefined
+      ? dpr
+      : Math.min(GRAPHICS_PROFILES[quality].maxPixelRatio, Math.max(0.6, pixelRatio));
+
   // Backend gráfico: WebGPU quando o aparelho suporta, senão WebGL2.
   // A detecção acontece uma vez, antes de montar o palco, para não recriar
   // o contexto (e perder todas as texturas) no meio da partida.
@@ -1045,11 +1050,7 @@ function Stadium3DImpl({
           key={backend}
           shadows={shadowsOn ? SHADOW_SETTINGS : false}
           frameloop={visible && !paused ? "always" : "demand"}
-          dpr={
-            pixelRatio === undefined
-              ? dpr
-              : Math.min(GRAPHICS_PROFILES[quality].maxPixelRatio, Math.max(0.6, pixelRatio))
-          }
+          dpr={requestedDpr}
           camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
           gl={glProp}
           performance={{ min: 0.5 }}
@@ -1094,7 +1095,7 @@ function Stadium3DImpl({
           }}
         >
           <CanvasLifecycle onStatus={(status) => setRendererReady(status === "ready")} />
-          <MobileFramebufferBudget tier={sceneTier} requested={dpr} />
+          <MobileFramebufferBudget tier={sceneTier} requested={requestedDpr} />
           <FirstMatchFrame
             startedAt={startedAt.current}
             quality={quality}
