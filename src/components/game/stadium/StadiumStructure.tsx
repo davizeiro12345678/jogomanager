@@ -16,6 +16,7 @@ import {
   stadiumRoofStructure,
   stadiumSeatFront,
 } from "@/game/stadium-structure";
+import { crowdBackdropRing } from "@/game/crowd-backdrop-geometry";
 import { bakeStadiumTierGeometry } from "@/game/stadium-tier-baked";
 import { stadiumTierInstances, type StadiumTierInstance } from "@/game/stadium-tier-instances";
 import { ktx2, needsKtx2ProceduralFallback, useKtx2Revision } from "@/game/textures/ktx2";
@@ -499,28 +500,6 @@ function crowdBackdropTexture(homeColor: string, awayColor: string, occupancy: n
   return texture;
 }
 
-const CROWD_BACKDROP_TEXTURE_ASPECT = 1024 / 320;
-
-/**
- * O painel longitudinal é muito mais largo que o canvas de torcedores.
- * Repetir somente o U com base na proporção do painel corrige a leitura dos
- * espectadores em planos abertos, sem criar outro material, textura ou draw.
- */
-function crowdBackdropGeometry(width: number, height: number, depth: number) {
-  const geometry = new THREE.PlaneGeometry(width, height);
-  // Follow the rake of the terraces. A vertical panel at the rear was hidden
-  // by nearly every concrete tier, leaving only its top row visible.
-  const position = geometry.getAttribute("position") as THREE.BufferAttribute;
-  for (let index = 0; index < position.count; index++)
-    position.setZ(index, (position.getY(index) * depth) / height);
-  geometry.computeVertexNormals();
-  const repeatX = Math.max(1, Math.round(width / height / CROWD_BACKDROP_TEXTURE_ASPECT));
-  const uv = geometry.getAttribute("uv") as THREE.BufferAttribute;
-  for (let index = 0; index < uv.count; index++) uv.setX(index, uv.getX(index) * repeatX);
-  uv.needsUpdate = true;
-  return geometry;
-}
-
 function CrowdBackdrop({
   homeColor,
   awayColor,
@@ -536,68 +515,23 @@ function CrowdBackdrop({
     () => crowdBackdropTexture(homeColor, awayColor, occupancy),
     [homeColor, awayColor, occupancy],
   );
+  const geometry = useMemo(() => crowdBackdropRing(rings), [rings]);
   useEffect(() => () => texture?.dispose(), [texture]);
-  const height = Math.max(9, rings * 1.45 + 0.6);
-  const depth = rings * 1.5;
-  // Dois buffers compartilhados entre quatro painéis: a mesma cobertura de
-  // arquibancada, com o mesmo orçamento de quatro draws.
-  const longitudinalGeometry = useMemo(
-    () => crowdBackdropGeometry(FIELD_X * 2 + 24, height, depth),
-    [height, depth],
-  );
-  const endGeometry = useMemo(
-    () => crowdBackdropGeometry(FIELD_Z * 2 + 18, height, depth),
-    [height, depth],
-  );
-  useEffect(
-    () => () => {
-      longitudinalGeometry.dispose();
-      endGeometry.dispose();
-    },
-    [longitudinalGeometry, endGeometry],
-  );
+  useEffect(() => () => geometry.dispose(), [geometry]);
   if (!texture) return null;
-  const y = 3.2 + height * 0.5;
-  const zEdge = FIELD_Z + 6.5 + depth * 0.5;
-  const xEdge = FIELD_X + 9.5 + depth * 0.5;
   return (
     <group renderOrder={1}>
-      {[-1, 1].map((z) => (
-        <mesh
-          key={`crowd-z-${z}`}
-          geometry={longitudinalGeometry}
-          position={[0, y, z * zEdge]}
-          rotation={[0, z > 0 ? 0 : Math.PI, 0]}
-        >
-          <meshBasicMaterial
-            map={texture}
-            transparent
-            opacity={1}
-            depthWrite={false}
-            toneMapped={false}
-            side={THREE.DoubleSide}
-            forceSinglePass
-          />
-        </mesh>
-      ))}
-      {[-1, 1].map((x) => (
-        <mesh
-          key={`crowd-x-${x}`}
-          geometry={endGeometry}
-          position={[x * xEdge, y, 0]}
-          rotation={[0, x > 0 ? Math.PI / 2 : -Math.PI / 2, 0]}
-        >
-          <meshBasicMaterial
-            map={texture}
-            transparent
-            opacity={1}
-            depthWrite={false}
-            toneMapped={false}
-            side={THREE.DoubleSide}
-            forceSinglePass
-          />
-        </mesh>
-      ))}
+      <mesh geometry={geometry}>
+        <meshBasicMaterial
+          map={texture}
+          transparent
+          opacity={1}
+          depthWrite={false}
+          toneMapped={false}
+          side={THREE.DoubleSide}
+          forceSinglePass
+        />
+      </mesh>
     </group>
   );
 }

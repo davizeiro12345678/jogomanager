@@ -5,7 +5,7 @@ import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 import type { SimView } from "@/game/sim-contracts";
 import type { Quality } from "../Stadium3D";
 import { censusRef } from "@/game/scene-census";
-import { GoalNetPanel } from "./GoalNet";
+import { GoalNet } from "./GoalNet";
 import { ktx2, useKtx2Revision } from "@/game/textures/ktx2";
 import { presentationBall } from "./stadium-ball";
 import { StaticBatch } from "./StaticBatch";
@@ -84,9 +84,7 @@ function useNetMaterial(repeatX: number, repeatY: number, high = false) {
 
 export function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: SimView }) {
   const x = side * FIELD_X;
-  const backMat = useNetMaterial(14, 5, quality === "alta");
-  const sideMat = useNetMaterial(4, 5, quality === "alta");
-  const topMat = useNetMaterial(4, 14, quality === "alta");
+  const netMaterial = useNetMaterial(1, 1, quality === "alta");
   const post = <meshStandardMaterial color="#fdfdfd" roughness={0.22} metalness={0.08} />;
   // trave viva: bola raspando poste/travessão treme a estrutura e pisca
   const frame = useRef<THREE.Group>(null);
@@ -167,10 +165,7 @@ export function Goal({ side, quality, sim }: { side: number; quality: Quality; s
           </mesh>
         </StaticBatch>
         {/* rede: fundo (com barriga), laterais e teto */}
-        <GoalNetPanel side={side} sim={sim} material={backMat} quality={quality} />
-        <GoalNetPanel side={side} sim={sim} material={sideMat} quality={quality} face="left" />
-        <GoalNetPanel side={side} sim={sim} material={sideMat} quality={quality} face="right" />
-        <GoalNetPanel side={side} sim={sim} material={topMat} quality={quality} face="roof" />
+        <GoalNet side={side} sim={sim} material={netMaterial} quality={quality} />
       </group>
     </group>
   );
