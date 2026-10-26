@@ -42,11 +42,16 @@ const report = {
 try {
   let ready = false;
   for (let attempt = 0; attempt < 120; attempt++) {
-    // Nitro's Cloudflare preview launcher exits0 after spawning Wrangler.
+    // The outer Nitro listener opens before its preview proxy is initialized.
+    // An early request hits a TDZ in Nitro. Use the same Wrangler ready signal
+    // as LHCI, then verify the actual HTTP response before recording anything.
     if (server.exitCode !== null && server.exitCode !== 0)
       throw new Error(`Preview exited: ${serverLog}`);
     try {
-      if ((await fetch(`http://127.0.0.1:${port}/`)).ok) {
+      if (
+        /Ready on http:\/\/localhost:/.test(serverLog) &&
+        (await fetch(`http://127.0.0.1:${port}/`)).ok
+      ) {
         ready = true;
         break;
       }
