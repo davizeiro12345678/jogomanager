@@ -1886,6 +1886,9 @@ export class MatchSim {
         // Resolve contacts in the original order; only reject provably distant pairs.
         // NaN must reach the original recovery path instead of being hidden by the rejection.
         if ((dx > 1.7 || dx < -1.7) && !Number.isNaN(dz)) continue;
+        // The second axis also allows a cheap rejection without changing the
+        // original NaN recovery path or mutating deterministic contact order.
+        if ((dz > 1.7 || dz < -1.7) && !Number.isNaN(dx)) continue;
         const d2 = dx * dx + dz * dz;
         if (d2 > 2.89) continue; // (0.85 * 2)^2
         let d = Math.sqrt(d2);
