@@ -306,10 +306,38 @@ export function estimateReplayBytes(replay: Replay, stored: StoredReplayV3) {
   };
 }
 
+/**
+ * Decide whether the binary replay is worthwhile before allocating and filling
+ * six typed arrays. The sizes and JSON envelope intentionally mirror
+ * estimateReplayBytes so that the V2/V3 selection never changes.
+ */
+function estimatedReplayReduction(replay: Replay): number {
+  const text = new TextEncoder();
+  const v2Bytes = text.encode(JSON.stringify(replay)).byteLength;
+  const frames = replay.frames;
+  const visual = frames.some((frame) => frame.v !== undefined)
+    ? frames.map((frame) => frame.v ?? null)
+    : undefined;
+  const envelope = {
+    version: REPLAY_FORMAT_V3,
+    id: replay.id,
+    createdAt: replay.createdAt,
+    title: replay.title,
+    home: replay.home,
+    away: replay.away,
+    meta: replay.meta,
+    score: replay.score,
+    visual,
+  };
+  // Uint32 time (4), Int16 ball (6), Uint16 score (4), possession (1);
+  // each athlete adds four Int16 positions (8) and one action byte (1).
+  const frameBytes = frames.length * (15 + replay.meta.length * 9);
+  const v3Bytes = frameBytes + text.encode(JSON.stringify(envelope)).byteLength;
+  return v2Bytes ? 1 - v3Bytes / v2Bytes : 0;
+}
+
 export function encodeStoredReplay(replay: Replay): StoredReplay {
-  const compact = encodeReplay(replay);
-  const report = estimateReplayBytes(replay, compact);
-  return report.reductionRatio >= REPLAY_V3_MIN_REDUCTION
-    ? compact
-    : { version: REPLAY_FORMAT_V2, ...replay };
+  if (estimatedReplayReduction(replay) < REPLAY_V3_MIN_REDUCTION)
+    return { version: REPLAY_FORMAT_V2, ...replay };
+  return encodeReplay(replay);
 }
