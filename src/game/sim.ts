@@ -2227,6 +2227,18 @@ export class MatchSim {
         ? 10 + setup.tactics.mentality * 5
         : -6 + setup.tactics.pressing * 7 + (surge ? 7 : 0);
       const shift = this.mentalityShift(side);
+      const plan = activePlan(setup.tactics);
+      // Only eleven tactical slots are addressable. Preserve the first-match
+      // semantics of Array.find even when imported plans contain duplicates.
+      // Build this lookup once per side/tick, not for every athlete.
+      const instructionsBySlot: Array<NonNullable<typeof plan>["players"][number] | undefined> = [];
+      if (plan) {
+        for (const instruction of plan.players) {
+          const slot = instruction.slot;
+          if (slot >= 0 && slot <= 10 && instructionsBySlot[slot] === undefined)
+            instructionsBySlot[slot] = instruction;
+        }
+      }
       return {
         setup,
         dir,
@@ -2235,7 +2247,8 @@ export class MatchSim {
         surge,
         pressLine,
         shift,
-        plan: activePlan(setup.tactics),
+        plan,
+        instructionsBySlot,
         phase: this.tacticalPhase(side),
       };
     };
@@ -2250,14 +2263,14 @@ export class MatchSim {
         p.side === "home" ? Math.min(10, homeSlotIndex++) : Math.min(10, awaySlotIndex++);
       if (p.sentOff) continue;
       if (p.id === this.ball.holder) continue;
-      const { setup, dir, attacking, widthFactor, surge, pressLine, shift, plan, phase } =
+      const { setup, dir, attacking, widthFactor, surge, pressLine, shift, plan, instructionsBySlot, phase } =
         p.side === "home"
           ? (homeMovement ??= movementFor("home"))
           : (awayMovement ??= movementFor("away"));
       let tx = p.slotX * FIELD_X * 0.9 + shift + bx * 0.22 + pressLine * dir;
       let tz = p.slotZ * FIELD_Z * widthFactor + bz * 0.28;
       const slot = plan ? rosterSlot : 0;
-      const instructionForRole = plan?.players.find((s) => s.slot === slot);
+      const instructionForRole = plan ? instructionsBySlot[slot] : undefined;
       const learnedRole = instructionForRole
         ? (setup.tactics.advanced!.familiarity.roles[
             roleFamiliarityKey(p.pid, instructionForRole.role)
