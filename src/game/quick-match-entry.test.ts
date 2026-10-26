@@ -3,7 +3,7 @@ import { isLightweightCssPath } from "../lib/public-content-routes";
 
 const world = vi.hoisted(() => ({ ready: false, apply: vi.fn() }));
 vi.mock("@/lib/world", () => ({
-  initializeWorld: () => {
+  default: () => {
     if (!world.ready) world.apply();
   },
 }));

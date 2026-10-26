@@ -298,11 +298,7 @@ export function buildRigSkin(
     indexOf[spec.joint] = bones.length;
     bones.push(bone);
     boneOf[spec.joint] = bone;
-  }
-  for (const spec of specs) {
-    const bone = boneOf[spec.joint];
-    const parent = spec.parent ? boneOf[spec.parent] : null;
-    if (parent) parent.add(bone);
+    if (spec.parent) boneOf[spec.parent].add(bone);
   }
 
   /* ------------------------------------------------- pose de bind */
@@ -391,30 +387,28 @@ export function buildRigSkin(
     }
   }
 
+  // Every material shares the same conservative animated reach. Avoid scanning
+  // all vertices for a rest sphere that would immediately be overwritten.
+  const p = ctx.P;
+  const armReach =
+    p.hipH * 0.5 +
+    p.spineLen +
+    p.chestLen +
+    p.shoulderW * 0.52 +
+    p.upperArm +
+    p.foreArm +
+    ctx.handR * 2.3;
+  const legReach = p.hipH * 0.4 + p.thigh + p.shin + p.footLen + p.footH;
+  const headReach = p.hipH * 0.5 + p.spineLen + p.chestLen + p.neckLen + p.headH + p.headR * 0.4;
+  const bounds = new THREE.Sphere(
+    new THREE.Vector3(0, p.hipY, 0),
+    CULL_MARGIN + Math.max(armReach, legReach, headReach),
+  );
   const groups: RigSkinGroup[] = [];
   for (const bucket of buckets.values()) {
     for (const merged of mergeRigSurfaces(bucket.geometries)) {
-      merged.computeBoundingSphere();
+      merged.boundingSphere = bounds.clone();
       merged.computeBoundingBox();
-      // Small detail buckets can travel much farther than their own rest
-      // radius (a glove moves from the hip to above the head). Bound the whole
-      // reachable athlete around the pelvis, retaining ordinary frustum tests.
-      if (merged.boundingSphere) {
-        const p = ctx.P;
-        const armReach =
-          p.hipH * 0.5 +
-          p.spineLen +
-          p.chestLen +
-          p.shoulderW * 0.52 +
-          p.upperArm +
-          p.foreArm +
-          ctx.handR * 2.3;
-        const legReach = p.hipH * 0.4 + p.thigh + p.shin + p.footLen + p.footH;
-        const headReach =
-          p.hipH * 0.5 + p.spineLen + p.chestLen + p.neckLen + p.headH + p.headR * 0.4;
-        merged.boundingSphere.center.set(0, p.hipY, 0);
-        merged.boundingSphere.radius = CULL_MARGIN + Math.max(armReach, legReach, headReach);
-      }
       groups.push({
         material: bucket.material,
         ...(bucket.materialKey !== undefined ? { materialKey: bucket.materialKey } : {}),

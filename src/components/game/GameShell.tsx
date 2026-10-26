@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 
-import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
+import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
 import { OfflineBar, SyncBadge } from "@/components/OfflineBar";
 import {
   DropdownMenu,

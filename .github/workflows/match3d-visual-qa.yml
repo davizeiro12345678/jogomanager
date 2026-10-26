@@ -45,6 +45,7 @@ jobs:
           git worktree add --detach "$RUNNER_TEMP/match3d-base" "$BASE_SHA"
           ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/match3d-base/node_modules"
       - name: Build and capture baseline with the candidate evidence runner
+        id: baseline_capture
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/match3d-qa/node_modules/playwright
         run: |
@@ -52,6 +53,8 @@ jobs:
           (cd "$RUNNER_TEMP/match3d-base" && npm run graphics:build)
           node --import tsx scripts/capture-match3d-evidence.mjs "$RUNNER_TEMP/match3d-base" "$RUNNER_TEMP/match3d-evidence/baseline" 4194 "$BASE_SHA"
       - name: Build and capture candidate
+        id: candidate_capture
+        if: ${{ !cancelled() && steps.baseline_capture.outcome != 'skipped' }}
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/match3d-qa/node_modules/playwright
         run: |
@@ -61,6 +64,7 @@ jobs:
       - name: Compare fixtures, authority and mobile scene ceilings
         run: node scripts/compare-match3d-evidence.mjs "$RUNNER_TEMP/match3d-evidence/baseline/evidence.json" "$RUNNER_TEMP/match3d-evidence/candidate/evidence.json" "$RUNNER_TEMP/match3d-evidence/comparison.json"
       - name: Pair the six sampled-pose videos
+        if: ${{ !cancelled() && steps.candidate_capture.outcome != 'skipped' }}
         run: |
           mkdir -p "$RUNNER_TEMP/match3d-evidence/comparisons"
           for clip in pass shotPower trap header diveLeft slide; do

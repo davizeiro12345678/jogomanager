@@ -17,10 +17,8 @@ import { AccessibilityProvider } from "@/components/accessibility/AccessibilityP
 import { RouteHeadContent } from "@/components/RouteHeadContent";
 // Reading-controls UI is only visible on the public home page. Keep it out of
 // the shared initial JS closure for every gameplay and editorial route.
-const AccessibilitySettings = lazy(() =>
-  import("@/components/accessibility/AccessibilitySettings").then((m) => ({
-    default: m.AccessibilitySettings,
-  })),
+const AccessibilitySettings = lazy(
+  () => import("@/components/accessibility/AccessibilitySettings"),
 );
 
 export function NotFoundComponent() {
@@ -111,7 +109,7 @@ export function RootComponent() {
     // The public home needs no catalogue. Restore the campaign on entry to the
     // rest of the app, rather than downloading every club after first paint.
     if (!isLightweightCssPath(pathname))
-      void import("../lib/world").then((world) => world.initializeWorld()).catch(() => undefined);
+      void import("../lib/world").then((world) => world.default()).catch(() => undefined);
   }, [pathname]);
 
   useEffect(() => {

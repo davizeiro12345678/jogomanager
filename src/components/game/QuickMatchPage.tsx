@@ -9,7 +9,7 @@ import { LEAGUES, getLeague } from "@/game/data/leagues";
 import type { Difficulty } from "@/game/quickMatch";
 import { loadQuickLive } from "@/game/quick-match-entry";
 import { safeClub } from "@/game/club-reference";
-import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
+import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
 import { useT } from "@/i18n/provider";
 
 const QuickLive = lazy(loadQuickLive);

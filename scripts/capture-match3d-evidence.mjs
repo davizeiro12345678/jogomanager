@@ -47,6 +47,7 @@ const report = {
   videos: [],
 };
 async function observe(page, label) {
+  page.setDefaultTimeout(60000);
   page.on("pageerror", (error) => report.errors.push(`${label}: ${error.message}`));
   page.on("console", (message) => {
     if (message.type() === "error") {
@@ -72,7 +73,31 @@ async function observe(page, label) {
       frames: [],
       basis: "webgl-submissions",
       contextLosses: 0,
+      fixtureSnapshot: null,
     });
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor(url, options) {
+        super(url, options);
+        if (String(url).includes("graphics-fixture.worker"))
+          this.addEventListener("message", ({ data }) => {
+            if (Number.isInteger(data?.seq)) {
+              const { seq, time, clock, phase, players, ball, stats, possession, eventSeq } = data;
+              probe.fixtureSnapshot = {
+                seq,
+                time,
+                clock,
+                phase,
+                players,
+                ball,
+                stats,
+                possession,
+                eventSeq,
+              };
+            }
+          });
+      }
+    };
     document.addEventListener(
       "webglcontextlost",
       () => {
@@ -206,6 +231,7 @@ try {
   const motionTab = page.getByRole("tab").nth(0);
   const sceneTab = page.getByRole("tab").nth(2);
   async function shot(name, details) {
+    console.log(JSON.stringify({ checkpoint: name, sha }));
     await page.waitForTimeout(150);
     await page.screenshot({ path: path.join(output, `${name}.png`), fullPage: false });
     report.captures.push({
@@ -354,6 +380,7 @@ try {
     if (encoded.status !== 0)
       throw new Error(`Video encoding failed: ${encoded.stderr || encoded.error}`);
     report.videos.push({ file, clip, phases: 12, encodingFps: 8, timingEvidence: false });
+    console.log(JSON.stringify({ checkpoint: `video-${clip}`, sha }));
   }
   await page.setViewportSize({ width: 844, height: 390 });
   await framing.selectOption("body");
@@ -472,16 +499,26 @@ try {
         return canvas?.width === width && canvas?.height === height;
       }, config.canvas);
     }
+    await match.waitForFunction(() => window.__match3dQA.fixtureSnapshot !== null);
+    const sequence = await match.evaluate(() => window.__match3dQA.fixtureSnapshot.seq);
     await match.evaluate(() => window.advanceTime(6000));
     await match.waitForFunction(
-      () => JSON.parse(window.render_game_to_text()).simulation.minute > 0,
+      (before) => window.__match3dQA.fixtureSnapshot?.seq > before,
+      sequence,
     );
     await match.waitForTimeout(2000);
     const shotPath = `match-${config.id}.png`;
     await match.screenshot({ path: path.join(output, shotPath) });
     const scene = await match.evaluate(() => JSON.parse(window.render_game_to_text()));
     const diagnostic = await measure(match, `match-${config.id}`);
-    report.matchScenes.push({ file: shotPath, scene, config, ...diagnostic });
+    const authoritativeSnapshot = await match.evaluate(() => window.__match3dQA.fixtureSnapshot);
+    report.matchScenes.push({
+      file: shotPath,
+      scene,
+      config,
+      authoritativeSnapshot,
+      ...diagnostic,
+    });
     await match.close();
   }
   report.renderedFlow =

@@ -20,7 +20,7 @@ beforeEach(() => {
 });
 
 it("does not apply custom club mutations twice when quick play is followed by a career route", async () => {
-  const { initializeWorld } = await import("./world");
+  const { default: initializeWorld } = await import("./world");
   initializeWorld();
   initializeWorld();
   expect(setup.custom).toHaveBeenCalledTimes(1);
@@ -31,7 +31,7 @@ it("can retry initialization after a failed custom-world application", async () 
   setup.custom.mockImplementationOnce(() => {
     throw new Error("temporary");
   });
-  const { initializeWorld } = await import("./world");
+  const { default: initializeWorld } = await import("./world");
   expect(() => initializeWorld()).toThrow("temporary");
   initializeWorld();
   expect(setup.custom).toHaveBeenCalledTimes(2);

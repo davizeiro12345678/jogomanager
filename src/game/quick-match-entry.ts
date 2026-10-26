@@ -4,7 +4,7 @@ let pending: Promise<typeof import("@/components/game/QuickLive")> | undefined;
 export function loadQuickLive() {
   return (pending ??= Promise.all([
     import("@/components/game/QuickLive"),
-    import("../lib/world").then((world) => world.initializeWorld()),
+    import("../lib/world").then((world) => world.default()),
   ]).then(
     ([page]) => page,
     (error: unknown) => {

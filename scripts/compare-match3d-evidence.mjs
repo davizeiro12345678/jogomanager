@@ -78,6 +78,12 @@ export function compareMatch3dEvidence(before, after) {
       }
       if (candidate.scene) {
         check(
+          Boolean(candidate.authoritativeSnapshot) &&
+            JSON.stringify(candidate.authoritativeSnapshot) ===
+              JSON.stringify(baseline.authoritativeSnapshot),
+          `${candidate.label}: worker snapshot mismatch`,
+        );
+        check(
           JSON.stringify(candidate.scene.scenario) === JSON.stringify(baseline.scene?.scenario),
           `${candidate.label}: different scenario`,
         );

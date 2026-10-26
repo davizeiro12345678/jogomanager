@@ -19,7 +19,7 @@ export function applyWorld() {
 
 let initialized = false;
 /** Route entry and quick-play intent share one successful boot. Failures retry. */
-export function initializeWorld() {
+export default function initializeWorld() {
   if (initialized) return;
   applyWorld();
   initialized = true;

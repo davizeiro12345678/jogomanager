@@ -1,4 +1,4 @@
-import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
+import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CLIP_NAMES, type ClipName, type PlayerAction } from "@/game/animation";
 import { cinematicOverlayActive, subscribeCinematicOverlay } from "@/game/cinematic-overlay";

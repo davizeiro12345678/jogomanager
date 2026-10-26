@@ -25,6 +25,7 @@ const capture = () => ({
   })),
   matchScenes: Array.from({ length: 6 }, (_, i) => ({
     label: `match-${i}`,
+    authoritativeSnapshot: { seq: 2, time: 36 },
     scene: { scenario: { seed: `s${i}` }, simulation: { score: [0, 0], ball: { x: 1 } } },
     certification: false,
     basis: "software-webgl-submissions",
@@ -46,6 +47,7 @@ it("rejects missing captures, changed authority, unequal resolution and over-bud
     after = capture();
   after.captures.pop();
   after.matchScenes[0]!.scene.simulation.ball.x = 2;
+  after.matchScenes[0]!.authoritativeSnapshot.time = 37;
   after.mobileDiagnostics[0]!.renderer.width = 800;
   after.mobileDiagnostics[0]!.peakTriangles = 90001;
   const result = compareMatch3dEvidence(before, after);
@@ -53,6 +55,7 @@ it("rejects missing captures, changed authority, unequal resolution and over-bud
     expect.arrayContaining([
       "candidate: missing Studio captures",
       "match-0: authoritative state changed",
+      "match-0: worker snapshot mismatch",
       "mobile-basic: unequal reference framebuffer",
       "mobile-basic: 90001 triangles exceed 90000",
     ]),
