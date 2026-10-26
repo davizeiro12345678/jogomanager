@@ -13,6 +13,24 @@ function box(color: string, x: number, roughness = 0.8) {
 }
 
 describe("immutable stadium batching", () => {
+  it("consolidates fixed subsystem colours and inactive shadow splits only with an explicit policy", () => {
+    const root = new THREE.Group();
+    for (let i = 0; i < 4; i++) {
+      const mesh = box(i % 2 ? "red" : "blue", i);
+      tagCensus(mesh, i < 2 ? "static" : "props");
+      mesh.castShadow = i % 2 === 0;
+      mesh.receiveShadow = i < 2;
+      root.add(mesh);
+    }
+    const before = censusScene(root);
+    const cleanup = batchStaticStadium(root, { bucket: "static", shadows: false });
+    const after = censusScene(root);
+    expect(after.total.draws).toBe(1);
+    expect(after.total.triangles).toBe(before.total.triangles);
+    expect(after.total.shadowCasters).toBe(0);
+    cleanup();
+    expect(censusScene(root).total).toEqual(before.total);
+  });
   it("reduces draws while preserving positions, colours, triangles and census ownership", () => {
     const group = new THREE.Group();
     group.position.x = 20;

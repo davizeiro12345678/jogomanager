@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 import { resolveRuntimeSceneBudget } from "./runtime-scene-budget";
 
 describe("RuntimeSceneBudget", () => {
+  it("exposes the actual mobile draw ceiling used to reserve hero headroom", () => {
+    expect(resolveRuntimeSceneBudget("baixa", 0, true).maxDrawCalls).toBe(75);
+    expect(resolveRuntimeSceneBudget("media", 0, true).maxDrawCalls).toBe(110);
+    expect(resolveRuntimeSceneBudget("media").maxDrawCalls).toBe(170);
+  });
   it("keeps mobile background work bounded even when a high tier is requested", () => {
     for (const tier of ["baixa", "media", "alta", "cinema"] as const) {
       const initial = resolveRuntimeSceneBudget(tier, 0, true);

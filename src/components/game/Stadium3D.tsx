@@ -782,6 +782,8 @@ function Scene({
           reactions retain their existing independent animation ownership. */}
       <StaticBatch
         enabled={quality !== "alta"}
+        bucket="static"
+        shadows={budget.shadows}
         signature={`fixed:${quality}:${time}:${budget.stage}:${sim.home.primary}:${sim.away.primary}:${supporters?.occupancy}`}
       >
         <Floodlights time={time} quality={quality} />

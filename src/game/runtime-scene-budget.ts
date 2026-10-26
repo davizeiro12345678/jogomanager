@@ -1,4 +1,4 @@
-import type { GraphicsTier } from "./contracts/graphics-profile";
+import { GRAPHICS_PROFILES, type GraphicsTier } from "./contracts/graphics-profile";
 
 /**
  * All adaptive rendering levers live in one resolved object.  A numeric
@@ -8,6 +8,7 @@ import type { GraphicsTier } from "./contracts/graphics-profile";
  */
 export type RuntimeSceneBudget = Readonly<{
   tier: GraphicsTier;
+  maxDrawCalls: number;
   stage: number;
   resolutionScale: number;
   textureScale: number;
@@ -28,7 +29,7 @@ export type RuntimeSceneBudget = Readonly<{
 
 type BudgetBase = Omit<
   RuntimeSceneBudget,
-  "tier" | "stage" | "resolutionScale" | "textureScale" | "shadows" | "post"
+  "tier" | "maxDrawCalls" | "stage" | "resolutionScale" | "textureScale" | "shadows" | "post"
 > & {
   post: "off" | "balanced" | "cinema";
 };
@@ -133,6 +134,7 @@ export function resolveRuntimeSceneBudget(
 
   return {
     tier,
+    maxDrawCalls: mobile ? (basic ? 75 : 110) : GRAPHICS_PROFILES[tier].maxDrawCalls,
     stage,
     resolutionScale,
     textureScale,

@@ -2,6 +2,7 @@ import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import { batchStaticStadium, type StaticStadiumBatch } from "@/game/static-stadium-batch";
+import type { CensusBucket } from "@/game/scene-census";
 
 /** Wait for descendant geometry to settle after R3F commits. Rebuild only
  * when the explicit signature changes; source meshes stay recoverable. */
@@ -9,10 +10,14 @@ export function StaticBatch({
   children,
   signature,
   enabled = true,
+  bucket,
+  shadows,
 }: {
   children: ReactNode;
   signature?: string | number;
   enabled?: boolean;
+  bucket?: CensusBucket;
+  shadows?: boolean;
 }) {
   const root = useRef<THREE.Group>(null);
   const pending = useRef(true);
@@ -25,7 +30,7 @@ export function StaticBatch({
       cleanup.current?.();
       cleanup.current = null;
     };
-  }, [signature, enabled]);
+  }, [signature, enabled, bucket, shadows]);
   useFrame(() => {
     if (!enabled) return;
     if (pending.current && root.current) {
@@ -42,7 +47,10 @@ export function StaticBatch({
       state.frames = sourceSignature === state.signature ? state.frames + 1 : 0;
       state.signature = sourceSignature;
       if (sources.length && state.frames >= 2) {
-        cleanup.current = batchStaticStadium(root.current);
+        cleanup.current = batchStaticStadium(root.current, {
+          ...(bucket ? { bucket } : {}),
+          ...(shadows === undefined ? {} : { shadows }),
+        });
         pending.current = false;
       }
     }
