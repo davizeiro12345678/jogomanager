@@ -103,7 +103,7 @@ export async function fetchVpsPublicCrests(
           ids.add(row.id);
           result.push(row);
         }
-        if (rows.length < PAGE_SIZE) return result;
+        if (rows.length < PAGE_SIZE) return result.length > 0 ? result : null;
       }
     }
     // Never return a truncated crest catalog.
