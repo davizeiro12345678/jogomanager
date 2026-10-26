@@ -78,7 +78,14 @@ describe("bounded public football projections", () => {
       getOfficialAssets(),
       getOfficialAssets(),
     ]);
-    expect(fixture.calls.map((call) => call.table)).toEqual(["clubs", "kits", "clubs", "kits"]);
+    // Independent public projections run concurrently: their completion/order
+    // is not a contract, but both should fetch and then terminate pagination.
+    expect(fixture.calls.map((call) => call.table).sort()).toEqual([
+      "clubs",
+      "clubs",
+      "kits",
+      "kits",
+    ]);
     expect(second.kits["fla"]).toBe("https://images.example/kit.png");
     first.crests["fla"] = "changed by caller";
     third.kits["fla"] = "changed by caller";
@@ -113,8 +120,14 @@ describe("bounded public football projections", () => {
         error: null,
       },
     );
+    const callsBeforeRetry = fixture.calls.length;
     expect((await getOfficialAssets()).kits["fla"]).toBe("https://images.example/recovered.png");
-    expect(fixture.calls).toHaveLength(7);
+    // Promise.all may reject before the other independent projection finishes
+    // its final empty page. The important guarantee is that both projections
+    // are fetched again and no partial result is retained.
+    const retryCalls = fixture.calls.slice(callsBeforeRetry).map((call) => call.table);
+    expect(retryCalls).toContain("clubs");
+    expect(retryCalls).toContain("kits");
   });
 
   it("keeps public squad cache keys separate and preserves source identity", async () => {
