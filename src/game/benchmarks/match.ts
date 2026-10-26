@@ -3,7 +3,7 @@ import type { Bench } from "tinybench";
 import { snapshotMatch, WorkerMatchView } from "../live-match";
 import { buildTeamSetup } from "../quickMatch";
 import { ReplayRecorder } from "../replay";
-import { decodeReplay, encodeReplay } from "../replay-codec";
+import { decodeReplay, encodeReplay, encodeStoredReplay } from "../replay-codec";
 import { MatchSim, MATCH_SIMULATION_STEP } from "../sim";
 
 const home = buildTeamSetup("fla");
@@ -55,6 +55,9 @@ export function registerMatchBenchmarks(bench: Bench) {
     })
     .add("replay codec: encodeReplay", () => {
       encodeReplay(replay);
+    })
+    .add("replay codec: encodeStoredReplay", () => {
+      encodeStoredReplay(replay);
     })
     .add("replay codec: decodeReplay", () => {
       decodeReplay(stored);

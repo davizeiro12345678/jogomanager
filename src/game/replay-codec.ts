@@ -66,23 +66,25 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
   for (let frameIndex = 0; frameIndex < frames.length; frameIndex++) {
     const frame = frames[frameIndex]!;
     const timeMs = Math.max(previousTimeMs, Math.round(frame.t * 1_000));
+    const ballOffset = frameIndex * 3;
+    const scoreOffset = frameIndex * 2;
     timesMs[frameIndex] = timeMs - previousTimeMs;
     previousTimeMs = timeMs;
-    for (let axis = 0; axis < 3; axis += 1)
-      ball[frameIndex * 3 + axis] = integer(frame.b[axis]! / 1);
-    score[frameIndex * 2] = Math.max(0, Math.min(65_535, frame.hg));
-    score[frameIndex * 2 + 1] = Math.max(0, Math.min(65_535, frame.ag));
+    for (let axis = 0; axis < 3; axis += 1) ball[ballOffset + axis] = integer(frame.b[axis]!);
+    score[scoreOffset] = Math.max(0, Math.min(65_535, frame.hg));
+    score[scoreOffset + 1] = Math.max(0, Math.min(65_535, frame.ag));
     possession[frameIndex] = frame.poss === "away" ? 1 : 0;
     const frameBase = frameIndex * playerCount;
+    const positionBase = frameBase * 4;
     const coords = frame.p;
     const frameActions = frame.a;
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
       const source = playerIndex * 4;
-      const target = (frameBase + playerIndex) * 4;
-      positions[target] = integer(coords[source] ?? 0 / 1);
-      positions[target + 1] = integer(coords[source + 1] ?? 0 / 1);
-      positions[target + 2] = integer(coords[source + 2] ?? 0 / 1);
-      positions[target + 3] = integer(coords[source + 3] ?? 0 / 1);
+      const target = positionBase + source;
+      positions[target] = integer(coords[source] ?? 0);
+      positions[target + 1] = integer(coords[source + 1] ?? 0);
+      positions[target + 2] = integer(coords[source + 2] ?? 0);
+      positions[target + 3] = integer(coords[source + 3] ?? 0);
       actions[frameBase + playerIndex] = actionCode(frameActions[playerIndex] ?? null);
     }
   }
@@ -273,30 +275,44 @@ function validateReplayInput(raw: object): void {
   }
 }
 
-export function estimateReplayBytes(replay: Replay, stored: StoredReplayV3) {
+/**
+ * An optional stored buffer allows the same exact byte budget to be computed
+ * before allocating typed arrays, without changing the V2/V3 threshold.
+ */
+export function estimateReplayBytes(replay: Replay, stored?: StoredReplayV3) {
   const text = new TextEncoder();
   const v2Bytes = text.encode(JSON.stringify(replay)).byteLength;
-  const arrays = [
-    stored.frames.timesMs,
-    stored.frames.ball,
-    stored.frames.positions,
-    stored.frames.actions,
-    stored.frames.score,
-    stored.frames.possession,
-  ];
+  const source = stored ?? replay;
+  const visual = stored
+    ? stored.frames.visual
+    : replay.frames.some((frame) => frame.v !== undefined)
+      ? replay.frames.map((frame) => frame.v ?? null)
+      : undefined;
   const envelope = {
-    version: stored.version,
-    id: stored.id,
-    createdAt: stored.createdAt,
-    title: stored.title,
-    home: stored.home,
-    away: stored.away,
-    meta: stored.meta,
-    score: stored.score,
-    visual: stored.frames.visual,
+    version: REPLAY_FORMAT_V3,
+    id: source.id,
+    createdAt: source.createdAt,
+    title: source.title,
+    home: source.home,
+    away: source.away,
+    meta: source.meta,
+    score: source.score,
+    visual,
   };
+  const arrays = stored
+    ? [
+        stored.frames.timesMs,
+        stored.frames.ball,
+        stored.frames.positions,
+        stored.frames.actions,
+        stored.frames.score,
+        stored.frames.possession,
+      ]
+    : null;
   const v3Bytes =
-    arrays.reduce((sum, value) => sum + value.byteLength, 0) +
+    (arrays
+      ? arrays.reduce((sum, value) => sum + value.byteLength, 0)
+      : replay.frames.length * (15 + replay.meta.length * 9)) +
     text.encode(JSON.stringify(envelope)).byteLength;
   return {
     frameCount: replay.frames.length,
@@ -307,9 +323,7 @@ export function estimateReplayBytes(replay: Replay, stored: StoredReplayV3) {
 }
 
 export function encodeStoredReplay(replay: Replay): StoredReplay {
-  const compact = encodeReplay(replay);
-  const report = estimateReplayBytes(replay, compact);
-  return report.reductionRatio >= REPLAY_V3_MIN_REDUCTION
-    ? compact
-    : { version: REPLAY_FORMAT_V2, ...replay };
+  if (estimateReplayBytes(replay).reductionRatio < REPLAY_V3_MIN_REDUCTION)
+    return { version: REPLAY_FORMAT_V2, ...replay };
+  return encodeReplay(replay);
 }
